@@ -4,6 +4,7 @@
 // absent (and future days) render neither.
 import { ScoreRing } from '@/shared/ui/ScoreRing'
 import { Icon } from '@/shared/ui/Icon'
+import { Spinner } from '@/shared/ui/Spinner'
 import { huMonthDayDow } from '@/shared/lib/dates'
 import type { MeWeekDay } from '@/data/me/meWeek'
 
@@ -33,7 +34,9 @@ function subscoreLine(d: MeWeekDay): string {
   return SUBSCORE_ORDER.map((k) => `${SUBSCORE_LABEL[k]} ${d.subscores[k] ?? '—'}`).join(' · ')
 }
 
-export function WeekDayCard({ day, expanded, onToggle, future = false, dayNote, onChat }: {
+export function WeekDayCard({
+  day, expanded, onToggle, future = false, dayNote, onChat, chatPending = false,
+}: {
   day: MeWeekDay
   expanded: boolean
   onToggle: () => void
@@ -41,6 +44,9 @@ export function WeekDayCard({ day, expanded, onToggle, future = false, dayNote, 
   future?: boolean
   dayNote?: string | null
   onChat?: () => void
+  /** The handoff's real-mode create round-trip is in flight — disable the chip meanwhile
+   *  (WeekReviewCard's same pattern), so a second click can't fire a second POST. */
+  chatPending?: boolean
 }) {
   const canExpand = !future
   return (
@@ -118,8 +124,21 @@ export function WeekDayCard({ day, expanded, onToggle, future = false, dayNote, 
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 2 }}>{dayNote}</p>
           )}
           {onChat != null && (
-            <button type="button" className="chip" style={{ alignSelf: 'flex-start' }} onClick={onChat}>
-              Beszélgess a napról <Icon name="chevron-right" size={10} />
+            <button
+              type="button"
+              className="chip"
+              style={{ alignSelf: 'flex-start' }}
+              disabled={chatPending}
+              onClick={onChat}
+            >
+              {chatPending ? (
+                <span className="row gap-xs" style={{ alignItems: 'center' }}>
+                  <Spinner size="sm" label="" />
+                  Indítás…
+                </span>
+              ) : (
+                <>Beszélgess a napról <Icon name="chevron-right" size={10} /></>
+              )}
             </button>
           )}
         </div>

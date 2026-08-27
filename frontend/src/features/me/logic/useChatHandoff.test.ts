@@ -100,6 +100,38 @@ describe('useChatHandoff (real mode)', () => {
     expect(body).toEqual({ context: { kind: 'week', date: '2026-08-24' } })
   })
 
+  it('ignores a second open() while the first create is still in flight (fix round 1)', async () => {
+    let requestCount = 0
+    let resolveRequest: () => void = () => {}
+    const gate = new Promise<void>((resolve) => { resolveRequest = resolve })
+    server.use(
+      http.post(`${API_BASE}/api/companion/conversation`, async () => {
+        requestCount += 1
+        await gate
+        return HttpResponse.json(
+          { id: 'c-anchored', title: null, startedAt: '2026-08-24T06:00:00Z', lastMessageAt: null },
+          { status: 200 },
+        )
+      }),
+    )
+    const { wrapper } = makeWrapper()
+    const { result } = renderHook(() => useChatHandoff(), { wrapper })
+
+    act(() => result.current.open({ kind: 'week', date: '2026-08-24' }))
+    await waitFor(() => expect(result.current.pending).toBe(true))
+
+    // A double-click (or two triggering buttons) while the first POST is still in flight —
+    // the re-entrancy guard in open() must swallow this, not fire a second request.
+    act(() => result.current.open({ kind: 'day', date: '2026-08-25' }))
+    act(() => result.current.open({ kind: 'week', date: '2026-08-24' }))
+
+    resolveRequest()
+    await waitFor(() => expect(result.current.pending).toBe(false))
+
+    expect(requestCount).toBe(1)
+    expect(mockNavigate).toHaveBeenCalledTimes(1)
+  })
+
   it('shows a toast and does not navigate on failure', async () => {
     server.use(
       http.post(`${API_BASE}/api/companion/conversation`, () =>

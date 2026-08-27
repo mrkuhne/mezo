@@ -71,6 +71,9 @@ export function useChatHandoff(): { open: (context: ChatHandoffContext) => void;
   }
 
   const open = (context: ChatHandoffContext) => {
+    // Structural double-click guard — a real POST in flight (or, in principle, an overlapping
+    // mock call) is ignored rather than relying on every call site to disable its own button.
+    if (pending) return
     if (isMockMode()) openMock(context)
     else void openReal(context)
   }

@@ -179,6 +179,7 @@ export function WeekPage() {
                 dayNote={dayNoteByDate.get(d.date) ?? null}
                 // Future days haven't happened yet — nothing to talk about.
                 onChat={future ? undefined : () => chatHandoff.open({ kind: 'day', date: d.date })}
+                chatPending={chatHandoff.pending}
               />
             )
           })}
