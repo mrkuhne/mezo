@@ -588,10 +588,10 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Gratitude embedding seam | ✅ `mezo-b3pp.3` | A SIXTH `memory_embedding` kind, `gratitude`: 1–3 short lines a day from `gratitude_entry` (`feature/journal`, [`journal.md`](journal.md) §5). `GratitudeEmbeddingListener` is the journal-shaped twin of the journal listener (`COMPANION_SWITCH` + `JOURNAL_SWITCH`, AFTER_COMMIT/`@Async`), calling `MemoryEmbeddingWriter.writeGratitude` / `.deleteGratitudeEmbedding` over the shared `upsert`; no edit endpoint, so only the create-then-delete liveness re-check. Short texts embed fine — they carry disproportionate emotional signal (spec §5.3). |
 | Note catch-up seam | ✅ `mezo-b3pp.5` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.writeNote`, write-once. No lower date bound, so the first run IS the one-time history backfill and later runs converge via `findRefIdsByCreatedByAndKind`; `mezo.companion.embedding.embed-notes` / `note-min-chars` (80) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
-| Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7`, retraction `mezo-b3pp.31` | Phase 5 W2.2 — confirmed patterns, non-pattern-sourced knowledge facts and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. **Promotion is two-way (`mezo-b3pp.31`)**: `retractPattern`/`retractGoal`/`retractFact` archive the mirror node when a pattern is un-confirmed, a goal is soft-deleted, or a fact is soft-deleted — see the W2.2 section below for the event wiring and the honest gap around `knowledge_fact` deletes. |
+| Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7`, retraction `mezo-b3pp.31`, fact opt-out `mezo-b3pp.30` | Phase 5 W2.2 — confirmed patterns, active AND prompt-included non-pattern-sourced knowledge facts, and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent`/`KnowledgeFactChangedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. **Promotion is two-way (`mezo-b3pp.31`)**: `retractPattern`/`retractGoal`/`retractFact` archive the mirror node when a pattern is un-confirmed, a goal is soft-deleted, or a fact is soft-deleted or opted out of the prompt (`include_in_prompt=false`) — see the W2.2 section below for the event wiring, `syncFact`, and the honest gap that remains around `knowledge_fact` hard/soft deletes. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
 | Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, punctuation stripped, ≥3 chars, no LLM) against active node titles/summaries; `GraphTraversalQuery` (both reads raw JDBC under one savepoint: the seed-candidate read + the recursive CTE — undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted + owner-scoped nodes only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines (`PRECEDED_BY` swapped so the line stays cause-first) under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode`/node-id ref per rendered node after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
-| Graph maintenance job (decay + reinforcement) | ✅ `mezo-b3pp.10`, retraction sweep `mezo-b3pp.31` | Phase 5 W2.5 — nightly `GraphMaintenanceJob` (`mezo.companion.graph.cron`, dawn slot, `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own job switch): per-user, three phase-isolated steps — `GraphMaintenanceService.runMaintenance` (edge weight ×= `decayFactor` daily, edges under `pruneFloor` soft-deleted in the same pass, candidate nodes older than `candidateMaxAgeDays` soft-deleted, fresh same-night `pattern_event` snapshot evidence bumps a promoted pattern's touching edges by `reinforcementBump` capped at 1.0), then W2.2's `GraphPromotionService.reconcile` (now per-row isolated, mezo-b3pp.32 fixed alongside) — **its phase-2 promotion loops now run BOTH directions (`mezo-b3pp.31`)**: the original three promoter loops UPSERT forward from a still-qualifying source row, and a fourth complement-set sweep runs after them, walking every active node back to its source row and archiving any whose source stopped qualifying — the backstop for a retraction missed while the switch was off, and the ONLY trigger `retractFact` ever gets, since nothing in main source soft-deletes a `knowledge_fact` — then W2.3's `LifeEventExtractionService.extractFor(yesterday)`. A failure in any phase for any user never skips the rest. |
+| Graph maintenance job (decay + reinforcement) | ✅ `mezo-b3pp.10`, retraction sweep `mezo-b3pp.31` | Phase 5 W2.5 — nightly `GraphMaintenanceJob` (`mezo.companion.graph.cron`, dawn slot, `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own job switch): per-user, three phase-isolated steps — `GraphMaintenanceService.runMaintenance` (edge weight ×= `decayFactor` daily, edges under `pruneFloor` soft-deleted in the same pass, candidate nodes older than `candidateMaxAgeDays` soft-deleted, fresh same-night `pattern_event` snapshot evidence bumps a promoted pattern's touching edges by `reinforcementBump` capped at 1.0), then W2.2's `GraphPromotionService.reconcile` (now per-row isolated, mezo-b3pp.32 fixed alongside) — **its phase-2 promotion loops now run BOTH directions (`mezo-b3pp.31`)**: the original three promoter loops UPSERT forward from a still-qualifying source row, and a fourth complement-set sweep runs after them, walking every active node back to its source row and archiving any whose source stopped qualifying — the backstop for a retraction missed while the switch was off, and (for the still-untriggered delete half of `retractFact`) the ONLY trigger it gets, since nothing in main source soft-deletes a `knowledge_fact`; the opt-out half reaches `retractFact` on the same turn via `syncFact` (`mezo-b3pp.30`) — then W2.3's `LifeEventExtractionService.extractFor(yesterday)`. A failure in any phase for any user never skips the rest. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs the kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (four here, five since W3.2 added the rungs) (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter ambient floor, today-and-later dates skipped (the snapshot already carries the day), the group's cap of items kept (a cap of 0 skips the query entirely) — **since W3.3 (`mezo-b3pp.14`) the floor, τ and cap are all per kind-group, `ambient-recall.<group>.{min-similarity,decay-days,cap}`**. Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → **[Összefüggések]** (W2.4) → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Consolidation ladder (W3.2) | ✅ `mezo-b3pp.13` | Phase 5 W3.2 — `period_summary` (`week`/`month` rungs, uq `(created_by, granularity, period_start)`) generated by `service/PeriodSummaryService`: pure-code gather (the week's `daily_summary` narratives → the week rung; the month's week rungs → the month rung) + ONE cheap-tier condensation call (`LlmCallContext("companion_consolidation", "weekly"|"monthly", …)`), idempotent per period (an existing rung is returned, the model is NOT called) and honest (no source rows or a blank answer ⇒ no row). `service/ConsolidationJob` (Monday 03:30 weekly + 1st-of-month 03:50 monthly, switch `mezo.techcore.cron.consolidation-job.enabled`) fills and embeds every missing rung of its backfill window per user, so the catch-up doubles as the history backfill; each rung is embedded through `MemoryEmbeddingWriter.writePeriodSummary` as `weekly_summary`/`monthly_summary` at `occurred_on = period_start` (unchanged text short-circuits before the provider call). Recall SHADOWING: `PromptMemoryAssembler` asks for `daily_summary` hits only inside `ambient-recall.weekly-shadow-days` and queries the rung group unfiltered — beyond the cutoff a stretch is remembered through its rung. **Nothing is ever deleted** (spec §12). |
@@ -1469,12 +1469,22 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     `status='active'` on the UPSERT** — the revive half of retraction: `GraphService.upsertNode`
     deliberately never touches `status`, so without this assertion an archived-then-reconfirmed
     pattern would UPSERT its row's summary/meta back to current but stay `archived` forever.
-  - `promoteFact(userId, factId)` — an active (own, not deleted) `knowledge_fact` →
-    `KIND_PREFERENCE`, `sourceKind="knowledge_fact"`. **Deliberately skips rows whose
-    `source='pattern'`**: those facts are the V3.3 shadow of a pattern that is ALREADY a PATTERN
-    node via `promotePattern`, so promoting them too would put the same sentence in the graph
-    twice under two different node kinds. Also asserts `status='active'` on UPSERT, the same
-    `mezo-b3pp.31` revive half as `promotePattern`.
+  - `promoteFact(userId, factId)` — an active (own, not deleted), **prompt-included**
+    (`include_in_prompt=true`), non-pattern-sourced `knowledge_fact` → `KIND_PREFERENCE`,
+    `sourceKind="knowledge_fact"`. **Deliberately skips rows whose `source='pattern'`**: those
+    facts are the V3.3 shadow of a pattern that is ALREADY a PATTERN node via `promotePattern`, so
+    promoting them too would put the same sentence in the graph twice under two different node
+    kinds. Also asserts `status='active'` on UPSERT, the same `mezo-b3pp.31` revive half as
+    `promotePattern`. **The `include_in_prompt` filter (`mezo-b3pp.30`) closes the bd's explicit
+    either/or**: filter promotion on the flag, or make the deliberate decision to ignore it
+    explicit in the spec and docs. This slice took the first option, and the second was never
+    seriously in the running — `include_in_prompt` is the user's kill-switch for EVERY injection
+    channel, the exact wording `KnowledgeFactService` already uses where the same flag gates the
+    V1.1 facts block and the V3.3 acknowledgment block, and `GraphPromptAssembler` renders
+    traversed nodes straight into that SAME system prompt. The graph is one more channel into it,
+    not an exception to the rule; documenting a switch the user can see in the Tudástár UI that
+    silently keeps leaking through the graph would contradict the switch's own contract, so the
+    question is closed here, not left open for a future slice to re-litigate.
   - `syncGoal(userId, goalId)` — a goal → `KIND_GOAL`, `sourceKind="goal"`. Status mapping: `active`
     ⇒ node `status="active"`; anything else (`planned`/`archived`) ⇒ node `status="archived"` (the
     graph shadows a goal's whole lifecycle, it never forgets one; this is why `syncGoal` already
@@ -1488,16 +1498,36 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
   - **Retraction (`mezo-b3pp.31`) — promotion's mirror.** `retractPattern(userId, patternId)`,
     `retractGoal(userId, goalId)` and `retractFact(userId, factId)` each re-check their own
     source row's qualifying condition rather than trusting the caller (a pattern no longer
-    `confirmed`; a goal or fact with `is_deleted=true`), and archive the matching node through a
-    private `archiveBySource` helper — plain JPA dirty checking inside the method's own
-    `@Transactional`, no `saveAndFlush`. Each is a no-op (empty return) when the node was never
-    promoted or is already archived, the same idempotence promotion already had. **`retractFact`
-    is the one with no live trigger today: no service in main source soft-deletes a
-    `knowledge_fact`, so nothing publishes a fact-retraction event and the nightly complement
-    sweep below is `retractFact`'s only caller** — stated here plainly rather than implying an
-    event seam that does not exist (that gap is separately tracked as `mezo-b3pp.30`: an
-    `includeInPrompt=false` fact keeps an active PREFERENCE node that the nightly reconcile
-    re-asserts, out of scope here).
+    `confirmed`; a goal with `is_deleted=true`; a fact with `is_deleted=true` OR
+    `include_in_prompt=false`, mirroring `promoteFact`'s own filter), and archive the matching
+    node through a private `archiveBySource` helper — plain JPA dirty checking inside the
+    method's own `@Transactional`, no `saveAndFlush`. Each is a no-op (empty return) when the
+    node was never promoted or is already archived, the same idempotence promotion already had.
+    **`retractFact` has two triggers now, not one.** The *delete* half is still dead code in
+    practice — no service in main source soft-deletes a `knowledge_fact`, so nothing publishes a
+    delete-triggered retraction event, and the nightly complement sweep below remains its only
+    caller for that half. The *opt-out* half is live as of `mezo-b3pp.30` (this slice): every
+    `KnowledgeFactService.update` publishes `KnowledgeFactChangedEvent` unconditionally, and
+    `GraphPromotionListener` routes it to `syncFact` below, so flipping `include_in_prompt` off
+    reaches `retractFact` on the same turn instead of waiting for dawn.
+  - **`syncFact(userId, factId)`** — promote-or-archive in ONE `@Transactional` call, the
+    `syncGoal` shape applied to facts. `promoteFact` and `retractFact` each answer only half of
+    "did this fact change", and a caller reacting to a `KnowledgeFactChangedEvent` cannot know in
+    advance which half applies — the same `PATCH` that opts a fact out can opt the next one back
+    in. `syncFact` tries `promoteFact` first and falls through to `retractFact` only when
+    `promoteFact` returns empty, and — unlike `reconcile`'s per-item loop below, which
+    deliberately calls itself through the injected `self` proxy so each row gets its own
+    transaction — `syncFact` calls `promoteFact`/`retractFact` on `this` on purpose: the whole
+    promote-or-archive decision for one fact must commit or roll back as a single unit, not as
+    two.
+  - **The regression this closes.** Before `mezo-b3pp.30`, `mezo-b3pp.31`'s revive half made
+    `promoteFact` unconditionally assert `status='active'` on UPSERT with no `include_in_prompt`
+    filter, so the nightly `reconcile` sweep would re-promote — and silently re-activate — an
+    opted-out fact's node on every pass. A user who noticed the leak and archived that node by
+    hand from the Tudástár UI had it resurrected by the next dawn's reconcile. The filter added
+    here (both in `promoteFact` and, via the same condition, in `retractFact`'s qualifying check)
+    closes that: an opted-out fact's node either never gets promoted or gets archived on the next
+    `syncFact`/`reconcile` pass, and stays archived.
   - **The node survives archiving; its edges don't, necessarily.** `status='archived'` keeps the
     row and its `(createdBy, sourceKind, sourceId)` anchor, so a later re-confirm/re-save
     UPSERTs the SAME node back to `active` rather than building a second one — but
@@ -1529,8 +1559,11 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     loop's whole reason to exist: the three promotion loops above only ever see rows that STILL
     qualify, so a row that LEAVES its qualifying set (un-confirmed, soft-deleted) is invisible to
     them and its node would otherwise stay active forever; the sweep is what heals a retraction
-    missed while the switch was off (no listener existed to hear the event), and it is the ONLY
-    path that ever retracts a `knowledge_fact`, since nothing in main source deletes one.
+    missed while the switch was off (no listener existed to hear the event). For a `knowledge_fact`
+    specifically it remains the ONLY path that ever retracts one for the *delete* half (nothing in
+    main source soft-deletes a `knowledge_fact`) — the *opt-out* half now also reaches `retractFact`
+    on the next turn via `syncFact` (`mezo-b3pp.30`), with the sweep as its backstop, same as every
+    other source kind.
   - **Deliberate transaction shape**: `promotePattern`/`promoteFact`/`syncGoal` are each
     all-or-nothing (node + any structured edges commit or roll back together, one DB transaction).
     A failure mid-promotion loses that one promotion, but promotion is idempotent, so the next
@@ -1577,7 +1610,10 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
   - `PatternConfirmedEvent(userId, patternId)` — published by `PatternService.decide` when a
     pattern lands in `confirmed` → `promotePattern`.
   - `KnowledgeFactPromotedEvent(userId, factId)` — published by `FactCandidateService` right after
-    an accept/refine promotes a candidate into a `knowledge_fact` → `promoteFact`.
+    an accept/refine promotes a candidate into a `knowledge_fact` → **`syncFact`, not
+    `promoteFact`** (rerouted by `mezo-b3pp.30`): a freshly promoted candidate is vanishingly
+    unlikely to already be opted out, but the handler has no reason to special-case it when
+    `syncFact` answers the same question correctly either way.
   - `GoalSavedEvent(userId, goalId)` — published by `GoalService` on every write that can change a
     goal's title or status (create/update/activate/archive) → `syncGoal`. The event record lives in
     `feature/goal/service/`, not `feature/companion/`: **the goal feature never imports companion**,
@@ -1593,7 +1629,18 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     transaction → `retractGoal`. Both publishers are unconditional and switch-blind, the same
     posture as the three promotion events: with `KNOWLEDGE_GRAPH_SWITCH` off the listener bean
     itself does not exist, so nobody is subscribed and publishing costs nothing beyond the event
-    object. There is no third event for facts — see `retractFact` above.
+    object.
+  - **`KnowledgeFactChangedEvent(userId, factId)` (`mezo-b3pp.30`)** — the third fact event, and
+    the one that closes the opt-out gap above: `KnowledgeFactService.update` publishes it
+    unconditionally inside its own write transaction, on every partial update — text edit,
+    category change, or the `includeInPrompt` toggle alike — because the publisher has no reason
+    to pre-judge whether a given edit flipped the fact's qualifying condition; the consumer
+    re-derives that. A new `@Async @TransactionalEventListener(AFTER_COMMIT)` handler on
+    `GraphPromotionListener` routes it to `syncFact`, so an opt-out (or opt-back-in) takes effect
+    on the user's next turn rather than waiting for the nightly `reconcile` sweep. **Incidental
+    win**: because the event fires on every update, not just the `includeInPrompt` toggle, an
+    edited fact's graph-node title no longer goes stale until the nightly reconcile catches up —
+    a rename now reaches `[Összefüggések]` on the same turn.
   - Each handler wraps its call in its own try/catch + `log.warn` — a promotion or retraction
     failure is logged, never rethrown into the async executor.
 
@@ -4005,6 +4052,19 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 39. **`degraded` is a persisted wire attribute** (`ai_message.degraded` NOT NULL default false;
     `MessageResponse.degraded` required) — the FE renders a subtle `nem ellenőrzött` eyebrow;
     mock messages never set it (`toChatMessage` maps false → `undefined`).
+40. **Graph promotion honours the fact prompt opt-out, closing `mezo-b3pp.30`'s either/or** —
+    filter `promoteFact` on `include_in_prompt`, or make the deliberate decision to leave it
+    unfiltered explicit in the spec and docs. The first was taken; the second was rejected because
+    `include_in_prompt` is already the user's kill-switch for every injection channel
+    (`KnowledgeFactService`'s own wording for the V1.1 facts block and the V3.3 acknowledgment
+    block), and `GraphPromptAssembler` renders traversed graph nodes into that SAME system prompt
+    — the graph is one more channel, not a carve-out. Before this fix, `mezo-b3pp.31`'s revive
+    half made the nightly `reconcile` re-assert `status='active'` on an opted-out fact's node, so
+    a user who archived that node by hand from the Tudástár UI had it silently resurrected by
+    dawn; the filter (mirrored into `retractFact`'s qualifying check) closes that. `syncFact`
+    (promote-or-archive in one transaction, the `syncGoal` shape) and the unconditionally
+    published `KnowledgeFactChangedEvent` route the toggle to the graph on the user's next turn
+    instead of waiting for the sweep, with an edited fact's node title kept fresh as a side effect.
 
 **Gotchas:**
 
