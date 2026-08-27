@@ -160,6 +160,28 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testOverview_shouldOrderKindsByCountThenKind_whenSeveralKindsArePopulated() {
+        UUID owner = ownerId();
+        LocalDate day = LocalDate.now().minusDays(1);
+        // chat_turn (3) leads on count desc; gratitude and journal_entry tie at 1 and must
+        // break the tie alphabetically (kind asc): gratitude before journal_entry.
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 0);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 1);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 2);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_GRATITUDE, day, 3);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, day, 4);
+
+        MemoryOverviewResponse response = overview();
+
+        assertThat(response.getL1().getEmbeddings())
+                .extracting(MemoryEmbeddingKindCount::getKind, MemoryEmbeddingKindCount::getCount)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("chat_turn", 3),
+                        org.assertj.core.groups.Tuple.tuple("gratitude", 1),
+                        org.assertj.core.groups.Tuple.tuple("journal_entry", 1));
+    }
+
+    @Test
     void testOverview_shouldOmitKindsWithNoVectors_whenTheStoreIsPartiallyPopulated() {
         UUID owner = ownerId();
         memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,

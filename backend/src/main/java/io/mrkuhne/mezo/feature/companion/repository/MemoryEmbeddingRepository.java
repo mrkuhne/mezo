@@ -68,7 +68,9 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
     /** Same-day live rows of a kind — the summary replace-by-day guard (V2.2). */
     List<MemoryEmbeddingEntity> findByCreatedByAndKindAndOccurredOn(UUID createdBy, String kind, LocalDate occurredOn);
 
-    /** Memória-obszervatórium (mezo-al1i) — vektor-darabszám rétegenként. */
+    /** Test-only single-kind vector count. Superseded for the memory observatory's L1 read by
+     *  {@link #countByKindForUser} (mezo-b3pp.22) — this method has no {@code src/main} caller
+     *  left, but stays for the several ITs that still assert one kind's live-vector count. */
     long countByCreatedByAndKind(UUID createdBy, String kind);
 
     /** Every populated kind for one user, with its live-vector count — the memory observatory's L1
