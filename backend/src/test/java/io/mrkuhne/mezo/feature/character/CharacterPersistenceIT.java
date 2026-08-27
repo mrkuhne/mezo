@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.character.entity.ClaimEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ClaimFeedbackEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ObservationDimensionKeysEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationSignalsEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
@@ -101,7 +102,7 @@ class CharacterPersistenceIT extends AbstractIntegrationTest {
         CharacterObservationEntity obs = new CharacterObservationEntity();
         obs.setCreatedBy(owner);
         obs.setExpertKey("drill");
-        obs.setDimensionKeys(List.of("discipline", "nutrition"));
+        obs.setDimensionKeys(new ObservationDimensionKeysEnvelope(List.of("discipline", "nutrition")));
         obs.setDay(LocalDate.of(2026, 8, 26));
         obs.setText("Ma sem került be étkezés, 4. napja.");
         obs.setSalience((short) 4);
@@ -131,7 +132,7 @@ class CharacterPersistenceIT extends AbstractIntegrationTest {
                 .findByCreatedByOrderByDayDescCreatedAtDesc(owner, org.springframework.data.domain.PageRequest.of(0, 10))
                 .getFirst();
         assertThat(reloadedObs.getSignals().signals()).hasSize(1);
-        assertThat(reloadedObs.getDimensionKeys()).containsExactly("discipline", "nutrition");
+        assertThat(reloadedObs.getDimensionKeys().keys()).containsExactly("discipline", "nutrition");
 
         List<CharacterPortraitRevisionEntity> revisions = revisionRepository
                 .findByCreatedByAndDimensionIdOrderByVersionDesc(owner, dim.getId());

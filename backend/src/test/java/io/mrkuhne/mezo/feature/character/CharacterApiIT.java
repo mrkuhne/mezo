@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ObservationDimensionKeysEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationSignalsEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterObservationRepository;
@@ -95,7 +96,7 @@ class CharacterApiIT extends ApiIntegrationTest {
         CharacterObservationEntity obs = new CharacterObservationEntity();
         obs.setCreatedBy(owner);
         obs.setExpertKey("drill");
-        obs.setDimensionKeys(List.of("discipline"));
+        obs.setDimensionKeys(new ObservationDimensionKeysEnvelope(List.of("discipline")));
         obs.setDay(LocalDate.now().minusDays(1));
         obs.setText("Tegnap sem került be edzésnapló.");
         obs.setSalience((short) 3);

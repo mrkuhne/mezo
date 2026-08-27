@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,7 +40,7 @@ public class CharacterObservationEntity extends OwnedEntity {
     @NotNull
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "dimension_keys", nullable = false, columnDefinition = "jsonb")
-    private List<String> dimensionKeys;
+    private ObservationDimensionKeysEnvelope dimensionKeys;
 
     @NotNull
     @Column(nullable = false)

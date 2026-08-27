@@ -154,7 +154,7 @@ public class CharacterService {
                     .kind(CharacterFeedItem.KindEnum.OBSERVATION)
                     .at(toOffset(obs.getCreatedAt()))
                     .expertKey(obs.getExpertKey())
-                    .dimensionKeys(obs.getDimensionKeys())
+                    .dimensionKeys(obs.getDimensionKeys().keys())
                     .text(obs.getText())
                     .build());
         }
