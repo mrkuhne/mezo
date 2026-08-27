@@ -3,7 +3,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.api.dto.MemoryLlmUsageDay;
 import io.mrkuhne.mezo.api.dto.MemoryLlmUsageResponse;
 import io.mrkuhne.mezo.api.dto.MemoryLlmUsageTotals;
-import io.mrkuhne.mezo.api.dto.MemoryEmbeddingCounts;
+import io.mrkuhne.mezo.api.dto.MemoryEmbeddingKindCount;
 import io.mrkuhne.mezo.api.dto.MemoryFactSourceCount;
 import io.mrkuhne.mezo.api.dto.MemoryOverviewJobs;
 import io.mrkuhne.mezo.api.dto.MemoryOverviewL0;
@@ -128,12 +128,12 @@ public class MemoryObservatoryService {
                         .summaryCount((int) dailySummaryRepository.countByCreatedBy(userId))
                         .firstDate(firstDate)
                         .lastDate(lastDate)
-                        .embeddings(MemoryEmbeddingCounts.builder()
-                                .dailySummary((int) memoryEmbeddingRepository
-                                        .countByCreatedByAndKind(userId, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY))
-                                .chatTurn((int) memoryEmbeddingRepository
-                                        .countByCreatedByAndKind(userId, MemoryEmbeddingEntity.KIND_CHAT_TURN))
-                                .build())
+                        .embeddings(memoryEmbeddingRepository.countByKindForUser(userId).stream()
+                                .map(row -> MemoryEmbeddingKindCount.builder()
+                                        .kind(row.getKind())
+                                        .count((int) row.getCount())
+                                        .build())
+                                .toList())
                         .build())
                 .l2(MemoryOverviewL2.builder()
                         .patterns(patternCounts)

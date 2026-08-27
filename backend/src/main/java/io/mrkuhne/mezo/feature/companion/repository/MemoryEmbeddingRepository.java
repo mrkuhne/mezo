@@ -71,6 +71,21 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
     /** Memória-obszervatórium (mezo-al1i) — vektor-darabszám rétegenként. */
     long countByCreatedByAndKind(UUID createdBy, String kind);
 
+    /** Every populated kind for one user, with its live-vector count — the memory observatory's L1
+     *  read (mezo-b3pp.22). ONE query instead of one {@code countByCreatedByAndKind} per kind: the
+     *  {@code ck_memory_embedding_kind} CHECK has already grown from three values to ten, and the
+     *  observatory must not need a code change every time it grows again. JPQL, so
+     *  {@code @SQLRestriction("is_deleted = false")} applies — a reaped vector (mezo-b3pp.26) is
+     *  correctly absent rather than inflating the reported store size. */
+    interface KindCount {
+        String getKind();
+        long getCount();
+    }
+
+    @Query("select m.kind as kind, count(m) as count from MemoryEmbeddingEntity m "
+            + "where m.createdBy = :createdBy group by m.kind order by count(m) desc, m.kind asc")
+    List<KindCount> countByKindForUser(@Param("createdBy") UUID createdBy);
+
     /** A napló-nézet batch embed-jelzője — a kind élő ref-id-i (a @SQLRestriction JPQL-re is áll). */
     @Query("select m.refId from MemoryEmbeddingEntity m where m.createdBy = :createdBy and m.kind = :kind")
     Set<UUID> findRefIdsByCreatedByAndKind(@Param("createdBy") UUID createdBy, @Param("kind") String kind);
