@@ -290,8 +290,12 @@ Locked patterns from the screen rounds (canonical for every further page):
   **Napló trend page** (weekly API already returns 7-day series, FE collapses it to 3 scalars),
   **Snack segment** on Receptek, **Gyógyszer segment** on Kamra, Terv rhythm-grid markers
   derived from settings instead of the hardcoded 21:00/14:00, and a future add-medication path
-  (today none exists). Deeper rounds still to design per subpage: full LogMealSheet (overrides,
-  MealPicker), AiLogSheet 3 fázis, MealScoreSheet/ScoreBreakdown, recipe detail/editor, Kamra
+  (today none exists). **Logging flow redesigned as ONE unified full-page flow** (Daniel's direction,
+  2026-08-27): LogMealSheet + AiLogSheet merge — source tiles Kamra / Recept / ✨ AI inside
+  one flow, AI text+photo combinable with manual lines in the same meal, every amount a
+  typeable input; flagged for implementation as an IA change (the real app has two separate
+  sheets today). Deeper rounds still to design per subpage: recipe-line overrides
+  (finomhangolás), MealScoreSheet/ScoreBreakdown, recipe detail/editor, Kamra
   detail + Import (OFF/link/fotó), StackItem/StackPicker sheets, FuelSlots editor + Tier-1/2
   validation, EnergyBreakdownSheet. New sprite icons: `i-injekcio` + the meal set
   `i-reggeli` / `i-ebed` / `i-snack` / `i-vacsora`.

@@ -117,11 +117,15 @@ are usable without a build step).
   carries no header — it speaks for itself; below it a **Mezo banner tile** ("2 új
   Fuel-üzenet ma") opens the Mezo · Fuel page collecting the fuel-context companion messages
   (time + context eyebrows) — the hub shows only the counter, never repeats the voice — then
-  6 tiles. **Working log sheet** (slot
-  segments defaulting to the launching window's slot —
-  the mezo-bnsf bug's fix pattern; derived-until-touched name; recipe line with adag stepper;
-  total card with `eddig +étkezés = új / cél` two-segment bar; saving flips the window tile to
-  done and updates hero, day-bar, rings) and **water sheet** (250/400/500 chips, manual ml overrides and deselects the
+  6 tiles. **Unified full-page log flow** (manual + AI merged
+  into one: slot segments defaulting to the launching window's slot — the mezo-bnsf fix
+  pattern —, derived-until-touched name, three colorful source tiles — Kamra (gold, grams,
+  multi-add picker that stays open), Recept (coral, servings, closes on pick), ✨ AI
+  (lavender inline panel: text and/or photo, combinable) — AI-recognized lines land as
+  BECSLÉS-tagged items next to the manual ones, so one meal can mix photo + text + pantry
+  items; every line amount is a typeable input with ± steppers, per-line macros and the
+  totals card recompute live; ✓ Logolás · +10 XP flips the window tile to done and updates
+  hero, day-bar, rings) and **water sheet** (250/400/500 chips, manual ml overrides and deselects the
   chip). Sketch-level subpages behind the tiles: **Terv** (stat strip, 24h week-rhythm grid with
   gym/röpi bars + kitchen-close & caffeine-cutoff markers *derived from settings — designed fix
   for the hardcoded ones*, medication-cycle strip; empty sections stay hidden), **Stack**
