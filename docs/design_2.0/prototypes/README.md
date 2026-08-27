@@ -132,9 +132,11 @@ are usable without a build step).
   or ✨ pending, a row of four tinted macro mini-tiles (kcal sage · P coral · C amber ·
   F lavender), NOVA dot 1 sage / 2-3 amber /
   4 terracotta, and a live footer surfacing the never-shown contract fields
-  `timesLogged`/`avgScore`/`lastLogged` — unlogged recipes say so honestly), **Kamra** (search + type switcher *incl. the new Gyógyszer
-  segment*, type-grouped list, food rows P/C/F + NOVA + kcal vs supp rows protocol + dose,
-  honest no-hit), **Gyógyszer** (med card with cycle bar — peak terracotta never red — phase
+  `timesLogged`/`avgScore`/`lastLogged` — unlogged recipes say so honestly), **Kamra** (stat strip; search + type switcher *incl. the new Gyógyszer
+  segment*; type-grouped list of kind-washed rail cards with monogram discs — food rows
+  brand + NOVA dot + tinted kcal/100g cell, supp/stim/med rows italic protocol + tinted dose
+  cell; a ✨ Mezo suggestion card and the Legutóbbi importok rows (OFF/FOTÓ source tags,
+  amber "ellenőrzés"), both hidden when empty; honest no-hit), **Gyógyszer** (med card with cycle bar — peak terracotta never red — phase
   note, dose list with note; new sprite icon `i-injekcio`), **Napló** (designed addition for
   the "no trends anywhere in Fuel" gap: 4-week kcal-average, AI-average and protein-days bars
   from the weekly API's full series).

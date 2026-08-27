@@ -178,13 +178,30 @@
   .ksec i { width: 8px; height: 8px; border-radius: 3px; flex: none; }
   .ksec .t { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #6E6257; }
   .ksec .n { font-size: 8px; font-weight: 700; color: #A2958A; }
-  .kitem { display: flex; align-items: center; gap: 9px; border-radius: 13px; padding: 8px 11px; margin-bottom: 6px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+  .kitem { position: relative; display: flex; align-items: center; gap: 9px; border-radius: 15px; padding: 8px 10px 8px 14px; margin-bottom: 7px; overflow: hidden;
+    background: linear-gradient(135deg, var(--kw) 0%, #FFFDF8 62%);
+    box-shadow: 0 10px 22px -14px var(--kg), 0 1.5px 4px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    cursor: pointer; transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .kitem:active { transform: scale(0.97); }
+  .kitem::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kr); }
+  .kthumb { width: 34px; height: 34px; border-radius: 11px; flex: none; display: grid; place-items: center;
+    background: rgba(255, 255, 255, 0.88); box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06);
+    font-size: 13px; font-weight: 800; color: var(--kd); }
   .kitem .nm { font-size: 11px; font-weight: 700; }
   .kitem .sb { font-size: 8px; color: #A2958A; display: flex; align-items: center; gap: 4px; margin-top: 1px; }
   .kitem .sb .proto { font-style: italic; }
-  .kitem .rv { margin-left: auto; text-align: right; flex: none; }
-  .kitem .rv b { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .kitem .rv small { font-size: 7px; color: #A2958A; display: block; }
+  .kcell { margin-left: auto; flex: none; border-radius: 10px; padding: 4px 9px 3px; text-align: center;
+    background: rgba(255, 255, 255, 0.88); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 5px rgba(43, 33, 24, 0.06); color: var(--kd); }
+  .kcell b { display: block; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .kcell small { font-size: 5.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+  .obscard { border-radius: 13px; padding: 9px 11px; background: linear-gradient(135deg, #FFE7DC, #FFFDF8); display: flex; gap: 8px; align-items: flex-start; }
+  .obscard .dot { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, #FF7A55, #FF5B36); flex: none; margin-top: 3px; }
+  .obscard p { font-size: 9.5px; line-height: 1.5; color: #2B2118; }
+  .improw { display: flex; align-items: center; gap: 7px; padding: 7px 0; font-size: 9px; }
+  .improw + .improw { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .improw .src { font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 5px; padding: 2px 6px; background: rgba(78, 143, 184, 0.14); color: #33749C; flex: none; }
+  .improw .chk { font-size: 6.5px; font-weight: 800; border-radius: 5px; padding: 2px 6px; background: rgba(201, 150, 46, 0.16); color: #A8801F; flex: none; }
+  .improw .when { margin-left: auto; color: #A2958A; font-size: 8px; flex: none; }
   /* ===== Gyógyszer ===== */
   .medcard { border-radius: 16px; padding: 11px 12px 12px 15px; margin-bottom: 10px; position: relative; overflow: hidden; background: linear-gradient(135deg, #EBE6F8 0%, #FFFDF8 60%); box-shadow: 0 10px 22px -13px rgba(138, 118, 204, 0.45), 0 1.5px 4px rgba(43, 33, 24, 0.05); }
   .medcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #8A76CC; }
@@ -475,6 +492,12 @@
           </div>
         </div>
         <div class="page-body">
+          <div class="statstrip rise" style="--d:20ms;margin-bottom:10px;">
+            <div class="statcell"><b>38</b><small>tétel</small></div>
+            <div class="statcell"><b>26</b><small>étel</small></div>
+            <div class="statcell"><b>12</b><small>protokollos</small></div>
+            <div class="statcell"><b style="color:#33749C;">2</b><small>import e héten</small></div>
+          </div>
           <div class="sfield rise" style="--d:30ms;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#A2958A" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L20.5 20.5"/></svg>
             <input type="text" id="kmSearch" aria-label="Keresés a kamrában" placeholder="Keress tétel, márka…">
@@ -488,7 +511,19 @@
           </div>
           <div class="lsthead rise" style="--d:90ms;"><div class="p-eyebrow" style="padding:0;">Polc</div><span class="cnt" id="kmCnt"></span></div>
           <div id="kmList"></div>
-          <p class="habnote">A készlet/lejárat réteg feature-flag mögött kész — ha bekapcsol, itt kap Lejár/Fogy cellát és borostyán figyelmeztetőt.</p>
+          <div class="qcard rise" style="--d:120ms;">
+            <div class="p-eyebrow" style="padding:0 0 5px;">✨ Mezo javaslatok</div>
+            <div class="obscard" style="margin-top:0;">
+              <span class="dot"></span>
+              <p>A tonhalkonzerv NOVA 3 — ebéd-wraphez van NOVA 1 alternatívád a polcon (csirkemell), a fehérje ugyanannyi.</p>
+            </div>
+          </div>
+          <div class="qcard rise" style="--d:150ms;padding:9px 12px 6px;">
+            <div class="p-eyebrow" style="padding:0 0 2px;">Legutóbbi importok</div>
+            <div class="improw"><span class="src">OFF</span><span>Skyr · vonalkód 5900512…</span><span class="when">tegnap</span></div>
+            <div class="improw"><span class="src">FOTÓ</span><span>Teljes kiőrlésű wrap · címke-olvasás</span><span class="chk">ellenőrzés</span><span class="when">3 napja</span></div>
+          </div>
+          <p class="habnote">A készlet/lejárat réteg feature-flag mögött kész — ha bekapcsol, itt kap Lejár/Fogy cellát és borostyán figyelmeztetőt. A javaslat- és import-szekció üresen nem foglal helyet.</p>
         </div>
       </div>
 
@@ -621,8 +656,12 @@
           <strong>n× logolva · ✨ átlag pont · utoljára mikor</strong> (a contract
           timesLogged/avgScore/lastLogged mezői, ma sehol sem látszanak), logolatlan receptnél
           őszinte „még nem logoltad" sor.</li>
-          <li><strong>Kamra</strong> — kereső + típus-váltó darabszámmal (a Gyógyszer is fület kapott),
-          típus-csoportos lista (étel: makrók + NOVA + kcal; supp: protokoll-sor + dózis).</li>
+          <li><strong>Kamra</strong> — stat-sor (tétel · étel · protokollos · import), kereső +
+          típus-váltó darabszámmal (a Gyógyszer is fület kapott), típus-csoportos lista
+          <strong>kind-színű wash-kártyákkal</strong>: rail + monogram-korong + márka · NOVA-pont
+          (étel) vagy dőlt protokoll-sor (supp/stim/med), jobbra tintázott kcal- vagy
+          dózis-cella. Alul ✨ Mezo-javaslat kártya (NOVA-csere tipp) és a Legutóbbi importok
+          (OFF / FOTÓ forrás-címke, borostyán „ellenőrzés" tag) — mindkettő üresen eltűnik.</li>
           <li><strong>Gyógyszer</strong> — készítmény-kártya ciklus-csíkkal (csúcs = terrakotta,
           sosem piros), fázis-jegyzet, beadás-lista jegyzettel. Új ikon: <code>i-injekcio</code>.</li>
           <li><strong>Napló</strong> — design-kiegészítés a „sehol egy trend" gapre: kcal-átlag,
@@ -1120,20 +1159,29 @@
     ['food', 'Étel', '#8FAF7E'],
     ['supplement', 'Supplement', '#4E8FB8'],
     ['stim', 'Stimuláns', '#C9962E'],
-    ['med', 'Gyógyszer', '#A8462E']
+    ['med', 'Gyógyszer', '#8A76CC']
   ];
+  var KPAL = {
+    food: { w: '#E4EEDD', r: '#8FAF7E', d: '#4E6B42', g: 'rgba(143,175,126,0.4)' },
+    supplement: { w: '#DFEDF5', r: '#4E8FB8', d: '#33749C', g: 'rgba(78,143,184,0.4)' },
+    stim: { w: '#F6E7C6', r: '#C9962E', d: '#A8801F', g: 'rgba(201,150,46,0.4)' },
+    med: { w: '#EBE6F8', r: '#8A76CC', d: '#5D4FA0', g: 'rgba(138,118,204,0.4)' }
+  };
   var listEl = document.getElementById('kmList');
   var cntEl = document.getElementById('kmCnt');
   var kind = 'all';
   var q = '';
   function row(it) {
+    var pal = KPAL[it.kind];
     var sb = it.kind === 'food'
       ? (it.b ? it.b + ' · ' : '') + '<span class="novadot n' + it.nova + '"></span> NOVA ' + it.nova
       : (it.b ? it.b + ' · ' : '') + '<span class="proto">' + it.proto + '</span>';
-    var rv = it.kind === 'food'
-      ? '<b>' + it.kcal + '</b><small>kcal /100 g</small>'
-      : '<b>' + it.dose + '</b><small>dózis</small>';
-    return '<div class="kitem"><div class="grow"><div class="nm">' + it.n + '</div><div class="sb">' + sb + '</div></div><div class="rv">' + rv + '</div></div>';
+    var cell = it.kind === 'food'
+      ? '<div class="kcell"><b>' + it.kcal + '</b><small>kcal · 100 g</small></div>'
+      : '<div class="kcell"><b>' + it.dose + '</b><small>dózis</small></div>';
+    return '<div class="kitem" style="--kw:' + pal.w + ';--kr:' + pal.r + ';--kd:' + pal.d + ';--kg:' + pal.g + ';" role="button" tabindex="0" aria-label="' + it.n + '">' +
+      '<span class="kthumb">' + it.n.charAt(0).toUpperCase() + '</span>' +
+      '<div class="grow"><div class="nm">' + it.n + '</div><div class="sb">' + sb + '</div></div>' + cell + '</div>';
   }
   function render() {
     var hits = K.filter(function (it) {
