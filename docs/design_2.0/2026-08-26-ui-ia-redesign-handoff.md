@@ -354,7 +354,7 @@ Artifact tool passing the artifact `url` above. **Decision B (2026-08-27): the t
 tabs — Nap · Edzés · Fuel · Mezo · Én — and quick-log lives on a floating coral FAB
 bottom-right, rolled out to every prototype.** The Én tab first ship is done in
 `prototypes/en-tab.html` (artifact `dee0dd7e-…`), audited against the real `/me`
-(`2026-08-27-en-feature-audit.md`): identity hero + goal card + 8 tiles hub; Cél, Súly,
+(`2026-08-27-en-feature-audit.md`): identity hero + goal card + 9 tiles hub; Heti, Cél, Súly,
 Alvás + Éjszakai mód, Growth, Napló, Emberek, Tudás, Értesítés, AI-napló subpages, all
 tile-based with the honest-state contracts preserved (— never 0, tartás contract, phase-card
 gating, night-mode clock ban). The **quick-log sheet** behind the floating FAB is designed and
@@ -362,7 +362,19 @@ wired live in en-tab (context-aware MOST head, in-place Víz logging, the full 4
 Heartbeat check-in flow with Mezo's reactive olvasat, all three Napló branches in place,
 honest Alvás state, Mezo chat row) — audited against the real QuickInputSheet + CheckInSheet +
 ActivityLogSheet. Daniel's iteration decisions for the Mezo/Én rounds are logged in
-[`2026-08-27-mezo-en-design-iterations.md`](2026-08-27-mezo-en-design-iterations.md). Remaining pages to design: Fuel subpage deep rounds (Terv +
+[`2026-08-27-mezo-en-design-iterations.md`](2026-08-27-mezo-en-design-iterations.md). The **Heti áttekintés** (weekly review) page
+landed after the real feature shipped on 2026-08-27 (`feat/weekly-review`, v2.52.0) — audited in
+[`2026-08-27-heti-feature-audit.md`](2026-08-27-heti-feature-audit.md) and built as the Én tab's Heti
+subpage: animated score ring + 8-week trend, 8 stat cells, band-coloured day columns, day tiles with
+the four subscore rings and kcal/protein vs target, the Mezo day note in a companion bubble, the
+review card with the previously-dead **anchor chips**, the honest-state split (running week ghost /
+`✦ Készítsd el most` for a review-less finished week / skeleton on week switch), the discovery mosaic
+with status chips, and **`A hét tanulságai`** — the designed knowledge loop. Four backend-flagged
+additions came out of this round: **A** candidate facts from the weekly generator routed through the
+existing Tudástár review flow, **B** highlight feedback into pattern confidence / fact salience,
+**C** a persisted weekly score series (the score is recomputed on every read today), **D** richer
+generator input (journal/decisions, experiments, people mentions, medication cycle,
+`period_summary(week)`). Remaining pages to design: Fuel subpage deep rounds (Terv +
 Gyógyszer at sketch depth, recipe detail/editor + the sheets), Mezo- and Én-tab iteration
 rounds with Daniel, Napzárás, and the Edzés review page (the live session flow is done — see
 Edzés-session above). New icons/spots always go back into `docs/design_2.0/assets/`
