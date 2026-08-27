@@ -7325,6 +7325,7 @@ paths:
           required: false
           schema:
             type: integer
+            minimum: 1
             default: 30
             maximum: 100
       responses:

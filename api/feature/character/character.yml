@@ -58,7 +58,7 @@ paths:
         - name: limit
           in: query
           required: false
-          schema: { type: integer, default: 30, maximum: 100 }
+          schema: { type: integer, minimum: 1, default: 30, maximum: 100 }
       responses:
         '200':
           description: Feed items, newest first (possibly empty — never a 404; list-endpoint precedent)

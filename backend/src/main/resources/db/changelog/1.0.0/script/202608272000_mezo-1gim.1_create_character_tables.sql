@@ -49,7 +49,7 @@ create table character_claim (
     constraint ck_character_claim_confidence check (confidence between 0 and 1)
 );
 
-create index ix_character_claim_dimension_id on character_claim (dimension_id);
+create index idx_character_claim_dimension_id on character_claim (dimension_id);
 
 create table character_observation (
     id                        uuid        not null default gen_random_uuid(),
@@ -68,7 +68,7 @@ create table character_observation (
     constraint ck_character_observation_salience check (salience between 1 and 5)
 );
 
-create index ix_character_observation_created_by_day on character_observation (created_by, day);
+create index idx_character_observation_created_by_day on character_observation (created_by, day);
 
 create table character_conference (
     id           uuid        not null default gen_random_uuid(),
@@ -102,4 +102,4 @@ create table character_portrait_revision (
     constraint fk_character_portrait_revision_dimension_id foreign key (dimension_id) references character_dimension (id)
 );
 
-create index ix_character_portrait_revision_dimension_id on character_portrait_revision (dimension_id);
+create index idx_character_portrait_revision_dimension_id on character_portrait_revision (dimension_id);
