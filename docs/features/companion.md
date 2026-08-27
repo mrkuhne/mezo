@@ -3203,6 +3203,35 @@ always had one), because without it the FE has nothing to vote on. See [`proacti
 The FE side is a single page-level hook + one shared controlled component
 (`useFeedback(kind, ids)` / `FeedbackChips`) — [`insights.md` §4/§5.7](insights.md).
 
+**The batch read is chunked at the api layer (`mezo-b3pp.23`).** At the old single-request shape,
+200 comma-joined uuids put the request line at ~7.45 KB — over Tomcat's default 8 KB
+`server.max-http-request-header-size`, which this repo does not override. Tomcat answered a bare
+400 with no `MessageFeedbackResponse[]` body, `useDualQuery` degraded to `realEmpty`, and every
+chip on the page read unvoted — the next vote's `invalidateQueries` then reverted the one chip the
+user had just tapped, because the refetch it triggered hit the same wall. `feedbackApi.list`
+(`frontend/src/data/feedback/feedbackApi.ts`) now splits `ids` into `FEEDBACK_IDS_PER_REQUEST`
+(100) uuids per request, fires the chunks with `Promise.all`, and flattens the merged pages before
+returning — a header-budget number, not a contract one (the contract's per-request `maxItems` is
+still 200, unchanged). The chunking lives entirely in the api layer on purpose: `useFeedback` keeps
+running ONE `useDualQuery` with ONE cache key, and none of its optimistic-write/rollback/invalidate
+machinery had to move. One failing chunk rejects the whole `Promise.all` call, deliberately — a
+partial merge would leave some chips reading unvoted with no signal that anything had failed at
+all, which is worse than the honest all-degrade `useFeedback` already does for a wholly failed read.
+`FEEDBACK_MAX_IDS` changed meaning alongside it: it moved from 200 to 1000 and is no longer a
+header-budget ceiling (chunking owns that now) but an overall fan-out ceiling of ten requests per
+page hydration, still applied in `feedbackHooks.ts` as `slice(-FEEDBACK_MAX_IDS)` — newest-ids-win,
+unchanged. This closes a second bug the bd never named: that `slice` already silently dropped the
+oldest ids on any page past 200 rendered artifacts, **before** the header limit was ever reached
+(the chat page renders oldest-first, so a conversation past 200 assistant messages showed its
+oldest chips as permanently unvoted). That is why the bd's own alternative of lowering the cap to
+~120 was rejected — it would only have moved that silent loss from 200 down to 120, not removed it.
+The bd's other alternative, overriding `server.max-http-request-header-size` to 16 KB, was also
+rejected — both rejections were confirmed with the human partner in favour of chunking. Past the
+new 1000-id ceiling the oldest ids are still dropped, same failure mode an order of magnitude
+further out; the residual is real and the actual cure is windowing `CompanionController.listMessages`
+(`GET /api/companion/conversation/{id}/messages`, §6 above), which returns the whole conversation,
+unwindowed, today.
+
 #### 5.7a Feedback → nightly rollups (✅ W4.2 wired, `mezo-b3pp.16`)
 
 Every finished night, `FeedbackLearningJob` walks every user and calls
@@ -3545,9 +3574,11 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   are enforced by generated bean validation — the same machinery the `artifactKind` cases prove is
   wired — which is why the gap was accepted rather than a bug, but it IS a gap: a fragment edit that
   dropped one of those four could not fail a test today. The FE tests that look adjacent do **not**
-  close it (`feedbackHooks.test.tsx` asserts the CLIENT never *sends* an empty or >200 list — the
-  cap and the skip-on-empty are hook behavior, not a server-rejection assertion). Cheapest fix if it
-  ever bites: four more cases in this IT, mirroring the two `whenArtifactKindUnknown` ones.
+  close it (`feedbackHooks.test.tsx` asserts the CLIENT never *sends* an empty list and, since
+  `mezo-b3pp.23`, never sends more than `FEEDBACK_IDS_PER_REQUEST` (100) ids in any ONE request —
+  the empty-skip and the per-chunk sizing are hook/api-layer behavior, not a server-rejection
+  assertion). Cheapest fix if it ever bites: four more cases in this IT, mirroring the two
+  `whenArtifactKindUnknown` ones.
 - **`feedback/MessageFeedbackPersistenceIT`** — the entity/constraint layer under the API: an `up`
   row without a reason and a `down` row with one round-trip; `ck_message_feedback_reason` really
   fires on reason-with-`up`; `uq_message_feedback_artifact` really fires on a second plain save; and
@@ -3558,11 +3589,25 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **Support:** `support/populator/FeedbackPopulator` + `message_feedback` in `ResetDatabase`'s
   truncate list (house rule for every new domain table).
 - **FE** (both Vitest modes): `data/feedback/feedbackHooks.test.tsx` (the toggle semantics, the
-  optimistic write + rollback, the 200-id cap keeping the NEWEST ids, empty-id-set = no request, a
-  failing read degrading to "no verdicts"), `features/insights/components/FeedbackChips.test.tsx`
-  (the reason row's reveal/retract branches, `aria-pressed`), plus per-surface cases in
+  optimistic write + rollback, the `FEEDBACK_MAX_IDS` (1000) cap keeping the NEWEST ids,
+  empty-id-set = no request, a failing read degrading to "no verdicts"),
+  `features/insights/components/FeedbackChips.test.tsx` (the reason row's reveal/retract branches,
+  `aria-pressed`), plus per-surface cases in
   `ChatPage`/`MemoirPage`/`WeeklyPage`/`PredictionsPage`/`MezoMessagesSheet`/`TodayPage.feedback`
   tests — see [`insights.md` §8](insights.md) and [`today.md` §8](today.md).
+
+**Batch-read chunking test additions (`mezo-b3pp.23`) — FE only, both Vitest modes:**
+
+- **`data/feedback/feedbackApi.test.ts`** (new file) — asserts against the REAL request URLs MSW
+  records, not just the merged return value: one request when ids fit in one chunk
+  (`list_shouldSendOneRequest_whenIdsFitInOneChunk`), a 100/N split across two and three chunks,
+  every chunk's rows merged in order, `list_shouldKeepEveryRequestUnderTheHeaderBudget` (the
+  regression anchor that trips if someone raises `FEEDBACK_IDS_PER_REQUEST` back toward 200), zero
+  requests for an empty `ids` array, and the whole call rejecting when one chunk's `Promise` rejects.
+- **`data/feedback/feedbackHooks.test.tsx`** gained `hydrates every chip on a page past the old
+  single-request cap` (a rendered id count that would have 400'd pre-`mezo-b3pp.23` now hydrates
+  fully across the chunked requests) and updated `still bounds the request at FEEDBACK_MAX_IDS,
+  keeping the NEWEST (last) ids` to the new 1000 ceiling.
 
 **W4.2 feedback-rollup test additions (`mezo-b3pp.16`) — all integration-first, no LLM in the path:**
 
@@ -4220,6 +4265,38 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **No feature switch of its own** — feedback rides `COMPANION_SWITCH` as a companion organ. Don't
   add `mezo.feature.feedback.*`; a surface whose chips work while the companion is dark would be
   collecting opinions about nothing.
+
+**Batch-read chunking decisions + gotchas (`mezo-b3pp.23`, §5.7 above):**
+
+- **Chunk at the api layer, not the hook.** `feedbackApi.list` is the only place that knows about
+  HTTP request shape; `useFeedback`/`feedbackHooks.ts` only knows about ids and verdicts. Moving the
+  chunk loop into the hook would have meant either N cache entries per page (defeating the "one
+  chip re-tap invalidates everything" model) or hand-rolled merge logic duplicated at every call
+  site — the api function is the one caller `useDualQuery`'s `realFetch` invokes, so merging there
+  is free.
+- **A failing chunk rejects the whole call — no partial merge.** `Promise.all` was chosen over
+  `Promise.allSettled` on purpose: a partially successful batch would render *some* chips correctly
+  and others silently unvoted with no way for the page to tell "unvoted" from "read failed", which
+  is strictly worse than `useFeedback`'s existing whole-read degrade to `realEmpty` (IDENT-3).
+- **Two alternatives were on the table and both were rejected, confirmed with the human partner.**
+  Raising `server.max-http-request-header-size` to 16 KB in `application.yml` would have fixed the
+  symptom without a ceiling, but ties FE payload size to a JVM/container tuning knob nobody else on
+  the team would think to look at when the next artifact-heavy surface reintroduces the problem.
+  Lowering `FEEDBACK_MAX_IDS` to ~120 (comfortably under the 200 that broke at 8 KB) would have
+  "fixed" the header failure but only by moving the *existing*, bd-unmentioned `slice(-FEEDBACK_MAX_IDS)`
+  truncation earlier — from 200 down to 120 — trading one silent-unvoted-chip bug for a smaller
+  version of the same bug. Chunking is the only option that removes the header wall without
+  shrinking what a page can ask for.
+- **`FEEDBACK_MAX_IDS` (1000) is a request-count ceiling now, not a header-budget one** —
+  `FEEDBACK_IDS_PER_REQUEST` (100) owns the header budget. The two constants are read from
+  different files for a reason: raising the per-request chunk size back toward 200 would silently
+  reopen the original Tomcat failure, which is exactly what
+  `feedbackApi.test.ts`'s `list_shouldKeepEveryRequestUnderTheHeaderBudget` pins against.
+- **The residual is real, not swept under the ceiling.** A conversation past 1000 rendered artifact
+  ids still drops the oldest ones from the batch read — the same failure mode as the pre-fix 200,
+  just an order of magnitude further out. The honest fix is windowing
+  `CompanionController.listMessages` server-side so a page never renders 1000 ids to begin with;
+  that is out of scope for this slice and undocumented as solved anywhere in this file.
 
 **W3.1 ambient-recall gotchas (`mezo-b3pp.12`, spec §7.1):**
 
