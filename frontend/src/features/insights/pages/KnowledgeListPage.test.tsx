@@ -176,6 +176,20 @@ describe('KnowledgeListPage (mock mode)', () => {
       expect(screen.queryByText('Új munkahely első hete')).not.toBeInTheDocument())
   })
 
+  it('egy élt nem javasló SEASON elfogadása a rövid megerősítést adja, saját csoportjában', async () => {
+    renderPage()
+    const card = (await screen.findByText('Nyári alapozás')).closest('.card') as HTMLElement
+    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
+
+    const confirmed = (await screen.findByText('Nyári alapozás')).closest('.card') as HTMLElement
+    expect(within(confirmed).getByText('Bekerült a gráfba')).toBeInTheDocument()
+    // proposedEdgeCount === 0 → nincs „· N kapcsolattal" toldalék
+    expect(within(confirmed).queryByText(/kapcsolattal/)).not.toBeInTheDocument()
+    // a SEASON csoport fejléce vált, az életesemény-csoporté érintetlen marad
+    expect(screen.getByText('Szezonok')).toBeInTheDocument()
+    expect(screen.getByText(/Életesemény-jelöltek · 1/)).toBeInTheDocument()
+  })
+
   it('az utolsó elfogadás után a fejléc „Életesemények", nem „…jelöltek · 0"', async () => {
     renderPage()
     const card = (await screen.findByText('Új munkahely első hete')).closest('.card') as HTMLElement
