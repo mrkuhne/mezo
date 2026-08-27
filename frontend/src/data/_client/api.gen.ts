@@ -3037,6 +3037,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/week/{start}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The week's per-day data + deterministic day scores + weekly aggregates (live for the current week) */
+        get: operations["getMeWeek"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6645,6 +6662,57 @@ export interface components {
         };
         GraphCandidateDecisionRequest: {
             decision: string;
+        };
+        MeWeekSubscores: {
+            /** @description 0–100; null = no sleep data */
+            sleep?: number | null;
+            fuel?: number | null;
+            checkin?: number | null;
+            activity?: number | null;
+        };
+        MeWeekDay: {
+            /** Format: date */
+            date: string;
+            /** @description 0–100; null = "tanulom" (<2 subscores) */
+            score?: number | null;
+            subscores: components["schemas"]["MeWeekSubscores"];
+            /** @description consumed kcal; null when nothing logged */
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            kcalTarget?: number | null;
+            proteinTargetG?: number | null;
+            weightKg?: number | null;
+            sleepMin?: number | null;
+            sleepQuality?: number | null;
+            checkinCount: number;
+            checkinEnergyAvg?: number | null;
+            /** @description gym + sport + run sessions logged on the day */
+            workoutCount: number;
+            xp?: number | null;
+        };
+        MeWeekAggregates: {
+            /** @description round(mean of non-null day scores); null when <2 */
+            score?: number | null;
+            prevWeekScore?: number | null;
+            /** @description mean over days with logged kcal */
+            avgKcal?: number | null;
+            avgProteinG?: number | null;
+            avgSleepMin?: number | null;
+            avgCheckinEnergy?: number | null;
+            /** @description filled slots / (4 × elapsed days of the week) */
+            checkinRatio?: number | null;
+            latestWeightKg?: number | null;
+            /** @description EWMA weekly rate from the weight trend */
+            weightWeeklyRateKg?: number | null;
+            totalXp?: number | null;
+        };
+        MeWeekResponse: {
+            /** Format: date */
+            start: string;
+            days: components["schemas"]["MeWeekDay"][];
+            weekly: components["schemas"]["MeWeekAggregates"];
         };
     };
     responses: never;
@@ -15128,6 +15196,47 @@ export interface operations {
             };
             /** @description GRAPH_NODE_NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMeWeek: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The week's ISO Monday (400 when the date is not a Monday) */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The week (always exactly 7 day entries, start..start+6) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeWeekResponse"];
+                };
+            };
+            /** @description start is not an ISO Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

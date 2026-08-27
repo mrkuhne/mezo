@@ -106,6 +106,12 @@ tags:
       call count + cost per calendar period
   - name: Needs
     description: 'Életjel-ringek — day-close snapshot, bonus XP, "Életben tartva" streak'
+  - name: MeWeek
+    description: >-
+      Weekly review data layer (mezo-p2tr) — live, deterministic per-day values
+      + day scores + weekly aggregates for one ISO-Monday week. Scores are
+      code-computed (spec §2); missing data is null ("tanulom"), never
+      fabricated.
 paths:
   /api/auth/login:
     post:
@@ -7063,6 +7069,41 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: GRAPH_NODE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/me/week/{start}':
+    get:
+      tags:
+        - MeWeek
+      operationId: getMeWeek
+      summary: >-
+        The week's per-day data + deterministic day scores + weekly aggregates
+        (live for the current week)
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: The week's ISO Monday (400 when the date is not a Monday)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'The week (always exactly 7 day entries, start..start+6)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeWeekResponse'
+        '400':
+          description: start is not an ISO Monday
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
           content:
             application/json:
               schema:
@@ -16118,3 +16159,128 @@ components:
         decision:
           type: string
           pattern: ^(accept|reject)$
+    MeWeekSubscores:
+      type: object
+      properties:
+        sleep:
+          type: integer
+          nullable: true
+          description: 0–100; null = no sleep data
+        fuel:
+          type: integer
+          nullable: true
+        checkin:
+          type: integer
+          nullable: true
+        activity:
+          type: integer
+          nullable: true
+    MeWeekDay:
+      type: object
+      required:
+        - date
+        - subscores
+        - checkinCount
+        - workoutCount
+      properties:
+        date:
+          type: string
+          format: date
+        score:
+          type: integer
+          nullable: true
+          description: 0–100; null = "tanulom" (<2 subscores)
+        subscores:
+          $ref: '#/components/schemas/MeWeekSubscores'
+        kcal:
+          type: number
+          nullable: true
+          description: consumed kcal; null when nothing logged
+        proteinG:
+          type: number
+          nullable: true
+        carbsG:
+          type: number
+          nullable: true
+        fatG:
+          type: number
+          nullable: true
+        kcalTarget:
+          type: number
+          nullable: true
+        proteinTargetG:
+          type: number
+          nullable: true
+        weightKg:
+          type: number
+          nullable: true
+        sleepMin:
+          type: integer
+          nullable: true
+        sleepQuality:
+          type: number
+          nullable: true
+        checkinCount:
+          type: integer
+        checkinEnergyAvg:
+          type: number
+          nullable: true
+        workoutCount:
+          type: integer
+          description: gym + sport + run sessions logged on the day
+        xp:
+          type: integer
+          nullable: true
+    MeWeekAggregates:
+      type: object
+      properties:
+        score:
+          type: integer
+          nullable: true
+          description: round(mean of non-null day scores); null when <2
+        prevWeekScore:
+          type: integer
+          nullable: true
+        avgKcal:
+          type: number
+          nullable: true
+          description: mean over days with logged kcal
+        avgProteinG:
+          type: number
+          nullable: true
+        avgSleepMin:
+          type: number
+          nullable: true
+        avgCheckinEnergy:
+          type: number
+          nullable: true
+        checkinRatio:
+          type: number
+          nullable: true
+          description: filled slots / (4 × elapsed days of the week)
+        latestWeightKg:
+          type: number
+          nullable: true
+        weightWeeklyRateKg:
+          type: number
+          nullable: true
+          description: EWMA weekly rate from the weight trend
+        totalXp:
+          type: integer
+          nullable: true
+    MeWeekResponse:
+      type: object
+      required:
+        - start
+        - days
+        - weekly
+      properties:
+        start:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeWeekDay'
+        weekly:
+          $ref: '#/components/schemas/MeWeekAggregates'
