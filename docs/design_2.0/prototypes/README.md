@@ -121,8 +121,12 @@ are usable without a build step).
   chip). Sketch-level subpages behind the tiles: **Terv** (stat strip, 24h week-rhythm grid with
   gym/röpi bars + kitchen-close & caffeine-cutoff markers *derived from settings — designed fix
   for the hardcoded ones*, medication-cycle strip; empty sections stay hidden), **Stack**
-  (zone cards with times + anchor notes, tappable intake ticks that live-update hero and hub
-  tile, 📌 pin badge, meal-match ✓/⚠ with amber advice, "Miért így" transparency),
+  (redesigned on the Edzés-subpage recipe: stat strip, a day-arc timeline with zone dots —
+  done sage ✓, next pulsing gold ring, MA marker, staggered time labels —, a featured
+  KÖVETKEZŐ card with a big tick, kind-colored dot and the Mezo "why here" note — the
+  unreachable `mezoNote` surfaced —, remaining zones in a 2-column mini-mosaic; every tick
+  live-updates hero, stats, timeline and the hub tile; all-done → quiet "szép ritmus" card;
+  meal-match ✓/⚠ with amber advice kept),
   **Receptek** (type filter with live counts *incl. the new Snack segment*; spacious cards:
   tall image band with a clay meal icon on a halo disc, slot chip + role tag + ★ + fit badge
   or ✨ pending, a row of four tinted macro mini-tiles (kcal sage · P coral · C amber ·

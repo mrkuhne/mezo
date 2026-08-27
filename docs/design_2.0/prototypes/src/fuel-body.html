@@ -99,18 +99,43 @@
   .cyc span.cur { box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.5); }
   .cyc span.cur::after { content: 'MA'; position: absolute; top: -11px; font-size: 5.5px; letter-spacing: 0.14em; color: #A8801F; }
   /* ===== Stack ===== */
-  .zcardz { border-radius: 15px; padding: 9px 11px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
-  .zhead { display: flex; align-items: baseline; gap: 7px; }
-  .zhead b { font-size: 10.5px; font-weight: 800; }
-  .zhead .zt { font-size: 9px; color: #6E6257; font-variant-numeric: tabular-nums; }
-  .zhead .an { margin-left: auto; font-size: 7px; font-weight: 700; letter-spacing: 0.06em; color: #A2958A; }
-  .zitem { display: flex; align-items: center; gap: 9px; padding: 7px 0 2px; }
-  .zitem + .zitem { border-top: 0.5px solid rgba(43, 33, 24, 0.06); margin-top: 5px; }
-  .zitem .nm { font-size: 10.5px; font-weight: 600; }
-  .zitem .nm.tk { color: #6E6257; font-weight: 500; text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
-  .zitem .ds { font-size: 8px; color: #A2958A; }
-  .zbadge { margin-left: auto; flex: none; font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; color: #A2958A; background: rgba(43, 33, 24, 0.05); border-radius: 5px; padding: 2px 6px; }
-  .zbadge.pin { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .sstrip { position: relative; height: 46px; margin-top: 10px; }
+  .sstrip .tr { position: absolute; left: 6px; right: 6px; top: 9px; height: 4px; border-radius: 2px; background: rgba(43, 33, 24, 0.08); }
+  .sstrip .tf { position: absolute; left: 6px; top: 9px; height: 4px; border-radius: 2px; background: rgba(143, 175, 126, 0.5); }
+  .szdot { position: absolute; top: 3px; width: 16px; height: 16px; border-radius: 50%; transform: translateX(-50%); display: grid; place-items: center; font-size: 8.5px; color: #fff; }
+  .szdot.done { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); box-shadow: 0 3px 7px -2px rgba(110, 139, 94, 0.6); }
+  .szdot.next { background: #fff; border: 2px solid #C9962E; }
+  .play .szdot.next { animation: nowpulse 2.6s ease-in-out 1s infinite; }
+  .szdot.todo { background: #FFFDF8; border: 1.5px solid rgba(43, 33, 24, 0.2); }
+  .szlbl { position: absolute; top: 23px; }
+  .szlbl.alt { top: 32px; }
+  .szlbl, .szlbl.alt { transform: translateX(-50%); font-size: 5.5px; font-weight: 800; color: #A2958A; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .smark { position: absolute; top: 0; width: 2px; height: 22px; border-radius: 2px; background: #C9962E; box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.2); }
+  .stripleg { display: flex; gap: 10px; margin-top: 7px; font-size: 7px; font-weight: 600; color: #A2958A; }
+  .znext { position: relative; border: 1px solid #C9962E; border-radius: 18px; background: #fff; padding: 11px 13px 12px; margin-bottom: 10px;
+    box-shadow: 0 20px 34px -14px rgba(201, 150, 46, 0.45), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .znrow { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .znrow .nm { font-size: 12.5px; font-weight: 700; }
+  .znrow .ds { font-size: 9px; color: #6E6257; }
+  .znote { font-weight: 300; font-size: 9.5px; color: #2B2118; background: #FBF3DF; border-radius: 10px; padding: 7px 9px; display: flex; gap: 7px; align-items: flex-start; margin-top: 9px; }
+  .znote .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; margin-top: 1px; background: linear-gradient(135deg, #E5C46B, #C9962E); }
+  .zgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .zmini { border-radius: 15px; padding: 8px 9px 9px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+  .zmini.all { background: linear-gradient(150deg, #EFF3EA, #FBFDF9); }
+  .zmini .zh { display: flex; align-items: baseline; gap: 4px; }
+  .zmini .zh b { font-size: 9.5px; font-weight: 800; }
+  .zmini .zh time { font-size: 7.5px; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .zmini .zh .pin { margin-left: auto; font-size: 8px; }
+  .zmini .an { font-size: 6.5px; font-weight: 700; letter-spacing: 0.06em; color: #A2958A; margin-top: 1px; }
+  .zrowm { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+  .itick { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.18); background: #fff;
+    display: grid; place-items: center; font-size: 10px; color: #fff; cursor: pointer; padding: 0; font-family: inherit; flex: none; transition: transform 0.12s ease; }
+  .itick:active { transform: scale(0.85); }
+  .itick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); animation: tickpop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1); }
+  .idot { width: 7px; height: 7px; border-radius: 3px; background: var(--pc, #8FAF7E); flex: none; }
+  .zrowm .nm { font-size: 9px; font-weight: 700; }
+  .zrowm .nm.tk { color: #6E6257; font-weight: 500; text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
+  .zrowm .ds { font-size: 7px; color: #A2958A; margin-left: auto; font-variant-numeric: tabular-nums; flex: none; }
   .mmrow { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; font-size: 9.5px; }
   .mmrow + .mmrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
   .mmrow .ic { flex: none; font-weight: 800; }
@@ -385,22 +410,25 @@
           </div>
         </div>
         <div class="page-body">
-          <div class="mut rise" style="--d:20ms;font-size:9px;padding:0 2px 9px;">Szerda · <b>edzésnap 17:30</b> · ébredés 06:45 · lefekvés 23:00 · 8 item, 1 📌</div>
-          <div id="zoneList"></div>
+          <div class="statstrip rise" style="--d:20ms;margin-bottom:10px;">
+            <div class="statcell"><b id="stTaken">4/8</b><small>bevéve ma</small></div>
+            <div class="statcell"><b id="stNext">16:45</b><small>következő</small></div>
+            <div class="statcell"><b>92%</b><small>e heti adherencia</small></div>
+            <div class="statcell"><b>1 📌</b><small>kézi rögzítés</small></div>
+          </div>
           <div class="qcard rise" style="--d:60ms;">
+            <div class="mrow"><div class="p-eyebrow" style="padding:0;">Nap-ív · 06:45 → 23:00</div><span class="mut" style="margin-left:auto;font-size:8px;"><b>edzésnap 17:30</b></span></div>
+            <div class="sstrip" id="sstrip"></div>
+            <div class="stripleg"><span style="color:#4E6B42;">● bevéve</span><span style="color:#A8801F;">◉ következő</span><span>○ hátravan</span><span style="margin-left:auto;">▏MA 13:30</span></div>
+          </div>
+          <div id="znext" class="rise" style="--d:100ms;"></div>
+          <div class="zgrid rise" style="--d:140ms;" id="zgrid"></div>
+          <div class="qcard rise" style="--d:180ms;">
             <div class="p-eyebrow" style="padding:0 0 3px;">Étkezés-egyeztetés</div>
             <div class="mmrow"><span class="ic ok">✓</span><div><b>Reggeli · Skyr-bowl</b> — zsír 16 g · a D3 felszívódik mellé.</div></div>
             <div class="mmrow"><span class="ic warn">⚠</span><div><b>Ebéd-terv · rizs-bowl</b> — zsír 9 g.<div class="adv">Told az Omega-3-at a vacsorához — ott lazac lesz.</div></div></div>
           </div>
-          <div class="qcard rise" style="--d:100ms;">
-            <div class="p-eyebrow" style="padding:0 0 3px;">Miért így</div>
-            <div class="mut" style="font-size:9.5px;line-height:1.55;">
-              · Koffein −45p: a csúcs-hatás a szett-munkára esik.<br>
-              · Whey +30p: a mozgás utáni ablakban a 30 g a leghasznosabb.<br>
-              · Magnézium lefekvés −30p: az alvás-latenciát segíti.
-            </div>
-          </div>
-          <p class="habnote">Pihenőnapon az edzés-zónák maguktól átköltöznek (reggeli / ebéd) — vagy kimaradnak, ha úgy állítottad.</p>
+          <p class="habnote">Pihenőnapon az edzés-zónák maguktól átköltöznek (reggeli / ebéd) — vagy kimaradnak, ha úgy állítottad. A „miért ide" indoklás mindig a zónán ül.</p>
         </div>
       </div>
 
@@ -576,9 +604,15 @@
           gym+sport), 24 órás heti ritmus-rács a gym/röpi sávokkal és a konyhazárás + koffein-cutoff
           jelölőkkel (<em>a beállításokból számolva — a mai oldal hardcode-ját javítja</em>),
           gyógyszer-ciklus csík. Az üres szekciók (minták, supplement-térkép) nem foglalnak helyet.</li>
-          <li><strong>Stack</strong> — zóna-kártyák idővel és horgony-jegyzettel (edzés −45p,
-          lefekvés −30p…), pipálható sorok (a hero és a csempe élőben számol), 📌 kézi rögzítés,
-          étkezés-egyeztetés (✓ / ⚠ borostyán tanáccsal), „Miért így" átláthatóság.</li>
+          <li><strong>Stack</strong> — az Edzés-aloldalak receptjével újratervezve: stat-sor
+          (bevéve · következő · adherencia · 📌), <strong>nap-ív idővonal</strong> zóna-pöttyökkel
+          (✓ bevéve zsálya, a következő arany gyűrű lüktet, MA-jelölő), kiemelt
+          <strong>KÖVETKEZŐ kártya</strong> nagy pipával, kind-színes ponttal és a Mezo
+          „miért ide" indoklásával (a kódban kész, de ma elérhetetlen <code>mezoNote</code>
+          felülete), a többi zóna <strong>2 oszlopos mini-mozaikban</strong> — a görgetés
+          harmadára esett. Minden pipa élőben újraszámolja a hőst, a stat-sort, az idővonalat
+          és a hub-csempét; ha minden megvan: csendes „szép ritmus" kártya. Étkezés-egyeztetés
+          (✓ / ⚠ borostyán tanáccsal) maradt.</li>
           <li><strong>Receptek</strong> — típus-szűrő élő darabszámmal (a Snack új fület kapott),
           levegős kártyák: magas kép-sáv clay étel-ikonnal (halo-korongon), slot-chip +
           szerep-címke + ★ + fit-jelvény (✨ amíg pontozatlan); a törzsben négy színes
@@ -893,60 +927,118 @@
 
 /* ===== Stack oldal ===== */
 (function () {
+  var KC = { sage: '#8FAF7E', sky: '#4E8FB8', amber: '#C9962E', lav: '#8A76CC' };
   var ZONES = [
-    { z: 'Ébredés', t: '06:45', an: '', items: [
-      { n: 'D3 + K2', d: '4 000 NE · 1 csepp', taken: true },
-      { n: 'Omega-3', d: '1 600 mg EPA+DHA', taken: true }
+    { z: 'Ébredés', t: '06:45', an: '', pct: 2, items: [
+      { n: 'D3 + K2', d: '4 000 NE', c: 'sage', taken: true },
+      { n: 'Omega-3', d: '1 600 mg', c: 'sky', taken: true }
     ] },
-    { z: 'Reggeli', t: '07:30', an: 'étkezéshez kötve', items: [{ n: 'Kreatin', d: '5 g', taken: true }] },
-    { z: 'Ebéd', t: '13:00', an: 'étkezéshez kötve', items: [{ n: 'Multivitamin', d: '1 tabletta', taken: true }] },
-    { z: 'Edzés előtt', t: '16:45', an: 'edzés −45p', items: [{ n: 'Koffein', d: '200 mg', taken: false }] },
-    { z: 'Edzés után', t: '18:30', an: 'edzés +30p', items: [{ n: 'Whey', d: '30 g', taken: false }] },
-    { z: 'Este', t: '21:00', an: 'lefekvés −2h', items: [{ n: 'Ashwagandha', d: '300 mg', taken: false, pin: true }] },
-    { z: 'Lefekvés', t: '22:30', an: 'lefekvés −30p', items: [{ n: 'Magnézium', d: '400 mg', taken: false }] }
+    { z: 'Reggeli', t: '07:30', an: 'étkezéshez kötve', pct: 7, items: [{ n: 'Kreatin', d: '5 g', c: 'sky', taken: true }] },
+    { z: 'Ebéd', t: '13:00', an: 'étkezéshez kötve', pct: 38.5, items: [{ n: 'Multivitamin', d: '1 tab', c: 'sage', taken: true }] },
+    { z: 'Edzés előtt', t: '16:45', an: 'edzés −45p', pct: 61.5,
+      note: 'A koffein csúcs-hatása így pont a szett-munkára esik — 14:00 után ez az egyetlen kivétel, mert edzésnap van.',
+      items: [{ n: 'Koffein', d: '200 mg', c: 'amber', taken: false }] },
+    { z: 'Edzés után', t: '18:30', an: 'edzés +30p', pct: 72.3,
+      note: 'A 30 g whey a mozgás utáni ablakban hasznosul a legjobban.',
+      items: [{ n: 'Whey', d: '30 g', c: 'sky', taken: false }] },
+    { z: 'Este', t: '21:00', an: 'lefekvés −2h', pct: 87.7,
+      note: 'Az ashwagandhát kézzel raktad estére — maradunk így. 📌',
+      items: [{ n: 'Ashwagandha', d: '300 mg', c: 'lav', taken: false, pin: true }] },
+    { z: 'Lefekvés', t: '22:30', an: 'lefekvés −30p', pct: 96,
+      note: 'A magnézium az alvás-latenciát segíti.',
+      items: [{ n: 'Magnézium', d: '400 mg', c: 'lav', taken: false }] }
   ];
-  var list = document.getElementById('zoneList');
+  var NOW_PCT = 41.5;
   function counts() {
     var tot = 0, tk = 0;
     ZONES.forEach(function (z) { z.items.forEach(function (i) { tot++; if (i.taken) tk++; }); });
-    return tk + '/' + tot;
+    return { tk: tk, tot: tot };
   }
-  function nextTime() {
+  function nextZi() {
     for (var i = 0; i < ZONES.length; i++) {
-      for (var j = 0; j < ZONES[i].items.length; j++) {
-        if (!ZONES[i].items[j].taken) return ZONES[i].t;
-      }
+      if (ZONES[i].items.some(function (it) { return !it.taken; })) return i;
     }
-    return null;
+    return -1;
   }
+  function zoneDone(z) { return z.items.every(function (it) { return it.taken; }); }
   function paintCounts() {
-    var c = counts();
-    document.getElementById('stackBig').textContent = c;
-    var nx = nextTime();
-    document.getElementById('stackTileLine').textContent = c + ' ma' + (nx ? ' · köv. ' + nx : ' · kész ✓');
+    var c = counts(), nz = nextZi();
+    var s = c.tk + '/' + c.tot;
+    document.getElementById('stackBig').textContent = s;
+    document.getElementById('stTaken').textContent = s;
+    document.getElementById('stNext').textContent = nz >= 0 ? ZONES[nz].t : '✓';
+    document.getElementById('stackTileLine').textContent = s + ' ma' + (nz >= 0 ? ' · köv. ' + ZONES[nz].t : ' · kész ✓');
   }
-  function render() {
-    list.innerHTML = ZONES.map(function (z, zi) {
-      return '<div class="zcardz rise" style="--d:' + (30 + zi * 25) + 'ms;">' +
-        '<div class="zhead"><b>' + z.z + '</b><span class="zt">' + z.t + '</span>' + (z.an ? '<span class="an">' + z.an + '</span>' : '') + '</div>' +
+  function renderStrip() {
+    var nz = nextZi();
+    var h = '<div class="tr"></div><div class="tf" style="width:' + NOW_PCT + '%;"></div>' +
+      '<i class="smark" style="left:' + NOW_PCT + '%;" aria-hidden="true"></i>';
+    ZONES.forEach(function (z, i) {
+      var st = zoneDone(z) ? 'done' : (i === nz ? 'next' : 'todo');
+      h += '<span class="szdot ' + st + '" style="left:' + z.pct + '%;">' + (st === 'done' ? '✓' : '') + '</span>' +
+        '<span class="szlbl' + (i % 2 ? ' alt' : '') + '" style="left:' + z.pct + '%;">' + z.t + '</span>';
+    });
+    document.getElementById('sstrip').innerHTML = h;
+  }
+  function tickBtn(zi, ii, it, size) {
+    return '<button class="' + (size === 'lg' ? 'htick' : 'itick') + (it.taken ? ' f' : '') + '" data-z="' + zi + '" data-i="' + ii +
+      '" aria-pressed="' + it.taken + '" aria-label="' + it.n + ' bevétel">' + (it.taken ? '✓' : '') + '</button>';
+  }
+  function renderNext() {
+    var nz = nextZi();
+    var el = document.getElementById('znext');
+    if (nz < 0) {
+      el.innerHTML = '<div class="qcard" style="background:linear-gradient(150deg,#EFF3EA,#FBFDF9);">' +
+        '<div class="mrow" style="gap:9px;"><span style="font-size:15px;">✓</span>' +
+        '<div><div style="font-size:11.5px;font-weight:700;">A mai stack kész</div>' +
+        '<div class="mut" style="font-size:9px;">Mind a ' + counts().tot + ' bevétel megvan — szép ritmus.</div></div></div></div>';
+      return;
+    }
+    var z = ZONES[nz];
+    el.innerHTML = '<div class="znext">' +
+      '<div class="p-eyebrow" style="color:#A8801F;">KÖVETKEZŐ · ' + z.z.toUpperCase() + ' · ' + z.t + (z.an ? ' · ' + z.an : '') + '</div>' +
+      z.items.map(function (it, ii) {
+        return '<div class="znrow">' + tickBtn(nz, ii, it, 'lg') +
+          '<span class="idot" style="--pc:' + KC[it.c] + ';"></span>' +
+          '<div class="grow"><div class="nm' + (it.taken ? ' tk' : '') + '">' + it.n + (it.pin ? ' 📌' : '') + '</div>' +
+          '<div class="ds">' + it.d + '</div></div></div>';
+      }).join('') +
+      (z.note ? '<div class="znote"><span class="dot"></span><span>' + z.note + '</span></div>' : '') +
+      '</div>';
+  }
+  function renderGrid() {
+    var nz = nextZi();
+    document.getElementById('zgrid').innerHTML = ZONES.map(function (z, zi) {
+      if (zi === nz) return '';
+      var pin = z.items.some(function (it) { return it.pin; });
+      return '<div class="zmini' + (zoneDone(z) ? ' all' : '') + '">' +
+        '<div class="zh"><b>' + z.z + '</b><time>' + z.t + '</time>' + (pin ? '<span class="pin">📌</span>' : '') + '</div>' +
+        (z.an ? '<div class="an">' + z.an + '</div>' : '') +
         z.items.map(function (it, ii) {
-          return '<div class="zitem">' +
-            '<button class="htick sm' + (it.taken ? ' f' : '') + '" data-z="' + zi + '" data-i="' + ii + '" aria-pressed="' + it.taken + '" aria-label="' + it.n + ' bevétel">' + (it.taken ? '✓' : '') + '</button>' +
-            '<div class="grow"><div class="nm' + (it.taken ? ' tk' : '') + '">' + it.n + '</div><div class="ds">' + it.d + '</div></div>' +
-            '<span class="zbadge' + (it.pin ? ' pin' : '') + '">' + (it.pin ? '📌' : 'auto') + '</span></div>';
+          return '<div class="zrowm">' + tickBtn(zi, ii, it) +
+            '<span class="idot" style="--pc:' + KC[it.c] + ';"></span>' +
+            '<span class="nm' + (it.taken ? ' tk' : '') + '">' + it.n + '</span>' +
+            '<span class="ds">' + it.d + '</span></div>';
         }).join('') + '</div>';
     }).join('');
-    list.querySelectorAll('button.htick').forEach(function (b) {
+  }
+  function wire() {
+    document.querySelectorAll('#znext [data-z], #zgrid [data-z]').forEach(function (b) {
       b.addEventListener('click', function () {
         var it = ZONES[+b.getAttribute('data-z')].items[+b.getAttribute('data-i')];
         it.taken = !it.taken;
         render();
-        paintCounts();
       });
     });
   }
+  function render() {
+    renderStrip();
+    renderNext();
+    renderGrid();
+    wire();
+    paintCounts();
+  }
   render();
-  paintCounts();
 })();
 
 /* ===== Receptek oldal ===== */
