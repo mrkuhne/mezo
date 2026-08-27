@@ -1,9 +1,8 @@
+import { Link } from 'react-router-dom'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { useKnowledge, useKnowledgeGraphActions, useKnowledgeGraphNodes } from '@/data/hooks'
-import { FACT_CATEGORIES, factCategoryColor } from '@/data/insights/knowledge'
 import { GRAPH_KIND_GROUPS, PROFILE_SOURCE_KIND } from '@/data/insights/graph'
 import { CategoryHeader } from '@/features/me/components/CategoryHeader'
-import { KnowledgeFactCard } from '@/features/me/components/KnowledgeFactCard'
 import { KnowledgeGraphNodeCard } from '@/features/me/components/KnowledgeGraphNodeCard'
 import { ProfileNodeCard } from '@/features/me/components/ProfileNodeCard'
 
@@ -46,30 +45,13 @@ export function KnowledgePage() {
               </span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Facts by category */}
-      <div style={{ padding: '0 24px 32px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-          <Eyebrow>Kategóriánként</Eyebrow>
-          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{facts.length}</span>
-        </div>
-        <div className="col gap-md">
-          {FACT_CATEGORIES.map(([cat, label]) => {
-            const items = facts.filter(f => f.category === cat)
-            if (items.length === 0) return null
-            return (
-              <div key={cat}>
-                <CategoryHeader label={label} color={factCategoryColor(cat)} count={items.length} />
-                <div className="col gap-xs">
-                  {items.map(f => (
-                    <KnowledgeFactCard key={f.id} fact={f} />
-                  ))}
-                </div>
-              </div>
-            )
-          })}
+          <Link
+            to="/insights/knowledge"
+            className="eyebrow"
+            style={{ color: 'var(--lav-deep)', display: 'block', marginTop: 12, textDecoration: 'none' }}
+          >
+            Tények kezelése → Tudástár
+          </Link>
         </div>
       </div>
 

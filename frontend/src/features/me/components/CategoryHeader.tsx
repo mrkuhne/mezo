@@ -1,4 +1,4 @@
-/** Category label row above a group of KnowledgeFactCards — Napiv row-card idiom (mezo-8141 Task 7). */
+/** Category label row above a group of row-cards — Napiv row-card idiom (mezo-8141 Task 7). */
 export function CategoryHeader({ label, color, count }: { label: string; color: string; count: number }) {
   return (
     <div

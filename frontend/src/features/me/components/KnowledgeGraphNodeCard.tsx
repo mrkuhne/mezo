@@ -1,7 +1,7 @@
 import type { KnowledgeGraphNode } from '@/data/types'
 
 /** One active knowledge-graph node in the Tudástár "Kapcsolatok" section (W2.6, mezo-b3pp.11) —
- *  the `KnowledgeFactCard` Napiv row-card idiom (flat surface, no left accent bar), plus the
+ *  the Napiv row-card idiom (flat surface, no left accent bar), plus the
  *  backend-rendered `topEdges` lines and an L2 archive action. */
 export function KnowledgeGraphNodeCard({ node, onArchive }: {
   node: KnowledgeGraphNode
