@@ -68,6 +68,13 @@
   .extile::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--fr); }
   .xchip { font-size: 8px; font-weight: 600; color: #6E6257; background: rgba(255, 255, 255, 0.78); border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 999px; padding: 2.5px 8px; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 3px; }
   .xchip.fam { color: var(--fd); }
+  .xstats { display: flex; gap: 14px; margin-top: 9px; }
+  .xstats small { display: block; font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-bottom: 1px; }
+  .xstats b { font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .xfoot { display: flex; align-items: center; gap: 7px; margin-top: 10px; padding-top: 9px; border-top: 0.5px solid rgba(43, 33, 24, 0.09); flex-wrap: wrap; }
+  .xfoot small { display: block; font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-bottom: 1px; }
+  .xfoot b { font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .xfoot .arr { color: #A2958A; font-size: 11px; }
   .mini-dots { display: flex; gap: 4px; margin-top: 9px; align-items: center; flex-wrap: wrap; }
   .md { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.14); font-size: 6.5px; font-weight: 700; color: #A2958A; display: grid; place-items: center; background: rgba(255, 255, 255, 0.7); flex: none; }
   .md.wu { border-style: dashed; border-color: rgba(201, 150, 46, 0.55); color: #A8801F; }
@@ -628,8 +635,9 @@
           Fejlődés (skill-sávok + „Ma építed"), Heti zóna (státusz-chipek), Küldetések (elfogad/passz,
           conf% vagy <em>tanulom</em>), Bemelegítés, Niggle (badge, „Értem" után kezelve ✓).</li>
           <li><strong>Gyakorlat-csempék</strong> — a Gyakorlatok oldalon minden gyakorlat maga is csempe:
-          családszín-mosás + sín, clay korong, chip-sor (szett-bontás, rep-sáv, RIR, induló súly,
-          progresszió, kihívás-jelölő), mini szett-pöttyök (B szaggatott arany), 1RM-medál, múlt heti adat.</li>
+          családszín-mosás + sín, clay korong, <strong>címkézett oszlopok</strong> (Szett · Cél · Induló súly),
+          mini szett-pöttyök (B szaggatott arany), 1RM-medál, és lábsor: „múlt héten → progresszió"
+          + kihívás-jelölő.</li>
           <li><strong>Élő logolás</strong> — óriás stepperek (tap-to-edit értékkel), RIR 0–3 (bemelegítőn rejtve),
           oldal L/B/R izolációnál, szett-jegyzet, Szett kész → pihenő-sáv (szünet/folytat/kihagy),
           medál-toast, szabad navigáció 5 úton (lapozó, pöttyök, swipe, áttekintő lap, áthelyezés).</li>
@@ -854,18 +862,23 @@
           var acc = CH.filter(function (c) { return c.acc && c.ex === e.id; })[0];
           var sw = null;
           e.presc.forEach(function (p) { if (sw == null && p.k === 'g' && p.w != null) sw = p.w; });
-          var chips = [];
-          chips.push('<span class="xchip fam">' + (e.warm ? e.warm + ' bem + ' : '') + e.work + ' work</span>');
-          chips.push('<span class="xchip">' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + '</span>');
-          if (e.rir != null) chips.push('<span class="xchip">RIR ' + e.rir + '</span>');
-          if (sw != null) chips.push('<span class="xchip">↑ ' + fmtW(sw) + ' kg</span>');
-          if (e.prog) chips.push('<span class="dchip ' + (e.prog.tone === 'rep' ? 'rep' : e.prog.tone === 'hold' ? 'hold' : 'up') + '">' + e.prog.chip + '</span>');
-          if (acc) chips.push('<span class="xchip" style="color:#A84A26;border-color:rgba(255,107,74,0.4);"><svg width="9" height="9" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>kihívás</span>');
+          var stats = '<div><small>Szett</small><b>' + (e.warm ? e.warm + ' bem + ' : '') + e.work + ' work</b></div>' +
+            '<div><small>Cél</small><b>' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + (e.rir != null ? ' · RIR ' + e.rir : '') + '</b></div>' +
+            (sw != null ? '<div><small>Induló súly</small><b>' + fmtW(sw) + ' kg</b></div>' : '');
           var dots = '';
           var wc2 = warmCount(e.id);
           for (var i = 0; i < e.warm + e.work; i++) {
             var pi = prescAt(e.id, i);
             dots += '<span class="md ' + (pi.k === 'w' ? 'wu' : 'wk') + '">' + (pi.k === 'w' ? 'B' + (i + 1) : (i + 1 - wc2)) + '</span>';
+          }
+          var foot = '';
+          if (e.last || e.prog || acc) {
+            foot = '<div class="xfoot">' +
+              (e.last ? '<span><small>Múlt héten</small><b>' + fmtW(e.last.w) + ' × ' + e.last.r + ' @' + e.last.rir + '</b></span>' : '') +
+              (e.last && e.prog ? '<span class="arr">→</span>' : '') +
+              (e.prog ? '<span class="dchip ' + (e.prog.tone === 'rep' ? 'rep' : e.prog.tone === 'hold' ? 'hold' : 'up') + '">' + e.prog.chip + '</span>' : '') +
+              (acc ? '<span class="xchip" style="color:#A84A26;border-color:rgba(255,107,74,0.4);margin-left:auto;"><svg width="9" height="9" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>kihívás</span>' : '') +
+              '</div>';
           }
           return '<div class="extile rise" style="--d:' + d + 'ms;--fr:' + f.rail + ';--fw:' + f.wash + ';--fd:' + f.deep + ';--fg:' + f.glow + ';">' +
             '<div class="mrow" style="gap:9px;align-items:flex-start;">' +
@@ -876,10 +889,9 @@
             '</div>' +
             (e.oneRm ? '<span class="xrm"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#s-medal"/></svg>' + e.oneRm + ' kg · 1RM</span>' : '') +
             '</div>' +
-            '<div class="pillrow" style="margin-top:7px;">' + chips.join('') + '</div>' +
-            '<div class="mini-dots">' + dots +
-            (e.last ? '<span class="zsub">múlt héten ' + fmtW(e.last.w) + ' × ' + e.last.r + ' @' + e.last.rir + '</span>' : '') +
-            '</div></div>';
+            '<div class="xstats">' + stats + '</div>' +
+            '<div class="mini-dots">' + dots + '</div>' +
+            foot + '</div>';
         }).join('');
     }).join('');
   }
