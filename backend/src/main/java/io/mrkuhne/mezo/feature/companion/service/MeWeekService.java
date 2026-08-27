@@ -180,6 +180,52 @@ public class MeWeekService {
                 .build();
     }
 
+    private static final String[] HU_DOW = {"H", "K", "Sze", "Cs", "P", "Szo", "V"};
+
+    /**
+     * One day's compact Hungarian one-liner (score + subscores + fuel + weight + sleep + check-in
+     * + workout + XP) — the SINGLE source of truth shared by {@code WeeklyReviewGenerator}'s LLM
+     * payload (mezo-p2tr, spec §5) and {@code WeekContextRenderer}'s {@code [Heti adatok]} block
+     * (Task 9): both render the exact same day line, so the review's own prompt and the chat's
+     * anchored context can never drift apart on what "the day" looked like.
+     */
+    public static String renderDayLine(MeWeekDay day) {
+        MeWeekSubscores subscores = day.getSubscores();
+        StringBuilder sb = new StringBuilder("- ").append(day.getDate())
+                .append(" (").append(HU_DOW[day.getDate().getDayOfWeek().getValue() - 1]).append("): ")
+                .append("score ").append(orDash(day.getScore()))
+                .append(" [alvás ").append(orDash(subscores != null ? subscores.getSleep() : null))
+                .append(" · fuel ").append(orDash(subscores != null ? subscores.getFuel() : null))
+                .append(" · checkin ").append(orDash(subscores != null ? subscores.getCheckin() : null))
+                .append(" · aktivitás ").append(orDash(subscores != null ? subscores.getActivity() : null))
+                .append(']')
+                .append(", ").append(orDashDecimal(day.getKcal())).append(" kcal / cél ")
+                .append(orDashDecimal(day.getKcalTarget()))
+                .append(", fehérje ").append(orDashDecimal(day.getProteinG())).append('g')
+                .append(", súly ").append(orDashDecimal(day.getWeightKg()));
+        if (day.getSleepMin() != null) {
+            sb.append(", alvás ").append(day.getSleepMin() / 60).append("ó")
+                    .append(day.getSleepMin() % 60).append('p');
+            if (day.getSleepQuality() != null) {
+                sb.append(" (").append(orDashDecimal(day.getSleepQuality())).append(')');
+            }
+        } else {
+            sb.append(", alvás –");
+        }
+        sb.append(", ").append(day.getCheckinCount() != null ? day.getCheckinCount() : 0).append(" check-in")
+                .append(", ").append(day.getWorkoutCount() != null ? day.getWorkoutCount() : 0).append(" edzés")
+                .append(", ").append(orDash(day.getXp())).append(" XP");
+        return sb.toString();
+    }
+
+    private static String orDash(Object v) {
+        return v != null ? v.toString() : "–";
+    }
+
+    private static String orDashDecimal(BigDecimal v) {
+        return v != null ? v.stripTrailingZeros().toPlainString() : "–";
+    }
+
     /** {@code min(7, today - start + 1)} clamped to >= 1; a fully-past week always uses the full 7. */
     private static int elapsedDays(LocalDate start, LocalDate end) {
         LocalDate today = LocalDate.now();

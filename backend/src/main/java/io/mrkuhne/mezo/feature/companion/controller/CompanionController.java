@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.controller;
 
 import io.mrkuhne.mezo.api.controller.CompanionApi;
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
+import io.mrkuhne.mezo.api.dto.CreateConversationRequest;
 import io.mrkuhne.mezo.api.dto.CreateFactRequest;
 import io.mrkuhne.mezo.api.dto.FactCandidateResponse;
 import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
@@ -56,8 +57,8 @@ public class CompanionController implements CompanionApi {
     }
 
     @Override
-    public ConversationResponse createConversation() {
-        return conversationService.create(currentUserId.get());
+    public ConversationResponse createConversation(CreateConversationRequest request) {
+        return conversationService.create(currentUserId.get(), request);
     }
 
     @Override

@@ -2,7 +2,6 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.api.dto.MeWeekDay;
 import io.mrkuhne.mezo.api.dto.MeWeekResponse;
-import io.mrkuhne.mezo.api.dto.MeWeekSubscores;
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
@@ -68,8 +67,6 @@ public class WeeklyReviewGenerator {
             + "megjegyzést. Válaszolj KIZÁRÓLAG szigorú JSON-nal: {\"summary\": \"a heti elemzés szövege\", "
             + "\"dayNotes\": [{\"date\": \"YYYY-MM-DD\", \"note\": \"...\"}], "
             + "\"anchorIndexes\": [a felhasznált HORGONY-JELÖLTEK sorszámai]}";
-
-    private static final String[] HU_DOW = {"H", "K", "Sze", "Cs", "P", "Szo", "V"};
 
     private final WeeklyReviewRepository weeklyReviewRepository;
     private final MeWeekService meWeekService;
@@ -143,7 +140,7 @@ public class WeeklyReviewGenerator {
         List<Highlight> candidates = new ArrayList<>();
         StringBuilder payload = new StringBuilder("A HÉT NAPJAI (" + weekStart + " – " + weekEnd + "):\n");
         for (MeWeekDay day : week.getDays()) {
-            payload.append(renderDayLine(day)).append('\n');
+            payload.append(MeWeekService.renderDayLine(day)).append('\n');
         }
 
         Instant since = WeeklyReviewWeekWindow.since(weekStart);
@@ -208,43 +205,6 @@ public class WeeklyReviewGenerator {
         return day.getKcal() != null || day.getSleepMin() != null
                 || (day.getCheckinCount() != null && day.getCheckinCount() > 0)
                 || (day.getWorkoutCount() != null && day.getWorkoutCount() > 0);
-    }
-
-    private static String renderDayLine(MeWeekDay day) {
-        MeWeekSubscores subscores = day.getSubscores();
-        StringBuilder sb = new StringBuilder("- ").append(day.getDate())
-                .append(" (").append(HU_DOW[day.getDate().getDayOfWeek().getValue() - 1]).append("): ")
-                .append("score ").append(orDash(day.getScore()))
-                .append(" [alvás ").append(orDash(subscores != null ? subscores.getSleep() : null))
-                .append(" · fuel ").append(orDash(subscores != null ? subscores.getFuel() : null))
-                .append(" · checkin ").append(orDash(subscores != null ? subscores.getCheckin() : null))
-                .append(" · aktivitás ").append(orDash(subscores != null ? subscores.getActivity() : null))
-                .append(']')
-                .append(", ").append(orDashDecimal(day.getKcal())).append(" kcal / cél ")
-                .append(orDashDecimal(day.getKcalTarget()))
-                .append(", fehérje ").append(orDashDecimal(day.getProteinG())).append('g')
-                .append(", súly ").append(orDashDecimal(day.getWeightKg()));
-        if (day.getSleepMin() != null) {
-            sb.append(", alvás ").append(day.getSleepMin() / 60).append("ó")
-                    .append(day.getSleepMin() % 60).append('p');
-            if (day.getSleepQuality() != null) {
-                sb.append(" (").append(orDashDecimal(day.getSleepQuality())).append(')');
-            }
-        } else {
-            sb.append(", alvás –");
-        }
-        sb.append(", ").append(day.getCheckinCount() != null ? day.getCheckinCount() : 0).append(" check-in")
-                .append(", ").append(day.getWorkoutCount() != null ? day.getWorkoutCount() : 0).append(" edzés")
-                .append(", ").append(orDash(day.getXp())).append(" XP");
-        return sb.toString();
-    }
-
-    private static String orDash(Object v) {
-        return v != null ? v.toString() : "–";
-    }
-
-    private static String orDashDecimal(java.math.BigDecimal v) {
-        return v != null ? v.stripTrailingZeros().toPlainString() : "–";
     }
 
     private static String truncate(String text, int maxLen) {

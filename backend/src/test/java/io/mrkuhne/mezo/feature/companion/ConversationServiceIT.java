@@ -33,7 +33,7 @@ class ConversationServiceIT extends AbstractIntegrationTest {
     void testCreate_shouldPersistEmptyConversation_whenCalled() {
         UUID userId = databasePopulator.populateUser("conv-create@test.local");
 
-        ConversationResponse created = conversationService.create(userId);
+        ConversationResponse created = conversationService.create(userId, null);
 
         assertThat(created.getId()).isNotNull();
         assertThat(created.getTitle()).isNull();

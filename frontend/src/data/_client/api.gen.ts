@@ -5290,6 +5290,18 @@ export interface components {
             /** @description The transcript in the speaker's own language; empty string when the recording carried no speech. */
             text: string;
         };
+        /** @description mezo-p2tr — anchored conversations: an optional week/day anchor. Absent body/context = plain conversation, unchanged behaviour. */
+        CreateConversationRequest: {
+            context?: {
+                /** @description 'week' anchors an ISO-Monday week; 'day' anchors one day inside its week */
+                kind: string;
+                /**
+                 * Format: date
+                 * @description ISO week-Monday for kind=week; any date inside the week for kind=day
+                 */
+                date: string;
+            } | null;
+        };
         ConversationResponse: {
             /** Format: uuid */
             id: string;
@@ -11791,7 +11803,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateConversationRequest"];
+            };
+        };
         responses: {
             /** @description The created conversation */
             201: {

@@ -361,7 +361,11 @@ public class FakeCompanionLlm implements CompanionLlm {
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         completeCallCount.incrementAndGet();
-        if (userMessage.contains(FAIL_COMPLETE)) {
+        // mezo-p2tr: the opening turn's userMessage is the FIXED KICKOFF_PROMPT (no room to plant a
+        // sentinel there), so an IT scripts the failure via the DYNAMIC [Heti adatok] block instead
+        // (e.g. a seeded weekly-review summary) — checking the system prompt too is what lets that
+        // reach this same forced-failure path.
+        if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
         }
         if (systemPrompt.startsWith(FactExtractionService.EXTRACTION_MARKER)) {

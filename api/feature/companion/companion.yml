@@ -38,6 +38,11 @@ paths:
       tags: [Companion]
       operationId: createConversation
       summary: Start a new, empty conversation (title is set by the first message)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateConversationRequest' }
       responses:
         '201':
           description: The created conversation
@@ -590,6 +595,19 @@ components:
         text:
           type: string
           description: The transcript in the speaker's own language; empty string when the recording carried no speech.
+    CreateConversationRequest:
+      type: object
+      description: >-
+        mezo-p2tr — anchored conversations: an optional week/day anchor. Absent body/context =
+        plain conversation, unchanged behaviour.
+      properties:
+        context:
+          type: object
+          nullable: true
+          required: [kind, date]
+          properties:
+            kind: { type: string, pattern: '^(week|day)$', description: "'week' anchors an ISO-Monday week; 'day' anchors one day inside its week" }
+            date: { type: string, format: date, description: 'ISO week-Monday for kind=week; any date inside the week for kind=day' }
     ConversationResponse:
       type: object
       required: [id, startedAt]

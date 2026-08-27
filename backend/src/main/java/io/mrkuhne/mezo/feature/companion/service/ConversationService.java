@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
+import io.mrkuhne.mezo.api.dto.CreateConversationRequest;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
@@ -10,6 +11,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,13 @@ public class ConversationService {
     private final AiConversationRepository conversationRepository;
     private final AiMessageRepository messageRepository;
     private final CompanionMapper mapper;
+    /**
+     * mezo-p2tr: {@link ChatService} already depends on {@code ConversationService} (its own
+     * ownership check), so a direct field here would be a constructor-injection cycle — the
+     * {@code ObjectProvider} lazy-lookup breaks it (resolved only when {@link #create} actually
+     * needs it, well after both beans exist).
+     */
+    private final ObjectProvider<ChatService> chatService;
 
     public List<ConversationResponse> list(UUID userId) {
         return conversationRepository.findAllOwned(userId).stream()
@@ -33,12 +42,27 @@ public class ConversationService {
                 .toList();
     }
 
+    /**
+     * mezo-p2tr: an optional {@code context} anchors the conversation to one ISO-Monday week or
+     * one day inside it — persisted on the row, then (only when present) the server generates the
+     * opening turn ({@link ChatService#openingTurn}) so Mezo speaks first about that week/day. A
+     * plain {@code request == null} (or {@code context == null}) call is unchanged.
+     */
     @Transactional
-    public ConversationResponse create(UUID userId) {
+    public ConversationResponse create(UUID userId, CreateConversationRequest request) {
         AiConversationEntity conversation = new AiConversationEntity();
         conversation.setCreatedBy(userId);
+        var context = request == null ? null : request.getContext();
+        if (context != null) {
+            conversation.setContextKind(context.getKind());
+            conversation.setContextDate(context.getDate());
+        }
         // saveAndFlush so @CreationTimestamp (createdAt -> startedAt) is populated before mapping.
-        return mapper.toConversationResponse(conversationRepository.saveAndFlush(conversation));
+        AiConversationEntity saved = conversationRepository.saveAndFlush(conversation);
+        if (context != null) {
+            chatService.getObject().openingTurn(userId, saved.getId());
+        }
+        return mapper.toConversationResponse(saved);
     }
 
     public List<MessageResponse> listMessages(UUID userId, UUID conversationId) {

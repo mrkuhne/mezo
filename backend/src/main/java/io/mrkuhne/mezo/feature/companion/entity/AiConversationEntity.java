@@ -13,6 +13,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -35,4 +36,12 @@ public class AiConversationEntity extends OwnedEntity {
 
     @Column(name = "last_message_at")
     private Instant lastMessageAt;
+
+    /** mezo-p2tr — anchored conversations: 'week' | 'day' (pattern-validated on the contract); null = plain conversation. */
+    @Column(name = "context_kind", length = 10)
+    private String contextKind;
+
+    /** ISO week-Monday for {@code contextKind='week'}; any date inside that week for {@code 'day'}. */
+    @Column(name = "context_date")
+    private LocalDate contextDate;
 }
