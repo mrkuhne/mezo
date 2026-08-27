@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
@@ -57,8 +58,27 @@ public class DayScoreService {
     public record DayScore(LocalDate date, Integer score, DaySubscores subscores) {
     }
 
+    /** Standalone entry point (WeeklyReviewGenerator, tests): fetches its own {@link FuelDayResponse}
+     *  per day — one {@link FuelDayService#getDay} call per day in {@code [from, to]}. Callers that
+     *  already hold the day's rollup (e.g. {@code MeWeekService}, which needs it for its own display
+     *  fields anyway) should use {@link #scores(UUID, LocalDate, LocalDate, Map)} instead, to avoid
+     *  fetching the same rollup twice. */
     @Transactional(readOnly = true)
     public List<DayScore> scores(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, FuelDayResponse> fuelDayByDate = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            fuelDayByDate.put(day, fuelDayService.getDay(userId, day));
+        }
+        return scores(userId, from, to, fuelDayByDate);
+    }
+
+    /** Same contract as {@link #scores(UUID, LocalDate, LocalDate)}, but takes the day's
+     *  {@link FuelDayResponse} pre-fetched by the caller (keyed by date, one entry per day in
+     *  {@code [from, to]}) instead of fetching it again here — the B1 efficiency fix (mezo-8tp8):
+     *  a caller that already loaded the day's fuel rollup for its own purposes no longer pays for
+     *  a second identical {@link FuelDayService#getDay} call per day. */
+    @Transactional(readOnly = true)
+    public List<DayScore> scores(UUID userId, LocalDate from, LocalDate to, Map<LocalDate, FuelDayResponse> fuelDayByDate) {
         Map<LocalDate, Double> durationH = metricSeriesService.series(userId, MetricKey.SLEEP_DURATION_H, from, to);
         Map<LocalDate, Double> quality = metricSeriesService.series(userId, MetricKey.SLEEP_QUALITY, from, to);
         Map<LocalDate, Double> kcal = metricSeriesService.series(userId, MetricKey.DAILY_KCAL, from, to);
@@ -73,7 +93,7 @@ public class DayScoreService {
         List<DayScore> result = new ArrayList<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
             Integer sleep = sleepSubscore(durationH.get(day), quality.get(day));
-            Integer fuel = fuelSubscore(userId, day, kcal.get(day), protein.get(day));
+            Integer fuel = fuelSubscore(fuelDayByDate.get(day), kcal.get(day), protein.get(day));
             Integer checkin = checkinSubscore(checkinCounts.getOrDefault(day, 0L), checkinEnergy.get(day));
             Integer activity = activitySubscore(
                     gymVolume.containsKey(day) || sportLoad.containsKey(day) || trainingRpe.containsKey(day),
@@ -84,13 +104,13 @@ public class DayScoreService {
         return result;
     }
 
-    /** Slot count per day inside the window — canonical Heartbeat cadence is 4/day. */
+    /** Slot count per day inside the window — canonical Heartbeat cadence is 4/day. B2 (mezo-8tp8):
+     *  queries the {@code [from, to]} window directly instead of loading every check-in the user
+     *  has ever logged and filtering in Java. */
     private Map<LocalDate, Long> checkinCounts(UUID userId, LocalDate from, LocalDate to) {
         Map<LocalDate, Long> counts = new HashMap<>();
-        for (CheckInEntity checkIn : checkInRepository.findAllOwned(userId)) {
-            if (!checkIn.getDate().isBefore(from) && !checkIn.getDate().isAfter(to)) {
-                counts.merge(checkIn.getDate(), 1L, Long::sum);
-            }
+        for (CheckInEntity checkIn : checkInRepository.findByCreatedByAndDeletedFalseAndDateBetween(userId, from, to)) {
+            counts.merge(checkIn.getDate(), 1L, Long::sum);
         }
         return counts;
     }
@@ -109,12 +129,14 @@ public class DayScoreService {
      * kcal-closeness vs the day's {@link FuelDayService} target, blended with protein-hit ratio
      * when a protein target is prescribed. Absent when no kcal was logged that day, or the day's
      * kcal target is not positive (reused from {@code FuelDayService}, never re-derived here).
+     * Takes the day's already-fetched {@link FuelDayResponse} — see {@link #scores(UUID, LocalDate,
+     * LocalDate, Map)} for why this is not fetched again here (B1, mezo-8tp8).
      */
-    private Integer fuelSubscore(UUID userId, LocalDate day, Double kcalConsumed, Double proteinConsumed) {
+    private Integer fuelSubscore(FuelDayResponse fuelDay, Double kcalConsumed, Double proteinConsumed) {
         if (kcalConsumed == null) {
             return null;
         }
-        MacroSet targets = fuelDayService.getDay(userId, day).getTargets();
+        MacroSet targets = fuelDay.getTargets();
         double kcalTarget = targets.getKcal().doubleValue();
         if (kcalTarget <= 0) {
             return null;
