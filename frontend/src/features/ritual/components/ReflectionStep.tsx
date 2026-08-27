@@ -42,7 +42,8 @@ import { localDateString } from '@/shared/lib/dates'
  * cannot trap the user; „Ma nem írok" writes neither half. What differs is the cap: today's
  * already-saved entries are read back, rendered as a saved list, and only `3 − saved.length`
  * input slots are offered, because a ✕-and-re-entered ritual replays this act from the start and
- * would otherwise duplicate the evening's lines.
+ * would otherwise duplicate the evening's lines. A GET that fails outright gets zero slots too,
+ * not three — see the `slots` comment below for why.
  */
 export function ReflectionStep({ onNext }: { onNext: () => void }) {
   const date = localDateString()
@@ -60,11 +61,18 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
   // back in — the flow always replays act 3 from act 1) from silently duplicating the evening's
   // lines and blowing past the spec's "1–3 a day": they render as a saved list and only the
   // remaining slots are offered. There is no gratitude PUT, so a saved line is shown, not edited.
-  const { data: saved, isPending: savedPending } = useGratitudeEntries(date, date)
+  const { data: saved, isPending: savedPending, isError: savedErrored } = useGratitudeEntries(date, date)
   const { addEntry } = useGratitudeActions()
   const [rows, setRows] = useState<string[]>([''])
   const [lifeArea, setLifeArea] = useState<string | null>(null)
-  const slots = Math.max(0, 3 - saved.length)
+  // A failed GET must NOT be read as "zero saved today": `useDualQuery` returns `realEmpty: []`
+  // for BOTH an unresolved read and a genuinely-errored one (useDualQuery.ts), so `saved.length`
+  // alone can't tell "the day really is empty" from "the day is empty because the fetch 500'd".
+  // Trusting it here would open all three slots on an errored read — a user who already has 3
+  // entries today would silently be offered 3 more, blowing the "1–3 a day" cap the docs call
+  // absolute (mezo-n5e9.2 idiom, JournalPage.tsx / RoutineEditorPage.tsx). So an errored read gets
+  // ZERO slots, same as the still-pending read below — never `3 - 0`.
+  const slots = savedErrored ? 0 : Math.max(0, 3 - saved.length)
 
   const advance = () => {
     const next = text.trim()
@@ -109,24 +117,33 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
       {!savedPending && (
         <div className="rz-reflect-gratitude">
           <div className="rz-story-eyebrow">Amiért hálás vagy</div>
-          {saved.length > 0 && (
-            <ul className="rz-gratitude-saved">
-              {saved.map((g) => <li key={g.id}>{g.text}</li>)}
-            </ul>
-          )}
-          {slots > 0 ? (
-            <div className="col gap-sm">
-              <GratitudeRows
-                rows={rows}
-                onRowsChange={setRows}
-                lifeArea={lifeArea}
-                onLifeAreaChange={setLifeArea}
-                max={slots}
-                hint={`Legfeljebb ${slots} sor — teljesen opcionális.`}
-              />
-            </div>
+          {savedErrored ? (
+            // No input rows here either — see the `slots` comment above for why an errored
+            // read can't be trusted to open slots. This line is what keeps that "render
+            // nothing" from reading as "there's simply no gratitude section today".
+            <p className="rz-reflect-hint">A mai hálabejegyzéseid most nem érhetők el.</p>
           ) : (
-            <p className="rz-reflect-hint">Ma már mind a három hálabejegyzésed megvan.</p>
+            <>
+              {saved.length > 0 && (
+                <ul className="rz-gratitude-saved" aria-label="Ma már elmentett hálabejegyzések">
+                  {saved.map((g) => <li key={g.id}>{g.text}</li>)}
+                </ul>
+              )}
+              {slots > 0 ? (
+                <div className="col gap-sm">
+                  <GratitudeRows
+                    rows={rows}
+                    onRowsChange={setRows}
+                    lifeArea={lifeArea}
+                    onLifeAreaChange={setLifeArea}
+                    max={slots}
+                    hint={`Legfeljebb ${slots} sor — teljesen opcionális.`}
+                  />
+                </div>
+              ) : (
+                <p className="rz-reflect-hint">Ma már mind a három hálabejegyzésed megvan.</p>
+              )}
+            </>
           )}
         </div>
       )}

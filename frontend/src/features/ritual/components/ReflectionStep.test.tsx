@@ -114,6 +114,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
   vi.clearAllMocks()
 })
 
@@ -358,6 +359,44 @@ describe('ReflectionStep — the gratitude half (W1.3b, mezo-b3pp.25)', () => {
     expect(screen.queryByLabelText('1. hálás gondolat')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Tovább' }))
+    expect(spies.addEntry).not.toHaveBeenCalled()
+  })
+
+  test('the saved list is reachable by its accessible name — "already saved" isn\'t purely visual', async () => {
+    seedGratitude([entry('g-a', 'Sütött a nap'), entry('g-b', 'Jó edzés')])
+    render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
+    await readySettled()
+
+    const list = await screen.findByRole('list', { name: 'Ma már elmentett hálabejegyzések' })
+    expect(list).toHaveTextContent('Sütött a nap')
+    expect(list).toHaveTextContent('Jó edzés')
+  })
+
+  // ── A failed gratitude read (mezo-b3pp fix wave finding 1). Only reachable in real mode:
+  // mock mode's `useDualQuery` queryFn never rejects (useDualQuery.ts), so `isError` is always
+  // false there — this forces real mode explicitly via `vi.stubEnv` rather than skipping,
+  // matching the `habitAdminHooks.test.tsx` "(real mode)" idiom, so it runs deterministically
+  // regardless of the ambient `VITE_USE_MOCK` the suite is invoked with.
+  test('an errored gratitude read offers no input rows, shows the honest line, and „Tovább" still advances and saves typed prose (real mode)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    // No `seedGratitude` cache seed here — the point is a GET that fails outright, not one that
+    // resolves to an empty list, so `useDualQuery`'s `realEmpty: []` can't be mistaken for a
+    // genuinely empty day (the exact confusion this fix guards against).
+    server.use(http.get(`${API_BASE}/api/journal/gratitude`, () => HttpResponse.json(null, { status: 500 })))
+    const user = userEvent.setup()
+    const onNext = vi.fn()
+    render(<ReflectionStep onNext={onNext} />, { wrapper })
+    await readySettled()
+
+    await screen.findByText('A mai hálabejegyzéseid most nem érhetők el.')
+    expect(screen.queryByLabelText('1. hálás gondolat')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ma már mind a három hálabejegyzésed megvan.')).not.toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox', { name: /napod/i }), 'Nehéz nap volt, de megvagyok.')
+    await user.click(screen.getByRole('button', { name: 'Tovább' }))
+
+    expect(onNext).toHaveBeenCalledTimes(1)
+    expect(spies.saveReflection).toHaveBeenCalledWith('Nehéz nap volt, de megvagyok.')
     expect(spies.addEntry).not.toHaveBeenCalled()
   })
 })
