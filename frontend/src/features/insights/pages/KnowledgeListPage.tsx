@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -8,6 +9,7 @@ import { LifecycleSection } from '@/features/insights/components/LifecycleSectio
 import { KnowledgeExplainer } from '@/features/insights/components/KnowledgeExplainer'
 import { FactCandidateCard } from '@/features/insights/components/FactCandidateCard'
 import { LifeEventCandidateCard } from '@/features/insights/components/LifeEventCandidateCard'
+import { LifeEventAcceptedCard } from '@/features/insights/components/LifeEventAcceptedCard'
 import { KnowledgeFactRow } from '@/features/insights/components/KnowledgeFactRow'
 import { bucketFacts, matchesQuery, type FactBucket } from '@/features/insights/logic/factCopy'
 import type { FactCategory, KnowledgeFact } from '@/data/types'
@@ -19,6 +21,10 @@ export function KnowledgeListPage() {
   const { decide: decideLifeEvent } = useLifeEventActions()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<FactCategory | 'all'>('all')
+  // Az elfogadott életesemény a szerver-listáról azonnal lekerül (query-invalidálás), ezért a
+  // megerősítést page-szintű state tartja életben az oldal elhagyásáig (mezo-0ap9). Mock és real
+  // módban azonos, hogy a mock-módú ellenőrzés a valós élményt mutassa.
+  const [acceptedEvents, setAcceptedEvents] = useState<{ id: string; title: string; edgeCount: number }[]>([])
 
   // A vödrözés a TELJES listán fut (a „10 megy a chatbe" a valóságot mondja), a szűrés csak
   // a megjelenítést szűkíti — különben egy aktív szűrő átírná a prompt-státuszokat.
@@ -81,6 +87,14 @@ export function KnowledgeListPage() {
 
       <KnowledgeExplainer />
 
+      <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5, padding: '0 4px', margin: 0 }}>
+        A kapcsolatok és életesemények a{' '}
+        <Link to="/me/knowledge" style={{ color: 'var(--lav-deep)', fontWeight: 600, textDecoration: 'none' }}>
+          Tudásgráfon
+        </Link>{' '}
+        élnek.
+      </p>
+
       {candidates.length > 0 && (
         <div className="col gap-sm">
           <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
@@ -96,18 +110,31 @@ export function KnowledgeListPage() {
         </div>
       )}
 
-      {lifeEvents.length > 0 && (
+      {(lifeEvents.length > 0 || acceptedEvents.length > 0) && (
         <div className="col gap-sm">
           <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
             Életesemény-jelöltek · {lifeEvents.length}
           </span>
-          {lifeEvents.map((c) => (
-            <LifeEventCandidateCard
-              key={c.id}
-              candidate={c}
-              onDecide={(decision) => decideLifeEvent(c.id, decision)}
-            />
+          {acceptedEvents.map((a) => (
+            <LifeEventAcceptedCard key={a.id} title={a.title} edgeCount={a.edgeCount} />
           ))}
+          {lifeEvents
+            .filter((c) => !acceptedEvents.some((a) => a.id === c.id))
+            .map((c) => (
+              <LifeEventCandidateCard
+                key={c.id}
+                candidate={c}
+                onDecide={(decision) => {
+                  if (decision === 'accept') {
+                    setAcceptedEvents((prev) => [
+                      ...prev,
+                      { id: c.id, title: c.title, edgeCount: c.proposedEdgeCount },
+                    ])
+                  }
+                  decideLifeEvent(c.id, decision)
+                }}
+              />
+            ))}
         </div>
       )}
 
