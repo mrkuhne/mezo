@@ -1014,11 +1014,12 @@
   .sd.ext { border-style: dashed; border-color: rgba(255, 107, 74, 0.55); }
   .wunote { font-size: 8px; font-weight: 600; color: #A8801F; margin-left: 2px; }
   .bigsteps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-  .bstep { background: rgba(43, 33, 24, 0.035); border-radius: 14px; padding: 8px 10px; border: 0.5px solid rgba(43, 33, 24, 0.05); }
+  .bstep { background: rgba(43, 33, 24, 0.035); border-radius: 14px; padding: 8px 10px; border: 0.5px solid rgba(43, 33, 24, 0.05); min-width: 0; }
+  .bsrow { min-width: 0; }
   .bstep small { font-size: 7.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; display: block; }
-  .bsrow { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
-  .bsbtn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(43, 33, 24, 0.15); background: #fff; font-family: inherit; font-size: 15px; color: #6E6257; cursor: pointer; padding: 0; line-height: 1; }
-  .bsval { font-size: 17px; font-weight: 300; font-variant-numeric: tabular-nums; cursor: text; border: none; background: none; font-family: inherit; text-align: center; width: 62px; padding: 0; color: #2B2118; }
+  .bsrow { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; gap: 2px; }
+  .bsbtn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(43, 33, 24, 0.15); background: #fff; font-family: inherit; font-size: 14px; color: #6E6257; cursor: pointer; padding: 0; line-height: 1; flex: none; }
+  .bsval { font-size: 16px; font-weight: 300; font-variant-numeric: tabular-nums; cursor: text; border: none; background: none; font-family: inherit; text-align: center; flex: 1; width: auto; min-width: 0; padding: 0; color: #2B2118; }
   .rirrow, .siderow { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
   .rirrow .lb, .siderow .lb { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; color: #A2958A; width: 26px; flex: none; }
   .rbtn { width: 30px; height: 26px; border-radius: 9px; border: 1px solid rgba(43, 33, 24, 0.14); background: rgba(255, 255, 255, 0.85); font-family: inherit; font-size: 10.5px; font-weight: 700; color: #6E6257; cursor: pointer; padding: 0; }
