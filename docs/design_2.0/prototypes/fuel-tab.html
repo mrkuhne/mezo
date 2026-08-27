@@ -1231,12 +1231,10 @@
             <div class="mrow">
               <svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>
               <div class="grow">
-                <div class="p-eyebrow" style="color:#4E6B42;">Ma · <span id="winCnt">2/5</span> ablak kész · edzés 17:30</div>
                 <div class="mrow" style="gap:6px;align-items:baseline;">
-                  <span class="big" style="font-size:32px;" id="kcalBig">1 240</span>
-                  <span class="mut" style="font-size:10px;">kcal hátra</span>
+                  <span class="big" style="font-size:34px;" id="kcalBig">420</span>
+                  <span class="mut" style="font-size:10px;">kcal ma</span>
                 </div>
-                <div class="mut" style="font-size:9px;">eddig <b id="kcalSoFar" style="font-variant-numeric:tabular-nums;">1 010</b> / <b style="font-variant-numeric:tabular-nums;">2 250</b></div>
               </div>
             </div>
             <div class="kbarwrap">
@@ -1247,19 +1245,19 @@
               <span>Alap 1 980</span><span>Mozgás +420</span><span class="goal">Cél −150</span>
             </div>
             <div class="frings" id="frings"></div>
-            <div class="coach">
-              <span class="dot"></span>
-              <span>Az ebéd-ablakban járunk — a bowl 42 g fehérjét hozna. A tízórait még be tudjuk pótolni, és kávé 14:00-ig fér bele.</span>
-            </div>
           </div>
 
           <!-- ===== ABLAK-SWIMLANE ===== -->
           <div class="wlanewrap rise" style="--d:70ms;">
-            <div class="mrow" style="padding:0 2px 5px;">
-              <div class="p-eyebrow">Étkezési ablakok · a te beosztásod</div>
-              <span class="mut" style="margin-left:auto;font-size:8px;">AI-átlag <b id="doneAvg">88</b> p</span>
-            </div>
             <div class="wlane" id="wlane"></div>
+          </div>
+
+          <!-- ===== MEZO · FUEL ÜZENETEK ===== -->
+          <div class="mezotile rise" style="--d:100ms;" data-page="page-mezofuel" role="button" tabindex="0" aria-label="Mezo Fuel-üzenetek">
+            <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>
+            <div class="txt"><b>Mezo</b> · 2 új Fuel-üzenet ma</div>
+            <span class="dot"></span>
+            <span class="chev">›</span>
           </div>
 
           <!-- ===== MOZAIK ===== -->
@@ -1297,6 +1295,37 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- ============ MEZO · FUEL ÜZENETEK ============ -->
+      <div class="page p-coral" id="page-mezofuel">
+        <div class="page-head"><button class="backbtn" data-back="page-mezofuel">‹ Fuel</button></div>
+        <div class="page-hero">
+          <div class="nm">Mezo · Fuel</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+            <div class="bignum">2</div>
+          </div>
+        </div>
+        <div class="page-body">
+          <div class="qcard rise" style="--d:30ms;">
+            <div class="p-eyebrow" style="color:#A84A26;padding:0 0 5px;">13:05 · EBÉD-ABLAK</div>
+            <div style="font-size:11px;font-weight:300;line-height:1.55;">Az ebéd-ablakban járunk — a bowl 42 g fehérjét hozna.
+            A tízórait még be tudjuk pótolni, és kávé 14:00-ig fér bele.</div>
+          </div>
+          <div class="qcard rise" style="--d:80ms;">
+            <div class="p-eyebrow" style="color:#A84A26;padding:0 0 5px;">07:40 · REGGELI UTÁN</div>
+            <div style="font-size:11px;font-weight:300;line-height:1.55;">Szép start — 32 g fehérje reggelire,
+            és a D3 a skyr zsírjával fel is szívódott.</div>
+          </div>
+          <div class="p-eyebrow rise" style="--d:120ms;padding:6px 2px 6px;">Tegnap</div>
+          <div class="qcard rise" style="--d:150ms;">
+            <div class="p-eyebrow" style="padding:0 0 5px;">21:20 · NAPZÁRÁS ELŐTT</div>
+            <div style="font-size:11px;font-weight:300;line-height:1.55;">A konyhazárást tartottad — hatodik napja sorban.
+            A vacsora-fehérje 38 g volt, pont a cél körül.</div>
+          </div>
+          <p class="habnote">Ide a Fuel-kontextusú Mezo-üzenetek gyűlnek — a hub csak a számlálót mutatja, a hangot nem ismétli.</p>
+        </div>
       </div>
 
       <!-- ============ TERV ============ -->
@@ -1561,11 +1590,12 @@
       <div>
         <h2>A Fuel hub felépítése</h2>
         <ul>
-          <li><strong>Keret-hero</strong> — a régi KeretHero minden ténye: hátralévő kcal (őszinte
-          mínusszal túllépésnél), eddig / cél sor, ablak-számláló, arányos <strong>nap-sáv</strong>
-          a kész ablakok szegmenseivel + arany MOST-jelölő, energia-chipek (Alap / Mozgás / Cél —
-          statikus energiánál az egész sor eltűnik), és az <strong>5 gyűrű</strong>: Fehérje ·
-          Szénhidrát · Zsír · Rost · Víz. A víz-gyűrű gomb — logoló sheetet nyit.</li>
+          <li><strong>Keret-hero</strong> — lecsupaszítva egyetlen számra: a ma
+          <strong>elfogyasztott kcal</strong> (a cél a chipekből olvasható: Alap / Mozgás / Cél —
+          statikus energiánál az egész sor eltűnik), arányos <strong>nap-sáv</strong> a kész
+          ablakok szegmenseivel + arany MOST-jelölő, és az <strong>5 gyűrű</strong>: Fehérje ·
+          Szénhidrát · Zsír · Rost · Víz. A víz-gyűrű gomb — logoló sheetet nyit. Se eyebrow,
+          se „eddig x/y" sor, se coach-szöveg — a hang a Mezo-csempe mögött lakik.</li>
           <li><strong>Ablak-swimlane</strong> — minden beütemezett étkezési ablak (amire az AI is
           ajánl) saját csempét kap egy vízszintesen görgethető sávban, saját clay étel-ikonnal
           (tojás / tál / alma / fazék). Minden csempén <strong>kcal mini-csempe</strong> + három
@@ -1575,7 +1605,11 @@
           korall keret + Logold CTA, a terv-étellel. <strong>Kimaradt</strong>: szaggatott borostyán
           keret, „még pótolható" + Pótold — sosem büntető. <strong>Jövőbeli</strong>: terv-javaslat +
           ghost Logold. A sáv a MOST-csempére gördül be, a sor végén az „ablakon kívüli" logolás-csempe
-          (＋ Logolás / ✨ AI). A fejlécben az AI-átlag — csak pontozott étkezésekből.</li>
+          (＋ Logolás / ✨ AI) — felirat nélkül, a sáv magáért beszél.</li>
+          <li><strong>Mezo-csempe</strong> — a coach-hang a hero-ból ide költözött: a banner csak
+          a számlálót mutatja („2 új Fuel-üzenet ma"), mögötte a <strong>Mezo · Fuel oldal</strong>
+          a Fuel-kontextusú üzenetekkel, idő + kontextus eyebrow-val (ebéd-ablak, reggeli után,
+          napzárás előtt).</li>
           <li><strong>Terv</strong> — heti stat-sor (kcal-átlag, protein-napok, stack-adherence,
           gym+sport), 24 órás heti ritmus-rács a gym/röpi sávokkal és a konyhazárás + koffein-cutoff
           jelölőkkel (<em>a beállításokból számolva — a mai oldal hardcode-ját javítja</em>),
@@ -1722,12 +1756,7 @@
 
   /* --- hero számok --- */
   function renderHero() {
-    document.getElementById('kcalBig').textContent = huInt(T.kcal - C.kcal);
-    document.getElementById('kcalSoFar').textContent = huInt(C.kcal);
-    document.getElementById('winCnt').textContent = doneWins().length + '/' + WINDOWS.length;
-    var scored = doneWins().filter(function (w) { return w.score != null; });
-    document.getElementById('doneAvg').textContent = scored.length
-      ? Math.round(scored.reduce(function (s, w) { return s + w.score; }, 0) / scored.length) : '—';
+    document.getElementById('kcalBig').textContent = huInt(C.kcal);
     renderKbar();
     renderRings();
   }

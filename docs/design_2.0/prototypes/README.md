@@ -101,8 +101,9 @@ are usable without a build step).
   searchable multi-add exercise picker, ▲▼ reorder), start/close sheets (close → report),
   frozen report, Történet selection mode → A/B compare page.
 - **fuel-tab** — the Fuel hub, audited against the real `/fuel` routes. **Hub = the old Mai page's
-  soul**: keret-hero (remaining-kcal with honest Unicode-minus on overshoot, eddig/cél line,
-  window counter, proportional day-bar built from done-window kcal segments + gold now-marker,
+  soul**: keret-hero stripped to one number — the kcal **consumed today** (target implied by
+  the energy chips; no eyebrow, no eddig/cél line, no coach text in the hero),
+  proportional day-bar built from done-window kcal segments + gold now-marker,
   energy chips Alap/Mozgás/Cél — the whole row vanishes on static energy, 5 rings
   Fehérje·Szénh.·Zsír·Rost·Víz where the water ring is a button → WaterLogSheet), the
   **window swimlane** — every user-scheduled eating window (the ones the AI recommends
@@ -112,8 +113,11 @@ are usable without a build step).
   KÉSZ ✓ + meal name + AI-score chip (fresh log = ✨ folyamatban), now = coral
   ring + MOST stamp + plan meal + Logold CTA, missed = dashed amber + "még pótolható" + Pótold
   (never punitive), future = plan suggestion + ghost Logold; the lane auto-scrolls to the MOST
-  tile and ends with the out-of-window log tile (＋ Logolás / ✨ AI napló); the lane header
-  carries the AI-average from scored meals only — then 6 tiles. **Working log sheet** (slot
+  tile and ends with the out-of-window log tile (＋ Logolás / ✨ AI napló); the lane
+  carries no header — it speaks for itself; below it a **Mezo banner tile** ("2 új
+  Fuel-üzenet ma") opens the Mezo · Fuel page collecting the fuel-context companion messages
+  (time + context eyebrows) — the hub shows only the counter, never repeats the voice — then
+  6 tiles. **Working log sheet** (slot
   segments defaulting to the launching window's slot —
   the mezo-bnsf bug's fix pattern; derived-until-touched name; recipe line with adag stepper;
   total card with `eddig +étkezés = új / cél` two-segment bar; saving flips the window tile to
