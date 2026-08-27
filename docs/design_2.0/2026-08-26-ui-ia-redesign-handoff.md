@@ -269,7 +269,9 @@ Locked patterns from the screen rounds (canonical for every further page):
   sprint-only in the sheet while the scorer treats pyramid as sprint), and the Napló
   HR-recovery trend card (data exists in `hrRecoverySec`, no UI today).
 - **Fuel hub specified** in the new fuel-tab prototype (2026-08-27, feature-audited against
-  all real `/fuel` routes; see `prototypes/README.md`). Hub absorbs the old Mai page: keret-hero
+  all real `/fuel` routes; see `prototypes/README.md`, and the **full audit** in
+  [`2026-08-27-fuel-feature-audit.md`](2026-08-27-fuel-feature-audit.md) — the per-subpage
+  deep rounds must consult it). Hub absorbs the old Mai page: keret-hero
   (honest negative remaining-kcal, proportional done-window day-bar + gold now-marker, energy
   chips that vanish on static energy, 5 rings with the water ring as a button), MOST-window
   card (advances on log; all-done → standing log row, the real behavior), done capsule (only
