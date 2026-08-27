@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.activity.service;
 import io.mrkuhne.mezo.feature.activity.repository.ActivityLogRepository;
 import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,16 @@ public class ActivityNoteSourceAdapter implements NarrativeNoteSource {
     @Override
     public List<Note> notesToEmbed(UUID userId, LocalDate through, int minChars) {
         return activityLogRepository.findNoteCandidates(userId, through, minChars).stream()
+                .map(e -> new Note(e.getId(), e.getCreatedBy(), e.getText(), e.getOccurredOn()))
+                .toList();
+    }
+
+    @Override
+    public List<Note> liveNotes(UUID userId, Collection<UUID> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return activityLogRepository.findByCreatedByAndIdIn(userId, ids).stream()
                 .map(e -> new Note(e.getId(), e.getCreatedBy(), e.getText(), e.getOccurredOn()))
                 .toList();
     }

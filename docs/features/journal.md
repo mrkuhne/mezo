@@ -238,46 +238,98 @@ DailySummaryJob.run()  (cron mezo.companion.summary.cron, COMPANION_SWITCH + DAI
   per user: … daily summaries … → chat-turn catch-up …
   → NoteEmbeddingCatchUp.run(userId, yesterday)          (COMPANION_SWITCH-gated bean)
       guard: mezo.companion.embedding.embed-notes        (checked INSIDE the pass)
-      for each NarrativeNoteSource bean (List<> injection):
-        source.notesToEmbed(userId, through, note-min-chars)   ← the port, oldest first
-          ActivityNoteSourceAdapter  (feature/activity/service/) → activity_log.text  → activity_note
-          CheckInNoteSourceAdapter   (feature/companion/embedding/) → check_in.note   → checkin_note
-        minus MemoryEmbeddingRepository.findRefIdsByCreatedByAndKind(userId, kind)
-        each surviving row → MemoryEmbeddingWriter.writeNote(kind, note)   (own @Transactional)
-      run-wide budget: mezo.companion.embedding.note-batch-size (200), across BOTH sources
-  → memory_embedding (kind=activity_note | checkin_note, write-once per source row)
+      for each NarrativeNoteSource bean (ObjectProvider<> injection):
+        REAP first, always, outside the budget (mezo-b3pp.26):
+          MemoryEmbeddingRepository.findRefContentByCreatedByAndKind(userId, kind)  ← stored (refId, content)
+          source.liveNotes(userId, storedRefIds)                                    ← the port, NOT length-gated
+          each ref-id that is ORPHANED (absent from liveNotes) OR still live but BLANK text
+            → MemoryEmbeddingWriter.deleteNoteEmbedding(kind, refId)                (own @Transactional, soft delete)
+        then, budget permitting:
+          source.notesToEmbed(userId, through, note-min-chars)   ← the port, oldest first, length-gated
+          each candidate → MemoryEmbeddingWriter.syncNote(kind, note)   (own @Transactional)
+            compares the note's CAPPED text against the stored vector's content;
+            unchanged → returns false, spends nothing; drifted or missing → re-embeds through
+            upsert (revive-capable) and returns true, charging the budget
+      run-wide budget: mezo.companion.embedding.note-batch-size (200), across BOTH sources' re-embeds only
+  → memory_embedding (kind=activity_note | checkin_note, re-embedded in place on drift, reaped on orphan)
 ```
 
 - **No listener behind these kinds — the nightly sweep is their only writer** (spec §5.5: one
   nightly narrative sweep, not a new cron). `DailySummaryJob` calls `NoteEmbeddingCatchUp.run` once
   per user after the summary + turn passes, wrapped in its own try/catch, and logs the count
   alongside the day count.
+- **Lifecycle-aware since `mezo-b3pp.26`: the pass now runs three outcomes per kind per user, in a
+  fixed order.** First, reap: `MemoryEmbeddingRepository.findRefContentByCreatedByAndKind` reads
+  every live vector's `(refId, content)` for the kind — a projection, not the entity, so a
+  768-float vector never travels through the sweep for a comparison it doesn't need — and
+  `NarrativeNoteSource.liveNotes` (deliberately **not** length-gated, unlike `notesToEmbed`)
+  answers which of those ref-ids still have a live source row, WITH their current text. Whatever
+  is absent from that answer, **or present but blank/null**, gets
+  `MemoryEmbeddingWriter.deleteNoteEmbedding`'d — a soft-delete of the VECTOR only, the source row
+  untouched. The live-but-blank half closes a real user-reachable hole: `CheckInService.save`
+  upserts `(createdBy, date, slotTime)` and happily writes a cleared `note`, so a row can stay LIVE
+  while its text is gone — that row is never an `notesToEmbed` candidate again (it fails the
+  length gate), so without this the OLD vector would stay recallable forever. Blank is the trigger
+  here, deliberately **not** "below `note-min-chars`" — see the residue bullet below for why.
+  **This reap runs unconditionally, before any budget check** — a vector whose source is gone or
+  blank must stop being recallable tonight even when this source's turn starts with the run's
+  budget already spent by an earlier source (IDENT-3 honesty beats throughput; a starved source
+  still logs its own line). Only THEN does the budget-gated half run: `notesToEmbed`'s
+  length-gated candidates each go through `MemoryEmbeddingWriter.syncNote`, which compares the
+  note's text — capped to `embedding.embed-max-chars` first, because the CAPPED text is what
+  actually gets stored — against the live vector's stored content. An unchanged note returns
+  `false` and costs nothing; a drifted or missing one re-embeds through the revive-capable
+  `upsert` (never the insert-only `write` — see the `mezo-b3pp.2` trap in §9) and returns `true`,
+  charging the budget. **Comparing the raw, uncapped source text instead of the capped one would
+  re-embed every over-length note on every nightly run, forever** — the capped text never changes
+  once the note is longer than the cap, but the raw tail can, so only the capped comparison is
+  stable.
 - **The pass carries NO lower date bound** — `findNoteCandidates` filters on `occurred_on <= through`
   only, which is precisely what makes the **first run the one-time history backfill**: every live,
-  length-gated row that has no vector yet is a candidate, however old. Later runs converge because
-  already-embedded rows drop out via `MemoryEmbeddingRepository.findRefIdsByCreatedByAndKind` (one
-  set read per kind, not a probe per row).
+  length-gated row is a candidate whether or not it already has a vector, however old — `syncNote`
+  decides cheaply (via the stored-content comparison) whether that candidate actually costs an
+  embed call. Later runs converge for the same reason: an unchanged note is free.
 - **Three tunables, three different jobs** (`mezo.companion.embedding.*`,
   `CompanionProperties.Embedding`): `note-min-chars` (80) is the **retrieval-value gate** — „fáradt
   vagyok" is not a memory, and a null `check_in.note` fails the SQL `length()` predicate so no null
-  branch is needed; `note-batch-size` (200) caps the **whole run per user** across both sources, so
-  a long history spreads over nights instead of one burst — a run picks up exactly where the
-  previous one's ref-id set left off, so a second night on the same backlog converges the
-  remainder (pinned by `NoteEmbeddingBudgetIT`); `embed-notes` is the toggle, checked **inside**
-  `NoteEmbeddingCatchUp.run` so the pass **heals** it rather than bypasses it (the
-  `embed-chat-turns` idiom in the same job). The two sources draw from this **one shared pool**,
-  consumed in `ObjectProvider#orderedStream()` order — that decides which KIND gets backfilled
-  FIRST on a large history (the second source can be starved for several nights), not whether both
-  eventually converge; each starved source now logs its own line (`NoteEmbeddingCatchUp`) so a
-  starved-second-source night is visible, not just inferred from the count.
+  branch is needed; `note-batch-size` (200) caps the **re-embed half of the whole run per user**
+  across both sources — reaps never charge it — so a long history spreads over nights instead of
+  one burst (pinned by `NoteVectorLifecycleBudgetIT`); `embed-notes` is the toggle, checked
+  **inside** `NoteEmbeddingCatchUp.run` so the pass **heals** it rather than bypasses it (the
+  `embed-chat-turns` idiom in the same job). The two sources draw from this **one shared re-embed
+  pool**, consumed in `ObjectProvider#orderedStream()` order — that decides which KIND gets its
+  drift healed FIRST on a busy night (the second source's re-embeds can be starved for several
+  nights), never whether its reap runs; each starved source logs its own line.
+- **The one deliberate residue: a live note edited down BELOW `note-min-chars` but still
+  NON-BLANK is neither re-embedded nor reaped.** It is still a LIVE row with substantive-looking
+  text (`liveNotes` says so — liveness and substantiveness are different questions, and the reap
+  only tests for BLANK, never for the length gate), so the reap leaves it alone; but it also drops
+  out of `notesToEmbed`'s length-gated candidate set, so `syncNote` never gets a turn to notice its
+  drift either. Its old vector survives, describing text the note no longer has. Reaping on the
+  length gate instead was rejected: it would mean merely RAISING `note-min-chars` mass-deletes a
+  user's existing vectors on the next nightly run, which is a worse failure mode than one
+  known-stale vector. Recorded as a known, bounded gap — not silently accepted, not "fixed" into a
+  shape that creates a bigger one. A note cleared all the way to BLANK is a DIFFERENT, unambiguous
+  case and IS reaped (the bullet above) — the residue is specifically the "shortened but still
+  something" middle ground.
 - **Per-row isolation:** `NoteEmbeddingCatchUp.run` is deliberately **not** `@Transactional`, so
-  each `MemoryEmbeddingWriter.writeNote` call crosses the Spring proxy in its **own** transaction —
-  one bad or racing row is logged (`warn`) and skipped, the rest of the run continues. Same shape as
-  the turn catch-up's log-and-continue loop.
+  each `MemoryEmbeddingWriter.syncNote`/`deleteNoteEmbedding` call crosses the Spring proxy in its
+  **own** transaction — one bad or racing row is logged (`warn`) and skipped, the rest of the run
+  continues. Same shape as the turn catch-up's log-and-continue loop.
 - **The note sources sit behind a companion-owned port, not behind repository imports** —
   `feature/companion/NarrativeNoteSource`. The rationale (and the ArchUnit failure that forced it)
   is §9's port-inversion decision; the asymmetry that one adapter lives in `feature/activity` and
   the other in `feature/companion` is documented there too.
+- **What is actually reachable today.** `activity_log` has **no edit and no delete surface**:
+  `ActivityController`/`ActivityService` expose only create, day, categorize and history, and
+  `categorize` never touches `text` — so neither drift nor a reap has a live trigger for
+  `activity_note` through the API today; the sweep covers the kind anyway, and needs no new wiring
+  the day an edit or delete surface lands. `check_in` has no delete, but `CheckInService.save`
+  upserts on `(createdBy, date, slotTime)` and overwrites `note` in place — **that** is the live
+  path that makes a stale `checkin_note` vector reachable today, and the one the reap/drift pass
+  was actually built to close, including the edge case where the overwrite CLEARS the note to
+  blank/null: the row stays live, so only the blank-aware reap (above) catches it — the row's
+  liveness alone was never enough.
 
 ## 4. Data model & API
 
@@ -557,28 +609,33 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   (`mezo-b3pp.5`).** The narrative Daniel writes outside the journal — the QuickInput „Napló"
   activity entry's `activity_log.text` ([`growth.md`](growth.md)) and `check_in.note`
   ([`today.md`](today.md)) — becomes `kind=activity_note`/`checkin_note` through
-  `MemoryEmbeddingWriter.writeNote(kind, note)`, driven ONLY by the nightly
+  `MemoryEmbeddingWriter.syncNote(kind, note)`, driven ONLY by the nightly
   `DailySummaryJob` → `NoteEmbeddingCatchUp` pass (§3 above). **Contract crossing the seam:** the
   companion-owned port `feature/companion/NarrativeNoteSource` (`kind()` +
   `notesToEmbed(userId, through, minChars)` returning a flat `Note(id, createdBy, text, occurredOn)`
-  record) — not the owning features' entities. `ActivityNoteSourceAdapter`
-  (`feature/activity/service/`) implements it over `ActivityLogRepository.findNoteCandidates`;
-  `CheckInNoteSourceAdapter` lives in `feature/companion/embedding/` and reads
-  `CheckInRepository.findNoteCandidates` directly — the asymmetry is deliberate and load-bearing,
-  §9. **Both adapters are deliberately UNGATED by their feature's own switch** (unlike every
-  listener seam above): history already logged must stay embeddable by the sweep even on a day
+  record, plus — since `mezo-b3pp.26` — `liveNotes(userId, ids)`, deliberately not length-gated,
+  the lifecycle half) — not the owning features' entities. `ActivityNoteSourceAdapter`
+  (`feature/activity/service/`) implements it over `ActivityLogRepository.findNoteCandidates`/
+  `findByCreatedByAndIdIn`; `CheckInNoteSourceAdapter` lives in `feature/companion/embedding/` and
+  reads `CheckInRepository` directly — the asymmetry is deliberate and load-bearing, §9. **Both
+  adapters are deliberately UNGATED by their feature's own switch** (unlike every listener seam
+  above): history already logged must stay embeddable (and reapable) by the sweep even on a day
   activity-capture or check-in capture is switched off — the sweep, not the capture path, owns
   whether this backlog gets embedded. The adapters carry no `@ConditionalOnProperty` at all; the
   gates all sit on the consuming side — `mezo.companion.embedding.embed-notes` (checked inside the
   pass), `COMPANION_SWITCH` (removes `NoteEmbeddingCatchUp` itself), and `DAILY_SUMMARY_JOB_SWITCH`
   (`mezo.techcore.cron.daily-summary-job.enabled`), which removes the driving `DailySummaryJob`, so
   with the cron off nothing sweeps at all.
-- **✅ The W1 narrative-capture wave is complete as of `mezo-b3pp.5`.** All five slices ship on this
-  one seam: `journal_entry` (W1.1), `reflection` (W1.2, from `feature/ritual`), `gratitude` (W1.3),
-  `decision` (W1.4) and the listener-less `activity_note`/`checkin_note` pair (W1.5). **W1.3b**
-  (`mezo-b3pp.25`, gratitude rows in the ritual `ReflectionStep`) has also shipped, reusing the
-  W1.3 seam unchanged; only `mezo-b3pp.26` (the W1.5 write-once staleness follow-up, above) remains
-  open.
+- **✅ `mezo-b3pp.26` shipped the lifecycle the W1.5 write-once shape deferred: drift re-embed +
+  orphan reap.** `syncNote` replaces the old insert-only `writeNote` (§3, §9); `deleteNoteEmbedding`
+  soft-deletes an orphaned vector. Both known gaps recorded when W1.5 shipped are now closed —
+  except the one deliberate residue (a live note edited below `note-min-chars`, §3/§9), which is a
+  bounded, documented gap rather than a bug.
+- **✅ The W1 narrative-capture wave is complete as of `mezo-b3pp.5`, with `mezo-b3pp.26` closing its
+  lifecycle follow-up.** All five slices ship on this one seam: `journal_entry` (W1.1), `reflection`
+  (W1.2, from `feature/ritual`), `gratitude` (W1.3), `decision` (W1.4) and the listener-less
+  `activity_note`/`checkin_note` pair (W1.5, now drift- and reap-aware). **W1.3b** (`mezo-b3pp.25`,
+  gratitude rows in the ritual `ReflectionStep`) has also shipped, reusing the W1.3 seam unchanged.
 
 ## 6. How to use it (consume)
 
@@ -713,12 +770,12 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   `feature/companion/embedding/`, all `@ActiveProfiles("companion-fake")`, data via
   `ActivityPopulator`/`CheckInPopulator` (no journal populator involved — the sources are other
   features' tables):
-  - `NoteEmbeddingWriterIT` — the two `findNoteCandidates` queries through their adapters
-    (`notesToEmbed` gates on length and on `through`, a null `check_in.note` is simply absent) and
-    `MemoryEmbeddingWriter.writeNote` (`occurred_on` = the entry's own day, never the embed day;
-    a second call for the same ref writes nothing new).
+  - `NoteEmbeddingWriterIT` — the two `findNoteCandidates`/`liveNotes` queries through their
+    adapters (`notesToEmbed` gates on length and on `through`, a null `check_in.note` is simply
+    absent) and `MemoryEmbeddingWriter.syncNote` called twice for the same ref (`occurred_on` = the
+    entry's own day, never the embed day; the second call is the no-drift no-op case).
   - `NoteEmbeddingCatchUpIT` — both kinds embedded in one run with the length gate applied, a
-    second run writing nothing new (idempotence via the ref-id set), **a row months older than the
+    second run writing nothing new (an unchanged note costs nothing), **a row months older than the
     daily-summary catch-up window still embedded** (that IS the one-time history backfill), a
     soft-deleted source row skipped, and another user's notes never touched.
   - `NoteEmbeddingBudgetIT` — separate from the above because it needs its own
@@ -729,6 +786,26 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   - `DailySummaryJobIT.testRun_shouldEmbedSubstantiveNotes_whenNotesExist` — the wiring itself: the
     nightly job's own run embeds the notes, so the pass is reached from the cron path and not only
     when called directly.
+  - `NoteVectorLifecycleIT` (`mezo-b3pp.26`) — the writer- and sweep-level lifecycle cases in one
+    class: `syncNote` writes on first sight, spends nothing when unchanged, re-embeds in place on a
+    text change, does **not** treat a change beyond `embed-max-chars` as drift (the cap-comparison
+    trap — same head, different tail, capped content unchanged), and revives a previously reaped
+    vector on the SAME row (the `mezo-b3pp.2` trap — pins that revival goes through `upsert`, never
+    the insert-only `write`); `deleteNoteEmbedding` soft-deletes an existing vector and no-ops on
+    one that never existed. At the sweep level: a check-in's live overwrite-in-place re-embeds the
+    same row (the one reachable live path today); a soft-deleted activity row's vector is reaped;
+    an unchanged note run costs nothing; a live note edited below `note-min-chars` is neither
+    reaped nor re-embedded (the deliberate residue, pinned by asserting the pre-edit content
+    survives untouched); and one failing row does not abort the rest of the sweep.
+  - `NoteVectorLifecycleBudgetIT` (`mezo-b3pp.26`) — isolated for its own `note-batch-size=1`
+    `@TestPropertySource`, mirroring `NoteEmbeddingBudgetIT`'s isolation reason: a reap never
+    charges the budget while a drift re-embed does (one drifted + one orphaned note, budget=1,
+    both resolve in one run); and the reap-starvation regression itself — with the first source's
+    fresh note spending the whole run's budget, the second source's orphaned vector is still
+    reaped, only its re-embed half is starved (this pins the fix in
+    `NoteEmbeddingCatchUp.embed`: the reap used to sit behind the `budget <= 0` early return, so a
+    first source consuming the whole budget silently starved the second source's reap for the
+    night).
 - **FE** (both modes green — W1.5 has **no** frontend surface at all): `data/journal/journalHooks.test.tsx` (dual-mode read + the
   range-scoped mock mutations); `features/me/sheets/JournalSheet.test.tsx` (create saves via
   `addNote`; edit prefills + calls `updateNote`; delete needs the second confirm tap; the „Döntés"
@@ -760,7 +837,7 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
     removes the embedding.
   - Gratitude cases folded into `MemoryEmbeddingWriterIT`: `testWriteGratitude_*`,
     `testDeleteGratitudeEmbedding_*`.
-- **Gate:** `cd backend && ./mvnw clean test -Dtest='JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT,GratitudeEntryPersistenceIT,GratitudeApiIT,GratitudeEmbeddingEventIT,AnchorResolverDecisionIT,MemoryEmbeddingWriterIT,NoteEmbeddingWriterIT,NoteEmbeddingCatchUpIT,NoteEmbeddingBudgetIT,NoteEmbeddingSwitchOffIT,DailySummaryJobIT' -Dmezo.test.use-testcontainers=true`
+- **Gate:** `cd backend && ./mvnw clean test -Dtest='JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT,GratitudeEntryPersistenceIT,GratitudeApiIT,GratitudeEmbeddingEventIT,AnchorResolverDecisionIT,MemoryEmbeddingWriterIT,NoteEmbeddingWriterIT,NoteEmbeddingCatchUpIT,NoteEmbeddingBudgetIT,NoteEmbeddingSwitchOffIT,NoteVectorLifecycleIT,NoteVectorLifecycleBudgetIT,DailySummaryJobIT' -Dmezo.test.use-testcontainers=true`
   (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky); `cd frontend && pnpm build &&
   pnpm test && VITE_USE_MOCK=true pnpm test`.
 
@@ -878,31 +955,79 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   whereas a plain `companion → biometrics` read is the direction that already exists safely in this
   pipeline. Don't "tidy" the two adapters into the same place; either move breaks the build. The
   full reasoning is in each class's javadoc, next to the code that depends on it.
-- **Known gap (W1.5) — `activity_note`/`checkin_note` are WRITE-ONCE: an edited source note keeps
-  its ORIGINAL vector.** `writeNote` goes through the insert-only `write` helper, not the
-  re-embedding `upsert` the journal/decision/reflection kinds use, and the exists-probe makes a
-  second pass over the same `ref_id` a no-op — so editing an `activity_log.text` or a
-  `check_in.note` after the sweep embedded it leaves the pre-edit text standing in
-  `memory_embedding` forever. Nothing in the sweep can notice: it has no content comparison, only
-  the ref-id set. A follow-up bd issue is filed for this (`mezo-b3pp.26`).
-- **Known gap (W1.5) — soft-deleting a source row does NOT remove its vector.** Unlike
-  `journal_entry`, which has an explicit delete path (`deleteJournalEmbedding` off
-  `JournalEntryDeletedEvent`), the note kinds have no listener at all — `findNoteCandidates` simply
-  stops returning the deleted row, so its already-written vector is never revisited and stays
-  recallable. This is the IDENT-3 honesty rule's one currently-unmet corner in the embed pipeline;
-  it is recorded, not hidden, and shares the follow-up bd issue (`mezo-b3pp.26`) with the write-once gap above.
-  `uq_memory_embedding_kind_ref_id` is a PLAIN (non-partial) unique index, so a soft-deleted
-  `activity_note`/`checkin_note` vector still occupies its `(kind, ref_id)` slot — whoever adds this
-  delete path MUST route any note re-write through `MemoryEmbeddingWriter`'s revive-on-write
-  `upsert`, never the insert-only `write` `writeNote` uses today, or every nightly run re-selects
-  the row, burns an embedding call, hits the constraint, and warns — forever.
-- **Deferred — the W1 wave itself is done, including its W1.3b follow-on; one item remains.** Every
-  W1 slice has shipped: journal (`mezo-b3pp.1`), evening reflection (`mezo-b3pp.2`, outside this
+- **Shipped (`mezo-b3pp.26`) — `activity_note`/`checkin_note` re-embed on drift and reap on
+  orphan; the write-once follow-up is closed.** `MemoryEmbeddingWriter.syncNote` replaces the old
+  insert-only `writeNote`: it compares an embed candidate's text — capped to
+  `embedding.embed-max-chars` first, because that capped text is what is actually stored — against
+  the live vector's stored content, and re-embeds through the revive-capable `upsert` (never the
+  insert-only `write`) only when they differ, returning whether it spent an embed call so the
+  nightly sweep's budget charges only real work. Comparing the RAW source text instead of the
+  capped one would have re-embedded every over-length note on every single nightly run, forever,
+  for a tail that never affects the stored content — the capped comparison is the only stable one.
+  Routing the re-write through `upsert` rather than `write` matters because
+  `uq_memory_embedding_kind_ref_id` is a PLAIN (non-partial) unique index: a reaped vector keeps
+  occupying its `(kind, ref_id)` slot, so a later revive must UPDATE that row back to life, not
+  INSERT a colliding one (the `mezo-b3pp.2` trap, pinned by
+  `NoteVectorLifecycleIT#testSyncNote_shouldReviveTheVector_whenItWasPreviouslyReaped`).
+- **Shipped (`mezo-b3pp.26`) — a source row no longer live, OR still live but cleared to blank,
+  gets its vector reaped, outside the budget.** `NoteEmbeddingCatchUp.embed` now runs the reap
+  FIRST and unconditionally, before any budget check, for every kind on every user's turn:
+  `NarrativeNoteSource.liveNotes` (deliberately **not** length-gated) answers which stored ref-ids
+  are still live, WITH their current text, and each ref-id that is either absent from that answer
+  or present with null/blank text gets `MemoryEmbeddingWriter.deleteNoteEmbedding`'d — a
+  soft-delete of the vector only, never the source row. This closes the IDENT-3 honesty gap the
+  write-once shape originally left, on BOTH its faces: a vector whose source is gone must stop
+  being recallable tonight even when a re-embed elsewhere has already spent the run's whole
+  budget, AND a vector whose row survives but whose note was cleared (the one live, user-reachable
+  path on `check_in` today — `CheckInService.save`'s upsert happily writes a blank `note`) must
+  stop being recallable too, even though `liveNotes` alone would call that row "still there"
+  (pinned by `NoteVectorLifecycleIT#testRun_shouldReapTheVector_whenALiveCheckInNoteWasClearedToBlank`).
+  Deliberately BLANK, never "below `note-min-chars`" — see the residue bullet below for why that
+  line is drawn there. **A real bug caught in review on the way here:** the reap originally sat
+  behind the same `budget <= 0` early return as the re-embed loop, so a first source consuming the
+  whole run's budget silently starved the second source's reap for the night — fixed by moving the
+  reap ahead of that check, and pinned by
+  `NoteVectorLifecycleBudgetIT#testRun_shouldStillReapTheSecondSource_whenTheFirstSourceExhaustedTheBudget`.
+- **Shipped (`mezo-b3pp.26` final review) — an unchanged corpus no longer pays a transaction +
+  select per candidate.** The re-embed loop used to call `syncNote` for EVERY candidate every
+  night; `syncNote`'s own internal comparison already made that a no-op for unchanged notes, but
+  the CALL itself still crossed the Spring proxy (its own transaction) and ran
+  `findByKindAndRefId` — a corpus of ~2700 embedded notes paid ~2700 short transactions and
+  selects every night, forever, for text that never changes. `NoteEmbeddingCatchUp.embed` now
+  skips the call outright when `storedByRef`'s already-loaded content for that ref-id equals
+  `MemoryEmbeddingWriter.cap(note.text())` — the SAME capped text `syncNote` itself compares
+  against (`cap` is package-visible for exactly this, one definition instead of two rules that
+  could drift), so `syncNote` is only reached for genuine first-writes and drifts; its own check
+  stays as a cheap belt-and-braces double check. Pinned by
+  `NoteEmbeddingCatchUpIT#testRun_shouldNotCallSyncNote_whenTheCorpusIsUnchanged` (a
+  `@MockitoSpyBean` on `MemoryEmbeddingWriter`, since the pre-fix code already returned `written=0`
+  for an unchanged run — only a call-count assertion actually pins the cost, not the outcome).
+- **Known, bounded gap (`mezo-b3pp.26`) — a live note edited down BELOW `note-min-chars` is
+  neither re-embedded nor reaped.** `liveNotes` says the row is still live, so the reap leaves it
+  alone; but `notesToEmbed`'s length gate drops it from the embed-candidate set, so `syncNote`
+  never gets a turn to notice its drift either — the note's OLD, pre-edit vector survives,
+  describing text the note no longer has (pinned by
+  `NoteVectorLifecycleIT#testRun_shouldNotReap_whenALiveNoteFellBelowMinChars`). This is deliberate,
+  not an oversight: reaping on the length gate instead was considered and rejected, because merely
+  RAISING `note-min-chars` in a future config change would then mass-delete a user's existing
+  vectors on the next nightly run — a worse failure than one bounded, known-stale vector.
+- **What this closes and what stays out of reach.** Both gaps above are recorded as shipped seams,
+  not silently patched over — and reachability was never symmetric between the two kinds.
+  `activity_log` has **no edit and no delete surface** today (`ActivityController`/`ActivityService`
+  expose only create, day, categorize and history; `categorize` never touches `text`), so neither
+  drift nor a reap has a live trigger for `activity_note` through the API — the sweep covers the
+  kind anyway and needs no new wiring the day such a surface lands. `check_in` has no delete
+  either, but `CheckInService.save` upserts on `(createdBy, date, slotTime)` and overwrites `note`
+  in place — that IS a live, reachable path today, and the one this lifecycle rework was actually
+  built to close.
+- **Deferred — the W1 wave, including its W1.3b and `mezo-b3pp.26` follow-ons, is done.** Every W1
+  slice has shipped: journal (`mezo-b3pp.1`), evening reflection (`mezo-b3pp.2`, outside this
   domain — see §5 and [`ritual.md`](ritual.md)), gratitude (`mezo-b3pp.3`), decision journal +
-  review loop (`mezo-b3pp.4`) and the note-embedding catch-up (`mezo-b3pp.5`, §3/§5/§8, with its
-  two known gaps two bullets up). **W1.3b** (`mezo-b3pp.25`) — gratitude rows in the ritual
-  `ReflectionStep`, §2 above — has also shipped, reusing the seam in §5 with no new embed pipeline.
-  Still open: **`mezo-b3pp.26`**, the W1.5 write-once staleness follow-up.
+  review loop (`mezo-b3pp.4`) and the note-embedding catch-up (`mezo-b3pp.5`, §3/§5/§8) with its
+  lifecycle follow-up (`mezo-b3pp.26`, the three bullets above) now closed except the one
+  documented residue. **W1.3b** (`mezo-b3pp.25`) — gratitude rows in the ritual `ReflectionStep`,
+  §2 above — has also shipped, reusing the seam in §5 with no new embed pipeline. Nothing open
+  remains in this domain.
 
 ## 10. Key files
 
@@ -933,16 +1058,16 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findByKindAndRefId` (the live-row lookup, still the delete path's probe) and, since `mezo-b3pp.2`, the native `findByKindAndRefIdIncludingDeleted` the single shared `upsert(...)` reads through so a soft-deleted row is revived rather than re-inserted (§9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/MemoryEmbeddingEntity.java:44-53,63` — the kind constants (`KIND_JOURNAL_ENTRY`/`KIND_DECISION`/`KIND_REFLECTION` + W1.5's `KIND_ACTIVITY_NOTE`/`KIND_CHECKIN_NOTE`) and the widened `kind` `@Pattern` mirroring `ck_memory_embedding_kind`.
 
-**Backend — the note catch-up (W1.5, `mezo-b3pp.5`; no listener, no migration, no FE)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/NarrativeNoteSource.java` — the companion-owned port (`kind()` + `notesToEmbed`, the flat `Note` record, the two kind constants); its javadoc carries the cycle rationale (§9).
+**Backend — the note catch-up + lifecycle (W1.5 `mezo-b3pp.5`, lifecycle `mezo-b3pp.26`; no listener, no migration, no FE)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/NarrativeNoteSource.java` — the companion-owned port (`kind()`, `notesToEmbed`, and — since `mezo-b3pp.26` — `liveNotes` (not length-gated), the flat `Note` record, the two kind constants); its javadoc carries the cycle rationale (§9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/activity/service/ActivityNoteSourceAdapter.java` — the `activity_note` source, a plain `ActivityLogRepository` read (NOT `ActivityService` — that import would close a cycle of its own), ungated by `ACTIVITY_SWITCH`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/CheckInNoteSourceAdapter.java` — the `checkin_note` source; lives in companion, not in `biometrics/checkin/service`, for the reason in §9.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/NoteEmbeddingCatchUp.java` — the pass itself: toggle check, per-kind ref-id diff, run-wide budget, per-row try/catch, deliberately NOT `@Transactional`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `writeNote(kind, note)`, the write-once path (the insert-only `write`, not `upsert` — §9's gaps).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/NoteEmbeddingCatchUp.java` — the pass itself: toggle check, per-kind reap-then-re-embed (§3), run-wide re-embed budget, per-row try/catch, deliberately NOT `@Transactional`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — `syncNote(kind, note)` (drift-aware, capped-text comparison, revive-capable `upsert`, mezo-b3pp.26) and `deleteNoteEmbedding(kind, refId)` (the reap half — §9's now-closed gaps).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DailySummaryJob.java` — the wiring: the note pass runs per user inside the EXISTING nightly cron, after the summary + turn passes.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/activity/repository/ActivityLogRepository.java` — `findNoteCandidates(createdBy, through, minChars)` (JPQL, `@SQLRestriction` keeps soft-deleted rows out, oldest first).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/repository/CheckInRepository.java` — `findNoteCandidates(...)` (a null note fails the `length()` predicate in SQL, so no null branch).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findRefIdsByCreatedByAndKind` (one set read per kind, the pass's idempotence anchor).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/activity/repository/ActivityLogRepository.java` — `findNoteCandidates(createdBy, through, minChars)` (JPQL, `@SQLRestriction` keeps soft-deleted rows out, oldest first) and `findByCreatedByAndIdIn` (the `liveNotes` finder).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/repository/CheckInRepository.java` — `findNoteCandidates(...)` (a null note fails the `length()` predicate in SQL, so no null branch) and `findByCreatedByAndIdIn` (the `liveNotes` finder).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/MemoryEmbeddingRepository.java` — `findRefContentByCreatedByAndKind` (the `RefContent` projection: `(refId, content)` per live vector, what the sweep's reap/drift compare against, without dragging a 768-float vector through).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Embedding.embedNotes`/`noteMinChars`/`noteBatchSize`; `backend/src/main/resources/application.yml:396-402` — `mezo.companion.embedding.embed-notes` / `note-min-chars: 80` / `note-batch-size: 200`.
 
 **Backend — the `decision_review` push category (documented fully in [`_platform-notifications.md`](_platform-notifications.md) §4/§10)**
@@ -960,6 +1085,8 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
 - `backend/src/test/java/io/mrkuhne/mezo/feature/journal/{JournalEntryPersistenceIT,JournalApiIT,JournalSwitchOffIT,JournalApiCompanionOffIT,JournalEmbeddingEventIT,DecisionEntryPersistenceIT,DecisionApiIT,DecisionApiCompanionOffIT,DecisionEmbeddingEventIT,GratitudeEntryPersistenceIT,GratitudeApiIT,GratitudeEmbeddingEventIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/feature/notification/AnchorResolverDecisionIT.java` — the `decision_review` anchor (§8; full test lives with the notification suite since it's `AnchorResolver`'s code, not journal's).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — journal + decision + gratitude cases (`testWriteJournal_*`/`testDeleteJournalEmbedding_*`, `testWriteDecision_*`, `testWriteGratitude_*`/`testDeleteGratitudeEmbedding_*`).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/{NoteEmbeddingWriterIT,NoteEmbeddingCatchUpIT,NoteEmbeddingBudgetIT,NoteEmbeddingSwitchOffIT}.java` — the W1.5 candidate/backfill/budget/toggle cases (§8).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/{NoteVectorLifecycleIT,NoteVectorLifecycleBudgetIT}.java` (`mezo-b3pp.26`) — the drift re-embed / reap lifecycle at both the writer and sweep level, and the reap-vs-budget interaction, §8.
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/JournalPopulator.java` — `createNote`/`createDecision`/`createGratitude`; `support/ResetDatabase.java:41` (`journal_entry`, `decision_entry`, `gratitude_entry` in the TRUNCATE list).
 
 **Frontend — data layer**
