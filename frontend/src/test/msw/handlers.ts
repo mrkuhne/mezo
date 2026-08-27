@@ -1340,17 +1340,22 @@ export const handlers = [
   // A day with no data (score: null) reports checkinCount/workoutCount: 0, never omitted fields.
   http.get(`${API_BASE}/api/me/week/:start`, ({ params }) => {
     const start = params.start as string
+    const empty = (offset: number) => ({
+      date: addDays(start, offset), score: null, subscores: { sleep: null, fuel: null, checkin: null, activity: null },
+      kcal: null, proteinG: null, carbsG: null, fatG: null, kcalTarget: 3000, proteinTargetG: 200,
+      weightKg: null, sleepMin: null, sleepQuality: null, checkinCount: 0, checkinEnergyAvg: null,
+      workoutCount: 0, xp: null,
+    })
     return HttpResponse.json({
       start,
+      // contract: always exactly 7 days (start..start+6) — one distinct-from-seed logged day,
+      // the rest honest-empty (the /api/fuel/week/:start handler above is the house precedent).
       days: [
         { date: start, score: 65, subscores: { sleep: 60, fuel: 70, checkin: 62, activity: 68 },
           kcal: 2800, proteinG: 190, carbsG: 300, fatG: 80, kcalTarget: 3000, proteinTargetG: 200,
           weightKg: 82.5, sleepMin: 410, sleepQuality: 6, checkinCount: 3, checkinEnergyAvg: 6,
           workoutCount: 1, xp: 90 },
-        { date: addDays(start, 1), score: null, subscores: { sleep: null, fuel: null, checkin: null, activity: null },
-          kcal: null, proteinG: null, carbsG: null, fatG: null, kcalTarget: 3000, proteinTargetG: 200,
-          weightKg: null, sleepMin: null, sleepQuality: null, checkinCount: 0, checkinEnergyAvg: null,
-          workoutCount: 0, xp: null },
+        empty(1), empty(2), empty(3), empty(4), empty(5), empty(6),
       ],
       weekly: {
         score: 65, prevWeekScore: 60, avgKcal: 2800, avgProteinG: 190, avgSleepMin: 410,

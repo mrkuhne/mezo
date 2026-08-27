@@ -115,7 +115,7 @@ export function mockMeWeek(startIso: string): MeWeek {
   const shift = daysBetween(mockMeWeekStart, startIso)
   return {
     start: startIso,
-    days: SEED_DAYS.map((d) => ({ ...d, date: shift === 0 ? d.date : addDays(d.date, shift) })),
+    days: SEED_DAYS.map((d) => ({ ...d, date: addDays(d.date, shift) })),
     weekly: {
       score: 78,
       prevWeekScore: 74,
