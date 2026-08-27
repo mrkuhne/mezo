@@ -17,6 +17,7 @@ they inline come from `../assets/`.
 | `fuel-tab.html` | https://claude.ai/code/artifact/e0da58f6-f4ef-4874-b60e-b83a1998ba0e |
 | `mezo-tab.html` | https://claude.ai/code/artifact/797270dd-f1dc-4196-b492-aa4ffb22d2de |
 | `en-ia-valasztas.html` | https://claude.ai/code/artifact/418b2a2d-25ba-4441-8cb5-6b15c6ab88b2 |
+| `en-tab.html` | https://claude.ai/code/artifact/dee0dd7e-f321-4f88-94ff-c7face496d70 |
 
 ## Workflow
 
@@ -228,3 +229,35 @@ are usable without a build step).
   header (Daniel's initial idea; reachable everywhere but the worst one-handed zone). Built
   standalone (not in build.sh); the changed element is marked with a dashed coral callout.
   Decision pending — the winning option gets rolled into all prototype tab bars.
+- **en-tab** — the Én tab (decision B: fifth first-class tab), audited against the real `/me`
+  section (`2026-08-27-en-feature-audit.md` — 9 sub-tabs + 5 full-screen pages). **Hub**:
+  identity hero (avatar with the in-level XP ring, name, equipped title chip, Lv · XP · 🔥 ·
+  🪙 row, and the bio line — only the filled bits, the whole row vanishes empty), the
+  coral-ringed **goal card** (trajectory + title, animated progress track with indulás/most/cél
+  labels, Hátra · Tempó · ETA mini-cells; maintain goals drop the track and read `tartás` per
+  the real contract), 8 tiles (Súly, Alvás, Growth, Napló, Emberek, Tudás, Értesítés,
+  AI-napló) with live bottom lines, and a Beállítások band (theme sheet: Világos/Sötét/
+  Cirkadián with the real −90p copy). **Subpages** (all tile-based, rise-staggered, animated
+  bars): Cél (hero card with guard chips + identity quote, the engine's prescription as
+  **segment tiles** — W1–12 mély deficit amber · W13–20 taper sage, each with 4 mini-cells +
+  rationale —, guard pills incl. the honest `Fehérje: Fuel-re vár`, a gym/futás/röplabda
+  timeline with the ⚠ W1–4 fedezetlen chip, dashed plan slots), Súly (−2,8 kg hero, stat
+  strip, trend chart with actual-MA + plan + ±1 kg tolerance band, weekly tiles with delta
+  pills and direction; the log sheet with steppers + the context tip — saving cascades into
+  the hero, bio line, goal card and hub tile), Alvás (goal card with the bed rail 🛏️→☀️,
+  Rendszeresség/Hatékonyság ring tiles, phase rail + reference rows — `a sávban`, never red —,
+  7-night stacked phase columns with quality dots, daily "Miért számít?" card, and the **dark
+  Éjszakai mód tile**), Éjszakai mód (pitch-dark page, NO clocks or countdowns: Felébredtél? →
+  Ébren vagyok → breathing orb + 3 tools; demo chip advances to the 20-minute Kelj fel state),
+  Growth (hero trio XP/Fegyelem/Ritmus + 4 segments: LIFE/Atlétikus/Izom band tiles with
+  animated skill bars + savings, Rutin 30-day 🌅/🌙 counters + chain tiles, Napló day tiles
+  with `csendben lejárt` honesty, Kitüntetések badge grid — achieved sage ✓, rest with
+  progress bars), Napló (gratitude streak tile, gold decision tile with inline 1–5 review that
+  settles to a sage acknowledgement, month-grouped note tiles), Emberek (2-col person tiles
+  with affect-ring avatars, mention tiles with the FIGYELEM badge + pattern tie), Tudás
+  (summary tile, grouped node tiles with edge lines and a live Archivál that decrements every
+  counter), Értesítés (dark daily-load card with a 24-hour spark + dense-window warning that
+  **recomputes live as category toggles flip**, master toggle, 3 category groups with washes,
+  the gym-only −45 perc lead chip, and the honest brain-events footnote), AI-napló (cost hero
+  with Ma/Hét/Hónap segments, feature cost bars, call tiles with status rails — siker sage ·
+  hiba terracotta · megszakadt amber — and the `~ becslés` footnote).

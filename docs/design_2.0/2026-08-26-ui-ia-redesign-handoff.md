@@ -350,10 +350,16 @@ Locked patterns from the screen rounds (canonical for every further page):
 
 **How a fresh session continues:** read this file + `docs/design_2.0/prototypes/README.md` +
 `docs/design_2.0/assets/README.md`; edit `prototypes/src/`, run `build.sh`, republish with the
-Artifact tool passing the artifact `url` above. Remaining pages to design: Fuel subpage deep
-rounds (Terv + Gyógyszer at sketch depth, recipe detail/editor + the sheets), Mezo-tab
-iteration rounds with Daniel (first ship is done — hub + chat + all 8 subpages), Napzárás,
-Me/profil surfaces, and the Edzés review page (the live session flow is done — see
+Artifact tool passing the artifact `url` above. **Decision B (2026-08-27): the tab bar is 5 first-class
+tabs — Nap · Edzés · Fuel · Mezo · Én — and quick-log lives on a floating coral FAB
+bottom-right, rolled out to every prototype.** The Én tab first ship is done in
+`prototypes/en-tab.html` (artifact `dee0dd7e-…`), audited against the real `/me`
+(`2026-08-27-en-feature-audit.md`): identity hero + goal card + 8 tiles hub; Cél, Súly,
+Alvás + Éjszakai mód, Growth, Napló, Emberek, Tudás, Értesítés, AI-napló subpages, all
+tile-based with the honest-state contracts preserved (— never 0, tartás contract, phase-card
+gating, night-mode clock ban). Remaining pages to design: Fuel subpage deep rounds (Terv +
+Gyógyszer at sketch depth, recipe detail/editor + the sheets), Mezo- and Én-tab iteration
+rounds with Daniel, Napzárás, and the Edzés review page (the live session flow is done — see
 Edzés-session above). New icons/spots always go back into `docs/design_2.0/assets/`
 sprites first.
 
