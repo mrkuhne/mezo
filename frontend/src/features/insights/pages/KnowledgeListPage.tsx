@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -8,10 +9,11 @@ import { LifecycleSection } from '@/features/insights/components/LifecycleSectio
 import { KnowledgeExplainer } from '@/features/insights/components/KnowledgeExplainer'
 import { FactCandidateCard } from '@/features/insights/components/FactCandidateCard'
 import { LifeEventCandidateCard } from '@/features/insights/components/LifeEventCandidateCard'
+import { LifeEventAcceptedCard } from '@/features/insights/components/LifeEventAcceptedCard'
 import { KnowledgeFactRow } from '@/features/insights/components/KnowledgeFactRow'
 import { bucketFacts, matchesQuery, type FactBucket } from '@/features/insights/logic/factCopy'
 import { CANDIDATE_COPY } from '@/data/insights/graph'
-import type { FactCategory, KnowledgeFact } from '@/data/types'
+import type { FactCategory, KnowledgeFact, LifeEventCandidate } from '@/data/types'
 
 export function KnowledgeListPage() {
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
@@ -20,6 +22,16 @@ export function KnowledgeListPage() {
   const { decide: decideLifeEvent } = useLifeEventActions()
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<FactCategory | 'all'>('all')
+  // Az elfogadott életesemény a szerver-listáról azonnal lekerül (query-invalidálás), ezért a
+  // megerősítést page-szintű state tartja életben az oldal elhagyásáig (mezo-0ap9). Mock és real
+  // módban azonos, hogy a mock-módú ellenőrzés a valós élményt mutassa.
+  const [acceptedEvents, setAcceptedEvents] = useState<
+    { id: string; kind: LifeEventCandidate['kind']; title: string; edgeCount: number }[]
+  >([])
+
+  // A már elfogadott jelölt real módban a refetch megérkezéséig még a szerver-listában van —
+  // enélkül egy pillanatra a jelölt-kártya ÉS a megerősítés is látszana.
+  const pendingLifeEvents = lifeEvents.filter((c) => !acceptedEvents.some((a) => a.id === c.id))
 
   // A vödrözés a TELJES listán fut (a „10 megy a chatbe" a valóságot mondja), a szűrés csak
   // a megjelenítést szűkíti — különben egy aktív szűrő átírná a prompt-státuszokat.
@@ -82,6 +94,14 @@ export function KnowledgeListPage() {
 
       <KnowledgeExplainer />
 
+      <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5, padding: '0 4px', margin: 0 }}>
+        A kapcsolatok és életesemények a{' '}
+        <Link to="/me/knowledge" style={{ color: 'var(--lav-deep)', fontWeight: 600, textDecoration: 'none' }}>
+          Tudásgráfon
+        </Link>{' '}
+        élnek.
+      </p>
+
       {candidates.length > 0 && (
         <div className="col gap-sm">
           <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
@@ -98,18 +118,34 @@ export function KnowledgeListPage() {
       )}
 
       {(['LIFE_EVENT', 'SEASON'] as const).map((kind) => {
-        const group = lifeEvents.filter((c) => c.kind === kind)
-        if (group.length === 0) return null
+        const pending = pendingLifeEvents.filter((c) => c.kind === kind)
+        const settled = acceptedEvents.filter((a) => a.kind === kind)
+        if (pending.length === 0 && settled.length === 0) return null
         return (
           <div key={kind} className="col gap-sm">
             <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
-              {CANDIDATE_COPY[kind].eyebrow} · {group.length}
+              {/* A darabszám a MÉG DÖNTÉSRE VÁRÓ jelölteké. Enélkül a csoport utolsó elfogadása
+                  után „…jelöltek · 0" állna a megerősítő kártya fölött. */}
+              {pending.length > 0
+                ? `${CANDIDATE_COPY[kind].eyebrow} · ${pending.length}`
+                : CANDIDATE_COPY[kind].settled}
             </span>
-            {group.map((c) => (
+            {settled.map((a) => (
+              <LifeEventAcceptedCard key={a.id} title={a.title} edgeCount={a.edgeCount} />
+            ))}
+            {pending.map((c) => (
               <LifeEventCandidateCard
                 key={c.id}
                 candidate={c}
-                onDecide={(decision) => decideLifeEvent(c.id, decision)}
+                onDecide={(decision) => {
+                  if (decision === 'accept') {
+                    setAcceptedEvents((prev) => [
+                      ...prev,
+                      { id: c.id, kind: c.kind, title: c.title, edgeCount: c.proposedEdgeCount },
+                    ])
+                  }
+                  decideLifeEvent(c.id, decision)
+                }}
               />
             ))}
           </div>
