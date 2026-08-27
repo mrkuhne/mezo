@@ -4,6 +4,7 @@ import { initialChat, cannedReply } from '@/data/insights/chat'
 import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge'
 import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
+import { addDays } from '@/shared/lib/dates'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -1333,4 +1334,29 @@ export const handlers = [
     return HttpResponse.json({ ...body, reason: body.reason ?? null, updatedAt: '2026-08-21T12:00:00Z' })
   }),
   http.delete(`${API_BASE}/api/companion/feedback/:artifactKind/:artifactId`, () => new HttpResponse(null, { status: 204 })),
+
+  // Weekly review (mezo-p2tr) — one fetched week, DELIBERATELY distinct from the mock seed
+  // (`meWeek.ts`) so real-mode tests can tell "the fetch resolved" apart from "the seed leaked".
+  // A day with no data (score: null) reports checkinCount/workoutCount: 0, never omitted fields.
+  http.get(`${API_BASE}/api/me/week/:start`, ({ params }) => {
+    const start = params.start as string
+    return HttpResponse.json({
+      start,
+      days: [
+        { date: start, score: 65, subscores: { sleep: 60, fuel: 70, checkin: 62, activity: 68 },
+          kcal: 2800, proteinG: 190, carbsG: 300, fatG: 80, kcalTarget: 3000, proteinTargetG: 200,
+          weightKg: 82.5, sleepMin: 410, sleepQuality: 6, checkinCount: 3, checkinEnergyAvg: 6,
+          workoutCount: 1, xp: 90 },
+        { date: addDays(start, 1), score: null, subscores: { sleep: null, fuel: null, checkin: null, activity: null },
+          kcal: null, proteinG: null, carbsG: null, fatG: null, kcalTarget: 3000, proteinTargetG: 200,
+          weightKg: null, sleepMin: null, sleepQuality: null, checkinCount: 0, checkinEnergyAvg: null,
+          workoutCount: 0, xp: null },
+      ],
+      weekly: {
+        score: 65, prevWeekScore: 60, avgKcal: 2800, avgProteinG: 190, avgSleepMin: 410,
+        avgCheckinEnergy: 6, checkinRatio: 0.5, latestWeightKg: 82.5, weightWeeklyRateKg: -0.2,
+        totalXp: 90,
+      },
+    })
+  }),
 ]
