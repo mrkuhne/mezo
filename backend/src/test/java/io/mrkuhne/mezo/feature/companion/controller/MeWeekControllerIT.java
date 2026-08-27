@@ -132,6 +132,18 @@ class MeWeekControllerIT extends ApiIntegrationTest {
     }
 
     @Test
+    void checkinRatioIsNullNotZeroForAFullyFutureWeek() {
+        LocalDate futureMonday = LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY))
+                .plusWeeks(10);
+
+        MeWeekResponse response = week(futureMonday);
+
+        assertThat(response.getDays()).hasSize(7);
+        assertThat(response.getWeekly().getCheckinRatio()).isNull();
+    }
+
+    @Test
     void prevWeekScoreComesFromThePriorWeek() {
         UUID owner = ownerId();
         LocalDate priorMonday = MONDAY.minusWeeks(1);

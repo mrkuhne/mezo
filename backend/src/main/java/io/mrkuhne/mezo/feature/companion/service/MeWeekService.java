@@ -226,11 +226,16 @@ public class MeWeekService {
         return v != null ? v.stripTrailingZeros().toPlainString() : "–";
     }
 
-    /** {@code min(7, today - start + 1)} clamped to >= 1; a fully-past week always uses the full 7. */
+    /** {@code min(7, today - start + 1)} clamped to >= 1; a fully-past week always uses the full 7.
+     *  A fully-future week (today before start) returns 0 — the honest "hasn't started yet" signal
+     *  that {@link #aggregates} turns into a {@code null} {@code checkinRatio} rather than 0.0. */
     private static int elapsedDays(LocalDate start, LocalDate end) {
         LocalDate today = LocalDate.now();
         if (today.isAfter(end)) {
             return 7;
+        }
+        if (today.isBefore(start)) {
+            return 0;
         }
         long elapsed = java.time.temporal.ChronoUnit.DAYS.between(start, today) + 1;
         return (int) Math.max(1, Math.min(7, elapsed));
