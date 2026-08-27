@@ -7,7 +7,13 @@ export const memoryOverview: MemoryOverview = {
     summaryCount: 38,
     firstDate: '2026-07-01',
     lastDate: '2026-08-12',
-    embeddings: { dailySummary: 38, chatTurn: 112 },
+    embeddings: [
+      { kind: 'chat_turn', count: 112 },
+      { kind: 'daily_summary', count: 38 },
+      { kind: 'journal_entry', count: 9 },
+      { kind: 'gratitude', count: 6 },
+      { kind: 'reflection', count: 4 },
+    ],
   },
   l2: {
     patterns: [

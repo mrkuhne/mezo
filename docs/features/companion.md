@@ -2371,13 +2371,54 @@ pre-baked `"name(args)"` label as `MessageTool.name`, `type` always `read` in V0
 includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1). **`mezo-al1i`** adds
 `MemoryOverviewResponse {l0, l1, l2, l3, jobs}` (nested `MemoryOverviewL0/L1/L2/L3/Jobs` +
 `MemoryPatternCount {kind, status, count}` + `MemoryFactSourceCount {source, count}` +
-`MemoryEmbeddingCounts {dailySummary, chatTurn}`), `MemorySummaryListResponse {items:
+`MemoryEmbeddingKindCount {kind, count}` — **`MemoryOverviewL1.embeddings` is `MemoryEmbeddingKindCount[]`
+since `mezo-b3pp.22`, a BREAKING replacement of the original two-field `MemoryEmbeddingCounts
+{dailySummary, chatTurn}`**; see the L1 paragraph below for why), `MemorySummaryListResponse {items:
 MemorySummaryItem[]}` (`{date, narrative, embedded}`), `SimilarDaysResponse {items:
 SimilarDayItem[]}` (`{date, excerpt, similarity, finalScore}` — `finalScore` is the wire name for
 `MemoryRecallService`'s `similarity × exp(-age/τ)` score), and `LlmUsageResponse {enabled, perDay:
 LlmUsageDay[], totals}` (`LlmUsageDay {date, calls, inputTokens, outputTokens, costUsd?}` —
 `costUsd` null means no priced row that day, never a fabricated 0). All four schemas are defined in
 `api/feature/companion/companion.yml`, alongside the existing `Companion` tag schemas.
+
+**L1's embedding count is a list per kind, not two fixed fields (`mezo-b3pp.22`).** The original
+`MemoryEmbeddingCounts {dailySummary, chatTurn}` shape hard-coded the two kinds `memory_embedding`
+carried at V2.1; `mezo-b3pp.1` widened `ck_memory_embedding_kind` from three values to ten
+(`journal_entry`, `reflection`, `gratitude`, `decision`, `activity_note`, `checkin_note` +
+`weekly_summary`/`monthly_summary`, all documented in the V2.1 table above), and a fixed-field
+response would have needed a contract change — and a matching FE edit — every time the CHECK grows
+again. `MemoryOverviewL1.embeddings` is now `MemoryEmbeddingKindCount[]` (`{kind, count}`),
+matching the shape its two L2/L3 siblings in the same response already use
+(`MemoryOverviewL2.patterns: MemoryPatternCount[]`, `MemoryOverviewL3.facts:
+MemoryFactSourceCount[]`) — an array absorbs an eleventh kind for free, no contract or FE change
+required. `kind` is deliberately plain `type: string` in the schema, not enum-constrained: the DB
+CHECK is the authority and it is expected to keep growing.
+`MemoryEmbeddingRepository.countByKindForUser` (`repository/MemoryEmbeddingRepository.java`) is
+ONE `group by m.kind` JPQL query — `select m.kind as kind, count(m) as count from
+MemoryEmbeddingEntity m where m.createdBy = :createdBy group by m.kind order by count(m) desc,
+m.kind asc` via the `KindCount {getKind(), getCount()}` projection — rather than one
+`countByCreatedByAndKind` call per kind. Being JPQL (not native) matters: Hibernate's
+`@SQLRestriction("is_deleted = false")` applies to JPQL exactly as it does to derived queries, so a
+vector the nightly sweep has reaped (`mezo-b3pp.26` made note reaping real —
+`MemoryEmbeddingWriter.syncNote` soft-deletes an orphaned or live-but-blank note vector) is
+correctly absent from the count rather than inflating it. `MemoryObservatoryService.overview` maps
+each row into `MemoryEmbeddingKindCount.builder().kind(row.getKind()).count((int)
+row.getCount()).build()`; a kind with zero live vectors is simply never a row, so it is omitted
+from the array — the same "absence is zero" convention `MemoryOverviewL2.patterns` and
+`MemoryOverviewL3.facts` already use, now shared by all three. The `order by count desc, kind asc`
+is deliberate, not cosmetic: it makes the response order deterministic, which is a property the API
+promises its consumer — the FE renders one chip per array entry in wire order, with no client-side
+sort. `testOverview_shouldOrderKindsByCountThenKind_whenSeveralKindsArePopulated` in
+`CompanionMemoryOverviewApiIT` asserts that order with `containsExactly`, so it documents and locks
+the intent — but it is not a hard guard: at this row count Postgres' aggregate happens to return the
+same order even with the `order by` removed (verified by hand), so what actually backs the clause is
+the API's determinism promise, not the test. On the FE,
+`MemoryLayersPanel`'s `EMBEDDING_KIND_LABEL` map (`features/insights/components/
+MemoryLayersPanel.tsx`) renders one stat per array entry and falls back to the raw `kind` string
+(`EMBEDDING_KIND_LABEL[e.kind] ?? e.kind`) for a kind it has no Hungarian label for yet — without
+that fallback the array shape would buy nothing, since a brand-new writer's vectors would still be
+invisible in the panel until the FE separately shipped a label for it; with it, a new kind is
+visible in the observatory the day its writer ships.
 
 **`PatternPairDetailResponse` (S1 close, `mezo-tk88.3`):** `{pair: PatternMonitorPair,
 pattern: PatternResponse | null, events: PatternEventResponse[], days: AlignedDayResponse[],

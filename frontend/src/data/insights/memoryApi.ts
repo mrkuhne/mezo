@@ -13,7 +13,7 @@ export function toOverview(w: MemoryOverviewResponse): MemoryOverview {
       summaryCount: w.l1.summaryCount,
       firstDate: w.l1.firstDate ?? null,
       lastDate: w.l1.lastDate ?? null,
-      embeddings: { dailySummary: w.l1.embeddings.dailySummary, chatTurn: w.l1.embeddings.chatTurn },
+      embeddings: w.l1.embeddings.map((e) => ({ kind: e.kind, count: e.count })),
     },
     l2: {
       patterns: w.l2.patterns.map((p) => ({ kind: p.kind, status: p.status, count: p.count })),

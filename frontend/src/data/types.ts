@@ -629,6 +629,7 @@ export type FactSource = 'chat' | 'pattern' | 'manual'
 
 export interface MemoryPatternCount { kind: string; status: string; count: number }
 export interface MemoryFactSourceCount { source: FactSource; count: number }
+export interface MemoryEmbeddingKindCount { kind: string; count: number }
 
 /** A memória-obszervatórium áttekintés (mezo-al1i) — L0→L3 réteg-számok + cron-ütemezés. */
 export interface MemoryOverview {
@@ -637,7 +638,7 @@ export interface MemoryOverview {
     summaryCount: number
     firstDate: string | null
     lastDate: string | null
-    embeddings: { dailySummary: number; chatTurn: number }
+    embeddings: MemoryEmbeddingKindCount[]
   }
   l2: { patterns: MemoryPatternCount[]; pendingFactCandidates: number }
   l3: { facts: MemoryFactSourceCount[]; totalReinforcements: number; factsInPrompt: number }
