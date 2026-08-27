@@ -5,7 +5,7 @@ import { WeekPage } from '@/features/me/pages/WeekPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { mockMeWeekStart } from '@/data/me/meWeek'
-import { nextMonday } from '@/features/me/logic/weekNav'
+import { prevMonday, nextMonday } from '@/features/me/logic/weekNav'
 
 // Task 10 (mezo-p2tr) — the week/day chat handoff routes through useNavigate; spy on it so the
 // wiring tests can assert the exact target without a real router transition.
@@ -86,6 +86,16 @@ test('next-week stepper is disabled on the current week', () => {
 test('prev-week stepper is enabled and steps back via ?start=', () => {
   renderPage()
   expect(screen.getByRole('button', { name: '‹' })).not.toBeDisabled()
+})
+
+test('clicking the prev-week chip steps the title back one week', () => {
+  renderPage()
+  const currentTitle = deriveWeekTitle(mondayIso())
+  const prevTitle = deriveWeekTitle(prevMonday(mondayIso()))
+  expect(screen.getByText(currentTitle)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: '‹' }))
+  expect(screen.queryByText(currentTitle)).not.toBeInTheDocument()
+  expect(screen.getByText(prevTitle)).toBeInTheDocument()
 })
 
 test('browsing a future week renders its day cards dimmed, non-expandable and without a chat chip', () => {
