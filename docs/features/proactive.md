@@ -1814,10 +1814,11 @@ no-row gate, the idempotent existing-row short-circuit, bounds-checked anchor re
 covers the never-lazy 404, the `stale` probe, the regenerate 409/404, and the digest's always-200
 contract. `AnchoredConversationIT` (companion) covers `context_kind`/`context_date` persistence, the
 assistant-only opening turn, and its swallow-and-log failure path. FE: `frontend/src/data/me/
-{meWeekHooks,weeklyReviewHooks}.test.tsx`, `frontend/src/features/me/{pages/WeekPage.test.tsx,
-logic/useChatHandoff.test.tsx,components/{WeekDayCard,WeekReviewCard,WeekScoreBars}.test.tsx}`,
-`frontend/src/app/router.weeklyRedirect.test.tsx` (the `/insights/weekly → /me/week` redirect).
-Full test list: [me.md §8](me.md).
+{meWeekHooks.test.tsx,weeklyReviewHooks.test.ts}`, `frontend/src/features/me/{pages/WeekPage.test.tsx,
+logic/useChatHandoff.test.ts,components/WeekDayCard.test.tsx}` (`WeekReviewCard`/`WeekScoreBars`
+have no dedicated component test files — their behavior is covered at the `WeekPage.test.tsx`
+integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/insights/weekly →
+/me/week` redirect). Full test list: [me.md §8](me.md).
 
 ## 9. Decisions, gotchas & deferred
 
