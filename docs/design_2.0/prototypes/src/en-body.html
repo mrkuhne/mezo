@@ -310,7 +310,119 @@
     cursor: pointer; z-index: 9;
     box-shadow: 0 12px 24px -6px rgba(255, 91, 54, 0.65); animation: fabglow 3.2s ease-in-out 1.6s infinite; }
   .floatfab:active { transform: scale(0.92); }
+  /* ===== HETI: hero, trend, oszlopok ===== */
+  .wknav { display: flex; gap: 5px; margin-left: auto; }
+  .wknav button { width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(43, 33, 24, 0.14);
+    background: rgba(255, 255, 255, 0.75); font-family: inherit; font-size: 11px; color: #6E6257; cursor: pointer; }
+  .wknav button:disabled { opacity: 0.3; cursor: default; }
+  .wkring { width: 82px; height: 82px; border-radius: 50%; display: grid; place-items: center; flex: none;
+    background: conic-gradient(#8A76CC 0%, rgba(43, 33, 24, 0.09) 0); }
+  .wkring .in { width: 66px; height: 66px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center;
+    box-shadow: inset 0 1px 3px rgba(43, 33, 24, 0.08); }
+  .wkring b { font-size: 27px; font-weight: 200; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+  .wkring b.thin { font-size: 13px; font-weight: 600; color: #A2958A; }
+  .wkring small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; color: #A2958A; text-transform: uppercase; }
+  .wkdelta { font-size: 11px; font-weight: 800; border-radius: 999px; padding: 2.5px 9px; display: inline-block;
+    font-variant-numeric: tabular-nums; background: rgba(143, 175, 126, 0.18); color: #4E6B42; }
+  .wkdelta.dn { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .wktrend { display: flex; align-items: flex-end; gap: 3px; height: 30px; margin-top: 3px; }
+  .wktrend i { flex: 1; border-radius: 3px 3px 2px 2px; min-height: 3px; transform: scaleY(0); transform-origin: bottom; }
+  .play .wktrend i { animation: trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 0ms); }
+  @keyframes trendup { to { transform: none; } }
+  .wktrend i.cur { box-shadow: 0 0 0 1.5px #FDFAF4, 0 0 0 3px rgba(138, 118, 204, 0.75); }
+  .sc-hi { background: linear-gradient(180deg, #A9C69A, #6E8B5E); }
+  .sc-mid { background: linear-gradient(180deg, #E5C46B, #B58E28); }
+  .sc-low { background: linear-gradient(180deg, #F0A88A, #D2704C); }
+  .sc-non { background: rgba(43, 33, 24, 0.09); }
+  .dcols { display: flex; gap: 5px; align-items: flex-end; height: 78px; margin-top: 6px; }
+  .dcols .c { flex: 1; display: grid; align-content: end; justify-items: center; gap: 3px; cursor: pointer; }
+  .dcols .bar { width: 100%; border-radius: 5px 5px 3px 3px; min-height: 4px; transform: scaleY(0); transform-origin: bottom; }
+  .play .dcols .bar { animation: trendup 0.6s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 0ms); }
+  .dcols .vl { font-size: 7px; font-weight: 800; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .dcols .dw { font-size: 7px; font-weight: 800; color: #A2958A; letter-spacing: 0.04em; }
+  .dcols .c.today .dw { color: #A84A26; }
+  .dcols .c.today .vl { color: #A84A26; }
+  .dcols .c.fut { opacity: 0.4; }
+  /* ===== HETI: nap-csempék ===== */
+  .sring { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; flex: none;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0); }
+  .sring i { width: 24px; height: 24px; border-radius: 50%; background: #fff; display: grid; place-items: center;
+    font-style: normal; font-size: 9px; font-weight: 700; color: var(--c); font-variant-numeric: tabular-nums; }
+  .sring.dash { background: none; box-shadow: inset 0 0 0 1.5px rgba(43, 33, 24, 0.12); }
+  .sring.dash i { background: none; color: #A2958A; }
+  .dtile { border-radius: 17px; padding: 10px 11px; margin-bottom: 9px; background: #fff; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 12px 24px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .dtile.fut { opacity: 0.5; background: rgba(255, 255, 255, 0.5); box-shadow: none; cursor: default; }
+  .dtile .dt { font-size: 10px; font-weight: 700; }
+  .dtile .cl { font-size: 8px; color: #6E6257; margin-top: 1px; font-variant-numeric: tabular-nums; }
+  .dtile .chv { color: #A2958A; font-size: 11px; flex: none; transition: transform 0.2s ease; }
+  .dtile.op .chv { transform: rotate(180deg); }
+  .dbody { margin-top: 9px; padding-top: 9px; border-top: 1px solid rgba(43, 33, 24, 0.07); }
+  .subrings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+  .subring { display: grid; justify-items: center; gap: 3px; }
+  .subring small { font-size: 6px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #A2958A; }
+  .tgrow { display: flex; align-items: center; gap: 7px; padding: 3px 0; }
+  .tgrow .nm { font-size: 8px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #A2958A; width: 40px; flex: none; }
+  .tgrow .gbar { flex: 1; }
+  .tgrow .vl { font-size: 8.5px; font-weight: 700; width: 82px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+  .notebub { display: flex; gap: 7px; align-items: flex-start; border-radius: 13px; padding: 8px 10px; margin-top: 9px;
+    background: linear-gradient(150deg, #EBE6F8, #F9F6FE); }
+  .notebub .t { font-size: 6.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #5D4FA0; }
+  .notebub .x { font-size: 9px; font-weight: 300; line-height: 1.5; margin-top: 2px; }
+  .chatch { display: inline-flex; align-items: center; gap: 5px; margin-top: 9px; border: 1px solid rgba(93, 79, 160, 0.3);
+    background: rgba(255, 255, 255, 0.72); border-radius: 999px; padding: 5px 11px; font-size: 8.5px; font-weight: 700;
+    color: #5D4FA0; font-family: inherit; cursor: pointer; }
+  .chatch:disabled { opacity: 0.55; cursor: default; }
+  /* ===== HETI: elemzés-kártya ===== */
+  .revcard { border: 1px solid #8A76CC; border-radius: 19px; padding: 12px 13px; margin-bottom: 10px;
+    background: linear-gradient(150deg, #F3F0FC, #FDFCFF);
+    box-shadow: 0 20px 34px -14px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .revcard .prose { font-size: 10.5px; font-weight: 300; line-height: 1.62; margin-top: 6px; color: #2B2118; }
+  .revcard .ghost9 { font-size: 9.5px; font-weight: 300; line-height: 1.55; color: #6E6257; margin-top: 6px; }
+  .hlrow { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 9px; }
+  .hlch { display: inline-flex; align-items: center; gap: 5px; border-radius: 9px; padding: 4px 8px; font-size: 8.5px;
+    font-weight: 600; color: #2B2118; cursor: pointer; background: rgba(255, 255, 255, 0.85);
+    border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: 0 4px 10px -6px rgba(43, 33, 24, 0.3); }
+  .hlch span { text-align: left; line-height: 1.3; }
+  .hlch em { display: block; font-style: normal; font-size: 6px; font-weight: 800; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--hc); margin-bottom: 1px; }
+  .revfoot { display: flex; align-items: center; gap: 7px; margin-top: 10px; }
+  .fbch { display: flex; gap: 4px; margin-left: auto; }
+  .fbch button { border: 1px solid rgba(43, 33, 24, 0.12); background: rgba(255, 255, 255, 0.8); border-radius: 8px;
+    padding: 3px 8px; font-size: 9px; cursor: pointer; font-family: inherit; }
+  .fbch button.on { border-color: #8FAF7E; background: rgba(143, 175, 126, 0.2); }
+  .genspin { width: 11px; height: 11px; border-radius: 50%; flex: none;
+    border: 2px solid rgba(93, 79, 160, 0.22); border-top-color: #5D4FA0; animation: gspin 0.7s linear infinite; }
+  @keyframes gspin { to { transform: rotate(360deg); } }
+  .skel { border-radius: 17px; margin-bottom: 9px; background: linear-gradient(100deg, rgba(43, 33, 24, 0.05) 30%, rgba(43, 33, 24, 0.11) 50%, rgba(43, 33, 24, 0.05) 70%);
+    background-size: 300% 100%; animation: shim 1.2s linear infinite; }
+  @keyframes shim { to { background-position: -200% 0; } }
+  /* ===== HETI: tanulságok + felfedezések ===== */
+  .lesst { border-radius: 17px; padding: 11px 12px; margin-bottom: 9px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    background: linear-gradient(150deg, #FFF1D6, #FFFAF0);
+    box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .lesst.ok { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); box-shadow: 0 14px 26px -14px rgba(110, 139, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .lesst.no { background: rgba(255, 255, 255, 0.5); box-shadow: none; border: 1px dashed rgba(43, 33, 24, 0.18); opacity: 0.6; }
+  .lesst .tx { font-size: 10px; font-weight: 600; line-height: 1.45; }
+  .lesst .ev { font-size: 7.5px; color: #6E6257; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .dscgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 10px; }
+  .dsct { border-radius: 16px; padding: 10px 11px; display: grid; gap: 5px; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--dw2, #fff);
+    box-shadow: 0 12px 22px -13px var(--dg2, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .dsct:active { transform: scale(0.96); }
+  .dsct.wide { grid-column: 1 / -1; }
+  .dsct .pic { width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center; flex: none;
+    background: rgba(255, 255, 255, 0.8); box-shadow: 0 2px 6px rgba(43, 33, 24, 0.08); }
+  .dsct b { font-size: 9.5px; font-weight: 700; line-height: 1.32; }
+  .dsct .mt2 { font-size: 7.5px; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .bflag { font-size: 6px; font-weight: 800; letter-spacing: 0.1em; border-radius: 5px; padding: 2px 6px; flex: none;
+    background: rgba(78, 143, 184, 0.16); color: #33749C; }
   @media (prefers-reduced-motion: reduce) {
+    .wktrend i, .dcols .bar { animation: none; transform: none; }
+    .genspin, .skel { animation: none; }
+
     .bsheet, .bsheet-back, .tgl, .tgl::after, .gtrack .fill { transition: none; }
     .play .gtrack .fill { width: var(--p); }
     .nbody .orb, .floatfab { animation: none; }
@@ -321,8 +433,8 @@
   <p class="eyebrow">Mezo · oldalépítés · Én tab</p>
   <h1>Én tab</h1>
   <p class="lede">A rólad szóló oldal — a B-döntés ötödik tabja. A hub az <strong>identitás-hero</strong>val
-  nyit (avatar + XP-gyűrű + cím + szint), alatta a <strong>cél-kártya</strong> korall kerettel, majd nyolc
-  csempe: Súly, Alvás, Growth, Napló, Emberek, Tudás, Értesítés, AI-napló. A valós <code>/me</code> kód
+  nyit (avatar + XP-gyűrű + cím + szint), alatta a <strong>cél-kártya</strong> korall kerettel, majd kilenc
+  csempe: Heti, Súly, Alvás, Growth, Napló, Emberek, Tudás, Értesítés, AI-napló. A valós <code>/me</code> kód
   auditja ellen épült — a becsületes állapotszabályokkal (— sosem 0, tartás-kontraktus, fázis-kártyák
   önálló kapuzása) együtt.</p>
 
@@ -379,6 +491,11 @@
 
           <!-- ===== MOZAIK ===== -->
           <div class="mosaic">
+            <div class="tile t-minta rise" style="--d:130ms;" data-page="page-heti" role="button" tabindex="0" aria-label="Heti áttekintés">
+              <div class="p-eyebrow" style="color:#5D4FA0;">Heti</div>
+              <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-heti"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;" id="hetiTileLine">78 / 100 · +4 · friss elemzés</div>
+            </div>
             <div class="tile t-water rise" style="--d:150ms;" data-page="page-suly" role="button" tabindex="0" aria-label="Súly">
               <div class="p-eyebrow" style="color:#3E7396;">Súly</div>
               <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-suly"/></svg></div>
@@ -932,6 +1049,30 @@
         </div>
       </div>
 
+      <!-- ============ HETI ============ -->
+      <div class="page p-lav" id="page-heti">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-heti">‹ Én</button>
+          <div class="wknav">
+            <button id="wkPrev" aria-label="Előző hét">‹</button>
+            <button id="wkNext" aria-label="Következő hét">›</button>
+          </div>
+        </div>
+        <div class="page-hero">
+          <div class="nm" id="wkTitle">Máj 18 – 24</div>
+          <div class="mrow" style="justify-content:center;gap:14px;margin-top:4px;">
+            <div class="wkring" id="wkRing"><div class="in"><b id="wkScore">0</b><small id="wkScoreU">/ 100</small></div></div>
+            <div style="width:106px;text-align:left;">
+              <span id="wkDelta"></span>
+              <div class="p-eyebrow" style="font-size:7px;margin-top:6px;">8 hét · pontszám</div>
+              <div class="wktrend" id="wkTrend"></div>
+            </div>
+          </div>
+          <div class="sb" id="wkSub">lezárt hét · a Mezo elemzésével</div>
+        </div>
+        <div class="page-body" id="wkBody"></div>
+      </div>
+
       <!-- ============ SHEETEK ============ -->
       <div class="bsheet-back" id="sback"></div>
       <div class="bsheet" id="sh-weight">
@@ -1038,6 +1179,56 @@
           Edzés · Stack (navigáló csempék: „ma 16:45 · Pull", „köv. 16:45 · koffein").</li>
           <li><strong>Mezo-sor alul</strong> — „Mondd el Mezónak · kérdezz, mesélj — vagy logolj
           szóban": a chat mint logolási út is megmarad, ahogy a valós sheetben.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Heti áttekintés — a hét, ami tanít</h2>
+        <ul>
+          <li><strong>Hero</strong> — animált pontszám-gyűrű (0-tól felpörgő szám, sávos szín: 80+ zsálya ·
+          70+ arany · alatta terrakotta — sosem piros), delta-pill az előző héthez, és a
+          <strong>8 hetes pontszám-trend</strong> a nézett héttel kiemelve. Kevesebb mint két mért nap
+          esetén „tanulom" áll a szám helyén.</li>
+          <li><strong>Nyolc mini-cella</strong> — a valós hat mellé bekerült a <strong>check-in energia</strong>
+          és a <strong>legutóbbi súly</strong> is (a backend visszaadja, a mai UI nem mutatja).</li>
+          <li><strong>Napi pontszám oszlopok</strong> — score-sávos színezés, „—" a tanulom-napokon,
+          MA-jelölés, és koppintásra a nap kártyájára ugrik + kinyitja. A tengely a valós dátumokból jön
+          (a mai UI-ban Sze és Szo is „Sz").</li>
+          <li><strong>Nap-csempék</strong> — a négy részpontszám <strong>színes gyűrűkben</strong>
+          („miből jött össze"), kcal <strong>és fehérje a cél ellenében</strong> (a kcal-cél ma nincs kirakva),
+          alvás · edzés · XP mini-cellák, és a <strong>Mezo napi jegyzete társ-buborékban</strong> orb-bal —
+          a mai jelöletlen bekezdés helyett. Jövő nap halvány, nem nyílik, nincs chat-chipje.</li>
+          <li><strong>Heti elemzés kártya</strong> — orb + próza, alatta az <strong>„amire épült"</strong>
+          horgony-chipek (Minta · Tudás · Életesemény · Emlék) — ezt a modell ma is kiválasztja, de a UI
+          soha nem jeleníti meg. Mellette a generálás időbélyege, a stale-frissítés, 👍/👎 és a
+          „Beszélgess a hétről".</li>
+          <li><strong>Becsületes állapotok szétszedve</strong> — a mai egyetlen szellem-szöveg helyett:
+          futó hét → „Hétfő reggel érkezik… 4 / 7 nap logolva"; lezárt hét elemzés nélkül →
+          <strong>„✦ Készítsd el most"</strong> (a regenerate-endpoint ma is pontosan ezt tudja) élő
+          spinnerrel és utána kész elemzéssel. Hét-váltásnál <strong>skeleton</strong> — a mai UI-ban
+          se töltés-, se hibaállapot nincs.</li>
+          <li><strong>Amit a héten felfedezett</strong> — csempe-mozaik: minta-esemény
+          státusz-chippel (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), új tudás, életesemény dátummal,
+          emlékkönyv, előrejelzés státusszal (◐ Folyamatban · ✓ Bevált · ✗ Nem jött be) — mind fetch-elt
+          adat, amit a mai UI eldob.</li>
+          <li><strong>A következő heted</strong> — csak a futó héten, ahogy a valós gating.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>„A hét gyarapítsa a tudást" — backend-igényes tervek</h2>
+        <ul>
+          <li><strong>A · A hét tanulságai</strong> — a generátor JSON-ja bővül
+          <code>candidateFacts[]</code>-szal: a hét <em>napokon átnyúló</em> összefüggéseiből javasolt
+          tények, evidencia-sorral. Elfogadva bekerülnek a Tudástárba és a promptba (a hub Tudás-csempe
+          és a gráf-szám élőben követi), elvetve nem kérdezi újra. A „code-collected, model-selected"
+          fegyelem marad: nyers modell-tény sosem ír közvetlenül a store-ba.</li>
+          <li><strong>B · Highlight-visszacsatolás</strong> — amit a modell kiemelt, erősítse a minta-
+          konfidenciát és a tény-salience-t. Az adat ma megvan és kárba megy.</li>
+          <li><strong>C · Heti pontszám-idősor</strong> — a score ma minden olvasáskor újraszámol és
+          sosem perzisztálódik. A review sorba mentve megvan a 8 hetes trend és a longitudinális
+          mondat („három hete volt a legjobb heted").</li>
+          <li><strong>D · Gazdagabb bemenet</strong> — napló/döntések, kísérletek, ember-említések,
+          gyógyszerciklus, <code>period_summary(week)</code>: mind olvasható proactive-oldalról, ma
+          egyik sem kerül a heti promptba.</li>
         </ul>
       </div>
       <div class="note">A B-döntés szerint az Én teljes értékű ötödik tab, a gyors logolás lebegő
@@ -1654,5 +1845,475 @@
       document.getElementById('aiCut').textContent = d.cut;
     });
   });
+})();
+/* ===== Heti áttekintés (Én → Heti) ===== */
+(function () {
+  function hu1(n) { return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace('-', '−'); }
+  function hu2(n) { return n.toLocaleString('hu-HU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('-', '−'); }
+  function huInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function slh(m) { return Math.floor(m / 60) + 'ó ' + (m % 60) + 'p'; }
+  function band(sc) { return sc == null ? 'sc-non' : (sc >= 80 ? 'sc-hi' : (sc >= 70 ? 'sc-mid' : 'sc-low')); }
+  function bandC(sc) { return sc == null ? '#A2958A' : (sc >= 80 ? '#6E8B5E' : (sc >= 70 ? '#B58E28' : '#D2704C')); }
+  function toast(t) {
+    var el = document.getElementById('toast');
+    el.textContent = t; el.classList.add('show');
+    clearTimeout(el._t); el._t = setTimeout(function () { el.classList.remove('show'); }, 2100);
+  }
+
+  var KT = 3100, PT = 220;
+  /* nap: dátum, nap, score, alvás/fuel/checkin/aktivitás, kcal, P, C, F, súly, alvás-perc, minőség, check-in, edzés, XP, Mezo-jegyzet */
+  function D(dt, dow, sc, sl, fu, ck, ac, kcal, pr, cb, ft, w, slm, q, cn, wo, xp, note) {
+    return { dt: dt, dow: dow, sc: sc, sub: { s: sl, f: fu, c: ck, a: ac }, kcal: kcal, p: pr, cb: cb, ft: ft,
+      w: w, slm: slm, q: q, cn: cn, wo: wo, xp: xp, note: note || null, fut: false };
+  }
+  function F(dt, dow) { var d = D(dt, dow, null, null, null, null, null, null, null, null, null, null, null, null, 0, 0, null, null); d.fut = true; return d; }
+
+  var SER = [64, 69, 66, 72, 68, 71, 74, 78, 75];
+  var W = {};
+
+  W.w1 = {
+    t: 'Máj 18 – 24', sub: 'lezárt hét · a Mezo elemzésével', p: 'w2', n: 'w0', cur: false, si: 7,
+    score: 78, prev: 74,
+    st: [['Kcal átlag', '3 004', 'kcal'], ['Fehérje', '212', 'g'], ['Alvás', '7ó 19p', ''], ['Check-in', '75', '%'],
+         ['Energia', '7,0', '/ 10'], ['Súly', '83,9', 'kg'], ['Súly-trend', '−0,30', 'kg/hét'], ['XP', '585', '']],
+    days: [
+      D('Máj 18', 'Hét', 78, 82, 75, 74, 88, 2980, 212, 335, 92, 84.3, 445, 7, 4, 1, 140,
+        'Hétfőn erős edzésnap volt — a fehérjecélt is hoztad, ez látszott az energiaszinteden.'),
+      D('Máj 19', 'Kedd', 72, 68, 80, 70, 78, 3050, 218, 360, 88, 84.2, 398, 6, 4, 1, 110,
+        'A röplabda estéd rövidebb alvást hozott, de a hangulatod tartotta magát.'),
+      D('Máj 20', 'Sze', 85, 90, 82, 80, 90, 3120, 225, 355, 95, 84.1, 470, 8, 4, 1, 155,
+        'Szerdán volt a heted legjobb alvása — ez a nap vitte a legtöbb pontot.'),
+      D('Máj 21', 'Csü', null, null, null, 65, null, null, null, null, null, null, null, null, 2, 0, 20, null),
+      D('Máj 22', 'Pén', 74, 76, 70, 72, 80, 2870, 198, 320, 84, 84.0, 420, 7, 3, 1, 100,
+        'Pénteken könnyebb edzés, de a makrók továbbra is célban.'),
+      D('Máj 23', 'Szo', null, null, null, null, null, null, null, null, null, null, null, null, 0, 0, null, null),
+      D('Máj 24', 'Vas', 80, 85, 78, 76, 82, 3000, 205, 340, 90, 83.9, 460, 8, 4, 0, 60,
+        'Vasárnap pihenőnap volt, mégis logoltál mindent — ez tartja a heti ritmust.')
+    ],
+    rev: {
+      sum: 'Erős hét volt: a fehérjecélt öt napon tartottad, és a legjobb alvásod pont az edzésnappal esett egybe. ' +
+           'A csütörtöki adathiány nem tört meg semmit — a hétvégi pihenőnap logolása visszahozta a ritmust.',
+      gen: 'hétfő 06:15', stale: false,
+      hl: [{ k: 'Minta', t: 'Edzésnapokon jobban alszol', c: '#5D4FA0', ic: 'i-minta' },
+           { k: 'Tudás', t: 'A fehérjecél tartása javítja a check-in energiát', c: '#A8801F', ic: 'i-tudas' },
+           { k: 'Életesemény', t: 'Nyaralás kezdete', c: '#33749C', ic: 'i-cel' },
+           { k: 'Emlék', t: 'Heti memoár', c: '#8E3F6F', ic: 'i-memoar' }]
+    },
+    less: [
+      { tx: 'Az edzésnapokat követő éjszakákon átlagosan 38 perccel többet alszol.', ev: '5 hét · 14 edzésnap · konfidencia erős', st: 0 },
+      { tx: 'A 200 g feletti fehérje-napokon a check-in energiád átlaga 7,6 — alatta 6,4.', ev: 'ez a hét + 3 előző · 19 nap', st: 0 },
+      { tx: 'Röplabda-esték után a lefekvésed 52 perccel tolódik.', ev: '4 röplabda-este · gyűlik még', st: 0 }
+    ],
+    dsc: { pat: [{ t: 'Edzésnapokon jobban alszol', e: 'confirmed' }], fact: [{ t: 'A fehérjecél tartása javítja a check-in energiát.' }],
+           life: [{ t: 'Nyaralás kezdete', d: 'máj 23.' }], mem: true, pred: [{ t: 'A súly csökkenő trendje folytatódik fehérjecél mellett', s: 'pending' }] },
+    nx: null
+  };
+
+  W.w2 = {
+    t: 'Máj 11 – 17', sub: 'lezárt hét · elemzés nélkül', p: null, n: 'w1', cur: false, si: 6,
+    score: 74, prev: 71,
+    st: [['Kcal átlag', '3 068', 'kcal'], ['Fehérje', '203', 'g'], ['Alvás', '7ó 5p', ''], ['Check-in', '68', '%'],
+         ['Energia', '6,4', '/ 10'], ['Súly', '84,4', 'kg'], ['Súly-trend', '−0,42', 'kg/hét'], ['XP', '580', '']],
+    days: [
+      D('Máj 11', 'Hét', 70, 72, 68, 70, 72, 2900, 195, 330, 88, 84.9, 405, 6, 3, 1, 95, null),
+      D('Máj 12', 'Kedd', 66, 60, 70, 64, 70, 3210, 188, 380, 96, 84.8, 372, 5, 3, 1, 85, null),
+      D('Máj 13', 'Sze', 81, 88, 80, 74, 84, 3050, 221, 340, 90, 84.7, 462, 8, 4, 1, 130, null),
+      D('Máj 14', 'Csü', 72, 70, 74, 68, 76, 2950, 205, 325, 86, 84.6, 410, 6, 3, 1, 100, null),
+      D('Máj 15', 'Pén', null, null, null, 60, null, null, null, null, null, null, null, null, 2, 0, 15, null),
+      D('Máj 16', 'Szo', 76, 82, 68, 76, 78, 3320, 198, 395, 104, 84.5, 445, 7, 4, 0, 55, null),
+      D('Máj 17', 'Vas', 79, 86, 76, 74, 80, 2980, 212, 335, 92, 84.4, 455, 8, 4, 1, 115, null)
+    ],
+    rev: null,
+    less: [],
+    dsc: { pat: [{ t: 'Késői vacsora × rosszabb mélyalvás', e: 'reinforced' }], fact: [],
+           life: [], mem: false, pred: [{ t: 'A heti alvás-átlag 7 óra felett marad', s: 'missed' }] },
+    nx: null
+  };
+
+  W.w0 = {
+    t: 'Máj 25 – 31', sub: 'ez a hét · még fut', p: 'w1', n: null, cur: true, si: 8,
+    score: 75, prev: 78,
+    st: [['Kcal átlag', '2 665', 'kcal'], ['Fehérje', '180', 'g'], ['Alvás', '7ó 5p', ''], ['Check-in', '81', '%'],
+         ['Energia', '7,2', '/ 10'], ['Súly', '83,5', 'kg'], ['Súly-trend', '−0,32', 'kg/hét'], ['XP', '385', '']],
+    days: [
+      D('Máj 25', 'Hét', 81, 86, 78, 78, 82, 3020, 218, 332, 90, 83.8, 458, 8, 4, 1, 135, null),
+      D('Máj 26', 'Kedd', 74, 70, 76, 72, 78, 3110, 208, 355, 92, 83.7, 402, 6, 4, 1, 105, null),
+      D('Máj 27', 'Sze', 73, 72, 70, 70, 80, 2890, 196, 318, 84, 83.6, 415, 7, 3, 1, 110, null),
+      D('Máj 28', 'Csü', 70, null, 72, 68, null, 1640, 96, 180, 44, 83.5, null, null, 2, 0, 35, null),
+      F('Máj 29', 'Pén'), F('Máj 30', 'Szo'), F('Máj 31', 'Vas')
+    ],
+    rev: null,
+    less: [],
+    dsc: { pat: [], fact: [{ t: 'A 6:00-os kelés utáni edzéseken a RPE-d fél ponttal alacsonyabb.' }],
+           life: [], mem: false, pred: [] },
+    nx: 'A hétvégén két edzés csúszik egymásra — a szombati röplabda után a vasárnapi láb-nap ' +
+        'nehéz lesz. Ha ma este 23:00 előtt lefekszel, a vasárnap is megmarad. A fehérjéd hét közben ' +
+        'stabil, ott nincs mit igazítani.'
+  };
+
+  var cur = 'w1', today = 'Máj 28', opened = null, fb = {};
+
+  var elTitle = document.getElementById('wkTitle'), elSub = document.getElementById('wkSub');
+  var elRing = document.getElementById('wkRing'), elScore = document.getElementById('wkScore');
+  var elScoreU = document.getElementById('wkScoreU'), elDelta = document.getElementById('wkDelta');
+  var elTrend = document.getElementById('wkTrend'), elBody = document.getElementById('wkBody');
+  var btnPrev = document.getElementById('wkPrev'), btnNext = document.getElementById('wkNext');
+
+  function ringTo(score) {
+    var col = score == null ? '#A2958A' : (score >= 80 ? '#8FAF7E' : (score >= 70 ? '#C9962E' : '#D2704C'));
+    if (score == null) {
+      elRing.style.background = 'conic-gradient(rgba(43,33,24,0.09) 100%, rgba(43,33,24,0.09) 0)';
+      elScore.textContent = 'tanulom'; elScore.className = 'thin'; elScoreU.textContent = 'még gyűlik';
+      return;
+    }
+    elScore.className = ''; elScoreU.textContent = '/ 100';
+    var t0 = null, dur = 900;
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var k = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - k, 3), v = score * e;
+      elRing.style.background = 'conic-gradient(' + col + ' ' + v.toFixed(1) + '%, rgba(43,33,24,0.09) 0)';
+      elScore.textContent = Math.round(v);
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function paintHero(w) {
+    elTitle.textContent = w.t; elSub.textContent = w.sub;
+    ringTo(w.score);
+    if (w.score == null || w.prev == null) elDelta.innerHTML = '';
+    else {
+      var d = w.score - w.prev;
+      elDelta.innerHTML = '<span class="wkdelta' + (d < 0 ? ' dn' : '') + '">' + (d > 0 ? '+' : (d < 0 ? '−' : '±')) +
+        Math.abs(d) + '</span><span style="font-size:7.5px;color:#A2958A;margin-left:5px;">előző hét ' + w.prev + '</span>';
+    }
+    var h = '';
+    for (var i = w.si - 7; i <= w.si; i++) {
+      var v = SER[i], px = Math.max(3, Math.round(v / 100 * 28));
+      h += '<i class="' + band(v) + (i === w.si ? ' cur' : '') + '" style="height:' + px + 'px;--d:' +
+        (120 + (i - (w.si - 7)) * 50) + 'ms;"></i>';
+    }
+    elTrend.innerHTML = h;
+    btnPrev.disabled = !w.p; btnNext.disabled = !w.n;
+  }
+
+  function statCells(st) {
+    var cw = [['#EBE6F8', '#5D4FA0'], ['#E4EEDD', '#4E6B42'], ['#DCEBF4', '#33749C'], ['#FFE3D8', '#A84A26'],
+              ['#FFF1D6', '#A8801F'], ['#DCEBF4', '#33749C'], ['#E4EEDD', '#4E6B42'], ['#FAE3ED', '#8E3F6F']];
+    var h = '', i;
+    for (i = 0; i < st.length; i++) {
+      if (i % 4 === 0) h += (i ? '</div>' : '') + '<div class="mcells" style="margin-top:' + (i ? '5px' : '0') + ';">';
+      h += '<span style="--mw:' + cw[i][0] + ';--md:' + cw[i][1] + ';"><b>' + st[i][1] +
+        (st[i][2] ? '<span style="font-size:7px;font-weight:700;"> ' + st[i][2] + '</span>' : '') +
+        '</b><small>' + st[i][0] + '</small></span>';
+    }
+    return h + '</div>';
+  }
+
+  function dayCols(w) {
+    var h = '<div class="dcols">', i;
+    for (i = 0; i < w.days.length; i++) {
+      var d = w.days[i], px = d.sc == null ? 4 : Math.max(5, Math.round(d.sc / 100 * 58));
+      h += '<div class="c' + (d.dt === today && w.cur ? ' today' : '') + (d.fut ? ' fut' : '') + '" data-jump="' + i + '">' +
+        '<span class="vl">' + (d.sc == null ? '—' : d.sc) + '</span>' +
+        '<i class="bar ' + band(d.sc) + '" style="height:' + px + 'px;--d:' + (200 + i * 60) + 'ms;"></i>' +
+        '<span class="dw">' + d.dow.slice(0, 3) + '</span></div>';
+    }
+    return h + '</div>';
+  }
+
+  function compact(d) {
+    var a = [];
+    a.push(d.kcal == null ? '—' : huInt(d.kcal) + ' kcal');
+    a.push(d.slm == null ? '—' : slh(d.slm));
+    a.push(d.w == null ? '—' : hu1(d.w) + ' kg');
+    a.push(d.cn + '× check-in');
+    return a.join(' · ');
+  }
+
+  function subRing(v, lbl) {
+    var c = bandC(v);
+    return '<div class="subring"><div class="sring' + (v == null ? ' dash' : '') + '" style="--c:' + c + ';--v:' +
+      (v == null ? 0 : v) + ';"><i>' + (v == null ? '—' : v) + '</i></div><small>' + lbl + '</small></div>';
+  }
+
+  function dayBody(d) {
+    var h = '<div class="dbody">';
+    h += '<div class="p-eyebrow" style="font-size:7px;padding-bottom:6px;">miből jött össze</div>';
+    h += '<div class="subrings">' + subRing(d.sub.s, 'alvás') + subRing(d.sub.f, 'fuel') +
+      subRing(d.sub.c, 'check-in') + subRing(d.sub.a, 'aktív') + '</div>';
+    if (d.kcal != null) {
+      var kp = Math.min(100, Math.round(d.kcal / KT * 100)), pp = Math.min(100, Math.round(d.p / PT * 100));
+      h += '<div style="margin-top:9px;">' +
+        '<div class="tgrow"><span class="nm">kcal</span><div class="gbar"><div class="coral" style="--d:120ms;width:' + kp + '%;"></div></div>' +
+        '<span class="vl">' + huInt(d.kcal) + ' / ' + huInt(KT) + '</span></div>' +
+        '<div class="tgrow"><span class="nm">fehérje</span><div class="gbar"><div class="sage" style="--d:200ms;width:' + pp + '%;"></div></div>' +
+        '<span class="vl">' + d.p + ' / ' + PT + ' g</span></div>' +
+        '<div class="tgrow"><span class="nm">c · f</span><div class="gbar"><div class="gold" style="--d:280ms;width:' +
+        Math.min(100, Math.round(d.cb / 400 * 100)) + '%;"></div></div><span class="vl">' + d.cb + ' g · ' + d.ft + ' g</span></div></div>';
+    }
+    h += '<div class="mcells" style="margin-top:9px;">' +
+      '<span style="--mw:#EBE6F8;--md:#5D4FA0;"><b>' + (d.slm == null ? '—' : slh(d.slm)) + '</b><small>alvás' + (d.q ? ' · Q' + d.q : '') + '</small></span>' +
+      '<span style="--mw:#FFE3D8;--md:#A84A26;"><b>' + d.wo + '×</b><small>edzés</small></span>' +
+      '<span style="--mw:#FFF1D6;--md:#A8801F;"><b>' + (d.xp == null ? '—' : d.xp) + '</b><small>xp</small></span></div>';
+    if (d.note) {
+      h += '<div class="notebub"><svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
+        '<div><div class="t">Mezo · a napról</div><div class="x">' + d.note + '</div></div></div>';
+    }
+    if (!d.fut) h += '<button class="chatch" data-chat="day" data-d="' + d.dt + '">💬 Beszélgess a napról ›</button>';
+    return h + '</div>';
+  }
+
+  function reviewCard(w) {
+    var h = '<div class="revcard rise" style="--d:180ms;">';
+    h += '<div class="mrow"><svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
+      '<div class="grow"><span class="p-eyebrow" style="color:#5D4FA0;">Mezo · heti elemzés</span></div>';
+    if (w.rev) h += '<span style="font-size:7px;color:#A2958A;">' + w.rev.gen + '</span>';
+    h += '</div>';
+    if (w.rev) {
+      h += '<div class="prose">' + w.rev.sum + '</div>';
+      h += '<div class="p-eyebrow" style="font-size:7px;margin-top:10px;">amire épült</div><div class="hlrow">';
+      for (var i = 0; i < w.rev.hl.length; i++) {
+        var x = w.rev.hl[i];
+        h += '<button class="hlch" data-hl="' + x.t + '" style="--hc:' + x.c + ';">' +
+          '<svg width="13" height="13" viewBox="0 0 100 100"><use href="#' + x.ic + '"/></svg>' +
+          '<span><em>' + x.k + '</em><br>' + x.t + '</span></button>';
+      }
+      h += '</div><div class="revfoot">';
+      if (w.rev.stale) h += '<button class="chatch" data-regen="1">↻ Frissítsd az elemzést</button>';
+      h += '<button class="chatch" data-chat="week">💬 Beszélgess a hétről ›</button>' +
+        '<span class="fbch"><button data-fb="up">👍</button><button data-fb="down">👎</button></span></div>';
+    } else if (w.cur) {
+      h += '<div class="ghost9">Hétfő reggel érkezik — a Mezo a lezárt hét adataiból írja meg. ' +
+        'Addig a napok adatai gyűlnek: <b>4 / 7 nap</b> logolva.</div>' +
+        '<button class="chatch" data-chat="week">💬 Beszélgess a hétről ›</button>';
+    } else {
+      h += '<div class="ghost9">Ez a hét lezárt, de <b>nem készült elemzés</b> — a hét adatai megvannak, ' +
+        'bármikor pótolható.</div>' +
+        '<div class="revfoot"><button class="chatch" data-gen="1">✦ Készítsd el most</button>' +
+        '<button class="chatch" data-chat="week">💬 Beszélgess a hétről ›</button></div>';
+    }
+    return h + '</div>';
+  }
+
+  function lessons(w) {
+    var h = '<div class="lsec rise" style="--d:220ms;"><span class="p-eyebrow" style="color:#A8801F;">A hét tanulságai</span>' +
+      '<span class="cnt">' + w.less.length + '</span></div>';
+    if (!w.less.length) {
+      h += '<div class="predtile rise" style="--d:250ms;background:rgba(255,255,255,0.55);border:1px dashed rgba(43,33,24,0.18);box-shadow:none;">' +
+        '<div style="font-size:9.5px;font-weight:300;line-height:1.5;color:#6E6257;">' +
+        (w.cur ? 'A hét közben még gyűlik — a tanulságok a hétfői elemzéssel érkeznek.'
+               : 'Nincs javaslat ehhez a héthez. Ha elkészül az elemzés, a Mezo ide teszi, amit megtanult.') +
+        '</div></div>';
+      return h;
+    }
+    h += '<div class="predtile lav rise" style="--d:240ms;padding:9px 11px;">' +
+      '<div style="font-size:9px;font-weight:300;line-height:1.5;">Ezeket a hét <b>napokon átnyúló</b> összefüggéseiből ' +
+      'szedte össze. Amit elfogadsz, bekerül a <b>Tudástárba</b> és a promptba — amit elvetsz, nem kérdezi újra.</div></div>';
+    for (var i = 0; i < w.less.length; i++) {
+      var l = w.less[i];
+      h += '<div class="lesst rise' + (l.st === 1 ? ' ok' : (l.st === 2 ? ' no' : '')) + '" style="--d:' + (270 + i * 40) + 'ms;" data-less="' + i + '">' +
+        '<div class="mrow" style="gap:8px;align-items:flex-start;">' +
+        '<span class="pic" style="width:28px;height:28px;border-radius:10px;background:rgba(255,255,255,0.8);display:grid;place-items:center;flex:none;">' +
+        '<svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-kristaly"/></svg></span>' +
+        '<div class="grow"><div class="tx">' + l.tx + '</div><div class="ev">' + l.ev + '</div></div></div>';
+      if (l.st === 0) {
+        h += '<div class="decrow"><button class="ghost" data-lno="' + i + '">Nem rólam szól</button>' +
+          '<button class="cta" data-lyes="' + i + '">✓ Tanuld meg</button></div>';
+      } else if (l.st === 1) {
+        h += '<div style="font-size:8.5px;font-weight:700;color:#4E6B42;margin-top:7px;">✓ Bekerült a Tudástárba · aktív a promptban</div>';
+      } else {
+        h += '<div style="font-size:8.5px;font-weight:700;color:#A2958A;margin-top:7px;">elvetve · nem kérdezi újra</div>';
+      }
+      h += '</div>';
+    }
+    return h;
+  }
+
+  function discoveries(w) {
+    var d = w.dsc, h = '', n = d.pat.length + d.fact.length + d.life.length + d.pred.length + (d.mem ? 1 : 0), i;
+    h += '<div class="lsec rise" style="--d:420ms;"><span class="p-eyebrow" style="color:#5D4FA0;">Amit a héten felfedezett</span>' +
+      '<span class="cnt">' + n + '</span></div>';
+    if (!n) {
+      return h + '<div class="predtile rise" style="--d:440ms;background:rgba(255,255,255,0.55);border:1px dashed rgba(43,33,24,0.18);box-shadow:none;">' +
+        '<div style="font-size:9.5px;font-weight:300;color:#6E6257;">Csendes hét volt — nem született új minta vagy tudás.</div></div>';
+    }
+    h += '<div class="dscgrid rise" style="--d:440ms;">';
+    var PE = { confirmed: ['✓ Megerősítve', 'ok'], reinforced: ['▲ Erősödött', 'lav'], promoted: ['★ Előléptetve', 'warn'] };
+    for (i = 0; i < d.pat.length; i++) {
+      h += '<div class="dsct wide" style="--dw2:linear-gradient(150deg,#EBE6F8,#F9F6FE);--dg2:rgba(93,79,160,0.4);" data-dsc="Minták">' +
+        '<div class="mrow"><span class="pic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-minta"/></svg></span>' +
+        '<div class="grow"><div class="p-eyebrow" style="font-size:6.5px;color:#5D4FA0;">Minta</div><b>' + d.pat[i].t + '</b></div>' +
+        '<span class="stch ' + PE[d.pat[i].e][1] + '">' + PE[d.pat[i].e][0] + '</span></div></div>';
+    }
+    for (i = 0; i < d.fact.length; i++) {
+      h += '<div class="dsct wide" style="--dw2:linear-gradient(150deg,#FFF1D6,#FFFAF0);--dg2:rgba(181,126,20,0.4);" data-dsc="Tudástár">' +
+        '<div class="mrow"><span class="pic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-tudas"/></svg></span>' +
+        '<div class="grow"><div class="p-eyebrow" style="font-size:6.5px;color:#A8801F;">Új tudás</div><b>' + d.fact[i].t + '</b></div>' +
+        '<span class="chev" style="color:#A2958A;">›</span></div></div>';
+    }
+    for (i = 0; i < d.life.length; i++) {
+      h += '<div class="dsct" style="--dw2:linear-gradient(150deg,#DFEDF5,#F5FAFD);--dg2:rgba(78,143,184,0.4);" data-dsc="Életesemény">' +
+        '<span class="pic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-cel"/></svg></span>' +
+        '<div class="p-eyebrow" style="font-size:6.5px;color:#33749C;">Életesemény</div><b>' + d.life[i].t + '</b>' +
+        '<span class="mt2">' + d.life[i].d + '</span></div>';
+    }
+    if (d.mem) {
+      h += '<div class="dsct" style="--dw2:linear-gradient(150deg,#FAE3ED,#FEF8FB);--dg2:rgba(142,63,111,0.38);" data-dsc="Memoár">' +
+        '<span class="pic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-memoar"/></svg></span>' +
+        '<div class="p-eyebrow" style="font-size:6.5px;color:#8E3F6F;">Emlékkönyv</div><b>Új bejegyzés készült a hétről</b>' +
+        '<span class="mt2">olvasd el ›</span></div>';
+    }
+    var PS = { pending: ['◐ Folyamatban', 'lav'], validated: ['✓ Bevált', 'ok'], missed: ['✗ Nem jött be', 'warn'] };
+    for (i = 0; i < d.pred.length; i++) {
+      h += '<div class="dsct wide" style="--dw2:linear-gradient(150deg,#EFF3EA,#FBFDF9);--dg2:rgba(110,139,94,0.4);" data-dsc="Előrejelzés">' +
+        '<div class="mrow"><span class="pic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-kristaly"/></svg></span>' +
+        '<div class="grow"><div class="p-eyebrow" style="font-size:6.5px;color:#4E6B42;">Előrejelzés</div><b>' + d.pred[i].t + '</b></div>' +
+        '<span class="stch ' + PS[d.pred[i].s][1] + '">' + PS[d.pred[i].s][0] + '</span></div></div>';
+    }
+    return h + '</div>';
+  }
+
+  function render() {
+    var w = W[cur];
+    paintHero(w);
+    var h = statCells(w.st);
+    h += '<div class="float3d rise" style="--d:100ms;border-radius:18px;padding:10px 12px 9px;margin:10px 0 10px;">' +
+      '<div class="mrow"><span class="p-eyebrow">Napi pontszám</span>' +
+      '<span style="margin-left:auto;font-size:7px;color:#A2958A;">koppints egy napra</span></div>' +
+      dayCols(w) + '</div>';
+    h += reviewCard(w);
+    h += lessons(w);
+    h += '<div class="lsec rise" style="--d:330ms;"><span class="p-eyebrow">A hét napjai</span><span class="cnt">7</span></div>';
+    for (var i = 0; i < w.days.length; i++) {
+      var d = w.days[i], c = bandC(d.sc);
+      h += '<div class="dtile rise' + (d.fut ? ' fut' : '') + '" style="--d:' + (350 + i * 30) + 'ms;" data-day="' + i + '" id="dt' + i + '">' +
+        '<div class="mrow">' +
+        '<div class="sring' + (d.sc == null ? ' dash' : '') + '" style="--c:' + c + ';--v:' + (d.sc == null ? 0 : d.sc) + ';"><i>' +
+        (d.sc == null ? '—' : d.sc) + '</i></div>' +
+        '<div class="grow"><div class="dt">' + d.dt + ' · ' + d.dow + (d.dt === today && w.cur ? ' <span class="bflag">MA</span>' : '') + '</div>' +
+        '<div class="cl">' + (d.fut ? 'még előtted' : compact(d)) + '</div></div>' +
+        (d.fut ? '' : '<span class="chv">⌄</span>') + '</div></div>';
+    }
+    h += discoveries(w);
+    if (w.nx) {
+      h += '<div class="predtile sage rise" style="--d:500ms;">' +
+        '<div class="mrow"><svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
+        '<span class="p-eyebrow" style="color:#4E6B42;">Mezo · a következő heted</span></div>' +
+        '<div style="font-size:10px;font-weight:300;line-height:1.55;margin-top:6px;">' + w.nx + '</div>' +
+        '<div class="revfoot"><span class="fbch" style="margin-left:0;"><button data-fb="up2">👍</button><button data-fb="down2">👎</button></span></div></div>';
+    }
+    h += '<div class="foot9 rise" style="--d:540ms;">A pontszám a négy mért területből áll össze — ha kettőnél kevesebb van, ' +
+      '„tanulom" áll a szám helyén. A Mezo sosem talál ki számot: az elemzés csak a logolt adatokból dolgozik.</div>';
+    elBody.innerHTML = h;
+    elBody.scrollTop = 0;
+    opened = null;
+  }
+
+  function switchWeek(k) {
+    cur = k;
+    elBody.innerHTML = '<div class="skel" style="height:52px;"></div><div class="skel" style="height:96px;"></div>' +
+      '<div class="skel" style="height:110px;"></div><div class="skel" style="height:46px;"></div>' +
+      '<div class="skel" style="height:46px;"></div>';
+    elTitle.textContent = W[k].t; elSub.textContent = 'betöltés…';
+    btnPrev.disabled = true; btnNext.disabled = true;
+    setTimeout(render, 320);
+  }
+  btnPrev.addEventListener('click', function () { if (W[cur].p) switchWeek(W[cur].p); });
+  btnNext.addEventListener('click', function () { if (W[cur].n) switchWeek(W[cur].n); });
+
+  elBody.addEventListener('click', function (e) {
+    var w = W[cur], t;
+
+    t = e.target.closest('[data-jump]');
+    if (t) {
+      var ji = +t.getAttribute('data-jump'), tile = document.getElementById('dt' + ji);
+      if (tile) { tile.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (!w.days[ji].fut) openDay(ji); }
+      return;
+    }
+    t = e.target.closest('[data-lyes]');
+    if (t) {
+      var li = +t.getAttribute('data-lyes');
+      w.less[li].st = 1; render();
+      var tb = document.getElementById('tudasTileLine');
+      var big = document.getElementById('tudasBig');
+      var n = 15; if (big) { n = (+big.textContent) + 1; big.textContent = n; }
+      if (tb) tb.textContent = n + ' tudás · 7 kapcsolat';
+      toast('Megtanulva · bekerült a Tudástárba');
+      return;
+    }
+    t = e.target.closest('[data-lno]');
+    if (t) { w.less[+t.getAttribute('data-lno')].st = 2; render(); toast('Elvetve — nem kérdezi újra'); return; }
+    t = e.target.closest('[data-gen]');
+    if (t) {
+      t.disabled = true;
+      t.innerHTML = '<span class="genspin"></span> Elemzés készül…';
+      setTimeout(function () {
+        W.w2.rev = {
+          sum: 'Egyenetlen hét: a keddi rövid alvás után a hét közepe húzta fel a pontokat, a pénteki adathiány ' +
+               'viszont kilyukasztotta a képet. A szombati 3 320 kcal a heti egyetlen nagy kilengés — a fehérje ' +
+               'ott csúszott meg, nem a kalória.',
+          gen: 'most · pótolva', stale: false,
+          hl: [{ k: 'Minta', t: 'Késői vacsora × rosszabb mélyalvás', c: '#5D4FA0', ic: 'i-minta' },
+               { k: 'Előrejelzés', t: 'A heti alvás-átlag 7 óra felett marad', c: '#4E6B42', ic: 'i-kristaly' }]
+        };
+        W.w2.less = [
+          { tx: 'A 3 200 kcal felett zárt napokat másnap 12%-kal alacsonyabb fehérje követi.', ev: '3 hét · 5 ilyen nap', st: 0 },
+          { tx: 'Hétvégén a lefekvésed átlagosan 41 perccel tolódik a hétköznapihoz képest.', ev: '6 hét · 12 hétvége', st: 0 }
+        ];
+        W.w2.sub = 'lezárt hét · a Mezo elemzésével';
+        render();
+        toast('Elkészült a heti elemzés');
+      }, 1500);
+      return;
+    }
+    t = e.target.closest('[data-regen]');
+    if (t) {
+      t.disabled = true; t.innerHTML = '<span class="genspin"></span> Frissítés…';
+      setTimeout(function () { w.rev.stale = false; w.rev.gen = 'most · frissítve'; render(); toast('Az elemzés frissült'); }, 1400);
+      return;
+    }
+    t = e.target.closest('[data-hl]');
+    if (t) { toast(t.getAttribute('data-hl') + ' → Mezo'); return; }
+    t = e.target.closest('[data-dsc]');
+    if (t) { toast(t.getAttribute('data-dsc') + ' → Mezo tab'); return; }
+    t = e.target.closest('[data-chat]');
+    if (t) {
+      var kind = t.getAttribute('data-chat');
+      t.disabled = true; t.innerHTML = '<span class="genspin"></span> Indítás…';
+      setTimeout(function () {
+        toast(kind === 'week' ? 'Heti beszélgetés · Mezo nyitja' : 'Napi beszélgetés · ' + t.getAttribute('data-d'));
+        t.disabled = false;
+        t.innerHTML = kind === 'week' ? '💬 Beszélgess a hétről ›' : '💬 Beszélgess a napról ›';
+      }, 1200);
+      return;
+    }
+    t = e.target.closest('[data-fb]');
+    if (t) {
+      var row = t.parentNode;
+      row.querySelectorAll('button').forEach(function (b) { b.classList.remove('on'); });
+      t.classList.add('on');
+      toast(t.getAttribute('data-fb').indexOf('up') === 0 ? 'Köszi — ezt megjegyzem' : 'Értem — igazítok a hangnemen');
+      return;
+    }
+    t = e.target.closest('[data-day]');
+    if (t) { var i = +t.getAttribute('data-day'); if (!w.days[i].fut) openDay(i); }
+  });
+
+  function openDay(i) {
+    var w = W[cur];
+    if (opened !== null) {
+      var prev = document.getElementById('dt' + opened);
+      if (prev) { prev.classList.remove('op'); var b = prev.querySelector('.dbody'); if (b) b.remove(); }
+    }
+    if (opened === i) { opened = null; return; }
+    var el = document.getElementById('dt' + i);
+    el.classList.add('op');
+    el.insertAdjacentHTML('beforeend', dayBody(w.days[i]));
+    opened = i;
+  }
+
+  document.querySelector('[data-page="page-heti"]').addEventListener('click', function () { render(); });
+  render();
 })();
 </script>

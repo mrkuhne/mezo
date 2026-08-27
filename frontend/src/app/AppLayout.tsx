@@ -5,6 +5,7 @@ import { PhoneFrame } from '@/app/PhoneFrame'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
+import { ClaySprites } from '@/shared/ui/clay'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { useTodayScenario, useScheduleSnapshotWriter } from '@/data/hooks'
@@ -27,6 +28,8 @@ export function AppLayout() {
   return (
     <>
       <CircadianTheme />
+      {/* Clay sprite defs — mounted once so every ClayIcon/ClaySpot <use> resolves. */}
+      <ClaySprites />
       <PhoneFrame anchor={anchor}>
         <ToastProvider>
           <LevelUpProvider>

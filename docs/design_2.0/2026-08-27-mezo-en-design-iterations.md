@@ -93,6 +93,66 @@ in-place; the rest navigate).
   place; Étkezés/Edzés/Stack navigate with live context sublines; the Mezo row at the bottom
   keeps chat as a logging path.
 
+## 5. Heti áttekintés — the round after the real feature shipped
+
+On 2026-08-27 the real weekly review merged (`feat/weekly-review`, bd `mezo-p2tr`, PR #270, v2.52.0):
+`/me/week` with a deterministic day/week score, an LLM weekly narrative, a deterministic "discoveries"
+digest, and anchored week/day conversations. Daniel: *"bemente egy új commit, a Heti új verziója…
+tervezzük meg ennek is az új UI részét… gazdagon jelenítsünk meg infokat, ez itt egy nagyon fontos
+része az appnak. ha kell tervezz hozzá olyat is, amihez kell backend módosítás, hogy még többet
+kihozzunk a heti reflexióból. az AI score-n kívül ez a heti elemzés új mintákat és tudásokat kéne hogy
+hozzon a userről, gyarapítania kéne a tudást az appnak, a memóriát."*
+
+Audited first (`2026-08-27-heti-feature-audit.md`), then built as the Én tab's **Heti** subpage (9th hub
+tile) per the §1 tile recipe. What the round changed relative to the shipped UI:
+
+- **Hero** — the spec originally asked for a score ring and shipped a flat 56px number; the redesign
+  restores it as an *animated* ring (0 → score spin-up, band colours 80+ sage · 70+ gold · below
+  terracotta — never red) plus a delta pill and an **8-week score trend** with the viewed week ringed.
+  `tanulom` honesty preserved.
+- **Eight stat cells** instead of six — `avgCheckinEnergy` and `latestWeightKg` are returned by
+  `/api/me/week` and were simply not rendered.
+- **Day columns** — band-coloured, `—` stub for tanulom days, MA marker, tappable (scrolls to the day
+  tile and opens it), and a date-derived axis (the shipped chart hardcodes `Sz` for both Szerda and
+  Szombat and is `aria-hidden` with no interaction).
+- **Day tiles** — the flat `Alvás 82 · Táplálkozás 75 · …` string became **four colored subscore rings**
+  under a `miből jött össze` eyebrow (the spec asked for this breakdown); kcal now shows against its
+  target too (`kcalTarget` was fetched and unused); the Mezo day note moved into a **companion bubble
+  with the orb** — in the shipped page it is an unmarked `<p>` indistinguishable from a data row.
+- **Review card** — the `highlights[]` payload finally renders as `amire épült` **anchor chips**
+  (Minta · Tudás · Életesemény · Emlék). This was the audit's largest dead payload: the generator's whole
+  bounds-checked index-selection machinery exists to produce it and no component ever showed it.
+  `generatedAt` is now visible as well.
+- **Honest states split** — the shipped page uses ONE ghost string ("Hétfő reggel érkezik…") for three
+  different situations, including a months-old week whose LLM call failed, with no retry surface. The
+  redesign splits them: running week → the ghost plus `4 / 7 nap logolva`; finished week without a review
+  → **`✦ Készítsd el most`** with a live spinner (the `POST …/regenerate` endpoint already does exactly
+  this — 409 only guards an in-progress week); and week switching shows a **skeleton**, since today the
+  page has neither a loading nor an error state (a failed fetch renders a blank body).
+- **Discoveries** → tile mosaic with the status information the API already returns and the UI dropped:
+  pattern `event` (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), life-event dates, prediction outcomes
+  (◐ Folyamatban · ✓ Bevált · ✗ Nem jött be).
+
+### The knowledge loop — backend-flagged additions
+
+Daniel's core ask ("gyarapítania kéne a tudást") has no implementation today: the weekly pipeline is
+**strictly read-only** with respect to the companion's knowledge stores. Four designed additions:
+
+1. **A · `A hét tanulságai`** *(designed in the prototype)* — the generator's JSON gains
+   `candidateFacts[]`: facts derived from the week's *cross-day* correlations, each with an evidence line.
+   They are reviewed in place (`Tanuld meg` / `Nem rólam szól`) and routed through the **existing**
+   candidate-fact flow, so the "code-collected, model-selected" discipline holds — a raw model-invented
+   fact never lands in the store. Accepting cascades into the hub Tudás tile and the graph count.
+2. **B · Highlight feedback** — the model already names which pattern/fact/life-event mattered this week;
+   feed that back into pattern confidence and fact salience. The data is persisted and currently wasted.
+3. **C · Persisted weekly score series** — the score is recomputed on every read and never stored, so
+   `prevWeekScore` is the only longitudinal signal (and it costs a second full `DayScoreService` pass).
+   Storing it on the review row unlocks the 8-week trend and sentences like "three weeks ago was your
+   best week".
+4. **D · Richer generator input** — journal entries/decisions, experiments, people mentions, the
+   medication cycle and `period_summary(week)` (which the spec listed as an input, then cut) are all
+   readable from the proactive slice and none reach the weekly prompt today.
+
 ## Cumulative designed additions (implementation flags)
 
 1. Mezo tab as a first-class tab (the Insights section promoted); Én as the fifth tab;
@@ -103,6 +163,15 @@ in-place; the rest navigate).
 5. Quick-log context head (MOST window) + in-place water logging.
 6. Memória: human cron times instead of raw cron strings.
 7. Én hub goal card with ETA cell; tile pass as the standing visual recipe.
+8. Heti: animated score ring + 8-week trend, 8 stat cells, date-derived tappable day columns,
+   subscore rings + kcal-vs-target on the day tiles, the Mezo day note as an attributed bubble,
+   **the review anchor chips** (dead payload today), the three honest states split apart with
+   `✦ Készítsd el most`, skeleton on week switch, and status chips on every discovery
+   (**IA change:** Heti is the Én tab's 9th tile, matching the real `/me/week` move).
+9. **Backend-flagged (Heti):** A candidate facts from the weekly generator through the existing
+   Tudástár review flow · B highlight feedback into pattern confidence / fact salience ·
+   C persisted weekly score series · D richer generator input (journal/decisions, experiments,
+   people mentions, medication cycle, `period_summary(week)`).
 
 ## Still open
 
