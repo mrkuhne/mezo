@@ -22,7 +22,7 @@ export function MemoryPage() {
         <p className="text-tertiary" style={{ fontSize: 12 }}>
           A társ memóriája most nem elérhető — a rétegek itt jelennek majd meg.
         </p>
-        <Link to="/insights/motor" style={{ fontSize: 12, color: 'var(--lav-deep)' }}>
+        <Link to="/mezo/motor" style={{ fontSize: 12, color: 'var(--lav-deep)' }}>
           A minta-motor diagnosztikája →
         </Link>
       </div>

@@ -1,4 +1,4 @@
-import { Navigate, type RouteObject } from 'react-router-dom'
+import { Navigate, type RouteObject, useLocation } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import { TrainSection } from '@/features/train/pages/TrainSection'
@@ -59,13 +59,21 @@ import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
 import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 
+// Design 2.0 shell (mezo-d20.1.1): /today → /nap and /insights → /mezo renames. The legacy
+// paths survive as redirects (PWA bookmarks, in-app navigate() calls not yet migrated).
+function LegacyPathRedirect({ prefix, to }: { prefix: string; to: string }) {
+  const location = useLocation()
+  return <Navigate to={location.pathname.replace(prefix, to) + location.search} replace />
+}
+
 export const routes: RouteObject[] = [
   {
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/today" replace /> },
-      { path: 'today', element: <TodayPage /> },
+      { index: true, element: <Navigate to="/nap" replace /> },
+      { path: 'nap', element: <TodayPage /> },
+      { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
       {
         path: 'train',
         element: <TrainSection />,
@@ -126,9 +134,10 @@ export const routes: RouteObject[] = [
       { path: 'fuel/slots', element: <FuelSlotsPage /> },
       // Pattern-pair detail (mezo-tk88.5) — a full leaf page, same sibling idiom as
       // fuel/recipes/:id above (no Insights sub-nav chrome).
-      { path: 'insights/patterns/:pairKey', element: <PatternDetailPage /> },
+      { path: 'mezo/patterns/:pairKey', element: <PatternDetailPage /> },
+      { path: 'insights/*', element: <LegacyPathRedirect prefix="/insights" to="/mezo" /> },
       {
-        path: 'insights',
+        path: 'mezo',
         element: <InsightsSection />,
         children: [
           { index: true, element: <PatternsPage /> },
@@ -145,7 +154,7 @@ export const routes: RouteObject[] = [
           // the pattern-pair detail page above (mezo-tk88.5); the route survives as an honest
           // redirect so any old bookmark/link (`?pair=` cross-links included) still lands
           // somewhere sensible.
-          { path: 'motor', element: <Navigate to="/insights" replace /> },
+          { path: 'motor', element: <Navigate to="/mezo" replace /> },
           { path: 'memoria', element: <MemoryPage /> },
         ],
       },
@@ -175,7 +184,7 @@ export const routes: RouteObject[] = [
       { path: 'me/ai-usage/:id', element: <AiCallDetailPage /> },
       // Full-screen Napzárás flow (train/session idiom) — no tab-bar chrome (mezo-ilsj).
       { path: 'ritual', element: <RitualPage /> },
-      { path: '*', element: <Navigate to="/today" replace /> },
+      { path: '*', element: <Navigate to="/nap" replace /> },
     ],
   },
 ]

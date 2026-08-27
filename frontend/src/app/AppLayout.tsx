@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { CircadianTheme } from '@/app/CircadianTheme'
 import { FloatingReturnLayer } from '@/app/FloatingReturnLayer'
 import { PhoneFrame } from '@/app/PhoneFrame'
+import { QuickLogFab } from '@/app/QuickLogFab'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
@@ -20,7 +21,7 @@ export function AppLayout() {
   // once per mount — see notificationScheduleWriter.ts for the full rationale.
   useScheduleSnapshotWriter()
   const location = useLocation()
-  const anchor = scenario.anchorMode && location.pathname.startsWith('/today')
+  const anchor = scenario.anchorMode && location.pathname.startsWith('/nap')
   // Full-screen surfaces where the tab bar is dead chrome: the active workout session,
   // the extra-dark night page (its light would defeat the <30 lux point), and the
   // Napzárás ritual flow (mezo-ilsj).
@@ -41,6 +42,9 @@ export function AppLayout() {
               </ErrorBoundary>
             </ScreenContent>
             {!hideTabBar && <TabBar />}
+            {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
+                every tab, absent on the chrome-free full-screen flows. */}
+            {!hideTabBar && <QuickLogFab />}
             <FloatingReturnLayer />
           </LevelUpProvider>
         </ToastProvider>

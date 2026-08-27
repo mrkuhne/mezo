@@ -35,7 +35,7 @@ test('a tényeket már nem listázza — azoknak a Tudástár a gazdája', () =>
 test('a Tudástárra mutató link ott van az összegző sáv alatt', () => {
   renderPage()
   const link = screen.getByRole('link', { name: /Tények kezelése/ })
-  expect(link).toHaveAttribute('href', '/insights/knowledge')
+  expect(link).toHaveAttribute('href', '/mezo/knowledge')
 })
 
 test('renders the Kapcsolatok section grouped by kind with strongest-edge lines', () => {

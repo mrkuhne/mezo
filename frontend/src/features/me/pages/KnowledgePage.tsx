@@ -46,7 +46,7 @@ export function KnowledgePage() {
             </div>
           </div>
           <Link
-            to="/insights/knowledge"
+            to="/mezo/knowledge"
             className="eyebrow"
             style={{ color: 'var(--lav-deep)', display: 'block', marginTop: 12, textDecoration: 'none' }}
           >

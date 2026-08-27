@@ -451,32 +451,19 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2px;
-  /* DS BottomNav label: 12 / 700 uppercase — one of the three documented 12px
-     exception classes (design-system-mezo.html §BottomNav) */
+  /* Design 2.0 .mtab recipe (mezo-d20.1.1): sentence-case label, clay icon above;
+     active speaks text-safe coral, inactive mutes the clay via filter. */
   font-family: var(--ff-body);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-secondary);
   transition: color var(--duration-fast) var(--ease-out);
   position: relative;
 }
 .tab-item.active { color: var(--primary-deep); }   /* text-safe coral (DS active tab) */
-.tab-item .tab-ico {
-  display: flex; align-items: center; justify-content: center;
-  padding: 2px 10px; border-radius: 14px;
-  transition: background var(--duration-fast) var(--ease-out);
-}
-.tab-item.active .tab-ico { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
-.tab-item svg { width: 24px; height: 24px; transition: all var(--duration-normal) var(--ease-out); }
-.tab-item .tab-dot {
-  position: absolute; top: 2px;
-  width: 4px; height: 4px; border-radius: 50%;
-  background: var(--coral);
-  opacity: 0;
-}
-.tab-item.active .tab-dot { opacity: 1; }
+.tab-item .tab-ico { display: grid; place-items: center; }
+.tab-item:not(.active) .tab-ico svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
+.tab-item svg { transition: filter var(--duration-normal) var(--ease-out); }
 
 /* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
    anchors to the device viewport like .sheet — floating just above the tab bar,
@@ -499,7 +486,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    (200+) so any open sheet's backdrop covers it. */
 .float-stack {
   position: absolute; right: 14px;
-  bottom: 92px; /* recipe-save-bar's clearance: tab-bar top edge ≈78px + 14px */
+  bottom: 158px; /* above the quick-log FAB: its 92px seat + 56px + 10px gap (mezo-d20.1.1) */
   display: flex; flex-direction: column; /* bottom-anchored container: the chat bubble (last child) keeps its spot, the train FAB grows upward above it */
   align-items: center; gap: 10px;
   z-index: 45;
@@ -1540,19 +1527,22 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 @supports not (backdrop-filter: blur(1px)) {
   .tab-bar { background: color-mix(in srgb, var(--canvas) 96%, transparent); }
 }
-.tab-fab {
-  width: 56px; height: 56px; border-radius: 50%; border: 4px solid var(--canvas);
-  margin-top: -34px; display: flex; align-items: center; justify-content: center;
-  background: var(--gradient-cta); color: #fff;   /* Rule 9: ONE definition */
-  box-shadow: var(--shadow-cta), inset 0 1.5px 0 rgba(255,255,255,.35);
-  cursor: pointer;
+/* Floating quick-log FAB (Design 2.0 decision B, mezo-d20.1.1) — bottom-right thumb
+   zone above the tab bar; prototype .floatfab recipe with the DS CTA gradient. */
+.quicklog-fab {
+  position: absolute; right: 14px; bottom: 92px;
+  width: 56px; height: 56px; border-radius: 50%; border: none;
+  background: var(--gradient-cta); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 12px 24px -6px color-mix(in srgb, var(--cta-g2) 65%, transparent);
+  cursor: pointer; z-index: 44;
   transition: transform var(--duration-fast) var(--ease-out);
 }
-.tab-fab:active { transform: scale(0.94); }   /* Rule 21: visible press feedback */
-/* Center + FAB soft glow pulse (spec §3.5) — motion only under no-preference. */
-@keyframes np-fabglow { 0%,100% { box-shadow: 0 6px 18px color-mix(in srgb, var(--cta-g2) 35%, transparent); }
-  50% { box-shadow: 0 8px 28px color-mix(in srgb, var(--cta-g2) 55%, transparent); } }
-@media (prefers-reduced-motion: no-preference) { .tab-fab { animation: np-fabglow 3.2s ease-in-out infinite; } }
+.quicklog-fab:active { transform: scale(0.92); }   /* Rule 21: visible press feedback */
+/* FAB soft glow pulse (prototype fabglow) — motion only under no-preference. */
+@keyframes np-fabglow { 0%,100% { box-shadow: 0 8px 18px -5px color-mix(in srgb, var(--cta-g2) 60%, transparent); }
+  50% { box-shadow: 0 8px 26px -3px color-mix(in srgb, var(--cta-g2) 85%, transparent); } }
+@media (prefers-reduced-motion: no-preference) { .quicklog-fab { animation: np-fabglow 3.2s ease-in-out 1.6s infinite; } }
 /* QuickInputSheet — the FAB's 6-tile quick-log launcher (DS re-dress mezo-setx.5.4) */
 .quicklog { padding: 4px 6px 10px; }
 .quicklog h2 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
@@ -1939,6 +1929,8 @@ button.itemrow { cursor: pointer; }
   .tab-bar { bottom: calc(10px + env(safe-area-inset-bottom)); }
   .screen-content { padding-bottom: calc(var(--screen-bottom-pad) + env(safe-area-inset-bottom)); }
   .recipe-save-bar { bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .quicklog-fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .float-stack { bottom: calc(154px + env(safe-area-inset-bottom)); }
 }
 
 /* ===== Napív giant set steppers (active workout, spec §4.5) =====
