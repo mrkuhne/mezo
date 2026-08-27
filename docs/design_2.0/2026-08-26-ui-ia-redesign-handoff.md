@@ -271,7 +271,8 @@ Locked patterns from the screen rounds (canonical for every further page):
 - **Fuel hub specified** in the new fuel-tab prototype (2026-08-27, feature-audited against
   all real `/fuel` routes; see `prototypes/README.md`, and the **full audit** in
   [`2026-08-27-fuel-feature-audit.md`](2026-08-27-fuel-feature-audit.md) — the per-subpage
-  deep rounds must consult it). Hub absorbs the old Mai page: keret-hero
+  deep rounds must consult it; Daniel's iteration decisions are logged in
+  [`2026-08-27-fuel-design-iterations.md`](2026-08-27-fuel-design-iterations.md)). Hub absorbs the old Mai page: keret-hero
   (honest negative remaining-kcal, proportional done-window day-bar + gold now-marker, energy
   chips that vanish on static energy, 5 rings with the water ring as a button), the
   **window swimlane** (Daniel's direction, replacing the earlier MOST-card + done-capsule
@@ -290,8 +291,12 @@ Locked patterns from the screen rounds (canonical for every further page):
   **Napló trend page** (weekly API already returns 7-day series, FE collapses it to 3 scalars),
   **Snack segment** on Receptek, **Gyógyszer segment** on Kamra, Terv rhythm-grid markers
   derived from settings instead of the hardcoded 21:00/14:00, and a future add-medication path
-  (today none exists). Deeper rounds still to design per subpage: full LogMealSheet (overrides,
-  MealPicker), AiLogSheet 3 fázis, MealScoreSheet/ScoreBreakdown, recipe detail/editor, Kamra
+  (today none exists). **Logging flow redesigned as ONE unified full-page flow** (Daniel's direction,
+  2026-08-27): LogMealSheet + AiLogSheet merge — source tiles Kamra / Recept / ✨ AI inside
+  one flow, AI text+photo combinable with manual lines in the same meal, every amount a
+  typeable input; flagged for implementation as an IA change (the real app has two separate
+  sheets today). Deeper rounds still to design per subpage: recipe-line overrides
+  (finomhangolás), MealScoreSheet/ScoreBreakdown, recipe detail/editor, Kamra
   detail + Import (OFF/link/fotó), StackItem/StackPicker sheets, FuelSlots editor + Tier-1/2
   validation, EnergyBreakdownSheet. New sprite icons: `i-injekcio` + the meal set
   `i-reggeli` / `i-ebed` / `i-snack` / `i-vacsora`.
@@ -301,6 +306,26 @@ Locked patterns from the screen rounds (canonical for every further page):
   editor with day breakdown + session-cap 11 + StructureLint + PeakFit, searchable multi-add
   picker, ▲▼ reorder), start/close sheets (close → report, mirroring the real transaction),
   frozen report ("Heti szettek · a blokk íve" naming), Történet selection mode → A/B compare.
+- **Mezo tab designed at hub + chat + all-8-subpage depth** in `prototypes/mezo-tab.html`
+  (artifact `797270dd-…`), audited against the real `/insights` section
+  ([`2026-08-27-mezo-feature-audit.md`](2026-08-27-mezo-feature-audit.md) — part 1 chat,
+  part 2 the 7 other sub-tabs). In the live app the companion is the Chat sub-tab of Insights;
+  the redesign promotes it to a first-class Mezo tab. Hub: breathing orb hero (no number —
+  the relationship is the hero) + one proactive sentence, composer-shaped chat opener,
+  gold decision card (Megerősítem/Figyeljük/Elvetem, in sync with the Minták page and tile
+  counters), 6 tiles + full-width L0→L3 memory band. Chat: tool chips, human-labeled
+  `Hivatkozott · L3` refs (designed fix for the inert-refs gap), collapsed `Emlékek · N`,
+  👍/👎 + reason chips, live send with typing dots + streaming tool chip, mic → transcript
+  into input, Beszélgetések sheet. Subpages: Minták (lifecycle grid + confidence words,
+  never raw r/p), Heti (82/100 + delta + arrows + tervjavaslat), Memoár (Fraunces chapter
+  card), Tudástár (approval inbox + per-row toggles + top-10 section), Előrejelzések /
+  Kísérletek (*Hungarian status chips ◐ Folyamatban / ✓ Bevált / ◇ Javaslat — localizing the
+  real app's English ones*), Memória (Rétegek with pulsing connectors + human cron times /
+  Napló / Kereső with score-math chips / Audit). New sprite icons: `i-memoar`, `i-lombik`,
+  `i-kristaly`, `i-retegek`. **v2 tile pass** (Daniel: "élőbb, mozgóbb, színesebb, csempés a
+  listák helyett" — applies to every page): all list rows on the subpages became washed
+  tiles with clay icons, rise staggers and animated bars/dots (see prototypes/README.md
+  for the per-page breakdown).
 - **Advisory signals are never red and never block; nulls are never zeros** — carried through
   every screen.
 - **Edzés-session fully specified** in its prototype (feature-audited against
@@ -325,10 +350,19 @@ Locked patterns from the screen rounds (canonical for every further page):
 
 **How a fresh session continues:** read this file + `docs/design_2.0/prototypes/README.md` +
 `docs/design_2.0/assets/README.md`; edit `prototypes/src/`, run `build.sh`, republish with the
-Artifact tool passing the artifact `url` above. Remaining pages to design: Fuel subpage deep
-rounds (Terv, Stack, Receptek, Kamra, Gyógyszer, Napló + their sheets — the hub is done), Mezo
-(chat) tab, Napzárás, Me/profil surfaces, and the Edzés review page (the live session flow is
-done — see Edzés-session above). New icons/spots always go back into `docs/design_2.0/assets/`
+Artifact tool passing the artifact `url` above. **Decision B (2026-08-27): the tab bar is 5 first-class
+tabs — Nap · Edzés · Fuel · Mezo · Én — and quick-log lives on a floating coral FAB
+bottom-right, rolled out to every prototype.** The Én tab first ship is done in
+`prototypes/en-tab.html` (artifact `dee0dd7e-…`), audited against the real `/me`
+(`2026-08-27-en-feature-audit.md`): identity hero + goal card + 8 tiles hub; Cél, Súly,
+Alvás + Éjszakai mód, Growth, Napló, Emberek, Tudás, Értesítés, AI-napló subpages, all
+tile-based with the honest-state contracts preserved (— never 0, tartás contract, phase-card
+gating, night-mode clock ban). The **quick-log sheet** behind the floating FAB is designed and
+wired live in en-tab (context-aware MOST head, in-place Víz/Check-in actions, honest Alvás
+state, Napló picker, Mezo chat row) — audited against the real QuickInputSheet. Remaining pages to design: Fuel subpage deep rounds (Terv +
+Gyógyszer at sketch depth, recipe detail/editor + the sheets), Mezo- and Én-tab iteration
+rounds with Daniel, Napzárás, and the Edzés review page (the live session flow is done — see
+Edzés-session above). New icons/spots always go back into `docs/design_2.0/assets/`
 sprites first.
 
 **The task for this Claude Design session:** propose **2-3 distinct IA/navigation directions**

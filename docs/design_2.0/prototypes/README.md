@@ -15,6 +15,9 @@ they inline come from `../assets/`.
 | `mezociklus.html` | https://claude.ai/code/artifact/a4f4ecdd-decc-4524-9fab-931af7a9c8b3 |
 | `edzes-session.html` | https://claude.ai/code/artifact/0a747fcc-0359-462a-8b8b-1de02a611f77 |
 | `fuel-tab.html` | https://claude.ai/code/artifact/e0da58f6-f4ef-4874-b60e-b83a1998ba0e |
+| `mezo-tab.html` | https://claude.ai/code/artifact/797270dd-f1dc-4196-b492-aa4ffb22d2de |
+| `en-ia-valasztas.html` | https://claude.ai/code/artifact/418b2a2d-25ba-4441-8cb5-6b15c6ab88b2 |
+| `en-tab.html` | https://claude.ai/code/artifact/dee0dd7e-f321-4f88-94ff-c7face496d70 |
 
 ## Workflow
 
@@ -117,11 +120,15 @@ are usable without a build step).
   carries no header — it speaks for itself; below it a **Mezo banner tile** ("2 új
   Fuel-üzenet ma") opens the Mezo · Fuel page collecting the fuel-context companion messages
   (time + context eyebrows) — the hub shows only the counter, never repeats the voice — then
-  6 tiles. **Working log sheet** (slot
-  segments defaulting to the launching window's slot —
-  the mezo-bnsf bug's fix pattern; derived-until-touched name; recipe line with adag stepper;
-  total card with `eddig +étkezés = új / cél` two-segment bar; saving flips the window tile to
-  done and updates hero, day-bar, rings) and **water sheet** (250/400/500 chips, manual ml overrides and deselects the
+  6 tiles. **Unified full-page log flow** (manual + AI merged
+  into one: slot segments defaulting to the launching window's slot — the mezo-bnsf fix
+  pattern —, derived-until-touched name, three colorful source tiles — Kamra (gold, grams,
+  multi-add picker that stays open), Recept (coral, servings, closes on pick), ✨ AI
+  (lavender inline panel: text and/or photo, combinable) — AI-recognized lines land as
+  BECSLÉS-tagged items next to the manual ones, so one meal can mix photo + text + pantry
+  items; every line amount is a typeable input with ± steppers, per-line macros and the
+  totals card recompute live; ✓ Logolás · +10 XP flips the window tile to done and updates
+  hero, day-bar, rings) and **water sheet** (250/400/500 chips, manual ml overrides and deselects the
   chip). Sketch-level subpages behind the tiles: **Terv** (stat strip, 24h week-rhythm grid with
   gym/röpi bars + kitchen-close & caffeine-cutoff markers *derived from settings — designed fix
   for the hardcoded ones*, medication-cycle strip; empty sections stay hidden), **Stack**
@@ -148,8 +155,11 @@ are usable without a build step).
   without touching a window — the real out-of-window semantics), and a two-tap Törlés
   that removes the item and live-updates hero + stats + list), **Gyógyszer** (med card with cycle bar — peak terracotta never red — phase
   note, dose list with note; new sprite icon `i-injekcio`), **Napló** (designed addition for
-  the "no trends anywhere in Fuel" gap: 4-week kcal-average, AI-average and protein-days bars
-  from the weekly API's full series).
+  the "no trends anywhere in Fuel" gap, now week-centric: week-picker segments over per-week
+  stored data — daily kcal bars with a dashed goal line (today = gold "in progress" bar,
+  future days = honest empty slots), protein-day counter, per-day macro-average mini-tiles,
+  and Súly heti átlag + AI-átlag cards with vs-previous-week deltas; the hero number follows
+  the selected week's AI average).
 - **edzes-session** — the full gym session flow (interactive state machine, feature-complete
   against `frontend/src/features/train/pages/ActiveWorkoutPage.tsx`).
   **Prep = Huawei tile IA**: hero (eyebrow + name + 4 mini stat cells: várható XP / szett / idő /
@@ -170,3 +180,95 @@ are usable without a build step).
   rows edit/delete with one-slot floor. RP debrief per exercise, closing summary (halo hero,
   muscle pills, medals + target sets, challenge outcomes, per-exercise chip map, note),
   finish → level-up screen → closed mode.
+- **mezo-tab** — the Mezo tab (the companion's home), audited against the real `/insights`
+  section (in the live app the companion is the Chat sub-tab of Insights; the redesign
+  promotes it to a first-class tab). **Hub**: a breathing clay **orb hero** — no number hero,
+  the relationship is the hero: one proactive companion sentence + quiet status
+  (Gemini · élő · együtt 47 napja); a composer-shaped **chat opener** ("Mondj valamit…" +
+  mic + send) that opens the full-screen chat; the motor's single **decision card** in a gold
+  ring (Megerősítem / Figyeljük / Elvetem — deciding flips it to a sage acknowledgement and
+  live-updates the Minták tile, the lifecycle grid and the memory band); a 6-tile mosaic
+  (Minták, Heti, Memoár, Tudástár, Előrejelzések, Kísérletek) with live bottom lines; and a
+  full-width **memory band** L0→L3 (nyers napok › napló › ítélet › tény) opening the Memória
+  page. **Chat page**: the audited anatomy — Mezo eyebrow + timestamp, tool chips above the
+  answer, `Hivatkozott · L3` refs footer with *human labels instead of raw ids* (designed fix
+  for the real app's inert-refs gap), a collapsed `Emlékek · N` disclosure (date · source ·
+  similarity% + gist), 👍/👎 feedback with the four reason chips on 👎; live send: typing
+  dots → tool chip streams in → answer lands; mic records then transcribes into the input
+  (never auto-sends); Beszélgetések sheet (rows with orb variants, active row, Névtelen
+  beszélgetés fallback, ＋ Új) and an Új chat empty state. **Subpages**: Minták (motor prose
+  with three bold numbers, 3×2 lifecycle grid where "döntésre vár" glows gold, the same
+  decision card in sync with the hub, Megerősítve/Megfigyelés/Még gyűlik sections with
+  human confidence words — never raw r/p —, Adat-egészség coverage rings), Heti (82/100 hero
+  + delta chip, trend rows with ↗→↘ arrows, Mezo tervjavaslat with feedback chips, Growth
+  weekly block), Memoár (Fraunces-titled chapter card with a lavender glow, anchor chips,
+  anniversary card), Tudástár (approval inbox card — Elfogad moves the fact into the top
+  section and bumps every counter —, search + category chips, "Most ezeket kapja meg a
+  társ · 10" sage section with per-row toggles, kimarad/kikapcsolva sections with honest
+  footnotes), Előrejelzések and Kísérletek (*Hungarian status chips — ◐ Folyamatban /
+  ✓ Bevált / ◇ Javaslat — localizing the real app's English ones*; confidence bars, basis
+  prose, acceptable proposal card that flips to ◐ Aktív 0/7), Memória (4 segments: Rétegek —
+  L0→L3 layer cards joined by pulsing dashed connectors carrying human cron times; Napló —
+  nightly-written day cards with embedded dots; Kereső — match-ring result cards with the
+  score-math chips egyezés × frissesség = végső; Audit — cost hero, token columns,
+  fact-provenance groups). **Tile pass (Daniel's direction: "élőbb, mozgóbb, színesebb,
+  csempés a listák helyett"):** every list-row pattern on the subpages became washed Huawei
+  tiles with clay icons, rise staggers and animated bars — Minták: colorful lifecycle cells
+  (the decision cell pulses gold) + 2-col pattern tiles (confirmed sage + confidence chip,
+  watching lavender + animated evidence bar, gathering dashed amber) + coverage-ring tile
+  strip; Heti: metric tiles (wash + icon + arrow + animated bar, protein day-dots, wide
+  weight-trend tile) + tinted Growth mini-cells; Tudástár: category-washed fact tiles
+  (edzés coral · egészség amber · élet sky; disabled facts fade to dashed); Előrejelzések /
+  Kísérletek: status-washed tiles (pending lavender, confirmed sage, active amber + day
+  dots); Memória: per-layer colored L0→L3 cards with icons + tinted provenance cells.
+- **en-ia-valasztas** — IA decision mockup (not a product page): where does the **Én** tab go?
+  Three live-proportion phone frames — A: Én behind the header avatar (4 tabs + center FAB
+  unchanged), B: Én as a fifth tab + the quick-log as a floating coral FAB bottom-right
+  (recommended: Én's content — goal, weight, sleep, growth — deserves first-class visibility,
+  and the log FAB stays in the thumb zone on *every* screen), C: fifth tab + quick-log in the
+  header (Daniel's initial idea; reachable everywhere but the worst one-handed zone). Built
+  standalone (not in build.sh); the changed element is marked with a dashed coral callout.
+  Decision pending — the winning option gets rolled into all prototype tab bars.
+- **en-tab** — the Én tab (decision B: fifth first-class tab), audited against the real `/me`
+  section (`2026-08-27-en-feature-audit.md` — 9 sub-tabs + 5 full-screen pages). **Hub**:
+  identity hero (avatar with the in-level XP ring, name, equipped title chip, Lv · XP · 🔥 ·
+  🪙 row, and the bio line — only the filled bits, the whole row vanishes empty), the
+  coral-ringed **goal card** (trajectory + title, animated progress track with indulás/most/cél
+  labels, Hátra · Tempó · ETA mini-cells; maintain goals drop the track and read `tartás` per
+  the real contract), 8 tiles (Súly, Alvás, Growth, Napló, Emberek, Tudás, Értesítés,
+  AI-napló) with live bottom lines, and a Beállítások band (theme sheet: Világos/Sötét/
+  Cirkadián with the real −90p copy). **Subpages** (all tile-based, rise-staggered, animated
+  bars): Cél (hero card with guard chips + identity quote, the engine's prescription as
+  **segment tiles** — W1–12 mély deficit amber · W13–20 taper sage, each with 4 mini-cells +
+  rationale —, guard pills incl. the honest `Fehérje: Fuel-re vár`, a gym/futás/röplabda
+  timeline with the ⚠ W1–4 fedezetlen chip, dashed plan slots), Súly (−2,8 kg hero, stat
+  strip, trend chart with actual-MA + plan + ±1 kg tolerance band, weekly tiles with delta
+  pills and direction; the log sheet with steppers + the context tip — saving cascades into
+  the hero, bio line, goal card and hub tile), Alvás (goal card with the bed rail 🛏️→☀️,
+  Rendszeresség/Hatékonyság ring tiles, phase rail + reference rows — `a sávban`, never red —,
+  7-night stacked phase columns with quality dots, daily "Miért számít?" card, and the **dark
+  Éjszakai mód tile**), Éjszakai mód (pitch-dark page, NO clocks or countdowns: Felébredtél? →
+  Ébren vagyok → breathing orb + 3 tools; demo chip advances to the 20-minute Kelj fel state),
+  Growth (hero trio XP/Fegyelem/Ritmus + 4 segments: LIFE/Atlétikus/Izom band tiles with
+  animated skill bars + savings, Rutin 30-day 🌅/🌙 counters + chain tiles, Napló day tiles
+  with `csendben lejárt` honesty, Kitüntetések badge grid — achieved sage ✓, rest with
+  progress bars), Napló (gratitude streak tile, gold decision tile with inline 1–5 review that
+  settles to a sage acknowledgement, month-grouped note tiles), Emberek (2-col person tiles
+  with affect-ring avatars, mention tiles with the FIGYELEM badge + pattern tie), Tudás
+  (summary tile, grouped node tiles with edge lines and a live Archivál that decrements every
+  counter), Értesítés (dark daily-load card with a 24-hour spark + dense-window warning that
+  **recomputes live as category toggles flip**, master toggle, 3 category groups with washes,
+  the gym-only −45 perc lead chip, and the honest brain-events footnote), AI-napló (cost hero
+  with Ma/Hét/Hónap segments, feature cost bars, call tiles with status rails — siker sage ·
+  hiba terracotta · megszakadt amber — and the `~ becslés` footnote). **Quick log** (the
+  floating FAB, wired live here — the same sheet sits behind every tab's FAB): audited against
+  the real `QuickInputSheet` (title `Gyors logolás` / `bármikor, két koppintás`, 8-tile grid +
+  highlighted chat row, Alvás/Napló/Check-in swap in place). Redesign: a **context-aware MOST
+  head** (13:30 → Ebéd-ablak tile with the plan meal + Logold, echoing the Fuel swimlane —
+  designed addition over the static grid), **do-it-here duo tiles** — Víz with ＋250/＋400/＋500
+  chips that log in place (live HU-grouped counter + toast) and Check-in with four inline mood
+  buttons —, six mini tiles with live context sublines (Súly opens the weight sheet in place;
+  Alvás honestly reads `ma ✓ 7,5 h` and refuses to re-log; Napló → Aktivitás/Napló/Hála picker
+  with ‹ Vissza; Étkezés/Edzés/Stack navigate with `ma 16:45 · Pull` / `köv. 16:45 · koffein`
+  sublines), and the Mezo row at the bottom (`Mondd el Mezónak · kérdezz, mesélj — vagy logolj
+  szóban`) keeping chat as a logging path.

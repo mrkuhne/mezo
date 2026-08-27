@@ -14,13 +14,19 @@ import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 /**
  * The W1.5 nightly note sweep: length gate, idempotent re-runs, and a history backfill that is NOT
  * bounded by the daily-summary catch-up window (a not-yet-embedded row from months ago is still a
  * candidate — that IS the one-time backfill).
+ *
+ * <p>{@code @MockitoSpyBean} forks the application context (the {@code
+ * GraphPromotionServiceReconcileIsolationIT} precedent) — every test in THIS class shares that
+ * forked context, which is fine since a spy with no stubbing behaves exactly like the real bean.
  */
 @ActiveProfiles("companion-fake")
 class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
@@ -36,6 +42,7 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private ActivityPopulator activityPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
+    @MockitoSpyBean private MemoryEmbeddingWriter memoryEmbeddingWriter;
 
     @Test
     void testRun_shouldEmbedBothKindsAndGateOnLength_whenNotesExist() {
@@ -69,6 +76,25 @@ class NoteEmbeddingCatchUpIT extends AbstractIntegrationTest {
 
         assertThat(written).isZero();
         assertThat(memoryEmbeddingRepository.count()).isEqualTo(afterFirst);
+    }
+
+    @Test
+    void testRun_shouldNotCallSyncNote_whenTheCorpusIsUnchanged() {
+        // FINDING 2: syncNote's own internal check already returns false for unchanged notes, so
+        // the OLD test above (asserting written==0) already passed pre-fix — it never proved the
+        // per-candidate transaction+query was avoided. This proves the call itself never happens.
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        activityPopulator.activity(owner, yesterday, LONG_NOTE, "mindset", 10, "AI");
+        checkInPopulator.createCheckIn(owner, yesterday, "18:00", 3, 4, LONG_NOTE);
+        noteEmbeddingCatchUp.run(owner, yesterday); // first-write both notes
+        Mockito.clearInvocations(memoryEmbeddingWriter);
+
+        int written = noteEmbeddingCatchUp.run(owner, yesterday);
+
+        assertThat(written).isZero();
+        Mockito.verify(memoryEmbeddingWriter, Mockito.never())
+                .syncNote(Mockito.anyString(), Mockito.any());
     }
 
     @Test

@@ -1240,7 +1240,7 @@ export const handlers = [
   http.get(`${API_BASE}/api/companion/memory/overview`, () =>
     HttpResponse.json({
       l0: { daysWithAnyData: 0, windowDays: 60 },
-      l1: { summaryCount: 0, firstDate: null, lastDate: null, embeddings: { dailySummary: 0, chatTurn: 0 } },
+      l1: { summaryCount: 0, firstDate: null, lastDate: null, embeddings: [] },
       l2: { patterns: [], pendingFactCandidates: 0 },
       l3: { facts: [], totalReinforcements: 0, factsInPrompt: 0 },
       jobs: {

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.MemoryEmbeddingKindCount;
 import io.mrkuhne.mezo.api.dto.MemoryFactSourceCount;
 import io.mrkuhne.mezo.api.dto.MemoryOverviewResponse;
 import io.mrkuhne.mezo.api.dto.MemoryPatternCount;
@@ -11,6 +12,7 @@ import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
@@ -39,6 +41,7 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -58,8 +61,7 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
         assertThat(response.getL1().getSummaryCount()).isZero();
         assertThat(response.getL1().getFirstDate()).isNull();
         assertThat(response.getL1().getLastDate()).isNull();
-        assertThat(response.getL1().getEmbeddings().getDailySummary()).isZero();
-        assertThat(response.getL1().getEmbeddings().getChatTurn()).isZero();
+        assertThat(response.getL1().getEmbeddings()).isEmpty();
         assertThat(response.getL2().getPatterns()).isEmpty();
         assertThat(response.getL2().getPendingFactCandidates()).isZero();
         assertThat(response.getL3().getFacts()).isEmpty();
@@ -100,8 +102,11 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
         assertThat(response.getL1().getSummaryCount()).isEqualTo(2);
         assertThat(response.getL1().getFirstDate()).isEqualTo(yesterday.minusDays(1));
         assertThat(response.getL1().getLastDate()).isEqualTo(yesterday);
-        assertThat(response.getL1().getEmbeddings().getDailySummary()).isEqualTo(1);
-        assertThat(response.getL1().getEmbeddings().getChatTurn()).isEqualTo(1);
+        assertThat(response.getL1().getEmbeddings())
+                .extracting(MemoryEmbeddingKindCount::getKind, MemoryEmbeddingKindCount::getCount)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("daily_summary", 1),
+                        org.assertj.core.groups.Tuple.tuple("chat_turn", 1));
         assertThat(response.getL2().getPatterns())
                 .extracting(MemoryPatternCount::getKind, MemoryPatternCount::getStatus, MemoryPatternCount::getCount)
                 .containsExactlyInAnyOrder(
@@ -129,5 +134,107 @@ class CompanionMemoryOverviewApiIT extends ApiIntegrationTest {
 
         assertThat(response.getL1().getSummaryCount()).isZero();
         assertThat(response.getL3().getFacts()).isEmpty();
+    }
+
+    @Test
+    void testOverview_shouldReportEveryPopulatedKind_whenSeveralNarrativeKindsHaveVectors() {
+        UUID owner = ownerId();
+        LocalDate day = LocalDate.now().minusDays(1);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 0);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 1);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 2);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 3);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 4);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, day, 5);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_GRATITUDE, day, 6);
+
+        MemoryOverviewResponse response = overview();
+
+        assertThat(response.getL1().getEmbeddings())
+                .extracting(MemoryEmbeddingKindCount::getKind, MemoryEmbeddingKindCount::getCount)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("daily_summary", 2),
+                        org.assertj.core.groups.Tuple.tuple("chat_turn", 3),
+                        org.assertj.core.groups.Tuple.tuple("journal_entry", 1),
+                        org.assertj.core.groups.Tuple.tuple("gratitude", 1));
+    }
+
+    @Test
+    void testOverview_shouldOrderKindsByCountThenKind_whenSeveralKindsArePopulated() {
+        UUID owner = ownerId();
+        LocalDate day = LocalDate.now().minusDays(1);
+        // chat_turn (3) leads on count desc; gratitude and journal_entry tie at 1 and must
+        // break the tie alphabetically (kind asc): gratitude before journal_entry.
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 0);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 1);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, day, 2);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_GRATITUDE, day, 3);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, day, 4);
+
+        MemoryOverviewResponse response = overview();
+
+        assertThat(response.getL1().getEmbeddings())
+                .extracting(MemoryEmbeddingKindCount::getKind, MemoryEmbeddingKindCount::getCount)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("chat_turn", 3),
+                        org.assertj.core.groups.Tuple.tuple("gratitude", 1),
+                        org.assertj.core.groups.Tuple.tuple("journal_entry", 1));
+    }
+
+    @Test
+    void testOverview_shouldOmitKindsWithNoVectors_whenTheStoreIsPartiallyPopulated() {
+        UUID owner = ownerId();
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
+                LocalDate.now().minusDays(1), 0);
+
+        MemoryOverviewResponse response = overview();
+
+        assertThat(response.getL1().getEmbeddings())
+                .extracting(MemoryEmbeddingKindCount::getKind)
+                .doesNotContain(MemoryEmbeddingEntity.KIND_CHAT_TURN, MemoryEmbeddingEntity.KIND_GRATITUDE);
+    }
+
+    @Test
+    void testOverview_shouldCountOnlyTheOwner_whenAnotherUserHasVectors() {
+        UUID owner = ownerId();
+        UUID foreign = userPopulator.createUser().getId();
+        LocalDate day = LocalDate.now().minusDays(1);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 0);
+        memoryEmbeddingPopulator.embedding(foreign, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 1);
+        memoryEmbeddingPopulator.embedding(foreign, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 2);
+
+        MemoryOverviewResponse response = overview();
+
+        assertThat(response.getL1().getEmbeddings())
+                .extracting(MemoryEmbeddingKindCount::getKind, MemoryEmbeddingKindCount::getCount)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("daily_summary", 1));
+    }
+
+    @Test
+    void testOverview_shouldIgnoreSoftDeletedVectors_whenSomeWereReaped() {
+        UUID owner = ownerId();
+        LocalDate day = LocalDate.now().minusDays(1);
+        MemoryEmbeddingEntity kept = memoryEmbeddingPopulator.embedding(owner,
+                MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 0);
+        MemoryEmbeddingEntity reaped = memoryEmbeddingPopulator.embedding(owner,
+                MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, day, 1);
+        memoryEmbeddingRepository.delete(reaped);
+
+        MemoryOverviewResponse response = overview();
+
+        assertThat(response.getL1().getEmbeddings())
+                .extracting(MemoryEmbeddingKindCount::getKind, MemoryEmbeddingKindCount::getCount)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("daily_summary", 1));
+        assertThat(memoryEmbeddingRepository
+                .findByKindAndRefIdIncludingDeleted(MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, reaped.getRefId()))
+                .isPresent();
+        assertThat(kept).isNotNull();
+    }
+
+    @Test
+    void testOverview_shouldReturnAnEmptyList_whenTheUserHasNoVectors() {
+        MemoryOverviewResponse response = overview();
+
+        assertThat(response.getL1().getEmbeddings()).isNotNull().isEmpty();
     }
 }

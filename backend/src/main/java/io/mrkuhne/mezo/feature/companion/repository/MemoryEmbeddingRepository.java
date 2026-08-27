@@ -68,12 +68,46 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
     /** Same-day live rows of a kind — the summary replace-by-day guard (V2.2). */
     List<MemoryEmbeddingEntity> findByCreatedByAndKindAndOccurredOn(UUID createdBy, String kind, LocalDate occurredOn);
 
-    /** Memória-obszervatórium (mezo-al1i) — vektor-darabszám rétegenként. */
+    /** Test-only single-kind vector count. Superseded for the memory observatory's L1 read by
+     *  {@link #countByKindForUser} (mezo-b3pp.22) — this method has no {@code src/main} caller
+     *  left, but stays for the several ITs that still assert one kind's live-vector count. */
     long countByCreatedByAndKind(UUID createdBy, String kind);
+
+    /** Every populated kind for one user, with its live-vector count — the memory observatory's L1
+     *  read (mezo-b3pp.22). ONE query instead of one {@code countByCreatedByAndKind} per kind: the
+     *  {@code ck_memory_embedding_kind} CHECK has already grown from three values to ten, and the
+     *  observatory must not need a code change every time it grows again. JPQL, so
+     *  {@code @SQLRestriction("is_deleted = false")} applies — a reaped vector (mezo-b3pp.26) is
+     *  correctly absent rather than inflating the reported store size. */
+    interface KindCount {
+        String getKind();
+        long getCount();
+    }
+
+    @Query("select m.kind as kind, count(m) as count from MemoryEmbeddingEntity m "
+            + "where m.createdBy = :createdBy group by m.kind order by count(m) desc, m.kind asc")
+    List<KindCount> countByKindForUser(@Param("createdBy") UUID createdBy);
 
     /** A napló-nézet batch embed-jelzője — a kind élő ref-id-i (a @SQLRestriction JPQL-re is áll). */
     @Query("select m.refId from MemoryEmbeddingEntity m where m.createdBy = :createdBy and m.kind = :kind")
     Set<UUID> findRefIdsByCreatedByAndKind(@Param("createdBy") UUID createdBy, @Param("kind") String kind);
+
+    /** W1.5 lifecycle (mezo-b3pp.26) — ref-id + stored content for one user's vectors of a kind:
+     *  what the nightly sweep compares against the live source text to detect drift. A projection,
+     *  not the entity: loading full rows here would drag a 768-float vector per note through the
+     *  sweep for nothing. {@code @SQLRestriction}-filtered like every JPQL query, so a reaped
+     *  vector is correctly absent — the sweep must treat "no live vector" as "needs writing", and
+     *  {@link io.mrkuhne.mezo.feature.companion.embedding.MemoryEmbeddingWriter#syncNote} then
+     *  revives the parked row through the upsert path. */
+    interface RefContent {
+        UUID getRefId();
+        String getContent();
+    }
+
+    @Query("select m.refId as refId, m.content as content from MemoryEmbeddingEntity m "
+            + "where m.createdBy = :createdBy and m.kind = :kind")
+    List<RefContent> findRefContentByCreatedByAndKind(@Param("createdBy") UUID createdBy,
+                                                      @Param("kind") String kind);
 
     /** Renders a float[] as the pgvector text literal ({@code [0.1,0.2,...]}) native queries bind. */
     static String toVectorLiteral(float[] vector) {

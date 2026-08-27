@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.biometrics.checkin.repository;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.techcore.persistence.OwnedRepository;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,4 +36,11 @@ public interface CheckInRepository extends OwnedRepository<CheckInEntity> {
     List<CheckInEntity> findNoteCandidates(@Param("createdBy") UUID createdBy,
                                            @Param("through") LocalDate through,
                                            @Param("minChars") int minChars);
+
+    /**
+     * W1.5 lifecycle (mezo-b3pp.26): which of {@code ids} are still LIVE rows for this user —
+     * a plain derived finder so {@code @SQLRestriction} applies, which is exactly what "live"
+     * means here (unlike {@link #findNoteCandidates}, this is deliberately NOT length-gated).
+     */
+    List<CheckInEntity> findByCreatedByAndIdIn(UUID createdBy, Collection<UUID> ids);
 }

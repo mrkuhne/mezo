@@ -73,8 +73,8 @@ class NoteEmbeddingWriterIT extends AbstractIntegrationTest {
         ActivityLogEntity entry = activityPopulator.activity(owner, day, LONG_NOTE, "mindset", 10, "AI");
         Note note = new Note(entry.getId(), entry.getCreatedBy(), entry.getText(), entry.getOccurredOn());
 
-        writer.writeNote(NarrativeNoteSource.ACTIVITY_NOTE, note);
-        writer.writeNote(NarrativeNoteSource.ACTIVITY_NOTE, note);
+        writer.syncNote(NarrativeNoteSource.ACTIVITY_NOTE, note);
+        writer.syncNote(NarrativeNoteSource.ACTIVITY_NOTE, note);
 
         MemoryEmbeddingEntity vector = memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_ACTIVITY_NOTE, entry.getId()).orElseThrow();
@@ -92,7 +92,7 @@ class NoteEmbeddingWriterIT extends AbstractIntegrationTest {
         CheckInEntity checkIn = checkInPopulator.createCheckIn(owner, day, "18:00", 3, 4, LONG_NOTE);
         Note note = new Note(checkIn.getId(), checkIn.getCreatedBy(), checkIn.getNote(), checkIn.getDate());
 
-        writer.writeNote(NarrativeNoteSource.CHECKIN_NOTE, note);
+        writer.syncNote(NarrativeNoteSource.CHECKIN_NOTE, note);
 
         MemoryEmbeddingEntity vector = memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_CHECKIN_NOTE, checkIn.getId()).orElseThrow();

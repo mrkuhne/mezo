@@ -586,7 +586,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
 | Reflection embedding seam | ✅ `mezo-b3pp.2` | A FIFTH `memory_embedding` kind, `reflection`: the Napzárás evening prose (`ritual_day.reflection_text`, [`ritual.md`](ritual.md) §4). `ReflectionEmbeddingListener` reuses the AFTER_COMMIT/`@Async` idiom but is gated on `COMPANION_SWITCH` + **`RITUAL_SWITCH`** — the first seam whose second switch isn't journal's — and consumes `feature/ritual`'s `RitualClosedEvent` → `MemoryEmbeddingWriter.writeReflection`, embedding **on close** rather than per keystroke-save; a post-close edit re-publishes the event and re-embeds the same `(kind, ref_id)` row in place, and clearing the prose soft-deletes the vector so an erased evening stops being recallable. No migration — `reflection` was already legal in the W1.1 kind CHECK. Full detail: [`ritual.md`](ritual.md) §5. |
 | Gratitude embedding seam | ✅ `mezo-b3pp.3` | A SIXTH `memory_embedding` kind, `gratitude`: 1–3 short lines a day from `gratitude_entry` (`feature/journal`, [`journal.md`](journal.md) §5). `GratitudeEmbeddingListener` is the journal-shaped twin of the journal listener (`COMPANION_SWITCH` + `JOURNAL_SWITCH`, AFTER_COMMIT/`@Async`), calling `MemoryEmbeddingWriter.writeGratitude` / `.deleteGratitudeEmbedding` over the shared `upsert`; no edit endpoint, so only the create-then-delete liveness re-check. Short texts embed fine — they carry disproportionate emotional signal (spec §5.3). |
-| Note catch-up seam | ✅ `mezo-b3pp.5` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.writeNote`, write-once. No lower date bound, so the first run IS the one-time history backfill and later runs converge via `findRefIdsByCreatedByAndKind`; `mezo.companion.embedding.embed-notes` / `note-min-chars` (80) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
+| Note catch-up seam | ✅ `mezo-b3pp.5`, lifecycle `mezo-b3pp.26` | The SEVENTH and EIGHTH kinds, `activity_note`/`checkin_note` — the narrative written OUTSIDE the journal (`activity_log.text`, `check_in.note`). The first seam with **no listener**: the existing nightly `DailySummaryJob` runs `NoteEmbeddingCatchUp` per user (spec §5.5 — one nightly sweep, not a new cron) → `MemoryEmbeddingWriter.syncNote`, lifecycle-aware since `mezo-b3pp.26` (replaces the original insert-only `writeNote`): it compares a candidate's CAPPED text against the live vector's stored content and re-embeds through the revive-capable `upsert` only on a first write or a drift, so an unchanged corpus costs no embed call. No lower date bound, so the first run IS the one-time history backfill and later runs both catch up and heal drift; `NoteEmbeddingCatchUp.embed` also REAPS — before any budget check, every stored ref-id whose source row is gone OR still live but cleared to blank gets its vector soft-deleted via `MemoryEmbeddingWriter.deleteNoteEmbedding` — via `NarrativeNoteSource.liveNotes`. `mezo.companion.embedding.embed-notes` / `note-min-chars` (80) / `note-batch-size` (200, the whole run per user). Sources arrive through the companion-owned `NarrativeNoteSource` port (ArchUnit `feature_slices_are_cycle_free` rejected the direct repository import), injected as an `ObjectProvider` so gating an adapter off later is a real no-op instead of a context-startup failure — `ActivityNoteSourceAdapter` implements it from `feature/activity`, while `CheckInNoteSourceAdapter` stays in `embedding/` here, since `feature/biometrics` has no edge into companion and gaining one would close a new 4-slice cycle. No migration, no FE. Full detail: [`journal.md`](journal.md) §3/§9. |
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7`, retraction `mezo-b3pp.31`, fact opt-out `mezo-b3pp.30` | Phase 5 W2.2 — confirmed patterns, active AND prompt-included non-pattern-sourced knowledge facts, and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent`/`KnowledgeFactChangedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. **Promotion is two-way (`mezo-b3pp.31`)**: `retractPattern`/`retractGoal`/`retractFact` archive the mirror node when a pattern is un-confirmed, a goal is soft-deleted, or a fact is soft-deleted or opted out of the prompt (`include_in_prompt=false`) — see the W2.2 section below for the event wiring, `syncFact`, and the honest gap that remains around `knowledge_fact` hard/soft deletes. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
@@ -1287,8 +1287,10 @@ swapped in-slice across compose/k3s/Testcontainers):
   `reflection` (W1.2, `KIND_REFLECTION`, written by `ReflectionEmbeddingListener` off
   `feature/ritual`'s close event), `gratitude` (W1.3, `KIND_GRATITUDE`, written by
   `GratitudeEmbeddingListener` below) and `activity_note`/`checkin_note` (W1.5,
-  `KIND_ACTIVITY_NOTE`/`KIND_CHECKIN_NOTE`, written write-once by the nightly
-  `NoteEmbeddingCatchUp` pass — the only kinds with NO listener behind them) are all populated;
+  `KIND_ACTIVITY_NOTE`/`KIND_CHECKIN_NOTE`, written by the nightly
+  `NoteEmbeddingCatchUp` pass through the lifecycle-aware `MemoryEmbeddingWriter.syncNote`
+  since `mezo-b3pp.26` — re-embeds on drift, reaps on orphan or live-but-blank — the only kinds
+  with NO listener behind them) are all populated;
   `monthly_summary` is what is still schema headroom from
   the Phase 5 W1 narrative-capture wave (`journal.md` §5/§9) — one migration lands all ten per the
   design spec's explicit instruction, rather than one `alter table` per later slice), `ref_id uuid`
@@ -2425,13 +2427,54 @@ pre-baked `"name(args)"` label as `MessageTool.name`, `type` always `read` in V0
 includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1). **`mezo-al1i`** adds
 `MemoryOverviewResponse {l0, l1, l2, l3, jobs}` (nested `MemoryOverviewL0/L1/L2/L3/Jobs` +
 `MemoryPatternCount {kind, status, count}` + `MemoryFactSourceCount {source, count}` +
-`MemoryEmbeddingCounts {dailySummary, chatTurn}`), `MemorySummaryListResponse {items:
+`MemoryEmbeddingKindCount {kind, count}` — **`MemoryOverviewL1.embeddings` is `MemoryEmbeddingKindCount[]`
+since `mezo-b3pp.22`, a BREAKING replacement of the original two-field `MemoryEmbeddingCounts
+{dailySummary, chatTurn}`**; see the L1 paragraph below for why), `MemorySummaryListResponse {items:
 MemorySummaryItem[]}` (`{date, narrative, embedded}`), `SimilarDaysResponse {items:
 SimilarDayItem[]}` (`{date, excerpt, similarity, finalScore}` — `finalScore` is the wire name for
 `MemoryRecallService`'s `similarity × exp(-age/τ)` score), and `LlmUsageResponse {enabled, perDay:
 LlmUsageDay[], totals}` (`LlmUsageDay {date, calls, inputTokens, outputTokens, costUsd?}` —
 `costUsd` null means no priced row that day, never a fabricated 0). All four schemas are defined in
 `api/feature/companion/companion.yml`, alongside the existing `Companion` tag schemas.
+
+**L1's embedding count is a list per kind, not two fixed fields (`mezo-b3pp.22`).** The original
+`MemoryEmbeddingCounts {dailySummary, chatTurn}` shape hard-coded the two kinds `memory_embedding`
+carried at V2.1; `mezo-b3pp.1` widened `ck_memory_embedding_kind` from three values to ten
+(`journal_entry`, `reflection`, `gratitude`, `decision`, `activity_note`, `checkin_note` +
+`weekly_summary`/`monthly_summary`, all documented in the V2.1 table above), and a fixed-field
+response would have needed a contract change — and a matching FE edit — every time the CHECK grows
+again. `MemoryOverviewL1.embeddings` is now `MemoryEmbeddingKindCount[]` (`{kind, count}`),
+matching the shape its two L2/L3 siblings in the same response already use
+(`MemoryOverviewL2.patterns: MemoryPatternCount[]`, `MemoryOverviewL3.facts:
+MemoryFactSourceCount[]`) — an array absorbs an eleventh kind for free, no contract or FE change
+required. `kind` is deliberately plain `type: string` in the schema, not enum-constrained: the DB
+CHECK is the authority and it is expected to keep growing.
+`MemoryEmbeddingRepository.countByKindForUser` (`repository/MemoryEmbeddingRepository.java`) is
+ONE `group by m.kind` JPQL query — `select m.kind as kind, count(m) as count from
+MemoryEmbeddingEntity m where m.createdBy = :createdBy group by m.kind order by count(m) desc,
+m.kind asc` via the `KindCount {getKind(), getCount()}` projection — rather than one
+`countByCreatedByAndKind` call per kind. Being JPQL (not native) matters: Hibernate's
+`@SQLRestriction("is_deleted = false")` applies to JPQL exactly as it does to derived queries, so a
+vector the nightly sweep has reaped (`mezo-b3pp.26` made note reaping real —
+`MemoryEmbeddingWriter.syncNote` soft-deletes an orphaned or live-but-blank note vector) is
+correctly absent from the count rather than inflating it. `MemoryObservatoryService.overview` maps
+each row into `MemoryEmbeddingKindCount.builder().kind(row.getKind()).count((int)
+row.getCount()).build()`; a kind with zero live vectors is simply never a row, so it is omitted
+from the array — the same "absence is zero" convention `MemoryOverviewL2.patterns` and
+`MemoryOverviewL3.facts` already use, now shared by all three. The `order by count desc, kind asc`
+is deliberate, not cosmetic: it makes the response order deterministic, which is a property the API
+promises its consumer — the FE renders one chip per array entry in wire order, with no client-side
+sort. `testOverview_shouldOrderKindsByCountThenKind_whenSeveralKindsArePopulated` in
+`CompanionMemoryOverviewApiIT` asserts that order with `containsExactly`, so it documents and locks
+the intent — but it is not a hard guard: at this row count Postgres' aggregate happens to return the
+same order even with the `order by` removed (verified by hand), so what actually backs the clause is
+the API's determinism promise, not the test. On the FE,
+`MemoryLayersPanel`'s `EMBEDDING_KIND_LABEL` map (`features/insights/components/
+MemoryLayersPanel.tsx`) renders one stat per array entry and falls back to the raw `kind` string
+(`EMBEDDING_KIND_LABEL[e.kind] ?? e.kind`) for a kind it has no Hungarian label for yet — without
+that fallback the array shape would buy nothing, since a brand-new writer's vectors would still be
+invisible in the panel until the FE separately shipped a label for it; with it, a new kind is
+visible in the observatory the day its writer ships.
 
 **`PatternPairDetailResponse` (S1 close, `mezo-tk88.3`):** `{pair: PatternMonitorPair,
 pattern: PatternResponse | null, events: PatternEventResponse[], days: AlignedDayResponse[],
