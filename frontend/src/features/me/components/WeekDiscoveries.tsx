@@ -60,9 +60,7 @@ export function WeekDiscoveries({ digest }: { digest: WeeklyReviewDigest | null 
       {hasLifeEvents && (
         <Section title="Életesemények">
           {digest.lifeEvents.map((e) => (
-            <div key={e.id} className="row" style={{ justifyContent: 'space-between', padding: '6px 0' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{e.title}</span>
-            </div>
+            <Row key={e.id} to="/insights/knowledge">{e.title}</Row>
           ))}
         </Section>
       )}
@@ -76,9 +74,7 @@ export function WeekDiscoveries({ digest }: { digest: WeeklyReviewDigest | null 
       {hasPredictions && (
         <Section title="Előrejelzések">
           {digest.predictions.map((p) => (
-            <div key={p.id} className="row" style={{ justifyContent: 'space-between', padding: '6px 0' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{p.title}</span>
-            </div>
+            <Row key={p.id} to="/insights/predictions">{p.title}</Row>
           ))}
         </Section>
       )}

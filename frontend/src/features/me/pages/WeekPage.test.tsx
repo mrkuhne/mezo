@@ -144,7 +144,7 @@ test('a stale review shows the refresh button; clicking it calls regenerate and 
   expect(screen.getByRole('button', { name: 'Frissítés…' })).toBeDisabled()
 })
 
-test('discoveries only render non-empty subsections, with pattern/fact/memoir links', () => {
+test('discoveries only render non-empty subsections, every row linked out', () => {
   renderPage(`/me/week?start=${mockMeWeekStart}`)
   expect(screen.getByText('Edzésnapokon jobban alszol')).toBeInTheDocument()
   const patternLink = screen.getByText('Edzésnapokon jobban alszol').closest('a')
@@ -153,8 +153,10 @@ test('discoveries only render non-empty subsections, with pattern/fact/memoir li
   expect(factLink).toHaveAttribute('href', '/insights/knowledge')
   const memoirLink = screen.getByText('Új bejegyzés készült a hétről').closest('a')
   expect(memoirLink).toHaveAttribute('href', '/insights/memoir')
-  // Life events render as plain (unlinked) rows.
-  expect(screen.getByText('Nyaralás kezdete')).toBeInTheDocument()
+  const lifeEventLink = screen.getByText('Nyaralás kezdete').closest('a')
+  expect(lifeEventLink).toHaveAttribute('href', '/insights/knowledge')
+  const predictionLink = screen.getByText('A súly csökkenő trendje folytatódik fehérjecél mellett').closest('a')
+  expect(predictionLink).toHaveAttribute('href', '/insights/predictions')
 })
 
 test('the next-week card shows the weekly-suggestion prose under its eyebrow, current week only', () => {
