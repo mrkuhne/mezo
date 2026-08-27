@@ -4,11 +4,14 @@ import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource;
 import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource.Note;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
+import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository.RefContent;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -24,10 +27,19 @@ import org.springframework.stereotype.Component;
  * would close a NEW slice cycle under {@code ArchitectureTest#feature_slices_are_cycle_free}).
  *
  * <p>There is no live listener behind these kinds: this pass is the ONLY writer, which is why it
- * carries no lower date bound. Every live, length-gated row that has no vector yet is a candidate,
- * so the very first run doubles as the one-time HISTORY BACKFILL and every later run finds only
- * what the previous ones missed (already-embedded rows drop out via the ref-id set). {@code
- * note-batch-size} bounds one run so a long history spreads over nights instead of one burst.
+ * carries no lower date bound. Every live, length-gated row is a candidate whether or not it
+ * already has a vector — {@link MemoryEmbeddingWriter#syncNote} compares against the STORED
+ * content and only spends an embed call on a first write or a drift re-embed (mezo-b3pp.26), so
+ * the very first run doubles as the one-time HISTORY BACKFILL and every later run both catches up
+ * what it missed and heals what changed underneath it. {@code note-batch-size} bounds one run so a
+ * long history spreads over nights instead of one burst.
+ *
+ * <p>Lifecycle since mezo-b3pp.26: {@link #embed} also REAPS — a vector whose source row is no
+ * longer live is soft-deleted, outside the budget, before any re-embed spends it (IDENT-3 honesty
+ * beats throughput). One deliberate residue: a live note edited down BELOW {@code note-min-chars}
+ * is neither a reap candidate (still live) nor an embed candidate (below the length gate), so its
+ * stale vector survives untouched — reaping on the length gate instead would mean that merely
+ * raising {@code note-min-chars} mass-deletes a user's existing vectors on the next nightly run.
  *
  * <p>Per-row isolation: {@link #run} is deliberately NOT transactional — each
  * {@link MemoryEmbeddingWriter} call goes through the proxy in its OWN transaction, so a failing or
@@ -73,7 +85,12 @@ public class NoteEmbeddingCatchUp {
         return written;
     }
 
-    /** One source's pass: drop what already has a vector, honour the remaining budget, isolate failures. */
+    /**
+     * One source's pass: reap first and outside the budget (a vector whose source is gone must
+     * stop being recallable tonight even if the budget is exhausted by drifted notes — IDENT-3
+     * honesty beats throughput), then spend the remaining budget on writes/re-embeds, isolating
+     * per-row failures on both halves.
+     */
     private int embed(NarrativeNoteSource source, UUID userId, LocalDate through, int minChars, int budget) {
         String kind = source.kind();
         if (budget <= 0) {
@@ -81,11 +98,37 @@ public class NoteEmbeddingCatchUp {
                     + "starved this run, waits for the next one", userId, kind);
             return 0;
         }
-        List<Note> candidates = source.notesToEmbed(userId, through, minChars);
-        if (candidates.isEmpty()) {
-            return 0;
+        // What the vectors currently SAY, keyed by source row — the sweep compares against this
+        // instead of merely asking "does a vector exist?" (mezo-b3pp.26). These kinds have no
+        // listener, so drift and orphaning can only be noticed here.
+        Map<UUID, String> storedByRef = memoryEmbeddingRepository
+                .findRefContentByCreatedByAndKind(userId, kind).stream()
+                .collect(Collectors.toMap(RefContent::getRefId, RefContent::getContent));
+
+        // REAP first, and outside the budget: a reap spends no embedding call, and a vector whose
+        // source is gone must stop being recallable tonight even if the budget is exhausted by
+        // drifted notes (IDENT-3 honesty beats throughput).
+        int reaped = 0;
+        if (!storedByRef.isEmpty()) {
+            Set<UUID> live = source.liveNotes(userId, storedByRef.keySet()).stream()
+                    .map(Note::id).collect(Collectors.toSet());
+            for (UUID refId : storedByRef.keySet()) {
+                if (live.contains(refId)) {
+                    continue;
+                }
+                try {
+                    memoryEmbeddingWriter.deleteNoteEmbedding(kind, refId);
+                    reaped++;
+                } catch (Exception e) {
+                    log.warn("Note-vector reap failed for user {} kind {} ref {}", userId, kind, refId, e);
+                }
+            }
         }
-        Set<UUID> alreadyEmbedded = memoryEmbeddingRepository.findRefIdsByCreatedByAndKind(userId, kind);
+        if (reaped > 0) {
+            log.info("Reaped {} orphaned note vector(s) for user {} kind {}", reaped, userId, kind);
+        }
+
+        List<Note> candidates = source.notesToEmbed(userId, through, minChars);
         int written = 0;
         for (Note note : candidates) {
             if (written >= budget) {
@@ -93,14 +136,12 @@ public class NoteEmbeddingCatchUp {
                         userId, kind);
                 break;
             }
-            if (alreadyEmbedded.contains(note.id())) {
-                continue;
-            }
+            // Unchanged notes cost nothing and must not charge the budget — syncNote returns
+            // false for them, which is the whole reason it returns a boolean.
             try {
-                // W1.5 (mezo-b3pp.26): syncNote(kind, note) — this call ignores the boolean for now;
-                // Task 2 reworks this sweep to spend it against the run's embed budget.
-                memoryEmbeddingWriter.syncNote(kind, note);
-                written++;
+                if (memoryEmbeddingWriter.syncNote(kind, note)) {
+                    written++;
+                }
             } catch (Exception e) {
                 log.warn("Note-embedding failed for user {} kind {} ref {}", userId, kind, note.id(), e);
             }

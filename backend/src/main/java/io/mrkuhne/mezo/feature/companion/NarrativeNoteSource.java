@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,4 +39,18 @@ public interface NarrativeNoteSource {
     /** Live notes up to and including {@code through} whose text is at least {@code minChars}
      *  long, oldest first. */
     List<Note> notesToEmbed(UUID userId, LocalDate through, int minChars);
+
+    /**
+     * Which of {@code ids} still exist as LIVE rows for this user, with their current text — the
+     * lifecycle half of the sweep (mezo-b3pp.26). An id absent from the result is a row that is
+     * gone (soft-deleted), and its vector gets reaped.
+     *
+     * <p>Deliberately NOT length-gated, unlike {@link #notesToEmbed}: liveness and
+     * substantiveness are different questions. A note edited down below {@code note-min-chars}
+     * is still LIVE and must be re-embedded with its shorter text, not reaped — otherwise merely
+     * raising that config knob would mass-delete a user's existing vectors on the next run.
+     *
+     * <p>An empty {@code ids} must return an empty list without hitting the database.
+     */
+    List<Note> liveNotes(UUID userId, Collection<UUID> ids);
 }
