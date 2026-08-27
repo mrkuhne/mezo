@@ -322,7 +322,10 @@ Locked patterns from the screen rounds (canonical for every further page):
   Kísérletek (*Hungarian status chips ◐ Folyamatban / ✓ Bevált / ◇ Javaslat — localizing the
   real app's English ones*), Memória (Rétegek with pulsing connectors + human cron times /
   Napló / Kereső with score-math chips / Audit). New sprite icons: `i-memoar`, `i-lombik`,
-  `i-kristaly`, `i-retegek`.
+  `i-kristaly`, `i-retegek`. **v2 tile pass** (Daniel: "élőbb, mozgóbb, színesebb, csempés a
+  listák helyett" — applies to every page): all list rows on the subpages became washed
+  tiles with clay icons, rise staggers and animated bars/dots (see prototypes/README.md
+  for the per-page breakdown).
 - **Advisory signals are never red and never block; nulls are never zeros** — carried through
   every screen.
 - **Edzés-session fully specified** in its prototype (feature-audited against

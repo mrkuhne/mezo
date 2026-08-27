@@ -209,4 +209,13 @@ are usable without a build step).
   L0→L3 layer cards joined by pulsing dashed connectors carrying human cron times; Napló —
   nightly-written day cards with embedded dots; Kereső — match-ring result cards with the
   score-math chips egyezés × frissesség = végső; Audit — cost hero, token columns,
-  fact-provenance groups).
+  fact-provenance groups). **Tile pass (Daniel's direction: "élőbb, mozgóbb, színesebb,
+  csempés a listák helyett"):** every list-row pattern on the subpages became washed Huawei
+  tiles with clay icons, rise staggers and animated bars — Minták: colorful lifecycle cells
+  (the decision cell pulses gold) + 2-col pattern tiles (confirmed sage + confidence chip,
+  watching lavender + animated evidence bar, gathering dashed amber) + coverage-ring tile
+  strip; Heti: metric tiles (wash + icon + arrow + animated bar, protein day-dots, wide
+  weight-trend tile) + tinted Growth mini-cells; Tudástár: category-washed fact tiles
+  (edzés coral · egészség amber · élet sky; disabled facts fade to dashed); Előrejelzések /
+  Kísérletek: status-washed tiles (pending lavender, confirmed sage, active amber + day
+  dots); Memória: per-layer colored L0→L3 cards with icons + tinted provenance cells.
