@@ -76,7 +76,10 @@ public class DayScoreService {
      *  {@link FuelDayResponse} pre-fetched by the caller (keyed by date, one entry per day in
      *  {@code [from, to]}) instead of fetching it again here — the B1 efficiency fix (mezo-8tp8):
      *  a caller that already loaded the day's fuel rollup for its own purposes no longer pays for
-     *  a second identical {@link FuelDayService#getDay} call per day. */
+     *  a second identical {@link FuelDayService#getDay} call per day. Safe by construction: a day
+     *  missing from {@code fuelDayByDate} falls back to {@link FuelDayService#getDay} for that
+     *  date, so an incomplete map degrades to the standalone behaviour instead of a null-pointer
+     *  failure. */
     @Transactional(readOnly = true)
     public List<DayScore> scores(UUID userId, LocalDate from, LocalDate to, Map<LocalDate, FuelDayResponse> fuelDayByDate) {
         Map<LocalDate, Double> durationH = metricSeriesService.series(userId, MetricKey.SLEEP_DURATION_H, from, to);
@@ -93,7 +96,11 @@ public class DayScoreService {
         List<DayScore> result = new ArrayList<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
             Integer sleep = sleepSubscore(durationH.get(day), quality.get(day));
-            Integer fuel = fuelSubscore(fuelDayByDate.get(day), kcal.get(day), protein.get(day));
+            FuelDayResponse fuelDay = fuelDayByDate.get(day);
+            if (fuelDay == null) {
+                fuelDay = fuelDayService.getDay(userId, day);
+            }
+            Integer fuel = fuelSubscore(fuelDay, kcal.get(day), protein.get(day));
             Integer checkin = checkinSubscore(checkinCounts.getOrDefault(day, 0L), checkinEnergy.get(day));
             Integer activity = activitySubscore(
                     gymVolume.containsKey(day) || sportLoad.containsKey(day) || trainingRpe.containsKey(day),
