@@ -134,10 +134,22 @@ public class GraphPromotionService {
      * The mirror of {@link #promotePattern} (bd mezo-b3pp.31): a pattern that is no longer
      * confirmed must stop asserting itself in the graph. Archives the node rather than deleting
      * it — {@code status='archived'} keeps the row (and with it the
-     * {@code (createdBy, sourceKind, sourceId)} anchor, so a later re-confirm revives the SAME
-     * node and its edges instead of building a second one), while
-     * {@code GraphTraversalQuery}'s {@code status = 'active'} filter takes it out of the
-     * [Összefüggések] prompt block immediately.
+     * {@code (createdBy, sourceKind, sourceId)} anchor), so a later re-confirm revives the SAME
+     * node — no duplicate under a new id — while {@code GraphTraversalQuery}'s
+     * {@code status = 'active'} filter takes it out of the [Összefüggések] prompt block
+     * immediately.
+     *
+     * <p><b>The node survives; its EDGES don't, necessarily.</b> {@link
+     * GraphMaintenanceService}'s nightly {@code decayAndPruneEdges} decays EVERY active edge by
+     * {@code graph.decay-factor} regardless of whether either endpoint is archived, and
+     * soft-deletes any edge that falls under {@code graph.prune-floor} — at the default
+     * {@code decay-factor=0.99}/{@code prune-floor=0.05}, an edge that started around weight 0.3
+     * crosses the floor in roughly half a year of nightly decay. And on the later re-confirm,
+     * {@link #promotePattern}'s {@code isNew} check is false (the node row never went away), so
+     * {@link GraphEdgeStructurer} is deliberately NOT re-run. A node archived long enough for its
+     * edges to fully decay away therefore comes back {@code active} but edge-less, and since
+     * [Összefüggések] renders purely from edges, contributes nothing to that block until
+     * something else rebuilds its edges.
      *
      * <p>Re-checks the pattern's status itself instead of trusting the caller, so
      * {@code PatternService.decide} can publish the retraction event on ANY non-confirm branch

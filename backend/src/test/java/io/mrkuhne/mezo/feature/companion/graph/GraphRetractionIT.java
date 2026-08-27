@@ -10,6 +10,8 @@ import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphReconcileResult;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
+import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionService;
+import io.mrkuhne.mezo.feature.companion.profile.service.ProfileAssembler;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
@@ -19,6 +21,7 @@ import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -280,6 +283,44 @@ class GraphRetractionIT extends AbstractIntegrationTest {
 
         assertThat(result.retracted()).isEqualTo(0);
         assertThat(nodeRepository.findById(strangerNode.getId()).orElseThrow().getStatus())
+            .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+    }
+
+    /**
+     * Pins the sweep's "don't archive what I don't own" guard (final review, Finding 3). The
+     * complement sweep in {@code GraphPromotionService.reconcile} skips {@code sourceId == null}
+     * nodes outright — that structurally covers extractor/quarterly candidates, since
+     * {@code GraphService.createCandidate} never sets a {@code sourceId}. The W4.3 profile node is
+     * different: {@code ProfileAssembler} gives it {@code sourceKind="profile"} with a NON-null
+     * {@code sourceId} (the owner's user id), so it is protected only by the sweep's {@code
+     * switch}'s {@code default -> false} arm. If that default arm is ever turned into a lookup,
+     * this test is what would catch the sweep silently archiving the singleton profile node.
+     *
+     * <p>The extractor half is seeded as an {@code ACTIVE} node with a null {@code sourceId}
+     * rather than through {@code GraphService.createCandidate}: a real extractor node is {@code
+     * status='candidate'}, which {@code listActive} never even offers to the sweep in the first
+     * place, so seeding one there would make that half of this test vacuous. Seeding it
+     * {@code active} instead still exercises the {@code sourceId == null} skip the sweep actually
+     * relies on for that source kind.
+     */
+    @Test
+    void testReconcile_shouldLeaveForeignSourceKindsAlone_whenProfileAndCandidateNodesExist() {
+        UUID owner = ownerId();
+        GraphNodeEntity profileNode = graphService.upsertNode(owner, GraphNodeEntity.KIND_INSIGHT,
+            ProfileAssembler.PROFILE_TITLE, "Amit eddig tanultam róla.",
+            ProfileAssembler.SOURCE_PROFILE, owner, null, Map.of());
+        assertThat(profileNode.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+        GraphNodeEntity extractorLikeNode = graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT,
+            "Egy nap eseménye", "Egy nap eseménye, kivonatolva.",
+            LifeEventExtractionService.SOURCE_EXTRACTOR, null, null, Map.of());
+        assertThat(extractorLikeNode.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+
+        GraphReconcileResult result = promotionService.reconcile(owner);
+
+        assertThat(result.retracted()).isEqualTo(0);
+        assertThat(nodeRepository.findById(profileNode.getId()).orElseThrow().getStatus())
+            .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+        assertThat(nodeRepository.findById(extractorLikeNode.getId()).orElseThrow().getStatus())
             .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
     }
 }

@@ -8,7 +8,9 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionListener;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
+import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,7 @@ class GraphPromotionSwitchOffIT extends ApiIntegrationTest {
     @Autowired private GraphNodeRepository nodeRepository;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private PatternPopulator patternPopulator;
+    @Autowired private GoalPopulator goalPopulator;
 
     @Test
     void testGraphPromotionBeans_shouldNotExist_whenSwitchOff() {
@@ -46,6 +49,40 @@ class GraphPromotionSwitchOffIT extends ApiIntegrationTest {
         postForBody("/api/companion/pattern/" + pattern.getId() + "/decision",
             PatternDecisionRequest.builder().decision("confirm").build(),
             ownerAuthHeaders(), HttpStatus.OK, Object.class);
+
+        assertThat(nodeRepository.findAll()).isEmpty();
+    }
+
+    /**
+     * Final review Finding 4: {@code PatternService.decide}'s reject/monitor branch publishes
+     * {@code PatternRetractedEvent} unconditionally (bd mezo-b3pp.31) — with the graph switch off
+     * there is no {@code GraphPromotionListener} bean to consume it, so the decide call must still
+     * succeed and write nothing to {@code knowledge_node}.
+     */
+    @Test
+    void testRejectPattern_shouldSucceedAndWriteNoGraphRow_whenSwitchOff() {
+        UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+        PatternEntity pattern = patternPopulator.createPattern(owner, "sleep_vs_food", "Késői evés rontja az alvást.");
+
+        postForBody("/api/companion/pattern/" + pattern.getId() + "/decision",
+            PatternDecisionRequest.builder().decision("reject").build(),
+            ownerAuthHeaders(), HttpStatus.OK, Object.class);
+
+        assertThat(nodeRepository.findAll()).isEmpty();
+    }
+
+    /**
+     * Final review Finding 4: {@code GoalService.deleteGoal} publishes {@code GoalDeletedEvent}
+     * unconditionally (bd mezo-b3pp.31) — with the graph switch off there is no
+     * {@code GraphPromotionListener} bean to consume it, so the delete must still succeed and
+     * write nothing to {@code knowledge_node}.
+     */
+    @Test
+    void testDeleteGoal_shouldSucceedAndWriteNoGraphRow_whenSwitchOff() {
+        UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+        GoalEntity goal = goalPopulator.createGoal(owner, "active");
+
+        deleteAndExpect("/api/goals/" + goal.getId(), ownerAuthHeaders(), HttpStatus.NO_CONTENT);
 
         assertThat(nodeRepository.findAll()).isEmpty();
     }

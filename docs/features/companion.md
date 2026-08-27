@@ -1426,6 +1426,8 @@ build was chosen after living with W3.1's always-on recall.
   `GraphTraversalQuery`'s `status = 'active'` filter is what takes an archived node out of the
   `[Összefüggések]` block (W2.4 § above). **Retraction (`mezo-b3pp.31`)** is this archiving path
   driven backwards from a source row that stopped qualifying — see the W2.2 section below.
+  **The node survives archiving; its EDGES don't, necessarily** — see the `retractPattern` bullet
+  below for why a node revived long after archiving can come back with none.
 - **The W4.3 companion profile is a singleton `knowledge_node`** of `kind=INSIGHT`,
   `source_kind='profile'`, per user — not a separate table (spec §4.2).
 - **`GraphNodeEntity`/`GraphEdgeEntity`** (`feature/companion/graph/entity/`, W2.1)
@@ -1493,7 +1495,25 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     is the one with no live trigger today: no service in main source soft-deletes a
     `knowledge_fact`, so nothing publishes a fact-retraction event and the nightly complement
     sweep below is `retractFact`'s only caller** — stated here plainly rather than implying an
-    event seam that does not exist.
+    event seam that does not exist (that gap is separately tracked as `mezo-b3pp.30`: an
+    `includeInPrompt=false` fact keeps an active PREFERENCE node that the nightly reconcile
+    re-asserts, out of scope here).
+  - **The node survives archiving; its edges don't, necessarily.** `status='archived'` keeps the
+    row and its `(createdBy, sourceKind, sourceId)` anchor, so a later re-confirm/re-save
+    UPSERTs the SAME node back to `active` rather than building a second one — but
+    `GraphMaintenanceService.decayAndPruneEdges` (W2.5 § below) decays EVERY active edge nightly
+    by `graph.decay-factor` regardless of endpoint status, and soft-deletes any that fall under
+    `graph.prune-floor`; at the defaults (`decay-factor=0.99`, `prune-floor=0.05`) an edge that
+    started around weight 0.3 crosses the floor in roughly half a year. On the later revive,
+    `promotePattern`'s `isNew` check is false (the node row never went away), so
+    `GraphEdgeStructurer` is deliberately NOT re-run — a node archived long enough comes back
+    `active` but edge-less, and since `[Összefüggések]` renders purely from edges, contributes
+    nothing to that block until something else rebuilds its edges.
+  - **Residual window via the weekly profile snapshot (honest gap, out of scope).** A retracted
+    PATTERN/PREFERENCE node leaves `[Összefüggések]` immediately, but `ProfileAssembler` (W4.3 §
+    below) condenses active PATTERN/PREFERENCE titles into the `[Profil]` block's `summary` only
+    once a week — so content retracted mid-week can still be quoted inside `[Profil]` until the
+    next weekly regeneration. Self-healing (the next `rebuild` drops it), not fixed here.
   - `reconcile(userId)` — the nightly sweep (patterns/facts/goals the write-path hooks could have
     missed: pre-graph confirmations, manually created facts, drifted titles). Pure UPSERT, so
     running it twice in a row is a no-op on the second pass. **Exists in this slice but nothing
