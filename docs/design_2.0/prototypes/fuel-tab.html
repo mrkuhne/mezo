@@ -960,7 +960,19 @@
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .wname.ghosty { color: #A2958A; font-weight: 600; }
   .wmeta { font-size: 7.5px; color: #6E6257; text-align: center; font-variant-numeric: tabular-nums; }
-  .wscore { display: flex; justify-content: center; margin-top: 2px; }
+  .wkcal { border-radius: 11px; padding: 4px 2px 3px; text-align: center; margin-top: 2px;
+    background: rgba(255, 255, 255, 0.88); box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06), 0 2px 5px rgba(43, 33, 24, 0.06); }
+  .wkcal b { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .wkcal small { font-size: 6px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-left: 3px; }
+  .wrings { display: flex; justify-content: space-between; padding: 0 7px; margin-top: 4px; }
+  .wring { display: grid; gap: 2px; justify-items: center; flex: none; }
+  .wring i { width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0); }
+  .wring i::after { content: attr(data-l); width: 12.5px; height: 12.5px; border-radius: 50%; background: #FFFDF8;
+    display: grid; place-items: center; font-size: 6px; font-weight: 800; color: #6E6257; }
+  .wring small { font-size: 6.5px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .wtile.missed .wkcal, .wtile.missed .wrings { opacity: 0.65; }
+  .wscore { display: flex; justify-content: center; margin-top: 3px; }
   .wcta { margin-top: 3px; width: 100%; padding: 6px 0; font-size: 9px; text-align: center; }
   .wcta.ghost { padding: 5px 0; }
   .scorech { font-size: 7.5px; font-weight: 800; border-radius: 999px; padding: 2px 7px; background: rgba(143, 175, 126, 0.18); color: #4E6B42; flex: none; font-variant-numeric: tabular-nums; }
@@ -1455,8 +1467,10 @@
           Szénhidrát · Zsír · Rost · Víz. A víz-gyűrű gomb — logoló sheetet nyit.</li>
           <li><strong>Ablak-swimlane</strong> — minden beütemezett étkezési ablak (amire az AI is
           ajánl) saját csempét kap egy vízszintesen görgethető sávban, saját clay étel-ikonnal
-          (tojás / tál / alma / fazék). <strong>Kész</strong>: zsálya wash, KÉSZ ✓, az étel neve,
-          kcal · g P és az AI-pont chip (a frissen logolt ✨ folyamatban). <strong>MOST</strong>:
+          (tojás / tál / alma / fazék). Minden csempén <strong>kcal mini-csempe</strong> + három
+          <strong>mini makró-gyűrű</strong> (P korall · C borostyán · F levendula — a kitöltés azt
+          mutatja, ez az étkezés mennyit tesz a napi célba). <strong>Kész</strong>: zsálya wash,
+          KÉSZ ✓, az étel neve és az AI-pont chip (a frissen logolt ✨ folyamatban). <strong>MOST</strong>:
           korall keret + Logold CTA, a terv-étellel. <strong>Kimaradt</strong>: szaggatott borostyán
           keret, „még pótolható" + Pótold — sosem büntető. <strong>Jövőbeli</strong>: terv-javaslat +
           ghost Logold. A sáv a MOST-csempére gördül be, a sor végén az „ablakon kívüli" logolás-csempe
@@ -1604,6 +1618,17 @@
     if (w.score != null) return '<span class="scorech' + (w.score < 90 ? ' mid' : '') + '">✨ ' + w.score + ' p</span>';
     return '<span class="scorech pend">✨ folyamatban</span>';
   }
+  function macBlock(m) {
+    function ring(l, v, t, c) {
+      var pct = Math.min(100, Math.round(v / t * 100));
+      return '<span class="wring"><i style="--c:' + c + ';--v:' + pct + ';" data-l="' + l + '" role="img" aria-label="' + l + ' ' + v + ' gramm, a napi cél ' + pct + ' százaléka"></i><small>' + v + ' g</small></span>';
+    }
+    return '<div class="wkcal"><b>' + m.kcal + '</b><small>kcal</small></div>' +
+      '<div class="wrings">' +
+      ring('P', m.p, T.p, '#E05535') +
+      ring('C', m.c, T.c, '#C9962E') +
+      ring('F', m.f, T.f, '#8A76CC') + '</div>';
+  }
   function wtile(w, i) {
     var icon = '<div class="wicon"><svg width="32" height="32" viewBox="0 0 100 100"><use href="#' + w.icon + '"/></svg></div>' +
       '<div class="wlbl">' + w.slot + '</div>';
@@ -1611,14 +1636,15 @@
       return '<div class="wtile done">' +
         '<div class="wtop"><time>' + (w.loggedTime || w.time) + '</time><span class="wstamp done">KÉSZ ✓</span></div>' +
         icon + '<div class="wname">' + w.meal.name + '</div>' +
-        '<div class="wmeta">' + w.meal.kcal + ' kcal · ' + w.meal.p + ' g P</div>' +
+        macBlock(w.meal) +
         '<div class="wscore">' + scoreChip(w) + '</div></div>';
     }
     if (w.state === 'now') {
       return '<div class="wtile now">' +
         '<div class="wtop"><time>' + w.time + '</time><span class="wstamp now">MOST</span></div>' +
         icon + '<div class="wname">' + w.plan.name + '</div>' +
-        '<div class="wmeta">a tervből · ' + w.plan.kcal + ' kcal · ' + w.plan.p + ' g P</div>' +
+        '<div class="wmeta">a tervből</div>' +
+        macBlock(w.plan) +
         '<button class="cta wcta" data-log="' + i + '">Logold</button></div>';
     }
     if (w.state === 'missed') {
@@ -1626,12 +1652,14 @@
         '<div class="wtop"><time>' + w.time + '</time><span class="wstamp miss">KIMARADT</span></div>' +
         icon + '<div class="wname ghosty">' + w.plan.name + '</div>' +
         '<div class="wmeta">még pótolható</div>' +
+        macBlock(w.plan) +
         '<button class="ghost wcta" data-log="' + i + '">Pótold</button></div>';
     }
     return '<div class="wtile">' +
       '<div class="wtop"><time>' + w.time + '</time></div>' +
       icon + '<div class="wname">' + w.plan.name + '</div>' +
-      '<div class="wmeta">a tervből · ' + w.plan.kcal + ' kcal · ' + w.plan.p + ' g P</div>' +
+      '<div class="wmeta">a tervből</div>' +
+      macBlock(w.plan) +
       '<button class="ghost wcta" data-log="' + i + '">Logold</button></div>';
   }
   function renderLane() {

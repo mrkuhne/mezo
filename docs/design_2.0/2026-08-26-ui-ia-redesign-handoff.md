@@ -276,7 +276,8 @@ Locked patterns from the screen rounds (canonical for every further page):
   chips that vanish on static energy, 5 rings with the water ring as a button), the
   **window swimlane** (Daniel's direction, replacing the earlier MOST-card + done-capsule
   pair): one tile per user-scheduled eating window in a horizontal lane with clay meal icons
-  — done tiles show the meal name + kcal · g P + AI-score chip (unscored ✨ folyamatban), the
+  — every tile carries a kcal mini-tile + three mini macro rings (fill = the meal's share of
+  the daily target); done tiles show the meal name + AI-score chip (unscored ✨ folyamatban), the
   now tile is coral-ringed with a Logold CTA, missed tiles are dashed amber "még pótolható"
   Pótold, future tiles carry the plan suggestion; the lane auto-scrolls to MOST and ends with
   the out-of-window log tile (＋ Logolás / ✨ AI); AI-average from scored meals only in the

@@ -107,8 +107,9 @@ are usable without a build step).
   Fehérje·Szénh.·Zsír·Rost·Víz where the water ring is a button → WaterLogSheet), the
   **window swimlane** — every user-scheduled eating window (the ones the AI recommends
   against) is its own tile in a horizontally scrolling lane with its own clay meal icon
-  (`i-reggeli` egg / `i-ebed` bowl / `i-snack` apple / `i-vacsora` pot): done = sage wash +
-  KÉSZ ✓ + meal name + kcal · g P + AI-score chip (fresh log = ✨ folyamatban), now = coral
+  (`i-reggeli` egg / `i-ebed` bowl / `i-snack` apple / `i-vacsora` pot): every tile carries a **kcal mini-tile + three mini macro rings** (P coral · C amber ·
+  F lavender — fill = this meal's share of the daily target); done = sage wash +
+  KÉSZ ✓ + meal name + AI-score chip (fresh log = ✨ folyamatban), now = coral
   ring + MOST stamp + plan meal + Logold CTA, missed = dashed amber + "még pótolható" + Pótold
   (never punitive), future = plan suggestion + ghost Logold; the lane auto-scrolls to the MOST
   tile and ends with the out-of-window log tile (＋ Logolás / ✨ AI napló); the lane header
