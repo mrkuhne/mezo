@@ -333,11 +333,20 @@ describe('useFeedback (real mode)', () => {
       const total = requestedByChunk.flat().length
       expect(total).toBe(FEEDBACK_MAX_IDS)
     })
-    const sent = requestedByChunk.flat()
-    // the tail (what the user is actually looking at) is kept; the oldest head is dropped
-    expect(sent[0]).toBe('m50')
-    expect(sent.at(-1)).toBe(`m${FEEDBACK_MAX_IDS + 49}`)
-    expect(sent).not.toContain('m0')
+    // MSW may record concurrent chunk requests in any dispatch order, so assert on the SET of ids
+    // actually requested rather than positional order — the property that matters is which ids
+    // survived the cap, not which chunk carried them. The tail (what the user is actually looking
+    // at) is kept; the oldest head is dropped.
+    const sent = new Set(requestedByChunk.flat())
+    const keptIds = Array.from({ length: FEEDBACK_MAX_IDS }, (_, i) => `m${i + 50}`)
+    const droppedIds = Array.from({ length: 50 }, (_, i) => `m${i}`)
+    for (const id of keptIds) {
+      expect(sent.has(id)).toBe(true)
+    }
+    for (const id of droppedIds) {
+      expect(sent.has(id)).toBe(false)
+    }
+    expect(sent.size).toBe(FEEDBACK_MAX_IDS)
   })
 
   test('an empty id list issues NO request (the contract requires minItems: 1)', async () => {

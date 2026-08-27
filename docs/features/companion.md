@@ -3574,10 +3574,10 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   are enforced by generated bean validation — the same machinery the `artifactKind` cases prove is
   wired — which is why the gap was accepted rather than a bug, but it IS a gap: a fragment edit that
   dropped one of those four could not fail a test today. The FE tests that look adjacent do **not**
-  close it (`feedbackHooks.test.tsx` asserts the CLIENT never *sends* an empty list and, since
-  `mezo-b3pp.23`, never sends more than `FEEDBACK_IDS_PER_REQUEST` (100) ids in any ONE request —
-  the empty-skip and the per-chunk sizing are hook/api-layer behavior, not a server-rejection
-  assertion). Cheapest fix if it ever bites: four more cases in this IT, mirroring the two
+  close it (`feedbackHooks.test.tsx` asserts the CLIENT never *sends* an empty list; since
+  `mezo-b3pp.23`, `feedbackApi.test.ts` separately asserts no ONE request ever carries more than
+  `FEEDBACK_IDS_PER_REQUEST` (100) ids — the empty-skip and the per-chunk sizing are hook/api-layer
+  behavior, not a server-rejection assertion). Cheapest fix if it ever bites: four more cases in this IT, mirroring the two
   `whenArtifactKindUnknown` ones.
 - **`feedback/MessageFeedbackPersistenceIT`** — the entity/constraint layer under the API: an `up`
   row without a reason and a `down` row with one round-trip; `ck_message_feedback_reason` really
@@ -4278,6 +4278,10 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   `Promise.allSettled` on purpose: a partially successful batch would render *some* chips correctly
   and others silently unvoted with no way for the page to tell "unvoted" from "read failed", which
   is strictly worse than `useFeedback`'s existing whole-read degrade to `realEmpty` (IDENT-3).
+  **This does amplify under retry:** the app `QueryClient` is `retry: 1`
+  (`QueryProvider.tsx:21`) and a retry re-runs the whole `queryFn`, so one flaky chunk on a
+  near-ceiling page re-fires every chunk — up to 20 requests instead of 2 — which is the accepted
+  cost of the all-or-nothing choice above, not a defect.
 - **Two alternatives were on the table and both were rejected, confirmed with the human partner.**
   Raising `server.max-http-request-header-size` to 16 KB in `application.yml` would have fixed the
   symptom without a ceiling, but ties FE payload size to a JVM/container tuning knob nobody else on
