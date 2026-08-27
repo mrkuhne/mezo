@@ -357,7 +357,9 @@ bottom-right, rolled out to every prototype.** The Én tab first ship is done in
 (`2026-08-27-en-feature-audit.md`): identity hero + goal card + 8 tiles hub; Cél, Súly,
 Alvás + Éjszakai mód, Growth, Napló, Emberek, Tudás, Értesítés, AI-napló subpages, all
 tile-based with the honest-state contracts preserved (— never 0, tartás contract, phase-card
-gating, night-mode clock ban). Remaining pages to design: Fuel subpage deep rounds (Terv +
+gating, night-mode clock ban). The **quick-log sheet** behind the floating FAB is designed and
+wired live in en-tab (context-aware MOST head, in-place Víz/Check-in actions, honest Alvás
+state, Napló picker, Mezo chat row) — audited against the real QuickInputSheet. Remaining pages to design: Fuel subpage deep rounds (Terv +
 Gyógyszer at sketch depth, recipe detail/editor + the sheets), Mezo- and Én-tab iteration
 rounds with Daniel, Napzárás, and the Edzés review page (the live session flow is done — see
 Edzés-session above). New icons/spots always go back into `docs/design_2.0/assets/`

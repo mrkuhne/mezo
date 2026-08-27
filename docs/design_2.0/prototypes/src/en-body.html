@@ -227,6 +227,47 @@
   .thcard.on { border-color: #FF6B4A; background: #FFF6F1; }
   .thcard b { font-size: 10.5px; display: block; }
   .thcard small { font-size: 8px; color: #6E6257; font-weight: 300; line-height: 1.45; display: block; margin-top: 2px; }
+  /* ===== gyors logolás (FAB-sheet) ===== */
+  .qlmost { border: 1px solid #FF6B4A; border-radius: 17px; background: #fff; padding: 10px 12px; margin-top: 10px; cursor: pointer;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 16px 28px -14px rgba(255, 107, 74, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .qlmost .stamp { font-size: 6px; font-weight: 800; letter-spacing: 0.1em; border-radius: 5px; padding: 1.5px 5px;
+    background: rgba(255, 107, 74, 0.12); color: #A84A26; }
+  .qlduo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .qlact { border-radius: 16px; padding: 9px 10px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 12px 22px -13px var(--qg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    background: var(--qw, #fff); }
+  .qlact .hd { display: flex; align-items: center; gap: 4px; font-size: 8.5px; font-weight: 700; white-space: nowrap; }
+  .qlact .hd b { font-size: 8px; }
+  .qlact .hd small { font-size: 6.5px; }
+  .qlchips { display: flex; gap: 4px; margin-top: 7px; }
+  .qlchips button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.12); background: rgba(255, 255, 255, 0.8); border-radius: 9px;
+    padding: 6px 0; font-size: 8.5px; font-weight: 700; color: #33749C; font-family: inherit; cursor: pointer; font-variant-numeric: tabular-nums; }
+  .qlchips button:active { transform: scale(0.94); }
+  .moodrow { display: flex; gap: 4px; margin-top: 7px; }
+  .moodrow button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.12); background: rgba(255, 255, 255, 0.8); border-radius: 9px;
+    padding: 5px 0; font-size: 12px; font-family: inherit; cursor: pointer; }
+  .moodrow button.on { border-color: #C46FA0; background: #FAE3ED; }
+  .qlgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+  .qltile { border-radius: 15px; padding: 9px 4px 8px; text-align: center; display: grid; gap: 3px; justify-items: center;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--qw, #fff); cursor: pointer; font-family: inherit;
+    box-shadow: 0 10px 18px -12px var(--qg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .qltile:active { transform: scale(0.94); }
+  .qltile b { font-size: 8.5px; font-weight: 700; color: #2B2118; }
+  .qltile small { font-size: 6.5px; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .qltile small.done { color: #4E6B42; font-weight: 700; }
+  .qlchat { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 10px; cursor: pointer; text-align: left;
+    border: none; font-family: inherit; border-radius: 999px; padding: 9px 12px 9px 14px;
+    background: linear-gradient(150deg, #EBE6F8, #F9F6FE);
+    box-shadow: 0 12px 22px -13px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .qlchat b { font-size: 10px; display: block; }
+  .qlchat small { font-size: 7.5px; color: #6E6257; }
+  .toast { position: absolute; left: 50%; bottom: 148px; transform: translateX(-50%) translateY(8px); z-index: 13;
+    background: #2B2118; color: #FDFAF4; border-radius: 999px; padding: 7px 15px; font-size: 9px; font-weight: 600;
+    white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease;
+    box-shadow: 0 12px 24px -8px rgba(29, 23, 18, 0.5); }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
   /* B-döntés: 5 tab + lebegő logolás-FAB */
   .tabbar.five { padding: 8px 10px; }
   .floatfab { position: absolute; right: 14px; bottom: 88px; width: 50px; height: 50px; border-radius: 50%;
@@ -881,7 +922,10 @@
         </div>
       </div>
 
-      <div class="floatfab" role="button" tabindex="0" aria-label="Gyors logolás"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div class="bsheet" id="sh-quick"></div>
+      <div class="toast" id="toast" role="status"></div>
+
+      <div class="floatfab" id="fab" role="button" tabindex="0" aria-label="Gyors logolás"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
       <div class="tabbar five">
         <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
         <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
@@ -936,9 +980,27 @@
           státusz-sínnel (siker zsálya · hiba terrakotta · megszakadt borostyán).</li>
         </ul>
       </div>
+      <div>
+        <h2>Gyors logolás — a lebegő FAB mögött</h2>
+        <ul>
+          <li><strong>Kontextus-fej (MOST)</strong> — a sheet tudja, hány óra van: 13:30-kor az
+          Ebéd-ablak a reflektor (korall keret, terv-étel, Logold CTA). Designolt kiegészítés a
+          valós app statikus rácsa fölé — ugyanaz a logika, mint a Fuel ablak-swimlane-je.</li>
+          <li><strong>Helyben elvégezhető akciók</strong> — a Víz csempén ＋250/＋400/＋500 chipek
+          azonnal logolnak (élő számláló + toast), a Check-in négy hangulat-gombja helyben ment.
+          A valós app elve — „a log mindig két koppintás" — itt szó szerint teljesül.</li>
+          <li><strong>Hat mini-csempe</strong> élő kontextus-aljsorral: Súly (a súly-sheetet nyitja
+          helyben), Alvás (becsületes „ma ✓ 7,5 h" állapot — nem kínál újra logolást), Napló
+          (→ Aktivitás / Napló / Hála választó, ‹ Vissza-val), Étkezés · Edzés · Stack
+          (navigáló csempék: „ma 16:45 · Pull", „köv. 16:45 · koffein").</li>
+          <li><strong>Mezo-sor alul</strong> — „Mondd el Mezónak · kérdezz, mesélj — vagy logolj
+          szóban": a chat mint logolási út is megmarad, ahogy a valós sheetben.</li>
+        </ul>
+      </div>
       <div class="note">A B-döntés szerint az Én teljes értékű ötödik tab, a gyors logolás lebegő
-      FAB. A „—" sosem 0, a tartás-kontraktus, a fázis-kártyák önálló kapuzása és az éjszakai mód
-      óra-tilalma a valós app becsület-szabályai — a redesign mind megtartja.</div>
+      FAB — a fenti sheet minden tab FAB-ja mögött ugyanez. A „—" sosem 0, a tartás-kontraktus,
+      a fázis-kártyák önálló kapuzása és az éjszakai mód óra-tilalma a valós app
+      becsület-szabályai — a redesign mind megtartja.</div>
     </aside>
   </div>
 </div>
@@ -990,7 +1052,7 @@
 
   /* ---------- sheetek ---------- */
   var sback = document.getElementById('sback');
-  var sheets = { weight: document.getElementById('sh-weight'), theme: document.getElementById('sh-theme') };
+  var sheets = { weight: document.getElementById('sh-weight'), theme: document.getElementById('sh-theme'), quick: document.getElementById('sh-quick') };
   function closeSheets() {
     sback.classList.remove('open');
     Object.keys(sheets).forEach(function (k) { sheets[k].classList.remove('open'); });
@@ -1237,6 +1299,108 @@
     if (row) { row.classList.toggle('off', !on); paintSpark(); }
   });
   paintSpark();
+
+  /* ---------- gyors logolás (FAB) ---------- */
+  var toastEl = document.getElementById('toast');
+  var toastT = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastT);
+    toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
+  }
+  function huInt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  var QL = { water: 1300, waterGoal: 3000, mood: null, sleepLogged: true };
+  var shq = sheets.quick;
+
+  function qlMenu() {
+    shq.innerHTML =
+      '<div class="p-eyebrow" style="color:#A84A26;">Gyors logolás</div>' +
+      '<div style="font-size:8.5px;color:#A2958A;margin-top:2px;">bármikor, két koppintás</div>' +
+      '<div class="qlmost" id="qlMost">' +
+      '<svg width="30" height="30" viewBox="0 0 100 100" style="flex:none;"><use href="#i-ebed"/></svg>' +
+      '<div class="grow"><div class="mrow" style="gap:6px;"><b style="font-size:10.5px;">Ebéd-ablak</b><span class="stamp">MOST</span></div>' +
+      '<div style="font-size:8px;color:#6E6257;margin-top:1px;">Csirkés rizs-bowl a terv · 640 kcal</div></div>' +
+      '<span class="cta" style="padding:6px 13px;">Logold</span></div>' +
+      '<div class="qlduo">' +
+      '<div class="qlact" style="--qw:linear-gradient(150deg,#DFEDF5,#F5FAFD);--qg:rgba(78,143,184,0.35);">' +
+      '<div class="hd"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-viz"/></svg>Víz <b id="qlWater" style="margin-left:auto;font-variant-numeric:tabular-nums;color:#33749C;">' + QL.water + ' ml</b></div>' +
+      '<div class="qlchips"><button data-ml="250">＋250</button><button data-ml="400">＋400</button><button data-ml="500">＋500</button></div></div>' +
+      '<div class="qlact" style="--qw:linear-gradient(150deg,#FAE3ED,#FEF8FB);--qg:rgba(142,63,111,0.3);">' +
+      '<div class="hd">❤️ Check-in <small id="qlMoodSt" style="margin-left:auto;font-size:7px;color:#A2958A;">délután</small></div>' +
+      '<div class="moodrow" id="qlMood"><button data-m="😖">😖</button><button data-m="😐">😐</button><button data-m="🙂">🙂</button><button data-m="😄">😄</button></div></div>' +
+      '</div>' +
+      '<div class="qlgrid">' +
+      '<button class="qltile" data-ql="suly" style="--qw:linear-gradient(150deg,#DFEDF5,#F5FAFD);--qg:rgba(78,143,184,0.35);"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-suly"/></svg><b>Súly</b><small>reggel 78,6</small></button>' +
+      '<button class="qltile" data-ql="alvas" style="--qw:linear-gradient(150deg,#EBE6F8,#F9F6FE);--qg:rgba(93,79,160,0.35);"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-alvas"/></svg><b>Alvás</b><small class="' + (QL.sleepLogged ? 'done' : '') + '">' + (QL.sleepLogged ? 'ma ✓ 7,5 h' : 'nincs ma') + '</small></button>' +
+      '<button class="qltile" data-ql="naplo" style="--qw:linear-gradient(150deg,#E9F1E2,#F7FBF3);--qg:rgba(110,139,94,0.35);"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-naplo"/></svg><b>Napló</b><small>3 mód</small></button>' +
+      '<button class="qltile" data-ql="etkezes" style="--qw:linear-gradient(150deg,#FFE7DC,#FFF7F2);--qg:rgba(216,72,31,0.3);"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg><b>Étkezés</b><small>ablakon kívül is</small></button>' +
+      '<button class="qltile" data-ql="edzes" style="--qw:linear-gradient(150deg,#FFE7DC,#FFF7F2);--qg:rgba(216,72,31,0.3);"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg><b>Edzés</b><small>ma 16:45 · Pull</small></button>' +
+      '<button class="qltile" data-ql="stack" style="--qw:linear-gradient(150deg,#FFF1D6,#FFFAF0);--qg:rgba(181,126,20,0.35);"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-stack"/></svg><b>Stack</b><small>köv. 16:45 · koffein</small></button>' +
+      '</div>' +
+      '<button class="qlchat" id="qlChat">' +
+      '<svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
+      '<span class="grow"><b>Mondd el Mezónak</b><small>kérdezz, mesélj — vagy logolj szóban</small></span>' +
+      '<span style="color:#5D4FA0;">›</span></button>';
+    wireQl();
+  }
+  function qlNaploPick() {
+    shq.innerHTML =
+      '<div class="mrow"><button class="pgact" id="qlBack" style="margin-left:0;">‹ Vissza</button></div>' +
+      '<div style="font-size:13px;font-weight:700;margin-top:8px;">Mit naplózol?</div>' +
+      '<div class="qlgrid" style="margin-top:10px;">' +
+      '<button class="qltile" data-qn="Aktivitás" style="--qw:linear-gradient(150deg,#FDF0DA,#FFFCF5);--qg:rgba(201,150,46,0.4);"><span style="font-size:18px;">✍️</span><b>Aktivitás</b><small>LIFE XP</small></button>' +
+      '<button class="qltile" data-qn="Napló" style="--qw:linear-gradient(150deg,#E9F1E2,#F7FBF3);--qg:rgba(110,139,94,0.35);"><span style="font-size:18px;">📓</span><b>Napló</b><small>vagy döntés</small></button>' +
+      '<button class="qltile" data-qn="Hála" style="--qw:linear-gradient(150deg,#FAE3ED,#FEF8FB);--qg:rgba(142,63,111,0.3);"><span style="font-size:18px;">🙏</span><b>Hála</b><small>1–3 dolog</small></button>' +
+      '</div>';
+    document.getElementById('qlBack').addEventListener('click', qlMenu);
+    shq.querySelectorAll('[data-qn]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        closeSheets();
+        toast('→ ' + b.getAttribute('data-qn') + '-sheet nyílik · két koppintás volt');
+      });
+    });
+  }
+  function wireQl() {
+    document.getElementById('qlMost').addEventListener('click', function () {
+      closeSheets();
+      toast('→ Fuel · egyesített logolási flow · Ebéd-ablak');
+    });
+    shq.querySelectorAll('[data-ml]').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        QL.water += parseInt(b.getAttribute('data-ml'), 10);
+        document.getElementById('qlWater').textContent = huInt(QL.water) + ' ml';
+        toast('✓ Víz logolva · ' + huInt(QL.water) + ' / ' + huInt(QL.waterGoal) + ' ml ma');
+      });
+    });
+    shq.querySelectorAll('#qlMood button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        shq.querySelectorAll('#qlMood button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        QL.mood = b.getAttribute('data-m');
+        document.getElementById('qlMoodSt').textContent = 'mentve ✓';
+        toast('✓ Check-in mentve · délután ' + QL.mood);
+      });
+    });
+    shq.querySelectorAll('[data-ql]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-ql');
+        if (k === 'suly') { closeSheets(); wDraft = Math.round((wCur - 0.2) * 10) / 10; paintWDraft(); openSheet('weight'); }
+        else if (k === 'alvas') { toast(QL.sleepLogged ? 'Ma reggel már logoltad — 7,5 h · Q9' : '→ Alvás-log nyílik'); }
+        else if (k === 'naplo') { qlNaploPick(); }
+        else if (k === 'etkezes') { closeSheets(); toast('→ Fuel · logolás — ablakon kívül'); }
+        else if (k === 'edzes') { closeSheets(); toast('→ Edzés tab · ma 16:45 · Pull Day'); }
+        else if (k === 'stack') { closeSheets(); toast('→ Fuel · Stack — köv. zóna 16:45'); }
+      });
+    });
+    document.getElementById('qlChat').addEventListener('click', function () {
+      closeSheets();
+      toast('→ Mezo tab · beszélgetés');
+    });
+  }
+  document.getElementById('fab').addEventListener('click', function () { qlMenu(); openSheet('quick'); });
+  document.getElementById('fab').addEventListener('keydown', function (e) { if (e.key === 'Enter') { qlMenu(); openSheet('quick'); } });
 
   /* ---------- AI szegmensek ---------- */
   var AI = {

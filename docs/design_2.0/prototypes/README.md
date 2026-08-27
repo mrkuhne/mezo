@@ -260,4 +260,15 @@ are usable without a build step).
   **recomputes live as category toggles flip**, master toggle, 3 category groups with washes,
   the gym-only −45 perc lead chip, and the honest brain-events footnote), AI-napló (cost hero
   with Ma/Hét/Hónap segments, feature cost bars, call tiles with status rails — siker sage ·
-  hiba terracotta · megszakadt amber — and the `~ becslés` footnote).
+  hiba terracotta · megszakadt amber — and the `~ becslés` footnote). **Quick log** (the
+  floating FAB, wired live here — the same sheet sits behind every tab's FAB): audited against
+  the real `QuickInputSheet` (title `Gyors logolás` / `bármikor, két koppintás`, 8-tile grid +
+  highlighted chat row, Alvás/Napló/Check-in swap in place). Redesign: a **context-aware MOST
+  head** (13:30 → Ebéd-ablak tile with the plan meal + Logold, echoing the Fuel swimlane —
+  designed addition over the static grid), **do-it-here duo tiles** — Víz with ＋250/＋400/＋500
+  chips that log in place (live HU-grouped counter + toast) and Check-in with four inline mood
+  buttons —, six mini tiles with live context sublines (Súly opens the weight sheet in place;
+  Alvás honestly reads `ma ✓ 7,5 h` and refuses to re-log; Napló → Aktivitás/Napló/Hála picker
+  with ‹ Vissza; Étkezés/Edzés/Stack navigate with `ma 16:45 · Pull` / `köv. 16:45 · koffein`
+  sublines), and the Mezo row at the bottom (`Mondd el Mezónak · kérdezz, mesélj — vagy logolj
+  szóban`) keeping chat as a logging path.
