@@ -198,6 +198,10 @@ mezo:
     # switch: proactive beans condition on BOTH (they call the CompanionLlm port).
     proactive:
       enabled: true
+    # Karakter dossier (mezo-1gim) — dimensions/claims/observations/conferences + reads.
+    # LLM-calling character beans (Slice 2+) additionally require the companion switch.
+    character:
+      enabled: true
     # Gamified growth E1 (ADR 0010) — daily quests (catalog-driven, derived completion).
     # Off => the /api/quest surface 404s and no quest beans exist.
     quest:

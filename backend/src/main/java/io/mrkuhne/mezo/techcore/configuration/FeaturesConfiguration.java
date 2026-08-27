@@ -70,6 +70,10 @@ public class FeaturesConfiguration {
      *  CompanionLlm port, whose beans only exist when the companion is on). */
     public static final String PROACTIVE_SWITCH = "mezo.feature.proactive.enabled";
 
+    /** Karakter dossier (mezo-1gim) — dimensions/claims/observations/conferences + reads.
+     *  LLM-calling character beans (Slice 2+) additionally require {@link #COMPANION_SWITCH}. */
+    public static final String CHARACTER_SWITCH = "mezo.feature.character.enabled";
+
     /** Companion-feed morning/midday/evening crons (mezo-gst9) — techcore cron zone
      *  (schedules: mezo.proactive.feed.*-cron). */
     public static final String FEED_JOB_SWITCH = "mezo.techcore.cron.feed-job.enabled";
