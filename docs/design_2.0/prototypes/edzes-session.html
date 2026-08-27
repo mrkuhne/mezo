@@ -1006,6 +1006,7 @@
   @keyframes xfade { 0%, 42% { opacity: 0; } 55%, 88% { opacity: 1; } 100% { opacity: 0; } }
   .vidbox { margin-top: 8px; aspect-ratio: 16/9; border-radius: 13px; background: #241C15; display: grid; place-items: center; text-align: center; color: #C4B6A5; font-size: 9px; font-weight: 600; }
   .notepill { display: flex; align-items: flex-start; gap: 6px; margin-top: 8px; font-size: 9px; font-weight: 400; color: #6E6257; background: rgba(255, 255, 255, 0.7); border-left: 2.5px solid var(--fr); border-radius: 9px; padding: 6px 9px; }
+  .notepill .ntext { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; min-width: 0; }
   .setdots { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
   .sd { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.16); display: grid; place-items: center; font-size: 8.5px; font-weight: 700; color: #A2958A; background: rgba(255, 255, 255, 0.7); }
   .sd.don { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); color: #fff; }
@@ -1033,19 +1034,25 @@
   .restbar b { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .rtbtn { width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-family: inherit; font-size: 11px; cursor: pointer; padding: 0; flex: none; }
 
-  .pobanner { margin: 9px 14px 0; border-radius: 15px; background: #fff; padding: 9px 12px; border: 0.5px solid rgba(43, 33, 24, 0.07); box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.3); }
+  .colstrip { margin: 9px 14px 0; border-radius: 15px; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.07); box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.3); overflow: hidden; }
+  .colhead { display: flex; align-items: center; gap: 8px; width: 100%; border: none; background: none; font-family: inherit; padding: 9px 12px; cursor: pointer; text-align: left; }
+  .colhead .csum { margin-left: auto; font-size: 8.5px; font-weight: 600; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .colhead .chev { color: #A2958A; font-size: 10px; transition: transform 0.2s ease; flex: none; }
+  .colstrip.open .colhead .chev { transform: rotate(180deg); }
+  .colbody { display: none; padding: 0 12px 11px; }
+  .colstrip.open .colbody { display: block; }
   .pochip { font-size: 8.5px; font-weight: 700; border-radius: 999px; padding: 2.5px 9px; flex: none; }
   .pocells { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 10px; font-weight: 600; }
   .pocells .arr { color: #A2958A; }
   .aistrip { margin: 9px 14px 0; border-radius: 12px; background: rgba(201, 150, 46, 0.1); font-size: 9.5px; font-weight: 400; color: #7E5C0D; padding: 7px 11px; }
   .pagerbar { display: flex; gap: 8px; margin: 9px 14px 0; }
-  .pgbtn { flex: 1; border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 13px; background: rgba(255, 255, 255, 0.8); font-family: inherit; padding: 7px 10px; cursor: pointer; text-align: left; }
+  .pgbtn { flex: 1; border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 13px; background: rgba(255, 255, 255, 0.8); font-family: inherit; padding: 5px 10px; cursor: pointer; text-align: left; }
   .pgbtn:disabled { opacity: 0.4; cursor: default; }
   .pgbtn .d1 { font-size: 8px; font-weight: 700; color: #A2958A; letter-spacing: 0.1em; }
   .pgbtn .d2 { font-size: 9.5px; font-weight: 600; color: #2B2118; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pgbtn.nx { text-align: right; }
 
-  .slist { margin: 10px 14px 14px; border-radius: 16px; background: #fff; padding: 10px 12px; border: 0.5px solid rgba(43, 33, 24, 0.07); box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3); }
+  .slist { margin: 0 14px 14px; }
   .shead { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
   .goalpill { font-size: 8px; font-weight: 700; color: var(--fd); background: var(--fw); border-radius: 999px; padding: 3px 9px; }
   .scols, .srow { display: grid; grid-template-columns: 30px 1fr 1fr 34px 62px; gap: 5px; align-items: center; }
@@ -1522,7 +1529,10 @@
           medál-toast, szabad navigáció 5 úton (lapozó, pöttyök, swipe, áttekintő lap, áthelyezés).</li>
           <li><strong>⋯ műveletek</strong> — Áthelyezés (a MOST gyakorlat is mozgatható), Kihagyás, ＋Szett
           („Csak ma / Minden hétre" terv-visszaírás), Jegyzet (tartós, sablonra), Edzés befejezése.</li>
-          <li><strong>Szett-lista</strong> — ghost-célok, MOST ↑, ✓/▼ cél alatt/▲ cél felett, medál-chip,
+          <li><strong>Nyugodt alapállapot</strong> — élő nézetben csak a logoló-kártya látszik; a Progresszió
+          és a Szettek egy-egy vékony <strong>lenyitható sáv</strong> („⚡ Progresszió · +2,5 kg ▾",
+          „Szettek · 2/6 ✓ · 1 234 kg ▾") — minden ott van, de csak kérésre nyílik ki.</li>
+          <li><strong>Szett-lista</strong> (lenyitva) — ghost-célok, MOST ↑, ✓/▼ cél alatt/▲ cél felett, medál-chip,
           láb: volumen · vs múlt hét · Ø RIR. Sorra koppintva szerkesztés/törlés (utolsó szett nem törölhető).</li>
           <li><strong>Zárás</strong> — RP-debrief gyakorlatonként (pump/ízület/mennyiség), összegző: halo-hero,
           izom-pillek, medálok + célszettek, kihívás-eredmények, gyakorlat-térkép chip-ekkel, jegyzet,
@@ -1626,7 +1636,7 @@
     viewed: 'e1', debrief: null, debriefed: {},
     noteLocal: {}, medals: [], feedback: {}
   };
-  var UI = { inp: null, inpKey: '', note: '', imgOpen: false, vidOpen: false, nigDismissed: false };
+  var UI = { inp: null, inpKey: '', note: '', imgOpen: false, vidOpen: false, nigDismissed: false, progOpen: false, slistOpen: false };
   var rest = { status: 'idle', remain: 0, total: 0, timer: null };
 
   function planned(id) { var e = byId[id]; return e.warm + e.work; }
@@ -1933,7 +1943,7 @@
       (e.rir != null ? '<span>RIR ' + e.rir + '</span>' : '') +
       '</div>';
     var note = S.noteLocal[e.id] !== undefined ? S.noteLocal[e.id] : e.note;
-    if (note) h += '<div class="notepill"><span style="flex:none;">✎</span><span>' + esc(note) + '</span></div>';
+    if (note) h += '<div class="notepill"><span style="flex:none;">✎</span><span class="ntext">' + esc(note) + '</span></div>';
     var fw = null;
     e.presc.forEach(function (pp) { if (fw == null && pp.k === 'g' && pp.w != null) fw = pp.w; });
     if (UI.imgOpen) h += '<div class="imghero"><div class="fr"><svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-edzes"/></svg><small>indító</small></div><div class="fr f2" style="background:' + f.wash + ';"><svg width="44" height="44" viewBox="0 0 100 100" style="transform:scaleY(0.8);"><use href="#i-edzes"/></svg><small>záró</small></div></div>';
@@ -2058,9 +2068,21 @@
     var el = document.getElementById('posig');
     if (e.prog) {
       var toneBg = e.prog.tone === 'rep' ? 'rgba(143,175,126,0.18);color:#4E6B42' : e.prog.tone === 'hold' ? 'rgba(201,150,46,0.16);color:#A8801F' : 'rgba(255,107,74,0.12);color:#A84A26';
-      el.innerHTML = '<div class="pobanner"><div class="mrow"><span class="p-eyebrow" style="color:#A84A26;">⚡ Progresszió</span><span class="grow"></span><span class="pochip" style="background:' + toneBg + ';">' + e.prog.chip + '</span></div>' +
-        '<div class="pocells"><span class="mut" style="font-size:9px;">Múlt hét</span><b>' + (e.last ? fmtW(e.last.w) + ' × ' + e.last.r + ' · RIR ' + e.last.rir : '—') + '</b><span class="arr">→</span><span class="mut" style="font-size:9px;">Ma a cél</span><b>' + e.prog.tw + '</b></div>' +
-        '<div class="mut" style="font-size:9px;font-weight:300;margin-top:5px;">' + e.prog.why + '</div></div>';
+      el.innerHTML = '<div class="colstrip' + (UI.progOpen ? ' open' : '') + '">' +
+        '<button class="colhead" id="progHead" aria-expanded="' + UI.progOpen + '">' +
+        '<span class="p-eyebrow" style="color:#A84A26;">⚡ Progresszió</span>' +
+        '<span class="pochip" style="background:' + toneBg + ';">' + e.prog.chip + '</span>' +
+        '<span class="csum"></span><span class="chev">▾</span></button>' +
+        '<div class="colbody">' +
+        '<div class="pocells" style="margin-top:0;"><span class="mut" style="font-size:9px;">Múlt hét</span><b>' + (e.last ? fmtW(e.last.w) + ' × ' + e.last.r + ' · RIR ' + e.last.rir : '—') + '</b><span class="arr">→</span><span class="mut" style="font-size:9px;">Ma a cél</span><b>' + e.prog.tw + '</b></div>' +
+        '<div class="mut" style="font-size:9px;font-weight:300;margin-top:5px;">' + e.prog.why + '</div>' +
+        '</div></div>';
+      var ph = document.getElementById('progHead');
+      ph.addEventListener('click', function () {
+        UI.progOpen = !UI.progOpen;
+        ph.parentNode.classList.toggle('open', UI.progOpen);
+        ph.setAttribute('aria-expanded', UI.progOpen);
+      });
     } else if (e.ai) {
       el.innerHTML = '<div class="aistrip">✨ ' + e.ai + '</div>';
     } else el.innerHTML = '';
@@ -2090,7 +2112,7 @@
     el.style.setProperty('--fd', f.deep); el.style.setProperty('--fgrad', f.grad);
     var failure = e.rir != null && e.rir <= 1;
     var wc = warmCount(e.id);
-    var h = '<div class="shead"><span class="p-eyebrow">Szettek</span><span class="goalpill">cél: ' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + (e.rir != null ? ' · RIR ' + e.rir + ' ' + (failure ? '🔥' : '🌿') : '') + '</span></div>';
+    var h = '<div class="shead" style="margin-bottom:2px;"><span class="goalpill">cél: ' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + (e.rir != null ? ' · RIR ' + e.rir + ' ' + (failure ? '🔥' : '🌿') : '') + '</span><span class="mut" style="font-size:8px;">sorra koppintva szerkeszthető</span></div>';
     h += '<div class="scols"><span>Szett</span><span>kg</span><span>' + (e.type === 'plyo' ? 'mp' : 'ism') + '</span><span>RIR</span><span></span></div>';
     for (var i = 0; i < eff; i++) {
       var p = prescAt(e.id, i), s = i < c ? S.logged[e.id][i] : null;
@@ -2119,7 +2141,18 @@
     h += '<div class="sfoot"><span>Volumen <b>' + vol.toLocaleString('hu-HU') + ' kg</b></span>' +
       '<span>vs múlt hét <b style="color:' + (dpct == null ? '#A2958A' : dpct >= 0 ? '#4E6B42' : '#A8801F') + ';">' + (dpct == null ? '–' : (dpct >= 0 ? '+' : '') + dpct + '%') + '</b></span>' +
       '<span>Átl. RIR <b>' + (rn ? (rsum / rn).toFixed(1).replace('.', ',') : '–') + '</b></span></div>';
-    el.innerHTML = h;
+    el.innerHTML = '<div class="colstrip' + (UI.slistOpen ? ' open' : '') + '" style="margin:9px 0 0;">' +
+      '<button class="colhead" id="slistHead" aria-expanded="' + UI.slistOpen + '">' +
+      '<span class="p-eyebrow">Szettek</span>' +
+      '<span class="csum">' + c + '/' + eff + ' ✓' + (vol ? ' · ' + vol.toLocaleString('hu-HU') + ' kg' : '') + '</span>' +
+      '<span class="chev">▾</span></button>' +
+      '<div class="colbody">' + h + '</div></div>';
+    var sh = document.getElementById('slistHead');
+    sh.addEventListener('click', function () {
+      UI.slistOpen = !UI.slistOpen;
+      sh.parentNode.classList.toggle('open', UI.slistOpen);
+      sh.setAttribute('aria-expanded', UI.slistOpen);
+    });
     el.querySelectorAll('[data-si]').forEach(function (b) {
       b.addEventListener('click', function () { openEdit(e.id, parseInt(b.getAttribute('data-si'), 10)); });
     });
