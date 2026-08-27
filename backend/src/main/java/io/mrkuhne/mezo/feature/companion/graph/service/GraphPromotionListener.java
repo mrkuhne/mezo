@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.companion.graph.service;
 
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactPromotedEvent;
 import io.mrkuhne.mezo.feature.companion.service.PatternConfirmedEvent;
+import io.mrkuhne.mezo.feature.companion.service.PatternRetractedEvent;
+import io.mrkuhne.mezo.feature.goal.service.GoalDeletedEvent;
 import io.mrkuhne.mezo.feature.goal.service.GoalSavedEvent;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +57,26 @@ public class GraphPromotionListener {
             promotionService.syncGoal(event.userId(), event.goalId());
         } catch (Exception e) {
             log.warn("Graph goal sync failed for goal {}", event.goalId(), e);
+        }
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onPatternRetracted(PatternRetractedEvent event) {
+        try {
+            promotionService.retractPattern(event.userId(), event.patternId());
+        } catch (Exception e) {
+            log.warn("Graph pattern retraction failed for pattern {}", event.patternId(), e);
+        }
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onGoalDeleted(GoalDeletedEvent event) {
+        try {
+            promotionService.retractGoal(event.userId(), event.goalId());
+        } catch (Exception e) {
+            log.warn("Graph goal retraction failed for goal {}", event.goalId(), e);
         }
     }
 }

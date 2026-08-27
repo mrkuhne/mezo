@@ -77,6 +77,11 @@ public class GoalService {
         linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc(id, userId)
             .forEach(linkRepository::delete); // @SQLDelete soft-deletes
         goalRepository.delete(goal); // @SQLDelete soft-deletes
+        // mezo-b3pp.31: the graph shadows a goal's lifecycle, and a soft-deleted goal is invisible
+        // to GoalSavedEvent's consumer (syncGoal's finder is ...AndDeletedFalse), so the delete
+        // gets its own event. Published INSIDE the transaction; the consumer's AFTER_COMMIT phase
+        // is what makes the commit boundary its problem, not ours (the JournalService idiom).
+        eventPublisher.publishEvent(new GoalDeletedEvent(userId, id));
     }
 
     @Transactional
