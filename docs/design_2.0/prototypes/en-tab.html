@@ -1191,10 +1191,45 @@
   .qlchips button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.12); background: rgba(255, 255, 255, 0.8); border-radius: 9px;
     padding: 6px 0; font-size: 8.5px; font-weight: 700; color: #33749C; font-family: inherit; cursor: pointer; font-variant-numeric: tabular-nums; }
   .qlchips button:active { transform: scale(0.94); }
-  .moodrow { display: flex; gap: 4px; margin-top: 7px; }
-  .moodrow button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.12); background: rgba(255, 255, 255, 0.8); border-radius: 9px;
-    padding: 5px 0; font-size: 12px; font-family: inherit; cursor: pointer; }
-  .moodrow button.on { border-color: #C46FA0; background: #FAE3ED; }
+  .ckmini { display: flex; gap: 3px; margin-top: 7px; }
+  .ckmini i { flex: 1; height: 16px; border-radius: 6px; display: grid; place-items: center; font-size: 7px; font-weight: 800;
+    color: var(--dc); background: var(--dw); font-style: normal; font-variant-numeric: tabular-nums; }
+  .ckprog { display: flex; gap: 3px; margin: 10px 0 12px; }
+  .ckprog i { flex: 1; height: 3px; border-radius: 2px; background: rgba(43, 33, 24, 0.08); }
+  .ckprog i.f { background: linear-gradient(90deg, #FF7A55, #FF5B36); }
+  .ckbig { text-align: center; font-size: 42px; font-weight: 200; letter-spacing: -0.03em; color: var(--dc);
+    font-variant-numeric: tabular-nums; padding: 4px 0 0; }
+  .ckbig small { font-size: 11px; color: #A2958A; font-weight: 600; }
+  .ckscale { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin-top: 8px; }
+  .ckscale button { border: 1px solid rgba(43, 33, 24, 0.1); background: rgba(43, 33, 24, 0.04); border-radius: 8px;
+    padding: 9px 0; font-size: 9px; font-weight: 700; color: #A2958A; font-family: inherit; cursor: pointer; }
+  .ckscale button.fill { background: var(--dw); border-color: transparent; color: var(--dc); }
+  .ckscale button.on { background: var(--dc); border-color: var(--dc); color: #fff; box-shadow: 0 4px 10px -3px var(--dc); }
+  .cklh { display: flex; justify-content: space-between; font-size: 7px; font-weight: 700; color: #A2958A; margin-top: 5px; }
+  .cksum { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .cksumc { border-radius: 14px; padding: 9px 11px; background: var(--dw); text-align: left; border: none; font-family: inherit; cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 8px 16px -10px rgba(43, 33, 24, 0.25); }
+  .cksumc .l { font-size: 7px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dc);
+    display: flex; justify-content: space-between; align-items: baseline; }
+  .cksumc .l b { font-size: 15px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .cksumc .gbar { margin-top: 6px; height: 4px; }
+  .qtxt { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 12px; padding: 9px 11px;
+    font-family: inherit; font-size: 10.5px; color: #2B2118; background: #fff; resize: none; }
+  .qtxt::placeholder { color: #A2958A; }
+  .lifegrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .lifegrid button { border: 1px solid rgba(43, 33, 24, 0.12); background: #fff; border-radius: 11px; padding: 8px 10px;
+    font-size: 9.5px; font-weight: 600; color: #2B2118; text-align: left; font-family: inherit; cursor: pointer; }
+  .lifegrid button:active { transform: scale(0.96); }
+  .obscard { border-radius: 13px; padding: 9px 11px; margin-top: 9px; display: flex; gap: 7px; align-items: flex-start;
+    background: linear-gradient(150deg, #EBE6F8, #F9F6FE); }
+  .obscard.warn { background: linear-gradient(150deg, #FFF1D6, #FFFAF0); }
+  .obscard.good { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .obscard .t { font-size: 7px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #5D4FA0; }
+  .obscard.warn .t { color: #A8801F; }
+  .obscard.good .t { color: #4E6B42; }
+  .obscard .x { font-size: 9px; font-weight: 300; line-height: 1.5; margin-top: 2px; }
+  .grrow { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+  .grrow .qtxt { padding: 8px 11px; }
   .qlgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
   .qltile { border-radius: 15px; padding: 9px 4px 8px; text-align: center; display: grid; gap: 3px; justify-items: center;
     border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--qw, #fff); cursor: pointer; font-family: inherit;
@@ -1934,12 +1969,20 @@
           Ebéd-ablak a reflektor (korall keret, terv-étel, Logold CTA). Designolt kiegészítés a
           valós app statikus rácsa fölé — ugyanaz a logika, mint a Fuel ablak-swimlane-je.</li>
           <li><strong>Helyben elvégezhető akciók</strong> — a Víz csempén ＋250/＋400/＋500 chipek
-          azonnal logolnak (élő számláló + toast), a Check-in négy hangulat-gombja helyben ment.
-          A valós app elve — „a log mindig két koppintás" — itt szó szerint teljesül.</li>
+          azonnal logolnak (élő számláló + toast); a <strong>Check-in a teljes Heartbeat-flow</strong>:
+          a csempe a négy mért dimenzió mini-celláit mutatja (a reggeli mérés halványan), koppintásra
+          pedig a valós, lépegetős mérés nyílik — Energia · Stressz · Testi · Mentális tisztaság,
+          1–10 skálán, auto-továbblépéssel és Kihagy-gombbal, a végén 2×2 összegzés-rács
+          (visszakoppintható), <strong>szabad szöveg</strong> (200 karakter) és a <strong>Mezo azonnali
+          olvasata</strong> — az értékekre reagáló kártya (magas energia + tiszta fej → PR-ablak;
+          alacsony energia + stressz → enyhébb edzés-javaslat).</li>
           <li><strong>Hat mini-csempe</strong> élő kontextus-aljsorral: Súly (a súly-sheetet nyitja
           helyben), Alvás (becsületes „ma ✓ 7,5 h" állapot — nem kínál újra logolást), Napló
-          (→ Aktivitás / Napló / Hála választó, ‹ Vissza-val), Étkezés · Edzés · Stack
-          (navigáló csempék: „ma 16:45 · Pull", „köv. 16:45 · koffein").</li>
+          (→ választó, majd <strong>mindhárom ág saját felülettel</strong>: Aktivitás — szöveg +
+          „az AI besorolja" + skill-választó rács + „✓ +15 XP · küldetés teljesítve" lezárás;
+          Napló — szöveg + mikrofon-leirat + dátum-sor; Hála — 1–3 bővíthető sor a valós
+          placeholderekkel, mentéskor a sorozat 5 napra nő és a hub-csempe követi), Étkezés ·
+          Edzés · Stack (navigáló csempék: „ma 16:45 · Pull", „köv. 16:45 · koffein").</li>
           <li><strong>Mezo-sor alul</strong> — „Mondd el Mezónak · kérdezz, mesélj — vagy logolj
           szóban": a chat mint logolási út is megmarad, ahogy a valós sheetben.</li>
         </ul>
@@ -2200,7 +2243,7 @@
       var r = b.getAttribute('data-r');
       document.getElementById('decTile').outerHTML =
         '<div class="decdone">✓ Visszanézve · ' + r + '/5 — a reggeli edzés bekerült a tudásba.</div>';
-      document.getElementById('naploTileLine').textContent = '4 napos hála-sorozat';
+      decPending = false; paintNaplo();
     });
   });
 
@@ -2257,7 +2300,24 @@
     toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
   }
   function huInt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
-  var QL = { water: 1300, waterGoal: 3000, mood: null, sleepLogged: true };
+  var QL = { water: 1300, waterGoal: 3000, sleepLogged: true };
+  var CK = { vals: { e: 7, s: 4, b: 7, m: 7 }, prev: { e: 8, s: 3, b: 7, m: 8 }, note: '', done: false };
+  var DIMS = [
+    { k: 'e', label: 'Energia', sub: 'Mennyi van benned ebben a pillanatban', lo: 'Üres', hi: 'Tele', dc: '#A84A26', dw: '#FFE3D8' },
+    { k: 's', label: 'Stressz', sub: 'Mennyire vagy feszült most', lo: 'Nyugodt', hi: 'Túlfeszült', dc: '#A8801F', dw: '#F6E7C6' },
+    { k: 'b', label: 'Testi', sub: 'Hogy érzed magad fizikailag', lo: 'Lerakva', hi: 'Friss', dc: '#8E3F6F', dw: '#FAE3ED' },
+    { k: 'm', label: 'Mentális tisztaság', sub: 'Mennyire tiszta a fej', lo: 'Köd', hi: 'Éles', dc: '#33749C', dw: '#DCEBF4' }
+  ];
+  var LIFE = ['📖 Tanulás', '🍳 Főzés', '🧘 Mindfulness', '💰 Pénzügy', '🤝 Kapcsolatok', '🎨 Kreativitás', '🧹 Rend', '💼 Karrier'];
+  var decPending = true;
+  var grStreak = 4, grCount = 6;
+  function paintNaplo() {
+    document.getElementById('naploTileLine').textContent = grStreak + ' napos hála-sorozat' + (decPending ? ' · 1 döntés' : '');
+    var big = document.querySelector('#page-naplo .page-hero .bignum');
+    var sb = document.querySelector('#page-naplo .page-hero .sb');
+    if (big) big.textContent = grStreak;
+    if (sb) sb.textContent = 'napos hála-sorozat · ' + grCount + ' bejegyzés';
+  }
   var shq = sheets.quick;
 
   function qlMenu() {
@@ -2271,11 +2331,14 @@
       '<span class="cta" style="padding:6px 13px;">Logold</span></div>' +
       '<div class="qlduo">' +
       '<div class="qlact" style="--qw:linear-gradient(150deg,#DFEDF5,#F5FAFD);--qg:rgba(78,143,184,0.35);">' +
-      '<div class="hd"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-viz"/></svg>Víz <b id="qlWater" style="margin-left:auto;font-variant-numeric:tabular-nums;color:#33749C;">' + QL.water + ' ml</b></div>' +
+      '<div class="hd"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-viz"/></svg>Víz <b id="qlWater" style="margin-left:auto;font-variant-numeric:tabular-nums;color:#33749C;">' + huInt(QL.water) + ' ml</b></div>' +
       '<div class="qlchips"><button data-ml="250">＋250</button><button data-ml="400">＋400</button><button data-ml="500">＋500</button></div></div>' +
-      '<div class="qlact" style="--qw:linear-gradient(150deg,#FAE3ED,#FEF8FB);--qg:rgba(142,63,111,0.3);">' +
-      '<div class="hd">❤️ Check-in <small id="qlMoodSt" style="margin-left:auto;font-size:7px;color:#A2958A;">délután</small></div>' +
-      '<div class="moodrow" id="qlMood"><button data-m="😖">😖</button><button data-m="😐">😐</button><button data-m="🙂">🙂</button><button data-m="😄">😄</button></div></div>' +
+      '<button class="qlact" id="qlCk" style="--qw:linear-gradient(150deg,#FAE3ED,#FEF8FB);--qg:rgba(142,63,111,0.3);border:none;text-align:left;font-family:inherit;cursor:pointer;">' +
+      '<div class="hd">❤️ Check-in <small style="margin-left:auto;color:' + (CK.done ? '#4E6B42;font-weight:700;' : '#A2958A;') + '" id="qlCkSt">' + (CK.done ? 'délután ✓' : 'délután · jöhet') + '</small></div>' +
+      '<div class="ckmini">' + DIMS.map(function (d) {
+        var v = CK.done ? CK.vals[d.k] : CK.prev[d.k];
+        return '<i style="--dc:' + d.dc + ';--dw:' + d.dw + ';' + (CK.done ? '' : 'opacity:0.55;') + '">' + v + '</i>';
+      }).join('') + '</div></button>' +
       '</div>' +
       '<div class="qlgrid">' +
       '<button class="qltile" data-ql="suly" style="--qw:linear-gradient(150deg,#DFEDF5,#F5FAFD);--qg:rgba(78,143,184,0.35);"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-suly"/></svg><b>Súly</b><small>reggel 78,6</small></button>' +
@@ -2291,23 +2354,201 @@
       '<span style="color:#5D4FA0;">›</span></button>';
     wireQl();
   }
+
+  /* ----- check-in flow (4 dimenzió + összegzés) ----- */
+  function ckProg(step) {
+    var h = '<div class="ckprog">';
+    for (var i = 0; i < 5; i++) h += '<i class="' + (i <= step ? 'f' : '') + '"></i>';
+    return h + '</div>';
+  }
+  function qlCheckin(step) {
+    if (step >= 4) { qlCkSum(); return; }
+    var d = DIMS[step];
+    var v = CK.vals[d.k];
+    var scale = '';
+    for (var n = 1; n <= 10; n++) {
+      scale += '<button data-n="' + n + '" class="' + (n === v ? 'on' : n < v ? 'fill' : '') + '" style="--dc:' + d.dc + ';--dw:' + d.dw + ';">' + n + '</button>';
+    }
+    shq.innerHTML =
+      '<div class="mrow"><button class="pgact" id="ckBack" style="margin-left:0;">‹ Vissza</button>' +
+      '<span class="p-eyebrow" style="margin-left:auto;color:#8E3F6F;">Heartbeat · délután</span></div>' +
+      '<div style="font-size:13px;font-weight:700;margin-top:8px;">Hogy vagyunk?</div>' +
+      ckProg(step) +
+      '<div style="font-size:7.5px;font-weight:800;letter-spacing:0.1em;color:' + d.dc + ';">0' + (step + 1) + ' / 04 · ' + d.label.toUpperCase() + '</div>' +
+      '<div style="font-size:11px;font-weight:600;margin-top:3px;">' + d.sub + '</div>' +
+      '<div class="ckbig" style="--dc:' + d.dc + ';">' + v + ' <small>/ 10</small></div>' +
+      '<div class="ckscale" id="ckScale">' + scale + '</div>' +
+      '<div class="cklh"><span>' + d.lo + '</span><span>' + d.hi + '</span></div>' +
+      '<div class="shrow"><button class="ghost" id="ckSkip">Kihagy →</button></div>';
+    document.getElementById('ckBack').addEventListener('click', function () {
+      if (step === 0) qlMenu(); else qlCheckin(step - 1);
+    });
+    document.getElementById('ckSkip').addEventListener('click', function () { qlCheckin(step + 1); });
+    shq.querySelectorAll('#ckScale button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        CK.vals[d.k] = parseInt(b.getAttribute('data-n'), 10);
+        shq.querySelectorAll('#ckScale button').forEach(function (x) {
+          var nn = parseInt(x.getAttribute('data-n'), 10);
+          x.className = nn === CK.vals[d.k] ? 'on' : nn < CK.vals[d.k] ? 'fill' : '';
+        });
+        shq.querySelector('.ckbig').innerHTML = CK.vals[d.k] + ' <small>/ 10</small>';
+        setTimeout(function () { qlCheckin(step + 1); }, 260);
+      });
+    });
+  }
+  function ckObs() {
+    var v = CK.vals;
+    if (v.e <= 4 && v.s >= 6) return { c: 'warn', m: 'Alacsony energia + magas stressz — ezt láttuk múlt kedden is volleyball után. Délután lehet, hogy érdemes a Pull Day-t enyhébbre venni.' };
+    if (v.b <= 4) return { c: 'warn', m: 'A testi 4 alatt van — ez a 3. nap a héten. Lehet, hogy az alvás-mennyiség nem elég, vagy egy aktív niggle nyomja. Nézzünk rá ma?' };
+    if (v.e >= 8 && v.m >= 8) return { c: 'good', m: 'Energia 8+, mentális 8+ — ez Pull Day-en a PR-kísérletre ideális ablak. Aktiváltam a 107,5 kg target predikciót.' };
+    if (v.s >= 8) return { c: 'warn', m: 'Magas stressz — most lélegezzünk együtt. Próbáljunk 4 mp be / 6 mp ki ritmust 2 percig, mielőtt belevágsz a következőbe.' };
+    return { c: '', m: 'Megvan, beírom. A 4×/nap mérés ritmusa az, amiből a heti memoár is épül — köszönöm.' };
+  }
+  function qlCkSum() {
+    var obs = ckObs();
+    shq.innerHTML =
+      '<div class="mrow"><button class="pgact" id="ckBack" style="margin-left:0;">‹ Vissza</button>' +
+      '<span class="p-eyebrow" style="margin-left:auto;color:#4E6B42;">Megvan · összegzés</span></div>' +
+      '<div style="font-size:13px;font-weight:700;margin-top:8px;">Bármi még, amit szeretnél?</div>' +
+      ckProg(4) +
+      '<div class="cksum">' + DIMS.map(function (d, i) {
+        return '<button class="cksumc" data-ck="' + i + '" style="--dc:' + d.dc + ';background:linear-gradient(150deg,' + d.dw + ',#FFFFFF 85%);">' +
+          '<span class="l">' + d.label + '<b>' + CK.vals[d.k] + '</b></span>' +
+          '<div class="gbar"><div style="transform:scaleX(1);animation:none;width:' + (CK.vals[d.k] * 10) + '%;background:' + d.dc + ';"></div></div></button>';
+      }).join('') + '</div>' +
+      '<div class="mrow" style="margin-top:10px;"><span style="font-size:8px;font-weight:800;letter-spacing:0.1em;color:#6E6257;">EGY MONDAT · OPCIONÁLIS</span><span style="margin-left:auto;font-size:7.5px;color:#A2958A;" id="ckCnt">' + CK.note.length + '/200</span></div>' +
+      '<textarea class="qtxt" id="ckNote" rows="2" maxlength="200" style="margin-top:5px;"></textarea>' +
+      '<div class="obscard ' + obs.c + '"><svg width="18" height="18" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb-figyel"/></svg>' +
+      '<div class="grow"><div class="t">Mezo · azonnali olvasat</div><div class="x">' + obs.m + '</div></div></div>' +
+      '<div class="shrow"><button class="cta" id="ckSave">✓ Mentés · délután</button></div>';
+    var noteEl = document.getElementById('ckNote');
+    noteEl.value = CK.note;
+    noteEl.placeholder = 'pl. "tegnap volleyball után még izomláz" · "fejes meeting előtt"';
+    document.getElementById('ckBack').addEventListener('click', function () { qlCheckin(3); });
+    shq.querySelectorAll('[data-ck]').forEach(function (b) {
+      b.addEventListener('click', function () { qlCheckin(parseInt(b.getAttribute('data-ck'), 10)); });
+    });
+    noteEl.addEventListener('input', function () {
+      CK.note = noteEl.value.slice(0, 200);
+      document.getElementById('ckCnt').textContent = CK.note.length + '/200';
+    });
+    document.getElementById('ckSave').addEventListener('click', function () {
+      CK.done = true;
+      toast('✓ Check-in mentve · délután · ' + CK.vals.e + '·' + CK.vals.s + '·' + CK.vals.b + '·' + CK.vals.m);
+      qlMenu();
+    });
+  }
+
+  /* ----- napló-ágak ----- */
   function qlNaploPick() {
     shq.innerHTML =
       '<div class="mrow"><button class="pgact" id="qlBack" style="margin-left:0;">‹ Vissza</button></div>' +
       '<div style="font-size:13px;font-weight:700;margin-top:8px;">Mit naplózol?</div>' +
       '<div class="qlgrid" style="margin-top:10px;">' +
-      '<button class="qltile" data-qn="Aktivitás" style="--qw:linear-gradient(150deg,#FDF0DA,#FFFCF5);--qg:rgba(201,150,46,0.4);"><span style="font-size:18px;">✍️</span><b>Aktivitás</b><small>LIFE XP</small></button>' +
-      '<button class="qltile" data-qn="Napló" style="--qw:linear-gradient(150deg,#E9F1E2,#F7FBF3);--qg:rgba(110,139,94,0.35);"><span style="font-size:18px;">📓</span><b>Napló</b><small>vagy döntés</small></button>' +
-      '<button class="qltile" data-qn="Hála" style="--qw:linear-gradient(150deg,#FAE3ED,#FEF8FB);--qg:rgba(142,63,111,0.3);"><span style="font-size:18px;">🙏</span><b>Hála</b><small>1–3 dolog</small></button>' +
+      '<button class="qltile" data-qn="akt" style="--qw:linear-gradient(150deg,#FDF0DA,#FFFCF5);--qg:rgba(201,150,46,0.4);"><span style="font-size:18px;">✍️</span><b>Aktivitás</b><small>LIFE XP</small></button>' +
+      '<button class="qltile" data-qn="jrn" style="--qw:linear-gradient(150deg,#E9F1E2,#F7FBF3);--qg:rgba(110,139,94,0.35);"><span style="font-size:18px;">📓</span><b>Napló</b><small>vagy döntés</small></button>' +
+      '<button class="qltile" data-qn="grt" style="--qw:linear-gradient(150deg,#FAE3ED,#FEF8FB);--qg:rgba(142,63,111,0.3);"><span style="font-size:18px;">🙏</span><b>Hála</b><small>1–3 dolog</small></button>' +
       '</div>';
     document.getElementById('qlBack').addEventListener('click', qlMenu);
-    shq.querySelectorAll('[data-qn]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        closeSheets();
-        toast('→ ' + b.getAttribute('data-qn') + '-sheet nyílik · két koppintás volt');
-      });
+    shq.querySelector('[data-qn="akt"]').addEventListener('click', qlAktivitas);
+    shq.querySelector('[data-qn="jrn"]').addEventListener('click', qlJournal);
+    shq.querySelector('[data-qn="grt"]').addEventListener('click', qlGratitude);
+  }
+  function qlAktivitas() {
+    shq.innerHTML =
+      '<div class="mrow"><button class="pgact" id="qlBack" style="margin-left:0;">‹ Vissza</button>' +
+      '<span class="p-eyebrow" style="margin-left:auto;color:#A8801F;">Tevékenységnapló</span></div>' +
+      '<div style="font-size:13px;font-weight:700;margin-top:8px;">Mi történt ma?</div>' +
+      '<textarea class="qtxt" id="akTxt" rows="3" maxlength="500" placeholder="pl. Olvastam 30 percet, átraktam 50 ezret megtakarításba…" style="margin-top:9px;"></textarea>' +
+      '<div class="foot9" style="padding:6px 2px 0;">Az AI besorolja, és a megfelelő LIFE skillhez írja az XP-t.</div>' +
+      '<div class="shrow"><button class="ghost" id="akCancel">Mégse</button><button class="cta" id="akGo">Naplózom</button></div>';
+    document.getElementById('qlBack').addEventListener('click', qlNaploPick);
+    document.getElementById('akCancel').addEventListener('click', closeSheets);
+    document.getElementById('akGo').addEventListener('click', function () {
+      var t = document.getElementById('akTxt').value.trim() || 'Este átnéztem a negyedéves büdzsét';
+      qlAkPick(t);
     });
   }
+  function qlAkPick(text) {
+    shq.innerHTML =
+      '<div class="mrow"><button class="pgact" id="qlBack" style="margin-left:0;">‹ Vissza</button>' +
+      '<span class="p-eyebrow" style="margin-left:auto;color:#A8801F;">Tevékenységnapló</span></div>' +
+      '<div style="font-size:11.5px;font-weight:700;margin-top:8px;">Nem egyértelmű — melyik skillhez tartozik?</div>' +
+      '<div style="border-radius:12px;padding:8px 11px;margin-top:8px;background:rgba(43,33,24,0.04);font-size:10px;font-style:italic;font-weight:300;">„' + text + '"</div>' +
+      '<div class="lifegrid">' + LIFE.map(function (s, i) { return '<button data-lf="' + i + '">' + s + '</button>'; }).join('') + '</div>';
+    document.getElementById('qlBack').addEventListener('click', qlAktivitas);
+    shq.querySelectorAll('[data-lf]').forEach(function (b) {
+      b.addEventListener('click', function () { qlAkDone(LIFE[parseInt(b.getAttribute('data-lf'), 10)]); });
+    });
+  }
+  function qlAkDone(skill) {
+    shq.innerHTML =
+      '<div class="p-eyebrow" style="color:#A8801F;">Tevékenységnapló</div>' +
+      '<div class="decdone" style="margin-top:10px;"><span style="font-size:15px;">' + skill.split(' ')[0] + '</span><div class="grow"><b style="font-size:10.5px;">' + skill.slice(skill.indexOf(' ') + 1) + '</b><div style="font-size:8px;color:#6E6257;">besorolva · a skill sávjába írva</div></div><span class="stch warn">+15 XP</span></div>' +
+      '<div class="decdone">✓ Küldetés teljesítve: Egy tevékenység ma (+10 XP)</div>' +
+      '<div class="shrow"><button class="cta" id="akDone">Kész</button></div>';
+    document.getElementById('akDone').addEventListener('click', function () {
+      closeSheets();
+      toast('✓ Naplózva · +25 XP');
+    });
+  }
+  function qlJournal() {
+    shq.innerHTML =
+      '<div class="mrow"><button class="pgact" id="qlBack" style="margin-left:0;">‹ Vissza</button>' +
+      '<span class="p-eyebrow" style="margin-left:auto;color:#4E6B42;">Napló</span></div>' +
+      '<div style="font-size:13px;font-weight:700;margin-top:8px;">Mi jár a fejedben?</div>' +
+      '<div style="display:flex;gap:7px;align-items:flex-start;margin-top:9px;">' +
+      '<textarea class="qtxt" id="jTxt" rows="3" placeholder="Írd le, mi jár a fejedben…"></textarea>' +
+      '<button class="cmic" id="jMic" aria-label="Hangbevitel"><svg width="14" height="14" viewBox="0 0 100 100"><use href="#i-mikrofon"/></svg></button></div>' +
+      '<div class="mrow" style="margin-top:9px;"><span style="font-size:8px;font-weight:800;letter-spacing:0.1em;color:#6E6257;">DÁTUM</span><span style="margin-left:auto;font-size:9.5px;font-weight:700;">ma · aug 26.</span></div>' +
+      '<div class="shrow"><button class="ghost" id="jCancel">Mégse</button><button class="cta" id="jSave">✓ Mentem</button></div>';
+    document.getElementById('qlBack').addEventListener('click', qlNaploPick);
+    document.getElementById('jCancel').addEventListener('click', closeSheets);
+    var jm = document.getElementById('jMic');
+    jm.addEventListener('click', function () {
+      if (jm.classList.contains('rec')) return;
+      jm.classList.add('rec');
+      setTimeout(function () {
+        jm.classList.remove('rec');
+        var tx = document.getElementById('jTxt');
+        if (tx) tx.value = (tx.value ? tx.value + ' ' : '') + 'Nehéz nap volt, de a láb-nap után este meglepően friss voltam.';
+      }, 1300);
+    });
+    document.getElementById('jSave').addEventListener('click', function () {
+      closeSheets();
+      toast('✓ Elmentve a naplóba');
+    });
+  }
+  var grRows = [''];
+  function qlGratitude() {
+    shq.innerHTML =
+      '<div class="mrow"><button class="pgact" id="qlBack" style="margin-left:0;">‹ Vissza</button>' +
+      '<span class="p-eyebrow" style="margin-left:auto;color:#8E3F6F;">Napló · Hála</span></div>' +
+      '<div style="font-size:13px;font-weight:700;margin-top:8px;">Hálabejegyzés</div>' +
+      '<div id="grList">' + grRows.map(function (v, i) {
+        return '<div class="grrow"><input type="text" class="qtxt" data-gr="' + i + '" maxlength="280" placeholder="' + (i + 1) + '. dolog, amiért hálás vagy…" value="' + v.replace(/"/g, '&quot;') + '"></div>';
+      }).join('') + '</div>' +
+      (grRows.length < 3 ? '<button class="convnew" id="grMore" style="margin-top:8px;padding:7px 0;font-size:9px;">＋ Még egy</button>' : '') +
+      '<div class="foot9" style="padding:7px 2px 0;">1–3 dolog, amiért ma hálás vagy (max. 280 karakter soronként).</div>' +
+      '<div class="shrow"><button class="ghost" id="grCancel">Mégse</button><button class="cta" id="grSave">✓ Mentem</button></div>';
+    document.getElementById('qlBack').addEventListener('click', qlNaploPick);
+    document.getElementById('grCancel').addEventListener('click', closeSheets);
+    shq.querySelectorAll('[data-gr]').forEach(function (inp) {
+      inp.addEventListener('input', function () { grRows[parseInt(inp.getAttribute('data-gr'), 10)] = inp.value; });
+    });
+    var more = document.getElementById('grMore');
+    if (more) more.addEventListener('click', function () { grRows.push(''); qlGratitude(); });
+    document.getElementById('grSave').addEventListener('click', function () {
+      var filled = grRows.filter(function (v) { return v.trim(); }).length;
+      if (filled === 0) { filled = 1; }
+      grStreak = 5; grCount += filled;
+      paintNaplo();
+      grRows = [''];
+      closeSheets();
+      toast('✓ Hála elmentve · 5 napos sorozat');
+    });
+  }
+
   function wireQl() {
     document.getElementById('qlMost').addEventListener('click', function () {
       closeSheets();
@@ -2321,15 +2562,7 @@
         toast('✓ Víz logolva · ' + huInt(QL.water) + ' / ' + huInt(QL.waterGoal) + ' ml ma');
       });
     });
-    shq.querySelectorAll('#qlMood button').forEach(function (b) {
-      b.addEventListener('click', function () {
-        shq.querySelectorAll('#qlMood button').forEach(function (x) { x.classList.remove('on'); });
-        b.classList.add('on');
-        QL.mood = b.getAttribute('data-m');
-        document.getElementById('qlMoodSt').textContent = 'mentve ✓';
-        toast('✓ Check-in mentve · délután ' + QL.mood);
-      });
-    });
+    document.getElementById('qlCk').addEventListener('click', function () { qlCheckin(0); });
     shq.querySelectorAll('[data-ql]').forEach(function (b) {
       b.addEventListener('click', function () {
         var k = b.getAttribute('data-ql');

@@ -266,9 +266,17 @@ are usable without a build step).
   highlighted chat row, Alvás/Napló/Check-in swap in place). Redesign: a **context-aware MOST
   head** (13:30 → Ebéd-ablak tile with the plan meal + Logold, echoing the Fuel swimlane —
   designed addition over the static grid), **do-it-here duo tiles** — Víz with ＋250/＋400/＋500
-  chips that log in place (live HU-grouped counter + toast) and Check-in with four inline mood
-  buttons —, six mini tiles with live context sublines (Súly opens the weight sheet in place;
-  Alvás honestly reads `ma ✓ 7,5 h` and refuses to re-log; Napló → Aktivitás/Napló/Hála picker
-  with ‹ Vissza; Étkezés/Edzés/Stack navigate with `ma 16:45 · Pull` / `köv. 16:45 · koffein`
+  chips that log in place (live HU-grouped counter + toast) and **Check-in as the full
+  Heartbeat flow** (the tile shows the four measured dimensions as mini-cells — the morning
+  reading faded —, tapping opens the real stepped measurement: Energia · Stressz · Testi ·
+  Mentális tisztaság on 1–10 scales with auto-advance + Kihagy, then a 2×2 tap-back summary
+  grid, the optional 200-char sentence, and **Mezo's reactive azonnali olvasat** card driven
+  by the entered values — the real rule set) —, six mini tiles with live context sublines (Súly opens the weight sheet in place;
+  Alvás honestly reads `ma ✓ 7,5 h` and refuses to re-log; Napló → picker, then **all three
+  branches with their own in-place UIs**: Aktivitás (textarea + "Az AI besorolja…" note →
+  ambiguous-skill picker grid quoting the entry → done card `+15 XP` + quest-completed line),
+  Napló (textarea + working mic transcript + Dátum row + ✓ Mentem), Hála (1–3 growable rows
+  with the real placeholders + `＋ Még egy`, saving bumps the streak to 5 and cascades to the
+  hub tile and page hero); Étkezés/Edzés/Stack navigate with `ma 16:45 · Pull` / `köv. 16:45 · koffein`
   sublines), and the Mezo row at the bottom (`Mondd el Mezónak · kérdezz, mesélj — vagy logolj
   szóban`) keeping chat as a logging path.
