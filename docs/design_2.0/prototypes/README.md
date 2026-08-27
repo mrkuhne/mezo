@@ -70,6 +70,30 @@ are usable without a build step).
   röpi-only (amber ≥7), **live Mezo observation card** reacting to the sliders
   (váll≥7 → Cable-variáns; RPE≥8 → holnap RIR 2; RPE≥7,5 → korai vacsora), notes input
   (designed addition for the contract's unused `notes` field), Mentés · +30 XP.
+  **Futás page (full surface, audited against the real `/train/futas`)**: compact hero
+  (Hét 3/8) + live stat strip; 3 segments (`E heti edzés | Napló | Tervek`), the `＋ Új terv`
+  header chip renders **only** on Tervek (real behavior). **E heti edzés**: block card with
+  goal eyebrow + phase label + N-segment week strip (past 50%, current glowing), session
+  cards with FUTÁS tag, RPE-target chip (sprint min≥9 = terracotta, else amber), segment
+  pills (warmup / `8× · 45 mp` work / `90 mp séta` rest / cooldown; pyramid = joined
+  `15／30／45` + `pihenő = szakasz × 2` note), three-way CTA (MA → `Naplózd`, past →
+  `Pótold`, future → disabled grey `Naplózás ▸`, done → KÉSZ ✓), honest cross-load card
+  ("a teljes bekötés a pattern-engine része lesz"). **Napló**: HR-recovery trend bars
+  (lower = better, Δmp colored; designed answer to the "no trends" gap), run cards with
+  conditional chips (RPE / kör / mp pulzus — the old pyramid logs honestly show no kör),
+  quoted notes. **Tervek**: Aktív/Tervezett/Archív sections with counts, status chips
+  (active sky / planned amber / archived neutral at 0.7 opacity + summary), active card
+  carries the week strip + `Builder ›`; `＋ Új terv` = create-then-navigate into the
+  builder. **Builder page** (full-screen, like the real `/train/futas/:id`): auto-save
+  pill cycling `Mentés… → ✓ Mentve` (no Save button), title + goal inputs, week chips 1–8
+  with ＋/− (cap enforced, current week ringed), per-session two-zone editor —
+  **Menetrend · minden héten** (7-day grid H/K/Sze/Cs/P/Szo/V + time) vs
+  **Terhelés · N. hét** (sprint: kör + mp-pihenő steppers; pyramid: pills cycling
+  15→30→45→60 on tap, ✕ delete, `＋ szakasz`), status CTA (`Aktiválás` enforcing
+  single-active / `Lezárás` → archived / archived = no CTA), Duplikálás + Törlés.
+  **Run log sheet**: Teljesített körök stepper (shown for pyramid too — designed fix for
+  the real scoring bug), RPE 1–10 scale, Pulzus-megnyugvás stepper (5-ös lépések),
+  jegyzet, Mentés · +40 XP.
 - **mezociklus** — full mesocycle functionality: hub (hero + Volumen/Történet/Sablonok/Új blokk
   tiles), MEV/MAV/MRV provenance bars with expandable derivation, 5-step wizard (tappable phase
   curve, Emphasize cap 2, program editor with day breakdown + session-cap 11 + Lint/PeakFit,

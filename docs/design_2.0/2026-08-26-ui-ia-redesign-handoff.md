@@ -254,6 +254,20 @@ Locked patterns from the screen rounds (canonical for every further page):
   red; minibars/chips only when the value exists. Designed additions flagged for
   implementation: notes input in the log sheet (contract field exists, UI missing) and the
   Napló 4-week idő+RPE trend (needs a `from`/`to` on `GET /api/train/sport-sessions`).
+- **Futás page fully specified** in the edzes-tab prototype (2026-08-27, feature-audited
+  against the real `/train/futas` + the `/train/futas/:id` builder; see
+  `prototypes/README.md` for the detailed list). Load-bearing behaviors carried over:
+  3 segments with `＋ Új terv` only on Tervek; create-then-navigate (running has no `/new`
+  route); the builder's auto-save contract (no Save button, `Mentés… → ✓ Mentve` pill,
+  flush-on-back) and its **plan-level vs week-level split** (Menetrend applies to every
+  week, Terhelés to one week); week cap 1–8; single-active invariant on Aktiválás;
+  three-way session CTA (planned/missed/today) with done-state on the
+  blockId+week+sessionKey triple; interval runs report no duration/hours anywhere;
+  conditional log chips (nothing shown that wasn't measured); RPE-target hue = terracotta
+  only for sprint min≥9. Designed additions flagged for implementation: rounds capture for
+  pyramid sessions too (today a logged pyramid earns ~0 XP because `completedRounds` is
+  sprint-only in the sheet while the scorer treats pyramid as sprint), and the Napló
+  HR-recovery trend card (data exists in `hrRecoverySec`, no UI today).
 - **Mezociklus fully specified** in its prototype: hub (hero + Volumen/Történet/Sablonok/Új
   blokk tiles), MEV/MAV/MRV provenance bars with expandable 01→02→03 derivation, 5-step wizard
   (tappable phase curve + Mezo reset, Emphasize cap 2 with disabled-not-hidden buttons, program

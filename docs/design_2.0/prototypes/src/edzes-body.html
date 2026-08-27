@@ -21,8 +21,46 @@
   .chiprow { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #6E6257; }
   .fchip.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
-  .laps { display: flex; gap: 4px; align-items: flex-end; height: 30px; padding-top: 4px; }
-  .laps b { flex: 1; border-radius: 3px 3px 2px 2px; background: linear-gradient(180deg, #9CC4E0, #4E8FB8); }
+  /* ===== Futás ===== */
+  .rwstrip { display: flex; gap: 3px; margin-top: 7px; }
+  .rwstrip i { flex: 1; height: 7px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); }
+  .rwstrip i.past { background: rgba(78, 143, 184, 0.45); }
+  .rwstrip i.now { background: #4E8FB8; box-shadow: 0 0 8px rgba(78, 143, 184, 0.7); }
+  .runcard { position: relative; border-radius: 16px; padding: 10px 12px 11px 15px; margin-bottom: 8px; overflow: hidden; background: linear-gradient(135deg, #DFEDF5 0%, #FFFDF8 60%); box-shadow: 0 10px 22px -13px rgba(78, 143, 184, 0.45), 0 1.5px 4px rgba(43, 33, 24, 0.05); }
+  .runcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #4E8FB8; }
+  .rpechip { font-size: 7.5px; font-weight: 800; border-radius: 999px; padding: 2.5px 8px; flex: none; background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .rpechip.hard { background: rgba(196, 99, 75, 0.16); color: #A8462E; }
+  .rpills { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+  .rpill { font-size: 8px; font-weight: 700; border-radius: 8px; padding: 3px 8px; background: rgba(255, 255, 255, 0.8); border: 0.5px solid rgba(43, 33, 24, 0.08); color: #6E6257; font-variant-numeric: tabular-nums; }
+  .rpill.work { background: rgba(78, 143, 184, 0.14); color: #33749C; border-color: transparent; font-weight: 800; }
+  .rpill.warm { background: rgba(201, 150, 46, 0.13); color: #A8801F; border-color: transparent; }
+  .logcta { margin-left: auto; flex: none; }
+  .logcta.off { font-size: 8.5px; font-weight: 700; color: #A2958A; padding: 4px 0; }
+  .blockcard { position: relative; border-radius: 16px; padding: 11px 12px 11px 15px; margin-bottom: 8px; overflow: hidden; background: linear-gradient(135deg, #DFEDF5 0%, #FFFDF8 60%); box-shadow: 0 10px 22px -13px rgba(78, 143, 184, 0.45), 0 1.5px 4px rgba(43, 33, 24, 0.05); cursor: pointer; }
+  .blockcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #4E8FB8; }
+  .blockcard.compact { background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+  .blockcard.arch { opacity: 0.7; }
+  .stchip { font-size: 7px; font-weight: 800; letter-spacing: 0.08em; border-radius: 999px; padding: 2.5px 8px; flex: none; }
+  .stchip.act { background: rgba(78, 143, 184, 0.16); color: #33749C; }
+  .stchip.plan { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .stchip.arch { background: rgba(43, 33, 24, 0.07); color: #6E6257; }
+  .savepill { margin-left: auto; font-size: 7.5px; font-weight: 700; border-radius: 999px; padding: 3px 9px; background: rgba(43, 33, 24, 0.06); color: #A2958A; }
+  .savepill.ok { background: rgba(143, 175, 126, 0.2); color: #4E6B42; }
+  .wkchips { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .wkchips button { min-width: 26px; height: 26px; border-radius: 9px; border: 1px solid rgba(43, 33, 24, 0.12); background: #fff; font-size: 9px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; padding: 0 4px; }
+  .wkchips button.on { background: #DFEDF5; border-color: #4E8FB8; color: #33749C; }
+  .wkchips button.cur { box-shadow: 0 0 0 2px rgba(78, 143, 184, 0.3); }
+  .wdgrid { display: flex; gap: 4px; }
+  .wdgrid button { flex: 1; height: 26px; border-radius: 8px; border: 1px solid rgba(43, 33, 24, 0.12); background: #fff; font-size: 8px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; padding: 0; }
+  .wdgrid button.on { background: #DFEDF5; border-color: #4E8FB8; color: #33749C; }
+  .bldcard { border-radius: 14px; padding: 9px 11px; margin-bottom: 8px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+  .bldcard .bt { font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-bottom: 5px; }
+  .bldin { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 10px; padding: 7px 10px; font-family: inherit; font-size: 11px; background: #fff; margin-bottom: 6px; }
+  .pypills { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+  .pypills .pp { display: inline-flex; align-items: center; gap: 3px; border: 1px solid rgba(78, 143, 184, 0.4); background: rgba(78, 143, 184, 0.1); border-radius: 999px; padding: 3px 4px 3px 9px; font-size: 9px; font-weight: 700; color: #33749C; font-variant-numeric: tabular-nums; }
+  .pypills .pp button { border: none; background: none; color: #A2958A; font-size: 9px; cursor: pointer; padding: 0 4px; font-family: inherit; }
+  .pypills .pp .val { cursor: pointer; }
+  .pypills .padd { border: 1.2px dashed rgba(43, 33, 24, 0.2); background: none; border-radius: 999px; padding: 3px 9px; font-size: 8.5px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; }
 
   /* ===== Gyakorlatok katalógus ===== */
   .pgact { margin-left: auto; border: 1px solid rgba(43, 33, 24, 0.14); background: rgba(255, 255, 255, 0.72); border-radius: 999px; padding: 5px 12px; font-size: 9.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
@@ -282,7 +320,7 @@
             <div class="tile t-water rise" style="--d:190ms;" data-page="page-futas" role="button" tabindex="0" aria-label="Futás">
               <div class="p-eyebrow" style="color:#3E7396;">Futás</div>
               <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-futas"/></svg></div>
-              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">Szo · intervall</div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">Ma · 8×45 sprint</div>
             </div>
 
             <div class="tile t-kreed rise" style="--d:230ms;" data-page="page-gyak" role="button" tabindex="0" aria-label="Gyakorlatok">
@@ -474,33 +512,25 @@
 
       <!-- ============ FUTÁS ============ -->
       <div class="page p-sky" id="page-futas">
-        <div class="page-head"><button class="backbtn" data-back="page-futas">‹ Edzés</button></div>
+        <div class="page-head">
+          <button class="backbtn" data-back="page-futas">‹ Edzés</button>
+          <button class="pgact" id="rnNewBtn" style="display:none;">＋ Új terv</button>
+        </div>
         <div class="page-hero">
-          <svg width="56" height="56" viewBox="0 0 100 100"><use href="#i-futas"/></svg>
-          <div class="bignum">W2/4</div>
-          <div class="nm">Intervall blokk</div>
+          <div class="nm">Futás</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-futas"/></svg>
+            <div class="bignum" id="rnBig">3/8</div>
+          </div>
         </div>
         <div class="page-body">
-          <div class="vcard rise" style="--d:40ms;padding:10px 12px;">
-            <div class="p-eyebrow" style="padding-bottom:2px;">Blokk-ív</div>
-            <div class="arcbars sky"><b style="height:45%;"></b><b class="cur" style="height:62%;"></b><b style="height:82%;"></b><b style="height:50%;"></b></div>
-            <div class="arclbl"><span>6×400</span><span>8×400 · MOST</span><span>10×400</span><span>levezető</span></div>
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;" id="rnStats"></div>
+          <div class="segtabs rise" style="--d:60ms;" id="rnTabs">
+            <button data-v="week" class="on" aria-pressed="true">E heti edzés</button>
+            <button data-v="log" aria-pressed="false">Napló</button>
+            <button data-v="plans" aria-pressed="false">Tervek</button>
           </div>
-          <div class="vcard rise" style="--d:100ms;padding:10px 12px;">
-            <div class="p-eyebrow">Legutóbbi · 6×400 m</div>
-            <div class="mrow" style="align-items:baseline;gap:5px;"><span class="big" style="font-size:20px;">1:32</span><span class="mut" style="font-size:9.5px;">átlag körönként · legjobb 1:28</span></div>
-            <div class="laps"><b style="height:70%;"></b><b style="height:62%;"></b><b style="height:78%;"></b><b style="height:85%;"></b><b style="height:92%;"></b><b style="height:100%;"></b></div>
-          </div>
-          <div class="vcard rise" style="--d:160ms;">
-            <div class="vrow today">
-              <span class="tick"></span>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;color:#A8801F;">Szombat · 8×400 m</div><div class="mut" style="font-size:9px;">reggel · cél: 1:34 alatt körönként</div></div>
-            </div>
-            <div class="vrow" style="opacity:0.6;">
-              <span class="tick"></span>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Jövő szombat · 10×400 m</div><div class="mut" style="font-size:9px;">terv · a blokk csúcsa</div></div>
-            </div>
-          </div>
+          <div id="rnView"></div>
         </div>
       </div>
 
@@ -586,6 +616,15 @@
         </div>
       </div>
 
+      <!-- ============ FUTÓBLOKK BUILDER ============ -->
+      <div class="page p-sky" id="page-runbuilder">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-runbuilder">‹ Futás</button>
+          <span class="savepill" id="rbSave">✓ Mentve</span>
+        </div>
+        <div class="page-body" id="rbBody" style="padding-top:6px;"></div>
+      </div>
+
       <div class="bsheet-back" id="sback"></div>
       <div class="bsheet" id="sh-rec"></div>
       <div class="bsheet" id="sh-edit"></div>
@@ -593,6 +632,7 @@
       <div class="bsheet" id="sh-slog"></div>
       <div class="bsheet" id="sh-sched"></div>
       <div class="bsheet" id="sh-sevent"></div>
+      <div class="bsheet" id="sh-rlog"></div>
 
       <div class="tabbar">
         <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
@@ -623,7 +663,21 @@
           <strong>Log-sheet</strong>: élő Mezo-megfigyelő kártya a csúszkákra reagálva,
           setek/körök ág, váll-skála csak röpinél, jegyzet-mező (design-újdonság a contract
           <code>notes</code> mezőjére).</li>
-          <li><strong>Futás</strong> — blokk-ív égszínben, legutóbbi futás <strong>kör-idő oszlopokkal</strong> (1:32 átlag), következő sessionök.</li>
+          <li><strong>Futás</strong> — teljes futó-felület, a valós <code>/train/futas</code> ellen auditálva:
+          kompakt hero (Hét 3/8) + élő stat-sor, három szegmens. <strong>E heti edzés</strong>:
+          blokk-kártya cél-eyebrow-val, fázis-címkével és 8 szegmenses hét-csíkkal (múlt 50%,
+          most izzik), session-kártyák szegmens-pillekkel (bemelegítés / 8×45 mp / 90 mp séta /
+          levezetés, piramisnál 15／30／45), RPE-cél chip (sprint 9+ = terrakotta), háromállású
+          CTA (MA → Naplózd, múlt → Pótold, jövő → szürke), őszinte cross-load kártya.
+          <strong>Napló</strong>: pulzus-megnyugvás trend-oszlopok (−mp = javulás), futás-kártyák
+          feltételes chipekkel (RPE / kör / pulzus) és jegyzettel. <strong>Tervek</strong>:
+          Aktív/Tervezett/Archív szekciók státusz-chipekkel, aktív kártyán hét-csík + Builder,
+          „＋ Új terv" = create-then-navigate. <strong>Builder-oldal</strong>: auto-save pill
+          (Mentés… → ✓ Mentve), cím+cél input, hét-chipek 1–8 (＋/−), menetrend minden hétre
+          (napválasztó + idő) vs. terhelés hetenként (sprint kör/pihenő stepper; piramis-pillek
+          tap-ciklussal 15→30→45→60, ✕ törlés, ＋ szakasz), Aktiválás (single-active) / Lezárás,
+          Duplikálás + Törlés. <strong>Log-sheet</strong>: körök (piramisnál is — a valós
+          XP-bug design-fixe), RPE-skála, pulzus-megnyugvás stepper, jegyzet.</li>
           <li><strong>Gyakorlatok</strong> — a teljes katalógus-oldal: kétszintű izomszűrő (régió → izomfej) + Plyo,
           <strong>kétmódú lista</strong> (alapból a rekordjaid rangsora, kereséskor teljes katalógus szaggatott
           ghost-sorokkal és Stim-mérővel), rekord-kártya két stat-ággal (súlyos / saját testsúlyos),
@@ -1489,6 +1543,423 @@
         location: shEvent.querySelector('#evLoc').value.trim()
       });
       view = 'week'; render(); closeSheet();
+    });
+  }
+
+  render();
+})();
+
+/* ===== Futás ===== */
+(function () {
+  var DAYS = ['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'];
+  var TODAY = 2;
+  var PHASES = ['Alapozás', 'Alapozás', 'Épített tempó', 'Épített tempó', 'Csúcs', 'Csúcs', 'Csúcs', 'Levezetés'];
+  var R = {
+    blocks: [
+      { id: 'b1', title: 'Intervallum blokk', goal: 'Röpi-specifikus gyorsaság', status: 'active', start: 'júl 7', end: 'aug 31', weeks: 8, cur: 3,
+        sessions: [
+          { key: 'wed-sprint', day: 2, time: '06:30', label: 'Sprint', kind: 'sprint', rpe: [8, 9] },
+          { key: 'sat-pyramid', day: 5, time: '08:00', label: 'Piramis', kind: 'pyramid', rpe: [7, 8] }
+        ],
+        load: {
+          'wed-sprint': [{ r: 5, rest: 90 }, { r: 6, rest: 90 }, { r: 8, rest: 90 }, { r: 8, rest: 75 }, { r: 8, rest: 75 }, { r: 10, rest: 75 }, { r: 10, rest: 60 }, { r: 6, rest: 90 }],
+          'sat-pyramid': [[15, 30, 45, 30, 15], [15, 30, 45, 30, 15], [15, 30, 45, 45, 30, 15], [15, 30, 45, 60, 30, 15], [15, 30, 60, 60, 30, 15], [30, 45, 60, 60, 45, 30], [30, 45, 60, 60, 45, 30], [15, 30, 45, 30, 15]]
+        } },
+      { id: 'b2', title: '5k tempó blokk', goal: 'Egyenletes tempó-alap', status: 'planned', start: 'szep 7', end: 'okt 18', weeks: 6, cur: 0,
+        sessions: [
+          { key: 'tue-sprint', day: 1, time: '06:30', label: 'Sprint', kind: 'sprint', rpe: [8, 9] },
+          { key: 'fri-pyramid', day: 4, time: '06:30', label: 'Piramis', kind: 'pyramid', rpe: [7, 8] }
+        ],
+        load: {
+          'tue-sprint': [{ r: 5, rest: 90 }, { r: 6, rest: 90 }, { r: 6, rest: 75 }, { r: 8, rest: 75 }, { r: 8, rest: 60 }, { r: 5, rest: 90 }],
+          'fri-pyramid': [[15, 30, 45, 30, 15], [15, 30, 45, 30, 15], [15, 30, 45, 45, 30, 15], [15, 30, 60, 30, 15], [30, 45, 60, 45, 30], [15, 30, 30, 15]]
+        } },
+      { id: 'b3', title: 'Tavaszi alapozás', goal: 'Aerob alap', status: 'archived', start: 'már 24', end: 'máj 18', weeks: 8, cur: 8,
+        summary: '7/10 · pulzus-megnyugvás −18 mp javult', sessions: [], load: {} }
+    ],
+    logs: [
+      { blockId: 'b1', wk: 2, key: 'sat-pyramid', date: 'aug 22 · szo', label: 'Piramis', rpe: 7, rounds: null, hr: 46, notes: null },
+      { blockId: 'b1', wk: 2, key: 'wed-sprint', date: 'aug 19 · sze', label: 'Sprint', rpe: 8, rounds: 6, hr: 44, notes: 'Utolsó két kör nehéz volt, de tartottam a tempót.' },
+      { blockId: 'b1', wk: 1, key: 'sat-pyramid', date: 'aug 15 · szo', label: 'Piramis', rpe: 7, rounds: null, hr: 48, notes: 'A 45-ös szakasz még szaggat.' },
+      { blockId: 'b1', wk: 1, key: 'wed-sprint', date: 'aug 12 · sze', label: 'Sprint', rpe: 8, rounds: 5, hr: 51, notes: null }
+    ]
+  };
+  var view = 'week';
+  var rnView = document.getElementById('rnView');
+  var rnStats = document.getElementById('rnStats');
+  var rnBig = document.getElementById('rnBig');
+  var rnNewBtn = document.getElementById('rnNewBtn');
+  function active() { return R.blocks.filter(function (b) { return b.status === 'active'; })[0] || null; }
+  function logged(b, wk, key) { return R.logs.some(function (l) { return l.blockId === b.id && l.wk === wk && l.key === key; }); }
+
+  function strip(b) {
+    var h = '<div class="rwstrip" aria-hidden="true">';
+    for (var i = 1; i <= b.weeks; i++) h += '<i class="' + (i < b.cur ? 'past' : i === b.cur ? 'now' : '') + '"></i>';
+    return h + '</div>';
+  }
+  function pills(s, b) {
+    var h = '<div class="rpills"><span class="rpill warm">5p bemelegítés</span>';
+    if (s.kind === 'sprint') {
+      var ld = b.load[s.key][b.cur - 1] || b.load[s.key][0];
+      h += '<span class="rpill work">' + ld.r + '× · 45 mp</span><span class="rpill">' + ld.rest + ' mp séta</span>';
+    } else {
+      var segs = b.load[s.key][b.cur - 1] || b.load[s.key][0];
+      h += '<span class="rpill work">' + segs.join('／') + ' mp</span><span class="rpill">pihenő = szakasz × 2</span>';
+    }
+    return h + '<span class="rpill warm">5p levezetés</span></div>';
+  }
+  function renderStats() {
+    var b = active();
+    if (!b) { rnBig.textContent = '—'; rnStats.innerHTML = '<div class="statcell"><b>0</b><small>aktív terv</small></div><div class="statcell"><b>' + R.blocks.filter(function (x) { return x.status === 'planned'; }).length + '</b><small>tervezett</small></div><div class="statcell"><b>' + R.logs.length + '</b><small>logolt futás</small></div>'; return; }
+    var done = b.sessions.filter(function (s) { return logged(b, b.cur, s.key); }).length;
+    rnBig.textContent = b.cur + '/' + b.weeks;
+    rnStats.innerHTML =
+      '<div class="statcell"><b>' + done + '/' + b.sessions.length + '</b><small>e heti edzés</small></div>' +
+      '<div class="statcell"><b>' + b.sessions.length + '×</b><small>/ hét</small></div>' +
+      '<div class="statcell"><b>' + b.weeks + ' hét</b><small>blokk</small></div>' +
+      '<div class="statcell"><b style="color:#33749C;">8–9</b><small>RPE sprint cél</small></div>';
+  }
+
+  function renderWeek() {
+    var b = active();
+    if (!b) {
+      rnView.innerHTML = '<div class="nohit rise" style="--d:30ms;">Nincs aktív futóterved — a Tervek fülön aktiválj egyet.</div>';
+      return;
+    }
+    var h = '<div class="runcard rise" style="--d:30ms;">' +
+      '<div class="p-eyebrow" style="color:#33749C;">' + (b.goal || 'Intervallum-blokk') + '</div>' +
+      '<div class="mrow" style="align-items:baseline;gap:6px;"><span class="big" style="font-size:19px;">Hét ' + b.cur + ' / ' + b.weeks + '</span>' +
+      '<span class="mut" style="font-size:9px;">' + PHASES[b.cur - 1] + '</span></div>' + strip(b) + '</div>';
+    h += '<div class="p-eyebrow rise" style="--d:80ms;padding:4px 2px 6px;">E hét · ' + b.sessions.length + ' edzés</div>';
+    h += b.sessions.map(function (s, i) {
+      var isT = s.day === TODAY, past = s.day < TODAY, done = logged(b, b.cur, s.key);
+      var cta = done ? '<span class="logcta mastamp" style="background:rgba(143,175,126,0.2);color:#4E6B42;">KÉSZ ✓</span>'
+        : isT ? '<button class="vchip logcta" data-rlog="' + s.key + '">Naplózd ›</button>'
+        : past ? '<button class="vchip logcta" data-rlog="' + s.key + '">Pótold ›</button>'
+        : '<span class="logcta off">Naplózás ▸</span>';
+      var hard = s.kind === 'sprint' && s.rpe[0] >= 9;
+      return '<div class="runcard rise" style="--d:' + (110 + i * 50) + 'ms;">' +
+        '<div class="mrow" style="gap:7px;">' +
+        '<span class="stag" style="--kc:#4E8FB8;">FUTÁS</span>' +
+        '<div><div style="font-size:11.5px;font-weight:700;">' + s.label + (isT ? ' <span class="mastamp">MA</span>' : '') + '</div>' +
+        '<div class="mut" style="font-size:8.5px;">' + DAYS[s.day] + ' · ' + s.time + '</div></div>' +
+        '<span class="rpechip' + (hard ? ' hard' : '') + '" style="margin-left:auto;">RPE ' + s.rpe[0] + '–' + s.rpe[1] + '</span></div>' +
+        pills(s, b) +
+        '<div class="mrow" style="margin-top:8px;">' + cta + '</div></div>';
+    }).join('');
+    h += '<div class="qcard rise" style="--d:240ms;"><div class="mrow" style="gap:9px;">' +
+      '<svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-minta"/></svg>' +
+      '<div class="grow"><div style="font-size:11px;font-weight:700;">Cross-load · Comb / Lábhajlító</div>' +
+      '<div class="mut" style="font-size:9px;font-weight:300;margin-top:2px;">A sprint-hetek láb-terhelése a mezo volumen-tervben MAV −2-t ér — a teljes bekötés a pattern-engine része lesz.</div></div></div></div>';
+    rnView.innerHTML = h;
+  }
+
+  function renderLog() {
+    if (!R.logs.length) { rnView.innerHTML = '<div class="nohit rise" style="--d:30ms;">Még nincs logolt futás.</div>'; return; }
+    var hrs = R.logs.filter(function (l) { return l.hr != null; }).slice(0, 6).reverse();
+    var h = '';
+    if (hrs.length > 1) {
+      var mx = Math.max.apply(null, hrs.map(function (l) { return l.hr; }));
+      var delta = hrs[hrs.length - 1].hr - hrs[0].hr;
+      h += '<div class="trendcard rise" style="--d:30ms;"><div class="lsthead" style="padding:0 0 2px;"><div class="p-eyebrow" style="padding:0;">Pulzus-megnyugvás · utolsó ' + hrs.length + ' futás</div>' +
+        '<span class="cnt" style="color:' + (delta <= 0 ? '#4E6B42' : '#A8801F') + ';">' + (delta <= 0 ? '' : '+') + delta + ' mp</span></div>' +
+        '<div class="trbars">' + hrs.map(function (l) {
+          return '<div><span class="rv" style="color:#33749C;">' + l.hr + '</span><b style="height:' + Math.max(14, Math.round(l.hr / mx * 78)) + '%;background:linear-gradient(180deg,#9CC4E0,#4E8FB8);"></b><small>' + l.date.slice(0, 6) + '</small></div>';
+        }).join('') + '</div>' +
+        '<div class="mut" style="font-size:7.5px;margin-top:4px;">mp a nyugalmi pulzusig — alacsonyabb = jobb regeneráció</div></div>';
+    }
+    h += '<div class="lsthead rise" style="--d:60ms;"><div class="p-eyebrow" style="padding:0;">Utolsó ' + R.logs.length + ' futás</div></div>';
+    h += R.logs.map(function (l, i) {
+      var chips = [];
+      if (l.rpe != null) chips.push('RPE ' + l.rpe);
+      if (l.rounds != null) chips.push(l.rounds + ' kör');
+      if (l.hr != null) chips.push(l.hr + ' mp pulzus');
+      return '<div class="sesscard rise" style="--d:' + (90 + i * 45) + 'ms;--cr:#4E8FB8;--cw:#DFEDF5;--cd:#33749C;--cg:rgba(78,143,184,0.4);">' +
+        '<div class="mrow" style="gap:7px;align-items:flex-start;">' +
+        '<span class="stag" style="--kc:#4E8FB8;">FUTÁS</span>' +
+        '<div class="mut" style="font-size:8.5px;padding-top:1px;">' + l.date + ' · ' + l.label + '</div>' +
+        '<div class="rpe"><b style="color:' + (l.rpe >= 8 ? '#A8801F' : l.rpe >= 7 ? '#A84A26' : '#6E6257') + ';">' + l.rpe + '</b><small>RPE / 10</small></div></div>' +
+        '<div class="rpills" style="margin-top:6px;">' + chips.map(function (c) { return '<span class="rpill">' + c + '</span>'; }).join('') + '</div>' +
+        (l.notes ? '<div class="snote">„' + l.notes + '"</div>' : '') + '</div>';
+    }).join('');
+    rnView.innerHTML = h;
+  }
+
+  function blockCard(b, i) {
+    if (b.status === 'active') {
+      return '<div class="blockcard rise" style="--d:' + (60 + i * 45) + 'ms;" role="button" tabindex="0" data-bld="' + b.id + '">' +
+        '<div class="mrow" style="gap:7px;"><div class="grow"><div class="p-eyebrow" style="color:#33749C;">' + (b.goal || '') + '</div>' +
+        '<div style="font-size:12.5px;font-weight:700;">' + b.title + '</div>' +
+        '<div class="mut" style="font-size:8.5px;">' + b.start + ' – ' + b.end + ' · ' + b.weeks + ' hét</div></div>' +
+        '<span class="stchip act">AKTÍV</span></div>' + strip(b) +
+        '<div class="mrow" style="margin-top:6px;"><span class="mut" style="font-size:8.5px;">Hét ' + b.cur + ' / ' + b.weeks + '</span><span class="vchip" style="margin-left:auto;">Builder ›</span></div></div>';
+    }
+    var arch = b.status === 'archived';
+    return '<div class="blockcard compact' + (arch ? ' arch' : '') + ' rise" style="--d:' + (60 + i * 45) + 'ms;" role="button" tabindex="0" data-bld="' + b.id + '">' +
+      '<div class="mrow" style="gap:7px;"><div class="grow"><div style="font-size:11.5px;font-weight:700;">' + b.title + '</div>' +
+      '<div class="mut" style="font-size:8.5px;">' + b.start + ' – ' + b.end + ' · ' + b.weeks + ' hét</div>' +
+      (arch && b.summary ? '<div class="mut" style="font-size:8.5px;margin-top:2px;">' + b.summary + '</div>' : '') + '</div>' +
+      '<span class="stchip ' + (arch ? 'arch">ARCHÍV' : 'plan">TERVEZETT') + '</span></div></div>';
+  }
+  function renderPlans() {
+    var groups = [['active', 'Aktív'], ['planned', 'Tervezett'], ['archived', 'Archív']];
+    var h = '', gi = 0;
+    groups.forEach(function (g) {
+      var list = R.blocks.filter(function (b) { return b.status === g[0]; });
+      h += '<div class="p-eyebrow rise" style="--d:' + (30 + gi * 30) + 'ms;padding:' + (gi ? '8px' : '0') + ' 2px 5px;">' + g[1] + ' · ' + list.length + '</div>';
+      h += list.length ? list.map(function (b, i) { return blockCard(b, gi + i); }).join('')
+        : '<div class="nohit" style="padding:8px;font-size:9px;">—</div>';
+      gi++;
+    });
+    h += '<p class="habnote">Egyszerre egy aktív blokk él — az aktiválás a többit archiválja. Az új terv rögtön a Builderben nyílik.</p>';
+    rnView.innerHTML = h;
+  }
+
+  function render() {
+    renderStats();
+    rnNewBtn.style.display = view === 'plans' ? '' : 'none';
+    if (view === 'week') renderWeek(); else if (view === 'log') renderLog(); else renderPlans();
+  }
+  document.getElementById('rnTabs').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-v]'); if (!b) return;
+    view = b.getAttribute('data-v');
+    document.querySelectorAll('#rnTabs button').forEach(function (x) {
+      var on = x.getAttribute('data-v') === view;
+      x.classList.toggle('on', on); x.setAttribute('aria-pressed', on);
+    });
+    render();
+  });
+  rnView.addEventListener('click', function (ev) {
+    var t;
+    if ((t = ev.target.closest('[data-rlog]'))) return openRunLog(t.getAttribute('data-rlog'));
+    if ((t = ev.target.closest('[data-bld]'))) return openBuilder(t.getAttribute('data-bld'));
+  });
+  rnNewBtn.addEventListener('click', function () {
+    var n = { id: 'nb' + R.blocks.length, title: 'Új futóterv', goal: '', status: 'planned', start: 'szep 1', end: 'szep 28', weeks: 4, cur: 0,
+      sessions: [
+        { key: 'tue-sprint', day: 1, time: '06:30', label: 'Sprint', kind: 'sprint', rpe: [8, 9] },
+        { key: 'fri-pyramid', day: 4, time: '06:30', label: 'Piramis', kind: 'pyramid', rpe: [7, 8] }
+      ],
+      load: { 'tue-sprint': [{ r: 5, rest: 90 }, { r: 6, rest: 90 }, { r: 6, rest: 75 }, { r: 5, rest: 90 }],
+        'fri-pyramid': [[15, 30, 45, 30, 15], [15, 30, 45, 30, 15], [15, 30, 45, 45, 30, 15], [15, 30, 30, 15]] } };
+    R.blocks.push(n);
+    openBuilder(n.id); // create-then-navigate
+  });
+
+  /* — builder page — */
+  var BID = null, BWK = 1, saveT = null;
+  var rbBody = document.getElementById('rbBody');
+  var rbSave = document.getElementById('rbSave');
+  function blockOf(id) { return R.blocks.filter(function (b) { return b.id === id; })[0]; }
+  function touchSave() {
+    rbSave.textContent = 'Mentés…'; rbSave.classList.remove('ok');
+    clearTimeout(saveT);
+    saveT = setTimeout(function () { rbSave.textContent = '✓ Mentve'; rbSave.classList.add('ok'); }, 600);
+  }
+  function openBuilder(id) {
+    BID = id;
+    var b = blockOf(id);
+    BWK = b.status === 'active' ? b.cur : 1;
+    rbSave.textContent = '✓ Mentve'; rbSave.classList.add('ok');
+    buildBuilder();
+    var pg = document.getElementById('page-runbuilder');
+    pg.classList.add('open'); pg.classList.remove('play');
+    pg.querySelector('.page-body').scrollTop = 0;
+    void pg.offsetWidth; pg.classList.add('play');
+  }
+  function buildBuilder() {
+    var b = blockOf(BID);
+    var eyebrow = b.status === 'active' ? 'Aktív · Hét ' + b.cur + '/' + b.weeks : b.status === 'planned' ? 'Tervezett' : 'Archív';
+    var h = '<div class="p-eyebrow rise" style="--d:0ms;color:#33749C;">Builder · ' + eyebrow + '</div>' +
+      '<input class="bldin rise" style="--d:30ms;font-size:14px;font-weight:700;" id="rbTitle" value="' + b.title.replace(/"/g, '&quot;') + '" aria-label="Cím">' +
+      '<input class="bldin rise" style="--d:60ms;" id="rbGoal" placeholder="Cél · pl. Röpi-specifikus gyorsaság" value="' + (b.goal || '').replace(/"/g, '&quot;') + '" aria-label="Cél">';
+    h += '<div class="bldcard rise" style="--d:90ms;"><div class="bt">Hetek · 1–8</div><div class="wkchips">' +
+      Array.apply(null, { length: b.weeks }).map(function (_, i) {
+        return '<button data-wk="' + (i + 1) + '" class="' + (BWK === i + 1 ? 'on' : '') + (b.cur === i + 1 ? ' cur' : '') + '" aria-pressed="' + (BWK === i + 1) + '">' + (i + 1) + '</button>';
+      }).join('') +
+      (b.weeks > 1 ? '<button data-wkrem aria-label="Utolsó hét eltávolítása">−</button>' : '') +
+      (b.weeks < 8 ? '<button data-wkadd aria-label="Hét hozzáadása">＋</button>' : '') +
+      '</div><div class="mut" style="font-size:7.5px;margin-top:4px;">' + PHASES[BWK - 1] + ' fázis · a kékkel jelölt az aktuális hét</div></div>';
+    b.sessions.forEach(function (s, si) {
+      h += '<div class="bldcard rise" style="--d:' + (120 + si * 40) + 'ms;">' +
+        '<div class="mrow" style="gap:6px;"><span class="stag" style="--kc:#4E8FB8;">' + s.label.toUpperCase() + '</span>' +
+        '<span class="rpechip" style="margin-left:auto;">RPE ' + s.rpe[0] + '–' + s.rpe[1] + '</span></div>' +
+        '<div class="bt" style="margin-top:7px;">Menetrend · minden héten</div>' +
+        '<div class="wdgrid">' + ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'].map(function (d, di) {
+          return '<button data-sday="' + si + ':' + di + '" class="' + (s.day === di ? 'on' : '') + '" aria-pressed="' + (s.day === di) + '" aria-label="' + DAYS[di] + '">' + d + '</button>';
+        }).join('') + '</div>' +
+        '<div class="mrow" style="gap:6px;margin-top:6px;"><input type="time" value="' + s.time + '" data-stime="' + si + '" aria-label="' + s.label + ' időpont" style="border:1px solid rgba(43,33,24,0.12);border-radius:8px;padding:4px 7px;font-family:inherit;font-size:10px;background:#fff;"></div>' +
+        '<div class="bt" style="margin-top:9px;">Terhelés · ' + BWK + '. hét</div>';
+      if (s.kind === 'sprint') {
+        var ld = b.load[s.key][BWK - 1];
+        h += '<div class="mrow" style="gap:14px;">' +
+          '<span class="durstep"><button data-lr="' + si + ':-1" aria-label="kevesebb kör">−</button><b>' + ld.r + ' kör</b><button data-lr="' + si + ':1" aria-label="több kör">＋</button></span>' +
+          '<span class="durstep"><button data-lp="' + si + ':-1" aria-label="rövidebb pihenő">−</button><b>' + ld.rest + ' mp</b><button data-lp="' + si + ':1" aria-label="hosszabb pihenő">＋</button></span>' +
+          '<span class="mut" style="font-size:7.5px;">45 mp-es körök · séta-pihenő</span></div>';
+      } else {
+        var segs = b.load[s.key][BWK - 1];
+        h += '<div class="pypills">' + segs.map(function (v, pi) {
+          return '<span class="pp"><span class="val" data-pcyc="' + si + ':' + pi + '" aria-label="' + v + ' mp szakasz váltása">' + v + ' mp</span><button data-pdel="' + si + ':' + pi + '" aria-label="' + v + ' mp szakasz törlése">✕</button></span>';
+        }).join('') + '<button class="padd" data-padd="' + si + '">＋ szakasz</button></div>' +
+          '<div class="mut" style="font-size:7.5px;margin-top:4px;">pihenő = szakasz × 2 · automatikus</div>';
+      }
+      h += '</div>';
+    });
+    var cta = b.status === 'planned'
+      ? '<button class="cta rise" style="--d:220ms;width:100%;padding:9px 0;" id="rbAct">Aktiválás · ' + b.start + '</button>'
+      : b.status === 'active'
+        ? '<button class="ghost rise" style="--d:220ms;width:100%;padding:9px 0;color:#A8462E;border-color:rgba(196,99,75,0.4);" id="rbClose">Lezárás</button>'
+        : '';
+    h += cta;
+    h += '<div class="mrow rise" style="--d:250ms;gap:8px;margin-top:8px;">' +
+      '<button class="ghost" style="flex:1;padding:7px 0;font-size:9px;" id="rbDup">Duplikálás</button>' +
+      '<button class="ghost" style="flex:1;padding:7px 0;font-size:9px;color:#A8462E;" id="rbDel">Törlés</button></div>';
+    h += '<p class="habnote">Nincs mentés gomb — minden módosítás magától mentődik. A menetrend minden hétre érvényes, a terhelés hetenként más.</p>';
+    rbBody.innerHTML = h;
+    wireBuilder(b);
+  }
+  function wireBuilder(b) {
+    rbBody.querySelector('#rbTitle').addEventListener('input', function (e) { b.title = e.target.value; touchSave(); });
+    rbBody.querySelector('#rbGoal').addEventListener('input', function (e) { b.goal = e.target.value; touchSave(); });
+    rbBody.querySelectorAll('[data-stime]').forEach(function (inp) {
+      inp.addEventListener('change', function () { b.sessions[Number(inp.getAttribute('data-stime'))].time = inp.value; touchSave(); });
+    });
+    rbBody.addEventListener('click', builderClick);
+    function builderClick(ev) {
+      var t, p;
+      if ((t = ev.target.closest('[data-wk]'))) { BWK = Number(t.getAttribute('data-wk')); rebuild(); return; }
+      if ((t = ev.target.closest('[data-wkadd]'))) {
+        if (b.weeks < 8) {
+          b.weeks++;
+          b.sessions.forEach(function (s) {
+            var arr = b.load[s.key];
+            arr.push(s.kind === 'sprint' ? { r: arr[arr.length - 1].r, rest: arr[arr.length - 1].rest } : arr[arr.length - 1].slice());
+          });
+          touchSave(); rebuild();
+        } return;
+      }
+      if ((t = ev.target.closest('[data-wkrem]'))) {
+        if (b.weeks > 1) {
+          b.weeks--;
+          b.sessions.forEach(function (s) { b.load[s.key].pop(); });
+          if (BWK > b.weeks) BWK = b.weeks;
+          touchSave(); rebuild();
+        } return;
+      }
+      if ((t = ev.target.closest('[data-sday]'))) {
+        p = t.getAttribute('data-sday').split(':');
+        b.sessions[Number(p[0])].day = Number(p[1]); touchSave(); rebuild(); return;
+      }
+      if ((t = ev.target.closest('[data-lr]'))) {
+        p = t.getAttribute('data-lr').split(':');
+        var ld = b.load[b.sessions[Number(p[0])].key][BWK - 1];
+        ld.r = Math.max(1, ld.r + Number(p[1])); touchSave(); rebuild(); return;
+      }
+      if ((t = ev.target.closest('[data-lp]'))) {
+        p = t.getAttribute('data-lp').split(':');
+        var l2 = b.load[b.sessions[Number(p[0])].key][BWK - 1];
+        l2.rest = Math.max(5, l2.rest + 5 * Number(p[1])); touchSave(); rebuild(); return;
+      }
+      if ((t = ev.target.closest('[data-pcyc]'))) {
+        p = t.getAttribute('data-pcyc').split(':');
+        var segs = b.load[b.sessions[Number(p[0])].key][BWK - 1];
+        var order = [15, 30, 45, 60];
+        segs[Number(p[1])] = order[(order.indexOf(segs[Number(p[1])]) + 1) % order.length];
+        touchSave(); rebuild(); return;
+      }
+      if ((t = ev.target.closest('[data-pdel]'))) {
+        p = t.getAttribute('data-pdel').split(':');
+        b.load[b.sessions[Number(p[0])].key][BWK - 1].splice(Number(p[1]), 1);
+        touchSave(); rebuild(); return;
+      }
+      if ((t = ev.target.closest('[data-padd]'))) {
+        b.load[b.sessions[Number(t.getAttribute('data-padd'))].key][BWK - 1].push(30);
+        touchSave(); rebuild(); return;
+      }
+      if ((t = ev.target.closest('#rbAct'))) {
+        R.blocks.forEach(function (x) { if (x.status === 'active') x.status = 'archived'; });
+        b.status = 'active'; b.cur = 1;
+        closeBuilder(); view = 'plans'; syncTabs(); render(); return;
+      }
+      if ((t = ev.target.closest('#rbClose'))) {
+        b.status = 'archived';
+        closeBuilder(); view = 'plans'; syncTabs(); render(); return;
+      }
+      if ((t = ev.target.closest('#rbDup'))) {
+        var c = JSON.parse(JSON.stringify(b));
+        c.id = b.id + '-cp'; c.title = b.title + ' (másolat)'; c.status = 'planned'; c.cur = 0;
+        R.blocks.push(c);
+        closeBuilder(); view = 'plans'; syncTabs(); render(); return;
+      }
+      if ((t = ev.target.closest('#rbDel'))) {
+        R.blocks.splice(R.blocks.indexOf(b), 1);
+        closeBuilder(); view = 'plans'; syncTabs(); render(); return;
+      }
+    }
+    function rebuild() { rbBody.removeEventListener('click', builderClick); buildBuilder(); }
+  }
+  function closeBuilder() { document.getElementById('page-runbuilder').classList.remove('open'); }
+  function syncTabs() {
+    document.querySelectorAll('#rnTabs button').forEach(function (x) {
+      var on = x.getAttribute('data-v') === view;
+      x.classList.toggle('on', on); x.setAttribute('aria-pressed', on);
+    });
+  }
+
+  /* — run log sheet — */
+  var sback = document.getElementById('sback');
+  var shRlog = document.getElementById('sh-rlog');
+  var openShR = null;
+  function openSheetR(el) { openShR = el; sback.classList.add('open'); el.classList.add('open'); el.scrollTop = 0; }
+  function closeSheetR() { if (openShR) { openShR.classList.remove('open'); openShR = null; sback.classList.remove('open'); } }
+  sback.addEventListener('click', closeSheetR);
+  var RL = null;
+  function openRunLog(key) {
+    var b = active();
+    var s = b.sessions.filter(function (x) { return x.key === key; })[0];
+    var ld = b.load[key][b.cur - 1];
+    RL = { key: key, label: s.label, kind: s.kind, rounds: s.kind === 'sprint' ? ld.r : (b.load[key][b.cur - 1].length || 5), rpe: 9, hr: 45 };
+    buildRunLog(); openSheetR(shRlog);
+  }
+  function buildRunLog() {
+    var h = '<div class="sh-eyebrow">Futás log · ' + RL.label + '</div><div class="sh-title">Hogy ment?</div>' +
+      '<div class="steprow"><span class="lbl">Teljesített körök<small>' + (RL.kind === 'pyramid' ? 'piramis-szakaszok · a haladás ebből számol' : '0–30') + '</small></span>' +
+      '<button data-rd="-1" aria-label="kevesebb kör">−</button><span class="v" id="rlR">' + RL.rounds + '</span><button data-rd="1" aria-label="több kör">＋</button></div>' +
+      '<div class="sh-eyebrow" style="padding:6px 0 0;">RPE · érzékelt nehézség</div><div class="scale10" id="rlRpe">' +
+      Array.apply(null, { length: 10 }).map(function (_, i) {
+        return '<button data-s="' + (i + 1) + '" class="' + (i + 1 <= RL.rpe ? 'f' : '') + '">' + (i + 1) + '</button>';
+      }).join('') + '</div>' +
+      '<div class="steprow" style="margin-top:6px;"><span class="lbl">Pulzus-megnyugvás · mp<small>1 perc pihenő után · 5-ös lépések</small></span>' +
+      '<button data-rh="-1" aria-label="kevesebb">−</button><span class="v" id="rlH">' + RL.hr + '</span><button data-rh="1" aria-label="több">＋</button></div>' +
+      '<div style="margin-top:8px;"><div class="sh-eyebrow" style="padding-bottom:3px;">Jegyzet</div>' +
+      '<input type="text" id="rlNotes" placeholder="opcionális"></div>' +
+      '<div class="shrow"><button class="ghost" id="rlCancel">Mégse</button><button class="cta" id="rlSave">Mentés · +40 XP</button></div>';
+    shRlog.innerHTML = h;
+    shRlog.querySelectorAll('[data-rd]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        RL.rounds = Math.min(30, Math.max(0, RL.rounds + Number(btn.getAttribute('data-rd'))));
+        document.getElementById('rlR').textContent = RL.rounds;
+      });
+    });
+    shRlog.querySelectorAll('[data-rh]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        RL.hr = Math.min(300, Math.max(0, RL.hr + 5 * Number(btn.getAttribute('data-rh'))));
+        document.getElementById('rlH').textContent = RL.hr;
+      });
+    });
+    shRlog.querySelectorAll('#rlRpe [data-s]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        RL.rpe = Number(btn.getAttribute('data-s'));
+        shRlog.querySelectorAll('#rlRpe [data-s]').forEach(function (x) {
+          x.className = Number(x.getAttribute('data-s')) <= RL.rpe ? 'f' : '';
+        });
+      });
+    });
+    shRlog.querySelector('#rlCancel').addEventListener('click', closeSheetR);
+    shRlog.querySelector('#rlSave').addEventListener('click', function () {
+      var b = active();
+      R.logs.unshift({ blockId: b.id, wk: b.cur, key: RL.key, date: 'aug 26 · sze', label: RL.label, rpe: RL.rpe, rounds: RL.rounds, hr: RL.hr, notes: shRlog.querySelector('#rlNotes').value.trim() || null });
+      view = 'log'; syncTabs(); render(); closeSheetR();
     });
   }
 
