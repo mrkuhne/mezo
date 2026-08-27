@@ -271,7 +271,8 @@ Locked patterns from the screen rounds (canonical for every further page):
 - **Fuel hub specified** in the new fuel-tab prototype (2026-08-27, feature-audited against
   all real `/fuel` routes; see `prototypes/README.md`, and the **full audit** in
   [`2026-08-27-fuel-feature-audit.md`](2026-08-27-fuel-feature-audit.md) — the per-subpage
-  deep rounds must consult it). Hub absorbs the old Mai page: keret-hero
+  deep rounds must consult it; Daniel's iteration decisions are logged in
+  [`2026-08-27-fuel-design-iterations.md`](2026-08-27-fuel-design-iterations.md)). Hub absorbs the old Mai page: keret-hero
   (honest negative remaining-kcal, proportional done-window day-bar + gold now-marker, energy
   chips that vanish on static energy, 5 rings with the water ring as a button), the
   **window swimlane** (Daniel's direction, replacing the earlier MOST-card + done-capsule
