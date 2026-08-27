@@ -5113,6 +5113,139 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/weekly-review/{start}':
+    get:
+      tags:
+        - Proactive
+      operationId: getWeeklyReview
+      summary: >-
+        The persisted weekly review narrative (Én/Heti, spec 2026-08-27 §5) for
+        the ISO-Monday week starting {start}
+      description: >-
+        Returns the review row as-is (never lazily generates — the
+        WeeklyReviewJob owns generation). `stale` is a best-effort probe: true
+        when any of the week's logged weight/sleep/check-in/meal rows was
+        created after the review's `generatedAt` (false on probe failure — never
+        blocks the read).
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: The ISO Monday of the wanted week
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The persisted weekly review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyReviewResponse'
+        '400':
+          description: '{start} is not a Monday'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No weekly review persisted for this week
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/weekly-review/{start}/regenerate':
+    post:
+      tags:
+        - Proactive
+      operationId: regenerateWeeklyReview
+      summary: >-
+        On-demand regeneration of the weekly review (soft-deletes the existing
+        row, re-runs the generator)
+      description: >-
+        409 while the week is still in progress (`{start} + 7 days` must be
+        on/before today — the same completed-week gate the generator idiom uses
+        elsewhere). 404 when the regenerated week still has no logged data
+        (empty-week ⇒ no row, the generator's own rule).
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: The ISO Monday of the wanted week
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The freshly generated weekly review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyReviewResponse'
+        '400':
+          description: '{start} is not a Monday'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Regeneration yielded no row (no logged data in the week)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The week is not completed yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/weekly-review/{start}/digest':
+    get:
+      tags:
+        - Proactive
+      operationId: getWeeklyReviewDigest
+      summary: >-
+        Code-collected week-window refs behind the weekly review — the confirmed
+        pattern events, new facts, life events, memoir presence and predictions
+        the review draws its highlight candidates from
+      description: >-
+        Always 200 — empty lists are the honest empty state, never a 404 (the
+        review row itself may not even exist yet; this is a raw week-window
+        read, independent of it).
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: The ISO Monday of the wanted week
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The week's digest (possibly all-empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyReviewDigestResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/quest/day/{date}':
     get:
       tags:
@@ -14291,6 +14424,155 @@ components:
         generatedAt:
           type: string
           format: date-time
+    WeeklyReviewDayNote:
+      type: object
+      required:
+        - date
+        - note
+      properties:
+        date:
+          type: string
+          format: date
+        note:
+          type: string
+    WeeklyReviewHighlight:
+      type: object
+      required:
+        - kind
+        - label
+      properties:
+        kind:
+          type: string
+          description: >-
+            FE RefTag kind (Pattern/Fact/LifeEvent/Memory) — code-collected,
+            model-SELECTED, never invented
+        label:
+          type: string
+    WeeklyReviewResponse:
+      type: object
+      required:
+        - id
+        - weekStart
+        - summary
+        - dayNotes
+        - highlights
+        - generatedAt
+        - stale
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: >-
+            The weekly_review row id — the W4.1 feedback artifactId
+            (weekly_review).
+        weekStart:
+          type: string
+          format: date
+        summary:
+          type: string
+          description: >-
+            The review prose — what went well, what broke, what pattern showed
+            up across the days
+        dayNotes:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyReviewDayNote'
+        highlights:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyReviewHighlight'
+        generatedAt:
+          type: string
+          format: date-time
+        stale:
+          type: boolean
+          description: >-
+            Best-effort: true when any of the week's logged
+            weight/sleep/check-in/meal rows was created after generatedAt; false
+            on probe failure (never blocks the read).
+    WeeklyReviewPatternRef:
+      type: object
+      required:
+        - pairKey
+        - title
+        - event
+      properties:
+        pairKey:
+          type: string
+        title:
+          type: string
+        event:
+          type: string
+          description: The pattern_event kind (confirmed | reinforced | promoted)
+    WeeklyReviewFactRef:
+      type: object
+      required:
+        - id
+        - text
+      properties:
+        id:
+          type: string
+          format: uuid
+        text:
+          type: string
+    WeeklyReviewLifeEventRef:
+      type: object
+      required:
+        - id
+        - title
+        - occurredOn
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        occurredOn:
+          type: string
+          format: date
+    WeeklyReviewPredictionRef:
+      type: object
+      required:
+        - id
+        - title
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          type: string
+          description: pending | validated | missed
+    WeeklyReviewDigestResponse:
+      type: object
+      required:
+        - patterns
+        - newFacts
+        - lifeEvents
+        - memoir
+        - predictions
+      properties:
+        patterns:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyReviewPatternRef'
+        newFacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyReviewFactRef'
+        lifeEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyReviewLifeEventRef'
+        memoir:
+          type: boolean
+          description: Whether a memoir row exists for this week
+        predictions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklyReviewPredictionRef'
     QuestResponse:
       type: object
       required:

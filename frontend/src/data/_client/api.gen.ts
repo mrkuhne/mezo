@@ -2041,6 +2041,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/weekly-review/{start}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The persisted weekly review narrative (Én/Heti, spec 2026-08-27 §5) for the ISO-Monday week starting {start}
+         * @description Returns the review row as-is (never lazily generates — the WeeklyReviewJob owns generation). `stale` is a best-effort probe: true when any of the week's logged weight/sleep/check-in/meal rows was created after the review's `generatedAt` (false on probe failure — never blocks the read).
+         */
+        get: operations["getWeeklyReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/weekly-review/{start}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * On-demand regeneration of the weekly review (soft-deletes the existing row, re-runs the generator)
+         * @description 409 while the week is still in progress (`{start} + 7 days` must be on/before today — the same completed-week gate the generator idiom uses elsewhere). 404 when the regenerated week still has no logged data (empty-week ⇒ no row, the generator's own rule).
+         */
+        post: operations["regenerateWeeklyReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/weekly-review/{start}/digest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Code-collected week-window refs behind the weekly review — the confirmed pattern events, new facts, life events, memoir presence and predictions the review draws its highlight candidates from
+         * @description Always 200 — empty lists are the honest empty state, never a 404 (the review row itself may not even exist yet; this is a raw week-window read, independent of it).
+         */
+        get: operations["getWeeklyReviewDigest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quest/day/{date}": {
         parameters: {
             query?: never;
@@ -5872,6 +5932,66 @@ export interface components {
             outcomeGood?: boolean | null;
             /** Format: date-time */
             generatedAt: string;
+        };
+        WeeklyReviewDayNote: {
+            /** Format: date */
+            date: string;
+            note: string;
+        };
+        WeeklyReviewHighlight: {
+            /** @description FE RefTag kind (Pattern/Fact/LifeEvent/Memory) — code-collected, model-SELECTED, never invented */
+            kind: string;
+            label: string;
+        };
+        WeeklyReviewResponse: {
+            /**
+             * Format: uuid
+             * @description The weekly_review row id — the W4.1 feedback artifactId (weekly_review).
+             */
+            id: string;
+            /** Format: date */
+            weekStart: string;
+            /** @description The review prose — what went well, what broke, what pattern showed up across the days */
+            summary: string;
+            dayNotes: components["schemas"]["WeeklyReviewDayNote"][];
+            highlights: components["schemas"]["WeeklyReviewHighlight"][];
+            /** Format: date-time */
+            generatedAt: string;
+            /** @description Best-effort: true when any of the week's logged weight/sleep/check-in/meal rows was created after generatedAt; false on probe failure (never blocks the read). */
+            stale: boolean;
+        };
+        WeeklyReviewPatternRef: {
+            pairKey: string;
+            title: string;
+            /** @description The pattern_event kind (confirmed | reinforced | promoted) */
+            event: string;
+        };
+        WeeklyReviewFactRef: {
+            /** Format: uuid */
+            id: string;
+            text: string;
+        };
+        WeeklyReviewLifeEventRef: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** Format: date */
+            occurredOn: string;
+        };
+        WeeklyReviewPredictionRef: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** @description pending | validated | missed */
+            status: string;
+        };
+        WeeklyReviewDigestResponse: {
+            patterns: components["schemas"]["WeeklyReviewPatternRef"][];
+            newFacts: components["schemas"]["WeeklyReviewFactRef"][];
+            lifeEvents: components["schemas"]["WeeklyReviewLifeEventRef"][];
+            /** @description Whether a memoir row exists for this week */
+            memoir: boolean;
+            predictions: components["schemas"]["WeeklyReviewPredictionRef"][];
         };
         QuestResponse: {
             /** Format: uuid */
@@ -12863,6 +12983,147 @@ export interface operations {
             };
             /** @description The challenge is not in the proposed state (already decided) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getWeeklyReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ISO Monday of the wanted week */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The persisted weekly review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyReviewResponse"];
+                };
+            };
+            /** @description {start} is not a Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No weekly review persisted for this week */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    regenerateWeeklyReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ISO Monday of the wanted week */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The freshly generated weekly review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyReviewResponse"];
+                };
+            };
+            /** @description {start} is not a Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Regeneration yielded no row (no logged data in the week) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The week is not completed yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getWeeklyReviewDigest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ISO Monday of the wanted week */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The week's digest (possibly all-empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyReviewDigestResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

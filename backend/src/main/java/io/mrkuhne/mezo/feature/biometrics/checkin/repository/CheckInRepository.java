@@ -17,6 +17,11 @@ public interface CheckInRepository extends OwnedRepository<CheckInEntity> {
     /** Latest check-in across days (date, then slot) for the companion context snapshot. */
     Optional<CheckInEntity> findFirstByCreatedByAndDeletedFalseOrderByDateDescSlotTimeDesc(UUID createdBy);
 
+    /** Weekly review {@code stale} probe (mezo-p2tr): the most recently CREATED check-in inside
+     *  the week — compared against the review's {@code generatedAt}, not its own {@code date}. */
+    Optional<CheckInEntity> findFirstByCreatedByAndDeletedFalseAndDateBetweenOrderByCreatedAtDesc(
+            UUID createdBy, LocalDate from, LocalDate to);
+
     /**
      * W1.5 note-embedding candidates (mezo-b3pp.5): live check-ins up to and including
      * {@code through} whose note is substantive, oldest first. A null note fails the length

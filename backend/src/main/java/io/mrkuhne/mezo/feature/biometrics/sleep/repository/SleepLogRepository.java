@@ -21,4 +21,9 @@ public interface SleepLogRepository extends OwnedRepository<SleepLogEntity> {
      *  — plain derived finder, no companion dependency. Inclusive bounds, newest first. */
     List<SleepLogEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(
             UUID createdBy, LocalDate from, LocalDate to);
+
+    /** Weekly review {@code stale} probe (mezo-p2tr): the most recently CREATED sleep row inside
+     *  the week — compared against the review's {@code generatedAt}, not its own {@code date}. */
+    Optional<SleepLogEntity> findFirstByCreatedByAndDeletedFalseAndDateBetweenOrderByCreatedAtDesc(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

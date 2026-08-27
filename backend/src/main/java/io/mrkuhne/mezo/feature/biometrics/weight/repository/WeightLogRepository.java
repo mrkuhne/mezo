@@ -23,4 +23,9 @@ public interface WeightLogRepository extends OwnedRepository<WeightLogEntity> {
      *  [Profil] "mérés:" fact, shown beside the EWMA trend (V2.2 follow-up, mezo-gst9). */
     Optional<WeightLogEntity> findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc(
             UUID createdBy);
+
+    /** Weekly review {@code stale} probe (mezo-p2tr): the most recently CREATED weigh-in inside
+     *  the week — compared against the review's {@code generatedAt}, not its own {@code date}. */
+    Optional<WeightLogEntity> findFirstByCreatedByAndDeletedFalseAndDateBetweenOrderByCreatedAtDesc(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

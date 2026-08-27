@@ -31,4 +31,9 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
         UUID createdBy, LocalDate mealDate);
 
     Optional<MealEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
+    /** Weekly review {@code stale} probe (mezo-p2tr): the most recently CREATED meal inside the
+     *  week — compared against the review's {@code generatedAt}, not its own {@code mealDate}. */
+    Optional<MealEntity> findFirstByCreatedByAndDeletedFalseAndMealDateBetweenOrderByCreatedAtDesc(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

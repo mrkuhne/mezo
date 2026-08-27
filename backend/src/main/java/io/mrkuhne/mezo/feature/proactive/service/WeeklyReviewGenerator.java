@@ -29,7 +29,6 @@ import io.mrkuhne.mezo.feature.proactive.repository.WeeklyReviewRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -147,18 +146,11 @@ public class WeeklyReviewGenerator {
             payload.append(renderDayLine(day)).append('\n');
         }
 
-        Instant since = weekStart.atStartOfDay(ZoneOffset.UTC).toInstant().minusSeconds(1);
-        Instant until = weekEnd.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant since = WeeklyReviewWeekWindow.since(weekStart);
+        Instant until = WeeklyReviewWeekWindow.until(weekEnd);
 
-        List<PatternEventEntity> patternEvents = new ArrayList<>();
-        for (String kind : List.of(PatternEventEntity.KIND_CONFIRMED, PatternEventEntity.KIND_REINFORCED,
-                PatternEventEntity.KIND_PROMOTED)) {
-            patternEventRepository
-                    .findByCreatedByAndKindAndOccurredAtAfterAndDeletedFalse(userId, kind, since)
-                    .stream()
-                    .filter(e -> e.getOccurredAt().isBefore(until))
-                    .forEach(patternEvents::add);
-        }
+        List<PatternEventEntity> patternEvents =
+                WeeklyReviewWeekWindow.patternEvents(patternEventRepository, userId, since, until);
         if (!patternEvents.isEmpty()) {
             payload.append("\nMINTA-ESEMÉNYEK A HÉTEN:\n");
             for (PatternEventEntity event : patternEvents) {
@@ -169,9 +161,8 @@ public class WeeklyReviewGenerator {
             }
         }
 
-        List<KnowledgeFactEntity> facts = knowledgeFactRepository
-                .findByCreatedByAndCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedFalse(
-                        userId, since.plusSeconds(1), until);
+        List<KnowledgeFactEntity> facts =
+                WeeklyReviewWeekWindow.facts(knowledgeFactRepository, userId, since, until);
         if (!facts.isEmpty()) {
             payload.append("\nÚJ TÉNYEK:\n");
             for (KnowledgeFactEntity fact : facts) {
@@ -181,9 +172,8 @@ public class WeeklyReviewGenerator {
             }
         }
 
-        List<GraphNodeEntity> lifeEvents = graphNodeRepository
-                .findByCreatedByAndKindAndStatusAndOccurredOnBetweenAndDeletedFalse(
-                        userId, GraphNodeEntity.KIND_LIFE_EVENT, GraphNodeEntity.STATUS_ACTIVE, weekStart, weekEnd);
+        List<GraphNodeEntity> lifeEvents =
+                WeeklyReviewWeekWindow.lifeEvents(graphNodeRepository, userId, weekStart, weekEnd);
         if (!lifeEvents.isEmpty()) {
             payload.append("\nÉLETESEMÉNYEK:\n");
             for (GraphNodeEntity node : lifeEvents) {
