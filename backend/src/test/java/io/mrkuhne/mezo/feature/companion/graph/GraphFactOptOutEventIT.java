@@ -10,6 +10,8 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import java.util.UUID;
@@ -37,6 +39,8 @@ class GraphFactOptOutEventIT extends ApiIntegrationTest {
     @Autowired private GraphNodeRepository nodeRepository;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private KnowledgeFactPopulator factPopulator;
+    @Autowired private GraphPromotionService promotionService;
+    @Autowired private KnowledgeFactRepository knowledgeFactRepository;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -92,19 +96,37 @@ class GraphFactOptOutEventIT extends ApiIntegrationTest {
                 .contains("Friss szöveg."));
     }
 
+    /**
+     * Review finding: a bare "still zero nodes" assertion on a never-promoted fact is vacuous —
+     * it passes identically whether the wiring exists or was never built at all. This case instead
+     * seeds the STALE state reachable from before this slice — a node promoted while the fact was
+     * included, then opted out WITHOUT going through the API (direct repository write, so no event
+     * fires and the node stays active) — and edits only the text, never touching
+     * {@code includeInPrompt} in the PATCH. Only a correctly wired publish site + handler re-derive
+     * the fact's current opted-out state and archive the node; with either half missing, the node
+     * stays active and the {@code await()} below times out.
+     */
     @Test
-    void testFactUpdate_shouldCreateNoNode_whenAnOptedOutFactIsEdited() {
+    void testFactUpdate_shouldArchiveTheNode_whenAnOptedOutFactWithAStaleActiveNodeIsEdited() {
         UUID owner = ownerId();
-        KnowledgeFactEntity fact = factPopulator.fact(owner, "Soha nem promotálva.", "life", 0, false,
-            KnowledgeFactEntity.SOURCE_MANUAL);
+        KnowledgeFactEntity fact = factPopulator.fact(owner, "Régen még bekerült.", "life", 0);
+        GraphNodeEntity node = promotionService.promoteFact(owner, fact.getId()).orElseThrow();
+        assertThat(nodeRepository.findById(node.getId()).orElseThrow().getStatus())
+            .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
 
-        patchFact(fact.getId(), UpdateFactRequest.builder().factText("Még mindig kikapcsolva.").build());
+        // Opt out directly through the repository — bypasses KnowledgeFactService.update, so no
+        // KnowledgeFactChangedEvent fires and the node is left stale (still active).
+        fact.setIncludeInPrompt(false);
+        knowledgeFactRepository.saveAndFlush(fact);
+        assertThat(nodeRepository.findById(node.getId()).orElseThrow().getStatus())
+            .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
 
-        // "Nothing happened" idiom (GraphPromotionEventIT): a constant-condition check held for a
-        // window, not a bare sleep — during() re-asserts the predicate for its whole duration.
-        await().during(2, SECONDS).atMost(10, SECONDS).untilAsserted(() ->
-            assertThat(nodeRepository.findAll().stream()
-                .filter(n -> fact.getId().equals(n.getSourceId()))).isEmpty());
+        // Text-only edit through the API — includeInPrompt is not in this request at all.
+        patchFact(fact.getId(), UpdateFactRequest.builder().factText("Ma már ki van kapcsolva.").build());
+
+        await().atMost(10, SECONDS).untilAsserted(() ->
+            assertThat(nodeRepository.findById(node.getId()).orElseThrow().getStatus())
+                .isEqualTo(GraphNodeEntity.STATUS_ARCHIVED));
     }
 
     /** PATCH with only {@code includeInPrompt} unset promotes the fact through the API first, then awaits the node. */
