@@ -325,6 +325,10 @@ mezo:
       # off = the WeeklySuggestionJob bean does not exist
       weekly-suggestion-job:
         enabled: true
+      # Monday weekly-review generation (mezo-p2tr, schedule: mezo.proactive.weekly-review.cron)
+      # for the JUST-FINISHED week; off = the WeeklyReviewJob bean does not exist
+      weekly-review-job:
+        enabled: true
       # W2 Sunday memoir generation (schedule: mezo.proactive.memoir.cron);
       # off = the MemoirJob bean does not exist
       memoir-job:
@@ -1070,6 +1074,10 @@ mezo:
     weekly:
       # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week
       cron: "0 0 6 * * MON"
+    weekly-review:
+      # Monday weekly-review schedule (server zone, mezo-p2tr) — for the week that JUST finished
+      # (weekStart = previous Monday), unlike weekly's forward-looking suggestion
+      cron: "0 50 6 * * MON"
     memoir:
       # W2 Sunday-evening memoir schedule (old journey 5.8) — the week ending that Sunday
       cron: "0 0 19 * * SUN"

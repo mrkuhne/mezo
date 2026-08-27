@@ -12,18 +12,18 @@ class NotificationCategoryTest {
     void testValues_shouldMatchTheSpecCatalog_whenListed() {
         assertThat(Arrays.stream(NotificationCategory.values()).map(NotificationCategory::key))
             .containsExactlyInAnyOrder("briefing", "gym", "medication", "ritual", "lights_out",
-                "weekly", "memoir", "wind_down", "midday", "checkin", "fuel_slot",
+                "weekly", "weekly_review", "memoir", "wind_down", "midday", "checkin", "fuel_slot",
                 "evening", "sleep_reaction", "weight_reaction", "pattern", "knowledge",
                 "prediction", "experiment", "challenge", "memory", "decision_review",
                 "intervention");
     }
 
     @Test
-    void testDefaultEnabled_shouldBeEighteenSpecDefaults_whenFiltered() {
+    void testDefaultEnabled_shouldBeNineteenSpecDefaults_whenFiltered() {
         assertThat(Arrays.stream(NotificationCategory.values())
                 .filter(NotificationCategory::defaultEnabled).map(NotificationCategory::key))
             .containsExactlyInAnyOrder("briefing", "gym", "medication", "ritual", "lights_out",
-                "weekly", "memoir", "evening", "sleep_reaction", "weight_reaction",
+                "weekly", "weekly_review", "memoir", "evening", "sleep_reaction", "weight_reaction",
                 "pattern", "knowledge", "prediction", "experiment", "challenge", "memory",
                 "decision_review", "intervention");
     }
@@ -47,6 +47,18 @@ class NotificationCategoryTest {
     void testFromKey_shouldBeEmpty_whenKeyIsUnknown() {
         assertThat(NotificationCategory.fromKey("nope")).isEmpty();
         assertThat(NotificationCategory.fromKey("gym")).contains(NotificationCategory.GYM);
+    }
+
+    @Test
+    void testWeeklyReview_shouldStillResolveByKey_whenTheRetiredWeeklyEntryIsAlsoStillPresent() {
+        // Both keys must keep resolving: `weekly` because persisted notification_pref rows still
+        // reference it (mezo-p2tr retirement keeps the enum entry), `weekly_review` as its
+        // backward-looking replacement.
+        assertThat(NotificationCategory.fromKey("weekly")).contains(NotificationCategory.WEEKLY);
+        assertThat(NotificationCategory.fromKey("weekly_review")).contains(NotificationCategory.WEEKLY_REVIEW);
+        assertThat(NotificationCategory.WEEKLY_REVIEW.defaultEnabled()).isTrue();
+        assertThat(NotificationCategory.WEEKLY_REVIEW.defaultLeadMinutes()).isZero();
+        assertThat(NotificationCategory.WEEKLY_REVIEW.feWritten()).isFalse();
     }
 
     @Test

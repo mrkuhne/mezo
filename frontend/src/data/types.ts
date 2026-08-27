@@ -1359,13 +1359,20 @@ export interface PushSubscriptionState {
 
 // ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3; companion-feed
 // evening/sleep_reaction/weight_reaction, mezo-gst9) ──────────────────────────────────────
-// The 22 keys/sections/defaults mirror the backend's authoritative enum
+// The keys/sections/defaults mirror the backend's authoritative enum
 // (backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java)
 // and design spec §6 (docs/superpowers/specs/2026-07-29-push-notifications-design.md) —
 // keep both in sync if a category is ever added/renamed.
+//
+// NOTE (mezo-p2tr): the backend's `weekly` enum entry is RETIRED (kept server-side only so
+// persisted notification_pref rows still resolve) — it is deliberately ABSENT from this union
+// and from NOTIFICATION_CATEGORIES/META below, so no dead settings row can ever render for it.
+// `notificationPrefHooks` drops any `GET /api/notification/pref` row whose category isn't in
+// NOTIFICATION_CATEGORIES for exactly this reason. `weekly_review` is its Monday-10:00,
+// backward-looking replacement.
 export type NotificationCategoryKey =
   | 'briefing' | 'gym' | 'medication' | 'ritual' | 'lights_out'
-  | 'weekly' | 'memoir' | 'wind_down' | 'midday' | 'checkin' | 'fuel_slot'
+  | 'weekly_review' | 'memoir' | 'wind_down' | 'midday' | 'checkin' | 'fuel_slot'
   | 'evening' | 'sleep_reaction' | 'weight_reaction'
   | 'pattern' | 'knowledge' | 'prediction' | 'experiment' | 'challenge' | 'memory'
   | 'decision_review' | 'intervention'
@@ -1373,7 +1380,7 @@ export type NotificationCategoryKey =
 /** Stable render order — NotificationCategory enum order (backend declaration order). */
 export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
   'briefing', 'gym', 'medication', 'ritual', 'lights_out',
-  'weekly', 'memoir', 'wind_down', 'midday', 'checkin', 'fuel_slot',
+  'weekly_review', 'memoir', 'wind_down', 'midday', 'checkin', 'fuel_slot',
   'evening', 'sleep_reaction', 'weight_reaction',
   'pattern', 'knowledge', 'prediction', 'experiment', 'challenge', 'memory',
   'decision_review', 'intervention',
@@ -1413,9 +1420,9 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
     label: 'Déli jegyzet', emoji: '✨', section: 'prose',
     description: 'Dél körül, egy rövid állapotfrissítés', showLeadChip: false, iconBg: '--wash-sport',
   },
-  weekly: {
-    label: 'Heti terv', emoji: '📖', section: 'prose',
-    description: 'Hétfő reggel, ébredéskor', showLeadChip: false, iconBg: '--wash-sport',
+  weekly_review: {
+    label: 'Heti elemzés', emoji: '📖', section: 'prose',
+    description: 'Hétfő reggel 10:00', showLeadChip: false, iconBg: '--wash-sport',
   },
   memoir: {
     label: 'Heti összefoglaló', emoji: '📔', section: 'prose',

@@ -17,7 +17,7 @@ type BackendNativeCategory = Exclude<NotificationCategoryKey, 'checkin' | 'fuel_
  * not client-forecastable); `NotificationsPage` discloses that gap next to their section.
  */
 export interface NotificationForecastAnchors {
-  /** Wake anchor (briefing daily; weekly on Monday only) — HH:mm. */
+  /** Wake anchor (briefing, daily) — HH:mm. */
   wake: string
   /** Lights-out / bed anchor — HH:mm, or null when unresolved. */
   bedTime: string | null
@@ -50,6 +50,7 @@ export interface NotificationForecast {
 const MIDDAY_HHMM = '12:30'
 const EVENING_HHMM = '20:30'
 const MEMOIR_HHMM = '19:00'
+const WEEKLY_REVIEW_HHMM = '10:00' // mirrors AnchorResolver's fixed WEEKLY_REVIEW_MINUTE (mezo-p2tr)
 const MEDICATION_HHMM = '08:00' // mirrors mezo.notification.medication-time's default (spec §9)
 const ISO_MONDAY = 1
 const ISO_SUNDAY = 7
@@ -90,8 +91,10 @@ function backendAnchorMinute(
   switch (category) {
     case 'briefing':
       return toMin(anchors.wake)
-    case 'weekly':
-      return weekday === ISO_MONDAY ? toMin(anchors.wake) : null
+    case 'weekly_review':
+      // Fixed Monday 10:00 (mezo-p2tr) — unlike the retired `weekly`, this is a config-ish
+      // constant, not the user's wake anchor.
+      return weekday === ISO_MONDAY ? toMin(WEEKLY_REVIEW_HHMM) : null
     case 'memoir':
       return weekday === ISO_SUNDAY ? toMin(MEMOIR_HHMM) : null
     case 'midday':

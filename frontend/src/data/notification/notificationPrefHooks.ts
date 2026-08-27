@@ -5,21 +5,20 @@ import { isMockMode } from '@/data/_client/mode'
 import { notificationApi } from '@/data/notification/notificationApi'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import type { components } from '@/data/_client/api.gen'
+import { NOTIFICATION_CATEGORIES } from '@/data/types'
 import type { NotificationCategoryKey, NotificationPrefView } from '@/data/types'
 
 const PREFS_KEY = ['notificationPrefs'] as const
+const KNOWN_CATEGORIES: readonly string[] = NOTIFICATION_CATEGORIES
 
 function toView(pref: components['schemas']['NotificationPref']): NotificationPrefView {
-  // The wire `category` is a plain string; the backend guarantees it is always one of the 21
-  // known keys ("All 21 categories, always complete" — GET /api/notification/pref), so this
-  // narrowing cast is safe without a runtime check.
   return { category: pref.category as NotificationCategoryKey, enabled: pref.enabled, leadMinutes: pref.leadMinutes }
 }
 
 /**
  * Dual-mode per-category notification prefs (N2 settings list, bd mezo-h4wp.6.2). Unlike N1's
  * device-owned `usePushSubscription`, this IS a server-owned read: mock seeds the deterministic
- * `notificationPrefSeed` (all 21, spec defaults) synchronously and never touches the network;
+ * `notificationPrefSeed` (all 22, spec defaults) synchronously and never touches the network;
  * real fetches `GET /api/notification/pref` and, while unresolved, returns the same seed as the
  * honest pre-resolve ghost — the backend's own "no stored row = code default" rule means the
  * seed IS the correct fallback, not a fabricated placeholder.
@@ -37,7 +36,13 @@ export function useNotificationPrefs(): {
   const { data, isPending } = useDualQuery<NotificationPrefView[]>({
     queryKey: PREFS_KEY,
     mockData: notificationPrefSeed,
-    realFetch: async () => (await notificationApi.prefs()).prefs.map(toView),
+    // The backend still returns a `weekly` row (the retired category's enum entry is kept only
+    // so persisted notification_pref rows resolve) — dropped here, not just from
+    // NOTIFICATION_CATEGORY_META, so no dead settings row can ever render for it (mezo-p2tr).
+    realFetch: async () =>
+      (await notificationApi.prefs()).prefs
+        .filter((p) => KNOWN_CATEGORIES.includes(p.category))
+        .map(toView),
     realEmpty: notificationPrefSeed,
   })
 
