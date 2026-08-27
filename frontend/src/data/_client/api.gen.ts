@@ -5540,11 +5540,13 @@ export interface components {
             firstDate?: string | null;
             /** Format: date */
             lastDate?: string | null;
-            embeddings: components["schemas"]["MemoryEmbeddingCounts"];
+            /** @description Vektorok kind szerint, csak a nem-üresek — a lista nő, ahogy új narratív kind kap írót (mezo-b3pp.22). */
+            embeddings: components["schemas"]["MemoryEmbeddingKindCount"][];
         };
-        MemoryEmbeddingCounts: {
-            dailySummary: number;
-            chatTurn: number;
+        MemoryEmbeddingKindCount: {
+            /** @description memory_embedding.kind — a ck_memory_embedding_kind CHECK egyik értéke. */
+            kind: string;
+            count: number;
         };
         MemoryOverviewL2: {
             patterns: components["schemas"]["MemoryPatternCount"][];

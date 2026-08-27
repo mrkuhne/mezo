@@ -13562,16 +13562,24 @@ components:
           format: date
           nullable: true
         embeddings:
-          $ref: '#/components/schemas/MemoryEmbeddingCounts'
-    MemoryEmbeddingCounts:
+          type: array
+          description: >-
+            Vektorok kind szerint, csak a nem-üresek — a lista nő, ahogy új
+            narratív kind kap írót (mezo-b3pp.22).
+          items:
+            $ref: '#/components/schemas/MemoryEmbeddingKindCount'
+    MemoryEmbeddingKindCount:
       type: object
       required:
-        - dailySummary
-        - chatTurn
+        - kind
+        - count
       properties:
-        dailySummary:
-          type: integer
-        chatTurn:
+        kind:
+          type: string
+          description: >-
+            memory_embedding.kind — a ck_memory_embedding_kind CHECK egyik
+            értéke.
+        count:
           type: integer
     MemoryOverviewL2:
       type: object
