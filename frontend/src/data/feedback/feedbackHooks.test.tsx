@@ -3,7 +3,7 @@ import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { useFeedback } from '@/data/hooks'
 import { API_BASE } from '@/data/_client/api'
-import { feedbackApi } from '@/data/feedback/feedbackApi'
+import { FEEDBACK_MAX_IDS, feedbackApi } from '@/data/feedback/feedbackApi'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import type { FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
@@ -300,22 +300,43 @@ describe('useFeedback (real mode)', () => {
     expect(result.current.get('a')?.reason).toBeNull()
   })
 
-  test('caps the batch read at the contract maximum, keeping the NEWEST (last) ids', async () => {
-    let idsParam = ''
+  test('hydrates every chip on a page past the old single-request cap', async () => {
+    // 250 ids: the old FEEDBACK_MAX_IDS of 200 would have sliced this down to the last 200,
+    // silently dropping the oldest 50 (including this one) before any header limit was hit.
+    const ids = Array.from({ length: 250 }, (_, i) => `m${i}`)
+    const oldestId = ids[0]
     server.use(
       http.get(`${API_BASE}/api/companion/feedback`, ({ request }) => {
-        idsParam = new URL(request.url).searchParams.get('ids') ?? ''
+        const requested = (new URL(request.url).searchParams.get('ids') ?? '').split(',').filter(Boolean)
+        return HttpResponse.json(requested.includes(oldestId) ? [wire(oldestId, 'up')] : [])
+      }),
+    )
+    const { result } = renderHook(() => useFeedback(KIND, ids), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.get(oldestId)?.verdict).toBe('up'))
+  })
+
+  test('still bounds the request at FEEDBACK_MAX_IDS, keeping the NEWEST (last) ids', async () => {
+    const requestedByChunk: string[][] = []
+    server.use(
+      http.get(`${API_BASE}/api/companion/feedback`, ({ request }) => {
+        const chunk = (new URL(request.url).searchParams.get('ids') ?? '').split(',').filter(Boolean)
+        requestedByChunk.push(chunk)
         return HttpResponse.json([])
       }),
     )
-    const ids = Array.from({ length: 250 }, (_, i) => `m${i}`)
+    const ids = Array.from({ length: FEEDBACK_MAX_IDS + 50 }, (_, i) => `m${i}`)
     renderHook(() => useFeedback(KIND, ids), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(idsParam).not.toBe(''))
-    const sent = idsParam.split(',')
-    expect(sent).toHaveLength(200)
+    await waitFor(() => expect(requestedByChunk.length).toBeGreaterThan(0))
+    // Chunking (mezo-b3pp.23) spreads the read across several requests; the hook still runs a
+    // single logical query, so summing every chunk's ids must reconstruct the whole request.
+    await waitFor(() => {
+      const total = requestedByChunk.flat().length
+      expect(total).toBe(FEEDBACK_MAX_IDS)
+    })
+    const sent = requestedByChunk.flat()
     // the tail (what the user is actually looking at) is kept; the oldest head is dropped
     expect(sent[0]).toBe('m50')
-    expect(sent.at(-1)).toBe('m249')
+    expect(sent.at(-1)).toBe(`m${FEEDBACK_MAX_IDS + 49}`)
     expect(sent).not.toContain('m0')
   })
 
