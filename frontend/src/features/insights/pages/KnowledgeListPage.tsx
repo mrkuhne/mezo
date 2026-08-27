@@ -26,6 +26,10 @@ export function KnowledgeListPage() {
   // módban azonos, hogy a mock-módú ellenőrzés a valós élményt mutassa.
   const [acceptedEvents, setAcceptedEvents] = useState<{ id: string; title: string; edgeCount: number }[]>([])
 
+  // A már elfogadott jelölt real módban a refetch megérkezéséig még a szerver-listában van —
+  // enélkül egy pillanatra a jelölt-kártya ÉS a megerősítés is látszana.
+  const pendingLifeEvents = lifeEvents.filter((c) => !acceptedEvents.some((a) => a.id === c.id))
+
   // A vödrözés a TELJES listán fut (a „10 megy a chatbe" a valóságot mondja), a szűrés csak
   // a megjelenítést szűkíti — különben egy aktív szűrő átírná a prompt-státuszokat.
   const buckets = useMemo(() => bucketFacts(facts, PROMPT_TOP_N), [facts])
@@ -110,31 +114,34 @@ export function KnowledgeListPage() {
         </div>
       )}
 
-      {(lifeEvents.length > 0 || acceptedEvents.length > 0) && (
+      {(pendingLifeEvents.length > 0 || acceptedEvents.length > 0) && (
         <div className="col gap-sm">
           <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
-            Életesemény-jelöltek · {lifeEvents.length}
+            {/* A darabszám a MÉG DÖNTÉSRE VÁRÓ jelölteké. Enélkül az utolsó elfogadás után
+                „Életesemény-jelöltek · 0" állna a megerősítő kártya fölött, real módban pedig a
+                refetch előtti ablakban az elfogadottat is beleszámolná. */}
+            {pendingLifeEvents.length > 0
+              ? `Életesemény-jelöltek · ${pendingLifeEvents.length}`
+              : 'Életesemények'}
           </span>
           {acceptedEvents.map((a) => (
             <LifeEventAcceptedCard key={a.id} title={a.title} edgeCount={a.edgeCount} />
           ))}
-          {lifeEvents
-            .filter((c) => !acceptedEvents.some((a) => a.id === c.id))
-            .map((c) => (
-              <LifeEventCandidateCard
-                key={c.id}
-                candidate={c}
-                onDecide={(decision) => {
-                  if (decision === 'accept') {
-                    setAcceptedEvents((prev) => [
-                      ...prev,
-                      { id: c.id, title: c.title, edgeCount: c.proposedEdgeCount },
-                    ])
-                  }
-                  decideLifeEvent(c.id, decision)
-                }}
-              />
-            ))}
+          {pendingLifeEvents.map((c) => (
+            <LifeEventCandidateCard
+              key={c.id}
+              candidate={c}
+              onDecide={(decision) => {
+                if (decision === 'accept') {
+                  setAcceptedEvents((prev) => [
+                    ...prev,
+                    { id: c.id, title: c.title, edgeCount: c.proposedEdgeCount },
+                  ])
+                }
+                decideLifeEvent(c.id, decision)
+              }}
+            />
+          ))}
         </div>
       )}
 

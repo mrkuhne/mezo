@@ -159,6 +159,16 @@ describe('KnowledgeListPage (mock mode)', () => {
       expect(screen.queryByText('Új munkahely első hete')).not.toBeInTheDocument())
   })
 
+  it('az utolsó elfogadás után a fejléc „Életesemények", nem „…jelöltek · 0"', async () => {
+    renderPage()
+    const card = (await screen.findByText('Új munkahely első hete')).closest('.card') as HTMLElement
+    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
+
+    expect(await screen.findByText(/Bekerült a gráfba/)).toBeInTheDocument()
+    expect(screen.getByText('Életesemények')).toBeInTheDocument()
+    expect(screen.queryByText(/Életesemény-jelöltek/)).not.toBeInTheDocument()
+  })
+
   it('elfogadás után megerősítő kártya marad a helyén, linkkel a Tudásgráfra', async () => {
     renderPage()
     const card = (await screen.findByText('Új munkahely első hete')).closest('.card') as HTMLElement
