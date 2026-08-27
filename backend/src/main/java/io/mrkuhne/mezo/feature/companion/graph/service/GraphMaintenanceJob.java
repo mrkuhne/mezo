@@ -55,8 +55,9 @@ public class GraphMaintenanceJob {
                 log.warn("Graph maintenance failed for user {}", user.getId(), e);
             }
             try {
-                int upserted = graphPromotionService.reconcile(user.getId());
-                log.info("Graph reconcile for user {}: {} node(s) upserted", user.getId(), upserted);
+                GraphReconcileResult reconciled = graphPromotionService.reconcile(user.getId());
+                log.info("Graph reconcile for user {}: {} node(s) upserted, {} retracted", user.getId(),
+                    reconciled.upserted(), reconciled.retracted());
             } catch (Exception e) {
                 log.warn("Graph reconcile failed for user {}", user.getId(), e);
             }

@@ -82,6 +82,11 @@ public class PatternService {
             // W2.2 (mezo-b3pp.7): every confirm re-syncs the graph node; the promotion itself is
             // an idempotent UPSERT, so a re-confirm costs nothing and never duplicates.
             eventPublisher.publishEvent(new PatternConfirmedEvent(userId, pattern.getId()));
+        } else {
+            // mezo-b3pp.31: the mirror. An un-confirmed pattern must stop asserting itself in the
+            // graph — the consumer re-reads the status, so publishing on every non-confirm branch
+            // (including a reject that was never confirmed) is safe and keeps the rule simple.
+            eventPublisher.publishEvent(new PatternRetractedEvent(userId, pattern.getId()));
         }
         return mapper.toPatternResponse(patternRepository.saveAndFlush(pattern));
     }
