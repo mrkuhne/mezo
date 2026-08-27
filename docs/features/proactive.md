@@ -15,7 +15,9 @@ key_files:
   - backend/src/main/resources/db/changelog/1.0.0/script/202607072100_mezo-hbwi_create_challenge.sql
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/OverloadChallengeGenerator.java
   - backend/src/main/resources/db/changelog/1.0.0/script/202607280641_mezo-gj42_challenge_overload_type.sql
-related: [companion, today, insights, train, _platform-api-backend, _platform-notifications]
+  - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java
+  - backend/src/main/resources/db/changelog/1.0.0/script/202608271200_mezo-p2tr_create_weekly_review.sql
+related: [companion, today, insights, train, me, _platform-api-backend, _platform-notifications]
 ---
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
@@ -468,6 +470,90 @@ evaluator**. Design of record:
   Depth / Volume / overload — `Tempo` still deferred** (no logged tempo to honestly evaluate against).
   Details: [train.md §2](train.md).
 
+**WR (`mezo-p2tr`) — weekly review (Én/Heti): the companion writes a backward-looking narrative over the just-finished week, surfaced on `/me/week`, not Insights.**
+
+Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not proactive, owns the
+**data layer** this stage narrates over — `DayScoreService` (deterministic per-day score) +
+`MeWeekService` (`GET /api/me/week/{start}`, live for the current week) both live in
+`feature/companion` and are documented in full in [`me.md` §4](me.md) — this doc covers only the
+**generated narrative** on top of that data, which IS proactive-owned.
+
+- **An eighth owned table** — `weekly_review` (UUID PK, `created_by`, soft-delete; `week_start
+  date` = the ISO Monday the review is FOR, `summary text` = the review prose, `day_notes jsonb` =
+  a typed envelope of short per-day comments, `highlights jsonb` = a typed envelope of
+  code-collected, model-selected refs (the `memoir.anchors` idiom), `generated_at`). A **partial**
+  unique index (one LIVE review per user+week; soft-delete + reinsert = regeneration, the
+  `weekly_suggestion`/`memoir` precedent) — unlike W1, WR **does** ship an on-demand regeneration
+  path (below).
+- **`WeeklyReviewGenerator`** — the `MemoirGenerator` idiom applied to the week's OWN data instead
+  of a single narrative: a **pure-code gather** composes every day's `MeWeekService.renderDayLine`
+  (the SAME formatter `WeekContextRenderer`'s `[Heti adatok]` chat block uses, so the review's own
+  prose and the chat's anchored context can never disagree on what a day looked like) + the week's
+  confirmed/reinforced pattern events + newly-created knowledge facts + active `LIFE_EVENT` graph
+  nodes + the week's own memoir (if any) + its predictions, plus a **numbered anchor-candidate
+  list** → **ONE smart-tier `CompanionLlm.completeSmart` call** answering strict JSON
+  `{summary, dayNotes, anchorIndexes}` (marker `HETI-ELEMZES-FELADAT`) → defensive parse →
+  **bounds-checked, deduped index→highlight resolution** (anchors are model-SELECTED, never
+  invented — the memoir/prediction ref rule) + day-notes filtered to dates inside the week.
+  **Empty week (no day carries ANY logged data) or an unusable answer (blank/null summary) ⇒ NO
+  row** (honest absence); existing row ⇒ returned untouched (idempotent, no second LLM call).
+- **A Monday-06:50 cron, running BACKWARD** — `WeeklyReviewJob` `@Scheduled` on
+  `mezo.proactive.weekly-review.cron` (**`0 50 6 * * MON`**) generates the review for the week that
+  **JUST FINISHED** (`weekStart = previousOrSame(MONDAY).minusWeeks(1)`) — the opposite direction
+  from `WeeklySuggestionJob`'s forward-looking current-week generation on the same Monday morning;
+  the two are deliberately separate jobs (one narrates the past, one plans the future). Gated on a
+  THIRD switch `mezo.techcore.cron.weekly-review-job.enabled` (`WEEKLY_REVIEW_JOB_SWITCH`) on top
+  of the dual companion+proactive gate; idempotent, per-user failures isolated, no backfill.
+- **Three reads/writes** (`api/feature/proactive/proactive.yml`, `WeeklyReviewController`) —
+  deliberately **NOT lazy** on the primary GET (a change from most proactive reads): `GET
+  /api/proactive/weekly-review/{start}` returns the row **as-is**, `404 RESOURCE_NOT_FOUND` when
+  the job hasn't produced one yet (the job owns generation — a lazy GET here would let a client
+  race the cron and generate off a still-in-progress week), plus a `stale: boolean` **best-effort**
+  probe (true when a newer weight/sleep/check-in/meal row in the week postdates `generatedAt`;
+  `false` on ANY probe failure — staleness is a hint, never a reason to fail the read). `POST
+  …/regenerate` soft-deletes the live row (if any) and re-runs the generator — `409
+  WEEKLY_REVIEW_WEEK_NOT_COMPLETE` while `weekStart + 7 days` is still in the future, `404` if the
+  fresh run still yields nothing (empty week). `GET …/digest` maps the SAME week-window reads the
+  generator's gather draws candidates from straight to DTOs (patterns/newFacts/lifeEvents/memoir
+  boolean/predictions) — always `200`, empty lists the honest empty state, independent of whether
+  the review row itself exists (`/me/week`'s `WeekDiscoveries` card's source).
+- **Notifications** — `AppNotificationKind.WEEKLY_REVIEW_READY` (`/me/week` deeplink, no
+  `familyKey` since the push category below already covers the event) fires on generation. The
+  `NotificationCategory.WEEKLY_REVIEW` push fires **Monday 10:00, fixed** (`AnchorResolver.
+  weeklyReviewAnchor`, looking up `weekStart = date.minusWeeks(1)` — the job ran 06:50 that same
+  morning, so the row already exists by 10:00). **This retires the old forward-looking `WEEKLY`
+  push category** — `NotificationCategory.WEEKLY` stays in the enum `@Deprecated` (persisted
+  `notification_pref` rows still resolve it via `fromKey`) but `AnchorResolver` no longer emits an
+  anchor for it; the FE drops the old `weekly` key from its category catalog entirely (a stray
+  backend-only `weekly` pref row is filtered out client-side, never rendered) and adds
+  **`weekly_review`** with the label **„Heti elemzés"** ([`me.md`](me.md) `Értesítés` §2).
+- **Feedback** — `weekly_review` joined `MessageFeedbackEntity`'s artifact-kind CHECK constraint
+  (`chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction`); the
+  `WeeklyReviewResponse.id` IS the feedback artifact id, exactly the W2/`(a2)` memoir precedent
+  (§9 below) — no per-kind branch anywhere in the feedback surface, just another string the generic
+  `POST /api/companion/feedback` accepts.
+- **Anchored chat conversations (a SEPARATE, companion-owned mechanism riding the same slice)** —
+  `ai_conversation` gained nullable `context_kind`/`context_date` columns;
+  `CreateConversationRequest.context {kind: week|day, date}` anchors a new conversation, and
+  `WeekContextRenderer` (companion) renders the `[Heti adatok]` block (day lines + weekly
+  aggregates +, when found via the `WeekReviewSource` port this doc's `WeekReviewSourceAdapter`
+  implements, the review's own summary/day-notes) into every turn's system prompt.
+  `ChatService.openingTurn` then fires a server-generated, **assistant-only** first turn (the
+  kickoff prompt itself is never persisted as a user message) so Mezo speaks first about the
+  anchored day/week. The `/me/week` „Beszélgess a napról/hétről" chips (`useChatHandoff`) are the
+  sole FE trigger. Full prompt-assembly detail: [`companion.md`](companion.md); the port/adapter
+  split exists purely to keep the dependency **proactive → companion** one-directional (proactive
+  already depends on companion elsewhere in this doc; a direct `companion.service →
+  proactive.repository` import would close a NEW slice cycle, `ArchitectureTest.
+  feature_slices_are_cycle_free`).
+- **The FE surface (`/me/week`'s `WeekReviewCard`/`WeekDiscoveries`, `mezo-p2tr`)** — this is a
+  **`me`-owned page**, not an Insights tab (unlike every other proactive surface in this doc): it
+  RETIRES the old Insights „Heti" tab outright (`useWeekly`/`WeeklyPage` deleted,
+  `/insights/weekly` now redirects to `/me/week`, [`insights.md` §2.2](insights.md)) rather than
+  un-ghosting a new one. `useWeeklyReview(start)` (dual-mode, `data/me/weeklyReviewHooks.ts`) reads
+  the review + digest (404→`null` on the review, never thrown) and drives the regenerate mutation;
+  full component anatomy: [`me.md`](me.md) `Heti` §2/§4/§8/§10.
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -486,8 +572,11 @@ evaluator**. Design of record:
 | Experiments (table + proposal + outcome + write path + two-cron job) | 🟢 P2 | `experiment` table (proposed/active/completed/dismissed lifecycle, nullable start_date/outcome_good); smart-tier `ExperimentProposalGenerator` (cap-gated, CONFIRMED-pattern-grounded); deterministic `ExperimentOutcomeService` (shared `MetricWindowEvaluator`); **write path** `POST …/decision` (L2, 409 on non-proposed) + `POST …/propose`; list `GET` (lazy propose, `[]` = honest); `ExperimentJob` two crons (weekly propose + daily outcome, three-switch). |
 | Frontend (Insights Experiments tab un-ghost) | 🟢 P2 | `useExperiments()` + `useExperimentActions()` (mutation accept/dismiss/propose); `experiments` left `PHASE3_TAB_IDS` (now EMPTY — all 7 tabs real); `ExperimentsPage` renders proposed (Elfogadom/Elvetem) / active (progress) / completed (outcome) rows + a real propose CTA, else the honest null-state. |
 | Workout challenges (table + generator + set-level evaluator + write path + outcome cron) | 🟢 HBWI | `challenge` table (proposed→accepted/dismissed→hit/miss/inconclusive, nullable confidence, structured targets); lazy-on-prep `ChallengeGenerator`; deterministic set-level `ChallengeOutcomeEvaluator` (NEW, not `MetricWindowEvaluator`); `GET …/challenge?templateSessionId=&date=` (lazy generate + lazy resolve, `[]` = honest) + `POST …/challenge/{id}/decision`; `ChallengeJob` outcome-cron backstop (three-switch). |
+| Weekly review (table + generator + Monday-06:50 backward job + read/regenerate/digest) | 🟢 WR (`mezo-p2tr`) | `weekly_review` table (ISO-Monday identity, partial unique, jsonb day-notes + highlights); smart-tier `WeeklyReviewGenerator` (gather = `MeWeekService` day lines + confirmed patterns + new facts + life events + memoir + predictions → ONE `completeSmart`, model-selected highlights, honest-empty); `WeeklyReviewJob` (Mon 06:50, backward — the JUST-FINISHED week, three-switch); `GET/POST` read/regenerate/digest (never lazy on the primary GET, 409 while the week is in progress). `WEEKLY_REVIEW_READY` app-notification + `WEEKLY_REVIEW` Monday-10:00 push (retires the old `WEEKLY` category, kept `@Deprecated`). |
+| Anchored chat conversations (`ai_conversation.context_kind/.context_date`) | 🟢 WR (`mezo-p2tr`) | Companion-owned: `WeekContextRenderer`'s `[Heti adatok]` block (via the `WeekReviewSource` port this doc's `WeekReviewSourceAdapter` implements) + `ChatService.openingTurn`'s assistant-only server-generated first turn. Full detail: [companion.md](companion.md). |
+| Frontend (`/me/week`'s `WeekReviewCard`/`WeekDiscoveries`, chat handoff) | 🟢 WR (`mezo-p2tr`) | `useWeeklyReview()` (review + digest + regenerate) + `useChatHandoff()`; RETIRES the old Insights „Heti" tab (`/insights/weekly` → `/me/week` redirect) rather than un-ghosting a new one. Full anatomy: [me.md](me.md) `Heti` §2. |
 | Frontend (ActiveWorkoutPage challenge surface) | 🟢 HBWI | `useChallenges()`/`useChallengeActions()` (`data/train/challengeHooks.ts`); `ActiveWorkoutPage` prep feeds the live list into `ChallengesCarousel`, accepted map + `decide()` from server status in live (local toggle in mock, byte-parity); `ChallengeCard` honest states — „tanulom" on null confidence, tools hidden in live, `hit/miss/inconclusive` outcome chip + line with the accept/skip row hidden. |
-| **Epic status** | ✅ COMPLETE | Original 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push shipped** (N1+N2+N3, `mezo-h4wp.6`, 2026-07-29); **`mezo-gst9` (2026-08-15) then redesigned B1.1/B1.2/H1 into the unified companion feed above** (W1/W2/P1/P2/HBWI unaffected). Every prose/forecast Insights + Today surface is honest and real — and reaches the lock screen too. |
+| **Epic status** | ✅ COMPLETE | Original 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push shipped** (N1+N2+N3, `mezo-h4wp.6`, 2026-07-29); **`mezo-gst9` (2026-08-15) then redesigned B1.1/B1.2/H1 into the unified companion feed above** (W1/W2/P1/P2/HBWI unaffected); **`mezo-p2tr` (2026-08-27) then added WR — the backward-looking weekly review** (a post-epic addition, the HBWI precedent: a new proactive-idiom surface layered on top of a finished epic, this one riding the `me`-owned `/me/week` page rather than an Insights tab). Every prose/forecast Insights + Today + `/me/week` surface is honest and real — and reaches the lock screen too. |
 
 **Driver:** `mezo-gst9` (companion feed, the current B/H-stage design) on top of `mezo-h4wp.4`
 (W2)/`mezo-h4wp.1`'s spine. **Design of record (current B/H model):**
@@ -1711,9 +1800,28 @@ in the `AbstractIntegrationTest` `@Import` list) + `companion_message`, `weekly_
 `heartbeat_note` dropped from both the schema and the list together). Full backend + FE gates green
 at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both modes + build).
 
+**Weekly review (WR, `mezo-p2tr`)** — the `[fake-review:{…}]` sentinel (GREEDY, nested
+`dayNotes`/`anchorIndexes` payload — the payload nests objects, so the match must run to the LAST
+brace, planted via a memoir title) dispatches on `WEEKLY_REVIEW_MARKER_MIRROR` (§9 gotcha a, the
+literal-mirror rule). `feature/companion/service/DayScoreServiceIT.java` pins the day-score formula
+per subscore (a fully-logged day → 100/100/100/100 → overall 100; a sleep-only day leaves the other
+three null and the overall score null under the `<2` gate; a zero-kcal day → `fuel()==0`, not null
+— kcal WAS logged) and the 1–10 (not 1–5) normalization. `feature/companion/controller/
+MeWeekControllerIT.java` covers the 7-day shape + the `ME_WEEK_START_NOT_MONDAY` 400 +
+weekly-aggregate math. `feature/proactive/service/WeeklyReviewGeneratorIT.java` covers the empty-week
+no-row gate, the idempotent existing-row short-circuit, bounds-checked anchor resolution, and the
+`WEEKLY_REVIEW_READY` notification emission. `feature/proactive/controller/WeeklyReviewControllerIT.java`
+covers the never-lazy 404, the `stale` probe, the regenerate 409/404, and the digest's always-200
+contract. `AnchoredConversationIT` (companion) covers `context_kind`/`context_date` persistence, the
+assistant-only opening turn, and its swallow-and-log failure path. FE: `frontend/src/data/me/
+{meWeekHooks,weeklyReviewHooks}.test.tsx`, `frontend/src/features/me/{pages/WeekPage.test.tsx,
+logic/useChatHandoff.test.tsx,components/{WeekDayCard,WeekReviewCard,WeekScoreBars}.test.tsx}`,
+`frontend/src/app/router.weeklyRedirect.test.tsx` (the `/insights/weekly → /me/week` redirect).
+Full test list: [me.md §8](me.md).
+
 ## 9. Decisions, gotchas & deferred
 
-- **(a) All TEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
+- **(a) All ELEVEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
   fake dispatches on `MORNING_MARKER_MIRROR` (`"REGGELI-ELIGAZITAS-FELADAT"`), `SLEEP_MARKER_MIRROR`
   (`"ALVAS-REAKCIO-FELADAT"`), `WEIGHT_MARKER_MIRROR` (`"SULY-REAKCIO-FELADAT"`) — the three NEW
   `mezo-gst9` kinds, replacing the single retired `BRIEFING_MARKER_MIRROR` — `WEEKLY_MARKER_MIRROR`
@@ -1721,8 +1829,10 @@ at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both mo
   (`"NAPKOZBENI-JEGYZET-FELADAT"` — the sentinel NAME survives from H1 even though it now mirrors
   `CompanionMessageGenerator.WINDOW_MARKER`, not a `HeartbeatGenerator` that no longer exists),
   `PREDICTION_MARKER_MIRROR` (`"HETI-PREDIKCIO-FELADAT"`), `EXPERIMENT_MARKER_MIRROR`
-  (`"N1-KISERLET-FELADAT"`) and `CHALLENGE_MARKER_MIRROR` (`"EDZES-KIHIVAS-FELADAT"`, mirroring
-  `ChallengeGenerator.CHALLENGE_MARKER`), **copies** of the generators' `*_MARKER` constants, NOT
+  (`"N1-KISERLET-FELADAT"`), `CHALLENGE_MARKER_MIRROR` (`"EDZES-KIHIVAS-FELADAT"`, mirroring
+  `ChallengeGenerator.CHALLENGE_MARKER`) and — the WR addition, `mezo-p2tr` —
+  `WEEKLY_REVIEW_MARKER_MIRROR` (`"HETI-ELEMZES-FELADAT"`, mirroring `WeeklyReviewGenerator.
+  WEEKLY_REVIEW_MARKER`, sentinel `[fake-review:{…}]`), **copies** of the generators' `*_MARKER` constants, NOT
   imports — a `companion` → `proactive` import would create a package cycle that the frozen ArchUnit
   rule fails the build on. Each literal pair must be edited together (both carry a comment pointing
   at the other; drift fails the generator IT loudly). The markers are prefix-collision-checked
@@ -2135,7 +2245,24 @@ at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both mo
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{CompanionMessagePopulator,WeeklySuggestionPopulator,MemoirPopulator,PredictionPopulator,ExperimentPopulator}.java` (`CompanionMessagePopulator` replaces the deleted `BriefingPopulator`+`HeartbeatNotePopulator`) + `support/ResetDatabase.java` (`companion_message` in the TRUNCATE list, `briefing`/`heartbeat_note` removed from it).
 - FE: `frontend/src/data/today/feedHooks.test.tsx` + `frontend/src/features/today/logic/mezoMessages.test.ts` (replace `briefingHooks.test.tsx`/`heartbeatHooks.test.tsx`/`CompanionNoteCard.test.tsx`, all DELETED), `…P1 tests…`, `frontend/src/data/insights/experimentsHooks.test.tsx`, `frontend/src/features/insights/pages/{ExperimentsPage.test.tsx,insights.nav.test.tsx}` (`InsightsSubNav.test.tsx` deleted with the component, compact-header redesign `mezo-ugqb`), `frontend/src/test/msw/handlers.ts` (`/api/proactive/feed` → `200 []`, weekly-suggestion/memoir → 404, prediction/experiment `200 []` + experiment POST handlers).
 
+**Weekly review — WR (`mezo-p2tr`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{WeeklyReviewEntity,WeeklyReviewDayNotesEnvelope,WeeklyReviewHighlightsEnvelope}.java` — the owned entity (`weekStart`/`summary`/`generatedAt` + two typed jsonb envelopes).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java` — pure-code `gather` (the week's `MeWeekService.renderDayLine`s + confirmed pattern events + new facts + life events + memoir + predictions + a numbered anchor-candidate list) + one `CompanionLlm.completeSmart` + strict-JSON `{summary, dayNotes, anchorIndexes}` parse + bounds-checked/deduped highlight resolution; `WEEKLY_REVIEW_MARKER = "HETI-ELEMZES-FELADAT"` + `PROMPT`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewJob.java` — the backward-looking Monday-06:50 `@Scheduled` cron (`weekStart = previousOrSame(MONDAY).minusWeeks(1)`, three-switch-gated `WEEKLY_REVIEW_JOB_SWITCH`, no backfill).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewService.java` — the read/regenerate service (`find`/`getResponse` with the `stale` best-effort probe; `regenerate` soft-delete + re-generate, 409 while the week is in progress).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewDigestService.java` — the always-200 week-window-refs read (`WeeklyReviewWeekWindow`-shared reads, mapped straight to DTOs).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewWeekWindow.java` — the shared window-query helper (`since`/`until`/`patternEvents`/`facts`/`lifeEvents`) both the generator's gather and the digest service read through, so they can never disagree on the candidate set.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeekReviewSourceAdapter.java` — implements companion's `WeekReviewSource` port (plain repository read + map, deliberately NOT `WeeklyReviewGenerator`, to keep `companion → proactive` out of the dependency graph entirely).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklyReviewRepository.java` — `findByCreatedByAndWeekStart` (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `getWeeklyReview`/`regenerateWeeklyReview`/`getWeeklyReviewDigest` (`requireMonday` 400 guard shared across all three).
+- **Companion-owned (the data layer + chat anchoring this stage narrates over/rides on) — see [me.md §4](me.md) and [companion.md](companion.md), not restated here:** `feature/companion/service/{DayScoreService,MeWeekService,WeekContextRenderer}.java`, `feature/companion/controller/MeWeekController.java`, `feature/companion/config/MeWeekProperties.java`, `feature/companion/WeekReviewSource.java`, `feature/companion/service/{ChatService,ConversationService}.java`, `ai_conversation.context_kind`/`.context_date`.
+- Contract: `api/feature/proactive/proactive.yml` (weekly-review paths + `WeeklyReview*` schemas), `api/feature/me-week/me-week.yml`, `api/feature/companion/companion.yml` (`CreateConversationRequest.context`).
+- Migrations: `...202608271200_mezo-p2tr_create_weekly_review.sql`, `...202608271500_mezo-p2tr_feedback_weekly_review_kind.sql`, `...202608271800_mezo-p2tr_ai_conversation_context.sql`.
+- Tests: `feature/proactive/service/WeeklyReviewGeneratorIT.java`, `feature/proactive/controller/WeeklyReviewControllerIT.java`, `support/populator/WeeklyReviewPopulator.java`; companion-side `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `AnchoredConversationIT`.
+- FE consumer: `frontend/src/data/me/{weeklyReviewApi.ts,weeklyReviewHooks.ts,weeklyReviewMock.ts}`, `frontend/src/features/me/{pages/WeekPage.tsx,components/{WeekReviewCard,WeekDiscoveries}.tsx,logic/useChatHandoff.ts}` — full anatomy [me.md](me.md) `Heti` §2/§10. **RETIRED alongside this slice:** the Insights Weekly consumer block just above (`useWeekly`/`WeeklyPage`) — WR does not extend it, it replaces it.
+
 **Docs (link, don't duplicate)**
+- Weekly review design of record (WR): `.superpowers/sdd/2026-08-27-weekly-review/`
 - Companion-feed design spec (current B/H model): [`docs/superpowers/specs/2026-08-15-companion-feed-design.md`](../superpowers/specs/2026-08-15-companion-feed-design.md)
 - Original proactive-layer design spec (W/P/HBWI, and the now-superseded original B/H design): [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
 - Roadmap (8 slices): [`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
