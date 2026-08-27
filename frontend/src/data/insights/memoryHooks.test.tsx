@@ -8,7 +8,10 @@ import { makeHookWrapper } from '@/test/queryWrapper'
 
 const overviewWire = {
   l0: { daysWithAnyData: 12, windowDays: 60 },
-  l1: { summaryCount: 5, embeddings: { dailySummary: 4, chatTurn: 9 } }, // first/lastDate hiányzik
+  l1: {
+    summaryCount: 5,
+    embeddings: [{ kind: 'chat_turn', count: 9 }, { kind: 'daily_summary', count: 4 }],
+  }, // first/lastDate hiányzik
   l2: { patterns: [{ kind: 'statistical', status: 'proposed', count: 1 }], pendingFactCandidates: 0 },
   l3: { facts: [{ source: 'chat', count: 2 }], totalReinforcements: 3, factsInPrompt: 2 },
   jobs: { summaryCron: '0 20 2 * * *', patternCron: '0 40 2 * * *', hypothesisCron: '0 0 3 * * SUN' },
@@ -24,6 +27,10 @@ describe('memory hooks (real mode)', () => {
 
     await waitFor(() => expect(result.current.overview).not.toBeNull())
     expect(result.current.overview!.l0.daysWithAnyData).toBe(12)
+    expect(result.current.overview!.l1.embeddings).toEqual([
+      { kind: 'chat_turn', count: 9 },
+      { kind: 'daily_summary', count: 4 },
+    ])
     expect(result.current.overview!.l1.firstDate).toBeNull()
     expect(result.current.overview!.jobs.lastDetectedAt).toBeNull()
     expect(result.current.degraded).toBe(false)

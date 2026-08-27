@@ -8,6 +8,22 @@ const STATUS_HU: Record<string, string> = {
 }
 const SOURCE_HU: Record<string, string> = { chat: 'chat', pattern: 'minta', manual: 'kézi' }
 
+/** Hungarian labels for `memory_embedding.kind` (mezo-b3pp.22). The backend sends whatever kinds
+ *  are populated, and the CHECK list grows — an unknown kind falls back to its raw key rather than
+ *  vanishing, so a new writer is visible here the day it ships, before this map learns about it. */
+const EMBEDDING_KIND_LABEL: Record<string, string> = {
+  daily_summary: 'nap',
+  chat_turn: 'chat',
+  weekly_summary: 'heti',
+  monthly_summary: 'havi',
+  journal_entry: 'napló',
+  reflection: 'esti',
+  gratitude: 'hála',
+  decision: 'döntés',
+  activity_note: 'tevékenység',
+  checkin_note: 'check-in',
+}
+
 /** A réteg-érés színskála (UI-spec §1) — kizárólag meglévő tokenekből. */
 const L0_ACCENT = 'var(--text-tertiary)'
 const L0_WASH = 'var(--surface-glass)'
@@ -58,8 +74,7 @@ export function MemoryLayersPanel({
         title="Éjszakai összefoglalók + vektorok"
         big={`${l1.summaryCount} nap`}
         stats={[
-          `${l1.embeddings.dailySummary} nap-vektor`,
-          `${l1.embeddings.chatTurn} chat-vektor`,
+          ...l1.embeddings.map((e) => `${e.count} ${EMBEDDING_KIND_LABEL[e.kind] ?? e.kind}-vektor`),
           l1.firstDate && l1.lastDate ? `${l1.firstDate} – ${l1.lastDate}` : 'még üres',
         ]}
         accent={L1_ACCENT}
