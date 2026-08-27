@@ -86,18 +86,15 @@ public class NoteEmbeddingCatchUp {
     }
 
     /**
-     * One source's pass: reap first and outside the budget (a vector whose source is gone must
-     * stop being recallable tonight even if the budget is exhausted by drifted notes — IDENT-3
-     * honesty beats throughput), then spend the remaining budget on writes/re-embeds, isolating
-     * per-row failures on both halves.
+     * One source's pass: reap ALWAYS runs first, unconditionally on the budget — even a source
+     * that gets its turn with the run's budget already spent by an earlier one (mezo-b3pp.26
+     * fix: the reap must not be starved by that) still reaps, because a vector whose source is
+     * gone must stop being recallable tonight regardless of embedding budget (IDENT-3 honesty
+     * beats throughput). Only the write/re-embed loop is budget-gated. Per-row failures on
+     * either half are isolated.
      */
     private int embed(NarrativeNoteSource source, UUID userId, LocalDate through, int minChars, int budget) {
         String kind = source.kind();
-        if (budget <= 0) {
-            log.info("Note-embedding budget already exhausted before user {} kind {} got a turn — "
-                    + "starved this run, waits for the next one", userId, kind);
-            return 0;
-        }
         // What the vectors currently SAY, keyed by source row — the sweep compares against this
         // instead of merely asking "does a vector exist?" (mezo-b3pp.26). These kinds have no
         // listener, so drift and orphaning can only be noticed here.
@@ -105,9 +102,10 @@ public class NoteEmbeddingCatchUp {
                 .findRefContentByCreatedByAndKind(userId, kind).stream()
                 .collect(Collectors.toMap(RefContent::getRefId, RefContent::getContent));
 
-        // REAP first, and outside the budget: a reap spends no embedding call, and a vector whose
-        // source is gone must stop being recallable tonight even if the budget is exhausted by
-        // drifted notes (IDENT-3 honesty beats throughput).
+        // REAP first, ALWAYS, and outside the budget: a reap spends no embedding call, and a
+        // vector whose source is gone must stop being recallable tonight even if THIS source's
+        // turn starts with the run's budget already exhausted by an earlier source (IDENT-3
+        // honesty beats throughput) — this must run before any budget check, not after it.
         int reaped = 0;
         if (!storedByRef.isEmpty()) {
             Set<UUID> live = source.liveNotes(userId, storedByRef.keySet()).stream()
@@ -126,6 +124,13 @@ public class NoteEmbeddingCatchUp {
         }
         if (reaped > 0) {
             log.info("Reaped {} orphaned note vector(s) for user {} kind {}", reaped, userId, kind);
+        }
+
+        // The budget guards ONLY embedding from here on — a starved source still reaped above.
+        if (budget <= 0) {
+            log.info("Note-embedding budget already exhausted before user {} kind {} got a turn to embed "
+                    + "(its reap still ran) — starved this run, waits for the next one", userId, kind);
+            return 0;
         }
 
         List<Note> candidates = source.notesToEmbed(userId, through, minChars);
