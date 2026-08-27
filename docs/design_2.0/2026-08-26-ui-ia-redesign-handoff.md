@@ -273,9 +273,14 @@ Locked patterns from the screen rounds (canonical for every further page):
   [`2026-08-27-fuel-feature-audit.md`](2026-08-27-fuel-feature-audit.md) — the per-subpage
   deep rounds must consult it). Hub absorbs the old Mai page: keret-hero
   (honest negative remaining-kcal, proportional done-window day-bar + gold now-marker, energy
-  chips that vanish on static energy, 5 rings with the water ring as a button), MOST-window
-  card (advances on log; all-done → standing log row, the real behavior), done capsule (only
-  when ≥1 done; AI-average from scored meals only; role tags; unscored ✨), 6 tiles → Terv /
+  chips that vanish on static energy, 5 rings with the water ring as a button), the
+  **window swimlane** (Daniel's direction, replacing the earlier MOST-card + done-capsule
+  pair): one tile per user-scheduled eating window in a horizontal lane with clay meal icons
+  — done tiles show the meal name + kcal · g P + AI-score chip (unscored ✨ folyamatban), the
+  now tile is coral-ringed with a Logold CTA, missed tiles are dashed amber "még pótolható"
+  Pótold, future tiles carry the plan suggestion; the lane auto-scrolls to MOST and ends with
+  the out-of-window log tile (＋ Logolás / ✨ AI); AI-average from scored meals only in the
+  lane header — then 6 tiles → Terv /
   Stack / Receptek / Kamra / Gyógyszer / Napló. Load-bearing behaviors carried: log sheet slot
   defaults to the launching window's slotKey (the mezo-bnsf bug class), derived-until-touched
   meal name, manual-ml-overrides-chip in the water sheet, zone anchor notes + pin/auto badge
@@ -287,7 +292,8 @@ Locked patterns from the screen rounds (canonical for every further page):
   (today none exists). Deeper rounds still to design per subpage: full LogMealSheet (overrides,
   MealPicker), AiLogSheet 3 fázis, MealScoreSheet/ScoreBreakdown, recipe detail/editor, Kamra
   detail + Import (OFF/link/fotó), StackItem/StackPicker sheets, FuelSlots editor + Tier-1/2
-  validation, EnergyBreakdownSheet. New sprite icon: `i-injekcio`.
+  validation, EnergyBreakdownSheet. New sprite icons: `i-injekcio` + the meal set
+  `i-reggeli` / `i-ebed` / `i-snack` / `i-vacsora`.
 - **Mezociklus fully specified** in its prototype: hub (hero + Volumen/Történet/Sablonok/Új
   blokk tiles), MEV/MAV/MRV provenance bars with expandable 01→02→03 derivation, 5-step wizard
   (tappable phase curve + Mezo reset, Emphasize cap 2 with disabled-not-hidden buttons, program

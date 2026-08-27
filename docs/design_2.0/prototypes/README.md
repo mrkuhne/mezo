@@ -104,16 +104,19 @@ are usable without a build step).
   soul**: keret-hero (remaining-kcal with honest Unicode-minus on overshoot, eddig/cél line,
   window counter, proportional day-bar built from done-window kcal segments + gold now-marker,
   energy chips Alap/Mozgás/Cél — the whole row vanishes on static energy, 5 rings
-  Fehérje·Szénh.·Zsír·Rost·Víz where the water ring is a button → WaterLogSheet), **MOST-window
-  card** (window time span + `edzés 17:30`, plan meal with kcal · g P, protein-jump fact pill,
-  Logold + ✨ AI, remaining windows line; after logging it advances to the next window; all-done →
-  quiet done card + the standing `＋ Logolás / ✨ AI` row — real behavior), **done capsule**
-  (renders only when ≥1 window is done: ✓ n · kcal · AI-average from scored meals only; expands
-  to rows with role tags STANDARD/EDZÉS ELŐTTI/UTÁNI and score chips, unscored = ✨ folyamatban),
-  then 6 tiles. **Working log sheet** (slot segments defaulting to the launching window's slot —
+  Fehérje·Szénh.·Zsír·Rost·Víz where the water ring is a button → WaterLogSheet), the
+  **window swimlane** — every user-scheduled eating window (the ones the AI recommends
+  against) is its own tile in a horizontally scrolling lane with its own clay meal icon
+  (`i-reggeli` egg / `i-ebed` bowl / `i-snack` apple / `i-vacsora` pot): done = sage wash +
+  KÉSZ ✓ + meal name + kcal · g P + AI-score chip (fresh log = ✨ folyamatban), now = coral
+  ring + MOST stamp + plan meal + Logold CTA, missed = dashed amber + "még pótolható" + Pótold
+  (never punitive), future = plan suggestion + ghost Logold; the lane auto-scrolls to the MOST
+  tile and ends with the out-of-window log tile (＋ Logolás / ✨ AI napló); the lane header
+  carries the AI-average from scored meals only — then 6 tiles. **Working log sheet** (slot
+  segments defaulting to the launching window's slot —
   the mezo-bnsf bug's fix pattern; derived-until-touched name; recipe line with adag stepper;
-  total card with `eddig +étkezés = új / cél` two-segment bar; saving updates hero, day-bar,
-  rings, capsule) and **water sheet** (250/400/500 chips, manual ml overrides and deselects the
+  total card with `eddig +étkezés = új / cél` two-segment bar; saving flips the window tile to
+  done and updates hero, day-bar, rings) and **water sheet** (250/400/500 chips, manual ml overrides and deselects the
   chip). Sketch-level subpages behind the tiles: **Terv** (stat strip, 24h week-rhythm grid with
   gym/röpi bars + kitchen-close & caffeine-cutoff markers *derived from settings — designed fix
   for the hardcoded ones*, medication-cycle strip; empty sections stay hidden), **Stack**

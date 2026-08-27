@@ -743,6 +743,34 @@
         <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
       </g>
     </symbol>
+
+    <symbol id="i-reggeli" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="56" rx="35" ry="26" fill="#F7F0E1"/>
+      <ellipse cx="44" cy="49" rx="10" ry="6" fill="rgba(255,255,255,0.7)" transform="rotate(-18 44 49)"/>
+      <circle cx="52" cy="56" r="13" fill="url(#ig-sun)"/>
+      <ellipse cx="48" cy="51" rx="4.5" ry="3" fill="rgba(255,255,255,0.6)"/>
+    </symbol>
+
+    <symbol id="i-ebed" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="66" rx="38" ry="13" fill="url(#ig-scale)"/>
+      <ellipse cx="50" cy="60" rx="25" ry="11" fill="url(#ig-bowl)"/>
+      <ellipse cx="42" cy="56" rx="8" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-16 42 56)"/>
+      <path d="M40 44q-3-6 0-12M52 46q-3-6 0-12M64 44q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-snack" viewBox="0 0 100 100">
+      <circle cx="50" cy="58" r="26" fill="url(#ig-p2)"/>
+      <path d="M50 33q-2-8 5-13" stroke="#9C5F33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="63" cy="27" rx="10" ry="6" fill="url(#ig-leaf)" transform="rotate(-22 63 27)"/>
+      <ellipse cx="41" cy="49" rx="8" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 41 49)"/>
+    </symbol>
+
+    <symbol id="i-vacsora" viewBox="0 0 100 100">
+      <path d="M17 52h66v5a27 27 0 0 1-27 27H44a27 27 0 0 1-27-27Z" fill="url(#ig-moon)"/>
+      <ellipse cx="50" cy="52" rx="33" ry="7.5" fill="#E6DFF9"/>
+      <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
+    </symbol>
   </defs>
 </svg>
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -908,24 +936,33 @@
   .fring::after { content: attr(data-pct); width: 25px; height: 25px; border-radius: 50%; background: #FFFDF8; display: grid; place-items: center; font-size: 7.5px; font-weight: 800; color: #2B2118; font-variant-numeric: tabular-nums; }
   .frings small { font-size: 6.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6E6257; }
   .frings .fv { font-size: 7px; color: #A2958A; font-variant-numeric: tabular-nums; }
-  /* ===== most-ablak kártya ===== */
-  .nw-meal { display: flex; align-items: center; gap: 8px; margin-top: 7px; }
-  .nw-meal .nm { font-size: 12.5px; font-weight: 700; }
-  .nw-meal .sb { font-size: 9px; color: #6E6257; }
-  .nw-fact { display: inline-flex; gap: 6px; align-items: center; margin-top: 7px; font-size: 8.5px; font-weight: 600; color: #4E6B42; background: rgba(143, 175, 126, 0.14); border-radius: 999px; padding: 3.5px 10px; font-variant-numeric: tabular-nums; }
-  .nw-acts { display: flex; gap: 7px; margin-top: 9px; align-items: center; }
-  .nw-next { font-size: 8.5px; color: #A2958A; margin-top: 8px; font-variant-numeric: tabular-nums; }
-  /* ===== kész-kapszula ===== */
-  .dcap { border: none; width: 100%; text-align: left; font-family: inherit; cursor: pointer; border-radius: 15px; padding: 9px 12px; background: rgba(255, 255, 255, 0.72); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); display: flex; align-items: center; gap: 7px; font-size: 10px; color: #2B2118; }
-  .dcap .tick-ic { color: #4E6B42; font-weight: 800; }
-  .dcap b { font-variant-numeric: tabular-nums; }
-  .dcap .chev { margin-left: auto; color: #A2958A; }
-  .dcaprows { border-radius: 0 0 15px 15px; margin-top: -6px; padding: 10px 12px 6px; background: rgba(255, 255, 255, 0.72); display: none; }
-  .dcaprows.open { display: block; }
-  .dcrow { display: flex; align-items: center; gap: 7px; padding: 6px 0; font-size: 9.5px; }
-  .dcrow + .dcrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
-  .dcrow .rolet { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; color: #6E6257; background: rgba(43, 33, 24, 0.06); border-radius: 5px; padding: 1.5px 5px; flex: none; }
-  .dcrow .meta { color: #A2958A; font-size: 8.5px; margin-left: auto; font-variant-numeric: tabular-nums; flex: none; }
+  /* ===== ablak-swimlane ===== */
+  .wlanewrap { margin: 0; }
+  .wlane { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -14px; padding: 3px 14px 10px; scroll-snap-type: x proximity; }
+  .wlane::-webkit-scrollbar { display: none; }
+  .wtile { flex: none; width: 128px; border-radius: 17px; padding: 9px 10px 10px; scroll-snap-align: center;
+    display: flex; flex-direction: column; gap: 4px; text-align: left;
+    background: #FFFFFF; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .wtile.done { background: linear-gradient(150deg, #EFF3EA, #FBFDF9); }
+  .wtile.now { border: 1px solid #FF6B4A; box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .wtile.missed { background: transparent; box-shadow: none; border: 1.2px dashed rgba(201, 150, 46, 0.55); }
+  .wtile.add { background: transparent; box-shadow: none; border: 1.2px dashed rgba(43, 33, 24, 0.2); align-items: center; justify-content: center; gap: 7px; }
+  .wtop { display: flex; align-items: center; gap: 4px; }
+  .wtop time { font-size: 9px; font-weight: 800; font-variant-numeric: tabular-nums; color: #6E6257; }
+  .wstamp { margin-left: auto; font-size: 6px; font-weight: 800; letter-spacing: 0.1em; border-radius: 5px; padding: 1.5px 5px; flex: none; }
+  .wstamp.now { background: rgba(255, 107, 74, 0.12); color: #A84A26; }
+  .wstamp.done { background: rgba(143, 175, 126, 0.2); color: #4E6B42; }
+  .wstamp.miss { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .wicon { display: grid; place-items: center; padding: 2px 0 1px; }
+  .wlbl { font-size: 6.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; text-align: center; }
+  .wname { font-size: 9.5px; font-weight: 700; line-height: 1.3; text-align: center; min-height: 25px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .wname.ghosty { color: #A2958A; font-weight: 600; }
+  .wmeta { font-size: 7.5px; color: #6E6257; text-align: center; font-variant-numeric: tabular-nums; }
+  .wscore { display: flex; justify-content: center; margin-top: 2px; }
+  .wcta { margin-top: 3px; width: 100%; padding: 6px 0; font-size: 9px; text-align: center; }
+  .wcta.ghost { padding: 5px 0; }
   .scorech { font-size: 7.5px; font-weight: 800; border-radius: 999px; padding: 2px 7px; background: rgba(143, 175, 126, 0.18); color: #4E6B42; flex: none; font-variant-numeric: tabular-nums; }
   .scorech.mid { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
   .scorech.pend { background: rgba(43, 33, 24, 0.06); color: #A2958A; }
@@ -1075,7 +1112,8 @@
   <p class="eyebrow">Mezo · oldalépítés · Fuel tab</p>
   <h1>Fuel tab</h1>
   <p class="lede">A Fuel hub a régi „Mai" oldal lényegét hordja: <strong>keret-hero</strong> (hátralévő kcal,
-  nap-sáv, energia-chipek, 5 gyűrű) + a <strong>MOST-ablak</strong> kártya, alatta a csempék az aloldalakra —
+  nap-sáv, energia-chipek, 5 gyűrű) + az <strong>ablak-swimlane</strong> — minden beütemezett étkezési
+  ablak saját élő csempét kap, oda logolsz, ott látod az AI-pontot. Alatta a csempék az aloldalakra —
   Terv, Stack, Receptek, Kamra, Gyógyszer és az új Napló. A valós <code>/fuel</code> kód auditja ellen épült.</p>
 
   <div class="stage">
@@ -1128,21 +1166,17 @@
             <div class="frings" id="frings"></div>
             <div class="coach">
               <span class="dot"></span>
-              <span>Az ebéd-ablakban járunk — a bowl 42 g fehérjét hoz, azzal 70%-on állunk. Kávé 14:00-ig fér bele.</span>
+              <span>Az ebéd-ablakban járunk — a bowl 42 g fehérjét hozna. A tízórait még be tudjuk pótolni, és kávé 14:00-ig fér bele.</span>
             </div>
           </div>
 
-          <!-- ===== MOST-ABLAK ===== -->
-          <div id="nowSlot" class="rise" style="--d:70ms;"></div>
-
-          <!-- ===== KÉSZ-KAPSZULA ===== -->
-          <div class="rise" style="--d:110ms;">
-            <button class="dcap" id="dcapBtn" aria-expanded="false">
-              <span class="tick-ic">✓</span>
-              <span><b id="doneN">2</b> kész ablak · <b id="doneKcal">1 010</b> kcal · AI-átlag <b id="doneAvg">87</b> p</span>
-              <span class="chev" id="dcapChev">›</span>
-            </button>
-            <div class="dcaprows" id="dcapRows"></div>
+          <!-- ===== ABLAK-SWIMLANE ===== -->
+          <div class="wlanewrap rise" style="--d:70ms;">
+            <div class="mrow" style="padding:0 2px 5px;">
+              <div class="p-eyebrow">Étkezési ablakok · a te beosztásod</div>
+              <span class="mut" style="margin-left:auto;font-size:8px;">AI-átlag <b id="doneAvg">88</b> p</span>
+            </div>
+            <div class="wlane" id="wlane"></div>
           </div>
 
           <!-- ===== MOZAIK ===== -->
@@ -1419,13 +1453,14 @@
           a kész ablakok szegmenseivel + arany MOST-jelölő, energia-chipek (Alap / Mozgás / Cél —
           statikus energiánál az egész sor eltűnik), és az <strong>5 gyűrű</strong>: Fehérje ·
           Szénhidrát · Zsír · Rost · Víz. A víz-gyűrű gomb — logoló sheetet nyit.</li>
-          <li><strong>MOST-ablak kártya</strong> — a window-river lényege egy kártyában: ablak-idő,
-          terv-étel (kcal · g P), fehérje-ugrás tény-pill, Logold + ✨ AI, alatta a nap hátralévő
-          ablakai. Logolás után a következő ablakra vált; ha minden kész, csendes kész-állapot +
-          álló logoló-sor (a valós viselkedés).</li>
-          <li><strong>Kész-kapszula</strong> — csak akkor jelenik meg, ha van kész ablak: ✓ n ablak ·
-          kcal · AI-átlag (csak pontozott étkezésekből), lenyitva sorok szerep-címkével
-          (STANDARD / EDZÉS ELŐTTI / UTÁNI) és score-chippel; a még nem pontozott ✨.</li>
+          <li><strong>Ablak-swimlane</strong> — minden beütemezett étkezési ablak (amire az AI is
+          ajánl) saját csempét kap egy vízszintesen görgethető sávban, saját clay étel-ikonnal
+          (tojás / tál / alma / fazék). <strong>Kész</strong>: zsálya wash, KÉSZ ✓, az étel neve,
+          kcal · g P és az AI-pont chip (a frissen logolt ✨ folyamatban). <strong>MOST</strong>:
+          korall keret + Logold CTA, a terv-étellel. <strong>Kimaradt</strong>: szaggatott borostyán
+          keret, „még pótolható" + Pótold — sosem büntető. <strong>Jövőbeli</strong>: terv-javaslat +
+          ghost Logold. A sáv a MOST-csempére gördül be, a sor végén az „ablakon kívüli" logolás-csempe
+          (＋ Logolás / ✨ AI). A fejlécben az AI-átlag — csak pontozott étkezésekből.</li>
           <li><strong>Terv</strong> — heti stat-sor (kcal-átlag, protein-napok, stack-adherence,
           gym+sport), 24 órás heti ritmus-rács a gym/röpi sávokkal és a konyhazárás + koffein-cutoff
           jelölőkkel (<em>a beállításokból számolva — a mai oldal hardcode-ját javítja</em>),
@@ -1501,24 +1536,21 @@
   function hu1(n) { return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
 
   var T = { kcal: 2250, p: 165, c: 250, f: 70, fiber: 30, water: 3000 };
-  var C = { kcal: 1010, p: 74, c: 96, f: 31, fiber: 12, water: 1300 };
-  var done = [
-    { name: 'Skyr-bowl zabbal', role: 'STANDARD', time: '07:30', kcal: 420, p: 32, score: 88 },
-    { name: 'Tonhalas wrap', role: 'STANDARD', time: '10:30', kcal: 590, p: 42, score: 85 }
+  var C = { kcal: 420, p: 32, c: 48, f: 9, fiber: 5, water: 1300 };
+  /* a user által beütemezett étkezési ablakok — az AI is ezekre ajánl */
+  var WINDOWS = [
+    { slot: 'Reggeli', time: '07:30', icon: 'i-reggeli', state: 'done',
+      meal: { name: 'Skyr-bowl zabbal', kcal: 420, p: 32, c: 48, f: 9, fiber: 5 }, score: 88, loggedTime: '07:30' },
+    { slot: 'Tízórai', time: '10:30', icon: 'i-snack', state: 'missed',
+      plan: { name: 'Sonkás-tojásos szendvics', kcal: 380, p: 26, c: 34, f: 15, fiber: 4 } },
+    { slot: 'Ebéd', time: '13:00', icon: 'i-ebed', state: 'now',
+      plan: { name: 'Csirkés rizs-bowl', kcal: 640, p: 42, c: 68, f: 14, fiber: 6 } },
+    { slot: 'Uzsonna', time: '16:30', icon: 'i-snack', state: 'pending',
+      plan: { name: 'Proteinpalacsinta', kcal: 320, p: 24, c: 38, f: 8, fiber: 3 } },
+    { slot: 'Vacsora', time: '19:00', icon: 'i-vacsora', state: 'pending',
+      plan: { name: 'Lazacos tészta', kcal: 610, p: 38, c: 64, f: 22, fiber: 7 } }
   ];
-  var TOTAL_WIN = 5;
-  var QUEUE = [
-    { slot: 'Ebéd', slotLbl: 'EBÉD', win: '13:00–16:30', now: true, extra: ' · edzés 17:30',
-      meal: { name: 'Csirkés rizs-bowl', kcal: 640, p: 42, c: 68, f: 14, fiber: 6 },
-      fact: 'Fehérje-ugrás +42 g → 116 g · a céled 70%-a' },
-    { slot: 'Uzsonna', slotLbl: 'UZSONNA', win: '16:30–19:00', now: false, extra: '',
-      meal: { name: 'Proteinpalacsinta', kcal: 320, p: 24, c: 38, f: 8, fiber: 3 },
-      fact: 'Fehérje-ugrás +24 g → 140 g · a céled 85%-a' },
-    { slot: 'Vacsora', slotLbl: 'VACSORA', win: '19:00–21:30', now: false, extra: '',
-      meal: { name: 'Lazacos tészta', kcal: 610, p: 38, c: 64, f: 22, fiber: 7 },
-      fact: 'Fehérje-ugrás +38 g → 178 g · a céled 108%-a' }
-  ];
-  var qi = 0;
+  function doneWins() { return WINDOWS.filter(function (w) { return w.state === 'done'; }); }
 
   /* --- gyűrűk --- */
   var RINGS = [
@@ -1548,8 +1580,8 @@
   /* --- nap-sáv --- */
   function renderKbar() {
     var kb = document.getElementById('kbar');
-    kb.innerHTML = done.map(function (m, i) {
-      return '<i' + (i % 2 ? ' class="alt"' : '') + ' style="width:' + (m.kcal / T.kcal * 100).toFixed(1) + '%;"></i>';
+    kb.innerHTML = doneWins().map(function (w, i) {
+      return '<i' + (i % 2 ? ' class="alt"' : '') + ' style="width:' + (w.meal.kcal / T.kcal * 100).toFixed(1) + '%;"></i>';
     }).join('');
   }
 
@@ -1557,61 +1589,67 @@
   function renderHero() {
     document.getElementById('kcalBig').textContent = huInt(T.kcal - C.kcal);
     document.getElementById('kcalSoFar').textContent = huInt(C.kcal);
-    document.getElementById('winCnt').textContent = done.length + '/' + TOTAL_WIN;
+    document.getElementById('winCnt').textContent = doneWins().length + '/' + WINDOWS.length;
+    var scored = doneWins().filter(function (w) { return w.score != null; });
+    document.getElementById('doneAvg').textContent = scored.length
+      ? Math.round(scored.reduce(function (s, w) { return s + w.score; }, 0) / scored.length) : '—';
     renderKbar();
     renderRings();
   }
 
-  /* --- kész-kapszula --- */
-  function renderDcap() {
-    document.getElementById('doneN').textContent = done.length;
-    document.getElementById('doneKcal').textContent = huInt(done.reduce(function (s, m) { return s + m.kcal; }, 0));
-    var scored = done.filter(function (m) { return m.score != null; });
-    var avgEl = document.getElementById('doneAvg');
-    avgEl.textContent = scored.length ? Math.round(scored.reduce(function (s, m) { return s + m.score; }, 0) / scored.length) : '—';
-    document.getElementById('dcapRows').innerHTML = done.map(function (m) {
-      var chip = m.score != null
-        ? '<span class="scorech' + (m.score < 90 ? ' mid' : '') + '">✨ ' + m.score + '</span>'
-        : '<span class="scorech pend">✨ folyamatban</span>';
-      return '<div class="dcrow"><b>' + m.name + '</b><span class="rolet">' + m.role + '</span>' + chip +
-        '<span class="meta">' + m.time + ' · ' + m.kcal + ' kcal · ' + m.p + ' g P</span></div>';
-    }).join('');
+  /* --- ablak-swimlane --- */
+  var lane = document.getElementById('wlane');
+  var laneScrolled = false;
+  function scoreChip(w) {
+    if (w.score != null) return '<span class="scorech' + (w.score < 90 ? ' mid' : '') + '">✨ ' + w.score + ' p</span>';
+    return '<span class="scorech pend">✨ folyamatban</span>';
   }
-  var dcapBtn = document.getElementById('dcapBtn');
-  dcapBtn.addEventListener('click', function () {
-    var open = document.getElementById('dcapRows').classList.toggle('open');
-    dcapBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    document.getElementById('dcapChev').textContent = open ? '˅' : '›';
-  });
-
-  /* --- MOST-ablak --- */
-  var nowSlot = document.getElementById('nowSlot');
-  function renderNow() {
-    if (qi >= QUEUE.length) {
-      nowSlot.innerHTML =
-        '<div class="qcard" style="margin-bottom:0;background:linear-gradient(150deg,#EFF3EA,#FBFDF9);">' +
-        '<div class="mrow" style="gap:9px;"><span style="font-size:16px;">✓</span><div class="grow">' +
-        '<div style="font-size:11.5px;font-weight:700;">Minden ablak kész</div>' +
-        '<div class="mut" style="font-size:9px;">Szép nap volt — a Napzárásban összegzünk.</div></div></div>' +
-        '<div class="nw-acts"><button class="cta" id="nwLog" style="flex:1;padding:8px 0;">＋ Logolás</button>' +
-        '<button class="ghost" style="flex:1;padding:8px 0;">✨ AI naplózás</button></div></div>';
-      document.getElementById('nwLog').addEventListener('click', function () { openLog(null); });
-      return;
+  function wtile(w, i) {
+    var icon = '<div class="wicon"><svg width="32" height="32" viewBox="0 0 100 100"><use href="#' + w.icon + '"/></svg></div>' +
+      '<div class="wlbl">' + w.slot + '</div>';
+    if (w.state === 'done') {
+      return '<div class="wtile done">' +
+        '<div class="wtop"><time>' + (w.loggedTime || w.time) + '</time><span class="wstamp done">KÉSZ ✓</span></div>' +
+        icon + '<div class="wname">' + w.meal.name + '</div>' +
+        '<div class="wmeta">' + w.meal.kcal + ' kcal · ' + w.meal.p + ' g P</div>' +
+        '<div class="wscore">' + scoreChip(w) + '</div></div>';
     }
-    var w = QUEUE[qi];
-    var rest = QUEUE.slice(qi + 1).map(function (x) { return x.slot + ' ' + x.win.split('–')[0]; }).join(' · ');
-    nowSlot.innerHTML =
-      '<div class="nowcard">' +
-      '<div class="p-eyebrow" style="color:#A84A26;">' + (w.now ? 'MOST' : 'KÖVETKEZŐ') + ' · ' + w.slotLbl + ' · ' + w.win + ' ablak' + w.extra + '</div>' +
-      '<div class="nw-meal"><svg width="30" height="30" viewBox="0 0 100 100" style="flex:none;"><use href="#i-fuel"/></svg>' +
-      '<div class="grow"><div class="nm">' + w.meal.name + '</div>' +
-      '<div class="sb">a tervből · ' + w.meal.kcal + ' kcal · ' + w.meal.p + ' g P</div></div></div>' +
-      (w.fact ? '<span class="nw-fact">' + w.fact + '</span>' : '') +
-      '<div class="nw-acts"><button class="cta" id="nwLog" style="flex:1.4;padding:8px 0;">Logold</button>' +
-      '<button class="ghost" style="flex:1;padding:8px 0;">✨ AI</button></div>' +
-      (rest ? '<div class="nw-next">még ma · ' + rest + '</div>' : '') +
-      '</div>';
-    document.getElementById('nwLog').addEventListener('click', function () { openLog(w); });
+    if (w.state === 'now') {
+      return '<div class="wtile now">' +
+        '<div class="wtop"><time>' + w.time + '</time><span class="wstamp now">MOST</span></div>' +
+        icon + '<div class="wname">' + w.plan.name + '</div>' +
+        '<div class="wmeta">a tervből · ' + w.plan.kcal + ' kcal · ' + w.plan.p + ' g P</div>' +
+        '<button class="cta wcta" data-log="' + i + '">Logold</button></div>';
+    }
+    if (w.state === 'missed') {
+      return '<div class="wtile missed">' +
+        '<div class="wtop"><time>' + w.time + '</time><span class="wstamp miss">KIMARADT</span></div>' +
+        icon + '<div class="wname ghosty">' + w.plan.name + '</div>' +
+        '<div class="wmeta">még pótolható</div>' +
+        '<button class="ghost wcta" data-log="' + i + '">Pótold</button></div>';
+    }
+    return '<div class="wtile">' +
+      '<div class="wtop"><time>' + w.time + '</time></div>' +
+      icon + '<div class="wname">' + w.plan.name + '</div>' +
+      '<div class="wmeta">a tervből · ' + w.plan.kcal + ' kcal · ' + w.plan.p + ' g P</div>' +
+      '<button class="ghost wcta" data-log="' + i + '">Logold</button></div>';
+  }
+  function renderLane() {
+    lane.innerHTML = WINDOWS.map(wtile).join('') +
+      '<div class="wtile add">' +
+      '<div class="wicon"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-fuel"/></svg></div>' +
+      '<div class="wlbl">Ablakon kívül</div>' +
+      '<button class="cta wcta" id="freeLog">＋ Logolás</button>' +
+      '<button class="ghost wcta">✨ AI napló</button></div>';
+    lane.querySelectorAll('[data-log]').forEach(function (b) {
+      b.addEventListener('click', function () { openLog(WINDOWS[+b.getAttribute('data-log')]); });
+    });
+    document.getElementById('freeLog').addEventListener('click', function () { openLog(null); });
+    if (!laneScrolled) {
+      laneScrolled = true;
+      var nowEl = lane.querySelector('.wtile.now');
+      if (nowEl) lane.scrollLeft = Math.max(0, nowEl.offsetLeft - lane.offsetLeft - 68);
+    }
   }
 
   /* --- sheet infra --- */
@@ -1630,7 +1668,7 @@
   function openLog(w) {
     var slots = ['Reggeli', 'Ebéd', 'Vacsora', 'Snack'];
     var sel = w ? (slots.indexOf(w.slot) >= 0 ? w.slot : 'Snack') : 'Snack';
-    var meal = w ? w.meal : null;
+    var meal = w ? w.plan : null;
     shLog.innerHTML =
       '<div class="sh-eyebrow">Logolás · mai nap</div>' +
       '<div class="sh-title">Mit ettél?</div>' +
@@ -1666,11 +1704,10 @@
     });
     document.getElementById('lgCancel').addEventListener('click', closeSheet);
     document.getElementById('lgSave').addEventListener('click', function () {
-      if (!meal) return;
+      if (!meal || !w) return;
       C.kcal += meal.kcal; C.p += meal.p; C.c += meal.c; C.f += meal.f; C.fiber += meal.fiber;
-      done.push({ name: meal.name, role: 'STANDARD', time: '13:30', kcal: meal.kcal, p: meal.p, score: null });
-      qi += 1;
-      renderHero(); renderDcap(); renderNow();
+      w.state = 'done'; w.meal = meal; w.score = null; w.loggedTime = '13:30';
+      renderHero(); renderLane();
       closeSheet();
     });
     shLog.scrollTop = 0;
@@ -1721,8 +1758,7 @@
   }
 
   renderHero();
-  renderDcap();
-  renderNow();
+  renderLane();
 })();
 
 /* ===== Stack oldal ===== */
