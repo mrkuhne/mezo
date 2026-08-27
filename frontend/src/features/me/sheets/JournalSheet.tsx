@@ -6,7 +6,7 @@ import { useDecisionActions, useJournalActions, useGratitudeActions } from '@/da
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
-import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
+import { GratitudeRows } from '@/features/me/components/GratitudeRows'
 import type { JournalNote } from '@/data/journal/journalTypes'
 
 type Mode = 'note' | 'decision' | 'gratitude'
@@ -120,72 +120,16 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
           <div className="col gap-sm">
             {mode === 'gratitude'
               ? (
-                // Gratitude mode: 1–3 rows with optional life-area chip
-                <>
-                  {rows.map((r, i) => (
-                    <div key={i} className="card" style={{ padding: 10, position: 'relative' }}>
-                      <textarea
-                        value={r}
-                        onChange={(e) => {
-                          const next = [...rows]
-                          next[i] = e.target.value
-                          setRows(next)
-                        }}
-                        aria-label={`${i + 1}. hálás gondolat`}
-                        placeholder={`${i + 1}. dolog, amiért hálás vagy…`}
-                        maxLength={280}
-                        autoFocus={i === 0 && rows.length === 1}
-                        style={{ width: '100%', minHeight: 60, resize: 'none', fontSize: 16, lineHeight: 1.45, paddingRight: 36 }}
-                      />
-                      <button
-                        type="button"
-                        className={cn('chip', recording && 'chat-mic-live')}
-                        style={{
-                          position: 'absolute', top: 8, right: 8, padding: 8,
-                          ...(recording
-                            ? { background: 'var(--wash-amber)', borderColor: 'var(--coral-deep)', color: 'var(--coral-deep)' }
-                            : {}),
-                        }}
-                        onClick={voice.toggle}
-                        disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
-                        aria-label={recording ? 'Felvétel leállítása' : 'Hangbevitel'}
-                        aria-pressed={recording}
-                      >
-                        <Icon name={recording ? 'voice-wave' : 'mic'} size={14} />
-                      </button>
-                    </div>
-                  ))}
-                  {voice.error && (
-                    <p className="text-tertiary" style={{ fontSize: 11 }}>{voice.error}</p>
-                  )}
-                  {rows.length < 3 && (
-                    <button
-                      type="button"
-                      className="cta-ghost"
-                      onClick={() => setRows((r) => [...r, ''])}
-                      style={{ fontSize: 13 }}
-                    >
-                      + Még egy
-                    </button>
-                  )}
-                  <div className="row gap-sm" style={{ flexWrap: 'wrap' }} role="group" aria-label="Life area">
-                    {LIFE_SKILLS.map(s => (
-                      <button
-                        key={s.key}
-                        type="button"
-                        className={cn('chip', lifeArea === s.key && 'chip-active')}
-                        aria-pressed={lifeArea === s.key}
-                        onClick={() => setLifeArea(lifeArea === s.key ? null : s.key)}
-                        style={{ fontSize: 12 }}
-                      >
-                        {s.icon} {s.name}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-tertiary" style={{ fontSize: 11 }}>
-                    1–3 dolog, amiért ma hálás vagy (max. 280 karakter soronként).
-                  </p>
-                </>
+                // Gratitude mode: 1–3 rows with an optional life-area chip (GratitudeRows,
+                // shared with the ritual's act-3 writing act — W1.3b, mezo-b3pp.25).
+                <GratitudeRows
+                  rows={rows}
+                  onRowsChange={setRows}
+                  lifeArea={lifeArea}
+                  onLifeAreaChange={setLifeArea}
+                  autoFocusFirst
+                  hint="1–3 dolog, amiért ma hálás vagy (max. 280 karakter soronként)."
+                />
               )
               : (
                 // Note/Decision mode: original single-textarea

@@ -31,8 +31,9 @@ related: [me, companion, ritual, _platform-data-layer, _platform-api-backend, _p
 > the domain. **W1.1 + W1.4 of the Phase 5 "deep memory & personalization" epic** (`mezo-b3pp`).
 > **W1.3 (gratitude entries, `mezo-b3pp.3`) is also ✅ done** — a third aggregate in the same
 > package with `kind=gratitude` embedding, capture via `JournalSheet` gratitude mode and QuickInput
-> Hála tile, and a derived streak card on `/me/naplo`. Ritual `ReflectionStep` gratitude rows
-> 🟣 deferred to W1.3b (W1.2 unmerged).
+> Hála tile, and a derived streak card on `/me/naplo`.
+> Ritual `ReflectionStep` gratitude rows ✅ shipped as **W1.3b** (`mezo-b3pp.25`) — the same rows,
+> capped at the day's remaining slots, inside Napzárás act 3 ([ritual.md](ritual.md) §2).
 
 ## 1. Summary
 
@@ -119,6 +120,22 @@ paragraph („…és szólunk, amikor itt az ideje, hogy visszanézzük, hogyan 
 card, deliberately never naming `mezo.companion.journal.decision-review-days` as a number. Editing an
 existing note never shows the toggle — there is no note→decision conversion, and `mode` is always
 `'note'` whenever `entry` is set.
+
+### `GratitudeRows` (`features/me/components/GratitudeRows.tsx`) — the shared capture block (W1.3b, `mezo-b3pp.25`)
+
+Up to `max` textareas (default 3, `maxLength={280}`), a per-row push-to-talk mic, „+ Még egy" up to
+the cap, the 8 LIFE life-area chips (single-select, tap again to clear) and an optional hint line.
+**State-free and data-free by design** — rows, life area and the save all belong to the caller,
+because the two callers save at different moments: `JournalSheet`'s „Hála" mode on „Mentem"
+(batch `Promise.all` then close), the ritual's `ReflectionStep` on „Tovább" (fire-and-forget). That
+is also what keeps the file out of `@/data/*`, the `frontend_conventions.md` rule for a component
+shared across features.
+
+The mic's target row is held in a **ref**, not state: `useVoiceInput`'s `rec.onstop` closes over the
+transcript callback as it stood when recording STARTED, so a state read inside it would be stale.
+Before the extraction the gratitude mic was wired to `JournalSheet`'s *note* textarea — a box
+gratitude mode never renders — so a transcription taken while capturing gratitude was silently
+lost; the extraction fixed it.
 
 ### `/me/naplo` — `JournalPage` (`features/me/pages/JournalPage.tsx`)
 The read + manage surface, reached via the `Napló` tab in `ME_TABS` (right after `Growth`). Header
@@ -558,9 +575,10 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   with the cron off nothing sweeps at all.
 - **✅ The W1 narrative-capture wave is complete as of `mezo-b3pp.5`.** All five slices ship on this
   one seam: `journal_entry` (W1.1), `reflection` (W1.2, from `feature/ritual`), `gratitude` (W1.3),
-  `decision` (W1.4) and the listener-less `activity_note`/`checkin_note` pair (W1.5). The only W1
-  follow-on still open is `mezo-b3pp.25` (gratitude rows in the ritual `ReflectionStep`), a surface
-  task that reuses the W1.3 seam unchanged.
+  `decision` (W1.4) and the listener-less `activity_note`/`checkin_note` pair (W1.5). **W1.3b**
+  (`mezo-b3pp.25`, gratitude rows in the ritual `ReflectionStep`) has also shipped, reusing the
+  W1.3 seam unchanged; only `mezo-b3pp.26` (the W1.5 write-once staleness follow-up, above) remains
+  open.
 
 ## 6. How to use it (consume)
 
@@ -724,7 +742,13 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   pinned against a UTC-reserialization regression at a month boundary);
   `features/me/sheets/DecisionReviewSheet.test.tsx` (rating required to enable save, calls
   `reviewDecision`); `data/hooks.reexport.test.ts` + `features/me/pages/MeSection.test.tsx` (barrel
-  identity + the `Napló` tab label in the sub-nav loop).
+  identity + the `Napló` tab label in the sub-nav loop);
+  `features/me/components/GratitudeRows.test.tsx` (`mezo-b3pp.25`) — the extracted block: one row
+  by default, „+ Még egy" up to the cap and gone at it, a `max` below 3 honoured (the ritual's
+  remaining slots), the life-area chip toggling both ways, and the two voice cases that pin the
+  fix — the transcript lands in the row whose mic was tapped, and appends to what that row already
+  holds. The ritual half of the extension — `features/ritual/components/ReflectionStep.test.tsx`'s
+  gratitude block — is documented in [`ritual.md`](ritual.md) §8.
 - **Backend ITs — gratitude (W1.3, `mezo-b3pp.3`)**, same infra, `gratitude_entry` also in
   `ResetDatabase`, `JournalPopulator.createGratitude(...)`:
   - `GratitudeEntryPersistenceIT` — round-trip create with lifeArea, newest-first range ordering,
@@ -872,13 +896,13 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   delete path MUST route any note re-write through `MemoryEmbeddingWriter`'s revive-on-write
   `upsert`, never the insert-only `write` `writeNote` uses today, or every nightly run re-selects
   the row, burns an embedding call, hits the constraint, and warns — forever.
-- **Deferred — the W1 wave itself is done; two follow-ons remain.** Every W1 slice has shipped:
-  journal (`mezo-b3pp.1`), evening reflection (`mezo-b3pp.2`, outside this domain — see §5 and
-  [`ritual.md`](ritual.md)), gratitude (`mezo-b3pp.3`), decision journal + review loop
-  (`mezo-b3pp.4`) and the note-embedding catch-up (`mezo-b3pp.5`, §3/§5/§8, with its two known
-  gaps two bullets up). Still open: **W1.3b** (`mezo-b3pp.25`) — gratitude rows in the ritual
-  `ReflectionStep` — and **`mezo-b3pp.26`**, the W1.5 write-once staleness follow-up. Neither
-  needs a NEW embed pipeline; both reuse the seam in §5.
+- **Deferred — the W1 wave itself is done, including its W1.3b follow-on; one item remains.** Every
+  W1 slice has shipped: journal (`mezo-b3pp.1`), evening reflection (`mezo-b3pp.2`, outside this
+  domain — see §5 and [`ritual.md`](ritual.md)), gratitude (`mezo-b3pp.3`), decision journal +
+  review loop (`mezo-b3pp.4`) and the note-embedding catch-up (`mezo-b3pp.5`, §3/§5/§8, with its
+  two known gaps two bullets up). **W1.3b** (`mezo-b3pp.25`) — gratitude rows in the ritual
+  `ReflectionStep`, §2 above — has also shipped, reusing the seam in §5 with no new embed pipeline.
+  Still open: **`mezo-b3pp.26`**, the W1.5 write-once staleness follow-up.
 
 ## 10. Key files
 
@@ -958,6 +982,7 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
 - `frontend/src/features/quickinput/sheets/QuickInputSheet.tsx:22,63-65,79-89` — the three-option picker phase (`naplo-pick` with Aktivitás/Napló/Hála); `'gratitude'` phase renders JournalSheet with `initialMode="gratitude"`.
 - `frontend/src/features/me/logic/gratitudeStreak.ts` — `gratitudeStreakDays()` (consecutive days derived from entry dates, yesterday-grace).
 - `frontend/src/features/me/components/GratitudeStreakCard.tsx` — streak card rendered on `/me/naplo` above the open-decisions block.
+- `frontend/src/features/me/components/GratitudeRows.tsx` — the shared, state-free gratitude capture block (W1.3b, `mezo-b3pp.25`), extracted out of `JournalSheet` and reused by `features/ritual/components/ReflectionStep.tsx` (see [`ritual.md`](ritual.md) §2/§10).
 
 **Frontend — tests**
 - `frontend/src/data/journal/journalHooks.test.tsx`, `frontend/src/data/journal/decisionHooks.test.tsx`, `frontend/src/data/journal/gratitudeHooks.test.tsx`
@@ -966,6 +991,7 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
 - `frontend/src/features/quickinput/sheets/QuickInputSheet.test.tsx` (picker-phase cases including the Hála tile)
 - `frontend/src/features/me/logic/gratitudeStreak.test.ts` (consecutive-day counting, yesterday-grace)
 - `frontend/src/features/me/components/GratitudeStreakCard.test.tsx` (derived streak rendering, ghost copy)
+- `frontend/src/features/me/components/GratitudeRows.test.tsx` (W1.3b, `mezo-b3pp.25` — §8)
 - `frontend/src/data/hooks.reexport.test.ts` + `frontend/src/features/me/pages/MeSection.test.tsx` (barrel identity + tab label).
 
 **Docs**

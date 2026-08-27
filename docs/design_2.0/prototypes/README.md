@@ -14,11 +14,12 @@ they inline come from `../assets/`.
 | `edzes-tab.html` | https://claude.ai/code/artifact/d9fd807c-71ca-4c27-b8c9-7d32aca48d15 |
 | `mezociklus.html` | https://claude.ai/code/artifact/a4f4ecdd-decc-4524-9fab-931af7a9c8b3 |
 | `edzes-session.html` | https://claude.ai/code/artifact/0a747fcc-0359-462a-8b8b-1de02a611f77 |
+| `fuel-tab.html` | https://claude.ai/code/artifact/e0da58f6-f4ef-4874-b60e-b83a1998ba0e |
 
 ## Workflow
 
 1. Edit the parts in `src/` (`*-head.html` = title + CSS; `*-body.html` = markup + JS).
-2. Run `./build.sh` — it inlines the sprites from `../assets/` into the 5 assembled files.
+2. Run `./build.sh` — it inlines the sprites from `../assets/` into the 6 assembled files.
 3. Republish the assembled file as an artifact, passing the matching `url` above so the link
    stays stable.
 
@@ -99,6 +100,33 @@ are usable without a build step).
   curve, Emphasize cap 2, program editor with day breakdown + session-cap 11 + Lint/PeakFit,
   searchable multi-add exercise picker, ▲▼ reorder), start/close sheets (close → report),
   frozen report, Történet selection mode → A/B compare page.
+- **fuel-tab** — the Fuel hub, audited against the real `/fuel` routes. **Hub = the old Mai page's
+  soul**: keret-hero (remaining-kcal with honest Unicode-minus on overshoot, eddig/cél line,
+  window counter, proportional day-bar built from done-window kcal segments + gold now-marker,
+  energy chips Alap/Mozgás/Cél — the whole row vanishes on static energy, 5 rings
+  Fehérje·Szénh.·Zsír·Rost·Víz where the water ring is a button → WaterLogSheet), **MOST-window
+  card** (window time span + `edzés 17:30`, plan meal with kcal · g P, protein-jump fact pill,
+  Logold + ✨ AI, remaining windows line; after logging it advances to the next window; all-done →
+  quiet done card + the standing `＋ Logolás / ✨ AI` row — real behavior), **done capsule**
+  (renders only when ≥1 window is done: ✓ n · kcal · AI-average from scored meals only; expands
+  to rows with role tags STANDARD/EDZÉS ELŐTTI/UTÁNI and score chips, unscored = ✨ folyamatban),
+  then 6 tiles. **Working log sheet** (slot segments defaulting to the launching window's slot —
+  the mezo-bnsf bug's fix pattern; derived-until-touched name; recipe line with adag stepper;
+  total card with `eddig +étkezés = új / cél` two-segment bar; saving updates hero, day-bar,
+  rings, capsule) and **water sheet** (250/400/500 chips, manual ml overrides and deselects the
+  chip). Sketch-level subpages behind the tiles: **Terv** (stat strip, 24h week-rhythm grid with
+  gym/röpi bars + kitchen-close & caffeine-cutoff markers *derived from settings — designed fix
+  for the hardcoded ones*, medication-cycle strip; empty sections stay hidden), **Stack**
+  (zone cards with times + anchor notes, tappable intake ticks that live-update hero and hub
+  tile, 📌 pin badge, meal-match ✓/⚠ with amber advice, "Miért így" transparency),
+  **Receptek** (type filter with live counts *incl. the new Snack segment*, cards with image
+  band + slot chip + role tag + ★ + fit badge or ✨ pending, macros /adag, NOVA dot 1 sage /
+  2-3 amber / 4 terracotta), **Kamra** (search + type switcher *incl. the new Gyógyszer
+  segment*, type-grouped list, food rows P/C/F + NOVA + kcal vs supp rows protocol + dose,
+  honest no-hit), **Gyógyszer** (med card with cycle bar — peak terracotta never red — phase
+  note, dose list with note; new sprite icon `i-injekcio`), **Napló** (designed addition for
+  the "no trends anywhere in Fuel" gap: 4-week kcal-average, AI-average and protein-days bars
+  from the weekly API's full series).
 - **edzes-session** — the full gym session flow (interactive state machine, feature-complete
   against `frontend/src/features/train/pages/ActiveWorkoutPage.tsx`).
   **Prep = Huawei tile IA**: hero (eyebrow + name + 4 mini stat cells: várható XP / szett / idő /

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { ReflectionStep } from '@/features/ritual/components/ReflectionStep'
 import { API_BASE } from '@/data/_client/api'
 import type { RitualDay } from '@/data/types'
+import type { GratitudeEntry } from '@/data/journal/journalTypes'
 import { server } from '@/test/msw/server'
 import { localDateString } from '@/shared/lib/dates'
 
@@ -34,7 +35,7 @@ function stubReduced(matches = true) {
 // records each `saveReflection` invocation on the way through. That is what lets the four
 // transitions below assert "no write happened at all" — a cache-content assertion cannot tell a
 // skipped write apart from a write that stored the identical value.
-const spies = vi.hoisted(() => ({ saveReflection: vi.fn() }))
+const spies = vi.hoisted(() => ({ saveReflection: vi.fn(), addEntry: vi.fn() }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -46,6 +47,16 @@ vi.mock('@/data/hooks', async (importOriginal) => {
         saveReflection: (text: string) => {
           spies.saveReflection(text)
           return real.saveReflection(text)
+        },
+      }
+    },
+    useGratitudeActions: () => {
+      const real = actual.useGratitudeActions()
+      return {
+        ...real,
+        addEntry: (text: string, lifeArea?: string | null, occurredOn?: string) => {
+          spies.addEntry(text, lifeArea, occurredOn)
+          return real.addEntry(text, lifeArea, occurredOn)
         },
       }
     },
@@ -75,6 +86,16 @@ function seedPriorProse() {
   server.use(http.get(`${API_BASE}/api/ritual/day/${today}`, () => HttpResponse.json(dayWith(PRIOR))))
 }
 
+/** Give the act N gratitude entries already saved for today, in both modes. */
+function seedGratitude(entries: GratitudeEntry[]) {
+  qc.setQueryData<GratitudeEntry[]>(['gratitude', today, today], entries)
+  server.use(http.get(`${API_BASE}/api/journal/gratitude`, () => HttpResponse.json(entries)))
+}
+
+const entry = (id: string, text: string): GratitudeEntry => ({
+  id, occurredOn: today, text, lifeArea: null, createdAt: `${today}T20:00:00Z`,
+})
+
 /** The day read must be settled before typing: in real mode an in-flight initial GET resolving
  *  AFTER the save would otherwise stomp the freshly-written reflectionText. In mock mode
  *  `initialData` + `staleTime: Infinity` make this immediate. */
@@ -93,6 +114,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
   vi.clearAllMocks()
 })
 
@@ -238,5 +260,143 @@ describe('ReflectionStep', () => {
     render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
 
     expect(screen.getByRole('textbox', { name: /napod/i })).toHaveValue(PRIOR)
+  })
+})
+
+describe('ReflectionStep — the gratitude half (W1.3b, mezo-b3pp.25)', () => {
+  test('renders one empty gratitude row under the prose', async () => {
+    seedGratitude([])
+    render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
+    await readySettled()
+
+    expect(await screen.findByLabelText('1. hálás gondolat')).toBeInTheDocument()
+    expect(screen.getByText('Amiért hálás vagy')).toBeInTheDocument()
+    // still the same single act — the prose is right there above it
+    expect(screen.getByRole('textbox', { name: /napod/i })).toBeInTheDocument()
+  })
+
+  test('„Tovább" saves every non-empty row with the chosen life area, for today', async () => {
+    seedGratitude([])
+    const user = userEvent.setup()
+    const onNext = vi.fn()
+    render(<ReflectionStep onNext={onNext} />, { wrapper })
+    await readySettled()
+
+    await user.type(await screen.findByLabelText('1. hálás gondolat'), 'Reggeli kávé')
+    await user.click(screen.getByRole('button', { name: '+ Még egy' }))
+    await user.type(screen.getByLabelText('2. hálás gondolat'), '   ')
+    await user.click(screen.getByRole('button', { name: /Kapcsolat/ }))
+    await user.click(screen.getByRole('button', { name: 'Tovább' }))
+
+    expect(onNext).toHaveBeenCalledTimes(1)
+    expect(spies.addEntry).toHaveBeenCalledTimes(1)
+    expect(spies.addEntry).toHaveBeenCalledWith('Reggeli kávé', 'connection', today)
+  })
+
+  test('the prose and the rows are independent — either half alone is enough', async () => {
+    seedGratitude([])
+    const user = userEvent.setup()
+    render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
+    await readySettled()
+
+    await user.type(await screen.findByLabelText('1. hálás gondolat'), 'Hívott anya')
+    await user.click(screen.getByRole('button', { name: 'Tovább' }))
+
+    expect(spies.addEntry).toHaveBeenCalledWith('Hívott anya', null, today)
+    expect(spies.saveReflection).not.toHaveBeenCalled()
+  })
+
+  test('„Ma nem írok" writes NOTHING — not the prose, not the rows', async () => {
+    seedGratitude([])
+    const user = userEvent.setup()
+    render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
+    await readySettled()
+
+    await user.type(screen.getByRole('textbox', { name: /napod/i }), 'Mégsem.')
+    await user.type(await screen.findByLabelText('1. hálás gondolat'), 'Mégsem ez.')
+    await user.click(screen.getByRole('button', { name: 'Ma nem írok' }))
+
+    expect(spies.saveReflection).not.toHaveBeenCalled()
+    expect(spies.addEntry).not.toHaveBeenCalled()
+  })
+
+  test('advancing with only whitespace in the rows writes no entry', async () => {
+    seedGratitude([])
+    const user = userEvent.setup()
+    render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
+    await readySettled()
+
+    await user.type(await screen.findByLabelText('1. hálás gondolat'), '   ')
+    await user.click(screen.getByRole('button', { name: 'Tovább' }))
+
+    expect(spies.addEntry).not.toHaveBeenCalled()
+  })
+
+  test('today already-saved entries are shown, and only the remaining slots are offered', async () => {
+    seedGratitude([entry('g-a', 'Sütött a nap'), entry('g-b', 'Jó edzés')])
+    const user = userEvent.setup()
+    render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
+    await readySettled()
+
+    expect(await screen.findByText('Sütött a nap')).toBeInTheDocument()
+    expect(screen.getByText('Jó edzés')).toBeInTheDocument()
+    // 3 − 2 = one slot left, so no „+ Még egy"
+    expect(screen.getByLabelText('1. hálás gondolat')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '+ Még egy' })).not.toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('1. hálás gondolat'), 'A harmadik')
+    await user.click(screen.getByRole('button', { name: 'Tovább' }))
+    expect(spies.addEntry).toHaveBeenCalledTimes(1)
+  })
+
+  test('with three already saved, the act offers no row at all — a re-entered ritual cannot duplicate the evening', async () => {
+    seedGratitude([entry('g-a', 'Egy'), entry('g-b', 'Kettő'), entry('g-c', 'Három')])
+    const user = userEvent.setup()
+    render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
+    await readySettled()
+
+    expect(await screen.findByText('Ma már mind a három hálabejegyzésed megvan.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('1. hálás gondolat')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Tovább' }))
+    expect(spies.addEntry).not.toHaveBeenCalled()
+  })
+
+  test('the saved list is reachable by its accessible name — "already saved" isn\'t purely visual', async () => {
+    seedGratitude([entry('g-a', 'Sütött a nap'), entry('g-b', 'Jó edzés')])
+    render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
+    await readySettled()
+
+    const list = await screen.findByRole('list', { name: 'Ma már elmentett hálabejegyzések' })
+    expect(list).toHaveTextContent('Sütött a nap')
+    expect(list).toHaveTextContent('Jó edzés')
+  })
+
+  // ── A failed gratitude read (mezo-b3pp fix wave finding 1). Only reachable in real mode:
+  // mock mode's `useDualQuery` queryFn never rejects (useDualQuery.ts), so `isError` is always
+  // false there — this forces real mode explicitly via `vi.stubEnv` rather than skipping,
+  // matching the `habitAdminHooks.test.tsx` "(real mode)" idiom, so it runs deterministically
+  // regardless of the ambient `VITE_USE_MOCK` the suite is invoked with.
+  test('an errored gratitude read offers no input rows, shows the honest line, and „Tovább" still advances and saves typed prose (real mode)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    // No `seedGratitude` cache seed here — the point is a GET that fails outright, not one that
+    // resolves to an empty list, so `useDualQuery`'s `realEmpty: []` can't be mistaken for a
+    // genuinely empty day (the exact confusion this fix guards against).
+    server.use(http.get(`${API_BASE}/api/journal/gratitude`, () => HttpResponse.json(null, { status: 500 })))
+    const user = userEvent.setup()
+    const onNext = vi.fn()
+    render(<ReflectionStep onNext={onNext} />, { wrapper })
+    await readySettled()
+
+    await screen.findByText('A mai hálabejegyzéseid most nem érhetők el.')
+    expect(screen.queryByLabelText('1. hálás gondolat')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ma már mind a három hálabejegyzésed megvan.')).not.toBeInTheDocument()
+
+    await user.type(screen.getByRole('textbox', { name: /napod/i }), 'Nehéz nap volt, de megvagyok.')
+    await user.click(screen.getByRole('button', { name: 'Tovább' }))
+
+    expect(onNext).toHaveBeenCalledTimes(1)
+    expect(spies.saveReflection).toHaveBeenCalledWith('Nehéz nap volt, de megvagyok.')
+    expect(spies.addEntry).not.toHaveBeenCalled()
   })
 })
