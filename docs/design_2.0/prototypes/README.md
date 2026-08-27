@@ -16,6 +16,7 @@ they inline come from `../assets/`.
 | `edzes-session.html` | https://claude.ai/code/artifact/0a747fcc-0359-462a-8b8b-1de02a611f77 |
 | `fuel-tab.html` | https://claude.ai/code/artifact/e0da58f6-f4ef-4874-b60e-b83a1998ba0e |
 | `mezo-tab.html` | https://claude.ai/code/artifact/797270dd-f1dc-4196-b492-aa4ffb22d2de |
+| `en-ia-valasztas.html` | https://claude.ai/code/artifact/418b2a2d-25ba-4441-8cb5-6b15c6ab88b2 |
 
 ## Workflow
 
@@ -219,3 +220,11 @@ are usable without a build step).
   (edzés coral · egészség amber · élet sky; disabled facts fade to dashed); Előrejelzések /
   Kísérletek: status-washed tiles (pending lavender, confirmed sage, active amber + day
   dots); Memória: per-layer colored L0→L3 cards with icons + tinted provenance cells.
+- **en-ia-valasztas** — IA decision mockup (not a product page): where does the **Én** tab go?
+  Three live-proportion phone frames — A: Én behind the header avatar (4 tabs + center FAB
+  unchanged), B: Én as a fifth tab + the quick-log as a floating coral FAB bottom-right
+  (recommended: Én's content — goal, weight, sleep, growth — deserves first-class visibility,
+  and the log FAB stays in the thumb zone on *every* screen), C: fifth tab + quick-log in the
+  header (Daniel's initial idea; reachable everywhere but the worst one-handed zone). Built
+  standalone (not in build.sh); the changed element is marked with a dashed coral callout.
+  Decision pending — the winning option gets rolled into all prototype tab bars.

@@ -1,0 +1,200 @@
+<style>
+  .opts { display: flex; gap: 34px; flex-wrap: wrap; justify-content: center; margin-top: 36px; }
+  .opt { display: grid; gap: 14px; justify-items: center; }
+  .optlbl { text-align: center; }
+  .optlbl .tag { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; color: #fff;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); border-radius: 999px; padding: 4px 14px; }
+  .optlbl h3 { font-size: 17px; font-weight: 700; margin-top: 8px; }
+  .optcard { max-width: 330px; background: var(--card); border-radius: 16px; padding: 14px 16px;
+    border: 0.5px solid var(--line); box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.25); }
+  .optcard ul { margin: 0; padding-left: 16px; display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
+  .optcard li b { color: var(--ink); }
+  .optcard .pro::marker { content: '＋ '; color: #4E6B42; }
+  .optcard .con::marker { content: '− '; color: #A8801F; }
+  .reco { border: 1.5px solid #FF6B4A; position: relative; }
+  .reco::before { content: 'MEZO AJÁNLÁSA'; position: absolute; top: -9px; left: 14px; font-size: 9px; font-weight: 800;
+    letter-spacing: 0.16em; background: var(--card); color: #A84A26; padding: 0 8px; }
+
+  /* mini hub placeholder */
+  .ghost-hero { display: grid; justify-items: center; gap: 3px; padding: 8px 0 6px; }
+  .ghost-hero .nm { font-size: 13px; font-weight: 700; }
+  .ghost-hero .ln { font-size: 8.5px; color: #6E6257; font-weight: 300; text-align: center; max-width: 200px; }
+  .ghost-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .ghost-tiles i { height: 62px; border-radius: 15px; display: block;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .callout { position: relative; }
+  .callout::after { content: ''; position: absolute; inset: -5px; border: 2px dashed #FF6B4A; border-radius: inherit; pointer-events: none; }
+  .co-r14::after { border-radius: 18px; }
+  .co-round::after { border-radius: 999px; }
+  .headplus { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); }
+  .floatfab { position: absolute; right: 14px; bottom: 74px; width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; display: grid; place-items: center; z-index: 9;
+    box-shadow: 0 12px 24px -6px rgba(255, 91, 54, 0.65); animation: fabglow 3.2s ease-in-out 1.6s infinite; }
+  .avlbl { position: absolute; top: 37px; left: 50%; transform: translateX(-50%); font-size: 7px; font-weight: 800;
+    letter-spacing: 0.1em; color: #A84A26; }
+  .avwrap { position: relative; flex: none; }
+  .tabbar.five { padding: 8px 10px; }
+  .phone.sm { height: 560px; }
+  .phone.sm .screen { font-size: 11px; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Mezo · IA-döntés</p>
+  <h1>Hová kerüljön az Én?</h1>
+  <p class="lede">A cél, a súly, az alvás, a growth és a beállítások otthona az <strong>Én</strong> oldal —
+  a mostani 4 tab + középső logolás-FAB rácsba nem fér be. Három irány, mindhárom élő aránnyal,
+  a változó rész korall szaggatott kerettel jelölve.</p>
+
+  <div class="opts">
+
+    <!-- ============ A ============ -->
+    <div class="opt">
+      <div class="optlbl"><span class="tag">A</span><h3>Avatar = Én</h3></div>
+      <div class="phone sm"><div class="screen">
+        <div class="isl"></div>
+        <div class="p-status"><span>13:30</span><span>ᯤ ▮▮▮</span></div>
+        <div class="p-body">
+          <div class="mrow">
+            <div class="grow"><div class="p-eyebrow">Szerda · aug 26</div></div>
+            <button class="dpswitch" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg></button>
+            <div class="avwrap callout co-round">
+              <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-emberek"/></svg></div></div>
+              <span class="avlbl">ÉN</span>
+            </div>
+          </div>
+          <div class="ghost-hero">
+            <svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+            <div class="nm">Mezo</div>
+            <div class="ln">a hub változatlan — az Én a fejléc-avatar mögött lakik</div>
+          </div>
+          <div class="ghost-tiles">
+            <i style="background:linear-gradient(150deg,#F0EDF8,#F9F6FE);"></i>
+            <i style="background:linear-gradient(150deg,#E9F1E2,#F7FBF3);"></i>
+            <i style="background:linear-gradient(150deg,#FFF2EA,#FFFFFF);"></i>
+            <i style="background:linear-gradient(150deg,#FDF0DA,#FFFCF5);"></i>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="mtab on"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+          <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+          <div class="fab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+          <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="optcard">
+        <ul>
+          <li class="pro"><b>Semmi nem mozdul</b> — marad a 4 tab + a megszokott középső FAB.</li>
+          <li class="pro">A valós app már ma is ezt csinálja: avatar + XP-gyűrű → /me.</li>
+          <li class="con"><b>Elrejti a célt, súlyt, alvást</b> — napi tartalom egy profil-ikon mögött.</li>
+          <li class="con">Az avatar egyszerre identitás és navigáció — kétértelmű célpont.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ B ============ -->
+    <div class="opt">
+      <div class="optlbl"><span class="tag">B</span><h3>5 tab + lebegő logolás</h3></div>
+      <div class="phone sm"><div class="screen">
+        <div class="isl"></div>
+        <div class="p-status"><span>13:30</span><span>ᯤ ▮▮▮</span></div>
+        <div class="p-body">
+          <div class="mrow">
+            <div class="grow"><div class="p-eyebrow">Szerda · aug 26</div></div>
+            <button class="dpswitch" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg></button>
+            <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+          </div>
+          <div class="ghost-hero">
+            <svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+            <div class="nm">Mezo</div>
+            <div class="ln">a logolás korall FAB-ként lebeg — minden képernyőn ugyanott, a hüvelykujj alatt</div>
+          </div>
+          <div class="ghost-tiles">
+            <i style="background:linear-gradient(150deg,#F0EDF8,#F9F6FE);"></i>
+            <i style="background:linear-gradient(150deg,#E9F1E2,#F7FBF3);"></i>
+            <i style="background:linear-gradient(150deg,#FFF2EA,#FFFFFF);"></i>
+            <i style="background:linear-gradient(150deg,#FDF0DA,#FFFCF5);"></i>
+          </div>
+        </div>
+        <div class="floatfab callout co-round"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div class="tabbar five callout co-r14">
+          <div class="mtab on"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+          <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+          <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+          <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+          <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-emberek"/></svg>Én</div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="optcard reco">
+        <ul>
+          <li class="pro"><b>Az Én teljes értékű tab</b> — a cél, súly, alvás, growth látható helyen.</li>
+          <li class="pro"><b>A logolás a hüvelykujj-zónában marad</b>, és minden képernyőn ott van (most a tab-váltás elnyeli).</li>
+          <li class="pro">A fejléc csendes marad: dátum + harang + avatar.</li>
+          <li class="con">A FAB tartalmat takarhat — a listák aljának extra padding kell.</li>
+          <li class="con">El kell engedni a középső FAB megszokott helyét.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============ C ============ -->
+    <div class="opt">
+      <div class="optlbl"><span class="tag">C</span><h3>5 tab + logolás a headerben</h3></div>
+      <div class="phone sm"><div class="screen">
+        <div class="isl"></div>
+        <div class="p-status"><span>13:30</span><span>ᯤ ▮▮▮</span></div>
+        <div class="p-body">
+          <div class="mrow">
+            <div class="grow"><div class="p-eyebrow">Szerda · aug 26</div></div>
+            <div class="headplus callout co-round"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+            <button class="dpswitch" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg></button>
+            <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+          </div>
+          <div class="ghost-hero">
+            <svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+            <div class="nm">Mezo</div>
+            <div class="ln">a ＋ mindenhonnan elérhető — de fent, a legmesszebbi sarokban</div>
+          </div>
+          <div class="ghost-tiles">
+            <i style="background:linear-gradient(150deg,#F0EDF8,#F9F6FE);"></i>
+            <i style="background:linear-gradient(150deg,#E9F1E2,#F7FBF3);"></i>
+            <i style="background:linear-gradient(150deg,#FFF2EA,#FFFFFF);"></i>
+            <i style="background:linear-gradient(150deg,#FDF0DA,#FFFCF5);"></i>
+          </div>
+        </div>
+        <div class="tabbar five">
+          <div class="mtab on"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+          <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+          <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+          <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+          <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-emberek"/></svg>Én</div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="optcard">
+        <ul>
+          <li class="pro"><b>Az Én itt is teljes értékű tab</b>, és a ＋ minden képernyőn elérhető.</li>
+          <li class="pro">Nem takar tartalmat, nem kell FAB-nak hely.</li>
+          <li class="con"><b>A jobb felső sarok a legrosszabb egykezes zóna</b> — a leggyakoribb művelet a legmesszebbre kerül.</li>
+          <li class="con">A fejléc zsúfolódik: dátum + ＋ + harang + avatar egy sorban.</li>
+          <li class="con">A korall ＋ fent vizuálisan versenyez a hero-val.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="stage" style="margin-top:40px;justify-content:center;">
+    <aside style="max-width:640px;">
+      <div class="note">Az ajánlás a <strong>B</strong>: az Én megérdemli az ötödik tabot (cél · súly · alvás ·
+      growth · beállítások — napi felületek, nem profil-apróságok), a gyors logolás pedig a jobb alsó
+      lebegő FAB-on még jobban is jár, mint most: nemcsak a tab-sorból érhető el, hanem <em>minden</em>
+      képernyőről, aloldalakról és sheetek alól is — pontosan ott, ahol a hüvelykujj van. A C működik,
+      de a leggyakoribb műveletet a legrosszabb zónába teszi; az A a legolcsóbb, de a súly/alvás/cél
+      egy avatar mögé dugva elveszti a láthatóságát.</div>
+    </aside>
+  </div>
+</div>
