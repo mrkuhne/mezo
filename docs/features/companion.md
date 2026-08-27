@@ -1548,9 +1548,10 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     nothing to that block until something else rebuilds its edges.
   - **Residual window via the weekly profile snapshot (honest gap, out of scope).** A retracted
     PATTERN/PREFERENCE node leaves `[Összefüggések]` immediately, but `ProfileAssembler` (W4.3 §
-    below) condenses active PATTERN/PREFERENCE titles into the `[Profil]` block's `summary` only
-    once a week — so content retracted mid-week can still be quoted inside `[Profil]` until the
-    next weekly regeneration. Self-healing (the next `rebuild` drops it), not fixed here.
+    below) condenses active PATTERN/PREFERENCE titles into the `[Rólad tanultam]` block's
+    `summary` only once a week — so content retracted mid-week can still be quoted inside
+    `[Rólad tanultam]` until the next weekly regeneration. Self-healing (the next `rebuild` drops
+    it), not fixed here.
   - `reconcile(userId)` — the nightly sweep (patterns/facts/goals the write-path hooks could have
     missed: pre-graph confirmations, manually created facts, drifted titles). Pure UPSERT, so
     running it twice in a row is a no-op on the second pass. **Exists in this slice but nothing
@@ -1650,8 +1651,8 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     a rename now reaches `[Összefüggések]` on the same turn. **Carve-out: this "next turn"
     claim covers only the traversal channel** (`[Összefüggések]` and the injected fact block) —
     it is NOT a complete enumeration of every place an opted-out fact's words can still surface.
-    The weekly `[Profil]` snapshot is a separate, slower channel with its own residue window; see
-    "Residual window via the weekly profile snapshot" above.
+    The weekly `[Rólad tanultam]` block is a separate, slower channel with its own residue
+    window; see "Residual window via the weekly profile snapshot" above.
   - Each handler wraps its call in its own try/catch + `log.warn` — a promotion or retraction
     failure is logged, never rethrown into the async executor.
 
@@ -4083,9 +4084,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     and the unconditionally published `KnowledgeFactChangedEvent` route the toggle to the
     traversal channel (`[Összefüggések]`, the injected fact block) on the user's next turn
     instead of waiting for the sweep, with an edited fact's node title kept fresh as a side
-    effect — the weekly `[Profil]` snapshot is a separate, slower channel that can still carry a
-    paraphrase of an opted-out fact for up to a week; see the W2.2 "Residual window via the
-    weekly profile snapshot" note.
+    effect — the weekly `[Rólad tanultam]` block is a separate, slower channel that can still
+    carry a paraphrase of an opted-out fact for up to a week; see the W2.2 "Residual window via
+    the weekly profile snapshot" note.
 
 **Gotchas:**
 
