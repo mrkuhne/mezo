@@ -234,9 +234,11 @@ public class MeWeekService {
         return v != null ? v.stripTrailingZeros().toPlainString() : "–";
     }
 
-    /** {@code min(7, today - start + 1)} clamped to >= 1; a fully-past week always uses the full 7.
-     *  A fully-future week (today before start) returns 0 — the honest "hasn't started yet" signal
-     *  that {@link #aggregates} turns into a {@code null} {@code checkinRatio} rather than 0.0. */
+    /** {@code min(7, today - start + 1)}; a fully-past week always uses the full 7. A fully-future
+     *  week (today before start) returns 0 — the honest "hasn't started yet" signal that
+     *  {@link #aggregates} turns into a {@code null} {@code checkinRatio} rather than 0.0. The
+     *  {@code Math.max(1, …)} below is now unreachable as a clamp: the fully-future early return
+     *  covers every case that used to need it. */
     private static int elapsedDays(LocalDate start, LocalDate end) {
         LocalDate today = LocalDate.now();
         if (today.isAfter(end)) {
