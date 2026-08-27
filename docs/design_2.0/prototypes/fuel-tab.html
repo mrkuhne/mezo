@@ -1053,10 +1053,11 @@
   .rcpbody { padding: 10px 12px 10px; }
   .rcpbody .nm { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
   .rcpmeta { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 8.5px; color: #A2958A; }
-  .rcpmacs2 { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-  .rcpmacs2 .wkcal { flex: none; width: 74px; margin-top: 0; padding: 5px 2px 4px; }
-  .rcpmacs2 .wrings { flex: 1; margin-top: 0; padding: 0 4px; }
-  .rcpmacs2 .per { flex: none; font-size: 7px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #A2958A; writing-mode: vertical-rl; }
+  .mcells { display: flex; gap: 5px; margin-top: 8px; }
+  .mcells span { flex: 1; border-radius: 11px; padding: 5px 2px 4px; text-align: center;
+    background: var(--mw); color: var(--md); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .mcells b { display: block; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .mcells small { font-size: 6px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.78; }
   .rcpfoot { display: flex; align-items: center; gap: 6px; margin-top: 9px; padding-top: 7px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); font-size: 8.5px; color: #6E6257; font-variant-numeric: tabular-nums; }
   .rcpfoot .avg { font-weight: 800; color: #A8801F; }
   .rcpfoot .last { margin-left: auto; color: #A2958A; }
@@ -1497,8 +1498,9 @@
           étkezés-egyeztetés (✓ / ⚠ borostyán tanáccsal), „Miért így" átláthatóság.</li>
           <li><strong>Receptek</strong> — típus-szűrő élő darabszámmal (a Snack új fület kapott),
           levegős kártyák: magas kép-sáv clay étel-ikonnal (halo-korongon), slot-chip +
-          szerep-címke + ★ + fit-jelvény (✨ amíg pontozatlan); a törzsben kcal mini-csempe +
-          P/C/F makró-gyűrűk /adag; a láblécben az eddig rejtett élő adatok —
+          szerep-címke + ★ + fit-jelvény (✨ amíg pontozatlan); a törzsben négy színes
+          makró mini-csempe egy sorban (kcal zsálya · fehérje korall · szénh. borostyán ·
+          zsír levendula); a láblécben az eddig rejtett élő adatok —
           <strong>n× logolva · ✨ átlag pont · utoljára mikor</strong> (a contract
           timesLogged/avgScore/lastLogged mezői, ma sehol sem látszanak), logolatlan receptnél
           őszinte „még nem logoltad" sor.</li>
@@ -1866,7 +1868,6 @@
 
 /* ===== Receptek oldal ===== */
 (function () {
-  var TT = { p: 165, c: 250, f: 70 };
   var CAT_ICON = { breakfast: 'i-reggeli', lunch: 'i-ebed', dinner: 'i-vacsora', snack: 'i-snack' };
   var R = [
     { n: 'Csirkés rizs-bowl', cat: 'lunch', catL: 'EBÉD', role: 'Edzés utáni', star: true, fit: 91, nova: 1, kcal: 640, p: 42, c: 68, f: 14, ing: 7, min: 35, bw: '#FFE3D8', bd: '#E05535', bg2: 'rgba(224,85,53,0.4)', tl: 18, avg: 91, last: 'tegnap' },
@@ -1880,9 +1881,8 @@
   var listEl = document.getElementById('rcpList');
   var cntEl = document.getElementById('rcpCnt');
   var cur = 'all';
-  function ring(l, v, t, c) {
-    var pct = Math.min(100, Math.round(v / t * 100));
-    return '<span class="wring"><i style="--c:' + c + ';--v:' + pct + ';" data-l="' + l + '" role="img" aria-label="' + l + ' ' + v + ' gramm"></i><small>' + v + ' g</small></span>';
+  function mcell(v, lbl, mw, md) {
+    return '<span style="--mw:' + mw + ';--md:' + md + ';"><b>' + v + '</b><small>' + lbl + '</small></span>';
   }
   function card(r, i) {
     var foot = r.tl > 0
@@ -1898,9 +1898,12 @@
       '</div><div class="rcpbody">' +
       '<div class="nm">' + r.n + '</div>' +
       '<div class="rcpmeta">' + r.ing + ' hozzávaló · ' + r.min + ' perc · <span class="novadot n' + r.nova + '"></span> NOVA ' + r.nova + '</div>' +
-      '<div class="rcpmacs2"><div class="wkcal"><b>' + r.kcal + '</b><small>kcal</small></div>' +
-      '<div class="wrings">' + ring('P', r.p, TT.p, '#E05535') + ring('C', r.c, TT.c, '#C9962E') + ring('F', r.f, TT.f, '#8A76CC') + '</div>' +
-      '<span class="per">/adag</span></div>' +
+      '<div class="mcells">' +
+      mcell(r.kcal, 'kcal', '#E4EEDD', '#4E6B42') +
+      mcell(r.p + ' g', 'fehérje', '#FFE3D8', '#A84A26') +
+      mcell(r.c + ' g', 'szénh.', '#F6E7C6', '#A8801F') +
+      mcell(r.f + ' g', 'zsír', '#EBE6F8', '#5D4FA0') +
+      '</div>' +
       foot + '</div></div>';
   }
   function render() {
