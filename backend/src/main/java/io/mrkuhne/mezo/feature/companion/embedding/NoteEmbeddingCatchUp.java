@@ -97,7 +97,9 @@ public class NoteEmbeddingCatchUp {
                 continue;
             }
             try {
-                memoryEmbeddingWriter.writeNote(kind, note);
+                // W1.5 (mezo-b3pp.26): syncNote(kind, note) — this call ignores the boolean for now;
+                // Task 2 reworks this sweep to spend it against the run's embed budget.
+                memoryEmbeddingWriter.syncNote(kind, note);
                 written++;
             } catch (Exception e) {
                 log.warn("Note-embedding failed for user {} kind {} ref {}", userId, kind, note.id(), e);

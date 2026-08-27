@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -206,14 +207,43 @@ public class MemoryEmbeddingWriter {
     }
 
     /**
-     * W1.5 note unit (spec §5.5): a substantive note from a {@link NarrativeNoteSource}
-     * (activity-log „Napló" entry or check-in note), embedded WRITE-ONCE via {@link #write} —
-     * there is no listener behind these kinds, only the nightly sweep, so an edited or deleted
-     * source row keeps/leaves orphaned its original vector (known gap, journal.md §9).
+     * W1.5 note unit (spec §5.5), lifecycle-aware since mezo-b3pp.26. There is no listener behind
+     * these kinds — the nightly {@code NoteEmbeddingCatchUp} is their only writer — so "has this
+     * note changed?" cannot be answered by an event and is answered here instead, against the
+     * stored content.
+     *
+     * <p>The comparison is against the CAPPED text, not the raw source text, and that is
+     * load-bearing: {@link #cap} is what actually gets stored, so a note longer than
+     * {@code embedding.embed-max-chars} whose tail changes has NOT changed as far as its vector is
+     * concerned. Comparing the raw text would re-embed such a note on every single nightly run,
+     * forever, for no change in the stored content.
+     *
+     * <p>Routed through {@link #upsert}, never {@link #write}: a previously reaped vector keeps
+     * its {@code (kind, ref_id)} slot under the plain (non-partial)
+     * {@code uq_memory_embedding_kind_ref_id}, and only the upsert path looks past
+     * {@code @SQLRestriction} to revive it (the mezo-b3pp.2 trap).
+     *
+     * @return true iff an embedding call was spent — a first write or a drift re-embed. The sweep
+     *         uses this to charge its per-run budget, so an unchanged note costs nothing.
      */
     @Transactional
-    public void writeNote(String kind, NarrativeNoteSource.Note note) {
-        write(note.createdBy(), kind, note.id(), note.text(), note.occurredOn());
+    public boolean syncNote(String kind, NarrativeNoteSource.Note note) {
+        String capped = cap(note.text());
+        Optional<MemoryEmbeddingEntity> live = memoryEmbeddingRepository.findByKindAndRefId(kind, note.id());
+        if (live.isPresent() && capped.equals(live.get().getContent())) {
+            return false;
+        }
+        upsert(note.createdBy(), kind, note.id(), note.text(), note.occurredOn());
+        return true;
+    }
+
+    /** The reap half (mezo-b3pp.26): a note whose source row is no longer live must stop being
+     *  recallable — the {@link #deleteJournalEmbedding} idiom, IDENT-3 honesty. Soft-deletes the
+     *  VECTOR only; the source row is never touched here. */
+    @Transactional
+    public void deleteNoteEmbedding(String kind, UUID refId) {
+        memoryEmbeddingRepository.findByKindAndRefId(kind, refId)
+                .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
     }
 
     /**

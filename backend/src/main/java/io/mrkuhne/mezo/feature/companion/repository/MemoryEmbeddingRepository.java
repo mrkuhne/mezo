@@ -75,6 +75,23 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
     @Query("select m.refId from MemoryEmbeddingEntity m where m.createdBy = :createdBy and m.kind = :kind")
     Set<UUID> findRefIdsByCreatedByAndKind(@Param("createdBy") UUID createdBy, @Param("kind") String kind);
 
+    /** W1.5 lifecycle (mezo-b3pp.26) — ref-id + stored content for one user's vectors of a kind:
+     *  what the nightly sweep compares against the live source text to detect drift. A projection,
+     *  not the entity: loading full rows here would drag a 768-float vector per note through the
+     *  sweep for nothing. {@code @SQLRestriction}-filtered like every JPQL query, so a reaped
+     *  vector is correctly absent — the sweep must treat "no live vector" as "needs writing", and
+     *  {@link io.mrkuhne.mezo.feature.companion.embedding.MemoryEmbeddingWriter#syncNote} then
+     *  revives the parked row through the upsert path. */
+    interface RefContent {
+        UUID getRefId();
+        String getContent();
+    }
+
+    @Query("select m.refId as refId, m.content as content from MemoryEmbeddingEntity m "
+            + "where m.createdBy = :createdBy and m.kind = :kind")
+    List<RefContent> findRefContentByCreatedByAndKind(@Param("createdBy") UUID createdBy,
+                                                      @Param("kind") String kind);
+
     /** Renders a float[] as the pgvector text literal ({@code [0.1,0.2,...]}) native queries bind. */
     static String toVectorLiteral(float[] vector) {
         StringBuilder literal = new StringBuilder("[");
