@@ -983,20 +983,19 @@
   .sprog i { border-radius: 3px; }
   .nigstrip { margin: 8px 14px 0; border-radius: 11px; background: rgba(201, 150, 46, 0.13); color: #7E5C0D; font-size: 9px; font-weight: 600; padding: 6px 10px; }
 
-  .excard { margin: 9px 14px 0; border-radius: 20px; padding: 12px 13px; position: relative; overflow: hidden; touch-action: pan-y;
+  .excard { margin: 9px 14px 0; border-radius: 20px; padding: 10px 12px 11px; position: relative; overflow: hidden; touch-action: pan-y;
     background: linear-gradient(160deg, var(--fw) 0%, #FFFFFF 62%);
     border: 0.5px solid rgba(43, 33, 24, 0.07);
     box-shadow: 0 20px 36px -16px var(--fg), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
   .excard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--fr); }
-  .chbanner { display: flex; align-items: center; gap: 6px; border-radius: 10px; background: rgba(255, 255, 255, 0.7); border: 1px dashed var(--fr); padding: 5px 9px; margin-bottom: 8px; font-size: 8.5px; font-weight: 600; }
-  .chbanner b { color: var(--fd); }
-  .pillrow2 { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
-  .pillrow2 span { font-size: 8.5px; font-weight: 700; border-radius: 999px; padding: 3px 9px; background: rgba(255, 255, 255, 0.78); border: 0.5px solid rgba(43, 33, 24, 0.08); color: #6E6257; font-variant-numeric: tabular-nums; }
-  .pillrow2 span.hot { color: #A84A26; }
-  .pillrow2 span.cool { color: #4E6B42; }
-  .mbtn { width: 30px; height: 30px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12); background: rgba(255, 255, 255, 0.85); display: grid; place-items: center; cursor: pointer; flex: none; padding: 0; font-family: inherit; font-size: 11px; color: #6E6257; }
+  .metaline { font-size: 9px; font-weight: 600; color: #6E6257; margin-top: 3px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+  .metaline .hot { color: #A84A26; }
+  .metaline .cool { color: #4E6B42; }
+  .chmini { color: #A84A26; border: 1px dashed var(--fr); border-radius: 999px; padding: 1.5px 8px; font-size: 8px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px; background: rgba(255, 255, 255, 0.7); }
+  .notetoggle { border: none; background: none; font-family: inherit; font-size: 8.5px; font-weight: 600; color: #A2958A; padding: 7px 0 0; cursor: pointer; text-align: left; display: block; }
+  .mbtn { width: 26px; height: 26px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12); background: rgba(255, 255, 255, 0.85); display: grid; place-items: center; cursor: pointer; flex: none; padding: 0; font-family: inherit; font-size: 10px; color: #6E6257; }
   .mbtn.on { border-color: var(--fr); background: #fff; box-shadow: 0 4px 10px -4px var(--fg); }
-  .logbox { margin-top: 10px; background: rgba(255, 255, 255, 0.88); border: 0.5px solid rgba(43, 33, 24, 0.07); border-radius: 16px; padding: 10px 11px 11px;
+  .logbox { margin-top: 8px; background: rgba(255, 255, 255, 0.88); border: 0.5px solid rgba(43, 33, 24, 0.07); border-radius: 16px; padding: 9px 11px 10px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 10px 20px -14px rgba(43, 33, 24, 0.3); }
   .logbox .lgoal { font-size: 8.5px; font-weight: 600; color: #6E6257; font-variant-numeric: tabular-nums; }
   .imghero { position: relative; margin-top: 8px; height: 96px; border-radius: 13px; overflow: hidden; background: var(--fw); }
@@ -1014,7 +1013,7 @@
   .sd.wu { border-style: dashed; color: #A8801F; border-color: rgba(201, 150, 46, 0.55); }
   .sd.ext { border-style: dashed; border-color: rgba(255, 107, 74, 0.55); }
   .wunote { font-size: 8px; font-weight: 600; color: #A8801F; margin-left: 2px; }
-  .bigsteps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .bigsteps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
   .bstep { background: rgba(43, 33, 24, 0.035); border-radius: 14px; padding: 8px 10px; border: 0.5px solid rgba(43, 33, 24, 0.05); }
   .bstep small { font-size: 7.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; display: block; }
   .bsrow { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
@@ -1636,7 +1635,7 @@
     viewed: 'e1', debrief: null, debriefed: {},
     noteLocal: {}, medals: [], feedback: {}
   };
-  var UI = { inp: null, inpKey: '', note: '', imgOpen: false, vidOpen: false, nigDismissed: false, progOpen: false, slistOpen: false };
+  var UI = { inp: null, inpKey: '', note: '', imgOpen: false, vidOpen: false, nigDismissed: false, progOpen: false, slistOpen: false, noteOpen: false };
   var rest = { status: 'idle', remain: 0, total: 0, timer: null };
 
   function planned(id) { var e = byId[id]; return e.warm + e.work; }
@@ -1881,7 +1880,7 @@
     var totSets = S.order.reduce(function (a, id) { return a + effective(id); }, 0);
     var c = cur(vid), eff = effective(vid);
     var key = vid + ':' + c + ':' + eff;
-    if (UI.inpKey !== key) { UI.inp = prefillFor(e); UI.inpKey = key; UI.imgOpen = false; UI.vidOpen = false; }
+    if (UI.inpKey !== key) { UI.inp = prefillFor(e); UI.inpKey = key; UI.imgOpen = false; UI.vidOpen = false; UI.noteOpen = false; }
 
     document.getElementById('cntT1').textContent = 'Pull A';
     document.getElementById('cntT2').textContent = '▾ ' + (idx + 1) + '/' + n + ' gyakorlat · ' + doneSets + '/' + totSets + ' szett';
@@ -1928,19 +1927,19 @@
     var failure = e.rir != null && e.rir <= 1;
 
     var h = '';
-    if (acc) h += '<div class="chbanner"><svg width="13" height="13" viewBox="0 0 100 100" style="flex:none;"><use href="#i-kihivas"/></svg><span class="grow">Kihívás · <b>' + acc.type + '</b></span><span>cél: <b>' + acc.target + '</b></span></div>';
     h += '<div class="mrow" style="align-items:flex-start;gap:7px;">' +
       '<div class="grow">' +
       '<div class="p-eyebrow" style="color:' + f.deep + ';">' + (idx + 1) + '/' + n + ' · ' + e.muscle + ' · ' + e.type + '</div>' +
-      '<div style="font-size:20px;font-weight:700;letter-spacing:-0.01em;">' + e.name + '</div>' +
+      '<div style="font-size:17px;font-weight:700;letter-spacing:-0.01em;">' + e.name + '</div>' +
       '</div>' +
       (e.img ? '<button class="mbtn' + (UI.imgOpen ? ' on' : '') + '" id="imgchip" aria-label="Kép" aria-expanded="' + UI.imgOpen + '">⛶</button>' : '') +
-      (e.video ? '<button class="mbtn' + (UI.vidOpen ? ' on' : '') + '" id="vidchip" aria-label="Demo videó" aria-expanded="' + UI.vidOpen + '"><svg width="14" height="14" viewBox="0 0 100 100"><use href="#i-video"/></svg></button>' : '') +
+      (e.video ? '<button class="mbtn' + (UI.vidOpen ? ' on' : '') + '" id="vidchip" aria-label="Demo videó" aria-expanded="' + UI.vidOpen + '"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#i-video"/></svg></button>' : '') +
       '</div>';
-    h += '<div class="pillrow2">' +
+    h += '<div class="metaline">' +
       '<span class="' + (failure ? 'hot' : 'cool') + '">' + (e.rir == null ? 'idő-alapú' : (failure ? '🔥 Failure' : '🌿 Volume')) + '</span>' +
-      '<span>' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + '</span>' +
-      (e.rir != null ? '<span>RIR ' + e.rir + '</span>' : '') +
+      '<span>· ' + e.repMin + '–' + e.repMax + (e.type === 'plyo' ? ' mp' : ' rep') + '</span>' +
+      (e.rir != null ? '<span>· RIR ' + e.rir + '</span>' : '') +
+      (acc ? '<span class="chmini"><svg width="9" height="9" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg>' + acc.target + '</span>' : '') +
       '</div>';
     var note = S.noteLocal[e.id] !== undefined ? S.noteLocal[e.id] : e.note;
     if (note) h += '<div class="notepill"><span style="flex:none;">✎</span><span class="ntext">' + esc(note) + '</span></div>';
@@ -1990,7 +1989,11 @@
         });
         h += '</div>';
       }
-      h += '<input class="setnote" id="snote" maxlength="500" placeholder="Megjegyzés ehhez a szetthez (opcionális)" value="' + esc(UI.note) + '" aria-label="Szett megjegyzés">';
+      if (UI.noteOpen || UI.note) {
+        h += '<input class="setnote" id="snote" maxlength="500" placeholder="Megjegyzés ehhez a szetthez (opcionális)" value="' + esc(UI.note) + '" aria-label="Szett megjegyzés">';
+      } else {
+        h += '<button class="notetoggle" id="noteToggle">＋ megjegyzés a szetthez</button>';
+      }
     }
 
     if (rest.status !== 'idle') {
@@ -2041,6 +2044,11 @@
     });
     var sn = document.getElementById('snote');
     if (sn) sn.addEventListener('input', function () { UI.note = sn.value; });
+    var nt = document.getElementById('noteToggle');
+    if (nt) nt.addEventListener('click', function () {
+      UI.noteOpen = true; renderActive();
+      var el2 = document.getElementById('snote'); if (el2) el2.focus();
+    });
     var ic = document.getElementById('imgchip');
     if (ic) ic.addEventListener('click', function () { UI.imgOpen = !UI.imgOpen; renderActive(); });
     var vc = document.getElementById('vidchip');
