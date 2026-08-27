@@ -118,18 +118,31 @@
   .mmrow .ic.warn { color: #A8801F; }
   .mmrow .adv { font-size: 8.5px; color: #A8801F; margin-top: 2px; }
   /* ===== Receptek ===== */
-  .rcpcard { border-radius: 17px; margin-bottom: 9px; overflow: hidden; background: #FFFFFF; border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 24px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
-  .rcpband { position: relative; height: 52px; background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 7px, transparent 7px 14px), linear-gradient(135deg, var(--bw), var(--bd)); }
-  .rcpband .slotch { position: absolute; left: 8px; top: 8px; font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; color: #2B2118; background: rgba(255, 255, 255, 0.85); border-radius: 6px; padding: 2px 7px; }
-  .rcpband .rolet2 { position: absolute; left: 8px; bottom: 8px; font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; color: #fff; background: rgba(43, 33, 24, 0.45); border-radius: 6px; padding: 2px 7px; }
-  .rcpband .star { position: absolute; right: 34px; top: 7px; font-size: 10px; color: #fff; text-shadow: 0 1px 3px rgba(43, 33, 24, 0.4); }
-  .rcpband .fitb { position: absolute; right: 8px; top: 8px; font-size: 7px; font-weight: 800; color: #4E6B42; background: rgba(255, 255, 255, 0.9); border-radius: 999px; padding: 2.5px 7px; font-variant-numeric: tabular-nums; }
+  .rcpcard { border-radius: 19px; margin-bottom: 11px; overflow: hidden; background: #FFFFFF; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 16px 30px -16px var(--bg2, rgba(43, 33, 24, 0.32)), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .rcpcard:active { transform: scale(0.975); }
+  .rcpband { position: relative; height: 66px; overflow: hidden;
+    background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.18) 0 8px, transparent 8px 16px), linear-gradient(135deg, var(--bw), var(--bd)); }
+  .rcpband .halo { position: absolute; right: 14px; top: 50%; width: 52px; height: 52px; border-radius: 50%;
+    transform: translateY(-50%); background: rgba(255, 253, 248, 0.55); display: grid; place-items: center;
+    box-shadow: 0 6px 14px -6px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+  .rcpband .slotch { position: absolute; left: 10px; top: 9px; font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; color: #2B2118; background: rgba(255, 255, 255, 0.88); border-radius: 6px; padding: 2.5px 8px; }
+  .rcpband .rolet2 { position: absolute; left: 10px; bottom: 9px; font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; color: #fff; background: rgba(43, 33, 24, 0.45); border-radius: 6px; padding: 2.5px 8px; }
+  .rcpband .star { position: absolute; right: 76px; top: 8px; font-size: 11px; color: #fff; text-shadow: 0 1px 3px rgba(43, 33, 24, 0.45); }
+  .rcpband .fitb { position: absolute; right: 10px; bottom: 9px; font-size: 7.5px; font-weight: 800; color: #4E6B42; background: rgba(255, 255, 255, 0.92); border-radius: 999px; padding: 3px 9px; font-variant-numeric: tabular-nums; box-shadow: 0 2px 6px rgba(43, 33, 24, 0.15); }
   .rcpband .fitb.pend { color: #A2958A; }
-  .rcpbody { padding: 8px 11px 9px; }
-  .rcpbody .nm { font-size: 11.5px; font-weight: 700; }
-  .rcpmacs { display: flex; gap: 10px; margin-top: 5px; font-size: 9px; font-variant-numeric: tabular-nums; color: #6E6257; }
-  .rcpmacs b { color: #2B2118; font-weight: 700; }
-  .rcpmeta { display: flex; align-items: center; gap: 5px; margin-top: 5px; font-size: 8px; color: #A2958A; }
+  .rcpbody { padding: 10px 12px 10px; }
+  .rcpbody .nm { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
+  .rcpmeta { display: flex; align-items: center; gap: 5px; margin-top: 3px; font-size: 8.5px; color: #A2958A; }
+  .rcpmacs2 { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .rcpmacs2 .wkcal { flex: none; width: 74px; margin-top: 0; padding: 5px 2px 4px; }
+  .rcpmacs2 .wrings { flex: 1; margin-top: 0; padding: 0 4px; }
+  .rcpmacs2 .per { flex: none; font-size: 7px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #A2958A; writing-mode: vertical-rl; }
+  .rcpfoot { display: flex; align-items: center; gap: 6px; margin-top: 9px; padding-top: 7px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); font-size: 8.5px; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .rcpfoot .avg { font-weight: 800; color: #A8801F; }
+  .rcpfoot .last { margin-left: auto; color: #A2958A; }
   .novadot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
   .novadot.n1 { background: #8FAF7E; }
   .novadot.n2, .novadot.n3 { background: #C9962E; }
@@ -566,8 +579,12 @@
           lefekvés −30p…), pipálható sorok (a hero és a csempe élőben számol), 📌 kézi rögzítés,
           étkezés-egyeztetés (✓ / ⚠ borostyán tanáccsal), „Miért így" átláthatóság.</li>
           <li><strong>Receptek</strong> — típus-szűrő élő darabszámmal (a Snack új fület kapott),
-          kártya: kép-sáv slot-chippel és szerep-címkével, név, makrók /adag, hozzávaló · perc ·
-          NOVA-pont (1 zsálya / 2–3 borostyán / 4 terrakotta), fit-jelvény vagy ✨ amíg pontozatlan.</li>
+          levegős kártyák: magas kép-sáv clay étel-ikonnal (halo-korongon), slot-chip +
+          szerep-címke + ★ + fit-jelvény (✨ amíg pontozatlan); a törzsben kcal mini-csempe +
+          P/C/F makró-gyűrűk /adag; a láblécben az eddig rejtett élő adatok —
+          <strong>n× logolva · ✨ átlag pont · utoljára mikor</strong> (a contract
+          timesLogged/avgScore/lastLogged mezői, ma sehol sem látszanak), logolatlan receptnél
+          őszinte „még nem logoltad" sor.</li>
           <li><strong>Kamra</strong> — kereső + típus-váltó darabszámmal (a Gyógyszer is fület kapott),
           típus-csoportos lista (étel: makrók + NOVA + kcal; supp: protokoll-sor + dózis).</li>
           <li><strong>Gyógyszer</strong> — készítmény-kártya ciklus-csíkkal (csúcs = terrakotta,
@@ -932,30 +949,42 @@
 
 /* ===== Receptek oldal ===== */
 (function () {
+  var TT = { p: 165, c: 250, f: 70 };
+  var CAT_ICON = { breakfast: 'i-reggeli', lunch: 'i-ebed', dinner: 'i-vacsora', snack: 'i-snack' };
   var R = [
-    { n: 'Csirkés rizs-bowl', cat: 'lunch', catL: 'EBÉD', role: 'Edzés utáni', star: true, fit: 91, nova: 1, kcal: 640, p: 42, c: 68, f: 14, ing: 7, min: 35, bw: '#FFE3D8', bd: '#E05535' },
-    { n: 'Skyr-bowl zabbal', cat: 'breakfast', catL: 'REGGELI', role: null, star: true, fit: 88, nova: 1, kcal: 420, p: 32, c: 52, f: 9, ing: 5, min: 10, bw: '#F6E7C6', bd: '#C9962E' },
-    { n: 'Tonhalas wrap', cat: 'lunch', catL: 'EBÉD', role: null, star: false, fit: 84, nova: 2, kcal: 590, p: 42, c: 55, f: 18, ing: 6, min: 15, bw: '#DFEDF5', bd: '#4E8FB8' },
-    { n: 'Lazacos tészta', cat: 'dinner', catL: 'VACSORA', role: null, star: true, fit: 86, nova: 2, kcal: 610, p: 38, c: 64, f: 22, ing: 8, min: 30, bw: '#FAE3ED', bd: '#C46FA0' },
-    { n: 'Proteinpalacsinta', cat: 'breakfast', catL: 'REGGELI', role: 'Edzés előtti', star: false, fit: null, nova: 1, kcal: 320, p: 24, c: 38, f: 8, ing: 4, min: 20, bw: '#F6E7C6', bd: '#C9962E' },
-    { n: 'Túrós keksztekercs', cat: 'snack', catL: 'SNACK', role: null, star: false, fit: 74, nova: 3, kcal: 280, p: 18, c: 32, f: 9, ing: 5, min: 15, bw: '#E4EEDD', bd: '#8FAF7E' },
-    { n: 'Marhapörkölt bulgurral', cat: 'dinner', catL: 'VACSORA', role: null, star: false, fit: 82, nova: 1, kcal: 680, p: 45, c: 58, f: 26, ing: 9, min: 90, bw: '#FAE3ED', bd: '#C46FA0' }
+    { n: 'Csirkés rizs-bowl', cat: 'lunch', catL: 'EBÉD', role: 'Edzés utáni', star: true, fit: 91, nova: 1, kcal: 640, p: 42, c: 68, f: 14, ing: 7, min: 35, bw: '#FFE3D8', bd: '#E05535', bg2: 'rgba(224,85,53,0.4)', tl: 18, avg: 91, last: 'tegnap' },
+    { n: 'Skyr-bowl zabbal', cat: 'breakfast', catL: 'REGGELI', role: null, star: true, fit: 88, nova: 1, kcal: 420, p: 32, c: 52, f: 9, ing: 5, min: 10, bw: '#F6E7C6', bd: '#C9962E', bg2: 'rgba(201,150,46,0.4)', tl: 24, avg: 88, last: 'ma reggel' },
+    { n: 'Tonhalas wrap', cat: 'lunch', catL: 'EBÉD', role: null, star: false, fit: 84, nova: 2, kcal: 590, p: 42, c: 55, f: 18, ing: 6, min: 15, bw: '#DFEDF5', bd: '#4E8FB8', bg2: 'rgba(78,143,184,0.4)', tl: 12, avg: 84, last: 'ma' },
+    { n: 'Lazacos tészta', cat: 'dinner', catL: 'VACSORA', role: null, star: true, fit: 86, nova: 2, kcal: 610, p: 38, c: 64, f: 22, ing: 8, min: 30, bw: '#FAE3ED', bd: '#C46FA0', bg2: 'rgba(196,111,160,0.4)', tl: 9, avg: 86, last: '4 napja' },
+    { n: 'Proteinpalacsinta', cat: 'breakfast', catL: 'REGGELI', role: 'Edzés előtti', star: false, fit: null, nova: 1, kcal: 320, p: 24, c: 38, f: 8, ing: 4, min: 20, bw: '#F6E7C6', bd: '#C9962E', bg2: 'rgba(201,150,46,0.4)', tl: 0 },
+    { n: 'Túrós keksztekercs', cat: 'snack', catL: 'SNACK', role: null, star: false, fit: 74, nova: 3, kcal: 280, p: 18, c: 32, f: 9, ing: 5, min: 15, bw: '#E4EEDD', bd: '#8FAF7E', bg2: 'rgba(143,175,126,0.4)', tl: 3, avg: 74, last: 'múlt héten' },
+    { n: 'Marhapörkölt bulgurral', cat: 'dinner', catL: 'VACSORA', role: null, star: false, fit: 82, nova: 1, kcal: 680, p: 45, c: 58, f: 26, ing: 9, min: 90, bw: '#FAE3ED', bd: '#C46FA0', bg2: 'rgba(196,111,160,0.4)', tl: 6, avg: 82, last: 'vasárnap' }
   ];
   var listEl = document.getElementById('rcpList');
   var cntEl = document.getElementById('rcpCnt');
   var cur = 'all';
+  function ring(l, v, t, c) {
+    var pct = Math.min(100, Math.round(v / t * 100));
+    return '<span class="wring"><i style="--c:' + c + ';--v:' + pct + ';" data-l="' + l + '" role="img" aria-label="' + l + ' ' + v + ' gramm"></i><small>' + v + ' g</small></span>';
+  }
   function card(r, i) {
-    return '<div class="rcpcard rise" style="--d:' + (30 + i * 30) + 'ms;">' +
+    var foot = r.tl > 0
+      ? '<div class="rcpfoot"><span>' + r.tl + '× logolva</span><span class="avg">✨ ' + r.avg + ' p átlag</span><span class="last">utoljára ' + r.last + '</span></div>'
+      : '<div class="rcpfoot"><span class="mut">még nem logoltad — a Mezo az első log után pontoz kontextusra</span></div>';
+    return '<div class="rcpcard rise" style="--d:' + (30 + i * 30) + 'ms;--bg2:' + r.bg2 + ';" role="button" tabindex="0" aria-label="' + r.n + '">' +
       '<div class="rcpband" style="--bw:' + r.bw + ';--bd:' + r.bd + ';">' +
+      '<span class="halo"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#' + CAT_ICON[r.cat] + '"/></svg></span>' +
       '<span class="slotch">' + r.catL + '</span>' +
       (r.role ? '<span class="rolet2">' + r.role + '</span>' : '') +
       (r.star ? '<span class="star">★</span>' : '') +
       (r.fit != null ? '<span class="fitb">' + r.fit + ' fit</span>' : '<span class="fitb pend">✨ Mezo</span>') +
       '</div><div class="rcpbody">' +
       '<div class="nm">' + r.n + '</div>' +
-      '<div class="rcpmacs"><span><b>' + r.kcal + '</b> kcal</span><span>P <b>' + r.p + '</b></span><span>C <b>' + r.c + '</b></span><span>F <b>' + r.f + '</b></span><span class="mut">/adag</span></div>' +
       '<div class="rcpmeta">' + r.ing + ' hozzávaló · ' + r.min + ' perc · <span class="novadot n' + r.nova + '"></span> NOVA ' + r.nova + '</div>' +
-      '</div></div>';
+      '<div class="rcpmacs2"><div class="wkcal"><b>' + r.kcal + '</b><small>kcal</small></div>' +
+      '<div class="wrings">' + ring('P', r.p, TT.p, '#E05535') + ring('C', r.c, TT.c, '#C9962E') + ring('F', r.f, TT.f, '#8A76CC') + '</div>' +
+      '<span class="per">/adag</span></div>' +
+      foot + '</div></div>';
   }
   function render() {
     var hits = R.filter(function (r) {

@@ -123,9 +123,11 @@ are usable without a build step).
   for the hardcoded ones*, medication-cycle strip; empty sections stay hidden), **Stack**
   (zone cards with times + anchor notes, tappable intake ticks that live-update hero and hub
   tile, 📌 pin badge, meal-match ✓/⚠ with amber advice, "Miért így" transparency),
-  **Receptek** (type filter with live counts *incl. the new Snack segment*, cards with image
-  band + slot chip + role tag + ★ + fit badge or ✨ pending, macros /adag, NOVA dot 1 sage /
-  2-3 amber / 4 terracotta), **Kamra** (search + type switcher *incl. the new Gyógyszer
+  **Receptek** (type filter with live counts *incl. the new Snack segment*; spacious cards:
+  tall image band with a clay meal icon on a halo disc, slot chip + role tag + ★ + fit badge
+  or ✨ pending, kcal mini-tile + P/C/F macro rings /adag, NOVA dot 1 sage / 2-3 amber /
+  4 terracotta, and a live footer surfacing the never-shown contract fields
+  `timesLogged`/`avgScore`/`lastLogged` — unlogged recipes say so honestly), **Kamra** (search + type switcher *incl. the new Gyógyszer
   segment*, type-grouped list, food rows P/C/F + NOVA + kcal vs supp rows protocol + dose,
   honest no-hit), **Gyógyszer** (med card with cycle bar — peak terracotta never red — phase
   note, dose list with note; new sprite icon `i-injekcio`), **Napló** (designed addition for
