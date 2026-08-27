@@ -1527,7 +1527,14 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     hand from the Tudástár UI had it resurrected by the next dawn's reconcile. The filter added
     here (both in `promoteFact` and, via the same condition, in `retractFact`'s qualifying check)
     closes that: an opted-out fact's node either never gets promoted or gets archived on the next
-    `syncFact`/`reconcile` pass, and stays archived.
+    `syncFact`/`reconcile` pass, and stays archived. **This durability is specific to opted-out
+    facts.** For a fact left `include_in_prompt=true`, `promoteFact` still unconditionally
+    re-asserts `status='active'` on UPSERT (the `mezo-b3pp.31` revive half, unchanged) — a
+    hand-archived node for such a fact is still resurrected, and this slice actually SHORTENS
+    that undo window from a night to a turn, since any `PATCH` on the fact now routes through
+    `syncFact` → `promoteFact` within the async hop. `include_in_prompt` is the intended lever
+    for keeping a fact out of the prompt; hand-archiving its graph node from the Tudástár UI is
+    not a substitute for it.
   - **The node survives archiving; its edges don't, necessarily.** `status='archived'` keeps the
     row and its `(createdBy, sourceKind, sourceId)` anchor, so a later re-confirm/re-save
     UPSERTs the SAME node back to `active` rather than building a second one — but
@@ -1640,7 +1647,11 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     on the user's next turn rather than waiting for the nightly `reconcile` sweep. **Incidental
     win**: because the event fires on every update, not just the `includeInPrompt` toggle, an
     edited fact's graph-node title no longer goes stale until the nightly reconcile catches up —
-    a rename now reaches `[Összefüggések]` on the same turn.
+    a rename now reaches `[Összefüggések]` on the same turn. **Carve-out: this "next turn"
+    claim covers only the traversal channel** (`[Összefüggések]` and the injected fact block) —
+    it is NOT a complete enumeration of every place an opted-out fact's words can still surface.
+    The weekly `[Profil]` snapshot is a separate, slower channel with its own residue window; see
+    "Residual window via the weekly profile snapshot" above.
   - Each handler wraps its call in its own try/catch + `log.warn` — a promotion or retraction
     failure is logged, never rethrown into the async executor.
 
@@ -4061,10 +4072,20 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     — the graph is one more channel, not a carve-out. Before this fix, `mezo-b3pp.31`'s revive
     half made the nightly `reconcile` re-assert `status='active'` on an opted-out fact's node, so
     a user who archived that node by hand from the Tudástár UI had it silently resurrected by
-    dawn; the filter (mirrored into `retractFact`'s qualifying check) closes that. `syncFact`
-    (promote-or-archive in one transaction, the `syncGoal` shape) and the unconditionally
-    published `KnowledgeFactChangedEvent` route the toggle to the graph on the user's next turn
-    instead of waiting for the sweep, with an edited fact's node title kept fresh as a side effect.
+    dawn; the filter (mirrored into `retractFact`'s qualifying check) closes that. **This
+    durability is specific to opted-out facts** — a fact left `include_in_prompt=true` is
+    unaffected: `promoteFact` still unconditionally re-asserts `status='active'` for it, so a
+    hand-archive of THAT node is undone by the very next write that touches the fact (even a
+    category-only edit now routes through `syncFact` → `promoteFact` within the async hop, an
+    even shorter undo window than the old nightly sweep). `include_in_prompt` is the intended
+    lever for a fact the user wants out of the prompt — hand-archiving the graph node is not a
+    substitute for it. `syncFact` (promote-or-archive in one transaction, the `syncGoal` shape)
+    and the unconditionally published `KnowledgeFactChangedEvent` route the toggle to the
+    traversal channel (`[Összefüggések]`, the injected fact block) on the user's next turn
+    instead of waiting for the sweep, with an edited fact's node title kept fresh as a side
+    effect — the weekly `[Profil]` snapshot is a separate, slower channel that can still carry a
+    paraphrase of an opted-out fact for up to a week; see the W2.2 "Residual window via the
+    weekly profile snapshot" note.
 
 **Gotchas:**
 

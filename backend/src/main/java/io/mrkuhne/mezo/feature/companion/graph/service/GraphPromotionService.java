@@ -256,8 +256,9 @@ public class GraphPromotionService {
      * (non-deleted) facts, and all (non-deleted) goals for the user, and lets each promote/sync
      * method's own filter decide whether a given row actually produces a node (unconfirmed
      * patterns are excluded at the query level since the repository already has a
-     * status-scoped finder; pattern-sourced facts and never-promoted/inactive goals are excluded
-     * by {@link #promoteFact} and {@link #syncGoal} respectively).
+     * status-scoped finder; pattern-sourced facts, opted-out facts (mezo-b3pp.30), and
+     * never-promoted/inactive goals are excluded by {@link #promoteFact} and {@link #syncGoal}
+     * respectively).
      *
      * <p><b>Deliberately NOT {@code @Transactional} itself.</b> Each promote/sync call below goes
      * through {@link #self}, the injected proxy, so it runs inside its OWN transaction — the one
@@ -287,7 +288,8 @@ public class GraphPromotionService {
      * walks the user's ACTIVE nodes back to their source row and retracts (archives) every one
      * whose source stopped qualifying. The three loops above only ever see rows that still
      * qualify, so a row that LEFT a qualifying set (a pattern un-confirmed, a goal or fact
-     * soft-deleted) is invisible to them and its node would otherwise stay active forever. This
+     * soft-deleted, or a fact opted out via {@code includeInPrompt = false}, mezo-b3pp.30) is
+     * invisible to them and its node would otherwise stay active forever. This
      * is what heals a retraction that happened while the graph switch was off (no listener
      * existed to hear the event), and it is the ONLY path that retracts a soft-deleted
      * {@code knowledge_fact}, since nothing in main source deletes one and so no event is
@@ -332,9 +334,12 @@ public class GraphPromotionService {
         // that LEAVES those sets is invisible to them and its node would stay active forever.
         // This walks the other way round: from the user's active nodes back to their source row,
         // archiving every node whose source stopped qualifying. It is what heals a retraction
-        // that happened while the graph switch was off (no listener existed to hear the event),
-        // and it is the ONLY path that retracts a soft-deleted knowledge_fact, since nothing in
-        // main source deletes one and so no event is published for it.
+        // that happened while the graph switch was off (no listener existed to hear the event).
+        // For the soft-delete half of a fact's retraction specifically, this sweep is the ONLY
+        // path: nothing in main source deletes a knowledge_fact today, so no event is published
+        // for it. The opt-out half is different — KnowledgeFactService.update already publishes
+        // a live event routed to syncFact (see retractFact's javadoc), so this sweep is only its
+        // fallback/healer, not its only path.
         int retracted = 0;
         for (GraphNodeEntity node : graphService.listActive(userId)) {
             UUID sourceId = node.getSourceId();
