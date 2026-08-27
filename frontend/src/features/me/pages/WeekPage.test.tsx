@@ -5,6 +5,7 @@ import { WeekPage } from '@/features/me/pages/WeekPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { mockMeWeekStart } from '@/data/me/meWeek'
+import { nextMonday } from '@/features/me/logic/weekNav'
 
 // Task 10 (mezo-p2tr) — the week/day chat handoff routes through useNavigate; spy on it so the
 // wiring tests can assert the exact target without a real router transition.
@@ -85,6 +86,21 @@ test('next-week stepper is disabled on the current week', () => {
 test('prev-week stepper is enabled and steps back via ?start=', () => {
   renderPage()
   expect(screen.getByRole('button', { name: '‹' })).not.toBeDisabled()
+})
+
+test('browsing a future week renders its day cards dimmed, non-expandable and without a chat chip', () => {
+  const futureStart = nextMonday(mondayIso())
+  renderPage(`/me/week?start=${futureStart}`)
+  const cards = screen.getAllByTestId('week-day-card')
+  expect(cards).toHaveLength(7)
+  for (const card of cards) {
+    expect((card as HTMLElement).style.opacity).toBe('0.45')
+    const toggle = card.querySelector('button')!
+    expect(toggle).toBeDisabled()
+    fireEvent.click(toggle)
+  }
+  // Nothing expanded (the disabled click is a no-op) — the "Beszélgess a napról" chip never renders.
+  expect(screen.queryByText(/Beszélgess a napról/)).not.toBeInTheDocument()
 })
 
 test('clicking a day card expands it and reveals the subscore breakdown', () => {
