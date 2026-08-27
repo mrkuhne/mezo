@@ -232,6 +232,16 @@ Locked patterns from the screen rounds (canonical for every further page):
 - **Edzés IA:** the 9 sub-tabs dissolved → hero (today's session WITH the coach line) + 6 tiles
   (Heti, Mesociklus, Sport, Futás, Gyakorlatok, Medálok). Sablonok folded into the Mesociklus
   page; the Gym muscle-zone view folds into Heti. Session/planner stay full-screen flows.
+- **Gyakorlatok page fully specified** in the edzes-tab prototype (2026-08-27, feature-audited
+  against the real `/train/exercises` — `ExercisesPage.tsx` + its three sheets; see
+  `prototypes/README.md` for the detailed list). Key load-bearing behaviors carried over:
+  the **dual-mode list** (default = ranked PR list, search/filter = records-then-ghosts over
+  the full catalog), the two-level muscle filter (region → sub-muscle, Plyo as the lone type
+  chip), ghost rows that are **not buttons** and carry the 5-tick Stim meter, the two-branch
+  stat strip (weighted vs bodyweight — `weightKg > 0` rule), roundels gated on
+  `editable`/`catalogId` (⋯ only on Saját, ▶ everywhere), `—` for null stats, sections that
+  vanish instead of rendering empty, reduced-motion demo stills → manual ⇄ toggle, IG videos
+  in 9:16, and the two-tap in-sheet delete.
 - **Mezociklus fully specified** in its prototype: hub (hero + Volumen/Történet/Sablonok/Új
   blokk tiles), MEV/MAV/MRV provenance bars with expandable 01→02→03 derivation, 5-step wizard
   (tappable phase curve + Mezo reset, Emphasize cap 2 with disabled-not-hidden buttons, program

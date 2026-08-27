@@ -21,9 +21,108 @@
   .chiprow { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
   .fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #6E6257; }
   .fchip.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
-  .searchpill { background: rgba(43, 33, 24, 0.06); border-radius: 999px; padding: 8px 14px; font-size: 10.5px; color: #A2958A; margin-bottom: 10px; }
   .laps { display: flex; gap: 4px; align-items: flex-end; height: 30px; padding-top: 4px; }
   .laps b { flex: 1; border-radius: 3px 3px 2px 2px; background: linear-gradient(180deg, #9CC4E0, #4E8FB8); }
+
+  /* ===== Gyakorlatok katalógus ===== */
+  .pgact { margin-left: auto; border: 1px solid rgba(43, 33, 24, 0.14); background: rgba(255, 255, 255, 0.72); border-radius: 999px; padding: 5px 12px; font-size: 9.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .sfield { display: flex; align-items: center; gap: 7px; background: #fff; border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 999px; padding: 7px 12px; margin-bottom: 9px; box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05); }
+  .sfield svg { flex: none; }
+  .sfield input { border: none; outline: none; background: none; font-family: inherit; font-size: 10.5px; color: #2B2118; width: 100%; padding: 0; }
+  .sfield input::placeholder { color: #A2958A; }
+  .subrow { display: flex; gap: 5px; flex-wrap: wrap; margin: -3px 0 10px; }
+  .fchip { cursor: pointer; font-family: inherit; }
+  .fchip.sm { padding: 3px 9px; font-size: 8.5px; }
+  .fchip.on2 { background: var(--cw); border-color: var(--cr); color: var(--cd); }
+  .lsthead { display: flex; align-items: baseline; padding: 2px 2px 7px; }
+  .lsthead .cnt { margin-left: auto; font-size: 9px; font-weight: 700; color: #A2958A; font-variant-numeric: tabular-nums; }
+  .ecat { position: relative; display: flex; align-items: stretch; gap: 8px; border-radius: 17px; padding: 10px 11px 10px 15px; margin-bottom: 8px; overflow: hidden;
+    background: linear-gradient(135deg, var(--cw) 0%, #FFFDF8 58%);
+    box-shadow: 0 10px 22px -13px var(--cg), 0 1.5px 4px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .ecat .erail { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cr); }
+  .ecat .ebody { flex: 1; min-width: 0; border: none; background: none; font-family: inherit; color: #2B2118; text-align: left; padding: 0; cursor: pointer; }
+  .ecat.ghost { background: transparent; box-shadow: none; border: 1.2px dashed rgba(43, 33, 24, 0.2); padding: 9px 11px 9px 14px; }
+  .ecat.ghost .erail { opacity: 0.45; }
+  .ecat.ghost .ename { color: #6E6257; }
+  .ecat.ghost .ebody { cursor: default; }
+  .etop { display: flex; align-items: center; gap: 8px; }
+  .ethumb { width: 38px; height: 38px; border-radius: 12px; flex: none; display: grid; place-items: center; background: linear-gradient(135deg, var(--cw), #fff); box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06); font-size: 14px; font-weight: 700; color: var(--cd); }
+  .erank { font-size: 8px; font-weight: 800; color: var(--cd); background: rgba(255, 255, 255, 0.8); border-radius: 6px; padding: 1.5px 5px; margin-right: 4px; vertical-align: 1px; font-variant-numeric: tabular-nums; }
+  .ename { font-size: 12px; font-weight: 700; line-height: 1.25; }
+  .etags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+  .stamp { font-size: 7.5px; font-weight: 700; color: #6E6257; background: rgba(255, 255, 255, 0.75); border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 6px; padding: 1.5px 6px; }
+  .stamp.fam { color: var(--cd); }
+  .stamp.plyo { background: #EFC75E; color: #2B2118; border-color: transparent; }
+  .stamp.own { background: var(--cw); color: var(--cd); border-color: transparent; }
+  .estats { display: flex; margin-top: 8px; padding-top: 8px; border-top: 0.5px solid rgba(43, 33, 24, 0.09); }
+  .estats > div { flex: 1; min-width: 0; padding: 0 8px; border-left: 0.5px solid rgba(43, 33, 24, 0.09); }
+  .estats > div:first-child { border-left: none; padding-left: 0; }
+  .estats small { display: block; font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-bottom: 1px; }
+  .estats b { font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .estats b.hot { color: #A84A26; }
+  .eacts { display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; flex: none; }
+  .eround { width: 30px; height: 30px; border-radius: 11px; border: none; background: rgba(255, 255, 255, 0.88); box-shadow: 0 2px 6px rgba(43, 33, 24, 0.1); color: #6E6257; font-size: 11px; display: grid; place-items: center; cursor: pointer; font-family: inherit; padding: 0; }
+  .eround.has { background: var(--cw); color: var(--cd); }
+  .estim { display: grid; gap: 2.5px; justify-items: center; }
+  .estim .tk { display: flex; gap: 2.5px; }
+  .estim .tk i { width: 4px; height: 11px; border-radius: 2px; background: rgba(43, 33, 24, 0.1); }
+  .estim .tk i.f { background: var(--cr); }
+  .estim small { font-size: 6px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+  .nohit { text-align: center; font-size: 10.5px; color: #6E6257; padding: 26px 10px; }
+  /* — sheets — */
+  .bsheet-back { position: absolute; inset: 0; z-index: 11; border-radius: 42px; background: rgba(29, 23, 18, 0.35); opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+  .bsheet-back.open { opacity: 1; pointer-events: auto; }
+  .bsheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 12; background: #FDFAF4; border-radius: 26px 26px 34px 34px; padding: 14px 14px 16px;
+    transform: translateY(112%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    box-shadow: 0 -12px 44px rgba(29, 23, 18, 0.3); max-height: 84%; overflow-y: auto; scrollbar-width: none; }
+  .bsheet::-webkit-scrollbar { display: none; }
+  .bsheet.open { transform: none; }
+  .bsheet input[type=text] { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 10px; padding: 8px 11px; font-family: inherit; font-size: 11px; background: #fff; }
+  .sh-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .sh-title { font-size: 14px; font-weight: 700; margin: 2px 0 6px; }
+  .rechero { border-radius: 16px; padding: 12px 13px; margin: 8px 0 10px; background: linear-gradient(135deg, var(--cw), #FFFDF8 70%); box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.05); }
+  .rechero .val { font-size: 24px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .recgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 10px 0; }
+  .reccell { background: #fff; border-radius: 13px; padding: 8px 10px; box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05); }
+  .reccell b { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; display: block; }
+  .reccell small { font-size: 6.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; }
+  .reprow { display: flex; align-items: baseline; gap: 8px; padding: 6px 2px; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .reprow + .reprow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .reprow .rp { font-weight: 800; color: #A84A26; }
+  .reprow .dt { margin-left: auto; font-size: 8.5px; color: #A2958A; }
+  .spark5 { display: flex; gap: 6px; align-items: flex-end; height: 58px; padding-top: 6px; }
+  .spark5 > div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+  .spark5 b { width: 100%; border-radius: 6px 6px 3px 3px; background: linear-gradient(180deg, var(--cw), var(--cr)); min-height: 18%; }
+  .spark5 small { font-size: 6.5px; font-weight: 700; color: #A2958A; }
+  .demo2 { position: relative; border-radius: 16px; overflow: hidden; height: 96px; margin: 8px 0 10px; background: linear-gradient(135deg, var(--cw), #fff); box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06); }
+  .demo2 .fr { position: absolute; inset: 0; display: grid; place-items: center; }
+  .demo2 .fr small { position: absolute; right: 8px; bottom: 6px; font-size: 6.5px; font-weight: 700; letter-spacing: 0.14em; color: #A2958A; }
+  .demo2 .frB { opacity: 0; animation: exalt 2.6s ease-in-out infinite; background: linear-gradient(135deg, var(--cw), #fff); }
+  .demo2.b .frB { animation: none; opacity: 1; }
+  .demo2 .flip { position: absolute; left: 8px; bottom: 6px; border: none; background: rgba(255, 255, 255, 0.85); border-radius: 999px; width: 22px; height: 22px; font-size: 10px; color: #6E6257; cursor: pointer; box-shadow: 0 1px 4px rgba(43, 33, 24, 0.15); }
+  @keyframes exalt { 0%, 38% { opacity: 0; } 55%, 88% { opacity: 1; } 100% { opacity: 0; } }
+  .vidchip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 5px 12px; font-size: 9.5px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; }
+  .player { border-radius: 14px; background: #1D1712; display: grid; place-items: center; color: #FBF6EF; margin-top: 8px; position: relative; }
+  .player.yt { aspect-ratio: 16 / 9; width: 100%; }
+  .player.ig { aspect-ratio: 9 / 16; width: 46%; margin-left: auto; margin-right: auto; }
+  .player small { position: absolute; bottom: 6px; font-size: 6.5px; letter-spacing: 0.14em; color: rgba(251, 246, 239, 0.55); }
+  .mgroup { margin: 8px 0 2px; }
+  .mgroup .p-eyebrow { padding: 4px 2px 5px; }
+  .seg3 { display: flex; gap: 5px; margin: 6px 0 2px; }
+  .seg3 button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 11px; padding: 6px 0; font-size: 9.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .seg3 button.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .steprow { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
+  .steprow .lbl { flex: 1; font-size: 10.5px; font-weight: 600; }
+  .steprow .lbl small { display: block; font-size: 8px; font-weight: 400; color: #A2958A; }
+  .steprow button { width: 30px; height: 30px; border-radius: 10px; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-size: 13px; color: #6E6257; cursor: pointer; font-family: inherit; padding: 0; }
+  .steprow .v { width: 40px; text-align: center; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .shrow { display: flex; gap: 8px; margin-top: 12px; }
+  .shrow .ghost, .shrow .cta { flex: 1; padding: 9px 0; }
+  .delbtn { width: 100%; border: none; background: none; font-family: inherit; font-size: 10px; font-weight: 700; color: #A84A26; padding: 10px 0 2px; cursor: pointer; }
+  @media (prefers-reduced-motion: reduce) {
+    .bsheet, .bsheet-back { transition: none; }
+    .demo2 .frB { animation: none; }
+  }
 </style>
 
 <div class="wrap">
@@ -112,7 +211,7 @@
             <div class="tile t-kreed rise" style="--d:230ms;" data-page="page-gyak" role="button" tabindex="0" aria-label="Gyakorlatok">
               <div class="p-eyebrow" style="color:#A84A26;">Gyakorlatok</div>
               <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-polc"/></svg></div>
-              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">112 · rekordok</div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">161 · 9 rekord</div>
             </div>
 
             <div class="tile t-quest rise" style="--d:270ms;" data-page="page-medal" role="button" tabindex="0" aria-label="Medálok">
@@ -347,39 +446,36 @@
 
       <!-- ============ GYAKORLATOK ============ -->
       <div class="page p-gold" id="page-gyak">
-        <div class="page-head"><button class="backbtn" data-back="page-gyak">‹ Edzés</button></div>
+        <div class="page-head">
+          <button class="backbtn" data-back="page-gyak">‹ Edzés</button>
+          <button class="pgact" id="newExBtn">＋ Új gyakorlat</button>
+        </div>
         <div class="page-hero">
-          <svg width="52" height="52" viewBox="0 0 100 100"><use href="#i-polc"/></svg>
-          <div class="bignum">112</div>
           <div class="nm">Gyakorlatok</div>
+          <div class="mrow" style="justify-content:center;gap:14px;">
+            <svg width="72" height="72" viewBox="0 0 100 100"><use href="#i-polc"/></svg>
+            <div class="bignum">161</div>
+          </div>
         </div>
         <div class="page-body">
-          <div class="searchpill rise" style="--d:40ms;">Keresés a katalógusban…</div>
-          <div class="chiprow rise" style="--d:80ms;">
-            <span class="fchip on">Mind</span><span class="fchip">Hát</span><span class="fchip">Mell</span><span class="fchip">Láb</span><span class="fchip">Váll</span><span class="fchip">Kar</span>
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">
+            <div class="statcell"><b>9</b><small>rekord</small></div>
+            <div class="statcell"><b>3</b><small>saját</small></div>
+            <div class="statcell"><b>4</b><small>videóval</small></div>
+            <div class="statcell"><b style="color:#A84A26;">2</b><small>PR e héten</small></div>
           </div>
-          <div class="p-eyebrow" style="padding:0 2px 6px;">Rekordjaid</div>
-          <div class="vcard rise" style="--d:120ms;">
-            <div class="vrow">
-              <svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Döntött evezés</div><div class="mut" style="font-size:9px;">e1RM 94 kg · tegnapi rekord</div></div>
-              <svg width="52" height="20" viewBox="0 0 52 20" preserveAspectRatio="none" style="flex:none;"><polyline points="2,16 12,15 22,12 32,12 42,8 50,4" fill="none" stroke="#C9962E" stroke-width="2" stroke-linecap="round"/></svg>
-              <svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
-            </div>
-            <div class="vrow">
-              <svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Fekvenyomás</div><div class="mut" style="font-size:9px;">e1RM 102 kg ↗</div></div>
-              <svg width="52" height="20" viewBox="0 0 52 20" preserveAspectRatio="none" style="flex:none;"><polyline points="2,17 12,14 22,14 32,10 42,9 50,6" fill="none" stroke="#E05535" stroke-width="2" stroke-linecap="round"/></svg>
-              <svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
-            </div>
-            <div class="vrow">
-              <svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Guggolás</div><div class="mut" style="font-size:9px;">e1RM 141 kg · stabil</div></div>
-              <svg width="52" height="20" viewBox="0 0 52 20" preserveAspectRatio="none" style="flex:none;"><polyline points="2,12 12,11 22,13 32,11 42,12 50,11" fill="none" stroke="#A2958A" stroke-width="2" stroke-linecap="round"/></svg>
-            </div>
+          <div class="sfield rise" style="--d:60ms;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#A2958A" stroke-width="2.4" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 L20.5 20.5"/></svg>
+            <input type="text" id="exSearch" aria-label="Keresés a gyakorlatok között" placeholder="Keresés · pl. bench, squat, row">
           </div>
-          <button class="ghost rise" style="--d:180ms;width:100%;padding:9px 0;">＋ Új gyakorlat</button>
-          <p class="habnote">Minden gyakorlathoz demo videó köthető — a katalógus a session-picker forrása is.</p>
+          <div class="chiprow rise" style="--d:90ms;" id="topChips"></div>
+          <div class="subrow" id="subChips" style="display:none;"></div>
+          <div class="lsthead rise" style="--d:120ms;">
+            <div class="p-eyebrow" style="padding:0;" id="lstEyebrow">Top gyakorlatok · rekordjaid</div>
+            <span class="cnt" id="lstCnt"></span>
+          </div>
+          <div id="exList"></div>
+          <p class="habnote">A lista alapból a rekordjaid rangsora — kereséskor a teljes katalógus nyílik ki, a még nem próbált gyakorlatok szaggatott kerettel.</p>
         </div>
       </div>
 
@@ -430,6 +526,11 @@
         </div>
       </div>
 
+      <div class="bsheet-back" id="sback"></div>
+      <div class="bsheet" id="sh-rec"></div>
+      <div class="bsheet" id="sh-edit"></div>
+      <div class="bsheet" id="sh-vid"></div>
+
       <div class="tabbar">
         <div class="mtab off"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
         <div class="mtab on"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
@@ -448,7 +549,12 @@
           <li><strong>Mesociklus</strong> — volumen-ív fázis-címkékkel (MOST/csúcs/deload), <strong>e1RM-trend sparkline</strong>, fázis-kártya, futam-történet riport-gombokkal, sablonok.</li>
           <li><strong>Sport</strong> — heti stat-sor, slotok (ma kiemelve, Logold), cross-load kártya.</li>
           <li><strong>Futás</strong> — blokk-ív égszínben, legutóbbi futás <strong>kör-idő oszlopokkal</strong> (1:32 átlag), következő sessionök.</li>
-          <li><strong>Gyakorlatok</strong> — kereső + izomcsoport-chipek, rekord-sorok <strong>saját sparkline-nal</strong> és clay medállal.</li>
+          <li><strong>Gyakorlatok</strong> — a teljes katalógus-oldal: kétszintű izomszűrő (régió → izomfej) + Plyo,
+          <strong>kétmódú lista</strong> (alapból a rekordjaid rangsora, kereséskor teljes katalógus szaggatott
+          ghost-sorokkal és Stim-mérővel), rekord-kártya két stat-ággal (súlyos / saját testsúlyos),
+          rekord-sheet (legjobb szett, demo képpár, videó, 2×2 stat, rep-PR tábla, utolsó-5 oszlopok),
+          szerkesztő-sheet (21 izom-token, stim/fáradtság stepper, két-tapos törlés) és videó-sheet.
+          A ⋯ csak Saját soron, a ▶ mindenhol — a mock-adat a valós <code>/train/exercises</code> ellen lett auditálva.</li>
           <li><strong>Medálok</strong> — dátum-csoportos vitrin, REKORD/CÉL típus-címkék, „mit múlt felül" sorok.</li>
         </ul>
       </div>
@@ -503,5 +609,415 @@
   document.addEventListener('click', function (e) {
     if (!ntfwrap.contains(e.target)) closeNtf();
   });
+})();
+
+/* ===== Gyakorlatok katalógus ===== */
+(function () {
+  var FAM = {
+    coral: { rail: '#E05535', wash: '#FFE3D8', deep: '#A84A26', glow: 'rgba(224,85,53,0.38)', label: 'Mell' },
+    sky:   { rail: '#4E8FB8', wash: '#DFEDF5', deep: '#33749C', glow: 'rgba(78,143,184,0.38)', label: 'Hát' },
+    lav:   { rail: '#8A76CC', wash: '#EBE6F8', deep: '#5D4FA0', glow: 'rgba(138,118,204,0.38)', label: 'Váll' },
+    rose:  { rail: '#C46FA0', wash: '#FAE3ED', deep: '#8E3F6F', glow: 'rgba(196,111,160,0.38)', label: 'Kar' },
+    sage:  { rail: '#8FAF7E', wash: '#E4EEDD', deep: '#4E6B42', glow: 'rgba(143,175,126,0.38)', label: 'Láb' },
+    amber: { rail: '#C9962E', wash: '#F6E7C6', deep: '#A8801F', glow: 'rgba(201,150,46,0.38)', label: 'Core' }
+  };
+  var REGIONS = ['coral', 'sky', 'lav', 'rose', 'sage', 'amber'];
+  // level-2 sub-chips (filter): only multi-muscle regions get a sub-row
+  var SUBS = {
+    coral: [['chest-upper', 'Felső'], ['chest-mid', 'Közép'], ['chest-lower', 'Alsó']],
+    sky: [['back-wide', 'Széles'], ['back-mid', 'Közép'], ['back-lower', 'Alsó hát'], ['traps', 'Trapéz']],
+    lav: [['shoulder-front', 'Első'], ['shoulder-side', 'Oldalsó'], ['shoulder-rear', 'Hátsó']],
+    rose: [['biceps-long', 'Bic. hosszú'], ['biceps-short', 'Bic. rövid'], ['biceps-brachialis', 'Brachialis'], ['triceps-long', 'Tri. hosszú'], ['triceps-lateral', 'Tri. oldalsó'], ['triceps-medial', 'Tri. mediális']],
+    sage: [['quad', 'Comb'], ['ham', 'Lábhajlító'], ['glute', 'Far'], ['calf', 'Vádli']],
+    amber: []
+  };
+  // authoring picker: all 21 tokens, region-grouped (Core included)
+  var PICK = { coral: SUBS.coral, sky: SUBS.sky, lav: SUBS.lav, rose: SUBS.rose, sage: SUBS.sage, amber: [['core', 'Core']] };
+  var MLBL = {
+    'chest-upper': 'Mell (felső)', 'chest-mid': 'Mell (közép)', 'chest-lower': 'Mell (alsó)',
+    'back-wide': 'Hát (széles)', 'back-mid': 'Hát (közép)', 'back-lower': 'Hát (alsó)', traps: 'Trapéz',
+    'shoulder-front': 'Váll (első)', 'shoulder-side': 'Váll (oldalsó)', 'shoulder-rear': 'Váll (hátsó)',
+    'biceps-long': 'Bicepsz (hosszú fej)', 'biceps-short': 'Bicepsz (rövid fej)', 'biceps-brachialis': 'Brachialis',
+    'triceps-long': 'Tricepsz (hosszú fej)', 'triceps-lateral': 'Tricepsz (oldalsó fej)', 'triceps-medial': 'Tricepsz (mediális fej)',
+    quad: 'Comb', ham: 'Lábhajlító', glute: 'Far', calf: 'Vádli', core: 'Core'
+  };
+  function famOf(m) {
+    for (var r in PICK) { for (var i = 0; i < PICK[r].length; i++) { if (PICK[r][i][0] === m) return r; } }
+    return 'amber';
+  }
+
+  var CAT = [
+    { id: 'e1', name: 'Döntött evezés', m: 'back-mid', fam: 'sky', type: 'compound', stim: 0.7, img: true, video: 'yt', videoUrl: 'https://www.youtube.com/watch?v=row-demo',
+      rec: { n: 24, best: { w: 90, r: 8, d: 'aug 21' }, e1: { v: 114, d: 'aug 21' }, bses: { v: 1840, d: 'aug 14' }, tvol: 38400, tsets: 96, treps: 812,
+        reps: [{ w: 90, r: 8, d: 'aug 21' }, { w: 85, r: 10, d: 'aug 7' }, { w: 80, r: 12, d: 'júl 24' }],
+        last5: [{ v: 82, d: 'júl 31' }, { v: 85, d: 'aug 7' }, { v: 84, d: 'aug 12' }, { v: 88, d: 'aug 14' }, { v: 90, d: 'aug 21' }] } },
+    { id: 'e2', name: 'Fekvenyomás', m: 'chest-mid', fam: 'coral', type: 'compound', stim: 0.75, img: true, video: null,
+      rec: { n: 22, best: { w: 100, r: 5, d: 'aug 19' }, e1: { v: 117, d: 'aug 19' }, bses: { v: 2120, d: 'aug 19' }, tvol: 41200, tsets: 88, treps: 704,
+        reps: [{ w: 100, r: 5, d: 'aug 19' }, { w: 92.5, r: 8, d: 'aug 5' }, { w: 85, r: 11, d: 'júl 22' }],
+        last5: [{ v: 92.5, d: 'júl 29' }, { v: 95, d: 'aug 5' }, { v: 97.5, d: 'aug 12' }, { v: 97.5, d: 'aug 15' }, { v: 100, d: 'aug 19' }] } },
+    { id: 'e3', name: 'Guggolás', m: 'quad', fam: 'sage', type: 'compound', stim: 0.8, img: false, video: 'yt', videoUrl: 'https://www.youtube.com/watch?v=squat-demo',
+      rec: { n: 19, best: { w: 130, r: 5, d: 'aug 16' }, e1: { v: 152, d: 'aug 16' }, bses: { v: 2860, d: 'aug 16' }, tvol: 46800, tsets: 76, treps: 570,
+        reps: [{ w: 130, r: 5, d: 'aug 16' }, { w: 120, r: 8, d: 'aug 2' }, { w: 110, r: 10, d: 'júl 19' }],
+        last5: [{ v: 115, d: 'júl 26' }, { v: 120, d: 'aug 2' }, { v: 122.5, d: 'aug 9' }, { v: 125, d: 'aug 12' }, { v: 130, d: 'aug 16' }] } },
+    { id: 'e4', name: 'Húzódzkodás', m: 'back-wide', fam: 'sky', type: 'compound', stim: 0.7, img: false, video: null,
+      rec: { n: 18, bw: true, maxRep: 14, treps: 486, tsets: 42,
+        last5: [{ v: 11, d: 'júl 31' }, { v: 12, d: 'aug 7' }, { v: 12, d: 'aug 12' }, { v: 13, d: 'aug 14' }, { v: 14, d: 'aug 21' }] } },
+    { id: 'e5', name: 'Tárogatás kábelen', m: 'chest-mid', fam: 'coral', type: 'isolation', stim: 0.55, img: false, video: null,
+      rec: { n: 15, best: { w: 25, r: 14, d: 'aug 15' }, e1: { v: 37, d: 'aug 15' }, bses: { v: 980, d: 'aug 15' }, tvol: 12400, tsets: 60, treps: 780,
+        reps: [{ w: 25, r: 14, d: 'aug 15' }, { w: 22.5, r: 15, d: 'aug 1' }],
+        last5: [{ v: 20, d: 'júl 25' }, { v: 22.5, d: 'aug 1' }, { v: 22.5, d: 'aug 8' }, { v: 25, d: 'aug 12' }, { v: 25, d: 'aug 15' }] } },
+    { id: 'e6', name: 'Vállból nyomás', m: 'shoulder-front', fam: 'lav', type: 'compound', stim: 0.65, img: false, video: null,
+      rec: { n: 14, best: { w: 60, r: 6, d: 'aug 18' }, e1: { v: 72, d: 'aug 18' }, bses: { v: 1240, d: 'aug 18' }, tvol: 15900, tsets: 56, treps: 420,
+        reps: [{ w: 60, r: 6, d: 'aug 18' }, { w: 55, r: 9, d: 'aug 4' }],
+        last5: [{ v: 52.5, d: 'júl 28' }, { v: 55, d: 'aug 4' }, { v: 55, d: 'aug 11' }, { v: 57.5, d: 'aug 14' }, { v: 60, d: 'aug 18' }] } },
+    { id: 'e7', name: 'Oldalemelés', m: 'shoulder-side', fam: 'lav', type: 'isolation', stim: 0.5, img: false, video: null,
+      rec: { n: 12, best: { w: 14, r: 15, d: 'aug 18' }, e1: null, bses: { v: 620, d: 'aug 18' }, tvol: 6800, tsets: 48, treps: 690,
+        reps: [{ w: 14, r: 15, d: 'aug 18' }, { w: 12, r: 18, d: 'aug 4' }],
+        last5: [{ v: 12, d: 'júl 28' }, { v: 12, d: 'aug 4' }, { v: 12, d: 'aug 11' }, { v: 14, d: 'aug 14' }, { v: 14, d: 'aug 18' }] } },
+    { id: 'e8', name: 'Bicepsz curl rúddal', m: 'biceps-short', fam: 'rose', type: 'isolation', stim: 0.5, img: false, video: null, own: true,
+      rec: { n: 11, best: { w: 40, r: 9, d: 'aug 20' }, e1: { v: 52, d: 'aug 20' }, bses: { v: 720, d: 'aug 20' }, tvol: 7100, tsets: 44, treps: 460,
+        reps: [{ w: 40, r: 9, d: 'aug 20' }, { w: 37.5, r: 11, d: 'aug 6' }],
+        last5: [{ v: 35, d: 'júl 30' }, { v: 37.5, d: 'aug 6' }, { v: 37.5, d: 'aug 13' }, { v: 40, d: 'aug 16' }, { v: 40, d: 'aug 20' }] } },
+    { id: 'e9', name: 'Kettlebell swing', m: 'glute', fam: 'sage', type: 'compound', stim: 0.6, img: false, video: 'ig', videoUrl: 'https://www.instagram.com/reel/kbswing',
+      rec: { n: 8, best: { w: 32, r: 15, d: 'aug 10' }, e1: null, bses: { v: 1440, d: 'aug 10' }, tvol: 9800, tsets: 32, treps: 470,
+        reps: [{ w: 32, r: 15, d: 'aug 10' }, { w: 28, r: 20, d: 'júl 27' }],
+        last5: [{ v: 24, d: 'júl 13' }, { v: 28, d: 'júl 20' }, { v: 28, d: 'júl 27' }, { v: 32, d: 'aug 3' }, { v: 32, d: 'aug 10' }] } },
+    { id: 'g1', name: 'Ferde fekvenyomás', m: 'chest-upper', fam: 'coral', type: 'compound', stim: 0.65, img: true, video: null, rec: null },
+    { id: 'g2', name: 'Tárogatás alsó kábelen', m: 'chest-lower', fam: 'coral', type: 'isolation', stim: 0.5, img: false, video: null, rec: null },
+    { id: 'g3', name: 'Lehúzás széles fogással', m: 'back-wide', fam: 'sky', type: 'compound', stim: 0.6, img: true, video: null, rec: null },
+    { id: 'g4', name: 'Rack pull', m: 'back-lower', fam: 'sky', type: 'compound', stim: 0.55, img: false, video: null, rec: null },
+    { id: 'g5', name: 'Shrug', m: 'traps', fam: 'sky', type: 'isolation', stim: 0.4, img: false, video: null, rec: null },
+    { id: 'g6', name: 'Arnold press', m: 'shoulder-front', fam: 'lav', type: 'compound', stim: 0.6, img: false, video: null, rec: null },
+    { id: 'g7', name: 'Face pull', m: 'shoulder-rear', fam: 'lav', type: 'isolation', stim: 0.5, img: false, video: 'yt', videoUrl: 'https://www.youtube.com/watch?v=facepull', rec: null },
+    { id: 'g8', name: 'Kalapács curl', m: 'biceps-brachialis', fam: 'rose', type: 'isolation', stim: 0.5, img: false, video: null, rec: null },
+    { id: 'g9', name: 'Koncentrált curl', m: 'biceps-long', fam: 'rose', type: 'isolation', stim: 0.4, img: false, video: null, rec: null },
+    { id: 'g10', name: 'Francia nyomás', m: 'triceps-long', fam: 'rose', type: 'isolation', stim: 0.55, img: false, video: null, rec: null },
+    { id: 'g11', name: 'Letolás kötéllel', m: 'triceps-lateral', fam: 'rose', type: 'isolation', stim: 0.45, img: false, video: null, rec: null },
+    { id: 'g12', name: 'Román felhúzás', m: 'ham', fam: 'sage', type: 'compound', stim: 0.7, img: true, video: null, rec: null },
+    { id: 'g13', name: 'Hip thrust', m: 'glute', fam: 'sage', type: 'compound', stim: 0.65, img: false, video: null, rec: null },
+    { id: 'g14', name: 'Kettlebell goblet squat', m: 'quad', fam: 'sage', type: 'compound', stim: 0.5, img: false, video: null, rec: null },
+    { id: 'g15', name: 'Állva vádliemelés', m: 'calf', fam: 'sage', type: 'isolation', stim: 0.35, img: false, video: null, rec: null },
+    { id: 'g16', name: 'Box jump', m: 'quad', fam: 'sage', type: 'plyo', stim: 0.5, img: false, video: null, rec: null },
+    { id: 'g17', name: 'Palloff press', m: 'core', fam: 'amber', type: 'isolation', stim: 0.45, img: false, video: null, rec: null },
+    { id: 'g18', name: 'Plank', m: 'core', fam: 'amber', type: 'isolation', stim: 0.3, img: false, video: null, rec: null },
+    { id: 'g19', name: 'Sled push', m: 'quad', fam: 'sage', type: 'compound', stim: 0.6, img: false, video: null, own: true, rec: null },
+    { id: 'g20', name: 'Nordic curl', m: 'ham', fam: 'sage', type: 'isolation', stim: 0.8, img: false, video: null, own: true, rec: null }
+  ];
+  function byId(id) { return CAT.filter(function (e) { return e.id === id; })[0]; }
+
+  var S = { q: '', top: 'all', sub: null };
+  var exSearch = document.getElementById('exSearch');
+  var topChips = document.getElementById('topChips');
+  var subChips = document.getElementById('subChips');
+  var lstEyebrow = document.getElementById('lstEyebrow');
+  var lstCnt = document.getElementById('lstCnt');
+  var exList = document.getElementById('exList');
+
+  function d1(x) { return String(x).replace('.', ','); }
+  function grp(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function volPage(kg) { return kg >= 1000 ? d1(Math.round(kg / 100) / 10) + ' t' : kg + ' kg'; }
+  function volSheet(kg) { return kg >= 10000 ? d1(Math.round(kg / 100) / 10) + ' t' : grp(kg) + ' kg'; }
+  function famVars(f) { return '--cr:' + f.rail + ';--cw:' + f.wash + ';--cd:' + f.deep + ';--cg:' + f.glow + ';'; }
+
+  function stamps(e) {
+    var s = '<span class="stamp fam">' + MLBL[e.m] + '</span>';
+    s += e.type === 'plyo' ? '<span class="stamp plyo">plyo</span>' : '<span class="stamp">' + e.type + '</span>';
+    s += e.rec ? '<span class="stamp">' + e.rec.n + ' alkalom</span>' : '<span class="stamp">Még nincs rekord</span>';
+    if (e.own) s += '<span class="stamp own">Saját</span>';
+    return s;
+  }
+  function thumb(e) {
+    return '<span class="ethumb">' + (e.img ? '<svg width="21" height="21" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>' : e.name.charAt(0)) + '</span>';
+  }
+  function statCells(r) {
+    if (r.bw) {
+      return '<div><small>Max rep</small><b>' + r.maxRep + '</b></div>' +
+        '<div><small>Összes rep</small><b>' + grp(r.treps) + '</b></div>' +
+        '<div><small>Szettek</small><b>' + r.tsets + '</b></div>';
+    }
+    return '<div><small>Legjobb szett</small><b>' + d1(r.best.w) + ' kg × ' + r.best.r + '</b></div>' +
+      '<div><small>e1RM</small><b class="hot">' + (r.e1 ? d1(r.e1.v) + ' kg' : '—') + '</b></div>' +
+      '<div><small>Összvolumen</small><b>' + volPage(r.tvol) + '</b></div>';
+  }
+  function acts(e) {
+    var a = '';
+    if (e.own) a += '<button class="eround" data-edit="' + e.id + '" aria-label="Gyakorlat szerkesztése">⋯</button>';
+    a += '<button class="eround' + (e.video ? ' has' : '') + '" data-vid="' + e.id + '" aria-label="' + (e.video ? 'Videó szerkesztése' : 'Videó hozzáadása') + '">▶</button>';
+    return a;
+  }
+  function stimMeter(e) {
+    var t = '', fills = Math.round(e.stim * 5);
+    for (var i = 0; i < 5; i++) t += '<i' + (i < fills ? ' class="f"' : '') + '></i>';
+    return '<span class="estim" aria-hidden="true"><span class="tk">' + t + '</span><small>Stim</small></span>';
+  }
+  function cardHTML(e, rank, d) {
+    var f = FAM[e.fam];
+    if (e.rec) {
+      return '<div class="ecat rise" style="--d:' + d + 'ms;' + famVars(f) + '"><span class="erail"></span>' +
+        '<button class="ebody" data-open="' + e.id + '">' +
+        '<div class="etop">' + thumb(e) + '<div style="min-width:0;">' +
+        '<div class="ename">' + (rank ? '<span class="erank">#' + rank + '</span>' : '') + e.name + '</div>' +
+        '<div class="etags">' + stamps(e) + '</div>' +
+        '</div></div>' +
+        '<div class="estats">' + statCells(e.rec) + '</div>' +
+        '</button>' +
+        '<div class="eacts">' + acts(e) + '</div></div>';
+    }
+    return '<div class="ecat ghost rise" style="--d:' + d + 'ms;' + famVars(f) + '"><span class="erail"></span>' +
+      '<div class="ebody">' +
+      '<div class="etop">' + thumb(e) + '<div style="min-width:0;">' +
+      '<div class="ename">' + e.name + '</div>' +
+      '<div class="etags">' + stamps(e) + '</div>' +
+      '</div></div>' +
+      '</div>' +
+      '<div class="eacts">' + stimMeter(e) + acts(e) + '</div></div>';
+  }
+
+  function matches(e) {
+    if (S.q && e.name.toLowerCase().indexOf(S.q.toLowerCase()) === -1) return false;
+    if (S.top === 'all') return true;
+    if (S.top === 'plyo') return e.type === 'plyo';
+    if (S.sub) return e.m === S.sub;
+    return e.fam === S.top;
+  }
+  function render() {
+    var searching = S.q !== '' || S.top !== 'all';
+    var recs = CAT.filter(function (e) { return e.rec; }).sort(function (a, b) { return b.rec.n - a.rec.n; });
+    var html = '', d = 30;
+    function nx() { var v = d; d += 45; return v; }
+    if (!searching) {
+      lstEyebrow.textContent = 'Top gyakorlatok · rekordjaid';
+      lstCnt.textContent = recs.length + ' PR';
+      html = recs.map(function (e, i) { return cardHTML(e, i + 1, nx()); }).join('');
+    } else {
+      var hitR = recs.filter(matches);
+      var hitG = CAT.filter(function (e) { return !e.rec && matches(e); });
+      lstEyebrow.textContent = 'Találatok · teljes katalógus';
+      lstCnt.textContent = (hitR.length + hitG.length) + ' / 161';
+      html = (hitR.length + hitG.length) === 0
+        ? '<div class="nohit">Nincs találat ezzel a szűrővel.</div>'
+        : hitR.map(function (e) { return cardHTML(e, null, nx()); }).join('') +
+          hitG.map(function (e) { return cardHTML(e, null, nx()); }).join('');
+    }
+    exList.innerHTML = html;
+  }
+  function renderChips() {
+    var tops = [['all', 'Összes'], ['plyo', 'Plyo']].concat(REGIONS.map(function (r) { return [r, FAM[r].label]; }));
+    topChips.innerHTML = tops.map(function (t) {
+      var on = S.top === t[0], f = FAM[t[0]];
+      return '<button class="fchip' + (on ? (f ? ' on2' : ' on') : '') + '"' + (f && on ? ' style="' + famVars(f) + '"' : '') +
+        ' data-top="' + t[0] + '" aria-pressed="' + on + '">' + t[1] + '</button>';
+    }).join('');
+    var subs = SUBS[S.top] || [];
+    if (subs.length > 1) {
+      var f2 = FAM[S.top];
+      subChips.style.display = 'flex';
+      subChips.innerHTML = subs.map(function (s) {
+        var on = S.sub === s[0];
+        return '<button class="fchip sm' + (on ? ' on2' : '') + '" style="' + famVars(f2) + '" data-sub="' + s[0] + '" aria-pressed="' + on + '">' + s[1] + '</button>';
+      }).join('');
+    } else { subChips.style.display = 'none'; subChips.innerHTML = ''; }
+  }
+
+  topChips.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-top]'); if (!b) return;
+    S.top = b.getAttribute('data-top'); S.sub = null; renderChips(); render();
+  });
+  subChips.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-sub]'); if (!b) return;
+    var m = b.getAttribute('data-sub'); S.sub = (S.sub === m) ? null : m; renderChips(); render();
+  });
+  exSearch.addEventListener('input', function () { S.q = exSearch.value.trim(); render(); });
+  exList.addEventListener('click', function (ev) {
+    var t;
+    if ((t = ev.target.closest('[data-edit]'))) return openEdit(t.getAttribute('data-edit'));
+    if ((t = ev.target.closest('[data-vid]'))) return openVid(t.getAttribute('data-vid'));
+    if ((t = ev.target.closest('[data-open]'))) return openRec(t.getAttribute('data-open'));
+  });
+
+  /* — sheets — */
+  var sback = document.getElementById('sback');
+  var shRec = document.getElementById('sh-rec');
+  var shEdit = document.getElementById('sh-edit');
+  var shVid = document.getElementById('sh-vid');
+  var openSh = null;
+  function openSheet(el) { closeSheet(); openSh = el; sback.classList.add('open'); el.classList.add('open'); el.scrollTop = 0; }
+  function closeSheet() { if (openSh) { openSh.classList.remove('open'); openSh = null; } sback.classList.remove('open'); }
+  sback.addEventListener('click', closeSheet);
+
+  function openRec(id) {
+    var e = byId(id), f = FAM[e.fam], r = e.rec;
+    var hero = r.bw
+      ? '<div class="val">' + grp(r.treps) + ' rep</div><div class="mut" style="font-size:9px;">' + r.n + ' alkalom alatt</div>'
+      : '<div class="val">' + d1(r.best.w) + ' kg × ' + r.best.r + '</div><div class="mut" style="font-size:9px;">' + r.best.d + '</div>';
+    var html = '<div class="sh-eyebrow">Rekordok</div>' +
+      '<div class="sh-title" role="heading" aria-level="2">' + e.name + '</div>' +
+      '<div class="mut" style="font-size:9px;margin-top:-4px;">' + MLBL[e.m] + ' · ' + e.type + ' · ' + r.n + ' alkalom</div>' +
+      '<div class="rechero" style="' + famVars(f) + '"><span class="sh-eyebrow" style="font-size:7px;">' + (r.bw ? 'Összes ismétlés' : 'Legjobb szett') + '</span>' + hero + '</div>';
+    if (e.img) {
+      html += '<div class="demo2" style="' + famVars(f) + '" id="demo2">' +
+        '<div class="fr"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-edzes"/></svg><small>A · KIINDULÁS</small></div>' +
+        '<div class="fr frB"><svg width="38" height="38" viewBox="0 0 100 100" style="transform:rotate(-16deg);"><use href="#i-edzes"/></svg><small>B · VÉGHELYZET</small></div>' +
+        '<button class="flip" aria-label="Képkocka váltása">⇄</button></div>';
+    }
+    if (e.video) html += '<div style="margin:2px 0 8px;"><button class="vidchip" id="vchip">▶ Demo</button><div id="vslot"></div></div>';
+    html += '<div class="recgrid">' +
+      '<div class="reccell"><small>Becsült 1RM</small><b>' + (r.e1 ? d1(r.e1.v) + ' kg' : '—') + '</b><small style="letter-spacing:0.06em;">EPLEY' + (r.e1 ? ' · ' + r.e1.d : '') + '</small></div>' +
+      '<div class="reccell"><small>Legjobb session</small><b>' + (r.bses ? volSheet(r.bses.v) : '—') + '</b><small style="letter-spacing:0.06em;">VOLUMEN' + (r.bses ? ' · ' + r.bses.d : '') + '</small></div>' +
+      '<div class="reccell"><small>Össz-volumen</small><b>' + (r.tvol ? volSheet(r.tvol) : '—') + '</b><small style="letter-spacing:0.06em;">ALL-TIME</small></div>' +
+      '<div class="reccell"><small>Szett · rep</small><b>' + r.tsets + ' · ' + grp(r.treps) + '</b><small style="letter-spacing:0.06em;">ALL-TIME</small></div></div>';
+    if (r.reps && r.reps.length) {
+      html += '<div class="sh-eyebrow" style="padding:2px 2px 2px;">Rep-rekord · top súlyok</div>' +
+        r.reps.map(function (p) {
+          return '<div class="reprow"><span style="font-weight:700;">' + d1(p.w) + ' kg</span><span class="rp">' + p.r + ' REP</span><span class="dt">' + p.d + '</span></div>';
+        }).join('');
+    }
+    if (r.last5 && r.last5.length) {
+      var mx = Math.max.apply(null, r.last5.map(function (x) { return x.v; }));
+      html += '<div class="sh-eyebrow" style="padding:8px 2px 0;">Utolsó ' + r.last5.length + ' alkalom · top szett</div>' +
+        '<div class="spark5" style="' + famVars(f) + '">' + r.last5.map(function (x) {
+          return '<div><b style="height:' + Math.max(18, Math.round(x.v / mx * 100)) + '%;"></b><small>' + x.d + '</small></div>';
+        }).join('') + '</div>';
+    }
+    shRec.innerHTML = html;
+    var dm = shRec.querySelector('#demo2');
+    if (dm) dm.querySelector('.flip').addEventListener('click', function () { dm.classList.toggle('b'); });
+    var vc = shRec.querySelector('#vchip');
+    if (vc) vc.addEventListener('click', function () {
+      shRec.querySelector('#vslot').innerHTML = e.video === 'ig'
+        ? '<div class="player ig"><span style="font-size:20px;">▶</span><small>INSTAGRAM · 9:16</small></div>'
+        : '<div class="player yt"><span style="font-size:20px;">▶</span><small>YOUTUBE · NOCOOKIE · 16:9</small></div>';
+      vc.style.display = 'none';
+    });
+    openSheet(shRec);
+  }
+
+  /* — create/edit sheet — */
+  var ES = null;
+  var newExBtn = document.getElementById('newExBtn');
+  newExBtn.addEventListener('click', function () {
+    ES = { mode: 'create', id: null, name: '', m: null, type: 'compound', stim: 0.5, fat: 0.5, videoUrl: '', del: false };
+    buildEdit(); openSheet(shEdit);
+  });
+  function openEdit(id) {
+    var e = byId(id);
+    ES = { mode: 'edit', id: id, name: e.name, m: e.m, type: e.type, stim: e.stim, fat: e.fat != null ? e.fat : 0.5, videoUrl: e.videoUrl || '', del: false };
+    buildEdit(); openSheet(shEdit);
+  }
+  function r2(x) { return Math.round(x * 100) / 100; }
+  function d2(x) { return x.toFixed(2).replace('.', ','); }
+  function buildEdit() {
+    var html = '<div class="sh-eyebrow">' + (ES.mode === 'create' ? 'Új gyakorlat' : 'Gyakorlat szerkesztése') + '</div>' +
+      '<div class="sh-title">' + (ES.mode === 'create' ? 'Vegyük fel' : ES.name) + '</div>' +
+      '<input type="text" id="esName" placeholder="A gyakorlat neve" value="' + ES.name.replace(/"/g, '&quot;') + '">';
+    html += '<div class="mgroup">';
+    REGIONS.forEach(function (rk) {
+      var f = FAM[rk];
+      html += '<div class="p-eyebrow" style="color:' + f.deep + ';">' + f.label + '</div><div class="chiprow" style="margin-bottom:4px;">' +
+        PICK[rk].map(function (s) {
+          var on = ES.m === s[0];
+          return '<button class="fchip sm' + (on ? ' on2' : '') + '" style="' + famVars(f) + '" data-m="' + s[0] + '" aria-pressed="' + on + '">' + s[1] + '</button>';
+        }).join('') + '</div>';
+    });
+    html += '</div><div class="seg3">' +
+      ['compound', 'isolation', 'plyo'].map(function (t) {
+        return '<button data-t="' + t + '" class="' + (ES.type === t ? 'on' : '') + '" aria-pressed="' + (ES.type === t) + '">' + t + '</button>';
+      }).join('') + '</div>';
+    html += '<div class="steprow"><span class="lbl">Stim<small>mennyire építi az izmot · 0–1</small></span>' +
+      '<button data-st="-1" aria-label="Stim csökkentése">−</button><span class="v" id="esStim">' + d2(ES.stim) + '</span><button data-st="1" aria-label="Stim növelése">＋</button></div>';
+    html += '<div class="steprow"><span class="lbl">Fáradtság<small>mennyire terhel · 0–1</small></span>' +
+      '<button data-ft="-1" aria-label="Fáradtság csökkentése">−</button><span class="v" id="esFat">' + d2(ES.fat) + '</span><button data-ft="1" aria-label="Fáradtság növelése">＋</button></div>';
+    html += '<div style="margin-top:6px;"><div class="sh-eyebrow" style="padding-bottom:3px;">Demo videó · YouTube vagy Instagram</div>' +
+      '<input type="text" id="esVid" placeholder="https://…" value="' + ES.videoUrl.replace(/"/g, '&quot;') + '"></div>';
+    html += '<div class="shrow"><button class="ghost" id="esCancel">Mégse</button><button class="cta" id="esSave">Mentés</button></div>';
+    if (ES.mode === 'edit') html += '<button class="delbtn" id="esDel">Gyakorlat törlése</button>';
+    shEdit.innerHTML = html;
+
+    var nameIn = shEdit.querySelector('#esName');
+    var save = shEdit.querySelector('#esSave');
+    function sync() {
+      var ok = nameIn.value.trim() !== '' && ES.m;
+      save.disabled = !ok; save.style.opacity = ok ? '' : '0.45';
+    }
+    sync();
+    nameIn.addEventListener('input', sync);
+    shEdit.querySelectorAll('[data-m]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        ES.m = b.getAttribute('data-m');
+        shEdit.querySelectorAll('[data-m]').forEach(function (x) {
+          var on = x.getAttribute('data-m') === ES.m;
+          x.classList.toggle('on2', on); x.setAttribute('aria-pressed', on);
+        });
+        sync();
+      });
+    });
+    shEdit.querySelectorAll('[data-t]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        ES.type = b.getAttribute('data-t');
+        shEdit.querySelectorAll('[data-t]').forEach(function (x) {
+          var on = x.getAttribute('data-t') === ES.type;
+          x.classList.toggle('on', on); x.setAttribute('aria-pressed', on);
+        });
+      });
+    });
+    shEdit.querySelectorAll('[data-st]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        ES.stim = r2(Math.min(1, Math.max(0, ES.stim + 0.05 * Number(b.getAttribute('data-st')))));
+        shEdit.querySelector('#esStim').textContent = d2(ES.stim);
+      });
+    });
+    shEdit.querySelectorAll('[data-ft]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        ES.fat = r2(Math.min(1, Math.max(0, ES.fat + 0.05 * Number(b.getAttribute('data-ft')))));
+        shEdit.querySelector('#esFat').textContent = d2(ES.fat);
+      });
+    });
+    shEdit.querySelector('#esCancel').addEventListener('click', closeSheet);
+    save.addEventListener('click', function () {
+      if (save.disabled) return;
+      var url = shEdit.querySelector('#esVid').value.trim();
+      var kind = url === '' ? null : (url.indexOf('instagram') !== -1 ? 'ig' : 'yt');
+      if (ES.mode === 'create') {
+        CAT.push({ id: 'own' + Date.now(), name: nameIn.value.trim(), m: ES.m, fam: famOf(ES.m), type: ES.type, stim: ES.stim, fat: ES.fat, img: false, video: kind, videoUrl: url, own: true, rec: null });
+      } else {
+        var e = byId(ES.id);
+        e.name = nameIn.value.trim(); e.m = ES.m; e.fam = famOf(ES.m); e.type = ES.type; e.stim = ES.stim; e.fat = ES.fat; e.video = kind; e.videoUrl = url;
+      }
+      render(); closeSheet();
+    });
+    var del = shEdit.querySelector('#esDel');
+    if (del) del.addEventListener('click', function () {
+      if (!ES.del) { ES.del = true; del.textContent = 'Biztos? Koppints a törléshez'; return; }
+      var i = CAT.indexOf(byId(ES.id)); if (i !== -1) CAT.splice(i, 1);
+      render(); closeSheet();
+    });
+  }
+
+  /* — video sheet — */
+  function openVid(id) {
+    var e = byId(id);
+    var html = '<div class="sh-eyebrow">Demo videó</div>' +
+      '<div class="sh-title">' + e.name + '</div>' +
+      '<div class="mut" style="font-size:9px;margin:-4px 0 8px;">YouTube vagy Instagram link — a session közben innen nyílik a bemutató.</div>' +
+      '<input type="text" id="vsUrl" placeholder="https://…" value="' + (e.videoUrl || '').replace(/"/g, '&quot;') + '">' +
+      '<div class="shrow">' +
+      (e.video ? '<button class="ghost" id="vsDel">Eltávolítás</button>' : '<button class="ghost" id="vsCancel">Mégse</button>') +
+      '<button class="cta" id="vsSave">Mentés</button></div>';
+    shVid.innerHTML = html;
+    var c = shVid.querySelector('#vsCancel');
+    if (c) c.addEventListener('click', closeSheet);
+    var dl = shVid.querySelector('#vsDel');
+    if (dl) dl.addEventListener('click', function () { e.video = null; e.videoUrl = ''; render(); closeSheet(); });
+    shVid.querySelector('#vsSave').addEventListener('click', function () {
+      var url = shVid.querySelector('#vsUrl').value.trim();
+      e.videoUrl = url;
+      e.video = url === '' ? null : (url.indexOf('instagram') !== -1 ? 'ig' : 'yt');
+      render(); closeSheet();
+    });
+    openSheet(shVid);
+  }
+
+  renderChips();
+  render();
 })();
 </script>

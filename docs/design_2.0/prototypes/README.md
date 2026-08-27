@@ -34,7 +34,21 @@ are usable without a build step).
   minimal tile anatomy, five detail pages (Mezo messages, habits, quests, check-in with fillable
   slot, Életjel with segmented ring → need tiles), interactive water/stack tiles.
 - **edzes-tab** — Edzés IA: hero (today's session + coach line) + 6 tiles; detail pages with
-  muscle-zone bars, volume arc, e1RM sparkline, lap chart, filter-chip catalog, medal cabinet.
+  muscle-zone bars, volume arc, e1RM sparkline, lap chart, medal cabinet.
+  **Gyakorlatok page (full catalog, audited against the real `/train/exercises`)**: compact hero
+  (title above icon+161) + stat strip; working search (name-substring) + two-level muscle filter
+  (Összes · Plyo · 6 regions → sub-muscle chips, region reset clears sub); **dual-mode list**
+  (default: `Top gyakorlatok · rekordjaid` ranked by sessionCount with #n plaques; searching:
+  `Találatok · teljes katalógus`, records first then dashed **ghost rows** with 5-tick Stim
+  meter — ghosts are not buttons); record card = muscle rail + thumb (icon or initial fallback)
+  + tag stamps (muscle · type · n alkalom · Saját; plyo = filled amber) + 3-cell stat strip with
+  two branches (weighted: Legjobb szett / e1RM / Összvolumen; bodyweight: Max rep / Összes rep /
+  Szettek) + gated roundels (⋯ only on Saját, ▶ everywhere, tinted when video exists);
+  record sheet (best-set hero, A/B demo-still crossfade with manual ⇄, tap-to-reveal player
+  16:9 YT / 9:16 IG, 2×2 stat grid with `—` nulls, rep-PR table, last-5 bars); create/edit
+  sheet (21 region-grouped muscle tokens, compound/isolation/plyo segmented, stim/fatigue
+  0–1 steppers, video URL, CTA gated on name+muscle, two-tap delete); video sheet
+  (Mentés + Eltávolítás when set).
 - **mezociklus** — full mesocycle functionality: hub (hero + Volumen/Történet/Sablonok/Új blokk
   tiles), MEV/MAV/MRV provenance bars with expandable derivation, 5-step wizard (tappable phase
   curve, Emphasize cap 2, program editor with day breakdown + session-cap 11 + Lint/PeakFit,
