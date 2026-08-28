@@ -45,7 +45,7 @@ function DetailFrame({ children }: { children: ReactNode }) {
   return (
     <div className="col gap-md" style={{ padding: '14px 16px 24px' }}>
       <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-        <Link to="/insights" aria-label="Vissza" style={{ fontSize: 19, color: 'var(--text-tertiary)' }}>‹</Link>
+        <Link to="/mezo" aria-label="Vissza" style={{ fontSize: 19, color: 'var(--text-tertiary)' }}>‹</Link>
         <h1 style={{ fontSize: 16.5, fontWeight: 800, flex: 1, margin: 0 }}>Minta részletei</h1>
       </div>
       {children}
@@ -81,7 +81,7 @@ function GatheringHeaderCard({ pair, bottleneckCoveredDays }: { pair: PatternMon
 
 /**
  * The pattern-pair detail page (mezo-tk88.5, spec-mockup screen 2) — a leaf route
- * (`/insights/patterns/:pairKey`, no Insights sub-nav) reached from the dashboard's „Részletek és
+ * (`/mezo/patterns/:pairKey`, no Insights sub-nav) reached from the dashboard's „Részletek és
  * előzmények →" / lifecycle-row links. Top to bottom: back link → header card (the dashboard's own
  * `PatternDecisionCard`, reused, or the plain `GatheringHeaderCard` for a no-row pair) → the
  * strength-over-time chart → the day-by-day scatter → the history journal → what the app built

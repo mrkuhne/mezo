@@ -43,7 +43,7 @@ describe('useChatHandoff (mock mode)', () => {
 
     expect(mockNavigate).toHaveBeenCalledTimes(1)
     const url = mockNavigate.mock.calls[0][0] as string
-    expect(url).toMatch(/^\/insights\/chat\?c=.+/)
+    expect(url).toMatch(/^\/mezo\/chat\?c=.+/)
     const id = url.split('c=')[1]
 
     const conversations = client.getQueryData<ChatConversations>(CONVERSATIONS_KEY)
@@ -96,7 +96,7 @@ describe('useChatHandoff (real mode)', () => {
 
     resolveRequest()
     await waitFor(() => expect(result.current.pending).toBe(false))
-    expect(mockNavigate).toHaveBeenCalledWith('/insights/chat?c=c-anchored')
+    expect(mockNavigate).toHaveBeenCalledWith('/mezo/chat?c=c-anchored')
     expect(body).toEqual({ context: { kind: 'week', date: '2026-08-24' } })
   })
 

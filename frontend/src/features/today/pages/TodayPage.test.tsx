@@ -34,7 +34,7 @@ function LocationProbe() {
 }
 
 /** Fresh JSX per call — a re-render must not be handed the SAME element, or React bails out. */
-const todayTree = (path = '/today') => (
+const todayTree = (path = '/nap') => (
   <QueryWrapper>
     <LevelUpProvider>
       <MemoryRouter initialEntries={[path]}>
@@ -45,7 +45,7 @@ const todayTree = (path = '/today') => (
   </QueryWrapper>
 )
 
-function renderToday(path = '/today') {
+function renderToday(path = '/nap') {
   return render(todayTree(path))
 }
 
@@ -78,7 +78,7 @@ describe('TodayPage — daypart selection', () => {
 
   test('?dp= overrides the clock — but the clock still marks the CURRENT tab', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    const { container } = renderToday('/today?dp=este')
+    const { container } = renderToday('/nap?dp=este')
     expect(shownFace(container)).toBe('este')
     // „hol tartok" (the clock) and „mit nézek" (the selection) must not blur together.
     expect(tab(/Este/)).toHaveAttribute('aria-pressed', 'true')
@@ -102,17 +102,17 @@ describe('TodayPage — daypart selection', () => {
 
   test('selecting the CURRENT face drops ?dp entirely (no stale param)', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    const { container } = renderToday('/today?dp=este')
+    const { container } = renderToday('/nap?dp=este')
     fireEvent.click(tab(/Reggel/))
     expect(shownFace(container)).toBe('reggel')
-    expect(screen.getByTestId('loc').textContent).toBe('/today')
+    expect(screen.getByTestId('loc').textContent).toBe('/nap')
   })
 
   test('selecting another face writes ?dp and keeps the other params', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    renderToday('/today?vulnerable=on')
+    renderToday('/nap?vulnerable=on')
     fireEvent.click(tab(/Nap/))
-    expect(screen.getByTestId('loc').textContent).toBe('/today?vulnerable=on&dp=nap')
+    expect(screen.getByTestId('loc').textContent).toBe('/nap?vulnerable=on&dp=nap')
   })
 
   test('switching tabs scrolls the app scroller back to the top', () => {
@@ -175,7 +175,7 @@ describe('TodayPage — composition', () => {
 
   test('?day=rough replaces the day with the single anchor island', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    renderToday('/today?day=rough')
+    renderToday('/nap?day=rough')
     // no switcher, no message chip, no daypart content — just the warm island
     expect(screen.queryByRole('group', { name: 'Napszak' })).toBeNull()
     expect(screen.queryByRole('button', { name: /Mezo üzenetei/ })).toBeNull()
@@ -187,7 +187,7 @@ describe('TodayPage — composition', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     // AnchorIsland's own elements took their horizontal inset from the retired island shell;
     // `.dayview` (padding, no card) is what replaces it. Bare content would hug the screen edge.
-    const { container } = renderToday('/today?day=rough')
+    const { container } = renderToday('/nap?day=rough')
     const frame = container.querySelector('.dayview')
     expect(frame).toContainElement(screen.getByText(/Horgony mód/))
     expect(frame).toContainElement(screen.getByRole('button', { name: 'Kilépés a horgony módból' }))
@@ -200,7 +200,7 @@ describe('TodayPage — composition', () => {
     // clock-derived tone would remount the melt — and AnchorIsland's three ticks are local
     // state, persisted nowhere. The tone must therefore be a constant on this branch.
     vi.useFakeTimers().setSystemTime(at('09:12'))
-    const { container, rerender } = render(todayTree('/today?day=rough'))
+    const { container, rerender } = render(todayTree('/nap?day=rough'))
     expect(screen.getAllByRole('button', { name: 'Megvolt ✓' })).toHaveLength(3)
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Megvolt ✓' })[0])
@@ -209,7 +209,7 @@ describe('TodayPage — composition', () => {
     // The clock walks into the evening and something re-renders the page (a focus refetch is
     // enough in the real app). The tick must survive.
     vi.setSystemTime(at('21:05'))
-    rerender(todayTree('/today?day=rough'))
+    rerender(todayTree('/nap?day=rough'))
     expect(screen.getAllByRole('button', { name: 'Megvolt ✓' })).toHaveLength(2)
     // AnchorIsland renders through the shared `ItemRow` (untouched by this redesign — spec
     // §7), not `TodayRow`, so this row still carries the OLD `.itemrow` class, unlike every
@@ -376,7 +376,7 @@ describe('TodayPage — composition', () => {
     const { container, unmount } = renderToday()
     expect(container.querySelector('.td-foot.is-warn')?.textContent).toContain('niggle')
     unmount()
-    const off = renderToday('/today?niggle=off')
+    const off = renderToday('/nap?niggle=off')
     expect(off.container.querySelector('.td-foot.is-warn')).toBeNull()
   })
 
@@ -509,7 +509,7 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
       .find((r) => within(r as HTMLElement).queryByRole('button', { name: 'Logold' })) as HTMLElement
     fireEvent.click(within(fuelRow).getByRole('button', { name: 'Logold' }))
     expect(screen.getByRole('dialog')).toHaveAccessibleName('Mit ettél?')
-    expect(screen.getByTestId('loc').textContent).toBe('/today') // it did NOT navigate away
+    expect(screen.getByTestId('loc').textContent).toBe('/nap') // it did NOT navigate away
   })
 
   test('a check-in row opens the check-in sheet for its own slot', () => {
@@ -562,7 +562,7 @@ describe('TodayPage — per-chain celebrations (mezo-n5e9.4)', () => {
     }
     qc.setQueryData(['habitDay', today], allMorningDone)
 
-    renderWithClient(qc, '/today?dp=reggel')
+    renderWithClient(qc, '/nap?dp=reggel')
 
     expect(seen).toEqual([{ kind: 'success', text: '🌅 Tökéletes reggel' }])
   })
@@ -592,7 +592,7 @@ describe('TodayPage — per-chain celebrations (mezo-n5e9.4)', () => {
     const day: HabitDay = { habits: [...mockHabitDay, customHabit], levelUps: [] }
     qc.setQueryData(['habitDay', today], day)
 
-    renderWithClient(qc, '/today?dp=nap')
+    renderWithClient(qc, '/nap?dp=nap')
 
     // Neither seed chain is complete in the unmodified mock day, so ONLY the custom chain toasts.
     expect(seen).toEqual([{ kind: 'success', text: '✨ Déli szünet kész' }])
