@@ -216,6 +216,20 @@
   --mz-cand-shadow: 0 19px 33px -17px rgba(201, 150, 46, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   --mz-fic-bg: rgba(255, 255, 255, 0.78);
   --mz-fact-off-bg: rgba(255, 255, 255, 0.6);
+  /* Előrejelzések + Kísérletek (mezo-d20.5.6) — prototype .stch/.gbar/.daydots hexes verbatim */
+  --mz-stch-pend-bg: rgba(138, 118, 204, 0.14); --mz-stch-pend-ink: #5D4FA0;
+  --mz-stch-ok-bg: rgba(143, 175, 126, 0.2);    --mz-stch-ok-ink: #4E6B42;
+  --mz-stch-prop-bg: rgba(201, 150, 46, 0.16);  --mz-stch-prop-ink: #A8801F;
+  --mz-stch-act-bg: rgba(255, 107, 74, 0.12);   --mz-stch-act-ink: #A84A26;
+  --mz-stch-mut-bg: rgba(43, 33, 24, 0.05);     --mz-stch-mut-ink: #6E6257;
+  --mz-gbar-bg: rgba(43, 33, 24, 0.08);
+  --mz-gbar-lav: linear-gradient(90deg, #B4A4E4, #8A76CC);
+  --mz-daydot: rgba(43, 33, 24, 0.1);
+  --mz-daydot-f: #C9962E;
+  --mz-prop-border: #C9962E;
+  --mz-prop-shadow: 0 20px 34px -14px rgba(201, 150, 46, 0.45), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-pic-bg: rgba(255, 255, 255, 0.78);
+  --mz-no-ink: #A8462E;
 
 }
 
@@ -355,6 +369,20 @@
   --mz-cand-shadow: 0 19px 33px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --mz-fic-bg: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
   --mz-fact-off-bg: color-mix(in srgb, var(--surface-card) 60%, transparent);
+  /* Előrejelzések + Kísérletek (mezo-d20.5.6) — chips/bars/dots on the dark dv ramp */
+  --mz-stch-pend-bg: color-mix(in srgb, var(--dv-lav) 22%, var(--surface-card));   --mz-stch-pend-ink: var(--dv-lav);
+  --mz-stch-ok-bg: color-mix(in srgb, var(--dv-sage) 22%, var(--surface-card));    --mz-stch-ok-ink: var(--dv-sage);
+  --mz-stch-prop-bg: color-mix(in srgb, var(--dv-amber) 20%, var(--surface-card)); --mz-stch-prop-ink: var(--dv-amber);
+  --mz-stch-act-bg: color-mix(in srgb, var(--dv-coral) 20%, var(--surface-card));  --mz-stch-act-ink: var(--primary-deep);
+  --mz-stch-mut-bg: var(--surface-recess); --mz-stch-mut-ink: var(--text-secondary);
+  --mz-gbar-bg: rgba(245, 239, 230, 0.1);
+  --mz-gbar-lav: linear-gradient(90deg, color-mix(in srgb, var(--dv-lav) 55%, var(--surface-card)), var(--dv-lav));
+  --mz-daydot: rgba(245, 239, 230, 0.12);
+  --mz-daydot-f: var(--dv-amber);
+  --mz-prop-border: var(--dv-amber);
+  --mz-prop-shadow: var(--mz-shadow);
+  --mz-pic-bg: rgba(245, 239, 230, 0.08);
+  --mz-no-ink: var(--primary-deep);
 
 }
 
@@ -4470,6 +4498,57 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 .mz-facttile.off { background: var(--mz-fact-off-bg); box-shadow: none;
   border: 1.2px dashed rgba(43, 33, 24, 0.16); }
 .mz-facttile.off .mz-fact-tx { color: var(--mz-ink-soft); }
+
+/* ── Előrejelzések + Kísérletek (mezo-d20.5.6) — prototype mezo-body
+      #page-josla / #page-kiserlet .predtile family, ×1.18. Status wears the
+      surface: ◐ Folyamatban = lavender + animated confidence bar, ✓ Bevált /
+      Megerősítve = sage, ◐ Aktív = amber + day-dot row + gold bar; the
+      ◇ Javaslat card rings gold and carries the 44pt decision row. ── */
+.mzp-pred { border-radius: 21px; padding: 13px 15px; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.mzp-pred.lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mzp-pred.sage { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.mzp-pred.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mzp-pred.propcard { border: 1px solid var(--mz-prop-border); box-shadow: var(--mz-prop-shadow); }
+.mzp-top { display: flex; align-items: center; gap: 9px; }
+.mzp-pic { width: 38px; height: 38px; border-radius: 13px; display: grid; place-items: center; flex: none;
+  background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.mzp-stch { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; border-radius: 7px; padding: 3px 8px; flex: none; }
+.mzp-stch.pend { background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
+.mzp-stch.ok   { background: var(--mz-stch-ok-bg);   color: var(--mz-stch-ok-ink); }
+.mzp-stch.prop { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.mzp-stch.act  { background: var(--mz-stch-act-bg);  color: var(--mz-stch-act-ink); }
+.mzp-stch.mut  { background: var(--mz-stch-mut-bg);  color: var(--mz-stch-mut-ink); }
+.mzp-date { margin-left: auto; font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mzp-title { font-size: 13.5px; font-weight: 700; line-height: 1.3; margin-top: 8px; }
+.mzp-conf { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+.mzp-gbar { flex: 1; height: 6px; border-radius: 4px; background: var(--mz-gbar-bg); overflow: hidden; }
+.mzp-gbar div { height: 100%; border-radius: 4px; background: var(--mz-gbar-lav);
+  transform: scaleX(0); transform-origin: left; }
+.mzp-gbar div.gold { background: var(--mz-strength); }
+.mz-play .mzp-gbar div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+@keyframes mzp-fill { to { transform: none; } }
+.mzp-pct { font-size: 11px; font-weight: 800; color: var(--mz-stch-pend-ink); font-variant-numeric: tabular-nums; flex: none; }
+.mzp-learn { font-size: 11px; font-weight: 600; color: var(--mz-ink-mut); }
+.mzp-basis { font-size: 12px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); margin: 7px 0 0; }
+.mzp-actual { font-size: 11px; font-weight: 600; color: var(--mz-stch-ok-ink); margin-top: 8px; }
+.mzp-daydots { display: flex; gap: 5px; margin-top: 9px; }
+.mzp-daydots i { width: 11px; height: 11px; border-radius: 50%; background: var(--mz-daydot); }
+.mzp-daydots i.f { background: var(--mz-daydot-f); }
+.mzp-decrow { display: flex; gap: 7px; margin-top: 11px; }
+.mzp-cta, .mzp-ghost { flex: 1; min-height: 44px; border-radius: 999px; border: none; font-family: inherit;
+  font-size: 12px; font-weight: 600; cursor: pointer; }
+.mzp-cta { background: var(--gradient-cta); color: #fff; box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+.mzp-ghost { background: var(--surface-recess); color: var(--mz-no-ink); }
+.mzp-cta:disabled, .mzp-ghost:disabled { opacity: 0.55; cursor: default; }
+.mzp-new { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px;
+  border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 17px; padding: 12px 0;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); cursor: pointer; font-family: inherit; }
+.mzp-new:disabled { opacity: 0.55; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mzp-gbar div, .mz-play .mzp-gbar div { transform: none; animation: none; }
+}
 
 /* ============================================================
    Today · iOS list language (mezo-e26w)
