@@ -150,6 +150,37 @@
   --ff-body:    'Geist', -apple-system, system-ui, sans-serif;
   --ff-serif:   'Fraunces', Georgia, serif;
   --ff-mono:    'Geist Mono', monospace;
+  /* ── Mozaik 2.0 token delta (mezo-d20.1.5) — light values verbatim from the
+        design_2.0 prototypes; dark overrides derive from the dv ramp + surfaces. */
+  --mz-wash-coral: linear-gradient(150deg, #FFE7DC, #FFF7F2);
+  --mz-wash-sage:  linear-gradient(150deg, #E9F1E2, #F7FBF3);
+  --mz-wash-sky:   linear-gradient(150deg, #DFEDF5, #F5FAFD);
+  --mz-wash-gold:  linear-gradient(150deg, #FFF1D6, #FFFAF0);
+  --mz-wash-lav:   linear-gradient(150deg, #EBE6F8, #F9F6FE);
+  --mz-wash-rose:  linear-gradient(150deg, #FAE3ED, #FEF8FB);
+  --mz-wash-white: #FFFFFF;
+  --mz-shadow:      0 17px 31px -17px rgba(43, 33, 24, 0.28), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-sage: 0 17px 31px -17px rgba(110, 139, 94, 0.45), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-sky:  0 17px 31px -17px rgba(78, 143, 184, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-gold: 0 17px 31px -17px rgba(181, 126, 20, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-lav:  0 17px 31px -17px rgba(93, 79, 160, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-rose: 0 17px 31px -17px rgba(142, 63, 111, 0.35), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-most: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-cell-sage-bg: #E9F1E2;  --mz-cell-sage-ink: #4E6B42;
+  --mz-cell-coral-bg: #FFE7DC; --mz-cell-coral-ink: #A84A26;
+  --mz-cell-amber-bg: #FFF1D6; --mz-cell-amber-ink: #8A5E07;
+  --mz-cell-lav-bg: #EBE6F8;   --mz-cell-lav-ink: #5D4FA0;
+  --mz-cell-sky-bg: #DFEDF5;   --mz-cell-sky-ink: #2E6E96;
+  --mz-cell-rose-bg: #FAE3ED;  --mz-cell-rose-ink: #8E3F6F;
+  --mz-cell-gold-bg: #FBEBCB;  --mz-cell-gold-ink: #8A5E07;
+  --mz-tone-coral: #FFE3D4; --mz-tone-gold: #FBEBCB; --mz-tone-lav: #E9E3F7;
+  --mz-tone-rose: #F7E3ED;  --mz-tone-sage: #E4EEDC; --mz-tone-sky: #DCEBF4;
+  --mz-cellbg: rgba(255, 255, 255, 0.72);
+  --mz-chipbg: rgba(255, 255, 255, 0.7);
+  --mz-stripbg: #FFFFFF;
+  --mz-ink-mut: #A2958A;
+  --mz-ink-soft: #6E6257;
+
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -217,6 +248,41 @@
   --cta-g2: #FF6B47;
 
   --shadow-focus: 0 0 0 3px rgba(255, 126, 92, 0.38);
+  /* ── Mozaik 2.0 dark ("Pulse") — washes/cells/tones derived from the dv dark
+        ramp mixed onto the warm-graphite surfaces (mezo-d20.1.5). */
+  --mz-wash-coral: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 6%, var(--surface-page)));
+  --mz-wash-sage:  linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-sage) 6%, var(--surface-page)));
+  --mz-wash-sky:   linear-gradient(150deg, color-mix(in srgb, var(--dv-sky) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-sky) 6%, var(--surface-page)));
+  --mz-wash-gold:  linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-amber) 5%, var(--surface-page)));
+  --mz-wash-lav:   linear-gradient(150deg, color-mix(in srgb, var(--dv-lav) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-lav) 6%, var(--surface-page)));
+  --mz-wash-rose:  linear-gradient(150deg, color-mix(in srgb, var(--dv-rose) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-rose) 5%, var(--surface-page)));
+  --mz-wash-white: var(--surface-card);
+  --mz-shadow:      0 17px 31px -17px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-shadow-sage: var(--mz-shadow);
+  --mz-shadow-sky:  var(--mz-shadow);
+  --mz-shadow-gold: var(--mz-shadow);
+  --mz-shadow-lav:  var(--mz-shadow);
+  --mz-shadow-rose: var(--mz-shadow);
+  --mz-shadow-most: 0 24px 40px -17px color-mix(in srgb, var(--dv-coral) 45%, transparent), 0 2px 7px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --mz-cell-sage-bg: color-mix(in srgb, var(--dv-sage) 20%, var(--surface-card));  --mz-cell-sage-ink: var(--dv-sage);
+  --mz-cell-coral-bg: color-mix(in srgb, var(--dv-coral) 20%, var(--surface-card)); --mz-cell-coral-ink: var(--primary-deep);
+  --mz-cell-amber-bg: color-mix(in srgb, var(--dv-amber) 18%, var(--surface-card)); --mz-cell-amber-ink: var(--dv-amber);
+  --mz-cell-lav-bg: color-mix(in srgb, var(--dv-lav) 20%, var(--surface-card));   --mz-cell-lav-ink: var(--dv-lav);
+  --mz-cell-sky-bg: color-mix(in srgb, var(--dv-sky) 20%, var(--surface-card));   --mz-cell-sky-ink: var(--dv-sky);
+  --mz-cell-rose-bg: color-mix(in srgb, var(--dv-rose) 18%, var(--surface-card));  --mz-cell-rose-ink: var(--dv-rose);
+  --mz-cell-gold-bg: color-mix(in srgb, var(--dv-amber) 22%, var(--surface-card)); --mz-cell-gold-ink: var(--dv-amber);
+  --mz-tone-coral: color-mix(in srgb, var(--dv-coral) 24%, var(--surface-page));
+  --mz-tone-gold:  color-mix(in srgb, var(--dv-amber) 22%, var(--surface-page));
+  --mz-tone-lav:   color-mix(in srgb, var(--dv-lav) 24%, var(--surface-page));
+  --mz-tone-rose:  color-mix(in srgb, var(--dv-rose) 22%, var(--surface-page));
+  --mz-tone-sage:  color-mix(in srgb, var(--dv-sage) 22%, var(--surface-page));
+  --mz-tone-sky:   color-mix(in srgb, var(--dv-sky) 22%, var(--surface-page));
+  --mz-cellbg: color-mix(in srgb, var(--surface-card) 72%, transparent);
+  --mz-chipbg: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+  --mz-stripbg: var(--surface-card);
+  --mz-ink-mut: #8A7A6A;
+  --mz-ink-soft: var(--text-secondary);
+
 }
 
 /* ===== Legacy alias bridge — Deep-Current / early-token names → DS tokens =====
@@ -3728,31 +3794,26 @@ ol.md-list { list-style: decimal; }
   display: flex; flex-direction: column; text-align: left;
   font-family: inherit; color: var(--text-primary);
   border: 0.5px solid rgba(43, 33, 24, 0.06);
-  box-shadow: 0 17px 31px -17px rgba(43, 33, 24, 0.28), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  box-shadow: var(--mz-shadow);
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
-  background: var(--mz-wash, #FFFFFF);
+  background: var(--mz-wash, var(--mz-wash-white));
 }
 button.mz-tile { cursor: pointer; }
 button.mz-tile:active { transform: scale(0.96); }
 
 /* washes — prototype .t-* gradients + their colored shadows */
-.mz-w-coral { --mz-wash: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
-.mz-w-sage  { --mz-wash: linear-gradient(150deg, #E9F1E2, #F7FBF3);
-  box-shadow: 0 17px 31px -17px rgba(110, 139, 94, 0.45), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-sky   { --mz-wash: linear-gradient(150deg, #DFEDF5, #F5FAFD);
-  box-shadow: 0 17px 31px -17px rgba(78, 143, 184, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-gold  { --mz-wash: linear-gradient(150deg, #FFF1D6, #FFFAF0);
-  box-shadow: 0 17px 31px -17px rgba(181, 126, 20, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-lav   { --mz-wash: linear-gradient(150deg, #EBE6F8, #F9F6FE);
-  box-shadow: 0 17px 31px -17px rgba(93, 79, 160, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-rose  { --mz-wash: linear-gradient(150deg, #FAE3ED, #FEF8FB);
-  box-shadow: 0 17px 31px -17px rgba(142, 63, 111, 0.35), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-white { --mz-wash: #FFFFFF; }
-.mz-w-most  { --mz-wash: #FFFFFF; border: 1px solid #FF6B4A;
-  box-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.mz-w-coral { --mz-wash: var(--mz-wash-coral); }
+.mz-w-sage  { --mz-wash: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.mz-w-sky   { --mz-wash: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
+.mz-w-gold  { --mz-wash: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mz-w-lav   { --mz-wash: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mz-w-rose  { --mz-wash: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose); }
+.mz-w-white { --mz-wash: var(--mz-wash-white); }
+.mz-w-most  { --mz-wash: var(--mz-wash-white); border: 1px solid #FF6B4A;
+  box-shadow: var(--mz-shadow-most); }
 
 .mz-tile-top { display: flex; align-items: center; }
-.mz-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+.mz-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-ink-mut); }
 .mz-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
 .mz-spotwrap { flex: 1; display: grid; place-items: center; padding: 5px 0; }
 .mz-tile-line { font-size: 11px; font-weight: 600; text-align: center;
@@ -3761,11 +3822,11 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-statstrip { display: flex; gap: 11px; }
 .mz-statcell {
   flex: 1; text-align: center; padding: 11px 5px; border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 9px 19px -12px rgba(43, 33, 24, 0.25);
 }
 .mz-statcell b { font-size: 15px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
-.mz-statcell small { font-size: 10px; color: #6E6257; }
+.mz-statcell small { font-size: 10px; color: var(--mz-ink-soft); }
 
 /* tinted mini-cells — the .mcells recipe */
 .mz-mcells { display: flex; gap: 6px; }
@@ -3773,28 +3834,28 @@ button.mz-tile:active { transform: scale(0.96); }
   background: var(--mw); color: var(--md); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
 .mz-mcells b { display: block; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .mz-mcells small { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.78; }
-.mz-c-sage  { --mw: #E9F1E2; --md: #4E6B42; }
-.mz-c-coral { --mw: #FFE7DC; --md: #A84A26; }
-.mz-c-amber { --mw: #FFF1D6; --md: #8A5E07; }
-.mz-c-lav   { --mw: #EBE6F8; --md: #5D4FA0; }
-.mz-c-sky   { --mw: #DFEDF5; --md: #2E6E96; }
-.mz-c-rose  { --mw: #FAE3ED; --md: #8E3F6F; }
-.mz-c-gold  { --mw: #FBEBCB; --md: #8A5E07; }
+.mz-c-sage  { --mw: var(--mz-cell-sage-bg); --md: var(--mz-cell-sage-ink); }
+.mz-c-coral { --mw: var(--mz-cell-coral-bg); --md: var(--mz-cell-coral-ink); }
+.mz-c-amber { --mw: var(--mz-cell-amber-bg); --md: var(--mz-cell-amber-ink); }
+.mz-c-lav   { --mw: var(--mz-cell-lav-bg); --md: var(--mz-cell-lav-ink); }
+.mz-c-sky   { --mw: var(--mz-cell-sky-bg); --md: var(--mz-cell-sky-ink); }
+.mz-c-rose  { --mw: var(--mz-cell-rose-bg); --md: var(--mz-cell-rose-ink); }
+.mz-c-gold  { --mw: var(--mz-cell-gold-bg); --md: var(--mz-cell-gold-ink); }
 
 /* tile → own page scaffold (Huawei pattern) */
 .mz-page {
   display: flex; flex-direction: column; min-height: 100%;
   background: var(--canvas);
 }
-.mz-p-coral { background: linear-gradient(180deg, #FFE3D4 0%, var(--canvas) 36%); }
-.mz-p-gold  { background: linear-gradient(180deg, #FBEBCB 0%, var(--canvas) 36%); }
-.mz-p-lav   { background: linear-gradient(180deg, #E9E3F7 0%, var(--canvas) 36%); }
-.mz-p-rose  { background: linear-gradient(180deg, #F7E3ED 0%, var(--canvas) 36%); }
-.mz-p-sage  { background: linear-gradient(180deg, #E4EEDC 0%, var(--canvas) 36%); }
-.mz-p-sky   { background: linear-gradient(180deg, #DCEBF4 0%, var(--canvas) 36%); }
+.mz-p-coral { background: linear-gradient(180deg, var(--mz-tone-coral) 0%, var(--canvas) 36%); }
+.mz-p-gold  { background: linear-gradient(180deg, var(--mz-tone-gold) 0%, var(--canvas) 36%); }
+.mz-p-lav   { background: linear-gradient(180deg, var(--mz-tone-lav) 0%, var(--canvas) 36%); }
+.mz-p-rose  { background: linear-gradient(180deg, var(--mz-tone-rose) 0%, var(--canvas) 36%); }
+.mz-p-sage  { background: linear-gradient(180deg, var(--mz-tone-sage) 0%, var(--canvas) 36%); }
+.mz-p-sky   { background: linear-gradient(180deg, var(--mz-tone-sky) 0%, var(--canvas) 36%); }
 .mz-page-head { display: flex; align-items: center; gap: 9px; padding: 9px 14px 0; }
 .mz-backbtn {
-  border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+  border: none; background: var(--mz-chipbg); font-family: inherit; cursor: pointer;
   border-radius: 999px; padding: 7px 15px 7px 11px; font-size: 13px; font-weight: 600; color: var(--text-primary);
   display: flex; align-items: center; gap: 5px;
   box-shadow: 0 7px 17px -9px rgba(43, 33, 24, 0.3);
@@ -3804,18 +3865,18 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-hero-nm { font-size: 18px; font-weight: 700; }
 .mz-hero-row { display: flex; align-items: center; gap: 9px; }
 .mz-bignum { font-weight: 200; font-size: 47px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.mz-hero-sb { font-size: 12px; color: #6E6257; }
+.mz-hero-sb { font-size: 12px; color: var(--mz-ink-soft); }
 .mz-page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 17px 19px; }
 .mz-page-body::-webkit-scrollbar { display: none; }
-.mz-principle { font-size: 11px; font-weight: 300; color: #A2958A; text-align: center; margin-top: 19px; }
+.mz-principle { font-size: 11px; font-weight: 300; color: var(--mz-ink-mut); text-align: center; margin-top: 19px; }
 
 /* thin collapsible reference strip — closed header already tells the story */
-.mz-colstrip { border-radius: 18px; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.07);
+.mz-colstrip { border-radius: 18px; background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
   box-shadow: 0 14px 26px -17px rgba(43, 33, 24, 0.3); overflow: hidden; }
 .mz-colhead { display: flex; align-items: center; gap: 9px; width: 100%; border: none; background: none;
   font-family: inherit; padding: 11px 14px; cursor: pointer; text-align: left; }
-.mz-csum { margin-left: auto; font-size: 10px; font-weight: 600; color: #6E6257; font-variant-numeric: tabular-nums; }
-.mz-chev { color: #A2958A; font-size: 12px; transition: transform 0.2s ease; flex: none; }
+.mz-csum { margin-left: auto; font-size: 10px; font-weight: 600; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.mz-chev { color: var(--mz-ink-mut); font-size: 12px; transition: transform 0.2s ease; flex: none; }
 .mz-colstrip.open .mz-chev { transform: rotate(180deg); }
 .mz-colbody { padding: 0 14px 13px; }
 
