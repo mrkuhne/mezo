@@ -6,6 +6,40 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 
+// Mode-agnostic data stubs for the hero/water assertions — real-mode MSW fixtures differ
+// from the mock seeds (same pattern as QuickInputSheet.test). The water pair shares a
+// setter through a ref so the in-place log re-renders the counter.
+// Several hooks read useFuelDay (the page AND the needs sim) — a per-instance useState
+// stub would let logWater update the wrong instance, so the stub is one shared store.
+const waterStore = vi.hoisted(() => {
+  const listeners = new Set<() => void>()
+  return {
+    water: 1850,
+    subscribe: (l: () => void) => { listeners.add(l); return () => listeners.delete(l) },
+    add(ml: number) { this.water += ml; listeners.forEach((l) => l()) },
+    reset() { this.water = 1850; listeners.forEach((l) => l()) },
+  }
+})
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  const { useSyncExternalStore } = await import('react')
+  return {
+    ...actual,
+    useSleep: () => ({
+      sleepLog: [],
+      lastNight: { date: '2026-05-22', bedtime: '00:42', wakeup: '09:03', duration: 7.5, quality: 9, awakenings: 1, mealToSleep: 125, notes: null },
+      logSleep: vi.fn(),
+    }),
+    useFuelDay: () => {
+      const water = useSyncExternalStore(waterStore.subscribe, () => waterStore.water)
+      return { fuel: { targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }, consumed: { kcal: 1300, p: 100, c: 152, f: 30, water }, meals: [], pacing: { msg: '' }, micronutrients: [], supplements: [] } }
+    },
+    useWaterActions: () => ({ logWater: (ml: number) => waterStore.add(ml) }),
+  }
+})
+
+beforeEach(() => waterStore.reset())
+
 // Nap hub (mezo-d20.2.1) — the day spine's Mozaik face: header recipe (date eyebrow +
 // daypart switch + bell + orb avatar), one hero per daypart panel, then the 2-column
 // mosaic. Detail pages are F1.2–F1.6; until they land the tiles open the existing sheets.

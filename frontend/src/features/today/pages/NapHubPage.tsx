@@ -15,7 +15,7 @@ import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 import {
-  useToday, useCheckins, useSleepGoal, useDailyQuests, useQuestActions,
+  useToday, useTodayScenario, resolveBriefing, useCheckins, useSleepGoal, useDailyQuests, useQuestActions,
   useHabitDay, useHabitCatalog, useHabitActions, useFuelPreview, useFuelDay,
   useWaterActions, useSleep, useWeight, useIntentionDay, useIntentionActions,
   useCompanionFeed, useFeedback, useStackDay,
@@ -33,7 +33,8 @@ import { MezoMessagesSheet } from '@/features/today/components/MezoMessagesSheet
 import { DailyQuestsSheet } from '@/features/today/components/DailyQuestsSheet'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
-import type { DailyQuest, NeedKey } from '@/data/types'
+import type { DailyQuest } from '@/data/types'
+import type { NeedKey } from '@/features/today/logic/needs'
 
 const isFace = (v: string | null): v is DayFace => v !== null && (DAY_FACES as readonly string[]).includes(v)
 
@@ -73,6 +74,7 @@ export function NapHubPage() {
   const [params, setSearchParams] = useSearchParams()
 
   const { today } = useToday()
+  const scenario = useTodayScenario()
   const { goal: sleepGoal } = useSleepGoal()
   const tick = useMinuteTick()
   const nowFace = dayFace(tick, sleepGoal)
@@ -107,7 +109,7 @@ export function NapHubPage() {
   const feed = useCompanionFeed()
   const feedIds = useMemo(() => feed.map((m) => m.id), [feed])
   const feedback = useFeedback('feed_message', feedIds)
-  const messages = useMemo(() => buildMezoMessages({ feed, demoBriefing: today.briefing ?? null }), [feed, today.briefing])
+  const messages = useMemo(() => buildMezoMessages({ feed, demoBriefing: resolveBriefing(scenario.dayState) }), [feed, scenario.dayState])
   const intention = intentionData ?? { date, creed: null, foci: [], reflection: null }
 
   // ── sheet state ─────────────────────────────────────────────────────
@@ -151,7 +153,7 @@ export function NapHubPage() {
   const kcalCount = useCountUp(kcalLeft)
   const mealSlots = plan.slots.filter((s) => s.slotKey !== undefined)
   const nowWindow = mealSlots.find((s) => s.state === 'now')
-  const stackTaken = stackSlots.filter((s) => (s.items ?? []).every((i) => i.done)).length
+  const stackTaken = stackSlots.filter((sl) => sl.entries.filter((e) => !e.skippedToday).every((e) => e.taken)).length
   const bedIn = minsToBed(tick, sleepGoal.bedTime)
   const unreadNtf = notifications.filter((n) => n.readAt === null).length
 
