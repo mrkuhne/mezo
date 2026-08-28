@@ -102,6 +102,21 @@ export const NEED_META: Record<NeedKey, { emoji: string; label: string; color: s
 
 const NEED_ORDER: NeedKey[] = ['energia', 'hidratacio', 'pihenes', 'mozgas', 'lelek', 'rend']
 
+/** The Életjel SEGMENTED ring: six equal arcs, each filled to its need's level.
+ *  Shared by the Nap hub's Életjel tile and the /nap/eletjel hero (mezo-d20.2.6). */
+export function needRingGradient(states: { key: NeedKey; pct: number }[]): string {
+  const stops: string[] = []
+  const seg = 100 / 6
+  states.forEach((s, i) => {
+    const from = i * seg
+    const fillTo = from + (seg * Math.max(0, Math.min(100, s.pct))) / 100
+    const to = (i + 1) * seg
+    stops.push(`${NEED_META[s.key].color} ${from}% ${fillTo}%`)
+    if (fillTo < to) stops.push(`rgba(43,33,24,0.08) ${fillTo}% ${to}%`)
+  })
+  return `conic-gradient(${stops.join(', ')})`
+}
+
 const MS_PER_MINUTE = 60_000
 const MS_PER_HOUR = 60 * MS_PER_MINUTE
 const MINUTES_PER_DAY = 24 * 60

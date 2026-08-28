@@ -127,10 +127,23 @@ test('the mosaic tiles render with clay spots — Mezo, Küldetések, Check-in, 
   expect(document.querySelector('.nap-bigring')).not.toBeNull()
 })
 
-test('the Mezo tile opens the messages sheet in place', async () => {
-  renderHub('/nap?dp=nap')
+test('the Mezo tile navigates to the Mezo üzenetei page (mezo-d20.2.2)', async () => {
+  render(
+    <QueryWrapper>
+      <ToastProvider>
+        <LevelUpProvider>
+          <MemoryRouter initialEntries={['/nap?dp=nap']}>
+            <Routes>
+              <Route path="/nap" element={<NapHubPage />} />
+              <Route path="/nap/uzenetek" element={<div>uzenetek-page</div>} />
+            </Routes>
+          </MemoryRouter>
+        </LevelUpProvider>
+      </ToastProvider>
+    </QueryWrapper>,
+  )
   await userEvent.click(await screen.findByRole('button', { name: 'Mezo üzenetei' }))
-  expect(await screen.findByText('Mezo üzenetei')).toBeInTheDocument()
+  expect(await screen.findByText('uzenetek-page')).toBeInTheDocument()
 })
 
 test('the water tile logs +2,5 dl in place and the counter moves', async () => {

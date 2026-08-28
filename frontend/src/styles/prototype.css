@@ -178,8 +178,14 @@
   --mz-cellbg: rgba(255, 255, 255, 0.72);
   --mz-chipbg: rgba(255, 255, 255, 0.7);
   --mz-stripbg: #FFFFFF;
+  --mz-strength: linear-gradient(90deg, #E5C46B, #C9962E); /* habit-strength bar (nap #page-hab .hstr) */
   --mz-ink-mut: #A2958A;
   --mz-ink-soft: #6E6257;
+  /* quest cards (mezo-d20.2.4) — prototype .qcard.done / .qxp hexes verbatim */
+  --mz-qdone-bg: linear-gradient(150deg, #EFF3EA, #FBFDF9);
+  --mz-qdone-ink: #5F7A52;
+  --mz-qxp-ink: #A8801F;
+  --mz-qxp-bg: rgba(201, 150, 46, 0.12);
 
 }
 
@@ -282,6 +288,12 @@
   --mz-stripbg: var(--surface-card);
   --mz-ink-mut: #8A7A6A;
   --mz-ink-soft: var(--text-secondary);
+  --mz-strength: linear-gradient(90deg, color-mix(in srgb, var(--dv-amber) 55%, var(--surface-card)), var(--dv-amber));
+  /* quest cards (mezo-d20.2.4) — done wash / XP pill on the dark dv ramp */
+  --mz-qdone-bg: linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 14%, var(--surface-card)), var(--surface-card));
+  --mz-qdone-ink: var(--dv-sage);
+  --mz-qxp-ink: var(--dv-amber);
+  --mz-qxp-bg: color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card));
 
 }
 
@@ -3971,9 +3983,144 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-ringhole { width: 42px; height: 42px; border-radius: 50%; background: var(--mz-wash-white);
   display: grid; place-items: center; }
 
+/* ── Mezo üzenetei page (mezo-d20.2.2) — prototype #page-mezo: breathing-orb
+   hero + the day's companion thread. Values verbatim from nap-head.html ×1.18. ── */
+.mz-page-hero.orb svg { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
+@keyframes mz-orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+.nap-mzmsg {
+  background: var(--surface-card); border-radius: 19px; padding: 13px 14px; margin-bottom: 12px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.nap-mzmsg-h { display: flex; align-items: center; gap: 11px; }
+.nap-mzmsg .t { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A8801F; }
+.nap-mzmsg .txt { font-size: 13px; font-weight: 300; margin-top: 7px; margin-bottom: 0; }
+.nap-mzmsg-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.nap-mzmsg-meta { font-size: 11px; color: var(--mz-ink-mut); margin-top: 6px; }
+.nap-mz-cta {
+  /* prototype .cta + .mz-cta; padding 14px (not 9×1.18) so the target clears 44pt */
+  width: 100%; margin-top: 5px; padding: 14px 0; text-align: center;
+  background: var(--gradient-cta); color: #fff; border-radius: 999px; border: none;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55);
+}
+/* ── Nap · Napi küldetések page (mezo-d20.2.4) — prototype nap-body #page-quest,
+      values ×1.18 (330→390px frame). The reroll/CTA chips keep the prototype's slim
+      pill face but grow to the 44pt touch floor. ── */
+.mz-qcard { background: var(--mz-stripbg); border-radius: 19px; padding: 13px 14px; margin-bottom: 12px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.mz-qcard.done { background: var(--mz-qdone-bg); }
+.mz-qrow { display: flex; align-items: flex-start; gap: 11px; }
+.mz-qrow svg { flex: none; }
+.mz-qgrow { flex: 1; min-width: 0; }
+.mz-qtitle { font-size: 14px; font-weight: 700; }
+.mz-qwhy { font-size: 11px; font-weight: 300; color: var(--mz-ink-soft); margin-top: 2px; }
+.mz-qxp { font-size: 11px; font-weight: 700; color: var(--mz-qxp-ink); background: var(--mz-qxp-bg);
+  border-radius: 999px; padding: 4px 11px; flex: none; }
+.mz-qfoot { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+.mz-qstate { flex: 1; min-width: 0; font-size: 11px; color: var(--mz-ink-soft); }
+.mz-qstate.f { font-weight: 600; color: var(--mz-qdone-ink); }
+.mz-qbtn { border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit; cursor: pointer;
+  border-radius: 999px; padding: 0 13px; min-height: 44px; font-size: 11px; font-weight: 600;
+  color: var(--mz-ink-soft); flex: none; }
+.mz-qbtn:disabled { opacity: 0.45; cursor: default; }
+.mz-qbtn.primary { border-color: transparent; background: var(--text-primary); color: var(--surface-card); }
+.mz-quest-empty { padding: 21px 0 28px; text-align: center; font-size: 13px; color: var(--text-muted); }
+/* ── Nap · Check-in detail page (mezo-d20.2.5) — prototype #page-check ×1.18.
+      One .vcard with the four slot rows: done = tick + mini-cells, the next
+      fillable slot is the hot row (its 1–5 inline chips became the real
+      CheckInSheet flow — 4 dims ×10, the data contract), future = muted. ── */
+.nck-card {
+  background: var(--mz-stripbg); border-radius: 19px; padding: 5px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.nck-row { display: flex; align-items: center; gap: 13px; padding: 11px 2px; }
+.nck-row + .nck-row { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.nck-grow { flex: 1; min-width: 0; }
+.nck-t { font-size: 14px; font-weight: 600; }
+.nck-rose { color: var(--mz-cell-rose-ink); }
+.nck-sub { font-size: 11px; color: var(--mz-ink-mut); }
+.nck-tick {
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  border: 1.5px solid rgba(43, 33, 24, 0.2); display: grid; place-items: center;
+  font-size: 14px; color: #fff; background: transparent;
+}
+.nck-tick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+.nck-cells { margin-top: 6px; max-width: 236px; }
+.nck-hot {
+  background: rgba(196, 111, 160, 0.08); border-radius: 14px;
+  margin: 2px -5px; padding: 11px 9px; border-top: none;
+}
+.nck-row.nck-hot + .nck-row, .nck-row + .nck-hot { border-top: none; }
+.nck-fill {
+  min-height: 44px; padding: 0 19px; border-radius: 999px; flex: none; cursor: pointer;
+  border: 1.5px solid rgba(196, 111, 160, 0.45); background: var(--mz-stripbg);
+  font-family: inherit; font-size: 12px; font-weight: 700; color: var(--mz-cell-rose-ink);
+  transition: transform 0.12s ease;
+}
+.nck-fill:active { transform: scale(0.94); }
+.nck-dim { opacity: 0.6; }
+/* ── Életjel page (mezo-d20.2.6) — prototype #page-vital ×1.18 ──
+   hero: segmented six-arc ring + big average %; tiles: eyebrow + clay icon +
+   mini conic ring (.rr 22px → 26px) + pct. Colors ride the need inks inline
+   (accent inks, not surfaces); the ring hole speaks the wash token. */
+.ej-hero-row { display: flex; align-items: center; justify-content: center; gap: 26px; }
+.ej-bigring { width: 90px; height: 90px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.ej-ringhole { width: 61px; height: 61px; border-radius: 50%; background: var(--mz-wash-white);
+  display: grid; place-items: center; }
+.ej-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.ej-rr { width: 26px; height: 26px; border-radius: 50%; flex: none;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+  display: grid; place-items: center; }
+.ej-rr::after { content: ''; width: 17px; height: 17px; border-radius: 50%; background: var(--mz-wash-white); }
+.ej-pct { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* attention skin (prototype: the low Mozgás tile) — terracotta max, never red */
+.ej-warn { border: 1px solid rgba(255, 107, 74, 0.5); }
+.ej-pct.is-warn { color: #A84A26; }
+
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev { transition: none; }
+  .mz-page-hero.orb svg { animation: none; }
+}
+
+/* ── Nap · Rutin oldal (mezo-d20.2.3) — prototype #page-hab, ×1.18 ── */
+.nr-herospot { order: -1; }
+.nr-stats { margin-bottom: 12px; }
+.nr-group { display: flex; align-items: baseline; gap: 8px; margin: 14px 2px 7px; }
+.nr-groupcount { font-size: 12px; font-weight: 600; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.nr-vcard {
+  background: var(--mz-stripbg); border-radius: 19px; padding: 5px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.nr-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+.nr-row + .nr-row { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.nr-tickbtn { width: 44px; height: 44px; flex: none; margin-left: -9px;
+  display: grid; place-items: center; border: none; background: none; padding: 0;
+  font-family: inherit; cursor: default; }
+button.nr-tickbtn { cursor: pointer; }
+button.nr-tickbtn:disabled { cursor: default; opacity: 0.6; }
+.nr-tick { width: 26px; height: 26px; border-radius: 50%;
+  border: 1.8px solid rgba(43, 33, 24, 0.2); display: grid; place-items: center;
+  font-size: 14px; color: #fff; background: transparent; transition: transform 0.12s ease; }
+button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
+.nr-tick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+.nr-grow { flex: 1; min-width: 0; padding: 6px 0; }
+.nr-nm { font-size: 13.5px; font-weight: 600; }
+.nr-nm.done { color: var(--mz-ink-soft); font-weight: 500;
+  text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
+.nr-anchor { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); }
+.nr-str { height: 6px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 5px; }
+.nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength); }
+.nr-pct { font-size: 10.5px; font-weight: 700; color: #A8801F; flex: none; width: 35px; text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .rise { opacity: 1; transform: none; animation: none; }
+  .mz-tile, .mz-chev, .nr-tick { transition: none; }
+  .nck-fill { transition: none; }
 }
 
 /* ============================================================
