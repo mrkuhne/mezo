@@ -645,8 +645,10 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   retracts), mock votes surviving a change of the rendered id set, mock making no network call at
   all; and real mode's comma-joined batch read, the optimistic write shown before the response
   resolves, DELETE on re-tap, **a growing id set never blanking the chips already on screen**
-  (the `keepPreviousRealData` case, §5.7), rollback on a failed vote, the 200-id cap keeping the
-  NEWEST ids, no request at all on an empty id set, and a failing read degrading to "no verdicts"
+  (the `keepPreviousRealData` case, §5.7), rollback on a failed vote, the `FEEDBACK_MAX_IDS`
+  (1000, `mezo-b3pp.23`) cap keeping the NEWEST ids (`still bounds the request at FEEDBACK_MAX_IDS,
+  keeping the NEWEST (last) ids`), no request at all on an empty id set, and a failing read
+  degrading to "no verdicts"
   instead of throwing (IDENT-3). `components/FeedbackChips.test.tsx` (11) covers the component's own
   branches: 👎 reveals the reason row without voting, picking a reason votes and leaves the row up
   with that reason selected, 👎 while already down retracts (and the row goes when the verdict
