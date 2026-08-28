@@ -57,6 +57,10 @@ public class CharacterSignalReads {
         List<DetectorInput.WeightPoint> weights = weightLogRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(owner, windowStart)
                 .stream()
+                // The finder only bounds below (>= windowStart); during catch-up runs for a past
+                // `day`, entries logged AFTER `day` would otherwise leak into the window and
+                // distort under-logging's first-vs-last delta, so bound above in memory here.
+                .filter(w -> !w.getDate().isAfter(day))
                 .map(w -> new DetectorInput.WeightPoint(w.getDate(), w.getWeightKg()))
                 .sorted(Comparator.comparing(DetectorInput.WeightPoint::date))
                 .toList();
