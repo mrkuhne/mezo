@@ -12,7 +12,8 @@ function dayLabel(date: string): string {
   })
 }
 
-/** Az L1 napló — memoir-tipográfiájú kártyák hónap-elválasztókkal; a sarok-pötty az embed-jelző. */
+/** Az L1 napló (mezo-d20.5.7) — a prototípus .daycard arca: éjjel írt nap-kártyák
+ *  hónap-elválasztókkal; a sarok-pötty a beágyazott embed-jelző (zsálya = van vektor). */
 export function MemoryJournalPanel({
   summaries, focusDate,
 }: { summaries: MemorySummaryItem[]; focusDate?: string | null }) {
@@ -26,45 +27,30 @@ export function MemoryJournalPanel({
   }
 
   let lastMonth = ''
+  let idx = -1
   return (
-    <div className="col gap-md">
+    <div className="col" style={{ gap: 0 }}>
       {summaries.map((summary) => {
         const month = monthLabel(summary.date)
         const showSeparator = month !== lastMonth
         lastMonth = month
         const focused = summary.date === focusDate
+        idx += 1
         return (
-          <div key={summary.date} className="col gap-md">
-            {showSeparator && (
-              <span className="eyebrow text-tertiary" style={{ marginTop: 4 }}>{month}</span>
-            )}
+          <div key={summary.date} className="col" style={{ gap: 0 }}>
+            {showSeparator && <span className="mz-eyebrow mem-month">{month}</span>}
             <div
               ref={focused ? focusRef : undefined}
-              className="card memoir-card"
-              style={{
-                padding: 18, position: 'relative', overflow: 'hidden',
-                border: focused ? '1px solid var(--lav-deep)' : undefined,
-              }}
+              className={`mem-daycard rise${focused ? ' focused' : ''}`}
+              style={{ '--d': `${Math.min(idx, 5) * 60}ms` } as React.CSSProperties}
             >
-              <div
-                aria-hidden="true"
-                style={{
-                  position: 'absolute', width: 100, height: 100, right: -32, top: -32, borderRadius: '50%',
-                  background: 'radial-gradient(circle, color-mix(in srgb, var(--lav) 16%, transparent), transparent 70%)',
-                }}
-              />
               <span
+                className={`mem-emb${summary.embedded ? '' : ' off'}`}
                 aria-label={summary.embedded ? 'vektorizálva' : 'még nincs vektor'}
                 title={summary.embedded ? 'vektorizálva' : 'még nincs vektor'}
-                style={{
-                  position: 'absolute', top: 12, right: 12, width: 8, height: 8, borderRadius: '50%',
-                  background: summary.embedded ? 'var(--success)' : 'var(--text-tertiary)', opacity: 0.7,
-                }}
               />
-              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{dayLabel(summary.date)}</span>
-              <p style={{ fontSize: 14, lineHeight: 1.65, marginTop: 10, color: 'var(--text-primary)' }}>
-                {summary.narrative}
-              </p>
+              <div className="mem-dl">{dayLabel(summary.date)}</div>
+              <p className="mem-bd">{summary.narrative}</p>
             </div>
           </div>
         )
