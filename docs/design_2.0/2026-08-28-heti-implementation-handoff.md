@@ -253,6 +253,38 @@ Ami hiányzik:
    legyenek (a mai `listPending` csak az eldöntetlent adja, a design viszont a már eldöntött
    állapotot is mutatja).
 3. **`evidence` mező** a válaszban (a design evidencia-sora), nullable.
+4. **DB check-constraintek — ne maradjanak le.** A séma nem csak `@Pattern`-nel véd:
+   `ck_knowledge_fact_source check (source in ('chat','pattern','manual'))` és
+   `ck_learned_fact_user_decision` a
+   `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql`-ben. Egy negyedik source
+   **migrációt igényel** (drop + re-add a constraintre — pontosan úgy, ahogy a
+   `202608271500_mezo-p2tr_feedback_weekly_review_kind.sql` tette a feedback-kindnál), plusz az
+   entitás `@Pattern`-jét is bővíteni kell. A `derived_from_message_id` FK-ja már
+   `on delete set null`, tehát heti jelöltnél nyugodtan üresen hagyható.
+5. **Bónusz, amit ingyen kapunk:** `FactCandidateService.decide` elfogadásnál publikál
+   `KnowledgeFactPromotedEvent`-et, amire a `GraphPromotionListener` ráakaszkodik — vagyis egy
+   elfogadott heti tanulság **automatikusan gráf-csomópontot is kap**, ha ezen az úton megy.
+   (`KnowledgeFactService.create` és `PatternService.promote` NEM publikál ilyet — ez is érv
+   amellett, hogy a heti jelölt a candidate-úton menjen, ne új írási ösvényen.)
+6. **Vedd át a dedupe-fegyelmet a chat-extrakcióból.** `FactExtractionService` normalizál
+   (`trim().toLowerCase()`, whitespace-összevonás) és szűr a **megerősített tények + a nyitott
+   jelöltek + az aktuális batch** ellen, plusz van egy `maxCandidatesPerTurn` plafon
+   (`mezo.companion.extraction.max-candidates-per-turn: 3`). A heti generátornak ugyanezt kell
+   tennie, különben minden héten újra felajánlja ugyanazt.
+7. **Értesítés:** a chat-extrakció jelöltenként emit-el `FACT_CANDIDATE`-et
+   („Új tény vár jóváhagyásra"). A heti körnél ez **zaj** lenne — a hétfői
+   `WEEKLY_REVIEW_READY` már szól; javaslat: a heti jelöltek ne emit-eljenek külön, a szám a
+   Heti hub csempéjén és a Tudástár inbox-számlálóján látszik.
+8. **Döntés-készlet:** a kontraktus **három** döntést ismer (`accept` · `reject` · `refine`), és
+   a meglévő Tudástár-kártya (`FactCandidateCard`) mind a hármat kínálja
+   („Elfogad" · „Pontosít" · „Elvet"). A Heti design két gombot mutat
+   („✓ Tanuld meg" / „Nem rólam szól") — **döntsük el:** vagy bekerül a „Pontosít" is
+   (a szerkesztő inline input már megvan a kártyában), vagy a heti oldalon szándékosan csak a
+   két gomb van, és a finomítás a Tudástárban lehetséges. Utóbbi esetben ezt a lábjegyzetben
+   mondjuk ki.
+9. **FE oldalon a döntés már kész hookon van:** `data/insights/knowledgeHooks.ts` →
+   `useKnowledgeActions().decide(id, decision, refinedText?)` (mock-módban cache-mutáció, real
+   módban invalidálja a `['knowledge']` kulcsot). A Heti tanulság-oldal ezt hívja, nem újat.
 4. **Idempotencia + regenerate.** A `regenerate` ma soft-deleteli a review sort; el kell
    dönteni, mi történjen a hozzá tartozó **eldöntött** jelöltekkel (javaslat: az eldöntötteket
    NEM bántjuk — a felhasználó döntése nem veszhet el —, a még nyitottakat a régi review-val
@@ -291,6 +323,14 @@ Vigyázni kell: a pontszám **utólag változhat** (visszamenőleges logolás), 
 érték cache, nem igazság — kell hozzá invalidálás vagy „utoljára számolva" bélyeg. Ez a szelet
 ezért **külön designdöntést** igényel: mikor íródik (a hétfői job? minden olvasáskor upsert?).
 
+**Teljesítmény-érv a szelet mellé:** ma **három** független útvonal számolja újra ugyanezt —
+`MeWeekController` → `MeWeekService.week` (és abban egy **második** teljes futás a
+`prevWeekScore`-ért), `WeeklyReviewGenerator.gather`, és a chat minden fordulójánál a
+`WeekContextRenderer`. Egy perzisztált heti sor mindhármat lerövidíti.
+
+**Ha új tábla lesz:** a `ResetDatabase` (`backend/src/test/java/io/mrkuhne/mezo/support/`)
+TRUNCATE-listájába **ugyanabban a változásban** fel kell venni — ez kikényszerített konvenció.
+
 ### 6.4 Opcionális (nem blokkol semmit)
 - **B — highlight-visszacsatolás:** amit a modell kiemelt, erősítse a minta-konfidenciát /
   tény-salience-t. Az adat ma megvan és kárba megy.
@@ -303,7 +343,38 @@ ezért **külön designdöntést** igényel: mikor íródik (a hétfői job? min
 
 ---
 
-## 7. Munkarend (a spec §6 szerint)
+## 7. Konvenció-puska (hogy ne kelljen keresni)
+
+- **Új endpoint:** `api/feature/<name>/<name>.yml` (OpenAPI 3.0.3, teljes mini-dokumentum) →
+  **hozzáfűzni** a `- inputFile:` sort az `api/generate/merge.yml`-hez → `cd api/generate &&
+  npm run generate:api` (a `api/openapi.yml` **commitolandó**) → backenden a `./mvnw clean test`
+  generál (`interfaceOnly`, a kontroller `implements <Tag>Api`, `@RequestMapping`/`@Valid`
+  nélkül, a principal injektált `CurrentUserId`) → FE: `pnpm generate:api` (az
+  `api.gen.ts` **commitolandó**). `operationId` = kontroller-metódusnév, `tag` = interfész-név;
+  validáció a kontraktusban, `pattern` az `enum` helyett; minden nem-2xx `SystemMessageList`.
+  Részletek: `docs/references/api_contract_conventions.md`.
+- **Liquibase:** `backend/src/main/resources/db/changelog/1.0.0/script/{YYYYMMDDHHMM}_{bd-id}_{snake_desc}.sql`,
+  changeset `id: "1.0.0:<fájlnév .sql nélkül>"`, `author: daniel.kuhne`, `sqlFile` +
+  `relativeToChangelogFile: true`, regisztrálás az `1.0.0_master.yml`-ben; nevesített
+  constraintek (`pk_/fk_/uq_/ck_/idx_`), `INSERT INTO` tilos. Linter:
+  `node scripts/lint-liquibase.mjs`. Részletek: `docs/references/liquibase_conventions.md`.
+- **IT:** `ApiIntegrationTest` (RANDOM_PORT + `ownerAuthHeaders()` + `assertHasFieldError`) vagy
+  `AbstractIntegrationTest`; **ne** legyen class-level `@Transactional`, ha az út
+  `AppNotificationEmitter`-t (REQUIRES_NEW) érint — az örök deadlock. Populatorok:
+  `support/populator/` (`WeeklyReviewPopulator`, `LearnedFactPopulator`,
+  `KnowledgeFactPopulator`, `PeriodSummaryPopulator`…).
+- **LLM szkriptelés tesztben:** `@ActiveProfiles("companion-fake")` + `FakeCompanionLlm`.
+  A heti kör markere `HETI-ELEMZES-FELADAT`, sentinelje `[fake-review:{…}]` (**greedy**), és a
+  sentinelt **a memoár címébe** kell elrejteni, mert a gather azt rendereli pontosan egyszer (a
+  minta/tény/életesemény címkék ismétlődnek a horgony-listában). Bővítéskor ugyanez a trükk
+  kell a `candidateFacts`-hoz is.
+- **FE dual-mode:** `useDualQuery({ queryKey, mockData, realFetch, realEmpty })` — real módban
+  **soha** a mock seed, `realEmpty` a töltés alatt; a szivárgó
+  `const { data = seed } = useQuery(...)` mintát a `data/dualMode.guard.test.ts` build-hibával
+  bünteti. Real-módú tesztek: `src/test/msw/handlers.ts` (`GET /api/me/week/:start` már ott van
+  a fact-endpointokkal együtt), per-teszt override `server.use(...)`.
+
+## 8. Munkarend (a spec §6 szerint)
 
 1 bd issue = 1 `feat/d20-<oldal>` branch = 1 self-PR (CI-kapu, `--no-ff` merge).
 A backend-szeletek külön gate-en mennek (fókuszált IT + CI), a FE F5.9 önállóan is zöld.
