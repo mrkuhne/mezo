@@ -18,10 +18,12 @@ test('redirects / to Today', async () => {
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
   // Decision B (mezo-d20.1.1): the companion section is the first-class Mezo tab —
-  // the Nap hub carries no ✨ header link any more.
+  // the Nap hub carries no ✨ header link any more. The tab lands on the hub Mozaik
+  // face (mezo-d20.5.1): chat opener + tile mosaic, no subnav dropdown.
   await userEvent.click((await screen.findAllByRole('link')).find(a => a.getAttribute('href') === '/mezo')!)
-  expect(await screen.findByLabelText('Insights alnavigáció')).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Beszélgetés a társsal' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Insights alnavigáció')).not.toBeInTheDocument()
 })
 test('Me screen theme selector flips data-theme', async () => {
   // Default is now circadian-auto (wall-clock dependent); preset manual light so this
@@ -74,7 +76,9 @@ test('/nap renders the day spine (Today content) and /today redirects to it', as
 test('/insights/chat redirects into the Mezo tab preserving the subpath', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/insights/chat'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  await screen.findByLabelText('Insights alnavigáció')
+  // The chat is a full-page sibling after the shell dissolution (mezo-d20.5.1) —
+  // the composer's send chip is its stable landmark.
+  await screen.findByLabelText('Küldés')
   expect(router.state.location.pathname).toBe('/mezo/chat')
 })
 
