@@ -3971,9 +3971,32 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-ringhole { width: 42px; height: 42px; border-radius: 50%; background: var(--mz-wash-white);
   display: grid; place-items: center; }
 
+/* ── Mezo üzenetei page (mezo-d20.2.2) — prototype #page-mezo: breathing-orb
+   hero + the day's companion thread. Values verbatim from nap-head.html ×1.18. ── */
+.mz-page-hero.orb svg { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
+@keyframes mz-orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+.nap-mzmsg {
+  background: var(--surface-card); border-radius: 19px; padding: 13px 14px; margin-bottom: 12px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.nap-mzmsg-h { display: flex; align-items: center; gap: 11px; }
+.nap-mzmsg .t { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A8801F; }
+.nap-mzmsg .txt { font-size: 13px; font-weight: 300; margin-top: 7px; margin-bottom: 0; }
+.nap-mzmsg-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.nap-mzmsg-meta { font-size: 11px; color: var(--mz-ink-mut); margin-top: 6px; }
+.nap-mz-cta {
+  /* prototype .cta + .mz-cta; padding 14px (not 9×1.18) so the target clears 44pt */
+  width: 100%; margin-top: 5px; padding: 14px 0; text-align: center;
+  background: var(--gradient-cta); color: #fff; border-radius: 999px; border: none;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev { transition: none; }
+  .mz-page-hero.orb svg { animation: none; }
 }
 
 /* ============================================================
