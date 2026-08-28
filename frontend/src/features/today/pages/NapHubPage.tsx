@@ -16,7 +16,7 @@ import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 import {
   useToday, useTodayScenario, resolveBriefing, useCheckins, useSleepGoal, useDailyQuests, useQuestActions,
-  useHabitDay, useHabitCatalog, useHabitActions, useFuelPreview, useFuelDay,
+  useHabitDay, useHabitCatalog, useFuelPreview, useFuelDay,
   useWaterActions, useSleep, useWeight, useIntentionDay, useIntentionActions,
   useCompanionFeed, useFeedback, useStackDay,
 } from '@/data/hooks'
@@ -99,7 +99,6 @@ export function NapHubPage() {
   const { reroll: rerollQuest, pending: questPending } = useQuestActions(date)
   const { habits } = useHabitDay(date)
   const { catalog: habitCatalog } = useHabitCatalog()
-  const { check: habitCheck, pending: habitPending } = useHabitActions(date)
   const { data: intentionData } = useIntentionDay(date)
   const { addFocus } = useIntentionActions(date)
   const needs = useNeeds(tick)
@@ -184,7 +183,7 @@ export function NapHubPage() {
     return (
       <Tile key="habit" wash={f === 'este' ? 'lav' : 'gold'} icon="i-rend" eyebrow="Rutin" delayMs={delay}
         line={next ? `${next.title} · ${done}/${items.length}` : `kész ✓ · ${done}/${items.length}`}
-        onClick={next?.key && !habitPending ? () => habitCheck(next.key) : undefined}
+        onClick={() => navigate(`/nap/rutin?dp=${f}`)}
         aria-label={f === 'este' ? 'Esti rutin' : 'Reggeli rutin'} />
     )
   }
