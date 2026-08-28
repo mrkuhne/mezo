@@ -174,7 +174,7 @@ export function NapHubPage() {
           {checkins.map((c, i) => <span key={i} className={cn('hd', c.state === 'done' && 'f')} />)}
         </span>
       }
-      onClick={openCheckIn} aria-label="Check-in" />
+      onClick={() => navigate('/nap/checkin')} aria-label="Check-in" />
   )
   const habitTile = (f: DayFace, delay: number) => {
     const items = habitsFor(f)
