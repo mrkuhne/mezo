@@ -70,12 +70,21 @@ public class FeaturesConfiguration {
      *  CompanionLlm port, whose beans only exist when the companion is on). */
     public static final String PROACTIVE_SWITCH = "mezo.feature.proactive.enabled";
 
+    /** Karakter dossier (mezo-1gim) — dimensions/claims/observations/conferences + reads.
+     *  LLM-calling character beans (Slice 2+) additionally require {@link #COMPANION_SWITCH}. */
+    public static final String CHARACTER_SWITCH = "mezo.feature.character.enabled";
+
     /** Companion-feed morning/midday/evening crons (mezo-gst9) — techcore cron zone
      *  (schedules: mezo.proactive.feed.*-cron). */
     public static final String FEED_JOB_SWITCH = "mezo.techcore.cron.feed-job.enabled";
 
     /** W1 Monday weekly-suggestion job — techcore cron zone (schedule: mezo.proactive.weekly.cron). */
     public static final String WEEKLY_SUGGESTION_JOB_SWITCH = "mezo.techcore.cron.weekly-suggestion-job.enabled";
+
+    /** Monday weekly-review job (mezo-p2tr) — techcore cron zone
+     *  (schedule: mezo.proactive.weekly-review.cron); generates the JUST-FINISHED week's review,
+     *  unlike the forward-looking {@link #WEEKLY_SUGGESTION_JOB_SWITCH}. */
+    public static final String WEEKLY_REVIEW_JOB_SWITCH = "mezo.techcore.cron.weekly-review-job.enabled";
 
     /** W2 Sunday memoir job — techcore cron zone (schedule: mezo.proactive.memoir.cron). */
     public static final String MEMOIR_JOB_SWITCH = "mezo.techcore.cron.memoir-job.enabled";

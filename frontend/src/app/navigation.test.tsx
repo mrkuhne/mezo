@@ -57,3 +57,10 @@ test('the floating chat bubble is mounted app-wide (mezo-78sd)', async () => {
   renderApp('/today')
   expect(await screen.findByRole('button', { name: 'Beszélgetés a társsal' })).toBeInTheDocument()
 })
+
+test('the app shell mounts the clay sprite defs once (mezo-d20.1.2)', () => {
+  renderApp('/today')
+  expect(document.querySelector('symbol#i-nap')).not.toBeNull()
+  expect(document.querySelector('symbol#s-orb')).not.toBeNull()
+  expect(document.querySelectorAll('#ig-orb')).toHaveLength(1)
+})

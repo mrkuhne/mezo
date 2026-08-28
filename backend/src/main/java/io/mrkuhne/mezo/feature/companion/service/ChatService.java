@@ -26,6 +26,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,8 +38,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
@@ -142,6 +145,17 @@ public class ChatService {
             [Emlékeztető] Ez beszélgetés Daniellel, nem adatlekérdezés. \
             A fenti adatblokk nyersanyag, nem a válasz formája.""";
 
+    /**
+     * mezo-p2tr — anchored conversations: the server-generated opening turn's user content. Never
+     * persisted as a user message (the {@link #openingTurn} javadoc); the fixed Hungarian text asks
+     * Mezo to open on the anchored day/week from the {@code [Heti adatok]} block already in the
+     * system prompt.
+     */
+    static final String KICKOFF_PROMPT =
+            "Nyisd meg a beszélgetést te: rövid, 3-5 mondatos reflexió a [Heti adatok] blokk kiemelt "
+                    + "napjáról (ha van kijelölt nap) vagy a hétről — mi tűnt fel, mi az egy dolog, "
+                    + "amiről érdemes beszélni. Kérdéssel zárj.";
+
     private final AiConversationRepository conversationRepository;
     private final AiMessageRepository messageRepository;
     private final ConversationService conversationService;
@@ -153,6 +167,8 @@ public class ChatService {
     private final ObjectProvider<GraphPromptAssembler> graphPromptAssembler;
     /** W4.3 — the [Rólad tanultam] block (mezo-b3pp.17); absent (null) when the graph switch is off. */
     private final ObjectProvider<ProfilePromptAssembler> profilePromptAssembler;
+    /** mezo-p2tr — anchored conversations' [Heti adatok] block; "" for a plain conversation. */
+    private final WeekContextRenderer weekContextRenderer;
     private final CompanionLlm companionLlm;
     /** V1.3 — present only when the advisors switch is on (bean-boundary gating). */
     private final ObjectProvider<CompanionAdvisorChain> advisorChain;
@@ -185,7 +201,8 @@ public class ChatService {
         PromptMemoryAssembler.AmbientRecall recalled =
                 promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
         GraphPromptAssembler.GraphContext graph = graphContext(userId, request.getContent());
-        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block());
+        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block(),
+                conversation.getContextKind(), conversation.getContextDate());
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
@@ -223,7 +240,8 @@ public class ChatService {
         PromptMemoryAssembler.AmbientRecall recalled =
                 promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
         GraphPromptAssembler.GraphContext graph = graphContext(userId, request.getContent());
-        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block());
+        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block(),
+                conversation.getContextKind(), conversation.getContextDate());
         // Window BEFORE persisting the new message — the current content travels as the user param.
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
 
@@ -273,21 +291,59 @@ public class ChatService {
     }
 
     /**
-     * The canonical system prompt: voice → snapshot (V0.3) → top-N facts (V1.1) → fresh
-     * pattern-facts acknowledgment (V3.3) → [Rólad tanultam] pragmatic profile (W4.3, "" when the
-     * profile is archived/absent) → [Emlékek] ambient recall (W3.1) → [Összefüggések] graph context
-     * (W2.4, "" when the graph switch is off or nothing matched) → TONE_REMINDER (mezo-q71s, always
-     * last). The history travels as real prior messages, not a transcript in here.
+     * mezo-p2tr — anchored conversations: the server-generated opening turn. Called by {@link
+     * ConversationService#create} AFTER the conversation row is saved, only when a context was
+     * given. Assembles the SAME anchored system prompt every turn gets, then calls the LLM with
+     * empty history, no tools, and {@link #KICKOFF_PROMPT} as the user content — persisting ONLY
+     * the assistant row (the kickoff itself is never written as a user message, so it never shows
+     * up in the transcript or the history window). Swallow-and-log on ANY failure: the conversation
+     * simply stays empty, exactly as a plain {@code createConversation()} call would leave it.
      */
-    private String assembleSystemPrompt(UUID userId, LocalDate today, String memoriesBlock, String graphBlock) {
+    @Transactional
+    public void openingTurn(UUID userId, UUID conversationId) {
+        try {
+            AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
+            String systemPrompt = assembleSystemPrompt(userId, LocalDate.now(), "", "",
+                    conversation.getContextKind(), conversation.getContextDate());
+            String answer = companionLlm.complete(
+                    systemPrompt, List.of(), KICKOFF_PROMPT, List.of(), Map.of());
+            if (answer == null || answer.isBlank()) {
+                log.warn("Opening turn for conversation {} produced no text — conversation stays empty",
+                        conversationId);
+                return;
+            }
+            persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT, answer, null, null, false, null);
+            conversation.setLastMessageAt(Instant.now());
+            conversationRepository.save(conversation);
+        } catch (RuntimeException e) {
+            log.warn("Opening turn failed for conversation {} — conversation stays empty", conversationId, e);
+        }
+    }
+
+    /**
+     * The canonical system prompt: voice → snapshot (V0.3) → [Heti adatok] anchored-conversation
+     * block (mezo-p2tr, "" for a plain conversation) → top-N facts (V1.1) → fresh pattern-facts
+     * acknowledgment (V3.3) → [Rólad tanultam] pragmatic profile (W4.3, "" when the profile is
+     * archived/absent) → [Emlékek] ambient recall (W3.1) → [Összefüggések] graph context (W2.4, ""
+     * when the graph switch is off or nothing matched) → TONE_REMINDER (mezo-q71s, always last).
+     * The history travels as real prior messages, not a transcript in here.
+     */
+    private String assembleSystemPrompt(UUID userId, LocalDate today, String memoriesBlock, String graphBlock,
+            String contextKind, LocalDate contextDate) {
         return SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, today)
+                + anchoredBlock(userId, contextKind, contextDate)
                 + knowledgeFactService.renderPromptBlock(userId)
                 + knowledgeFactService.renderNewPatternFactsBlock(userId)
                 + profileBlock(userId)
                 + memoriesBlock
                 + graphBlock
                 + TONE_REMINDER;
+    }
+
+    /** mezo-p2tr: "" for a plain conversation (no anchor); the [Heti adatok] block otherwise. */
+    private String anchoredBlock(UUID userId, String contextKind, LocalDate contextDate) {
+        return contextKind == null ? "" : weekContextRenderer.render(userId, contextKind, contextDate);
     }
 
     /** W2.4: the graph's contribution — EMPTY when the switch is off (no bean) or nothing matched. */

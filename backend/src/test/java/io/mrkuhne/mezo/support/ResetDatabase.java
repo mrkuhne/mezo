@@ -37,13 +37,14 @@ public class ResetDatabase {
     public void resetExceptMasterData() {
         // TRUNCATE CASCADE handles FK dependencies between owned domain tables.
         entityManager.createNativeQuery(
-            "TRUNCATE TABLE llm_log_history, gamification_profile, push_subscription, notification_pref, push_log, notification_schedule, app_notification, coin_event, owned_title, needs_day, ritual_day, intention_creed, intention_focus, daily_intention, habit_day, habit_def, habit_chain, activity_log, daily_quest, challenge, experiment, prediction, memoir, weekly_suggestion, companion_message, pattern_event, pattern, daily_summary, period_summary, memory_embedding, message_feedback, feedback_rollup, companion_flag_log, knowledge_node, knowledge_edge, learned_fact, knowledge_fact, ai_message, ai_conversation, supplement_intake, protocol_item, protocol, water_log, medication_dose, medication, meal_item, meal, recipe_ingredient, recipe, pantry_import, pantry_item, weight_log, sleep_log, sleep_goal, fuel_settings, "
+            "TRUNCATE TABLE llm_log_history, gamification_profile, push_subscription, notification_pref, push_log, notification_schedule, app_notification, coin_event, owned_title, needs_day, ritual_day, intention_creed, intention_focus, daily_intention, habit_day, habit_def, habit_chain, activity_log, daily_quest, challenge, experiment, prediction, weekly_review, memoir, weekly_suggestion, companion_message, pattern_event, pattern, daily_summary, period_summary, memory_embedding, message_feedback, feedback_rollup, companion_flag_log, knowledge_node, knowledge_edge, learned_fact, knowledge_fact, ai_message, ai_conversation, supplement_intake, protocol_item, protocol, water_log, medication_dose, medication, meal_item, meal, recipe_ingredient, recipe, pantry_import, pantry_item, weight_log, sleep_log, sleep_goal, fuel_settings, "
                 + "meal_slot_template, check_in, journal_entry, decision_entry, gratitude_entry, "
                 + "exercise_feedback, exercise_set, exercise, workout_session, muscle_group_volume_log, mesocycle, "
                 + "meso_template, mesocycle_report, "
                 + "gym_schedule_slot, sport_schedule_slot, sport_event, sport_session, run_session_log, running_block, "
                 + "skill_progress, level_up_event, perk_unlock, "
                 + "goal_plan_link, goal, biometric_profile, "
+                + "character_portrait_revision, character_conference, character_observation, character_claim, character_dimension, "
                 + "mention, person CASCADE").executeUpdate();
         // Master data (demodata owner + their profile) survives; everything else goes.
         entityManager.createNativeQuery(

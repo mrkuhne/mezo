@@ -198,6 +198,10 @@ mezo:
     # switch: proactive beans condition on BOTH (they call the CompanionLlm port).
     proactive:
       enabled: true
+    # Karakter dossier (mezo-1gim) — dimensions/claims/observations/conferences + reads.
+    # LLM-calling character beans (Slice 2+) additionally require the companion switch.
+    character:
+      enabled: true
     # Gamified growth E1 (ADR 0010) — daily quests (catalog-driven, derived completion).
     # Off => the /api/quest surface 404s and no quest beans exist.
     quest:
@@ -324,6 +328,10 @@ mezo:
       # W1 Monday weekly-suggestion pre-generation (schedule: mezo.proactive.weekly.cron);
       # off = the WeeklySuggestionJob bean does not exist
       weekly-suggestion-job:
+        enabled: true
+      # Monday weekly-review generation (mezo-p2tr, schedule: mezo.proactive.weekly-review.cron)
+      # for the JUST-FINISHED week; off = the WeeklyReviewJob bean does not exist
+      weekly-review-job:
         enabled: true
       # W2 Sunday memoir generation (schedule: mezo.proactive.memoir.cron);
       # off = the MemoirJob bean does not exist
@@ -1061,10 +1069,19 @@ mezo:
     # Phase 5 W1 journal (mezo-b3pp.1) — decision review-due offset in days (used by W1.4's decision journal).
     journal:
       decision-review-days: 30
+    # Weekly review (mezo-p2tr) — deterministic day-score constants (spec §2).
+    me-week:
+      sleep-target-h: 8.0
+      kcal-band: 0.25
+      xp-baseline: 150
   proactive:
     weekly:
       # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week
       cron: "0 0 6 * * MON"
+    weekly-review:
+      # Monday weekly-review schedule (server zone, mezo-p2tr) — for the week that JUST finished
+      # (weekStart = previous Monday), unlike weekly's forward-looking suggestion
+      cron: "0 50 6 * * MON"
     memoir:
       # W2 Sunday-evening memoir schedule (old journey 5.8) — the week ending that Sunday
       cron: "0 0 19 * * SUN"

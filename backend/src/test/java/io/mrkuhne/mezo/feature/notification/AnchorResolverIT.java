@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import io.mrkuhne.mezo.support.populator.WeeklyReviewPopulator;
 import io.mrkuhne.mezo.support.populator.WeeklySuggestionPopulator;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -45,9 +46,6 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     /** The Sunday that ends WEDNESDAY's week — `memoir` only anchors on a Sunday. */
     private static final LocalDate SUNDAY = LocalDate.of(2026, 8, 2);
 
-    /** mezo.proactive.weekly.cron is `0 0 6 * * MON` and mezo.notification.prose-generation-grace-min
-     *  is 15 -> a wake anchor at or before 06:00 must be pushed to 06:15. */
-    private static final int WEEKLY_GRACED_MINUTE = 6 * 60 + 15;
     /** mezo.proactive.memoir.cron `0 0 19 * * SUN` + 15. */
     private static final int MEMOIR_GRACED_MINUTE = 19 * 60 + 15;
     /** mezo.proactive.feed.midday-cron `0 30 12 * * *` + 15. */
@@ -65,6 +63,7 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     @Autowired private MedicationDosePopulator medicationDosePopulator;
     @Autowired private NotificationPopulator notificationPopulator;
     @Autowired private WeeklySuggestionPopulator weeklySuggestionPopulator;
+    @Autowired private WeeklyReviewPopulator weeklyReviewPopulator;
     @Autowired private MemoirPopulator memoirPopulator;
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
 
@@ -190,33 +189,61 @@ class AnchorResolverIT extends AbstractIntegrationTest {
 
     // ---- trap #6: a prose anchor must never land on its own generator's minute -------------------
 
+    // ---- the retired `weekly` push must never emit again (mezo-p2tr) -----------------------------
+
     @Test
-    void testResolve_shouldPushTheWeeklyAnchorPastTheGenerator_whenTheWakeTimeLandsOnTheWeeklyCronMinute() {
+    void testResolve_shouldYieldNoWeeklyAnchor_whenAWeeklySuggestionRowExistsBecauseThePushWasRetired() {
         UUID owner = ownerId();
-        // No sleep_goal row -> SleepAnchorPort's config ghost wake, mezo.sleep.default-wake 06:00,
-        // which is EXACTLY mezo.proactive.weekly.cron's minute: WeeklySuggestionJob has not written
-        // the row yet at that minute (same size-1 scheduler thread, plus an LLM call), so an
-        // ungraced anchor means this default-ON category never fires at all.
+        // A weekly_suggestion row still exists (the /me/week plan-suggestion GET keeps using it),
+        // but AnchorResolver no longer emits a `weekly` push for it — only weekly_review does now.
         weeklySuggestionPopulator.suggestion(owner, MONDAY);
 
         AnchorSet anchors = anchorResolver.resolve(owner, MONDAY);
 
-        assertThat(weeklyEvent(anchors).minuteOfDay()).isEqualTo(WEEKLY_GRACED_MINUTE);
-        assertThat(weeklyEvent(anchors).dedupSuffix()).isEqualTo("06:15");
+        assertThat(anchors.proseAnchors())
+                .noneMatch(e -> e.category() == NotificationCategory.WEEKLY);
+    }
+
+    // ---- weekly_review: Monday 10:00, keyed by the JUST-FINISHED week (mezo-p2tr) -----------------
+
+    @Test
+    void testResolve_shouldYieldAWeeklyReviewAnchor_whenARowExistsForTheJustFinishedWeek() {
+        UUID owner = ownerId();
+        // The job runs Monday morning and writes the row keyed by the FINISHED week's own Monday —
+        // one week before the resolving date.
+        LocalDate finishedWeekStart = MONDAY.minusWeeks(1);
+        weeklyReviewPopulator.weeklyReview(owner, finishedWeekStart);
+
+        AnchorSet anchors = anchorResolver.resolve(owner, MONDAY);
+
+        AnchoredEvent review = proseEvent(anchors, NotificationCategory.WEEKLY_REVIEW);
+        assertThat(review.minuteOfDay()).as("fixed 10:00, never generation-graced").isEqualTo(10 * 60);
+        assertThat(review.dedupSuffix()).isEqualTo("10:00");
+        assertThat(review.title()).isEqualTo("Mezo · heti elemzés");
+        assertThat(review.body()).isEqualTo("Teszt heti elemzés.");
+        assertThat(review.url()).isEqualTo("/me/week?start=" + finishedWeekStart);
     }
 
     @Test
-    void testResolve_shouldLeaveTheWeeklyAnchorOnWake_whenTheWakeTimeIsWellAfterTheWeeklyCronMinute() {
+    void testResolve_shouldYieldNoWeeklyReviewAnchor_whenNoRowExistsForTheJustFinishedWeek() {
         UUID owner = ownerId();
-        sleepGoalPopulator.goal(owner, 450, "WAKE", LATE_WAKE, 15);
-        weeklySuggestionPopulator.suggestion(owner, MONDAY);
 
         AnchorSet anchors = anchorResolver.resolve(owner, MONDAY);
 
-        assertThat(weeklyEvent(anchors).minuteOfDay())
-                .as("the grace is relative to the generator's cron minute, never blindly added to wake")
-                .isEqualTo(8 * 60 + 20);
-        assertThat(weeklyEvent(anchors).dedupSuffix()).isEqualTo(LATE_WAKE);
+        assertThat(anchors.proseAnchors())
+                .noneMatch(e -> e.category() == NotificationCategory.WEEKLY_REVIEW);
+    }
+
+    @Test
+    void testResolve_shouldYieldNoWeeklyReviewAnchor_whenTheRowExistsButTodayIsNotMonday() {
+        UUID owner = ownerId();
+        // Keyed by WEDNESDAY's own week — irrelevant, since weekly_review only ever anchors on Monday.
+        weeklyReviewPopulator.weeklyReview(owner, WEDNESDAY.minusWeeks(1));
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        assertThat(anchors.proseAnchors())
+                .noneMatch(e -> e.category() == NotificationCategory.WEEKLY_REVIEW);
     }
 
     @Test
@@ -332,10 +359,6 @@ class AnchorResolverIT extends AbstractIntegrationTest {
         AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
 
         assertThat(anchors.scheduleAnchors()).isEmpty();
-    }
-
-    private static AnchoredEvent weeklyEvent(AnchorSet anchors) {
-        return proseEvent(anchors, NotificationCategory.WEEKLY);
     }
 
     private static AnchoredEvent proseEvent(AnchorSet anchors, NotificationCategory category) {

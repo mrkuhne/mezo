@@ -2041,6 +2041,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/weekly-review/{start}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The persisted weekly review narrative (Én/Heti, spec 2026-08-27 §5) for the ISO-Monday week starting {start}
+         * @description Returns the review row as-is (never lazily generates — the WeeklyReviewJob owns generation). `stale` is a best-effort probe: true when any of the week's logged weight/sleep/check-in/meal rows was created after the review's `generatedAt` (false on probe failure — never blocks the read).
+         */
+        get: operations["getWeeklyReview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/weekly-review/{start}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * On-demand regeneration of the weekly review (soft-deletes the existing row, re-runs the generator)
+         * @description 409 while the week is still in progress (`{start} + 7 days` must be on/before today — the same completed-week gate the generator idiom uses elsewhere). 404 when the regenerated week still has no logged data (empty-week ⇒ no row, the generator's own rule).
+         */
+        post: operations["regenerateWeeklyReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/weekly-review/{start}/digest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Code-collected week-window refs behind the weekly review — the confirmed pattern events, new facts, life events, memoir presence and predictions the review draws its highlight candidates from
+         * @description Always 200 — empty lists are the honest empty state, never a 404 (the review row itself may not even exist yet; this is a raw week-window read, independent of it).
+         */
+        get: operations["getWeeklyReviewDigest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quest/day/{date}": {
         parameters: {
             query?: never;
@@ -3031,6 +3091,108 @@ export interface paths {
         put?: never;
         /** Decide a candidate (W2.3 life event / W5.3 season) — accept activates the node and creates its proposed edges, reject soft-deletes it. One decision per candidate; confirm is an explicit L2 action. */
         post: operations["decideGraphCandidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/week/{start}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The week's per-day data + deterministic day scores + weekly aggregates (live for the current week) */
+        get: operations["getMeWeek"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The dossier overview — all dimensions with maturity, portrait and top claims (lazily seeds the 7 CORE dimensions on first read) */
+        get: operations["getCharacterOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/dimension/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One dimension in full — portrait, ACTIVE claims with evidence refs, recent revisions */
+        get: operations["getCharacterDimension"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent expert observations + the latest conference outcome diff, merged chronologically (empty array = honest empty state) */
+        get: operations["getCharacterFeed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/conference": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Konzílium list (summaries only — transcripts load per id) */
+        get: operations["listCharacterConferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/conference/{conferenceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One konzílium with its full persisted transcript — the exchange as it actually ran, never re-dramatized */
+        get: operations["getCharacterConference"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5213,6 +5375,18 @@ export interface components {
             /** @description The transcript in the speaker's own language; empty string when the recording carried no speech. */
             text: string;
         };
+        /** @description mezo-p2tr — anchored conversations: an optional week/day anchor. Absent body/context = plain conversation, unchanged behaviour. */
+        CreateConversationRequest: {
+            context?: {
+                /** @description 'week' anchors an ISO-Monday week; 'day' anchors one day inside its week */
+                kind: string;
+                /**
+                 * Format: date
+                 * @description ISO week-Monday for kind=week; any date inside the week for kind=day
+                 */
+                date: string;
+            } | null;
+        };
         ConversationResponse: {
             /** Format: uuid */
             id: string;
@@ -5857,6 +6031,66 @@ export interface components {
             outcomeGood?: boolean | null;
             /** Format: date-time */
             generatedAt: string;
+        };
+        WeeklyReviewDayNote: {
+            /** Format: date */
+            date: string;
+            note: string;
+        };
+        WeeklyReviewHighlight: {
+            /** @description FE RefTag kind (Pattern/Fact/LifeEvent/Memory) — code-collected, model-SELECTED, never invented */
+            kind: string;
+            label: string;
+        };
+        WeeklyReviewResponse: {
+            /**
+             * Format: uuid
+             * @description The weekly_review row id — the W4.1 feedback artifactId (weekly_review).
+             */
+            id: string;
+            /** Format: date */
+            weekStart: string;
+            /** @description The review prose — what went well, what broke, what pattern showed up across the days */
+            summary: string;
+            dayNotes: components["schemas"]["WeeklyReviewDayNote"][];
+            highlights: components["schemas"]["WeeklyReviewHighlight"][];
+            /** Format: date-time */
+            generatedAt: string;
+            /** @description Best-effort: true when any of the week's logged weight/sleep/check-in/meal rows was created after generatedAt; false on probe failure (never blocks the read). */
+            stale: boolean;
+        };
+        WeeklyReviewPatternRef: {
+            pairKey: string;
+            title: string;
+            /** @description The pattern_event kind (confirmed | reinforced | promoted) */
+            event: string;
+        };
+        WeeklyReviewFactRef: {
+            /** Format: uuid */
+            id: string;
+            text: string;
+        };
+        WeeklyReviewLifeEventRef: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** Format: date */
+            occurredOn: string;
+        };
+        WeeklyReviewPredictionRef: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** @description pending | validated | missed */
+            status: string;
+        };
+        WeeklyReviewDigestResponse: {
+            patterns: components["schemas"]["WeeklyReviewPatternRef"][];
+            newFacts: components["schemas"]["WeeklyReviewFactRef"][];
+            lifeEvents: components["schemas"]["WeeklyReviewLifeEventRef"][];
+            /** @description Whether a memoir row exists for this week */
+            memoir: boolean;
+            predictions: components["schemas"]["WeeklyReviewPredictionRef"][];
         };
         QuestResponse: {
             /** Format: uuid */
@@ -6611,7 +6845,7 @@ export interface components {
             reason?: string | null;
         };
         MessageFeedbackResponse: {
-            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'memoir' | 'prediction' */
+            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' */
             artifactKind: string;
             /** Format: uuid */
             artifactId: string;
@@ -6647,6 +6881,145 @@ export interface components {
         };
         GraphCandidateDecisionRequest: {
             decision: string;
+        };
+        MeWeekSubscores: {
+            /** @description 0–100; null = no sleep data */
+            sleep?: number | null;
+            fuel?: number | null;
+            checkin?: number | null;
+            activity?: number | null;
+        };
+        MeWeekDay: {
+            /** Format: date */
+            date: string;
+            /** @description 0–100; null = "tanulom" (<2 subscores) */
+            score?: number | null;
+            subscores: components["schemas"]["MeWeekSubscores"];
+            /** @description consumed kcal; null when nothing logged */
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            kcalTarget?: number | null;
+            proteinTargetG?: number | null;
+            weightKg?: number | null;
+            sleepMin?: number | null;
+            sleepQuality?: number | null;
+            checkinCount: number;
+            checkinEnergyAvg?: number | null;
+            /** @description gym + sport + run sessions logged on the day */
+            workoutCount: number;
+            xp?: number | null;
+        };
+        MeWeekAggregates: {
+            /** @description round(mean of non-null day scores); null when <2 */
+            score?: number | null;
+            prevWeekScore?: number | null;
+            /** @description mean over days with logged kcal */
+            avgKcal?: number | null;
+            avgProteinG?: number | null;
+            avgSleepMin?: number | null;
+            avgCheckinEnergy?: number | null;
+            /** @description filled slots / (4 × elapsed days of the week) */
+            checkinRatio?: number | null;
+            latestWeightKg?: number | null;
+            /** @description EWMA weekly rate from the weight trend */
+            weightWeeklyRateKg?: number | null;
+            totalXp?: number | null;
+        };
+        MeWeekResponse: {
+            /** Format: date */
+            start: string;
+            days: components["schemas"]["MeWeekDay"][];
+            weekly: components["schemas"]["MeWeekAggregates"];
+        };
+        CharacterClaimDto: {
+            /** Format: uuid */
+            id: string;
+            text: string;
+            /** @description 0–1; the FE renders human words, never the raw number (Minták precedent) */
+            confidence: number;
+            sensitive: boolean;
+            /** @description expert persona key */
+            proposedBy?: string;
+            evidence: {
+                kind: string;
+                id?: string | null;
+                label: string;
+            }[];
+        };
+        CharacterDimensionSummary: {
+            key: string;
+            title: string;
+            /** @enum {string} */
+            kind: "CORE" | "CHAPTER";
+            expertKey?: string | null;
+            /** @description 0–100; 0 = "tanulom" */
+            maturity: number;
+            /** @description empty string until the first conference writes it */
+            portrait: string;
+            topClaims: components["schemas"]["CharacterClaimDto"][];
+        };
+        CharacterOverviewResponse: {
+            dimensions: components["schemas"]["CharacterDimensionSummary"][];
+        };
+        CharacterPortraitRevisionDto: {
+            version: number;
+            portrait: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CharacterDimensionResponse: {
+            key: string;
+            title: string;
+            /** @enum {string} */
+            kind: "CORE" | "CHAPTER";
+            expertKey?: string | null;
+            maturity: number;
+            portrait: string;
+            claims: components["schemas"]["CharacterClaimDto"][];
+            revisions: components["schemas"]["CharacterPortraitRevisionDto"][];
+        };
+        CharacterFeedItem: {
+            /** @enum {string} */
+            kind: "OBSERVATION" | "CONFERENCE_CHANGE";
+            /** Format: date-time */
+            at: string;
+            /** @description null for CONFERENCE_CHANGE items */
+            expertKey?: string | null;
+            dimensionKeys?: string[];
+            text: string;
+        };
+        CharacterConferenceSummary: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "BOOTSTRAP" | "WEEKLY" | "MONTHLY";
+            /** Format: date */
+            weekStart?: string | null;
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        ConferenceTurn: {
+            persona: string;
+            text: string;
+            refIds?: string[];
+        };
+        CharacterConferenceResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "BOOTSTRAP" | "WEEKLY" | "MONTHLY";
+            /** Format: date */
+            weekStart?: string | null;
+            /** Format: date-time */
+            generatedAt: string;
+            transcript: components["schemas"]["ConferenceTurn"][];
+            changes: {
+                kind: string;
+                dimensionKey?: string | null;
+                summary: string;
+            }[];
         };
     };
     responses: never;
@@ -11605,7 +11978,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateConversationRequest"];
+            };
+        };
         responses: {
             /** @description The created conversation */
             201: {
@@ -12797,6 +13174,147 @@ export interface operations {
             };
             /** @description The challenge is not in the proposed state (already decided) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getWeeklyReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ISO Monday of the wanted week */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The persisted weekly review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyReviewResponse"];
+                };
+            };
+            /** @description {start} is not a Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No weekly review persisted for this week */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    regenerateWeeklyReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ISO Monday of the wanted week */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The freshly generated weekly review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyReviewResponse"];
+                };
+            };
+            /** @description {start} is not a Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Regeneration yielded no row (no logged data in the week) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The week is not completed yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getWeeklyReviewDigest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ISO Monday of the wanted week */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The week's digest (possibly all-empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyReviewDigestResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15129,6 +15647,216 @@ export interface operations {
                 };
             };
             /** @description GRAPH_NODE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMeWeek: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The week's ISO Monday (400 when the date is not a Monday) */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The week (always exactly 7 day entries, start..start+6) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeWeekResponse"];
+                };
+            };
+            /** @description start is not an ISO Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The dossier (CORE dimensions always present; portraits may be empty — the honest pre-bootstrap state) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOverviewResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterDimension: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The dimension */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterDimensionResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such dimension key for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterFeed: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Feed items, newest first (possibly empty — never a 404; list-endpoint precedent) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterFeedItem"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listCharacterConferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conference summaries, newest first (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterConferenceSummary"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterConference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conferenceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The conference */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterConferenceResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such conference for this user */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -8,6 +8,9 @@ import io.mrkuhne.mezo.api.dto.FeedRef;
 import io.mrkuhne.mezo.api.dto.MemoirAnchor;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.PredictionResponse;
+import io.mrkuhne.mezo.api.dto.WeeklyReviewDayNote;
+import io.mrkuhne.mezo.api.dto.WeeklyReviewHighlight;
+import io.mrkuhne.mezo.api.dto.WeeklyReviewResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeRefsEnvelope;
@@ -17,6 +20,9 @@ import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirAnchorsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.WeeklyReviewDayNotesEnvelope;
+import io.mrkuhne.mezo.feature.proactive.entity.WeeklyReviewEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.WeeklyReviewHighlightsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklySuggestionEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -36,6 +42,17 @@ public interface ProactiveMapper {
     MemoirAnchor toMemoirAnchor(MemoirAnchorsEnvelope.Anchor anchor);
 
     PredictionResponse toPredictionResponse(PredictionEntity entity);
+
+    /** {@code stale} is NOT mapped — it depends on OTHER aggregates' rows, computed by
+     *  {@code WeeklyReviewService} and set on the returned DTO after this call. */
+    @Mapping(target = "dayNotes", source = "dayNotes.notes")
+    @Mapping(target = "highlights", source = "highlights.highlights")
+    @Mapping(target = "stale", ignore = true)
+    WeeklyReviewResponse toWeeklyReviewResponse(WeeklyReviewEntity entity);
+
+    WeeklyReviewDayNote toWeeklyReviewDayNote(WeeklyReviewDayNotesEnvelope.DayNote note);
+
+    WeeklyReviewHighlight toWeeklyReviewHighlight(WeeklyReviewHighlightsEnvelope.Highlight highlight);
 
     ExperimentResponse toExperimentResponse(ExperimentEntity entity);
 

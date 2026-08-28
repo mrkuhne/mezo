@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.api.dto.ExperimentResponse;
 import io.mrkuhne.mezo.api.dto.FeedMessageResponse;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.PredictionResponse;
+import io.mrkuhne.mezo.api.dto.WeeklyReviewDigestResponse;
+import io.mrkuhne.mezo.api.dto.WeeklyReviewResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveChallengeService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveExperimentService;
@@ -15,13 +17,19 @@ import io.mrkuhne.mezo.feature.proactive.service.ProactiveFeedService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveMemoirService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactivePredictionService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveWeeklySuggestionService;
+import io.mrkuhne.mezo.feature.proactive.service.WeeklyReviewDigestService;
+import io.mrkuhne.mezo.feature.proactive.service.WeeklyReviewService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -37,7 +45,16 @@ public class ProactiveController implements ProactiveApi {
     private final ProactiveExperimentService experimentService;
     private final ProactiveChallengeService challengeService;
     private final ProactiveFeedService feedService;
+    private final WeeklyReviewService weeklyReviewService;
+    private final WeeklyReviewDigestService weeklyReviewDigestService;
     private final CurrentUserId currentUserId;
+
+    private static void requireMonday(LocalDate start) {
+        if (start.getDayOfWeek() != DayOfWeek.MONDAY) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("WEEKLY_REVIEW_START_NOT_MONDAY").build(), HttpStatus.BAD_REQUEST);
+        }
+    }
 
     @Override
     public List<FeedMessageResponse> getFeed(LocalDate date) {
@@ -82,5 +99,22 @@ public class ProactiveController implements ProactiveApi {
     @Override
     public ChallengeResponse decideChallenge(UUID id, ChallengeDecisionRequest request) {
         return challengeService.decide(currentUserId.get(), id, request);
+    }
+
+    @Override
+    public WeeklyReviewResponse getWeeklyReview(LocalDate start) {
+        requireMonday(start);
+        return weeklyReviewService.getResponse(currentUserId.get(), start);
+    }
+
+    @Override
+    public WeeklyReviewResponse regenerateWeeklyReview(LocalDate start) {
+        requireMonday(start);
+        return weeklyReviewService.regenerate(currentUserId.get(), start);
+    }
+
+    @Override
+    public WeeklyReviewDigestResponse getWeeklyReviewDigest(LocalDate start) {
+        return weeklyReviewDigestService.getDigest(currentUserId.get(), start);
     }
 }

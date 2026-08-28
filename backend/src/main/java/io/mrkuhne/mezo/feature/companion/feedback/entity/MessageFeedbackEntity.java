@@ -40,6 +40,7 @@ public class MessageFeedbackEntity extends OwnedEntity {
     public static final String KIND_CHAT_MESSAGE = "chat_message";
     public static final String KIND_FEED_MESSAGE = "feed_message";
     public static final String KIND_WEEKLY_SUGGESTION = "weekly_suggestion";
+    public static final String KIND_WEEKLY_REVIEW = "weekly_review";
     public static final String KIND_MEMOIR = "memoir";
     public static final String KIND_PREDICTION = "prediction";
 
@@ -63,7 +64,7 @@ public class MessageFeedbackEntity extends OwnedEntity {
     /** Mirrors ck_message_feedback_artifact_kind. */
     @NotNull
     @Size(max = 20)
-    @Pattern(regexp = "chat_message|feed_message|weekly_suggestion|memoir|prediction")
+    @Pattern(regexp = "chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction")
     @Column(name = "artifact_kind", nullable = false, length = 20)
     private String artifactKind;
 

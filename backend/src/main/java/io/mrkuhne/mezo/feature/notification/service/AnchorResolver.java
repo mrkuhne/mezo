@@ -18,10 +18,9 @@ import io.mrkuhne.mezo.feature.notification.domain.NotificationCategory;
 import io.mrkuhne.mezo.feature.notification.domain.ScheduleEntry;
 import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
-import io.mrkuhne.mezo.feature.proactive.entity.WeeklySuggestionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.feature.proactive.repository.MemoirRepository;
-import io.mrkuhne.mezo.feature.proactive.repository.WeeklySuggestionRepository;
+import io.mrkuhne.mezo.feature.proactive.repository.WeeklyReviewRepository;
 import io.mrkuhne.mezo.feature.ritual.service.RitualService;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
@@ -81,12 +80,12 @@ import org.springframework.transaction.annotation.Transactional;
  * "no dose logged yet" state and is treated as "no anchor today", never as cycle day zero.
  *
  * <p>Prose anchors ({@code briefing}/{@code morning}, {@code midday}, {@code evening},
- * {@code sleep_reaction}, {@code weight_reaction}, {@code weekly}, {@code memoir}) exist only
- * when their content row exists for the day — a missing row is an honest absence, never a
+ * {@code sleep_reaction}, {@code weight_reaction}, {@code weekly_review}, {@code memoir}) exist
+ * only when their content row exists for the day — a missing row is an honest absence, never a
  * placeholder. Five of the seven ({@code morning}/{@code midday}/{@code evening}/
  * {@code sleep_reaction}/{@code weight_reaction}) read the unified {@code companion_message}
  * table (companion-feed, mezo-gst9) instead of the retired {@code briefing}/{@code
- * heartbeat_note} tables; {@code weekly}/{@code memoir} are unaffected. Their body is an excerpt
+ * heartbeat_note} tables; {@code weekly_review}/{@code memoir} are unaffected. Their body is an excerpt
  * of the already-generated text (never a new LLM call), cut at a word boundary via {@link
  * #excerptProse(String)}, which reuses {@link PushSender#truncateBody(String, int)}'s
  * surrogate-safe cut (same package) rather than a second raw {@code substring}.
@@ -107,7 +106,6 @@ public class AnchorResolver {
     private static final String URL_MEDICATION = "/fuel/gyogyszer";
     private static final String URL_RITUAL = "/ritual";
     private static final String URL_LIGHTS_OUT = "/me/sleep";
-    private static final String URL_INSIGHTS_WEEKLY = "/insights/weekly";
     private static final String URL_INSIGHTS_MEMOIR = "/insights/memoir";
     private static final String URL_JOURNAL = "/me/naplo";
 
@@ -117,6 +115,11 @@ public class AnchorResolver {
     private static final int MIDDAY_PREFERRED_MINUTE = 12 * 60 + 30;
     private static final int EVENING_PREFERRED_MINUTE = 20 * 60 + 30;
     private static final int MEMOIR_PREFERRED_MINUTE = 19 * 60;
+
+    /** Fixed Monday 10:00 push slot for the weekly review (mezo-p2tr) — unlike the retired
+     *  {@code weekly} push, this never collides with its generator's 06:50 cron, so it needs no
+     *  {@link #anchorAfterGeneration} grace. */
+    private static final int WEEKLY_REVIEW_MINUTE = 10 * 60;
 
     private static final int LAST_MINUTE_OF_DAY = 23 * 60 + 59;
 
@@ -128,7 +131,7 @@ public class AnchorResolver {
     private final MedicationRepository medicationRepository;
     private final MedicationCycleService medicationCycleService;
     private final CompanionMessageRepository companionMessageRepository;
-    private final WeeklySuggestionRepository weeklySuggestionRepository;
+    private final WeeklyReviewRepository weeklyReviewRepository;
     private final MemoirRepository memoirRepository;
     private final NotificationScheduleService notificationScheduleService;
     private final NotificationProperties notificationProperties;
@@ -152,7 +155,7 @@ public class AnchorResolver {
         eveningAnchor(owner, date).ifPresent(proseAnchors::add);
         sleepReactionAnchor(owner, date).ifPresent(proseAnchors::add);
         weightReactionAnchor(owner, date).ifPresent(proseAnchors::add);
-        weeklyAnchor(owner, date).ifPresent(proseAnchors::add);
+        weeklyReviewAnchor(owner, date).ifPresent(proseAnchors::add);
         memoirAnchor(owner, date).ifPresent(proseAnchors::add);
 
         List<AnchoredEvent> scheduleAnchors = scheduleAnchors(owner, date);
@@ -411,7 +414,7 @@ public class AnchorResolver {
         return events;
     }
 
-    // ---- prose anchors: morning / midday / evening / sleep_reaction / weight_reaction / weekly / memoir ----
+    // ---- prose anchors: morning / midday / evening / sleep_reaction / weight_reaction / weekly_review / memoir ----
     // The first five read the unified companion_message table (companion-feed, mezo-gst9),
     // replacing the retired briefing/heartbeat_note reads those tables die in a later task.
 
@@ -483,20 +486,23 @@ public class AnchorResolver {
                 });
     }
 
-    private Optional<AnchoredEvent> weeklyAnchor(UUID owner, LocalDate date) {
+    /**
+     * Monday-only, fixed 10:00 push for the JUST-FINISHED week's review (mezo-p2tr) — the
+     * backward-looking replacement for the retired {@code weekly} anchor above. The
+     * {@code weekly_review} row is keyed by the finished week's own Monday, i.e.
+     * {@code date.minusWeeks(1)} when {@code date} IS the resolving Monday (the job runs 06:50 that
+     * same morning) — never {@code date} itself, which would look up the CURRENT (not-yet-lived)
+     * week and always miss.
+     */
+    private Optional<AnchoredEvent> weeklyReviewAnchor(UUID owner, LocalDate date) {
         if (date.getDayOfWeek() != DayOfWeek.MONDAY) {
             return Optional.empty();
         }
-        return weeklySuggestionRepository.findByCreatedByAndWeekStart(owner, date).map(suggestion -> {
-            // The wake anchor is user-configurable and could be ANY minute, so the grace is applied
-            // relative to the generator's own cron minute, never blindly added to wake: a 08:00
-            // waker keeps 08:00, a 06:00 waker (the config default, == the generator minute) is
-            // pushed past the WeeklySuggestionJob.
-            int minute = anchorAfterGeneration(minuteOfDay(sleepAnchorPort.resolve(owner).wake()),
-                    proactiveProperties.weekly().cron(), date);
-            return new AnchoredEvent(NotificationCategory.WEEKLY, minute, hhmm(minute),
-                    "Mezo · heti terv", excerptProse(suggestion.getProse()), URL_INSIGHTS_WEEKLY);
-        });
+        LocalDate weekStart = date.minusWeeks(1);
+        return weeklyReviewRepository.findByCreatedByAndWeekStart(owner, weekStart).map(review ->
+                new AnchoredEvent(NotificationCategory.WEEKLY_REVIEW, WEEKLY_REVIEW_MINUTE,
+                        hhmm(WEEKLY_REVIEW_MINUTE), "Mezo · heti elemzés", excerptProse(review.getSummary()),
+                        "/me/week?start=" + weekStart));
     }
 
     private Optional<AnchoredEvent> memoirAnchor(UUID owner, LocalDate date) {

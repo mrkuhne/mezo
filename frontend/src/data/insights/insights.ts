@@ -6,8 +6,6 @@ import type {
   PatternPairDetail,
   Prediction,
   Experiment,
-  WeeklyReview,
-  WeeklyGrowth,
   Memoir,
 } from '@/data/types'
 
@@ -73,27 +71,6 @@ export const recentlyConfirmed: string[] = [
   'Hét 17: Volleyball nap → kevesebb gym set',
   'Hét 16: Magnézium 21:00 előtt',
 ]
-
-export const weekly: WeeklyReview = {
-  title: 'Hét 21 áttekintés · Máj 18-24',
-  score: 82,
-  delta: 4,
-  items: [
-    { label: 'Edzés volumen', value: '16 set fölött', trend: 'up' },
-    { label: 'Alvás átlag', value: '7.2h', trend: 'flat' },
-    { label: 'Kcal pacing', value: '94% target', trend: 'up' },
-    { label: 'Niggle-mentes napok', value: '5/7', trend: 'down' },
-  ],
-}
-
-export const growthWeek: WeeklyGrowth = {
-  weekStart: '2026-05-18',
-  questCompleted: 9,
-  questClosed: 14,
-  lifeXp: 120,
-  activities: 6,
-  savingsHuf: 50000,
-}
 
 export const weeklySuggestion =
   'Hét 22: tartsd ezt a Pull/Push váltogatást. A volleyball után visszamentünk 7.2h-ra — vasárnap próbáljunk 8h+-ot.'

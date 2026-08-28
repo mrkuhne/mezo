@@ -9,7 +9,7 @@ class AppNotificationKindTest {
 
     @Test
     void testCatalog_shouldPinTwelveKindsWithFamiliesAndDeeplinks_perSpec() {
-        assertThat(AppNotificationKind.values()).hasSize(12);
+        assertThat(AppNotificationKind.values()).hasSize(13);
         assertThat(AppNotificationKind.PATTERN_INBOX.key()).isEqualTo("pattern_inbox");
         assertThat(AppNotificationKind.PATTERN_INBOX.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.PATTERN_SIGNAL.familyKey()).isEqualTo("pattern");
@@ -24,6 +24,9 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.EXPERIMENT_CLOSED.familyKey()).isEqualTo("experiment");
         assertThat(AppNotificationKind.CHALLENGE_EVENT.familyKey()).isEqualTo("challenge");
         assertThat(AppNotificationKind.MEMORY_NOTE.familyKey()).isEqualTo("memory");
+        // weekly_review_ready: same no-family rationale as memoir_ready (mezo-p2tr).
+        assertThat(AppNotificationKind.WEEKLY_REVIEW_READY.familyKey()).isNull();
+        assertThat(AppNotificationKind.WEEKLY_REVIEW_READY.deeplink()).isEqualTo("/me/week");
         assertThat(AppNotificationKind.FACT_CANDIDATE.deeplink()).isEqualTo("/insights/knowledge");
         assertThat(AppNotificationKind.CHALLENGE_EVENT.deeplink()).isEqualTo("/train");
         assertThat(AppNotificationKind.MEMORY_NOTE.deeplink()).isEqualTo("/insights/memoria");
