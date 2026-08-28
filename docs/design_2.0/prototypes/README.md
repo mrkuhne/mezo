@@ -284,28 +284,39 @@ are usable without a build step).
 - **en-tab → Heti áttekintés** — the weekly-review page, audited against the freshly merged
   `feat/weekly-review` slice (`2026-08-27-heti-feature-audit.md`: `/me/week` + `GET /api/me/week/{start}`,
   `GET|POST /api/proactive/weekly-review/{start}[/regenerate]`, `…/digest`, the Monday 06:50 generator
-  and the Monday 10:00 push). The real page ships as a flat number + list rows; this round rebuilds it
-  tile-first and fixes the audit's dead payloads. **Hero**: an animated score ring (number spins up from
-  0, band-coloured — 80+ sage · 70+ gold · below terracotta, never red), a delta pill against last week,
-  and an **8-week score trend** with the viewed week ringed; under two measured days it honestly reads
-  `tanulom`. **Stats**: eight tinted mini-cells — the real six plus **check-in energy** and **latest
-  weight**, both returned by the backend and unused by today's UI. **Daily score columns**: band-coloured
-  bars, `—` stubs on tanulom days, a MA marker, and tapping a column scrolls to that day's tile and opens
-  it; the axis comes from the real dates (today's UI hardcodes `Sz` for both Szerda and Szombat).
-  **Day tiles**: the four subscores as **colored rings** under a `miből jött össze` eyebrow, kcal **and**
-  protein against target (the kcal target is fetched but never shown today), alvás · edzés · XP mini-cells,
-  and the Mezo day note in a **companion bubble with the orb** instead of today's unmarked paragraph;
-  future days stay dimmed, unexpandable and chip-less. **Weekly review card**: orb + prose, then the
-  `amire épült` **anchor chips** (Minta · Tudás · Életesemény · Emlék) — the model already selects these
-  by index and the real UI drops them entirely —, the generation stamp, the stale refresh, 👍/👎 and
-  `Beszélgess a hétről`. **The single ghost string is split into honest states**: a running week reads
-  `Hétfő reggel érkezik… 4 / 7 nap logolva`; a finished week with no review offers **`✦ Készítsd el most`**
-  (the regenerate endpoint already does exactly this) with a live spinner that fills in a real summary,
-  day notes and lessons; week stepping shows a **skeleton** (today's page has neither a loading nor an
-  error state). **Amit a héten felfedezett**: a tile mosaic with status chips — pattern events
-  (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), new facts, life events with their date, the memoir, and
-  predictions with outcome (◐ Folyamatban · ✓ Bevált · ✗ Nem jött be) — all fetched today and thrown away.
-  **A hét tanulságai** is the designed knowledge loop (backend flag A): cross-day candidate facts with an
-  evidence line and Tanuld meg / Nem rólam szól — accepting cascades into the hub Tudás tile and the graph
-  count. `A következő heted` renders only on the running week, matching the real gating. Week navigation
-  walks three live weeks (finished-with-review → finished-without → running).
+  and the Monday 10:00 push). The real page is one long scroll of cards; this round rebuilds it as a
+  **tile hub with four view subpages** (Daniel's round-2 note: *"picit sok a scroll… legyen itt is pár
+  csempe"*) — hub scroll height 1651 px -> 525 px. **Hub**: the animated score ring (number spins up from
+  0, band-coloured — 80+ sage · 70+ gold · below terracotta, never red), a delta pill against last week
+  and an **8-week score trend** with the viewed week ringed (`tanulom` under two measured days); eight
+  tinted mini-cells — the real six plus **check-in energy** and **latest weight**, both returned by the
+  backend and unused today; then the four tiles; then the `Mezo · a következő heted` band (current week
+  only, matching the real gating) and the honesty footnote. **1 · Heti elemzés** (wide, lav-ringed):
+  orb + the review's first sentence + the week's **mini score bars** + the generation stamp (or
+  `hétfőn jön` / `nincs még`) → subpage with the Napi pontszám card (band-coloured columns, MA marker,
+  date-derived axis — today's chart hardcodes `Sz` for both Szerda and Szombat —, tapping a column opens
+  the days page and expands that day), the full review card with the **`amire épült` anchor chips**
+  (Minta · Tudás · Életesemény · Emlék — the model selects these by index and the real UI drops them
+  entirely), stale refresh, thumbs feedback, `Beszélgess a hétről`, and a hand-off band to the lessons.
+  **2 · A hét tanulságai**: open-candidate count → subpage with the cross-day candidate facts, each with
+  an evidence line and `Tanuld meg` / `Nem rólam szól`; accepting cascades into the tile, the hub Tudás
+  tile and the graph count (backend flag A). **3 · A hét napjai**: `5 / 7 nap` + seven mini score rings
+  → subpage as a **2-column day mosaic** (round 3: the first pass was still a row list), each day a tile
+  washed by its score band, with the big score, the four subscores as **animated sparks** (sleep sky ·
+  fuel sage · check-in rose · activity coral) and clay-icon data chips (kcal · sleep · workouts ·
+  check-in n/4 · a `jegyzet` chip when Mezo wrote about the day); above them mini-cells for
+  *legjobb nap · leggyengébb · tanulom*. Tapping a tile makes it **grow full-width** and expands the
+  detail in place: four subscore rings, kcal **and** protein against target (the kcal target is fetched
+  but never shown today), alvás · edzés · XP cells, the Mezo note in a **companion bubble with the orb**
+  instead of today's unmarked paragraph, and `Beszélgess a napról`. Honest distinction the shipped UI
+  does not draw: **`tanulom`** = fewer than two domains have data · **`nincs adat`** = nothing was logged
+  that day (dashed tile) · future days dashed, dimmed and unexpandable. **4 · Heti felfedezések**: `5 új nyom a
+  memóriában` + category dots → subpage mosaic with the status information the API returns and the UI
+  drops: pattern `event` (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), life-event dates, prediction
+  outcomes (◐ Folyamatban · ✓ Bevált · ✗ Nem jött be); the header line separates these (things that
+  already happened) from tile 2's candidates. **Honest states split apart**: a running week reads
+  `Hétfő reggel érkezik… 4 / 7 nap logolva`; a finished week with no review offers
+  **`✦ Készítsd el most`** (the regenerate endpoint already does exactly this) with a live spinner that
+  fills in a real summary, day notes and lessons and refreshes every hub tile; week stepping shows a
+  **skeleton** (today's page has neither a loading nor an error state). Week navigation walks three live
+  weeks: finished-with-review → finished-without → running.

@@ -34,7 +34,7 @@ export function PatternJournal({ entries }: { entries: JournalEntry[] }) {
             {entry.factLink && (
               <>
                 {' '}Létrejött a tudás-tény:{' '}
-                <Link to="/insights/knowledge" style={{ color: 'var(--lav-deep)', fontWeight: 600, textDecoration: 'none' }}>
+                <Link to="/mezo/knowledge" style={{ color: 'var(--lav-deep)', fontWeight: 600, textDecoration: 'none' }}>
                   a Tudástárban →
                 </Link>
               </>

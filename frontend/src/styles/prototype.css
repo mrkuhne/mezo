@@ -150,6 +150,93 @@
   --ff-body:    'Geist', -apple-system, system-ui, sans-serif;
   --ff-serif:   'Fraunces', Georgia, serif;
   --ff-mono:    'Geist Mono', monospace;
+  /* ── Mozaik 2.0 token delta (mezo-d20.1.5) — light values verbatim from the
+        design_2.0 prototypes; dark overrides derive from the dv ramp + surfaces. */
+  --mz-wash-coral: linear-gradient(150deg, #FFE7DC, #FFF7F2);
+  --mz-wash-sage:  linear-gradient(150deg, #E9F1E2, #F7FBF3);
+  --mz-wash-sky:   linear-gradient(150deg, #DFEDF5, #F5FAFD);
+  --mz-wash-gold:  linear-gradient(150deg, #FFF1D6, #FFFAF0);
+  --mz-wash-lav:   linear-gradient(150deg, #EBE6F8, #F9F6FE);
+  --mz-wash-rose:  linear-gradient(150deg, #FAE3ED, #FEF8FB);
+  --mz-wash-white: #FFFFFF;
+  --mz-shadow:      0 17px 31px -17px rgba(43, 33, 24, 0.28), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-sage: 0 17px 31px -17px rgba(110, 139, 94, 0.45), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-sky:  0 17px 31px -17px rgba(78, 143, 184, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-gold: 0 17px 31px -17px rgba(181, 126, 20, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-lav:  0 17px 31px -17px rgba(93, 79, 160, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-rose: 0 17px 31px -17px rgba(142, 63, 111, 0.35), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-shadow-most: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-cell-sage-bg: #E9F1E2;  --mz-cell-sage-ink: #4E6B42;
+  --mz-cell-coral-bg: #FFE7DC; --mz-cell-coral-ink: #A84A26;
+  --mz-cell-amber-bg: #FFF1D6; --mz-cell-amber-ink: #8A5E07;
+  --mz-cell-lav-bg: #EBE6F8;   --mz-cell-lav-ink: #5D4FA0;
+  --mz-cell-sky-bg: #DFEDF5;   --mz-cell-sky-ink: #2E6E96;
+  --mz-cell-rose-bg: #FAE3ED;  --mz-cell-rose-ink: #8E3F6F;
+  --mz-cell-gold-bg: #FBEBCB;  --mz-cell-gold-ink: #8A5E07;
+  --mz-tone-coral: #FFE3D4; --mz-tone-gold: #FBEBCB; --mz-tone-lav: #E9E3F7;
+  --mz-tone-rose: #F7E3ED;  --mz-tone-sage: #E4EEDC; --mz-tone-sky: #DCEBF4;
+  --mz-cellbg: rgba(255, 255, 255, 0.72);
+  --mz-chipbg: rgba(255, 255, 255, 0.7);
+  --mz-stripbg: #FFFFFF;
+  --mz-strength: linear-gradient(90deg, #E5C46B, #C9962E); /* habit-strength bar (nap #page-hab .hstr) */
+  --mz-ink-mut: #A2958A;
+  --mz-ink-soft: #6E6257;
+  /* quest cards (mezo-d20.2.4) — prototype .qcard.done / .qxp hexes verbatim */
+  --mz-qdone-bg: linear-gradient(150deg, #EFF3EA, #FBFDF9);
+  --mz-qdone-ink: #5F7A52;
+  --mz-qxp-ink: #A8801F;
+  --mz-qxp-bg: rgba(201, 150, 46, 0.12);
+  /* Mezo hub (mezo-d20.5.1) — prototype mezo-head/body hexes verbatim */
+  --mz-wash-minta: #F0EDF8;                                   /* .t-minta solid lav */
+  --mz-wash-kreed: linear-gradient(140deg, #FFF2EA, #FFFFFF 75%); /* .t-kreed / .kreed */
+  --mz-decring: #C9962E;                                      /* .deccard gold ring */
+  --mz-decobs-bg: #FBF3DF;                                    /* .decobs recessed gold */
+  --mz-shadow-dec: 0 24px 40px -17px rgba(201, 150, 46, 0.45), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-shadow-chatopen: 0 19px 35px -17px rgba(93, 79, 160, 0.45), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  /* chat face (mezo-d20.5.2) — prototype mezo-body #page-chat hexes verbatim, shadows ×1.18 */
+  --mz-chat-user-bg: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+  --mz-chat-user-shadow: 0 12px 24px -14px rgba(216, 72, 31, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-chat-a-shadow: 0 14px 28px -17px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-chat-send-bg: linear-gradient(135deg, #8A76CC, #6C5FA3);
+  --mz-chat-send-shadow: 0 7px 17px -5px rgba(108, 95, 163, 0.6);
+  --mz-chat-mic-bg: rgba(93, 79, 160, 0.08);
+  --mz-chat-mic-rec-bg: rgba(201, 150, 46, 0.2);
+  --mz-chat-refch-bg: rgba(43, 33, 24, 0.04);
+  --mz-chat-refch-bd: rgba(43, 33, 24, 0.08);
+  --mz-chat-memline: rgba(138, 118, 204, 0.4);
+  --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(43, 33, 24, 0.25), 0 17px 31px -17px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  /* Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak hexes verbatim */
+  --mz-mnt-motor-bg: linear-gradient(140deg, #F7F4FD, #FFFFFF 70%);
+  --mz-mnt-hot-ring: #C9962E;
+  --mz-mnt-bar: linear-gradient(90deg, #B4A4E4, #8A76CC);
+  /* Memoár + Tudástár re-face (mezo-d20.5.5) — prototype mezo-body .memoir/.candc/.facttile */
+  --mz-memoir-glow: rgba(138, 118, 204, 0.16);
+  --mz-memoir-shadow: 0 24px 42px -19px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-cand-ring: #C9962E;
+  --mz-cand-shadow: 0 19px 33px -17px rgba(201, 150, 46, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-fic-bg: rgba(255, 255, 255, 0.78);
+  --mz-fact-off-bg: rgba(255, 255, 255, 0.6);
+  /* Előrejelzések + Kísérletek (mezo-d20.5.6) — prototype .stch/.gbar/.daydots hexes verbatim */
+  --mz-stch-pend-bg: rgba(138, 118, 204, 0.14); --mz-stch-pend-ink: #5D4FA0;
+  --mz-stch-ok-bg: rgba(143, 175, 126, 0.2);    --mz-stch-ok-ink: #4E6B42;
+  --mz-stch-prop-bg: rgba(201, 150, 46, 0.16);  --mz-stch-prop-ink: #A8801F;
+  --mz-stch-act-bg: rgba(255, 107, 74, 0.12);   --mz-stch-act-ink: #A84A26;
+  --mz-stch-mut-bg: rgba(43, 33, 24, 0.05);     --mz-stch-mut-ink: #6E6257;
+  --mz-gbar-bg: rgba(43, 33, 24, 0.08);
+  --mz-gbar-lav: linear-gradient(90deg, #B4A4E4, #8A76CC);
+  --mz-daydot: rgba(43, 33, 24, 0.1);
+  --mz-daydot-f: #C9962E;
+  --mz-prop-border: #C9962E;
+  --mz-prop-shadow: 0 20px 34px -14px rgba(201, 150, 46, 0.45), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-pic-bg: rgba(255, 255, 255, 0.78);
+  --mz-no-ink: #A8462E;
+  /* Memória observatory (mezo-d20.5.7) — laycard sand wash + coral layer shadow +
+     the lav flow-connector/match-ring inks (prototype mezo-body .laycard/.flowc/.mring) */
+  --mz-wash-sand: linear-gradient(150deg, #F3EDE2, #FBF8F1);
+  --mz-shadow-coral: 0 17px 31px -17px rgba(216, 72, 31, 0.32), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-mem-dash: #B4A8D8;
+  --mz-mem-ink: #8A76CC;
+
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -217,6 +304,97 @@
   --cta-g2: #FF6B47;
 
   --shadow-focus: 0 0 0 3px rgba(255, 126, 92, 0.38);
+  /* ── Mozaik 2.0 dark ("Pulse") — washes/cells/tones derived from the dv dark
+        ramp mixed onto the warm-graphite surfaces (mezo-d20.1.5). */
+  --mz-wash-coral: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 6%, var(--surface-page)));
+  --mz-wash-sage:  linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-sage) 6%, var(--surface-page)));
+  --mz-wash-sky:   linear-gradient(150deg, color-mix(in srgb, var(--dv-sky) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-sky) 6%, var(--surface-page)));
+  --mz-wash-gold:  linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-amber) 5%, var(--surface-page)));
+  --mz-wash-lav:   linear-gradient(150deg, color-mix(in srgb, var(--dv-lav) 18%, var(--surface-card)), color-mix(in srgb, var(--dv-lav) 6%, var(--surface-page)));
+  --mz-wash-rose:  linear-gradient(150deg, color-mix(in srgb, var(--dv-rose) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-rose) 5%, var(--surface-page)));
+  --mz-wash-white: var(--surface-card);
+  --mz-shadow:      0 17px 31px -17px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-shadow-sage: var(--mz-shadow);
+  --mz-shadow-sky:  var(--mz-shadow);
+  --mz-shadow-gold: var(--mz-shadow);
+  --mz-shadow-lav:  var(--mz-shadow);
+  --mz-shadow-rose: var(--mz-shadow);
+  --mz-shadow-most: 0 24px 40px -17px color-mix(in srgb, var(--dv-coral) 45%, transparent), 0 2px 7px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --mz-cell-sage-bg: color-mix(in srgb, var(--dv-sage) 20%, var(--surface-card));  --mz-cell-sage-ink: var(--dv-sage);
+  --mz-cell-coral-bg: color-mix(in srgb, var(--dv-coral) 20%, var(--surface-card)); --mz-cell-coral-ink: var(--primary-deep);
+  --mz-cell-amber-bg: color-mix(in srgb, var(--dv-amber) 18%, var(--surface-card)); --mz-cell-amber-ink: var(--dv-amber);
+  --mz-cell-lav-bg: color-mix(in srgb, var(--dv-lav) 20%, var(--surface-card));   --mz-cell-lav-ink: var(--dv-lav);
+  --mz-cell-sky-bg: color-mix(in srgb, var(--dv-sky) 20%, var(--surface-card));   --mz-cell-sky-ink: var(--dv-sky);
+  --mz-cell-rose-bg: color-mix(in srgb, var(--dv-rose) 18%, var(--surface-card));  --mz-cell-rose-ink: var(--dv-rose);
+  --mz-cell-gold-bg: color-mix(in srgb, var(--dv-amber) 22%, var(--surface-card)); --mz-cell-gold-ink: var(--dv-amber);
+  --mz-tone-coral: color-mix(in srgb, var(--dv-coral) 24%, var(--surface-page));
+  --mz-tone-gold:  color-mix(in srgb, var(--dv-amber) 22%, var(--surface-page));
+  --mz-tone-lav:   color-mix(in srgb, var(--dv-lav) 24%, var(--surface-page));
+  --mz-tone-rose:  color-mix(in srgb, var(--dv-rose) 22%, var(--surface-page));
+  --mz-tone-sage:  color-mix(in srgb, var(--dv-sage) 22%, var(--surface-page));
+  --mz-tone-sky:   color-mix(in srgb, var(--dv-sky) 22%, var(--surface-page));
+  --mz-cellbg: color-mix(in srgb, var(--surface-card) 72%, transparent);
+  --mz-chipbg: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+  --mz-stripbg: var(--surface-card);
+  --mz-ink-mut: #8A7A6A;
+  --mz-ink-soft: var(--text-secondary);
+  --mz-strength: linear-gradient(90deg, color-mix(in srgb, var(--dv-amber) 55%, var(--surface-card)), var(--dv-amber));
+  /* quest cards (mezo-d20.2.4) — done wash / XP pill on the dark dv ramp */
+  --mz-qdone-bg: linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 14%, var(--surface-card)), var(--surface-card));
+  --mz-qdone-ink: var(--dv-sage);
+  --mz-qxp-ink: var(--dv-amber);
+  --mz-qxp-bg: color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card));
+  /* Mezo hub (mezo-d20.5.1) — dark ("Pulse") derivations on the dv ramp */
+  --mz-wash-minta: color-mix(in srgb, var(--dv-lav) 14%, var(--surface-card));
+  --mz-wash-kreed: linear-gradient(140deg, color-mix(in srgb, var(--dv-coral) 12%, var(--surface-card)), var(--surface-card) 75%);
+  --mz-decring: var(--dv-amber);
+  --mz-decobs-bg: color-mix(in srgb, var(--dv-amber) 14%, var(--surface-card));
+  --mz-shadow-dec: 0 24px 40px -17px color-mix(in srgb, var(--dv-amber) 45%, transparent), 0 2px 7px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --mz-shadow-chatopen: 0 19px 35px -17px color-mix(in srgb, var(--dv-lav) 45%, transparent), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  /* chat face (mezo-d20.5.2) — bubbles/composer on the dark dv ramp; the lav send disc
+     stays saturated in both themes (colored control, like the MOST ring). */
+  --mz-chat-user-bg: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
+  --mz-chat-user-shadow: 0 12px 24px -14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --mz-chat-a-shadow: 0 14px 28px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-chat-send-bg: linear-gradient(135deg, #8A76CC, #6C5FA3);
+  --mz-chat-send-shadow: 0 7px 17px -5px rgba(0, 0, 0, 0.5);
+  --mz-chat-mic-bg: color-mix(in srgb, var(--dv-lav) 14%, var(--surface-elevated));
+  --mz-chat-mic-rec-bg: color-mix(in srgb, var(--dv-amber) 24%, var(--surface-elevated));
+  --mz-chat-refch-bg: rgba(245, 239, 230, 0.05);
+  --mz-chat-refch-bd: rgba(245, 239, 230, 0.1);
+  --mz-chat-memline: color-mix(in srgb, var(--dv-lav) 45%, transparent);
+  --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(0, 0, 0, 0.5), 0 17px 31px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  /* Minták page (mezo-d20.5.3) — motor card / hot ring / evidence bar on the dark ramp */
+  --mz-mnt-motor-bg: linear-gradient(140deg, color-mix(in srgb, var(--dv-lav) 10%, var(--surface-card)), var(--surface-card) 70%);
+  --mz-mnt-hot-ring: var(--dv-amber);
+  --mz-mnt-bar: linear-gradient(90deg, color-mix(in srgb, var(--dv-lav) 55%, var(--surface-card)), var(--dv-lav));
+  /* Memoár + Tudástár re-face (mezo-d20.5.5) — glows/rings on the dark dv ramp */
+  --mz-memoir-glow: color-mix(in srgb, var(--dv-lav) 22%, transparent);
+  --mz-memoir-shadow: 0 24px 42px -19px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-cand-ring: var(--dv-amber);
+  --mz-cand-shadow: 0 19px 33px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-fic-bg: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+  --mz-fact-off-bg: color-mix(in srgb, var(--surface-card) 60%, transparent);
+  /* Előrejelzések + Kísérletek (mezo-d20.5.6) — chips/bars/dots on the dark dv ramp */
+  --mz-stch-pend-bg: color-mix(in srgb, var(--dv-lav) 22%, var(--surface-card));   --mz-stch-pend-ink: var(--dv-lav);
+  --mz-stch-ok-bg: color-mix(in srgb, var(--dv-sage) 22%, var(--surface-card));    --mz-stch-ok-ink: var(--dv-sage);
+  --mz-stch-prop-bg: color-mix(in srgb, var(--dv-amber) 20%, var(--surface-card)); --mz-stch-prop-ink: var(--dv-amber);
+  --mz-stch-act-bg: color-mix(in srgb, var(--dv-coral) 20%, var(--surface-card));  --mz-stch-act-ink: var(--primary-deep);
+  --mz-stch-mut-bg: var(--surface-recess); --mz-stch-mut-ink: var(--text-secondary);
+  --mz-gbar-bg: rgba(245, 239, 230, 0.1);
+  --mz-gbar-lav: linear-gradient(90deg, color-mix(in srgb, var(--dv-lav) 55%, var(--surface-card)), var(--dv-lav));
+  --mz-daydot: rgba(245, 239, 230, 0.12);
+  --mz-daydot-f: var(--dv-amber);
+  --mz-prop-border: var(--dv-amber);
+  --mz-prop-shadow: var(--mz-shadow);
+  --mz-pic-bg: rgba(245, 239, 230, 0.08);
+  --mz-no-ink: var(--primary-deep);
+  /* Memória observatory (mezo-d20.5.7) — sand → warm graphite, flow inks on the dv-lav ramp */
+  --mz-wash-sand: linear-gradient(150deg, color-mix(in srgb, var(--secondary-base) 12%, var(--surface-card)), color-mix(in srgb, var(--secondary-base) 4%, var(--surface-page)));
+  --mz-shadow-coral: var(--mz-shadow);
+  --mz-mem-dash: color-mix(in srgb, var(--dv-lav) 65%, transparent);
+  --mz-mem-ink: var(--dv-lav);
+
 }
 
 /* ===== Legacy alias bridge — Deep-Current / early-token names → DS tokens =====
@@ -451,32 +629,19 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   flex: 1;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 2px;
-  /* DS BottomNav label: 12 / 700 uppercase — one of the three documented 12px
-     exception classes (design-system-mezo.html §BottomNav) */
+  /* Design 2.0 .mtab recipe (mezo-d20.1.1): sentence-case label, clay icon above;
+     active speaks text-safe coral, inactive mutes the clay via filter. */
   font-family: var(--ff-body);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-secondary);
   transition: color var(--duration-fast) var(--ease-out);
   position: relative;
 }
 .tab-item.active { color: var(--primary-deep); }   /* text-safe coral (DS active tab) */
-.tab-item .tab-ico {
-  display: flex; align-items: center; justify-content: center;
-  padding: 2px 10px; border-radius: 14px;
-  transition: background var(--duration-fast) var(--ease-out);
-}
-.tab-item.active .tab-ico { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
-.tab-item svg { width: 24px; height: 24px; transition: all var(--duration-normal) var(--ease-out); }
-.tab-item .tab-dot {
-  position: absolute; top: 2px;
-  width: 4px; height: 4px; border-radius: 50%;
-  background: var(--coral);
-  opacity: 0;
-}
-.tab-item.active .tab-dot { opacity: 1; }
+.tab-item .tab-ico { display: grid; place-items: center; }
+.tab-item:not(.active) .tab-ico svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
+.tab-item svg { transition: filter var(--duration-normal) var(--ease-out); }
 
 /* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
    anchors to the device viewport like .sheet — floating just above the tab bar,
@@ -499,7 +664,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    (200+) so any open sheet's backdrop covers it. */
 .float-stack {
   position: absolute; right: 14px;
-  bottom: 92px; /* recipe-save-bar's clearance: tab-bar top edge ≈78px + 14px */
+  bottom: 158px; /* above the quick-log FAB: its 92px seat + 56px + 10px gap (mezo-d20.1.1) */
   display: flex; flex-direction: column; /* bottom-anchored container: the chat bubble (last child) keeps its spot, the train FAB grows upward above it */
   align-items: center; gap: 10px;
   z-index: 45;
@@ -1147,11 +1312,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 @media (prefers-reduced-motion: reduce) { .graph-node-pulse { animation: none; } }
 
-/* Memória-obszervatórium — L0→L3 áramlás-konnektor (mezo-al1i) */
-@keyframes memory-flow { to { stroke-dashoffset: -16; } }
-.memory-flow-line { animation: memory-flow 1.6s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .memory-flow-line { animation: none; } }
-
 /* Pattern card critique mini-bars */
 .critique-grid {
   display: grid;
@@ -1540,19 +1700,22 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 @supports not (backdrop-filter: blur(1px)) {
   .tab-bar { background: color-mix(in srgb, var(--canvas) 96%, transparent); }
 }
-.tab-fab {
-  width: 56px; height: 56px; border-radius: 50%; border: 4px solid var(--canvas);
-  margin-top: -34px; display: flex; align-items: center; justify-content: center;
-  background: var(--gradient-cta); color: #fff;   /* Rule 9: ONE definition */
-  box-shadow: var(--shadow-cta), inset 0 1.5px 0 rgba(255,255,255,.35);
-  cursor: pointer;
+/* Floating quick-log FAB (Design 2.0 decision B, mezo-d20.1.1) — bottom-right thumb
+   zone above the tab bar; prototype .floatfab recipe with the DS CTA gradient. */
+.quicklog-fab {
+  position: absolute; right: 14px; bottom: 92px;
+  width: 56px; height: 56px; border-radius: 50%; border: none;
+  background: var(--gradient-cta); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 12px 24px -6px color-mix(in srgb, var(--cta-g2) 65%, transparent);
+  cursor: pointer; z-index: 44;
   transition: transform var(--duration-fast) var(--ease-out);
 }
-.tab-fab:active { transform: scale(0.94); }   /* Rule 21: visible press feedback */
-/* Center + FAB soft glow pulse (spec §3.5) — motion only under no-preference. */
-@keyframes np-fabglow { 0%,100% { box-shadow: 0 6px 18px color-mix(in srgb, var(--cta-g2) 35%, transparent); }
-  50% { box-shadow: 0 8px 28px color-mix(in srgb, var(--cta-g2) 55%, transparent); } }
-@media (prefers-reduced-motion: no-preference) { .tab-fab { animation: np-fabglow 3.2s ease-in-out infinite; } }
+.quicklog-fab:active { transform: scale(0.92); }   /* Rule 21: visible press feedback */
+/* FAB soft glow pulse (prototype fabglow) — motion only under no-preference. */
+@keyframes np-fabglow { 0%,100% { box-shadow: 0 8px 18px -5px color-mix(in srgb, var(--cta-g2) 60%, transparent); }
+  50% { box-shadow: 0 8px 26px -3px color-mix(in srgb, var(--cta-g2) 85%, transparent); } }
+@media (prefers-reduced-motion: no-preference) { .quicklog-fab { animation: np-fabglow 3.2s ease-in-out 1.6s infinite; } }
 /* QuickInputSheet — the FAB's 6-tile quick-log launcher (DS re-dress mezo-setx.5.4) */
 .quicklog { padding: 4px 6px 10px; }
 .quicklog h2 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
@@ -1566,6 +1729,42 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: inherit;
 }
 .quicklog-emoji { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-recess); display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 6px; }
+/* ── quick-log v2 (mezo-d20.1.6): MOST head + in-place water + live sublines ── */
+.quicklog-sub-line { font-size: 11px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.quicklog-sub-line.done { color: var(--success-deep); font-weight: 700; }
+.quicklog-most {
+  width: 100%; margin-top: var(--sp-3); padding: 11px 13px;
+  display: flex; align-items: center; gap: 11px; text-align: left; font-family: inherit; cursor: pointer;
+  border: 1px solid #FF6B4A; border-radius: 20px; background: var(--mz-wash-white);
+  box-shadow: var(--mz-shadow-most);
+}
+.quicklog-most-text { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.quicklog-most-row { display: flex; align-items: center; gap: 7px; }
+.quicklog-most-row b { font-size: 14px; color: var(--text-primary); }
+.quicklog-most-stamp { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; color: #fff;
+  background: var(--gradient-cta); border-radius: 999px; padding: 2px 8px; }
+.quicklog-most-meal { font-size: 12px; color: var(--mz-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quicklog-most-cta { font-size: 13px; font-weight: 700; color: var(--primary-deep); flex: none; }
+.quicklog-water {
+  margin-top: var(--sp-3); padding: 11px 13px; border-radius: 20px;
+  background: var(--mz-wash-sky); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-sky);
+}
+.quicklog-water-head { display: flex; align-items: center; gap: 8px; }
+.quicklog-water-count { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.quicklog-water-chips { display: flex; gap: 8px; margin-top: 9px; }
+.quicklog-chip {
+  flex: 1; border: none; font-family: inherit; cursor: pointer;
+  border-radius: 999px; padding: 8px 0; font-size: 13px; font-weight: 700;
+  color: var(--mz-cell-sky-ink); background: var(--mz-cellbg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 6px 12px -8px rgba(43, 33, 24, 0.3);
+}
+.quicklog-tile.tone-sky { background: var(--mz-wash-sky); border-color: transparent; }
+.quicklog-tile.tone-lav { background: var(--mz-wash-lav); border-color: transparent; }
+.quicklog-tile.tone-sage { background: var(--mz-wash-sage); border-color: transparent; }
+.quicklog-tile.tone-coral { background: var(--mz-wash-coral); border-color: transparent; }
+.quicklog-tile.tone-gold { background: var(--mz-wash-gold); border-color: transparent; }
+.quicklog-tile.tone-rose { background: var(--mz-wash-rose); border-color: transparent; }
 .quicklog-label { font-size: 14px; font-weight: 700; color: var(--text-primary); }
 /* The one non-logging entry, lifted out of the grid so the companion chat stops hiding (mezo-967c) */
 .quicklog-chat {
@@ -1939,6 +2138,8 @@ button.itemrow { cursor: pointer; }
   .tab-bar { bottom: calc(10px + env(safe-area-inset-bottom)); }
   .screen-content { padding-bottom: calc(var(--screen-bottom-pad) + env(safe-area-inset-bottom)); }
   .recipe-save-bar { bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .quicklog-fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .float-stack { bottom: calc(154px + env(safe-area-inset-bottom)); }
 }
 
 /* ===== Napív giant set steppers (active workout, spec §4.5) =====
@@ -3714,6 +3915,726 @@ ol.md-list { list-style: decimal; }
 /* Recording mic (mezo-at8x.4) — a slow breath while the composer is listening. */
 .chat-mic-live { animation: pulse-soft 1.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .chat-mic-live { animation: none; } }
+
+/* ============================================================
+   Mozaik 2.0 primitives (design_2.0 — mezo-d20.1.3)
+   Values = the prototype heads' CSS ×1.18 (330→390px frame scale),
+   light-mode hexes verbatim from the prototypes. The dark ("Pulse")
+   and circadian overrides for the wash tokens land in F0.5
+   (mezo-d20.1.5) — components never branch on theme.
+   ============================================================ */
+
+/* entrance stagger hook — the choreography trigger (adding .play) is the
+   motion kit's job (F0.4); without .play tiles render settled. */
+.mz-play .rise { opacity: 0; transform: translateY(19px) scale(0.98);
+  animation: mz-rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d, 0ms); }
+@keyframes mz-rise { to { opacity: 1; transform: none; } }
+
+.mz-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+.mz-tile {
+  border-radius: 20px; padding: 12px 13px; min-height: 104px;
+  display: flex; flex-direction: column; text-align: left;
+  font-family: inherit; color: var(--text-primary);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  background: var(--mz-wash, var(--mz-wash-white));
+}
+button.mz-tile { cursor: pointer; }
+button.mz-tile:active { transform: scale(0.96); }
+
+/* washes — prototype .t-* gradients + their colored shadows */
+.mz-w-coral { --mz-wash: var(--mz-wash-coral); }
+.mz-w-sage  { --mz-wash: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.mz-w-sky   { --mz-wash: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
+.mz-w-gold  { --mz-wash: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mz-w-lav   { --mz-wash: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mz-w-rose  { --mz-wash: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose); }
+.mz-w-white { --mz-wash: var(--mz-wash-white); }
+.mz-w-most  { --mz-wash: var(--mz-wash-white); border: 1px solid #FF6B4A;
+  box-shadow: var(--mz-shadow-most); }
+
+.mz-tile-top { display: flex; align-items: center; }
+.mz-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.mz-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
+.mz-spotwrap { flex: 1; display: grid; place-items: center; padding: 5px 0; }
+.mz-tile-line { font-size: 11px; font-weight: 600; text-align: center;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.mz-statstrip { display: flex; gap: 11px; }
+.mz-statcell {
+  flex: 1; text-align: center; padding: 11px 5px; border-radius: 18px;
+  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 9px 19px -12px rgba(43, 33, 24, 0.25);
+}
+.mz-statcell b { font-size: 15px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
+.mz-statcell small { font-size: 10px; color: var(--mz-ink-soft); }
+
+/* tinted mini-cells — the .mcells recipe */
+.mz-mcells { display: flex; gap: 6px; }
+.mz-mcells span { flex: 1; border-radius: 13px; padding: 6px 2px 5px; text-align: center;
+  background: var(--mw); color: var(--md); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mz-mcells b { display: block; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.mz-mcells small { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.78; }
+.mz-c-sage  { --mw: var(--mz-cell-sage-bg); --md: var(--mz-cell-sage-ink); }
+.mz-c-coral { --mw: var(--mz-cell-coral-bg); --md: var(--mz-cell-coral-ink); }
+.mz-c-amber { --mw: var(--mz-cell-amber-bg); --md: var(--mz-cell-amber-ink); }
+.mz-c-lav   { --mw: var(--mz-cell-lav-bg); --md: var(--mz-cell-lav-ink); }
+.mz-c-sky   { --mw: var(--mz-cell-sky-bg); --md: var(--mz-cell-sky-ink); }
+.mz-c-rose  { --mw: var(--mz-cell-rose-bg); --md: var(--mz-cell-rose-ink); }
+.mz-c-gold  { --mw: var(--mz-cell-gold-bg); --md: var(--mz-cell-gold-ink); }
+
+/* tile → own page scaffold (Huawei pattern) */
+.mz-page {
+  display: flex; flex-direction: column; min-height: 100%;
+  background: var(--canvas);
+}
+.mz-p-coral { background: linear-gradient(180deg, var(--mz-tone-coral) 0%, var(--canvas) 36%); }
+.mz-p-gold  { background: linear-gradient(180deg, var(--mz-tone-gold) 0%, var(--canvas) 36%); }
+.mz-p-lav   { background: linear-gradient(180deg, var(--mz-tone-lav) 0%, var(--canvas) 36%); }
+.mz-p-rose  { background: linear-gradient(180deg, var(--mz-tone-rose) 0%, var(--canvas) 36%); }
+.mz-p-sage  { background: linear-gradient(180deg, var(--mz-tone-sage) 0%, var(--canvas) 36%); }
+.mz-p-sky   { background: linear-gradient(180deg, var(--mz-tone-sky) 0%, var(--canvas) 36%); }
+.mz-page-head { display: flex; align-items: center; gap: 9px; padding: 9px 14px 0; }
+.mz-backbtn {
+  border: none; background: var(--mz-chipbg); font-family: inherit; cursor: pointer;
+  border-radius: 999px; padding: 7px 15px 7px 11px; font-size: 13px; font-weight: 600; color: var(--text-primary);
+  display: flex; align-items: center; gap: 5px;
+  box-shadow: 0 7px 17px -9px rgba(43, 33, 24, 0.3);
+}
+.mz-backbtn:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
+.mz-page-hero { display: grid; justify-items: center; text-align: center; gap: 1px; padding: 9px 17px 14px; }
+.mz-hero-nm { font-size: 18px; font-weight: 700; }
+.mz-hero-row { display: flex; align-items: center; gap: 9px; }
+.mz-bignum { font-weight: 200; font-size: 47px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.mz-hero-sb { font-size: 12px; color: var(--mz-ink-soft); }
+.mz-page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 17px 19px; }
+.mz-page-body::-webkit-scrollbar { display: none; }
+.mz-principle { font-size: 11px; font-weight: 300; color: var(--mz-ink-mut); text-align: center; margin-top: 19px; }
+
+/* thin collapsible reference strip — closed header already tells the story */
+.mz-colstrip { border-radius: 18px; background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: 0 14px 26px -17px rgba(43, 33, 24, 0.3); overflow: hidden; }
+.mz-colhead { display: flex; align-items: center; gap: 9px; width: 100%; border: none; background: none;
+  font-family: inherit; padding: 11px 14px; cursor: pointer; text-align: left; }
+.mz-csum { margin-left: auto; font-size: 10px; font-weight: 600; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.mz-chev { color: var(--mz-ink-mut); font-size: 12px; transition: transform 0.2s ease; flex: none; }
+.mz-colstrip.open .mz-chev { transform: rotate(180deg); }
+.mz-colbody { padding: 0 14px 13px; }
+
+/* ── Nap hub (mezo-d20.2.1) — header recipe + panel heroes + tile extras ── */
+.nap-hub { display: flex; flex-direction: column; gap: 13px; padding: 6px 0 8px; }
+.nap-head { display: flex; align-items: center; gap: 9px; }
+.nap-head-grow { flex: 1; min-width: 0; }
+.nap-dpwrap { position: relative; }
+.nap-roundbtn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+  background: var(--mz-chipbg); display: grid; place-items: center; cursor: pointer;
+  box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3); }
+.nap-offnow { position: absolute; top: 2px; right: 2px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--dv-amber); box-shadow: 0 0 0 2px var(--canvas); }
+.nap-badge { position: absolute; top: -3px; right: -3px; min-width: 17px; height: 17px; border-radius: 999px;
+  background: var(--gradient-cta); color: #fff; font-size: 10px; font-weight: 800;
+  display: grid; place-items: center; padding: 0 4px; }
+.nap-dpmenu, .nap-ntfmenu { position: absolute; right: 0; top: 46px; z-index: 30;
+  background: var(--surface-card); border-radius: 18px; padding: 8px;
+  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: 0 20px 40px -16px rgba(43, 33, 24, 0.4);
+  display: flex; gap: 6px; }
+.nap-dpmenu button { width: 40px; height: 40px; border-radius: 50%; border: none; background: none;
+  display: grid; place-items: center; cursor: pointer; }
+.nap-dpmenu button.on { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
+.nap-ntfmenu { width: 264px; flex-direction: column; align-items: stretch; gap: 7px; padding: 11px; }
+.nap-ntfrow { display: grid; gap: 1px; text-align: left; border: none; background: none; font-family: inherit;
+  cursor: pointer; padding: 5px 4px; border-radius: 10px; }
+.nap-ntf-t { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.nap-ntf-x { font-size: 11px; color: var(--mz-ink-soft); }
+.nap-ntffoot { border: none; background: none; font-family: inherit; cursor: pointer;
+  font-size: 12px; font-weight: 700; color: var(--primary-deep); padding: 5px 4px 2px; text-align: left; }
+.nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-base);
+  background: var(--surface-card); display: grid; place-items: center; cursor: pointer; }
+.nap-hero { min-height: 0; cursor: default; }
+.nap-hero-row { display: flex; align-items: center; gap: 12px; }
+.nap-hero-line { display: flex; align-items: baseline; gap: 7px; }
+.nap-big { font-weight: 200; font-size: 42px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.nap-mut { font-size: 12px; color: var(--mz-ink-soft); }
+.nap-mut b { color: var(--text-primary); }
+.nap-hero-sub { display: flex; gap: 17px; margin-top: 7px; }
+.nap-lav { color: #6C5FA3; }
+.nap-sage { color: #5F7A52; }
+.nap-coral { color: var(--primary-deep); }
+.nap-dusk { background: linear-gradient(140deg, var(--mz-tone-lav), var(--mz-wash-white) 75%); }
+.nap-cta-lav { width: 100%; margin-top: 11px; padding: 10px 0; border-radius: 999px; border: none;
+  font-family: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
+  background: linear-gradient(135deg, #8A6BC9, #5D4FA0);
+  box-shadow: 0 10px 22px -8px rgba(93, 79, 160, 0.55); }
+.daybar { display: flex; gap: 4px; margin-top: 9px; align-items: center; }
+.daybar i { height: 6px; border-radius: 4px; flex: 1; background: rgba(43, 33, 24, 0.1); }
+.daybar i.f { background: var(--dv-sage); }
+.daybar i.now { background: var(--dv-amber); }
+.nap-ckdots { display: flex; justify-content: center; gap: 7px; }
+.nap-ckdots .hd, .hprog .hd { width: 9px; height: 9px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); display: inline-block; }
+.nap-ckdots .hd.f { background: var(--dv-rose); }
+.nap-bigring { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; }
+.nap-ringhole { width: 42px; height: 42px; border-radius: 50%; background: var(--mz-wash-white);
+  display: grid; place-items: center; }
+
+/* ── Mezo üzenetei page (mezo-d20.2.2) — prototype #page-mezo: breathing-orb
+   hero + the day's companion thread. Values verbatim from nap-head.html ×1.18. ── */
+.mz-page-hero.orb svg { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
+@keyframes mz-orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+.nap-mzmsg {
+  background: var(--surface-card); border-radius: 19px; padding: 13px 14px; margin-bottom: 12px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.nap-mzmsg-h { display: flex; align-items: center; gap: 11px; }
+.nap-mzmsg .t { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A8801F; }
+.nap-mzmsg .txt { font-size: 13px; font-weight: 300; margin-top: 7px; margin-bottom: 0; }
+.nap-mzmsg-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.nap-mzmsg-meta { font-size: 11px; color: var(--mz-ink-mut); margin-top: 6px; }
+.nap-mz-cta {
+  /* prototype .cta + .mz-cta; padding 14px (not 9×1.18) so the target clears 44pt */
+  width: 100%; margin-top: 5px; padding: 14px 0; text-align: center;
+  background: var(--gradient-cta); color: #fff; border-radius: 999px; border: none;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55);
+}
+/* ── Nap · Napi küldetések page (mezo-d20.2.4) — prototype nap-body #page-quest,
+      values ×1.18 (330→390px frame). The reroll/CTA chips keep the prototype's slim
+      pill face but grow to the 44pt touch floor. ── */
+.mz-qcard { background: var(--mz-stripbg); border-radius: 19px; padding: 13px 14px; margin-bottom: 12px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.mz-qcard.done { background: var(--mz-qdone-bg); }
+.mz-qrow { display: flex; align-items: flex-start; gap: 11px; }
+.mz-qrow svg { flex: none; }
+.mz-qgrow { flex: 1; min-width: 0; }
+.mz-qtitle { font-size: 14px; font-weight: 700; }
+.mz-qwhy { font-size: 11px; font-weight: 300; color: var(--mz-ink-soft); margin-top: 2px; }
+.mz-qxp { font-size: 11px; font-weight: 700; color: var(--mz-qxp-ink); background: var(--mz-qxp-bg);
+  border-radius: 999px; padding: 4px 11px; flex: none; }
+.mz-qfoot { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+.mz-qstate { flex: 1; min-width: 0; font-size: 11px; color: var(--mz-ink-soft); }
+.mz-qstate.f { font-weight: 600; color: var(--mz-qdone-ink); }
+.mz-qbtn { border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit; cursor: pointer;
+  border-radius: 999px; padding: 0 13px; min-height: 44px; font-size: 11px; font-weight: 600;
+  color: var(--mz-ink-soft); flex: none; }
+.mz-qbtn:disabled { opacity: 0.45; cursor: default; }
+.mz-qbtn.primary { border-color: transparent; background: var(--text-primary); color: var(--surface-card); }
+.mz-quest-empty { padding: 21px 0 28px; text-align: center; font-size: 13px; color: var(--text-muted); }
+/* ── Nap · Check-in detail page (mezo-d20.2.5) — prototype #page-check ×1.18.
+      One .vcard with the four slot rows: done = tick + mini-cells, the next
+      fillable slot is the hot row (its 1–5 inline chips became the real
+      CheckInSheet flow — 4 dims ×10, the data contract), future = muted. ── */
+.nck-card {
+  background: var(--mz-stripbg); border-radius: 19px; padding: 5px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.nck-row { display: flex; align-items: center; gap: 13px; padding: 11px 2px; }
+.nck-row + .nck-row { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.nck-grow { flex: 1; min-width: 0; }
+.nck-t { font-size: 14px; font-weight: 600; }
+.nck-rose { color: var(--mz-cell-rose-ink); }
+.nck-sub { font-size: 11px; color: var(--mz-ink-mut); }
+.nck-tick {
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  border: 1.5px solid rgba(43, 33, 24, 0.2); display: grid; place-items: center;
+  font-size: 14px; color: #fff; background: transparent;
+}
+.nck-tick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+.nck-cells { margin-top: 6px; max-width: 236px; }
+.nck-hot {
+  background: rgba(196, 111, 160, 0.08); border-radius: 14px;
+  margin: 2px -5px; padding: 11px 9px; border-top: none;
+}
+.nck-row.nck-hot + .nck-row, .nck-row + .nck-hot { border-top: none; }
+.nck-fill {
+  min-height: 44px; padding: 0 19px; border-radius: 999px; flex: none; cursor: pointer;
+  border: 1.5px solid rgba(196, 111, 160, 0.45); background: var(--mz-stripbg);
+  font-family: inherit; font-size: 12px; font-weight: 700; color: var(--mz-cell-rose-ink);
+  transition: transform 0.12s ease;
+}
+.nck-fill:active { transform: scale(0.94); }
+.nck-dim { opacity: 0.6; }
+/* ── Életjel page (mezo-d20.2.6) — prototype #page-vital ×1.18 ──
+   hero: segmented six-arc ring + big average %; tiles: eyebrow + clay icon +
+   mini conic ring (.rr 22px → 26px) + pct. Colors ride the need inks inline
+   (accent inks, not surfaces); the ring hole speaks the wash token. */
+.ej-hero-row { display: flex; align-items: center; justify-content: center; gap: 26px; }
+.ej-bigring { width: 90px; height: 90px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.ej-ringhole { width: 61px; height: 61px; border-radius: 50%; background: var(--mz-wash-white);
+  display: grid; place-items: center; }
+.ej-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.ej-rr { width: 26px; height: 26px; border-radius: 50%; flex: none;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+  display: grid; place-items: center; }
+.ej-rr::after { content: ''; width: 17px; height: 17px; border-radius: 50%; background: var(--mz-wash-white); }
+.ej-pct { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* attention skin (prototype: the low Mozgás tile) — terracotta max, never red */
+.ej-warn { border: 1px solid rgba(255, 107, 74, 0.5); }
+.ej-pct.is-warn { color: #A84A26; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .rise { opacity: 1; transform: none; animation: none; }
+  .mz-tile, .mz-chev { transition: none; }
+  .mz-page-hero.orb svg { animation: none; }
+}
+
+/* ── Nap · Rutin oldal (mezo-d20.2.3) — prototype #page-hab, ×1.18 ── */
+.nr-herospot { order: -1; }
+.nr-stats { margin-bottom: 12px; }
+.nr-group { display: flex; align-items: baseline; gap: 8px; margin: 14px 2px 7px; }
+.nr-groupcount { font-size: 12px; font-weight: 600; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.nr-vcard {
+  background: var(--mz-stripbg); border-radius: 19px; padding: 5px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.nr-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+.nr-row + .nr-row { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.nr-tickbtn { width: 44px; height: 44px; flex: none; margin-left: -9px;
+  display: grid; place-items: center; border: none; background: none; padding: 0;
+  font-family: inherit; cursor: default; }
+button.nr-tickbtn { cursor: pointer; }
+button.nr-tickbtn:disabled { cursor: default; opacity: 0.6; }
+.nr-tick { width: 26px; height: 26px; border-radius: 50%;
+  border: 1.8px solid rgba(43, 33, 24, 0.2); display: grid; place-items: center;
+  font-size: 14px; color: #fff; background: transparent; transition: transform 0.12s ease; }
+button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
+.nr-tick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+.nr-grow { flex: 1; min-width: 0; padding: 6px 0; }
+.nr-nm { font-size: 13.5px; font-weight: 600; }
+.nr-nm.done { color: var(--mz-ink-soft); font-weight: 500;
+  text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
+.nr-anchor { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); }
+.nr-str { height: 6px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 5px; }
+.nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength); }
+.nr-pct { font-size: 10.5px; font-weight: 700; color: #A8801F; flex: none; width: 35px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Mezo hub (mezo-d20.5.1) — prototype mezo-body.html hub section ×1.18:
+      breathing orb hero (NO number — one companion sentence + quiet status line),
+      composer-shaped chat opener, the motor's single decision card in a gold
+      ring, 6-tile mosaic, and the full-width L0→L3 memory band. ── */
+.mzh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
+.mzh-panel { display: flex; flex-direction: column; gap: 11px; }
+
+.mzh-orbhero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 12px 14px 14px; }
+.mzh-orbhero svg:first-child { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
+.mzh-nm { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; }
+.mzh-ln { font-size: 12.5px; font-weight: 300; color: var(--text-primary); max-width: 271px;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.mzh-lv { font-size: 9.5px; font-weight: 700; color: var(--mz-ink-mut); margin-top: 4px; }
+.mzh-lv b { color: var(--mz-cell-lav-ink); }
+
+.mzh-chatopen { display: flex; align-items: center; gap: 11px; cursor: pointer; width: 100%;
+  border-radius: 999px; padding: 11px 11px 11px 19px; font-family: inherit;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.08);
+  box-shadow: var(--mz-shadow-chatopen);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mzh-chatopen:active { transform: scale(0.97); }
+.mzh-ph { flex: 1; font-size: 13px; color: var(--mz-ink-mut); font-weight: 300; text-align: left; }
+.mzh-micd { width: 35px; height: 35px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: rgba(93, 79, 160, 0.08); }
+.mzh-snd { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: linear-gradient(135deg, #8A76CC, #6C5FA3); color: #fff;
+  box-shadow: 0 7px 17px -5px rgba(108, 95, 163, 0.6); }
+
+.mzh-deccard { border: 1px solid var(--mz-decring); border-radius: 21px; background: var(--mz-stripbg);
+  padding: 13px 15px 14px; box-shadow: var(--mz-shadow-dec); }
+.mzh-dechead { display: flex; align-items: center; gap: 8px; }
+.mzh-eb-gold .mz-eyebrow, .mz-eyebrow.mzh-eb-gold { color: var(--mz-qxp-ink); }
+.mzh-eb-sage .mz-eyebrow { color: var(--mz-cell-sage-ink); }
+.mzh-eb-sky .mz-eyebrow { color: var(--mz-cell-sky-ink); }
+.mzh-t-minta { --mz-wash: var(--mz-wash-minta); }
+.mzh-t-minta .mz-eyebrow { color: var(--mz-cell-lav-ink); }
+.mzh-t-kreed { --mz-wash: var(--mz-wash-kreed); }
+.mzh-t-kreed .mz-eyebrow { color: var(--mz-cell-coral-ink); }
+.mzh-confch { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none;
+  margin-left: auto; background: var(--mz-qxp-bg); color: var(--mz-qxp-ink); }
+.mzh-confch.is-success { background: rgba(143, 175, 126, 0.18); color: var(--mz-cell-sage-ink); }
+.mzh-confch.is-warning { background: rgba(255, 107, 74, 0.12); color: var(--mz-cell-coral-ink); }
+.mzh-decq { font-size: 14px; font-weight: 700; margin-top: 6px; }
+.mzh-decpair { font-size: 10px; color: var(--mz-ink-soft); margin-top: 2px; }
+.mzh-decobs { font-weight: 300; font-size: 11px; color: var(--text-primary);
+  background: var(--mz-decobs-bg); border-radius: 12px; padding: 8px 11px; margin-top: 9px; }
+.mzh-decrow { display: flex; gap: 7px; margin-top: 11px; }
+.mzh-cta { flex: 1; min-height: 44px; border: none; border-radius: 999px; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 700; color: #fff;
+  background: var(--gradient-cta); box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+.mzh-ghost { flex: 1; min-height: 44px; border: none; border-radius: 999px; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 600; color: var(--mz-ink-soft);
+  background: rgba(43, 33, 24, 0.06); }
+.mzh-ghost.is-no { color: var(--mz-cell-coral-ink); }
+.mzh-decdone { display: flex; align-items: center; gap: 11px; border-radius: 21px; padding: 13px 15px;
+  background: var(--mz-qdone-bg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-sage); font-size: 12px; font-weight: 600; color: var(--mz-cell-sage-ink);
+  text-align: left; }
+
+.mzh-membnd { display: flex; align-items: center; gap: 5px; width: 100%; cursor: pointer;
+  border-radius: 20px; padding: 12px 14px; font-family: inherit; color: var(--text-primary);
+  background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-lav);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mzh-membnd:active { transform: scale(0.97); }
+.mzh-lyr { flex: 1; text-align: center; }
+.mzh-lyr b { display: block; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mzh-lyr small { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--mz-ink-soft); }
+.mzh-arr { color: var(--mz-ink-mut); font-size: 12px; flex: none; }
+.mzh-membnd-ph { flex: 1; text-align: left; font-size: 12px; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .rise { opacity: 1; transform: none; animation: none; }
+  .mz-tile, .mz-chev, .nr-tick { transition: none; }
+  .nck-fill { transition: none; }
+  .mzh-orbhero svg:first-child { animation: none; }
+  .mzh-chatopen, .mzh-membnd { transition: none; }
+}
+
+/* ── Chat face (mezo-d20.5.2) — prototype mezo-body.html #page-chat, px ×1.18.
+      A behavioral re-face: the sticky/`:has` plumbing keys off `.chat-composer`
+      (declared earlier in this file), these rules carry only the Mozaik look. ── */
+
+/* header: chsub anatomy + pgact chips */
+.mzc-chsub { display: flex; flex-direction: column; gap: 2px; }
+.mzc-eb { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lav-deep); }
+.mzc-st { font-size: 11px; color: var(--text-tertiary); }
+.mzc-pgact {
+  border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg);
+  border-radius: 999px; padding: 8px 14px; min-height: 36px;
+  font-size: 11px; font-weight: 700; color: var(--mz-ink-soft);
+  font-family: inherit; cursor: pointer;
+}
+.mzc-pgact:disabled { opacity: 0.5; cursor: default; }
+
+/* message anatomy */
+.mzc-msg-a { align-self: flex-start; width: 92%; max-width: 92%; }
+.mzc-msg-u { align-self: flex-end; max-width: 80%; }
+.mzc-meta { display: flex; align-items: center; gap: 6px; }
+.mzc-meta .mzc-eb { font-size: 9px; }
+.mzc-meta time, .mzc-msg-u time { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-warn { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-deep); margin-left: 4px; }
+.mzc-bub-a {
+  background: var(--mz-stripbg); border-radius: 5px 19px 19px 19px; padding: 11px 13px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-chat-a-shadow);
+  font-size: 13px; line-height: 1.5; color: var(--text-primary);
+}
+.mzc-bub-u {
+  background: var(--mz-chat-user-bg); border-radius: 19px 5px 19px 19px; padding: 11px 13px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-chat-user-shadow);
+}
+.mzc-bub-u p { font-size: 13px; line-height: 1.5; color: var(--text-primary); white-space: pre-line; }
+.mzc-msg-u time { display: block; text-align: right; margin-top: 4px; }
+.mzc-noanswer { font-size: 12.5px; font-style: italic; color: var(--text-tertiary); }
+
+/* refs footer — human labels (gap-7 fix) */
+.mzc-reffoot { border-top: 0.5px solid rgba(43, 33, 24, 0.08); margin-top: 9px; padding-top: 8px; }
+.mzc-refeb { font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.mzc-refrow { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.mzc-refch {
+  font-size: 10px; font-weight: 600; border-radius: 9px; padding: 4px 9px;
+  background: var(--mz-chat-refch-bg); border: 0.5px solid var(--mz-chat-refch-bd); color: var(--mz-ink-soft);
+}
+.mzc-refch .mzc-refk { font-weight: 800; color: var(--text-primary); margin-right: 4px; }
+
+/* Emlékek · N disclosure */
+.mzc-membtn { border: none; background: none; font-family: inherit; cursor: pointer; padding: 5px 0; align-items: center; }
+.mzc-memeb { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.mzc-memlist { list-style: none; margin: 0; padding: 0 0 0 2px; }
+.mzc-memlist li { border-left: 2px solid var(--mz-chat-memline); padding-left: 9px; }
+.mzc-memlist .m1 { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-memlist .m2 { font-size: 11px; color: var(--text-secondary); }
+
+/* typing bubble */
+.mzc-typing {
+  display: flex; gap: 5px; padding: 12px 14px; width: 64px;
+  background: var(--mz-stripbg); border-radius: 5px 19px 19px 19px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-chat-a-shadow);
+}
+
+/* composer pill — mic disc · borderless field · lav send disc (44pt touch targets) */
+.mzc-composer {
+  display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 10px;
+  border-radius: 26px; background: var(--mz-stripbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: var(--mz-chat-composer-shadow);
+}
+.mzc-composer textarea { background: none; border: none; outline: none; font-family: inherit; color: var(--text-primary); }
+.mzc-composer textarea::placeholder { color: var(--mz-ink-mut); }
+.mzc-cmic, .mzc-csend {
+  width: 44px; height: 44px; border-radius: 50%; border: none; flex: none;
+  display: grid; place-items: center; padding: 0; font-family: inherit; cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.mzc-cmic { background: var(--mz-chat-mic-bg); color: var(--lav-deep); }
+.mzc-cmic.rec { background: var(--mz-chat-mic-rec-bg); color: var(--coral-deep); }
+.mzc-csend { background: var(--mz-chat-send-bg); color: #fff; box-shadow: var(--mz-chat-send-shadow); }
+.mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
+.mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mzc-cmic, .mzc-csend { transition: none; }
+}
+
+/* ── Mezo · Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak ×1.18:
+      motor prose card + colorful 3×2 lifecycle grid (döntésre vár = white + gold
+      ring, pulsing), gold-ringed decision card + sage acknowledgement, lifecycle
+      tile mosaics (sage / lavender + evidence bar / dashed amber / muted) and the
+      Adat-egészség coverage-ring tile strip. ── */
+.mnt-motor { border-radius: 21px; padding: 13px 15px; margin-bottom: 12px;
+  background: var(--mz-mnt-motor-bg);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-lav); }
+.mnt-motor-meta { margin-left: auto; font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mnt-prose { font-size: 13px; font-weight: 300; line-height: 1.55; margin: 8px 0 0; color: var(--text-primary); }
+.mnt-prose b { font-weight: 700; }
+.mnt-lgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 11px; }
+.mnt-lcel { border-radius: 16px; padding: 9px 5px 8px; text-align: center;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 12px 21px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mnt-lcel b { display: block; font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.mnt-lcel small { font-size: 8px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mz-ink-soft); }
+.mnt-lcel.c-sage { background: var(--mz-wash-sage); }  .mnt-lcel.c-sage b { color: var(--mz-cell-sage-ink); }
+.mnt-lcel.c-lav { background: var(--mz-wash-lav); }    .mnt-lcel.c-lav b { color: var(--mz-cell-lav-ink); }
+.mnt-lcel.c-amber { background: var(--mz-wash-gold); } .mnt-lcel.c-amber b { color: var(--mz-cell-amber-ink); }
+.mnt-lcel.c-mute { background: var(--mz-cellbg); }     .mnt-lcel.c-mute b { color: var(--mz-ink-mut); }
+.mnt-lcel.hot { background: var(--mz-stripbg);
+  box-shadow: inset 0 0 0 1.5px var(--mz-mnt-hot-ring), 0 12px 21px -12px rgba(201, 150, 46, 0.55); }
+.mnt-lcel.hot b { color: var(--mz-cell-amber-ink); }
+.mz-play .mnt-lcel.hot { animation: mnt-pulse 2.6s ease-in-out 1.2s infinite; }
+@keyframes mnt-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+.mnt-lsec { display: flex; align-items: center; gap: 7px; padding: 12px 2px 7px; }
+.mnt-cnt { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mnt-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 12px; margin: 0; }
+.mnt-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.mnt-ptile { border-radius: 20px; padding: 12px 13px; min-height: 92px;
+  display: flex; flex-direction: column; gap: 6px; text-align: left;
+  color: var(--text-primary); text-decoration: none;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow); background: var(--mz-cellbg); }
+.mnt-ptile.sage { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.mnt-ptile.lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mnt-ptile.dashed { background: transparent; box-shadow: none; border: 1.4px dashed rgba(201, 150, 46, 0.55); }
+.mnt-ptile-top { display: flex; align-items: flex-start; gap: 7px; }
+.mnt-ptile-top svg { flex: none; }
+.mnt-chip { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none; margin-left: auto; }
+.mnt-chip.sage { background: color-mix(in srgb, var(--dv-sage) 18%, transparent); color: var(--mz-cell-sage-ink); }
+.mnt-chip.amber { background: color-mix(in srgb, var(--dv-amber) 16%, transparent); color: var(--mz-cell-amber-ink); }
+.mnt-chip.lav { background: color-mix(in srgb, var(--dv-lav) 14%, transparent); color: var(--mz-cell-lav-ink); }
+.mnt-chip.mute { background: rgba(43, 33, 24, 0.05); color: var(--mz-ink-mut); }
+.mnt-ttl { font-size: 12.5px; font-weight: 700; line-height: 1.3; }
+.mnt-sb { font-size: 10.5px; color: var(--mz-ink-soft); line-height: 1.4; }
+.mnt-gbar { height: 6px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: auto; }
+.mnt-gbar div { height: 100%; border-radius: 4px; transform: scaleX(var(--w, 0)); transform-origin: left;
+  background: var(--mz-mnt-bar); }
+.mz-play .mnt-gbar div { transform: scaleX(0);
+  animation: mnt-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 400ms); }
+@keyframes mnt-fill { to { transform: scaleX(var(--w, 0)); } }
+.mnt-decwrap { margin-bottom: 12px; }
+.mnt-decwrap > .card { border: 1px solid var(--mz-mnt-hot-ring);
+  box-shadow: 0 20px 34px -14px rgba(201, 150, 46, 0.45), 0 2px 6px rgba(43, 33, 24, 0.05); }
+.mnt-decdone { display: flex; align-items: center; gap: 10px; border-radius: 20px;
+  padding: 13px 15px; margin-bottom: 12px;
+  background: var(--mz-qdone-bg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 14px 26px -14px rgba(110, 139, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  font-size: 12px; font-weight: 600; color: var(--mz-qdone-ink); }
+.mnt-covstrip { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 5px; }
+.mnt-covstrip::-webkit-scrollbar { display: none; }
+.mnt-covtile { flex: none; width: 108px; text-align: center; border-radius: 18px; padding: 12px 5px 11px;
+  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 9px 19px -12px rgba(43, 33, 24, 0.25);
+  display: grid; justify-items: center; gap: 5px; }
+.mnt-covtile b { font-size: 10.5px; line-height: 1.25; color: var(--text-primary); }
+.mnt-covtile small { font-size: 8.5px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mnt-rr { width: 42px; height: 42px; border-radius: 50%;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+  display: grid; place-items: center; }
+.mnt-rr::after { content: ''; width: 27px; height: 27px; border-radius: 50%; background: var(--mz-stripbg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .mnt-lcel.hot { animation: none; }
+  .mz-play .mnt-gbar div { animation: none; transform: scaleX(var(--w, 0)); }
+  .nck-fill, .mz-decbtn { transition: none; }
+}
+
+/* ── Mezo · Memoár + Tudástár re-face (mezo-d20.5.5) — prototype mezo-body
+      #page-memoar / #page-tudas ×1.18 (330→390px frame). ── */
+
+/* Memoár: Fraunces-titled chapter card with the lavender glow */
+.mz-memoir { position: relative; overflow: hidden; border-radius: 21px; padding: 17px 17px 15px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-memoir-shadow); }
+.mz-memoir::before { content: ''; position: absolute; top: -47px; right: -35px; width: 177px; height: 177px;
+  border-radius: 50%; background: radial-gradient(circle, var(--mz-memoir-glow), transparent 70%); }
+.mz-memoir-ttl { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 18px;
+  font-weight: 500; line-height: 1.35; margin-top: 6px; }
+.mz-memoir-bd { font-size: 13px; font-weight: 300; line-height: 1.6; margin: 8px 0 0; }
+.mz-memoir-foot { display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  margin-top: 13px; padding-top: 11px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.mz-anniv { border-radius: 19px; padding: 12px 14px; background: var(--mz-wash-lav);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
+.mz-anniv p { font-size: 12px; font-weight: 300; line-height: 1.5; margin: 5px 0 0; }
+
+/* Tudástár: the gold-ringed approval inbox card */
+.mz-candc { border: 1px solid var(--mz-cand-ring); border-radius: 19px; padding: 12px 14px 13px;
+  background: var(--mz-stripbg); box-shadow: var(--mz-cand-shadow); }
+.mz-decrow { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+.mz-decbtn { min-height: 44px; padding: 0 17px; border-radius: 999px; flex: none; cursor: pointer;
+  border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); transition: transform 0.12s ease; }
+.mz-decbtn:active { transform: scale(0.95); }
+.mz-decbtn:disabled { opacity: 0.45; cursor: default; }
+.mz-decbtn.primary { border-color: transparent; background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+
+/* Tudástár: category-washed fact tiles (iterations §1 — list rows → tiles) */
+.mz-facttile { display: flex; gap: 11px; align-items: flex-start; border-radius: 19px; padding: 12px 13px;
+  background: var(--mz-wash, var(--mz-wash-white)); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow); }
+.mz-facttile.mz-w-sage { box-shadow: var(--mz-shadow-sage); }
+.mz-facttile.mz-w-sky  { box-shadow: var(--mz-shadow-sky); }
+.mz-facttile.mz-w-gold { box-shadow: var(--mz-shadow-gold); }
+.mz-fic { width: 35px; height: 35px; border-radius: 13px; display: grid; place-items: center; flex: none;
+  background: var(--mz-fic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.mz-fact-grow { flex: 1; min-width: 0; }
+.mz-fact-tx { font-size: 13px; line-height: 1.45; margin: 0; }
+.mz-fact-sb { font-size: 10px; color: var(--mz-ink-soft); margin: 3px 0 0; font-variant-numeric: tabular-nums; }
+.mz-fact-origin { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); line-height: 1.5; margin: 4px 0 0; }
+.mz-fact-status { font-size: 10px; color: var(--mz-ink-mut); margin: 5px 0 0; }
+.mz-facttile.off { background: var(--mz-fact-off-bg); box-shadow: none;
+  border: 1.2px dashed rgba(43, 33, 24, 0.16); }
+.mz-facttile.off .mz-fact-tx { color: var(--mz-ink-soft); }
+
+/* ── Előrejelzések + Kísérletek (mezo-d20.5.6) — prototype mezo-body
+      #page-josla / #page-kiserlet .predtile family, ×1.18. Status wears the
+      surface: ◐ Folyamatban = lavender + animated confidence bar, ✓ Bevált /
+      Megerősítve = sage, ◐ Aktív = amber + day-dot row + gold bar; the
+      ◇ Javaslat card rings gold and carries the 44pt decision row. ── */
+.mzp-pred { border-radius: 21px; padding: 13px 15px; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.mzp-pred.lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mzp-pred.sage { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.mzp-pred.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mzp-pred.propcard { border: 1px solid var(--mz-prop-border); box-shadow: var(--mz-prop-shadow); }
+.mzp-top { display: flex; align-items: center; gap: 9px; }
+.mzp-pic { width: 38px; height: 38px; border-radius: 13px; display: grid; place-items: center; flex: none;
+  background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.mzp-stch { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; border-radius: 7px; padding: 3px 8px; flex: none; }
+.mzp-stch.pend { background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
+.mzp-stch.ok   { background: var(--mz-stch-ok-bg);   color: var(--mz-stch-ok-ink); }
+.mzp-stch.prop { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.mzp-stch.act  { background: var(--mz-stch-act-bg);  color: var(--mz-stch-act-ink); }
+.mzp-stch.mut  { background: var(--mz-stch-mut-bg);  color: var(--mz-stch-mut-ink); }
+.mzp-date { margin-left: auto; font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mzp-title { font-size: 13.5px; font-weight: 700; line-height: 1.3; margin-top: 8px; }
+.mzp-conf { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+.mzp-gbar { flex: 1; height: 6px; border-radius: 4px; background: var(--mz-gbar-bg); overflow: hidden; }
+.mzp-gbar div { height: 100%; border-radius: 4px; background: var(--mz-gbar-lav);
+  transform: scaleX(0); transform-origin: left; }
+.mzp-gbar div.gold { background: var(--mz-strength); }
+.mz-play .mzp-gbar div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+@keyframes mzp-fill { to { transform: none; } }
+.mzp-pct { font-size: 11px; font-weight: 800; color: var(--mz-stch-pend-ink); font-variant-numeric: tabular-nums; flex: none; }
+.mzp-learn { font-size: 11px; font-weight: 600; color: var(--mz-ink-mut); }
+.mzp-basis { font-size: 12px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); margin: 7px 0 0; }
+.mzp-actual { font-size: 11px; font-weight: 600; color: var(--mz-stch-ok-ink); margin-top: 8px; }
+.mzp-daydots { display: flex; gap: 5px; margin-top: 9px; }
+.mzp-daydots i { width: 11px; height: 11px; border-radius: 50%; background: var(--mz-daydot); }
+.mzp-daydots i.f { background: var(--mz-daydot-f); }
+.mzp-decrow { display: flex; gap: 7px; margin-top: 11px; }
+.mzp-cta, .mzp-ghost { flex: 1; min-height: 44px; border-radius: 999px; border: none; font-family: inherit;
+  font-size: 12px; font-weight: 600; cursor: pointer; }
+.mzp-cta { background: var(--gradient-cta); color: #fff; box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+.mzp-ghost { background: var(--surface-recess); color: var(--mz-no-ink); }
+.mzp-cta:disabled, .mzp-ghost:disabled { opacity: 0.55; cursor: default; }
+.mzp-new { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px;
+  border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 17px; padding: 12px 0;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); cursor: pointer; font-family: inherit; }
+.mzp-new:disabled { opacity: 0.55; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mzp-gbar div, .mz-play .mzp-gbar div { transform: none; animation: none; }
+}
+
+/* ── Mezo · Memória observatory (mezo-d20.5.7) — prototype mezo-body #page-memoria ×1.18.
+   Rétegek: per-layer COLORED laycards (sand→gold→coral→lav) with clay icon discs, joined
+   by pulsing dashed connectors carrying HUMAN cron times; Napló: nightly day cards with
+   the embed dot; Kereső: match-ring result cards + score-math chips; Audit: cost hero +
+   tinted provenance mini-cells. Every surface speaks --mz-* tokens. ── */
+.mem-seg { display: flex; gap: 5px; border-radius: 999px; padding: 4px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.mem-seg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.mem-seg button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+
+.mem-laycard { border-radius: 20px; padding: 12px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.mem-t-sand  { background: var(--mz-wash-sand); }
+.mem-t-gold  { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mem-t-coral { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.mem-t-lav   { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mem-layrow { display: flex; align-items: center; gap: 12px; }
+.mem-lic { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center;
+  flex: none; background: var(--mz-cellbg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.mem-laygrow { flex: 1; min-width: 0; }
+.mem-bignm { font-size: 22px; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.mem-unit { font-size: 13px; font-weight: 400; color: var(--mz-ink-soft); }
+.mem-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.mem-chips span { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 9px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); color: var(--mz-ink-soft);
+  font-variant-numeric: tabular-nums; }
+.mem-flowc { display: flex; align-items: center; gap: 8px; padding: 4px 0 4px 26px; }
+.mem-dash { width: 2px; height: 24px; border-radius: 2px; flex: none;
+  background: repeating-linear-gradient(180deg, var(--mz-mem-dash) 0 5px, transparent 5px 10px);
+  animation: mem-dashfl 1.6s linear infinite; }
+@keyframes mem-dashfl { to { background-position: 0 10px; } }
+.mem-flowc small { font-size: 10px; font-weight: 600; color: var(--mz-mem-ink); }
+
+.mem-month { display: block; margin: 5px 2px 9px; }
+.mem-daycard { border-radius: 19px; padding: 13px 14px; margin-bottom: 11px; position: relative; overflow: hidden;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.mem-daycard.focused { border: 1px solid var(--lav-deep); }
+.mem-dl { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.mem-bd { font-size: 13px; font-weight: 300; line-height: 1.6; margin-top: 6px; color: var(--text-primary); }
+.mem-emb { position: absolute; top: 13px; right: 14px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--dv-sage); }
+.mem-emb.off { background: color-mix(in srgb, var(--text-primary) 18%, transparent); }
+
+.mem-ring { width: 52px; height: 52px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: conic-gradient(var(--mz-mem-ink) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0); }
+.mem-ring::after { content: attr(data-l); width: 38px; height: 38px; border-radius: 50%;
+  background: var(--mz-stripbg); display: grid; place-items: center;
+  font-size: 11px; font-weight: 800; color: var(--mz-cell-lav-ink); font-variant-numeric: tabular-nums; }
+.mem-scmath { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.mem-scmath span { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 9px;
+  background: color-mix(in srgb, var(--dv-lav) 12%, transparent); color: var(--mz-cell-lav-ink);
+  font-variant-numeric: tabular-nums; }
+.mem-scmath span.is-final { font-weight: 800; }
+.mem-scmath span.is-amber { color: var(--mz-cell-amber-ink);
+  background: color-mix(in srgb, var(--dv-amber) 14%, transparent); }
+.mem-scmath span.is-mut { background: none; color: var(--mz-ink-mut); font-weight: 600; padding-left: 0; }
+
+.mem-sfield { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 44px;
+  background: var(--mz-stripbg); border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 999px;
+  padding: 8px 14px; box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+.mem-sfield > span { color: var(--mz-ink-mut); }
+.mem-sfield input { border: none; outline: none; background: none; font-family: inherit;
+  font-size: 13px; color: var(--text-primary); width: 100%; padding: 0; }
+.mem-sfield input::placeholder { color: var(--mz-ink-mut); }
+
+.mem-card { border-radius: 20px; padding: 13px 15px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.mem-cost { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mem-foot { font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mem-provcells { margin-top: 9px; }
+.mem-fact .mem-scmath { margin-top: 7px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mem-dash { animation: none; }
+}
 
 /* ============================================================
    Today · iOS list language (mezo-e26w)

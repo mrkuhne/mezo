@@ -318,7 +318,7 @@ export function TodayPage() {
   // keeps the DOM node across the pending → resolved transition.
   const appHero = (
     <AppHero
-      utilities={<Link to="/insights" aria-label="Insights" className="icon-btn"><Icon name="sparkle" size={18} /></Link>}
+      utilities={<Link to="/mezo" aria-label="Insights" className="icon-btn"><Icon name="sparkle" size={18} /></Link>}
     />
   )
 

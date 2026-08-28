@@ -1,16 +1,39 @@
+// ============================================================
+// Mezo · Előrejelzések — Mozaik re-face (mezo-d20.5.6).
+// Source of truth: mezo-body.html #page-josla (.predtile, ×1.18).
+// Status-washed tiles: ◐ Folyamatban = lavender + animated confidence
+// bar, ✓ Bevált = sage + "✓ Bejött:" actual line. The Hungarian chips
+// are a DESIGNED FIX — the wire's statuses shipped as English chips
+// (✓ Validated / ✗ Missed / ◐ Pending); the view localizes them, as it
+// does the accuracy header. Behavioral contracts preserved verbatim:
+// honest null-states ("tanulom" on null confidence, the still-learning
+// empty card, accuracy hidden without closed rows), the ONE feedback
+// read for the whole list, FeedbackChips on every card in both modes.
+// ============================================================
 import { useMemo } from 'react'
-import { Icon } from '@/shared/ui/Icon'
+import { cn } from '@/shared/lib/cn'
+import { ClayIcon } from '@/shared/ui/clay'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useFeedback, usePredictions } from '@/data/hooks'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
-import type { Prediction } from '@/data/types'
+import type { Prediction, PredictionStatus } from '@/data/types'
 
-/** Right-side header: mock keeps the Phase-1 literal; live derives honestly from CLOSED rows. */
+/** Hungarian status chips (prototype .stch) — localizing the shipped English ones.
+ *  `missed` has no prototype card; it wears the muted chip, never red (guardrail). */
+const STATUS: Record<PredictionStatus, { label: string; chip: string; wash?: string }> = {
+  pending: { label: '◐ Folyamatban', chip: 'pend', wash: 'lav' },
+  validated: { label: '✓ Bevált', chip: 'ok', wash: 'sage' },
+  missed: { label: '◯ Nem jött be', chip: 'mut' },
+}
+
+/** Right-side header: mock keeps the Phase-1 literal (localized view-side);
+ *  live derives honestly from CLOSED rows — hidden while none exist. */
 function accuracyHeader(predictions: Prediction[], mock: boolean): string | null {
-  if (mock) return '2 validated · 60-day acc 68%'
+  if (mock) return '2 bevált · 60 napos pontosság 68%'
   const validated = predictions.filter((p) => p.status === 'validated').length
   const closed = validated + predictions.filter((p) => p.status === 'missed').length
   if (closed === 0) return null
-  return `${validated} validated · acc ${Math.round((validated / closed) * 100)}%`
+  return `${validated} bevált · pontosság ${Math.round((validated / closed) * 100)}%`
 }
 
 export function PredictionsPage() {
@@ -34,61 +57,57 @@ export function PredictionsPage() {
   }
 
   return (
-    <div className="col gap-md">
+    <EntranceGroup className="col gap-md">
       <div className="row gap-sm" style={{ justifyContent: 'space-between' }}>
         <span className="eyebrow">Aktív predikciók</span>
         {header && <span className="eyebrow text-tertiary">{header}</span>}
       </div>
 
-      {predictions.map((p) => (
-        <div key={p.id} className="card" style={{ padding: 14 }}>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span
-              className="chip"
-              style={{ fontSize: 9, ...(p.status === 'validated' ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)' } : {}) }}
-            >
-              {p.status === 'validated' ? '✓ Validated' : p.status === 'missed' ? '✗ Missed' : '◐ Pending'}
-            </span>
-            <span className="label-mono" style={{ fontSize: 9 }}>{p.date}</span>
-          </div>
-
-          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, marginTop: 8, lineHeight: 1.2, color: 'var(--text-primary)' }}>{p.title}</div>
-
-          <div className="row mt-sm" style={{ justifyContent: 'space-between' }}>
-            {p.confidence != null ? (
-              <>
-                <div className="bar" style={{ flex: 1, marginRight: 12 }}>
-                  <div className="bar-fill glow" style={{ width: `${p.confidence * 100}%` }} />
-                </div>
-                <span className="label-mono" style={{ fontSize: 10, color: 'var(--lav-deep)' }}>{(p.confidence * 100).toFixed(0)}%</span>
-              </>
-            ) : (
-              <span className="label-mono" style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>tanulom</span>
-            )}
-          </div>
-
-          {p.basis && <p className="text-secondary mt-sm" style={{ fontSize: 12, lineHeight: 1.5 }}>{p.basis}</p>}
-
-          {p.actual && (
-            <div className="row gap-sm mt-md" style={{ paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}>
-              <Icon name="check" size={14} color="var(--success)" />
-              <span style={{ fontSize: 12, color: 'var(--success)' }}>{p.actual}</span>
+      {predictions.map((p, i) => {
+        const meta = STATUS[p.status]
+        return (
+          <div key={p.id} className={cn('mzp-pred', meta.wash, 'rise')} style={{ '--d': `${i * 70}ms` } as React.CSSProperties}>
+            <div className="mzp-top">
+              <span className="mzp-pic"><ClayIcon name="i-kristaly" size={22} /></span>
+              <span className={cn('mzp-stch', meta.chip)}>{meta.label}</span>
+              <span className="mzp-date">{p.date}</span>
             </div>
-          )}
 
-          {/* Both modes — a prediction is an AI artifact wherever it comes from. Keyed by the
-              prediction id (as the card itself is), so React never reuses one card's
-              FeedbackChips instance — and its session-local reason-row state — for another row. */}
-          <div className="mt-md">
-            <FeedbackChips
-              key={p.id}
-              value={feedback.get(p.id)}
-              onVote={(verdict, reason) => feedback.vote(p.id, verdict, reason)}
-              label="az előrejelzésről"
-            />
+            <div className="mzp-title">{p.title}</div>
+
+            {p.status === 'pending' && (
+              <div className="mzp-conf">
+                {p.confidence != null ? (
+                  <>
+                    <div className="mzp-gbar">
+                      <div style={{ width: `${Math.round(p.confidence * 100)}%`, '--d': `${350 + i * 70}ms` } as React.CSSProperties} />
+                    </div>
+                    <span className="mzp-pct">{Math.round(p.confidence * 100)}%</span>
+                  </>
+                ) : (
+                  <span className="mzp-learn">tanulom</span>
+                )}
+              </div>
+            )}
+
+            {p.basis && <p className="mzp-basis">{p.basis}</p>}
+
+            {p.actual && <div className="mzp-actual">✓ Bejött: {p.actual}</div>}
+
+            {/* Both modes — a prediction is an AI artifact wherever it comes from. Keyed by the
+                prediction id (as the card itself is), so React never reuses one card's
+                FeedbackChips instance — and its session-local reason-row state — for another row. */}
+            <div className="mt-md">
+              <FeedbackChips
+                key={p.id}
+                value={feedback.get(p.id)}
+                onVote={(verdict, reason) => feedback.vote(p.id, verdict, reason)}
+                label="az előrejelzésről"
+              />
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        )
+      })}
+    </EntranceGroup>
   )
 }

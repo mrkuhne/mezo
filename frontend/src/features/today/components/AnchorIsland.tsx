@@ -54,7 +54,7 @@ export function AnchorIsland() {
         ))}
       </div>
       <div className="isl-act">
-        <button type="button" className="isl-more" onClick={() => navigate('/today')}>
+        <button type="button" className="isl-more" onClick={() => navigate('/nap')}>
           Kilépés a horgony módból
         </button>
       </div>

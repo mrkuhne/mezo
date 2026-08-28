@@ -23,6 +23,12 @@ public interface CheckInRepository extends OwnedRepository<CheckInEntity> {
     Optional<CheckInEntity> findFirstByCreatedByAndDeletedFalseAndDateBetweenOrderByCreatedAtDesc(
             UUID createdBy, LocalDate from, LocalDate to);
 
+    /** B2 (mezo-8tp8): the check-ins inside a {@code [from, to]} date window — used by
+     *  {@code DayScoreService}/{@code MeWeekService}'s per-day counts and energy averages, which
+     *  previously loaded every check-in the user ever logged via {@link #findAllOwned} and
+     *  filtered the window in Java. */
+    List<CheckInEntity> findByCreatedByAndDeletedFalseAndDateBetween(UUID createdBy, LocalDate from, LocalDate to);
+
     /**
      * W1.5 note-embedding candidates (mezo-b3pp.5): live check-ins up to and including
      * {@code through} whose note is substantive, oldest first. A null note fails the length

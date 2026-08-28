@@ -15,13 +15,35 @@ describe('PredictionsPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders the header, pending + validated states, confidence and outcome', () => {
+  test('renders the header, pending + validated states, confidence and outcome — Hungarian chips (mezo-d20.5.6)', () => {
     renderPage()
     expect(screen.getByText('Aktív predikciók')).toBeInTheDocument()
-    expect(screen.getByText('2 validated · 60-day acc 68%')).toBeInTheDocument()
+    // mock keeps the Phase-1 literal, localized view-side (the shipped English header was a designed fix)
+    expect(screen.getByText('2 bevált · 60 napos pontosság 68%')).toBeInTheDocument()
     expect(screen.getByText('Csütörtök Pull Day · Chest Row PR (107.5 × 8)')).toBeInTheDocument()
-    expect(screen.getAllByText('◐ Pending').length).toBeGreaterThan(0)
-    expect(screen.getByText('RPE 8.2 · vacsora 20:50')).toBeInTheDocument()
+    expect(screen.getAllByText('◐ Folyamatban').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('✓ Bevált').length).toBeGreaterThan(0)
+    // no English chip survives the localization pass
+    expect(screen.queryByText('◐ Pending')).not.toBeInTheDocument()
+    expect(screen.queryByText('✓ Validated')).not.toBeInTheDocument()
+    expect(screen.getByText('✓ Bejött: RPE 8.2 · vacsora 20:50')).toBeInTheDocument()
+  })
+
+  test('status-washed tiles: pending → lavender + animated confidence bar, validated → sage (mezo-d20.5.6)', () => {
+    const { container } = renderPage()
+    const tiles = container.querySelectorAll('.mzp-pred')
+    expect(tiles).toHaveLength(mockPredictions.length)
+    const pending = container.querySelectorAll('.mzp-pred.lav')
+    const validated = container.querySelectorAll('.mzp-pred.sage')
+    expect(pending).toHaveLength(2)
+    expect(validated).toHaveLength(2)
+    // pending carries the animated confidence bar with the honest width; validated carries none
+    const fill = pending[0].querySelector('.mzp-gbar div') as HTMLElement
+    expect(fill).not.toBeNull()
+    expect(fill.style.width).toBe('72%')
+    expect(validated[0].querySelector('.mzp-gbar')).toBeNull()
+    // the entrance choreography is armed once
+    expect(container.querySelector('.mz-play')).not.toBeNull()
   })
 
   test('renders one feedback chip row per prediction card (mezo-b3pp.15)', async () => {
@@ -75,10 +97,11 @@ describe('PredictionsPage (real mode)', () => {
     expect(await screen.findByText('Hét 27 testsúly csökken')).toBeInTheDocument()
     // null confidence renders the honest „tanulom" chip, not a fabricated %
     expect(screen.getAllByText('tanulom').length).toBeGreaterThan(0)
-    // one validated of one closed row → derived header
-    expect(screen.getByText('1 validated · acc 100%')).toBeInTheDocument()
+    // one validated of one closed row → derived header, Hungarian
+    expect(screen.getByText('1 bevált · pontosság 100%')).toBeInTheDocument()
     expect(screen.queryByText('hamarosan')).not.toBeInTheDocument()
-    expect(screen.queryByText('2 validated · 60-day acc 68%')).not.toBeInTheDocument()
+    expect(screen.queryByText('2 bevált · 60 napos pontosság 68%')).not.toBeInTheDocument()
+    expect(screen.queryByText(/validated/)).not.toBeInTheDocument()
     // The chips are not mock-only — both live rows carry their own row.
     expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2)
   })

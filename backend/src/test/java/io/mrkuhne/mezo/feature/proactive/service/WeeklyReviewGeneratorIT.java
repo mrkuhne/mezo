@@ -152,6 +152,31 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
         assertThat(repository.count()).isEqualTo(1);
     }
 
+    /**
+     * B4 (mezo-8tp8): {@code resolveHighlights} was only ever exercised with valid index 0 (above)
+     * and invalid 99 (below) — an off-by-one that always returned {@code candidates.get(0)}
+     * regardless of the requested index would still pass both. This seeds TWO candidates (a
+     * Pattern at index 0, then the memoir's own Memory candidate at index 1 — see the class
+     * javadoc for why the memoir is the only safe sentinel-planting channel) and resolves the
+     * NON-ZERO index 1, asserting the resolved highlight is the candidate AT THAT POSITION
+     * (kind + label), not the one at index 0.
+     */
+    @Test
+    void resolvesANonZeroValidHighlightIndexToTheCandidateAtThatPosition() {
+        UUID user = userPopulator.createUser("wr-nonzero-idx@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedConfirmedPatternEvent(user, WEEK_START);
+        seedMemoirWithSentinel(user, WEEK_START,
+                "[fake-review:{\"summary\":\"Vegyes hét.\",\"dayNotes\":[],\"anchorIndexes\":[1]}]");
+
+        WeeklyReviewEntity review = generator.generate(user, WEEK_START);
+
+        assertThat(review).isNotNull();
+        assertThat(review.getHighlights().highlights()).hasSize(1);
+        assertThat(review.getHighlights().highlights().get(0).kind()).isEqualTo("Memory");
+        assertThat(review.getHighlights().highlights().get(0).label()).isEqualTo(WEEK_START.toString());
+    }
+
     @Test
     void invalidHighlightIndexesAreDropped() {
         UUID user = userPopulator.createUser("wr-invalid-idx@test.local").getId();

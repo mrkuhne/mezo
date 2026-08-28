@@ -11,7 +11,7 @@ import { cannedReply } from '@/data/insights/chat'
 // The page reads its selected conversation from `?c=` (mezo-at8x.3), so it needs a router.
 const FEEDBACK_GROUP = 'Visszajelzés a válaszról'
 
-const renderPage = (path = '/insights/chat') =>
+const renderPage = (path = '/mezo/chat') =>
   render(
     <QueryWrapper>
       <MemoryRouter initialEntries={[path]}>
@@ -89,6 +89,57 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.getAllByRole('button', { name: /Segített/ })[1]).toHaveAttribute('aria-pressed', 'false')
   })
 
+  // ── Design 2.0 face (mezo-d20.5.2) — the Mozaik chat chrome ─────────────────────────
+
+  test('the refs footer speaks human labels, falling back to the raw id only when no label exists', () => {
+    renderPage()
+    // seed ref [Workout w-2026-05-21] → kind label Edzés + derived date
+    // both seed answers carry a refs footer
+    expect(screen.getAllByText('Hivatkozott · L3')).toHaveLength(2)
+    const workoutRef = screen.getAllByText('Edzés').find((el) => el.classList.contains('mzc-refk'))
+    expect(workoutRef).toBeTruthy()
+    expect(workoutRef!.parentElement).toHaveTextContent('máj. 21.')
+    // seed ref [Pattern p-medication-appetite] → kind label Minta, HONEST raw-id fallback
+    const patternRef = screen.getAllByText('Minta').find((el) => el.classList.contains('mzc-refk'))
+    expect(patternRef).toBeTruthy()
+    expect(patternRef!.parentElement).toHaveTextContent('p-medication-appetite')
+  })
+
+  test('every assistant answer carries the Mezo eyebrow + timestamp meta row with the orb', () => {
+    const { container } = renderPage()
+    // two assistant answers in the seed → two orb-led meta rows
+    expect(container.querySelectorAll('.mzc-meta')).toHaveLength(2)
+    expect(screen.getAllByText('Mezo', { selector: '.mzc-meta .mzc-eb' })).toHaveLength(2)
+    expect(screen.getByText('06:32')).toBeInTheDocument()
+  })
+
+  test('the tool chips render ABOVE the answer bubble, not inside it', () => {
+    const { container } = renderPage()
+    const first = container.querySelector('.mzc-msg-a')!
+    const toolrow = first.querySelector('.mzc-tools')
+    const bubble = first.querySelector('.mzc-bub-a')
+    expect(toolrow).toBeTruthy()
+    expect(bubble).toBeTruthy()
+    // DOM order: the tool row precedes the bubble and is a sibling, never a child of it
+    expect(bubble!.contains(toolrow!)).toBe(false)
+    expect(toolrow!.compareDocumentPosition(bubble!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  test('the user bubble sits in the washed Mozaik card with its timestamp below', () => {
+    const { container } = renderPage()
+    const user = container.querySelector('.mzc-msg-u')!
+    expect(user.querySelector('.mzc-bub-u')).toHaveTextContent('Aludtam 7h-t.')
+    expect(user.querySelector('time')).toHaveTextContent('06:34')
+  })
+
+  test('the composer is the Mozaik pill with mic and send controls intact', () => {
+    const { container } = renderPage()
+    const composer = container.querySelector('.chat-composer')!
+    expect(composer.classList.contains('mzc-composer')).toBe(true)
+    expect(screen.getByLabelText('Hangbevitel')).toBeInTheDocument()
+    expect(screen.getByLabelText('Küldés')).toBeInTheDocument()
+  })
+
   test('the first assistant message shows a collapsed Emlékek row that reveals the recalled gists', async () => {
     renderPage()
     const toggle = await screen.findByText(/Emlékek · 2/)
@@ -121,9 +172,13 @@ describe('ChatPage (real mode)', () => {
     // appended cache pair when the stream completes, so a captured node can go stale.
     await waitFor(() => expect(screen.getByText('Fáradt vagyok')).toBeInTheDocument())
     await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
-    // V0.5: the persisted reply renders its REAL tool chip + ref tag (from the done event)
+    // V0.5: the persisted reply renders its REAL tool chip + ref chip (from the done event) —
+    // the ref speaks the human label (Alvás + derived date), not the raw wire kind/id (d20.5.2).
     expect(screen.getByText('get_sleep(days=3)')).toBeInTheDocument()
-    expect(screen.getByText(/\[Sleep\]/)).toBeInTheDocument()
+    const sleepRef = screen
+      .getAllByText('Alvás')
+      .find((el) => el.classList.contains('mzc-refk') && el.parentElement?.textContent?.includes('júl. 2.'))
+    expect(sleepRef).toBeTruthy()
   })
 
   test('the streamed answer carries its own Emlékek disclosure (mezo-b3pp.28)', async () => {
@@ -306,7 +361,7 @@ describe('ChatPage (real mode)', () => {
         { status: 201 },
       )
     }))
-    renderPage('/insights/chat?c=new')
+    renderPage('/mezo/chat?c=new')
     const input = await screen.findByPlaceholderText('Mondj valamit...')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })

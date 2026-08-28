@@ -59,7 +59,9 @@ function writeRow(
  *   for the session. The cache key omits the id set there (mock never fetches, so the ids play no
  *   part in cache identity) — otherwise a newly-arrived chat message would change the key and
  *   silently drop every vote the demo user had just cast.
- * - **real:** one batch GET per rendered id set, an optimistic cache write on every vote, then an
+ * - **real:** one batch read per rendered id set — chunked into FEEDBACK_IDS_PER_REQUEST-sized
+ *   HTTP requests by `feedbackApi.list` when the id set is large, but still ONE query with ONE
+ *   cache key from this hook's point of view — an optimistic cache write on every vote, then an
  *   invalidate so server truth wins. A FAILED read degrades to "no verdicts" (IDENT-3) — a
  *   missing verdict never breaks the page it decorates.
  */
@@ -67,11 +69,15 @@ export function useFeedback(kind: FeedbackArtifactKind, ids: string[]): Feedback
   const qc = useQueryClient()
   const mock = isMockMode()
 
-  // Dedupe (the same artifact can legitimately be rendered twice) and cap at the contract's
-  // maxItems — an oversized list is a guaranteed 400, i.e. NO verdicts for the whole page.
+  // Dedupe (the same artifact can legitimately be rendered twice) and cap at FEEDBACK_MAX_IDS.
+  // This is NOT a header-budget number — `feedbackApi.list` chunks the read into
+  // FEEDBACK_IDS_PER_REQUEST-sized requests, so an oversized list no longer risks a bare 400.
+  // It is a request-count ceiling: past it we stop fanning out (a very long, unwindowed
+  // conversation would otherwise issue an unbounded number of chunked requests on every render).
   // The cap keeps the LAST ids, not the first: every one of these surfaces renders
   // oldest-first with the user pinned to the newest end (chat especially), so the tail is what
-  // is actually on screen — dropping the head loses chips nobody can see.
+  // is actually on screen — dropping the head loses chips nobody can see. Past this ceiling the
+  // oldest ids are still silently dropped, same as before — just an order of magnitude further out.
   const requestIds = useMemo(() => [...new Set(ids)].slice(-FEEDBACK_MAX_IDS), [ids])
   const fingerprint = useMemo(() => [...requestIds].sort().join(','), [requestIds])
   const queryKey = useMemo(

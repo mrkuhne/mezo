@@ -365,7 +365,8 @@ ActivityLogSheet. Daniel's iteration decisions for the Mezo/Én rounds are logge
 [`2026-08-27-mezo-en-design-iterations.md`](2026-08-27-mezo-en-design-iterations.md). The **Heti áttekintés** (weekly review) page
 landed after the real feature shipped on 2026-08-27 (`feat/weekly-review`, v2.52.0) — audited in
 [`2026-08-27-heti-feature-audit.md`](2026-08-27-heti-feature-audit.md) and built as the Én tab's Heti
-subpage: animated score ring + 8-week trend, 8 stat cells, band-coloured day columns, day tiles with
+subpage — a **tile hub** (hero + 8 stat cells + four view tiles, each with its own subpage; hub
+scroll 1651 px -> 525 px after Daniel's round-2 note): animated score ring + 8-week trend, day tiles with
 the four subscore rings and kcal/protein vs target, the Mezo day note in a companion bubble, the
 review card with the previously-dead **anchor chips**, the honest-state split (running week ghost /
 `✦ Készítsd el most` for a review-less finished week / skeleton on week switch), the discovery mosaic

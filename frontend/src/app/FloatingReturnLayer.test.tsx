@@ -46,20 +46,15 @@ const openToday: WorkoutTodayResponse = {
   },
 }
 
-test('a regular tab always shows the chat bubble, which navigates to the chat', async () => {
-  renderAt('/today', null)
-  const bubble = screen.getByRole('button', { name: 'Beszélgetés a társsal' })
-  await userEvent.click(bubble)
-  expect(screen.getByTestId('loc')).toHaveTextContent('/insights/chat')
-})
-
-test('no workout FAB without an open workout', () => {
-  renderAt('/today', null)
-  expect(screen.queryByRole('button', { name: 'Vissza az edzéshez' })).toBeNull()
+// Design 2.0 decision B (mezo-d20.1.1): the floating chat bubble is retired — Mezo is a
+// first-class tab; this layer is session-return chrome only.
+test('a regular tab renders nothing without an open workout — the chat bubble is gone', () => {
+  renderAt('/nap', null)
+  expect(screen.queryByRole('button')).toBeNull()
 })
 
 test('an open workout adds the resume FAB with the done-set badge (skipped rows excluded)', async () => {
-  renderAt('/today', openToday)
+  renderAt('/nap', openToday)
   const fab = screen.getByRole('button', { name: 'Vissza az edzéshez' })
   expect(fab).toHaveTextContent('2')
   await userEvent.click(fab)
@@ -67,19 +62,17 @@ test('an open workout adds the resume FAB with the done-set badge (skipped rows 
 })
 
 test('a completed today-workout suppresses the resume FAB even if openWorkout rides along', () => {
-  renderAt('/today', { ...openToday, completedWorkout: openToday.openWorkout })
+  renderAt('/nap', { ...openToday, completedWorkout: openToday.openWorkout })
   expect(screen.queryByRole('button', { name: 'Vissza az edzéshez' })).toBeNull()
 })
 
-test('the active session route keeps only the chat bubble, repositioned', () => {
+test('the active session route renders nothing — no bubble, no resume FAB', () => {
   renderAt('/train/session', openToday)
-  expect(screen.queryByRole('button', { name: 'Vissza az edzéshez' })).toBeNull()
-  const bubble = screen.getByRole('button', { name: 'Beszélgetés a társsal' })
-  expect(bubble.closest('.float-stack')).toHaveClass('float-stack-session')
+  expect(screen.queryByRole('button')).toBeNull()
 })
 
-test('the chat route swaps the bubbles for a return bar while a workout is open', async () => {
-  renderAt('/insights/chat', openToday)
+test('the chat route shows a return bar while a workout is open', async () => {
+  renderAt('/mezo/chat', openToday)
   expect(screen.queryByRole('button', { name: 'Beszélgetés a társsal' })).toBeNull()
   const bar = screen.getByRole('button', { name: /Vissza az edzéshez/ })
   expect(bar).toHaveTextContent('Pull Day')
@@ -89,7 +82,7 @@ test('the chat route swaps the bubbles for a return bar while a workout is open'
 })
 
 test('the chat route renders nothing without an open workout', () => {
-  renderAt('/insights/chat', null)
+  renderAt('/mezo/chat', null)
   expect(screen.queryByRole('button')).toBeNull()
 })
 

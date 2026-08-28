@@ -380,13 +380,12 @@ public class MetricSeriesService {
         Integer value(CheckInEntity checkIn);
     }
 
-    /** Avg of the day's check-in slots for the given score. */
+    /** Avg of the day's check-in slots for the given score. B2 (mezo-8tp8): queries the
+     *  {@code [from, to]} window directly instead of loading every check-in the user has ever
+     *  logged and filtering in Java. */
     private Map<LocalDate, Double> checkIn(UUID userId, LocalDate from, LocalDate to, CheckInValue extractor) {
         Map<LocalDate, List<Double>> perDay = new HashMap<>();
-        for (CheckInEntity checkIn : checkInRepository.findAllOwned(userId)) {
-            if (checkIn.getDate().isBefore(from) || checkIn.getDate().isAfter(to)) {
-                continue;
-            }
+        for (CheckInEntity checkIn : checkInRepository.findByCreatedByAndDeletedFalseAndDateBetween(userId, from, to)) {
             Integer value = extractor.value(checkIn);
             if (value != null) {
                 perDay.computeIfAbsent(checkIn.getDate(), d -> new ArrayList<>()).add(value.doubleValue());

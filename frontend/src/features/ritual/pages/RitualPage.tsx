@@ -102,7 +102,7 @@ export function RitualPage() {
             <span key={i} className={i < act ? 'rz-dot on' : 'rz-dot'} />
           ))}
         </div>
-        <button className="rz-exit" aria-label="Kilépés" onClick={() => navigate('/today')}>✕</button>
+        <button className="rz-exit" aria-label="Kilépés" onClick={() => navigate('/nap')}>✕</button>
       </div>
 
       {act === 1 && <ArrivalStep onNext={() => setAct(2)} />}
@@ -121,7 +121,7 @@ export function RitualPage() {
           prepStartsAt={data.window.prepStartsAt}
           bedTime={data.window.bedTime}
           closingNote={closingNote}
-          onFinish={() => navigate('/today')}
+          onFinish={() => navigate('/nap')}
         />
       )}
 

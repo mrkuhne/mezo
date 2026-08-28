@@ -69,7 +69,7 @@ public class WeeklyReviewService {
             throw notFound();
         }
         WeeklyReviewResponse response = mapper.toWeeklyReviewResponse(fresh);
-        response.setStale(false);
+        response.setStale(isStale(userId, weekStart, fresh.getGeneratedAt()));
         return response;
     }
 

@@ -23,7 +23,8 @@ describe('MemoryPage (mock mode)', () => {
   test('renders the four layer cards with the flow connectors', () => {
     renderPage()
     expect(screen.getByText('L0 · Nyers adat')).toBeInTheDocument()
-    expect(screen.getByText('47/60 nap')).toBeInTheDocument()
+    expect(screen.getByText('47')).toBeInTheDocument()
+    expect(screen.getByText('/60 nap')).toBeInTheDocument()
     expect(screen.getByText('L1 · Epizodikus napló')).toBeInTheDocument()
     expect(screen.getByText('38 nap-vektor')).toBeInTheDocument()
     expect(screen.getByText('112 chat-vektor')).toBeInTheDocument()
@@ -31,10 +32,21 @@ describe('MemoryPage (mock mode)', () => {
     expect(screen.getByText('2 függő tényjelölt')).toBeInTheDocument()
     expect(screen.getByText('L3 · Tartós tudás')).toBeInTheDocument()
     expect(screen.getByText('168× megerősítés')).toBeInTheDocument()
-    // a konnektorokon a cron-idők látszanak
-    expect(screen.getByText('napi összefoglaló · 0 20 2 * * *')).toBeInTheDocument()
-    expect(screen.getByText('minta-felismerés · 0 40 2 * * *')).toBeInTheDocument()
-    expect(screen.getByText('hipotézis + tudás-promóció · 0 0 3 * * SUN')).toBeInTheDocument()
+    // a konnektorokon EMBERI cron-idők látszanak (nézet-oldali fordítás, mezo-d20.5.7)
+    expect(screen.getByText('napi összefoglaló · minden éjjel 02:20')).toBeInTheDocument()
+    expect(screen.getByText('minta-felismerés · minden éjjel 02:40')).toBeInTheDocument()
+    expect(screen.getByText('hipotézis + tudás-promóció · vasárnap 03:00')).toBeInTheDocument()
+  })
+
+  test('the layer cards wear the per-layer washes (sand→gold→coral→lav) with clay icons', () => {
+    renderPage()
+    const tones = ['sand', 'gold', 'coral', 'lav']
+    const eyebrows = ['L0 · Nyers adat', 'L1 · Epizodikus napló', 'L2 · Ítélet-inbox', 'L3 · Tartós tudás']
+    eyebrows.forEach((eb, i) => {
+      const card = screen.getByText(eb).closest('.mem-laycard') as HTMLElement
+      expect(card).toHaveClass(`mem-t-${tones[i]}`)
+      expect(card.querySelector('.mem-lic svg use')).not.toBeNull() // clay ikon-korong
+    })
   })
 
   test('switches to the journal with month separators and embed dots', async () => {
@@ -71,6 +83,8 @@ describe('MemoryPage (mock mode)', () => {
     expect(await screen.findByText('egyezés 0.81')).toBeInTheDocument()
     expect(screen.getByText('frissesség 0.96')).toBeInTheDocument()
     expect(screen.getByText('végső 0.78')).toBeInTheDocument()
+    // a találati kártya egyezés-gyűrűje a % címkével (új arc, mezo-d20.5.7)
+    expect(screen.getByRole('img', { name: 'egyezés 81%' })).toBeInTheDocument()
     await userEvent.click(screen.getByText('egyezés 0.81'))
     // a koppintás a Napló szegmensre vált, a 08-09-es bejegyzés látszik
     expect(await screen.findByText(/a vasárnap esti mintázat megint kirajzolódott/)).toBeInTheDocument()
@@ -83,7 +97,12 @@ describe('MemoryPage (mock mode)', () => {
     expect(screen.getByText('$0.125')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Napi LLM token-oszlopok' })).toBeInTheDocument()
     expect(screen.getByText(/54 hívás · bemenet 248\.3k · kimenet 38\.7k/)).toBeInTheDocument()
-    // 2 · forrás-csoportok (a seed elosztása: 12 chat · 1 pattern · 2 manual)
+    // 2 · tintázott tény-eredet mini-cellák (a seed elosztása: 12 chat · 1 pattern · 2 manual)
+    expect(screen.getByText('Honnan tudom, amit tudok')).toBeInTheDocument()
+    expect(screen.getByText('chatből').previousElementSibling).toHaveTextContent('12')
+    expect(screen.getByText('mintából').previousElementSibling).toHaveTextContent('1')
+    expect(screen.getByText('kézzel').previousElementSibling).toHaveTextContent('2')
+    // 3 · forrás-csoportok
     expect(screen.getByText('Chatből tanulta')).toBeInTheDocument()
     expect(screen.getByText('Mintából promótálva')).toBeInTheDocument()
     expect(screen.getByText('Kézzel rögzítve')).toBeInTheDocument()

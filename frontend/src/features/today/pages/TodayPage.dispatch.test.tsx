@@ -99,7 +99,7 @@ function LocationProbe() {
   return <div data-testid="loc">{loc.pathname}</div>
 }
 
-function tree(path = '/today?dp=este') {
+function tree(path = '/nap?dp=este') {
   return (
     <QueryWrapper>
       <LevelUpProvider>
@@ -112,7 +112,7 @@ function tree(path = '/today?dp=este') {
   )
 }
 
-function renderToday(path = '/today?dp=este') {
+function renderToday(path = '/nap?dp=este') {
   return render(tree(path))
 }
 
@@ -218,7 +218,7 @@ describe('TodayPage — no habitAction kind is a dead control', () => {
     renderToday()
     fireEvent.click(within(rowOf(title)).getByRole('button'))
     expect(screen.getByRole('dialog')).toHaveAccessibleName(sheetName)
-    expect(screen.getByTestId('loc').textContent).toBe('/today') // it did not navigate away
+    expect(screen.getByTestId('loc').textContent).toBe('/nap') // it did not navigate away
     expect(check).not.toHaveBeenCalled()                          // nor self-complete
   })
 })
@@ -317,7 +317,7 @@ describe('TodayPage — no quest-sheet action is a dead control either', () => {
     renderToday()
     const dialog = await openQuestSheet()
     fireEvent.click(within(questRowOf(dialog, 'Igyál vizet')).getByRole('button', { name: '+250 ml' }))
-    expect(screen.getByTestId('loc').textContent).toBe('/today') // it did not navigate
+    expect(screen.getByTestId('loc').textContent).toBe('/nap') // it did not navigate
     expect(dialog).toBeInTheDocument()                           // and kept the quest sheet open
     expect(logWater).toHaveBeenCalledWith(250)
   })
@@ -332,7 +332,7 @@ describe('TodayPage — no quest-sheet action is a dead control either', () => {
 
   test('a completed standalone quest still contributes to the evening XP total', () => {
     setup({ quests: [] })
-    const baselineView = renderToday('/today?dp=este')
+    const baselineView = renderToday('/nap?dp=este')
     const baseline = Number(
       screen.getByText('Nap mérlege').closest('.td-stat')?.querySelector('.td-stat-v')?.textContent?.replace(/\D/g, ''),
     )
@@ -341,7 +341,7 @@ describe('TodayPage — no quest-sheet action is a dead control either', () => {
     setup({
       quests: [quest({ id: 'done-q', title: 'Kész küldetés', status: 'completed', xp: 20 })],
     })
-    renderToday('/today?dp=este')
+    renderToday('/nap?dp=este')
 
     const balance = screen.getByText('Nap mérlege').closest('.td-stat') as HTMLElement
     expect(balance).toHaveTextContent(`+${baseline + 20}XP`)
@@ -397,7 +397,7 @@ describe('TodayPage — a passed check-in slot is still fillable (mezo-mvb4.1)',
 
   test('the morning daypart renders BOTH passed slots, each with a Pótold pill', () => {
     setup({ habits: [], checkins: AT_15 })
-    renderToday('/today?dp=reggel')
+    renderToday('/nap?dp=reggel')
     const rows = screen.getAllByText('Hogy voltál?')
     expect(rows).toHaveLength(2)
     for (const r of rows) {
@@ -407,7 +407,7 @@ describe('TodayPage — a passed check-in slot is still fillable (mezo-mvb4.1)',
 
   test('the copy does not pretend it was on time — past tense + „elmaradt" + its own clock time', () => {
     setup({ habits: [], checkins: AT_15 })
-    renderToday('/today?dp=reggel')
+    renderToday('/nap?dp=reggel')
     const row = screen.getAllByText('Hogy voltál?')[0].closest('.td-row') as HTMLElement
     expect(row).toHaveTextContent('06:30 · elmaradt')
     expect(within(row).queryByText('Koppints')).toBeNull()
@@ -415,7 +415,7 @@ describe('TodayPage — a passed check-in slot is still fillable (mezo-mvb4.1)',
 
   test('Pótold opens the sheet for THAT slot, so the morning can be recorded', () => {
     setup({ habits: [], checkins: AT_15 })
-    renderToday('/today?dp=reggel')
+    renderToday('/nap?dp=reggel')
     const row = screen.getAllByText('Hogy voltál?')[0].closest('.td-row') as HTMLElement
     fireEvent.click(within(row).getByRole('button', { name: 'Pótold' }))
     expect(screen.getByRole('dialog').textContent).toContain('06:30')
@@ -431,7 +431,7 @@ describe('TodayPage — an in-flight habit write withdraws its controls', () => 
 
   test('an in-flight habit write withdraws habit pills but leaves quest actions live', async () => {
     setup({ habits: ALL_KINDS, quests: [waterQuest], pending: true })
-    const { container } = renderToday('/today?dp=este')
+    const { container } = renderToday('/nap?dp=este')
     // no clickable control survives on a HABIT row — the DERIVED rows' pills stay as inert
     // copy (`.td-act.is-inert`), but the MANUAL row's tick WITHDRAWS entirely (TodayRow's own
     // rule: it withdraws, it does not dim), so no button and no leftover ✓ ghost either.
@@ -449,7 +449,7 @@ describe('TodayPage — an in-flight habit write withdraws its controls', () => 
 
   test('with no write in flight the controls are live', () => {
     setup({ habits: ALL_KINDS })
-    renderToday('/today?dp=este')
+    renderToday('/nap?dp=este')
     fireEvent.click(within(rowOf('MANUAL lánc')).getByRole('button', { name: /kipipálása/ }))
     expect(check).toHaveBeenCalledWith('caffeine_cutoff')
   })
@@ -468,7 +468,7 @@ describe('TodayPage — the chain-completion celebration', () => {
     const seen: ToastMessage[] = []
     const off = onToast((t) => seen.push(t))
     setup({ habits: chain('MORNING', true) })
-    const { rerender } = renderToday('/today?dp=reggel')
+    const { rerender } = renderToday('/nap?dp=reggel')
     // A re-render of an already-complete chain stays silent (the wasComplete edge).
     rerender(<div />)
     off()
@@ -479,7 +479,7 @@ describe('TodayPage — the chain-completion celebration', () => {
     const seen: ToastMessage[] = []
     const off = onToast((t) => seen.push(t))
     setup({ habits: chain('EVENING', true) })
-    renderToday('/today?dp=este')
+    renderToday('/nap?dp=este')
     off()
     expect(seen).toEqual([{ kind: 'success', text: '🌙 Tökéletes este' }])
   })
@@ -488,7 +488,7 @@ describe('TodayPage — the chain-completion celebration', () => {
     const seen: ToastMessage[] = []
     const off = onToast((t) => seen.push(t))
     setup({ habits: chain('MORNING', false) })
-    renderToday('/today?dp=reggel')
+    renderToday('/nap?dp=reggel')
     off()
     expect(seen).toEqual([])
   })
@@ -497,7 +497,7 @@ describe('TodayPage — the chain-completion celebration', () => {
 describe('TodayPage — the day daypart hero', () => {
   test('a rest day offers the custom-workout sheet instead of a session hero', async () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workout: null, workoutTime: null })
-    const { container } = renderToday('/today?dp=nap')
+    const { container } = renderToday('/nap?dp=nap')
     // Zero-guard: no workout ⇒ no duration fact anywhere in the hero markup (the
     // Pihenő placeholder's own `.td-hero-u` reads "nap", never a `~X perc` chip).
     expect(container.querySelector('.td-hero-u')?.textContent).not.toMatch(/perc/)
@@ -510,7 +510,7 @@ describe('TodayPage — the day daypart hero', () => {
   // while the Train tab read „Kész · N szett". The done-state is one flag from `useToday` now.
   test('a finished workout retires the start CTA for the done footnote', () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workoutDone: true, workoutDoneSets: 18 })
-    const { container } = renderToday('/today?dp=nap')
+    const { container } = renderToday('/nap?dp=nap')
     expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
     expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
     // The hero itself survives — the day still had a session, it is simply over.
@@ -519,7 +519,7 @@ describe('TodayPage — the day daypart hero', () => {
 
   test('an unfinished workout keeps the start CTA', () => {
     mocks.useToday.mockReturnValue(baseToday)
-    renderToday('/today?dp=nap')
+    renderToday('/nap?dp=nap')
     expect(screen.getByRole('button', { name: 'Indítsuk' })).toBeInTheDocument()
   })
 
@@ -527,14 +527,14 @@ describe('TodayPage — the day daypart hero', () => {
   // in), it never invites a restart. Same `/train` target, honest label.
   test('an open instance turns the CTA into Folytassuk with the logged set count', () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workoutInProgress: true, workoutOpenSets: 6 })
-    renderToday('/today?dp=nap')
+    renderToday('/nap?dp=nap')
     expect(screen.queryByRole('button', { name: 'Indítsuk' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Folytassuk · 6 szett kész' })).toBeInTheDocument()
   })
 
   test('an open instance with nothing logged yet reads a bare Folytassuk', () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workoutInProgress: true, workoutOpenSets: 0 })
-    renderToday('/today?dp=nap')
+    renderToday('/nap?dp=nap')
     expect(screen.getByRole('button', { name: 'Folytassuk' })).toBeInTheDocument()
   })
 
@@ -542,7 +542,7 @@ describe('TodayPage — the day daypart hero', () => {
     mocks.useToday.mockReturnValue({
       ...baseToday, workoutDone: true, workoutDoneSets: 18, workoutInProgress: true, workoutOpenSets: 6,
     })
-    const { container } = renderToday('/today?dp=nap')
+    const { container } = renderToday('/nap?dp=nap')
     expect(screen.queryByRole('button', { name: /Folytassuk/ })).toBeNull()
     expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész · 18 szett')
   })
@@ -569,21 +569,21 @@ describe('TodayPage — the sport hero done-state', () => {
 
   test('an unlogged sport session keeps its Logold CTA', () => {
     mocks.useToday.mockReturnValue(sportOnly())
-    const { container } = renderToday('/today?dp=nap')
+    const { container } = renderToday('/nap?dp=nap')
     expect(heroCta(container)?.textContent).toBe('Logold')
   })
 
   test('a logged sport session drops the CTA for the done footnote', () => {
     // No `sport` discriminator ⇒ `sportOf` resolves volleyball (the Phase-1 default).
     mocks.useToday.mockReturnValue(sportOnly({ loggedSportKinds: ['volleyball'] }))
-    const { container } = renderToday('/today?dp=nap')
+    const { container } = renderToday('/nap?dp=nap')
     expect(heroCta(container)).toBeNull()
     expect(container.querySelector('.td-foot.is-done')?.textContent).toContain('Kész')
   })
 
   test('a different logged kind leaves this hero alone — a mixed day flips each independently', () => {
     mocks.useToday.mockReturnValue(sportOnly({ loggedSportKinds: ['trx'] }))
-    const { container } = renderToday('/today?dp=nap')
+    const { container } = renderToday('/nap?dp=nap')
     expect(heroCta(container)?.textContent).toBe('Logold')
   })
 })
@@ -601,7 +601,7 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
 
   test('the promoted session renders on the day view only', () => {
     mocks.useToday.mockReturnValue({ ...baseToday, workoutTime: '07:30' })
-    const { container } = renderToday('/today?dp=reggel')
+    const { container } = renderToday('/nap?dp=reggel')
     // On the morning daypart it renders NOWHERE (that inert twin is what I5 was) — the
     // capsule essence line that used to carry it is gone with the islands…
     expect(shownFace(container)).toBe('reggel')
@@ -644,7 +644,7 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
       intensity: 'közepes', role: 'edzés', today: true,
     }
     mocks.useToday.mockReturnValue({ ...baseToday, volleyballSessions: [session] })
-    const { container } = renderToday('/today?dp=nap')
+    const { container } = renderToday('/nap?dp=nap')
     // the gym is the hero…
     expect(container.querySelector('.td-hero-u')?.textContent).toContain('Pull Day')
     // …and the volleyball session is a row, with its own facts
@@ -662,7 +662,7 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
     mocks.useToday.mockReturnValue({
       ...baseToday, workout: null, workoutTime: null, volleyballSessions: [session],
     })
-    const { container } = renderToday('/today?dp=nap')
+    const { container } = renderToday('/nap?dp=nap')
     expect(container.querySelector('.td-hero-u')?.textContent).toContain('Volleyball')
     expect(rows(container)).not.toContain('Volleyball')
   })
@@ -675,7 +675,7 @@ describe('TodayPage — a session is authored once (mezo-mvb4.1)', () => {
 describe('TodayPage — habit bucketing tracks the live catalog (mezo-n5e9.2)', () => {
   test('an unresolved catalog ({chains: []}) skips every habit row without crashing', () => {
     setup({ habits: ALL_KINDS, catalogChains: [], catalogPending: true })
-    renderToday('/today?dp=este')
+    renderToday('/nap?dp=este')
     // Every chain lookup misses while the catalog is unresolved — every habit row vanishes
     // rather than the page throwing on an undefined chain; reaching this assertion at all
     // is itself the no-crash proof.
@@ -688,11 +688,11 @@ describe('TodayPage — habit bucketing tracks the live catalog (mezo-n5e9.2)', 
 
   test('habit rows appear the moment the catalog resolves — the items memo tracks catalog.chains', () => {
     setup({ habits: ALL_KINDS, catalogChains: [], catalogPending: true })
-    const { rerender } = renderToday('/today?dp=este')
+    const { rerender } = renderToday('/nap?dp=este')
     expect(screen.queryByText('MANUAL lánc')).toBeNull()
 
     mocks.useHabitCatalog.mockReturnValue({ catalog: { chains: SEED_CHAINS }, isPending: false })
-    rerender(tree('/today?dp=este'))
+    rerender(tree('/nap?dp=este'))
 
     expect(screen.getByText('MANUAL lánc')).toBeInTheDocument()
     expect(within(rowOf('MANUAL lánc')).getByRole('button')).toHaveTextContent('✓')

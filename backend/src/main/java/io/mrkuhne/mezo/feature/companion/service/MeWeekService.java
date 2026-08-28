@@ -69,7 +69,15 @@ public class MeWeekService {
     public MeWeekResponse week(UUID userId, LocalDate start) {
         LocalDate end = start.plusDays(6);
 
-        Map<LocalDate, DayScoreService.DayScore> scores = dayScoreService.scores(userId, start, end).stream()
+        // B1 (mezo-8tp8): fetch each day's FuelDayResponse ONCE and hand it into DayScoreService's
+        // pre-fetched overload — buildDay needs the same rollup for its own display fields, so
+        // fetching it again inside the score computation would be a redundant call per day.
+        Map<LocalDate, FuelDayResponse> fuelByDate = new HashMap<>();
+        for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
+            fuelByDate.put(day, fuelDayService.getDay(userId, day));
+        }
+
+        Map<LocalDate, DayScoreService.DayScore> scores = dayScoreService.scores(userId, start, end, fuelByDate).stream()
                 .collect(Collectors.toMap(DayScoreService.DayScore::date, s -> s));
         Map<LocalDate, SleepLogEntity> sleepByDate = latestSleepByDate(userId, start, end);
         Map<LocalDate, List<CheckInEntity>> checkinsByDate = checkinsByDate(userId, start, end);
@@ -82,7 +90,7 @@ public class MeWeekService {
 
         List<MeWeekDay> days = new ArrayList<>();
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
-            days.add(buildDay(day, scores.get(day), fuelDayService.getDay(userId, day),
+            days.add(buildDay(day, scores.get(day), fuelByDate.get(day),
                     sleepByDate.get(day), checkinsByDate.getOrDefault(day, List.of()),
                     weightByDate.get(day),
                     gymCounts.getOrDefault(day, 0L) + sportCounts.getOrDefault(day, 0L) + runCounts.getOrDefault(day, 0L),
@@ -226,11 +234,18 @@ public class MeWeekService {
         return v != null ? v.stripTrailingZeros().toPlainString() : "–";
     }
 
-    /** {@code min(7, today - start + 1)} clamped to >= 1; a fully-past week always uses the full 7. */
+    /** {@code min(7, today - start + 1)}; a fully-past week always uses the full 7. A fully-future
+     *  week (today before start) returns 0 — the honest "hasn't started yet" signal that
+     *  {@link #aggregates} turns into a {@code null} {@code checkinRatio} rather than 0.0. The
+     *  {@code Math.max(1, …)} below is now unreachable as a clamp: the fully-future early return
+     *  covers every case that used to need it. */
     private static int elapsedDays(LocalDate start, LocalDate end) {
         LocalDate today = LocalDate.now();
         if (today.isAfter(end)) {
             return 7;
+        }
+        if (today.isBefore(start)) {
+            return 0;
         }
         long elapsed = java.time.temporal.ChronoUnit.DAYS.between(start, today) + 1;
         return (int) Math.max(1, Math.min(7, elapsed));
@@ -274,9 +289,11 @@ public class MeWeekService {
         return byDate;
     }
 
+    /** B2 (mezo-8tp8): queries the {@code [start, end]} window directly instead of loading every
+     *  check-in the user has ever logged via {@link CheckInRepository#findAllOwned} and filtering
+     *  in Java. */
     private Map<LocalDate, List<CheckInEntity>> checkinsByDate(UUID userId, LocalDate start, LocalDate end) {
-        return checkInRepository.findAllOwned(userId).stream()
-                .filter(c -> !c.getDate().isBefore(start) && !c.getDate().isAfter(end))
+        return checkInRepository.findByCreatedByAndDeletedFalseAndDateBetween(userId, start, end).stream()
                 .collect(Collectors.groupingBy(CheckInEntity::getDate));
     }
 

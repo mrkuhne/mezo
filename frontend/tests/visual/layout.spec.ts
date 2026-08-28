@@ -65,13 +65,14 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
   // (the original mezo-gllr bug this file exists to catch).
   await page.setViewportSize({ width: 393, height: 852 })
   await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
-  await page.goto('/today?dp=nap')
+  await page.goto('/nap?dp=nap')
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
 
   const m = await page.evaluate(() => {
     const sc = document.querySelector('.screen-content') as HTMLElement
-    const dayview = document.querySelector('.dayview') as HTMLElement | null
+    // Design 2.0 (mezo-d20.2.1): the day spine's panel is the Nap hub now — same invariant.
+    const dayview = document.querySelector('.nap-hub') as HTMLElement | null
 
     // Walk from `.dayview` up to (not including) the app's own scroller, looking for an
     // ancestor that is ACTIVELY clipping its content — `overflow: hidden`/`-y: hidden` AND
@@ -110,7 +111,7 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
     }
   })
 
-  expect(m.hasDayview, 'the nap daypart renders its .dayview panel').toBe(true)
+  expect(m.hasDayview, 'the nap daypart renders its .nap-hub panel').toBe(true)
   expect(m.buttonCount, 'the day view renders at least one control').toBeGreaterThan(0)
   expect(m.clipped, `an ancestor between .dayview and .screen-content clips ${m.clipped}px of content`).toBeLessThanOrEqual(0)
   expect(

@@ -133,6 +133,45 @@ tile) per the §1 tile recipe. What the round changed relative to the shipped UI
   pattern `event` (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), life-event dates, prediction outcomes
   (◐ Folyamatban · ✓ Bevált · ✗ Nem jött be).
 
+### Round 2 — the Heti becomes a tile hub
+
+Daniel: *"picit sok a scroll szerintem, legyen itt is pár csempe… ez a rész maradhat de utána legyen
+heti elemzés csempe, ahol bent van a napi pontszám és heti elemzés kártya… legyen egy csempe a hét
+tanulságaival. legyen egy csempe ami a hét napjaihoz vezet ahol meg tudod őket nézni egyesével. és
+legyen egy heti felfedezések, ahol van minden ami alul volt."*
+
+The hero + the eight stat cells stay; everything below became **four view tiles**, each with its own
+subpage. Hub scroll height dropped from 1651 px to 525 px (roughly one screen).
+
+| Csempe | Preview on the hub | Subpage |
+|---|---|---|
+| **1 · Heti elemzés** (wide, lav ring) | orb, the review's first sentence, the week's mini score bars, the generation stamp / `hétfőn jön` / `nincs még` | Napi pontszám card + the full review card with the anchor chips + a hand-off band to the lessons |
+| **2 · A hét tanulságai** | open-candidate count, `dönts róluk — bekerülnek a Tudástárba` | the candidates with evidence lines and Tanuld meg / Nem rólam szól |
+| **3 · A hét napjai** | `5 / 7 nap` + seven mini score rings | a 2-column day mosaic (see round 3), each tile growing full-width to expand its detail |
+| **4 · Heti felfedezések** | `5 új nyom a memóriában` + category dots | the discovery mosaic with the status chips |
+
+Two things Daniel's list did not name explicitly, kept on the hub bottom: the **`Mezo · a következő
+heted`** band (running week only, per the real gating) and the honesty footnote. Every cascade crosses
+the boundary: accepting a lesson re-renders the tile, the analysis page's hand-off band, the hub Tudás
+tile and the graph count; generating a missing review refreshes all four tiles at once. Tapping a day
+column in the analysis page opens the days page and expands that day.
+
+### Round 3 — the days stop being a list
+
+Daniel: *"még a hét napjait pimpeljük picit, most túl listás."* The seven rows became a **2-column
+mosaic**: each day is a tile washed by its score band (80+ sage · 70+ gold · below terracotta), carrying
+the big score, the four subscores as **animated sparks** (alvás sky · fuel sage · check-in rose ·
+aktivitás coral) and clay-icon data chips (kcal · alvás · edzés · check-in n/4 · a `jegyzet` chip when
+Mezo wrote about that day). A summary row of mini-cells sits above: *legjobb nap · leggyengébb ·
+tanulom*. Tapping a tile makes it **grow to full width** and the detail opens inside it (subscore rings,
+kcal/protein vs target, cells, the Mezo bubble, the chat chip) — so the drill-down never leaves the
+mosaic. The repeated `nyisd ki ›` label was replaced by a single chevron in each tile's header.
+
+The round also split a state the shipped UI conflates: **`tanulom`** (fewer than two domains have data,
+so no score) versus **`nincs adat`** (nothing was logged that day) — the latter on a dashed tile with
+`ezen a napon nem logoltál — a hét pontszámába nem számít bele`. Future days are dashed, dimmed and
+carry `még előtted — ide majd a nap adatai jönnek`.
+
 ### The knowledge loop — backend-flagged additions
 
 Daniel's core ask ("gyarapítania kéne a tudást") has no implementation today: the weekly pipeline is
@@ -163,7 +202,8 @@ Daniel's core ask ("gyarapítania kéne a tudást") has no implementation today:
 5. Quick-log context head (MOST window) + in-place water logging.
 6. Memória: human cron times instead of raw cron strings.
 7. Én hub goal card with ETA cell; tile pass as the standing visual recipe.
-8. Heti: animated score ring + 8-week trend, 8 stat cells, date-derived tappable day columns,
+8. Heti as a **tile hub** (hero + 8 cells + 4 view tiles → own subpages): animated score ring +
+   8-week trend, 8 stat cells, date-derived tappable day columns,
    subscore rings + kcal-vs-target on the day tiles, the Mezo day note as an attributed bubble,
    **the review anchor chips** (dead payload today), the three honest states split apart with
    `✦ Készítsd el most`, skeleton on week switch, and status chips on every discovery

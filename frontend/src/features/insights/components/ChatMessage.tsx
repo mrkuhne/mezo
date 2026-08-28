@@ -1,8 +1,9 @@
 import { Markdown } from '@/shared/lib/markdown'
-import { RefTag } from '@/shared/ui/RefTag'
 import { ToolChipRow } from '@/shared/ui/ToolChipRow'
+import { ClaySpot } from '@/shared/ui/clay'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RecalledMemoriesRow } from '@/features/insights/components/RecalledMemoriesRow'
+import { chatRefDisplay } from '@/features/insights/logic/chatRefs'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
 import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
 
@@ -13,50 +14,40 @@ export interface ChatMessageFeedback {
   onVote: (verdict: FeedbackVerdict, reason?: FeedbackReason) => void
 }
 
+// Design 2.0 face (mezo-d20.5.2) — prototype mezo-body.html #page-chat anatomy:
+// assistant = orb + Mezo eyebrow + timestamp meta row, tool chips ABOVE the answer,
+// white 4/16-radius bubble with the "Hivatkozott · L3" human-label refs footer;
+// user = warm-washed 16/4-radius bubble, timestamp below right. The behavioral
+// contracts (blank-answer naming, degraded badge, votable-only-persisted,
+// hidden-when-empty sections) are unchanged — this is a re-face, not a rewrite.
 export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatMessageFeedback }) {
   if (m.role === 'user') {
     return (
-      <div style={{ alignSelf: 'flex-end', maxWidth: '80%' }}>
-        <div
-          className="card"
-          style={{ padding: '10px 14px', background: 'var(--surface-2)', borderColor: 'var(--border-subtle)' }}
-        >
-          <p style={{ fontSize: 13, color: 'var(--text-primary)', whiteSpace: 'pre-line' }}>{m.text}</p>
+      <div className="mzc-msg-u">
+        <div className="mzc-bub-u">
+          <p>{m.text}</p>
         </div>
-        <span
-          style={{
-            fontSize: 9,
-            fontVariantNumeric: 'tabular-nums',
-            display: 'block',
-            textAlign: 'right',
-            marginTop: 4,
-            color: 'var(--text-tertiary)',
-          }}
-        >
-          {m.ts}
-        </span>
+        <time>{m.ts}</time>
       </div>
     )
   }
   return (
-    <div className="col gap-sm" style={{ alignSelf: 'flex-start', maxWidth: '92%', width: '92%' }}>
-      <div className="row gap-sm">
-        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo</span>
-        <span className="text-tertiary" style={{ fontSize: 9, fontVariantNumeric: 'tabular-nums' }}>
-          {m.ts}
-        </span>
+    <div className="mzc-msg-a col gap-sm">
+      <div className="mzc-meta">
+        <ClaySpot name="s-orb" size={18} />
+        <span className="mzc-eb">Mezo</span>
+        <time>{m.ts}</time>
         {m.degraded && (
           <span
-            className="eyebrow"
-            style={{ fontSize: 9, color: 'var(--color-warning)' }}
+            className="mzc-warn"
             title="Ez a válasz nem ment át az önellenőrzésen — kezeld fenntartással."
           >
             nem ellenőrzött
           </span>
         )}
       </div>
-      {m.tools && <ToolChipRow tools={m.tools} />}
-      <div className="card" style={{ padding: 14 }}>
+      {m.tools && <ToolChipRow tools={m.tools} className="mzc-tools" />}
+      <div className="mzc-bub-a">
         {/* mezo-8z79: a blank answer can no longer be persisted, but rows written BEFORE the guard
             are still in history — and an empty card reads as a rendering bug. Name what happened
             instead of showing nothing. Gated on `m.id` (i.e. PERSISTED): the in-flight streaming
@@ -65,21 +56,23 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
           /* Model prose — blocks, not one <p>: the answer carries real markdown (mezo-at8x.1). */
           <div className="md-prose"><Markdown text={m.text} /></div>
         ) : (
-          <p className="text-tertiary" style={{ fontSize: 12.5, fontStyle: 'italic' }}>
-            Erre a körre nem érkezett válasz.
-          </p>
+          <p className="mzc-noanswer">Erre a körre nem érkezett válasz.</p>
         )}
         {m.refs && (
-          <div
-            className="row gap-xs flex-wrap mt-md"
-            style={{ paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}
-          >
-            <span className="eyebrow text-tertiary" style={{ fontSize: 9 }}>
-              Hivatkozott · L3
-            </span>
-            {m.refs.map((r, i) => (
-              <RefTag key={i} kind={r.kind} label={r.id} />
-            ))}
+          <div className="mzc-reffoot">
+            <span className="mzc-refeb">Hivatkozott · L3</span>
+            <div className="mzc-refrow">
+              {m.refs.map((r, i) => {
+                // Gap-7 fix: human labels where the data provides them, raw id otherwise.
+                const d = chatRefDisplay(r)
+                return (
+                  <span key={i} className="mzc-refch">
+                    <b className="mzc-refk">{d.kind}</b>
+                    {d.label}
+                  </span>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>

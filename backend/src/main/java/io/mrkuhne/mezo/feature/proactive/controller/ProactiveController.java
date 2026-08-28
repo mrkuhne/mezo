@@ -115,6 +115,7 @@ public class ProactiveController implements ProactiveApi {
 
     @Override
     public WeeklyReviewDigestResponse getWeeklyReviewDigest(LocalDate start) {
+        requireMonday(start);
         return weeklyReviewDigestService.getDigest(currentUserId.get(), start);
     }
 }

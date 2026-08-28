@@ -1375,8 +1375,62 @@
   .dsct .mt2 { font-size: 7.5px; color: #6E6257; font-variant-numeric: tabular-nums; }
   .bflag { font-size: 6px; font-weight: 800; letter-spacing: 0.1em; border-radius: 5px; padding: 2px 6px; flex: none;
     background: rgba(78, 143, 184, 0.16); color: #33749C; }
+  /* ===== HETI: nap-mozaik ===== */
+  .dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .dcard { border-radius: 18px; padding: 10px 11px 9px; cursor: pointer; display: grid; gap: 6px; align-content: start;
+    background: var(--dcw, #fff); border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px var(--dcg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .dcard:active { transform: scale(0.96); }
+  .dcard.op { grid-column: 1 / -1; }
+  .dcard.thin { background: rgba(255, 255, 255, 0.5); border: 1px dashed rgba(43, 33, 24, 0.16); box-shadow: none; }
+  .dcard.fut { background: none; border: 1px dashed rgba(43, 33, 24, 0.14); box-shadow: none; opacity: 0.55; cursor: default; }
+  .dcard .dow { font-size: 11px; font-weight: 700; letter-spacing: -0.01em; }
+  .dcard .dte { font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; }
+  .dcard .scnum { font-size: 27px; font-weight: 200; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .dcard .scnum small { font-size: 8px; font-weight: 700; color: #A2958A; }
+  .dcard .scnum.dash { font-size: 17px; color: #A2958A; }
+  .sparks { display: flex; gap: 3px; align-items: flex-end; height: 24px; margin-left: auto; }
+  .sparks i { width: 5px; border-radius: 2px; min-height: 3px; transform: scaleY(0); transform-origin: bottom; }
+  .play .sparks i { animation: trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 300ms); }
+  .dchips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .dchip { display: inline-flex; align-items: center; gap: 3px; font-size: 7.5px; font-weight: 700; color: #6E6257;
+    background: rgba(255, 255, 255, 0.72); border-radius: 7px; padding: 2.5px 6px; font-variant-numeric: tabular-nums; }
+  .dchip.mute { color: #A2958A; }
+  .dchv { font-size: 11px; color: #A2958A; flex: none; transition: transform 0.2s ease; }
+  .dcard.op .dchv { transform: rotate(180deg); }
+  .dnote { font-size: 7.5px; font-weight: 300; line-height: 1.4; color: #A2958A; }
+  /* ===== HETI: hub-csempék ===== */
+  .hwide { border-radius: 19px; padding: 12px 13px; margin-bottom: 9px; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--hw, #fff);
+    box-shadow: 0 16px 30px -15px var(--hg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .hwide:active { transform: scale(0.975); }
+  .hwide.ring { border: 1px solid #8A76CC; }
+  .hwide .snip { font-size: 9.5px; font-weight: 300; line-height: 1.5; margin-top: 6px; color: #2B2118;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .minibars { display: flex; align-items: flex-end; gap: 3px; height: 22px; margin-top: 9px; }
+  .minibars i { flex: 1; border-radius: 2px 2px 1px 1px; min-height: 3px; transform: scaleY(0); transform-origin: bottom; }
+  .play .minibars i { animation: trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 0ms); }
+  .hduo { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
+  .hsm { border-radius: 18px; padding: 11px 12px; cursor: pointer; display: grid; gap: 4px; align-content: start;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--hw, #fff);
+    box-shadow: 0 14px 26px -14px var(--hg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .hsm:active { transform: scale(0.96); }
+  .hsm .big { font-size: 22px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .hsm .big span { font-size: 9px; font-weight: 700; color: #6E6257; }
+  .hsm .lb { font-size: 9px; font-weight: 700; }
+  .hsm .sub { font-size: 7.5px; color: #6E6257; line-height: 1.35; }
+  .hsm .picrow { display: flex; align-items: center; gap: 6px; }
+  .miniring { display: flex; gap: 3px; margin-top: 2px; }
+  .miniring i { width: 13px; height: 13px; border-radius: 50%; flex: none;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.1) 0); }
+  .miniring i::after { content: ''; display: block; margin: 3.5px; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+  .dscdots { display: flex; gap: 4px; margin-top: 3px; }
+  .dscdots i { width: 7px; height: 7px; border-radius: 2px; flex: none; }
   @media (prefers-reduced-motion: reduce) {
-    .wktrend i, .dcols .bar { animation: none; transform: none; }
+    .wktrend i, .dcols .bar, .minibars i { animation: none; transform: none; }
     .genspin, .skel { animation: none; }
 
     .bsheet, .bsheet-back, .tgl, .tgl::after, .gtrack .fill { transition: none; }
@@ -2029,6 +2083,62 @@
         <div class="page-body" id="wkBody"></div>
       </div>
 
+      <!-- ---- Heti → elemzés ---- -->
+      <div class="page p-lav" id="page-hanaly">
+        <div class="page-head"><button class="backbtn" data-back="page-hanaly">‹ Heti</button><span class="p-eyebrow" id="haTitle" style="margin-left:auto;"></span></div>
+        <div class="page-hero">
+          <div class="nm">Heti elemzés</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="50" height="50" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+            <div class="bignum" id="haBig">78<span style="font-size:14px;color:#6E6257;"> / 100</span></div>
+          </div>
+          <div class="sb" id="haSub">napi pontszámok · a Mezo olvasata</div>
+        </div>
+        <div class="page-body" id="haBody"></div>
+      </div>
+
+      <!-- ---- Heti → tanulságok ---- -->
+      <div class="page p-gold" id="page-hless">
+        <div class="page-head"><button class="backbtn" data-back="page-hless">‹ Heti</button><span class="p-eyebrow" id="hlTitle" style="margin-left:auto;"></span></div>
+        <div class="page-hero">
+          <div class="nm">A hét tanulságai</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-kristaly"/></svg>
+            <div class="bignum" id="hlBig">3</div>
+          </div>
+          <div class="sb" id="hlSub">javaslat · te döntesz róluk</div>
+        </div>
+        <div class="page-body" id="hlBody"></div>
+      </div>
+
+      <!-- ---- Heti → napok ---- -->
+      <div class="page p-sage" id="page-hdays">
+        <div class="page-head"><button class="backbtn" data-back="page-hdays">‹ Heti</button><span class="p-eyebrow" id="hdTitle" style="margin-left:auto;"></span></div>
+        <div class="page-hero">
+          <div class="nm">A hét napjai</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-nap"/></svg>
+            <div class="bignum" id="hdBig">5<span style="font-size:14px;color:#6E6257;"> / 7</span></div>
+          </div>
+          <div class="sb" id="hdSub">logolt nap · koppints egy napra</div>
+        </div>
+        <div class="page-body" id="hdBody"></div>
+      </div>
+
+      <!-- ---- Heti → felfedezések ---- -->
+      <div class="page p-sky" id="page-hdisc">
+        <div class="page-head"><button class="backbtn" data-back="page-hdisc">‹ Heti</button><span class="p-eyebrow" id="hsTitle" style="margin-left:auto;"></span></div>
+        <div class="page-hero">
+          <div class="nm">Heti felfedezések</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-retegek"/></svg>
+            <div class="bignum" id="hsBig">5</div>
+          </div>
+          <div class="sb" id="hsSub">új nyom a memóriában</div>
+        </div>
+        <div class="page-body" id="hsBody"></div>
+      </div>
+
       <!-- ============ SHEETEK ============ -->
       <div class="bsheet-back" id="sback"></div>
       <div class="bsheet" id="sh-weight">
@@ -2139,34 +2249,54 @@
       </div>
       <div>
         <h2>Heti áttekintés — a hét, ami tanít</h2>
+        <p style="font-size:14px;color:var(--ink-2);max-width:62ch;">A valós oldal egy hosszú
+        scroll; a redesign <strong>csempés hubbá</strong> bontja: a hero + a nyolc mini-cella marad,
+        utána <strong>négy nézet-csempe</strong> vezet a saját aloldalára. A hub scrollja így
+        1651 px → 525 px.</p>
         <ul>
-          <li><strong>Hero</strong> — animált pontszám-gyűrű (0-tól felpörgő szám, sávos szín: 80+ zsálya ·
-          70+ arany · alatta terrakotta — sosem piros), delta-pill az előző héthez, és a
-          <strong>8 hetes pontszám-trend</strong> a nézett héttel kiemelve. Kevesebb mint két mért nap
-          esetén „tanulom" áll a szám helyén.</li>
-          <li><strong>Nyolc mini-cella</strong> — a valós hat mellé bekerült a <strong>check-in energia</strong>
-          és a <strong>legutóbbi súly</strong> is (a backend visszaadja, a mai UI nem mutatja).</li>
-          <li><strong>Napi pontszám oszlopok</strong> — score-sávos színezés, „—" a tanulom-napokon,
-          MA-jelölés, és koppintásra a nap kártyájára ugrik + kinyitja. A tengely a valós dátumokból jön
-          (a mai UI-ban Sze és Szo is „Sz").</li>
-          <li><strong>Nap-csempék</strong> — a négy részpontszám <strong>színes gyűrűkben</strong>
-          („miből jött össze"), kcal <strong>és fehérje a cél ellenében</strong> (a kcal-cél ma nincs kirakva),
-          alvás · edzés · XP mini-cellák, és a <strong>Mezo napi jegyzete társ-buborékban</strong> orb-bal —
-          a mai jelöletlen bekezdés helyett. Jövő nap halvány, nem nyílik, nincs chat-chipje.</li>
-          <li><strong>Heti elemzés kártya</strong> — orb + próza, alatta az <strong>„amire épült"</strong>
-          horgony-chipek (Minta · Tudás · Életesemény · Emlék) — ezt a modell ma is kiválasztja, de a UI
-          soha nem jeleníti meg. Mellette a generálás időbélyege, a stale-frissítés, 👍/👎 és a
-          „Beszélgess a hétről".</li>
-          <li><strong>Becsületes állapotok szétszedve</strong> — a mai egyetlen szellem-szöveg helyett:
-          futó hét → „Hétfő reggel érkezik… 4 / 7 nap logolva"; lezárt hét elemzés nélkül →
+          <li><strong>Hero (marad)</strong> — animált pontszám-gyűrű (0-tól felpörgő szám, sávos
+          szín: 80+ zsálya · 70+ arany · alatta terrakotta — sosem piros), delta-pill az előző héthez,
+          és a <strong>8 hetes pontszám-trend</strong> a nézett héttel kiemelve. Kevesebb mint két
+          mért nap esetén „tanulom" áll a szám helyén.</li>
+          <li><strong>Nyolc mini-cella (marad)</strong> — a valós hat mellé bekerült a
+          <strong>check-in energia</strong> és a <strong>legutóbbi súly</strong> is (a backend
+          visszaadja, a mai UI nem mutatja).</li>
+          <li><strong>1 · Heti elemzés csempe</strong> (széles, lila keret) — orb, az elemzés első
+          mondata, a hét <strong>mini pontszám-oszlopai</strong> és a generálás bélyege (vagy
+          „hétfőn jön" / „nincs még"). Az <strong>aloldalon</strong>: a Napi pontszám kártya
+          (sávos oszlopok, MA-jelölés, koppintásra a nap kártyájára visz), a teljes elemzés-kártya
+          az <strong>„amire épült" horgony-chipekkel</strong>, stale-frissítés, 👍/👎,
+          „Beszélgess a hétről", és egy átvezető sáv a tanulságokhoz.</li>
+          <li><strong>2 · A hét tanulságai csempe</strong> — a nyitott javaslatok száma; az
+          aloldalon a jelöltek evidencia-sorral és <em>Tanuld meg / Nem rólam szól</em> döntéssel.
+          Elfogadás után a csempe, a hub Tudás-csempéje és a gráf-szám is élőben követi.</li>
+          <li><strong>3 · A hét napjai csempe</strong> — „5 / 7 nap" + hét mini-gyűrű a napi
+          pontszámokkal; az aloldal <strong>nem lista, hanem 2 hasábos nap-mozaik</strong>:
+          minden nap saját csempe a pontszáma szerinti washban (80+ zsálya · 70+ arany · alatta
+          terrakotta), nagy pontszámmal, a négy részpontszám <strong>animált pálcikáival</strong>
+          (alvás égszín · fuel zsálya · check-in rózsa · aktivitás korall) és clay-ikonos
+          adat-chipekkel (kcal · alvás · edzés · check-in n/4 · „jegyzet", ha a Mezo írt a napról).
+          Fölötte mini-cellák: <em>legjobb nap · leggyengébb · tanulom</em>. A csempe koppintásra
+          <strong>teljes szélességűre nő</strong> és ott nyílik ki a részletes nézet: négy
+          részpontszám-gyűrű, kcal <strong>és</strong> fehérje a cél ellenében, alvás · edzés · XP
+          cellák, a Mezo jegyzete orb-os buborékban és a „Beszélgess a napról". Becsületes
+          különbségtétel: <strong>„tanulom"</strong> = kevesebb mint két területről van adat ·
+          <strong>„nincs adat"</strong> = azon a napon nem logoltál (szaggatott csempe) · jövő nap
+          halvány szaggatott, nem nyílik.</li>
+          <li><strong>4 · Heti felfedezések csempe</strong> — „5 új nyom a memóriában" + a
+          kategória-pöttyök; az aloldalon a mozaik státusz-chipekkel: minta-esemény
+          (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), új tudás, életesemény dátummal,
+          emlékkönyv, előrejelzés kimenettel (◐ Folyamatban · ✓ Bevált · ✗ Nem jött be) — mind
+          fetch-elt adat, amit a mai UI eldob. A fejszöveg tisztázza: ezek nem javaslatok, hanem
+          megtörtént nyomok (szemben a 2-es csempe jelöltjeivel).</li>
+          <li><strong>A hub alján</strong> — a „Mezo · a következő heted" sáv (csak a futó héten,
+          a valós gating szerint) és a becsület-lábjegyzet.</li>
+          <li><strong>Becsületes állapotok szétszedve</strong> — a mai egyetlen szellem-szöveg
+          helyett: futó hét → „Hétfő reggel érkezik… 4 / 7 nap logolva"; lezárt hét elemzés nélkül →
           <strong>„✦ Készítsd el most"</strong> (a regenerate-endpoint ma is pontosan ezt tudja) élő
-          spinnerrel és utána kész elemzéssel. Hét-váltásnál <strong>skeleton</strong> — a mai UI-ban
-          se töltés-, se hibaállapot nincs.</li>
-          <li><strong>Amit a héten felfedezett</strong> — csempe-mozaik: minta-esemény
-          státusz-chippel (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), új tudás, életesemény dátummal,
-          emlékkönyv, előrejelzés státusszal (◐ Folyamatban · ✓ Bevált · ✗ Nem jött be) — mind fetch-elt
-          adat, amit a mai UI eldob.</li>
-          <li><strong>A következő heted</strong> — csak a futó héten, ahogy a valós gating.</li>
+          spinnerrel, ami után az elemzés, a napi jegyzetek és a tanulságok is megjelennek — a hub
+          csempéi együtt frissülnek. Hét-váltásnál <strong>skeleton</strong> — a mai UI-ban se
+          töltés-, se hibaállapot nincs.</li>
         </ul>
       </div>
       <div>
@@ -2802,10 +2932,9 @@
     });
   });
 })();
-/* ===== Heti áttekintés (Én → Heti) ===== */
+/* ===== Heti áttekintés (Én → Heti) — csempés hub + négy aloldal ===== */
 (function () {
   function hu1(n) { return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).replace('-', '−'); }
-  function hu2(n) { return n.toLocaleString('hu-HU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('-', '−'); }
   function huInt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
   function slh(m) { return Math.floor(m / 60) + 'ó ' + (m % 60) + 'p'; }
   function band(sc) { return sc == null ? 'sc-non' : (sc >= 80 ? 'sc-hi' : (sc >= 70 ? 'sc-mid' : 'sc-low')); }
@@ -2815,7 +2944,7 @@
     el.textContent = t; el.classList.add('show');
     clearTimeout(el._t); el._t = setTimeout(function () { el.classList.remove('show'); }, 2100);
   }
-
+  function firstSent(t) { var i = t.indexOf('. '); return i > 0 ? t.slice(0, i + 1) : t; }
   var KT = 3100, PT = 220;
   /* nap: dátum, nap, score, alvás/fuel/checkin/aktivitás, kcal, P, C, F, súly, alvás-perc, minőség, check-in, edzés, XP, Mezo-jegyzet */
   function D(dt, dow, sc, sl, fu, ck, ac, kcal, pr, cb, ft, w, slm, q, cn, wo, xp, note) {
@@ -2907,7 +3036,7 @@
         'stabil, ott nincs mit igazítani.'
   };
 
-  var cur = 'w1', today = 'Máj 28', opened = null, fb = {};
+  var cur = 'w1', today = 'Máj 28', opened = null;
 
   var elTitle = document.getElementById('wkTitle'), elSub = document.getElementById('wkSub');
   var elRing = document.getElementById('wkRing'), elScore = document.getElementById('wkScore');
@@ -2966,6 +3095,99 @@
     return h + '</div>';
   }
 
+  /* ---------- HUB: négy csempe ---------- */
+  function hub(w) {
+    var h = statCells(w.st), i, d;
+
+    /* 1 · heti elemzés (wide) */
+    var mb = '<div class="minibars">';
+    for (i = 0; i < w.days.length; i++) {
+      d = w.days[i];
+      mb += '<i class="' + band(d.sc) + '" style="height:' + (d.sc == null ? 3 : Math.max(4, Math.round(d.sc / 100 * 20))) +
+        'px;--d:' + (400 + i * 45) + 'ms;"></i>';
+    }
+    mb += '</div>';
+    var logged = 0;
+    for (i = 0; i < w.days.length; i++) if (w.days[i].sc != null) logged++;
+    h += '<div class="lsec rise" style="--d:80ms;"><span class="p-eyebrow" style="color:#5D4FA0;">A hét négy nézete</span></div>';
+    h += '<div class="hwide rise ring" style="--d:110ms;--hw:linear-gradient(150deg,#F3F0FC,#FDFCFF);--hg:rgba(93,79,160,0.4);" data-hgo="page-hanaly">' +
+      '<div class="mrow"><svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
+      '<div class="grow"><span class="p-eyebrow" style="color:#5D4FA0;">Mezo · heti elemzés</span></div>' +
+      (w.rev ? '<span class="stch lav">' + w.rev.gen + '</span>'
+             : '<span class="stch warn">' + (w.cur ? 'hétfőn jön' : 'nincs még') + '</span>') +
+      '<span class="chev" style="color:#A2958A;font-size:12px;">›</span></div>' +
+      '<div class="snip">' + (w.rev ? firstSent(w.rev.sum)
+        : (w.cur ? 'Hétfő reggel érkezik — a lezárt hét adataiból írja meg. Addig gyűlnek a napok.'
+                 : 'Ez a hét lezárt, de nem készült elemzés — bármikor pótolható.')) + '</div>' +
+      mb + '<div class="mrow" style="margin-top:6px;"><span style="font-size:7.5px;color:#A2958A;">napi pontszám · ' +
+      logged + ' / 7 nap</span><span style="margin-left:auto;font-size:8px;font-weight:700;color:#5D4FA0;">nyisd ki ›</span></div></div>';
+
+    /* 2-3 · tanulságok + napok */
+    var newL = 0, okL = 0;
+    for (i = 0; i < w.less.length; i++) { if (w.less[i].st === 0) newL++; if (w.less[i].st === 1) okL++; }
+    var mr = '<div class="miniring">';
+    for (i = 0; i < w.days.length; i++) {
+      d = w.days[i];
+      mr += '<i style="--c:' + bandC(d.sc) + ';--v:' + (d.sc == null ? 0 : d.sc) + ';"></i>';
+    }
+    mr += '</div>';
+    h += '<div class="hduo rise" style="--d:150ms;">' +
+      '<div class="hsm" style="--hw:linear-gradient(150deg,#FFF1D6,#FFFAF0);--hg:rgba(181,126,20,0.4);" data-hgo="page-hless">' +
+      '<div class="picrow"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-kristaly"/></svg>' +
+      '<span class="chev" style="margin-left:auto;color:#A2958A;font-size:12px;">›</span></div>' +
+      '<div class="big">' + (w.less.length ? (newL || okL || w.less.length) : '—') +
+      (w.less.length ? '<span> ' + (newL ? 'javaslat' : (okL ? 'megtanult' : 'elvetve')) + '</span>' : '') + '</div>' +
+      '<div class="lb" style="color:#A8801F;">A hét tanulságai</div>' +
+      '<div class="sub">' + (w.less.length
+        ? (newL ? 'dönts róluk — bekerülnek a Tudástárba' : (okL + ' megtanulva · ' + (w.less.length - okL) + ' elvetve'))
+        : (w.cur ? 'a hét közben még gyűlik' : 'nincs javaslat ehhez a héthez')) + '</div></div>' +
+      '<div class="hsm" style="--hw:linear-gradient(150deg,#E9F1E2,#F7FBF3);--hg:rgba(110,139,94,0.42);" data-hgo="page-hdays">' +
+      '<div class="picrow"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>' +
+      '<span class="chev" style="margin-left:auto;color:#A2958A;font-size:12px;">›</span></div>' +
+      '<div class="big">' + logged + '<span> / 7 nap</span></div>' +
+      '<div class="lb" style="color:#4E6B42;">A hét napjai</div>' + mr +
+      '<div class="sub">nézd meg egyesével</div></div></div>';
+
+    /* 4 · felfedezések (wide) */
+    var dd = w.dsc, n = dd.pat.length + dd.fact.length + dd.life.length + dd.pred.length + (dd.mem ? 1 : 0);
+    var parts = [];
+    if (dd.pat.length) parts.push(dd.pat.length + ' minta');
+    if (dd.fact.length) parts.push(dd.fact.length + ' új tudás');
+    if (dd.life.length) parts.push(dd.life.length + ' életesemény');
+    if (dd.mem) parts.push('memoár');
+    if (dd.pred.length) parts.push(dd.pred.length + ' előrejelzés');
+    var dots = '<div class="dscdots">';
+    for (i = 0; i < dd.pat.length; i++) dots += '<i style="background:#8A76CC;"></i>';
+    for (i = 0; i < dd.fact.length; i++) dots += '<i style="background:#C9962E;"></i>';
+    for (i = 0; i < dd.life.length; i++) dots += '<i style="background:#4E8FB8;"></i>';
+    if (dd.mem) dots += '<i style="background:#C46FA0;"></i>';
+    for (i = 0; i < dd.pred.length; i++) dots += '<i style="background:#8FAF7E;"></i>';
+    dots += '</div>';
+    h += '<div class="hwide rise" style="--d:190ms;--hw:linear-gradient(150deg,#DFEDF5,#F7FBFD);--hg:rgba(78,143,184,0.4);" data-hgo="page-hdisc">' +
+      '<div class="mrow"><span class="pic" style="width:28px;height:28px;border-radius:10px;background:rgba(255,255,255,0.8);display:grid;place-items:center;flex:none;">' +
+      '<svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-retegek"/></svg></span>' +
+      '<div class="grow"><div class="p-eyebrow" style="color:#33749C;">Heti felfedezések</div>' +
+      '<div style="font-size:10.5px;font-weight:700;margin-top:1px;">' + (n ? n + ' új nyom a memóriában' : 'Csendes hét volt') + '</div></div>' +
+      '<span class="chev" style="color:#A2958A;font-size:12px;">›</span></div>' +
+      (n ? '<div class="mrow" style="margin-top:7px;"><span style="font-size:8px;color:#6E6257;">' + parts.join(' · ') + '</span>' +
+           '<span style="margin-left:auto;">' + dots + '</span></div>'
+         : '<div style="font-size:8.5px;color:#6E6257;margin-top:5px;">nem született új minta vagy tudás</div>') +
+      '</div>';
+
+    /* következő heted — csak a futó héten */
+    if (w.nx) {
+      h += '<div class="predtile sage rise" style="--d:230ms;">' +
+        '<div class="mrow"><svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
+        '<span class="p-eyebrow" style="color:#4E6B42;">Mezo · a következő heted</span></div>' +
+        '<div style="font-size:10px;font-weight:300;line-height:1.55;margin-top:6px;">' + w.nx + '</div>' +
+        '<div class="revfoot"><span class="fbch" style="margin-left:0;"><button data-fb="up2">👍</button><button data-fb="down2">👎</button></span></div></div>';
+    }
+    h += '<div class="foot9 rise" style="--d:270ms;">A pontszám a négy mért területből áll össze — ha kettőnél kevesebb van, ' +
+      '„tanulom" áll a szám helyén. A Mezo sosem talál ki számot: az elemzés csak a logolt adatokból dolgozik.</div>';
+    return h;
+  }
+
+  /* ---------- ALOLDAL: heti elemzés ---------- */
   function dayCols(w) {
     var h = '<div class="dcols">', i;
     for (i = 0; i < w.days.length; i++) {
@@ -2978,6 +3200,103 @@
     return h + '</div>';
   }
 
+  function reviewCard(w) {
+    var h = '<div class="revcard rise" style="--d:120ms;">';
+    h += '<div class="mrow"><svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
+      '<div class="grow"><span class="p-eyebrow" style="color:#5D4FA0;">Mezo · heti elemzés</span></div>';
+    if (w.rev) h += '<span style="font-size:7px;color:#A2958A;">' + w.rev.gen + '</span>';
+    h += '</div>';
+    if (w.rev) {
+      h += '<div class="prose">' + w.rev.sum + '</div>';
+      h += '<div class="p-eyebrow" style="font-size:7px;margin-top:10px;">amire épült</div><div class="hlrow">';
+      for (var i = 0; i < w.rev.hl.length; i++) {
+        var x = w.rev.hl[i];
+        h += '<button class="hlch" data-hl="' + x.t + '" style="--hc:' + x.c + ';">' +
+          '<svg width="13" height="13" viewBox="0 0 100 100"><use href="#' + x.ic + '"/></svg>' +
+          '<span><em>' + x.k + '</em>' + x.t + '</span></button>';
+      }
+      h += '</div><div class="revfoot">';
+      if (w.rev.stale) h += '<button class="chatch" data-regen="1">↻ Frissítsd az elemzést</button>';
+      h += '<button class="chatch" data-chat="week">💬 Beszélgess a hétről ›</button>' +
+        '<span class="fbch"><button data-fb="up">👍</button><button data-fb="down">👎</button></span></div>';
+    } else if (w.cur) {
+      h += '<div class="ghost9">Hétfő reggel érkezik — a Mezo a lezárt hét adataiból írja meg. ' +
+        'Addig a napok adatai gyűlnek: <b>4 / 7 nap</b> logolva.</div>' +
+        '<button class="chatch" data-chat="week">💬 Beszélgess a hétről ›</button>';
+    } else {
+      h += '<div class="ghost9">Ez a hét lezárt, de <b>nem készült elemzés</b> — a hét adatai megvannak, ' +
+        'bármikor pótolható.</div>' +
+        '<div class="revfoot"><button class="chatch" data-gen="1">✦ Készítsd el most</button>' +
+        '<button class="chatch" data-chat="week">💬 Beszélgess a hétről ›</button></div>';
+    }
+    return h + '</div>';
+  }
+
+  function analyPage(w) {
+    document.getElementById('haTitle').textContent = w.t;
+    document.getElementById('haBig').innerHTML = (w.score == null ? 'tanulom' : w.score) +
+      (w.score == null ? '' : '<span style="font-size:14px;color:#6E6257;"> / 100</span>');
+    document.getElementById('haSub').textContent = w.rev ? 'napi pontszámok · a Mezo olvasata' : 'napi pontszámok · elemzés nélkül';
+    var h = '<div class="float3d rise" style="--d:0ms;border-radius:18px;padding:10px 12px 9px;margin-bottom:10px;">' +
+      '<div class="mrow"><span class="p-eyebrow">Napi pontszám</span>' +
+      '<span style="margin-left:auto;font-size:7px;color:#A2958A;">koppints egy napra</span></div>' +
+      dayCols(w) + '</div>';
+    h += reviewCard(w);
+    var nl = 0, i;
+    for (i = 0; i < w.less.length; i++) if (w.less[i].st === 0) nl++;
+    h += '<div class="hsm rise" style="--d:200ms;--hw:linear-gradient(150deg,#FFF1D6,#FFFAF0);--hg:rgba(181,126,20,0.4);grid-template-columns:auto 1fr auto;display:flex;align-items:center;gap:10px;" data-hgo="page-hless">' +
+      '<svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-kristaly"/></svg>' +
+      '<div class="grow"><div class="lb" style="color:#A8801F;">A hét tanulságai</div>' +
+      '<div class="sub">' + (w.less.length ? (nl ? nl + ' javaslat vár rád' : w.less.length + ' feldolgozva') : 'még nincs javaslat') + '</div></div>' +
+      '<span class="chev" style="color:#A2958A;font-size:12px;">›</span></div>';
+    document.getElementById('haBody').innerHTML = h;
+  }
+
+  /* ---------- ALOLDAL: tanulságok ---------- */
+  function lessPage(w) {
+    document.getElementById('hlTitle').textContent = w.t;
+    var nl = 0, ok = 0, i;
+    for (i = 0; i < w.less.length; i++) { if (w.less[i].st === 0) nl++; if (w.less[i].st === 1) ok++; }
+    document.getElementById('hlBig').textContent = w.less.length;
+    document.getElementById('hlSub').textContent = w.less.length
+      ? (nl ? nl + ' javaslat · te döntesz róluk' : ok + ' megtanult · ' + (w.less.length - ok) + ' elvetve')
+      : 'nincs javaslat ehhez a héthez';
+    var h = '';
+    if (!w.less.length) {
+      h += '<div class="predtile rise" style="--d:0ms;background:rgba(255,255,255,0.55);border:1px dashed rgba(43,33,24,0.18);box-shadow:none;">' +
+        '<div style="font-size:9.5px;font-weight:300;line-height:1.5;color:#6E6257;">' +
+        (w.cur ? 'A hét közben még gyűlik — a tanulságok a hétfői elemzéssel érkeznek.'
+               : 'Nincs javaslat ehhez a héthez. Ha elkészül az elemzés, a Mezo ide teszi, amit megtanult.') +
+        '</div></div>';
+      document.getElementById('hlBody').innerHTML = h;
+      return;
+    }
+    h += '<div class="predtile lav rise" style="--d:0ms;padding:9px 11px;">' +
+      '<div style="font-size:9px;font-weight:300;line-height:1.5;">Ezeket a hét <b>napokon átnyúló</b> összefüggéseiből ' +
+      'szedte össze. Amit elfogadsz, bekerül a <b>Tudástárba</b> és a promptba — amit elvetsz, nem kérdezi újra.</div></div>';
+    for (i = 0; i < w.less.length; i++) {
+      var l = w.less[i];
+      h += '<div class="lesst rise' + (l.st === 1 ? ' ok' : (l.st === 2 ? ' no' : '')) + '" style="--d:' + (40 + i * 40) + 'ms;">' +
+        '<div class="mrow" style="gap:8px;align-items:flex-start;">' +
+        '<span class="pic" style="width:28px;height:28px;border-radius:10px;background:rgba(255,255,255,0.8);display:grid;place-items:center;flex:none;">' +
+        '<svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-kristaly"/></svg></span>' +
+        '<div class="grow"><div class="tx">' + l.tx + '</div><div class="ev">' + l.ev + '</div></div></div>';
+      if (l.st === 0) {
+        h += '<div class="decrow"><button class="ghost" data-lno="' + i + '">Nem rólam szól</button>' +
+          '<button class="cta" data-lyes="' + i + '">✓ Tanuld meg</button></div>';
+      } else if (l.st === 1) {
+        h += '<div style="font-size:8.5px;font-weight:700;color:#4E6B42;margin-top:7px;">✓ Bekerült a Tudástárba · aktív a promptban</div>';
+      } else {
+        h += '<div style="font-size:8.5px;font-weight:700;color:#A2958A;margin-top:7px;">elvetve · nem kérdezi újra</div>';
+      }
+      h += '</div>';
+    }
+    h += '<div class="foot9 rise" style="--d:' + (60 + w.less.length * 40) + 'ms;">A Mezo nem ír a tudásba magától: ' +
+      'a heti elemzés jelöltet állít, a döntés a tiéd.</div>';
+    document.getElementById('hlBody').innerHTML = h;
+  }
+
+  /* ---------- ALOLDAL: napok ---------- */
   function compact(d) {
     var a = [];
     a.push(d.kcal == null ? '—' : huInt(d.kcal) + ' kcal');
@@ -2986,13 +3305,10 @@
     a.push(d.cn + '× check-in');
     return a.join(' · ');
   }
-
   function subRing(v, lbl) {
-    var c = bandC(v);
-    return '<div class="subring"><div class="sring' + (v == null ? ' dash' : '') + '" style="--c:' + c + ';--v:' +
+    return '<div class="subring"><div class="sring' + (v == null ? ' dash' : '') + '" style="--c:' + bandC(v) + ';--v:' +
       (v == null ? 0 : v) + ';"><i>' + (v == null ? '—' : v) + '</i></div><small>' + lbl + '</small></div>';
   }
-
   function dayBody(d) {
     var h = '<div class="dbody">';
     h += '<div class="p-eyebrow" style="font-size:7px;padding-bottom:6px;">miből jött össze</div>';
@@ -3019,82 +3335,100 @@
     if (!d.fut) h += '<button class="chatch" data-chat="day" data-d="' + d.dt + '">💬 Beszélgess a napról ›</button>';
     return h + '</div>';
   }
+  function dayWash(sc) {
+    if (sc == null) return ['rgba(255,255,255,0.5)', 'rgba(43,33,24,0.2)'];
+    if (sc >= 80) return ['linear-gradient(150deg,#E9F1E2,#F7FBF3)', 'rgba(110,139,94,0.42)'];
+    if (sc >= 70) return ['linear-gradient(150deg,#FFF1D6,#FFFAF0)', 'rgba(181,126,20,0.4)'];
+    return ['linear-gradient(150deg,#FFE7DC,#FFF7F2)', 'rgba(168,74,38,0.38)'];
+  }
+  var SUBC = [['s', '#4E8FB8'], ['f', '#8FAF7E'], ['c', '#C46FA0'], ['a', '#FF6B4A']];
 
-  function reviewCard(w) {
-    var h = '<div class="revcard rise" style="--d:180ms;">';
-    h += '<div class="mrow"><svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
-      '<div class="grow"><span class="p-eyebrow" style="color:#5D4FA0;">Mezo · heti elemzés</span></div>';
-    if (w.rev) h += '<span style="font-size:7px;color:#A2958A;">' + w.rev.gen + '</span>';
+  function dayCard(d, i, w) {
+    var wash = dayWash(d.sc), h = '';
+    if (d.fut) {
+      return '<div class="dcard fut rise" style="--d:' + (i * 30) + 'ms;" id="dt' + i + '">' +
+        '<div class="mrow"><span class="dow" style="color:#A2958A;">' + d.dow + '</span>' +
+        '<span class="dte" style="margin-left:auto;">' + d.dt.replace('Máj ', 'máj ') + '</span></div>' +
+        '<div class="scnum dash">·</div><div class="dnote">még előtted — ide majd a nap adatai jönnek</div></div>';
+    }
+    h += '<div class="dcard rise' + (d.sc == null ? ' thin' : '') + '" style="--d:' + (i * 30) +
+      'ms;--dcw:' + wash[0] + ';--dcg:' + wash[1] + ';" data-day="' + i + '" id="dt' + i + '">';
+    h += '<div class="mrow"><span class="dow">' + d.dow + '</span>' +
+      (d.dt === today && w.cur ? '<span class="bflag">MA</span>' : '') +
+      '<span class="dte" style="margin-left:auto;">' + d.dt.replace('Máj ', 'máj ') + '</span>' +
+      '<span class="dchv">⌄</span></div>';
+    var sp = '<div class="sparks">';
+    for (var k = 0; k < SUBC.length; k++) {
+      var v = d.sub[SUBC[k][0]];
+      sp += '<i style="height:' + (v == null ? 3 : Math.max(4, Math.round(v / 100 * 22))) + 'px;background:' +
+        (v == null ? 'rgba(43,33,24,0.12)' : SUBC[k][1]) + ';--d:' + (300 + i * 30 + k * 45) + 'ms;"></i>';
+    }
+    sp += '</div>';
+    var empty = d.sc == null && d.kcal == null && d.slm == null && !d.cn && !d.wo;
+    h += '<div class="mrow">' + (d.sc == null
+      ? '<span class="scnum dash">' + (empty ? 'nincs adat' : 'tanulom') + '</span>'
+      : '<span class="scnum" style="color:' + bandC(d.sc) + ';">' + d.sc + '<small> / 100</small></span>') + sp + '</div>';
+    h += '<div class="dchips">';
+    if (d.kcal != null) h += '<span class="dchip"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>' + huInt(d.kcal) + '</span>';
+    if (d.slm != null) h += '<span class="dchip"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-alvas"/></svg>' + slh(d.slm) + '</span>';
+    if (d.wo) h += '<span class="dchip"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>' + d.wo + '×</span>';
+    h += '<span class="dchip' + (d.cn ? '' : ' mute') + '"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-checkin"/></svg>' + d.cn + '/4</span>';
+    if (d.note) h += '<span class="dchip" style="color:#5D4FA0;"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#s-orb"/></svg>jegyzet</span>';
     h += '</div>';
-    if (w.rev) {
-      h += '<div class="prose">' + w.rev.sum + '</div>';
-      h += '<div class="p-eyebrow" style="font-size:7px;margin-top:10px;">amire épült</div><div class="hlrow">';
-      for (var i = 0; i < w.rev.hl.length; i++) {
-        var x = w.rev.hl[i];
-        h += '<button class="hlch" data-hl="' + x.t + '" style="--hc:' + x.c + ';">' +
-          '<svg width="13" height="13" viewBox="0 0 100 100"><use href="#' + x.ic + '"/></svg>' +
-          '<span><em>' + x.k + '</em><br>' + x.t + '</span></button>';
-      }
-      h += '</div><div class="revfoot">';
-      if (w.rev.stale) h += '<button class="chatch" data-regen="1">↻ Frissítsd az elemzést</button>';
-      h += '<button class="chatch" data-chat="week">💬 Beszélgess a hétről ›</button>' +
-        '<span class="fbch"><button data-fb="up">👍</button><button data-fb="down">👎</button></span></div>';
-    } else if (w.cur) {
-      h += '<div class="ghost9">Hétfő reggel érkezik — a Mezo a lezárt hét adataiból írja meg. ' +
-        'Addig a napok adatai gyűlnek: <b>4 / 7 nap</b> logolva.</div>' +
-        '<button class="chatch" data-chat="week">💬 Beszélgess a hétről ›</button>';
-    } else {
-      h += '<div class="ghost9">Ez a hét lezárt, de <b>nem készült elemzés</b> — a hét adatai megvannak, ' +
-        'bármikor pótolható.</div>' +
-        '<div class="revfoot"><button class="chatch" data-gen="1">✦ Készítsd el most</button>' +
-        '<button class="chatch" data-chat="week">💬 Beszélgess a hétről ›</button></div>';
+    if (d.sc == null) {
+      h += '<div class="dnote">' + (empty ? 'ezen a napon nem logoltál — a hét pontszámába nem számít bele'
+                                          : 'kevesebb mint két területről van adat, ezért nincs pontszám') + '</div>';
     }
     return h + '</div>';
   }
 
-  function lessons(w) {
-    var h = '<div class="lsec rise" style="--d:220ms;"><span class="p-eyebrow" style="color:#A8801F;">A hét tanulságai</span>' +
-      '<span class="cnt">' + w.less.length + '</span></div>';
-    if (!w.less.length) {
-      h += '<div class="predtile rise" style="--d:250ms;background:rgba(255,255,255,0.55);border:1px dashed rgba(43,33,24,0.18);box-shadow:none;">' +
-        '<div style="font-size:9.5px;font-weight:300;line-height:1.5;color:#6E6257;">' +
-        (w.cur ? 'A hét közben még gyűlik — a tanulságok a hétfői elemzéssel érkeznek.'
-               : 'Nincs javaslat ehhez a héthez. Ha elkészül az elemzés, a Mezo ide teszi, amit megtanult.') +
-        '</div></div>';
-      return h;
+  function daysPage(w) {
+    document.getElementById('hdTitle').textContent = w.t;
+    var logged = 0, best = null, worst = null, thin = 0, i, d;
+    for (i = 0; i < w.days.length; i++) {
+      d = w.days[i];
+      if (d.fut) continue;
+      if (d.sc == null) { thin++; continue; }
+      logged++;
+      if (!best || d.sc > best.sc) best = d;
+      if (!worst || d.sc < worst.sc) worst = d;
     }
-    h += '<div class="predtile lav rise" style="--d:240ms;padding:9px 11px;">' +
-      '<div style="font-size:9px;font-weight:300;line-height:1.5;">Ezeket a hét <b>napokon átnyúló</b> összefüggéseiből ' +
-      'szedte össze. Amit elfogadsz, bekerül a <b>Tudástárba</b> és a promptba — amit elvetsz, nem kérdezi újra.</div></div>';
-    for (var i = 0; i < w.less.length; i++) {
-      var l = w.less[i];
-      h += '<div class="lesst rise' + (l.st === 1 ? ' ok' : (l.st === 2 ? ' no' : '')) + '" style="--d:' + (270 + i * 40) + 'ms;" data-less="' + i + '">' +
-        '<div class="mrow" style="gap:8px;align-items:flex-start;">' +
-        '<span class="pic" style="width:28px;height:28px;border-radius:10px;background:rgba(255,255,255,0.8);display:grid;place-items:center;flex:none;">' +
-        '<svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-kristaly"/></svg></span>' +
-        '<div class="grow"><div class="tx">' + l.tx + '</div><div class="ev">' + l.ev + '</div></div></div>';
-      if (l.st === 0) {
-        h += '<div class="decrow"><button class="ghost" data-lno="' + i + '">Nem rólam szól</button>' +
-          '<button class="cta" data-lyes="' + i + '">✓ Tanuld meg</button></div>';
-      } else if (l.st === 1) {
-        h += '<div style="font-size:8.5px;font-weight:700;color:#4E6B42;margin-top:7px;">✓ Bekerült a Tudástárba · aktív a promptban</div>';
-      } else {
-        h += '<div style="font-size:8.5px;font-weight:700;color:#A2958A;margin-top:7px;">elvetve · nem kérdezi újra</div>';
-      }
-      h += '</div>';
-    }
-    return h;
+    document.getElementById('hdBig').innerHTML = logged + '<span style="font-size:14px;color:#6E6257;"> / 7</span>';
+    document.getElementById('hdSub').textContent = 'mért nap · koppints egy csempére';
+    var h = '<div class="mcells rise" style="--d:0ms;margin-bottom:10px;">' +
+      '<span style="--mw:#E4EEDD;--md:#4E6B42;"><b>' + (best ? best.dow + ' ' + best.sc : '—') + '</b><small>legjobb nap</small></span>' +
+      '<span style="--mw:#FFF1D6;--md:#A8801F;"><b>' + (worst ? worst.dow + ' ' + worst.sc : '—') + '</b><small>leggyengébb</small></span>' +
+      '<span style="--mw:#EBE6F8;--md:#5D4FA0;"><b>' + (thin ? thin : '—') + '</b><small>tanulom</small></span></div>';
+    h += '<div class="dgrid rise" style="--d:40ms;">';
+    for (i = 0; i < w.days.length; i++) h += dayCard(w.days[i], i, w);
+    h += '</div>';
+    h += '<div class="phleg rise" style="--d:' + (60 + w.days.length * 30) + 'ms;margin-top:10px;">' +
+      '<span><i style="background:#4E8FB8;"></i>alvás</span><span><i style="background:#8FAF7E;"></i>fuel</span>' +
+      '<span><i style="background:#C46FA0;"></i>check-in</span><span><i style="background:#FF6B4A;"></i>aktivitás</span></div>';
+    h += '<div class="foot9 rise" style="--d:' + (90 + w.days.length * 30) + 'ms;">A négy pálcika a nap részpontszáma. ' +
+      'A „tanulom" azt jelenti: kevesebb mint két területről van adat — nem azt, hogy nulla volt a nap.</div>';
+    document.getElementById('hdBody').innerHTML = h;
+    opened = null;
   }
 
-  function discoveries(w) {
-    var d = w.dsc, h = '', n = d.pat.length + d.fact.length + d.life.length + d.pred.length + (d.mem ? 1 : 0), i;
-    h += '<div class="lsec rise" style="--d:420ms;"><span class="p-eyebrow" style="color:#5D4FA0;">Amit a héten felfedezett</span>' +
-      '<span class="cnt">' + n + '</span></div>';
+  /* ---------- ALOLDAL: felfedezések ---------- */
+  function discPage(w) {
+    document.getElementById('hsTitle').textContent = w.t;
+    var d = w.dsc, n = d.pat.length + d.fact.length + d.life.length + d.pred.length + (d.mem ? 1 : 0), i;
+    document.getElementById('hsBig').textContent = n;
+    document.getElementById('hsSub').textContent = n ? 'új nyom a memóriában' : 'csendes hét volt';
+    var h = '';
     if (!n) {
-      return h + '<div class="predtile rise" style="--d:440ms;background:rgba(255,255,255,0.55);border:1px dashed rgba(43,33,24,0.18);box-shadow:none;">' +
-        '<div style="font-size:9.5px;font-weight:300;color:#6E6257;">Csendes hét volt — nem született új minta vagy tudás.</div></div>';
+      document.getElementById('hsBody').innerHTML =
+        '<div class="predtile rise" style="--d:0ms;background:rgba(255,255,255,0.55);border:1px dashed rgba(43,33,24,0.18);box-shadow:none;">' +
+        '<div style="font-size:9.5px;font-weight:300;color:#6E6257;">Csendes hét volt — nem született új minta vagy tudás. ' +
+        'Ez nem hiba: a memória csak akkor nő, ha van mit tanulni.</div></div>';
+      return;
     }
-    h += '<div class="dscgrid rise" style="--d:440ms;">';
+    h += '<div class="predtile lav rise" style="--d:0ms;padding:9px 11px;">' +
+      '<div style="font-size:9px;font-weight:300;line-height:1.5;">Amit a Mezo a héten <b>magától</b> tett a memóriába — ' +
+      'ezek nem javaslatok, hanem megtörtént nyomok. Koppints, és a Mezo tabon nyílnak ki.</div></div>';
+    h += '<div class="dscgrid rise" style="--d:40ms;">';
     var PE = { confirmed: ['✓ Megerősítve', 'ok'], reinforced: ['▲ Erősödött', 'lav'], promoted: ['★ Előléptetve', 'warn'] };
     for (i = 0; i < d.pat.length; i++) {
       h += '<div class="dsct wide" style="--dw2:linear-gradient(150deg,#EBE6F8,#F9F6FE);--dg2:rgba(93,79,160,0.4);" data-dsc="Minták">' +
@@ -3127,50 +3461,21 @@
         '<div class="grow"><div class="p-eyebrow" style="font-size:6.5px;color:#4E6B42;">Előrejelzés</div><b>' + d.pred[i].t + '</b></div>' +
         '<span class="stch ' + PS[d.pred[i].s][1] + '">' + PS[d.pred[i].s][0] + '</span></div></div>';
     }
-    return h + '</div>';
+    document.getElementById('hsBody').innerHTML = h + '</div>';
   }
 
   function render() {
     var w = W[cur];
     paintHero(w);
-    var h = statCells(w.st);
-    h += '<div class="float3d rise" style="--d:100ms;border-radius:18px;padding:10px 12px 9px;margin:10px 0 10px;">' +
-      '<div class="mrow"><span class="p-eyebrow">Napi pontszám</span>' +
-      '<span style="margin-left:auto;font-size:7px;color:#A2958A;">koppints egy napra</span></div>' +
-      dayCols(w) + '</div>';
-    h += reviewCard(w);
-    h += lessons(w);
-    h += '<div class="lsec rise" style="--d:330ms;"><span class="p-eyebrow">A hét napjai</span><span class="cnt">7</span></div>';
-    for (var i = 0; i < w.days.length; i++) {
-      var d = w.days[i], c = bandC(d.sc);
-      h += '<div class="dtile rise' + (d.fut ? ' fut' : '') + '" style="--d:' + (350 + i * 30) + 'ms;" data-day="' + i + '" id="dt' + i + '">' +
-        '<div class="mrow">' +
-        '<div class="sring' + (d.sc == null ? ' dash' : '') + '" style="--c:' + c + ';--v:' + (d.sc == null ? 0 : d.sc) + ';"><i>' +
-        (d.sc == null ? '—' : d.sc) + '</i></div>' +
-        '<div class="grow"><div class="dt">' + d.dt + ' · ' + d.dow + (d.dt === today && w.cur ? ' <span class="bflag">MA</span>' : '') + '</div>' +
-        '<div class="cl">' + (d.fut ? 'még előtted' : compact(d)) + '</div></div>' +
-        (d.fut ? '' : '<span class="chv">⌄</span>') + '</div></div>';
-    }
-    h += discoveries(w);
-    if (w.nx) {
-      h += '<div class="predtile sage rise" style="--d:500ms;">' +
-        '<div class="mrow"><svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
-        '<span class="p-eyebrow" style="color:#4E6B42;">Mezo · a következő heted</span></div>' +
-        '<div style="font-size:10px;font-weight:300;line-height:1.55;margin-top:6px;">' + w.nx + '</div>' +
-        '<div class="revfoot"><span class="fbch" style="margin-left:0;"><button data-fb="up2">👍</button><button data-fb="down2">👎</button></span></div></div>';
-    }
-    h += '<div class="foot9 rise" style="--d:540ms;">A pontszám a négy mért területből áll össze — ha kettőnél kevesebb van, ' +
-      '„tanulom" áll a szám helyén. A Mezo sosem talál ki számot: az elemzés csak a logolt adatokból dolgozik.</div>';
-    elBody.innerHTML = h;
+    elBody.innerHTML = hub(w);
     elBody.scrollTop = 0;
-    opened = null;
+    analyPage(w); lessPage(w); daysPage(w); discPage(w);
   }
 
   function switchWeek(k) {
     cur = k;
-    elBody.innerHTML = '<div class="skel" style="height:52px;"></div><div class="skel" style="height:96px;"></div>' +
-      '<div class="skel" style="height:110px;"></div><div class="skel" style="height:46px;"></div>' +
-      '<div class="skel" style="height:46px;"></div>';
+    elBody.innerHTML = '<div class="skel" style="height:52px;"></div><div class="skel" style="height:112px;"></div>' +
+      '<div class="skel" style="height:92px;"></div><div class="skel" style="height:60px;"></div>';
     elTitle.textContent = W[k].t; elSub.textContent = 'betöltés…';
     btnPrev.disabled = true; btnNext.disabled = true;
     setTimeout(render, 320);
@@ -3178,89 +3483,21 @@
   btnPrev.addEventListener('click', function () { if (W[cur].p) switchWeek(W[cur].p); });
   btnNext.addEventListener('click', function () { if (W[cur].n) switchWeek(W[cur].n); });
 
-  elBody.addEventListener('click', function (e) {
-    var w = W[cur], t;
-
-    t = e.target.closest('[data-jump]');
-    if (t) {
-      var ji = +t.getAttribute('data-jump'), tile = document.getElementById('dt' + ji);
-      if (tile) { tile.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (!w.days[ji].fut) openDay(ji); }
-      return;
-    }
-    t = e.target.closest('[data-lyes]');
-    if (t) {
-      var li = +t.getAttribute('data-lyes');
-      w.less[li].st = 1; render();
-      var tb = document.getElementById('tudasTileLine');
-      var big = document.getElementById('tudasBig');
-      var n = 15; if (big) { n = (+big.textContent) + 1; big.textContent = n; }
-      if (tb) tb.textContent = n + ' tudás · 7 kapcsolat';
-      toast('Megtanulva · bekerült a Tudástárba');
-      return;
-    }
-    t = e.target.closest('[data-lno]');
-    if (t) { w.less[+t.getAttribute('data-lno')].st = 2; render(); toast('Elvetve — nem kérdezi újra'); return; }
-    t = e.target.closest('[data-gen]');
-    if (t) {
-      t.disabled = true;
-      t.innerHTML = '<span class="genspin"></span> Elemzés készül…';
-      setTimeout(function () {
-        W.w2.rev = {
-          sum: 'Egyenetlen hét: a keddi rövid alvás után a hét közepe húzta fel a pontokat, a pénteki adathiány ' +
-               'viszont kilyukasztotta a képet. A szombati 3 320 kcal a heti egyetlen nagy kilengés — a fehérje ' +
-               'ott csúszott meg, nem a kalória.',
-          gen: 'most · pótolva', stale: false,
-          hl: [{ k: 'Minta', t: 'Késői vacsora × rosszabb mélyalvás', c: '#5D4FA0', ic: 'i-minta' },
-               { k: 'Előrejelzés', t: 'A heti alvás-átlag 7 óra felett marad', c: '#4E6B42', ic: 'i-kristaly' }]
-        };
-        W.w2.less = [
-          { tx: 'A 3 200 kcal felett zárt napokat másnap 12%-kal alacsonyabb fehérje követi.', ev: '3 hét · 5 ilyen nap', st: 0 },
-          { tx: 'Hétvégén a lefekvésed átlagosan 41 perccel tolódik a hétköznapihoz képest.', ev: '6 hét · 12 hétvége', st: 0 }
-        ];
-        W.w2.sub = 'lezárt hét · a Mezo elemzésével';
-        render();
-        toast('Elkészült a heti elemzés');
-      }, 1500);
-      return;
-    }
-    t = e.target.closest('[data-regen]');
-    if (t) {
-      t.disabled = true; t.innerHTML = '<span class="genspin"></span> Frissítés…';
-      setTimeout(function () { w.rev.stale = false; w.rev.gen = 'most · frissítve'; render(); toast('Az elemzés frissült'); }, 1400);
-      return;
-    }
-    t = e.target.closest('[data-hl]');
-    if (t) { toast(t.getAttribute('data-hl') + ' → Mezo'); return; }
-    t = e.target.closest('[data-dsc]');
-    if (t) { toast(t.getAttribute('data-dsc') + ' → Mezo tab'); return; }
-    t = e.target.closest('[data-chat]');
-    if (t) {
-      var kind = t.getAttribute('data-chat');
-      t.disabled = true; t.innerHTML = '<span class="genspin"></span> Indítás…';
-      setTimeout(function () {
-        toast(kind === 'week' ? 'Heti beszélgetés · Mezo nyitja' : 'Napi beszélgetés · ' + t.getAttribute('data-d'));
-        t.disabled = false;
-        t.innerHTML = kind === 'week' ? '💬 Beszélgess a hétről ›' : '💬 Beszélgess a napról ›';
-      }, 1200);
-      return;
-    }
-    t = e.target.closest('[data-fb]');
-    if (t) {
-      var row = t.parentNode;
-      row.querySelectorAll('button').forEach(function (b) { b.classList.remove('on'); });
-      t.classList.add('on');
-      toast(t.getAttribute('data-fb').indexOf('up') === 0 ? 'Köszi — ezt megjegyzem' : 'Értem — igazítok a hangnemen');
-      return;
-    }
-    t = e.target.closest('[data-day]');
-    if (t) { var i = +t.getAttribute('data-day'); if (!w.days[i].fut) openDay(i); }
-  });
+  function openPg(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open'); pg.classList.remove('play');
+    var b = pg.querySelector('.page-body'); if (b) b.scrollTop = 0;
+    void pg.offsetWidth; pg.classList.add('play');
+  }
 
   function openDay(i) {
     var w = W[cur];
     if (opened !== null) {
       var prev = document.getElementById('dt' + opened);
-      if (prev) { prev.classList.remove('op'); var b = prev.querySelector('.dbody'); if (b) b.remove(); }
+      if (prev) {
+        prev.classList.remove('op');
+        var b = prev.querySelector('.dbody'); if (b) b.remove();
+      }
     }
     if (opened === i) { opened = null; return; }
     var el = document.getElementById('dt' + i);
@@ -3268,6 +3505,97 @@
     el.insertAdjacentHTML('beforeend', dayBody(w.days[i]));
     opened = i;
   }
+
+  function wire(root) {
+    root.addEventListener('click', function (e) {
+      var w = W[cur], t;
+
+      t = e.target.closest('[data-hgo]');
+      if (t) { openPg(t.getAttribute('data-hgo')); return; }
+
+      t = e.target.closest('[data-jump]');
+      if (t) {
+        var ji = +t.getAttribute('data-jump');
+        openPg('page-hdays');
+        setTimeout(function () {
+          var tile = document.getElementById('dt' + ji);
+          if (tile) { tile.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (!w.days[ji].fut) openDay(ji); }
+        }, 260);
+        return;
+      }
+      t = e.target.closest('[data-lyes]');
+      if (t) {
+        w.less[+t.getAttribute('data-lyes')].st = 1;
+        var big = document.getElementById('tudasBig'), tb = document.getElementById('tudasTileLine'), n = 15;
+        if (big) { n = (+big.textContent) + 1; big.textContent = n; }
+        if (tb) tb.textContent = n + ' tudás · 7 kapcsolat';
+        lessPage(w); analyPage(w); elBody.innerHTML = hub(w);
+        toast('Megtanulva · bekerült a Tudástárba');
+        return;
+      }
+      t = e.target.closest('[data-lno]');
+      if (t) {
+        w.less[+t.getAttribute('data-lno')].st = 2;
+        lessPage(w); analyPage(w); elBody.innerHTML = hub(w);
+        toast('Elvetve — nem kérdezi újra');
+        return;
+      }
+      t = e.target.closest('[data-gen]');
+      if (t) {
+        t.disabled = true; t.innerHTML = '<span class="genspin"></span> Elemzés készül…';
+        setTimeout(function () {
+          W.w2.rev = {
+            sum: 'Egyenetlen hét: a keddi rövid alvás után a hét közepe húzta fel a pontokat, a pénteki adathiány ' +
+                 'viszont kilyukasztotta a képet. A szombati 3 320 kcal a heti egyetlen nagy kilengés — a fehérje ' +
+                 'ott csúszott meg, nem a kalória.',
+            gen: 'most · pótolva', stale: false,
+            hl: [{ k: 'Minta', t: 'Késői vacsora × rosszabb mélyalvás', c: '#5D4FA0', ic: 'i-minta' },
+                 { k: 'Előrejelzés', t: 'A heti alvás-átlag 7 óra felett marad', c: '#4E6B42', ic: 'i-kristaly' }]
+          };
+          W.w2.less = [
+            { tx: 'A 3 200 kcal felett zárt napokat másnap 12%-kal alacsonyabb fehérje követi.', ev: '3 hét · 5 ilyen nap', st: 0 },
+            { tx: 'Hétvégén a lefekvésed átlagosan 41 perccel tolódik a hétköznapihoz képest.', ev: '6 hét · 12 hétvége', st: 0 }
+          ];
+          W.w2.sub = 'lezárt hét · a Mezo elemzésével';
+          render();
+          toast('Elkészült a heti elemzés');
+        }, 1500);
+        return;
+      }
+      t = e.target.closest('[data-regen]');
+      if (t) {
+        t.disabled = true; t.innerHTML = '<span class="genspin"></span> Frissítés…';
+        setTimeout(function () { w.rev.stale = false; w.rev.gen = 'most · frissítve'; analyPage(w); toast('Az elemzés frissült'); }, 1400);
+        return;
+      }
+      t = e.target.closest('[data-hl]');
+      if (t) { toast(t.getAttribute('data-hl') + ' → Mezo'); return; }
+      t = e.target.closest('[data-dsc]');
+      if (t) { toast(t.getAttribute('data-dsc') + ' → Mezo tab'); return; }
+      t = e.target.closest('[data-chat]');
+      if (t) {
+        var kind = t.getAttribute('data-chat'), lbl = t.getAttribute('data-d');
+        t.disabled = true; t.innerHTML = '<span class="genspin"></span> Indítás…';
+        setTimeout(function () {
+          toast(kind === 'week' ? 'Heti beszélgetés · Mezo nyitja' : 'Napi beszélgetés · ' + lbl);
+          t.disabled = false;
+          t.innerHTML = kind === 'week' ? '💬 Beszélgess a hétről ›' : '💬 Beszélgess a napról ›';
+        }, 1200);
+        return;
+      }
+      t = e.target.closest('[data-fb]');
+      if (t) {
+        t.parentNode.querySelectorAll('button').forEach(function (b) { b.classList.remove('on'); });
+        t.classList.add('on');
+        toast(t.getAttribute('data-fb').indexOf('up') === 0 ? 'Köszi — ezt megjegyzem' : 'Értem — igazítok a hangnemen');
+        return;
+      }
+      t = e.target.closest('[data-day]');
+      if (t) { var i = +t.getAttribute('data-day'); if (!w.days[i].fut) openDay(i); }
+    });
+  }
+  [elBody, document.getElementById('haBody'), document.getElementById('hlBody'),
+   document.getElementById('hdBody'), document.getElementById('hsBody')].forEach(wire);
 
   document.querySelector('[data-page="page-heti"]').addEventListener('click', function () { render(); });
   render();
