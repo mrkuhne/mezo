@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
@@ -53,14 +53,44 @@ test('the tab bar hides on the full-screen Napzárás ritual flow (mezo-ilsj)', 
   const { container } = renderApp('/ritual')
   expect(container.querySelector('.tab-bar')).toBeNull()
 })
-test('the floating chat bubble is mounted app-wide (mezo-78sd)', async () => {
-  renderApp('/today')
-  expect(await screen.findByRole('button', { name: 'Beszélgetés a társsal' })).toBeInTheDocument()
-})
+
 
 test('the app shell mounts the clay sprite defs once (mezo-d20.1.2)', () => {
   renderApp('/today')
   expect(document.querySelector('symbol#i-nap')).not.toBeNull()
   expect(document.querySelector('symbol#s-orb')).not.toBeNull()
   expect(document.querySelectorAll('#ig-orb')).toHaveLength(1)
+})
+
+// --- Design 2.0 shell (mezo-d20.1.1): /nap + /mezo routes, legacy redirects, floating FAB ---
+
+test('/nap renders the day spine (Today content) and /today redirects to it', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/nap'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  expect(await screen.findByRole('group', { name: 'Napszak' })).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/nap')
+  cleanup()
+  const legacy = createMemoryRouter(routes, { initialEntries: ['/today'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={legacy} /></ThemeProvider></QueryWrapper>)
+  await screen.findByRole('group', { name: 'Napszak' })
+  expect(legacy.state.location.pathname).toBe('/nap')
+})
+
+test('/insights/chat redirects into the Mezo tab preserving the subpath', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/insights/chat'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await screen.findByLabelText('Insights alnavigáció')
+  expect(router.state.location.pathname).toBe('/mezo/chat')
+})
+
+test('the floating quick-log FAB is present on tabs and hidden on full-screen flows', () => {
+  const { container } = renderApp('/train')
+  expect(container.querySelector('.quicklog-fab')).not.toBeNull()
+  const ritual = renderApp('/ritual')
+  expect(ritual.container.querySelector('.quicklog-fab')).toBeNull()
+})
+
+test('the floating chat bubble is retired — Mezo is a first-class tab now (decision B)', () => {
+  renderApp('/nap')
+  expect(screen.queryByRole('button', { name: 'Beszélgetés a társsal' })).not.toBeInTheDocument()
 })

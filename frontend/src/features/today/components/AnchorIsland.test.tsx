@@ -11,7 +11,7 @@ function LocationProbe() {
 
 const renderAnchor = () =>
   render(
-    <MemoryRouter initialEntries={['/today?day=rough']}>
+    <MemoryRouter initialEntries={['/nap?day=rough']}>
       <AnchorIsland />
       <LocationProbe />
     </MemoryRouter>,
@@ -37,6 +37,6 @@ describe('AnchorIsland', () => {
   test('the exit drops back to /today without the rough param', async () => {
     renderAnchor()
     await userEvent.click(screen.getByRole('button', { name: 'Kilépés a horgony módból' }))
-    expect(screen.getByTestId('loc').textContent).toBe('/today')
+    expect(screen.getByTestId('loc').textContent).toBe('/nap')
   })
 })

@@ -94,7 +94,7 @@ export function MemoryLayersPanel({
         accent={L2_ACCENT}
         wash={L2_WASH}
         last={jobs.lastDetectedAt ? jobs.lastDetectedAt.slice(0, 10) : null}
-        onOpen={() => navigate('/insights')}
+        onOpen={() => navigate('/mezo')}
       />
       <FlowConnector label={`hipotézis + tudás-promóció · ${jobs.hypothesisCron}`} color={L3_ACCENT} />
       <MemoryLayerCard
@@ -108,9 +108,9 @@ export function MemoryLayersPanel({
         ]}
         accent={L3_ACCENT}
         wash={L3_WASH}
-        onOpen={() => navigate('/insights/knowledge')}
+        onOpen={() => navigate('/mezo/knowledge')}
       />
-      <Link to="/insights/motor" style={{ fontSize: 12, color: 'var(--lav-deep)', marginTop: 12 }}>
+      <Link to="/mezo/motor" style={{ fontSize: 12, color: 'var(--lav-deep)', marginTop: 12 }}>
         Miért nem lát még mintát a motor? →
       </Link>
     </div>

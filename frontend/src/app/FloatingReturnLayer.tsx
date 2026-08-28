@@ -1,22 +1,20 @@
 // ============================================================
-// Mezo · FloatingReturnLayer — quick two-way switching between a running gym
-// session and the Mezo chat (mezo-78sd). Mounted once in AppLayout next to the
+// Mezo · FloatingReturnLayer — the way back into a running gym session
+// (mezo-78sd, reshaped by mezo-d20.1.1). Mounted once in AppLayout next to the
 // TabBar; positioning lives in prototype.css (.float-stack / .float-return,
 // z-index 45 — above the tab bar (40), below sheets (200+)).
 //
-// Route rules:
+// Design 2.0 decision B: the lavender chat bubble is retired — Mezo (chat) is a
+// first-class tab now, and its old bottom-right spot belongs to the quick-log
+// FAB (QuickLogFab). What remains here is session-return chrome only:
 //   /me/sleep/night, /ritual   → nothing (deliberately chrome-free screens)
-//   /insights/chat             → a coral "Vissza az edzéshez" bar above the
+//   /mezo/chat                 → a coral "Vissza az edzéshez" bar above the
 //                                composer while a workout is open; else nothing
-//   /train/session             → the lavender chat bubble only, dropped to the
-//                                corner (no tab bar, no docked bottom chrome there)
-//   everywhere else            → the chat bubble always; the coral resume FAB
-//                                (done-set badge) stacked above it while a
-//                                workout is open
+//   everywhere else            → the coral resume FAB (done-set badge) stacked
+//                                above the quick-log FAB while a workout is open
 // ============================================================
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
-import { cn } from '@/shared/lib/cn'
 import { useOpenWorkout } from '@/data/hooks'
 
 /** Same exact-match list idea as AppLayout's hideTabBar — these two screens are
@@ -30,9 +28,9 @@ export function FloatingReturnLayer() {
 
   if (HIDDEN_ROUTES.includes(pathname)) return null
   const inProgress = openWorkout !== null
+  if (!inProgress) return null
 
-  if (pathname === '/insights/chat') {
-    if (!inProgress) return null
+  if (pathname === '/mezo/chat') {
     const meta = [title, doneSets > 0 ? `${doneSets} szett kész` : null].filter(Boolean).join(' · ')
     return (
       <button type="button" className="float-return np-press" onClick={() => navigate('/train/session')}>
@@ -46,27 +44,17 @@ export function FloatingReturnLayer() {
     )
   }
 
-  const onSession = pathname === '/train/session'
+  if (pathname === '/train/session') return null
   return (
-    <div className={cn('float-stack', onSession && 'float-stack-session')}>
-      {inProgress && !onSession && (
-        <button
-          type="button"
-          className="float-fab float-fab-train np-press"
-          onClick={() => navigate('/train/session')}
-          aria-label="Vissza az edzéshez"
-        >
-          <Icon name="play" size={22} />
-          {doneSets > 0 && <span className="float-fab-badge" aria-hidden>{doneSets}</span>}
-        </button>
-      )}
+    <div className="float-stack">
       <button
         type="button"
-        className="float-fab float-fab-chat np-press"
-        onClick={() => navigate('/insights/chat')}
-        aria-label="Beszélgetés a társsal"
+        className="float-fab float-fab-train np-press"
+        onClick={() => navigate('/train/session')}
+        aria-label="Vissza az edzéshez"
       >
-        <Icon name="chat" size={22} />
+        <Icon name="play" size={22} />
+        {doneSets > 0 && <span className="float-fab-badge" aria-hidden>{doneSets}</span>}
       </button>
     </div>
   )

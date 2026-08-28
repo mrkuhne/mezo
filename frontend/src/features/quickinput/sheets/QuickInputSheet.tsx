@@ -106,7 +106,7 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 className="quicklog-chat np-press"
-                onClick={() => { close(); navigate('/insights/chat') }}
+                onClick={() => { close(); navigate('/mezo/chat') }}
               >
                 <span className="quicklog-chat-emoji" aria-hidden>💬</span>
                 <span className="quicklog-chat-text">
@@ -124,7 +124,7 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
                 <Tile emoji="❤️" label="Check-in"
                   onClick={() => {
                     if (nextCheckInIdx >= 0) { setCheckInIdx(nextCheckInIdx); setPhase('checkin') }
-                    else { close(); navigate('/today') }
+                    else { close(); navigate('/nap') }
                   }} />
                 <Tile emoji="😴" label="Alvás"
                   onClick={() => setPhase('sleep')} />

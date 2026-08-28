@@ -46,7 +46,7 @@ function renderSheet(onClose = () => {}) {
   return render(
     <QueryWrapper>
       <LevelUpProvider>
-        <MemoryRouter initialEntries={['/today']}>
+        <MemoryRouter initialEntries={['/nap']}>
           <Routes><Route path="*" element={<><QuickInputSheet onClose={onClose} /><LocationProbe /></>} /></Routes>
         </MemoryRouter>
       </LevelUpProvider>
@@ -71,7 +71,7 @@ test('the chat row closes the sheet and navigates to the companion chat', async 
   renderSheet(onClose)
   await userEvent.click(screen.getByText('Beszélgetés a társsal'))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
-  expect(screen.getByTestId('loc')).toHaveTextContent('/insights/chat')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/mezo/chat')
 })
 
 test('the Napló tile swaps the menu for a two-option picker, without closing', async () => {
@@ -149,7 +149,7 @@ test('with every slot done the Check-in tile falls back to navigating to Today',
   renderSheet(onClose)
   await userEvent.click(screen.getByText('Check-in'))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
-  expect(screen.getByTestId('loc')).toHaveTextContent('/today')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/nap')
 })
 
 // A single fillable slot (mirrors the review's own repro: "with only the 20:00 slot unfilled").

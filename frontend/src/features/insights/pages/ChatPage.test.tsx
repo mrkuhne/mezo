@@ -11,7 +11,7 @@ import { cannedReply } from '@/data/insights/chat'
 // The page reads its selected conversation from `?c=` (mezo-at8x.3), so it needs a router.
 const FEEDBACK_GROUP = 'Visszajelzés a válaszról'
 
-const renderPage = (path = '/insights/chat') =>
+const renderPage = (path = '/mezo/chat') =>
   render(
     <QueryWrapper>
       <MemoryRouter initialEntries={[path]}>
@@ -306,7 +306,7 @@ describe('ChatPage (real mode)', () => {
         { status: 201 },
       )
     }))
-    renderPage('/insights/chat?c=new')
+    renderPage('/mezo/chat?c=new')
     const input = await screen.findByPlaceholderText('Mondj valamit...')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })

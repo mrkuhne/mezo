@@ -44,7 +44,7 @@ export function WeekDiscoveries({ digest }: { digest: WeeklyReviewDigest | null 
       {hasPatterns && (
         <Section title="Minták">
           {digest.patterns.map((p) => (
-            <Row key={p.pairKey} to={`/insights/patterns/${p.pairKey}`}>{p.title}</Row>
+            <Row key={p.pairKey} to={`/mezo/patterns/${p.pairKey}`}>{p.title}</Row>
           ))}
         </Section>
       )}
@@ -52,7 +52,7 @@ export function WeekDiscoveries({ digest }: { digest: WeeklyReviewDigest | null 
       {hasFacts && (
         <Section title="Új tudás">
           {digest.newFacts.map((f) => (
-            <Row key={f.id} to="/insights/knowledge">{f.text}</Row>
+            <Row key={f.id} to="/mezo/knowledge">{f.text}</Row>
           ))}
         </Section>
       )}
@@ -69,7 +69,7 @@ export function WeekDiscoveries({ digest }: { digest: WeeklyReviewDigest | null 
 
       {digest.memoir && (
         <Section title="Emlékkönyv">
-          <Row to="/insights/memoir">Új bejegyzés készült a hétről</Row>
+          <Row to="/mezo/memoir">Új bejegyzés készült a hétről</Row>
         </Section>
       )}
 

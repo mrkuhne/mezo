@@ -60,21 +60,21 @@ export function PatternImpactCard({ pattern, impact }: { pattern: Pattern | null
               <ImpactRow
                 title="Tudástár-tény"
                 sub={`×${impact.fact.reinforcementCount} megerősítve · ${impact.fact.includeInPrompt ? 'benne van a társ promptjában' : 'nincs a promptban'}`}
-                to="/insights/knowledge"
+                to="/mezo/knowledge"
               />
             )}
             {impact.predictions.length > 0 && (
               <ImpactRow
                 title={`${impact.predictions.length} előrejelzés`}
                 sub={`${impact.predictions.filter((p) => p.status === 'validated').length} bejött · ${impact.predictions.filter((p) => p.status === 'pending').length} még fut`}
-                to="/insights/predictions"
+                to="/mezo/predictions"
               />
             )}
             {impact.experiments.length > 0 && (
               <ImpactRow
                 title={`${impact.experiments.length} kísérlet`}
                 sub={openClosedCaption(impact.experiments)}
-                to="/insights/experiments"
+                to="/mezo/experiments"
               />
             )}
             {impact.challenges.length > 0 && (

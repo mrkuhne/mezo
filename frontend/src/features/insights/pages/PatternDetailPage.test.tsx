@@ -17,7 +17,7 @@ function renderAt(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
-        <Route path="/insights/patterns/:pairKey" element={<PatternDetailPage />} />
+        <Route path="/mezo/patterns/:pairKey" element={<PatternDetailPage />} />
       </Routes>
     </MemoryRouter>,
     { wrapper: QueryWrapper },
@@ -29,9 +29,9 @@ describe('PatternDetailPage (mock mode)', () => {
   afterEach(() => vi.unstubAllEnvs())
 
   test('confirmed showcase pair renders all five blocks in order + the judged header', () => {
-    renderAt(`/insights/patterns/${SHOWCASE_KEY}`)
+    renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     // the house full-page header row (AiUsagePage idiom): back chevron + h1
-    expect(screen.getByRole('link', { name: 'Vissza' })).toHaveAttribute('href', '/insights')
+    expect(screen.getByRole('link', { name: 'Vissza' })).toHaveAttribute('href', '/mezo')
     expect(screen.getByRole('heading', { name: 'Minta részletei' })).toBeInTheDocument()
     expect(screen.getByText('Hogyan erősödött a jel')).toBeInTheDocument()
     expect(screen.getByText(/nap, amiből ez kijött/)).toBeInTheDocument()
@@ -51,7 +51,7 @@ describe('PatternDetailPage (mock mode)', () => {
   })
 
   test('a decision made from the detail header updates the page without a reload (review fix, mezo-tk88.5)', async () => {
-    renderAt(`/insights/patterns/${SHOWCASE_KEY}`)
+    renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     expect(screen.getByRole('button', { name: 'Megerősítve' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Elvetem' }))
@@ -66,7 +66,7 @@ describe('PatternDetailPage (mock mode)', () => {
   })
 
   test('the strength/scatter captions use the first/last snapshot n and the latest day', () => {
-    renderAt(`/insights/patterns/${SHOWCASE_KEY}`)
+    renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     // showcase events: first snapshot n=14 (jún 3), last snapshot n=32 (aug 13)
     expect(screen.getByText(/14 napról 32-re/)).toBeInTheDocument()
     // showcase days: latest aligned day is 2026-08-13
@@ -74,7 +74,7 @@ describe('PatternDetailPage (mock mode)', () => {
   })
 
   test('opening Motor-diagnosztika reveals the raw stats and the freeze note (judged row)', () => {
-    renderAt(`/insights/patterns/${SHOWCASE_KEY}`)
+    renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     expect(screen.queryByText(/r=-0\.42/)).not.toBeInTheDocument()
     fireEvent.click(screen.getByText(/Motor-diagnosztika/))
     expect(screen.getByText(/r=-0\.42/)).toBeInTheDocument()
@@ -83,7 +83,7 @@ describe('PatternDetailPage (mock mode)', () => {
   })
 
   test('Napok listája toggles the inline aligned-days table', () => {
-    renderAt(`/insights/patterns/${SHOWCASE_KEY}`)
+    renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
     fireEvent.click(screen.getByText('Napok listája →'))
     expect(screen.getByRole('table')).toBeInTheDocument()
@@ -91,7 +91,7 @@ describe('PatternDetailPage (mock mode)', () => {
   })
 
   test('gathering pair (no persisted row) renders the gate nudge, honest empty states and the future-tense impact row', () => {
-    renderAt(`/insights/patterns/${GATHERING_KEY}`)
+    renderAt(`/mezo/patterns/${GATHERING_KEY}`)
     expect(screen.getByText(/Még \d+ nap adat/)).toBeInTheDocument() // verdictSentence's few_days nudge
     // "Még nincs előzmény…" is the shared no-history line — it renders TWICE (strength card +
     // journal card, review fix item 3), both describing the same empty `events: []`.
@@ -108,8 +108,8 @@ describe('PatternDetailPage (mock mode)', () => {
   })
 
   test('unknown key renders the honest not-found state with a back link', () => {
-    renderAt('/insights/patterns/nonsense~key')
-    expect(screen.getByRole('link', { name: 'Vissza' })).toHaveAttribute('href', '/insights')
+    renderAt('/mezo/patterns/nonsense~key')
+    expect(screen.getByRole('link', { name: 'Vissza' })).toHaveAttribute('href', '/mezo')
     expect(screen.getByText(/Nincs ilyen minta/)).toBeInTheDocument()
   })
 })
@@ -177,7 +177,7 @@ describe('PatternDetailPage (real mode)', () => {
         }),
       ),
     )
-    renderAt(`/insights/patterns/${SHOWCASE_KEY}`)
+    renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     expect(await screen.findByText('Mit kezd ezzel az app')).toBeInTheDocument()
     expect(screen.getByText('Hogyan erősödött a jel')).toBeInTheDocument()
     expect(screen.getByText(/nap, amiből ez kijött/)).toBeInTheDocument()
@@ -219,7 +219,7 @@ describe('PatternDetailPage (real mode)', () => {
         }),
       ),
     )
-    renderAt(`/insights/patterns/${weekendKey}`)
+    renderAt(`/mezo/patterns/${weekendKey}`)
 
     // scatter x-axis: a binary metric gets named columns, not alacsony/magas
     expect(await screen.findByText('hétköznap')).toBeInTheDocument()
@@ -247,7 +247,7 @@ describe('PatternDetailPage (real mode)', () => {
         HttpResponse.json([{ code: 'NOT_FOUND' }], { status: 404 }),
       ),
     )
-    renderAt('/insights/patterns/nonsense-key')
+    renderAt('/mezo/patterns/nonsense-key')
     expect(await screen.findByText(/Nincs ilyen minta/)).toBeInTheDocument()
   })
 })
