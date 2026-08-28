@@ -160,7 +160,7 @@ export function NapHubPage() {
   // ── shared tiles (Mezo / Küldetések / Check-in appear on every panel) ──
   const mezoTile = (delay: number) => (
     <Tile key="mezo" wash="coral" icon="i-level" eyebrow="Mezo" delayMs={delay} dot={messages.length > 0}
-      line={<span className="tile-more">Üzenetek ›</span>} onClick={() => setMsgsOpen(true)} aria-label="Mezo üzenetei" />
+      line={<span className="tile-more">Üzenetek ›</span>} onClick={() => navigate('/nap/uzenetek')} aria-label="Mezo üzenetei" />
   )
   const questTile = (delay: number) => (
     <Tile key="quest" wash="gold" icon="i-lang" eyebrow="Küldetések" delayMs={delay}
