@@ -1,6 +1,7 @@
 import { Navigate, type RouteObject, useLocation } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
+import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
 import { TrainSection } from '@/features/train/pages/TrainSection'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
@@ -73,6 +74,8 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/nap" replace /> },
       { path: 'nap', element: <NapHubPage /> },
+      // Nap tile → own page (F1.4, mezo-d20.2.4): Napi küldetések detail
+      { path: 'nap/kuldetesek', element: <NapKuldetesekPage /> },
       { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
       {
         path: 'train',
