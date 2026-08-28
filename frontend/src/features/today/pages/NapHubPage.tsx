@@ -164,7 +164,7 @@ export function NapHubPage() {
   const questTile = (delay: number) => (
     <Tile key="quest" wash="gold" icon="i-lang" eyebrow="Küldetések" delayMs={delay}
       line={`${questsDone}/${quests.length}${questXpLeft > 0 ? ` · +${questXpLeft} XP` : ' · kész ✓'}`}
-      onClick={() => setQuestsOpen(true)} aria-label="Napi küldetések" />
+      onClick={() => navigate('/nap/kuldetesek')} aria-label="Napi küldetések" />
   )
   const checkTile = (delay: number) => (
     <Tile key="check" wash="rose" icon="i-checkin" eyebrow="Check-in" delayMs={delay}
