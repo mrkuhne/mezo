@@ -4084,6 +4084,8 @@ button.mz-tile:active { transform: scale(0.96); }
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev { transition: none; }
   .mz-page-hero.orb svg { animation: none; }
+}
+
 /* ── Nap · Rutin oldal (mezo-d20.2.3) — prototype #page-hab, ×1.18 ── */
 .nr-herospot { order: -1; }
 .nr-stats { margin-bottom: 12px; }
