@@ -193,6 +193,26 @@ class WeeklyReviewControllerIT extends ApiIntegrationTest {
     }
 
     @Test
+    void regenerateReprobesStaleInsteadOfHardcodingFalse() {
+        UUID owner = ownerId();
+        seedDay(owner, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(owner, WEEK_START,
+                "[fake-review:{\"summary\":\"Friss elemzés.\",\"dayNotes\":[],\"anchorIndexes\":[]}]");
+        weeklyReviewPopulator.weeklyReview(owner, WEEK_START);
+        // createdAt is an hour in the future — guaranteed newer than whatever generatedAt the
+        // regenerate call below produces, so a hardcoded stale=false would fail this assertion.
+        weightLogPopulator.createWeightLogAt(owner, WEEK_START.plusDays(1), new BigDecimal("81.0"),
+                Instant.now().plusSeconds(3600));
+
+        WeeklyReviewResponse response = postForBody(
+                "/api/proactive/weekly-review/" + WEEK_START + "/regenerate",
+                null, ownerAuthHeaders(), HttpStatus.OK, WeeklyReviewResponse.class);
+
+        assertThat(response.getStale()).isTrue();
+        assertThat(getReview(WEEK_START).getStale()).isTrue();
+    }
+
+    @Test
     void digestListsSeededRefs() {
         UUID owner = ownerId();
         seedConfirmedPatternEvent(owner, WEEK_START, "pair-digest-1", "Alvás minta");
@@ -215,6 +235,14 @@ class WeeklyReviewControllerIT extends ApiIntegrationTest {
         assertThat(digest.getLifeEvents().get(0).getOccurredOn()).isEqualTo(WEEK_START.plusDays(3));
         assertThat(digest.getMemoir()).isFalse();
         assertThat(digest.getPredictions()).isEmpty();
+    }
+
+    @Test
+    void digestNonMondayIs400() {
+        LocalDate tuesday = WEEK_START.plusDays(1);
+        String body = exchangeForBody(HttpMethod.GET, "/api/proactive/weekly-review/" + tuesday + "/digest",
+                null, ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "WEEKLY_REVIEW_START_NOT_MONDAY");
     }
 
     @Test
