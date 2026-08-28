@@ -1,5 +1,16 @@
+// ============================================================
+// Mezo · MemoirPage — the Memoár page re-faced to Mozaik 2.0 (mezo-d20.5.5).
+// Source of truth: docs/design_2.0/prototypes/src/mezo-body.html #page-memoar
+// (×1.18): page hero (clay i-memoar + "a közös történetünk, hétről hétre"),
+// then the Fraunces-titled chapter card with the lavender glow, the
+// "Horgonyok" anchor chips and the feedback chips, plus the mock-only
+// lav-washed anniversary card. The dead "Memoir archive · 17 darab" row is
+// retired (audit §3: decorative, not to promote). Data/behavior unchanged:
+// useMemoir + useFeedback verbatim; the honest W2 null-state stays exactly.
+// ============================================================
 import { useMemo } from 'react'
-import { Icon } from '@/shared/ui/Icon'
+import { PageHero } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { RefTag } from '@/shared/ui/RefTag'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { useFeedback, useMemoir } from '@/data/hooks'
@@ -12,13 +23,18 @@ export function MemoirPage() {
   const feedbackIds = useMemo(() => (memoirId ? [memoirId] : []), [memoirId])
   const feedback = useFeedback('memoir', feedbackIds)
 
+  const hero = (
+    <PageHero icon="i-memoar" name="Memoár" sub="a közös történetünk, hétről hétre" />
+  )
+
   // Live mode with no generated memoir yet (404/loading/error) → honest placeholder, never
   // the demo fiction. Mock always has the seed, so a null memoir only ever occurs in live mode.
   if (memoir == null) {
     return (
       <div className="col gap-md">
+        {hero}
         <div className="card" style={{ padding: 16 }}>
-          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Heti memoár</span>
+          <span className="eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>Heti memoár</span>
           <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
             Az első memoár a hét zárásakor készül el.
           </p>
@@ -28,22 +44,17 @@ export function MemoirPage() {
   }
 
   return (
-    <div className="col gap-md">
-      <div className="card memoir-card" style={{ padding: 22, position: 'relative', overflow: 'hidden' }}>
-        <div
-          style={{ position: 'absolute', right: -40, top: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, color-mix(in srgb, var(--lav) 16%, transparent), transparent 70%)' }}
-        />
-        <div className="row gap-sm">
-          <Icon name="bookmark" size={14} color="var(--lav-deep)" />
-          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Heti memoár · {memoir.week}</span>
-        </div>
-        <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, lineHeight: 1.15, marginTop: 12, color: 'var(--text-primary)' }}>
-          {memoir.title}
-        </div>
-        <p style={{ fontSize: 14, lineHeight: 1.65, marginTop: 14, color: 'var(--text-primary)' }}>{memoir.body}</p>
+    <EntranceGroup className="col gap-md">
+      {hero}
+      <div className="mz-memoir rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+        <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>
+          Heti memoár · {memoir.week}
+        </span>
+        <div className="mz-memoir-ttl">{memoir.title}</div>
+        <p className="mz-memoir-bd">{memoir.body}</p>
 
-        <div className="row gap-xs flex-wrap mt-lg" style={{ paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
-          <span className="eyebrow text-tertiary" style={{ marginRight: 6 }}>Anchors</span>
+        <div className="mz-memoir-foot">
+          <span className="mz-eyebrow" style={{ marginRight: 4 }}>Horgonyok</span>
           {memoir.anchors.map((a, i) => (
             <RefTag key={i} kind={a.kind} label={a.label} />
           ))}
@@ -63,21 +74,11 @@ export function MemoirPage() {
       </div>
 
       {mode === 'mock' ? (
-        <div className="card" style={{ padding: 16, borderColor: 'color-mix(in srgb, var(--lav) 32%, transparent)', background: 'var(--wash-lav)' }}>
-          <div className="row gap-sm">
-            <Icon name="sparkle" size={14} color="var(--lav-deep)" />
-            <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Évforduló · 1 hónap</span>
-          </div>
-          <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-primary)', lineHeight: 1.5 }}>{anniversaryNote}</p>
+        <div className="mz-anniv rise" style={{ '--d': '90ms' } as React.CSSProperties}>
+          <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>Évforduló · 1 hónap</span>
+          <p>{anniversaryNote}</p>
         </div>
       ) : null}
-
-      {mode === 'mock' ? (
-        <div className="row gap-sm" style={{ justifyContent: 'center', marginTop: 8 }}>
-          <span className="eyebrow text-tertiary">Memoir archive · 17 darab</span>
-          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>→</span>
-        </div>
-      ) : null}
-    </div>
+    </EntranceGroup>
   )
 }

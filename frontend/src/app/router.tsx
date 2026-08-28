@@ -37,7 +37,7 @@ import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
 import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
 import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
 import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
-import { InsightsSection } from '@/features/insights/pages/InsightsSection'
+import { MezoHubPage } from '@/features/insights/pages/MezoHubPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
 import { MemoirPage } from '@/features/insights/pages/MemoirPage'
@@ -150,28 +150,28 @@ export const routes: RouteObject[] = [
       // fuel/recipes/:id above (no Insights sub-nav chrome).
       { path: 'mezo/patterns/:pairKey', element: <PatternDetailPage /> },
       { path: 'insights/*', element: <LegacyPathRedirect prefix="/insights" to="/mezo" /> },
-      {
-        path: 'mezo',
-        element: <InsightsSection />,
-        children: [
-          { index: true, element: <PatternsPage /> },
-          // Heti retired (mezo-p2tr): the review moved to /me/week (WeekPage) — including the
-          // score hero, the growth card and the weekly tervjavaslat prose. The route survives as
-          // an honest redirect so any old bookmark/link still lands somewhere sensible.
-          { path: 'weekly', element: <Navigate to="/me/week" replace /> },
-          { path: 'memoir', element: <MemoirPage /> },
-          { path: 'knowledge', element: <KnowledgeListPage /> },
-          { path: 'chat', element: <ChatPage /> },
-          { path: 'predictions', element: <PredictionsPage /> },
-          { path: 'experiments', element: <ExperimentsPage /> },
-          // Motor retired (mezo-tk88.4) — the diagnostics moved into the Minták dashboard +
-          // the pattern-pair detail page above (mezo-tk88.5); the route survives as an honest
-          // redirect so any old bookmark/link (`?pair=` cross-links included) still lands
-          // somewhere sensible.
-          { path: 'motor', element: <Navigate to="/mezo" replace /> },
-          { path: 'memoria', element: <MemoryPage /> },
-        ],
-      },
+      // Mezo tab — Design 2.0 shell dissolution (mezo-d20.5.1): the Insights shell
+      // (AppHero + SubNavDropdown) is gone. /mezo is the hub Mozaik face; the former
+      // sub-tabs are FULL-PAGE SIBLINGS on their stable paths (they render their own
+      // MozaikPage scaffolds as their F4 slices land). Minták — previously the /mezo
+      // index — lives at /mezo/patterns, next to the pattern-pair detail leaf above.
+      { path: 'mezo', element: <MezoHubPage /> },
+      { path: 'mezo/patterns', element: <PatternsPage /> },
+      // Heti retired (mezo-p2tr): the review moved to /me/week (WeekPage) — including the
+      // score hero, the growth card and the weekly tervjavaslat prose. The route survives as
+      // an honest redirect so any old bookmark/link still lands somewhere sensible.
+      { path: 'mezo/weekly', element: <Navigate to="/me/week" replace /> },
+      { path: 'mezo/memoir', element: <MemoirPage /> },
+      { path: 'mezo/knowledge', element: <KnowledgeListPage /> },
+      { path: 'mezo/chat', element: <ChatPage /> },
+      { path: 'mezo/predictions', element: <PredictionsPage /> },
+      { path: 'mezo/experiments', element: <ExperimentsPage /> },
+      // Motor retired (mezo-tk88.4) — the diagnostics moved into the Minták dashboard +
+      // the pattern-pair detail page above (mezo-tk88.5); the route survives as an honest
+      // redirect so any old bookmark/link (`?pair=` cross-links included) still lands
+      // somewhere sensible.
+      { path: 'mezo/motor', element: <Navigate to="/mezo/patterns" replace /> },
+      { path: 'mezo/memoria', element: <MemoryPage /> },
       {
         path: 'me',
         element: <MeSection />,

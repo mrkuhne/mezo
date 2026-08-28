@@ -186,6 +186,56 @@
   --mz-qdone-ink: #5F7A52;
   --mz-qxp-ink: #A8801F;
   --mz-qxp-bg: rgba(201, 150, 46, 0.12);
+  /* Mezo hub (mezo-d20.5.1) — prototype mezo-head/body hexes verbatim */
+  --mz-wash-minta: #F0EDF8;                                   /* .t-minta solid lav */
+  --mz-wash-kreed: linear-gradient(140deg, #FFF2EA, #FFFFFF 75%); /* .t-kreed / .kreed */
+  --mz-decring: #C9962E;                                      /* .deccard gold ring */
+  --mz-decobs-bg: #FBF3DF;                                    /* .decobs recessed gold */
+  --mz-shadow-dec: 0 24px 40px -17px rgba(201, 150, 46, 0.45), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-shadow-chatopen: 0 19px 35px -17px rgba(93, 79, 160, 0.45), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  /* chat face (mezo-d20.5.2) — prototype mezo-body #page-chat hexes verbatim, shadows ×1.18 */
+  --mz-chat-user-bg: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+  --mz-chat-user-shadow: 0 12px 24px -14px rgba(216, 72, 31, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-chat-a-shadow: 0 14px 28px -17px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-chat-send-bg: linear-gradient(135deg, #8A76CC, #6C5FA3);
+  --mz-chat-send-shadow: 0 7px 17px -5px rgba(108, 95, 163, 0.6);
+  --mz-chat-mic-bg: rgba(93, 79, 160, 0.08);
+  --mz-chat-mic-rec-bg: rgba(201, 150, 46, 0.2);
+  --mz-chat-refch-bg: rgba(43, 33, 24, 0.04);
+  --mz-chat-refch-bd: rgba(43, 33, 24, 0.08);
+  --mz-chat-memline: rgba(138, 118, 204, 0.4);
+  --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(43, 33, 24, 0.25), 0 17px 31px -17px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  /* Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak hexes verbatim */
+  --mz-mnt-motor-bg: linear-gradient(140deg, #F7F4FD, #FFFFFF 70%);
+  --mz-mnt-hot-ring: #C9962E;
+  --mz-mnt-bar: linear-gradient(90deg, #B4A4E4, #8A76CC);
+  /* Memoár + Tudástár re-face (mezo-d20.5.5) — prototype mezo-body .memoir/.candc/.facttile */
+  --mz-memoir-glow: rgba(138, 118, 204, 0.16);
+  --mz-memoir-shadow: 0 24px 42px -19px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-cand-ring: #C9962E;
+  --mz-cand-shadow: 0 19px 33px -17px rgba(201, 150, 46, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-fic-bg: rgba(255, 255, 255, 0.78);
+  --mz-fact-off-bg: rgba(255, 255, 255, 0.6);
+  /* Előrejelzések + Kísérletek (mezo-d20.5.6) — prototype .stch/.gbar/.daydots hexes verbatim */
+  --mz-stch-pend-bg: rgba(138, 118, 204, 0.14); --mz-stch-pend-ink: #5D4FA0;
+  --mz-stch-ok-bg: rgba(143, 175, 126, 0.2);    --mz-stch-ok-ink: #4E6B42;
+  --mz-stch-prop-bg: rgba(201, 150, 46, 0.16);  --mz-stch-prop-ink: #A8801F;
+  --mz-stch-act-bg: rgba(255, 107, 74, 0.12);   --mz-stch-act-ink: #A84A26;
+  --mz-stch-mut-bg: rgba(43, 33, 24, 0.05);     --mz-stch-mut-ink: #6E6257;
+  --mz-gbar-bg: rgba(43, 33, 24, 0.08);
+  --mz-gbar-lav: linear-gradient(90deg, #B4A4E4, #8A76CC);
+  --mz-daydot: rgba(43, 33, 24, 0.1);
+  --mz-daydot-f: #C9962E;
+  --mz-prop-border: #C9962E;
+  --mz-prop-shadow: 0 20px 34px -14px rgba(201, 150, 46, 0.45), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-pic-bg: rgba(255, 255, 255, 0.78);
+  --mz-no-ink: #A8462E;
+  /* Memória observatory (mezo-d20.5.7) — laycard sand wash + coral layer shadow +
+     the lav flow-connector/match-ring inks (prototype mezo-body .laycard/.flowc/.mring) */
+  --mz-wash-sand: linear-gradient(150deg, #F3EDE2, #FBF8F1);
+  --mz-shadow-coral: 0 17px 31px -17px rgba(216, 72, 31, 0.32), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-mem-dash: #B4A8D8;
+  --mz-mem-ink: #8A76CC;
 
 }
 
@@ -294,6 +344,56 @@
   --mz-qdone-ink: var(--dv-sage);
   --mz-qxp-ink: var(--dv-amber);
   --mz-qxp-bg: color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card));
+  /* Mezo hub (mezo-d20.5.1) — dark ("Pulse") derivations on the dv ramp */
+  --mz-wash-minta: color-mix(in srgb, var(--dv-lav) 14%, var(--surface-card));
+  --mz-wash-kreed: linear-gradient(140deg, color-mix(in srgb, var(--dv-coral) 12%, var(--surface-card)), var(--surface-card) 75%);
+  --mz-decring: var(--dv-amber);
+  --mz-decobs-bg: color-mix(in srgb, var(--dv-amber) 14%, var(--surface-card));
+  --mz-shadow-dec: 0 24px 40px -17px color-mix(in srgb, var(--dv-amber) 45%, transparent), 0 2px 7px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --mz-shadow-chatopen: 0 19px 35px -17px color-mix(in srgb, var(--dv-lav) 45%, transparent), 0 2px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  /* chat face (mezo-d20.5.2) — bubbles/composer on the dark dv ramp; the lav send disc
+     stays saturated in both themes (colored control, like the MOST ring). */
+  --mz-chat-user-bg: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
+  --mz-chat-user-shadow: 0 12px 24px -14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --mz-chat-a-shadow: 0 14px 28px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-chat-send-bg: linear-gradient(135deg, #8A76CC, #6C5FA3);
+  --mz-chat-send-shadow: 0 7px 17px -5px rgba(0, 0, 0, 0.5);
+  --mz-chat-mic-bg: color-mix(in srgb, var(--dv-lav) 14%, var(--surface-elevated));
+  --mz-chat-mic-rec-bg: color-mix(in srgb, var(--dv-amber) 24%, var(--surface-elevated));
+  --mz-chat-refch-bg: rgba(245, 239, 230, 0.05);
+  --mz-chat-refch-bd: rgba(245, 239, 230, 0.1);
+  --mz-chat-memline: color-mix(in srgb, var(--dv-lav) 45%, transparent);
+  --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(0, 0, 0, 0.5), 0 17px 31px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  /* Minták page (mezo-d20.5.3) — motor card / hot ring / evidence bar on the dark ramp */
+  --mz-mnt-motor-bg: linear-gradient(140deg, color-mix(in srgb, var(--dv-lav) 10%, var(--surface-card)), var(--surface-card) 70%);
+  --mz-mnt-hot-ring: var(--dv-amber);
+  --mz-mnt-bar: linear-gradient(90deg, color-mix(in srgb, var(--dv-lav) 55%, var(--surface-card)), var(--dv-lav));
+  /* Memoár + Tudástár re-face (mezo-d20.5.5) — glows/rings on the dark dv ramp */
+  --mz-memoir-glow: color-mix(in srgb, var(--dv-lav) 22%, transparent);
+  --mz-memoir-shadow: 0 24px 42px -19px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-cand-ring: var(--dv-amber);
+  --mz-cand-shadow: 0 19px 33px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-fic-bg: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+  --mz-fact-off-bg: color-mix(in srgb, var(--surface-card) 60%, transparent);
+  /* Előrejelzések + Kísérletek (mezo-d20.5.6) — chips/bars/dots on the dark dv ramp */
+  --mz-stch-pend-bg: color-mix(in srgb, var(--dv-lav) 22%, var(--surface-card));   --mz-stch-pend-ink: var(--dv-lav);
+  --mz-stch-ok-bg: color-mix(in srgb, var(--dv-sage) 22%, var(--surface-card));    --mz-stch-ok-ink: var(--dv-sage);
+  --mz-stch-prop-bg: color-mix(in srgb, var(--dv-amber) 20%, var(--surface-card)); --mz-stch-prop-ink: var(--dv-amber);
+  --mz-stch-act-bg: color-mix(in srgb, var(--dv-coral) 20%, var(--surface-card));  --mz-stch-act-ink: var(--primary-deep);
+  --mz-stch-mut-bg: var(--surface-recess); --mz-stch-mut-ink: var(--text-secondary);
+  --mz-gbar-bg: rgba(245, 239, 230, 0.1);
+  --mz-gbar-lav: linear-gradient(90deg, color-mix(in srgb, var(--dv-lav) 55%, var(--surface-card)), var(--dv-lav));
+  --mz-daydot: rgba(245, 239, 230, 0.12);
+  --mz-daydot-f: var(--dv-amber);
+  --mz-prop-border: var(--dv-amber);
+  --mz-prop-shadow: var(--mz-shadow);
+  --mz-pic-bg: rgba(245, 239, 230, 0.08);
+  --mz-no-ink: var(--primary-deep);
+  /* Memória observatory (mezo-d20.5.7) — sand → warm graphite, flow inks on the dv-lav ramp */
+  --mz-wash-sand: linear-gradient(150deg, color-mix(in srgb, var(--secondary-base) 12%, var(--surface-card)), color-mix(in srgb, var(--secondary-base) 4%, var(--surface-page)));
+  --mz-shadow-coral: var(--mz-shadow);
+  --mz-mem-dash: color-mix(in srgb, var(--dv-lav) 65%, transparent);
+  --mz-mem-ink: var(--dv-lav);
 
 }
 
@@ -1211,11 +1311,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   50% { opacity: 0.6; }
 }
 @media (prefers-reduced-motion: reduce) { .graph-node-pulse { animation: none; } }
-
-/* Memória-obszervatórium — L0→L3 áramlás-konnektor (mezo-al1i) */
-@keyframes memory-flow { to { stroke-dashoffset: -16; } }
-.memory-flow-line { animation: memory-flow 1.6s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .memory-flow-line { animation: none; } }
 
 /* Pattern card critique mini-bars */
 .critique-grid {
@@ -4117,10 +4212,428 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 .nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength); }
 .nr-pct { font-size: 10.5px; font-weight: 700; color: #A8801F; flex: none; width: 35px; text-align: right; font-variant-numeric: tabular-nums; }
 
+/* ── Mezo hub (mezo-d20.5.1) — prototype mezo-body.html hub section ×1.18:
+      breathing orb hero (NO number — one companion sentence + quiet status line),
+      composer-shaped chat opener, the motor's single decision card in a gold
+      ring, 6-tile mosaic, and the full-width L0→L3 memory band. ── */
+.mzh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
+.mzh-panel { display: flex; flex-direction: column; gap: 11px; }
+
+.mzh-orbhero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 12px 14px 14px; }
+.mzh-orbhero svg:first-child { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
+.mzh-nm { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; }
+.mzh-ln { font-size: 12.5px; font-weight: 300; color: var(--text-primary); max-width: 271px;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.mzh-lv { font-size: 9.5px; font-weight: 700; color: var(--mz-ink-mut); margin-top: 4px; }
+.mzh-lv b { color: var(--mz-cell-lav-ink); }
+
+.mzh-chatopen { display: flex; align-items: center; gap: 11px; cursor: pointer; width: 100%;
+  border-radius: 999px; padding: 11px 11px 11px 19px; font-family: inherit;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.08);
+  box-shadow: var(--mz-shadow-chatopen);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mzh-chatopen:active { transform: scale(0.97); }
+.mzh-ph { flex: 1; font-size: 13px; color: var(--mz-ink-mut); font-weight: 300; text-align: left; }
+.mzh-micd { width: 35px; height: 35px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: rgba(93, 79, 160, 0.08); }
+.mzh-snd { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: linear-gradient(135deg, #8A76CC, #6C5FA3); color: #fff;
+  box-shadow: 0 7px 17px -5px rgba(108, 95, 163, 0.6); }
+
+.mzh-deccard { border: 1px solid var(--mz-decring); border-radius: 21px; background: var(--mz-stripbg);
+  padding: 13px 15px 14px; box-shadow: var(--mz-shadow-dec); }
+.mzh-dechead { display: flex; align-items: center; gap: 8px; }
+.mzh-eb-gold .mz-eyebrow, .mz-eyebrow.mzh-eb-gold { color: var(--mz-qxp-ink); }
+.mzh-eb-sage .mz-eyebrow { color: var(--mz-cell-sage-ink); }
+.mzh-eb-sky .mz-eyebrow { color: var(--mz-cell-sky-ink); }
+.mzh-t-minta { --mz-wash: var(--mz-wash-minta); }
+.mzh-t-minta .mz-eyebrow { color: var(--mz-cell-lav-ink); }
+.mzh-t-kreed { --mz-wash: var(--mz-wash-kreed); }
+.mzh-t-kreed .mz-eyebrow { color: var(--mz-cell-coral-ink); }
+.mzh-confch { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none;
+  margin-left: auto; background: var(--mz-qxp-bg); color: var(--mz-qxp-ink); }
+.mzh-confch.is-success { background: rgba(143, 175, 126, 0.18); color: var(--mz-cell-sage-ink); }
+.mzh-confch.is-warning { background: rgba(255, 107, 74, 0.12); color: var(--mz-cell-coral-ink); }
+.mzh-decq { font-size: 14px; font-weight: 700; margin-top: 6px; }
+.mzh-decpair { font-size: 10px; color: var(--mz-ink-soft); margin-top: 2px; }
+.mzh-decobs { font-weight: 300; font-size: 11px; color: var(--text-primary);
+  background: var(--mz-decobs-bg); border-radius: 12px; padding: 8px 11px; margin-top: 9px; }
+.mzh-decrow { display: flex; gap: 7px; margin-top: 11px; }
+.mzh-cta { flex: 1; min-height: 44px; border: none; border-radius: 999px; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 700; color: #fff;
+  background: var(--gradient-cta); box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+.mzh-ghost { flex: 1; min-height: 44px; border: none; border-radius: 999px; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 600; color: var(--mz-ink-soft);
+  background: rgba(43, 33, 24, 0.06); }
+.mzh-ghost.is-no { color: var(--mz-cell-coral-ink); }
+.mzh-decdone { display: flex; align-items: center; gap: 11px; border-radius: 21px; padding: 13px 15px;
+  background: var(--mz-qdone-bg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-sage); font-size: 12px; font-weight: 600; color: var(--mz-cell-sage-ink);
+  text-align: left; }
+
+.mzh-membnd { display: flex; align-items: center; gap: 5px; width: 100%; cursor: pointer;
+  border-radius: 20px; padding: 12px 14px; font-family: inherit; color: var(--text-primary);
+  background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-lav);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mzh-membnd:active { transform: scale(0.97); }
+.mzh-lyr { flex: 1; text-align: center; }
+.mzh-lyr b { display: block; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mzh-lyr small { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--mz-ink-soft); }
+.mzh-arr { color: var(--mz-ink-mut); font-size: 12px; flex: none; }
+.mzh-membnd-ph { flex: 1; text-align: left; font-size: 12px; font-weight: 600; }
+
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev, .nr-tick { transition: none; }
   .nck-fill { transition: none; }
+  .mzh-orbhero svg:first-child { animation: none; }
+  .mzh-chatopen, .mzh-membnd { transition: none; }
+}
+
+/* ── Chat face (mezo-d20.5.2) — prototype mezo-body.html #page-chat, px ×1.18.
+      A behavioral re-face: the sticky/`:has` plumbing keys off `.chat-composer`
+      (declared earlier in this file), these rules carry only the Mozaik look. ── */
+
+/* header: chsub anatomy + pgact chips */
+.mzc-chsub { display: flex; flex-direction: column; gap: 2px; }
+.mzc-eb { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lav-deep); }
+.mzc-st { font-size: 11px; color: var(--text-tertiary); }
+.mzc-pgact {
+  border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg);
+  border-radius: 999px; padding: 8px 14px; min-height: 36px;
+  font-size: 11px; font-weight: 700; color: var(--mz-ink-soft);
+  font-family: inherit; cursor: pointer;
+}
+.mzc-pgact:disabled { opacity: 0.5; cursor: default; }
+
+/* message anatomy */
+.mzc-msg-a { align-self: flex-start; width: 92%; max-width: 92%; }
+.mzc-msg-u { align-self: flex-end; max-width: 80%; }
+.mzc-meta { display: flex; align-items: center; gap: 6px; }
+.mzc-meta .mzc-eb { font-size: 9px; }
+.mzc-meta time, .mzc-msg-u time { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-warn { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-deep); margin-left: 4px; }
+.mzc-bub-a {
+  background: var(--mz-stripbg); border-radius: 5px 19px 19px 19px; padding: 11px 13px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-chat-a-shadow);
+  font-size: 13px; line-height: 1.5; color: var(--text-primary);
+}
+.mzc-bub-u {
+  background: var(--mz-chat-user-bg); border-radius: 19px 5px 19px 19px; padding: 11px 13px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-chat-user-shadow);
+}
+.mzc-bub-u p { font-size: 13px; line-height: 1.5; color: var(--text-primary); white-space: pre-line; }
+.mzc-msg-u time { display: block; text-align: right; margin-top: 4px; }
+.mzc-noanswer { font-size: 12.5px; font-style: italic; color: var(--text-tertiary); }
+
+/* refs footer — human labels (gap-7 fix) */
+.mzc-reffoot { border-top: 0.5px solid rgba(43, 33, 24, 0.08); margin-top: 9px; padding-top: 8px; }
+.mzc-refeb { font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.mzc-refrow { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.mzc-refch {
+  font-size: 10px; font-weight: 600; border-radius: 9px; padding: 4px 9px;
+  background: var(--mz-chat-refch-bg); border: 0.5px solid var(--mz-chat-refch-bd); color: var(--mz-ink-soft);
+}
+.mzc-refch .mzc-refk { font-weight: 800; color: var(--text-primary); margin-right: 4px; }
+
+/* Emlékek · N disclosure */
+.mzc-membtn { border: none; background: none; font-family: inherit; cursor: pointer; padding: 5px 0; align-items: center; }
+.mzc-memeb { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.mzc-memlist { list-style: none; margin: 0; padding: 0 0 0 2px; }
+.mzc-memlist li { border-left: 2px solid var(--mz-chat-memline); padding-left: 9px; }
+.mzc-memlist .m1 { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-memlist .m2 { font-size: 11px; color: var(--text-secondary); }
+
+/* typing bubble */
+.mzc-typing {
+  display: flex; gap: 5px; padding: 12px 14px; width: 64px;
+  background: var(--mz-stripbg); border-radius: 5px 19px 19px 19px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-chat-a-shadow);
+}
+
+/* composer pill — mic disc · borderless field · lav send disc (44pt touch targets) */
+.mzc-composer {
+  display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 10px;
+  border-radius: 26px; background: var(--mz-stripbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: var(--mz-chat-composer-shadow);
+}
+.mzc-composer textarea { background: none; border: none; outline: none; font-family: inherit; color: var(--text-primary); }
+.mzc-composer textarea::placeholder { color: var(--mz-ink-mut); }
+.mzc-cmic, .mzc-csend {
+  width: 44px; height: 44px; border-radius: 50%; border: none; flex: none;
+  display: grid; place-items: center; padding: 0; font-family: inherit; cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.mzc-cmic { background: var(--mz-chat-mic-bg); color: var(--lav-deep); }
+.mzc-cmic.rec { background: var(--mz-chat-mic-rec-bg); color: var(--coral-deep); }
+.mzc-csend { background: var(--mz-chat-send-bg); color: #fff; box-shadow: var(--mz-chat-send-shadow); }
+.mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
+.mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mzc-cmic, .mzc-csend { transition: none; }
+}
+
+/* ── Mezo · Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak ×1.18:
+      motor prose card + colorful 3×2 lifecycle grid (döntésre vár = white + gold
+      ring, pulsing), gold-ringed decision card + sage acknowledgement, lifecycle
+      tile mosaics (sage / lavender + evidence bar / dashed amber / muted) and the
+      Adat-egészség coverage-ring tile strip. ── */
+.mnt-motor { border-radius: 21px; padding: 13px 15px; margin-bottom: 12px;
+  background: var(--mz-mnt-motor-bg);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-lav); }
+.mnt-motor-meta { margin-left: auto; font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mnt-prose { font-size: 13px; font-weight: 300; line-height: 1.55; margin: 8px 0 0; color: var(--text-primary); }
+.mnt-prose b { font-weight: 700; }
+.mnt-lgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 11px; }
+.mnt-lcel { border-radius: 16px; padding: 9px 5px 8px; text-align: center;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 12px 21px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mnt-lcel b { display: block; font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.mnt-lcel small { font-size: 8px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mz-ink-soft); }
+.mnt-lcel.c-sage { background: var(--mz-wash-sage); }  .mnt-lcel.c-sage b { color: var(--mz-cell-sage-ink); }
+.mnt-lcel.c-lav { background: var(--mz-wash-lav); }    .mnt-lcel.c-lav b { color: var(--mz-cell-lav-ink); }
+.mnt-lcel.c-amber { background: var(--mz-wash-gold); } .mnt-lcel.c-amber b { color: var(--mz-cell-amber-ink); }
+.mnt-lcel.c-mute { background: var(--mz-cellbg); }     .mnt-lcel.c-mute b { color: var(--mz-ink-mut); }
+.mnt-lcel.hot { background: var(--mz-stripbg);
+  box-shadow: inset 0 0 0 1.5px var(--mz-mnt-hot-ring), 0 12px 21px -12px rgba(201, 150, 46, 0.55); }
+.mnt-lcel.hot b { color: var(--mz-cell-amber-ink); }
+.mz-play .mnt-lcel.hot { animation: mnt-pulse 2.6s ease-in-out 1.2s infinite; }
+@keyframes mnt-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+.mnt-lsec { display: flex; align-items: center; gap: 7px; padding: 12px 2px 7px; }
+.mnt-cnt { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mnt-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 12px; margin: 0; }
+.mnt-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.mnt-ptile { border-radius: 20px; padding: 12px 13px; min-height: 92px;
+  display: flex; flex-direction: column; gap: 6px; text-align: left;
+  color: var(--text-primary); text-decoration: none;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow); background: var(--mz-cellbg); }
+.mnt-ptile.sage { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.mnt-ptile.lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mnt-ptile.dashed { background: transparent; box-shadow: none; border: 1.4px dashed rgba(201, 150, 46, 0.55); }
+.mnt-ptile-top { display: flex; align-items: flex-start; gap: 7px; }
+.mnt-ptile-top svg { flex: none; }
+.mnt-chip { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none; margin-left: auto; }
+.mnt-chip.sage { background: color-mix(in srgb, var(--dv-sage) 18%, transparent); color: var(--mz-cell-sage-ink); }
+.mnt-chip.amber { background: color-mix(in srgb, var(--dv-amber) 16%, transparent); color: var(--mz-cell-amber-ink); }
+.mnt-chip.lav { background: color-mix(in srgb, var(--dv-lav) 14%, transparent); color: var(--mz-cell-lav-ink); }
+.mnt-chip.mute { background: rgba(43, 33, 24, 0.05); color: var(--mz-ink-mut); }
+.mnt-ttl { font-size: 12.5px; font-weight: 700; line-height: 1.3; }
+.mnt-sb { font-size: 10.5px; color: var(--mz-ink-soft); line-height: 1.4; }
+.mnt-gbar { height: 6px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: auto; }
+.mnt-gbar div { height: 100%; border-radius: 4px; transform: scaleX(var(--w, 0)); transform-origin: left;
+  background: var(--mz-mnt-bar); }
+.mz-play .mnt-gbar div { transform: scaleX(0);
+  animation: mnt-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 400ms); }
+@keyframes mnt-fill { to { transform: scaleX(var(--w, 0)); } }
+.mnt-decwrap { margin-bottom: 12px; }
+.mnt-decwrap > .card { border: 1px solid var(--mz-mnt-hot-ring);
+  box-shadow: 0 20px 34px -14px rgba(201, 150, 46, 0.45), 0 2px 6px rgba(43, 33, 24, 0.05); }
+.mnt-decdone { display: flex; align-items: center; gap: 10px; border-radius: 20px;
+  padding: 13px 15px; margin-bottom: 12px;
+  background: var(--mz-qdone-bg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 14px 26px -14px rgba(110, 139, 94, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  font-size: 12px; font-weight: 600; color: var(--mz-qdone-ink); }
+.mnt-covstrip { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding-bottom: 5px; }
+.mnt-covstrip::-webkit-scrollbar { display: none; }
+.mnt-covtile { flex: none; width: 108px; text-align: center; border-radius: 18px; padding: 12px 5px 11px;
+  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 9px 19px -12px rgba(43, 33, 24, 0.25);
+  display: grid; justify-items: center; gap: 5px; }
+.mnt-covtile b { font-size: 10.5px; line-height: 1.25; color: var(--text-primary); }
+.mnt-covtile small { font-size: 8.5px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mnt-rr { width: 42px; height: 42px; border-radius: 50%;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+  display: grid; place-items: center; }
+.mnt-rr::after { content: ''; width: 27px; height: 27px; border-radius: 50%; background: var(--mz-stripbg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .mnt-lcel.hot { animation: none; }
+  .mz-play .mnt-gbar div { animation: none; transform: scaleX(var(--w, 0)); }
+  .nck-fill, .mz-decbtn { transition: none; }
+}
+
+/* ── Mezo · Memoár + Tudástár re-face (mezo-d20.5.5) — prototype mezo-body
+      #page-memoar / #page-tudas ×1.18 (330→390px frame). ── */
+
+/* Memoár: Fraunces-titled chapter card with the lavender glow */
+.mz-memoir { position: relative; overflow: hidden; border-radius: 21px; padding: 17px 17px 15px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-memoir-shadow); }
+.mz-memoir::before { content: ''; position: absolute; top: -47px; right: -35px; width: 177px; height: 177px;
+  border-radius: 50%; background: radial-gradient(circle, var(--mz-memoir-glow), transparent 70%); }
+.mz-memoir-ttl { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 18px;
+  font-weight: 500; line-height: 1.35; margin-top: 6px; }
+.mz-memoir-bd { font-size: 13px; font-weight: 300; line-height: 1.6; margin: 8px 0 0; }
+.mz-memoir-foot { display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  margin-top: 13px; padding-top: 11px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.mz-anniv { border-radius: 19px; padding: 12px 14px; background: var(--mz-wash-lav);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
+.mz-anniv p { font-size: 12px; font-weight: 300; line-height: 1.5; margin: 5px 0 0; }
+
+/* Tudástár: the gold-ringed approval inbox card */
+.mz-candc { border: 1px solid var(--mz-cand-ring); border-radius: 19px; padding: 12px 14px 13px;
+  background: var(--mz-stripbg); box-shadow: var(--mz-cand-shadow); }
+.mz-decrow { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+.mz-decbtn { min-height: 44px; padding: 0 17px; border-radius: 999px; flex: none; cursor: pointer;
+  border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); transition: transform 0.12s ease; }
+.mz-decbtn:active { transform: scale(0.95); }
+.mz-decbtn:disabled { opacity: 0.45; cursor: default; }
+.mz-decbtn.primary { border-color: transparent; background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+
+/* Tudástár: category-washed fact tiles (iterations §1 — list rows → tiles) */
+.mz-facttile { display: flex; gap: 11px; align-items: flex-start; border-radius: 19px; padding: 12px 13px;
+  background: var(--mz-wash, var(--mz-wash-white)); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow); }
+.mz-facttile.mz-w-sage { box-shadow: var(--mz-shadow-sage); }
+.mz-facttile.mz-w-sky  { box-shadow: var(--mz-shadow-sky); }
+.mz-facttile.mz-w-gold { box-shadow: var(--mz-shadow-gold); }
+.mz-fic { width: 35px; height: 35px; border-radius: 13px; display: grid; place-items: center; flex: none;
+  background: var(--mz-fic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.mz-fact-grow { flex: 1; min-width: 0; }
+.mz-fact-tx { font-size: 13px; line-height: 1.45; margin: 0; }
+.mz-fact-sb { font-size: 10px; color: var(--mz-ink-soft); margin: 3px 0 0; font-variant-numeric: tabular-nums; }
+.mz-fact-origin { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); line-height: 1.5; margin: 4px 0 0; }
+.mz-fact-status { font-size: 10px; color: var(--mz-ink-mut); margin: 5px 0 0; }
+.mz-facttile.off { background: var(--mz-fact-off-bg); box-shadow: none;
+  border: 1.2px dashed rgba(43, 33, 24, 0.16); }
+.mz-facttile.off .mz-fact-tx { color: var(--mz-ink-soft); }
+
+/* ── Előrejelzések + Kísérletek (mezo-d20.5.6) — prototype mezo-body
+      #page-josla / #page-kiserlet .predtile family, ×1.18. Status wears the
+      surface: ◐ Folyamatban = lavender + animated confidence bar, ✓ Bevált /
+      Megerősítve = sage, ◐ Aktív = amber + day-dot row + gold bar; the
+      ◇ Javaslat card rings gold and carries the 44pt decision row. ── */
+.mzp-pred { border-radius: 21px; padding: 13px 15px; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.mzp-pred.lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mzp-pred.sage { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.mzp-pred.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mzp-pred.propcard { border: 1px solid var(--mz-prop-border); box-shadow: var(--mz-prop-shadow); }
+.mzp-top { display: flex; align-items: center; gap: 9px; }
+.mzp-pic { width: 38px; height: 38px; border-radius: 13px; display: grid; place-items: center; flex: none;
+  background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.mzp-stch { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; border-radius: 7px; padding: 3px 8px; flex: none; }
+.mzp-stch.pend { background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
+.mzp-stch.ok   { background: var(--mz-stch-ok-bg);   color: var(--mz-stch-ok-ink); }
+.mzp-stch.prop { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.mzp-stch.act  { background: var(--mz-stch-act-bg);  color: var(--mz-stch-act-ink); }
+.mzp-stch.mut  { background: var(--mz-stch-mut-bg);  color: var(--mz-stch-mut-ink); }
+.mzp-date { margin-left: auto; font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mzp-title { font-size: 13.5px; font-weight: 700; line-height: 1.3; margin-top: 8px; }
+.mzp-conf { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+.mzp-gbar { flex: 1; height: 6px; border-radius: 4px; background: var(--mz-gbar-bg); overflow: hidden; }
+.mzp-gbar div { height: 100%; border-radius: 4px; background: var(--mz-gbar-lav);
+  transform: scaleX(0); transform-origin: left; }
+.mzp-gbar div.gold { background: var(--mz-strength); }
+.mz-play .mzp-gbar div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+@keyframes mzp-fill { to { transform: none; } }
+.mzp-pct { font-size: 11px; font-weight: 800; color: var(--mz-stch-pend-ink); font-variant-numeric: tabular-nums; flex: none; }
+.mzp-learn { font-size: 11px; font-weight: 600; color: var(--mz-ink-mut); }
+.mzp-basis { font-size: 12px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); margin: 7px 0 0; }
+.mzp-actual { font-size: 11px; font-weight: 600; color: var(--mz-stch-ok-ink); margin-top: 8px; }
+.mzp-daydots { display: flex; gap: 5px; margin-top: 9px; }
+.mzp-daydots i { width: 11px; height: 11px; border-radius: 50%; background: var(--mz-daydot); }
+.mzp-daydots i.f { background: var(--mz-daydot-f); }
+.mzp-decrow { display: flex; gap: 7px; margin-top: 11px; }
+.mzp-cta, .mzp-ghost { flex: 1; min-height: 44px; border-radius: 999px; border: none; font-family: inherit;
+  font-size: 12px; font-weight: 600; cursor: pointer; }
+.mzp-cta { background: var(--gradient-cta); color: #fff; box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+.mzp-ghost { background: var(--surface-recess); color: var(--mz-no-ink); }
+.mzp-cta:disabled, .mzp-ghost:disabled { opacity: 0.55; cursor: default; }
+.mzp-new { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 44px;
+  border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 17px; padding: 12px 0;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); cursor: pointer; font-family: inherit; }
+.mzp-new:disabled { opacity: 0.55; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mzp-gbar div, .mz-play .mzp-gbar div { transform: none; animation: none; }
+}
+
+/* ── Mezo · Memória observatory (mezo-d20.5.7) — prototype mezo-body #page-memoria ×1.18.
+   Rétegek: per-layer COLORED laycards (sand→gold→coral→lav) with clay icon discs, joined
+   by pulsing dashed connectors carrying HUMAN cron times; Napló: nightly day cards with
+   the embed dot; Kereső: match-ring result cards + score-math chips; Audit: cost hero +
+   tinted provenance mini-cells. Every surface speaks --mz-* tokens. ── */
+.mem-seg { display: flex; gap: 5px; border-radius: 999px; padding: 4px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.mem-seg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.mem-seg button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+
+.mem-laycard { border-radius: 20px; padding: 12px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.mem-t-sand  { background: var(--mz-wash-sand); }
+.mem-t-gold  { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mem-t-coral { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.mem-t-lav   { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mem-layrow { display: flex; align-items: center; gap: 12px; }
+.mem-lic { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center;
+  flex: none; background: var(--mz-cellbg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.mem-laygrow { flex: 1; min-width: 0; }
+.mem-bignm { font-size: 22px; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.mem-unit { font-size: 13px; font-weight: 400; color: var(--mz-ink-soft); }
+.mem-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.mem-chips span { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 9px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); color: var(--mz-ink-soft);
+  font-variant-numeric: tabular-nums; }
+.mem-flowc { display: flex; align-items: center; gap: 8px; padding: 4px 0 4px 26px; }
+.mem-dash { width: 2px; height: 24px; border-radius: 2px; flex: none;
+  background: repeating-linear-gradient(180deg, var(--mz-mem-dash) 0 5px, transparent 5px 10px);
+  animation: mem-dashfl 1.6s linear infinite; }
+@keyframes mem-dashfl { to { background-position: 0 10px; } }
+.mem-flowc small { font-size: 10px; font-weight: 600; color: var(--mz-mem-ink); }
+
+.mem-month { display: block; margin: 5px 2px 9px; }
+.mem-daycard { border-radius: 19px; padding: 13px 14px; margin-bottom: 11px; position: relative; overflow: hidden;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.mem-daycard.focused { border: 1px solid var(--lav-deep); }
+.mem-dl { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.mem-bd { font-size: 13px; font-weight: 300; line-height: 1.6; margin-top: 6px; color: var(--text-primary); }
+.mem-emb { position: absolute; top: 13px; right: 14px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--dv-sage); }
+.mem-emb.off { background: color-mix(in srgb, var(--text-primary) 18%, transparent); }
+
+.mem-ring { width: 52px; height: 52px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: conic-gradient(var(--mz-mem-ink) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0); }
+.mem-ring::after { content: attr(data-l); width: 38px; height: 38px; border-radius: 50%;
+  background: var(--mz-stripbg); display: grid; place-items: center;
+  font-size: 11px; font-weight: 800; color: var(--mz-cell-lav-ink); font-variant-numeric: tabular-nums; }
+.mem-scmath { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.mem-scmath span { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 9px;
+  background: color-mix(in srgb, var(--dv-lav) 12%, transparent); color: var(--mz-cell-lav-ink);
+  font-variant-numeric: tabular-nums; }
+.mem-scmath span.is-final { font-weight: 800; }
+.mem-scmath span.is-amber { color: var(--mz-cell-amber-ink);
+  background: color-mix(in srgb, var(--dv-amber) 14%, transparent); }
+.mem-scmath span.is-mut { background: none; color: var(--mz-ink-mut); font-weight: 600; padding-left: 0; }
+
+.mem-sfield { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 44px;
+  background: var(--mz-stripbg); border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 999px;
+  padding: 8px 14px; box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+.mem-sfield > span { color: var(--mz-ink-mut); }
+.mem-sfield input { border: none; outline: none; background: none; font-family: inherit;
+  font-size: 13px; color: var(--text-primary); width: 100%; padding: 0; }
+.mem-sfield input::placeholder { color: var(--mz-ink-mut); }
+
+.mem-card { border-radius: 20px; padding: 13px 15px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.mem-cost { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mem-foot { font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mem-provcells { margin-top: 9px; }
+.mem-fact .mem-scmath { margin-top: 7px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mem-dash { animation: none; }
 }
 
 /* ============================================================

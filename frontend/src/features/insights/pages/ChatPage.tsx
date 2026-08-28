@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
+import { ClaySpot } from '@/shared/ui/clay'
 import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
@@ -15,25 +16,29 @@ const SUBTITLE = { mock: 'demo beszélgetés', live: 'Gemini · élő' } as cons
 const COMPOSER_MAX_HEIGHT = 104
 
 function ThinkingDots() {
+  // Prototype typing bubble: orb-led meta row + three pulsing lavender dots in a
+  // 4/16-radius bubble (mezo-d20.5.2). The .np-pulse animation stays the page's
+  // reduced-motion-guarded pulse (prototype.css).
   return (
-    <div className="col gap-sm" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
-      <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo</span>
-      <div className="card" style={{ padding: 14 }}>
-        <div className="row gap-xs">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="np-pulse"
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: 'var(--lav-deep)',
-                animationDelay: `${i * 0.2}s`,
-              }}
-            />
-          ))}
-        </div>
+    <div className="mzc-msg-a col gap-sm" style={{ maxWidth: '85%' }}>
+      <div className="mzc-meta">
+        <ClaySpot name="s-orb" size={18} />
+        <span className="mzc-eb">Mezo</span>
+      </div>
+      <div className="mzc-typing">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="np-pulse"
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: 'var(--lav-deep)',
+              animationDelay: `${i * 0.2}s`,
+            }}
+          />
+        ))}
       </div>
     </div>
   )
@@ -106,34 +111,35 @@ export function ChatPage() {
   }
 
   return (
-    <div className="col gap-md chat-page">
-      <div className="row gap-sm" style={{ justifyContent: 'space-between' }}>
-        <div className="col">
-          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo · társ</span>
-          <span className="text-tertiary" style={{ fontSize: 11 }}>
+    <div className="col gap-md chat-page mzc">
+      {/* Prototype chat chrome (mezo-d20.5.2): the chsub anatomy — lav eyebrow + quiet
+          status on the left, the Beszélgetések / ＋ Új pgact chips on the right. The
+          subtitle precedence (degraded → new → mode) is the audited contract, unchanged. */}
+      <div className="row gap-sm" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="mzc-chsub">
+          <span className="mzc-eb">Mezo · társ</span>
+          <span className="mzc-st">
             {degraded ? 'a társ most nem elérhető' : isNew ? 'új beszélgetés' : SUBTITLE[mode]}
           </span>
         </div>
         <div className="row gap-xs">
           <button
             type="button"
-            className="chip"
-            style={{ padding: 8 }}
+            className="mzc-pgact"
             onClick={() => setPickerOpen(true)}
             disabled={degraded}
             aria-label="Beszélgetések"
           >
-            <Icon name="bookmark" size={14} />
+            Beszélgetések
           </button>
           <button
             type="button"
-            className="chip"
-            style={{ padding: 8 }}
+            className="mzc-pgact"
             onClick={() => selectConversation(NEW_CHAT)}
             disabled={degraded || isNew}
             aria-label="Új beszélgetés"
           >
-            <Icon name="plus" size={14} />
+            ＋ Új
           </button>
         </div>
       </div>
@@ -149,7 +155,7 @@ export function ChatPage() {
       )}
 
       {degraded && (
-        <div className="card" style={{ padding: 14 }}>
+        <div className="mzc-bub-a" style={{ alignSelf: 'stretch' }}>
           <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5 }}>
             A társ jelenleg nincs bekapcsolva — a beszélgetés nem elérhető. A napló, az edzés és a
             Fuel változatlanul működik.
@@ -160,7 +166,7 @@ export function ChatPage() {
       <div className="col gap-md chat-thread">
         {isPending && !degraded && !isNew && messages.length === 0 && !turn && <ThinkingDots />}
         {!degraded && !isPending && messages.length === 0 && !turn && (
-          <div className="card" style={{ padding: 14, alignSelf: 'flex-start', maxWidth: '85%' }}>
+          <div className="mzc-bub-a" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               Új beszélgetés — kérdezz bármit, vagy mondd fel a mikrofonnal.
             </p>
@@ -200,7 +206,7 @@ export function ChatPage() {
           />
         )}
         {error && (
-          <div className="card" style={{ padding: 14, alignSelf: 'flex-start', maxWidth: '85%' }}>
+          <div className="mzc-bub-a" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
             <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{error}</p>
           </div>
         )}
@@ -212,22 +218,19 @@ export function ChatPage() {
         <p className="text-tertiary" style={{ fontSize: 11, textAlign: 'center' }}>{voice.error}</p>
       )}
 
-      <div className="card chat-composer" style={{ padding: 8, display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+      {/* Prototype composer pill (mezo-d20.5.2): round mic disc · borderless field · lav
+          gradient send disc. The sticky/`:has` plumbing keys off `.chat-composer`, so that
+          class stays; controls honor the 44pt touch-target guardrail (prototype ~35px ×1.18). */}
+      <div className="chat-composer mzc-composer">
         <button
           type="button"
-          className={cn('chip', recording && 'chat-mic-live')}
-          style={{
-            padding: 8,
-            ...(recording
-              ? { background: 'var(--wash-amber)', borderColor: 'var(--coral-deep)', color: 'var(--coral-deep)' }
-              : null),
-          }}
+          className={cn('mzc-cmic', recording && 'rec chat-mic-live')}
           onClick={voice.toggle}
           disabled={degraded || voice.state === 'unsupported' || voice.state === 'transcribing'}
           aria-label={recording ? 'Felvétel leállítása' : 'Hangbevitel'}
           aria-pressed={recording}
         >
-          <Icon name={recording ? 'voice-wave' : 'mic'} size={14} />
+          <Icon name={recording ? 'voice-wave' : 'mic'} size={15} />
         </button>
         <textarea
           ref={draftRef}
@@ -260,13 +263,12 @@ export function ChatPage() {
         />
         <button
           type="button"
-          className="chip"
+          className="mzc-csend"
           onClick={submit}
           disabled={degraded}
-          style={{ padding: 8, background: 'var(--wash-lav)', borderColor: 'var(--lav-deep)', color: 'var(--lav-deep)' }}
           aria-label="Küldés"
         >
-          <Icon name="send" size={14} />
+          <Icon name="send" size={15} />
         </button>
       </div>
     </div>
