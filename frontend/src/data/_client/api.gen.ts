@@ -3114,6 +3114,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The dossier overview — all dimensions with maturity, portrait and top claims (lazily seeds the 7 CORE dimensions on first read) */
+        get: operations["getCharacterOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/dimension/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One dimension in full — portrait, ACTIVE claims with evidence refs, recent revisions */
+        get: operations["getCharacterDimension"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent expert observations + the latest conference outcome diff, merged chronologically (empty array = honest empty state) */
+        get: operations["getCharacterFeed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/conference": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Konzílium list (summaries only — transcripts load per id) */
+        get: operations["listCharacterConferences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/conference/{conferenceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One konzílium with its full persisted transcript — the exchange as it actually ran, never re-dramatized */
+        get: operations["getCharacterConference"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6847,6 +6932,94 @@ export interface components {
             start: string;
             days: components["schemas"]["MeWeekDay"][];
             weekly: components["schemas"]["MeWeekAggregates"];
+        };
+        CharacterClaimDto: {
+            /** Format: uuid */
+            id: string;
+            text: string;
+            /** @description 0–1; the FE renders human words, never the raw number (Minták precedent) */
+            confidence: number;
+            sensitive: boolean;
+            /** @description expert persona key */
+            proposedBy?: string;
+            evidence: {
+                kind: string;
+                id?: string | null;
+                label: string;
+            }[];
+        };
+        CharacterDimensionSummary: {
+            key: string;
+            title: string;
+            /** @enum {string} */
+            kind: "CORE" | "CHAPTER";
+            expertKey?: string | null;
+            /** @description 0–100; 0 = "tanulom" */
+            maturity: number;
+            /** @description empty string until the first conference writes it */
+            portrait: string;
+            topClaims: components["schemas"]["CharacterClaimDto"][];
+        };
+        CharacterOverviewResponse: {
+            dimensions: components["schemas"]["CharacterDimensionSummary"][];
+        };
+        CharacterPortraitRevisionDto: {
+            version: number;
+            portrait: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CharacterDimensionResponse: {
+            key: string;
+            title: string;
+            /** @enum {string} */
+            kind: "CORE" | "CHAPTER";
+            expertKey?: string | null;
+            maturity: number;
+            portrait: string;
+            claims: components["schemas"]["CharacterClaimDto"][];
+            revisions: components["schemas"]["CharacterPortraitRevisionDto"][];
+        };
+        CharacterFeedItem: {
+            /** @enum {string} */
+            kind: "OBSERVATION" | "CONFERENCE_CHANGE";
+            /** Format: date-time */
+            at: string;
+            /** @description null for CONFERENCE_CHANGE items */
+            expertKey?: string | null;
+            dimensionKeys?: string[];
+            text: string;
+        };
+        CharacterConferenceSummary: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "BOOTSTRAP" | "WEEKLY" | "MONTHLY";
+            /** Format: date */
+            weekStart?: string | null;
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        ConferenceTurn: {
+            persona: string;
+            text: string;
+            refIds?: string[];
+        };
+        CharacterConferenceResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "BOOTSTRAP" | "WEEKLY" | "MONTHLY";
+            /** Format: date */
+            weekStart?: string | null;
+            /** Format: date-time */
+            generatedAt: string;
+            transcript: components["schemas"]["ConferenceTurn"][];
+            changes: {
+                kind: string;
+                dimensionKey?: string | null;
+                summary: string;
+            }[];
         };
     };
     responses: never;
@@ -15525,6 +15698,175 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The dossier (CORE dimensions always present; portraits may be empty — the honest pre-bootstrap state) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterOverviewResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterDimension: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The dimension */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterDimensionResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such dimension key for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterFeed: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Feed items, newest first (possibly empty — never a 404; list-endpoint precedent) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterFeedItem"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listCharacterConferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conference summaries, newest first (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterConferenceSummary"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterConference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conferenceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The conference */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterConferenceResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such conference for this user */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
