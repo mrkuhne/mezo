@@ -18,10 +18,29 @@ describe('ExperimentsPage (mock mode)', () => {
     expect(screen.getByText('Glikogén-feltöltés volleyball előtt')).toBeInTheDocument()
     expect(screen.getByText('◐ Aktív')).toBeInTheDocument()
     expect(screen.getByText('✓ Megerősítve')).toBeInTheDocument()
-    expect(screen.getByText('Megerősítve · 3/4 mérés')).toBeInTheDocument()
-    expect(screen.getByText('+ Új kísérlet javasol Mezo')).toBeInTheDocument()
+    expect(screen.getByText('✓ Megerősítve · 3/4 mérés')).toBeInTheDocument()
+    expect(screen.getByText('＋ Új kísérletet javasol Mezo')).toBeInTheDocument()
     // the mock seed has no proposed rows, so no accept/dismiss buttons appear (byte-parity)
     expect(screen.queryByRole('button', { name: 'Elfogadom' })).not.toBeInTheDocument()
+  })
+
+  test('status-washed tiles: active → amber + 7-day dot row + gold bar, confirmed → sage (mezo-d20.5.6)', () => {
+    const { container } = renderPage()
+    // active exp (4/7): amber wash, one dot per day, the elapsed ones filled
+    const active = container.querySelector('.mzp-pred.amber')
+    expect(active).not.toBeNull()
+    const dots = active!.querySelectorAll('.mzp-daydots i')
+    expect(dots).toHaveLength(7)
+    expect(active!.querySelectorAll('.mzp-daydots i.f')).toHaveLength(4)
+    const fill = active!.querySelector('.mzp-gbar div.gold') as HTMLElement
+    expect(fill).not.toBeNull()
+    expect(fill.style.width).toBe('57%') // round(4/7)
+    // confirmed exp: sage wash, no dots, no bar — just the outcome line
+    const sage = container.querySelector('.mzp-pred.sage')
+    expect(sage).not.toBeNull()
+    expect(sage!.querySelector('.mzp-daydots')).toBeNull()
+    expect(sage!.querySelector('.mzp-gbar')).toBeNull()
+    expect(container.querySelector('.mz-play')).not.toBeNull()
   })
 })
 
@@ -29,7 +48,8 @@ describe('ExperimentsPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders a proposed experiment with L2 accept/dismiss; accepting posts the decision', async () => {
+  test('renders a proposed experiment with L2 accept/dismiss; accepting posts and flips to ◐ Aktív 0/7', async () => {
+    let accepted = false
     server.use(
       http.get(`${API_BASE}/api/proactive/experiment`, () =>
         HttpResponse.json([
@@ -37,7 +57,7 @@ describe('ExperimentsPage (real mode)', () => {
             id: 'e1',
             title: 'Esti magnézium',
             hypothesis: 'Korábbi adagolás → mélyebb alvás.',
-            status: 'proposed',
+            status: accepted ? 'active' : 'proposed',
             metricKey: 'sleep_avg',
             expectedDirection: 'up',
             startDate: null,
@@ -58,15 +78,20 @@ describe('ExperimentsPage (real mode)', () => {
     server.use(
       http.post(`${API_BASE}/api/proactive/experiment/:id/decision`, async ({ params }) => {
         posted = true
+        accepted = true
         return HttpResponse.json({
           id: params.id, title: 'Esti magnézium', hypothesis: 'x', status: 'active',
-          metricKey: 'sleep_avg', expectedDirection: 'up', startDate: '2026-07-07', totalDays: 7,
+          metricKey: 'sleep_avg', expectedDirection: 'up', startDate: null, totalDays: 7,
           outcome: null, outcomeGood: null, generatedAt: '2026-07-07T06:45:00Z',
         })
       }),
     )
     await userEvent.click(screen.getByRole('button', { name: 'Elfogadom' }))
     await waitFor(() => expect(posted).toBe(true))
+    // the accept mutation invalidates → the refetched row re-faces as the active amber tile
+    expect(await screen.findByText('◐ Aktív')).toBeInTheDocument()
+    expect(screen.getByText('0/7 nap')).toBeInTheDocument()
+    expect(screen.queryByText('◇ Javaslat')).not.toBeInTheDocument()
   })
 
   test('renders the honest still-learning null-state on the default empty array', async () => {

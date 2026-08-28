@@ -1,28 +1,37 @@
-import type { CSSProperties } from 'react'
+// ============================================================
+// Mezo · N=1 kísérletek — Mozaik re-face (mezo-d20.5.6).
+// Source of truth: mezo-body.html #page-kiserlet (.predtile, ×1.18).
+// Status-washed tiles: ◇ Javaslat = gold-ringed proposal card with the
+// Elfogadom/Elvetem decision row (live-only, the existing accept
+// mutation — invalidate → the refetched row re-faces as ◐ Aktív 0/7),
+// ◐ Aktív = amber + day-dot row + gold progress bar, ✓ Megerősítve =
+// sage + "✓ …" outcome line. Chips were already Hungarian here; the
+// dismissed branch gains its missing label (audit §6 gap). Behavioral
+// contracts preserved: honest empty state, actions gated on live and
+// disabled while pending, the propose CTA inert in mock (byte-parity).
+// ============================================================
 import { cn } from '@/shared/lib/cn'
+import { ClayIcon } from '@/shared/ui/clay'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useExperiments, useExperimentActions } from '@/data/hooks'
 import type { Experiment } from '@/data/types'
 
-// active → amber "in-progress" chip (kept semantic); proposed / completed carry no class
-function statusChipClass(e: Experiment): string {
-  return e.status === 'active' ? 'warning' : ''
-}
-
-// completed + good outcome → lav-wash "positive" badge (Insights accent; T5 PatternCard precedent)
-function statusChipStyle(e: Experiment): CSSProperties {
-  const good = e.status !== 'proposed' && e.status !== 'active' && !!e.outcomeGood
-  return good ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)' } : {}
-}
-
-function statusLabel(e: Experiment): string {
+/** Hungarian status chips (prototype .stch classes). */
+function chipOf(e: Experiment): { label: string; chip: string; wash?: string } {
   switch (e.status) {
     case 'proposed':
-      return '◇ Javaslat'
+      return { label: '◇ Javaslat', chip: 'prop' }
     case 'active':
-      return '◐ Aktív'
+      return { label: '◐ Aktív', chip: 'act', wash: 'amber' }
+    case 'dismissed':
+      return { label: '✕ Elvetve', chip: 'mut' }
     default:
-      // completed: good / not-good / inconclusive (outcomeGood undefined)
-      return e.outcomeGood === true ? '✓ Megerősítve' : e.outcomeGood === false ? '◯ Nem igazolódott' : '◌ Nem értékelhető'
+      // completed: good / not-good / inconclusive (outcomeGood undefined) — never red
+      return e.outcomeGood === true
+        ? { label: '✓ Megerősítve', chip: 'ok', wash: 'sage' }
+        : e.outcomeGood === false
+          ? { label: '◯ Nem igazolódott', chip: 'mut' }
+          : { label: '◌ Nem értékelhető', chip: 'mut' }
   }
 }
 
@@ -43,49 +52,66 @@ export function ExperimentsPage() {
   }
 
   return (
-    <div className="col gap-md">
+    <EntranceGroup className="col gap-md">
       <span className="eyebrow">N=1 kísérletek · {experiments.length}</span>
 
-      {experiments.map((e) => (
-        <div key={e.id} className="card" style={{ padding: 16 }}>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className={cn('chip', statusChipClass(e))} style={{ fontSize: 9, ...statusChipStyle(e) }}>{statusLabel(e)}</span>
-            {e.status !== 'proposed' && <span className="label-mono" style={{ fontSize: 9 }}>{e.day}/{e.total} nap</span>}
+      {experiments.map((e, i) => {
+        const meta = chipOf(e)
+        return (
+          <div
+            key={e.id}
+            className={cn('mzp-pred', meta.wash, e.status === 'proposed' && 'propcard', 'rise')}
+            style={{ '--d': `${i * 70}ms` } as React.CSSProperties}
+          >
+            <div className="mzp-top">
+              <span className="mzp-pic"><ClayIcon name={e.status === 'active' ? 'i-idozito' : 'i-lombik'} size={22} /></span>
+              <span className={cn('mzp-stch', meta.chip)}>{meta.label}</span>
+              {e.status !== 'proposed' && <span className="mzp-date">{e.day}/{e.total} nap</span>}
+            </div>
+
+            <div className="mzp-title">{e.title}</div>
+            <p className="mzp-basis">{e.hypothesis}</p>
+
+            {e.status === 'active' && (
+              <>
+                <div className="mzp-daydots" aria-hidden="true">
+                  {Array.from({ length: e.total }, (_, d) => (
+                    <i key={d} className={cn(d < e.day && 'f')} />
+                  ))}
+                </div>
+                <div className="mzp-conf">
+                  <div className="mzp-gbar">
+                    <div className="gold" style={{ width: `${Math.round((e.day / e.total) * 100)}%`, '--d': `${350 + i * 70}ms` } as React.CSSProperties} />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {e.outcome && <div className="mzp-actual">✓ {e.outcome}</div>}
+
+            {e.status === 'proposed' && live && (
+              <div className="mzp-decrow">
+                <button type="button" className="mzp-cta" disabled={pending} onClick={() => decide(e.id, 'accept')}>
+                  Elfogadom
+                </button>
+                <button type="button" className="mzp-ghost" disabled={pending} onClick={() => decide(e.id, 'dismiss')}>
+                  Elvetem
+                </button>
+              </div>
+            )}
           </div>
-
-          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 16, marginTop: 8, lineHeight: 1.2 }}>{e.title}</div>
-          <p className="text-secondary mt-sm" style={{ fontSize: 12, lineHeight: 1.5 }}>{e.hypothesis}</p>
-
-          {e.status !== 'proposed' && (
-            <div className="bar mt-md">
-              <div className="bar-fill glow" style={{ width: `${(e.day / e.total) * 100}%` }} />
-            </div>
-          )}
-
-          {e.outcome && <p className="mt-sm" style={{ fontSize: 12, color: 'var(--success)', lineHeight: 1.4 }}>{e.outcome}</p>}
-
-          {e.status === 'proposed' && live && (
-            <div className="row gap-sm mt-md">
-              <button type="button" className="chip" disabled={pending} onClick={() => decide(e.id, 'accept')} style={{ fontSize: 11, padding: '6px 12px', background: 'var(--wash-lav)', borderColor: 'var(--lav-deep)', color: 'var(--lav-deep)' }}>
-                Elfogadom
-              </button>
-              <button type="button" className="chip" disabled={pending} onClick={() => decide(e.id, 'dismiss')} style={{ fontSize: 11, padding: '6px 12px' }}>
-                Elvetem
-              </button>
-            </div>
-          )}
-        </div>
-      ))}
+        )
+      })}
 
       <button
         type="button"
-        className="cta-ghost mt-md"
+        className="mzp-new rise"
+        style={{ '--d': `${experiments.length * 70}ms` } as React.CSSProperties}
         disabled={live && pending}
         onClick={live ? () => propose() : undefined}
-        style={{ textAlign: 'center', padding: 14 }}
       >
-        + Új kísérlet javasol Mezo
+        ＋ Új kísérletet javasol Mezo
       </button>
-    </div>
+    </EntranceGroup>
   )
 }

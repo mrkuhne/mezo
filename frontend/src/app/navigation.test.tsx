@@ -12,21 +12,18 @@ function renderApp(path = '/') {
 
 test('redirects / to Today', async () => {
   renderApp('/')
-  // The daypart switcher is Today's face-INDEPENDENT landmark (mezo-puci) — a daypart's own
-  // content would make this routing smoke test wall-clock dependent.
-  // findBy, not getBy: Today's face selection is gated on the sleep anchor, so in REAL
-  // mode TodayPage renders TodaySkeleton until `useSleepGoal()` resolves (TodayPage's
-  // `sleepGoalPending` guard). Mock mode seeds the goal synchronously via `initialData`,
-  // so a getBy would only ever have passed there — this keeps the smoke test mode-agnostic.
-  expect(await screen.findByRole('group', { name: 'Napszak' })).toBeInTheDocument()
+  // The Nap hub's daypart switch is the face-INDEPENDENT landmark (mezo-d20.2.1).
+  expect(await screen.findByRole('button', { name: 'Napszak váltása' })).toBeInTheDocument()
 })
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
-  await userEvent.click(screen.getByLabelText('Insights'))
-  // Insights shell: the AppHero dropdown chip is the stable landmark; it shows the
-  // active sub-view (the index sub-view is "Minták").
-  expect(screen.getByLabelText('Insights alnavigáció')).toBeInTheDocument()
+  // Decision B (mezo-d20.1.1): the companion section is the first-class Mezo tab —
+  // the Nap hub carries no ✨ header link any more. The tab lands on the hub Mozaik
+  // face (mezo-d20.5.1): chat opener + tile mosaic, no subnav dropdown.
+  await userEvent.click((await screen.findAllByRole('link')).find(a => a.getAttribute('href') === '/mezo')!)
+  expect(await screen.findByRole('button', { name: 'Beszélgetés a társsal' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Insights alnavigáció')).not.toBeInTheDocument()
 })
 test('Me screen theme selector flips data-theme', async () => {
   // Default is now circadian-auto (wall-clock dependent); preset manual light so this
@@ -67,19 +64,21 @@ test('the app shell mounts the clay sprite defs once (mezo-d20.1.2)', () => {
 test('/nap renders the day spine (Today content) and /today redirects to it', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  expect(await screen.findByRole('group', { name: 'Napszak' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Napszak váltása' })).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/nap')
   cleanup()
   const legacy = createMemoryRouter(routes, { initialEntries: ['/today'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={legacy} /></ThemeProvider></QueryWrapper>)
-  await screen.findByRole('group', { name: 'Napszak' })
+  await screen.findByRole('button', { name: 'Napszak váltása' })
   expect(legacy.state.location.pathname).toBe('/nap')
 })
 
 test('/insights/chat redirects into the Mezo tab preserving the subpath', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/insights/chat'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  await screen.findByLabelText('Insights alnavigáció')
+  // The chat is a full-page sibling after the shell dissolution (mezo-d20.5.1) —
+  // the composer's send chip is its stable landmark.
+  await screen.findByLabelText('Küldés')
   expect(router.state.location.pathname).toBe('/mezo/chat')
 })
 

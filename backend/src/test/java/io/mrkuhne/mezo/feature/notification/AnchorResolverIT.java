@@ -41,7 +41,9 @@ class AnchorResolverIT extends AbstractIntegrationTest {
 
     /** A known Wednesday (matches the current-date convention used elsewhere in this suite). */
     private static final LocalDate WEDNESDAY = LocalDate.of(2026, 7, 29);
-    /** The ISO Monday of WEDNESDAY's own week — `weekly` only anchors on a Monday. */
+    /** The ISO Monday of WEDNESDAY's own week — used both as the resolving date for the
+     *  {@code WEEKLY_REVIEW} anchor (which fires only when resolving ON a Monday) and as a
+     *  week-start key for the weekly-suggestion/weekly-review/memoir fixtures below. */
     private static final LocalDate MONDAY = LocalDate.of(2026, 7, 27);
     /** The Sunday that ends WEDNESDAY's week — `memoir` only anchors on a Sunday. */
     private static final LocalDate SUNDAY = LocalDate.of(2026, 8, 2);

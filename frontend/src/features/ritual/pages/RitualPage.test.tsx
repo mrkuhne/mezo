@@ -95,7 +95,7 @@ test('the ✕ exit (Kilépés) navigates straight to /today, consequence-free fr
   await user.click(screen.getByRole('button', { name: 'Kilépés' }))
   // Today's face-independent landmark: a daypart's own content would make the exit
   // assertion clock-dependent, so anchor on the daypart switcher (mezo-puci).
-  expect(await screen.findByRole('group', { name: 'Napszak' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Napszak váltása' })).toBeInTheDocument()
 })
 
 test('act 4 (Nyitott hurkok): the journal invite mounts ActivityLogSheet at the page level', async () => {
@@ -167,7 +167,7 @@ test('the ✕ exit before act 5 never calls close (consequence-free up to the Ha
   await user.click(screen.getByRole('button', { name: 'Kilépés' }))
 
   // Today's daypart switcher — the face-independent landmark (mezo-puci).
-  expect(await screen.findByRole('group', { name: 'Napszak' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Napszak váltása' })).toBeInTheDocument()
   expect(close).not.toHaveBeenCalled()
   expect(consumeLevelUps).not.toHaveBeenCalled()
 })

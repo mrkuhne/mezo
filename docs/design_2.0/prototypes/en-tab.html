@@ -1375,6 +1375,31 @@
   .dsct .mt2 { font-size: 7.5px; color: #6E6257; font-variant-numeric: tabular-nums; }
   .bflag { font-size: 6px; font-weight: 800; letter-spacing: 0.1em; border-radius: 5px; padding: 2px 6px; flex: none;
     background: rgba(78, 143, 184, 0.16); color: #33749C; }
+  /* ===== HETI: nap-mozaik ===== */
+  .dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .dcard { border-radius: 18px; padding: 10px 11px 9px; cursor: pointer; display: grid; gap: 6px; align-content: start;
+    background: var(--dcw, #fff); border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px var(--dcg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .dcard:active { transform: scale(0.96); }
+  .dcard.op { grid-column: 1 / -1; }
+  .dcard.thin { background: rgba(255, 255, 255, 0.5); border: 1px dashed rgba(43, 33, 24, 0.16); box-shadow: none; }
+  .dcard.fut { background: none; border: 1px dashed rgba(43, 33, 24, 0.14); box-shadow: none; opacity: 0.55; cursor: default; }
+  .dcard .dow { font-size: 11px; font-weight: 700; letter-spacing: -0.01em; }
+  .dcard .dte { font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; }
+  .dcard .scnum { font-size: 27px; font-weight: 200; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .dcard .scnum small { font-size: 8px; font-weight: 700; color: #A2958A; }
+  .dcard .scnum.dash { font-size: 17px; color: #A2958A; }
+  .sparks { display: flex; gap: 3px; align-items: flex-end; height: 24px; margin-left: auto; }
+  .sparks i { width: 5px; border-radius: 2px; min-height: 3px; transform: scaleY(0); transform-origin: bottom; }
+  .play .sparks i { animation: trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 300ms); }
+  .dchips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .dchip { display: inline-flex; align-items: center; gap: 3px; font-size: 7.5px; font-weight: 700; color: #6E6257;
+    background: rgba(255, 255, 255, 0.72); border-radius: 7px; padding: 2.5px 6px; font-variant-numeric: tabular-nums; }
+  .dchip.mute { color: #A2958A; }
+  .dchv { font-size: 11px; color: #A2958A; flex: none; transition: transform 0.2s ease; }
+  .dcard.op .dchv { transform: rotate(180deg); }
+  .dnote { font-size: 7.5px; font-weight: 300; line-height: 1.4; color: #A2958A; }
   /* ===== HETI: hub-csempék ===== */
   .hwide { border-radius: 19px; padding: 12px 13px; margin-bottom: 9px; cursor: pointer;
     border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--hw, #fff);
@@ -2246,10 +2271,18 @@
           aloldalon a jelöltek evidencia-sorral és <em>Tanuld meg / Nem rólam szól</em> döntéssel.
           Elfogadás után a csempe, a hub Tudás-csempéje és a gráf-szám is élőben követi.</li>
           <li><strong>3 · A hét napjai csempe</strong> — „5 / 7 nap" + hét mini-gyűrű a napi
-          pontszámokkal; az aloldalon a hét nap-csempéje egyesével nyitható: négy részpontszám
-          <strong>színes gyűrűben</strong>, kcal <strong>és</strong> fehérje a cél ellenében,
-          alvás · edzés · XP cellák, és a Mezo napi jegyzete <strong>orb-os társ-buborékban</strong>.
-          Jövő nap halvány, nem nyílik, nincs chat-chipje.</li>
+          pontszámokkal; az aloldal <strong>nem lista, hanem 2 hasábos nap-mozaik</strong>:
+          minden nap saját csempe a pontszáma szerinti washban (80+ zsálya · 70+ arany · alatta
+          terrakotta), nagy pontszámmal, a négy részpontszám <strong>animált pálcikáival</strong>
+          (alvás égszín · fuel zsálya · check-in rózsa · aktivitás korall) és clay-ikonos
+          adat-chipekkel (kcal · alvás · edzés · check-in n/4 · „jegyzet", ha a Mezo írt a napról).
+          Fölötte mini-cellák: <em>legjobb nap · leggyengébb · tanulom</em>. A csempe koppintásra
+          <strong>teljes szélességűre nő</strong> és ott nyílik ki a részletes nézet: négy
+          részpontszám-gyűrű, kcal <strong>és</strong> fehérje a cél ellenében, alvás · edzés · XP
+          cellák, a Mezo jegyzete orb-os buborékban és a „Beszélgess a napról". Becsületes
+          különbségtétel: <strong>„tanulom"</strong> = kevesebb mint két területről van adat ·
+          <strong>„nincs adat"</strong> = azon a napon nem logoltál (szaggatott csempe) · jövő nap
+          halvány szaggatott, nem nyílik.</li>
           <li><strong>4 · Heti felfedezések csempe</strong> — „5 új nyom a memóriában" + a
           kategória-pöttyök; az aloldalon a mozaik státusz-chipekkel: minta-esemény
           (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), új tudás, életesemény dátummal,
@@ -3302,25 +3335,78 @@
     if (!d.fut) h += '<button class="chatch" data-chat="day" data-d="' + d.dt + '">💬 Beszélgess a napról ›</button>';
     return h + '</div>';
   }
+  function dayWash(sc) {
+    if (sc == null) return ['rgba(255,255,255,0.5)', 'rgba(43,33,24,0.2)'];
+    if (sc >= 80) return ['linear-gradient(150deg,#E9F1E2,#F7FBF3)', 'rgba(110,139,94,0.42)'];
+    if (sc >= 70) return ['linear-gradient(150deg,#FFF1D6,#FFFAF0)', 'rgba(181,126,20,0.4)'];
+    return ['linear-gradient(150deg,#FFE7DC,#FFF7F2)', 'rgba(168,74,38,0.38)'];
+  }
+  var SUBC = [['s', '#4E8FB8'], ['f', '#8FAF7E'], ['c', '#C46FA0'], ['a', '#FF6B4A']];
+
+  function dayCard(d, i, w) {
+    var wash = dayWash(d.sc), h = '';
+    if (d.fut) {
+      return '<div class="dcard fut rise" style="--d:' + (i * 30) + 'ms;" id="dt' + i + '">' +
+        '<div class="mrow"><span class="dow" style="color:#A2958A;">' + d.dow + '</span>' +
+        '<span class="dte" style="margin-left:auto;">' + d.dt.replace('Máj ', 'máj ') + '</span></div>' +
+        '<div class="scnum dash">·</div><div class="dnote">még előtted — ide majd a nap adatai jönnek</div></div>';
+    }
+    h += '<div class="dcard rise' + (d.sc == null ? ' thin' : '') + '" style="--d:' + (i * 30) +
+      'ms;--dcw:' + wash[0] + ';--dcg:' + wash[1] + ';" data-day="' + i + '" id="dt' + i + '">';
+    h += '<div class="mrow"><span class="dow">' + d.dow + '</span>' +
+      (d.dt === today && w.cur ? '<span class="bflag">MA</span>' : '') +
+      '<span class="dte" style="margin-left:auto;">' + d.dt.replace('Máj ', 'máj ') + '</span>' +
+      '<span class="dchv">⌄</span></div>';
+    var sp = '<div class="sparks">';
+    for (var k = 0; k < SUBC.length; k++) {
+      var v = d.sub[SUBC[k][0]];
+      sp += '<i style="height:' + (v == null ? 3 : Math.max(4, Math.round(v / 100 * 22))) + 'px;background:' +
+        (v == null ? 'rgba(43,33,24,0.12)' : SUBC[k][1]) + ';--d:' + (300 + i * 30 + k * 45) + 'ms;"></i>';
+    }
+    sp += '</div>';
+    var empty = d.sc == null && d.kcal == null && d.slm == null && !d.cn && !d.wo;
+    h += '<div class="mrow">' + (d.sc == null
+      ? '<span class="scnum dash">' + (empty ? 'nincs adat' : 'tanulom') + '</span>'
+      : '<span class="scnum" style="color:' + bandC(d.sc) + ';">' + d.sc + '<small> / 100</small></span>') + sp + '</div>';
+    h += '<div class="dchips">';
+    if (d.kcal != null) h += '<span class="dchip"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>' + huInt(d.kcal) + '</span>';
+    if (d.slm != null) h += '<span class="dchip"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-alvas"/></svg>' + slh(d.slm) + '</span>';
+    if (d.wo) h += '<span class="dchip"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>' + d.wo + '×</span>';
+    h += '<span class="dchip' + (d.cn ? '' : ' mute') + '"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-checkin"/></svg>' + d.cn + '/4</span>';
+    if (d.note) h += '<span class="dchip" style="color:#5D4FA0;"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#s-orb"/></svg>jegyzet</span>';
+    h += '</div>';
+    if (d.sc == null) {
+      h += '<div class="dnote">' + (empty ? 'ezen a napon nem logoltál — a hét pontszámába nem számít bele'
+                                          : 'kevesebb mint két területről van adat, ezért nincs pontszám') + '</div>';
+    }
+    return h + '</div>';
+  }
+
   function daysPage(w) {
     document.getElementById('hdTitle').textContent = w.t;
-    var logged = 0, i;
-    for (i = 0; i < w.days.length; i++) if (w.days[i].sc != null) logged++;
-    document.getElementById('hdBig').innerHTML = logged + '<span style="font-size:14px;color:#6E6257;"> / 7</span>';
-    document.getElementById('hdSub').textContent = 'logolt nap · koppints egy napra';
-    var h = '';
+    var logged = 0, best = null, worst = null, thin = 0, i, d;
     for (i = 0; i < w.days.length; i++) {
-      var d = w.days[i];
-      h += '<div class="dtile rise' + (d.fut ? ' fut' : '') + '" style="--d:' + (i * 30) + 'ms;" data-day="' + i + '" id="dt' + i + '">' +
-        '<div class="mrow">' +
-        '<div class="sring' + (d.sc == null ? ' dash' : '') + '" style="--c:' + bandC(d.sc) + ';--v:' + (d.sc == null ? 0 : d.sc) + ';"><i>' +
-        (d.sc == null ? '—' : d.sc) + '</i></div>' +
-        '<div class="grow"><div class="dt">' + d.dt + ' · ' + d.dow + (d.dt === today && w.cur ? ' <span class="bflag">MA</span>' : '') + '</div>' +
-        '<div class="cl">' + (d.fut ? 'még előtted' : compact(d)) + '</div></div>' +
-        (d.fut ? '' : '<span class="chv">⌄</span>') + '</div></div>';
+      d = w.days[i];
+      if (d.fut) continue;
+      if (d.sc == null) { thin++; continue; }
+      logged++;
+      if (!best || d.sc > best.sc) best = d;
+      if (!worst || d.sc < worst.sc) worst = d;
     }
-    h += '<div class="foot9 rise" style="--d:' + (30 + w.days.length * 30) + 'ms;">A „—" azt jelenti: nincs adat, nem azt, hogy nulla. ' +
-      'A jövő napok halványak és nem nyílnak.</div>';
+    document.getElementById('hdBig').innerHTML = logged + '<span style="font-size:14px;color:#6E6257;"> / 7</span>';
+    document.getElementById('hdSub').textContent = 'mért nap · koppints egy csempére';
+    var h = '<div class="mcells rise" style="--d:0ms;margin-bottom:10px;">' +
+      '<span style="--mw:#E4EEDD;--md:#4E6B42;"><b>' + (best ? best.dow + ' ' + best.sc : '—') + '</b><small>legjobb nap</small></span>' +
+      '<span style="--mw:#FFF1D6;--md:#A8801F;"><b>' + (worst ? worst.dow + ' ' + worst.sc : '—') + '</b><small>leggyengébb</small></span>' +
+      '<span style="--mw:#EBE6F8;--md:#5D4FA0;"><b>' + (thin ? thin : '—') + '</b><small>tanulom</small></span></div>';
+    h += '<div class="dgrid rise" style="--d:40ms;">';
+    for (i = 0; i < w.days.length; i++) h += dayCard(w.days[i], i, w);
+    h += '</div>';
+    h += '<div class="phleg rise" style="--d:' + (60 + w.days.length * 30) + 'ms;margin-top:10px;">' +
+      '<span><i style="background:#4E8FB8;"></i>alvás</span><span><i style="background:#8FAF7E;"></i>fuel</span>' +
+      '<span><i style="background:#C46FA0;"></i>check-in</span><span><i style="background:#FF6B4A;"></i>aktivitás</span></div>';
+    h += '<div class="foot9 rise" style="--d:' + (90 + w.days.length * 30) + 'ms;">A négy pálcika a nap részpontszáma. ' +
+      'A „tanulom" azt jelenti: kevesebb mint két területről van adat — nem azt, hogy nulla volt a nap.</div>';
     document.getElementById('hdBody').innerHTML = h;
     opened = null;
   }
@@ -3408,7 +3494,10 @@
     var w = W[cur];
     if (opened !== null) {
       var prev = document.getElementById('dt' + opened);
-      if (prev) { prev.classList.remove('op'); var b = prev.querySelector('.dbody'); if (b) b.remove(); }
+      if (prev) {
+        prev.classList.remove('op');
+        var b = prev.querySelector('.dbody'); if (b) b.remove();
+      }
     }
     if (opened === i) { opened = null; return; }
     var el = document.getElementById('dt' + i);

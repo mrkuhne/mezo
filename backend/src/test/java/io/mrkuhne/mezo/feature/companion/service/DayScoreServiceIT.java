@@ -18,10 +18,12 @@ import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -205,6 +207,29 @@ class DayScoreServiceIT extends AbstractIntegrationTest {
         DayScoreService.DayScore day = dayFor(owner, DAY);
 
         assertThat(day.subscores().fuel()).isEqualTo(0);
+    }
+
+    /**
+     * The {@code scores(userId, from, to, Map)} overload must degrade to the standalone fetch,
+     * not NPE, when the caller's map omits a day (mezo-8tp8 review I1): kcal WAS logged that day,
+     * so {@code fuelSubscore} dereferences the day's targets — if the map lookup returned
+     * {@code null} unguarded, this would throw. Falling back to {@link FuelDayService#getDay}
+     * for the missing day scores it exactly as the standalone {@code scores(userId, from, to)}
+     * would.
+     */
+    @Test
+    void mapOverloadFallsBackToFetchWhenDayIsMissingFromTheSuppliedMap() {
+        UUID owner = userPopulator.createUser().getId();
+        seedMeal(owner, DAY, 1.0, 1.0);
+        sleepLogPopulator.createSleepLog(owner, DAY, new BigDecimal("8.0"), 10);
+
+        List<DayScoreService.DayScore> scores =
+                dayScoreService.scores(owner, DAY, DAY, Map.<LocalDate, FuelDayResponse>of());
+
+        assertThat(scores).hasSize(1);
+        assertThat(scores.get(0).subscores().fuel()).isEqualTo(100);
+        assertThat(scores.get(0).subscores().sleep()).isEqualTo(100);
+        assertThat(scores.get(0).score()).isEqualTo(100);
     }
 
     /**

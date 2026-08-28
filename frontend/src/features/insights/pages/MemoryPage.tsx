@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMemoryOverview, useMemorySummaries } from '@/data/hooks'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { GhostState } from '@/shared/ui/GhostState'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MemoryLayersPanel } from '@/features/insights/components/MemoryLayersPanel'
 import { MemoryJournalPanel } from '@/features/insights/components/MemoryJournalPanel'
 import { MemorySearchPanel } from '@/features/insights/components/MemorySearchPanel'
@@ -47,40 +48,31 @@ export function MemoryPage() {
 
   return (
     <div className="col gap-md">
-      <div
-        className="row" role="tablist" aria-label="Memória nézetek"
-        style={{ background: 'var(--surface-glass)', borderRadius: 12, padding: 3 }}
-      >
-        <SegButton on={view === 'overview'} onClick={() => setView('overview')}>Áttekintés</SegButton>
+      <div className="mem-seg" role="tablist" aria-label="Memória nézetek">
+        <SegButton on={view === 'overview'} onClick={() => setView('overview')}>Rétegek</SegButton>
         <SegButton on={view === 'journal'} onClick={() => setView('journal')}>Napló</SegButton>
         <SegButton on={view === 'search'} onClick={() => setView('search')}>Kereső</SegButton>
         <SegButton on={view === 'audit'} onClick={() => setView('audit')}>Audit</SegButton>
       </div>
 
-      {view === 'overview' && (
-        <MemoryLayersPanel overview={overview} onOpenJournal={() => setView('journal')} />
-      )}
-      {view === 'journal' && <MemoryJournalPanel summaries={summaries} focusDate={focusDate} />}
-      {view === 'search' && (
-        <MemorySearchPanel onPick={(date) => { setFocusDate(date); setView('journal') }} />
-      )}
-      {view === 'audit' && <MemoryAuditPanel />}
+      <EntranceGroup replayKey={view}>
+        {view === 'overview' && (
+          <MemoryLayersPanel overview={overview} onOpenJournal={() => setView('journal')} />
+        )}
+        {view === 'journal' && <MemoryJournalPanel summaries={summaries} focusDate={focusDate} />}
+        {view === 'search' && (
+          <MemorySearchPanel onPick={(date) => { setFocusDate(date); setView('journal') }} />
+        )}
+        {view === 'audit' && <MemoryAuditPanel />}
+      </EntranceGroup>
     </div>
   )
 }
 
-/** A GrowthPage/FuelSlotsPage szegmens-gomb idiómájának lokális másolata (a bevett norma). */
+/** Szegmens-gomb a prototípus .segtabs pill arcával (aktív = korall CTA-gradiens). */
 function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void; children: string }) {
   return (
-    <button
-      role="tab" aria-selected={on} onClick={onClick} className="rad-12"
-      style={{
-        flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 800, letterSpacing: 1,
-        textTransform: 'uppercase', padding: '7px 0', borderRadius: 3,
-        color: on ? 'var(--lav-deep)' : 'var(--text-tertiary)',
-        background: on ? 'var(--wash-lav)' : 'transparent',
-      }}
-    >
+    <button role="tab" aria-selected={on} onClick={onClick} className={on ? 'on' : undefined}>
       {children}
     </button>
   )

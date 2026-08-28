@@ -45,6 +45,12 @@ class AnchoredConversationIT extends AbstractIntegrationTest {
                 .build();
     }
 
+    private CreateConversationRequest weekRequest(LocalDate date) {
+        return CreateConversationRequest.builder()
+                .context(CreateConversationRequestContext.builder().kind("week").date(date).build())
+                .build();
+    }
+
     private List<AiMessageEntity> messages(UUID conversationId, UUID userId) {
         return messageRepository
                 .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversationId, userId);
@@ -61,6 +67,23 @@ class AnchoredConversationIT extends AbstractIntegrationTest {
 
         assertThat(answer.getContent()).contains("[Heti adatok]");
         assertThat(answer.getContent()).contains("A KIJELÖLT NAP: " + seededDay + " — erről beszélgetünk.");
+    }
+
+    @Test
+    void weekAnchoredConversationNormalizesNonMondayDateToItsMonday() {
+        UUID userId = databasePopulator.populateUser("anchor-week@test.local");
+        LocalDate monday = LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        LocalDate wednesday = monday.plusDays(2);
+        ConversationResponse conversation = conversationService.create(userId, weekRequest(wednesday));
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
+                io.mrkuhne.mezo.api.dto.SendMessageRequest.builder().content("milyen volt a hetem?").build());
+
+        assertThat(answer.getContent()).contains("[Heti adatok]");
+        assertThat(answer.getContent()).contains("- " + monday);
+        assertThat(answer.getContent()).contains("- " + monday.plusDays(6));
+        assertThat(answer.getContent()).doesNotContain("A KIJELÖLT NAP");
     }
 
     @Test

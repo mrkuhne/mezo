@@ -5,6 +5,7 @@ import { WeekPage } from '@/features/me/pages/WeekPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { mockMeWeekStart } from '@/data/me/meWeek'
+import { prevMonday, nextMonday } from '@/features/me/logic/weekNav'
 
 // Task 10 (mezo-p2tr) — the week/day chat handoff routes through useNavigate; spy on it so the
 // wiring tests can assert the exact target without a real router transition.
@@ -87,6 +88,31 @@ test('prev-week stepper is enabled and steps back via ?start=', () => {
   expect(screen.getByRole('button', { name: '‹' })).not.toBeDisabled()
 })
 
+test('clicking the prev-week chip steps the title back one week', () => {
+  renderPage()
+  const currentTitle = deriveWeekTitle(mondayIso())
+  const prevTitle = deriveWeekTitle(prevMonday(mondayIso()))
+  expect(screen.getByText(currentTitle)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: '‹' }))
+  expect(screen.queryByText(currentTitle)).not.toBeInTheDocument()
+  expect(screen.getByText(prevTitle)).toBeInTheDocument()
+})
+
+test('browsing a future week renders its day cards dimmed, non-expandable and without a chat chip', () => {
+  const futureStart = nextMonday(mondayIso())
+  renderPage(`/me/week?start=${futureStart}`)
+  const cards = screen.getAllByTestId('week-day-card')
+  expect(cards).toHaveLength(7)
+  for (const card of cards) {
+    expect((card as HTMLElement).style.opacity).toBe('0.45')
+    const toggle = card.querySelector('button')!
+    expect(toggle).toBeDisabled()
+    fireEvent.click(toggle)
+  }
+  // Nothing expanded (the disabled click is a no-op) — the "Beszélgess a napról" chip never renders.
+  expect(screen.queryByText(/Beszélgess a napról/)).not.toBeInTheDocument()
+})
+
 test('clicking a day card expands it and reveals the subscore breakdown', () => {
   renderPage()
   const first = screen.getAllByTestId('week-day-card')[0]
@@ -128,7 +154,7 @@ test('a stale review shows the refresh button; clicking it calls regenerate and 
   expect(screen.getByRole('button', { name: 'Frissítés…' })).toBeDisabled()
 })
 
-test('discoveries only render non-empty subsections, with pattern/fact/memoir links', () => {
+test('discoveries only render non-empty subsections, every row linked out', () => {
   renderPage(`/me/week?start=${mockMeWeekStart}`)
   expect(screen.getByText('Edzésnapokon jobban alszol')).toBeInTheDocument()
   const patternLink = screen.getByText('Edzésnapokon jobban alszol').closest('a')
@@ -137,8 +163,10 @@ test('discoveries only render non-empty subsections, with pattern/fact/memoir li
   expect(factLink).toHaveAttribute('href', '/mezo/knowledge')
   const memoirLink = screen.getByText('Új bejegyzés készült a hétről').closest('a')
   expect(memoirLink).toHaveAttribute('href', '/mezo/memoir')
-  // Life events render as plain (unlinked) rows.
-  expect(screen.getByText('Nyaralás kezdete')).toBeInTheDocument()
+  const lifeEventLink = screen.getByText('Nyaralás kezdete').closest('a')
+  expect(lifeEventLink).toHaveAttribute('href', '/mezo/knowledge')
+  const predictionLink = screen.getByText('A súly csökkenő trendje folytatódik fehérjecél mellett').closest('a')
+  expect(predictionLink).toHaveAttribute('href', '/mezo/predictions')
 })
 
 test('the next-week card shows the weekly-suggestion prose under its eyebrow, current week only', () => {
@@ -158,12 +186,12 @@ test('"Beszélgess a napról" on an expanded day card opens an anchored conversa
   fireEvent.click(first.querySelector('button')!)
   fireEvent.click(screen.getByRole('button', { name: /Beszélgess a napról/ }))
   expect(mockNavigate).toHaveBeenCalledTimes(1)
-  expect(mockNavigate.mock.calls[0][0]).toMatch(/^\/insights\/chat\?c=.+/)
+  expect(mockNavigate.mock.calls[0][0]).toMatch(/^\/mezo\/chat\?c=.+/)
 })
 
 test('"Beszélgess a hétről" in the review card opens an anchored conversation for the week', () => {
   renderPage(`/me/week?start=${mockMeWeekStart}`)
   fireEvent.click(screen.getByRole('button', { name: /Beszélgess a hétről/ }))
   expect(mockNavigate).toHaveBeenCalledTimes(1)
-  expect(mockNavigate.mock.calls[0][0]).toMatch(/^\/insights\/chat\?c=.+/)
+  expect(mockNavigate.mock.calls[0][0]).toMatch(/^\/mezo\/chat\?c=.+/)
 })

@@ -301,10 +301,16 @@ are usable without a build step).
   **2 · A hét tanulságai**: open-candidate count → subpage with the cross-day candidate facts, each with
   an evidence line and `Tanuld meg` / `Nem rólam szól`; accepting cascades into the tile, the hub Tudás
   tile and the graph count (backend flag A). **3 · A hét napjai**: `5 / 7 nap` + seven mini score rings
-  → subpage with the seven day tiles, each expanding to four **colored subscore rings**, kcal **and**
-  protein against target (the kcal target is fetched but never shown today), alvás · edzés · XP cells,
-  and the Mezo day note in a **companion bubble with the orb** instead of today's unmarked paragraph;
-  future days stay dimmed, unexpandable and chip-less. **4 · Heti felfedezések**: `5 új nyom a
+  → subpage as a **2-column day mosaic** (round 3: the first pass was still a row list), each day a tile
+  washed by its score band, with the big score, the four subscores as **animated sparks** (sleep sky ·
+  fuel sage · check-in rose · activity coral) and clay-icon data chips (kcal · sleep · workouts ·
+  check-in n/4 · a `jegyzet` chip when Mezo wrote about the day); above them mini-cells for
+  *legjobb nap · leggyengébb · tanulom*. Tapping a tile makes it **grow full-width** and expands the
+  detail in place: four subscore rings, kcal **and** protein against target (the kcal target is fetched
+  but never shown today), alvás · edzés · XP cells, the Mezo note in a **companion bubble with the orb**
+  instead of today's unmarked paragraph, and `Beszélgess a napról`. Honest distinction the shipped UI
+  does not draw: **`tanulom`** = fewer than two domains have data · **`nincs adat`** = nothing was logged
+  that day (dashed tile) · future days dashed, dimmed and unexpandable. **4 · Heti felfedezések**: `5 új nyom a
   memóriában` + category dots → subpage mosaic with the status information the API returns and the UI
   drops: pattern `event` (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), life-event dates, prediction
   outcomes (◐ Folyamatban · ✓ Bevált · ✗ Nem jött be); the header line separates these (things that

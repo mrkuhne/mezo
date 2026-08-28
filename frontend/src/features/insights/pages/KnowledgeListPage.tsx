@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
+import { PageHero } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useKnowledge, useKnowledgeActions, useLifeEventCandidates, useLifeEventActions } from '@/data/hooks'
 import { FACT_CATEGORIES, PROMPT_TOP_N } from '@/data/insights/knowledge'
 import { LifecycleSection } from '@/features/insights/components/LifecycleSection'
@@ -86,11 +88,16 @@ export function KnowledgeListPage() {
   }
 
   return (
-    <div className="col gap-md">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="eyebrow">Tudástár · {facts.length} tény</span>
-        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{buckets.inPrompt.length} megy a chatbe</span>
-      </div>
+    <EntranceGroup className="col gap-md">
+      {/* Mozaik re-face (mezo-d20.5.5): prototype #page-tudas hero — clay i-tudas + the big
+          fact count + "tény rólad · N megy a chatbe". Same honest numbers as the old header
+          (full-list buckets, never the filtered view), only the face changed. */}
+      <PageHero
+        icon="i-tudas"
+        big={facts.length}
+        name="Tudástár"
+        sub={`tény rólad · ${buckets.inPrompt.length} megy a chatbe`}
+      />
 
       <KnowledgeExplainer />
 
@@ -103,8 +110,9 @@ export function KnowledgeListPage() {
       </p>
 
       {candidates.length > 0 && (
-        <div className="col gap-sm">
-          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+        <div className="col gap-sm rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+          {/* prototype .candc: the approval inbox speaks gold, not lavender */}
+          <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-amber-ink)' }}>
             Jóváhagyásra vár · {candidates.length}
           </span>
           {candidates.map((c) => (
@@ -160,7 +168,7 @@ export function KnowledgeListPage() {
         </div>
       ) : (
         <>
-          <div>
+          <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
             <div className="searchfield" style={{ marginBottom: 8 }}>
               <Icon name="search" size={16} color="var(--text-tertiary)" />
               <input
@@ -201,8 +209,8 @@ export function KnowledgeListPage() {
           ) : (
             <div className="col gap-sm">
               {inPrompt.length > 0 && (
-                <div className="col gap-sm">
-                  <span className="eyebrow" style={{ color: 'var(--sage)' }}>
+                <div className="col gap-sm rise" style={{ '--d': '110ms' } as React.CSSProperties}>
+                  <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sage-ink)' }}>
                     Most ezeket kapja meg a társ · {inPrompt.length}
                   </span>
                   {rows(inPrompt, 'in-prompt')}
@@ -241,6 +249,6 @@ export function KnowledgeListPage() {
       <p className="text-tertiary mt-md" style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.5, padding: '0 20px' }}>
         A graph nézethez · Me → Knowledge.
       </p>
-    </div>
+    </EntranceGroup>
   )
 }

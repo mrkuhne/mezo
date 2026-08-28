@@ -40,7 +40,8 @@ export function WeekDayCard({
   day: MeWeekDay
   expanded: boolean
   onToggle: () => void
-  /** Current-week day later than today — renders dimmed, no expand (nothing has happened yet). */
+  /** This day's date is later than today, for whichever week is browsed — renders dimmed, no
+   *  expand (nothing has happened yet). */
   future?: boolean
   dayNote?: string | null
   onChat?: () => void
