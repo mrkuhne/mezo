@@ -230,6 +230,12 @@
   --mz-prop-shadow: 0 20px 34px -14px rgba(201, 150, 46, 0.45), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   --mz-pic-bg: rgba(255, 255, 255, 0.78);
   --mz-no-ink: #A8462E;
+  /* Memória observatory (mezo-d20.5.7) — laycard sand wash + coral layer shadow +
+     the lav flow-connector/match-ring inks (prototype mezo-body .laycard/.flowc/.mring) */
+  --mz-wash-sand: linear-gradient(150deg, #F3EDE2, #FBF8F1);
+  --mz-shadow-coral: 0 17px 31px -17px rgba(216, 72, 31, 0.32), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-mem-dash: #B4A8D8;
+  --mz-mem-ink: #8A76CC;
 
 }
 
@@ -383,6 +389,11 @@
   --mz-prop-shadow: var(--mz-shadow);
   --mz-pic-bg: rgba(245, 239, 230, 0.08);
   --mz-no-ink: var(--primary-deep);
+  /* Memória observatory (mezo-d20.5.7) — sand → warm graphite, flow inks on the dv-lav ramp */
+  --mz-wash-sand: linear-gradient(150deg, color-mix(in srgb, var(--secondary-base) 12%, var(--surface-card)), color-mix(in srgb, var(--secondary-base) 4%, var(--surface-page)));
+  --mz-shadow-coral: var(--mz-shadow);
+  --mz-mem-dash: color-mix(in srgb, var(--dv-lav) 65%, transparent);
+  --mz-mem-ink: var(--dv-lav);
 
 }
 
@@ -1300,11 +1311,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   50% { opacity: 0.6; }
 }
 @media (prefers-reduced-motion: reduce) { .graph-node-pulse { animation: none; } }
-
-/* Memória-obszervatórium — L0→L3 áramlás-konnektor (mezo-al1i) */
-@keyframes memory-flow { to { stroke-dashoffset: -16; } }
-.memory-flow-line { animation: memory-flow 1.6s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .memory-flow-line { animation: none; } }
 
 /* Pattern card critique mini-bars */
 .critique-grid {
@@ -4548,6 +4554,86 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 
 @media (prefers-reduced-motion: reduce) {
   .mzp-gbar div, .mz-play .mzp-gbar div { transform: none; animation: none; }
+}
+
+/* ── Mezo · Memória observatory (mezo-d20.5.7) — prototype mezo-body #page-memoria ×1.18.
+   Rétegek: per-layer COLORED laycards (sand→gold→coral→lav) with clay icon discs, joined
+   by pulsing dashed connectors carrying HUMAN cron times; Napló: nightly day cards with
+   the embed dot; Kereső: match-ring result cards + score-math chips; Audit: cost hero +
+   tinted provenance mini-cells. Every surface speaks --mz-* tokens. ── */
+.mem-seg { display: flex; gap: 5px; border-radius: 999px; padding: 4px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.mem-seg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.mem-seg button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+
+.mem-laycard { border-radius: 20px; padding: 12px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.mem-t-sand  { background: var(--mz-wash-sand); }
+.mem-t-gold  { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mem-t-coral { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.mem-t-lav   { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mem-layrow { display: flex; align-items: center; gap: 12px; }
+.mem-lic { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center;
+  flex: none; background: var(--mz-cellbg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.mem-laygrow { flex: 1; min-width: 0; }
+.mem-bignm { font-size: 22px; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.mem-unit { font-size: 13px; font-weight: 400; color: var(--mz-ink-soft); }
+.mem-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.mem-chips span { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 9px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); color: var(--mz-ink-soft);
+  font-variant-numeric: tabular-nums; }
+.mem-flowc { display: flex; align-items: center; gap: 8px; padding: 4px 0 4px 26px; }
+.mem-dash { width: 2px; height: 24px; border-radius: 2px; flex: none;
+  background: repeating-linear-gradient(180deg, var(--mz-mem-dash) 0 5px, transparent 5px 10px);
+  animation: mem-dashfl 1.6s linear infinite; }
+@keyframes mem-dashfl { to { background-position: 0 10px; } }
+.mem-flowc small { font-size: 10px; font-weight: 600; color: var(--mz-mem-ink); }
+
+.mem-month { display: block; margin: 5px 2px 9px; }
+.mem-daycard { border-radius: 19px; padding: 13px 14px; margin-bottom: 11px; position: relative; overflow: hidden;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.mem-daycard.focused { border: 1px solid var(--lav-deep); }
+.mem-dl { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.mem-bd { font-size: 13px; font-weight: 300; line-height: 1.6; margin-top: 6px; color: var(--text-primary); }
+.mem-emb { position: absolute; top: 13px; right: 14px; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--dv-sage); }
+.mem-emb.off { background: color-mix(in srgb, var(--text-primary) 18%, transparent); }
+
+.mem-ring { width: 52px; height: 52px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: conic-gradient(var(--mz-mem-ink) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0); }
+.mem-ring::after { content: attr(data-l); width: 38px; height: 38px; border-radius: 50%;
+  background: var(--mz-stripbg); display: grid; place-items: center;
+  font-size: 11px; font-weight: 800; color: var(--mz-cell-lav-ink); font-variant-numeric: tabular-nums; }
+.mem-scmath { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.mem-scmath span { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 9px;
+  background: color-mix(in srgb, var(--dv-lav) 12%, transparent); color: var(--mz-cell-lav-ink);
+  font-variant-numeric: tabular-nums; }
+.mem-scmath span.is-final { font-weight: 800; }
+.mem-scmath span.is-amber { color: var(--mz-cell-amber-ink);
+  background: color-mix(in srgb, var(--dv-amber) 14%, transparent); }
+.mem-scmath span.is-mut { background: none; color: var(--mz-ink-mut); font-weight: 600; padding-left: 0; }
+
+.mem-sfield { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 44px;
+  background: var(--mz-stripbg); border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 999px;
+  padding: 8px 14px; box-shadow: 0 2px 7px rgba(43, 33, 24, 0.05); }
+.mem-sfield > span { color: var(--mz-ink-mut); }
+.mem-sfield input { border: none; outline: none; background: none; font-family: inherit;
+  font-size: 13px; color: var(--text-primary); width: 100%; padding: 0; }
+.mem-sfield input::placeholder { color: var(--mz-ink-mut); }
+
+.mem-card { border-radius: 20px; padding: 13px 15px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.mem-cost { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mem-foot { font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mem-provcells { margin-top: 9px; }
+.mem-fact .mem-scmath { margin-top: 7px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mem-dash { animation: none; }
 }
 
 /* ============================================================

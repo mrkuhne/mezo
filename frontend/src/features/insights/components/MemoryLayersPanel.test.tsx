@@ -45,7 +45,16 @@ test('falls back to the raw kind when a kind has no label yet', () => {
 
 test('renders no vector lines when embeddings is empty', () => {
   renderPanel(makeOverview([]))
-  expect(screen.getByText('5 nap')).toBeInTheDocument()
+  const l1 = screen.getByText('L1 · Epizodikus napló').closest('.mem-laycard') as HTMLElement
+  expect(l1.querySelector('.mem-bignm')).toHaveTextContent('5 nap')
   expect(screen.getByText('2026-07-01 – 2026-08-12')).toBeInTheDocument()
   expect(screen.queryByText(/-vektor/)).not.toBeInTheDocument()
+})
+
+test('an unparseable cron falls back honestly to the raw string on its connector', () => {
+  const overview = makeOverview([])
+  overview.jobs.summaryCron = '0 20 2 1 * *' // day-of-month bound — nem fordítható emberire
+  renderPanel(overview)
+  expect(screen.getByText('napi összefoglaló · 0 20 2 1 * *')).toBeInTheDocument()
+  expect(screen.getByText('minta-felismerés · minden éjjel 02:40')).toBeInTheDocument()
 })
