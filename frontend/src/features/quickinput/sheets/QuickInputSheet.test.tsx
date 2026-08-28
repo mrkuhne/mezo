@@ -17,17 +17,26 @@ import type { CheckinSlot } from '@/data/types'
 // care about a specific state override it with their own `mockReturnValue`.
 const checkinsMock = vi.hoisted(() => ({ useCheckins: vi.fn() }))
 const gratitudeActionsMock = vi.hoisted(() => ({ useGratitudeActions: vi.fn() }))
+const fuelPreviewMock = vi.hoisted(() => ({ useFuelPreview: vi.fn() }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
     useCheckins: () => checkinsMock.useCheckins(),
     useGratitudeActions: () => gratitudeActionsMock.useGratitudeActions(),
+    useFuelPreview: () => fuelPreviewMock.useFuelPreview(),
   }
 })
 
+/** A deterministic now-window for the MOST head — the real hook is wall-clock dependent. */
+const NOW_WINDOW = {
+  time: '13:30', kind: 'meal', label: 'Ebéd-ablak', slotKey: 'lunch',
+  state: 'now', mealName: 'Csirkés rizses tál',
+} as const
+
 beforeEach(() => {
   checkinsMock.useCheckins.mockReturnValue({ checkins: initialCheckins, saveCheckIn: vi.fn() })
+  fuelPreviewMock.useFuelPreview.mockReturnValue({ visible: [NOW_WINDOW], nextStack: undefined, plan: { slots: [NOW_WINDOW] } })
   gratitudeActionsMock.useGratitudeActions.mockReturnValue({
     addEntry: vi.fn().mockResolvedValue(undefined),
     removeEntry: vi.fn(),
@@ -37,6 +46,7 @@ beforeEach(() => {
 afterEach(() => {
   checkinsMock.useCheckins.mockReset()
   gratitudeActionsMock.useGratitudeActions.mockReset()
+  fuelPreviewMock.useFuelPreview.mockReset()
 })
 
 function LocationProbe() {
@@ -59,17 +69,67 @@ test('renders all eight quick-log tiles', () => {
   for (const label of ['Étkezés', 'Edzés', 'Víz', 'Súly', 'Stack', 'Check-in', 'Alvás', 'Napló'])
     expect(screen.getByText(label)).toBeInTheDocument()
 })
-test('a tile closes the sheet and navigates to its target', async () => {
+test('a navigating tile closes the sheet and routes to its target', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
-  await userEvent.click(screen.getByText('Súly'))
+  await userEvent.click(screen.getByText('Stack'))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/weight')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/stack')
 })
-test('the chat row closes the sheet and navigates to the companion chat', async () => {
+
+// ── Design 2.0 quick-log v2 (mezo-d20.1.6) ─────────────────────────────────
+
+test('tiles carry clay icons via sprite use refs — no emojis', () => {
+  renderSheet()
+  // the Sheet renders through a portal — query the document, not the container
+  for (const sym of ['i-suly', 'i-alvas', 'i-naplo', 'i-fuel', 'i-edzes', 'i-stack']) {
+    expect(document.querySelector(`use[href="#${sym}"]`)).not.toBeNull()
+  }
+})
+
+test('the MOST head shows the current eating window and Logold navigates to Fuel', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
-  await userEvent.click(screen.getByText('Beszélgetés a társsal'))
+  expect(screen.getByText('Ebéd-ablak')).toBeInTheDocument()
+  expect(screen.getByText('MOST')).toBeInTheDocument()
+  expect(screen.getByText('Csirkés rizses tál')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Logold/ }))
+  await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel')
+})
+
+test('without a now-window the MOST head renders nothing (honest state)', () => {
+  fuelPreviewMock.useFuelPreview.mockReturnValue({ visible: [], nextStack: undefined, plan: { slots: [] } })
+  renderSheet()
+  expect(screen.queryByText('MOST')).not.toBeInTheDocument()
+})
+
+test('the Víz chips log in place — the counter updates and the sheet stays open', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  expect(screen.getByText('1850 ml')).toBeInTheDocument() // hu-HU leaves 4-digit numbers ungrouped
+  await userEvent.click(screen.getByRole('button', { name: '＋250' }))
+  expect(await screen.findByText('2100 ml')).toBeInTheDocument()
+  expect(onClose).not.toHaveBeenCalled()
+})
+
+test('the Súly tile opens the weight log sheet in place', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  await userEvent.click(screen.getByRole('button', { name: /Súly/ }))
+  expect(await screen.findByText('Mi a számunk ma?')).toBeInTheDocument()
+  expect(onClose).not.toHaveBeenCalled()
+})
+
+test('live sublines: Edzés reads the day plan, Súly the latest weight', () => {
+  renderSheet()
+  expect(screen.getByText(/17:00 · Pull Day/)).toBeInTheDocument()
+  expect(screen.getByText(/78,6/)).toBeInTheDocument()
+})
+test('the Mezo row closes the sheet and navigates to the companion chat', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  await userEvent.click(screen.getByText('Mondd el Mezónak'))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
   expect(screen.getByTestId('loc')).toHaveTextContent('/mezo/chat')
 })

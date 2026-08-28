@@ -1,41 +1,44 @@
 // ============================================================
-// Mezo · QuickInputSheet — Napív quick-log launcher
-// A highlighted chat row + an 8-tile grid. The navigating tiles route away;
-// Alvás/Napló/Check-in swap this sheet for the matching log sheet in place,
-// so a log is always two taps from anywhere (mezo-967c).
+// Mezo · QuickInputSheet v2 — the Design 2.0 quick-log launcher (mezo-d20.1.6)
+// Behind the floating coral FAB on every tab. Anatomy (en-tab prototype):
+//   · MOST head — the current eating window with the plan meal + Logold
+//     (echoes the Fuel swimlane); renders NOTHING without a now-window.
+//   · Víz duo tile — ＋250/＋400/＋500 logs in place, live HU-grouped counter.
+//   · Clay tile grid with live sublines; Súly opens the weight sheet in
+//     place, Alvás/Napló/Check-in swap in place (mezo-967c), the rest
+//     navigate. A log stays two taps from anywhere.
+//   · The Mezo row at the bottom keeps chat as a logging path.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
+import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
 import { QuickSleepSheet } from '@/features/quickinput/sheets/QuickSleepSheet'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
+import { WeightLogSheet } from '@/features/me/sheets/WeightLogSheet'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
-import { useCheckins } from '@/data/hooks'
+import { useCheckins, useFuelPreview, useFuelDay, useWaterActions, useWeight, useToday } from '@/data/hooks'
 
 /** Which surface the sheet shows: the launcher grid, an in-place two-option picker, or a log
- * sheet opened in its place. Napló used to jump straight to the activity log (`'naplo'`); it now
- * offers a choice first (mezo-b3pp.1) — `'naplo-pick'` renders inside the same Sheet shell, while
- * `'aktivitas'`/`'journal'`/`'gratitude'` are the three log sheets it can swap in. */
-type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin'
+ * sheet opened in its place (mezo-b3pp.1 / mezo-d20.1.6 — Súly joined the in-place set). */
+type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin' | 'weight'
 
-const NAV_ACTIONS = [
-  { label: 'Étkezés', emoji: '🍽', to: '/fuel' },
-  { label: 'Edzés', emoji: '🏋️', to: '/train' },
-  { label: 'Víz', emoji: '💧', to: '/fuel' },
-  { label: 'Súly', emoji: '⚖️', to: '/me/weight' },
-  { label: 'Stack', emoji: '💊', to: '/fuel/stack' },
-] as const
+const WATER_CHIPS = [250, 400, 500] as const
+const HU = new Intl.NumberFormat('hu-HU')
 
-function Tile({
-  emoji, label, onClick,
-}: { emoji: string; label: string; onClick: () => void }) {
+function Tile({ icon, label, sub, subDone, tone, onClick, disabled }: {
+  icon: ClayIconName; label: string; sub?: string; subDone?: boolean
+  tone?: 'sky' | 'lav' | 'sage' | 'coral' | 'gold' | 'rose'
+  onClick?: () => void; disabled?: boolean
+}) {
   return (
-    <button type="button" className="quicklog-tile np-press" onClick={onClick}>
-      <span className="quicklog-emoji" aria-hidden>{emoji}</span>
+    <button type="button" className={tone ? `quicklog-tile tone-${tone} np-press` : 'quicklog-tile np-press'} onClick={onClick} disabled={disabled}>
+      <ClayIcon name={icon} size={26} />
       <span className="quicklog-label">{label}</span>
+      {sub && <span className={subDone ? 'quicklog-sub-line done' : 'quicklog-sub-line'}>{sub}</span>}
     </button>
   )
 }
@@ -44,24 +47,28 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>('menu')
 
-  // The day's four canonical slots are usually still in the Today query cache — cheap and
-  // shared with Today's own read — but past the 30s staleTime (QueryProvider.tsx) a `+` tap
-  // does issue a real GET. -1 = every slot is done for today.
+  // ── live context for the head + sublines ─────────────────────────────
+  // The MOST head mirrors the Fuel swimlane: the user-scheduled eating window
+  // whose state is 'now' (slotKey present = meal/snack window, not a block slot).
+  const { plan } = useFuelPreview()
+  const nowWindow = plan.slots.find(s => s.slotKey !== undefined && s.state === 'now')
+  const { fuel } = useFuelDay()
+  const { logWater } = useWaterActions()
+  const { weightLog, logWeight } = useWeight()
+  const latestWeight = weightLog.length > 0 ? weightLog[weightLog.length - 1] : null
+  const { today, workoutDone } = useToday()
+
   const { checkins, saveCheckIn } = useCheckins()
-  // Pinned at click time (see the tile below), NOT recomputed here: `saveCheckIn` flips this
-  // slot's state synchronously via its own optimistic `local` layer, so a live `findIndex`
-  // would flip out from under `CheckInSheet` mid-save and unmount it before its exit
-  // animation's onClose ever fires (mezo-967c finding 1). `nextCheckInIdx` below still drives
-  // the tile's click with a fresh read — only the mounted sheet needs the pin.
+  // Pinned at click time (see the tile below), NOT recomputed here — see mezo-967c finding 1.
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
   const nextCheckInIdx = checkins.findIndex(isFillableSlot)
 
-  // Return to naplo-pick from a sub-sheet (aktivitas/journal/gratitude).
   const goBack = () => setPhase('naplo-pick')
 
-  // Each log sheet brings its own portal + backdrop, so it REPLACES the menu
-  // rather than layering over it. Closing it closes the whole stack.
   if (phase === 'sleep') return <QuickSleepSheet onClose={onClose} />
+  if (phase === 'weight') {
+    return <WeightLogSheet onClose={onClose} onSave={logWeight} currentWeight={latestWeight?.value ?? 0} />
+  }
   if (phase === 'aktivitas') return <ActivityLogSheet onClose={onClose} onBack={goBack} />
   if (phase === 'journal') return <JournalSheet onClose={onClose} onBack={goBack} />
   if (phase === 'gratitude') return <JournalSheet onClose={onClose} initialMode="gratitude" onBack={goBack} />
@@ -75,6 +82,12 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
       />
     )
   }
+
+  const trainSub = workoutDone
+    ? 'ma ✓'
+    : today.workoutType
+      ? `ma ${today.workoutTime} · ${today.workoutType}`
+      : undefined
 
   return (
     <Sheet onClose={onClose} labelledBy="quicklog-title">
@@ -90,12 +103,9 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
               </div>
               <h2 id="quicklog-title">Mit naplózol?</h2>
               <div className="quicklog-grid mt-lg">
-                <Tile emoji="✍️" label="Aktivitás"
-                  onClick={() => setPhase('aktivitas')} />
-                <Tile emoji="📓" label="Napló"
-                  onClick={() => setPhase('journal')} />
-                <Tile emoji="🙏" label="Hála"
-                  onClick={() => setPhase('gratitude')} />
+                <Tile icon="i-lang" label="Aktivitás" onClick={() => setPhase('aktivitas')} />
+                <Tile icon="i-naplo" label="Napló" onClick={() => setPhase('journal')} />
+                <Tile icon="i-growth" label="Hála" onClick={() => setPhase('gratitude')} />
               </div>
             </>
           ) : (
@@ -103,34 +113,73 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
               <h2 id="quicklog-title">Gyors logolás</h2>
               <p className="quicklog-sub">bármikor, két koppintás</p>
 
+              {nowWindow && (
+                <button
+                  type="button"
+                  className="quicklog-most np-press"
+                  onClick={() => { close(); navigate('/fuel') }}
+                  aria-label={`Logold — ${nowWindow.label}`}
+                >
+                  <ClayIcon name="i-ebed" size={30} />
+                  <span className="quicklog-most-text">
+                    <span className="quicklog-most-row">
+                      <b>{nowWindow.label}</b>
+                      <span className="quicklog-most-stamp">MOST</span>
+                    </span>
+                    {nowWindow.mealName && <span className="quicklog-most-meal">{nowWindow.mealName}</span>}
+                  </span>
+                  <span className="quicklog-most-cta">Logold ›</span>
+                </button>
+              )}
+
+              <div className="quicklog-water">
+                <div className="quicklog-water-head">
+                  <ClayIcon name="i-viz" size={24} />
+                  <span className="quicklog-label">Víz</span>
+                  <span className="quicklog-water-count">{HU.format(fuel.consumed.water)} ml</span>
+                </div>
+                <div className="quicklog-water-chips">
+                  {WATER_CHIPS.map(ml => (
+                    <button key={ml} type="button" className="quicklog-chip np-press" onClick={() => logWater(ml)}>
+                      ＋{ml}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="quicklog-grid">
+                <Tile icon="i-fuel" label="Étkezés" tone="coral" sub="ablakon kívül is"
+                  onClick={() => { close(); navigate('/fuel') }} />
+                <Tile icon="i-edzes" label="Edzés" tone="coral" sub={trainSub} subDone={workoutDone}
+                  onClick={() => { close(); navigate('/train') }} />
+                <Tile icon="i-stack" label="Stack" tone="gold"
+                  onClick={() => { close(); navigate('/fuel/stack') }} />
+                <Tile icon="i-suly" label="Súly" tone="sky"
+                  sub={latestWeight ? `${HU.format(latestWeight.value)} kg` : undefined}
+                  onClick={() => setPhase('weight')} />
+                <Tile icon="i-checkin" label="Check-in" tone="rose"
+                  sub={nextCheckInIdx >= 0 ? `köv. ${checkins[nextCheckInIdx].time}` : 'ma kész ✓'}
+                  subDone={nextCheckInIdx < 0}
+                  onClick={() => {
+                    if (nextCheckInIdx >= 0) { setCheckInIdx(nextCheckInIdx); setPhase('checkin') }
+                    else { close(); navigate('/nap') }
+                  }} />
+                <Tile icon="i-alvas" label="Alvás" tone="lav" onClick={() => setPhase('sleep')} />
+                <Tile icon="i-naplo" label="Napló" tone="sage" sub="3 mód" onClick={() => setPhase('naplo-pick')} />
+              </div>
+
               <button
                 type="button"
                 className="quicklog-chat np-press"
                 onClick={() => { close(); navigate('/mezo/chat') }}
               >
-                <span className="quicklog-chat-emoji" aria-hidden>💬</span>
+                <ClayIcon name="i-mezo" size={26} />
                 <span className="quicklog-chat-text">
-                  <span className="quicklog-chat-label">Beszélgetés a társsal</span>
-                  <span className="quicklog-chat-hint">kérdezz, mesélj, tervezz</span>
+                  <span className="quicklog-chat-label">Mondd el Mezónak</span>
+                  <span className="quicklog-chat-hint">kérdezz, mesélj — vagy logolj szóban</span>
                 </span>
                 <Icon name="chevron-right" size={18} />
               </button>
-
-              <div className="quicklog-grid">
-                {NAV_ACTIONS.map(a => (
-                  <Tile key={a.label} emoji={a.emoji} label={a.label}
-                    onClick={() => { close(); navigate(a.to) }} />
-                ))}
-                <Tile emoji="❤️" label="Check-in"
-                  onClick={() => {
-                    if (nextCheckInIdx >= 0) { setCheckInIdx(nextCheckInIdx); setPhase('checkin') }
-                    else { close(); navigate('/nap') }
-                  }} />
-                <Tile emoji="😴" label="Alvás"
-                  onClick={() => setPhase('sleep')} />
-                <Tile emoji="📓" label="Napló"
-                  onClick={() => setPhase('naplo-pick')} />
-              </div>
             </>
           )}
         </div>
