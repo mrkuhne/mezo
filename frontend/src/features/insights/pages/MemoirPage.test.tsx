@@ -14,15 +14,31 @@ describe('MemoirPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders the memoir card, anchors, anniversary card and archive footer', () => {
+  test('renders the hero, the chapter card, anchors and the anniversary card', () => {
     renderPage()
+    // Mozaik re-face (mezo-d20.5.5): page hero from the prototype #page-memoar.
+    expect(screen.getByText('Memoár')).toBeInTheDocument()
+    expect(screen.getByText('a közös történetünk, hétről hétre')).toBeInTheDocument()
     expect(screen.getByText('Heti memoár · Hét 20 · 2026 · Máj 11-17')).toBeInTheDocument()
     expect(screen.getByText('Egy hét amikor a tested megtanult várni')).toBeInTheDocument()
     // RefTag renders "[PR] Chest Row 102.5 × 9"; RTL normalizes &nbsp; to a space, so this matches.
     // If it ever doesn't, fall back to: screen.getByText(/Chest Row 102\.5 × 9/)
     expect(screen.getByText(/Chest Row 102\.5 × 9/)).toBeInTheDocument()
+    // The anchors row speaks Hungarian now (prototype: "Horgonyok", not "Anchors").
+    expect(screen.getByText('Horgonyok')).toBeInTheDocument()
+    expect(screen.queryByText('Anchors')).toBeNull()
     expect(screen.getByText('Évforduló · 1 hónap')).toBeInTheDocument()
-    expect(screen.getByText('Memoir archive · 17 darab')).toBeInTheDocument()
+    // The dead decorative archive row is retired (audit §3: "not to promote into tiles";
+    // the prototype dropped it) — no false affordance survives the re-face.
+    expect(screen.queryByText(/Memoir archive/)).toBeNull()
+  })
+
+  test('the chapter card wears the mz-memoir face: Fraunces title + lavender glow + lav-washed anniversary', () => {
+    const { container } = renderPage()
+    const card = container.querySelector('.mz-memoir')
+    expect(card).not.toBeNull()
+    expect(card!.querySelector('.mz-memoir-ttl')?.textContent).toBe('Egy hét amikor a tested megtanult várni')
+    expect(container.querySelector('.mz-anniv')).not.toBeNull()
   })
 
   test('renders the feedback chips instead of the retired mock reaction row (mezo-kr9v)', () => {
@@ -68,7 +84,7 @@ describe('MemoirPage (real mode)', () => {
     // Demo-only extras are mock-only now.
     expect(screen.queryByText('Évforduló · 1 hónap')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Like/ })).not.toBeInTheDocument()
-    expect(screen.queryByText('Memoir archive · 17 darab')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Memoir archive/)).not.toBeInTheDocument()
     // ...but the feedback chips are NOT mock-only — that asymmetry was the mezo-kr9v bug.
     expect(screen.getByRole('group', { name: FEEDBACK_GROUP })).toBeInTheDocument()
   })
