@@ -1,20 +1,11 @@
 import { Navigate, type RouteObject, useLocation } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
 import { NapRutinPage } from '@/features/today/pages/NapRutinPage'
-=======
 import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
->>>>>>> feat/d20-nap-kuldetesek
-=======
 import { NapCheckinPage } from '@/features/today/pages/NapCheckinPage'
->>>>>>> feat/d20-nap-checkin
-=======
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
->>>>>>> feat/d20-nap-eletjel
 import { TrainSection } from '@/features/train/pages/TrainSection'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
@@ -87,24 +78,15 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/nap" replace /> },
       { path: 'nap', element: <NapHubPage /> },
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
       // Nap tile → own full page (mezo-d20.2.2): the hub's Mezo tile.
       { path: 'nap/uzenetek', element: <NapMezoPage /> },
       { path: 'nap/rutin', element: <NapRutinPage /> },
-=======
       // Nap tile → own page (F1.4, mezo-d20.2.4): Napi küldetések detail
       { path: 'nap/kuldetesek', element: <NapKuldetesekPage /> },
->>>>>>> feat/d20-nap-kuldetesek
-=======
       // Nap tile → own full page (Huawei pattern, mezo-d20.2.5)
       { path: 'nap/checkin', element: <NapCheckinPage /> },
->>>>>>> feat/d20-nap-checkin
-=======
       // Nap detail pages (F1.2–F1.6) — full-page siblings, tile → own page (Huawei pattern).
       { path: 'nap/eletjel', element: <EletjelPage /> },
->>>>>>> feat/d20-nap-eletjel
       { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
       {
         path: 'train',

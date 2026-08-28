@@ -288,15 +288,12 @@
   --mz-stripbg: var(--surface-card);
   --mz-ink-mut: #8A7A6A;
   --mz-ink-soft: var(--text-secondary);
-<<<<<<< HEAD
   --mz-strength: linear-gradient(90deg, color-mix(in srgb, var(--dv-amber) 55%, var(--surface-card)), var(--dv-amber));
-=======
   /* quest cards (mezo-d20.2.4) — done wash / XP pill on the dark dv ramp */
   --mz-qdone-bg: linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 14%, var(--surface-card)), var(--surface-card));
   --mz-qdone-ink: var(--dv-sage);
   --mz-qxp-ink: var(--dv-amber);
   --mz-qxp-bg: color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card));
->>>>>>> feat/d20-nap-kuldetesek
 
 }
 
@@ -3986,9 +3983,6 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-ringhole { width: 42px; height: 42px; border-radius: 50%; background: var(--mz-wash-white);
   display: grid; place-items: center; }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 /* ── Mezo üzenetei page (mezo-d20.2.2) — prototype #page-mezo: breathing-orb
    hero + the day's companion thread. Values verbatim from nap-head.html ×1.18. ── */
 .mz-page-hero.orb svg { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
@@ -4010,7 +4004,6 @@ button.mz-tile:active { transform: scale(0.96); }
   font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
   box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55);
 }
-=======
 /* ── Nap · Napi küldetések page (mezo-d20.2.4) — prototype nap-body #page-quest,
       values ×1.18 (330→390px frame). The reroll/CTA chips keep the prototype's slim
       pill face but grow to the 44pt touch floor. ── */
@@ -4034,8 +4027,6 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-qbtn:disabled { opacity: 0.45; cursor: default; }
 .mz-qbtn.primary { border-color: transparent; background: var(--text-primary); color: var(--surface-card); }
 .mz-quest-empty { padding: 21px 0 28px; text-align: center; font-size: 13px; color: var(--text-muted); }
->>>>>>> feat/d20-nap-kuldetesek
-=======
 /* ── Nap · Check-in detail page (mezo-d20.2.5) — prototype #page-check ×1.18.
       One .vcard with the four slot rows: done = tick + mini-cells, the next
       fillable slot is the hot row (its 1–5 inline chips became the real
@@ -4071,8 +4062,6 @@ button.mz-tile:active { transform: scale(0.96); }
 }
 .nck-fill:active { transform: scale(0.94); }
 .nck-dim { opacity: 0.6; }
->>>>>>> feat/d20-nap-checkin
-=======
 /* ── Életjel page (mezo-d20.2.6) — prototype #page-vital ×1.18 ──
    hero: segmented six-arc ring + big average %; tiles: eyebrow + clay icon +
    mini conic ring (.rr 22px → 26px) + pct. Colors ride the need inks inline
@@ -4090,12 +4079,10 @@ button.mz-tile:active { transform: scale(0.96); }
 /* attention skin (prototype: the low Mozgás tile) — terracotta max, never red */
 .ej-warn { border: 1px solid rgba(255, 107, 74, 0.5); }
 .ej-pct.is-warn { color: #A84A26; }
->>>>>>> feat/d20-nap-eletjel
 
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev { transition: none; }
-<<<<<<< HEAD
   .mz-page-hero.orb svg { animation: none; }
 /* ── Nap · Rutin oldal (mezo-d20.2.3) — prototype #page-hab, ×1.18 ── */
 .nr-herospot { order: -1; }
@@ -4131,9 +4118,7 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev, .nr-tick { transition: none; }
-=======
   .nck-fill { transition: none; }
->>>>>>> feat/d20-nap-checkin
 }
 
 /* ============================================================
