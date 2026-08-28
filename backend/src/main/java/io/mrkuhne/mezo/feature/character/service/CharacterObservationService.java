@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.character.entity.ObservationDimensionKeysEnvelope
 import io.mrkuhne.mezo.feature.character.entity.ObservationSignalsEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterObservationRepository;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ public class CharacterObservationService {
     private final CharacterObservationRepository observationRepository;
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     /** One drafted observation as the LLM returns it, before validation/clamping. */
     record Draft(String text, Integer salience, List<String> dimensionKeys) {}
@@ -83,15 +86,20 @@ public class CharacterObservationService {
     }
 
     private int generateForExpert(UUID owner, LocalDate day, String expertKey, List<DetectorSignal> expertSignals) {
-        CharacterExpertCatalog.Expert expert = CharacterExpertCatalog.byKey(expertKey);
-        String systemPrompt = OBSERVATION_MARKER + "\n" + expert.systemPersona() + "\n" + outputContract();
-        String userMessage = userMessage(day, expertSignals);
-
+        CharacterExpertCatalog.Expert expert;
         String raw;
         try {
-            raw = companionLlm.complete(systemPrompt, userMessage);
+            // byKey lives inside the try too: an unknown expertKey must skip only THIS expert,
+            // never abort the whole per-day pass — same per-expert isolation contract as the LLM
+            // call below.
+            expert = CharacterExpertCatalog.byKey(expertKey);
+            String systemPrompt = OBSERVATION_MARKER + "\n" + expert.systemPersona() + "\n" + outputContract();
+            String userMessage = userMessage(day, expertSignals);
+            raw = llmCallContextHolder.runWith(
+                    new LlmCallContext("character", "observe", "expert", null),
+                    () -> companionLlm.complete(systemPrompt, userMessage));
         } catch (Exception e) {
-            log.warn("Observation LLM call failed for owner {} expert {} day {}", owner, expertKey, day, e);
+            log.warn("Observation generation failed for owner {} expert {} day {}", owner, expertKey, day, e);
             return 0;
         }
 
