@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.feature.character.service.CharacterCoreCatalog;
 import io.mrkuhne.mezo.feature.character.service.CharacterExpertCatalog;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
 
 class CharacterExpertCatalogTest {
@@ -24,7 +25,7 @@ class CharacterExpertCatalogTest {
     @Test
     void byKey_unknown_throws_andPersonasAreNonBlankHungarian() {
         assertThatThrownBy(() -> CharacterExpertCatalog.byKey("nonsense"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(SystemRuntimeErrorException.class);
         CharacterExpertCatalog.EXPERTS.forEach(e -> {
             assertThat(e.systemPersona()).isNotBlank();
             assertThat(e.displayName()).isNotBlank();

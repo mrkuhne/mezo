@@ -1,6 +1,9 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 
 /**
  * The profiling team (Karakter spec §3): 7 named domain experts, each the owner of one CORE
@@ -47,7 +50,8 @@ public final class CharacterExpertCatalog {
 
     public static Expert byKey(String key) {
         return EXPERTS.stream().filter(e -> e.key().equals(key)).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unknown expert: " + key));
+                .orElseThrow(() -> new SystemRuntimeErrorException(
+                        SystemMessage.error("CHARACTER_UNKNOWN_EXPERT").build(), HttpStatus.INTERNAL_SERVER_ERROR));
     }
 
     private CharacterExpertCatalog() {}
