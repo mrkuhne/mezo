@@ -178,6 +178,7 @@
   --mz-cellbg: rgba(255, 255, 255, 0.72);
   --mz-chipbg: rgba(255, 255, 255, 0.7);
   --mz-stripbg: #FFFFFF;
+  --mz-strength: linear-gradient(90deg, #E5C46B, #C9962E); /* habit-strength bar (nap #page-hab .hstr) */
   --mz-ink-mut: #A2958A;
   --mz-ink-soft: #6E6257;
 
@@ -282,6 +283,7 @@
   --mz-stripbg: var(--surface-card);
   --mz-ink-mut: #8A7A6A;
   --mz-ink-soft: var(--text-secondary);
+  --mz-strength: linear-gradient(90deg, color-mix(in srgb, var(--dv-amber) 55%, var(--surface-card)), var(--dv-amber));
 
 }
 
@@ -3997,6 +3999,40 @@ button.mz-tile:active { transform: scale(0.96); }
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev { transition: none; }
   .mz-page-hero.orb svg { animation: none; }
+/* ── Nap · Rutin oldal (mezo-d20.2.3) — prototype #page-hab, ×1.18 ── */
+.nr-herospot { order: -1; }
+.nr-stats { margin-bottom: 12px; }
+.nr-group { display: flex; align-items: baseline; gap: 8px; margin: 14px 2px 7px; }
+.nr-groupcount { font-size: 12px; font-weight: 600; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.nr-vcard {
+  background: var(--mz-stripbg); border-radius: 19px; padding: 5px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.nr-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+.nr-row + .nr-row { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.nr-tickbtn { width: 44px; height: 44px; flex: none; margin-left: -9px;
+  display: grid; place-items: center; border: none; background: none; padding: 0;
+  font-family: inherit; cursor: default; }
+button.nr-tickbtn { cursor: pointer; }
+button.nr-tickbtn:disabled { cursor: default; opacity: 0.6; }
+.nr-tick { width: 26px; height: 26px; border-radius: 50%;
+  border: 1.8px solid rgba(43, 33, 24, 0.2); display: grid; place-items: center;
+  font-size: 14px; color: #fff; background: transparent; transition: transform 0.12s ease; }
+button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
+.nr-tick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+.nr-grow { flex: 1; min-width: 0; padding: 6px 0; }
+.nr-nm { font-size: 13.5px; font-weight: 600; }
+.nr-nm.done { color: var(--mz-ink-soft); font-weight: 500;
+  text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
+.nr-anchor { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); }
+.nr-str { height: 6px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 5px; }
+.nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength); }
+.nr-pct { font-size: 10.5px; font-weight: 700; color: #A8801F; flex: none; width: 35px; text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .rise { opacity: 1; transform: none; animation: none; }
+  .mz-tile, .mz-chev, .nr-tick { transition: none; }
 }
 
 /* ============================================================

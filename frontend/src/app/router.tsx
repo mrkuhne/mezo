@@ -2,6 +2,7 @@ import { Navigate, type RouteObject, useLocation } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
+import { NapRutinPage } from '@/features/today/pages/NapRutinPage'
 import { TrainSection } from '@/features/train/pages/TrainSection'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
@@ -76,6 +77,7 @@ export const routes: RouteObject[] = [
       { path: 'nap', element: <NapHubPage /> },
       // Nap tile → own full page (mezo-d20.2.2): the hub's Mezo tile.
       { path: 'nap/uzenetek', element: <NapMezoPage /> },
+      { path: 'nap/rutin', element: <NapRutinPage /> },
       { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
       {
         path: 'train',
