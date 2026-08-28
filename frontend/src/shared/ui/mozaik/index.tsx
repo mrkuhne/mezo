@@ -105,11 +105,11 @@ export function MozaikPage({ tone, children, className }: { tone: PageTone; chil
   return <div className={cn('mz-page', `mz-p-${tone}`, className)}>{children}</div>
 }
 
-export function PageHead({ onBack, children }: { onBack: () => void; children?: ReactNode }) {
+export function PageHead({ onBack, label = '‹ vissza', children }: { onBack: () => void; label?: string; children?: ReactNode }) {
   return (
     <div className="mz-page-head">
       <button type="button" className="mz-backbtn" onClick={onBack} aria-label="Vissza">
-        ‹ vissza
+        {label}
       </button>
       {children}
     </div>
