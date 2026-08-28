@@ -18,6 +18,14 @@ public record CharacterProperties(
         /** Per-detector kill switches (spec §5): key = detector key. Absent key = enabled. */
         @NotNull Map<String, Detector> detector) {
 
+    // An empty YAML map (`detector: {}`) produces zero leaf properties under the
+    // mezo.character.detector prefix, so relaxed binding sees nothing bound there and hands the
+    // Binder null rather than an empty Map — normalize it here so @NotNull validates and every
+    // detector stays enabled-by-default (detectorEnabled's absent-key contract).
+    public CharacterProperties {
+        detector = detector == null ? Map.of() : detector;
+    }
+
     public record Observation(
             /** Nightly expert-pass cron (server zone). */
             @NotBlank String cron,
