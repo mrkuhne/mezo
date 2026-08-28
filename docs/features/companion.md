@@ -1187,7 +1187,10 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   renders the **`[Heti adatok]`** block for an anchored conversation — every day of the anchored
   week via `MeWeekService.renderDayLine`, the weekly aggregates, and (when a `weekly_review` row
   exists for that week) the review's own summary + day-notes; `kind=day` additionally calls out the
-  anchored day with its own expanded line. **Prompt position:** right after the `[Profil]`/`[Cél]`/…
+  anchored day with its own expanded line. A client-supplied `contextDate` that isn't itself a
+  Monday is normalized to `previousOrSame(MONDAY)` for BOTH `kind`s — `kind=week` anchors this way
+  too, not just `kind=day`, so a mid-week `contextDate` can never silently shift the rendered
+  window off the ISO week it actually falls in. **Prompt position:** right after the `[Profil]`/`[Cél]`/…
   context snapshot (V0.3) and before the top-N facts block — `assembleSystemPrompt` now takes two
   extra parameters, `contextKind`/`contextDate` (both `null` for a plain conversation, in which case
   the block renders `""` and every other turn is byte-identical to before this slice). **Failure
@@ -4489,12 +4492,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   candidate selection); the duplicate audit rows this bullet describes stay a `companion_flag_log`
   bookkeeping quirk, never a duplicate delivery.
 - **One evaluation issues roughly 9 `MetricSeriesService.series` calls, three of which
-  (`sustained_stress`, `recovery_needed`, `all_healthy` — all reading `CHECKIN_STRESS`) fetch
-  EVERY one of the owner's check-ins via `CheckInRepository.findAllOwned` and filter to the window
-  in memory** (the `MetricSeriesService.checkIn` implementation, shared by every `CHECKIN_*`
-  metric). Fine at today's single-user-interactive-request scale — this runs at most once per
-  write plus once an hour — but worth knowing before `FlagService.evaluateAndLog` is reused at
-  higher frequency or batch scale, where the unbounded owner-history scan would start to matter.
+  (`sustained_stress`, `recovery_needed`, `all_healthy` — all reading `CHECKIN_STRESS`) query the
+  `[from, to]` window directly via `CheckInRepository.findByCreatedByAndDeletedFalseAndDateBetween`**
+  (the `MetricSeriesService.checkIn` implementation, shared by every `CHECKIN_*` metric —
+  mezo-8tp8's B2 fix moved this off the earlier `findAllOwned` + in-memory filter, the same window
+  finder `DayScoreService.checkinCounts` and `MeWeekService.checkinsByDate` already used). Fine at
+  today's single-user-interactive-request scale — this runs at most once per write plus once an
+  hour — and no longer scans the owner's full check-in history to do it.
 
 **W5.2 intervention delivery decisions + gotchas (`mezo-b3pp.19`, spec §9.2):**
 

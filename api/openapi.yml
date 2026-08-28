@@ -5234,9 +5234,9 @@ paths:
         pattern events, new facts, life events, memoir presence and predictions
         the review draws its highlight candidates from
       description: >-
-        Always 200 — empty lists are the honest empty state, never a 404 (the
-        review row itself may not even exist yet; this is a raw week-window
-        read, independent of it).
+        Otherwise always 200 — empty lists are the honest empty state, never a
+        404 (the review row itself may not even exist yet; this is a raw
+        week-window read, independent of it).
       parameters:
         - name: start
           in: path
@@ -5252,6 +5252,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WeeklyReviewDigestResponse'
+        '400':
+          description: '{start} is not a Monday'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing or invalid token
           content:

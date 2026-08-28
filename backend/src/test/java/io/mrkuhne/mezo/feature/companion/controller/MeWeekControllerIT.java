@@ -6,6 +6,8 @@ import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MeWeekResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
+import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
@@ -16,6 +18,7 @@ import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -43,6 +46,8 @@ class MeWeekControllerIT extends ApiIntegrationTest {
     @Autowired private FuelDayService fuelDayService;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private WeightLogPopulator weightLogPopulator;
+    @Autowired private HabitDayRepository habitDayRepository;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -96,11 +101,30 @@ class MeWeekControllerIT extends ApiIntegrationTest {
         mealRepository.saveAndFlush(meal);
     }
 
+    /** Seeds a habit-awarded XP row for {@code date} — the {@code DayScoreServiceIT}
+     *  xp-only-activity recipe, reused here so the dense day's {@code xp} field has a
+     *  deterministic, exactly-assertable value (B5, mezo-8tp8). */
+    private void seedXp(UUID owner, LocalDate date, int xpAwarded) {
+        HabitDayEntity habit = new HabitDayEntity();
+        habit.setCreatedBy(owner);
+        habit.setHabitDate(date);
+        habit.setHabitKey("dense-day-xp");
+        habit.setStatus(HabitDayEntity.STATUS_DONE);
+        habit.setXpAwarded(xpAwarded);
+        habitDayRepository.saveAndFlush(habit);
+    }
+
     @Test
     void weekReturnsSevenDaysWithScoresAndAggregates() {
         UUID owner = ownerId();
+        // fetched BEFORE seeding so the dense day's exact kcal/protein expectations track
+        // whatever target FuelDayService actually prescribes (config fallback or an active goal),
+        // rather than hardcoding the config default (mirrors DayScoreServiceIT.seedMeal).
+        MacroSet targets = fuelDayService.getDay(owner, MONDAY).getTargets();
         seedDenseDay(owner, MONDAY);
         seedDenseDay(owner, MONDAY.plusDays(1));
+        weightLogPopulator.createWeightLog(owner, MONDAY, new BigDecimal("82.5"));
+        seedXp(owner, MONDAY, 75);
 
         MeWeekResponse response = week(MONDAY);
 
@@ -109,7 +133,25 @@ class MeWeekControllerIT extends ApiIntegrationTest {
         assertThat(response.getDays().get(0).getDate()).isEqualTo(MONDAY);
         assertThat(response.getDays().get(6).getDate()).isEqualTo(MONDAY.plusDays(6));
 
-        assertThat(response.getDays().get(0).getScore()).isNotNull();
+        var monday = response.getDays().get(0);
+        assertThat(monday.getScore()).isEqualTo(100);
+        assertThat(monday.getSubscores().getSleep()).isEqualTo(100);
+        assertThat(monday.getSubscores().getFuel()).isEqualTo(100);
+        assertThat(monday.getSubscores().getCheckin()).isEqualTo(100);
+        assertThat(monday.getSubscores().getActivity()).isEqualTo(100);
+        assertThat(monday.getKcal().doubleValue()).isEqualTo(targets.getKcal().doubleValue());
+        assertThat(monday.getProteinG().doubleValue()).isEqualTo(targets.getP().doubleValue());
+        assertThat(monday.getCarbsG().doubleValue()).isEqualTo(10.0);
+        assertThat(monday.getFatG().doubleValue()).isEqualTo(1.0);
+        assertThat(monday.getKcalTarget().doubleValue()).isEqualTo(targets.getKcal().doubleValue());
+        assertThat(monday.getProteinTargetG().doubleValue()).isEqualTo(targets.getP().doubleValue());
+        assertThat(monday.getWeightKg().doubleValue()).isEqualTo(82.5);
+        assertThat(monday.getSleepMin()).isEqualTo(480);
+        assertThat(monday.getSleepQuality().doubleValue()).isEqualTo(10.0);
+        assertThat(monday.getCheckinCount()).isEqualTo(4);
+        assertThat(monday.getWorkoutCount()).isEqualTo(1);
+        assertThat(monday.getXp()).isEqualTo(75);
+
         assertThat(response.getDays().get(1).getScore()).isNotNull();
         for (int i = 2; i < 7; i++) {
             assertThat(response.getDays().get(i).getScore()).isNull();
@@ -120,6 +162,9 @@ class MeWeekControllerIT extends ApiIntegrationTest {
         assertThat(response.getWeekly().getAvgKcal()).isNotNull();
         assertThat(response.getWeekly().getAvgKcal().doubleValue())
             .isEqualTo(response.getDays().get(0).getKcal().doubleValue());
+        // 8 filled slots (4 + 4, the two dense days) over 4*7=28 canonical slots for a fully-past
+        // (elapsedDays=7) week -> 8/28 = 0.2857 (scale 4, HALF_UP).
+        assertThat(response.getWeekly().getCheckinRatio().doubleValue()).isEqualTo(0.2857);
     }
 
     @Test
@@ -129,6 +174,18 @@ class MeWeekControllerIT extends ApiIntegrationTest {
             "/api/me/week/" + tuesday, null, ownerAuthHeaders(),
             HttpStatus.BAD_REQUEST, String.class);
         assertHasRequestError(body, "ME_WEEK_START_NOT_MONDAY");
+    }
+
+    @Test
+    void checkinRatioIsNullNotZeroForAFullyFutureWeek() {
+        LocalDate futureMonday = LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.next(java.time.DayOfWeek.MONDAY))
+                .plusWeeks(10);
+
+        MeWeekResponse response = week(futureMonday);
+
+        assertThat(response.getDays()).hasSize(7);
+        assertThat(response.getWeekly().getCheckinRatio()).isNull();
     }
 
     @Test

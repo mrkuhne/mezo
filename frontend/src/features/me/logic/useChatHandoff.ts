@@ -55,14 +55,14 @@ export function useChatHandoff(): { open: (context: ChatHandoffContext) => void;
       degraded: false,
       mode: 'mock',
     })
-    navigate(`/insights/chat?c=${id}`)
+    navigate(`/mezo/chat?c=${id}`)
   }
 
   const openReal = async (context: ChatHandoffContext) => {
     setPending(true)
     try {
       const conversation = await chatApi.createConversation(context)
-      navigate(`/insights/chat?c=${conversation.id}`)
+      navigate(`/mezo/chat?c=${conversation.id}`)
     } catch {
       toast.show({ kind: 'error', text: 'Nem sikerült elindítani a beszélgetést' })
     } finally {

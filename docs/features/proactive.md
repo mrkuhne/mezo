@@ -504,19 +504,22 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   the two are deliberately separate jobs (one narrates the past, one plans the future). Gated on a
   THIRD switch `mezo.techcore.cron.weekly-review-job.enabled` (`WEEKLY_REVIEW_JOB_SWITCH`) on top
   of the dual companion+proactive gate; idempotent, per-user failures isolated, no backfill.
-- **Three reads/writes** (`api/feature/proactive/proactive.yml`, `WeeklyReviewController`) —
-  deliberately **NOT lazy** on the primary GET (a change from most proactive reads): `GET
+- **Three reads/writes** (`api/feature/proactive/proactive.yml`, `WeeklyReviewController`) — all
+  three share the SAME `requireMonday` 400 guard (`WEEKLY_REVIEW_START_NOT_MONDAY`), deliberately
+  **NOT lazy** on the primary GET (a change from most proactive reads): `GET
   /api/proactive/weekly-review/{start}` returns the row **as-is**, `404 RESOURCE_NOT_FOUND` when
   the job hasn't produced one yet (the job owns generation — a lazy GET here would let a client
   race the cron and generate off a still-in-progress week), plus a `stale: boolean` **best-effort**
   probe (true when a newer weight/sleep/check-in/meal row in the week postdates `generatedAt`;
   `false` on ANY probe failure — staleness is a hint, never a reason to fail the read). `POST
-  …/regenerate` soft-deletes the live row (if any) and re-runs the generator — `409
-  WEEKLY_REVIEW_WEEK_NOT_COMPLETE` while `weekStart + 7 days` is still in the future, `404` if the
-  fresh run still yields nothing (empty week). `GET …/digest` maps the SAME week-window reads the
-  generator's gather draws candidates from straight to DTOs (patterns/newFacts/lifeEvents/memoir
-  boolean/predictions) — always `200`, empty lists the honest empty state, independent of whether
-  the review row itself exists (`/me/week`'s `WeekDiscoveries` card's source).
+  …/regenerate` soft-deletes the live row (if any) and re-runs the generator, then RE-RUNS the
+  same `stale` probe against the fresh row's `generatedAt` (never hardcoded `false` — a log landing
+  mid-generation still surfaces honestly) — `409 WEEKLY_REVIEW_WEEK_NOT_COMPLETE` while `weekStart +
+  7 days` is still in the future, `404` if the fresh run still yields nothing (empty week). `GET
+  …/digest` maps the SAME week-window reads the generator's gather draws candidates from straight
+  to DTOs (patterns/newFacts/lifeEvents/memoir boolean/predictions) — `400` on a non-Monday
+  `start`, otherwise always `200`, empty lists the honest empty state, independent of whether the
+  review row itself exists (`/me/week`'s `WeekDiscoveries` card's source).
 - **Notifications** — `AppNotificationKind.WEEKLY_REVIEW_READY` (`/me/week` deeplink, no
   `familyKey` since the push category below already covers the event) fires on generation. The
   `NotificationCategory.WEEKLY_REVIEW` push fires **Monday 10:00, fixed** (`AnchorResolver.
@@ -1811,8 +1814,8 @@ MeWeekControllerIT.java` covers the 7-day shape + the `ME_WEEK_START_NOT_MONDAY`
 weekly-aggregate math. `feature/proactive/service/WeeklyReviewGeneratorIT.java` covers the empty-week
 no-row gate, the idempotent existing-row short-circuit, bounds-checked anchor resolution, and the
 `WEEKLY_REVIEW_READY` notification emission. `feature/proactive/controller/WeeklyReviewControllerIT.java`
-covers the never-lazy 404, the `stale` probe, the regenerate 409/404, and the digest's always-200
-contract. `AnchoredConversationIT` (companion) covers `context_kind`/`context_date` persistence, the
+covers the never-lazy 404, the `stale` probe (re-probed on `regenerate` too, not hardcoded), the
+regenerate 409/404, and the digest's 400-on-non-Monday + otherwise-always-200 contract. `AnchoredConversationIT` (companion) covers `context_kind`/`context_date` persistence, the
 assistant-only opening turn, and its swallow-and-log failure path. FE: `frontend/src/data/me/
 {meWeekHooks.test.tsx,weeklyReviewHooks.test.ts}`, `frontend/src/features/me/{pages/WeekPage.test.tsx,
 logic/useChatHandoff.test.ts,components/WeekDayCard.test.tsx}` (`WeekReviewCard`/`WeekScoreBars`
@@ -2250,8 +2253,8 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{WeeklyReviewEntity,WeeklyReviewDayNotesEnvelope,WeeklyReviewHighlightsEnvelope}.java` — the owned entity (`weekStart`/`summary`/`generatedAt` + two typed jsonb envelopes).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java` — pure-code `gather` (the week's `MeWeekService.renderDayLine`s + confirmed pattern events + new facts + life events + memoir + predictions + a numbered anchor-candidate list) + one `CompanionLlm.completeSmart` + strict-JSON `{summary, dayNotes, anchorIndexes}` parse + bounds-checked/deduped highlight resolution; `WEEKLY_REVIEW_MARKER = "HETI-ELEMZES-FELADAT"` + `PROMPT`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewJob.java` — the backward-looking Monday-06:50 `@Scheduled` cron (`weekStart = previousOrSame(MONDAY).minusWeeks(1)`, three-switch-gated `WEEKLY_REVIEW_JOB_SWITCH`, no backfill).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewService.java` — the read/regenerate service (`find`/`getResponse` with the `stale` best-effort probe; `regenerate` soft-delete + re-generate, 409 while the week is in progress).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewDigestService.java` — the always-200 week-window-refs read (`WeeklyReviewWeekWindow`-shared reads, mapped straight to DTOs).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewService.java` — the read/regenerate service (`find`/`getResponse` with the `stale` best-effort probe; `regenerate` soft-delete + re-generate + RE-PROBES `stale` against the fresh row, 409 while the week is in progress).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewDigestService.java` — the week-window-refs read (400 on a non-Monday `start` via the controller's shared `requireMonday`, otherwise always 200; `WeeklyReviewWeekWindow`-shared reads, mapped straight to DTOs; an event whose backing pattern is missing/deleted logs a warn and drops the orphan ref).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewWeekWindow.java` — the shared window-query helper (`since`/`until`/`patternEvents`/`facts`/`lifeEvents`) both the generator's gather and the digest service read through, so they can never disagree on the candidate set.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeekReviewSourceAdapter.java` — implements companion's `WeekReviewSource` port (plain repository read + map, deliberately NOT `WeeklyReviewGenerator`, to keep `companion → proactive` out of the dependency graph entirely).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklyReviewRepository.java` — `findByCreatedByAndWeekStart` (owner + soft-delete scoped).

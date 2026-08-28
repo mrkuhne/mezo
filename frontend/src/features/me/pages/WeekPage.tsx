@@ -167,7 +167,7 @@ export function WeekPage() {
       {week && (
         <div style={{ padding: '0 24px 24px' }}>
           {week.days.map((d) => {
-            const future = currentWeek && d.date > todayIso
+            const future = d.date > todayIso
             return (
               <WeekDayCard
                 key={d.date}

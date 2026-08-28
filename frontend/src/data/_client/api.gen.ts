@@ -2090,7 +2090,7 @@ export interface paths {
         };
         /**
          * Code-collected week-window refs behind the weekly review — the confirmed pattern events, new facts, life events, memoir presence and predictions the review draws its highlight candidates from
-         * @description Always 200 — empty lists are the honest empty state, never a 404 (the review row itself may not even exist yet; this is a raw week-window read, independent of it).
+         * @description Otherwise always 200 — empty lists are the honest empty state, never a 404 (the review row itself may not even exist yet; this is a raw week-window read, independent of it).
          */
         get: operations["getWeeklyReviewDigest"];
         put?: never;
@@ -13311,6 +13311,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WeeklyReviewDigestResponse"];
+                };
+            };
+            /** @description {start} is not a Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing or invalid token */
