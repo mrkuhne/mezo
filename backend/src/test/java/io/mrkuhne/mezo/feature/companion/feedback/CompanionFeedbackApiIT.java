@@ -263,8 +263,9 @@ class CompanionFeedbackApiIT extends ApiIntegrationTest {
     void testListFeedback_shouldReturn400_whenMoreThanTheContractMaximumIdsRequested() {
         // Probed first: 201 uuids (~7.4 KB of query string) is close to Tomcat's default 8 KB
         // server.max-http-request-header-size, which could reject the request before bean
-        // validation ever runs (bare 400, no SystemMessageList body). In practice the request
-        // clears Tomcat fine and reaches @Size(max = 200) on the generated API interface, landing
+        // validation ever runs (bare 400, no SystemMessageList body). In practice — with this
+        // harness's thin TestRestTemplate header set, not a real browser's; see companion.md §8 —
+        // the request clears Tomcat fine and reaches @Size(max = 200) on the generated API interface, landing
         // on the same ConstraintViolationException -> "ids"/VALIDATION_INVALID_VALUE path as any
         // other @Size violation (confirmed via the GlobalExceptionHandler "Validation failed" log
         // line, as opposed to the "Unconvertible request parameter" line the type-mismatch handler

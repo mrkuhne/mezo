@@ -3260,8 +3260,10 @@ The FE side is a single page-level hook + one shared controlled component
 (`useFeedback(kind, ids)` / `FeedbackChips`) — [`insights.md` §4/§5.7](insights.md).
 
 **The batch read is chunked at the api layer (`mezo-b3pp.23`).** At the old single-request shape,
-200 comma-joined uuids put the request line at ~7.45 KB — over Tomcat's default 8 KB
-`server.max-http-request-header-size`, which this repo does not override. Tomcat answered a bare
+200 comma-joined uuids put the query string alone at ~7.45 KB — under Tomcat's default 8 KB
+`server.max-http-request-header-size` by itself, but the full request (that query string plus the
+`Authorization: Bearer <JWT>` header and a real browser's own headers) pushed the total over that
+budget, which this repo does not override. Tomcat answered a bare
 400 with no `MessageFeedbackResponse[]` body, `useDualQuery` degraded to `realEmpty`, and every
 chip on the page read unvoted — the next vote's `invalidateQueries` then reverted the one chip the
 user had just tapped, because the refetch it triggered hit the same wall. `feedbackApi.list`
@@ -3641,10 +3643,17 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   `testPutFeedback_shouldReturn400_whenReasonUnknown`,
   `testListFeedback_shouldReturn400_whenIdsEmpty`, and
   `testListFeedback_shouldReturn400_whenMoreThanTheContractMaximumIdsRequested`. All five
-  constraints (`verdict`/`reason` `@Pattern`, `ids` `@Size(min = 1, max = 200)`, `kind`/`artifactKind`
-  `@Pattern`) live only on the **generated** `CompanionFeedbackApi` interface's bean-validation
-  annotations — there is no hand-written equivalent — so without these cases a fragment edit that
-  silently dropped one would ship green with every other test in the suite still passing.
+  constraints are generated bean-validation annotations, split across two generated sources:
+  `kind`/`ids`/`artifactKind` (path) `@Pattern`/`@Size` live on the **`CompanionFeedbackApi`**
+  interface itself, while `verdict`/`reason`/`artifactKind` (body) `@Pattern` live on the
+  **`PutFeedbackRequest`** DTO it takes as a parameter. For `verdict` and `reason`, dropping the
+  `@Pattern` wouldn't ship silently accepted garbage — the `ck_message_feedback_verdict` and
+  `ck_message_feedback_reason_value` CHECK constraints in
+  `backend/src/main/resources/db/changelog/1.0.0/script/202608211200_mezo-b3pp.15_create_message_feedback.sql`
+  would still reject the write, just as a 500 instead of a field error. `ids`' `@Size(min = 1, max =
+  200)` has no DB-level equivalent at all — nothing backstops it below the generated annotation.
+  Either way, without these cases a fragment edit that silently dropped one of these constraints
+  would ship green with every other test in the suite still passing.
   `testPutFeedback_shouldReturn400_whenReasonUnknown` deliberately pairs its bad `reason` value with
   `verdict = down` (the legal verdict for a reason): pairing it with `up` instead would trip the
   service-level `FEEDBACK_REASON_REQUIRES_DOWN` guard (already covered by
