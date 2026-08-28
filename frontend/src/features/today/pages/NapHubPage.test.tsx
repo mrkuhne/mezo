@@ -38,6 +38,14 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   }
 })
 
+// Pin the wall clock: dayFace(tick) decides which face counts as "now", and setFace
+// DELETES ?dp when the clicked face IS the now-face — on a CI runner whose clock lands
+// in the este band, the dp=este assertion below would flip vacuously (this exact flake
+// failed CI run 33144018103). 13:42 → nowFace 'nap', deterministic everywhere.
+vi.mock('@/features/today/logic/useMinuteTick', () => ({
+  useMinuteTick: () => new Date('2026-05-22T13:42:00'),
+}))
+
 beforeEach(() => waterStore.reset())
 
 // Nap hub (mezo-d20.2.1) — the day spine's Mozaik face: header recipe (date eyebrow +
