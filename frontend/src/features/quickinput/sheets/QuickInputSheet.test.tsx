@@ -18,13 +18,34 @@ import type { CheckinSlot } from '@/data/types'
 const checkinsMock = vi.hoisted(() => ({ useCheckins: vi.fn() }))
 const gratitudeActionsMock = vi.hoisted(() => ({ useGratitudeActions: vi.fn() }))
 const fuelPreviewMock = vi.hoisted(() => ({ useFuelPreview: vi.fn() }))
+// Deterministic, MODE-AGNOSTIC data stubs for the v2 head/sublines: the real hooks are
+// wall-clock (fuel timeline) or fixture (MSW vs mock seed) dependent, and this suite tests
+// the sheet's behavior, not the data layer. The water pair shares a setter through a ref so
+// an in-place log re-renders the counter exactly like the real cache write does.
+const waterStore = vi.hoisted(() => ({ set: undefined as undefined | ((up: (n: number) => number) => void) }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
+  const { useState } = await import('react')
   return {
     ...actual,
     useCheckins: () => checkinsMock.useCheckins(),
     useGratitudeActions: () => gratitudeActionsMock.useGratitudeActions(),
     useFuelPreview: () => fuelPreviewMock.useFuelPreview(),
+    useFuelDay: () => {
+      const [water, setWater] = useState(1850)
+      waterStore.set = setWater
+      return { fuel: { consumed: { water } } }
+    },
+    useWaterActions: () => ({ logWater: (ml: number) => waterStore.set?.(n => n + ml) }),
+    useWeight: () => ({
+      weightLog: [{ date: '2026-05-22', value: 78.6 }],
+      weightTrends: { latestTrendKg: 78.6, weeklyRateKgPerWeek: -0.5, last4wRateKgPerWeek: -0.5 },
+      logWeight: vi.fn(),
+    }),
+    useToday: () => ({
+      today: { workoutTime: '17:00', workoutType: 'Pull Day' },
+      workoutDone: false,
+    }),
   }
 })
 
