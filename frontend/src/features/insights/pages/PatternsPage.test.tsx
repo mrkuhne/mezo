@@ -18,13 +18,43 @@ describe('PatternsPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders the hero sentence, tiles and lifecycle sections from the seeds', () => {
+  test('renders the hero, the motor prose and the lifecycle sections from the seeds', () => {
     renderPage()
+    // Mozaik hero (mezo-d20.5.3): name + confirmed big number + honest sub line
+    expect(screen.getByText('Minták')).toBeInTheDocument()
+    expect(screen.getByText('megerősített összefüggés él a tudásban')).toBeInTheDocument()
     expect(screen.getByText('A motor állapota')).toBeInTheDocument()
     expect(screen.getByText(/kérdést/)).toBeInTheDocument()
     expect(screen.getByText(/Döntésre vár/)).toBeInTheDocument()
     expect(screen.getByText(/Megerősítve — él a tudásban/)).toBeInTheDocument()
     expect(screen.getByText('Adat-egészség')).toBeInTheDocument()
+  })
+
+  test('the 3×2 lifecycle grid renders six colorful cells; döntésre vár is the hot gold-ringed one', () => {
+    const { container } = renderPage()
+    const cells = container.querySelectorAll('.mnt-lcel')
+    expect(cells).toHaveLength(6)
+    // seeds: 2 decide → the hot skin (white + gold ring, pulse guarded in CSS) is armed
+    const hot = container.querySelector('.mnt-lcel.hot') as HTMLElement
+    expect(hot).not.toBeNull()
+    expect(hot.textContent).toContain('döntésre vár')
+    expect(hot.textContent).toContain('2')
+    // the other five keep their prototype skins
+    expect(container.querySelector('.mnt-lcel.c-sage')?.textContent).toContain('megerősítve')
+    expect(container.querySelector('.mnt-lcel.c-lav')?.textContent).toContain('megfigyelés')
+    expect(container.querySelector('.mnt-lcel.c-amber')?.textContent).toContain('még gyűlik')
+  })
+
+  test('lifecycle mosaics: confirmed tiles speak human confidence words, gathering tiles are dashed amber', () => {
+    const { container } = renderPage()
+    // p1 (confirmed, no monitor pair): honest "tanulom" chip on a sage tile, no fabricated stats
+    const confirmedTile = container.querySelector('.mnt-ptile.sage') as HTMLElement
+    expect(confirmedTile).not.toBeNull()
+    expect(within(confirmedTile).getByText('tanulom')).toBeInTheDocument()
+    // the 7 pattern-less monitor pairs are gathering → dashed tiles carrying the gate verdicts
+    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(7)
+    // raw statistics never reach a tile face
+    expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
   })
 
   test('lists the decide-bucket questions (pair-backed prefers the live questionHu)', () => {
@@ -35,13 +65,15 @@ describe('PatternsPage (mock mode)', () => {
     expect(screen.getByText('Caffeine 14:00 utáni dózis → sleep onset +24 perc')).toBeInTheDocument()
   })
 
-  test('confirming a decide card moves it into the Megerősítve bucket', async () => {
+  test('confirming a decide card moves it into the Megerősítve bucket and settles to the sage acknowledgement', async () => {
     renderPage()
     const confirmButtons = screen.getAllByRole('button', { name: /Megerősítem/ })
     fireEvent.click(confirmButtons[0])
     await waitFor(() => {
-      expect(screen.getByText(/Megerősítve — él a tudásban · 2/)).toBeInTheDocument()
+      expect(screen.getByTestId('mnt-cnt-confirmed')).toHaveTextContent('2')
     })
+    // prototype decdone: the decision settles to a sage acknowledgement row
+    expect(screen.getByText('✓ Beépítettem a tudásba — mostantól számolok vele.')).toBeInTheDocument()
   })
 
   test('Adat-egészség expands to the coverage rings, thinnest-first', () => {
@@ -247,6 +279,27 @@ describe('PatternsPage (real mode)', () => {
     fireEvent.click(await screen.findByText(/Megfigyelés alatt/))
     expect(screen.getByText(/Még 4 nap adat ebből/)).toBeInTheDocument()
     expect(screen.queryByText(patternWire.mechanism)).not.toBeInTheDocument()
+  })
+
+  test('a monitoring pattern with a live pair renders a lavender tile: evidence bar, human-word chip, detail link', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern`, () =>
+        HttpResponse.json([{ ...patternWire, status: 'monitoring' }]),
+      ),
+      http.get(`${API_BASE}/api/companion/pattern/monitor`, () => HttpResponse.json(monitorWire)),
+    )
+    const { container } = renderPage()
+
+    expect(await screen.findByText(/Megfigyelés alatt/)).toBeInTheDocument()
+    const tile = container.querySelector('.mnt-ptile.lav') as HTMLElement
+    expect(tile).not.toBeNull()
+    // n=21, p=0.058 → the HUMAN confidence word (confidenceMeta), never raw r/p
+    expect(within(tile).getByText('ígéretes jel')).toBeInTheDocument()
+    expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
+    // the animated evidence bar (alignedDays / lookbackDays) is present
+    expect(tile.querySelector('.mnt-gbar')).not.toBeNull()
+    // pair-backed tile links to the pattern detail page
+    expect(tile.tagName).toBe('A')
   })
 
   test('a switch-off 404 on BOTH endpoints renders the honest degraded card, with no motor link', async () => {
