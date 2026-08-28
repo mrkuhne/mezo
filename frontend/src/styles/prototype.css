@@ -186,6 +186,18 @@
   --mz-qdone-ink: #5F7A52;
   --mz-qxp-ink: #A8801F;
   --mz-qxp-bg: rgba(201, 150, 46, 0.12);
+  /* chat face (mezo-d20.5.2) — prototype mezo-body #page-chat hexes verbatim, shadows ×1.18 */
+  --mz-chat-user-bg: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+  --mz-chat-user-shadow: 0 12px 24px -14px rgba(216, 72, 31, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --mz-chat-a-shadow: 0 14px 28px -17px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-chat-send-bg: linear-gradient(135deg, #8A76CC, #6C5FA3);
+  --mz-chat-send-shadow: 0 7px 17px -5px rgba(108, 95, 163, 0.6);
+  --mz-chat-mic-bg: rgba(93, 79, 160, 0.08);
+  --mz-chat-mic-rec-bg: rgba(201, 150, 46, 0.2);
+  --mz-chat-refch-bg: rgba(43, 33, 24, 0.04);
+  --mz-chat-refch-bd: rgba(43, 33, 24, 0.08);
+  --mz-chat-memline: rgba(138, 118, 204, 0.4);
+  --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(43, 33, 24, 0.25), 0 17px 31px -17px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
 
 }
 
@@ -294,6 +306,19 @@
   --mz-qdone-ink: var(--dv-sage);
   --mz-qxp-ink: var(--dv-amber);
   --mz-qxp-bg: color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card));
+  /* chat face (mezo-d20.5.2) — bubbles/composer on the dark dv ramp; the lav send disc
+     stays saturated in both themes (colored control, like the MOST ring). */
+  --mz-chat-user-bg: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
+  --mz-chat-user-shadow: 0 12px 24px -14px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --mz-chat-a-shadow: 0 14px 28px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-chat-send-bg: linear-gradient(135deg, #8A76CC, #6C5FA3);
+  --mz-chat-send-shadow: 0 7px 17px -5px rgba(0, 0, 0, 0.5);
+  --mz-chat-mic-bg: color-mix(in srgb, var(--dv-lav) 14%, var(--surface-elevated));
+  --mz-chat-mic-rec-bg: color-mix(in srgb, var(--dv-amber) 24%, var(--surface-elevated));
+  --mz-chat-refch-bg: rgba(245, 239, 230, 0.05);
+  --mz-chat-refch-bd: rgba(245, 239, 230, 0.1);
+  --mz-chat-memline: color-mix(in srgb, var(--dv-lav) 45%, transparent);
+  --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(0, 0, 0, 0.5), 0 17px 31px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
 }
 
@@ -4121,6 +4146,90 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev, .nr-tick { transition: none; }
   .nck-fill { transition: none; }
+}
+
+/* ── Chat face (mezo-d20.5.2) — prototype mezo-body.html #page-chat, px ×1.18.
+      A behavioral re-face: the sticky/`:has` plumbing keys off `.chat-composer`
+      (declared earlier in this file), these rules carry only the Mozaik look. ── */
+
+/* header: chsub anatomy + pgact chips */
+.mzc-chsub { display: flex; flex-direction: column; gap: 2px; }
+.mzc-eb { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lav-deep); }
+.mzc-st { font-size: 11px; color: var(--text-tertiary); }
+.mzc-pgact {
+  border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg);
+  border-radius: 999px; padding: 8px 14px; min-height: 36px;
+  font-size: 11px; font-weight: 700; color: var(--mz-ink-soft);
+  font-family: inherit; cursor: pointer;
+}
+.mzc-pgact:disabled { opacity: 0.5; cursor: default; }
+
+/* message anatomy */
+.mzc-msg-a { align-self: flex-start; width: 92%; max-width: 92%; }
+.mzc-msg-u { align-self: flex-end; max-width: 80%; }
+.mzc-meta { display: flex; align-items: center; gap: 6px; }
+.mzc-meta .mzc-eb { font-size: 9px; }
+.mzc-meta time, .mzc-msg-u time { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-warn { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-deep); margin-left: 4px; }
+.mzc-bub-a {
+  background: var(--mz-stripbg); border-radius: 5px 19px 19px 19px; padding: 11px 13px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-chat-a-shadow);
+  font-size: 13px; line-height: 1.5; color: var(--text-primary);
+}
+.mzc-bub-u {
+  background: var(--mz-chat-user-bg); border-radius: 19px 5px 19px 19px; padding: 11px 13px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-chat-user-shadow);
+}
+.mzc-bub-u p { font-size: 13px; line-height: 1.5; color: var(--text-primary); white-space: pre-line; }
+.mzc-msg-u time { display: block; text-align: right; margin-top: 4px; }
+.mzc-noanswer { font-size: 12.5px; font-style: italic; color: var(--text-tertiary); }
+
+/* refs footer — human labels (gap-7 fix) */
+.mzc-reffoot { border-top: 0.5px solid rgba(43, 33, 24, 0.08); margin-top: 9px; padding-top: 8px; }
+.mzc-refeb { font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.mzc-refrow { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.mzc-refch {
+  font-size: 10px; font-weight: 600; border-radius: 9px; padding: 4px 9px;
+  background: var(--mz-chat-refch-bg); border: 0.5px solid var(--mz-chat-refch-bd); color: var(--mz-ink-soft);
+}
+.mzc-refch .mzc-refk { font-weight: 800; color: var(--text-primary); margin-right: 4px; }
+
+/* Emlékek · N disclosure */
+.mzc-membtn { border: none; background: none; font-family: inherit; cursor: pointer; padding: 5px 0; align-items: center; }
+.mzc-memeb { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.mzc-memlist { list-style: none; margin: 0; padding: 0 0 0 2px; }
+.mzc-memlist li { border-left: 2px solid var(--mz-chat-memline); padding-left: 9px; }
+.mzc-memlist .m1 { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-memlist .m2 { font-size: 11px; color: var(--text-secondary); }
+
+/* typing bubble */
+.mzc-typing {
+  display: flex; gap: 5px; padding: 12px 14px; width: 64px;
+  background: var(--mz-stripbg); border-radius: 5px 19px 19px 19px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-chat-a-shadow);
+}
+
+/* composer pill — mic disc · borderless field · lav send disc (44pt touch targets) */
+.mzc-composer {
+  display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 10px;
+  border-radius: 26px; background: var(--mz-stripbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: var(--mz-chat-composer-shadow);
+}
+.mzc-composer textarea { background: none; border: none; outline: none; font-family: inherit; color: var(--text-primary); }
+.mzc-composer textarea::placeholder { color: var(--mz-ink-mut); }
+.mzc-cmic, .mzc-csend {
+  width: 44px; height: 44px; border-radius: 50%; border: none; flex: none;
+  display: grid; place-items: center; padding: 0; font-family: inherit; cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.mzc-cmic { background: var(--mz-chat-mic-bg); color: var(--lav-deep); }
+.mzc-cmic.rec { background: var(--mz-chat-mic-rec-bg); color: var(--coral-deep); }
+.mzc-csend { background: var(--mz-chat-send-bg); color: #fff; box-shadow: var(--mz-chat-send-shadow); }
+.mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
+.mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mzc-cmic, .mzc-csend { transition: none; }
 }
 
 /* ============================================================
