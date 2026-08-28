@@ -3708,6 +3708,123 @@ ol.md-list { list-style: decimal; }
 @media (prefers-reduced-motion: reduce) { .chat-mic-live { animation: none; } }
 
 /* ============================================================
+   Mozaik 2.0 primitives (design_2.0 — mezo-d20.1.3)
+   Values = the prototype heads' CSS ×1.18 (330→390px frame scale),
+   light-mode hexes verbatim from the prototypes. The dark ("Pulse")
+   and circadian overrides for the wash tokens land in F0.5
+   (mezo-d20.1.5) — components never branch on theme.
+   ============================================================ */
+
+/* entrance stagger hook — the choreography trigger (adding .play) is the
+   motion kit's job (F0.4); without .play tiles render settled. */
+.mz-play .rise { opacity: 0; transform: translateY(19px) scale(0.98);
+  animation: mz-rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d, 0ms); }
+@keyframes mz-rise { to { opacity: 1; transform: none; } }
+
+.mz-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+.mz-tile {
+  border-radius: 20px; padding: 12px 13px; min-height: 104px;
+  display: flex; flex-direction: column; text-align: left;
+  font-family: inherit; color: var(--text-primary);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -17px rgba(43, 33, 24, 0.28), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  background: var(--mz-wash, #FFFFFF);
+}
+button.mz-tile { cursor: pointer; }
+button.mz-tile:active { transform: scale(0.96); }
+
+/* washes — prototype .t-* gradients + their colored shadows */
+.mz-w-coral { --mz-wash: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
+.mz-w-sage  { --mz-wash: linear-gradient(150deg, #E9F1E2, #F7FBF3);
+  box-shadow: 0 17px 31px -17px rgba(110, 139, 94, 0.45), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mz-w-sky   { --mz-wash: linear-gradient(150deg, #DFEDF5, #F5FAFD);
+  box-shadow: 0 17px 31px -17px rgba(78, 143, 184, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mz-w-gold  { --mz-wash: linear-gradient(150deg, #FFF1D6, #FFFAF0);
+  box-shadow: 0 17px 31px -17px rgba(181, 126, 20, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mz-w-lav   { --mz-wash: linear-gradient(150deg, #EBE6F8, #F9F6FE);
+  box-shadow: 0 17px 31px -17px rgba(93, 79, 160, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mz-w-rose  { --mz-wash: linear-gradient(150deg, #FAE3ED, #FEF8FB);
+  box-shadow: 0 17px 31px -17px rgba(142, 63, 111, 0.35), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mz-w-white { --mz-wash: #FFFFFF; }
+.mz-w-most  { --mz-wash: #FFFFFF; border: 1px solid #FF6B4A;
+  box-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+
+.mz-tile-top { display: flex; align-items: center; }
+.mz-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+.mz-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
+.mz-spotwrap { flex: 1; display: grid; place-items: center; padding: 5px 0; }
+.mz-tile-line { font-size: 11px; font-weight: 600; text-align: center;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.mz-statstrip { display: flex; gap: 11px; }
+.mz-statcell {
+  flex: 1; text-align: center; padding: 11px 5px; border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 9px 19px -12px rgba(43, 33, 24, 0.25);
+}
+.mz-statcell b { font-size: 15px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
+.mz-statcell small { font-size: 10px; color: #6E6257; }
+
+/* tinted mini-cells — the .mcells recipe */
+.mz-mcells { display: flex; gap: 6px; }
+.mz-mcells span { flex: 1; border-radius: 13px; padding: 6px 2px 5px; text-align: center;
+  background: var(--mw); color: var(--md); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.mz-mcells b { display: block; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.mz-mcells small { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.78; }
+.mz-c-sage  { --mw: #E9F1E2; --md: #4E6B42; }
+.mz-c-coral { --mw: #FFE7DC; --md: #A84A26; }
+.mz-c-amber { --mw: #FFF1D6; --md: #8A5E07; }
+.mz-c-lav   { --mw: #EBE6F8; --md: #5D4FA0; }
+.mz-c-sky   { --mw: #DFEDF5; --md: #2E6E96; }
+.mz-c-rose  { --mw: #FAE3ED; --md: #8E3F6F; }
+.mz-c-gold  { --mw: #FBEBCB; --md: #8A5E07; }
+
+/* tile → own page scaffold (Huawei pattern) */
+.mz-page {
+  display: flex; flex-direction: column; min-height: 100%;
+  background: var(--canvas);
+}
+.mz-p-coral { background: linear-gradient(180deg, #FFE3D4 0%, var(--canvas) 36%); }
+.mz-p-gold  { background: linear-gradient(180deg, #FBEBCB 0%, var(--canvas) 36%); }
+.mz-p-lav   { background: linear-gradient(180deg, #E9E3F7 0%, var(--canvas) 36%); }
+.mz-p-rose  { background: linear-gradient(180deg, #F7E3ED 0%, var(--canvas) 36%); }
+.mz-p-sage  { background: linear-gradient(180deg, #E4EEDC 0%, var(--canvas) 36%); }
+.mz-p-sky   { background: linear-gradient(180deg, #DCEBF4 0%, var(--canvas) 36%); }
+.mz-page-head { display: flex; align-items: center; gap: 9px; padding: 9px 14px 0; }
+.mz-backbtn {
+  border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+  border-radius: 999px; padding: 7px 15px 7px 11px; font-size: 13px; font-weight: 600; color: var(--text-primary);
+  display: flex; align-items: center; gap: 5px;
+  box-shadow: 0 7px 17px -9px rgba(43, 33, 24, 0.3);
+}
+.mz-backbtn:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
+.mz-page-hero { display: grid; justify-items: center; text-align: center; gap: 1px; padding: 9px 17px 14px; }
+.mz-hero-nm { font-size: 18px; font-weight: 700; }
+.mz-hero-row { display: flex; align-items: center; gap: 9px; }
+.mz-bignum { font-weight: 200; font-size: 47px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.mz-hero-sb { font-size: 12px; color: #6E6257; }
+.mz-page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 17px 19px; }
+.mz-page-body::-webkit-scrollbar { display: none; }
+.mz-principle { font-size: 11px; font-weight: 300; color: #A2958A; text-align: center; margin-top: 19px; }
+
+/* thin collapsible reference strip — closed header already tells the story */
+.mz-colstrip { border-radius: 18px; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: 0 14px 26px -17px rgba(43, 33, 24, 0.3); overflow: hidden; }
+.mz-colhead { display: flex; align-items: center; gap: 9px; width: 100%; border: none; background: none;
+  font-family: inherit; padding: 11px 14px; cursor: pointer; text-align: left; }
+.mz-csum { margin-left: auto; font-size: 10px; font-weight: 600; color: #6E6257; font-variant-numeric: tabular-nums; }
+.mz-chev { color: #A2958A; font-size: 12px; transition: transform 0.2s ease; flex: none; }
+.mz-colstrip.open .mz-chev { transform: rotate(180deg); }
+.mz-colbody { padding: 0 14px 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .rise { opacity: 1; transform: none; animation: none; }
+  .mz-tile, .mz-chev { transition: none; }
+}
+
+/* ============================================================
    Today · iOS list language (mezo-e26w)
    Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
    16px-es sín — a globális `--sp-4` DS-token közvetlenül, elemenként. Árnyék
@@ -4017,120 +4134,3 @@ ol.md-list { list-style: decimal; }
                         letter-spacing: .03em; color: var(--text-disabled); white-space: nowrap; }
 .td-need-tl-empty { margin: 2px var(--sp-4) 0; padding: 14px; text-align: center;
                      font-family: var(--ff-body); font-size: 12.5px; color: var(--text-muted); }
-
-/* ============================================================
-   Mozaik 2.0 primitives (design_2.0 — mezo-d20.1.3)
-   Values = the prototype heads' CSS ×1.18 (330→390px frame scale),
-   light-mode hexes verbatim from the prototypes. The dark ("Pulse")
-   and circadian overrides for the wash tokens land in F0.5
-   (mezo-d20.1.5) — components never branch on theme.
-   ============================================================ */
-
-/* entrance stagger hook — the choreography trigger (adding .play) is the
-   motion kit's job (F0.4); without .play tiles render settled. */
-.mz-play .rise { opacity: 0; transform: translateY(19px) scale(0.98);
-  animation: mz-rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d, 0ms); }
-@keyframes mz-rise { to { opacity: 1; transform: none; } }
-
-.mz-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
-
-.mz-tile {
-  border-radius: 20px; padding: 12px 13px; min-height: 104px;
-  display: flex; flex-direction: column; text-align: left;
-  font-family: inherit; color: var(--text-primary);
-  border: 0.5px solid rgba(43, 33, 24, 0.06);
-  box-shadow: 0 17px 31px -17px rgba(43, 33, 24, 0.28), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
-  background: var(--mz-wash, #FFFFFF);
-}
-button.mz-tile { cursor: pointer; }
-button.mz-tile:active { transform: scale(0.96); }
-
-/* washes — prototype .t-* gradients + their colored shadows */
-.mz-w-coral { --mz-wash: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
-.mz-w-sage  { --mz-wash: linear-gradient(150deg, #E9F1E2, #F7FBF3);
-  box-shadow: 0 17px 31px -17px rgba(110, 139, 94, 0.45), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-sky   { --mz-wash: linear-gradient(150deg, #DFEDF5, #F5FAFD);
-  box-shadow: 0 17px 31px -17px rgba(78, 143, 184, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-gold  { --mz-wash: linear-gradient(150deg, #FFF1D6, #FFFAF0);
-  box-shadow: 0 17px 31px -17px rgba(181, 126, 20, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-lav   { --mz-wash: linear-gradient(150deg, #EBE6F8, #F9F6FE);
-  box-shadow: 0 17px 31px -17px rgba(93, 79, 160, 0.4), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-rose  { --mz-wash: linear-gradient(150deg, #FAE3ED, #FEF8FB);
-  box-shadow: 0 17px 31px -17px rgba(142, 63, 111, 0.35), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-w-white { --mz-wash: #FFFFFF; }
-.mz-w-most  { --mz-wash: #FFFFFF; border: 1px solid #FF6B4A;
-  box-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
-
-.mz-tile-top { display: flex; align-items: center; }
-.mz-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
-.mz-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
-.mz-spotwrap { flex: 1; display: grid; place-items: center; padding: 5px 0; }
-.mz-tile-line { font-size: 11px; font-weight: 600; text-align: center;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-
-.mz-statstrip { display: flex; gap: 11px; }
-.mz-statcell {
-  flex: 1; text-align: center; padding: 11px 5px; border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72); border: 0.5px solid rgba(43, 33, 24, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 9px 19px -12px rgba(43, 33, 24, 0.25);
-}
-.mz-statcell b { font-size: 15px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
-.mz-statcell small { font-size: 10px; color: #6E6257; }
-
-/* tinted mini-cells — the .mcells recipe */
-.mz-mcells { display: flex; gap: 6px; }
-.mz-mcells span { flex: 1; border-radius: 13px; padding: 6px 2px 5px; text-align: center;
-  background: var(--mw); color: var(--md); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
-.mz-mcells b { display: block; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.mz-mcells small { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.78; }
-.mz-c-sage  { --mw: #E9F1E2; --md: #4E6B42; }
-.mz-c-coral { --mw: #FFE7DC; --md: #A84A26; }
-.mz-c-amber { --mw: #FFF1D6; --md: #8A5E07; }
-.mz-c-lav   { --mw: #EBE6F8; --md: #5D4FA0; }
-.mz-c-sky   { --mw: #DFEDF5; --md: #2E6E96; }
-.mz-c-rose  { --mw: #FAE3ED; --md: #8E3F6F; }
-.mz-c-gold  { --mw: #FBEBCB; --md: #8A5E07; }
-
-/* tile → own page scaffold (Huawei pattern) */
-.mz-page {
-  display: flex; flex-direction: column; min-height: 100%;
-  background: var(--canvas);
-}
-.mz-p-coral { background: linear-gradient(180deg, #FFE3D4 0%, var(--canvas) 36%); }
-.mz-p-gold  { background: linear-gradient(180deg, #FBEBCB 0%, var(--canvas) 36%); }
-.mz-p-lav   { background: linear-gradient(180deg, #E9E3F7 0%, var(--canvas) 36%); }
-.mz-p-rose  { background: linear-gradient(180deg, #F7E3ED 0%, var(--canvas) 36%); }
-.mz-p-sage  { background: linear-gradient(180deg, #E4EEDC 0%, var(--canvas) 36%); }
-.mz-p-sky   { background: linear-gradient(180deg, #DCEBF4 0%, var(--canvas) 36%); }
-.mz-page-head { display: flex; align-items: center; gap: 9px; padding: 9px 14px 0; }
-.mz-backbtn {
-  border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
-  border-radius: 999px; padding: 7px 15px 7px 11px; font-size: 13px; font-weight: 600; color: var(--text-primary);
-  display: flex; align-items: center; gap: 5px;
-  box-shadow: 0 7px 17px -9px rgba(43, 33, 24, 0.3);
-}
-.mz-backbtn:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
-.mz-page-hero { display: grid; justify-items: center; text-align: center; gap: 1px; padding: 9px 17px 14px; }
-.mz-hero-nm { font-size: 18px; font-weight: 700; }
-.mz-hero-row { display: flex; align-items: center; gap: 9px; }
-.mz-bignum { font-weight: 200; font-size: 47px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.mz-hero-sb { font-size: 12px; color: #6E6257; }
-.mz-page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 17px 19px; }
-.mz-page-body::-webkit-scrollbar { display: none; }
-.mz-principle { font-size: 11px; font-weight: 300; color: #A2958A; text-align: center; margin-top: 19px; }
-
-/* thin collapsible reference strip — closed header already tells the story */
-.mz-colstrip { border-radius: 18px; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.07);
-  box-shadow: 0 14px 26px -17px rgba(43, 33, 24, 0.3); overflow: hidden; }
-.mz-colhead { display: flex; align-items: center; gap: 9px; width: 100%; border: none; background: none;
-  font-family: inherit; padding: 11px 14px; cursor: pointer; text-align: left; }
-.mz-csum { margin-left: auto; font-size: 10px; font-weight: 600; color: #6E6257; font-variant-numeric: tabular-nums; }
-.mz-chev { color: #A2958A; font-size: 12px; transition: transform 0.2s ease; flex: none; }
-.mz-colstrip.open .mz-chev { transform: rotate(180deg); }
-.mz-colbody { padding: 0 14px 13px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .mz-play .rise { opacity: 1; transform: none; animation: none; }
-  .mz-tile, .mz-chev { transition: none; }
-}
