@@ -305,12 +305,16 @@ are usable without a build step).
   washed by its score band, with the big score, the four subscores as **animated sparks** (sleep sky ·
   fuel sage · check-in rose · activity coral) and clay-icon data chips (kcal · sleep · workouts ·
   check-in n/4 · a `jegyzet` chip when Mezo wrote about the day); above them mini-cells for
-  *legjobb nap · leggyengébb · tanulom*. Tapping a tile makes it **grow full-width** and expands the
-  detail in place: four subscore rings, kcal **and** protein against target (the kcal target is fetched
-  but never shown today), alvás · edzés · XP cells, the Mezo note in a **companion bubble with the orb**
-  instead of today's unmarked paragraph, and `Beszélgess a napról`. Honest distinction the shipped UI
-  does not draw: **`tanulom`** = fewer than two domains have data · **`nincs adat`** = nothing was logged
-  that day (dashed tile) · future days dashed, dimmed and unexpandable. **4 · Heti felfedezések**: `5 új nyom a
+  *legjobb nap · leggyengébb · tanulom*. Tapping a tile opens a **dedicated day page** (round 4 —
+  the in-place full-width expansion punched a hole in the mosaic when a right-column tile opened): hero
+  with the day's score ring and data chips, `Miből jött össze` with the four subscore rings,
+  `Fuel · a cél ellenében` with three target bars, alvás · edzés · súly · XP cells, the Mezo note on an
+  **orb card** with feedback and `Beszélgess a napról`, and finally **‹ előző nap / következő nap ›**
+  tiles carrying the neighbours' scores so the week can be stepped through without leaving. Honest
+  distinction the shipped UI does not draw: **`tanulom`** = fewer than two domains have data (`kitalálni
+  nem fog`) · **`nincs adat`** = nothing was logged that day, so it does not count toward the weekly
+  score · future days get their own empty page. When the review wrote no note for a day, the page says
+  so instead of staying silent. **4 · Heti felfedezések**: `5 új nyom a
   memóriában` + category dots → subpage mosaic with the status information the API returns and the UI
   drops: pattern `event` (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), life-event dates, prediction
   outcomes (◐ Folyamatban · ✓ Bevált · ✗ Nem jött be); the header line separates these (things that
