@@ -186,6 +186,13 @@
   --mz-qdone-ink: #5F7A52;
   --mz-qxp-ink: #A8801F;
   --mz-qxp-bg: rgba(201, 150, 46, 0.12);
+  /* Memoár + Tudástár re-face (mezo-d20.5.5) — prototype mezo-body .memoir/.candc/.facttile */
+  --mz-memoir-glow: rgba(138, 118, 204, 0.16);
+  --mz-memoir-shadow: 0 24px 42px -19px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-cand-ring: #C9962E;
+  --mz-cand-shadow: 0 19px 33px -17px rgba(201, 150, 46, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-fic-bg: rgba(255, 255, 255, 0.78);
+  --mz-fact-off-bg: rgba(255, 255, 255, 0.6);
 
 }
 
@@ -294,6 +301,13 @@
   --mz-qdone-ink: var(--dv-sage);
   --mz-qxp-ink: var(--dv-amber);
   --mz-qxp-bg: color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card));
+  /* Memoár + Tudástár re-face (mezo-d20.5.5) — glows/rings on the dark dv ramp */
+  --mz-memoir-glow: color-mix(in srgb, var(--dv-lav) 22%, transparent);
+  --mz-memoir-shadow: 0 24px 42px -19px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-cand-ring: var(--dv-amber);
+  --mz-cand-shadow: 0 19px 33px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mz-fic-bg: color-mix(in srgb, var(--surface-elevated) 78%, transparent);
+  --mz-fact-off-bg: color-mix(in srgb, var(--surface-card) 60%, transparent);
 
 }
 
@@ -4120,8 +4134,56 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev, .nr-tick { transition: none; }
-  .nck-fill { transition: none; }
+  .nck-fill, .mz-decbtn { transition: none; }
 }
+
+/* ── Mezo · Memoár + Tudástár re-face (mezo-d20.5.5) — prototype mezo-body
+      #page-memoar / #page-tudas ×1.18 (330→390px frame). ── */
+
+/* Memoár: Fraunces-titled chapter card with the lavender glow */
+.mz-memoir { position: relative; overflow: hidden; border-radius: 21px; padding: 17px 17px 15px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-memoir-shadow); }
+.mz-memoir::before { content: ''; position: absolute; top: -47px; right: -35px; width: 177px; height: 177px;
+  border-radius: 50%; background: radial-gradient(circle, var(--mz-memoir-glow), transparent 70%); }
+.mz-memoir-ttl { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-size: 18px;
+  font-weight: 500; line-height: 1.35; margin-top: 6px; }
+.mz-memoir-bd { font-size: 13px; font-weight: 300; line-height: 1.6; margin: 8px 0 0; }
+.mz-memoir-foot { display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  margin-top: 13px; padding-top: 11px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.mz-anniv { border-radius: 19px; padding: 12px 14px; background: var(--mz-wash-lav);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
+.mz-anniv p { font-size: 12px; font-weight: 300; line-height: 1.5; margin: 5px 0 0; }
+
+/* Tudástár: the gold-ringed approval inbox card */
+.mz-candc { border: 1px solid var(--mz-cand-ring); border-radius: 19px; padding: 12px 14px 13px;
+  background: var(--mz-stripbg); box-shadow: var(--mz-cand-shadow); }
+.mz-decrow { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; }
+.mz-decbtn { min-height: 44px; padding: 0 17px; border-radius: 999px; flex: none; cursor: pointer;
+  border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); transition: transform 0.12s ease; }
+.mz-decbtn:active { transform: scale(0.95); }
+.mz-decbtn:disabled { opacity: 0.45; cursor: default; }
+.mz-decbtn.primary { border-color: transparent; background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+
+/* Tudástár: category-washed fact tiles (iterations §1 — list rows → tiles) */
+.mz-facttile { display: flex; gap: 11px; align-items: flex-start; border-radius: 19px; padding: 12px 13px;
+  background: var(--mz-wash, var(--mz-wash-white)); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow); }
+.mz-facttile.mz-w-sage { box-shadow: var(--mz-shadow-sage); }
+.mz-facttile.mz-w-sky  { box-shadow: var(--mz-shadow-sky); }
+.mz-facttile.mz-w-gold { box-shadow: var(--mz-shadow-gold); }
+.mz-fic { width: 35px; height: 35px; border-radius: 13px; display: grid; place-items: center; flex: none;
+  background: var(--mz-fic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.mz-fact-grow { flex: 1; min-width: 0; }
+.mz-fact-tx { font-size: 13px; line-height: 1.45; margin: 0; }
+.mz-fact-sb { font-size: 10px; color: var(--mz-ink-soft); margin: 3px 0 0; font-variant-numeric: tabular-nums; }
+.mz-fact-origin { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); line-height: 1.5; margin: 4px 0 0; }
+.mz-fact-status { font-size: 10px; color: var(--mz-ink-mut); margin: 5px 0 0; }
+.mz-facttile.off { background: var(--mz-fact-off-bg); box-shadow: none;
+  border: 1.2px dashed rgba(43, 33, 24, 0.16); }
+.mz-facttile.off .mz-fact-tx { color: var(--mz-ink-soft); }
 
 /* ============================================================
    Today · iOS list language (mezo-e26w)
