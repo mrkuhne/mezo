@@ -3988,6 +3988,7 @@ button.mz-tile:active { transform: scale(0.96); }
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 /* ── Mezo üzenetei page (mezo-d20.2.2) — prototype #page-mezo: breathing-orb
    hero + the day's companion thread. Values verbatim from nap-head.html ×1.18. ── */
 .mz-page-hero.orb svg { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
@@ -4071,6 +4072,25 @@ button.mz-tile:active { transform: scale(0.96); }
 .nck-fill:active { transform: scale(0.94); }
 .nck-dim { opacity: 0.6; }
 >>>>>>> feat/d20-nap-checkin
+=======
+/* ── Életjel page (mezo-d20.2.6) — prototype #page-vital ×1.18 ──
+   hero: segmented six-arc ring + big average %; tiles: eyebrow + clay icon +
+   mini conic ring (.rr 22px → 26px) + pct. Colors ride the need inks inline
+   (accent inks, not surfaces); the ring hole speaks the wash token. */
+.ej-hero-row { display: flex; align-items: center; justify-content: center; gap: 26px; }
+.ej-bigring { width: 90px; height: 90px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.ej-ringhole { width: 61px; height: 61px; border-radius: 50%; background: var(--mz-wash-white);
+  display: grid; place-items: center; }
+.ej-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.ej-rr { width: 26px; height: 26px; border-radius: 50%; flex: none;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+  display: grid; place-items: center; }
+.ej-rr::after { content: ''; width: 17px; height: 17px; border-radius: 50%; background: var(--mz-wash-white); }
+.ej-pct { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* attention skin (prototype: the low Mozgás tile) — terracotta max, never red */
+.ej-warn { border: 1px solid rgba(255, 107, 74, 0.5); }
+.ej-pct.is-warn { color: #A84A26; }
+>>>>>>> feat/d20-nap-eletjel
 
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }

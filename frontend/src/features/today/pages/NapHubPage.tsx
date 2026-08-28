@@ -24,7 +24,7 @@ import { useNotificationFeed } from '@/data/notification/feedHooks'
 import { DAY_FACES, dayFace, type DayFace } from '@/features/today/logic/dayFace'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { useNeeds } from '@/features/today/logic/useNeeds'
-import { NEED_META } from '@/features/today/logic/needs'
+import { needRingGradient } from '@/features/today/logic/needs'
 import { minsToBed } from '@/features/today/logic/windDown'
 import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
 import { questAction } from '@/features/today/logic/questAction'
@@ -34,7 +34,6 @@ import { DailyQuestsSheet } from '@/features/today/components/DailyQuestsSheet'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import type { DailyQuest } from '@/data/types'
-import type { NeedKey } from '@/features/today/logic/needs'
 
 const isFace = (v: string | null): v is DayFace => v !== null && (DAY_FACES as readonly string[]).includes(v)
 
@@ -52,20 +51,6 @@ function fmtHm(mins: number): string {
 /** SleepEntry.duration is HOURS (7.5 → "7:30"). */
 function fmtHours(hours: number): string {
   return fmtHm(Math.round(hours * 60))
-}
-
-/** The Életjel tile's segmented ring: six equal arcs, each filled to its need's level. */
-function needRingGradient(states: { key: NeedKey; pct: number }[]): string {
-  const stops: string[] = []
-  const seg = 100 / 6
-  states.forEach((s, i) => {
-    const from = i * seg
-    const fillTo = from + (seg * Math.max(0, Math.min(100, s.pct))) / 100
-    const to = (i + 1) * seg
-    stops.push(`${NEED_META[s.key].color} ${from}% ${fillTo}%`)
-    if (fillTo < to) stops.push(`rgba(43,33,24,0.08) ${fillTo}% ${to}%`)
-  })
-  return `conic-gradient(${stops.join(', ')})`
 }
 
 export function NapHubPage() {
@@ -297,14 +282,15 @@ export function NapHubPage() {
                 <Tile wash="coral" icon="i-edzes" eyebrow="Edzés" delayMs={110}
                   line={today.workoutType} onClick={() => navigate('/train')} aria-label="Edzés" />
               )}
-              <div className="mz-tile mz-w-white rise" style={{ '--d': '150ms' } as React.CSSProperties}>
+              <button type="button" className="mz-tile mz-w-white rise" style={{ '--d': '150ms' } as React.CSSProperties}
+                onClick={() => navigate('/nap/eletjel')} aria-label="Életjel">
                 <span className="mz-eyebrow">Életjel</span>
                 <div className="mz-spotwrap">
                   <div className="nap-bigring" style={{ background: needRingGradient(needs.states) }}>
                     <span className="nap-ringhole"><ClayIcon name="i-eletjel" size={18} /></span>
                   </div>
                 </div>
-              </div>
+              </button>
               <Tile wash="sky" icon="i-viz" eyebrow="Víz" delayMs={190}
                 line={`${(fuel.consumed.water / 1000).toLocaleString('hu-HU', { maximumFractionDigits: 2 })} / ${(fuel.targets.water / 1000).toLocaleString('hu-HU', { maximumFractionDigits: 1 })} L · +2,5 dl`}
                 onClick={() => logWater(250)} aria-label="Víz +2,5 dl" />
