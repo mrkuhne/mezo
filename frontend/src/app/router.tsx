@@ -1,6 +1,6 @@
 import { Navigate, type RouteObject, useLocation } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
-import { TodayPage } from '@/features/today/pages/TodayPage'
+import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { TrainSection } from '@/features/train/pages/TrainSection'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
@@ -72,7 +72,7 @@ export const routes: RouteObject[] = [
     element: <AppLayout />,
     children: [
       { index: true, element: <Navigate to="/nap" replace /> },
-      { path: 'nap', element: <TodayPage /> },
+      { path: 'nap', element: <NapHubPage /> },
       { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
       {
         path: 'train',

@@ -3916,6 +3916,61 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-colstrip.open .mz-chev { transform: rotate(180deg); }
 .mz-colbody { padding: 0 14px 13px; }
 
+/* ── Nap hub (mezo-d20.2.1) — header recipe + panel heroes + tile extras ── */
+.nap-hub { display: flex; flex-direction: column; gap: 13px; padding: 6px 0 8px; }
+.nap-head { display: flex; align-items: center; gap: 9px; }
+.nap-head-grow { flex: 1; min-width: 0; }
+.nap-dpwrap { position: relative; }
+.nap-roundbtn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+  background: var(--mz-chipbg); display: grid; place-items: center; cursor: pointer;
+  box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3); }
+.nap-offnow { position: absolute; top: 2px; right: 2px; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--dv-amber); box-shadow: 0 0 0 2px var(--canvas); }
+.nap-badge { position: absolute; top: -3px; right: -3px; min-width: 17px; height: 17px; border-radius: 999px;
+  background: var(--gradient-cta); color: #fff; font-size: 10px; font-weight: 800;
+  display: grid; place-items: center; padding: 0 4px; }
+.nap-dpmenu, .nap-ntfmenu { position: absolute; right: 0; top: 46px; z-index: 30;
+  background: var(--surface-card); border-radius: 18px; padding: 8px;
+  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: 0 20px 40px -16px rgba(43, 33, 24, 0.4);
+  display: flex; gap: 6px; }
+.nap-dpmenu button { width: 40px; height: 40px; border-radius: 50%; border: none; background: none;
+  display: grid; place-items: center; cursor: pointer; }
+.nap-dpmenu button.on { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
+.nap-ntfmenu { width: 264px; flex-direction: column; align-items: stretch; gap: 7px; padding: 11px; }
+.nap-ntfrow { display: grid; gap: 1px; text-align: left; border: none; background: none; font-family: inherit;
+  cursor: pointer; padding: 5px 4px; border-radius: 10px; }
+.nap-ntf-t { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.nap-ntf-x { font-size: 11px; color: var(--mz-ink-soft); }
+.nap-ntffoot { border: none; background: none; font-family: inherit; cursor: pointer;
+  font-size: 12px; font-weight: 700; color: var(--primary-deep); padding: 5px 4px 2px; text-align: left; }
+.nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-base);
+  background: var(--surface-card); display: grid; place-items: center; cursor: pointer; }
+.nap-hero { min-height: 0; cursor: default; }
+.nap-hero-row { display: flex; align-items: center; gap: 12px; }
+.nap-hero-line { display: flex; align-items: baseline; gap: 7px; }
+.nap-big { font-weight: 200; font-size: 42px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.nap-mut { font-size: 12px; color: var(--mz-ink-soft); }
+.nap-mut b { color: var(--text-primary); }
+.nap-hero-sub { display: flex; gap: 17px; margin-top: 7px; }
+.nap-lav { color: #6C5FA3; }
+.nap-sage { color: #5F7A52; }
+.nap-coral { color: var(--primary-deep); }
+.nap-dusk { background: linear-gradient(140deg, var(--mz-tone-lav), var(--mz-wash-white) 75%); }
+.nap-cta-lav { width: 100%; margin-top: 11px; padding: 10px 0; border-radius: 999px; border: none;
+  font-family: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
+  background: linear-gradient(135deg, #8A6BC9, #5D4FA0);
+  box-shadow: 0 10px 22px -8px rgba(93, 79, 160, 0.55); }
+.daybar { display: flex; gap: 4px; margin-top: 9px; align-items: center; }
+.daybar i { height: 6px; border-radius: 4px; flex: 1; background: rgba(43, 33, 24, 0.1); }
+.daybar i.f { background: var(--dv-sage); }
+.daybar i.now { background: var(--dv-amber); }
+.nap-ckdots { display: flex; justify-content: center; gap: 7px; }
+.nap-ckdots .hd, .hprog .hd { width: 9px; height: 9px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); display: inline-block; }
+.nap-ckdots .hd.f { background: var(--dv-rose); }
+.nap-bigring { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; }
+.nap-ringhole { width: 42px; height: 42px; border-radius: 50%; background: var(--mz-wash-white);
+  display: grid; place-items: center; }
+
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev { transition: none; }
