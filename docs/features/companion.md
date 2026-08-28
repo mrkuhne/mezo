@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-27
+updated: 2026-08-28
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -3628,25 +3628,53 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 
 **W4.1 feedback test additions (`mezo-b3pp.15`) — all integration-first, no LLM in the path:**
 
-- **`feedback/CompanionFeedbackApiIT`** (11 tests, HTTP-level, deliberately NOT `@Transactional` —
+- **`feedback/CompanionFeedbackApiIT`** (15 tests, HTTP-level, deliberately NOT `@Transactional` —
   the `JournalApiIT` rationale) — first vote, opposite-verdict overwrite,
   **resurrect-after-retraction**, the service-level `FEEDBACK_REASON_REQUIRES_DOWN` guard (400 on a
   reason sent with `up`), retraction incl. idempotency, batch-read incl. cross-user isolation, and a
   **dangling `artifact_id` accepted on purpose** (spec §8.1 — the no-cross-table-FK decision's
-  regression anchor: if someone ever "fixes" it with a lookup, this test fails first). Its
-  **contract-validation coverage is `artifactKind` only** — `testPutFeedback_shouldReturn400_whenArtifactKindUnknown`
-  and `testListFeedback_shouldReturn400_whenKindUnknown`.
-- **Known gap — the rest of the contract's validation is UNTESTED on the backend.** Nothing asserts
-  that an unknown `verdict`, an unknown `reason` value, an **empty** `ids` list (`minItems: 1`) or a
-  **>200** one (`maxItems: 200`) is rejected. Those constraints are declared in the fragment and so
-  are enforced by generated bean validation — the same machinery the `artifactKind` cases prove is
-  wired — which is why the gap was accepted rather than a bug, but it IS a gap: a fragment edit that
-  dropped one of those four could not fail a test today. The FE tests that look adjacent do **not**
-  close it (`feedbackHooks.test.tsx` asserts the CLIENT never *sends* an empty list; since
-  `mezo-b3pp.23`, `feedbackApi.test.ts` separately asserts no ONE request ever carries more than
-  `FEEDBACK_IDS_PER_REQUEST` (100) ids — the empty-skip and the per-chunk sizing are hook/api-layer
-  behavior, not a server-rejection assertion). Cheapest fix if it ever bites: four more cases in this IT, mirroring the two
-  `whenArtifactKindUnknown` ones.
+  regression anchor: if someone ever "fixes" it with a lookup, this test fails first). Contract
+  validation is now covered for all five constrained fields (`mezo-b3pp.24`):
+  `testPutFeedback_shouldReturn400_whenArtifactKindUnknown` and
+  `testListFeedback_shouldReturn400_whenKindUnknown` (pre-existing), plus four new cases —
+  `testPutFeedback_shouldReturn400_whenVerdictUnknown`,
+  `testPutFeedback_shouldReturn400_whenReasonUnknown`,
+  `testListFeedback_shouldReturn400_whenIdsEmpty`, and
+  `testListFeedback_shouldReturn400_whenMoreThanTheContractMaximumIdsRequested`. All five
+  constraints (`verdict`/`reason` `@Pattern`, `ids` `@Size(min = 1, max = 200)`, `kind`/`artifactKind`
+  `@Pattern`) live only on the **generated** `CompanionFeedbackApi` interface's bean-validation
+  annotations — there is no hand-written equivalent — so without these cases a fragment edit that
+  silently dropped one would ship green with every other test in the suite still passing.
+  `testPutFeedback_shouldReturn400_whenReasonUnknown` deliberately pairs its bad `reason` value with
+  `verdict = down` (the legal verdict for a reason): pairing it with `up` instead would trip the
+  service-level `FEEDBACK_REASON_REQUIRES_DOWN` guard (already covered by
+  `testPutFeedback_shouldReturn400_whenReasonSentWithUp`) before the `@Pattern` on `reason` is ever
+  reached, proving nothing about the pattern itself.
+  - **The `maxItems: 200` case is pinned but only partly reachable over HTTP.** No
+    `server.max-http-request-header-size` override exists anywhere under
+    `backend/src/main/resources`, so Tomcat's default 8 KB request-line/header limit applies. A
+    201-uuid `ids` query string is ~7.48 KB — inside that budget in the IT, which reaches
+    `@Size(max = 200)` cleanly and gets the expected `SystemMessageList` body. But the IT's
+    `TestRestTemplate` request carries only `Authorization` plus HttpClient boilerplate; a real
+    browser adds `User-Agent`, `Accept-Language`, `Accept-Encoding`, `Cookie`, `sec-ch-ua-*`,
+    `Origin`/`Referer` — typically 400–800+ combined bytes — which can push the same request over
+    Tomcat's 8 KB wall *before* bean validation runs (a bare, bodyless 400, not a field error). This
+    is not a hypothetical: it is the same header-size wall `mezo-b3pp.23` fixed on the client side by
+    chunking feedback batch reads to `FEEDBACK_IDS_PER_REQUEST` (100) ids per request — this test
+    pins the server side of that wall, not proof a browser can reach 200 in one request.
+  - **The empty-`ids` case pins a 400 but cannot prove which layer produced it.** `?ids=` binds to an
+    empty `List<UUID>` and reaches `@Size(min = 1)` on the generated interface — confirmed at the
+    time these tests were written via the `GlobalExceptionHandler` "Validation failed" log line
+    (the `ConstraintViolationException` path), not the "Unconvertible request parameter" line a
+    UUID-conversion failure would emit. But `handleConstraintViolation` and `handleTypeMismatch`
+    both emit an identical `SystemMessage` for `ids` (same `fieldName`, same
+    `VALIDATION_INVALID_VALUE` code), so the response-body assertion alone cannot distinguish the
+    two paths — it would keep passing unchanged even if a refactor moved the rejection to the
+    type-mismatch route. The FE tests that look adjacent do **not** add server-side proof either
+    (`feedbackHooks.test.tsx` asserts the CLIENT never *sends* an empty list; since `mezo-b3pp.23`,
+    `feedbackApi.test.ts` separately asserts no ONE request ever carries more than
+    `FEEDBACK_IDS_PER_REQUEST` (100) ids — both are hook/api-layer behavior, not a server-rejection
+    assertion).
 - **`feedback/MessageFeedbackPersistenceIT`** — the entity/constraint layer under the API: an `up`
   row without a reason and a `down` row with one round-trip; `ck_message_feedback_reason` really
   fires on reason-with-`up`; `uq_message_feedback_artifact` really fires on a second plain save; and

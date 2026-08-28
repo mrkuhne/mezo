@@ -281,12 +281,15 @@ class CompanionFeedbackApiIT extends ApiIntegrationTest {
 
     @Test
     void testListFeedback_shouldReturn400_whenIdsEmpty() {
-        // Probed first: `?ids=` (present but empty) could plausibly bind to a single empty-string
-        // element that then fails UUID conversion (MethodArgumentTypeMismatchException, a
-        // different handler/log line: "Unconvertible request parameter"). In practice Spring binds
-        // `ids=` to an empty List<UUID>, which genuinely reaches @Size(min = 1) on the generated
-        // API interface -- confirmed via the GlobalExceptionHandler "Validation failed" log line
-        // (the ConstraintViolationException handler), not the type-mismatch one.
+        // Point-in-time observation, not a guarantee: when this was written, Spring bound
+        // `ids=` (present but empty) to an empty List<UUID>, and the request reached
+        // @Size(min = 1) on the generated API interface (confirmed via the GlobalExceptionHandler
+        // "Validation failed" log line -- the ConstraintViolationException handler -- rather than
+        // the "Unconvertible request parameter" line a UUID-conversion failure would emit). The
+        // assertion below cannot by itself tell that path from a conversion failure: both
+        // handleConstraintViolation and handleTypeMismatch emit an identical SystemMessage for
+        // `ids` (same fieldName, same VALIDATION_INVALID_VALUE code), so a refactor that moved
+        // this rejection to the type-mismatch route would still pass this test unchanged.
         String body = getForBody("/api/companion/feedback?kind=" + MessageFeedbackEntity.KIND_CHAT_MESSAGE + "&ids=",
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
 
