@@ -54,7 +54,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 
 // The absorbed log surfaces stay the existing sheets — stubbed to markers here so the
 // dispatch assertions don't drag the whole fuel/me data layer into this page's test.
-vi.mock('@/features/fuel/sheets/LogMealSheet', () => ({ LogMealSheet: () => <div>meal-sheet-stub</div> }))
+vi.mock('@/features/fuel/pages/LogFlowPage', () => ({ LogFlowPage: () => <div>meal-sheet-stub</div> }))
 vi.mock('@/features/me/sheets/SleepLogSheet', () => ({ SleepLogSheet: () => <div>sleep-sheet-stub</div> }))
 vi.mock('@/features/today/sheets/CheckInSheet', () => ({ CheckInSheet: () => <div>checkin-sheet-stub</div> }))
 

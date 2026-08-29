@@ -4,7 +4,7 @@ import { render, screen, fireEvent, renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { MealInput } from '@/data/types'
 
-// Single-hook override (the LogMealSheet.timestamp.test idiom): every hook stays real (mock mode),
+// Single-hook override (the LogFlowPage.timestamp.test idiom): every hook stays real (mock mode),
 // only logMeal becomes a spy so we can read the outgoing payload.
 const hoisted = vi.hoisted(() => ({ logMeal: null as null | ((input: MealInput) => void) }))
 vi.mock('@/data/hooks', async (importOriginal) => {
@@ -18,7 +18,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   }
 })
 
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { useRecipes } from '@/data/hooks'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -32,7 +32,7 @@ function setup() {
   return { qc, wrapper }
 }
 
-function openSheetWithRecipe(recipeId?: string) {
+function openFlowWithRecipe(recipeId?: string) {
   const { qc, wrapper } = setup()
   const recipes = renderHook(() => useRecipes(), { wrapper })
   const recipe = recipeId
@@ -40,22 +40,22 @@ function openSheetWithRecipe(recipeId?: string) {
     : recipes.result.current.recipes.find(r => r.ingredients.length >= 2)!
   render(
     <QueryClientProvider client={qc}>
-      <LogMealSheet prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={vi.fn()} />
+      <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={vi.fn()} />
     </QueryClientProvider>,
   )
   return recipe
 }
 
-describe('LogMealSheet ingredient overrides', () => {
+describe('LogFlowPage ingredient overrides', () => {
   it('keeps the ingredient list collapsed until asked', () => {
-    const recipe = openSheetWithRecipe()
+    const recipe = openFlowWithRecipe()
     expect(screen.queryByRole('button', { name: new RegExp(`${recipe.ingredients[0].name} növelés`, 'i') }))
       .not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /hozzávalók finomhangolása/i })).toBeInTheDocument()
   })
 
   it('expands to one editable row per ingredient', () => {
-    const recipe = openSheetWithRecipe()
+    const recipe = openFlowWithRecipe()
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
     for (const line of recipe.ingredients) {
       expect(screen.getByRole('button', { name: new RegExp(`${line.name} növelés`, 'i') })).toBeInTheDocument()
@@ -65,11 +65,11 @@ describe('LogMealSheet ingredient overrides', () => {
   it('sends the changed line as an ingredientOverride and leaves the rest alone', () => {
     const logSpy = vi.fn()
     hoisted.logMeal = logSpy as (input: MealInput) => void
-    const recipe = openSheetWithRecipe()
+    const recipe = openFlowWithRecipe()
 
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
     fireEvent.click(screen.getByRole('button', { name: new RegExp(`${recipe.ingredients[1].name} csökkentés`, 'i') }))
-    fireEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
 
     const payload = logSpy.mock.calls[0][0] as MealInput
     const item = payload.items[0]
@@ -84,10 +84,10 @@ describe('LogMealSheet ingredient overrides', () => {
   it('sends no overrides when nothing was touched', () => {
     const logSpy = vi.fn()
     hoisted.logMeal = logSpy as (input: MealInput) => void
-    openSheetWithRecipe()
+    openFlowWithRecipe()
 
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
-    fireEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
 
     const item = (logSpy.mock.calls[0][0] as MealInput).items[0]
     if (item.source === 'estimate') throw new Error('expected the recipe arm')
@@ -97,7 +97,7 @@ describe('LogMealSheet ingredient overrides', () => {
   it('drops the override entirely when a row is stepped back to its original amount', () => {
     const logSpy = vi.fn()
     hoisted.logMeal = logSpy as (input: MealInput) => void
-    const recipe = openSheetWithRecipe()
+    const recipe = openFlowWithRecipe()
 
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
     const name = recipe.ingredients[0].name
@@ -108,7 +108,7 @@ describe('LogMealSheet ingredient overrides', () => {
     expect(screen.queryByText(/módosítva/i)).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /alaphelyzet/i })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
     const item = (logSpy.mock.calls[0][0] as MealInput).items[0]
     if (item.source === 'estimate') throw new Error('expected the recipe arm')
     expect(item.ingredientOverrides).toBeUndefined()
@@ -117,12 +117,12 @@ describe('LogMealSheet ingredient overrides', () => {
   it('reverts every change with Alaphelyzet', () => {
     const logSpy = vi.fn()
     hoisted.logMeal = logSpy as (input: MealInput) => void
-    const recipe = openSheetWithRecipe()
+    const recipe = openFlowWithRecipe()
 
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
     fireEvent.click(screen.getByRole('button', { name: new RegExp(`${recipe.ingredients[0].name} csökkentés`, 'i') }))
     fireEvent.click(screen.getByRole('button', { name: /alaphelyzet/i }))
-    fireEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
 
     const item = (logSpy.mock.calls[0][0] as MealInput).items[0]
     if (item.source === 'estimate') throw new Error('expected the recipe arm')
@@ -139,7 +139,7 @@ describe('LogMealSheet ingredient overrides', () => {
   // contribution to 10.6*0.6 = 6.36g, so the new total is 6.36 + 0 + 1.92 + 0 + 1.875 = 10.155 g,
   // which rounds to "10,2".
   it('a Rost-összesítő 11,2-ről 10,2-re csökken, amikor a zab-sor mennyiségét egy lépéssel visszaveszik', () => {
-    const recipe = openSheetWithRecipe('rec-1')
+    const recipe = openFlowWithRecipe('rec-1')
     expect(recipe.ingredients[0].refId).toBe('ing-zab')
 
     expect(screen.getAllByText('11,2')).toHaveLength(2) // soronkénti + "EZ AZ ÉTKEZÉS" cella

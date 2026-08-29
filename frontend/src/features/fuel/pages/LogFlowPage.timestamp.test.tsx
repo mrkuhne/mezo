@@ -18,7 +18,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   }
 })
 
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { usePantry } from '@/data/hooks'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -35,7 +35,7 @@ function setup() {
   return { qc, wrapper }
 }
 
-describe('LogMealSheet loggedAt', () => {
+describe('LogFlowPage loggedAt', () => {
   // Root cause of the pre-workout mis-score: a UTC `Z` timestamp made the backend classify the
   // meal's training role + timing against UTC wall-clock (1-2h off local), so a pre-workout
   // breakfast fell out of its pre-window and got the standard rubric. The local offset must ride
@@ -49,10 +49,10 @@ describe('LogMealSheet loggedAt', () => {
 
     render(
       <QueryClientProvider client={qc}>
-        <LogMealSheet prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
+        <LogFlowPage prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
       </QueryClientProvider>,
     )
-    fireEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
 
     const payload = logSpy.mock.calls[0][0] as MealInput
     expect(payload.loggedAt).toMatch(/T\d\d:\d\d:\d\d[+-]\d\d:\d\d$/)
