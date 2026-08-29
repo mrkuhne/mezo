@@ -4976,6 +4976,8 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 
 @media (prefers-reduced-motion: reduce) {
   .ppl-tile:active { transform: none; }
+}
+
 /* ── Értesítés + AI-napló re-face (mezo-d20.6.8) — prototype en-body
    #page-ertesites / #page-ai ×1.18. The dark daily-load card stays a fixed
    dark surface in BOTH themes (prototype .ntfprev — a deliberately-nocturnal
