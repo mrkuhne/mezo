@@ -5303,6 +5303,76 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 
 @media (prefers-reduced-motion: reduce) {
   .mz-rcpcard { transition: none; }
+/* ── Fuel · Kamra v2 + item detail (mezo-d20.4.5) — prototype fuel-body
+   #page-kamra / #page-kitem ×1.18. Kind-washed rail cards reuse the SAME
+   --mz-wash-, --mz-cell- and --mz-shadow- tokens every other Mozaik
+   tile draws from (food=sage, supplement=sky, stim=gold/amber, med=lav) —
+   no new hex literals, so light/dark + the circadian ramp already cover it.
+   `.km-k-*` sets the four custom props a row/cell needs; `.km-item`/`.km-cell`
+   just consume them. */
+.km-k-food       { --km-wash: var(--mz-wash-sage); --km-cbg: var(--mz-cell-sage-bg); --km-ink: var(--mz-cell-sage-ink); --km-shadow: var(--mz-shadow-sage); }
+.km-k-supplement { --km-wash: var(--mz-wash-sky);  --km-cbg: var(--mz-cell-sky-bg);  --km-ink: var(--mz-cell-sky-ink);  --km-shadow: var(--mz-shadow-sky); }
+.km-k-stim       { --km-wash: var(--mz-wash-gold); --km-cbg: var(--mz-cell-gold-bg); --km-ink: var(--mz-cell-gold-ink); --km-shadow: var(--mz-shadow-gold); }
+.km-k-med        { --km-wash: var(--mz-wash-lav);  --km-cbg: var(--mz-cell-lav-bg);  --km-ink: var(--mz-cell-lav-ink);  --km-shadow: var(--mz-shadow-lav); }
+
+.km-sec { display: flex; align-items: center; gap: 7px; padding: 9px 2px 6px; }
+.km-sec i { width: 9px; height: 9px; border-radius: 4px; flex: none; background: var(--km-ink); }
+.km-sec .t { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mz-ink-soft); }
+.km-sec .n { font-size: 9px; font-weight: 700; color: var(--mz-ink-mut); }
+.km-sec .rule { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(43, 33, 24, 0.12), transparent); }
+
+.km-item {
+  position: relative; display: flex; align-items: center; gap: 11px; width: 100%;
+  border-radius: 18px; padding: 9px 12px 9px 17px; margin-bottom: 8px; overflow: hidden;
+  text-align: left; font-family: inherit; border: none; cursor: pointer;
+  background: var(--km-wash); box-shadow: var(--km-shadow);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.km-item:active { transform: scale(0.97); }
+.km-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--km-ink); }
+.km-thumb { width: 40px; height: 40px; border-radius: 13px; flex: none; display: grid; place-items: center;
+  background: var(--mz-wash-white); box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06);
+  font-size: 15px; font-weight: 800; color: var(--km-ink); }
+.km-item .nm { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.km-item .sb { font-size: 9px; color: var(--mz-ink-mut); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.km-item .sb .proto { font-style: italic; }
+.km-cell { margin-left: auto; flex: none; border-radius: 12px; padding: 5px 11px 4px; text-align: center;
+  background: var(--mz-wash-white); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px rgba(43, 33, 24, 0.06);
+  color: var(--km-ink); }
+.km-cell b { display: block; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.km-cell small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+
+/* — item detail page — */
+.km-head { display: grid; justify-items: center; text-align: center; gap: 6px; padding: 5px 16px 14px; }
+.km-head .km-thumb { width: 64px; height: 64px; border-radius: 20px; font-size: 25px; }
+.km-head .nm { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
+.km-head .sb { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--mz-ink-mut); flex-wrap: wrap; justify-content: center; }
+.km-ncells { display: flex; gap: 6px; }
+.km-ncells span { flex: 1; border-radius: 13px; padding: 7px 2px 6px; text-align: center;
+  background: var(--mz-cellbg); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px rgba(43, 33, 24, 0.05); }
+.km-ncells b { display: block; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.km-ncells b.dash { color: var(--mz-ink-mut); font-weight: 500; }
+.km-ncells small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.km-rchips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+.km-rchips span { font-size: 10px; font-weight: 600; color: var(--mz-cell-coral-ink); background: var(--mz-cell-coral-bg); border-radius: 999px; padding: 4px 12px; }
+.km-stkchip { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 10px; font-weight: 700;
+  color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); border-radius: 999px; padding: 5px 13px; }
+.km-delbtn { width: 100%; min-height: 44px; border: none; background: none; font-family: inherit;
+  font-size: 12px; font-weight: 700; color: var(--warning); cursor: pointer; }
+.km-improw { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 11px; color: var(--text-secondary); }
+.km-improw + .km-improw { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.km-improw .src { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 7px;
+  background: var(--mz-cell-sky-bg); color: var(--mz-cell-sky-ink); flex: none; }
+.km-improw .chk { font-size: 8px; font-weight: 800; border-radius: 6px; padding: 2px 7px;
+  background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); flex: none; }
+.km-improw .when { margin-left: auto; color: var(--mz-ink-mut); font-size: 9px; flex: none; }
+.km-obscard { border-radius: 15px; padding: 11px 13px; background: var(--mz-wash-coral);
+  display: flex; gap: 9px; align-items: flex-start; box-shadow: var(--mz-shadow); }
+.km-obscard .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gradient-cta); flex: none; margin-top: 3px; }
+.km-obscard p { font-size: 11px; line-height: 1.5; color: var(--text-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .km-item { transition: none; }
 }
 
 /* ============================================================
