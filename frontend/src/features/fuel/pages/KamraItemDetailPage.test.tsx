@@ -72,7 +72,7 @@ test('Szerkesztés opens the edit drawer prefilled', async () => {
   expect((screen.getByLabelText(/név/i) as HTMLInputElement).value).toMatch(/Csirkemell/)
 })
 
-test('opens LogMealSheet pre-filled when "+ Logolás" is tapped', async () => {
+test('opens LogFlowPage pre-filled when "+ Logolás" is tapped', async () => {
   renderDetail('ing-csirkemell', newQc())
   await screen.findByText(/Csirkemell/)
   fireEvent.click(screen.getByRole('button', { name: /logolás/i }))

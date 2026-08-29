@@ -133,7 +133,7 @@ import {
 } from '@/data/fuel/recipeMacros'
 
 // The single normalizer behind enrichLine, computeRecipeNutrientsWithOverrides,
-// LogMealSheet's pantry-arm line, and ImportItemSheet's preview (mezo-m6uv review finding 3).
+// LogFlowPage's pantry-arm line, and ImportItemSheet's preview (mezo-m6uv review finding 3).
 describe('factsOf', () => {
   it('reads the four fields off any structurally-matching source', () => {
     const src = { fiberG: 3.2, sugarG: 4.1, saltG: 0.4, saturatedFatG: 2.8 }

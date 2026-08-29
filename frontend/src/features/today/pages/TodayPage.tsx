@@ -55,7 +55,7 @@ import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import { NeedRingSheet } from '@/features/today/sheets/NeedRingSheet'
 import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { questAction } from '@/features/today/logic/questAction'
@@ -531,7 +531,7 @@ export function TodayPage() {
       )}
       {activityQuest && <ActivityLogSheet quest={activityQuest} onClose={() => setActivityQuest(null)} />}
       {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
-      {mealOpen && <LogMealSheet initialSlot={mealOpen.slot} onClose={() => setMealOpen(null)} />}
+      {mealOpen && <LogFlowPage initialSlot={mealOpen.slot} onClose={() => setMealOpen(null)} />}
       {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
       {focusOpen && <IntentionSheet creed={intention.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}
       {reflectOpen && <ReflectSheet onReflect={reflect} onClose={() => setReflectOpen(false)} />}

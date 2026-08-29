@@ -1,9 +1,12 @@
+// Mezo · LogFlowPage prefill/slot/name contracts — retargeted verbatim from the retired
+// LogMealSheet.test.tsx (mezo-d20.9.1): every entry point below (recipe prefill, pantry prefill,
+// initialSlot seeding, the derived-until-touched title) is behaviour LogFlowPage now owns.
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, renderHook, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { useFuelDay, useRecipes, usePantry } from '@/data/hooks'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -15,7 +18,7 @@ function setup() {
   return { qc, wrapper }
 }
 
-describe('LogMealSheet', () => {
+describe('LogFlowPage', () => {
   it('opens pre-filled from a recipe and logs it to the day (meal appended)', async () => {
     const { qc, wrapper } = setup()
     const recipes = renderHook(() => useRecipes(), { wrapper })
@@ -26,13 +29,13 @@ describe('LogMealSheet', () => {
     const onClose = vi.fn()
     render(
       <QueryClientProvider client={qc}>
-        <LogMealSheet prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={onClose} />
+        <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={onClose} />
       </QueryClientProvider>,
     )
 
     // the recipe name shows as a pre-filled item line
     expect(screen.getByText(recipe.name)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
 
     await waitFor(() => {
       expect(day.result.current.fuel.meals.length).toBe(before + 1)
@@ -49,11 +52,11 @@ describe('LogMealSheet', () => {
 
     render(
       <QueryClientProvider client={qc}>
-        <LogMealSheet prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
+        <LogFlowPage prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
       </QueryClientProvider>,
     )
     expect(screen.getByText(ing.name)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
     await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
   })
 
@@ -69,7 +72,7 @@ describe('LogMealSheet', () => {
 
     render(
       <QueryClientProvider client={qc}>
-        <LogMealSheet prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
+        <LogFlowPage prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
       </QueryClientProvider>,
     )
     const perLabel = `${ing.per} ${ing.unit}`
@@ -85,12 +88,12 @@ describe('LogMealSheet', () => {
 
     render(
       <QueryClientProvider client={qc}>
-        <LogMealSheet prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
+        <LogFlowPage prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
       </QueryClientProvider>,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Vacsora' }))
-    fireEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
-    // The sheet sends the 'dinner' enum in MealInput.slot; the (shipped, frozen) data
+    fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
+    // The flow sends the 'dinner' enum in MealInput.slot; the (shipped, frozen) data
     // layer stores FuelMeal.slot as its Hungarian display label ('Vacsora') — so that
     // is what surfaces on the logged meal.
     await waitFor(() => {
@@ -102,7 +105,7 @@ describe('LogMealSheet', () => {
     const { qc } = setup()
     render(
       <QueryClientProvider client={qc}>
-        <LogMealSheet initialSlot="dinner" onClose={vi.fn()} />
+        <LogFlowPage initialSlot="dinner" onClose={vi.fn()} />
       </QueryClientProvider>,
     )
     // The 'Vacsora' (dinner) segment is pre-selected without any user interaction.
@@ -114,10 +117,10 @@ describe('LogMealSheet', () => {
     const { qc } = setup()
     render(
       <QueryClientProvider client={qc}>
-        <LogMealSheet onClose={vi.fn()} />
+        <LogFlowPage onClose={vi.fn()} />
       </QueryClientProvider>,
     )
-    expect(screen.getByRole('button', { name: /logolás a mai naphoz/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /logolás · \+10 XP/i })).toBeDisabled()
   })
 
   // Editable meal name — smart default derived from the lines, sent as MealInput.title (mezo-u68c).
@@ -133,7 +136,7 @@ describe('LogMealSheet', () => {
 
     render(
       <QueryClientProvider client={qc}>
-        <LogMealSheet prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={vi.fn()} />
+        <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={vi.fn()} />
       </QueryClientProvider>,
     )
 
@@ -141,7 +144,7 @@ describe('LogMealSheet', () => {
     expect(input.value.length).toBeGreaterThan(0)
     const shown = input.value
 
-    await userEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    await userEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
 
     await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
     expect(day.result.current.fuel.meals.at(-1)?.title).toBe(shown)
@@ -156,14 +159,14 @@ describe('LogMealSheet', () => {
 
     render(
       <QueryClientProvider client={qc}>
-        <LogMealSheet prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={vi.fn()} />
+        <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={vi.fn()} />
       </QueryClientProvider>,
     )
 
     const input = screen.getByLabelText('Étkezés neve')
     await userEvent.clear(input)
     await userEvent.type(input, 'Edzés előtti reggeli')
-    await userEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+    await userEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
 
     await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
     expect(day.result.current.fuel.meals.at(-1)?.title).toBe('Edzés előtti reggeli')

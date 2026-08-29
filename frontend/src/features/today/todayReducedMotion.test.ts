@@ -7,8 +7,8 @@ import rawCss from '@/styles/prototype.css?raw'
 /**
  * Guard (mezo-1khu heritage, re-anchored onto the three-islands CSS by mezo-euze, and again
  * onto the daypart-tabs CSS by mezo-puci): the `.isl-*` blob morph, floating capsules and L1
- * row stagger are now Fuel's alone (`shared/ui/Island.tsx` + `features/fuel/components/
- * WindowIsland.tsx` — the „Mai" window island) and the evening phase-swap (`.isl-phase`) that
+ * row stagger are now Fuel's alone (`shared/ui/Island.tsx` + Fuel's belt/keret
+ * surfaces, which carry the retired WindowIsland's classes) and the evening phase-swap (`.isl-phase`) that
  * used to live here was retired with the island components. Today's own motion is now the
  * `.dayview` fade-in (`isl-phasein`, reused). Every one of these must be neutralized under
  * `prefers-reduced-motion`, or the Playwright goldens (which run `reducedMotion: 'reduce'`)
@@ -26,7 +26,7 @@ const REDUCED_BLOCKS = [...rawCss.matchAll(/@media \(prefers-reduced-motion: red
 
 describe('the island family (now Fuel-owned) and Today day-view motion are reduced-motion safe', () => {
   // These three are Fuel's — the `.isl`/`.isl-l1` shell lives in `shared/ui/Island.tsx` and
-  // `features/fuel/components/WindowIsland.tsx` now, not Today.
+  // Fuel's belt/keret components now, not Today.
   test.each([
     ':where(.isl.isl-big) .isl-blob',
     ':where(.isl:not(.isl-big))',
@@ -152,7 +152,7 @@ const rules = parseRules(rawCss)
 const isActive = (r: Rule) => r.media !== 'reduce' && r.media !== 'no-preference'
 
 /** The three island motion families (Fuel-owned: `shared/ui/Island.tsx` +
- *  `features/fuel/components/WindowIsland.tsx`): which ACTIVE selectors belong to each (by
+ *  Fuel's belt/keret components): which ACTIVE selectors belong to each (by
  *  token) and which reduce-block override must dominate them. The fourth family this guard
  *  used to cover — the evening `.isl-phase` swap — was retired with the island components
  *  (mezo-puci); Today's own phase-in motion is `.dayview`, covered separately above. */

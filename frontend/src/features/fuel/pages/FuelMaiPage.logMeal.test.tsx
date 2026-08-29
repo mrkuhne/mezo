@@ -7,7 +7,7 @@ import type { FuelPlanToday } from '@/data/types'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // The planner never emits recipe-suggestion / budget-only slots off the frozen mock seed
-// (they only arise from the real composition), so to drive the FuelMaiPage → LogMealSheet
+// (they only arise from the real composition), so to drive the FuelMaiPage → LogFlowPage
 // tap-to-log wiring we override useFuelTimeline with a crafted plan. Every OTHER hook the page
 // pulls from @/data/hooks stays real (mock mode) via the importOriginal spread; when
 // `hoisted.plan` is unset the real useFuelTimeline runs, so this override is inert elsewhere.
@@ -62,7 +62,7 @@ const baseCtx = {
   energy: { base: 2400, activity: 0, balance: 0, target: 2400 },
 }
 
-test('tapping a recipe-suggestion window opens LogMealSheet pre-filled from that recipe', async () => {
+test('tapping a recipe-suggestion window opens LogFlowPage pre-filled from that recipe', async () => {
   const recipe = renderHook(() => useRecipes(), { wrapper }).result.current.recipes[0]
   hoisted.plan = {
     ...baseCtx,
@@ -79,7 +79,7 @@ test('tapping a recipe-suggestion window opens LogMealSheet pre-filled from that
   expect(screen.getByText('recept')).toBeInTheDocument()
 })
 
-test('tapping a budget-only window opens LogMealSheet with the mapped slot pre-selected', async () => {
+test('tapping a budget-only window opens LogFlowPage with the mapped slot pre-selected', async () => {
   hoisted.plan = {
     ...baseCtx,
     slots: [

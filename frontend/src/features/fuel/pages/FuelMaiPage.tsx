@@ -23,7 +23,7 @@
 // vanishes rather than fabricating a number, an unscored meal reads "✨ folyamatban",
 // a missed window says "Pótold", never shame.
 //
-// Retired here (component files stay in-tree until F8): DoneWindowsCapsule,
+// Retired and DELETED in F8 (mezo-d20.9.1): DoneWindowsCapsule,
 // WindowIsland + the `?w=` selection URL state, EmptyDayIsland, the `.mai-logrow`
 // standing row (absorbed by the lane's trailing out-of-window tile), the sky shell.
 // ============================================================
