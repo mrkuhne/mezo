@@ -86,7 +86,19 @@ test('no fuel-context message today → the page says so instead of padding the 
   feedMock.useCompanionFeed.mockReturnValue([workoutMsg])
   renderPage()
   expect(await screen.findByText('ma még nincs Fuel-üzenet')).toBeInTheDocument()
-  expect(document.querySelectorAll('.fh-mzmsg')).toHaveLength(0)
+  // Exactly ONE card: the honest empty-thread card (mezo-d20.11 — the armed EntranceGroup
+  // used to have nothing to animate). No companion message is padded in.
+  expect(document.querySelectorAll('.fh-mzmsg')).toHaveLength(1)
+  expect(screen.getByText(/Ma még nincs Fuel-üzenet/)).toBeInTheDocument()
+  expect(screen.queryByText(/edzés/i)).toBeNull()
+})
+
+test('the honest empty card carries the entrance choreography (.rise inside .mz-play)', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([workoutMsg])
+  const { container } = renderPage()
+  await screen.findByText(/Ma még nincs Fuel-üzenet/)
+  const card = container.querySelector('.mz-play .fh-mzmsg.rise')
+  expect(card).not.toBeNull()
 })
 
 test('a persisted feed message carries the feedback chips and votes with its artifactId', async () => {

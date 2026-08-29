@@ -58,8 +58,10 @@ export function FuelPlanPage() {
         <PageHero icon="i-rend" name="Terv" />
 
         <PageBody>
-          {/* Weekly stat strip — every number the page shows lives here exactly once. */}
-          <StatStrip>
+          {/* Weekly stat strip — every number the page shows lives here exactly once.
+              It rises with the prototype's own 30 ms lead-in (fidelity audit, mezo-d20.11:
+              the strip was the one block on this page with no entrance). */}
+          <StatStrip className="rise">
             <StatCell
               value={weeklyKcalAvg > 0 ? weeklyKcalAvg.toLocaleString() : '—'}
               label={`kcal-átlag / ${weeklyStats.kcalTarget}`}

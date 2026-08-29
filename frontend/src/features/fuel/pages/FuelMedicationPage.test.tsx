@@ -136,5 +136,9 @@ describe('FuelMedicationPage (nincs aktív gyógyszer)', () => {
     expect(screen.queryByRole('button', { name: /Beadás/ })).not.toBeInTheDocument()
     expect(screen.queryByTestId('medication-phase-note')).not.toBeInTheDocument()
     expect(container.querySelector('.mz-page-hero')).not.toBeInTheDocument()
+    // Fidelity audit (mezo-d20.11): /fuel/gyogyszer measured as "no entrance choreography"
+    // because the empty branch — the only one the seeded day ever reaches — rendered outside
+    // any EntranceGroup. The honest empty card rises too now.
+    expect(container.querySelector('.mz-play [data-testid="medication-empty"].rise')).not.toBeNull()
   })
 })
