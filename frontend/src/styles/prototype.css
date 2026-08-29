@@ -5119,6 +5119,55 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
    stripbg/shadow/radius as .mz-colstrip, just without the toggle chrome. ── */
 .mz-panel { background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
   border-radius: 18px; padding: 12px 14px; box-shadow: var(--mz-shadow); margin-bottom: 12px; }
+/* ── Edzés · session prep mosaic (mezo-d20.3.8) — prototype session-body
+   #prepPanel + tile pages ×1.18. The long hero-tile (eyebrow + title + the
+   4 mini stat cells + the CTA above the fold), the 6-tile mosaic, and the
+   Gyakorlatok page's tile-styled exercise cards (family wash + rail, clay
+   disc, labeled Cél · Induló súly columns, mini set dots, 1RM medal, a
+   múlt-hét → progresszió footer). Küldetések/Niggle badges reuse the
+   anchor+badge idiom (a numbered/exclamation dot pinned on the tile icon). */
+.tp-hero { padding: 15px 16px 16px; display: flex; flex-direction: column; gap: 9px;
+  background: linear-gradient(140deg, var(--mz-wash-coral), var(--surface-card) 72%); }
+.tp-title { font-family: var(--ff-display); font-weight: 700; font-size: 23px; line-height: 1.15; }
+.tp-cta { width: 100%; margin-top: 2px; }
+.tp-anchor { position: relative; display: inline-flex; }
+.tp-badge { position: absolute; top: -3px; right: -5px; min-width: 17px; height: 17px; padding: 0 3px;
+  border-radius: 999px; background: #FF6B4A; color: #fff; font-size: 9.5px; font-weight: 800;
+  display: grid; place-items: center; box-shadow: 0 2px 6px rgba(255, 107, 74, 0.5); }
+.tp-niggle { background: linear-gradient(150deg, var(--mz-cell-gold-bg), var(--mz-wash-white)); }
+.tp-niggle .tp-badge { background: linear-gradient(135deg, #E5C46B, #C9962E); box-shadow: 0 3px 8px -2px rgba(201, 150, 46, 0.6); }
+
+/* Gyakorlatok tile page — .gx-tile exercise card */
+.gx-tile { border-radius: 19px; padding: 12px 13px 11px; background: var(--fw, var(--mz-stripbg));
+  box-shadow: inset 3px 0 0 var(--fr, transparent), 0 12px 22px -16px rgba(43, 33, 24, 0.28); }
+.gx-top { display: flex; align-items: flex-start; gap: 9px; }
+.gx-disc { width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.8); }
+.gx-grow { flex: 1; min-width: 0; }
+.gx-name { font-size: 13px; font-weight: 700; margin-top: 1px; }
+.gx-medal { flex: none; text-align: right; font-size: 11px; font-weight: 800; color: var(--amber-deep, #A8801F); }
+.gx-medal small { display: block; font-size: 7px; font-weight: 700; letter-spacing: 0.08em; }
+.gx-cols { display: flex; gap: 16px; margin-top: 9px; }
+.gx-cols small { display: block; font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.gx-cols b { font-size: 12px; font-weight: 700; }
+.gx-dots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.gx-dot { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 8px; font-weight: 800; flex: none; }
+.gx-dot-wu { border: 1.5px dashed var(--fd, var(--text-tertiary)); color: var(--fd, var(--text-tertiary)); }
+.gx-dot-wk { background: var(--fr, var(--text-tertiary)); color: #fff; }
+.gx-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+  padding-top: 8px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); font-size: 10px; color: var(--mz-ink-soft); }
+.gx-foot b { font-weight: 700; color: var(--text-primary); }
+.gx-arr { color: var(--mz-ink-mut); }
+.gx-chip { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 999px; color: #fff; background: var(--fr); }
+.gx-chip[data-lever='deload'] { background: var(--amber-deep, #A8801F); }
+.gx-chip[data-lever='rep'] { background: var(--sage, #7FA06C); }
+.gx-challenge { margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; color: #A84A26; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .gx-tile.rise { opacity: 1; transform: none; animation: none; }
+}
 
 /* ============================================================
    Today · iOS list language (mezo-e26w)

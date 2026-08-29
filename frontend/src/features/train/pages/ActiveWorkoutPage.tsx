@@ -25,7 +25,6 @@ import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromP
 import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
 import { setStyle } from '@/features/train/logic/setBudget'
 import { selectPrepRows, weekZoneRows } from '@/features/train/logic/weekZone'
-import { WeekZoneCard } from '@/features/train/components/WeekZoneCard'
 import { avgWorkingRir, exerciseTonnage, sessionProgressSegments, setStatus, topSetDeltaPct, warmupPctLabel } from '@/features/train/logic/workoutCardMeta'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
@@ -64,24 +63,29 @@ import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
 import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
-import { ChallengesCarousel } from '@/features/train/components/ChallengesCarousel'
 import { ExerciseActionSheet } from '@/features/train/sheets/ExerciseActionSheet'
 import { ExerciseOverviewSheet, type OverviewExercise } from '@/features/train/sheets/ExerciseOverviewSheet'
-import { PrepHero } from '@/features/train/components/PrepHero'
-import { PrepExerciseCard } from '@/features/train/components/PrepExerciseCard'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
+import { ClayIcon } from '@/shared/ui/clay'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { Mosaic, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
+import { PrepGyakorlatokPage } from '@/features/train/pages/prep/PrepGyakorlatokPage'
+import { PrepFejlodesPage } from '@/features/train/pages/prep/PrepFejlodesPage'
+import { PrepHetiZonaPage } from '@/features/train/pages/prep/PrepHetiZonaPage'
+import { PrepKuldetesekPage } from '@/features/train/pages/prep/PrepKuldetesekPage'
+import { PrepBemelegitesPage, type WarmupRow } from '@/features/train/pages/prep/PrepBemelegitesPage'
+import { PrepNigglePage } from '@/features/train/pages/prep/PrepNigglePage'
 
 type Phase = 'prep' | 'active' | 'summary' | 'complete'
 type Side = 'L' | 'B' | 'R'
+/** Which prep-mosaic tile page is open (mezo-d20.3.8); null = the hub itself. */
+type PrepTile = 'gyakorlatok' | 'fejlodes' | 'zona' | 'kuldetesek' | 'bemelegites' | 'niggle'
 
-const WARMUP_ROWS = [
-  { label: 'Dinamikus stretching', time: '3 perc' },
-  { label: 'Cardio-lite · evezőpad', time: '3 perc' },
-  { label: 'Aktiváció · band pull-apart × 20', time: '2 perc' },
+const WARMUP_ROWS: readonly WarmupRow[] = [
+  { label: 'Dinamikus stretching', time: '3 perc', minutes: 3 },
+  { label: 'Cardio-lite · evezőpad', time: '3 perc', minutes: 3 },
+  { label: 'Aktiváció · band pull-apart × 20', time: '2 perc', minutes: 2 },
 ] as const
-
-const AMBER_TINT_6 = 'color-mix(in srgb, var(--warning) 6%, transparent)'
-const AMBER_BORDER = 'color-mix(in srgb, var(--warning) 30%, transparent)'
 
 // The RECORD-tier medal toast auto-hides after this long (mezo-wp6n; was PR_TOAST_MS).
 const MEDAL_TOAST_MS = 4500
@@ -277,6 +281,8 @@ function ActiveWorkoutSession({
   // an explicit feedback target that overrides `viewedId` until the debrief closes.
   const [feedbackEx, setFeedbackEx] = useState<LoggedWorkoutExercise | null>(null)
   const [niggleConfirmed, setNiggleConfirmed] = useState(false)
+  // Prep mosaic (mezo-d20.3.8): which tile's own page is open, null = the hub.
+  const [prepTile, setPrepTile] = useState<PrepTile | null>(null)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
   const [actionSheetOpen, setActionSheetOpen] = useState(false)
   // Free navigation (spec 2026-07-15): the header counter opens a jump-to overview.
@@ -754,6 +760,72 @@ function ActiveWorkoutSession({
     const zonePlanWorkouts = (activeMeso?.days ?? []).filter((d) => d.exerciseCount > 0).length
     const zoneDoneWorkouts = weekLog.completedSummaries.filter((s) => s.origin === 'meso').length
 
+    // Tile-page dispatch (mezo-d20.3.8, Huawei pattern): a tile opens its OWN
+    // page with a compact hero + stat strip; '‹ Indítás' returns to the hub.
+    const backToHub = () => setPrepTile(null)
+    if (prepTile === 'gyakorlatok') {
+      const progressionCount = W.exercises.filter((e) => (e.progression?.deltaKg ?? 0) !== 0 || (e.progression?.deltaReps ?? 0) !== 0).length
+      return (
+        <PrepGyakorlatokPage
+          groups={exerciseGroups}
+          stats={stats}
+          progressionCount={progressionCount}
+          oneRmOf={(e) => oneRmMap.get(identityKeyOf(e)) ?? null}
+          challengeOf={(e) => {
+            const c = challenges.find((x) => x.exerciseId === e.id && acceptedMap[x.id])
+            return c ? { typeLabel: c.typeLabel, target: c.target } : null
+          }}
+          onBack={backToHub}
+        />
+      )
+    }
+    if (prepTile === 'fejlodes' && forecast) {
+      return <PrepFejlodesPage forecast={forecast} workSets={stats.workSets} overload={W.overloadSummary} onBack={backToHub} />
+    }
+    if (prepTile === 'zona') {
+      return <PrepHetiZonaPage rows={zoneRows} doneWorkouts={zoneDoneWorkouts} planWorkouts={zonePlanWorkouts} onBack={backToHub} />
+    }
+    if (prepTile === 'kuldetesek') {
+      return (
+        <PrepKuldetesekPage
+          challenges={challenges}
+          accepted={acceptedMap}
+          onToggle={toggleChallenge}
+          pending={challengesPending}
+          onBack={backToHub}
+        />
+      )
+    }
+    if (prepTile === 'bemelegites') {
+      return (
+        <PrepBemelegitesPage
+          rows={WARMUP_ROWS}
+          niggleNote={niggleActive && !niggleConfirmed && W.niggleWarning
+            ? `${W.niggleWarning.muscleLabel} — a bemelegítés blokkjai erre készítenek fel.`
+            : null}
+          onBack={backToHub}
+        />
+      )
+    }
+    if (prepTile === 'niggle' && W.niggleWarning) {
+      return (
+        <PrepNigglePage
+          muscleLabel={W.niggleWarning.muscleLabel}
+          detail={W.niggleWarning.detail}
+          confirmed={niggleConfirmed}
+          onConfirm={() => setNiggleConfirmed(true)}
+          onBack={backToHub}
+        />
+      )
+    }
+
+    // ---- hub: hero (eyebrow + name + 4 mini stat cells + CTA above the fold) + the 6-tile mosaic ----
+    const warmupTotalMin = WARMUP_ROWS.reduce((s, w) => s + w.minutes, 0)
+    const acceptedCount = challenges.filter((c) => acceptedMap[c.id]).length
+    const niggleLine = W.niggleWarning
+      ? `${W.niggleWarning.muscleLabel} · ${niggleConfirmed ? 'kezelve ✓' : 'aktív'}`
+      : null
+
     return (
       <div>
         {/* Breadcrumb — pinned below the status bar like native nav chrome (mezo-wdk) */}
@@ -764,140 +836,80 @@ function ActiveWorkoutSession({
           </button>
         </div>
 
-        {/* Hero — over-line ({day} · week/phase label) + title + XP ring/skill bars
-            (forecast null-hides the ring, honest-empty-safe) + the szett/rep/perc pill. */}
-        <div style={{ padding: '6px 24px' }}>
-          <PrepHero overline={`${huWeekdayFull()} · ${weekLabel}`} title={W.title} forecast={forecast} stats={stats} overload={W.overloadSummary ?? null} />
-        </div>
-
-        {zoneRows.length > 0 && (
-          <div style={{ padding: '10px 24px 0' }}>
-            <WeekZoneCard rows={zoneRows} doneWorkouts={zoneDoneWorkouts} planWorkouts={zonePlanWorkouts} />
-          </div>
-        )}
-
-        {/* Niggle pre-flag — dismissed once acknowledged ("Értem · jó így") */}
-        {niggleActive && W.niggleWarning && !niggleConfirmed && (
-          <div style={{ padding: '16px 24px' }}>
-            <div
-              className="card"
-              style={{
-                padding: 16,
-                background: AMBER_TINT_6,
-                borderColor: AMBER_BORDER,
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--warning)' }} />
-              <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                <Icon name="warning" size={16} color="var(--warning)" />
-                <span className="eyebrow" style={{ color: 'var(--warning)' }}>
-                  {W.niggleWarning.muscleLabel} · aktív niggle
-                </span>
-              </div>
-              <p style={{ fontSize: 13, marginTop: 10, color: 'var(--text-primary)', lineHeight: 1.5 }}>
-                {W.niggleWarning.detail}
-              </p>
-              <div className="row gap-sm mt-md">
-                <button
-                  type="button"
-                  className="cta-ghost"
-                  style={{ fontSize: 10 }}
-                  onClick={() => setNiggleConfirmed(true)}
-                >
-                  Értem · jó így
-                </button>
-                <button type="button" className="chip" style={{ fontSize: 9 }}>
-                  Tudatosítsuk később
-                </button>
-              </div>
+        <EntranceGroup>
+          <div style={{ padding: '6px 24px 0' }}>
+            <div className="mz-tile mz-w-coral tp-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+              <span className="mz-eyebrow" style={{ color: 'var(--coral-deep)' }}>{huWeekdayFull()} · {weekLabel}</span>
+              <span className="tp-title">{W.title}</span>
+              <StatStrip className="mt-sm">
+                <StatCell value={forecast ? `+${forecast.totalXp}` : '—'} label="várható XP" />
+                <StatCell value={stats.workSets} label="szett" />
+                <StatCell value={stats.durationEst > 0 ? `~${stats.durationEst}′` : '—'} label="idő" />
+                <StatCell value={stats.muscleCount} label="izomcsoport" />
+              </StatStrip>
+              <button type="button" className="np-cta np-press tp-cta" onClick={beginWorkout}>
+                ⚡ Kezdjük el →
+              </button>
             </div>
           </div>
-        )}
 
-        {/* ⚔️ A mai küldetések — companion proposes, user approves */}
-        <ChallengesCarousel
-          challenges={challenges}
-          accepted={acceptedMap}
-          onToggle={toggleChallenge}
-          pending={challengesPending}
-        />
-
-        {/* Warmup block */}
-        <div style={{ padding: '8px 24px' }}>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>
-            Bemelegítés · 8 perc
-          </div>
-          <div className="col gap-sm">
-            {WARMUP_ROWS.map((w, i) => (
-              <div
-                key={i}
-                className="row"
-                style={{
-                  padding: '10px 14px',
-                  alignItems: 'center',
-                  background: 'var(--surface)',
-                  borderRadius: 20,
-                  boxShadow: 'var(--np-shadow-row)',
-                }}
+          <div style={{ padding: '11px 24px 24px' }}>
+            <Mosaic>
+              <Tile
+                wash="coral" icon="i-edzes" eyebrow="Gyakorlatok" delayMs={70}
+                line={`${W.exercises.length} gyakorlat · ${stats.workSets + stats.warmupSets} szett`}
+                onClick={() => setPrepTile('gyakorlatok')} aria-label="Gyakorlatok"
+              />
+              {forecast && (
+                <Tile
+                  wash="coral" icon="i-growth" eyebrow="Fejlődés" delayMs={100}
+                  line={`+${forecast.totalXp} XP`}
+                  onClick={() => setPrepTile('fejlodes')} aria-label="Várható fejlődés"
+                />
+              )}
+              {zoneRows.length > 0 && (
+                <Tile
+                  wash="white" icon="i-edzes" eyebrow="Heti zóna" delayMs={130}
+                  line={`kész ${zoneDoneWorkouts}/${zonePlanWorkouts} edzés`}
+                  onClick={() => setPrepTile('zona')} aria-label="Heti zóna"
+                />
+              )}
+              <button
+                type="button" className="mz-tile mz-w-gold rise" style={{ '--d': '160ms' } as React.CSSProperties}
+                onClick={() => setPrepTile('kuldetesek')} aria-label="A mai küldetések"
               >
-                <span
-                  className="label-mono"
-                  style={{ fontSize: 9, color: 'var(--coral-deep)', marginRight: 12 }}
+                <div className="mz-tile-top"><span className="mz-eyebrow">Küldetések</span></div>
+                <div className="mz-spotwrap">
+                  <span className="tp-anchor">
+                    <ClayIcon name="i-kihivas" size={38} />
+                    {acceptedCount > 0 && <span className="tp-badge">{acceptedCount}</span>}
+                  </span>
+                </div>
+                <div className="mz-tile-line">{acceptedCount}/{challenges.length} elfogadva</div>
+              </button>
+              <Tile
+                wash="sky" icon="i-lang" eyebrow="Bemelegítés" delayMs={190}
+                line={`${warmupTotalMin} perc · ${WARMUP_ROWS.length} blokk`}
+                onClick={() => setPrepTile('bemelegites')} aria-label="Bemelegítés"
+              />
+              {niggleActive && W.niggleWarning && (
+                <button
+                  type="button" className="mz-tile mz-w-gold tp-niggle rise" style={{ '--d': '220ms' } as React.CSSProperties}
+                  onClick={() => setPrepTile('niggle')} aria-label="Aktív niggle"
                 >
-                  0{i + 1}
-                </span>
-                <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>{w.label}</span>
-                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)' }}>
-                  {w.time}
-                </span>
-              </div>
-            ))}
+                  <div className="mz-tile-top"><span className="mz-eyebrow">Niggle</span></div>
+                  <div className="mz-spotwrap">
+                    <span className="tp-anchor">
+                      <ClayIcon name="i-eletjel" size={38} />
+                      {!niggleConfirmed && <span className="tp-badge">!</span>}
+                    </span>
+                  </div>
+                  <div className="mz-tile-line">{niggleLine}</div>
+                </button>
+              )}
+            </Mosaic>
           </div>
-        </div>
-
-        {/* Gyakorlatok, izomcsoport-szekciókban — muscle-color family sections (plan
-            order preserved), each exercise a bigger PrepExerciseCard (1RM badge +
-            accepted-challenge accent, ported from the old flat list's sparkle idiom). */}
-        <div style={{ padding: '16px 24px' }}>
-          <div className="col gap-md">
-            {exerciseGroups.map((group) => (
-              <div key={group.key} className="col gap-sm">
-                <div className="eyebrow" style={{ color: group.deep }}>
-                  {group.label} · {group.exercises.length} gyakorlat
-                </div>
-                <div className="col gap-sm">
-                  {group.exercises.map((e) => {
-                    const exChallenge = challenges.find((c) => c.exerciseId === e.id && acceptedMap[c.id]) ?? null
-                    return (
-                      <PrepExerciseCard
-                        key={e.id}
-                        exercise={e}
-                        oneRmKg={oneRmMap.get(identityKeyOf(e)) ?? null}
-                        accentChallenge={exChallenge ? { typeLabel: exChallenge.typeLabel, target: exChallenge.target } : null}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* In-flow CTA at the END of the list (mezo-87d2): `position: sticky; bottom`
-            proved platform-fragile on the device scroller (it pinned mid-content on
-            iOS PWA), and the approved B mockup had the CTA after the content anyway.
-            np-ctarow: .np-cta is flex:1 — full-width only inside this flex row. */}
-        <div className="np-ctarow" style={{ marginTop: 0, padding: '16px 24px 32px' }}>
-          <button
-            type="button"
-            className="np-cta np-press"
-            onClick={beginWorkout}
-          >
-            ⚡ Kezdjük el →
-          </button>
-        </div>
+        </EntranceGroup>
       </div>
     )
   }
