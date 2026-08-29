@@ -32,7 +32,12 @@ public record ProactiveProperties(
      *  unlike {@link Weekly}'s forward-looking suggestion. */
     public record WeeklyReview(
         /** Monday schedule (server zone) — the review is FOR the week that just ended. */
-        @NotBlank String cron
+        @NotBlank String cron,
+        /** How many trailing weeks of live reviews the highlight-citation signal looks back over
+         *  (mezo-d20.7.7). A citation is a decaying signal on purpose: a fact the companion leaned
+         *  on all last spring and never since should not keep outranking today's material forever.
+         *  Doubles as the bound on the derived read. */
+        @Min(1) @Max(52) int citationWindowWeeks
     ) {}
 
     /** W2 Sunday-evening weekly memoir generation. */

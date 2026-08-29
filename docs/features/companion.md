@@ -3156,7 +3156,21 @@ fails outright). **`PatternImpactSource`** (`feature.companion.service`, plain i
 the dependency exactly like `TodayQuestSource` does, just mirrored: `PatternPairDetailService`
 depends only on its own package; the real assembly (`feature.proactive.service.PatternImpactService`)
 imports `feature.companion` (the already-existing direction) and implements the interface — Spring
-wires it in, no compile-time edge crosses the boundary in the new direction. `PatternImpactService`
+wires it in, no compile-time edge crosses the boundary in the new direction.
+
+**`HighlightCitationSource`** (`feature.companion`, `mezo-d20.7.7`) is the third instance of the
+same inversion, and the one that closes the weekly review's highlight loop: it answers "in how many
+of the last 12 live weekly reviews was this pattern/fact cited?", implemented by
+`feature.proactive.service.HighlightCitationSourceAdapter`. Consumed through an `ObjectProvider`
+(the adapter needs BOTH switches, so it can genuinely be absent), and that absence surfaces as a
+`null` `citedWeeks` — not measurable is not zero. Two hard boundaries, both deliberate:
+`PatternEntity.confidence` (a statistic) is never touched by a citation and a citation never moves
+a pattern's status; and `KnowledgeFactEntity.reinforcementCount` keeps meaning "the USER re-stated
+this" rather than being widened to cover the model quoting its own knowledge — the citation acts
+only as a tie-breaker UNDER reinforcement inside `KnowledgeFactService.renderPromptBlock`. Full
+rationale in [`proactive.md`](proactive.md) §5.12.
+
+`PatternImpactService`
 is `@ConditionalOnProperty(COMPANION_SWITCH)` — the SAME switch as `PatternPairDetailService`, not
 `PROACTIVE_SWITCH` — so the detail endpoint always resolves a bean when companion is on; with the
 proactive generators off it just lists nothing (the finder repositories are plain, unconditioned

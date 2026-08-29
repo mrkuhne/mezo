@@ -43,7 +43,8 @@ import tools.jackson.databind.ObjectMapper;
  * Weekly review generator (Én/Heti, spec 2026-08-27 §5, bd mezo-p2tr) — the {@code
  * MemoirGenerator} idiom applied to the week's data instead of a single narrative: PURE-CODE
  * gather ({@link MeWeekService#week(UUID, LocalDate)}'s day rows + the week's confirmed pattern
- * events + newly-created facts + active life events + the week's memoir/predictions, plus a
+ * events + newly-created facts + active life events + the week's memoir/predictions + the wider
+ * context {@link WeeklyReviewContextSources} renders, plus a
  * numbered anchor-candidate list) → ONE SMART-tier call with a strict-JSON contract
  * {@code {summary, dayNotes, anchorIndexes, candidateFacts}} — highlights are model-SELECTED from
  * code-collected candidates, never invented. Empty week (no day carries any logged data) or an
@@ -53,6 +54,18 @@ import tools.jackson.databind.ObjectMapper;
  * (mezo-d20.7.6): the week's lessons, handed to {@link WeeklyLessonService} which bounds-checks,
  * dedupes and caps them onto the same {@code learned_fact} candidate flow chat extraction feeds.
  * No usable lesson ⇒ no candidate row, same no-placeholder rule as the review itself.
+ *
+ * <p>mezo-d20.7.7: every collected candidate now carries the id of the entity it came from, so a
+ * persisted highlight is a REF and not just a chip label. That is the whole write side of the
+ * highlight-feedback loop — the reading side ({@code HighlightCitationSourceAdapter}) derives
+ * "cited in N of the last weeks" from the live review rows, so this generator gains no counter to
+ * keep, nothing to decrement on regenerate, and no new failure mode.
+ *
+ * <p>The wider gather input (mezo-d20.7.8) is data ONLY: it adds no anchor candidates and no prompt
+ * text. Anchor kinds stay {@code Pattern|Fact|LifeEvent|Memory} — the vocabulary
+ * {@code WeeklyReviewHighlight.kind} documents in {@code api/openapi.yml} and the FE RefTag chips
+ * render — so this slice is backend-only, and every candidate keeps costing DOUBLE tokens (its own
+ * section plus the numbered list), which is exactly the budget argument for not minting more.
  */
 @Slf4j
 @Service
@@ -93,6 +106,7 @@ public class WeeklyReviewGenerator {
     private final ObjectMapper objectMapper;
     private final AppNotificationEmitter appNotificationEmitter;
     private final WeeklyLessonService weeklyLessonService;
+    private final WeeklyReviewContextSources contextSources;
 
     public record WeeklyReviewGather(String payload, List<Highlight> candidates) {
     }
@@ -178,7 +192,9 @@ public class WeeklyReviewGenerator {
                 String title = patternRepository.findByIdAndCreatedByAndDeletedFalse(event.getPatternId(), userId)
                         .map(PatternEntity::getTitle).orElse("Ismeretlen minta");
                 payload.append("- ").append(title).append(" (").append(event.getKind()).append(")\n");
-                candidates.add(new Highlight("Pattern", title));
+                // mezo-d20.7.7: the candidate carries the PATTERN's id, not the event's — a
+                // citation is about the pattern, and two events in one week are one pattern.
+                candidates.add(new Highlight(Highlight.KIND_PATTERN, title, event.getPatternId()));
             }
         }
 
@@ -189,7 +205,7 @@ public class WeeklyReviewGenerator {
             for (KnowledgeFactEntity fact : facts) {
                 String label = truncate(fact.getFactText(), 80);
                 payload.append("- ").append(label).append('\n');
-                candidates.add(new Highlight("Fact", label));
+                candidates.add(new Highlight(Highlight.KIND_FACT, label, fact.getId()));
             }
         }
 
@@ -199,13 +215,13 @@ public class WeeklyReviewGenerator {
             payload.append("\nÉLETESEMÉNYEK:\n");
             for (GraphNodeEntity node : lifeEvents) {
                 payload.append("- ").append(node.getTitle()).append('\n');
-                candidates.add(new Highlight("LifeEvent", node.getTitle()));
+                candidates.add(new Highlight(Highlight.KIND_LIFE_EVENT, node.getTitle(), node.getId()));
             }
         }
 
         memoirRepository.findByCreatedByAndWeekStart(userId, weekStart).ifPresent(memoir -> {
             payload.append("\nHETI MEMOÁR: ").append(memoir.getTitle()).append('\n');
-            candidates.add(new Highlight("Memory", weekStart.toString()));
+            candidates.add(new Highlight(Highlight.KIND_MEMORY, weekStart.toString(), memoir.getId()));
         });
 
         List<PredictionEntity> predictions = predictionRepository.findByCreatedByAndWeekStart(userId, weekStart);
@@ -216,6 +232,11 @@ public class WeeklyReviewGenerator {
                         .append(" [").append(prediction.getStatus()).append("]\n");
             }
         }
+
+        // The WIDER context (mezo-d20.7.8): journal, decisions, running experiments, mentions, the
+        // medication cycle and the week's consolidated narrative. Deliberately contributes NO
+        // anchor candidates — see the section below and WeeklyReviewContextSources' javadoc.
+        payload.append(contextSources.render(userId, weekStart, weekEnd, since, until));
 
         payload.append("\nHORGONY-JELÖLTEK (az anchorIndexes ezekre mutat):\n");
         for (int i = 0; i < candidates.size(); i++) {

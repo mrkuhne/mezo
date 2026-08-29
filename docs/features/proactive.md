@@ -481,7 +481,10 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 - **An eighth owned table** — `weekly_review` (UUID PK, `created_by`, soft-delete; `week_start
   date` = the ISO Monday the review is FOR, `summary text` = the review prose, `day_notes jsonb` =
   a typed envelope of short per-day comments, `highlights jsonb` = a typed envelope of
-  code-collected, model-selected refs (the `memoir.anchors` idiom), `generated_at`). A **partial**
+  code-collected, model-selected refs (the `memoir.anchors` idiom — since `mezo-d20.7.7` each entry
+  also carries a nullable `refId`, the id of the pattern/fact/life-event/memoir it was collected
+  from, so a citation can be counted against the entity rather than a display label; rows written
+  before that slice have none and are never label-matched back), `generated_at`). A **partial**
   unique index (one LIVE review per user+week; soft-delete + reinsert = regeneration, the
   `weekly_suggestion`/`memoir` precedent) — unlike W1, WR **does** ship an on-demand regeneration
   path (below).
@@ -546,6 +549,30 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   its settled state) — always `200`, empty list = honest empty. `POST …/regenerate` archives the
   week's still-OPEN candidates with the old review and leaves DECIDED ones untouched — a
   regeneration must never undo a user decision.
+- **The WIDER gather input (`mezo-d20.7.8`)** — `WeeklyReviewContextSources` adds the six sources
+  the design spec listed as input and the first cut dropped, rendered into the payload **after**
+  the predictions block and **before** the numbered anchor list: **journal entries**
+  (`occurredOn` in-week, prose clipped to 180 chars, max 7), **decisions** (recorded in-week +
+  **reviewed** in-week with their 1–5 rating, text clipped to 140, max 6 combined), **N=1
+  experiments** whose `[startDate, startDate+totalDays)` window *intersects* the week (title +
+  status + window position or outcome; `proposed` rows never ran, so they are excluded),
+  **people mentions** aggregated to a **per-person COUNT** (top 5), the **medication cycle**
+  position on the week's first and last day (one line, derived via `MedicationCycleService`), and
+  the week's consolidated **`period_summary(week)`** narrative (clipped to 600 — its `03:30 MON`
+  consolidation cron runs three hours before the `06:50` review cron on the SAME `weekStart`).
+  Three disciplines make this a widening rather than a bloat: it is **data only** (the prompt is
+  byte-identical and mints no new anchor kinds — the `Pattern|Fact|LifeEvent|Memory` RefTag
+  vocabulary is unchanged, and every candidate costs double tokens because it renders in its own
+  section *and* in the anchor list); **each source is capped and clipped** at the coarsest
+  granularity that still carries its signal, with mention excerpts/tone, gratitude entries,
+  `daily_summary` narratives (the `period_summary` rung IS their consolidation), the decision
+  `contextSnapshot` and the dose ledger deliberately **left out as noise**; and **an absent source
+  renders no scaffolding at all** — no header, no placeholder, an unknown cycle day or ungraded
+  review printing the house `–`. Cross-feature edges: `proactive → journal`, `proactive → people`
+  and `proactive → medication` are new, all three verified acyclic (ADR 0012 prescribes a
+  consumer-owned port where the direct edge would *close* a cycle; `CheckInNoteSourceAdapter` is
+  the standing precedent for a plain read when the direction is already safe), so no port was
+  minted and the ArchUnit freeze store is unchanged.
 - **Notifications** — `AppNotificationKind.WEEKLY_REVIEW_READY` (`/me/week` deeplink, no
   `familyKey` since the push category below already covers the event) fires on generation. The
   `NotificationCategory.WEEKLY_REVIEW` push fires **Monday 10:00, fixed** (`AnchorResolver.
@@ -1508,6 +1535,42 @@ can never break the generator's own persistence. See
 the dedup-key shapes, and the load-bearing rule that any emit-reachable IT test must drop its
 class-level `@Transactional` (the emitter's `REQUIRES_NEW` transaction otherwise FK-deadlocks against
 the test's own uncommitted fixtures).
+
+### 5.12 Proactive → Companion, highlight feedback (✅ `mezo-d20.7.7` wired — third port inversion)
+
+The weekly round already names which pattern / fact / life event / memory the week was built on
+(`weekly_review.highlights`); until this slice nothing read it back. `HighlightCitationSourceAdapter`
+(`feature.proactive.service`) implements the companion-owned `HighlightCitationSource` port — the
+same inversion as `PatternImpactSource` (§5.1) and `FeedMessageKindSource`, so the import direction
+stays proactive → companion. It answers one question: *in how many of the last
+`mezo.proactive.weekly-review.citation-window-weeks` (12) live weekly reviews was this entity
+cited?*
+
+Four decisions worth keeping:
+
+- **Derived on read, never accumulated.** The count is a fold over the LIVE `weekly_review` rows,
+  not a stored counter. Regeneration therefore cannot double-count (soft-delete + reinsert leaves
+  exactly one live row per week — the partial unique index), and a soft-deleted review stops
+  contributing immediately instead of leaving an unexplainable bump behind. There is no ledger to
+  reconcile and nothing that can drift out of sync with the reviews themselves.
+- **Weeks, not mentions** — one review naming the same pattern twice (a confirmed AND a reinforced
+  event in the same week are two candidates over one pattern) is one week of evidence.
+- **It never becomes a statistic.** `PatternEntity.confidence` stays untouched (and stays NULL for
+  statistical rows — honest small-n); a citation cannot promote a pattern or move its status. It is
+  exposed as a separate `citedWeeks` field on `PatternResponse`, rendered beside the statistic.
+- **It does not widen `reinforcementCount`.** That field means "the USER re-stated this"; the model
+  citing its own knowledge is not that — the same call `WeeklyLessonService` made when it refused to
+  reinforce on a weekly duplicate (`mezo-d20.7.6`). `KnowledgeFactResponse.citedWeeks` carries it
+  separately, and the only place it ACTS is `KnowledgeFactService.renderPromptBlock`, as a
+  tie-breaker *under* reinforcement: it can order two equally-confirmed facts, never outrank one the
+  user confirmed more often. With the proactive switch off the port is absent and `citedWeeks` is
+  `null` — not measurable, never a stand-in zero.
+
+Life-event and memory highlights carry their refId too but feed **nothing** yet, deliberately: a
+`LIFE_EVENT` node's state is the user's own (`active`/`ended`), with no salience field a citation
+could honestly inform, and a memoir belongs to exactly one week, so "cited in N weeks" over memoirs
+is structurally 0-or-1 and carries no information. The refs are recorded so a later loop has data to
+work with.
 
 ## 6. How to use it (consume)
 
