@@ -5692,6 +5692,35 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fmd-doserow .nt { font-size: 10px; font-style: italic; color: var(--mz-ink-mut); }
 .fmd-doserow .dd { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-cell-lav-ink); font-variant-numeric: tabular-nums; }
 
+/* ── Edzés · Sport heti ritmus (mezo-d20.11) — prototype edzes-body.html
+   #page-sport `.sday` / `.slotrow` / `.mastamp` / `.onestamp` ×1.18
+   (330→390px frame). Every day of the week renders: a day WITHOUT a session
+   is a dashed empty row (`.spw-day.empty`), never omitted — the prototype's
+   „nincs session" line. Colours are the rose Mozaik wash/shadow tokens; the
+   MA stamp rides the amber cell pair, the same marker the rest of the app uses. ── */
+.spw-day { position: relative; display: flex; gap: 12px; align-items: flex-start;
+  border-radius: 18px; padding: 9px 13px 9px 17px; margin-bottom: 8px; overflow: hidden;
+  background: var(--mz-stripbg); box-shadow: var(--mz-shadow); }
+.spw-day .spw-dlbl { width: 39px; flex: none; font-size: 11px; font-weight: 800;
+  color: var(--mz-ink-soft); padding-top: 2px; }
+.spw-day.has .spw-dlbl { color: var(--mz-cell-rose-ink); }
+.spw-day.today { background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose); }
+.spw-day.today::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 5px; background: var(--mz-cell-rose-ink); }
+.spw-day.empty { background: transparent; box-shadow: none;
+  border: 1.4px dashed var(--border-subtle); }
+.spw-day.empty .spw-none { font-size: 10.5px; color: var(--mz-ink-mut); padding-top: 2px; }
+.spw-slot + .spw-slot { margin-top: 8px; padding-top: 8px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.spw-l1 { display: flex; align-items: center; gap: 7px; font-size: 13px; flex-wrap: wrap; }
+.spw-l1 b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.spw-l1 .dur { font-size: 10.5px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.spw-l2 { font-size: 10px; color: var(--mz-ink-mut); margin-top: 2px; }
+.spw-ma, .spw-one { font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em;
+  border-radius: 6px; padding: 2px 6px; flex: none; }
+.spw-ma { color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg); }
+.spw-one { color: var(--mz-cell-rose-ink); background: var(--mz-cell-rose-bg); }
+.spw-logbtn { margin-left: auto; flex: none; min-height: 44px; }
+
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
    Ez a szekció EGYKOR a Mai oldal teljes „inset grouped list" lapnyelvét vitte

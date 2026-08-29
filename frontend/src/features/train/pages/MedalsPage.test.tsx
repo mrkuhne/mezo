@@ -195,3 +195,17 @@ describe('MedalsPage (mock mode)', () => {
     expect(newestIdx).toBeLessThan(oldestIdx)
   })
 })
+
+// Motion (mezo-d20.11): the page shipped an ARMED EntranceGroup with nothing
+// marked `.rise` — the wrapper animated an empty stage. Both halves must exist.
+test('the cabinet staggers inside the armed entrance group', async () => {
+  const { container } = renderView()
+  await screen.findByText('3 medál')
+  const play = container.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  const risen = play!.querySelectorAll('.rise')
+  expect(risen.length).toBeGreaterThan(1)
+  // a running 60ms cadence across the date-group eyebrows and their cards
+  expect((risen[0] as HTMLElement).style.getPropertyValue('--d')).toBe('40ms')
+  expect((risen[1] as HTMLElement).style.getPropertyValue('--d')).toBe('100ms')
+})

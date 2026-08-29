@@ -33,16 +33,36 @@ describe('RunningPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('own page-header: pghead-np over + h1', () => {
-    renderView()
-    expect(screen.getByText('Edzés · Futás')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Intervallum' })).toBeInTheDocument()
+  // Mozaik 2.0 re-face (mezo-d20.11): the prototype's #page-futas head is a
+  // `‹ Edzés` back chip; the page name + `Hét cur/weeks` live in the hero.
+  test('page head + Mozaik hero: ‹ Edzés chip, page name, week big number', () => {
+    const { container } = renderView()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Edzés')
+    expect(container.querySelector('.mz-hero-nm')).toHaveTextContent('Futás')
+    // active block rb-active-01: currentWeek 3 / 8 weeks — stated ONCE, in the hero
+    expect(container.querySelector('.mz-bignum')).toHaveTextContent('3/8')
+    expect(screen.queryByRole('heading', { name: 'Intervallum' })).not.toBeInTheDocument()
   })
 
-  test('default (E heti edzés) renders the active block hero + this week sessions', () => {
+  test('the stat strip carries the prototype cells', () => {
     renderView()
-    // active block rb-active-01: currentWeek 3 / 8 weeks
-    expect(screen.getByText(/Hét 3 \/ 8/)).toBeInTheDocument()
+    expect(screen.getByText('e heti edzés')).toBeInTheDocument()
+    expect(screen.getByText('/ hét')).toBeInTheDocument()
+    expect(screen.getByText('blokk')).toBeInTheDocument()
+  })
+
+  // Motion (mezo-d20.11): the page had NO entrance choreography at all.
+  test('the page arms the entrance choreography and staggers its children', () => {
+    const { container } = renderView()
+    const play = container.querySelector('.mz-play')
+    expect(play).not.toBeNull()
+    expect(play!.querySelector('.mz-statstrip.rise')).not.toBeNull()
+    expect(play!.querySelector('.segtabs.rise')).not.toBeNull()
+    expect(play!.querySelectorAll('.rise').length).toBeGreaterThan(3)
+  })
+
+  test('default (E heti edzés) renders the active block card + this week sessions', () => {
+    renderView()
     // week 3 prescribes both sessions
     expect(screen.getByText('Sprint-intervallum')).toBeInTheDocument()
     expect(screen.getByText('Piramis-intervallum')).toBeInTheDocument()
