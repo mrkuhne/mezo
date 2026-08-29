@@ -1,31 +1,32 @@
 import type { GrowthBadge } from '@/data/types'
 
-/** 9 computed growth badges — achieved = sage tint + ✓; else lav progress bar (Growth page). */
+/**
+ * 9 computed growth badges — achieved = sage tint + ✓; else a gold progress bar
+ * (Growth page Kitüntetések tab). Mozaik reface (mezo-d20.6.5): the prototype's
+ * `.bdggrid`/`.bdg` 3-col tile grid, the unearned tiles' bar animating in once
+ * (mzp-fill, prefers-reduced-motion guarded) like the predictions/experiments family.
+ */
 export function BadgesCard({ badges }: { badges: GrowthBadge[] }) {
   const done = badges.filter((b) => b.achieved).length
   return (
-    <div className="card" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Badge-ek</span>
-        <span className="chip">{done} / {badges.length} megszerezve</span>
+    <div className="rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+      <div className="row" style={{ justifyContent: 'space-between', padding: '0 2px 8px' }}>
+        <span className="mz-eyebrow">Badge-ek</span>
+        <span className="gr-band-chip">{done} / {badges.length} megszerezve</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 10 }}>
-        {badges.map((b) => (
-          <div key={b.key} style={{
-            background: b.achieved ? 'var(--wash-sage)' : 'var(--surface-2)',
-            borderRadius: 4, padding: '10px 6px 8px', textAlign: 'center' }}>
-            <div style={{ fontSize: 19 }}>{b.icon}</div>
-            <div style={{ fontSize: 9.5, fontWeight: 600, marginTop: 4, lineHeight: 1.25 }}>{b.name}</div>
+      <div className="gr-bdggrid">
+        {badges.map((b, i) => (
+          <div key={b.key} className={b.achieved ? 'gr-bdg done' : 'gr-bdg'}>
+            <div className="gr-bdg-em" aria-hidden="true">{b.icon}</div>
+            <b>{b.name}</b>
             {b.achieved ? (
-              <div style={{ fontSize: 8, fontWeight: 800, color: 'var(--sage-deep)', marginTop: 3 }}>✓</div>
+              <small style={{ color: 'var(--mz-cell-sage-ink)', fontWeight: 800 }}>✓</small>
             ) : (
               <>
-                <div style={{ height: 3, background: 'var(--surface-3)', borderRadius: 2, marginTop: 5, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${Math.min(100, (b.current / b.target) * 100)}%`, background: 'var(--lav-deep)' }} />
+                <div className="gr-bdg-bar">
+                  <div style={{ width: `${Math.min(100, (b.current / b.target) * 100)}%`, '--d': `${350 + i * 60}ms` } as React.CSSProperties} />
                 </div>
-                <div style={{ fontSize: 8, fontWeight: 800, color: 'var(--text-tertiary)', marginTop: 3 }}>
-                  {b.current.toLocaleString('hu-HU').replace(/[  ]/g, ' ')} / {b.target.toLocaleString('hu-HU').replace(/[  ]/g, ' ')}
-                </div>
+                <small>{b.current.toLocaleString('hu-HU').replace(/[  ]/g, ' ')} / {b.target.toLocaleString('hu-HU').replace(/[  ]/g, ' ')}</small>
               </>
             )}
           </div>

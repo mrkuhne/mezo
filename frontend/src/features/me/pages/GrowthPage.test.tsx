@@ -75,19 +75,19 @@ beforeEach(() => {
 })
 afterEach(() => vi.clearAllMocks())
 
-test('renders the Growth header', () => {
+test('renders the Growth hero + the "‹ Én" back chip (mezo-d20.6.5 Mozaik reface)', () => {
   renderPage()
-  expect(screen.getByRole('heading', { level: 1, name: 'Growth' })).toBeInTheDocument()
-  expect(screen.getByText('Me · Growth')).toBeInTheDocument()
+  expect(screen.getByText('Growth')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Én')
 })
 
-test('hero trio shows the FE-summed Össz XP, Fegyelem and Ritmus', () => {
+test('hero shows the FE-summed total XP + the Fegyelem/Ritmus subline (mezo-d20.6.5 hero)', () => {
   renderPage()
-  // Össz XP = Σ cumulativeXp across life (1085) + athletic (9350) + muscle (8550) = 18985.
+  // Total XP = Σ cumulativeXp across life (1085) + athletic (9350) + muscle (8550) = 18985.
   expect(screen.getByText('18 985')).toBeInTheDocument()
-  expect(screen.getByText('Össz XP')).toBeInTheDocument()
-  expect(screen.getByText('78%')).toBeInTheDocument() // traits.disciplinePct
-  expect(screen.getByText('5 hét')).toBeInTheDocument() // traits.consistencyWeeks
+  expect(screen.getByText('XP')).toBeInTheDocument()
+  // traits.disciplinePct + traits.consistencyWeeks, prototype's single subline.
+  expect(screen.getByText('Fegyelem 78% · Ritmus 5 hét')).toBeInTheDocument()
 })
 
 test('default Skillek tab lists all three bands, one .skl row per skill', () => {

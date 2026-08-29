@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { clampPct } from '@/shared/lib/pct'
+import { cn } from '@/shared/lib/cn'
 
 export interface SkillRowVM {
   key: string
@@ -10,29 +11,34 @@ export interface SkillRowVM {
   xp: number
 }
 
+export type SkillBandWash = 'lav' | 'sage' | 'amber'
+
 // Normalise hu-HU's NBSP / narrow-NBSP thousands separators to a plain space.
 const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
 
 /**
  * One skill band (LIFE / Atlétikus / Izom) as a full meter-row list — Growth page Skillek tab.
- * Re-skinned (Napiv, mezo-8141 Task 7): reuses the `.skl` row idiom introduced for
- * GrowthSummaryCard's top-3 preview (Task 4) — name + `.bar i` width driven by
- * `progressPct` + `.lv` level readout — plus one SkillBandCard-local extension: a
- * right-aligned per-row cumulative-XP readout after `.lv` ("no functionality lost" rule;
- * the shared `.skl`/`.bar`/`.lv` classes are untouched, so GrowthSummaryCard's top-3
- * preview on Profil keeps its original three-slot shape).
+ * Mozaik reface (mezo-d20.6.5): the card itself wears the prototype's washed `.predtile`
+ * skin (`gr-band`, one tint per band); per-skill rows keep the shared `.skl` row idiom
+ * introduced for GrowthSummaryCard's top-3 preview (Task 4) verbatim — name + `.bar i`
+ * width driven by `progressPct` (already self-animating, prefers-reduced-motion guarded)
+ * + `.lv` level readout — plus one SkillBandCard-local extension: a right-aligned per-row
+ * cumulative-XP readout after `.lv` ("no functionality lost" rule; the shared
+ * `.skl`/`.bar`/`.lv` classes are untouched, so GrowthSummaryCard's top-3 preview on
+ * Profil keeps its original three-slot shape).
  */
-export function SkillBandCard({ eyebrow, chip, rows, footer }: {
+export function SkillBandCard({ eyebrow, chip, rows, footer, wash = 'lav' }: {
   eyebrow: string
   chip: string
   rows: SkillRowVM[]
   footer?: ReactNode
+  wash?: SkillBandWash
 }) {
   return (
-    <div className="card" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 }}>
-        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{eyebrow}</span>
-        <span className="chip">{chip}</span>
+    <div className={cn('gr-band', wash)}>
+      <div className="gr-band-top">
+        <span className="mz-eyebrow">{eyebrow}</span>
+        <span className="gr-band-chip">{chip}</span>
       </div>
       <div>
         {rows.map((r) => {
@@ -47,12 +53,12 @@ export function SkillBandCard({ eyebrow, chip, rows, footer }: {
                 <i style={{ width: `${pct}%` }} />
               </div>
               <span className="lv">Lv {r.level}</span>
-              <span style={{ width: 44, textAlign: 'right', fontSize: 10, fontWeight: 700, color: 'var(--faint)', fontVariantNumeric: 'tabular-nums' }}>{fmt(r.xp)}</span>
+              <span style={{ width: 44, textAlign: 'right', fontSize: 10, fontWeight: 700, color: 'var(--mz-ink-mut)', fontVariantNumeric: 'tabular-nums' }}>{fmt(r.xp)}</span>
             </div>
           )
         })}
       </div>
-      {footer}
+      {footer && <div className="gr-band-foot">{footer}</div>}
     </div>
   )
 }
