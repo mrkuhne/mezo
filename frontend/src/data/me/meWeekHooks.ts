@@ -9,16 +9,12 @@ import { mockMeWeek, type MeWeek, type MeWeekDay } from '@/data/me/meWeek'
 
 export type { MeWeek, MeWeekDay }
 
+/** The week PAYLOAD — what the query resolves to. Deliberately free of query state:
+ *  it is also the shape of `REAL_EMPTY`, so anything added here has to be inventable
+ *  for a week that does not exist. */
 export interface MeWeekBootstrap {
   week: MeWeek | null
   mode: 'mock' | 'live'
-  /** The real-mode fetch has not resolved yet — the Heti surfaces render a skeleton, not an
-   *  empty week (mezo-d20.6.10; the hook used to throw this away, so a cold load looked like
-   *  "no data" — a lie). Always false in mock mode, where the seed is synchronous. */
-  isPending: boolean
-  /** The fetch FAILED — a retryable error state, which is not the same as "nothing logged". */
-  isError: boolean
-  retry: () => void
 }
 
 /** ADDITIVE (mezo-d20.6.10): the query's own liveness, so a screen can tell "still loading"
@@ -29,7 +25,10 @@ export interface MeWeekBootstrap {
  *  keep their names and meanings. Mock mode never pends (`initialData`) and never rejects,
  *  so both flags are always false there. */
 export interface MeWeekQuery extends MeWeekBootstrap {
+  /** The real-mode fetch has not resolved yet — the Heti surfaces render a skeleton, not an
+   *  empty week. A cold load used to look like "no data", which is a lie. */
   isPending: boolean
+  /** The fetch FAILED — a retryable error state, which is not the same as "nothing logged". */
   isError: boolean
   refetch: () => void
 }

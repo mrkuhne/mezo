@@ -17,7 +17,7 @@ import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useWeeklyReview } from '@/data/hooks'
-import { resolveWeekStart, weekHubHref } from '@/features/me/logic/weekStartParam'
+import { resolveWeekStart, weekHubPath } from '@/features/me/logic/weekNav'
 import { WeekDiscoveries, countDiscoveries } from '@/features/me/components/WeekDiscoveries'
 
 export function WeekDiscoveriesPage() {
@@ -29,7 +29,7 @@ export function WeekDiscoveriesPage() {
   const empty = count === 0
 
   const head = (
-    <PageHead label="‹ Heti" onBack={() => navigate(weekHubHref(start))}>
+    <PageHead label="‹ Heti" onBack={() => navigate(weekHubPath(start))}>
       <span className="mz-eyebrow wkl-wk">{deriveWeekTitle(start)}</span>
     </PageHead>
   )

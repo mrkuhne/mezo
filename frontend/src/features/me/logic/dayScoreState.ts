@@ -25,6 +25,21 @@ export function isDayUnlogged(day: MeWeekDay): boolean {
     && !day.checkinCount && !day.workoutCount && !day.xp
 }
 
+/** How many of the four sub-scores the Mezo could actually measure. Two is the
+ *  threshold below which it refuses to score the day at all (handoff §4). */
+export function measuredSubscores(day: MeWeekDay): number {
+  const s = day.subscores
+  return [s?.sleep, s?.fuel, s?.checkin, s?.activity].filter((v) => v != null).length
+}
+
+/** The positive reading of `isDayUnlogged` — true when the day carries ANY logged
+ *  signal at all. This is the `nincs adat` / `tanulom` split, and the reason they are
+ *  two states rather than one: "you logged nothing" and "you logged too little to
+ *  score" are different sentences to a user, and only one of them is their doing. */
+export function dayHasAnyLog(day: MeWeekDay): boolean {
+  return !isDayUnlogged(day)
+}
+
 /** `todayIso` is the viewer's LOCAL today (`localDateString()`), not a UTC slice. */
 export function dayScoreState(day: MeWeekDay, todayIso: string): DayScoreState {
   if (day.date > todayIso) return 'future'

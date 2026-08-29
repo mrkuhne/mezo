@@ -19,7 +19,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useKnowledgeActions, useWeekLessons } from '@/data/hooks'
 import { isCurrentWeek } from '@/features/me/logic/weekNav'
-import { resolveWeekStart, weekHubHref } from '@/features/me/logic/weekStartParam'
+import { resolveWeekStart, weekHubPath } from '@/features/me/logic/weekNav'
 import { WeekLessonCard } from '@/features/me/components/week/WeekLessonCard'
 import type { FactDecision } from '@/data/types'
 
@@ -53,7 +53,7 @@ export function WeekLessonsPage() {
   const accepted = rows.filter((l) => l.decision === 'accept' || l.decision === 'refine').length
 
   const head = (
-    <PageHead label="‹ Heti" onBack={() => navigate(weekHubHref(start))}>
+    <PageHead label="‹ Heti" onBack={() => navigate(weekHubPath(start))}>
       <span className="mz-eyebrow wkl-wk">{deriveWeekTitle(start)}</span>
     </PageHead>
   )

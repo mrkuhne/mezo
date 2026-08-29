@@ -13,9 +13,17 @@
 // ============================================================
 import { huInt } from '@/shared/lib/huNum'
 import { huWeekdayFull } from '@/shared/lib/dates'
-import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import type { MeWeekAggregates, MeWeekDay } from '@/data/me/meWeek'
 import type { WeeklyReview, WeeklyReviewDigest } from '@/data/me/weeklyReviewHooks'
+
+// The week-URL and day-state rules are shared with every sibling Heti page and are
+// therefore declared ONCE, elsewhere; re-exported here so the hub keeps a single
+// import surface (mezo-d20.6.10 integration — three slices had each grown their own copy).
+export { resolveWeekStart, weekHubPath } from '@/features/me/logic/weekNav'
+export {
+  type DayScoreState, dayScoreState, isDayUnlogged, dayHasAnyLog, measuredSubscores,
+  DAY_STATE_LABEL, DAY_STATE_COPY,
+} from '@/features/me/logic/dayScoreState'
 
 /** Hungarian one-decimal that KEEPS the ",0" (the prototype's `hu1`, which sets
  *  minimumFractionDigits: 1 — "7,0", not the shared `hu1`'s "7"). */
@@ -26,16 +34,6 @@ export function huDec(value: number, digits = 1): string {
   return neg ? `−${text}` : text
 }
 
-/** `?start=` → a real ISO Monday, or the current week's when absent/invalid/not-a-Monday.
- *  Lifted verbatim from the retired WeekPage so the shareable `?start=` idiom survives. */
-export function resolveWeekStart(raw: string | null): string {
-  if (raw && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    const [y, m, d] = raw.split('-').map(Number)
-    const dt = new Date(y, m - 1, d)
-    if (dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d && dt.getDay() === 1) return raw
-  }
-  return mondayIso()
-}
 
 // ── the four honest day states (handoff §4) ───────────────────────────────
 // Today's code collapses "tanulom" and "nincs adat" into one null score. They
@@ -44,41 +42,6 @@ export function resolveWeekStart(raw: string | null): string {
 //              refuses to invent a score from one signal;
 //   nodata   = you logged nothing at all, and the day does not drag the week's
 //              score down either (it is simply not in the average).
-export type DayScoreState = 'scored' | 'learning' | 'nodata' | 'future'
-
-/** True when the day carries ANY logged signal at all (the nodata/learning split). */
-export function dayHasAnyLog(day: MeWeekDay): boolean {
-  return day.kcal != null
-    || day.proteinG != null
-    || day.sleepMin != null
-    || day.weightKg != null
-    || (day.checkinCount ?? 0) > 0
-    || (day.workoutCount ?? 0) > 0
-    || (day.xp ?? 0) > 0
-    || measuredSubscores(day) > 0
-}
-
-export function measuredSubscores(day: MeWeekDay): number {
-  const s = day.subscores
-  return [s?.sleep, s?.fuel, s?.checkin, s?.activity].filter((v) => v != null).length
-}
-
-export function dayScoreState(day: MeWeekDay, todayIso: string): DayScoreState {
-  if (day.date > todayIso) return 'future'
-  if (!dayHasAnyLog(day)) return 'nodata'
-  if (day.score == null) return 'learning'
-  return 'scored'
-}
-
-/** The one-line explanation the design owes each state. Verbatim from handoff §4 —
- *  the sibling day surfaces render these too, so they are declared once. */
-export const DAY_STATE_COPY: Record<DayScoreState, string | null> = {
-  scored: null,
-  learning: 'Kettőnél kevesebb területről van adat, ezért a Mezo nem ad pontszámot: kitalálni nem fog.',
-  nodata: 'ezen a napon nem logoltál — a hét pontszámába nem számít bele',
-  future: 'még előtted — ide majd a nap adatai jönnek',
-}
-
 /** Days that actually carry a score — the `5 / 7 nap` numerator and the analysis
  *  tile's `napi pontszám · N / 7 nap` footer (the prototype's `logged`). */
 export function loggedDayCount(days: readonly MeWeekDay[]): number {
