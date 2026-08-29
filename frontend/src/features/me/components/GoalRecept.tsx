@@ -1,13 +1,16 @@
 import type { GoalResponse } from '@/data/me/goalApi'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
 
-// The G5 recept finale of the goal command-center: replaces G4b's static
-// "G5 · hamarosan" placeholder. Renders the engine's GoalPrescription —
-// a feasibility verdict banner, the per-segment recept (kcal/protein/sleep/rest +
-// projected rate + rationale) and the guard-status pills (strength e1RM trend,
-// muscle volume/rate, protein "Fuel-re vár"). When the goal has no prescription
-// yet (real mode, not evaluated) it shows an "Értékeld a célt" CTA that fires the
-// engine via `onEvaluate`. Pure presentational — consumes the raw contract shape.
-// Inline-style + token idiom, matching GoalTimeline. (mezo-g1u)
+// The G5 recept finale of the goal command-center: renders the engine's
+// GoalPrescription as the prototype's segment TILES (en-body #page-cel,
+// mezo-d20.6.2) — a `.gc-lsec` verdict chip next to the "Recept ·
+// szakaszonként" eyebrow, then one amber/sage `.gc-seg` tile per segment
+// (kcal/protein/sleep/rest as white `.mz-mcells` + an italic rationale
+// footer), then the guard-status pills (strength e1RM trend, muscle
+// volume/rate, protein "Fuel-re vár"). When the goal has no prescription yet
+// (real mode, not evaluated) it shows an "Értékeld a célt" CTA that fires the
+// engine via `onEvaluate`. Pure presentational — consumes the raw contract
+// shape. Segments render only when the engine provides them (honest states).
 
 type Prescription = NonNullable<GoalResponse['prescription']>
 type Feasibility = Prescription['feasibility']
@@ -20,102 +23,45 @@ interface GoalReceptProps {
   evaluating?: boolean
 }
 
-// Verdict → HU label + tone color. feasible = calm/brand, with-warnings = warning,
-// aggressive = error. The banner border/background derive from this one color.
-const VERDICT: Record<Feasibility['verdict'], { label: string; color: string }> = {
-  feasible: { label: 'Reális', color: 'var(--sage-deep)' },
-  'feasible-with-warnings': { label: 'Reális, figyelmeztetésekkel', color: 'var(--warning)' },
-  aggressive: { label: 'Agresszív', color: 'var(--error)' },
+// Verdict → HU label + the .mzp-stch tone that carries it (pre-existing
+// Előrejelzések status-chip family, mezo-d20.5.6 — ok=sage, prop=amber,
+// act=coral; never a literal red, per the handoff §2 guardrail).
+const VERDICT: Record<Feasibility['verdict'], { label: string; tone: 'ok' | 'prop' | 'act' }> = {
+  feasible: { label: 'Reális', tone: 'ok' },
+  'feasible-with-warnings': { label: 'Reális, figyelmeztetésekkel', tone: 'prop' },
+  aggressive: { label: 'Agresszív', tone: 'act' },
 }
 
 const signedRate = (v: number): string => `${v > 0 ? '+' : ''}${v.toFixed(2)}`
 
-function SectionLabel({ tag }: { tag: string }) {
+function MCell({ mw, md, value, unit, label }: { mw: string; md: string; value: string; unit: string; label: string }) {
   return (
-    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', margin: '14px 0 6px' }}>
-      <span className="eyebrow">Recept · szakaszonként</span>
-      <span
-        className="tag"
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '.06em',
-          padding: '1px 6px',
-          border: '1px solid var(--border-subtle)',
-          color: 'var(--text-tertiary)',
-        }}
-      >
-        {tag}
-      </span>
-    </div>
-  )
-}
-
-function VerdictBanner({ feasibility }: { feasibility: Feasibility }) {
-  const { label, color } = VERDICT[feasibility.verdict]
-  return (
-    <div
-      className="card"
-      style={{
-        padding: '9px 11px',
-        background: `color-mix(in srgb, ${color} 7%, transparent)`,
-        border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
-        marginBottom: 8,
-      }}
-    >
-      <div className="row" style={{ alignItems: 'center', gap: 7 }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flex: '0 0 auto' }} />
-        <span style={{ fontSize: 11, fontWeight: 700, color }}>{label}</span>
-      </div>
-      {feasibility.notes.length > 0 && (
-        <ul style={{ margin: '6px 0 0', padding: '0 0 0 13px', listStyle: 'disc' }}>
-          {feasibility.notes.map((note, i) => (
-            <li key={i} style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-              {note}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
-}
-
-function SegmentMetric({ value, unit, label }: { value: string; unit: string; label: string }) {
-  return (
-    <div className="col" style={{ gap: 1 }}>
-      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+    <span style={{ '--mw': mw, '--md': md } as React.CSSProperties}>
+      <b>
         {value}
-        <span style={{ fontSize: 8, color: 'var(--text-tertiary)', marginLeft: 2 }}>{unit}</span>
-      </span>
-      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
-    </div>
+        <span style={{ fontSize: 8, fontWeight: 700, opacity: 0.75, marginLeft: 1 }}>{unit}</span>
+      </b>
+      <small>{label}</small>
+    </span>
   )
 }
 
-function SegmentCard({ segment }: { segment: Segment }) {
+function SegmentCard({ segment, wash }: { segment: Segment; wash: 'amber' | 'sage' }) {
   return (
-    <div
-      className="card"
-      style={{ padding: '10px 11px', background: 'var(--wash-sage)', borderColor: 'var(--border-subtle)' }}
-    >
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{segment.label}</span>
-        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-tertiary)' }}>
+    <div className={`gc-seg ${wash}`}>
+      <div className="gc-seg-head">
+        <span className={`mzp-stch ${wash === 'amber' ? 'prop' : 'ok'}`}>
           W{segment.fromWeek}–{segment.toWeek}
         </span>
+        <span className="gc-seg-title">{segment.label}</span>
       </div>
-      <div className="row" style={{ flexWrap: 'wrap', gap: 16 }}>
-        <SegmentMetric value={String(segment.kcal)} unit="kcal" label="napi cél" />
-        <SegmentMetric value={String(segment.proteinG)} unit="g" label="fehérje" />
-        <SegmentMetric value={String(segment.sleepTargetH)} unit="h" label="alvás" />
-        <SegmentMetric value={signedRate(segment.projectedRateKgPerWk)} unit="kg/hét" label="várt tempó" />
+      <div className="mz-mcells">
+        <MCell mw="var(--mz-wash-white)" md="var(--mz-cell-amber-ink)" value={String(segment.kcal)} unit="kcal" label="napi cél" />
+        <MCell mw="var(--mz-wash-white)" md="var(--mz-cell-coral-ink)" value={String(segment.proteinG)} unit="g" label="fehérje" />
+        <MCell mw="var(--mz-wash-white)" md="var(--mz-cell-lav-ink)" value={String(segment.sleepTargetH)} unit="h" label="alvás" />
+        <MCell mw="var(--mz-wash-white)" md="var(--mz-cell-sage-ink)" value={signedRate(segment.projectedRateKgPerWk)} unit="kg/hét" label="várt tempó" />
       </div>
-      <p
-        className="text-secondary"
-        style={{ fontSize: 10, fontStyle: 'italic', lineHeight: 1.5, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}
-      >
-        {segment.rationale}
-      </p>
+      <p className="gc-seg-foot">{segment.rationale}</p>
     </div>
   )
 }
@@ -130,7 +76,7 @@ function GuardPill({ color, children }: { color: string; children: React.ReactNo
         fontSize: 9,
         fontWeight: 700,
         padding: '3px 8px',
-        borderRadius: 3,
+        borderRadius: 7,
         border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
         background: `color-mix(in srgb, ${color} 8%, transparent)`,
         color,
@@ -147,9 +93,10 @@ function GuardRow({ guardStatus }: { guardStatus: GuardStatus }) {
   const strengthColor = strength.breached ? 'var(--error)' : 'var(--sage-deep)'
   const muscleColor =
     muscle.belowMaintenanceMuscles.length > 0 || !muscle.rateWithinCap ? 'var(--warning)' : 'var(--sage-deep)'
+  const notes = [...strength.notes, ...muscle.notes]
   return (
-    <div style={{ marginTop: 8 }}>
-      <div className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
+    <div>
+      <div className="gc-guardrow">
         {strength.active && (
           <GuardPill color={strengthColor}>
             Erő · e1RM {signedRate(strength.e1rmTrendPct)}%{strength.breached ? ' · sérülve' : ''}
@@ -162,15 +109,14 @@ function GuardRow({ guardStatus }: { guardStatus: GuardStatus }) {
               {muscle.belowMaintenanceMuscles.length > 0 ? ` · ${muscle.belowMaintenanceMuscles.length} alatt` : ''}
               {muscle.rateWithinCap ? '' : ' · tempó túl gyors'}
             </GuardPill>
-            <GuardPill color="var(--text-tertiary)">Fehérje: Fuel-re vár</GuardPill>
+            <span className="gc-mut">Fehérje: Fuel-re vár</span>
           </>
         )}
       </div>
-      {/* Guard notes (e.g. a breach explanation) listed below the pills. */}
-      {[...strength.notes, ...muscle.notes].length > 0 && (
-        <ul style={{ margin: '6px 0 0', padding: '0 0 0 13px', listStyle: 'disc' }}>
-          {[...strength.notes, ...muscle.notes].map((note, i) => (
-            <li key={i} style={{ fontSize: 9, lineHeight: 1.5, color: 'var(--text-tertiary)' }}>
+      {notes.length > 0 && (
+        <ul style={{ margin: '-4px 0 12px', padding: '0 0 0 13px', listStyle: 'disc' }}>
+          {notes.map((note, i) => (
+            <li key={i} style={{ fontSize: 9, lineHeight: 1.5, color: 'var(--mz-ink-soft)' }}>
               {note}
             </li>
           ))}
@@ -182,40 +128,46 @@ function GuardRow({ guardStatus }: { guardStatus: GuardStatus }) {
 
 export function GoalRecept({ prescription, onEvaluate, evaluating }: GoalReceptProps) {
   // Null prescription (real mode, goal not yet evaluated) → the evaluate CTA.
+  // Honest state: no fabricated segments while the engine hasn't run yet.
   if (!prescription) {
     return (
-      <div>
-        <SectionLabel tag="G5 · motor" />
-        <div
-          className="card"
-          style={{ padding: '12px 13px', background: 'var(--wash-sage)' }}
+      <div className="gc-seg sage">
+        <p style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--mz-ink-soft)', margin: '0 0 10px' }}>
+          Még nincs recept — futtasd a motort, és a blokkhatárok mentén szakaszokra bontja a kalóriát, fehérjét és alvást.
+        </p>
+        <button
+          type="button"
+          className="mzp-ghost"
+          onClick={onEvaluate}
+          disabled={evaluating}
+          style={{ color: 'var(--mz-cell-sage-ink)' }}
         >
-          <p style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--text-secondary)', margin: '0 0 10px' }}>
-            Még nincs recept — futtasd a motort, és a blokkhatárok mentén szakaszokra bontja a kalóriát, fehérjét és alvást.
-          </p>
-          <button
-            type="button"
-            className="chip"
-            onClick={onEvaluate}
-            disabled={evaluating}
-            style={{ borderColor: 'transparent', background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
-          >
-            {evaluating ? 'Számolás…' : '⚡ Értékeld a célt'}
-          </button>
-        </div>
+          {evaluating ? 'Számolás…' : '⚡ Értékeld a célt'}
+        </button>
       </div>
     )
   }
 
+  const verdict = VERDICT[prescription.feasibility.verdict]
+
   return (
     <div>
-      <SectionLabel tag={prescription.basis === 'adaptive' ? 'adaptív' : 'formula'} />
-      <VerdictBanner feasibility={prescription.feasibility} />
-      <div className="col gap-sm">
-        {prescription.segments.map((segment, i) => (
-          <SegmentCard key={`${segment.fromWeek}-${segment.toWeek}-${i}`} segment={segment} />
-        ))}
+      <div className="gc-lsec">
+        <Eyebrow>Recept · szakaszonként</Eyebrow>
+        <span className={`mzp-stch ${verdict.tone}`}>{verdict.label}</span>
       </div>
+      {prescription.feasibility.notes.length > 0 && (
+        <ul style={{ margin: '-2px 0 9px', padding: '0 0 0 13px', listStyle: 'disc' }}>
+          {prescription.feasibility.notes.map((note, i) => (
+            <li key={i} style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--mz-ink-soft)' }}>
+              {note}
+            </li>
+          ))}
+        </ul>
+      )}
+      {prescription.segments.map((segment, i) => (
+        <SegmentCard key={`${segment.fromWeek}-${segment.toWeek}-${i}`} segment={segment} wash={i % 2 === 0 ? 'amber' : 'sage'} />
+      ))}
       <GuardRow guardStatus={prescription.guardStatus} />
     </div>
   )
