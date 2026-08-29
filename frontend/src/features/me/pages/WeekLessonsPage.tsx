@@ -88,8 +88,11 @@ export function WeekLessonsPage() {
   }
 
   const empty = rows.length === 0
+  // A running week has not been analysed yet, so "nincs javaslat ehhez a héthez" would be a
+  // verdict on a week that is still happening — and it contradicted the body copy right below
+  // it, which correctly says the lessons arrive with Monday's analysis (mezo-d20.6.10 review).
   const sub = empty
-    ? 'nincs javaslat ehhez a héthez'
+    ? (running ? 'a hét közben még gyűlik' : 'nincs javaslat ehhez a héthez')
     : open > 0
       ? `${open} javaslat · te döntesz róluk`
       : `${accepted} megtanult · ${rows.length - accepted} elvetve`

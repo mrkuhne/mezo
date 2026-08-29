@@ -68,7 +68,10 @@ describe('WeekLessonsPage (mock mode)', () => {
   test('CONTRACT — the RUNNING week has no candidates yet and says so; the hero reads — not 0', () => {
     const { container } = renderPage(`/me/week/tanulsagok?start=${mondayIso()}`)
     expect(container.querySelector('.mz-bignum')?.textContent).toBe('—')
-    expect(screen.getByText('nincs javaslat ehhez a héthez')).toBeInTheDocument()
+    // The running week's sub-line must NOT read as a verdict on a week that is still
+    // happening — "nincs javaslat ehhez a héthez" belongs to a CLOSED week only.
+    expect(screen.getByText('a hét közben még gyűlik')).toBeInTheDocument()
+    expect(screen.queryByText('nincs javaslat ehhez a héthez')).toBeNull()
     expect(screen.getByText('A hét közben még gyűlik — a tanulságok a hétfői elemzéssel érkeznek.')).toBeInTheDocument()
     expect(container.querySelector('.wkl-tile')).toBeNull()
     expect(container.querySelector('.wkl-foot')).toBeNull()
