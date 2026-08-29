@@ -293,13 +293,18 @@ export function ExercisesPage() {
 
       {/* Compact hero (icon + catalog count) + an honest stat strip — prototype
           edzes-body #page-gyak ×1.18. The prototype's 4th "PR e héten" cell is
-          dropped: no dated week-boundary contract exists to derive it truthfully. */}
+          dropped: no dated week-boundary contract exists to derive it truthfully.
+          The page chrome gets its OWN one-shot entrance (prototype stagger:
+          strip 30ms, search field 60ms, chip row 90ms, list head 120ms); the
+          result list below keeps its own group, which re-arms on every filter
+          change (mezo-d20.11 — the chrome must not re-animate with it). */}
+      <EntranceGroup>
       <div style={{ padding: '0 24px 4px' }}>
         <div className="row" style={{ justifyContent: 'center', alignItems: 'center', gap: 14, margin: '2px 0 12px' }}>
           <ClayIcon name="i-polc" size={57} />
           <span className="mz-bignum">{exerciseLibrary.length}</span>
         </div>
-        <div className="mz-statstrip" aria-label="Katalógus áttekintés">
+        <div className="mz-statstrip rise" style={{ '--d': '30ms' } as CSSProperties} aria-label="Katalógus áttekintés">
           <div className="mz-statcell"><b>{exerciseRecords.length}</b><small>rekord</small></div>
           <div className="mz-statcell"><b>{exerciseLibrary.filter((e) => e.editable).length}</b><small>saját</small></div>
           <div className="mz-statcell"><b>{exerciseLibrary.filter((e) => e.videoUrl).length}</b><small>videóval</small></div>
@@ -308,7 +313,7 @@ export function ExercisesPage() {
 
       <div style={{ padding: '0 24px 8px' }}>
         {/* Search — the DS SearchInput: leading glyph + a borderless 16px field. */}
-        <div className="searchfield" style={{ marginBottom: 10 }}>
+        <div className="searchfield rise" style={{ marginBottom: 10, '--d': '60ms' } as CSSProperties}>
           <Icon name="search" size={16} color="var(--text-tertiary)" />
           <input
             aria-label="Keresés a gyakorlatok között"
@@ -318,7 +323,7 @@ export function ExercisesPage() {
           />
         </div>
         {/* Muscle filter — level 1: régiók */}
-        <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: subs.length ? 6 : 4, paddingBottom: 4 }}>
+        <div className="row gap-xs rise" style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: subs.length ? 6 : 4, paddingBottom: 4, '--d': '90ms' } as CSSProperties}>
           {TOP_FILTERS.map((m) => (
             <button
               key={m}
@@ -350,7 +355,7 @@ export function ExercisesPage() {
       </div>
 
       <div style={{ padding: '0 24px 32px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', margin: '10px 0' }}>
+        <div className="row rise" style={{ justifyContent: 'space-between', margin: '10px 0', '--d': '120ms' } as CSSProperties}>
           <span className="eyebrow">{searching ? 'Találatok · teljes katalógus' : 'Top gyakorlatok · rekordjaid'}</span>
           <span className="label-mono text-tertiary">
             {searching ? `${records.length + ghosts.length} / ${exerciseLibrary.length}` : `${exerciseRecords.length} PR`}
@@ -393,6 +398,7 @@ export function ExercisesPage() {
           </EntranceGroup>
         )}
       </div>
+      </EntranceGroup>
 
       {openRecord && (
         <ExerciseRecordSheet

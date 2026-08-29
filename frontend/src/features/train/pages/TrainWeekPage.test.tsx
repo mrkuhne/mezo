@@ -178,3 +178,20 @@ test('real mode: a weekly gym row completed this week on ANOTHER date routes to 
   fireEvent.click(await screen.findByRole('button', { name: /Pull Day/ }))
   expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-pulled')
 })
+
+// Motion (mezo-d20.11): the page shipped an ARMED EntranceGroup with nothing
+// marked `.rise` — the wrapper was animating an empty stage. Both halves must
+// exist, and the day list must carry the prototype's 40ms-step stagger.
+test('the week body staggers inside the armed entrance group', async () => {
+  const { container } = renderPage()
+  await screen.findByText('szett terv')
+  const play = container.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  const strip = play!.querySelector('.mz-statstrip.rise') as HTMLElement | null
+  expect(strip).not.toBeNull()
+  expect(strip!.style.getPropertyValue('--d')).toBe('40ms')
+  const dayRows = [...play!.querySelectorAll('.rise')].filter(
+    (el) => (el as HTMLElement).style.getPropertyValue('--d') === '140ms',
+  )
+  expect(dayRows.length).toBe(1)
+})

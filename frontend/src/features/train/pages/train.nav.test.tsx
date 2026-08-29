@@ -33,7 +33,10 @@ test('Train opens on the Edzés hub and its tiles open the sub-pages', async () 
   expect(screen.queryByLabelText('Train alnavigáció')).not.toBeInTheDocument()
 
   await userEvent.click(screen.getByRole('button', { name: 'Sport' }))
-  expect(await screen.findByText('BVSC csarnok')).toBeInTheDocument()
+  // Sport is re-faced (mezo-d20.11): the Mozaik hero speaks the page name; the
+  // court moved onto each slot row's meta line, so it is no longer a lone node.
+  expect(await screen.findByText('Sport', { selector: '.mz-hero-nm' })).toBeInTheDocument()
+  expect(screen.getAllByText(/BVSC csarnok/).length).toBeGreaterThan(0)
   cleanup()
 
   renderApp('/train')

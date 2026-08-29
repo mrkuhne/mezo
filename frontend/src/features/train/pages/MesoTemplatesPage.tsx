@@ -21,9 +21,10 @@
 // the editor is where the flow wants to end. Törlés is a soft delete: past runs
 // and their frozen reports are untouched (the confirm lives in the card).
 // ============================================================
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMesoTemplates } from '@/data/hooks'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import type { MesoTemplate } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
@@ -84,32 +85,44 @@ export function MesoTemplatesPage() {
         </button>
       </div>
 
+      {/* One-shot entrance choreography (mezo-d20.11): the page had none. The
+          prototype does not draw a standalone Sablonok PAGE (it is a section on
+          Mesociklus), so the FACE stays as-is — F7 territory — but its list
+          speaks the same staggered `.rise` cadence as every other Edzés list. */}
+      <EntranceGroup>
       <div style={{ padding: '8px 24px 24px' }}>
-        <div style={{ marginBottom: 12 }}>
+        <div className="rise" style={{ marginBottom: 12, '--d': '30ms' } as CSSProperties}>
           <Eyebrow>Sablonok · {templates.length}</Eyebrow>
         </div>
         {templates.length === 0 && (
-          <div style={{ marginBottom: 12 }}>
+          <div className="rise" style={{ marginBottom: 12, '--d': '60ms' } as CSSProperties}>
             <GhostState lines={2} message="Még nincs sablonod." />
           </div>
         )}
         <div className="col gap-sm">
-          {templates.map((t) => (
-            <MesoTemplateCard
-              key={t.id}
-              template={t}
-              onEdit={() => openEditor(t.id)}
-              onStart={() => setStartTemplate({ id: t.id, title: t.title })}
-              onDuplicate={() => duplicate(t)}
-              onDelete={() => remove(t.id)}
-            />
+          {templates.map((t, i) => (
+            <div key={t.id} className="rise" style={{ '--d': `${60 + i * 45}ms` } as CSSProperties}>
+              <MesoTemplateCard
+                template={t}
+                onEdit={() => openEditor(t.id)}
+                onStart={() => setStartTemplate({ id: t.id, title: t.title })}
+                onDuplicate={() => duplicate(t)}
+                onDelete={() => remove(t.id)}
+              />
+            </div>
           ))}
           {/* The shared dashed "add one more" CTA every DS list closes with. */}
-          <button type="button" onClick={openPlanner} className="card dashedcta">
+          <button
+            type="button"
+            onClick={openPlanner}
+            className="card dashedcta rise"
+            style={{ '--d': `${60 + templates.length * 45}ms` } as CSSProperties}
+          >
             + Új sablon tervezése
           </button>
         </div>
       </div>
+      </EntranceGroup>
 
       {startTemplate && (
         <MesoStartSheet
