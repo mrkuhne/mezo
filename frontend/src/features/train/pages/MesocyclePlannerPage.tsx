@@ -537,7 +537,9 @@ function Step1Length({
     if (goal) setPhaseCurve(goal.phaseTemplate)
   }
 
-  const phaseHeight = (p: MesoPhase) => (p === 'MEV' ? 20 : p === 'MAV' ? 40 : p === 'MRV' ? 60 : 12)
+  // Prototype px (meso-body.html PSTYLE) ×1.18 scale (spec §1): MEV 26→31, MAV 46→54,
+  // MRV 64→76, Deload 14→17.
+  const phaseHeight = (p: MesoPhase) => (p === 'MEV' ? 31 : p === 'MAV' ? 54 : p === 'MRV' ? 76 : 17)
 
   return (
     <div style={{ padding: '8px 24px' }}>
@@ -613,7 +615,9 @@ function Step1Length({
           </button>
         </div>
         <div className="card" style={{ padding: 14 }}>
-          <div className="row gap-xs" style={{ height: 70, alignItems: 'flex-end' }}>
+          {/* Prototype .phaseed height 84px ×1.18 (spec §1) — room for the tallest MRV bar
+              (76px) plus its two-line W/phase label underneath. */}
+          <div className="row gap-xs" style={{ height: 99, alignItems: 'flex-end' }}>
             {phaseCurve.map((p, i) => (
               <div key={i} className="col flex-1" style={{ alignItems: 'center', gap: 4 }}>
                 <button

@@ -39,11 +39,15 @@ export const SYSTEM_LABELS: Record<string, { label: string; color: string; icon:
   Insights: { label: 'Patterns', color: 'var(--cat-physiology)', icon: 'insights' },
 }
 
+// Prototype fidelity (meso-body.html PSTYLE): the tappable phase curve must read at a
+// glance, so each phase carries a visually distinct hue — sage (ramp-up) → coral
+// (progression) → deep coral (peak) → amber (deload) — instead of three near-identical
+// coral tones that would defeat the point of a scannable curve (mezo-d20.3.7).
 export const MESOCYCLE_PHASE_COLORS: Record<MesoPhase, string> = {
-  MEV: 'var(--coral-deep, var(--coral))',
+  MEV: 'var(--sage)',
   MAV: 'var(--coral)',
-  MRV: 'var(--coral)',
-  Deload: 'var(--text-tertiary)',
+  MRV: 'var(--coral-deep, var(--coral))',
+  Deload: 'var(--amber)',
 }
 // Bar heights per phase, used by the phase-curve mini bars (small variant).
 export function phaseBarHeight(p: MesoPhase): number {
