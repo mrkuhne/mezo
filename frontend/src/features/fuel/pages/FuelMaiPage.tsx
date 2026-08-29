@@ -193,7 +193,7 @@ export function FuelMaiPage() {
         </button>
       </div>
 
-      <EntranceGroup className="fh-panel">
+      <EntranceGroup className="mz-panel-stack">
         <div className="fh-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <KeretHero
             vm={keretHeroVm}

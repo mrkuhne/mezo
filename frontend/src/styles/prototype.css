@@ -4075,6 +4075,14 @@ ol.md-list { list-style: decimal; }
 
 .mz-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 
+/* The panel's own vertical rhythm — the prototype's `.dp-panel { gap: 9px }` at ×1.18,
+   the same 11px the mosaic uses between tiles, so a hero, a mosaic and a stat strip are
+   spaced like tiles rather than by whatever margins their components happen to carry.
+   This lived as four identical per-tab copies (.eh-/.enh-/.fh-/.mzh-panel), which is
+   exactly why the two pages that forgot to declare one — the Nap daypart panels and the
+   Heti hub — had their children touching at 0px (mezo-d20.11.2). One class now. */
+.mz-panel-stack { display: flex; flex-direction: column; gap: 11px; }
+
 .mz-tile {
   border-radius: 20px; padding: 12px 13px; min-height: 104px;
   display: flex; flex-direction: column; text-align: left;
@@ -4462,7 +4470,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
       composer-shaped chat opener, the motor's single decision card in a gold
       ring, 6-tile mosaic, and the full-width L0→L3 memory band. ── */
 .mzh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
-.mzh-panel { display: flex; flex-direction: column; gap: 11px; }
 
 .mzh-orbhero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 12px 14px 14px; }
 .mzh-orbhero svg:first-child { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
@@ -4890,7 +4897,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
    labels, Hátra · Tempó · ETA mini-cells; a maintain goal drops the track and reads
    „tartás") → the 9-tile mosaic → the Beállítások band. Every surface is --mz-*. ── */
 .enh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
-.enh-panel { display: flex; flex-direction: column; gap: 11px; }
 
 .enh-idhero { display: grid; justify-items: center; text-align: center; gap: 4px; padding: 9px 14px 12px; }
 .enh-idring { width: 78px; height: 78px; border-radius: 50%; display: grid; place-items: center; flex: none;
@@ -5272,7 +5278,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
       Mai's honest ones — done bar, resume, start, rest day, meso-less ghost —
       so the CTA row has exactly one occupant at a time. ── */
 .eh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
-.eh-panel { display: flex; flex-direction: column; gap: 11px; }
 
 .eh-hero {
   border-radius: 21px; padding: 14px 15px;
@@ -5492,7 +5497,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
    band. The hero's own internals keep the shipped .khero family — only its frame
    changes here. Every CTA is a 44pt target. ── */
 .fh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
-.fh-panel { display: flex; flex-direction: column; gap: 11px; }
 
 .fh-hero { border-radius: 21px; overflow: hidden;
   border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-sage); }
@@ -6019,7 +6023,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 
 /* ── the two wide tiles (elemzés, felfedezések) ────────────────────────── */
 .wkh-wide { display: block; width: 100%; text-align: left; font-family: inherit; color: inherit;
-  border-radius: 22px; padding: 14px 15px; margin-bottom: 11px; cursor: pointer;
+  border-radius: 22px; padding: 14px 15px; cursor: pointer;
   border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-stripbg);
   box-shadow: 0 19px 35px -18px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
@@ -6045,7 +6049,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .wkh-genbtn:disabled { opacity: 0.55; cursor: default; }
 
 /* ── the two small tiles (tanulságok, napok) ───────────────────────────── */
-.wkh-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 11px; }
+.wkh-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 .wkh-sm { text-align: left; font-family: inherit; color: inherit; border-radius: 21px; padding: 13px 14px;
   cursor: pointer; display: grid; gap: 5px; align-content: start;
   border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-stripbg);
@@ -6087,7 +6091,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .wkh-dots i.prediction { background: var(--mz-wkh-dot-prediction); }
 
 /* ── the eight mini-cells: two rows of four ────────────────────────────── */
-.wkh-cells + .wkh-cells { margin-top: 6px; }
+/* The two mini-cell rows are ONE unit — the prototype pairs them 5px apart (→6) inside the
+   panel's own 11px rhythm, so they sit in a wrapper rather than as two panel children. */
+.wkh-cellstack { display: flex; flex-direction: column; gap: 6px; }
 .wkh-cellunit { font-size: 8.5px; font-weight: 700; }
 
 /* ── loading skeleton (the prototype's .skel shimmer) ──────────────────── */

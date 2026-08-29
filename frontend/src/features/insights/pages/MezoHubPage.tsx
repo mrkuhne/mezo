@@ -165,7 +165,7 @@ export function MezoHubPage() {
         </button>
       </div>
 
-      <EntranceGroup className="mzh-panel">
+      <EntranceGroup className="mz-panel-stack">
         {/* ===== orb hero — no number, one sentence, quiet status ===== */}
         <div className="mzh-orbhero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <ClaySpot name="s-orb" size={109} />
