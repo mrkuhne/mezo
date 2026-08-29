@@ -293,3 +293,23 @@ test('a record card leads with the catalog thumbnail and keeps the rank as a #n 
   const hip = await screen.findByRole('button', { name: /Hip Thrust/ })
   expect(hip.querySelector('img.exdemo-thumb')).not.toBeNull()
 })
+
+// Motion (mezo-d20.11): only the RESULT LIST was inside an EntranceGroup — the
+// hero strip, the search field, the filter chips and the list head had no
+// `.rise` at all, so the page chrome snapped in. The chrome now has its own
+// one-shot group (prototype #page-gyak: 30 · 60 · 90 · 120ms) while the list
+// keeps its filter-keyed group beneath it.
+test('the page chrome staggers inside its own entrance group', async () => {
+  const { container } = renderView()
+  await screen.findByText('Top gyakorlatok · rekordjaid')
+  const play = container.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  const at = (d: string) =>
+    [...play!.querySelectorAll('.rise')].filter((el) => (el as HTMLElement).style.getPropertyValue('--d') === d)
+  expect(play!.querySelector('.mz-statstrip.rise')).not.toBeNull()
+  expect(at('30ms').length).toBe(1)
+  expect(play!.querySelector('.searchfield.rise')).not.toBeNull()
+  expect(at('60ms').length).toBe(1)
+  expect(at('90ms').length).toBe(1)
+  expect(at('120ms').length).toBe(1)
+})

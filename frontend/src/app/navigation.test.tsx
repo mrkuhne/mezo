@@ -79,7 +79,9 @@ test('the Edzés tab lands on the hub Mozaik face — no subnav dropdown (mezo-d
 
 test('/train/sport stays a stable full-page sibling of the hub', async () => {
   renderApp('/train/sport')
-  expect(await screen.findByRole('heading', { level: 1, name: 'Röplabda' })).toBeInTheDocument()
+  // Mozaik 2.0 re-face (mezo-d20.11): the `Röplabda` h1 became the prototype's
+  // page hero — the route itself is unchanged.
+  expect(await screen.findByText('Sport', { selector: '.mz-hero-nm' })).toBeInTheDocument()
 })
 test('the tab bar hides on the full-screen active-workout session (mezo-8141)', () => {
   const { container } = renderApp('/train/session')
