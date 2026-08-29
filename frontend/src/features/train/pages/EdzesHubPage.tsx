@@ -337,7 +337,7 @@ export function EdzesHubPage() {
         </button>
       </div>
 
-      <EntranceGroup className="eh-panel">
+      <EntranceGroup className="mz-panel-stack">
         {hero}
 
         <Mosaic>

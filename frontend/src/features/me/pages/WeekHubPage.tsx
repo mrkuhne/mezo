@@ -195,15 +195,17 @@ export function WeekHubPage() {
       </div>
 
       <PageBody>
-        <EntranceGroup replayKey={start}>
-          <MCells className="wkh-cells rise" cells={cells.slice(0, 4).map((c) => ({
-            tone: c.tone, label: c.label,
-            value: <>{c.value}{c.unit && <span className="wkh-cellunit"> {c.unit}</span>}</>,
-          }))} />
-          <MCells className="wkh-cells rise" cells={cells.slice(4).map((c) => ({
-            tone: c.tone, label: c.label,
-            value: <>{c.value}{c.unit && <span className="wkh-cellunit"> {c.unit}</span>}</>,
-          }))} />
+        <EntranceGroup replayKey={start} className="mz-panel-stack">
+          <div className="wkh-cellstack">
+            <MCells className="wkh-cells rise" cells={cells.slice(0, 4).map((c) => ({
+              tone: c.tone, label: c.label,
+              value: <>{c.value}{c.unit && <span className="wkh-cellunit"> {c.unit}</span>}</>,
+            }))} />
+            <MCells className="wkh-cells rise" cells={cells.slice(4).map((c) => ({
+              tone: c.tone, label: c.label,
+              value: <>{c.value}{c.unit && <span className="wkh-cellunit"> {c.unit}</span>}</>,
+            }))} />
+          </div>
 
           <div className="wkh-lsec rise" style={d(80)}>
             <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>A hét négy nézete</span>

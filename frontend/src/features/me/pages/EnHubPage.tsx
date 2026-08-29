@@ -242,7 +242,7 @@ export function EnHubPage() {
         </div>
       </div>
 
-      <EntranceGroup className="enh-panel">
+      <EntranceGroup className="mz-panel-stack">
         {/* ===== identity hero ===== */}
         <div className="enh-idhero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <div className="enh-idring" style={{ '--xp': xpPct } as React.CSSProperties}

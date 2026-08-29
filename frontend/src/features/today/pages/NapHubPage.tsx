@@ -272,7 +272,7 @@ export function NapHubPage() {
             <ClayIcon name="i-mezo" size={19} />
           </button>
         </div>
-        <EntranceGroup>
+        <EntranceGroup className="mz-panel-stack">
           <div className="mz-tile nap-hero nap-anch-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
             <div className="nap-hero-row">
               <ClaySpot name="s-piheno" size={52} />
@@ -373,7 +373,7 @@ export function NapHubPage() {
         </button>
       </div>
 
-      <EntranceGroup replayKey={face}>
+      <EntranceGroup replayKey={face} className="mz-panel-stack">
         {face === 'reggel' && (
           <>
             <div className="mz-tile mz-w-lav nap-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
