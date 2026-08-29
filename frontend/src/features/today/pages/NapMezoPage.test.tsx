@@ -4,6 +4,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import type { FeedMessage } from '@/data/types'
+import { lastSeenMessage } from '@/shared/lib/seenMessages'
+import { localDateString } from '@/shared/lib/dates'
 
 // Mezo üzenetei page (mezo-d20.2.2) — the Nap hub's Mezo tile → own full page
 // (prototype nap-body.html #page-mezo): p-coral tone, breathing-orb hero, the day's
@@ -23,6 +25,20 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   }
 })
 
+// Életjel küszöb-nudge-ok (mezo-d20.11): the thread's tail is data-driven, so the
+// ring engine is stubbed — empty by default, and one red ring in the dedicated test.
+const needsMock = vi.hoisted(() => ({
+  states: [] as { key: string; pct: number; band: string }[],
+}))
+vi.mock('@/features/today/logic/useNeeds', () => ({
+  useNeeds: () => ({ states: needsMock.states, isPending: false }),
+}))
+// A fixed wall clock: `deriveNudges` is quiet at night and in the first hour after
+// waking, so an unpinned clock would make the nudge test flake by time of day.
+vi.mock('@/features/today/logic/useMinuteTick', () => ({
+  useMinuteTick: () => new Date('2026-05-22T13:42:00'),
+}))
+
 const morningMsg: FeedMessage = {
   id: 'fm-1', kind: 'morning', eyebrow: 'Reggeli briefing',
   body: [{ type: 'p', text: 'Két nap múlva W3-csúcs — ma a Pull A a hét kulcs-edzése.' }],
@@ -39,6 +55,8 @@ const sleepMsg: FeedMessage = {
 beforeEach(() => {
   feedMock.useCompanionFeed.mockReturnValue([])
   voteMock.vote.mockClear()
+  needsMock.states = []
+  localStorage.clear()
 })
 
 function renderPage() {
@@ -108,8 +126,44 @@ test('the demo briefing card carries NO feedback chips — nothing persisted to 
   expect(within(msg).queryByRole('button', { name: /Segített/ })).toBeNull()
 })
 
+// ── Életjel küszöb-nudge-ok: the delivery path restored by the 1:1 audit (mezo-d20.11).
+// `needsNudges.ts` had had no producer since `needsNudges`'s caller (TodayPage) was deleted;
+// the thread's owner is this page, so the nudges land here — at the very END of the thread.
+test('a red Életjel ring appends its nudge to the END of the thread, and only once a day', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  const { unmount } = renderPage()
+  expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
+  const cards = document.querySelectorAll('.nap-mzmsg')
+  expect(cards).toHaveLength(2)
+  expect(within(cards[1] as HTMLElement).getByText('Életjel-figyelő')).toBeInTheDocument()
+
+  // second visit: the ring is STILL red, but the day's log already carries it — it must
+  // pass through exactly once, not duplicate.
+  unmount()
+  renderPage()
+  expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(2)
+})
+
+test('a healthy ring set adds nothing to the thread', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 82, band: 'green' }]
+  renderPage()
+  expect(await screen.findByText('07:05 · Reggeli briefing')).toBeInTheDocument()
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+})
+
 test('the chat CTA navigates to /mezo/chat', async () => {
   renderPage()
   await userEvent.click(await screen.findByRole('button', { name: 'Beszélgess Mezóval ›' }))
   expect(await screen.findByText('chat-page')).toBeInTheDocument()
+})
+
+test('opening the thread stamps the read watermark — the hub tile’s unread counter clears (mezo-d20.11)', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
+  renderPage()
+  await screen.findByText('07:12 · Alvás-reakció')
+  // the watermark is the LAST thread item's id (the sheet's own seenMessages idiom)
+  expect(lastSeenMessage(localDateString())).toBe('sleep')
 })

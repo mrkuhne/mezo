@@ -263,6 +263,13 @@
   --mz-nova-1:   #8FAF7E;
   --mz-nova-mid: #C9962E;
   --mz-nova-4:   #A8462E;
+
+  /* Nap hub 1:1 audit (mezo-d20.11) — nap-head.html tile internals: the water
+     bar's track/fill, the sage tick fill and the „nehéz nap" horgony wash. */
+  --mz-water-track: #D8E7F0;
+  --mz-water-fill:  linear-gradient(90deg, #7FB6D9, #4E8FB8);
+  --mz-tickfill:    linear-gradient(135deg, #8FAF7E, #6E8B5E);
+  --mz-wash-anchor: linear-gradient(140deg, #F7EEE2, #FFFBF6 75%);
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -446,6 +453,12 @@
   --mz-nova-1:   var(--dv-sage);
   --mz-nova-mid: var(--dv-amber);
   --mz-nova-4:   var(--primary-deep);
+
+  /* Nap hub 1:1 audit (mezo-d20.11) — dark ("Pulse") derivations on the dv ramp */
+  --mz-water-track: color-mix(in srgb, var(--dv-sky) 22%, var(--surface-card));
+  --mz-water-fill:  linear-gradient(90deg, color-mix(in srgb, var(--dv-sky) 55%, var(--surface-card)), var(--dv-sky));
+  --mz-tickfill:    linear-gradient(135deg, color-mix(in srgb, var(--dv-sage) 65%, var(--surface-card)), var(--dv-sage));
+  --mz-wash-anchor: linear-gradient(140deg, color-mix(in srgb, var(--dv-amber) 10%, var(--surface-card)), var(--surface-card) 75%);
 }
 
 /* ===== Legacy alias bridge — Deep-Current / early-token names → DS tokens =====
@@ -4073,25 +4086,108 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-big { font-weight: 200; font-size: 42px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .nap-mut { font-size: 12px; color: var(--mz-ink-soft); }
 .nap-mut b { color: var(--text-primary); }
-.nap-hero-sub { display: flex; gap: 17px; margin-top: 7px; }
+/* Prototype keeps `Súly … ↘` and `Fókusz …` on ONE row (nap-body reggel hero): the
+   focus text is the only elastic half, so it ellipsises instead of wrapping the row. */
+.nap-hero-sub { display: flex; flex-wrap: nowrap; gap: 17px; margin-top: 7px; }
+.nap-hero-sub > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nap-hero-sub > span:first-child { flex: none; }
 .nap-lav { color: #6C5FA3; }
 .nap-sage { color: #5F7A52; }
 .nap-coral { color: var(--primary-deep); }
+.nap-gold { color: var(--mz-qxp-ink); }
 .nap-dusk { background: linear-gradient(140deg, var(--mz-tone-lav), var(--mz-wash-white) 75%); }
 .nap-cta-lav { width: 100%; margin-top: 11px; padding: 10px 0; border-radius: 999px; border: none;
   font-family: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
   background: linear-gradient(135deg, #8A6BC9, #5D4FA0);
   box-shadow: 0 10px 22px -8px rgba(93, 79, 160, 0.55); }
 .daybar { display: flex; gap: 4px; margin-top: 9px; align-items: center; }
-.daybar i { height: 6px; border-radius: 4px; flex: 1; background: rgba(43, 33, 24, 0.1); }
+.daybar i { height: 6px; border-radius: 4px; flex: 1; background: rgba(43, 33, 24, 0.1);
+  transform: scaleX(1); transform-origin: left; }
 .daybar i.f { background: var(--dv-sage); }
 .daybar i.now { background: var(--dv-amber); }
+/* prototype `.play .daybar i { animation: segf … }` — the segments SWEEP in on the
+   panel's entrance, and the current window keeps a slow amber halo (mezo-d20.11). */
+.mz-play .daybar i { transform: scaleX(0);
+  animation: nap-segfill 0.4s ease-out forwards; animation-delay: var(--d, 0ms); }
+@keyframes nap-segfill { to { transform: scaleX(1); } }
+.mz-play .daybar i.now {
+  animation: nap-segfill 0.4s ease-out forwards, nap-nowpulse 2.6s ease-in-out 1.4s infinite; }
+@keyframes nap-nowpulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(201, 150, 46, 0.3); }
+}
 .nap-ckdots { display: flex; justify-content: center; gap: 7px; }
 .nap-ckdots .hd, .hprog .hd { width: 9px; height: 9px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); display: inline-block; }
 .nap-ckdots .hd.f { background: var(--dv-rose); }
 .nap-bigring { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; }
 .nap-ringhole { width: 42px; height: 42px; border-radius: 50%; background: var(--mz-wash-white);
   display: grid; place-items: center; }
+
+/* ── Nap hub · a prototípus csempe-belsői (mezo-d20.11, 1:1 hűség-audit) ──
+   nap-body.html reggel/nap/este panel: a Mezo-spot olvasatlan-SZÁMLÁLÓJA, a Rutin
+   per-szokás ikon + név + helyben pipálás, a küldetés-pöttyök, a víz-sáv és a
+   Kreed idézet. Értékek nap-head.html ×1.18; minden szín token. */
+.nap-anchorwrap { position: relative; display: grid; place-items: center; }
+.nap-unread { position: absolute; top: -6px; right: -11px; min-width: 20px; height: 20px;
+  border-radius: 999px; background: var(--gradient-cta); color: #fff;
+  font-size: 11px; font-weight: 700; display: grid; place-items: center; padding: 0 5px;
+  font-variant-numeric: tabular-nums; box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.6); }
+.nap-tilemore { font-size: 11px; font-weight: 600; text-align: center; }
+
+.nap-habname { font-size: 13.5px; font-weight: 700; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nap-habfoot { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+.nap-habcount { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600;
+  color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+/* 30px artwork inside a 44pt hit box (the .nr-tickbtn precedent) — the negative
+   margin keeps the prototype's row height while the target clears the floor. */
+.nap-htickbtn { width: 44px; height: 44px; flex: none; margin: -7px -7px -7px 0;
+  display: grid; place-items: center; border: none; background: none; padding: 0;
+  font-family: inherit; cursor: pointer; }
+.nap-htickbtn:disabled { cursor: default; opacity: 0.6; }
+span.nap-htickbtn { cursor: default; }
+.nap-htick { width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid rgba(43, 33, 24, 0.18); background: var(--mz-chipbg);
+  display: grid; place-items: center; color: #fff; font-size: 15px;
+  transition: transform 0.12s ease; }
+button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
+.nap-htick.f { border-color: transparent; background: var(--mz-tickfill);
+  box-shadow: 0 7px 14px -5px rgba(110, 139, 94, 0.6); }
+.mz-play .nap-htick.f { animation: nap-tickpop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1); }
+@keyframes nap-tickpop { 0% { transform: scale(0); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+.nap-bigdots { display: flex; justify-content: center; align-items: center; gap: 7px; }
+.nap-bigdots .hd { width: 13px; height: 13px; border-radius: 50%; display: inline-block;
+  background: rgba(43, 33, 24, 0.12); }
+.nap-bigdots .hd.f { background: var(--mz-daydot-f); }
+.nap-qxp { font-size: 12px; font-weight: 700; color: var(--mz-qxp-ink); margin-left: 5px;
+  font-variant-numeric: tabular-nums; }
+
+.nap-kreedq { font-size: 12px; font-weight: 300;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.nap-tilegap { flex: 1; }
+
+.nap-watertop { display: flex; align-items: center; gap: 8px; }
+.nap-waterval { display: flex; align-items: baseline; gap: 4px; }
+.nap-waterbig { font-weight: 200; font-size: 22px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.nap-watermut { font-size: 10px; color: var(--mz-ink-soft); }
+.nap-waterfill { height: 8px; border-radius: 5px; background: var(--mz-water-track); overflow: hidden; }
+.nap-waterfill div { height: 100%; border-radius: 5px; background: var(--mz-water-fill);
+  transform: scaleX(var(--w, 0)); transform-origin: left; }
+.mz-play .nap-waterfill div { transform: scaleX(0);
+  animation: nap-waterfill 1s cubic-bezier(0.25, 0.8, 0.35, 1) 0.9s forwards; }
+@keyframes nap-waterfill { to { transform: scaleX(var(--w, 0)); } }
+.nap-waterhint { font-size: 10px; color: var(--mz-ink-mut); margin-top: 5px; }
+.nap-stackbig { font-size: 20px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* ── „Nehéz nap" horgony-olvadás (`?day=rough`, mezo-d20.11 — PROVIZÓRIKUS) ──
+   A törölt AnchorIsland utódja a Mozaik nyelvén: egy meleg hero + három horgony-
+   csempe + a kilépés. F7-ig ez tartja életben a módot, nem új képernyő. */
+.nap-anch-hero { background: var(--mz-wash-anchor); }
+.nap-anch-say { font-size: 13px; font-weight: 300; margin: 7px 0 0; }
+.nap-anch-exit { width: 100%; min-height: 44px; border-radius: 999px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--mz-ink-soft);
+  background: rgba(43, 33, 24, 0.06); }
 
 /* ── Mezo üzenetei page (mezo-d20.2.2) — prototype #page-mezo: breathing-orb
    hero + the day's companion thread. Values verbatim from nap-head.html ×1.18. ── */
@@ -4194,6 +4290,11 @@ button.mz-tile:active { transform: scale(0.96); }
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev { transition: none; }
   .mz-page-hero.orb svg { animation: none; }
+  /* Nap hub entrance choreography (mezo-d20.11) — end states kept, motion dropped. */
+  .daybar i, .mz-play .daybar i, .mz-play .daybar i.now { animation: none; transform: scaleX(1); }
+  .nap-htick { transition: none; }
+  .mz-play .nap-htick.f { animation: none; }
+  .nap-waterfill div, .mz-play .nap-waterfill div { animation: none; transform: scaleX(var(--w, 0)); }
 }
 
 /* ── Nap · Rutin oldal (mezo-d20.2.3) — prototype #page-hab, ×1.18 ── */
@@ -4224,7 +4325,15 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
 .nr-anchor { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); }
 .nr-str { height: 6px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 5px; }
-.nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength); }
+.nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength);
+  transform: scaleX(1); transform-origin: left; }
+/* the lánc-erő bars FILL on the page's entrance (mezo-d20.11) — the `.mnt-gbar` recipe */
+.mz-play .nr-str div { transform: scaleX(0);
+  animation: nap-segfill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+/* a habit carrying its own external content (linkUrl — e.g. the morning video) keeps
+   that affordance on the row title; the tick stays the row's separate control. */
+a.nr-nm { color: var(--primary-deep); text-decoration: none; }
+a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
 .nr-pct { font-size: 10.5px; font-weight: 700; color: #A8801F; flex: none; width: 35px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ── Mezo hub (mezo-d20.5.1) — prototype mezo-body.html hub section ×1.18:
@@ -4302,6 +4411,7 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev, .nr-tick { transition: none; }
+  .nr-str div, .mz-play .nr-str div { animation: none; transform: scaleX(1); }
   .nck-fill { transition: none; }
   .mzh-orbhero svg:first-child { animation: none; }
   .mzh-chatopen, .mzh-membnd { transition: none; }
