@@ -4852,6 +4852,73 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   font-size: 9px; font-weight: 800; color: var(--lav-deep); white-space: nowrap;
   box-shadow: 0 2px 7px rgba(43, 33, 24, 0.2); }
 
+/* ── Growth (mezo-d20.6.5) — prototype en-body #page-growth (.segtabs/.predtile/
+   .sklrow/.covgrid/.bdggrid family), ×1.18. Skill bands (LIFE/Atlétikus/Izom) wear the
+   predtile wash; per-skill rows keep the shared .skl meter (GrowthSummaryCard's Profil
+   preview reads the identical rows, so that markup stays untouched). Rutin gets the
+   30-day 🌅/🌙 counter tiles above the chain cards; Napló keeps its honest "csendben
+   lejárt" line inside washed day tiles; Kitüntetések gets the 3-col badge grid (achieved
+   sage ✓, else a gold progress bar) — all sharing the .mzp-fill keyframe already declared
+   above for the predictions/experiments family. ── */
+.gr-seg { display: flex; gap: 5px; border-radius: 999px; padding: 4px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.gr-seg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px;
+  font-size: 11px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.gr-seg button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+.gr-xpwrap { display: flex; align-items: baseline; gap: 4px; }
+.gr-unit { font-size: 15px; font-weight: 400; color: var(--mz-ink-soft); }
+
+.gr-band { border-radius: 21px; padding: 13px 15px; margin-bottom: 10px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.gr-band.lav   { background: var(--mz-wash-lav);  box-shadow: var(--mz-shadow-lav); }
+.gr-band.sage  { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.gr-band.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.gr-band-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.gr-band-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.05em; border-radius: 7px;
+  padding: 3px 8px; flex: none; background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
+.gr-band-foot { display: flex; justify-content: space-between; margin-top: 11px; padding-top: 9px;
+  border-top: 1px solid rgba(43, 33, 24, 0.08); font-size: 12px; }
+
+.gr-day { border-radius: 19px; padding: 12px 14px; margin-bottom: 10px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.gr-day-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 5px;
+  border-bottom: 1px solid rgba(43, 33, 24, 0.08); }
+.gr-row { display: flex; gap: 9px; align-items: flex-start; padding-top: 7px; }
+
+.gr-covgrid { display: flex; gap: 9px; margin-bottom: 10px; }
+.gr-covtile { flex: 1; text-align: center; border-radius: 15px; padding: 10px 4px 9px;
+  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25);
+  display: grid; justify-items: center; gap: 4px; }
+.gr-covtile b { font-size: 11px; }
+.gr-covtile small { font-size: 9px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.gr-covtrack { width: 80%; height: 5px; border-radius: 3px; background: var(--mz-gbar-bg); overflow: hidden; }
+.gr-covtrack div { height: 100%; border-radius: 3px; background: var(--mz-strength);
+  transform: scaleX(0); transform-origin: left; }
+.mz-play .gr-covtrack div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+
+.gr-chain { border-radius: 20px; padding: 13px 15px; margin-bottom: 10px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+
+.gr-bdggrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gr-bdg { border-radius: 14px; padding: 9px 6px; text-align: center; display: grid; gap: 4px; justify-items: center;
+  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 6px 12px -8px rgba(43, 33, 24, 0.2); }
+.gr-bdg.done { background: var(--mz-wash-sage); }
+.gr-bdg-em { font-size: 18px; }
+.gr-bdg b { font-size: 9.5px; font-weight: 700; line-height: 1.25; }
+.gr-bdg small { font-size: 8px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.gr-bdg-bar { width: 100%; height: 4px; border-radius: 3px; background: var(--mz-gbar-bg); overflow: hidden; }
+.gr-bdg-bar div { height: 100%; border-radius: 3px; background: var(--mz-strength);
+  transform: scaleX(0); transform-origin: left; }
+.mz-play .gr-bdg-bar div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gr-covtrack div, .mz-play .gr-covtrack div,
+  .gr-bdg-bar div, .mz-play .gr-bdg-bar div { transform: none; animation: none; }
+}
+
 /* ============================================================
    Today · iOS list language (mezo-e26w)
    Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
