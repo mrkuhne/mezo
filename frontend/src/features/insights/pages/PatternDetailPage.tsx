@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
+import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { usePatternPairDetail, usePatternActions, usePatternMonitor } from '@/data/hooks'
 import { PatternDecisionCard } from '@/features/insights/components/PatternDecisionCard'
 import { PatternStrengthChart } from '@/features/insights/components/PatternStrengthChart'
@@ -42,14 +43,20 @@ function lastRunLabel(lastRunAt: string | null | undefined): string {
  * pending/error/not-found branches too keeps a way back on every state.
  */
 function DetailFrame({ children }: { children: ReactNode }) {
+  const navigate = useNavigate()
   return (
-    <div className="col gap-md" style={{ padding: '14px 16px 24px' }}>
-      <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-        <Link to="/mezo" aria-label="Vissza" style={{ fontSize: 19, color: 'var(--text-tertiary)' }}>‹</Link>
-        <h1 style={{ fontSize: 16.5, fontWeight: 800, flex: 1, margin: 0 }}>Minta részletei</h1>
+    <MozaikPage tone="gold">
+      {/* mezo-d20.11: the ad-hoc chevron + h1 row becomes the house PageHead chip, and it now
+          points at the LIST it was opened from (`/mezo/patterns`) rather than the hub — the
+          user's way back is one step, not two. */}
+      <PageHead onBack={() => navigate('/mezo/patterns')} label="‹ Minták" />
+      <div className="mz-page-hero">
+        <div className="mz-hero-nm">Minta részletei</div>
       </div>
-      {children}
-    </div>
+      <PageBody>
+        <div className="col gap-md">{children}</div>
+      </PageBody>
+    </MozaikPage>
   )
 }
 

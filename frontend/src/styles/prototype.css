@@ -6580,6 +6580,33 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 @media (prefers-reduced-motion: reduce) {
   .mz-play .stk-arc-fill { animation: none; transform: none; }
 }
+/* ── Mezo tab · 1:1 hűség-javítás (mezo-d20.11) ────────────────────────────
+   A Mezo-testvérek megkapják a Mozaik-scaffoldot (MozaikPage + PageHead +
+   PageHero + PageBody), ami a lap-margót is hozza; ezek a szabályok csak azt
+   a néhány prototípus-részletet pótolják, aminek nem volt osztálya:
+   a hero-szám mellé írt egység (#page-josla „68%", #page-memoria „47/60"),
+   és a chat #page-chat saját elrendezése (page-head jobbra tolt pgact
+   chipekkel, chsub sáv, majd a 17px-es oldalmargós szál + composer).
+   Minden érték a prototípus px-e ×1.18. ── */
+.mzp-heropct { font-size: 19px; font-weight: 200; }
+/* a döntés-kártya már meghozott döntése (a prototípus decdone-ra vált; itt a gomb marad,
+   ezért a kiválasztott ghost halkan tintázódik — soha nem pirossal) */
+.mzh-ghost[aria-pressed="true"] { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.mzh-ghost.is-no[aria-pressed="true"] { background: var(--mz-stch-mut-bg); color: var(--mz-no-ink); }
+.mem-herounit { font-size: 18px; font-weight: 400; color: var(--mz-ink-soft); }
+
+/* #page-chat: a page-head két pgact chipje jobbra ül (prototípus .pgact margin-left:auto) */
+.mz-page-head .mzc-pgact:first-of-type { margin-left: auto; }
+/* A prototípusban a page-head FIX, alatta a .chthread görget. Az appban egyetlen görgető van
+   (.screen-content), ezért a fejléc kitapad — különben egy hosszú szál aljáról a kiút ismét
+   csak a tabbar lenne, azaz visszaesnénk a javított hibába. */
+.mzc > .mz-page-head { position: sticky; top: 0; z-index: 30;
+  padding-top: 9px; padding-bottom: 6px; background: var(--canvas); }
+/* prototípus .chsub { padding: 2px 16px 6px } */
+.mzc-chsub { padding: 2px 19px 0; }
+/* prototípus .chthread { padding: 4px 14px 10px } / .composer { margin: 6px 12px 10px } */
+.mzc .chat-thread { padding: 5px 17px 12px; }
+.mzc .mzc-composer { margin-left: 14px; margin-right: 14px; }
 
 
 /* ============================================================
