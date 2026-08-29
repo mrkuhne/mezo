@@ -14,15 +14,25 @@ export interface MeWeekBootstrap {
   mode: 'mock' | 'live'
 }
 
+/** ADDITIVE (mezo-d20.6.10): the query's own liveness, so a screen can tell "still
+ *  loading" apart from "resolved empty" and offer a retry on a genuinely failed fetch
+ *  instead of a silently blank week. Existing `const { week } = useMeWeek(...)` callers
+ *  are untouched — the bootstrap fields keep their names and meanings. */
+export interface MeWeekQuery extends MeWeekBootstrap {
+  isPending: boolean
+  isError: boolean
+  refetch: () => void
+}
+
 const REAL_EMPTY: MeWeekBootstrap = { week: null, mode: 'live' }
 
 /** `startIso` — ISO Monday of the week to load. */
-export function useMeWeek(startIso: string): MeWeekBootstrap {
-  const { data } = useDualQuery<MeWeekBootstrap>({
+export function useMeWeek(startIso: string): MeWeekQuery {
+  const { data, isPending, isError, refetch } = useDualQuery<MeWeekBootstrap>({
     queryKey: ['meWeek', startIso],
     mockData: { week: mockMeWeek(startIso), mode: 'mock' },
     realFetch: async () => ({ week: await meWeekApi.get(startIso), mode: 'live' }),
     realEmpty: REAL_EMPTY,
   })
-  return data
+  return { ...data, isPending, isError, refetch }
 }

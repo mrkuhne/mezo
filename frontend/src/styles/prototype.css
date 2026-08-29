@@ -263,6 +263,25 @@
   --mz-wk-cur-ring: rgba(138, 118, 204, 0.75);
   --mz-fh-now-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
 
+  /* Heti hub-csempék (mezo-d20.6.10) — en-body.html hub() inline washes/glows verbatim.
+     The four view tiles are LIGHTER than the generic --mz-wash-* family (the hub reads as
+     one calm surface with four tinted panes), so they get their own tokens. */
+  --mz-wkh-rev-wash:  linear-gradient(150deg, #F3F0FC, #FDFCFF);
+  --mz-wkh-rev-bd:    #8A76CC;
+  --mz-wkh-rev-glow:  rgba(93, 79, 160, 0.4);
+  --mz-wkh-less-wash: linear-gradient(150deg, #FFF1D6, #FFFAF0);
+  --mz-wkh-less-glow: rgba(181, 126, 20, 0.4);
+  --mz-wkh-days-wash: linear-gradient(150deg, #E9F1E2, #F7FBF3);
+  --mz-wkh-days-glow: rgba(110, 139, 94, 0.42);
+  --mz-wkh-disc-wash: linear-gradient(150deg, #DFEDF5, #F7FBFD);
+  --mz-wkh-disc-glow: rgba(78, 143, 184, 0.4);
+  --mz-wkh-dot-pattern:    #8A76CC;
+  --mz-wkh-dot-fact:       #C9962E;
+  --mz-wkh-dot-life:       #4E8FB8;
+  --mz-wkh-dot-memoir:     #C46FA0;
+  --mz-wkh-dot-prediction: #8FAF7E;
+  --mz-wkh-hair: rgba(43, 33, 24, 0.14);
+
   /* Receptek v2 (mezo-d20.4.4) — category band gradients (fuel-body.html #page-recept
      card seeds, verbatim) + the NOVA dot ramp. NOVA 4 stays terracotta, never red. */
   --mz-rcp-breakfast-bw: #F6E7C6; --mz-rcp-breakfast-bd: #C9962E; --mz-rcp-breakfast-shadow: rgba(201, 150, 46, 0.4);
@@ -457,6 +476,23 @@
   --mz-sc-non-ink: var(--text-muted);
   --mz-wk-cur-ring: color-mix(in srgb, var(--dv-lav) 75%, transparent);
   --mz-fh-now-shadow: var(--mz-shadow-most);
+
+  /* Heti hub-csempék — dark ("Pulse") derivations on the dv ramp */
+  --mz-wkh-rev-wash:  linear-gradient(150deg, color-mix(in srgb, var(--dv-lav) 16%, var(--surface-card)), var(--surface-card));
+  --mz-wkh-rev-bd:    var(--dv-lav);
+  --mz-wkh-rev-glow:  color-mix(in srgb, var(--dv-lav) 40%, transparent);
+  --mz-wkh-less-wash: linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card)), var(--surface-card));
+  --mz-wkh-less-glow: color-mix(in srgb, var(--dv-amber) 40%, transparent);
+  --mz-wkh-days-wash: linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 16%, var(--surface-card)), var(--surface-card));
+  --mz-wkh-days-glow: color-mix(in srgb, var(--dv-sage) 42%, transparent);
+  --mz-wkh-disc-wash: linear-gradient(150deg, color-mix(in srgb, var(--dv-sky) 16%, var(--surface-card)), var(--surface-card));
+  --mz-wkh-disc-glow: color-mix(in srgb, var(--dv-sky) 40%, transparent);
+  --mz-wkh-dot-pattern:    var(--dv-lav);
+  --mz-wkh-dot-fact:       var(--dv-amber);
+  --mz-wkh-dot-life:       var(--dv-sky);
+  --mz-wkh-dot-memoir:     var(--dv-rose);
+  --mz-wkh-dot-prediction: var(--dv-sage);
+  --mz-wkh-hair: color-mix(in srgb, var(--text-primary) 22%, transparent);
 
   /* Receptek v2 (mezo-d20.4.4) — dark ("Pulse") derivations on the dv ramp */
   --mz-rcp-breakfast-bw: color-mix(in srgb, var(--dv-amber) 20%, var(--surface-card)); --mz-rcp-breakfast-bd: var(--dv-amber); --mz-rcp-breakfast-shadow: color-mix(in srgb, var(--dv-amber) 40%, transparent);
@@ -5761,6 +5797,134 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 
 @media (prefers-reduced-motion: reduce) {
   .mz-play .wk-trend i, .mz-play .wk-minibars i { animation: none; transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Heti hub (mezo-d20.6.10)
+   Source: prototypes/src/en-body.html — `#page-heti` + the `hub()` function in
+   the „Heti áttekintés" IIFE (.wknav / .hwide / .hduo / .hsm / .miniring /
+   .dscdots / .lsec / .foot9 / .stch / .skel), scaled x1.18 (330 -> 390px frame).
+   Geometry and proportions are the prototype's; every colour is a token so the
+   page flips with the theme. The score ring, the 8-week spark and the .sc-*
+   bands are the shared Heti foundation above — not repeated here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── week stepper in the page head ─────────────────────────────────────── */
+.wkh-nav { display: flex; gap: 6px; margin-left: auto; }
+.wkh-nav button { position: relative; width: 31px; height: 31px; border-radius: 50%;
+  border: 1px solid var(--mz-wkh-hair); background: var(--mz-chipbg);
+  font-family: inherit; font-size: 13px; color: var(--mz-ink-soft); cursor: pointer;
+  display: grid; place-items: center; }
+/* 44pt hit area around a 31px circle — the visual stays the prototype's. */
+.wkh-nav button::after { content: ''; position: absolute; inset: -7px; border-radius: 50%; }
+.wkh-nav button:disabled { opacity: 0.3; cursor: default; }
+.wkh-nav button:disabled::after { display: none; }
+
+/* ── hero: ring + delta/trend column ───────────────────────────────────── */
+.wkh-herorow { display: flex; align-items: center; justify-content: center; gap: 17px; margin-top: 5px; }
+.wkh-heroside { width: 125px; text-align: left; }
+.wkh-prev { font-size: 9px; color: var(--mz-ink-mut); margin-left: 6px; }
+.wkh-trendlbl { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin-top: 7px; }
+
+/* ── section label + closing footnote ──────────────────────────────────── */
+.wkh-lsec { display: flex; align-items: center; gap: 7px; padding: 12px 2px 7px; }
+.wkh-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; line-height: 1.5; padding: 7px 2px 0; }
+
+/* ── shared tile furniture ─────────────────────────────────────────────── */
+.wkh-row { display: flex; align-items: center; gap: 8px; }
+.wkh-grow { flex: 1; min-width: 0; text-align: left; }
+.wkh-chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+.wkh-stch { font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 7px;
+  padding: 2.5px 8px; flex: none; }
+.wkh-stch.lav  { background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
+.wkh-stch.warn { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.wkh-pic { width: 33px; height: 33px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+
+/* ── the two wide tiles (elemzés, felfedezések) ────────────────────────── */
+.wkh-wide { display: block; width: 100%; text-align: left; font-family: inherit; color: inherit;
+  border-radius: 22px; padding: 14px 15px; margin-bottom: 11px; cursor: pointer;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-stripbg);
+  box-shadow: 0 19px 35px -18px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.wkh-wide:active { transform: scale(0.975); }
+.wkh-wide.rev { background: var(--mz-wkh-rev-wash); border: 1px solid var(--mz-wkh-rev-bd);
+  box-shadow: 0 19px 35px -18px var(--mz-wkh-rev-glow), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.wkh-wide.disc { background: var(--mz-wkh-disc-wash);
+  box-shadow: 0 19px 35px -18px var(--mz-wkh-disc-glow), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.wkh-snip { font-size: 11px; font-weight: 300; line-height: 1.5; margin-top: 7px;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wkh-widefoot { display: flex; align-items: center; margin-top: 7px; font-size: 9px; color: var(--mz-ink-mut); }
+.wkh-open { margin-left: auto; font-size: 9.5px; font-weight: 700; color: var(--mz-cell-lav-ink); }
+.wkh-disctitle { font-size: 12.5px; font-weight: 700; margin-top: 1px; }
+.wkh-discparts { font-size: 9.5px; color: var(--mz-ink-soft); }
+.wkh-discempty { font-size: 10px; color: var(--mz-ink-soft); margin-top: 6px; }
+
+/* „✦ Készítsd el most" — the closed-week-without-analysis repair action. It is a
+   sibling of the tile, not a child: a button inside a button is invalid markup. */
+.wkh-genbtn { display: block; width: 100%; margin: -4px 0 11px; padding: 11px 14px; min-height: 44px;
+  border-radius: 14px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  color: var(--mz-cell-lav-ink); background: var(--mz-chipbg);
+  border: 1px solid var(--mz-wkh-rev-bd); }
+.wkh-genbtn:disabled { opacity: 0.55; cursor: default; }
+
+/* ── the two small tiles (tanulságok, napok) ───────────────────────────── */
+.wkh-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 11px; }
+.wkh-sm { text-align: left; font-family: inherit; color: inherit; border-radius: 21px; padding: 13px 14px;
+  cursor: pointer; display: grid; gap: 5px; align-content: start;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-stripbg);
+  box-shadow: 0 17px 31px -17px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.wkh-sm:active { transform: scale(0.96); }
+.wkh-sm.less { background: var(--mz-wkh-less-wash);
+  box-shadow: 0 17px 31px -17px var(--mz-wkh-less-glow), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.wkh-sm.days { background: var(--mz-wkh-days-wash);
+  box-shadow: 0 17px 31px -17px var(--mz-wkh-days-glow), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.wkh-sm .picrow { display: flex; align-items: center; gap: 7px; }
+.wkh-sm .big { font-size: 26px; font-weight: 200; letter-spacing: -0.02em; line-height: 1.05;
+  font-variant-numeric: tabular-nums; }
+.wkh-sm .big span { font-size: 11px; font-weight: 700; color: var(--mz-ink-soft); }
+.wkh-sm .lb { font-size: 11px; font-weight: 700; }
+.wkh-sm .lb.less { color: var(--mz-stch-prop-ink); }
+.wkh-sm .lb.days { color: var(--mz-cell-sage-ink); }
+.wkh-sm .sub { font-size: 9px; color: var(--mz-ink-soft); line-height: 1.35; }
+
+/* seven per-day rings on the „A hét napjai" tile */
+.wkh-miniring { display: flex; gap: 3.5px; margin-top: 2px; }
+.wkh-miniring i { width: 15px; height: 15px; border-radius: 50%; flex: none;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-sc-track) 0); }
+.wkh-miniring i::after { content: ''; display: block; margin: 4px; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--mz-fh-ringhole); }
+.wkh-miniring i.is-nodata { background: none; box-shadow: inset 0 0 0 1.5px var(--mz-wkh-hair); }
+.wkh-miniring i.is-nodata::after { background: none; }
+.wkh-miniring i.is-future { opacity: 0.45; background: none;
+  box-shadow: inset 0 0 0 1.5px var(--mz-wkh-hair); }
+.wkh-miniring i.is-future::after { background: none; }
+
+/* category dots on the „Heti felfedezések" tile */
+.wkh-dots { display: flex; gap: 5px; margin-left: auto; }
+.wkh-dots i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.wkh-dots i.pattern    { background: var(--mz-wkh-dot-pattern); }
+.wkh-dots i.fact       { background: var(--mz-wkh-dot-fact); }
+.wkh-dots i.life       { background: var(--mz-wkh-dot-life); }
+.wkh-dots i.memoir     { background: var(--mz-wkh-dot-memoir); }
+.wkh-dots i.prediction { background: var(--mz-wkh-dot-prediction); }
+
+/* ── the eight mini-cells: two rows of four ────────────────────────────── */
+.wkh-cells + .wkh-cells { margin-top: 6px; }
+.wkh-cellunit { font-size: 8.5px; font-weight: 700; }
+
+/* ── loading skeleton (the prototype's .skel shimmer) ──────────────────── */
+.wkh-skel { border-radius: 20px; margin-bottom: 11px;
+  background: linear-gradient(100deg, rgba(43, 33, 24, 0.05) 30%, rgba(43, 33, 24, 0.11) 50%, rgba(43, 33, 24, 0.05) 70%);
+  background-size: 300% 100%; animation: wkh-shim 1.2s linear infinite; }
+.wkh-skel.ring { width: 97px; height: 97px; border-radius: 50%; margin: 0 auto 11px; }
+@keyframes wkh-shim { to { background-position: -200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wkh-skel { animation: none; }
+  .wkh-wide, .wkh-sm { transition: none; }
 }
 
 /* ============================================================
