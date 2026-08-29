@@ -33,6 +33,23 @@ const renderPage = () =>
     { wrapper: QueryWrapper },
   )
 
+// ── entrance choreography (mezo-d20.11) ──
+// Two blocks sat between the staggered siblings with no `.rise` at all
+// (PhaseAverageCard, RemDurationCard) — a visible hole in the cascade.
+test('the whole Alvás body is in the cascade — no un-risen block between the staggered ones', () => {
+  const { container } = renderPage()
+  const rises = [...container.querySelectorAll('.rise')]
+  for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+  const delays = rises
+    .map((r) => (r as HTMLElement).style.getPropertyValue('--d'))
+    .filter((d) => d !== '')
+    .map((d) => Number.parseInt(d, 10))
+  // 0 · 50 · 90 · 130 · 170 · 190 · 210 · 230 · 250 · 290 — a gapless ladder
+  for (const wanted of [0, 50, 90, 130, 190, 210, 230, 250, 290]) {
+    expect(delays).toContain(wanted)
+  }
+})
+
 test('renders the last-night hero', () => {
   renderPage()
   // Mozaik PageHero (mezo-d20.6.4) renders the page name as a styled div, not an <h1> —

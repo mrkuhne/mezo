@@ -104,7 +104,7 @@ export function GrowthPage() {
               {/* "Ma" block: Growth keeps the full quest + activity cards. Today reads the
                   same query through its standing DailyQuestsChip/Sheet; both surfaces share
                   DailyQuestList, while Growth additionally owns the activity-log overview. */}
-              <div className="mt-md">
+              <div className="mt-md rise" style={{ '--d': '0ms' } as React.CSSProperties}>
                 <span className="mz-eyebrow">Ma</span>
                 <div className="mt-sm">
                   <DailyQuestsCard />
@@ -113,6 +113,7 @@ export function GrowthPage() {
               </div>
               <div className="mt-md">
                 <SkillBandCard
+                  delayMs={60}
                   wash="lav"
                   eyebrow="LIFE"
                   chip={`8 skill · ${fmt(lifeXp)} XP`}
@@ -125,12 +126,14 @@ export function GrowthPage() {
                   ) : undefined}
                 />
                 <SkillBandCard
+                  delayMs={120}
                   wash="sage"
                   eyebrow="Atlétikus"
                   chip={`12 skill · átlag ${profile.athleteLevel ?? '–'}`}
                   rows={toRows(athletic, (k) => athMeta(k)?.icon ?? '✨', (k) => athMeta(k)?.name ?? k)}
                 />
                 <SkillBandCard
+                  delayMs={180}
                   wash="amber"
                   eyebrow="Izom"
                   chip={`13 izom · legjobb Lv ${muscle.length ? Math.max(...muscle.map((m) => m.level)) : 1}`}
