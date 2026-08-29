@@ -53,6 +53,12 @@ import tools.jackson.databind.ObjectMapper;
  * (mezo-d20.7.6): the week's lessons, handed to {@link WeeklyLessonService} which bounds-checks,
  * dedupes and caps them onto the same {@code learned_fact} candidate flow chat extraction feeds.
  * No usable lesson ⇒ no candidate row, same no-placeholder rule as the review itself.
+ *
+ * <p>mezo-d20.7.7: every collected candidate now carries the id of the entity it came from, so a
+ * persisted highlight is a REF and not just a chip label. That is the whole write side of the
+ * highlight-feedback loop — the reading side ({@code HighlightCitationSourceAdapter}) derives
+ * "cited in N of the last weeks" from the live review rows, so this generator gains no counter to
+ * keep, nothing to decrement on regenerate, and no new failure mode.
  */
 @Slf4j
 @Service
@@ -178,7 +184,9 @@ public class WeeklyReviewGenerator {
                 String title = patternRepository.findByIdAndCreatedByAndDeletedFalse(event.getPatternId(), userId)
                         .map(PatternEntity::getTitle).orElse("Ismeretlen minta");
                 payload.append("- ").append(title).append(" (").append(event.getKind()).append(")\n");
-                candidates.add(new Highlight("Pattern", title));
+                // mezo-d20.7.7: the candidate carries the PATTERN's id, not the event's — a
+                // citation is about the pattern, and two events in one week are one pattern.
+                candidates.add(new Highlight(Highlight.KIND_PATTERN, title, event.getPatternId()));
             }
         }
 
@@ -189,7 +197,7 @@ public class WeeklyReviewGenerator {
             for (KnowledgeFactEntity fact : facts) {
                 String label = truncate(fact.getFactText(), 80);
                 payload.append("- ").append(label).append('\n');
-                candidates.add(new Highlight("Fact", label));
+                candidates.add(new Highlight(Highlight.KIND_FACT, label, fact.getId()));
             }
         }
 
@@ -199,13 +207,13 @@ public class WeeklyReviewGenerator {
             payload.append("\nÉLETESEMÉNYEK:\n");
             for (GraphNodeEntity node : lifeEvents) {
                 payload.append("- ").append(node.getTitle()).append('\n');
-                candidates.add(new Highlight("LifeEvent", node.getTitle()));
+                candidates.add(new Highlight(Highlight.KIND_LIFE_EVENT, node.getTitle(), node.getId()));
             }
         }
 
         memoirRepository.findByCreatedByAndWeekStart(userId, weekStart).ifPresent(memoir -> {
             payload.append("\nHETI MEMOÁR: ").append(memoir.getTitle()).append('\n');
-            candidates.add(new Highlight("Memory", weekStart.toString()));
+            candidates.add(new Highlight(Highlight.KIND_MEMORY, weekStart.toString(), memoir.getId()));
         });
 
         List<PredictionEntity> predictions = predictionRepository.findByCreatedByAndWeekStart(userId, weekStart);
