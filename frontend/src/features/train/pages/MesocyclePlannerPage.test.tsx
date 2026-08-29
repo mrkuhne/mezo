@@ -193,6 +193,9 @@ test('„Mentés + indítás" creates the template, starts it active on the wiza
   expect(startedId).toBe('e1f3a0e2-0000-4000-8000-00000000d00d') // started from the just-created template
   expect(postedStart!.status).toBe('active')
   expect(postedStart!.startDate).toBe('2026-06-16')
+  // GymPage folded into Heti (mezo-d20.3.2): the wizard still targets /train/gym,
+  // which now renders TrainWeekPage's content directly (same page, no client
+  // redirect) — the pathname itself is untouched (hub-agent territory).
   await waitFor(() => expect(router.state.location.pathname).toBe('/train/gym'))
 })
 

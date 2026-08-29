@@ -38,7 +38,8 @@ test('Train opens on the Edzés hub and its tiles open the sub-pages', async () 
 
   renderApp('/train')
   await userEvent.click(await screen.findByRole('button', { name: 'Medálok' }))
-  expect(await screen.findByRole('heading', { level: 1, name: 'Medálok' })).toBeInTheDocument()
+  // Medálok is re-faced (mezo-d20.3.2): the Mozaik hero speaks the page name, not an h1.
+  expect(await screen.findByText('Medálok', { selector: '.mz-hero-nm' })).toBeInTheDocument()
   cleanup()
 
   renderApp('/train')

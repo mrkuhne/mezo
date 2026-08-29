@@ -5109,6 +5109,13 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   .eh-cta, .eh-ghostcta { transition: none; }
   .eh-cta:active, .eh-ghostcta:active { transform: none; }
 }
+/* ── Heti re-face (mezo-d20.3.2) — prototype edzes-body.html #page-heti
+   ×1.18 (330→390px frame). A static, non-collapsible panel for the folded-in
+   izom-zóna card (GymPage's meta card content, minus the retired Fázis/Split
+   cells now that the Mezociklus áttekintő chip covers those) — same
+   stripbg/shadow/radius as .mz-colstrip, just without the toggle chrome. ── */
+.mz-panel { background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  border-radius: 18px; padding: 12px 14px; box-shadow: var(--mz-shadow); margin-bottom: 12px; }
 
 /* ============================================================
    Today · iOS list language (mezo-e26w)
