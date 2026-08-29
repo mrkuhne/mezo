@@ -3117,6 +3117,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/week/{start}/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The persisted weekly-score trend for the N ISO weeks ending at start (inclusive)
+         * @description The Heti hero's 8-week trend (mezo-d20.7.5). Points are the PERSISTED weekly scores (weekly_score) — a deterministic cache, refreshed whenever the week's own inputs changed after computedAt (and always for a week that has not finished yet). A week whose score is null (fewer than 2 scored days — the "tanulom" gate) yields NO point: the series is short, never padded with a zero. Oldest first.
+         */
+        get: operations["getMeWeekTrend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character": {
         parameters: {
             query?: never;
@@ -6933,6 +6953,36 @@ export interface components {
             /** @description EWMA weekly rate from the weight trend */
             weightWeeklyRateKg?: number | null;
             totalXp?: number | null;
+        };
+        MeWeekTrendPoint: {
+            /**
+             * Format: date
+             * @description The week's ISO Monday
+             */
+            weekStart: string;
+            /** @description 0–100 — round(mean of the week's non-null day scores) */
+            score: number;
+            /** @description mean of the week's non-null sleep subscores; null when none */
+            sleepAvg?: number | null;
+            fuelAvg?: number | null;
+            checkinAvg?: number | null;
+            activityAvg?: number | null;
+            /**
+             * Format: date-time
+             * @description When this score was last computed from the week's data. The score is a cache, not a truth — a retroactive log can change it; this stamp is what makes the value honest.
+             */
+            computedAt: string;
+        };
+        MeWeekTrendResponse: {
+            /**
+             * Format: date
+             * @description The window's last week (ISO Monday), echoed back
+             */
+            start: string;
+            /** @description The requested window width — points may be shorter */
+            weeks: number;
+            /** @description Oldest first; only weeks that actually have a score. Never padded. */
+            points: components["schemas"]["MeWeekTrendPoint"][];
         };
         MeWeekResponse: {
             /** Format: date */
@@ -15707,6 +15757,50 @@ export interface operations {
                 };
             };
             /** @description start is not an ISO Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMeWeekTrend: {
+        parameters: {
+            query?: {
+                /** @description How many ISO weeks the window spans, counting back from start (inclusive) */
+                weeks?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The last week of the window — its ISO Monday (400 when the date is not a Monday) */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The window's points (0..weeks entries, oldest first) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeWeekTrendResponse"];
+                };
+            };
+            /** @description start is not an ISO Monday, or weeks is out of range */
             400: {
                 headers: {
                     [name: string]: unknown;
