@@ -546,6 +546,30 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   its settled state) — always `200`, empty list = honest empty. `POST …/regenerate` archives the
   week's still-OPEN candidates with the old review and leaves DECIDED ones untouched — a
   regeneration must never undo a user decision.
+- **The WIDER gather input (`mezo-d20.7.8`)** — `WeeklyReviewContextSources` adds the six sources
+  the design spec listed as input and the first cut dropped, rendered into the payload **after**
+  the predictions block and **before** the numbered anchor list: **journal entries**
+  (`occurredOn` in-week, prose clipped to 180 chars, max 7), **decisions** (recorded in-week +
+  **reviewed** in-week with their 1–5 rating, text clipped to 140, max 6 combined), **N=1
+  experiments** whose `[startDate, startDate+totalDays)` window *intersects* the week (title +
+  status + window position or outcome; `proposed` rows never ran, so they are excluded),
+  **people mentions** aggregated to a **per-person COUNT** (top 5), the **medication cycle**
+  position on the week's first and last day (one line, derived via `MedicationCycleService`), and
+  the week's consolidated **`period_summary(week)`** narrative (clipped to 600 — its `03:30 MON`
+  consolidation cron runs three hours before the `06:50` review cron on the SAME `weekStart`).
+  Three disciplines make this a widening rather than a bloat: it is **data only** (the prompt is
+  byte-identical and mints no new anchor kinds — the `Pattern|Fact|LifeEvent|Memory` RefTag
+  vocabulary is unchanged, and every candidate costs double tokens because it renders in its own
+  section *and* in the anchor list); **each source is capped and clipped** at the coarsest
+  granularity that still carries its signal, with mention excerpts/tone, gratitude entries,
+  `daily_summary` narratives (the `period_summary` rung IS their consolidation), the decision
+  `contextSnapshot` and the dose ledger deliberately **left out as noise**; and **an absent source
+  renders no scaffolding at all** — no header, no placeholder, an unknown cycle day or ungraded
+  review printing the house `–`. Cross-feature edges: `proactive → journal`, `proactive → people`
+  and `proactive → medication` are new, all three verified acyclic (ADR 0012 prescribes a
+  consumer-owned port where the direct edge would *close* a cycle; `CheckInNoteSourceAdapter` is
+  the standing precedent for a plain read when the direction is already safe), so no port was
+  minted and the ArchUnit freeze store is unchanged.
 - **Notifications** — `AppNotificationKind.WEEKLY_REVIEW_READY` (`/me/week` deeplink, no
   `familyKey` since the push category below already covers the event) fires on generation. The
   `NotificationCategory.WEEKLY_REVIEW` push fires **Monday 10:00, fixed** (`AnchorResolver.
