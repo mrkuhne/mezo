@@ -60,17 +60,30 @@ function segmentPills(session: RunPrescribedSession): { key: string; text: strin
     if (rest) pills.push({ key: 'rest', text: `${rest.durationSec}mp séta`, tone: 'rest' })
   }
 
+  // Pyramid rest is derived (segment × 2, wired into the block draft) — the
+  // card surfaces that as an honest note pill instead of restating a number.
+  if (session.kind === 'pyramid' && segs.some((s) => s.type === 'rest')) {
+    pills.push({ key: 'restnote', text: 'pihenő = szakasz × 2', tone: 'rest' })
+  }
   if (cooldown) pills.push({ key: 'cool', text: `${secLabel(cooldown.durationSec)} levezetés`, tone: 'warm' })
   return pills
 }
 
-export function RunSessionCard({ session, onLog }: { session: RunPrescribedSession; onLog?: () => void }) {
+/** MA → Naplózd (today, not yet logged) · múlt → Pótold · jövő → disabled grey · done → KÉSZ. */
+export type RunCtaState = 'today' | 'past' | 'future' | 'done'
+
+export function RunSessionCard({ session, ctaState, onLog }: {
+  session: RunPrescribedSession
+  ctaState: RunCtaState
+  onLog?: () => void
+}) {
   const dayLabel = DAY_ORDER[session.dayOfWeek] ?? ''
   const { min, max } = session.rpeTarget
-  // High-intensity sprint targets (min >= 9) get the red --error tag; otherwise amber --warning.
+  // High-intensity sprint targets (min >= 9) get the terracotta --error tag (light
+  // theme's --error-base IS terracotta, #C4634B — never a true alarm red); otherwise amber --warning.
   const hot = session.kind === 'sprint' && min >= 9
   const rpeStyle = hot
-    ? { color: 'var(--error)', background: 'rgba(244, 63, 94, 0.08)', borderColor: 'rgba(244, 63, 94, 0.35)' }
+    ? { color: 'var(--error)', background: 'color-mix(in srgb, var(--error) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--error) 35%, transparent)' }
     : { color: 'var(--warning)', background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.35)' }
 
   return (
@@ -88,6 +101,9 @@ export function RunSessionCard({ session, onLog }: { session: RunPrescribedSessi
               <span style={{ fontSize: 11, color: RUN }}>{session.timeOfDay}</span>
             )}
             <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{session.label}</span>
+            {ctaState === 'today' && (
+              <span className="excat-tag" style={{ background: 'var(--wash-run)', color: RUN }}>MA</span>
+            )}
           </div>
           <span
             style={{
@@ -110,7 +126,26 @@ export function RunSessionCard({ session, onLog }: { session: RunPrescribedSessi
           ))}
         </div>
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 10 }}>
-          {onLog ? (
+          {ctaState === 'done' ? (
+            <span
+              className="excat-tag"
+              style={{ background: 'color-mix(in srgb, var(--success) 16%, transparent)', color: 'var(--success)' }}
+            >
+              KÉSZ ✓
+            </span>
+          ) : ctaState === 'future' ? (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'var(--text-tertiary)',
+              }}
+            >
+              Naplózás ▸
+            </span>
+          ) : (
             <button
               type="button"
               onClick={onLog}
@@ -126,20 +161,8 @@ export function RunSessionCard({ session, onLog }: { session: RunPrescribedSessi
                 padding: 0,
               }}
             >
-              Naplózás ▸
+              {ctaState === 'today' ? 'Naplózd ›' : 'Pótold ›'}
             </button>
-          ) : (
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--text-tertiary)',
-              }}
-            >
-              Naplózás ▸
-            </span>
           )}
         </div>
       </div>
