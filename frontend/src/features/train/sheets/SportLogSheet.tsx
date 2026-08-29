@@ -20,6 +20,7 @@ import { SPORT_KINDS, SPORT_LABELS, type SportKind } from '@/features/train/logi
 // display is tap-to-edit (type the value in); the same min/max clamp on blur.
 export function NumberStep({
   label,
+  hint,
   val,
   step,
   onChange,
@@ -28,6 +29,8 @@ export function NumberStep({
   max,
 }: {
   label: string
+  /** Small tertiary sub-label under the main label (e.g. what the number honestly means for this kind). */
+  hint?: string
   val: number
   step: number
   onChange: (next: number) => void
@@ -39,7 +42,10 @@ export function NumberStep({
   return (
     <div className="col gap-sm">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="label-mono">{label}</span>
+        <span className="label-mono">
+          {label}
+          {hint && <span className="text-tertiary" style={{ fontWeight: 400, marginLeft: 6, textTransform: 'none', letterSpacing: 0 }}>{hint}</span>}
+        </span>
         <span
           style={{
             fontFamily: 'var(--ff-display)',

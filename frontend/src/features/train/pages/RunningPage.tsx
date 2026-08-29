@@ -16,7 +16,7 @@ import { PageTitle } from '@/shared/ui/PageTitle'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { useRunning } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import type { RunningBlockResponse, RunSessionLogResponse, RunSessionLogRequest } from '@/data/train/runningApi'
+import type { RunningBlockResponse, RunSessionLogResponse, RunSessionLogRequest, RunPrescribedSession } from '@/data/train/runningApi'
 import { newDraft } from '@/data/train/runningDraft'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
@@ -24,13 +24,14 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Display } from '@/shared/ui/Display'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import { RunWeekStrip } from '@/features/train/components/RunWeekStrip'
-import { RunSessionCard } from '@/features/train/components/RunSessionCard'
+import { RunSessionCard, type RunCtaState } from '@/features/train/components/RunSessionCard'
 import { RunCrossLoadCard } from '@/features/train/components/RunCrossLoadCard'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
+import { todayIdx, dateForDayOfWeek } from '@/data/train/runningAgenda'
 
 const RUN = 'var(--tag-run)'
 
-type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
+type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number; date: string }
 
 type RunSubView = 'week' | 'log' | 'blocks'
 
@@ -101,7 +102,7 @@ export function RunningPage() {
         ))}
       </div>
 
-      {view === 'week' && <RunWeekView block={activeRunningBlock} pending={runningPending} onLog={logRunSession} />}
+      {view === 'week' && <RunWeekView block={activeRunningBlock} sessions={runSessions} pending={runningPending} onLog={logRunSession} />}
       {view === 'log' && <RunLogView sessions={runSessions} />}
       {view === 'blocks' && <RunBlocksView blocks={runningBlocks} onOpen={openBuilder} />}
     </>
@@ -109,7 +110,12 @@ export function RunningPage() {
 }
 
 // === E heti edzés: active block hero + this week's prescribed sessions ===
-function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | null; pending: boolean; onLog: (body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void; onSettled?: () => void }) => void }) {
+function RunWeekView({ block, sessions: logs, pending, onLog }: {
+  block: RunningBlockResponse | null
+  sessions: RunSessionLogResponse[]
+  pending: boolean
+  onLog: (body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void; onSettled?: () => void }) => void
+}) {
   const [logCtx, setLogCtx] = useState<RunLogCtx | null>(null)
   const { showLevelUp } = useLevelUp()
 
@@ -133,7 +139,11 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
   }
 
   const week = block.structure.weeks.find((w) => w.weekNumber === block.currentWeek)
-  const sessions = week?.sessions ?? []
+  const prescribed = week?.sessions ?? []
+  const today = todayIdx()
+  const isDone = (key: string) => logs.some((l) => l.blockId === block.id && l.weekNumber === block.currentWeek && l.sessionKey === key)
+  const ctaStateFor = (s: RunPrescribedSession): RunCtaState =>
+    isDone(s.key) ? 'done' : s.dayOfWeek === today ? 'today' : s.dayOfWeek < today ? 'past' : 'future'
 
   return (
     <div style={{ padding: '0 24px 16px' }}>
@@ -179,7 +189,7 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
             style={{ paddingTop: 14, borderTop: '1px solid var(--divider)' }}
           >
             <RunStat val={`${block.weeks}`} unit="hét" label="blokk" />
-            <RunStat val={`${sessions.length}`} unit="×/hét" label="edzés" />
+            <RunStat val={`${prescribed.length}`} unit="×/hét" label="edzés" />
             <RunStat val="RPE" label="intervallum cél" />
           </div>
         </div>
@@ -188,22 +198,30 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
       {/* This week's sessions */}
       {week ? (
         <>
-          <div style={{ marginBottom: 12 }}><Eyebrow>E hét · {sessions.length} edzés</Eyebrow></div>
+          <div style={{ marginBottom: 12 }}><Eyebrow>E hét · {prescribed.length} edzés</Eyebrow></div>
           <div className="col gap-sm">
-            {sessions.map((s) => (
-              <RunSessionCard
-                key={s.key}
-                session={s}
-                onLog={() => setLogCtx({
-                  blockId: block.id,
-                  weekNumber: block.currentWeek,
-                  sessionKey: s.key,
-                  label: s.label,
-                  isSprint: s.kind === 'sprint',
-                  defaultRounds: s.rounds ?? undefined,
-                })}
-              />
-            ))}
+            {prescribed.map((s) => {
+              const cta = ctaStateFor(s)
+              const loggable = cta === 'today' || cta === 'past'
+              return (
+                <RunSessionCard
+                  key={s.key}
+                  session={s}
+                  ctaState={cta}
+                  onLog={loggable ? () => setLogCtx({
+                    blockId: block.id,
+                    weekNumber: block.currentWeek,
+                    sessionKey: s.key,
+                    label: s.label,
+                    isSprint: s.kind === 'sprint',
+                    // Sprint carries an explicit round count; pyramid has none (it's a
+                    // ladder), so the honest default is its prescribed segment count.
+                    defaultRounds: s.rounds ?? s.segments.filter((seg) => seg.type === 'work').length,
+                    date: dateForDayOfWeek(s.dayOfWeek),
+                  }) : undefined}
+                />
+              )
+            })}
           </div>
           {/* Derived cross-load → gym leg volume (static in Phase 2) */}
           <div style={{ marginTop: 16 }}>
@@ -219,6 +237,7 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
       {logCtx && (
         <RunLogSheet
           ctx={logCtx}
+          date={logCtx.date}
           onClose={() => setLogCtx(null)}
           onSave={(body, done) => onLog(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
@@ -258,12 +277,52 @@ function RunLogView({ sessions }: { sessions: RunSessionLogResponse[] }) {
   const ordered = [...sessions].sort((a, b) => b.date.localeCompare(a.date))
   return (
     <div style={{ padding: '8px 24px 16px' }}>
+      <RunHrTrend logs={ordered} />
       <div style={{ marginBottom: 12 }}><Eyebrow>Utolsó {ordered.length} futás</Eyebrow></div>
       <div className="col gap-sm">
         {ordered.map((s) => (
           <RunLogCard key={s.id} session={s} />
         ))}
       </div>
+    </div>
+  )
+}
+
+// Pulzus-megnyugvás (HR-recovery) trend — lower mp = better recovery, so a
+// non-positive delta reads as improvement (success), a rise reads as amber
+// (never red — a slower recovery isn't a failure state). `logs` is newest-first.
+function RunHrTrend({ logs }: { logs: RunSessionLogResponse[] }) {
+  const withHr = logs.filter((l) => l.hrRecoverySec != null).slice(0, 6).reverse()
+  if (withHr.length < 2) return null
+  const max = Math.max(...withHr.map((l) => l.hrRecoverySec!))
+  const delta = withHr[withHr.length - 1].hrRecoverySec! - withHr[0].hrRecoverySec!
+  return (
+    <div className="card" style={{ padding: 14, marginBottom: 14 }}>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <Eyebrow>Pulzus-megnyugvás · utolsó {withHr.length} futás</Eyebrow>
+        <span style={{ fontSize: 12, fontWeight: 700, color: delta <= 0 ? 'var(--success)' : 'var(--warning)' }}>
+          {delta <= 0 ? '' : '+'}{delta} mp
+        </span>
+      </div>
+      <div className="row" style={{ gap: 8, alignItems: 'flex-end', height: 64, marginTop: 12 }}>
+        {withHr.map((l) => (
+          <div key={l.id} className="col" style={{ alignItems: 'center', flex: 1, height: '100%', justifyContent: 'flex-end', gap: 4 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, color: RUN }}>{l.hrRecoverySec}</span>
+            <div style={{
+              width: '100%',
+              maxWidth: 22,
+              height: `${Math.max(14, Math.round((l.hrRecoverySec! / max) * 100))}%`,
+              minHeight: 6,
+              borderRadius: 2,
+              background: 'linear-gradient(180deg, var(--wash-run), var(--tag-run))',
+            }} />
+            <span className="text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>{huMonthDay(l.date)}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-tertiary" style={{ fontSize: 11, marginTop: 8 }}>
+        mp a nyugalmi pulzusig — alacsonyabb = jobb regeneráció
+      </p>
     </div>
   )
 }
