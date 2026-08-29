@@ -9,7 +9,8 @@ test('renders all 9 badges with the megszerezve header from the mock (4 achieved
   const { container } = render(<BadgesCard badges={badges} />)
   expect(screen.getByText('Badge-ek')).toBeInTheDocument()
   expect(screen.getByText('4 / 9 megszerezve')).toBeInTheDocument()
-  const grid = container.querySelector('[style*="grid-template-columns"]') as HTMLElement
+  // Mozaik reface (mezo-d20.6.5): the 3-col grid is the .gr-bdggrid CSS class now.
+  const grid = container.querySelector('.gr-bdggrid') as HTMLElement
   expect(grid.children).toHaveLength(9)
 })
 

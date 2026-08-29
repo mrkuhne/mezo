@@ -26,10 +26,10 @@ export function AiFeatureBreakdown({ groups, selected, onSelect }: {
   const max = Math.max(...groups.map((g) => g.costUsd ?? 0), 0)
 
   return (
-    <div className="card" style={{ padding: '11px 0 4px' }}>
-      <div className="eyebrow" style={{ padding: '0 13px 6px' }}>Feature szerint</div>
+    <div className="aiu-fcard rise">
+      <div className="eyebrow" style={{ padding: '0 15px 7px' }}>Feature szerint</div>
 
-      {shown.map((g) => {
+      {shown.map((g, i) => {
         // `key` is the stable identity used for React's key prop, the onSelect payload and the
         // selected-comparison — 'unknown' internally, unreachable in practice (feature is NOT NULL
         // at the contract level). `label` is what renders, and must be Hungarian like
@@ -43,25 +43,23 @@ export function AiFeatureBreakdown({ groups, selected, onSelect }: {
             type="button"
             onClick={() => onSelect(isSelected ? null : key)}
             aria-pressed={isSelected}
+            className="aiu-bar"
             style={{
-              display: 'block', width: '100%', textAlign: 'left', border: 0, cursor: 'pointer',
-              padding: '8px 13px', background: isSelected ? 'var(--surface-2)' : 'transparent',
+              width: '100%', textAlign: 'left', border: 0, cursor: 'pointer', minHeight: 44,
+              background: isSelected ? 'var(--surface-2)' : 'transparent', flexDirection: 'column', alignItems: 'stretch',
             }}
           >
             <div className="row" style={{ alignItems: 'baseline', gap: 8 }}>
-              <span style={{ fontSize: 12.5, fontWeight: 700, flex: 1 }}>{label}</span>
+              <span className="nm" style={{ flex: 1, width: 'auto' }}>{label}</span>
               <span className="text-tertiary" style={{ fontSize: 10.5, fontVariantNumeric: 'tabular-nums' }}>
                 {g.callCount}
               </span>
-              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--sage-deep)', fontVariantNumeric: 'tabular-nums' }}>
+              <span className="vl" style={{ width: 'auto', color: 'var(--sage-deep)', fontSize: 12, fontWeight: 800 }}>
                 {formatRollupCost(g.costUsd)}
               </span>
             </div>
-            <div style={{ height: 5, borderRadius: 3, background: 'var(--surface-2)', marginTop: 5 }}>
-              <div style={{
-                height: '100%', borderRadius: 3, background: 'var(--coral)',
-                width: max > 0 ? `${((g.costUsd ?? 0) / max) * 100}%` : '0%',
-              }} />
+            <div className="gbar" style={{ marginTop: 5 }}>
+              <div style={{ width: max > 0 ? `${((g.costUsd ?? 0) / max) * 100}%` : '0%', '--d': `${350 + i * 60}ms` } as React.CSSProperties} />
             </div>
           </button>
         )

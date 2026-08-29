@@ -46,10 +46,9 @@ import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
 import { MemoryPage } from '@/features/insights/pages/MemoryPage'
-import { MeSection } from '@/features/me/pages/MeSection'
+import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
-import { ProfilePage } from '@/features/me/pages/ProfilePage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
 import { WeekPage } from '@/features/me/pages/WeekPage'
@@ -172,22 +171,21 @@ export const routes: RouteObject[] = [
       // somewhere sensible.
       { path: 'mezo/motor', element: <Navigate to="/mezo/patterns" replace /> },
       { path: 'mezo/memoria', element: <MemoryPage /> },
-      {
-        path: 'me',
-        element: <MeSection />,
-        children: [
-          { index: true, element: <ProfilePage /> },
-          { path: 'growth', element: <GrowthPage /> },
-          { path: 'naplo', element: <JournalPage /> },
-          { path: 'week', element: <WeekPage /> },
-          { path: 'goals', element: <GoalsPage /> },
-          { path: 'weight', element: <WeightPage /> },
-          { path: 'sleep', element: <SleepPage /> },
-          { path: 'people', element: <PeoplePage /> },
-          { path: 'knowledge', element: <KnowledgePage /> },
-          { path: 'ertesitesek', element: <NotificationsPage /> },
-        ],
-      },
+      // Én tab — Design 2.0 shell dissolution (mezo-d20.6.1): the Me shell
+      // (AppHero + SubNavDropdown + its ⚙️ Beállítások action) is gone. /me is the hub
+      // Mozaik face, which carries the settings band itself; the former sub-tabs are
+      // full-page siblings on their stable routes (they keep their current faces until
+      // their own F5 slices land) — the same idiom the Mezo tab took in mezo-d20.5.1.
+      { path: 'me', element: <EnHubPage /> },
+      { path: 'me/growth', element: <GrowthPage /> },
+      { path: 'me/naplo', element: <JournalPage /> },
+      { path: 'me/week', element: <WeekPage /> },
+      { path: 'me/goals', element: <GoalsPage /> },
+      { path: 'me/weight', element: <WeightPage /> },
+      { path: 'me/sleep', element: <SleepPage /> },
+      { path: 'me/people', element: <PeoplePage /> },
+      { path: 'me/knowledge', element: <KnowledgePage /> },
+      { path: 'me/ertesitesek', element: <NotificationsPage /> },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },
       // Full-screen routine editor (mezo-n5e9.2) — same sibling idiom (no Me sub-nav chrome).
       { path: 'me/routines/edit', element: <RoutineEditorPage /> },

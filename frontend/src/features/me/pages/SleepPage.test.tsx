@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, expect, it, test, vi } from 'vitest'
 import { SleepPage } from '@/features/me/pages/SleepPage'
@@ -35,7 +35,9 @@ const renderPage = () =>
 
 test('renders the last-night hero', () => {
   renderPage()
-  expect(screen.getByRole('heading', { level: 1, name: 'Alvás' })).toBeInTheDocument()
+  // Mozaik PageHero (mezo-d20.6.4) renders the page name as a styled div, not an <h1> —
+  // structural change from the old pghead-np face; the text is still the one assertion.
+  expect(screen.getByText('Alvás')).toBeInTheDocument()
   expect(screen.getByText('Tegnap éjjel')).toBeInTheDocument()
   // hero duration (48px) renders "7.5" — also appears in the log, so assert it is present at least once
   expect(screen.getAllByText('7.5').length).toBeGreaterThan(0)
@@ -64,8 +66,10 @@ test('real mode with an empty sleep log renders the placeholder instead of crash
 
 it('renders the sleep-goal card with derived ends and the regularity band', () => {
   renderPage()
-  expect(screen.getByText('23:15')).toBeInTheDocument()          // derived bed
-  expect(screen.getAllByText('06:45').length).toBeGreaterThan(0) // fixed wake
+  // The bed-rail (mezo-d20.6.4) joins the emoji + time in ONE span per the prototype
+  // (🛏️ {bed} / ☀️ {wake}), so the exact-string match moved to a substring regex.
+  expect(screen.getByText(/🛏️\s*23:15/)).toBeInTheDocument()          // derived bed
+  expect(screen.getAllByText(/☀️\s*06:45/).length).toBeGreaterThan(0) // fixed wake
   expect(screen.getByText('7.5 ó cél')).toBeInTheDocument()
   // The phrase now renders twice — the sleep-goal card's regularity quote (SleepPage.tsx) AND the
   // "A rendszeresség a király" education card title mounted since mezo-hd8k — so match like '06:45' above.
@@ -97,6 +101,26 @@ test('renders the night-mode entry row linking to /me/sleep/night', () => {
   renderPage() // the file's existing helper
   const link = screen.getByRole('link', { name: /Éjszakai mód/ })
   expect(link).toHaveAttribute('href', '/me/sleep/night')
+})
+
+test('the back chip (Mozaik PageHead) navigates back', async () => {
+  render(
+    <MemoryRouter initialEntries={['/elsewhere', '/me/sleep']} initialIndex={1}>
+      <Routes>
+        <Route path="/elsewhere" element={<div>elsewhere-page</div>} />
+        <Route path="/me/sleep" element={<SleepPage />} />
+      </Routes>
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
+  await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
+  expect(await screen.findByText('elsewhere-page')).toBeInTheDocument()
+})
+
+test('the header "＋ Log" action opens the real SleepLogSheet', async () => {
+  renderPage()
+  await userEvent.click(screen.getByRole('button', { name: /Log/ }))
+  expect(screen.getByText('Hogyan aludtunk?')).toBeInTheDocument()
 })
 
 test('renders the daily stat card when no escalation', () => {

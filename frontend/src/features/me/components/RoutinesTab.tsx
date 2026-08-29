@@ -38,18 +38,16 @@ export function RoutinesTab() {
   const doneOf = (l: HabitItem[]) => l.filter((h) => h.status === 'done').length
   const earnedXp = habits.filter((h) => h.status === 'done').reduce((s, h) => s + h.xp, 0)
 
-  const stat = (emoji: string, label: string, count: number, color: string) => (
-    <div className="hab-gstat">
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-        <span className="hab-gnum">{count}</span>
-        <span className="hab-gof">/ {SUMMARY_DAYS} nap</span>
-      </div>
-      <div className="hab-glab">
-        <span aria-hidden="true">{emoji} </span>
-        <span>{label}</span>
-      </div>
-      <div className="hab-gtrack">
-        <div className="hab-gfill" style={{ width: `${(count / SUMMARY_DAYS) * 100}%`, background: color }} />
+  // Mozaik reface (mezo-d20.6.5): the prototype's `.covgrid`/`.covtile` 30-day
+  // counter tiles — the fill bar animates in once (mzp-fill, prefers-reduced-motion
+  // guarded), same recipe as the badge grid's unearned bars.
+  const stat = (emoji: string, label: string, count: number, delayMs: number) => (
+    <div className="gr-covtile rise" style={{ '--d': `${delayMs}ms` } as React.CSSProperties}>
+      <span style={{ fontSize: 16 }} aria-hidden="true">{emoji}</span>
+      <b>{count} / {SUMMARY_DAYS} nap</b>
+      <small>{label}</small>
+      <div className="gr-covtrack">
+        <div style={{ width: `${(count / SUMMARY_DAYS) * 100}%`, '--d': `${350 + delayMs}ms` } as React.CSSProperties} />
       </div>
     </div>
   )
@@ -61,8 +59,8 @@ export function RoutinesTab() {
       return null
     }
     return (
-      <div key={chain.id} className="card" style={{ padding: '14px 16px' }}>
-        <div className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+      <div key={chain.id} className="gr-chain rise" style={{ '--d': '80ms' } as React.CSSProperties}>
+        <div className="mz-eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
           <span aria-hidden="true">{DAYPART_EMOJI[chain.daypart]}</span>
           <span>{chain.title}</span>
         </div>
@@ -102,9 +100,9 @@ export function RoutinesTab() {
       </div>
       {isToday ? (
         <>
-          <div className="row" style={{ gap: 12 }}>
-            {stat('🌅', 'Tökéletes reggelek', summary.perfectMorningDays30, 'var(--amber)')}
-            {stat('🌙', 'Tökéletes esték', summary.perfectEveningDays30, 'var(--lav)')}
+          <div className="gr-covgrid">
+            {stat('🌅', 'Tökéletes reggelek', summary.perfectMorningDays30, 0)}
+            {stat('🌙', 'Tökéletes esték', summary.perfectEveningDays30, 40)}
           </div>
           {chains.map((c) => chainCard(c, true))}
         </>
@@ -112,21 +110,11 @@ export function RoutinesTab() {
         <GhostState lines={2} message="Nincs rutinadat erre a napra" />
       ) : (
         <>
-          <div
-            className="card"
-            style={{
-              padding: '10px 14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: 13,
-              fontWeight: 700,
-            }}
-          >
+          <div className="gr-chain rise" style={{ '--d': '0ms', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 700 } as React.CSSProperties}>
             <span>
               Reggel {doneOf(morning)}/{morning.length} · Este {doneOf(evening)}/{evening.length}
             </span>
-            <span style={{ color: 'var(--sage-deep)' }}>+{earnedXp} XP</span>
+            <span style={{ color: 'var(--mz-cell-sage-ink)' }}>+{earnedXp} XP</span>
           </div>
           {chains.map((c) => chainCard(c, false))}
         </>

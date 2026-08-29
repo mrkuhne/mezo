@@ -64,7 +64,9 @@ describe('RoutinesTab', () => {
   it('today: shows the 30-day perfect-day counters + per-habit strength bars', () => {
     const { container } = renderTab()
     expect(screen.getByText('Tökéletes reggelek')).toBeInTheDocument()
-    expect(screen.getByText('22')).toBeInTheDocument()
+    // Mozaik reface (mezo-d20.6.5): the count lives in one "{n} / 30 nap" node now
+    // (prototype .covtile), not a standalone number.
+    expect(screen.getByText('22 / 30 nap')).toBeInTheDocument()
     // today keeps the strength rows (percentage + bar)
     expect(screen.getByText('71%')).toBeInTheDocument()
     expect(container.querySelector('.hab-sbar')).not.toBeNull()

@@ -236,6 +236,12 @@
   --mz-shadow-coral: 0 17px 31px -17px rgba(216, 72, 31, 0.32), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --mz-mem-dash: #B4A8D8;
   --mz-mem-ink: #8A76CC;
+  /* Én hub (mezo-d20.6.1) — prototype en-body .idhero/.goalcard/.mezotile hexes verbatim */
+  --mz-titlech-bg: rgba(201, 150, 46, 0.14);
+  --mz-titlech-ink: #A8801F;
+  --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
+  --mz-goaldot: #FF5B36;
+  --mz-wash-band: linear-gradient(150deg, #FFEDE4, #FFF8F4);
 
 }
 
@@ -394,6 +400,13 @@
   --mz-shadow-coral: var(--mz-shadow);
   --mz-mem-dash: color-mix(in srgb, var(--dv-lav) 65%, transparent);
   --mz-mem-ink: var(--dv-lav);
+  /* Én hub (mezo-d20.6.1) — title chip / goal track / settings band on the dark dv ramp.
+     The goal fill + its dot stay saturated coral in both themes (like the MOST ring). */
+  --mz-titlech-bg: color-mix(in srgb, var(--dv-amber) 18%, var(--surface-card));
+  --mz-titlech-ink: var(--dv-amber);
+  --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
+  --mz-goaldot: #FF5B36;
+  --mz-wash-band: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
 
 }
 
@@ -4494,6 +4507,7 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 .mz-facttile.mz-w-sage { box-shadow: var(--mz-shadow-sage); }
 .mz-facttile.mz-w-sky  { box-shadow: var(--mz-shadow-sky); }
 .mz-facttile.mz-w-gold { box-shadow: var(--mz-shadow-gold); }
+.mz-facttile.mz-w-lav  { box-shadow: var(--mz-shadow-lav); }
 .mz-fic { width: 35px; height: 35px; border-radius: 13px; display: grid; place-items: center; flex: none;
   background: var(--mz-fic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
 .mz-fact-grow { flex: 1; min-width: 0; }
@@ -4634,6 +4648,389 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 
 @media (prefers-reduced-motion: reduce) {
   .mem-dash { animation: none; }
+}
+
+/* ── Én hub (mezo-d20.6.1) — prototype en-body.html hub section ×1.18 (330→390px).
+   Anatomy: identity hero (conic in-level XP ring around the initial, name, equipped
+   title chip, Lv · XP · 🔥 · 🪙 row, bio line that vanishes when empty) → the
+   coral-ringed GOAL CARD (trajectory eyebrow, animated track with indulás/most/cél
+   labels, Hátra · Tempó · ETA mini-cells; a maintain goal drops the track and reads
+   „tartás") → the 9-tile mosaic → the Beállítások band. Every surface is --mz-*. ── */
+.enh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
+.enh-panel { display: flex; flex-direction: column; gap: 11px; }
+
+.enh-idhero { display: grid; justify-items: center; text-align: center; gap: 4px; padding: 9px 14px 12px; }
+.enh-idring { width: 78px; height: 78px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: conic-gradient(#FF6B4A calc(var(--xp, 0) * 1%), var(--mz-gbar-bg) 0); }
+.enh-idring i { width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center;
+  font-style: normal; font-size: 26px; font-weight: 700;
+  background: var(--mz-wash-coral); color: var(--mz-cell-coral-ink); }
+.enh-nm { font-size: 19px; font-weight: 700; margin-top: 3px; }
+.enh-titlech { font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--mz-titlech-bg); color: var(--mz-titlech-ink); border-radius: 999px; padding: 4px 12px; }
+.enh-idstats { display: flex; gap: 12px; margin-top: 6px; font-size: 10.5px; font-weight: 700;
+  color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.enh-bio { border: none; background: none; font-family: inherit; cursor: pointer;
+  min-height: 44px; padding: 4px 12px; font-size: 10px; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums; }
+.enh-bio:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
+
+.enh-goalcard { border: 1px solid #FF6B4A; border-radius: 21px; background: var(--mz-stripbg);
+  padding: 13px 15px 14px; width: 100%; text-align: left; font-family: inherit; color: var(--text-primary);
+  cursor: pointer; box-shadow: var(--mz-shadow-most);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.enh-goalcard:active { transform: scale(0.97); }
+.enh-goalhead { display: flex; align-items: center; gap: 8px; }
+.enh-goalhead .mz-eyebrow { color: var(--mz-cell-coral-ink); }
+.enh-stch { margin-left: auto; flex: none; font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
+  border-radius: 7px; padding: 3px 9px; background: var(--mz-stch-ok-bg); color: var(--mz-stch-ok-ink); }
+.enh-gtrack { position: relative; height: 8px; border-radius: 5px; background: var(--mz-gbar-bg); margin-top: 12px; }
+.enh-gtrack .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px;
+  width: var(--p); background: var(--mz-goalfill); }
+.mz-play .enh-gtrack .fill { animation: enh-gfill 0.9s cubic-bezier(0.25, 0.8, 0.35, 1) 0.4s backwards; }
+@keyframes enh-gfill { from { width: 0; } }
+.enh-gtrack .dot { position: absolute; top: 50%; left: var(--p); transform: translate(-50%, -50%);
+  width: 15px; height: 15px; border-radius: 50%; background: var(--mz-stripbg);
+  border: 3px solid var(--mz-goaldot); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.4); }
+.enh-gtlbl { display: flex; justify-content: space-between; margin-top: 6px; font-size: 8.5px;
+  font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.enh-gtlbl b { color: var(--text-primary); }
+.enh-goalcard .mz-mcells { margin-top: 11px; }
+.enh-newgoal { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  min-height: 44px; border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 20px;
+  padding: 14px 0; font-family: inherit; font-size: 12.5px; font-weight: 700;
+  color: var(--mz-ink-soft); cursor: pointer; }
+
+/* tile washes + eyebrow inks — prototype .t-minta / .t-water / .t-habe / .t-kreed /
+   .t-check / .t-quest / .t-stack / .t-vital, one per hub tile */
+.enh-t-minta { --mz-wash: var(--mz-wash-minta); box-shadow: var(--mz-shadow-lav); }
+.enh-t-kreed { --mz-wash: var(--mz-wash-kreed); }
+.enh-eb-lav .mz-eyebrow   { color: var(--mz-cell-lav-ink); }
+.enh-eb-sky .mz-eyebrow   { color: var(--mz-cell-sky-ink); }
+.enh-eb-coral .mz-eyebrow { color: var(--mz-cell-coral-ink); }
+.enh-eb-rose .mz-eyebrow  { color: var(--mz-cell-rose-ink); }
+.enh-eb-gold .mz-eyebrow  { color: var(--mz-qxp-ink); }
+.enh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
+
+.enh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
+  cursor: pointer; border-radius: 20px; padding: 12px 14px; font-family: inherit; text-align: left;
+  color: var(--text-primary); background: var(--mz-wash-band);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-coral);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.enh-band:active { transform: scale(0.97); }
+.enh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
+.enh-band .txt b { font-weight: 700; }
+.enh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .enh-gtrack .fill { animation: none; }
+  .enh-goalcard, .enh-band { transition: none; }
+}
+
+/* ── Cél page re-face (mezo-d20.6.2) — prototype en-body #page-cel ×1.18:
+   the guard-chip goal card (coral wash, shared .track vocabulary + the identity
+   quote), the engine's recept as amber/sage segment tiles (white mcells + a
+   rationale footer), the gym/futás/röplabda timeline lanes + the ⚠ fedezetlen
+   gap chip, and the dashed Mesociklus/Futóblokk plan slots. Lane/bar accents
+   reuse the pre-existing --tag- and --wash- domain tokens (the GoalTimeline prior
+   face), not new --mz-* surfaces, so only structural rules land here. ── */
+.gc-card { border-radius: 20px; padding: 12px 14px; text-align: left; font-family: inherit;
+  border: none; width: 100%; cursor: pointer; background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.gc-card-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gc-guards { display: flex; gap: 5px; margin-left: auto; flex-wrap: wrap; }
+.gc-quote { font-size: 11px; font-style: italic; line-height: 1.5; color: var(--mz-ink-soft);
+  margin: 10px 0 0; padding-top: 10px; border-top: 0.5px solid rgba(43, 33, 24, 0.1); }
+
+.gc-lsec { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 9px; }
+
+.gc-seg { border-radius: 19px; padding: 11px 13px; margin-bottom: 9px; }
+.gc-seg.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.gc-seg.sage  { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.gc-seg-head { display: flex; align-items: center; gap: 8px; }
+.gc-seg-title { font-size: 11.5px; font-weight: 700; }
+.gc-seg .mz-mcells { margin-top: 9px; }
+.gc-seg-foot { font-size: 10.5px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft);
+  margin: 9px 0 0; padding-top: 9px; border-top: 0.5px solid rgba(43, 33, 24, 0.1); }
+
+.gc-guardrow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.gc-mut { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700;
+  padding: 3px 8px; border-radius: 7px; background: var(--mz-stch-mut-bg); color: var(--mz-stch-mut-ink); }
+
+.gc-tlband { border-radius: 19px; padding: 12px 14px; margin-bottom: 12px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.gc-lane-label { font-size: 8px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin-top: 11px; }
+.gc-lane-label:first-child { margin-top: 0; }
+.gc-lane { display: grid; gap: 3px; margin-top: 5px; }
+.gc-bar {
+  min-height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  gap: 5px; font-size: 8.5px; font-weight: 800; color: #fff; overflow: hidden;
+  white-space: nowrap; padding: 0 5px;
+}
+.gc-bar.gap { border: 1px dashed var(--amber-deep); background: var(--wash-amber); color: var(--amber-deep); }
+.gc-bar.empty { border: 1px dashed rgba(43, 33, 24, 0.16); background: none; color: var(--mz-ink-mut);
+  letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+.gc-bar.amb { border-radius: 6px; background: var(--wash-sport); color: var(--tag-sport);
+  border: 1px solid color-mix(in srgb, var(--tag-sport) 30%, transparent); font-weight: 700; }
+.gc-detach {
+  flex: 0 0 auto; background: transparent; border: none; cursor: pointer; color: inherit;
+  font-size: 11px; font-weight: 700; line-height: 1; padding: 0; opacity: 0.75; min-height: 24px;
+}
+
+.gc-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.gc-slot { border: 1.2px dashed rgba(43, 33, 24, 0.2); border-radius: 17px; padding: 10px 11px;
+  display: flex; flex-direction: column; gap: 3px; background: none; }
+.gc-slot-cap { font-size: 9px; font-weight: 300; color: var(--mz-ink-soft); }
+.gc-slot-plan { align-self: flex-start; min-height: 30px; display: flex; align-items: center;
+  border: none; background: none; font-family: inherit; cursor: pointer;
+  font-size: 11px; font-weight: 800; padding: 0; margin-top: 2px; }
+.gc-slot-attach { align-self: flex-start; min-height: 30px; display: flex; align-items: center;
+  border: none; background: none; font-family: inherit; cursor: pointer;
+  font-size: 9.5px; font-weight: 700; color: var(--mz-ink-soft); text-decoration: underline; padding: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-card { transition: none; }
+}
+/* ── Súly re-face (mezo-d20.6.3) — prototype en-body.html #page-suly ×1.18
+   (330→390px frame). Hero (goal delta + start→latest) lives in the shared
+   MozaikPage/PageHero scaffold; this section carries the page's own bits:
+   the page-head log CTA, the trend chart card + legend, and the weekly
+   tiles (delta pill + H K Sz Cs P Sz V direction row). Direction/delta
+   color is ALWAYS sage (improvement) or amber (not) — never red, per the
+   handoff §2 guardrail; the prototype itself never used red here either
+   (its `.deltap.up` is amber, not error). ── */
+.mz-pgact {
+  margin-left: auto; border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg);
+  border-radius: 999px; padding: 6px 14px; min-height: 44px;
+  font-size: 11px; font-weight: 700; color: var(--mz-ink-soft);
+  font-family: inherit; cursor: pointer; white-space: nowrap;
+}
+.mz-hero-unit { font-size: 18px; font-weight: 400; color: var(--mz-ink-soft); }
+.wt-lsec { display: flex; align-items: center; gap: 7px; padding: 12px 2px 8px; }
+.wt-cnt { margin-left: auto; font-size: 10px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.wt-4wk { font-size: 12px; color: var(--mz-ink-mut); text-align: center; margin-top: 8px; }
+.wt-goalpill { display: inline-flex; margin-top: 10px; font-size: 12px; font-weight: 700;
+  color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); padding: 5px 12px; border-radius: 999px; }
+
+.wt-chart { border-radius: 21px; padding: 13px 15px 10px; background: var(--mz-stripbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  margin-bottom: 12px; }
+.wt-leg { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; font-size: 10px; font-weight: 600; color: var(--mz-ink-soft); }
+.wt-leg i { display: inline-block; width: 11px; height: 4px; border-radius: 2px; margin-right: 5px; vertical-align: 2px; }
+
+.wt-week { border-radius: 20px; padding: 12px 14px; margin-bottom: 11px; background: var(--mz-stripbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.wt-week-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center;
+  background: transparent; border: none; padding: 0; cursor: pointer; min-height: 44px; }
+.wt-dl { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.wt-deltap { font-size: 10px; font-weight: 800; border-radius: 999px; padding: 3px 10px; flex: none;
+  font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.wt-deltap.is-up { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.wt-days { display: flex; justify-content: space-between; align-items: center; margin-top: 7px;
+  font-size: 10px; font-weight: 700; color: var(--mz-ink-mut); letter-spacing: 0.1em; text-transform: uppercase; }
+.wt-dir { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mz-cell-sage-ink); }
+.wt-dir.is-warn { color: var(--mz-cell-amber-ink); }
+.wt-dayrow { display: flex; justify-content: space-between; padding: 10px 12px; background: var(--mz-cellbg); border-radius: 14px; }
+.wt-dod { font-size: 11px; color: var(--mz-cell-sage-ink); font-variant-numeric: tabular-nums; }
+.wt-dod.is-up { color: var(--mz-cell-amber-ink); }
+/* ── Alvás (mezo-d20.6.4) — prototype en-body #page-alvas ×1.18: the sleep-goal
+   card's bed↔wake rail. The card wash + ring tiles reuse the mz-w-lav/mz-w-sage
+   --mz-* tokens already declared above for every other Mozaik tile; only the
+   rail geometry is new here, riding the existing (already dual-themed) DS
+   tokens --lav/--sky/--lav-deep the rest of the Me surfaces already use. ── */
+.mzalv-goal { border-radius: 21px; padding: 17px 19px;
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); }
+.mzalv-bedrail { display: flex; align-items: center; gap: 9px; margin-top: 9px; }
+.mzalv-end { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; flex: none; color: var(--text-primary); }
+.mzalv-rail { flex: 1; height: 14px; border-radius: 8px; position: relative;
+  background: linear-gradient(90deg, var(--lav), var(--sky)); opacity: 0.85; }
+.mzalv-rail span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  background: var(--surface-card); border-radius: 999px; padding: 3px 11px;
+  font-size: 9px; font-weight: 800; color: var(--lav-deep); white-space: nowrap;
+  box-shadow: 0 2px 7px rgba(43, 33, 24, 0.2); }
+
+/* ── Growth (mezo-d20.6.5) — prototype en-body #page-growth (.segtabs/.predtile/
+   .sklrow/.covgrid/.bdggrid family), ×1.18. Skill bands (LIFE/Atlétikus/Izom) wear the
+   predtile wash; per-skill rows keep the shared .skl meter (GrowthSummaryCard's Profil
+   preview reads the identical rows, so that markup stays untouched). Rutin gets the
+   30-day 🌅/🌙 counter tiles above the chain cards; Napló keeps its honest "csendben
+   lejárt" line inside washed day tiles; Kitüntetések gets the 3-col badge grid (achieved
+   sage ✓, else a gold progress bar) — all sharing the .mzp-fill keyframe already declared
+   above for the predictions/experiments family. ── */
+.gr-seg { display: flex; gap: 5px; border-radius: 999px; padding: 4px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.gr-seg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px;
+  font-size: 11px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.gr-seg button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+.gr-xpwrap { display: flex; align-items: baseline; gap: 4px; }
+.gr-unit { font-size: 15px; font-weight: 400; color: var(--mz-ink-soft); }
+
+.gr-band { border-radius: 21px; padding: 13px 15px; margin-bottom: 10px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.gr-band.lav   { background: var(--mz-wash-lav);  box-shadow: var(--mz-shadow-lav); }
+.gr-band.sage  { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.gr-band.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.gr-band-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.gr-band-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.05em; border-radius: 7px;
+  padding: 3px 8px; flex: none; background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
+.gr-band-foot { display: flex; justify-content: space-between; margin-top: 11px; padding-top: 9px;
+  border-top: 1px solid rgba(43, 33, 24, 0.08); font-size: 12px; }
+
+.gr-day { border-radius: 19px; padding: 12px 14px; margin-bottom: 10px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.gr-day-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 5px;
+  border-bottom: 1px solid rgba(43, 33, 24, 0.08); }
+.gr-row { display: flex; gap: 9px; align-items: flex-start; padding-top: 7px; }
+
+.gr-covgrid { display: flex; gap: 9px; margin-bottom: 10px; }
+.gr-covtile { flex: 1; text-align: center; border-radius: 15px; padding: 10px 4px 9px;
+  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25);
+  display: grid; justify-items: center; gap: 4px; }
+.gr-covtile b { font-size: 11px; }
+.gr-covtile small { font-size: 9px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.gr-covtrack { width: 80%; height: 5px; border-radius: 3px; background: var(--mz-gbar-bg); overflow: hidden; }
+.gr-covtrack div { height: 100%; border-radius: 3px; background: var(--mz-strength);
+  transform: scaleX(0); transform-origin: left; }
+.mz-play .gr-covtrack div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+
+.gr-chain { border-radius: 20px; padding: 13px 15px; margin-bottom: 10px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+
+.gr-bdggrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gr-bdg { border-radius: 14px; padding: 9px 6px; text-align: center; display: grid; gap: 4px; justify-items: center;
+  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 6px 12px -8px rgba(43, 33, 24, 0.2); }
+.gr-bdg.done { background: var(--mz-wash-sage); }
+.gr-bdg-em { font-size: 18px; }
+.gr-bdg b { font-size: 9.5px; font-weight: 700; line-height: 1.25; }
+.gr-bdg small { font-size: 8px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.gr-bdg-bar { width: 100%; height: 4px; border-radius: 3px; background: var(--mz-gbar-bg); overflow: hidden; }
+.gr-bdg-bar div { height: 100%; border-radius: 3px; background: var(--mz-strength);
+  transform: scaleX(0); transform-origin: left; }
+.mz-play .gr-bdg-bar div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gr-covtrack div, .mz-play .gr-covtrack div,
+  .gr-bdg-bar div, .mz-play .gr-bdg-bar div { transform: none; animation: none; }
+}
+/* ── Napló re-face (mezo-d20.6.6) — prototype en-body.html #page-naplo ×1.18.
+      The gratitude tile and the gold decision card reuse the Előrejelzések/Kísérletek family's
+      `.mzp-pred`/`.mzp-top`/`.mzp-pic`/`.mzp-stch` and the Mezo hub's `.mzh-deccard`/`.mzh-dechead`/
+      `.mzh-decrow`/`.mzh-cta`/`.mzh-ghost`/`.mzh-decdone` verbatim (same tokens, same gold ring,
+      same sage acknowledgement) — only the two small pieces below are new: the gratitude tile's
+      text column, and the decision quote's own type size. The month-grouped note rows reuse the
+      Memória Napló segment's `.mem-daycard`/`.mem-dl`/`.mem-bd` — the identical "day label + one
+      paragraph" card the nightly journal embed already renders there. ── */
+.mzj-grow { flex: 1; min-width: 0; }
+.mzj-gtitle { font-size: 12px; font-weight: 700; }
+.mzj-gsub { font-size: 10px; color: var(--mz-ink-soft); margin-top: 1px; }
+.mzj-decq { font-size: 12.5px; font-weight: 400; line-height: 1.5; margin-top: 6px; color: var(--text-primary); }
+/* ── Emberek + Tudás re-face (mezo-d20.6.7) — prototype en-body #page-emberek /
+      #page-tudas ×1.18 (330→390px frame). Person tiles: 2-col grid, conic-gradient
+      affect ring (--ac/--av are element-local, same LOCAL_PROPS exemption as the
+      .mcells --mw/--md pair — not tokens, set inline per avatar). Mention tiles:
+      washed card, FIGYELEM badge on the amber cell tokens, the pattern-tie chip.
+      Tudás summary tile reuses --mz-wash-lav/--mz-shadow-lav; node/profile tiles
+      reuse .mz-facttile + .mz-fic + .mz-decbtn verbatim (mezo-d20.5.5). ── */
+.ppl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.ppl-tile { border-radius: 20px; padding: 12px 13px; display: grid; gap: 4px; justify-items: center;
+  text-align: center; font-family: inherit; border: none; min-height: 44px; cursor: pointer;
+  background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.ppl-tile:active { transform: scale(0.97); }
+.ppl-avat { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--ac) var(--av), rgba(43, 33, 24, 0.1) 0); }
+.ppl-avin { width: 32px; height: 32px; border-radius: 50%; background: var(--mz-stripbg); display: grid; place-items: center;
+  font-family: var(--ff-display); font-size: 13px; font-weight: 700; }
+.ppl-nm { font-size: 12.5px; font-weight: 700; color: var(--text-primary); }
+.ppl-rl { font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.ppl-mt { font-size: 9.5px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+
+.ppl-mrowt { border-radius: 18px; padding: 11px 13px; margin-bottom: 8px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.ppl-mtop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.ppl-mtime { font-size: 9px; font-weight: 800; color: var(--mz-ink-mut); }
+.ppl-mname { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.ppl-msrc { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--mz-ink-mut); }
+.ppl-figy { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 7px;
+  background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); flex: none; margin-left: auto; }
+.ppl-mx { font-size: 12px; font-style: italic; font-weight: 300; line-height: 1.5; margin: 6px 0 0; color: var(--text-primary); }
+.ppl-mtie { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.ppl-mtie > .ppl-mtielbl { font-size: 9px; font-weight: 800; color: var(--mz-cell-rose-ink); }
+.ppl-mtiechip { font-size: 10px; font-weight: 700; color: var(--mz-ink-soft);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); border-radius: 999px; padding: 2px 8px; }
+
+.tud-summary { border-radius: 20px; padding: 14px 15px;
+  background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
+.tud-summary-link { display: block; margin-top: 10px; font-size: 11px; font-weight: 700;
+  color: var(--mz-cell-lav-ink); text-decoration: none; }
+.tud-lsec { display: flex; align-items: center; gap: 6px; padding: 10px 2px 6px; }
+.tud-cnt { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ppl-tile:active { transform: none; }
+}
+
+/* ── Értesítés + AI-napló re-face (mezo-d20.6.8) — prototype en-body
+   #page-ertesites / #page-ai ×1.18. The dark daily-load card stays a fixed
+   dark surface in BOTH themes (prototype .ntfprev — a deliberately-nocturnal
+   panel, not a wash) and keeps its hexes as component inline style rather
+   than tokens here, same idiom NotificationPreviewHeader already used.
+   Category rows wear the category's EXISTING --wash-* icon token (data/
+   types.ts NOTIFICATION_CATEGORY_META.iconBg) as the whole row's wash via
+   the local --cw custom prop — the wash-per-category mapping the prototype's
+   .catrow rows already draw, without inventing a second color table. AI-napló
+   reuses the same statcell2/aibar/callt family (prototype .ai section);
+   status rails keep the tones the page already had (sage/terracotta/amber —
+   the ok/error/cancelled split), just placed on the Mozaik card shape. ── */
+.ntf-masterrow { display: flex; align-items: center; gap: 11px; border-radius: 21px; padding: 14px 15px;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.ntf-masterrow .ntf-mic { width: 41px; height: 41px; border-radius: 14px; display: grid; place-items: center;
+  flex: none; background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.ntf-testrow { border-radius: 21px; padding: 14px 15px; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.ntf-catrow { display: flex; align-items: center; gap: 11px; border-radius: 18px; padding: 11px 13px;
+  margin-bottom: 9px; background: var(--cw, var(--mz-wash-white));
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 24px -15px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.ntf-catrow .ntf-cic { width: 35px; height: 35px; border-radius: 13px; display: grid; place-items: center;
+  flex: none; background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.ntf-catrow.off { opacity: 0.55; }
+.ntf-catrow.off .ntf-cic { filter: grayscale(1); }
+.ntf-cat-nm { font-size: 12px; font-weight: 700; }
+.ntf-cat-sb { font-size: 9px; color: var(--mz-ink-soft); margin-top: 1px; }
+.ntf-leadch { font-size: 8px; font-weight: 800; border-radius: 999px; padding: 2px 8px; flex: none;
+  background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); font-variant-numeric: tabular-nums; }
+.ntf-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; }
+
+.aiu-segtabs { display: flex; gap: 4px; background: var(--surface-recess); border-radius: 999px; padding: 4px; margin-bottom: 4px; }
+.aiu-segtabs button { flex: 1; min-height: 44px; border: none; background: none; border-radius: 999px;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.aiu-segtabs button.on { background: var(--gradient-cta); color: #fff; box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+.aiu-fcard { border-radius: 21px; padding: 13px 0 5px; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.aiu-bar { display: flex; align-items: center; gap: 9px; padding: 7px 15px; }
+.aiu-bar .nm { font-size: 11px; font-weight: 600; flex: 1; }
+.aiu-bar .gbar { flex: 1.4; height: 6px; border-radius: 3px; background: var(--mz-gbar-bg); overflow: hidden; }
+.aiu-bar .gbar div { height: 100%; border-radius: 3px; background: var(--coral);
+  transform: scaleX(0); transform-origin: left; }
+.mz-play .aiu-bar .gbar div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+.aiu-bar .vl { font-size: 9px; font-weight: 700; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; flex: none; }
+.aiu-callt { border-radius: 18px; padding: 11px 13px 11px 15px; margin-bottom: 9px; position: relative;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 12px 24px -15px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.aiu-callt::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px;
+  border-radius: 2px; background: var(--rc); }
+.aiu-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; text-align: center; margin-top: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aiu-bar .gbar div, .mz-play .aiu-bar .gbar div { transform: none; animation: none; }
 }
 
 /* ============================================================

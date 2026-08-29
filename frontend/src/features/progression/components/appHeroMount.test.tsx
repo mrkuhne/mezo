@@ -18,9 +18,17 @@ const renderAt = (path: string) => {
   )
 }
 
-test.each(['/train', '/fuel', '/me'])('AppHero renders on %s', (path) => {
+test.each(['/train', '/fuel'])('AppHero renders on %s', (path) => {
   renderAt(path)
   expect(document.querySelector('.apphero')).toBeInTheDocument()
+})
+
+// Design 2.0 (mezo-d20.6.1): the Me shell dissolved too — /me is the Én hub Mozaik face
+// with the Nap-hub header recipe, and the former sub-tabs are full-page siblings.
+test('the Én hub replaces AppHero with its own header', () => {
+  renderAt('/me')
+  expect(document.querySelector('.apphero')).not.toBeInTheDocument()
+  expect(document.querySelector('.nap-head')).toBeInTheDocument()
 })
 
 // Design 2.0 (mezo-d20.5.1): the Insights shell dissolved — the Mezo hub carries the

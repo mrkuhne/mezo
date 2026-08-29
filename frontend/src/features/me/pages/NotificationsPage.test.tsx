@@ -264,4 +264,32 @@ describe('NotificationsPage', () => {
       screen.getByText('Eseményvezérelt — nem szerepel a napi terhelés előnézetben.'),
     ).toBeInTheDocument()
   })
+
+  // ── Mozaik re-face (mezo-d20.6.8): washed tiles, clay icons, rise stagger ──────────────────
+  it('renders category rows as washed tiles carrying the category clay icon (gym lead-chip row)', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    const gymRow = (await screen.findByRole('switch', { name: 'Edzés előtt' })).closest('.ntf-catrow')
+    expect(gymRow).not.toBeNull()
+    expect(gymRow).toHaveClass('rise')
+    // the gym-only lead chip sits inside the same washed row, not a plain list row.
+    expect(gymRow?.querySelector('.ntf-leadch')).toHaveTextContent(/−\d+ perc/)
+    expect(gymRow?.querySelector('svg')).not.toBeNull()
+  })
+
+  it('a disabled category row wears the .off dimming class', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    // "Déli jegyzet" (midday) defaults OFF (see the toggle test above).
+    const row = (await screen.findByRole('switch', { name: 'Déli jegyzet' })).closest('.ntf-catrow')
+    expect(row).toHaveClass('off')
+  })
+
+  it('the master push row is a washed tile with a clay icon, not a plain card', () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: false, permission: 'default' }))
+    renderPage()
+    const master = screen.getByRole('switch', { name: 'Push értesítések' }).closest('.ntf-masterrow')
+    expect(master).not.toBeNull()
+    expect(master?.querySelector('svg')).not.toBeNull()
+  })
 })
