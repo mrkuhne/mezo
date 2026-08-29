@@ -31,15 +31,28 @@ const renderView = () =>
     </QueryWrapper>,
   )
 
-test('renders stats and the type switcher', () => {
+test('renders the Mozaik subpage hero, stats and the type switcher', () => {
   renderView()
-  expect(screen.getByRole('heading', { name: 'Polc' })).toBeInTheDocument()
-  // Sage Napiv header (Task 7): the .over eyebrow copy is unchanged, only the pghead-np/
-  // sage vocabulary + the action chips' accent moved off brand-teal.
-  expect(screen.getByText('Fuel · Kamra')).toBeInTheDocument()
-  // Direction A: the type axis is a segmented switcher (Mind/Étel/Supp/Stim).
+  // Kamra v2 (Mozaik re-face): the subpage hero reads "Kamra" (prototype fuel-body
+  // #page-kamra .nm), and the "Polc" list-section head sits above the grouped list.
+  expect(screen.getByText('Kamra')).toBeInTheDocument()
+  expect(screen.getByText('Polc')).toBeInTheDocument()
+  // Back chip reads "‹ Fuel" visibly; its accessible name stays the house "Vissza".
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Fuel')
+  // The type axis is a segmented switcher — now FIVE segments (audit gap #19: med gets
+  // its own Gyógyszer segment instead of folding silently into "Mind").
   expect(screen.getByRole('button', { name: /Supp/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Gyógyszer/ })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /^Mind\d+$/ })).toBeInTheDocument()
+})
+test('Gyógyszer segment isolates medication items (honestly empty — mock tracks no medication)', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: /Gyógyszer/ }))
+  // The mock seed has no `type: 'medication'` stash row today (Medication is a separate
+  // entity from the pantry, per fuel-audit gap #19/F6.4) — the segment must filter out
+  // every food item and land on the honest no-hit state, never fabricate a row.
+  expect(screen.queryByText(/Csirkemell/)).not.toBeInTheDocument()
+  expect(screen.getByText('Nincs egyező tétel.')).toBeInTheDocument()
 })
 test('header "Új tétel" opens the manual add-item sheet', async () => {
   // Task 8: the header add affordance opens the real manual CRUD form (AddPantryItemSheet).
