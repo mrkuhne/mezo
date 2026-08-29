@@ -125,3 +125,27 @@ describe('FuelKamraPage (mock mode)', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 })
+
+// Silent-static regression (fidelity audit, mezo-d20.11): the page carried three `.rise`
+// elements with NO EntranceGroup around them — they rendered correctly, never animated, and
+// nothing failed. Both halves are pinned here: the wrapper exists AND no `.rise` sits outside it.
+describe('FuelKamraPage entrance choreography', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('arms an EntranceGroup and leaves no orphan .rise outside it', () => {
+    const { container } = renderView()
+    const play = container.querySelector('.mz-play')
+    expect(play).not.toBeNull()
+    const all = [...container.querySelectorAll('.rise')]
+    expect(all.length).toBeGreaterThan(2)
+    expect(all.every(el => play?.contains(el))).toBe(true)
+  })
+
+  it('staggers the stat strip, the type switcher, the search row and the shelf head', () => {
+    const { container } = renderView()
+    const delays = [...container.querySelectorAll('.mz-play .rise')]
+      .map(el => (el as HTMLElement).style.getPropertyValue('--d'))
+    expect(delays.slice(0, 4)).toEqual(['20ms', '40ms', '60ms', '90ms'])
+  })
+})

@@ -8,11 +8,16 @@ import type { MealMatchResult } from '@/features/fuel/logic/matchMealsToStack'
 // logged meal clears the macro floor, ⚠ amber + advice when it doesn't). Hidden entirely when
 // both arrays are empty — a rest day / a stack with no fat- or protein-bound items has nothing to
 // say here.
-export function StackMealMatch({ result }: { result: MealMatchResult }) {
+export function StackMealMatch({ result, className, style }: {
+  result: MealMatchResult
+  /** entrance hook (`rise`) when the host page arms an EntranceGroup */
+  className?: string
+  style?: React.CSSProperties
+}) {
   if (result.suggestions.length === 0 && result.verdicts.length === 0) return null
 
   return (
-    <div style={{ padding: '16px 24px 8px' }}>
+    <div className={className} style={{ padding: '16px 0 8px', ...style }}>
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
         <span className="eyebrow" style={{ color: 'var(--sage-deep)' }}>Étkezés-egyeztetés</span>
         <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>macro + micro match</span>

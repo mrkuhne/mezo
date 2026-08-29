@@ -18,6 +18,7 @@
 // ============================================================
 import { useEffect, useRef } from 'react'
 import { ClayIcon } from '@/shared/ui/clay'
+import { useCountUp } from '@/shared/ui/mozaik/motion'
 import { huInt } from '@/shared/lib/huNum'
 import type { TileRingVM, WindowLaneVM, WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 
@@ -29,10 +30,14 @@ const STAMP: Partial<Record<WindowTileVM['state'], { text: string; cls: string }
 }
 
 function MiniRing({ ring }: { ring: TileRingVM }) {
+  // The conic sweep fills instead of appearing already full — the WeekScoreRing recipe
+  // (`useCountUp` drives `--v`), which is also the reduced-motion guard: the hook jumps
+  // straight to the target when the user asked for less motion.
+  const swept = useCountUp(ring.pct)
   return (
     <span className="fh-wring">
       <i
-        style={{ '--c': ring.color, '--v': ring.pct } as React.CSSProperties}
+        style={{ '--c': ring.color, '--v': swept } as React.CSSProperties}
         data-l={ring.letter}
         role="img"
         aria-label={`${ring.label} ${ring.grams} g, a napi cél ${ring.pct} százaléka`}

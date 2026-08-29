@@ -49,6 +49,17 @@ export function FuelMezoPage() {
       </div>
       <PageBody principle="Ide a Fuel-kontextusú Mezo-üzenetek gyűlnek — a hub csak a számlálót mutatja, a hangot nem ismétli.">
         <EntranceGroup>
+          {/* Honest empty thread: the page still says what it collects, and the entrance
+              choreography has something to carry (the armed-but-empty EntranceGroup was the
+              fidelity audit's B) class). Never a fabricated message. */}
+          {messages.length === 0 && (
+            <div className="fh-mzmsg rise" style={{ '--d': '40ms' } as React.CSSProperties}>
+              <div className="mz-eyebrow fh-mzmsg-eb">Ma</div>
+              <p className="fh-mzmsg-tx">
+                Ma még nincs Fuel-üzenet — ahogy az evésedről lesz mit mondani, itt jelenik meg.
+              </p>
+            </div>
+          )}
           {messages.map((m, i) => (
             <div key={m.id} className="fh-mzmsg rise" style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}>
               <div className="mz-eyebrow fh-mzmsg-eb">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</div>
