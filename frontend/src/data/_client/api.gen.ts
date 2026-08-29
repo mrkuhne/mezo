@@ -5031,6 +5031,10 @@ export interface components {
             /** Format: date */
             start: string;
             days: components["schemas"]["FuelDayRollup"][];
+            /** @description Weekly "AI-atlag": the mean of the deterministic meal scores (0..1, mezo-yta) of the week's scored meals, rounded to 3 decimals. NULL when no meal in start..start+6 carries a score (honest-state: never 0-as-a-fake). Derived at read from meal.score, not stored. */
+            mealScoreAvg?: number | null;
+            /** @description Weekly weight average in kg, rounded to 2 decimals: one value per day that has a weigh-in (that day's LATEST entry, so a multi-weigh-in day is not over-weighted), averaged over those days. NULL when the week has no weigh-in at all. */
+            weightAvgKg?: number | null;
         };
         RecipeLogResponse: {
             /** Format: uuid */
