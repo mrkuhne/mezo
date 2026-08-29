@@ -4636,6 +4636,23 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   .mem-dash { animation: none; }
 }
 
+/* ── Alvás (mezo-d20.6.4) — prototype en-body #page-alvas ×1.18: the sleep-goal
+   card's bed↔wake rail. The card wash + ring tiles reuse the mz-w-lav/mz-w-sage
+   --mz-* tokens already declared above for every other Mozaik tile; only the
+   rail geometry is new here, riding the existing (already dual-themed) DS
+   tokens --lav/--sky/--lav-deep the rest of the Me surfaces already use. ── */
+.mzalv-goal { border-radius: 21px; padding: 17px 19px;
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); }
+.mzalv-bedrail { display: flex; align-items: center; gap: 9px; margin-top: 9px; }
+.mzalv-end { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; flex: none; color: var(--text-primary); }
+.mzalv-rail { flex: 1; height: 14px; border-radius: 8px; position: relative;
+  background: linear-gradient(90deg, var(--lav), var(--sky)); opacity: 0.85; }
+.mzalv-rail span { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  background: var(--surface-card); border-radius: 999px; padding: 3px 11px;
+  font-size: 9px; font-weight: 800; color: var(--lav-deep); white-space: nowrap;
+  box-shadow: 0 2px 7px rgba(43, 33, 24, 0.2); }
+
 /* ============================================================
    Today · iOS list language (mezo-e26w)
    Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
