@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useGoalCreation, useWeight, useFeasibilityPreview, useBiometricProfile } from '@/data/hooks'
 import { Icon, type IconName } from '@/shared/ui/Icon'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { huMonthDay } from '@/shared/lib/dates'
 import { hu1 } from '@/shared/lib/huNum'
 import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/data/me/goalApi'
@@ -127,8 +128,12 @@ function GoalWizard() {
         </button>
       </div>
 
+      {/* Entrance choreography (mezo-d20.11): the wizard was the one Én sibling
+          with no `.rise` at all. `replayKey={step}` re-arms the stagger on each
+          step, the way the prototype's `showGr` replays a swapped panel. */}
+      <EntranceGroup replayKey={step}>
       {/* Step progress — earlier segments tappable to jump back */}
-      <div style={{ padding: '6px 24px 0' }}>
+      <div className="rise" style={{ '--d': '0ms', padding: '6px 24px 0' } as React.CSSProperties}>
         <div className="row gap-xs" style={{ marginBottom: 14 }}>
           {Array.from({ length: STEP_COUNT }, (_, i) => (
             <button
@@ -156,7 +161,7 @@ function GoalWizard() {
       </div>
 
       {/* Own header (outside MeSection chrome, spec §4.6 / Task 5) */}
-      <div className="pghead-np lav">
+      <div className="pghead-np lav rise" style={{ '--d': '40ms' } as React.CSSProperties}>
         <div>
           <div className="over">Me · Új cél</div>
           <h1>{STEP_TITLES[step]}</h1>
@@ -164,7 +169,7 @@ function GoalWizard() {
       </div>
 
       {step === 0 && (
-        <div style={{ padding: '8px 24px' }}>
+        <div className="rise" style={{ '--d': '80ms', padding: '8px 24px' } as React.CSSProperties}>
           <div style={{ marginTop: 8 }}>
             <span className="eyebrow">Súly-trajektória</span>
           </div>
@@ -243,6 +248,7 @@ function GoalWizard() {
       )}
 
       {step === 1 && (
+        <div className="rise" style={{ '--d': '80ms' } as React.CSSProperties}>
         <Step1
           {...{
             title,
@@ -261,10 +267,11 @@ function GoalWizard() {
             preview: previewable ? preview : undefined,
           }}
         />
+        </div>
       )}
 
       {/* Nav */}
-      <div style={{ padding: '16px 24px 32px' }}>
+      <div className="rise" style={{ '--d': '130ms', padding: '16px 24px 32px' } as React.CSSProperties}>
         {step < 1 ? (
           <div className="row gap-sm">
             {step > 0 && (
@@ -315,6 +322,7 @@ function GoalWizard() {
           </div>
         )}
       </div>
+      </EntranceGroup>
     </div>
   )
 }

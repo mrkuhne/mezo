@@ -22,6 +22,15 @@ test('achieved badges show ✓ and no progress current/target', () => {
   expect(screen.queryByText('23 / 1')).not.toBeInTheDocument()
 })
 
+// Prototype `.bdg` (en-body #page-growth, GR.kit): emoji → name → count → bar.
+// The first cut put the bar between the name and the count (mezo-d20.11).
+test('an unearned badge stacks name → count → progress bar, in the prototype order', () => {
+  const { container } = render(<BadgesCard badges={badges} />)
+  const unearned = [...container.querySelectorAll('.gr-bdg')].find((t) => !t.classList.contains('done'))!
+  const order = [...unearned.children].map((c) => c.className || c.tagName.toLowerCase())
+  expect(order).toEqual(['gr-bdg-em', 'b', 'small', 'gr-bdg-bar'])
+})
+
 test('unachieved badges show the formatted current / target progress', () => {
   render(<BadgesCard badges={badges} />)
   expect(screen.getByText('23 / 50')).toBeInTheDocument() // quests_50

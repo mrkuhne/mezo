@@ -159,35 +159,43 @@ export function GoalsPage() {
               feasibility verdict and the guard-status pills. Null prescription
               (real, not yet evaluated) → the "Értékeld a célt" CTA that runs the
               engine via useGoalActions().evaluate. (mezo-g1u) */}
-          <GoalRecept
-            prescription={goalResponse.prescription}
-            onEvaluate={goalId ? () => evaluate(goalId) : undefined}
-            evaluating={evaluating}
-          />
+          <div className="rise" style={{ '--d': '90ms' } as React.CSSProperties}>
+            <GoalRecept
+              prescription={goalResponse.prescription}
+              onEvaluate={goalId ? () => evaluate(goalId) : undefined}
+              evaluating={evaluating}
+            />
+          </div>
 
           {/* Timeline — the goal as a horizontal time axis: gym/run lanes + gap
               chips + the ambient volleyball band (G4b command-center finale). The
               lane component consumes the raw timeline; each plan bar's ✕
               detaches the link via useGoalActions().detachPlan. */}
-          <div className="gc-lsec">
+          <div className="gc-lsec rise" style={{ '--d': '190ms' } as React.CSSProperties}>
             <Eyebrow>Cél alatt fut · idővonal</Eyebrow>
             <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--mz-ink-mut)' }}>{timeline?.weeks ?? 0} hét</span>
           </div>
-          {timeline ? (
-            <GoalTimeline
-              timeline={timeline}
-              onDetach={goalId ? (linkId) => detachPlan(goalId, linkId) : undefined}
-            />
-          ) : (
-            <GhostState lines={3} message="Még nincs terv a cél alá csatolva — tervezz egy mesót, és itt jelenik meg az idővonalon." />
-          )}
+          <div className="rise" style={{ '--d': '220ms' } as React.CSSProperties}>
+            {timeline ? (
+              <GoalTimeline
+                timeline={timeline}
+                onDetach={goalId ? (linkId) => detachPlan(goalId, linkId) : undefined}
+              />
+            ) : (
+              <GhostState lines={3} message="Még nincs terv a cél alá csatolva — tervezz egy mesót, és itt jelenik meg az idővonalon." />
+            )}
+          </div>
 
           {/* Plan slots — the hub-and-spoke assembly UX (G4b, goal-funnel.html
               Funnel B): Mesociklus + Futóblokk slots, each launching the existing
               planner (＋ Tervezd) or attaching an owned plan (＋ Csatolj
               meglévőt → AttachPlanSheet). Volleyball stays ambient/read-only in
               the timeline band — not a slot. */}
-          {goalId && <GoalPlanSlots goalId={goalId} />}
+          {goalId && (
+            <div className="rise" style={{ '--d': '260ms' } as React.CSSProperties}>
+              <GoalPlanSlots goalId={goalId} />
+            </div>
+          )}
         </PageBody>
       </EntranceGroup>
 

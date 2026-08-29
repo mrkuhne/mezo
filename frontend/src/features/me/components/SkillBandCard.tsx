@@ -27,24 +27,28 @@ const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
  * `.skl`/`.bar`/`.lv` classes are untouched, so GrowthSummaryCard's top-3 preview on
  * Profil keeps its original three-slot shape).
  */
-export function SkillBandCard({ eyebrow, chip, rows, footer, wash = 'lav' }: {
+export function SkillBandCard({ eyebrow, chip, rows, footer, wash = 'lav', delayMs }: {
   eyebrow: string
   chip: string
   rows: SkillRowVM[]
   footer?: ReactNode
   wash?: SkillBandWash
+  /** entrance stagger — the prototype's `.predtile.rise` `--d` on the Skillek tab
+   *  (mezo-d20.11); the `.mz-play` wrapper is the page's job. */
+  delayMs?: number
 }) {
   return (
-    <div className={cn('gr-band', wash)}>
+    <div className={cn('gr-band', wash, 'rise')}
+      style={delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined}>
       <div className="gr-band-top">
         <span className="mz-eyebrow">{eyebrow}</span>
         <span className="gr-band-chip">{chip}</span>
       </div>
       <div>
-        {rows.map((r) => {
+        {rows.map((r, i) => {
           const pct = clampPct(r.progressPct)
           return (
-            <div key={r.key} className="skl">
+            <div key={r.key} className="skl" style={{ '--d': `${350 + i * 60}ms` } as React.CSSProperties}>
               <span className="k">
                 <span aria-hidden="true">{r.icon} </span>
                 <span>{r.name}</span>
