@@ -18,8 +18,8 @@ export function WeightTrendChart({ log, goalResponse, period }: {
   const data = sliceByPeriod(log, period)
   if (!win || data.length < 2) {
     return (
-      <div className="card" style={{ padding: 24, textAlign: 'center' }}>
-        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>Kevés mérés ehhez az ablakhoz</span>
+      <div className="wt-chart" style={{ padding: 24, textAlign: 'center' }}>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--mz-ink-mut)' }}>Kevés mérés ehhez az ablakhoz</span>
       </div>
     )
   }
@@ -54,7 +54,7 @@ export function WeightTrendChart({ log, goalResponse, period }: {
   const lastVal = data[data.length - 1].value
 
   return (
-    <div className="card" style={{ padding: '14px 12px 10px' }}>
+    <div className="wt-chart">
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
         <defs>
           <linearGradient id="wtc-area" x1="0" y1="0" x2="0" y2="1">
@@ -66,7 +66,7 @@ export function WeightTrendChart({ log, goalResponse, period }: {
         {yTicks.map((t, i) => (
           <g key={i}>
             <line x1={PX0} x2={PX1} y1={t.y} y2={t.y} stroke="var(--border-subtle)" strokeDasharray="3 4" />
-            <text x={PX0 - 4} y={t.y + 3} fontSize="9" fill="var(--text-tertiary)" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{t.label}</text>
+            <text x={PX0 - 4} y={t.y + 3} fontSize="9" fill="var(--mz-ink-mut)" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{t.label}</text>
           </g>
         ))}
 
@@ -81,15 +81,15 @@ export function WeightTrendChart({ log, goalResponse, period }: {
         <text x={last.x - 8} y={last.y - 8} fontSize="11" fontWeight="700" fill="var(--lav-deep)" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{lastVal.toFixed(1)}</text>
 
         {xLabels.map((l, i) => (
-          <text key={i} x={l.x} y={H - 8} fontSize="9" fill="var(--text-tertiary)"
+          <text key={i} x={l.x} y={H - 8} fontSize="9" fill="var(--mz-ink-mut)"
             textAnchor={i === 0 ? 'start' : i === xLabels.length - 1 ? 'end' : 'middle'}>{huMonthDay(l.iso)}</text>
         ))}
       </svg>
 
-      <div className="row gap-md" style={{ marginTop: 6, flexWrap: 'wrap', fontSize: 10, color: 'var(--text-secondary)' }}>
-        <span className="row" style={{ gap: 5 }}><i style={{ width: 14, borderTop: '2px solid var(--lav-deep)' }} /> tényleges</span>
-        {plan && <span className="row" style={{ gap: 5 }}><i style={{ width: 14, borderTop: '2px dashed var(--sage-deep)' }} /> terv</span>}
-        {plan && <span className="row" style={{ gap: 5 }}><i style={{ width: 14, height: 10, background: 'color-mix(in srgb, var(--sage-deep) 18%, transparent)', borderRadius: 2 }} /> tűréssáv</span>}
+      <div className="wt-leg">
+        <span><i style={{ background: 'var(--lav-deep)' }} /> tényleges</span>
+        {plan && <span><i style={{ background: 'var(--sage-deep)' }} /> terv</span>}
+        {plan && <span><i style={{ background: 'color-mix(in srgb, var(--sage-deep) 40%, transparent)' }} /> tűréssáv</span>}
       </div>
     </div>
   )

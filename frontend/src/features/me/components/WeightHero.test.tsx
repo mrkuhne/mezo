@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react'
-import { expect, test, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { expect, test } from 'vitest'
 import { WeightHero } from '@/features/me/components/WeightHero'
 import type { WeightEntry, WeightTrends, Goal } from '@/data/types'
 
@@ -7,20 +7,22 @@ const log: WeightEntry[] = [{ date: '2026-04-22', value: 81.4 }, { date: '2026-0
 const trends: WeightTrends = { last7d: { avg: 78.96, weeklyRate: -0.5 }, last4w: { weeklyRate: -0.7 } }
 const goal = { startWeight: 81.4, currentWeight: 78.6, targetWeight: 73.0, kind: 'cut' } as Goal
 
-test('renders down-from-start, progress, stats, and fires onLog', () => {
-  const onLog = vi.fn()
-  render(<WeightHero log={log} weightTrends={trends} goal={goal} onLog={onLog} />)
-  expect(screen.getByText('Induláshoz képest')).toBeInTheDocument()
+test('renders the page title, the goal-delta big number, the start→latest sub, and the progress pill', () => {
+  render(<WeightHero log={log} weightTrends={trends} goal={goal} />)
+  expect(screen.getByText('Napi súly')).toBeInTheDocument()
   expect(screen.getByText('−2.8')).toBeInTheDocument()
+  expect(screen.getByText(/indulás óta · 81.4 → 78.6 · cél 73 kg/)).toBeInTheDocument()
   expect(screen.getByText('✓ 33% a célig')).toBeInTheDocument()
-  expect(screen.getByText('Jelenleg')).toBeInTheDocument()
   expect(screen.getByText(/4-hét tempó/)).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /naplózás/i }))
-  expect(onLog).toHaveBeenCalledOnce()
 })
 
-test('no-goal fallback: no progress pill, ETA dash', () => {
-  render(<WeightHero log={log} weightTrends={trends} goal={null} onLog={() => {}} />)
+test('no-goal fallback: no progress pill, honest dash never shown when log has data', () => {
+  render(<WeightHero log={log} weightTrends={trends} goal={null} />)
   expect(screen.queryByText(/a célig/)).not.toBeInTheDocument()
-  expect(screen.getByText('ETA')).toBeInTheDocument()
+  expect(screen.getByText(/indulás óta · 81.4 → 78.6/)).toBeInTheDocument()
+})
+
+test('honest state: no log entries at all → dash, no sub line', () => {
+  render(<WeightHero log={[]} weightTrends={trends} goal={null} />)
+  expect(screen.getByText('—')).toBeInTheDocument()
 })
