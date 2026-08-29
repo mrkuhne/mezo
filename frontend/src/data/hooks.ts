@@ -8,6 +8,7 @@ export { useSleep, useSleepGoal, useSleepGoalActions, useSleepShot } from '@/dat
 export { useProfile } from '@/data/me/meHooks'
 export { useMeWeek } from '@/data/me/meWeekHooks'
 export { useWeeklyReview } from '@/data/me/weeklyReviewHooks'
+export { useWeekLessons } from '@/data/me/weekLessonsHooks'
 export { usePeople } from '@/data/me/peopleHooks'
 export { useInsights } from '@/data/insights/insightsHooks'
 export { useMemoir } from '@/data/insights/memoirHooks'

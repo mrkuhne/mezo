@@ -159,8 +159,9 @@ test('discoveries only render non-empty subsections, every row linked out', () =
   expect(screen.getByText('Edzésnapokon jobban alszol')).toBeInTheDocument()
   const patternLink = screen.getByText('Edzésnapokon jobban alszol').closest('a')
   expect(patternLink).toHaveAttribute('href', '/mezo/patterns/sleep_workout')
+  // mezo-d20.6.10: a new fact links to the SPECIFIC fact (newFacts[].id), not the list
   const factLink = screen.getByText('A fehérjecél tartása javítja a check-in energiát.').closest('a')
-  expect(factLink).toHaveAttribute('href', '/mezo/knowledge')
+  expect(factLink?.getAttribute('href')).toMatch(/^\/mezo\/knowledge\?fact=/)
   const memoirLink = screen.getByText('Új bejegyzés készült a hétről').closest('a')
   expect(memoirLink).toHaveAttribute('href', '/mezo/memoir')
   const lifeEventLink = screen.getByText('Nyaralás kezdete').closest('a')

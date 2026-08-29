@@ -53,6 +53,8 @@ import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
 import { WeekPage } from '@/features/me/pages/WeekPage'
+import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
+import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -195,6 +197,11 @@ export const routes: RouteObject[] = [
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       { path: 'me/week', element: <WeekPage /> },
+      // Heti detail pages (mezo-d20.6.10) — top-level full-screen siblings with Hungarian
+      // slugs, the Nap tab's hub → own-page idiom. Each inherits the browsed week from the
+      // hub through `?start=`; an absent/invalid value falls back to the current week.
+      { path: 'me/week/tanulsagok', element: <WeekLessonsPage /> },
+      { path: 'me/week/felfedezesek', element: <WeekDiscoveriesPage /> },
       { path: 'me/goals', element: <GoalsPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },
