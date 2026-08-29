@@ -6,10 +6,9 @@
 // GymDayCard list was a true duplicate of Heti's own agenda list (both drive
 // the same gymDayTarget direct-start/review logic). `/train/gym` stays live
 // as a thin alias — renders TrainWeekPage directly (no client navigate) so
-// the URL/route itself is untouched (hub-agent territory: TrainSection's
-// SubNavDropdown highlights by pathname, and MesocyclePlannerPage's post-start
-// redirect still lands on `/train/gym`) while the content is unified with
-// Heti — one page, two paths in.
+// the URL/route itself is untouched (MesocyclePlannerPage's post-start redirect
+// still lands on `/train/gym`) while the content is unified with Heti — one
+// page, two paths in.
 // ============================================================
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 
