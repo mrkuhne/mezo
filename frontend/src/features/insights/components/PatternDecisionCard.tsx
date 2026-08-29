@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { Icon } from '@/shared/ui/Icon'
 import { patternCategoryColor } from '@/data/insights/insights'
 import { confidenceMeta, findingSentence, pairLine, type ConfidenceMeta } from '@/features/insights/logic/findings'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
@@ -68,7 +67,10 @@ export function PatternDecisionCard({
           </span>
         ) : (
           <span className="eyebrow text-tertiary">
-            {pattern.confidence != null ? `conf ${(pattern.confidence * 100).toFixed(0)}%` : 'tanulom'}
+            {/* mezo-d20.11: „conf 69%" was the last English string on this card. There is no
+                n/p for an AI-hypothesis row, so confidenceMeta cannot speak — but the model's
+                own confidence is a real datum; it just says it in Hungarian now. */}
+            {pattern.confidence != null ? `bizonyosság ${(pattern.confidence * 100).toFixed(0)}%` : 'tanulom'}
           </span>
         )}
       </div>
@@ -117,49 +119,37 @@ export function PatternDecisionCard({
             de nem tanulok belőle.
           </p>
           <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)', marginTop: 4 }}>
-            <b style={{ color: 'var(--error-base)' }}>Elvetem</b> — befagy, többé nem hozom elő.
+            <b style={{ color: 'var(--mz-no-ink)' }}>Elvetem</b> — befagy, többé nem hozom elő.
           </p>
         </div>
       )}
 
-      <div className="row gap-sm" style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
+      {/* Prototype .decrow (mezo-body #deccard, ×1.18) — coral CTA + two ghosts, 44pt targets.
+          „Elvetem" wears --mz-no-ink (terracotta), NEVER --error-*: the dark-mode error ramp
+          is an actual red (#F7B3AE), which the guardrail forbids (mezo-d20.11). */}
+      <div className="mzh-decrow" style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
         <button
           type="button"
           onClick={() => onDecide('confirm')}
-          className="cta-ghost flex-1"
-          style={{
-            justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10,
-            background: status === 'confirmed' ? 'var(--success-bg)' : 'transparent',
-            borderColor: status === 'confirmed' ? 'var(--success-base)' : 'var(--border-strong)',
-            color: status === 'confirmed' ? 'var(--success-deep)' : undefined,
-          }}
+          className="mzh-cta"
+          aria-pressed={status === 'confirmed'}
         >
-          <Icon name="check" size={12} color={status === 'confirmed' ? 'var(--success-deep)' : undefined} />
+          {/* the prototype's .cta carries the verb alone — no icon */}
           {status === 'confirmed' ? 'Megerősítve' : 'Megerősítem'}
         </button>
         <button
           type="button"
           onClick={() => onDecide('monitor')}
-          className="cta-ghost flex-1"
-          style={{
-            justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10,
-            background: status === 'monitoring' ? 'var(--warning-bg)' : 'transparent',
-            borderColor: status === 'monitoring' ? 'var(--warning-base)' : 'var(--border-strong)',
-            color: status === 'monitoring' ? 'var(--warning-deep)' : undefined,
-          }}
+          className="mzh-ghost"
+          aria-pressed={status === 'monitoring'}
         >
           Figyeljük
         </button>
         <button
           type="button"
           onClick={() => onDecide('reject')}
-          className="cta-ghost flex-1"
-          style={{
-            justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10,
-            background: status === 'rejected' ? 'var(--error-bg)' : 'transparent',
-            borderColor: status === 'rejected' ? 'var(--error-base)' : 'var(--border-strong)',
-            color: status === 'rejected' ? 'var(--error-deep)' : undefined,
-          }}
+          className="mzh-ghost is-no"
+          aria-pressed={status === 'rejected'}
         >
           Elvetem
         </button>
@@ -167,7 +157,8 @@ export function PatternDecisionCard({
 
       {showDetailLink && (
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: 9 }}>
-          <Link to={`/insights/patterns/${pattern.pairKey}`} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+          {/* Direct to the sibling leaf — `/insights/…` only reached it via LegacyPathRedirect. */}
+          <Link to={`/mezo/patterns/${pattern.pairKey}`} className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
             Részletek és előzmények →
           </Link>
         </div>

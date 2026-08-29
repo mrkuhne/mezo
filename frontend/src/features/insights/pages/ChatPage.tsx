@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { ClaySpot } from '@/shared/ui/clay'
+import { PageHead } from '@/shared/ui/mozaik'
 import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
@@ -47,6 +48,7 @@ function ThinkingDots() {
 export function ChatPage() {
   // Which conversation is on screen lives in the URL (`?c=<id>` / `?c=new`) — a shared link,
   // a back navigation and a reload all land on the same thread (mezo-at8x.3).
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const selection = params.get('c')
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -112,36 +114,36 @@ export function ChatPage() {
 
   return (
     <div className="col gap-md chat-page mzc">
-      {/* Prototype chat chrome (mezo-d20.5.2): the chsub anatomy — lav eyebrow + quiet
-          status on the left, the Beszélgetések / ＋ Új pgact chips on the right. The
-          subtitle precedence (degraded → new → mode) is the audited contract, unchanged. */}
-      <div className="row gap-sm" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="mzc-chsub">
-          <span className="mzc-eb">Mezo · társ</span>
-          <span className="mzc-st">
-            {degraded ? 'a társ most nem elérhető' : isNew ? 'új beszélgetés' : SUBTITLE[mode]}
-          </span>
-        </div>
-        <div className="row gap-xs">
-          <button
-            type="button"
-            className="mzc-pgact"
-            onClick={() => setPickerOpen(true)}
-            disabled={degraded}
-            aria-label="Beszélgetések"
-          >
-            Beszélgetések
-          </button>
-          <button
-            type="button"
-            className="mzc-pgact"
-            onClick={() => selectConversation(NEW_CHAT)}
-            disabled={degraded || isNew}
-            aria-label="Új beszélgetés"
-          >
-            ＋ Új
-          </button>
-        </div>
+      {/* Prototype chat chrome (mezo-d20.5.2, head restored mezo-d20.11): the #page-chat
+          anatomy is `page-head` = ‹ Mezo backbtn + the two pgact chips, and BELOW it the
+          chsub row — lav eyebrow + quiet status. Before this the back chip was missing
+          entirely (ADR 0032: every sibling page owns its own header). The subtitle
+          precedence (degraded → new → mode) is the audited contract, unchanged. */}
+      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo">
+        <button
+          type="button"
+          className="mzc-pgact"
+          onClick={() => setPickerOpen(true)}
+          disabled={degraded}
+          aria-label="Beszélgetések"
+        >
+          Beszélgetések
+        </button>
+        <button
+          type="button"
+          className="mzc-pgact"
+          onClick={() => selectConversation(NEW_CHAT)}
+          disabled={degraded || isNew}
+          aria-label="Új beszélgetés"
+        >
+          ＋ Új
+        </button>
+      </PageHead>
+      <div className="mzc-chsub">
+        <span className="mzc-eb">Mezo · társ</span>
+        <span className="mzc-st">
+          {degraded ? 'a társ most nem elérhető' : isNew ? 'új beszélgetés' : SUBTITLE[mode]}
+        </span>
       </div>
 
       {pickerOpen && (
@@ -247,7 +249,7 @@ export function ChatPage() {
           placeholder={
             recording ? 'Hallgatlak…'
               : voice.state === 'transcribing' ? 'Leiratozom…'
-                : 'Mondj valamit...'
+                : 'Mondj valamit…'
           }
           disabled={degraded}
           style={{
