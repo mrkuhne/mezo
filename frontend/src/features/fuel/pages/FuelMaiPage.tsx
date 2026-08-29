@@ -15,9 +15,8 @@ import { Island } from '@/shared/ui/Island'
 import { WindowIsland } from '@/features/fuel/components/WindowIsland'
 import { KeretHero } from '@/features/fuel/components/KeretHero'
 import { DoneWindowsCapsule, type DoneCapsuleRow } from '@/features/fuel/components/DoneWindowsCapsule'
-import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
-import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
+import type { LogFlowPrefill } from '@/features/fuel/pages/LogFlowPage'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
@@ -89,10 +88,9 @@ export function FuelMaiPage() {
   const { fuel: yesterdayFuel } = useFuelDay(yesterday)
 
   const [logOpen, setLogOpen] = useState(false)
-  const [aiOpen, setAiOpen] = useState(false)
-  const [aiSlot, setAiSlot] = useState<MealSlot | undefined>(undefined)
-  const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
+  const [logPrefill, setLogPrefill] = useState<LogFlowPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
+  const [logAiOpenOnMount, setLogAiOpenOnMount] = useState(false)
   const [waterOpen, setWaterOpen] = useState(false)
   const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
@@ -167,9 +165,10 @@ export function FuelMaiPage() {
     setSearchParams(next, { replace: true })
   }
 
-  const openLog = (prefill: LogMealPrefill = null, slot?: MealSlot) => {
+  const openLog = (prefill: LogFlowPrefill = null, slot?: MealSlot, aiOpenOnMount = false) => {
     setLogPrefill(prefill)
     setLogInitialSlot(slot)
+    setLogAiOpenOnMount(aiOpenOnMount)
     setLogOpen(true)
   }
   // A log opened FROM a window always carries that window's slotKey — both branches (mezo-bnsf).
@@ -183,8 +182,7 @@ export function FuelMaiPage() {
     else openLog(null, slotKey)
   }
   const handleAiLog = (slot: FuelSlot) => {
-    setAiSlot(slot.slotKey)
-    setAiOpen(true)
+    openLog(null, slot.slotKey ?? 'snack', true)
   }
   const openScoreForMeal = (mealId: string) => {
     const meal = fuel.meals.find(m => m.id === mealId)
@@ -235,17 +233,20 @@ export function FuelMaiPage() {
             navigation-only, S1). Without this row an all-done evening has zero log paths. */}
         <div className="mai-logrow">
           <button type="button" className="isl-more" onClick={() => openLog()}>＋ Logolás</button>
-          <button
-            type="button"
-            className="isl-more"
-            onClick={() => { setAiSlot(undefined); setAiOpen(true) }}
-          >
+          <button type="button" className="isl-more" onClick={() => openLog(null, undefined, true)}>
             ✨ AI naplózás
           </button>
         </div>
       </div>
 
-      {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
+      {logOpen && (
+        <LogFlowPage
+          prefill={logPrefill}
+          initialSlot={logInitialSlot}
+          aiPanelOpenOnMount={logAiOpenOnMount}
+          onClose={() => setLogOpen(false)}
+        />
+      )}
       {waterOpen && (
         <WaterLogSheet
           currentMl={fuel.consumed.water}
@@ -257,14 +258,6 @@ export function FuelMaiPage() {
       {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {energyOpen && energyBreakdown && (
         <EnergyBreakdownSheet breakdown={energyBreakdown} initial={energyOpen} onClose={() => setEnergyOpen(null)} />
-      )}
-      {aiOpen && (
-        <AiLogSheet
-          date={localDateString()}
-          initialSlot={aiSlot}
-          onClose={() => setAiOpen(false)}
-          onManualFallback={() => { setAiOpen(false); openLog() }}
-        />
       )}
     </>
   )

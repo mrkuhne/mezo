@@ -202,14 +202,15 @@ test('an all-done day still offers meal logging: the standing ＋ Logolás row o
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
 
-test('an all-done day still offers AI logging: the standing ✨ AI naplózás row opens AiLogSheet', async () => {
+test('an all-done day still offers AI logging: the standing ✨ AI naplózás row opens the unified flow with the AI panel expanded', async () => {
   hoisted.overrideSlots = [
     { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
   ]
   renderView()
   const ai = screen.getByRole('button', { name: '✨ AI naplózás' })
   await userEvent.click(ai)
-  expect(await screen.findByText('AI naplózás · mai nap')).toBeInTheDocument()
+  expect(await screen.findByRole('dialog', { name: 'Mit ettél?' })).toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Mit ettél?' })).toBeInTheDocument()
 })
 
 test('the standing log row is present on a normal day too (below the islands)', () => {
@@ -281,14 +282,17 @@ test('the selected window\'s CTA opens LogMealSheet on that window\'s slot', asy
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
 
-test('clicking a window\'s ✨ AI chip opens the AI log sheet on that window\'s slot (mezo-53su)', async () => {
+test('clicking a window\'s ✨ AI chip opens the unified flow on that window\'s slot, AI panel expanded (mezo-53su)', async () => {
   hoisted.injectOpenSlot = true // inject a KNOWN open meal/snack slot (deterministic across weekdays)
   renderView()
   // Select the injected slot's OWN island first (act-anywhere: select, then act) — its capsule
   // essence carries the slot label, so the aria-label is unambiguous.
   await userEvent.click(screen.getByRole('button', { name: /^Esti snack · 20:00 ·/ }))
   await userEvent.click(screen.getByRole('button', { name: '✨ AI' }))
-  expect(await screen.findByRole('dialog', { name: 'AI ételnapló' })).toBeInTheDocument()
+  expect(await screen.findByRole('dialog', { name: 'Mit ettél?' })).toBeInTheDocument()
+  // slot-lock (mezo-53su): a slot-targeted launch keeps ITS slot — Snack, matching the injected window.
+  expect(screen.getByRole('button', { name: 'Snack', pressed: true })).toBeInTheDocument()
+  expect(screen.getByRole('textbox', { name: 'Mit ettél?' })).toBeInTheDocument()
 })
 
 test('a missed window\'s CTA reads Pótold and still opens LogMealSheet on that slot', async () => {

@@ -7,7 +7,7 @@
 // Layout (docs/design/kamra-detail-edit-v1.html · phone 2), chamfer chrome:
 //   back (‹) + eyebrow → source pill → big Antonio name → category · NOVA →
 //   Makrók (4 card cells) → Tápanyag (4 card cells) → Készlet · ár →
-//   actions (Logolás → opens LogMealSheet pre-filled, Szerkesztés, Törlés).
+//   actions (Logolás → opens LogFlowPage pre-filled, Szerkesztés, Törlés).
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -19,7 +19,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { NovaDot } from '@/features/fuel/components/NovaDot'
 import { AddPantryItemSheet } from '@/features/fuel/sheets/AddPantryItemSheet'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 
 // The full IngredientStock carries expires/lowExpiry; the bare { qty, unit }
 // stock shape does not. Narrow once instead of fighting `in`-narrowing in JSX.
@@ -236,7 +236,7 @@ export function KamraItemDetailPage() {
         editId={backendId}
         initial={inputFromItem(item)}
       />
-      {logOpen && <LogMealSheet prefill={{ source: 'pantry', pantryItemId: backendId }} onClose={() => setLogOpen(false)} />}
+      {logOpen && <LogFlowPage prefill={{ source: 'pantry', pantryItemId: backendId }} onClose={() => setLogOpen(false)} />}
     </>
   )
 }
