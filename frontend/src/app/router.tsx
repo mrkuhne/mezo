@@ -26,8 +26,9 @@ import { MesoComparePage } from '@/features/train/pages/MesoComparePage'
 import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEditorPage'
 import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
-import { FuelSection } from '@/features/fuel/pages/FuelSection'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
+import { FuelMezoPage } from '@/features/fuel/pages/FuelMezoPage'
+import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
 import { FuelRecipesPage } from '@/features/fuel/pages/FuelRecipesPage'
@@ -134,27 +135,30 @@ export const routes: RouteObject[] = [
       { path: 'train/custom/new', element: <CustomWorkoutBuilderPage /> },
       { path: 'train/custom/:id', element: <CustomWorkoutBuilderPage /> },
       { path: 'train/futas/:id', element: <RunningBlockBuilderPage /> },
-      {
-        path: 'fuel',
-        element: <FuelSection />,
-        children: [
-          { index: true, element: <FuelMaiPage /> },
-          { path: 'plan', element: <FuelPlanPage /> },
-          { path: 'stack', element: <FuelStackPage /> },
-          { path: 'recipes', element: <FuelRecipesPage /> },
-          { path: 'kamra', element: <FuelKamraPage /> },
-          { path: 'kamra/:id', element: <KamraItemDetailPage /> },
-          { path: 'gyogyszer', element: <FuelMedicationPage /> },
-        ],
-      },
-      // Recipe detail + editor are full pages (no Fuel sub-nav chrome), mirroring
-      // train/session — siblings of the `fuel` group, not nested children. `new`
-      // is listed before `:id` for clarity (React Router ranks static over dynamic).
+      // Fuel tab — Design 2.0 shell dissolution (mezo-d20.4.1): the Fuel shell
+      // (AppHero + SubNavDropdown + its ⚙️ Fuel-beállítások action) is gone. /fuel is
+      // the hub Mozaik face, which carries the settings band itself; the former
+      // sub-tabs are FULL-PAGE SIBLINGS on their stable routes (they keep their
+      // current faces until their own F3 slices land) — the same idiom the Mezo
+      // (mezo-d20.5.1) and Én (mezo-d20.6.1) tabs took.
+      { path: 'fuel', element: <FuelMaiPage /> },
+      // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
+      { path: 'fuel/uzenetek', element: <FuelMezoPage /> },
+      { path: 'fuel/plan', element: <FuelPlanPage /> },
+      { path: 'fuel/stack', element: <FuelStackPage /> },
+      { path: 'fuel/kamra', element: <FuelKamraPage /> },
+      { path: 'fuel/kamra/:id', element: <KamraItemDetailPage /> },
+      { path: 'fuel/gyogyszer', element: <FuelMedicationPage /> },
+      // Napló — the hub's 6th tile. Week-centric trend depth is F3.6 (+ the F6.2
+      // backend series); this route is its honest destination today.
+      { path: 'fuel/naplo', element: <FuelNaploPage /> },
+      // `new` is listed before `:id` for clarity (React Router ranks static over dynamic).
       { path: 'fuel/recipes/new', element: <RecipeEditorPage /> },
+      { path: 'fuel/recipes', element: <FuelRecipesPage /> },
       { path: 'fuel/recipes/:id', element: <RecipeDetailPage /> },
       { path: 'fuel/recipes/:id/edit', element: <RecipeEditorPage /> },
-      // Meal-slot template editor (mezo-7102) — a full page, same sibling idiom as the recipe
-      // editor above (no Fuel sub-nav chrome).
+      // Meal-slot template editor (mezo-7102) — reachable only from FuelSettingsSheet,
+      // which now opens from the hub's Fuel-beállítások band.
       { path: 'fuel/slots', element: <FuelSlotsPage /> },
       // Pattern-pair detail (mezo-tk88.5) — a full leaf page, same sibling idiom as
       // fuel/recipes/:id above (no Insights sub-nav chrome).
