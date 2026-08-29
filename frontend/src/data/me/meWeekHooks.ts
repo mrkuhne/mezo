@@ -14,15 +14,25 @@ export interface MeWeekBootstrap {
   mode: 'mock' | 'live'
 }
 
+/** What a screen needs to tell "still loading" and "the fetch FAILED" apart from the honest
+ *  "resolved, and the week is empty" — `realEmpty` reads identically for all three otherwise
+ *  (mezo-d20.6.10; the same additive treatment `useLlmCall`/`useDecisions` already carry).
+ *  Mock mode never pends (`initialData`) and never rejects, so both flags are always false. */
+export interface MeWeekHandle extends MeWeekBootstrap {
+  isPending: boolean
+  isError: boolean
+  refetch: () => void
+}
+
 const REAL_EMPTY: MeWeekBootstrap = { week: null, mode: 'live' }
 
 /** `startIso` — ISO Monday of the week to load. */
-export function useMeWeek(startIso: string): MeWeekBootstrap {
-  const { data } = useDualQuery<MeWeekBootstrap>({
+export function useMeWeek(startIso: string): MeWeekHandle {
+  const { data, isPending, isError, refetch } = useDualQuery<MeWeekBootstrap>({
     queryKey: ['meWeek', startIso],
     mockData: { week: mockMeWeek(startIso), mode: 'mock' },
     realFetch: async () => ({ week: await meWeekApi.get(startIso), mode: 'live' }),
     realEmpty: REAL_EMPTY,
   })
-  return data
+  return { ...data, isPending, isError, refetch }
 }

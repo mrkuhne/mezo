@@ -53,6 +53,7 @@ import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
 import { WeekPage } from '@/features/me/pages/WeekPage'
+import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -195,6 +196,10 @@ export const routes: RouteObject[] = [
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       { path: 'me/week', element: <WeekPage /> },
+      // Heti → elemzés (mezo-d20.6.10): a full-screen sibling of the Heti hub, NOT a child
+      // route — the Heti detail pages are the same "tile → own page" idiom the Nap/Fuel/Mezo
+      // tabs took. The browsed week rides along in `?start=` (absent = the current week).
+      { path: 'me/week/elemzes', element: <WeekAnalysisPage /> },
       { path: 'me/goals', element: <GoalsPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },

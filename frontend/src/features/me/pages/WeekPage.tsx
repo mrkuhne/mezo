@@ -3,15 +3,15 @@
 // The browsed week lives in `?start=` (a shareable/reloadable Monday, the ChatPage `?c=` idiom) —
 // an invalid, non-Monday or absent value always falls back to the CURRENT week, never a stale one.
 import { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useMeWeek, useWeeklyReview } from '@/data/hooks'
-import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
+import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { localDateString } from '@/shared/lib/dates'
-import { prevMonday, nextMonday, isCurrentWeek } from '@/features/me/logic/weekNav'
+import { prevMonday, nextMonday, isCurrentWeek, resolveWeekStart } from '@/features/me/logic/weekNav'
 import { useChatHandoff } from '@/features/me/logic/useChatHandoff'
 import { WeekDayCard } from '@/features/me/components/WeekDayCard'
-import { WeekScoreBars } from '@/features/me/components/WeekScoreBars'
+import { WeekScoreBars } from '@/features/me/components/week/WeekScoreBars'
 import { WeekReviewCard } from '@/features/me/components/WeekReviewCard'
 import { WeekDiscoveries } from '@/features/me/components/WeekDiscoveries'
 import { WeekNextCard } from '@/features/me/components/WeekNextCard'
@@ -49,16 +49,6 @@ function useWeekNextSuggestion(enabled: boolean): WeeklySuggestion | null {
   if (!enabled) return null
   if (mock) return { id: mockWeeklySuggestionId, prose: mockWeeklySuggestion }
   return data ?? null
-}
-
-/** `?start=` -> a real ISO Monday, or the current week's when absent/invalid/not-a-Monday. */
-function resolveStart(raw: string | null): string {
-  if (raw && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    const [y, m, d] = raw.split('-').map(Number)
-    const dt = new Date(y, m - 1, d)
-    if (dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d && dt.getDay() === 1) return raw
-  }
-  return mondayIso()
 }
 
 function fmtSleepH(min: number | null | undefined): string {
@@ -122,7 +112,8 @@ function WeekHero({ weekly }: { weekly: MeWeekAggregates }) {
 
 export function WeekPage() {
   const [params, setParams] = useSearchParams()
-  const start = resolveStart(params.get('start'))
+  const navigate = useNavigate()
+  const start = resolveWeekStart(params.get('start'))
   const { week } = useMeWeek(start)
   const { review, digest, regenerate, regenerating } = useWeeklyReview(start)
   const currentWeek = isCurrentWeek(start)
@@ -160,7 +151,12 @@ export function WeekPage() {
 
       {week && (
         <div style={{ padding: '0 24px 16px' }}>
-          <WeekScoreBars scores={week.days.map((d) => d.score ?? null)} />
+          <WeekScoreBars
+            days={week.days}
+            todayIso={todayIso}
+            currentWeek={currentWeek}
+            onSelect={(date) => navigate(`/me/week/napok/${date}`)}
+          />
         </div>
       )}
 
