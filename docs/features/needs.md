@@ -6,7 +6,7 @@ updated: 2026-08-21
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
-  - frontend/src/features/today/components/NeedsRow.tsx
+  - frontend/src/features/today/pages/EletjelPage.tsx
   - frontend/src/data/needs
   - api/feature/needs/needs.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/needs
@@ -15,8 +15,9 @@ related: [today, ritual, _platform-data-layer, growth]
 
 # Needs — Életjel-ringek (Sims-style Needs)
 
-> Six real-time decaying "life-sign" rings rendered on **every** Today daypart, directly under
-> the `MezoChip`. No route of its own — a Today sub-surface + a thin day-close backend slice.
+> Six real-time decaying "life-sign" rings. Since the Design 2.0 re-face (mezo-d20.2.6) the Nap
+> hub carries them as ONE segmented six-arc ring tile, which opens the **Életjel page**
+> (`/nap/eletjel`) with a need tile per ring — plus a thin day-close backend slice.
 > **Status: ✅ done** (FE pure engine + UI + nudges; backend day-close/summary + progression XP).
 
 ## 1. Summary

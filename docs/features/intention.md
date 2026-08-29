@@ -7,14 +7,15 @@ tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
   - frontend/src/data/intention
-  - frontend/src/features/today/components/IntentionBanner.tsx
+  - frontend/src/features/today/pages/NapHubPage.tsx
+  - frontend/src/features/today/sheets/IntentionSheet.tsx
   - api/feature/intention/intention.yml
 related: [today, habit, growth, _platform-data-layer, _platform-api-backend]
 ---
 
 # Intention — Daily Creed, Foci & Evening Reflection
 
-> A two-layer intentionality practice — a standing **creed** (one editable north-star sentence) + up to **3 daily foci** + a holistic **evening reflection** (`igen`/`részben`/`nem`) — surfaced on Today (`/today`) as a one-line **creed chip** on the morning/day faces and an **evening reflection block** on the Este face (both `IntentionBanner`, since `mezo-j7u4` split into two explicit variants), plus two **DERIVED** habits in the morning/evening chains and one **DERIVED** `growth_intention` daily quest. **Status: ✅ done** (backend + FE real + FE mock). It has **no route/tab of its own** — it rides Today, [habit.md](habit.md), and [growth.md](growth.md). Driving spec: [`2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md); tone ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md) (XP is feedback, not payment). bd `mezo-a686`.
+> A two-layer intentionality practice — a standing **creed** (one editable north-star sentence) + up to **3 daily foci** + a holistic **evening reflection** (`igen`/`részben`/`nem`) — surfaced on the Nap spine (`/nap`) as the hub's **Kreed tile** opening `IntentionSheet` (the Design 2.0 re-face, mezo-d20.2.1, replaced the `IntentionBanner` creed chip + evening reflection block), plus two **DERIVED** habits in the morning/evening chains and one **DERIVED** `growth_intention` daily quest. **Status: ✅ done** (backend + FE real + FE mock). It has **no route/tab of its own** — it rides Today, [habit.md](habit.md), and [growth.md](growth.md). Driving spec: [`2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md); tone ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md) (XP is feedback, not payment). bd `mezo-a686`.
 
 ## 1. Summary
 
