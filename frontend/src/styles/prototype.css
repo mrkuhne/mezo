@@ -242,7 +242,24 @@
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+  /* Fuel hub (mezo-d20.4.1) — prototype fuel-head/body .wtile + .mezotile hexes verbatim.
+     The MOST ring keeps its saturated coral in BOTH themes (the .mz-w-most precedent). */
+  --mz-fh-now-ring: #FF6B4A;
+  --mz-fh-miss-bd: rgba(201, 150, 46, 0.55);
+  --mz-fh-add-bd: rgba(43, 33, 24, 0.2);
+  --mz-fh-kcal-bg: rgba(255, 255, 255, 0.88);
+  --mz-fh-ringhole: #FFFDF8;
+  --mz-fh-now-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
 
+  /* Receptek v2 (mezo-d20.4.4) — category band gradients (fuel-body.html #page-recept
+     card seeds, verbatim) + the NOVA dot ramp. NOVA 4 stays terracotta, never red. */
+  --mz-rcp-breakfast-bw: #F6E7C6; --mz-rcp-breakfast-bd: #C9962E; --mz-rcp-breakfast-shadow: rgba(201, 150, 46, 0.4);
+  --mz-rcp-lunch-bw:     #FFE3D8; --mz-rcp-lunch-bd:     #E05535; --mz-rcp-lunch-shadow:     rgba(224, 85, 53, 0.4);
+  --mz-rcp-dinner-bw:    #FAE3ED; --mz-rcp-dinner-bd:    #C46FA0; --mz-rcp-dinner-shadow:    rgba(196, 111, 160, 0.4);
+  --mz-rcp-snack-bw:     #E4EEDD; --mz-rcp-snack-bd:     #8FAF7E; --mz-rcp-snack-shadow:     rgba(143, 175, 126, 0.4);
+  --mz-nova-1:   #8FAF7E;
+  --mz-nova-mid: #C9962E;
+  --mz-nova-4:   #A8462E;
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -407,7 +424,22 @@
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
+  /* Fuel hub (mezo-d20.4.1) — the swimlane surfaces on the dark dv ramp. */
+  --mz-fh-now-ring: #FF6B4A;
+  --mz-fh-miss-bd: color-mix(in srgb, var(--dv-amber) 55%, transparent);
+  --mz-fh-add-bd: color-mix(in srgb, var(--text-primary) 20%, transparent);
+  --mz-fh-kcal-bg: color-mix(in srgb, var(--surface-card) 88%, transparent);
+  --mz-fh-ringhole: var(--surface-card);
+  --mz-fh-now-shadow: var(--mz-shadow-most);
 
+  /* Receptek v2 (mezo-d20.4.4) — dark ("Pulse") derivations on the dv ramp */
+  --mz-rcp-breakfast-bw: color-mix(in srgb, var(--dv-amber) 20%, var(--surface-card)); --mz-rcp-breakfast-bd: var(--dv-amber); --mz-rcp-breakfast-shadow: color-mix(in srgb, var(--dv-amber) 40%, transparent);
+  --mz-rcp-lunch-bw:     color-mix(in srgb, var(--dv-coral) 20%, var(--surface-card)); --mz-rcp-lunch-bd:     var(--dv-coral); --mz-rcp-lunch-shadow:     color-mix(in srgb, var(--dv-coral) 40%, transparent);
+  --mz-rcp-dinner-bw:    color-mix(in srgb, var(--dv-rose) 20%, var(--surface-card));  --mz-rcp-dinner-bd:    var(--dv-rose);  --mz-rcp-dinner-shadow:    color-mix(in srgb, var(--dv-rose) 40%, transparent);
+  --mz-rcp-snack-bw:     color-mix(in srgb, var(--dv-sage) 20%, var(--surface-card));  --mz-rcp-snack-bd:     var(--dv-sage);  --mz-rcp-snack-shadow:     color-mix(in srgb, var(--dv-sage) 40%, transparent);
+  --mz-nova-1:   var(--dv-sage);
+  --mz-nova-mid: var(--dv-amber);
+  --mz-nova-4:   var(--primary-deep);
 }
 
 /* ===== Legacy alias bridge — Deep-Current / early-token names → DS tokens =====
@@ -5032,6 +5064,444 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 @media (prefers-reduced-motion: reduce) {
   .aiu-bar .gbar div, .mz-play .aiu-bar .gbar div { transform: none; animation: none; }
 }
+
+/* ── Fuel hub re-face (mezo-d20.4.1) — prototype fuel-body hub section ×1.18:
+   the keret-hero as a rounded sage card (ONE number, hub v3), the WINDOW SWIMLANE
+   (.fh-lane / .fh-wtile with its kcal mini-tile and three mini macro rings), the
+   Mezo counter banner, the 6-tile mosaic's eyebrow inks and the Fuel-beállítások
+   band. The hero's own internals keep the shipped .khero family — only its frame
+   changes here. Every CTA is a 44pt target. ── */
+.fh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
+.fh-panel { display: flex; flex-direction: column; gap: 11px; }
+
+.fh-hero { border-radius: 21px; overflow: hidden;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-sage); }
+
+/* ═══ window swimlane ═══ */
+.fh-lanewrap { margin: 0; }
+.fh-lane { display: flex; gap: 9px; overflow-x: auto; scrollbar-width: none;
+  padding: 4px 2px 12px; scroll-snap-type: x proximity; }
+.fh-lane::-webkit-scrollbar { display: none; }
+
+.fh-wtile { flex: none; width: 151px; border-radius: 20px; padding: 11px 12px 12px;
+  scroll-snap-align: center; display: flex; flex-direction: column; gap: 5px; text-align: left;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow); }
+.fh-wtile.is-done { background: var(--mz-qdone-bg); }
+.fh-wtile.is-now { border: 1px solid var(--mz-fh-now-ring); box-shadow: var(--mz-fh-now-shadow); }
+.fh-wtile.is-missed { background: none; box-shadow: none; border: 1.4px dashed var(--mz-fh-miss-bd); }
+.fh-wtile.is-add { background: none; box-shadow: none; border: 1.4px dashed var(--mz-fh-add-bd);
+  align-items: center; justify-content: center; gap: 8px; }
+
+.fh-wtop { display: flex; align-items: center; gap: 5px; min-height: 16px; }
+.fh-wtop time { font-size: 10.5px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--mz-ink-soft); }
+.fh-wstamp { margin-left: auto; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
+  border-radius: 6px; padding: 2px 6px; flex: none; }
+.fh-st-now { background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }
+.fh-st-done { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.fh-st-miss { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+
+.fh-wicon { display: grid; place-items: center; padding: 2px 0 1px; }
+.fh-wlbl { font-size: 7.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--mz-ink-mut); text-align: center; }
+.fh-wname { font-size: 11px; font-weight: 700; line-height: 1.3; text-align: center; min-height: 30px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fh-wname.is-ghost { color: var(--mz-ink-mut); font-weight: 600; }
+.fh-wmeta { font-size: 9px; color: var(--mz-ink-soft); text-align: center; font-variant-numeric: tabular-nums; }
+
+.fh-wkcal { border-radius: 13px; padding: 5px 2px 4px; text-align: center; margin-top: 2px;
+  background: var(--mz-fh-kcal-bg);
+  box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06), 0 2px 6px rgba(43, 33, 24, 0.06); }
+.fh-wkcal b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.fh-wkcal small { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin-left: 3px; }
+
+.fh-wrings { display: flex; justify-content: space-between; padding: 0 8px; margin-top: 4px; }
+.fh-wring { display: grid; gap: 2px; justify-items: center; flex: none; }
+.fh-wring i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-gbar-bg) 0); }
+.fh-wring i::after { content: attr(data-l); width: 15px; height: 15px; border-radius: 50%;
+  background: var(--mz-fh-ringhole); display: grid; place-items: center;
+  font-size: 7px; font-weight: 800; color: var(--mz-ink-soft); }
+.fh-wring small { font-size: 7.5px; font-weight: 700; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.fh-wtile.is-missed .fh-wkcal, .fh-wtile.is-missed .fh-wrings { opacity: 0.65; }
+
+.fh-wscore { display: flex; justify-content: center; margin-top: 3px; min-height: 44px; align-items: center; }
+.fh-wcta { margin-top: 3px; width: 100%; min-height: 44px; border-radius: 14px; font-family: inherit;
+  font-size: 10.5px; font-weight: 700; cursor: pointer; text-align: center;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.fh-wcta:active { transform: scale(0.96); }
+.fh-wcta.is-primary { border: none; color: #fff; background: var(--gradient-cta);
+  box-shadow: 0 5px 12px -3px rgba(255, 91, 54, 0.5); }
+.fh-wcta.is-ghost { border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg); color: var(--mz-ink-soft); }
+
+.fh-scorech { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none;
+  font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.fh-scorech.is-mid { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.fh-scorech.is-pend { background: var(--mz-chat-refch-bg); color: var(--mz-ink-mut); }
+button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-height: 44px; padding: 3px 14px; }
+
+/* ═══ Mezo counter banner + Fuel-beállítások band (the .enh-band shape) ═══ */
+.fh-mezotile, .fh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
+  cursor: pointer; border-radius: 20px; padding: 12px 14px; font-family: inherit; text-align: left;
+  color: var(--text-primary); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.fh-mezotile { background: var(--mz-wash-band); box-shadow: var(--mz-shadow-coral); }
+.fh-band { background: var(--mz-wash-white); box-shadow: var(--mz-shadow); }
+.fh-mezotile:active, .fh-band:active { transform: scale(0.97); }
+.fh-mezotile .txt, .fh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
+.fh-mezotile .txt b, .fh-band .txt b { font-weight: 700; }
+.fh-mezotile .chev, .fh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+.fh-mzdot { width: 8px; height: 8px; border-radius: 50%; background: var(--mz-fh-now-ring); flex: none; }
+
+/* mosaic eyebrow inks — one per hub tile (the .enh-eb- family precedent) */
+.fh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
+.fh-eb-coral .mz-eyebrow { color: var(--mz-cell-coral-ink); }
+.fh-eb-gold .mz-eyebrow  { color: var(--mz-qxp-ink); }
+.fh-eb-lav .mz-eyebrow   { color: var(--mz-cell-lav-ink); }
+.fh-eb-sky .mz-eyebrow   { color: var(--mz-cell-sky-ink); }
+
+/* ═══ Mezo · Fuel message thread + Napló rows ═══ */
+.fh-mzmsg { border-radius: 20px; padding: 13px 15px; margin-bottom: 9px;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.fh-mzmsg-eb { display: block; padding: 0 0 5px; color: var(--mz-cell-coral-ink); }
+.fh-mzmsg-tx { font-size: 13px; font-weight: 300; line-height: 1.55; margin: 0 0 6px; }
+.fh-mzmsg-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.fh-mzmsg-meta { font-size: 10px; color: var(--mz-ink-mut); margin-top: 6px; }
+
+.fh-naplorow { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 9px; border-radius: 18px;
+  padding: 11px 13px; margin-bottom: 9px; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.fh-naplorow-t { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; }
+.fh-naplorow-x { width: 100%; font-size: 10px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.fh-naplo-empty { font-size: 12px; font-weight: 300; color: var(--mz-ink-soft); padding: 8px 2px; margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fh-wcta, .fh-mezotile, .fh-band { transition: none; }
+  .fh-wcta:active, .fh-mezotile:active, .fh-band:active { transform: none; }
+}
+/* ── Fuel · Stack v2 (mezo-d20.4.3) — day-arc timeline + featured KÖVETKEZŐ card + zone
+   mini-mosaic. Values follow the Mozaik 2.0 recipe (mz-cell-, mz-wash- and mz-shadow- tokens
+   above) rather than the prototype's own hand-rolled hexes — Stack has no head/body split in
+   the prototype build (fuel-head.html never defines .sstrip/.szdot/.znext/.zmini at all, which
+   is exactly Daniel's "puritan" complaint), so this section composes from the shared tokens
+   instead of porting undefined classes 1:1. ── */
+.stk-arc { padding: 13px 14px 11px; }
+.stk-arc-head { margin-bottom: 9px; }
+.stk-arc-track {
+  position: relative; height: 40px; margin: 0 4px;
+  border-top: 1.5px solid var(--border-subtle);
+}
+.stk-arc-fill { position: absolute; top: -1.5px; left: 0; height: 1.5px; background: var(--dv-amber); }
+.stk-arc-now {
+  position: absolute; top: -7px; width: 2px; height: 14px; margin-left: -1px;
+  background: var(--dv-amber); border-radius: 1px;
+}
+.stk-arc-dot {
+  position: absolute; top: -7px; width: 14px; height: 14px; margin-left: -7px;
+  border-radius: 50%; display: grid; place-items: center;
+  font-size: 8px; font-weight: 800; color: var(--text-inverse);
+  border: 1.5px solid var(--surface-card);
+}
+.stk-arc-dot.done { background: var(--dv-sage); }
+.stk-arc-dot.todo { background: var(--surface-card); border: 1.5px solid var(--border-strong); }
+.stk-arc-dot.next {
+  background: var(--dv-amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.mz-play .stk-arc-dot.next { animation: stk-pulse 1.8s ease-in-out infinite; }
+@keyframes stk-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--dv-amber) 30%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--dv-amber) 12%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .stk-arc-dot.next { animation: none; } }
+.stk-arc-lbl {
+  position: absolute; top: 12px; transform: translateX(-50%);
+  font-size: 8.5px; font-weight: 600; color: var(--mz-ink-mut); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.stk-arc-lbl.alt { top: 24px; }
+.stk-arc-legend {
+  display: flex; flex-wrap: wrap; gap: 9px; margin-top: 10px;
+  font-size: 8.5px; font-weight: 600; color: var(--mz-ink-mut);
+}
+.stk-leg-done { color: var(--dv-sage); }
+.stk-leg-next { color: var(--dv-amber); }
+.stk-leg-ma { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.stk-next {
+  padding: 13px 14px 12px;
+  background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold);
+  border: 1px solid color-mix(in srgb, var(--dv-amber) 35%, transparent);
+}
+.stk-next-eyebrow { color: var(--mz-cell-amber-ink); white-space: normal; display: block; margin-bottom: 9px; }
+.stk-next-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.stk-htick {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; padding: 0; cursor: pointer;
+  display: grid; place-items: center;
+  border: 2px solid var(--border-strong); background: var(--surface-card);
+}
+.stk-htick.f { border: none; background: var(--dv-sage); }
+.stk-kdot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.stk-k-sage { background: var(--dv-sage); }
+.stk-k-amber { background: var(--dv-amber); }
+.stk-k-lav { background: var(--dv-lav); }
+.stk-next-label {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;
+  text-align: left; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer;
+}
+.stk-next-label .nm { font-size: 13px; font-weight: 700; }
+.stk-next-label .ds { font-size: 10.5px; color: var(--mz-ink-soft); }
+.stk-next-note {
+  display: flex; align-items: flex-start; gap: 7px; margin: 9px 0 0;
+  font-size: 10.5px; line-height: 1.5; color: var(--text-secondary);
+}
+.stk-next-note .dot { flex: none; width: 5px; height: 5px; border-radius: 50%; margin-top: 5px; background: var(--dv-amber); }
+
+.stk-done { display: flex; align-items: center; gap: 10px; padding: 13px 14px; background: var(--mz-wash-sage); }
+.stk-done-check { flex: none; font-size: 16px; color: var(--dv-sage); }
+.stk-done-title { font-size: 12.5px; font-weight: 700; }
+.stk-done-sub { font-size: 10px; color: var(--mz-ink-soft); margin-top: 1px; }
+
+.stk-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stk-mini.done .zcard { background: var(--mz-wash-sage); }
+/* ── Receptek v2 (mezo-d20.4.4) — prototype fuel-body.html #page-recept .rcpcard,
+   ×1.18 (330→390px frame: 66px band → 78px). Spacious, alive cards: tall halo band,
+   tinted macro mini-tiles (`.mz-mcells`, reused from the Mozaik primitives), and a
+   live footer surfacing timesLogged/avgScore/lastLogged (audit gap #7). ── */
+.mz-rcpcard { position: relative; width: 100%; text-align: left; display: block;
+  border-radius: 22px; margin-bottom: 13px; overflow: hidden; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 19px 35px -19px var(--rcp-shadow, rgba(43, 33, 24, 0.32)), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); cursor: pointer; }
+.mz-rcpcard:active { transform: scale(0.975); }
+.mz-rcp-breakfast { --bw: var(--mz-rcp-breakfast-bw); --bd: var(--mz-rcp-breakfast-bd); --rcp-shadow: var(--mz-rcp-breakfast-shadow); }
+.mz-rcp-lunch     { --bw: var(--mz-rcp-lunch-bw);     --bd: var(--mz-rcp-lunch-bd);     --rcp-shadow: var(--mz-rcp-lunch-shadow); }
+.mz-rcp-dinner    { --bw: var(--mz-rcp-dinner-bw);    --bd: var(--mz-rcp-dinner-bd);    --rcp-shadow: var(--mz-rcp-dinner-shadow); }
+.mz-rcp-snack     { --bw: var(--mz-rcp-snack-bw);     --bd: var(--mz-rcp-snack-bd);     --rcp-shadow: var(--mz-rcp-snack-shadow); }
+.mz-rcpband { position: relative; height: 78px; overflow: hidden;
+  background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.18) 0 9px, transparent 9px 19px), linear-gradient(135deg, var(--bw), var(--bd)); }
+.mz-rcpband .mz-rcp-halo { position: absolute; right: 16px; top: 50%; width: 61px; height: 61px; border-radius: 50%;
+  transform: translateY(-50%); background: rgba(255, 253, 248, 0.55); display: grid; place-items: center;
+  box-shadow: 0 7px 16px -7px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.mz-rcpband .mz-rcp-slotch { position: absolute; left: 12px; top: 10px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #2B2118; background: rgba(255, 255, 255, 0.88); border-radius: 7px; padding: 3px 9px; }
+.mz-rcpband .mz-rcp-rolet { position: absolute; left: 12px; bottom: 10px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.08em; color: #fff; background: rgba(43, 33, 24, 0.45); border-radius: 7px; padding: 3px 9px; }
+.mz-rcpband .mz-rcp-star { position: absolute; right: 90px; top: 9px; font-size: 13px; color: #fff; text-shadow: 0 1px 3px rgba(43, 33, 24, 0.45); line-height: 1; }
+.mz-rcpband .mz-rcp-fitb { position: absolute; right: 12px; bottom: 10px; font-size: 9px; font-weight: 800; color: var(--mz-cell-sage-ink); background: rgba(255, 255, 255, 0.92); border-radius: 999px; padding: 3.5px 10.5px; font-variant-numeric: tabular-nums; box-shadow: 0 2px 7px rgba(43, 33, 24, 0.15); }
+.mz-rcpband .mz-rcp-fitb.pending { color: var(--mz-ink-mut); }
+.mz-rcpbody { padding: 12px 14px 12px; }
+.mz-rcpbody .mz-rcp-nm { font-family: var(--ff-display); font-size: 15px; font-weight: 600; letter-spacing: -0.01em; text-transform: uppercase; color: var(--text-primary); }
+.mz-rcpmeta { display: flex; align-items: center; gap: 6px; margin-top: 3.5px; font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mz-rcp-novadot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.mz-rcp-novadot.n1 { background: var(--mz-nova-1); }
+.mz-rcp-novadot.n2, .mz-rcp-novadot.n3 { background: var(--mz-nova-mid); }
+.mz-rcp-novadot.n4 { background: var(--mz-nova-4); }
+.mz-rcpbody .mz-mcells { margin-top: 8px; }
+.mz-rcpfoot { display: flex; align-items: center; gap: 7px; margin-top: 10.5px; padding-top: 8px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); font-size: 10px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.mz-rcpfoot .mz-rcp-avg { font-weight: 800; color: var(--mz-cell-amber-ink); }
+.mz-rcpfoot .mz-rcp-last { margin-left: auto; color: var(--mz-ink-mut); }
+.mz-rcpfoot .mz-rcp-unlogged { color: var(--mz-ink-mut); font-style: italic; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-rcpcard { transition: none; }
+}
+
+/* ── Fuel · Kamra v2 + item detail (mezo-d20.4.5) — prototype fuel-body
+   #page-kamra / #page-kitem ×1.18. Kind-washed rail cards reuse the SAME
+   --mz-wash-, --mz-cell- and --mz-shadow- tokens every other Mozaik
+   tile draws from (food=sage, supplement=sky, stim=gold/amber, med=lav) —
+   no new hex literals, so light/dark + the circadian ramp already cover it.
+   `.km-k-*` sets the four custom props a row/cell needs; `.km-item`/`.km-cell`
+   just consume them. */
+.km-k-food       { --km-wash: var(--mz-wash-sage); --km-cbg: var(--mz-cell-sage-bg); --km-ink: var(--mz-cell-sage-ink); --km-shadow: var(--mz-shadow-sage); }
+.km-k-supplement { --km-wash: var(--mz-wash-sky);  --km-cbg: var(--mz-cell-sky-bg);  --km-ink: var(--mz-cell-sky-ink);  --km-shadow: var(--mz-shadow-sky); }
+.km-k-stim       { --km-wash: var(--mz-wash-gold); --km-cbg: var(--mz-cell-gold-bg); --km-ink: var(--mz-cell-gold-ink); --km-shadow: var(--mz-shadow-gold); }
+.km-k-med        { --km-wash: var(--mz-wash-lav);  --km-cbg: var(--mz-cell-lav-bg);  --km-ink: var(--mz-cell-lav-ink);  --km-shadow: var(--mz-shadow-lav); }
+
+.km-sec { display: flex; align-items: center; gap: 7px; padding: 9px 2px 6px; }
+.km-sec i { width: 9px; height: 9px; border-radius: 4px; flex: none; background: var(--km-ink); }
+.km-sec .t { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mz-ink-soft); }
+.km-sec .n { font-size: 9px; font-weight: 700; color: var(--mz-ink-mut); }
+.km-sec .rule { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(43, 33, 24, 0.12), transparent); }
+
+.km-item {
+  position: relative; display: flex; align-items: center; gap: 11px; width: 100%;
+  border-radius: 18px; padding: 9px 12px 9px 17px; margin-bottom: 8px; overflow: hidden;
+  text-align: left; font-family: inherit; border: none; cursor: pointer;
+  background: var(--km-wash); box-shadow: var(--km-shadow);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.km-item:active { transform: scale(0.97); }
+.km-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--km-ink); }
+.km-thumb { width: 40px; height: 40px; border-radius: 13px; flex: none; display: grid; place-items: center;
+  background: var(--mz-wash-white); box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06);
+  font-size: 15px; font-weight: 800; color: var(--km-ink); }
+.km-item .nm { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.km-item .sb { font-size: 9px; color: var(--mz-ink-mut); display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.km-item .sb .proto { font-style: italic; }
+.km-cell { margin-left: auto; flex: none; border-radius: 12px; padding: 5px 11px 4px; text-align: center;
+  background: var(--mz-wash-white); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px rgba(43, 33, 24, 0.06);
+  color: var(--km-ink); }
+.km-cell b { display: block; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.km-cell small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+
+/* — item detail page — */
+.km-head { display: grid; justify-items: center; text-align: center; gap: 6px; padding: 5px 16px 14px; }
+.km-head .km-thumb { width: 64px; height: 64px; border-radius: 20px; font-size: 25px; }
+.km-head .nm { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--text-primary); }
+.km-head .sb { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--mz-ink-mut); flex-wrap: wrap; justify-content: center; }
+.km-ncells { display: flex; gap: 6px; }
+.km-ncells span { flex: 1; border-radius: 13px; padding: 7px 2px 6px; text-align: center;
+  background: var(--mz-cellbg); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px rgba(43, 33, 24, 0.05); }
+.km-ncells b { display: block; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.km-ncells b.dash { color: var(--mz-ink-mut); font-weight: 500; }
+.km-ncells small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.km-rchips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+.km-rchips span { font-size: 10px; font-weight: 600; color: var(--mz-cell-coral-ink); background: var(--mz-cell-coral-bg); border-radius: 999px; padding: 4px 12px; }
+.km-stkchip { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 10px; font-weight: 700;
+  color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); border-radius: 999px; padding: 5px 13px; }
+.km-delbtn { width: 100%; min-height: 44px; border: none; background: none; font-family: inherit;
+  font-size: 12px; font-weight: 700; color: var(--warning); cursor: pointer; }
+.km-improw { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 11px; color: var(--text-secondary); }
+.km-improw + .km-improw { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.km-improw .src { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 7px;
+  background: var(--mz-cell-sky-bg); color: var(--mz-cell-sky-ink); flex: none; }
+.km-improw .chk { font-size: 8px; font-weight: 800; border-radius: 6px; padding: 2px 7px;
+  background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); flex: none; }
+.km-improw .when { margin-left: auto; color: var(--mz-ink-mut); font-size: 9px; flex: none; }
+.km-obscard { border-radius: 15px; padding: 11px 13px; background: var(--mz-wash-coral);
+  display: flex; gap: 9px; align-items: flex-start; box-shadow: var(--mz-shadow); }
+.km-obscard .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gradient-cta); flex: none; margin-top: 3px; }
+.km-obscard p { font-size: 11px; line-height: 1.5; color: var(--text-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .km-item { transition: none; }
+}
+
+/* ============================================================
+   Unified log flow (design 2.0 iterations §7, bd mezo-d20.4.2)
+   `page-log` ×1.18: a full-bleed page (not a bottom sheet), self-portaled into
+   .phone-screen like the level-up overlay — z-index sits above the tab bar (40)
+   but BELOW the sheets (200+) it hosts (KamraPickSheet / ReceptPickSheet), the
+   same tier the recipe-editor save bar already claims. Source-tile washes and
+   shadows reuse the existing --mz-wash-, --mz-shadow- and --mz-tone- tokens
+   (both :root blocks above) instead of inventing a parallel palette. ── */
+.logflow-page {
+  position: absolute; inset: 0; z-index: 60;
+  background: var(--surface-page); color: var(--text-primary);
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.logflow-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 20px 6px; position: sticky; top: 0; z-index: 1;
+  background: var(--surface-page);
+}
+.logflow-back { padding: 6px 12px; }
+.logflow-time { margin-left: auto; font-size: 9px; color: var(--text-tertiary); font-family: var(--ff-mono); }
+.logflow-body { padding: 4px 20px calc(20px + env(safe-area-inset-bottom)); }
+
+.logflow-srctiles { display: flex; gap: 7px; margin: 8px 0 2px; }
+.logflow-srct {
+  flex: 1; min-height: 44px; border: none; cursor: pointer; font-family: inherit;
+  border-radius: var(--r-2xl, 18px); padding: 11px 7px 10px;
+  display: grid; gap: 3px; justify-items: center; text-align: center;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.logflow-srct:active { transform: scale(0.94); }
+.logflow-srct b { font-size: 11.5px; color: var(--text-primary); }
+.logflow-srct small { font-size: 7.5px; font-weight: 700; color: var(--text-tertiary); }
+.logflow-srct.tone-gold { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.logflow-srct.tone-coral { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.logflow-srct.tone-lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.logflow-srct.on { box-shadow: var(--mz-shadow), inset 0 0 0 1.5px var(--lav-deep); }
+
+.logflow-aipanel {
+  border-radius: var(--r-2xl, 18px); padding: 11px 12px 12px; margin-top: 9px;
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
+}
+.logflow-aipanel textarea {
+  width: 100%; border: 1px solid var(--border-subtle); border-radius: 10px;
+  padding: 9px 11px; font-family: inherit; font-size: 12px; color: var(--text-primary);
+  background: var(--surface-card, var(--surface-1)); resize: none;
+}
+.logflow-aibusy {
+  display: flex; gap: 9px; align-items: center; font-size: 11px; font-weight: 600;
+  color: var(--lav-deep); justify-content: center;
+}
+.logflow-aibusy .np-twinkle {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--lav-deep); flex: none;
+}
+
+.logflow-lncard {
+  border-radius: 15px; padding: 10px 12px; background: var(--surface-1);
+  border-left: 2.5px solid var(--coral);
+}
+.logflow-lncard[data-tag="kamra"] { border-left-color: var(--mz-cell-gold-ink, #8A5E07); }
+.logflow-lncard[data-tag="becslés"] { border-left-color: var(--lav-deep); }
+.logflow-lntag {
+  font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 5px; flex: none;
+  background: color-mix(in srgb, var(--coral) 14%, transparent); color: var(--coral);
+}
+.logflow-lntag[data-tag="kamra"] { background: var(--mz-tone-gold); color: var(--mz-cell-gold-ink, #8A5E07); }
+.logflow-lntag[data-tag="becslés"] { background: var(--mz-tone-lav); color: var(--lav-deep); }
+.logflow-stepbtn {
+  width: 26px; height: 26px; min-width: 26px; border-radius: 8px; border: 1px solid var(--border-subtle);
+  background: var(--surface-2); font-size: 13px; color: var(--text-secondary); cursor: pointer;
+}
+.logflow-amtinput {
+  width: 52px; text-align: center; border: 1px solid var(--border-subtle); border-radius: 8px;
+  padding: 5px 2px; font-family: inherit; font-size: 12px; font-weight: 600;
+  color: var(--text-primary); background: var(--surface-2); font-variant-numeric: tabular-nums;
+}
+.logflow-lnnote { font-size: 10px; color: var(--lav-deep); margin-top: 7px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .logflow-srct { transition: none; }
+}
+/* ── Fuel · Terv + Gyógyszer re-face (mezo-d20.4.7) — prototype fuel-body
+   #page-terv / #page-gyogyszer ×1.18 (330→390px frame). The week-rhythm
+   rows/track/markers (.fpl-*, prototype .rhyrow/.rhytrack/.rhyleg) and the
+   medication card + cycle bar (.fmd-*, prototype .medcard/.cyc/.doserow)
+   reuse the existing --mz-* cell/no-ink tokens for phase tints instead of
+   inventing new ones. The medication peak deliberately does NOT ride
+   --error (an actual-red token in dark mode) — it uses --mz-no-ink, the
+   shared terracotta the app already reserves for "high but not alarming"
+   (NOVA 4, the low-Mozgás skin): the peak (appetite-suppression) window is
+   information, never a warning (handoff §2 — phase hue never red). ── */
+.fpl-rhyrow { display: flex; align-items: center; gap: 9px; padding: 7px 0; }
+.fpl-rhyrow + .fpl-rhyrow { border-top: 0.5px solid rgba(43, 33, 24, 0.06); }
+.fpl-dl { width: 35px; flex: none; font-size: 10px; font-weight: 800; color: var(--mz-ink-soft); text-align: center; }
+.fpl-dl .ma { display: block; font-size: 7px; font-weight: 800; letter-spacing: 0.12em; color: var(--mz-cell-amber-ink); }
+.fpl-track { flex: 1; position: relative; height: 16px; border-radius: 8px; background: rgba(43, 33, 24, 0.05); }
+.fpl-blk { position: absolute; top: 2px; bottom: 2px; border-radius: 6px; }
+.fpl-blk.gym { background: var(--mz-goalfill); }
+.fpl-blk.vb { background: var(--cat-tendency); }
+.fpl-mk { position: absolute; top: -2px; bottom: -2px; width: 2px; border-radius: 2px; }
+.fpl-mk.kc { background: var(--mz-ink-mut); opacity: 0.6; }
+.fpl-mk.cf { background: var(--warning); opacity: 0.8; }
+.fpl-rest { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 9px; letter-spacing: 0.1em; color: var(--mz-ink-mut); }
+.fpl-leg { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 9px; font-size: 9px; color: var(--mz-ink-soft); font-weight: 600; }
+.fpl-leg i { display: inline-block; width: 11px; height: 7px; border-radius: 4px; margin-right: 4px; vertical-align: 0.5px; }
+
+.fmd-medcard { border-radius: 19px; padding: 13px 14px 14px 18px; margin-bottom: 12px; position: relative;
+  overflow: hidden; background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.fmd-medcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--mz-cell-lav-ink); }
+.fmd-cyc { display: flex; gap: 5px; margin-top: 14px; list-style: none; padding: 0; }
+.fmd-cyc li { flex: 1; height: 35px; border-radius: 11px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; background: rgba(43, 33, 24, 0.05); color: var(--mz-ink-soft); position: relative; }
+.fmd-cyc li.peak { background: color-mix(in srgb, var(--mz-no-ink) 16%, transparent); color: var(--mz-no-ink); }
+.fmd-cyc li.stable { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.fmd-cyc li.trough { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.fmd-cyc li.cur { box-shadow: 0 0 0 2px color-mix(in srgb, var(--mz-cell-amber-ink) 50%, transparent); }
+.fmd-cyc li.cur::after { content: 'MA'; position: absolute; top: -13px; font-size: 6.5px; font-weight: 800;
+  letter-spacing: 0.14em; color: var(--mz-cell-amber-ink); }
+.fmd-cyc-glyph { font-size: 9px; font-weight: 800; }
+.fmd-cyc-day { font-variant-numeric: tabular-nums; font-size: 8px; font-weight: 600; color: var(--mz-ink-mut); }
+.fmd-doserow { display: flex; align-items: baseline; gap: 9px; padding: 9px 2px; font-size: 12px; list-style: none; }
+.fmd-doserow + .fmd-doserow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.fmd-doserow .nt { font-size: 10px; font-style: italic; color: var(--mz-ink-mut); }
+.fmd-doserow .dd { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-cell-lav-ink); font-variant-numeric: tabular-nums; }
 
 /* ============================================================
    Today · iOS list language (mezo-e26w)

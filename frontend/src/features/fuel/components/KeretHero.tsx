@@ -1,8 +1,9 @@
 // ============================================================
 // Mezo · KeretHero — the Fuel Mai hero (mezo-c9t5, keret-hero Task 2). Sits at the top of
 // the page, above the window-river sky, replacing the retired KeretBelt. Anatomy top→bottom:
-// a 2s ease-out count-up remaining-kcal number on a halo-sage band, the "eddig X / Y · n/m
-// ablak" of-line (no percent), a segmented day-bar with a gold now-marker, the 3 signed
+// a 2s ease-out count-up of TODAY'S CONSUMED kcal on a halo-sage band (hub v3 declutter,
+// fuel iterations §2 — the "eddig X / Y · n/m ablak" of-line is gone: the frame is told by
+// the chips and the day-bar), a segmented day-bar with a gold now-marker, the 3 signed
 // energy chips (→ EnergyBreakdownSheet sections), and the 5 macro/rost/víz progress rings
 // (the víz ring is a real button opening the water-log sheet). Pure presentational: all data
 // comes from the `KeretHeroVM` Task 1 built; every callback is a prop, no data hooks here.
@@ -116,7 +117,9 @@ export function KeretHero({ vm, onChip, onWaterRing, durationMs = 2000 }: {
   durationMs?: number
 }) {
   const reduced = useReducedMotion()
-  const displayKcal = useCountUpKcal(vm.remainingKcal, durationMs)
+  // Hub v3 declutter (fuel iterations §2, Daniel: "nem kell az eddig x/y kalória, csak
+  // amennyit elfogyasztott"): the hero is ONE number — the kcal CONSUMED today.
+  const displayKcal = useCountUpKcal(vm.consumedKcal, durationMs)
 
   // Rings fill together with the count-up: starts empty (or already final under reduced
   // motion), flips true one frame after mount so the CSS transition carries the sweep.
@@ -129,12 +132,9 @@ export function KeretHero({ vm, onChip, onWaterRing, durationMs = 2000 }: {
 
   return (
     <div className="khero">
-      <div className="khero-n" aria-label={`${fmt(vm.remainingKcal)} kcal hátra`}>
+      <div className="khero-n" aria-label={`${fmt(vm.consumedKcal)} kcal ma`}>
         {fmt(displayKcal)}
-        <span className="khero-u"> kcal hátra</span>
-      </div>
-      <div className="khero-of">
-        eddig {fmt(vm.consumedKcal)} / <b>{fmt(vm.targetKcal)}</b> · {vm.doneCount}/{vm.totalCount} ablak
+        <span className="khero-u"> kcal ma</span>
       </div>
       <div className="khero-dayseg">
         {vm.segments.map((s, i) => (
