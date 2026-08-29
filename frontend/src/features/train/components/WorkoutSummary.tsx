@@ -213,6 +213,12 @@ export function WorkoutSummary({
           </button>
         )}
       </div>
+
+      {/* Quiet principle line (mezo-d20.3.9, prototype .habnote) — the closing report's
+          honesty contract, said once at the bottom instead of colour-coding the misses. */}
+      <p className="wsum-principle">
+        A riport sosem büntet: a kimaradt szett szellem-chip, a kihagyott kihívás tompított — piros nincs.
+      </p>
     </div>
   )
 }

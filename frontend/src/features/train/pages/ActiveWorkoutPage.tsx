@@ -29,7 +29,7 @@ import { avgWorkingRir, exerciseTonnage, sessionProgressSegments, setStatus, top
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
-import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
+import { ProgressionBanner, progressionDeltaLabel } from '@/features/train/components/ProgressionBanner'
 import { ExerciseImage } from '@/features/train/components/ExerciseImage'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, SetUpdateRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
@@ -54,10 +54,9 @@ import {
   updateLoggedSet,
 } from '@/features/train/logic/workoutState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
-import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SetStepper } from '@/features/train/components/SetStepper'
-import { VideoDemo, videoEmbed } from '@/features/train/components/VideoDemo'
+import { videoEmbed } from '@/features/train/components/VideoDemo'
 import { MedalChip } from '@/features/train/components/MedalChip'
 import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
@@ -68,7 +67,7 @@ import { ExerciseOverviewSheet, type OverviewExercise } from '@/features/train/s
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 import { ClayIcon } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { Mosaic, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
+import { CollapsibleStrip, Mosaic, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
 import { PrepGyakorlatokPage } from '@/features/train/pages/prep/PrepGyakorlatokPage'
 import { PrepFejlodesPage } from '@/features/train/pages/prep/PrepFejlodesPage'
 import { PrepHetiZonaPage } from '@/features/train/pages/prep/PrepHetiZonaPage'
@@ -307,8 +306,13 @@ function ActiveWorkoutSession({
   // tells the user the save failed; this just keeps the row from being a dead end.
   const [failedSetLocalIds, setFailedSetLocalIds] = useState<Set<string>>(() => new Set())
   // Tap-to-reveal demo still (mezo-8xdl.4) — mirrors the video's hidden-until-asked
-  // stance, so it never steals the logging surface mid-set.
+  // stance, so it never steals the logging surface mid-set. The demo VIDEO is gated
+  // the same way from the head's icon button (mezo-d20.3.9).
   const [imageOpen, setImageOpen] = useState(false)
+  const [videoOpen, setVideoOpen] = useState(false)
+  // The per-set note is COLLAPSED in the calm default (mezo-d20.3.9) — the "＋ megjegyzés
+  // a szetthez" toggle opens it; it re-collapses on every slot/exercise change.
+  const [noteOpen, setNoteOpen] = useState(false)
 
   // Auto-hide the medal toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -404,8 +408,10 @@ function ActiveWorkoutSession({
   useEffect(() => {
     setEditingSetIdx(null)
   }, [current.id])
-  // The demo still must not stay open across an advance to the next exercise.
-  useEffect(() => { setImageOpen(false) }, [current.id])
+  // The demo media must not stay open across an advance to the next exercise, and the
+  // per-set note toggle re-collapses on every slot change (prototype UI.inpKey reset).
+  useEffect(() => { setImageOpen(false); setVideoOpen(false) }, [current.id])
+  useEffect(() => { setNoteOpen(false) }, [current.id, cursor])
   // Challenges: unified across modes — the hook returns the Phase-1 seed in mock
   // and the live session/day list (or honest []) in real. Accept/dismiss is a
   // local toggle in mock (byte-parity with Phase-1) and a persisted L2 decision
@@ -960,10 +966,20 @@ function ActiveWorkoutSession({
   // `current.workingSets` — otherwise a ＋Szett extra set shows `4/3` and a removed working
   // slot sticks at `/3`.
   const liveWorkingSetCount = Math.max(0, currentSetCount - warmupCount)
-  const firstWorkingTargetKg = (session.prescribed[current.id] ?? [])
-    .find((p) => p.kind === 'working' && p.targetWeightKg != null)?.targetWeightKg ?? null
   const lastWarmupIdx = lastLoggedWarmupIdx(session, current.id, cursor)
   const warmupNote = lastWarmupIdx != null ? warmupPctLabel(current, lastWarmupIdx) : null
+  // Logging-panel slot label (mezo-d20.3.9, prototype `slotLbl`): the panel names the
+  // slot it is about to fill AND its target, so the target never needs a cell of its
+  // own. `cél` parts are omitted when the engine prescribed nothing (honest state).
+  const repUnit = current.type === 'plyo' ? ' mp' : ''
+  const slotLabel = cursor >= currentSetCount
+    ? 'Kész'
+    : isWarmupSet
+      ? `Logolás · B${cursor + 1}${currentTarget?.targetWeightKg != null ? ` · cél ${currentTarget.targetWeightKg.toLocaleString('hu-HU')} × ${currentTarget.targetReps}` : ''}`
+      : `Logolás · ${cursor + 1 - warmupCount}. working · cél ${currentTarget?.targetWeightKg != null ? `${currentTarget.targetWeightKg.toLocaleString('hu-HU')} × ` : ''}${currentTarget?.targetReps ?? `${current.repMin}–${current.repMax}`}${repUnit}`
+  // The demo video's resolved embed (null when there is no recognizable URL) — the
+  // head's icon button only renders when this exists.
+  const videoEmbedTarget = videoEmbed(current.videoUrl)
   // Session progress bar (under the header): one flex segment per exercise,
   // weighted by its own planned set count, coloured by ITS OWN muscle family.
   const progressSegments = sessionProgressSegments(
@@ -1159,33 +1175,18 @@ function ActiveWorkoutSession({
       )}
 
       <div>
-        {/* Header — Napív wk-top (spec §4.5): back pill, title + counter, exercise
-            dots, and the ⋯ actions chip, all in one sticky row (mezo-8141). */}
+        {/* Header — Napív wk-top (spec §4.5), re-faced (mezo-d20.3.9, prototype
+            #page-active head): back pill, the centered title + counter button, and the
+            ⋯ actions chip. The exercise dots dropped OUT of the header into their own
+            centered row below it, so the title can breathe on a phone. */}
         <div className="wk-top np-anim" style={{ '--i': 0 } as React.CSSProperties}>
           <button type="button" className="back np-press" aria-label="Vissza" onClick={onExit}>‹</button>
           {/* Counter is now a button — tapping it opens the jump-to overview sheet
               (spec 2026-07-15 free navigation). ▾ signals the drop-down affordance. */}
-          <button type="button" className="tt" aria-label="Gyakorlatlista" disabled={!!feedbackEx} onClick={() => setOverviewOpen(true)} style={{ textAlign: 'left' }}>
+          <button type="button" className="tt wkx-tt" aria-label="Gyakorlatlista" disabled={!!feedbackEx} onClick={() => setOverviewOpen(true)}>
             <div className="t1">{W.title}</div>
             <div className="t2">▾ {currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
           </button>
-          <div className="exdots">
-            {W.exercises.map((e) => {
-              // Resolved-state classing (free navigation): a fully-logged or skipped
-              // exercise is done/skipped regardless of order; the viewed one is current.
-              const resolved = session.skipped.includes(e.id)
-                ? 'skp'
-                : (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id)
-                  ? 'don'
-                  : undefined
-              // Dots are tappable (free navigation) — each jumps to its exercise.
-              return (
-                <button key={e.id} type="button" aria-label={`Ugrás: ${e.name}`} onClick={() => jumpTo(e.id)} style={{ padding: 2, lineHeight: 0 }}>
-                  <i className={e.id === current.id ? 'cur' : resolved} />
-                </button>
-              )
-            })}
-          </div>
           <button
             type="button"
             aria-label="Gyakorlat műveletek"
@@ -1196,6 +1197,24 @@ function ActiveWorkoutSession({
           >
             ⋯
           </button>
+        </div>
+
+        <div className="exdots">
+          {W.exercises.map((e) => {
+            // Resolved-state classing (free navigation): a fully-logged or skipped
+            // exercise is done/skipped regardless of order; the viewed one is current.
+            const resolved = session.skipped.includes(e.id)
+              ? 'skp'
+              : (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id)
+                ? 'don'
+                : undefined
+            // Dots are tappable (free navigation) — each jumps to its exercise.
+            return (
+              <button key={e.id} type="button" aria-label={`Ugrás: ${e.name}`} onClick={() => jumpTo(e.id)}>
+                <i className={e.id === current.id ? 'cur' : resolved} />
+              </button>
+            )
+          })}
         </div>
 
         {/* Session progress bar (v2, mezo-8xmf): one segment per exercise, flex-weighted
@@ -1244,207 +1263,205 @@ function ActiveWorkoutSession({
             else if (dx >= 60) jumpTo(prevEx?.id)
           }}
         >
-          {activeChallenge && (
-            <div className="warmstrip">
-              <Icon name="sparkle" size={14} color="var(--coral)" />
-              <div className="col flex-1">
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral-deep)' }}>
-                  Aktív kihívás · {activeChallenge.typeLabel}
-                </span>
-                <span style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2 }}>
-                  Cél: <strong style={{ color: 'var(--coral-deep)', fontWeight: 500 }}>{activeChallenge.target}</strong>
-                </span>
+          {/* ① head — the eyebrow (idx/n · muscleLabel · type) + a SINGLE-LINE name,
+              with the media as small round icon buttons on the right (mezo-d20.3.9,
+              prototype .mrow + .mbtn). The old labelled "⛶ Kép" / "▶ Demo" chips
+              are gone: mid-set the card must read as one calm block. */}
+          <div className="wkx-exhead">
+            <div className="wkx-exhead-grow">
+              <div className="exo" style={{ color: family.deep }}>
+                {currentIdx + 1}/{W.exercises.length} · {muscleLabel} · {current.type}
               </div>
+              <h2>{current.name}</h2>
             </div>
-          )}
-          {/* ① eyebrow — idx/n · muscleLabel · type (family-deep) + name only. */}
-          <div className="exo" style={{ color: family.deep }}>
-            {currentIdx + 1}/{W.exercises.length} · {muscleLabel} · {current.type}
-          </div>
-          <h2>{current.name}</h2>
-
-          {/* ② stat-strip — three labeled cells: Stílus (failure/volume + RIR),
-              Rep-cél (mono range), Szett (mono done/working). */}
-          <div className="wkx-statstrip">
-            <div className="wkx-statcell">
-              <div className="wkx-statlabel">Stílus</div>
-              <div className="wkx-statvalue" style={{ color: cardStyle === 'failure' ? 'var(--coral-deep)' : 'var(--sage-deep)' }}>
-                {cardStyle === 'failure' ? '🔥 Failure' : `🌿 Volume · RIR ${current.targetRIR}`}
-              </div>
-            </div>
-            <div className="wkx-statcell">
-              <div className="wkx-statlabel">Rep-cél</div>
-              <div className="wkx-statvalue mono">{current.repMin}–{current.repMax}</div>
-            </div>
-            <div className="wkx-statcell">
-              <div className="wkx-statlabel">Szett</div>
-              <div className="wkx-statvalue mono">{doneWorkingSets}/{liveWorkingSetCount}</div>
-            </div>
-          </div>
-
-          {/* ③ múlt + javaslat subrow — top-bordered, own row; left the last-week top
-              set (hidden with no lastWeek), right the first working target (hidden
-              when the engine hasn't prescribed one). */}
-          {(current.lastWeek || firstWorkingTargetKg != null) && (
-            <div className="wkx-subrow">
-              {current.lastWeek && (
-                <span className="mono wkx-subrow-prev">
-                  múlt héten: {current.lastWeek.weight.toLocaleString('hu-HU')} kg × {current.lastWeek.reps} @{current.lastWeek.rir}
-                </span>
-              )}
-              <span style={{ flex: 1 }} />
-              {firstWorkingTargetKg != null && (
-                <span className="wkx-subrow-next">↗ ma: {firstWorkingTargetKg.toLocaleString('hu-HU')} kg</span>
-              )}
-            </div>
-          )}
-
-          {/* Inline demo media (catalog-resolved). The video wrapper renders only when a real
-              YouTube id is extractable; the still is tap-to-reveal so it never steals the
-              logging surface mid-set (mezo-8xdl.4). The image chip and Demo chip stay stacked
-              (not side by side) — merging them onto one row would mean restructuring
-              VideoDemo's chip+player unit, which mezo-setx.6.14/.6.17 own. */}
-          {current.imageStartUrl && (
-            <div className="mt-sm">
+            {current.imageStartUrl && (
               <button
                 type="button"
-                className="chip"
-                style={{ fontSize: 9, alignSelf: 'flex-start' }}
+                className={'wkx-mbtn' + (imageOpen ? ' on' : '')}
+                aria-label="Kép"
                 aria-expanded={imageOpen}
                 onClick={() => setImageOpen((v) => !v)}
               >
-                <span aria-hidden="true">⛶</span> Kép
+                <span aria-hidden="true">⛶</span>
               </button>
-              {imageOpen && (
-                <div className="mt-sm">
-                  <ExerciseImage
-                    start={current.imageStartUrl}
-                    end={current.imageEndUrl}
-                    name={current.name}
-                    muscle={current.muscle}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-          {videoEmbed(current.videoUrl) && (
-            <div className="mt-sm">
-              <VideoDemo url={current.videoUrl} />
-            </div>
-          )}
-
-          {/* Durable per-exercise note pill (F4) — always visible while a note exists */}
-          {effectiveNote && (
-            <div
-              aria-label="Gyakorlat-jegyzet"
-              className="exercise-note-pill row gap-sm mt-sm"
-              style={{
-                alignItems: 'center',
-                padding: '6px 10px',
-                background: 'var(--surface-2)',
-                borderLeft: '2px solid var(--coral)',
-                fontSize: 12,
-                color: 'var(--text-secondary)',
-                lineHeight: 1.4,
-              }}
-            >
-              <Icon name="tool" size={11} color="var(--coral)" />
-              <span style={{ flex: 1 }}>{effectiveNote}</span>
-            </div>
-          )}
-
-          {/* Set-dots — one per planned+extra set; ✓ done, coral current, amber
-              "B{n}" pending warmups, plain ordinal pending working sets. */}
-          <div className="setdots">
-            {Array.from({ length: currentSetCount }, (_, i) => {
-              const warm = prescribedAt(session, current.id, i)?.kind === 'warmup'
-              const cls = i < cursor ? 'sd don' : i === cursor ? 'sd cur' : 'sd'
-              // An F2-added set (index at/past the exercise's planned baseline)
-              // gets a distinct dashed marker while still pending — restored in
-              // the final-review fix (mezo-8141 — Finding 2), gone since S5.
-              const extra = i >= (session.planned[current.id] ?? 0)
-              return (
-                <div key={i} className={cls + (warm ? ' wu' : '') + (extra && cls === 'sd' ? ' extra' : '')}>
-                  {i < cursor ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
-                </div>
-              )
-            })}
-            {/* ④ last-logged-warmup note (spec §Execution card v2): the % of the
-                first working target this warmup was loaded at. */}
-            {warmupNote && <span className="mono wkx-setdots-note">{warmupNote} ✓</span>}
-          </div>
-
-          {/* Giant steppers — the single logging surface (spec §4.5). Only
-              genuinely load-less exercises (plyo) hide the kg stepper. */}
-          <div className="steprow">
-            {current.type !== 'plyo' && (
-              <SetStepper label="Súly" value={weight} step={2.5} unit="kg" min={0} max={999} onChange={setWeight} />
             )}
-            <SetStepper label="Ismétlés" value={reps} step={1} integer min={1} max={100} onChange={setReps} />
+            {videoEmbed(current.videoUrl) && (
+              <button
+                type="button"
+                className={'wkx-mbtn' + (videoOpen ? ' on' : '')}
+                aria-label="Demo videó"
+                aria-expanded={videoOpen}
+                onClick={() => setVideoOpen((v) => !v)}
+              >
+                <ClayIcon name="i-video" size={15} />
+              </button>
+            )}
           </div>
 
-          {/* No RIR on a warmup set — effort tracking is working-set-only (mezo-eerq). */}
-          {!isWarmupSet && (
-            <div className="rirrow">
-              <span className="rk">RIR</span>
-              {[0, 1, 2, 3].map((n) => (
-                <button key={n} type="button" aria-pressed={rir === n} aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
-                  {n}
-                </button>
-              ))}
-              <span style={{ flex: 1 }} />
-              {/* ⑥ inline style hint — failure pushes to bukásig, volume keeps reserve. */}
-              <span className="wkx-rirhint" style={{ color: cardStyle === 'failure' ? 'var(--amber-deep)' : 'var(--sage-deep)' }}>
-                {cardStyle === 'failure' ? '🔥 bukásig!' : '🌿 hagyj 2 rep tartalékot'}
+          {/* ② metaline — the muted one-liner that replaced the 3-cell stat strip:
+              style · rep range · RIR, plus the accepted challenge as a dashed chip
+              (the old full-width "Aktív kihívás" banner). */}
+          <div className="wkx-metaline">
+            <span className={cardStyle === 'failure' ? 'hot' : 'cool'}>
+              {cardStyle === 'failure' ? '🔥 Failure' : '🌿 Volume'}
+            </span>
+            <span>· {current.repMin}–{current.repMax} {current.type === 'plyo' ? 'mp' : 'rep'}</span>
+            <span>· RIR {current.targetRIR}</span>
+            {activeChallenge && (
+              <span className="wkx-chmini" title={activeChallenge.typeLabel}>
+                <ClayIcon name="i-kihivas" size={11} />
+                {activeChallenge.target}
               </span>
+            )}
+          </div>
+
+          {/* Durable per-exercise note pill (F4) — one line, clamped; the full text
+              stays reachable through ⋯ → Jegyzet. */}
+          {effectiveNote && (
+            <div aria-label="Gyakorlat-jegyzet" className="exercise-note-pill wkx-notepill">
+              <span aria-hidden="true">✎</span>
+              <span className="ntext">{effectiveNote}</span>
             </div>
           )}
-          {current.type === 'isolation' && (
-            <div className="rirrow">
-              <span className="rk">Side</span>
-              {(['L', 'B', 'R'] as const).map((s) => (
-                <button key={s} type="button" aria-pressed={side === s} onClick={() => setSide(side === s ? null : s)}>
-                  {s}
+
+          {/* Tap-to-reveal demo media (mezo-8xdl.4) — neither still nor video ever
+              steals the logging surface unasked. */}
+          {imageOpen && current.imageStartUrl && (
+            <div className="wkx-media">
+              <ExerciseImage
+                start={current.imageStartUrl}
+                end={current.imageEndUrl}
+                name={current.name}
+                muscle={current.muscle}
+              />
+            </div>
+          )}
+          {videoOpen && videoEmbedTarget && (
+            <div className="wkx-media exvideo" style={{ aspectRatio: videoEmbedTarget.aspectRatio }}>
+              <iframe title="Demo videó" loading="lazy" allowFullScreen src={videoEmbedTarget.src} />
+            </div>
+          )}
+
+          {/* ③ THE logging panel — the one clearly bounded input zone of the screen
+              ("a kártyán logolsz, a sávokban utánanézel"): slot label with its
+              target, set dots + warmup-% note, steppers, RIR (working sets only),
+              L/B/R for isolation, the collapsed per-set note, and the CTA / rest bar. */}
+          <div className="wkx-logbox">
+            <div className="wkx-logtop">
+              <span className="eyebrow" style={{ color: family.deep }}>{slotLabel}</span>
+              <span style={{ flex: 1 }} />
+              <span className="wkx-lgoal">{doneWorkingSets}/{liveWorkingSetCount} szett</span>
+            </div>
+
+            {/* Set-dots — one per planned+extra set; ✓ done, coral current, amber
+                "B{n}" pending warmups, plain ordinal pending working sets. */}
+            <div className="setdots">
+              {Array.from({ length: currentSetCount }, (_, i) => {
+                const warm = prescribedAt(session, current.id, i)?.kind === 'warmup'
+                const cls = i < cursor ? 'sd don' : i === cursor ? 'sd cur' : 'sd'
+                // An F2-added set (index at/past the exercise's planned baseline)
+                // gets a distinct dashed marker while still pending — restored in
+                // the final-review fix (mezo-8141 — Finding 2), gone since S5.
+                const extra = i >= (session.planned[current.id] ?? 0)
+                return (
+                  <div key={i} className={cls + (warm ? ' wu' : '') + (extra && cls === 'sd' ? ' extra' : '')}>
+                    {i < cursor ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
+                  </div>
+                )
+              })}
+              {/* ④ last-logged-warmup note (spec §Execution card v2): the % of the
+                  first working target this warmup was loaded at. */}
+              {warmupNote && <span className="mono wkx-setdots-note">{warmupNote} ✓</span>}
+            </div>
+
+            {/* The inputs only exist while there IS a slot to log — a finished
+                exercise shows its dots and the done line, nothing to fill in. */}
+            {cursor < currentSetCount && (
+              <>
+                {/* Flexible steppers (tap ± or type the exact value). Only genuinely
+                    load-less exercises (plyo) hide the kg stepper. */}
+                <div className="steprow">
+                  {current.type !== 'plyo' && (
+                    <SetStepper label="Súly" value={weight} step={2.5} unit="kg" min={0} max={999} onChange={setWeight} />
+                  )}
+                  <SetStepper label="Ismétlés" value={reps} step={1} integer min={1} max={100} onChange={setReps} />
+                </div>
+
+                {/* No RIR on a warmup set — effort tracking is working-set-only (mezo-eerq). */}
+                {!isWarmupSet && (
+                  <div className="rirrow">
+                    <span className="rk">RIR</span>
+                    {[0, 1, 2, 3].map((n) => (
+                      <button key={n} type="button" aria-pressed={rir === n} aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
+                        {n}
+                      </button>
+                    ))}
+                    <span style={{ flex: 1 }} />
+                    {/* ⑥ inline style hint — failure pushes to bukásig, volume keeps reserve. */}
+                    <span className="wkx-rirhint" style={{ color: cardStyle === 'failure' ? 'var(--amber-deep)' : 'var(--sage-deep)' }}>
+                      {cardStyle === 'failure' ? '🔥 bukásig!' : '🌿 hagyj 2 rep tartalékot'}
+                    </span>
+                  </div>
+                )}
+                {current.type === 'isolation' && (
+                  <div className="rirrow">
+                    <span className="rk">Oldal</span>
+                    {(['L', 'B', 'R'] as const).map((s) => (
+                      <button key={s} type="button" aria-pressed={side === s} onClick={() => setSide(side === s ? null : s)}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Transient per-set note (SetLogRequest.note) — COLLAPSED behind a
+                    toggle in the calm default; cleared (and re-collapsed) after each
+                    log. Distinct from the durable per-exercise note pill/editor. */}
+                {noteOpen || note ? (
+                  <input
+                    className="setnote"
+                    aria-label="Szett megjegyzés"
+                    placeholder="Megjegyzés ehhez a szetthez (opcionális)"
+                    maxLength={500}
+                    autoFocus={noteOpen}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
+                ) : (
+                  <button type="button" className="wkx-notetoggle" onClick={() => setNoteOpen(true)}>
+                    ＋ megjegyzés a szetthez
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* I2 (fix round 1): a delete can complete the exercise WITHOUT going through
+                completeSet's own last-set branch (which is what normally pins `feedbackEx`
+                and never re-renders this CTA afterwards) — so the CTA is gated on the
+                cursor directly: once there is no next slot to log, it must not linger.
+                N3 (fix round 2): the REST BAR is a different story — a rest can still be
+                genuinely running (free-navigated away from mid-rest, or navigated back to
+                a since-completed exercise) and must stay visible/pausable regardless of
+                whether this exercise still has a next slot; only the CTA is cursor-gated. */}
+            {rest.status === 'idle' ? (
+              cursor < currentSetCount ? (
+                <button type="button" className="donebtn np-press" onClick={completeSet}>
+                  Szett kész ✓
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* Transient per-set note (SetLogRequest.note) — cleared after each log;
-              distinct from the durable per-exercise note pill/editor above. */}
-          <input
-            className="setnote"
-            aria-label="Szett megjegyzés"
-            placeholder="Megjegyzés ehhez a szetthez (opcionális)"
-            maxLength={500}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-
-          {/* I2 (fix round 1): a delete can complete the exercise WITHOUT going through
-              completeSet's own last-set branch (which is what normally pins `feedbackEx`
-              and never re-renders this CTA afterwards) — so the CTA is gated on the
-              cursor directly: once there is no next slot to log, it must not linger.
-              N3 (fix round 2): the REST BAR is a different story — a rest can still be
-              genuinely running (free-navigated away from mid-rest, or navigated back to
-              a since-completed exercise) and must stay visible/pausable regardless of
-              whether this exercise still has a next slot; only the CTA is cursor-gated. */}
-          {rest.status === 'idle' ? (
-            cursor < currentSetCount && (
-              <button type="button" className="donebtn np-press" onClick={completeSet}>
-                Szett kész ✓
-              </button>
-            )
-          ) : (
-            <RestTimerBar
-              remaining={rest.remaining}
-              total={rest.total}
-              paused={rest.status === 'paused'}
-              onPause={rest.pause}
-              onResume={rest.resume}
-              onSkip={rest.skip}
-            />
-          )}
+              ) : (
+                <div className="wkx-alldone">✓ Minden szett megvan ennél a gyakorlatnál</div>
+              )
+            ) : (
+              <RestTimerBar
+                remaining={rest.remaining}
+                total={rest.total}
+                paused={rest.status === 'paused'}
+                onPause={rest.pause}
+                onResume={rest.resume}
+                onSkip={rest.skip}
+              />
+            )}
+          </div>
         </div>
 
         {/* Two-way pager bar (mockup B) — big tap targets, neighbour name + live n/m. */}
@@ -1466,9 +1483,19 @@ function ActiveWorkoutSession({
         </div>
 
         {/* Progressive-overload signal (mezo-5pfe): the structured banner when the engine
-            emits a progression, else the plain rationale strip (first session / anchor). */}
+            emits a progression, else the plain rationale strip (first session / anchor).
+            Re-face (mezo-d20.3.9): the banner is REFERENCE content, so it lives in a thin
+            collapsible strip whose closed header already carries the delta chip
+            ("⚡ Progresszió · +2,5 kg ▾"). The rationale strip stays as-is — one muted
+            sentence is already calm. */}
         {current.progression ? (
-          <ProgressionBanner progression={current.progression} lastWeek={current.lastWeek} />
+          <CollapsibleStrip
+            className="wkx-strip"
+            eyebrow="⚡ Progresszió"
+            chip={<span className="wkx-pochip" data-lever={current.progression.lever}>{progressionDeltaLabel(current.progression)}</span>}
+          >
+            <ProgressionBanner progression={current.progression} lastWeek={current.lastWeek} bare />
+          </CollapsibleStrip>
         ) : current.rationale ? (
           <div className="aistrip">
             <span aria-hidden="true">✨</span>
@@ -1495,17 +1522,22 @@ function ActiveWorkoutSession({
           const deltaPct = topSetDeltaPct(loggedForMeta, current.lastWeek?.weight ?? null)
           const avgRir = avgWorkingRir(loggedForMeta)
           return (
+            <CollapsibleStrip
+              className="wkx-strip"
+              eyebrow="Szettek"
+              summary={`${cursor}/${currentSetCount} ✓${tonnage ? ` · ${tonnage.toLocaleString('hu-HU')} kg` : ''}`}
+            >
             <div
               className="wkx-slist"
               style={{ '--fam-rail': family.rail, '--fam-wash': family.wash, '--fam-deep': family.deep } as React.CSSProperties}
             >
               {/* Exercise-level target — the ONLY place the rep-range/RIR/style shows. */}
               <div className="wkx-shead">
-                <span className="eyebrow">Szettek</span>
-                <span style={{ flex: 1 }} />
                 <span className="wkx-tgt" style={{ background: family.wash, color: family.deep }}>
                   cél: {current.repMin}–{current.repMax} rep · RIR {current.targetRIR} {cardStyle === 'failure' ? '🔥' : '🌿'}
                 </span>
+                <span style={{ flex: 1 }} />
+                <span className="wkx-shint">sorra koppintva szerkeszthető</span>
               </div>
 
               <div className="wkx-srow wkx-srow-head">
@@ -1613,6 +1645,7 @@ function ActiveWorkoutSession({
                 </div>
               </div>
             </div>
+            </CollapsibleStrip>
           )
         })()}
       </div>

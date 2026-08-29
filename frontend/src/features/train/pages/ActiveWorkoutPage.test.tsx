@@ -46,6 +46,14 @@ async function completeExerciseSets(user: ReturnType<typeof userEvent.setup>) {
   }
 }
 
+// Live re-face (mezo-d20.3.9): the set table is REFERENCE content and lives inside
+// the "Szettek" collapsible strip, closed by default (the calm logging default) —
+// open it before asserting on / tapping its rows.
+async function openSetsStrip(user: ReturnType<typeof userEvent.setup>) {
+  const head = screen.getByRole('button', { name: /^Szettek/ })
+  if (head.getAttribute('aria-expanded') === 'false') await user.click(head)
+}
+
 test('prep screen shows the workout title, the mosaic tiles and the start CTA above the fold', () => {
   setup()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
@@ -123,29 +131,34 @@ test('the excard h2 shows the current exercise name, and a matching set-dot per 
   expect(container.querySelectorAll('.setdots .sd')).toHaveLength(5)
 })
 
-test('mock mode: the excard shows the "múlt héten" comparison line when lastWeek exists', async () => {
+test('mock mode: the last-week comparison is surfaced (in the Progresszió strip since mezo-d20.3.9)', async () => {
   const user = userEvent.setup()
-  setup()
+  const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // ex1.lastWeek = { weight: 102.5, reps: 9, rir: 2 } — v2 subrow format (mezo-8xmf):
-  // `múlt héten: {w} kg × {r} @{rir}` (short @rir, not "@ RIR n").
-  expect(await screen.findByText('múlt héten: 102,5 kg × 9 @2')).toBeInTheDocument()
+  // ex1.lastWeek = { weight: 102.5, reps: 9, rir: 2 }. The calm card no longer
+  // repeats it — it lives in the Progresszió strip's Múlt hét cell.
+  await user.click(screen.getByRole('button', { name: /Progresszió/ }))
+  const banner = container.querySelector('.pobanner') as HTMLElement
+  expect(within(banner).getByText('Múlt hét')).toBeInTheDocument()
+  expect(within(banner).getByText('102,5 × 9 · RIR 2')).toBeInTheDocument()
 })
 
-// ---- Execution card v2 (mezo-8xmf): muscle-themed card + structured context zones ----
+// ---- Execution card v2 (mezo-8xmf) → calm re-face (mezo-d20.3.9): the muscle-themed
+// card, its metaline and the single logging panel ----
 
-test('mock mode: the eyebrow shows idx/n · muscleLabel · type, and the stat-strip renders style + rep-range + set count', async () => {
+test('mock mode: the eyebrow shows idx/n · muscleLabel · type, and the metaline + panel render style, rep-range and set count', async () => {
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
   // ex1: 1/5, muscle 'back-mid' -> MUSCLE_LABELS 'Hát (közép)', type compound.
   expect(container.querySelector('.excard .exo')).toHaveTextContent('1/5 · Hát (közép) · compound')
   // ex1.targetRIR = 0 -> failure style (setStyle, RIR<=1); repMin/repMax = 8/10;
-  // 2 warmup + 3 working planned, none logged yet.
-  const strip = container.querySelector('.wkx-statstrip')
-  expect(strip).toHaveTextContent('🔥 Failure')
-  expect(strip).toHaveTextContent('8–10')
-  expect(strip).toHaveTextContent('0/3')
+  // 2 warmup + 3 working planned, none logged yet. Style + rep-range read from the
+  // metaline; the working-set count from the logging panel's own counter.
+  const meta = container.querySelector('.wkx-metaline')
+  expect(meta).toHaveTextContent('🔥 Failure')
+  expect(meta).toHaveTextContent('8–10')
+  expect(container.querySelector('.wkx-lgoal')).toHaveTextContent('0/3')
 })
 
 test('mock mode: the RIR row shows the failure-style "bukásig" hint on a working set', async () => {
@@ -160,7 +173,7 @@ test('mock mode: the RIR row shows the failure-style "bukásig" hint on a workin
   expect(await screen.findByText('🔥 bukásig!')).toBeInTheDocument()
 })
 
-test('real mode: a volume-style exercise (targetRIR 2) shows the sage hint and the Volume stat cell', async () => {
+test('real mode: a volume-style exercise (targetRIR 2) shows the sage hint and the Volume metaline', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useRealHandlers(
@@ -170,7 +183,9 @@ test('real mode: a volume-style exercise (targetRIR 2) shows the sage hint and t
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(await screen.findByText(/Kezdjük el/))
-  expect(container.querySelector('.wkx-statstrip')).toHaveTextContent('🌿 Volume · RIR 2')
+  const meta = container.querySelector('.wkx-metaline')
+  expect(meta).toHaveTextContent('🌿 Volume')
+  expect(meta).toHaveTextContent('RIR 2')
   expect(await screen.findByText('🌿 hagyj 2 rep tartalékot')).toBeInTheDocument()
 })
 
@@ -333,12 +348,16 @@ test('mock mode: the excard renders a per-set note input that clears after loggi
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
+  // Calm default (mezo-d20.3.9): the input hides behind the ＋ megjegyzés toggle.
+  await user.click(screen.getByRole('button', { name: /megjegyzés a szetthez/ }))
   const noteInput = await screen.findByLabelText('Szett megjegyzés')
   await user.type(noteInput, 'Nehéz volt az utolsó ismétlés')
   expect(noteInput).toHaveValue('Nehéz volt az utolsó ismétlés')
   await user.click(screen.getByText('Szett kész ✓'))
-  // Post-log reset: the transient note clears (proves it participates in the
-  // completeSet submit path, same as the old removed input did).
+  // Post-log reset: the transient note clears AND the field re-collapses (proves it
+  // participates in the completeSet submit path, same as the old removed input did).
+  expect(screen.queryByLabelText('Szett megjegyzés')).toBeNull()
+  await user.click(screen.getByRole('button', { name: /megjegyzés a szetthez/ }))
   expect(await screen.findByLabelText('Szett megjegyzés')).toHaveValue('')
 })
 
@@ -358,6 +377,7 @@ test('mock mode: warmup sets render up-front as 2 amber-filled "B" marker rows i
   // The v4 table shows ALL sets up front; ex1's 2 warmups are the 2 "bemelegítő
   // szett" rows (the old kind tag "Bemel." is gone — the marker circle + row
   // label now carry the warmup/working distinction).
+  await openSetsStrip(user)
   expect(screen.getAllByRole('button', { name: /bemelegítő szett szerkesztése/ })).toHaveLength(2)
 })
 
@@ -367,6 +387,7 @@ test('mock mode: the set-list header pill shows the exercise target once; the cu
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
+  await openSetsStrip(user)
   // ex1: repMin 8, repMax 10, targetRIR 0 -> failure style (🔥) — the target
   // appears ONCE, in the header pill, not repeated per row.
   expect(screen.getByText('cél: 8–10 rep · RIR 0 🔥')).toBeInTheDocument()
@@ -405,6 +426,7 @@ test('mock mode: a logged working set below the prescribed rep range shows "▼ 
     await user.click(screen.getByRole('button', { name: 'Ismétlés csökkentése' }))
   }
   await user.click(screen.getByText('Szett kész ✓'))
+  await openSetsStrip(user)
   const workingRow = screen.getAllByRole('button', { name: /working szett szerkesztése/ })[0]
   expect(workingRow.querySelector('.wkx-c-st')).toHaveTextContent('▼ cél alatt')
 })
@@ -421,6 +443,7 @@ test('mock mode: a logged working set above the prescribed rep range shows "▲ 
   // ex1's repMax (10).
   await user.click(screen.getByRole('button', { name: 'Ismétlés növelése' }))
   await user.click(screen.getByText('Szett kész ✓'))
+  await openSetsStrip(user)
   const workingRow = screen.getAllByRole('button', { name: /working szett szerkesztése/ })[0]
   expect(workingRow.querySelector('.wkx-c-st')).toHaveTextContent('▲ cél felett')
 })
@@ -651,6 +674,7 @@ test('mock mode: a set that hits its target gets a sage ✓ status and a chip pe
   await user.click(screen.getByText('Szett kész ✓')) // B2 (warmup)
   await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // working set (index 2)
+  await openSetsStrip(user)
 
   // Exactly TWO chips — the TARGET_HIT contributes none (MedalChip gates on tier).
   await waitFor(() => expect(within(firstWorkingRow()).getAllByRole('img')).toHaveLength(2))
@@ -679,6 +703,7 @@ test('mock mode: a set that sets records still shows its chips even when the log
   // yet 102,5 × 10 still beats lastWeek (102,5 × 9) on REPS_AT_WEIGHT and E1RM.
   await user.click(screen.getByRole('button', { name: 'Súly csökkentése' }))
   await user.click(screen.getByText('Szett kész ✓')) // working set (index 2)
+  await openSetsStrip(user)
 
   await waitFor(() => expect(within(firstWorkingRow()).getAllByRole('img')).toHaveLength(2))
   const workingRow = firstWorkingRow()
@@ -772,10 +797,10 @@ test('starting the workout jumps the app scroller back to the top', async () => 
 
 // The Szett stat-cell's value (e.g. "0/3") — helper so callers don't hand-roll the
 // wkx-statcell/wkx-statlabel traversal.
+// The live working-slot counter — since mezo-d20.3.9 it is the logging panel's own
+// "n/m szett" readout (the 3-cell stat strip it used to live in is gone).
 function szettCellValue(container: HTMLElement): string | null {
-  const cells = Array.from(container.querySelectorAll('.wkx-statcell'))
-  const cell = cells.find((c) => c.querySelector('.wkx-statlabel')?.textContent === 'Szett')
-  return cell?.querySelector('.wkx-statvalue')?.textContent ?? null
+  return container.querySelector('.wkx-lgoal')?.textContent?.replace(' szett', '') ?? null
 }
 
 test('＋ Szett adds an extra set: the set-dots and prescribed list grow 5→6', async () => {
@@ -785,6 +810,7 @@ test('＋ Szett adds an extra set: the set-dots and prescribed list grow 5→6',
   expect(container.querySelectorAll('.setdots .sd')).toHaveLength(5)
   // v4 (mezo-8xmf): the set-list table row count is the "Working"/"Bemel." tag
   // count's replacement — count rows by their aria-label instead.
+  await openSetsStrip(user)
   expect(screen.getAllByRole('button', { name: /working szett szerkesztése/ })).toHaveLength(3) // 3 planned working rows
   // Szett stat-cell (final-review fix, mezo-8xmf): denominator must track the LIVE
   // working-slot count, not the static `current.workingSets` — before the extra set
@@ -977,6 +1003,7 @@ type RealExercise = {
   prescribedSets?: PrescribedSetFixture[] | null
   lastWeek: { weightKg: number; reps: number; rir: number } | null
   imageStartUrl?: string | null; imageEndUrl?: string | null
+  videoUrl?: string | null
 }
 // Recipe-shaped /today exercise (warmupSets+workingSets = the old `sets`); prescribedSets
 // omitted → toWorkoutPlan sets it null → the panel falls back to the lastWeek prefill.
@@ -1084,6 +1111,7 @@ test('real mode: a failed logSet POST leaves the row present AND tappable, and d
   // prescribed[i] for anything but the LAST entry (fix round 3, F1). The honest move
   // is to leave the set visible: the dot stays "done" throughout.
   await waitFor(() => expect(container.querySelector('.setdots .sd.don')).toBeInTheDocument())
+  await openSetsStrip(user)
   // The row is disabled while the POST is genuinely in flight, then becomes tappable
   // again once it's KNOWN to have failed (not stuck disabled forever, unlike a still-
   // in-flight row).
@@ -1137,6 +1165,7 @@ test('real mode: an edit PUTs the FIRST logged set\'s OWN server id, and deletin
 
   // Edit the FIRST row (102.5 kg) — bump REPS only (not weight), so the 102.5/105 kg
   // marker keeps discriminating the two rows through the edit.
+  await openSetsStrip(user)
   await user.click(screen.getAllByRole('button', { name: /szett szerkesztése/ })[0])
   await user.click(within(screen.getByRole('dialog')).getByLabelText('Ismétlés növelése'))
   await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Mentés ✓' }))
@@ -1161,6 +1190,7 @@ test('real mode: typing a per-set note before Szett kész sends it in the logSet
   setup()
   await user.click(await screen.findByText(/Kezdjük el/))
   await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(await screen.findByRole('button', { name: /megjegyzés a szetthez/ }))
   await user.type(await screen.findByLabelText('Szett megjegyzés'), 'Fájt a csukló')
   await user.click(screen.getByText('Szett kész ✓'))
   await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5:note=Fájt a csukló'))
@@ -1697,6 +1727,7 @@ test('a logged working set shows its RIR in the set-list table\'s own RIR column
   await user.click(screen.getByText('Szett kész ✓'))
   // v4 (mezo-8xmf): RIR is its own table column now, not a chip — the just-
   // logged (first) working row's RIR cell reads the logged value directly.
+  await openSetsStrip(user)
   const workingRow = screen.getAllByRole('button', { name: /working szett szerkesztése/ })[0]
   expect(workingRow.querySelector('.wkx-c-rir')).toHaveTextContent('1')
 })
@@ -1749,6 +1780,7 @@ test('mock mode: a logged set row opens the edit sheet, and saving rewrites the 
   const skipRest = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
   if (skipRest) await user.click(skipRest)
 
+  await openSetsStrip(user)
   await user.click(firstRow())
   const sheet = within(screen.getByRole('dialog'))
   await user.click(sheet.getByLabelText('Ismétlés növelése'))
@@ -1773,6 +1805,7 @@ test('mock mode: logging a set that earns no medal still binds its server id (th
   const skipRest = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
   if (skipRest) await user.click(skipRest)
 
+  await openSetsStrip(user)
   await waitFor(() => expect(firstRow()).not.toBeDisabled())
   await user.click(firstRow())
   expect(screen.getByRole('dialog')).toBeInTheDocument()
@@ -1785,6 +1818,7 @@ test('mock mode: deleting a set drops one slot from the exercise', async () => {
   expect(container.querySelectorAll('.setdots .sd')).toHaveLength(5)
 
   // The pending-slot path: nothing is logged yet, so this row has no server row either.
+  await openSetsStrip(user)
   await user.click(firstRow())
   await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
 
@@ -1810,6 +1844,7 @@ test('mock mode: deleting the last pending slot completes the exercise and trigg
   expect(screen.getByText('Szett kész ✓')).toBeInTheDocument()
 
   // Delete the still-pending 5th (last) slot.
+  await openSetsStrip(user)
   const lastRow = screen.getAllByRole('button', { name: /szett szerkesztése/ })[4]
   await user.click(lastRow)
   await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
@@ -1826,6 +1861,7 @@ test('mock mode: the last remaining slot cannot be deleted', async () => {
   await user.click(screen.getByText(/Kezdjük el/))
 
   // 5 planned slots -> delete four of them, one at a time.
+  await openSetsStrip(user)
   for (let i = 0; i < 4; i++) {
     await user.click(firstRow())
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Szett törlése' }))
@@ -1863,4 +1899,131 @@ test('real mode: the active exercise hides its demo still behind a chip', async 
   expect(document.querySelector('.exdemo')).toBeNull()
   await user.click(chip)
   expect(document.querySelector('.exdemo')).not.toBeNull()
+})
+
+// ============================================================
+// Live-session re-face (mezo-d20.3.9) — the CALM DEFAULT: only the execution
+// card is expanded (single-line name + small media icon buttons, a muted
+// metaline, a one-line note pill and ONE white "Logolás" panel); Progresszió
+// and Szettek are thin collapsible strips whose CLOSED header already carries
+// the summary. Structural guards for that face.
+// ============================================================
+
+test('calm default: exactly ONE white logging panel, and the reference content sits in closed collapsible strips', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // "a kártyán logolsz, a sávokban utánanézel": one bounded input panel …
+  expect(container.querySelectorAll('.wkx-logbox')).toHaveLength(1)
+  // … and it is the ONLY place the steppers / CTA live.
+  const box = container.querySelector('.wkx-logbox') as HTMLElement
+  expect(within(box).getByRole('button', { name: 'Súly növelése' })).toBeInTheDocument()
+  expect(within(box).getByText('Szett kész ✓')).toBeInTheDocument()
+  // Both reference strips exist and start CLOSED.
+  const strips = container.querySelectorAll('.mz-colstrip')
+  expect(strips).toHaveLength(2)
+  for (const s of strips) expect(s.querySelector('.mz-colhead')).toHaveAttribute('aria-expanded', 'false')
+})
+
+test('the Progresszió strip: its closed header carries the delta chip; opening reveals the Múlt hét → Ma a cél cells', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  const head = screen.getByRole('button', { name: /Progresszió/ })
+  // Closed header already tells the story (ex1: +2,5 kg).
+  expect(head).toHaveTextContent('⚡ Progresszió')
+  expect(head).toHaveTextContent('+2,5 kg')
+  // The last-week comparison moved INTO the strip body (it is no longer repeated
+  // on the calm card) — ex1.lastWeek = 102,5 kg × 9 @RIR 2.
+  await user.click(head)
+  expect(head).toHaveAttribute('aria-expanded', 'true')
+  const body = container.querySelector('.pobanner') as HTMLElement
+  expect(within(body).getByText('Múlt hét')).toBeInTheDocument()
+  expect(within(body).getByText('102,5 × 9 · RIR 2')).toBeInTheDocument()
+})
+
+test('the Szettek strip: its closed header carries "n/m ✓ · tonnage" and the set table lives in its body', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(screen.getByRole('button', { name: /Szettek/ })).toHaveTextContent('0/5 ✓')
+  // Log B1 (52,5 × 8 = 420 kg) — the CLOSED header updates with the live tonnage.
+  await user.click(screen.getByText('Szett kész ✓'))
+  const head = screen.getByRole('button', { name: /Szettek/ })
+  expect(head).toHaveTextContent(`1/5 ✓ · ${(420).toLocaleString('hu-HU')} kg`)
+  // The table is inside the strip body, not loose on the page.
+  const strip = head.parentElement as HTMLElement
+  expect(strip).toHaveClass('mz-colstrip')
+  expect(container.querySelector('.mz-colbody .wkx-slist')).not.toBeNull()
+})
+
+test('the calm card: a muted metaline replaces the 3-cell stat strip, and the old múlt-hét subrow is gone', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(container.querySelector('.wkx-statstrip')).toBeNull()
+  expect(container.querySelector('.wkx-subrow')).toBeNull()
+  const meta = container.querySelector('.wkx-metaline') as HTMLElement
+  expect(meta).toHaveTextContent('🔥 Failure')
+  expect(meta).toHaveTextContent('8–10 rep')
+  expect(meta).toHaveTextContent('RIR 0')
+})
+
+test('the logging panel header names the slot with its target, and carries the working-set counter', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1 slot 1 is warmup B1, target 52,5 × 8; 0 of 3 working sets done.
+  expect(container.querySelector('.wkx-logtop')).toHaveTextContent('Logolás · B1 · cél 52,5 × 8')
+  expect(container.querySelector('.wkx-lgoal')).toHaveTextContent('0/3 szett')
+})
+
+test('the per-set note starts COLLAPSED behind a ＋ megjegyzés toggle', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(screen.queryByLabelText('Szett megjegyzés')).toBeNull()
+  await user.click(screen.getByRole('button', { name: /megjegyzés a szetthez/ }))
+  expect(await screen.findByLabelText('Szett megjegyzés')).toBeInTheDocument()
+})
+
+test('the execution card offers the media as small icon buttons, not labelled chips', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [{
+        ...REAL_TODAY.exercises[0],
+        imageStartUrl: '/exercises/a.jpg',
+        imageEndUrl: '/exercises/b.jpg',
+        videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      }],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  const head = container.querySelector('.wkx-exhead') as HTMLElement
+  expect(within(head).getByRole('button', { name: 'Kép' })).toHaveClass('wkx-mbtn')
+  const vid = within(head).getByRole('button', { name: 'Demo videó' })
+  expect(vid).toHaveClass('wkx-mbtn')
+  // Hidden until asked for — mid-set the screen belongs to logging.
+  expect(container.querySelector('.exvideo')).toBeNull()
+  await user.click(vid)
+  expect(vid).toHaveAttribute('aria-expanded', 'true')
+  expect(container.querySelector('.exvideo')).not.toBeNull()
+})
+
+test('when every slot of the exercise is logged the panel says so instead of leaving a dead CTA slot', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await completeExerciseSets(user)
+  // Dismiss the debrief, then navigate BACK to the finished exercise.
+  await user.click(screen.getByText('Hagyjuk'))
+  await user.click(await screen.findByRole('button', { name: /Előző:/ }))
+  expect(await screen.findByText('✓ Minden szett megvan ennél a gyakorlatnál')).toBeInTheDocument()
+  expect(screen.queryByText('Szett kész ✓')).toBeNull()
 })
