@@ -12,6 +12,13 @@ export type { MeWeek, MeWeekDay }
 export interface MeWeekBootstrap {
   week: MeWeek | null
   mode: 'mock' | 'live'
+  /** The real-mode fetch has not resolved yet — the Heti surfaces render a skeleton, not an
+   *  empty week (mezo-d20.6.10; the hook used to throw this away, so a cold load looked like
+   *  "no data" — a lie). Always false in mock mode, where the seed is synchronous. */
+  isPending: boolean
+  /** The fetch FAILED — a retryable error state, which is not the same as "nothing logged". */
+  isError: boolean
+  retry: () => void
 }
 
 /** ADDITIVE (mezo-d20.6.10): the query's own liveness, so a screen can tell "still loading"
