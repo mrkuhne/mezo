@@ -27,7 +27,9 @@ test('the dropdown lists all eight Me sub-views and navigates to Cél', async ()
     expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument()
   }
   await userEvent.click(screen.getByRole('menuitem', { name: 'Cél' }))
-  expect(await screen.findByRole('heading', { level: 1, name: /Hosszú cél/ })).toBeInTheDocument()
+  // GoalsPage's Mozaik re-face (mezo-d20.6.2) speaks the subpage hero name as
+  // plain text, not an h1 (matches the other tile→page scaffolds).
+  expect(await screen.findByText('Hosszú cél')).toBeInTheDocument()
 })
 
 test('Beállítások menu item opens SettingsSheet and the theme selector flips data-theme', async () => {

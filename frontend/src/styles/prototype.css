@@ -4636,6 +4636,72 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   .mem-dash { animation: none; }
 }
 
+/* ── Cél page re-face (mezo-d20.6.2) — prototype en-body #page-cel ×1.18:
+   the guard-chip goal card (coral wash, shared .track vocabulary + the identity
+   quote), the engine's recept as amber/sage segment tiles (white mcells + a
+   rationale footer), the gym/futás/röplabda timeline lanes + the ⚠ fedezetlen
+   gap chip, and the dashed Mesociklus/Futóblokk plan slots. Lane/bar accents
+   reuse the pre-existing --tag-*/--wash-* domain tokens (GoalTimeline's prior
+   face), not new --mz-* surfaces, so only structural rules land here. ── */
+.gc-card { border-radius: 20px; padding: 12px 14px; text-align: left; font-family: inherit;
+  border: none; width: 100%; cursor: pointer; background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.gc-card-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gc-guards { display: flex; gap: 5px; margin-left: auto; flex-wrap: wrap; }
+.gc-quote { font-size: 11px; font-style: italic; line-height: 1.5; color: var(--mz-ink-soft);
+  margin: 10px 0 0; padding-top: 10px; border-top: 0.5px solid rgba(43, 33, 24, 0.1); }
+
+.gc-lsec { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 9px; }
+
+.gc-seg { border-radius: 19px; padding: 11px 13px; margin-bottom: 9px; }
+.gc-seg.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.gc-seg.sage  { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.gc-seg-head { display: flex; align-items: center; gap: 8px; }
+.gc-seg-title { font-size: 11.5px; font-weight: 700; }
+.gc-seg .mz-mcells { margin-top: 9px; }
+.gc-seg-foot { font-size: 10.5px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft);
+  margin: 9px 0 0; padding-top: 9px; border-top: 0.5px solid rgba(43, 33, 24, 0.1); }
+
+.gc-guardrow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.gc-mut { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700;
+  padding: 3px 8px; border-radius: 7px; background: var(--mz-stch-mut-bg); color: var(--mz-stch-mut-ink); }
+
+.gc-tlband { border-radius: 19px; padding: 12px 14px; margin-bottom: 12px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.gc-lane-label { font-size: 8px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin-top: 11px; }
+.gc-lane-label:first-child { margin-top: 0; }
+.gc-lane { display: grid; gap: 3px; margin-top: 5px; }
+.gc-bar {
+  min-height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  gap: 5px; font-size: 8.5px; font-weight: 800; color: #fff; overflow: hidden;
+  white-space: nowrap; padding: 0 5px;
+}
+.gc-bar.gap { border: 1px dashed var(--amber-deep); background: var(--wash-amber); color: var(--amber-deep); }
+.gc-bar.empty { border: 1px dashed rgba(43, 33, 24, 0.16); background: none; color: var(--mz-ink-mut);
+  letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+.gc-bar.amb { border-radius: 6px; background: var(--wash-sport); color: var(--tag-sport);
+  border: 1px solid color-mix(in srgb, var(--tag-sport) 30%, transparent); font-weight: 700; }
+.gc-detach {
+  flex: 0 0 auto; background: transparent; border: none; cursor: pointer; color: inherit;
+  font-size: 11px; font-weight: 700; line-height: 1; padding: 0; opacity: 0.75; min-height: 24px;
+}
+
+.gc-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.gc-slot { border: 1.2px dashed rgba(43, 33, 24, 0.2); border-radius: 17px; padding: 10px 11px;
+  display: flex; flex-direction: column; gap: 3px; background: none; }
+.gc-slot-cap { font-size: 9px; font-weight: 300; color: var(--mz-ink-soft); }
+.gc-slot-plan { align-self: flex-start; min-height: 30px; display: flex; align-items: center;
+  border: none; background: none; font-family: inherit; cursor: pointer;
+  font-size: 11px; font-weight: 800; padding: 0; margin-top: 2px; }
+.gc-slot-attach { align-self: flex-start; min-height: 30px; display: flex; align-items: center;
+  border: none; background: none; font-family: inherit; cursor: pointer;
+  font-size: 9.5px; font-weight: 700; color: var(--mz-ink-soft); text-decoration: underline; padding: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gc-card { transition: none; }
+}
+
 /* ============================================================
    Today · iOS list language (mezo-e26w)
    Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
