@@ -30,6 +30,8 @@ import {
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
+import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 const fmt = (n: number): string => n.toLocaleString('hu-HU')
 const signed = (n: number): string => `${n > 0 ? '+' : ''}${fmt(n)}`
@@ -149,30 +151,15 @@ export function MesoComparePage() {
   const activeMuscle = volumeMuscles.find((m) => m.muscle === muscle) ?? volumeMuscles[0]
 
   return (
-    // Inside AppLayout's .screen-content scroller — no nested wrapper (MesoReportPage idiom).
-    <div>
-      {/* Breadcrumb — pinned below the status bar like native nav chrome */}
-      <div className="sticky-top" style={{ padding: '8px 24px' }}>
-        <button type="button" onClick={goBack} className="row gap-sm">
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
-          <span className="eyebrow">Vissza</span>
-        </button>
-      </div>
-
-      {/* Header */}
-      <div style={{ padding: '6px 24px 0' }}>
-        <Eyebrow>Két lezárt futam</Eyebrow>
-      </div>
-      <div className="pghead-np">
-        <div>
-          <div className="over">Edzés · Futam-összevetés</div>
-          <h1>Összevetés</h1>
-        </div>
-      </div>
+    <MozaikPage tone="gold">
+      <PageHead onBack={goBack} label="‹ Mezociklus" />
+      <EntranceGroup>
+        <PageHero icon="i-naplo" big={valid ? 'A · B' : undefined} name="Összevetés" sub="Két lezárt futam" />
+        <PageBody>
 
       {!valid ? (
         // A hand-typed / stale link, or a selection that never got two runs.
-        <div style={{ padding: '16px 24px' }}>
+        <div style={{ padding: '16px 0' }}>
           <GhostState
             lines={2}
             message={'Válassz két lezárt futamot az összevetéshez — a Történet szekció „Összevetés" módjában.'}
@@ -184,7 +171,7 @@ export function MesoComparePage() {
         <>
           {/* Both columns always render: a missing report is a per-column state, not a
               page-level dead end — the other run's identity stays on screen. */}
-          <div data-testid="meso-compare-header" style={{ ...TWO_COL, padding: '8px 24px 0' }}>
+          <div data-testid="meso-compare-header" style={{ ...TWO_COL, padding: '0 0 8px' }}>
             <ColumnHead
               side="A"
               id={aId as string}
@@ -208,10 +195,10 @@ export function MesoComparePage() {
           {both && (
             <>
               {/* Adherencia — the "did either plan actually happen" glance */}
-              <div style={{ padding: '12px 24px 0' }}>
+              <div style={{ padding: '12px 0 0' }}>
                 <Eyebrow>Adherencia</Eyebrow>
               </div>
-              <div data-testid="meso-compare-adherence" style={{ ...TWO_COL, padding: '8px 24px 0' }}>
+              <div data-testid="meso-compare-adherence" style={{ ...TWO_COL, padding: '8px 0 0' }}>
                 {([['A', both.a], ['B', both.b]] as const).map(([side, r]) => (
                   <div key={side} className="card col gap-xs" style={{ padding: 'var(--sp-4)' }}>
                     <span className="label-mono" style={LABEL_MONO}>{side}</span>
@@ -228,7 +215,7 @@ export function MesoComparePage() {
 
               {/* Volumen — the union of both arcs' muscles, weeks aligned W1..Wn */}
               {activeMuscle && (
-                <div className="col gap-sm" style={{ padding: '16px 24px 0' }} data-testid="meso-compare-volume">
+                <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-volume">
                   <Eyebrow>Volumen · szet/hét</Eyebrow>
                   {/* Same pill row as the report/overview arc switch (MuscleArcSwitch) — the
                       chart itself cannot be reused here: it draws ONE run's arc. */}
@@ -288,7 +275,7 @@ export function MesoComparePage() {
               )}
 
               {/* Erő — the heart of the comparison: only the exercises BOTH runs trained */}
-              <div className="col gap-sm" style={{ padding: '16px 24px 0' }} data-testid="meso-compare-strength">
+              <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-strength">
                 <Eyebrow>Közös gyakorlatok · {strengthRows.length}</Eyebrow>
                 {strengthRows.length === 0 ? (
                   <span className="text-secondary" style={{ fontSize: 13 }}>
@@ -334,7 +321,7 @@ export function MesoComparePage() {
 
               {/* Kontextus — the run-level lifestyle averages, not the weekly buckets */}
               {contextRows.length > 0 && (
-                <div className="col gap-sm" style={{ padding: '16px 24px 0' }} data-testid="meso-compare-context">
+                <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-context">
                   <Eyebrow>Kontextus-átlagok</Eyebrow>
                   <div className="card" style={{ padding: '10px 4px 6px' }}>
                     <div style={{ overflowX: 'auto' }}>
@@ -367,7 +354,7 @@ export function MesoComparePage() {
           )}
 
           {/* Both reports open one tap away — the compare view is a lens, not a replacement. */}
-          <div className="row gap-sm" style={{ padding: '20px 24px 32px', justifyContent: 'center' }}>
+          <div className="row gap-sm" style={{ padding: '20px 0 32px', justifyContent: 'center' }}>
             <button
               type="button"
               className="chip tapchip"
@@ -385,6 +372,8 @@ export function MesoComparePage() {
           </div>
         </>
       )}
-    </div>
+        </PageBody>
+      </EntranceGroup>
+    </MozaikPage>
   )
 }

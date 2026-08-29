@@ -2,9 +2,13 @@
 // Mezo · MesoTemplatesPage (mezo-tlwa) — the dedicated `Sablonok` Train tab at
 // /train/templates. The template half of the mezo-meyc.1 template/run split now
 // lives HERE instead of on top of the run library (which became runs-only and
-// keeps a `.mesorow` nav row pointing at this page): a blueprint list is a
+// keeps a Mosaic tile pointing at this page): a blueprint list is a
 // different job from "how are my blocks going", and templates gained enough
-// actions to need the room.
+// actions to need the room. A Train TAB (children of TrainSection, mezo-d20.3.6
+// hub slice) — it keeps the Train sub-nav around it, NOT a full-screen sibling
+// (train.nav.test.tsx pins this), so it stays on the plain DS page-header shell
+// rather than the MozaikPage/PageHero scaffold its full-screen siblings
+// (MesoOverviewPage/MesoReportPage/MesoComparePage) use.
 //
 // Layout: DS page head (`Edzés · Sablonok` + `+ Új` → the planner) → a counted
 // section of `MesoTemplateCard`s → the shared dashed "plan one more" CTA. Each
