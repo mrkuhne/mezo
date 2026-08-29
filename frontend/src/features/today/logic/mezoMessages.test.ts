@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest'
 import { buildMezoMessages, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
-import { toNudgeMessage } from '@/features/today/logic/needsNudges'
 import type { Briefing, FeedMessage } from '@/data/types'
 
 const demoBriefing: Briefing = {
@@ -126,8 +125,12 @@ describe('buildMezoMessages', () => {
     expect(msgs.map((m) => m.id)).toEqual(['briefing-demo', 'midday', 'nudge-hidratacio-2026-07-06T15:00:00.000Z'])
   })
 
+  // A nudge-fixture korábban a `needsNudges.toNudgeMessage()` gyárból jött; az a modul a
+  // TodayPage-dzsel együtt kikerült (mezo-d20.9.1), a `nudges` PARAMÉTER viszont él
+  // (NapHubPage/FuelMaiPage is átadhat sort), ezért a szerződés itt marad — a fixture most
+  // a fenti literál, ami pontosan azt a shape-et adja, amit a gyár adott (artifactId nélkül).
   test('a nudge artifactId nélkül fut végig a szálon — nem perzisztált artifact (mezo-kr9v)', () => {
-    const msgs = buildMezoMessages({ feed: [midday], demoBriefing, nudges: [toNudgeMessage({ key: 'hidratacio', at: '2026-07-06T15:00:00.000Z' })] })
+    const msgs = buildMezoMessages({ feed: [midday], demoBriefing, nudges: [nudge] })
     expect(msgs[msgs.length - 1].artifactId).toBeUndefined()
     // A szálban PONTOSAN egy elem votolható: a feed sora.
     expect(msgs.filter((m) => m.artifactId != null).map((m) => m.id)).toEqual(['midday'])
