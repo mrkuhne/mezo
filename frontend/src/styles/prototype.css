@@ -5303,6 +5303,8 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 
 @media (prefers-reduced-motion: reduce) {
   .mz-rcpcard { transition: none; }
+}
+
 /* ── Fuel · Kamra v2 + item detail (mezo-d20.4.5) — prototype fuel-body
    #page-kamra / #page-kitem ×1.18. Kind-washed rail cards reuse the SAME
    --mz-wash-, --mz-cell- and --mz-shadow- tokens every other Mozaik
