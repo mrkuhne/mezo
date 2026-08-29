@@ -5135,7 +5135,7 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   border-radius: 999px; background: #FF6B4A; color: #fff; font-size: 9.5px; font-weight: 800;
   display: grid; place-items: center; box-shadow: 0 2px 6px rgba(255, 107, 74, 0.5); }
 .tp-niggle { background: linear-gradient(150deg, var(--mz-cell-gold-bg), var(--mz-wash-white)); }
-.tp-niggle .tp-badge { background: linear-gradient(135deg, #E5C46B, #C9962E); box-shadow: 0 3px 8px -2px rgba(201, 150, 46, 0.6); }
+.tp-niggle .tp-badge { background: var(--mz-strength); box-shadow: 0 3px 8px -2px rgba(201, 150, 46, 0.6); }
 
 /* Gyakorlatok tile page — .gx-tile exercise card */
 .gx-tile { border-radius: 19px; padding: 12px 13px 11px; background: var(--fw, var(--mz-stripbg));
