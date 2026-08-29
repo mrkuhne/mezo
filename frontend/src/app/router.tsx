@@ -53,6 +53,8 @@ import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
 import { WeekPage } from '@/features/me/pages/WeekPage'
+import { WeekDaysPage } from '@/features/me/pages/WeekDaysPage'
+import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -195,6 +197,12 @@ export const routes: RouteObject[] = [
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       { path: 'me/week', element: <WeekPage /> },
+      // Heti tile → own full page (F5.9, mezo-d20.6.10): the day mosaic, and ONE day as its
+      // own deep-linkable route (audit gap §8.3/6 — a push notification can point at a day).
+      // Both inherit the browsed week from `?start=`; the day page derives it from `:date`
+      // when the param is absent.
+      { path: 'me/week/napok', element: <WeekDaysPage /> },
+      { path: 'me/week/napok/:date', element: <WeekDayPage /> },
       { path: 'me/goals', element: <GoalsPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },

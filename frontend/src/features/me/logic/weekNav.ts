@@ -18,3 +18,15 @@ export function nextMonday(startIso: string): string {
 export function isCurrentWeek(startIso: string): boolean {
   return startIso === mondayIso()
 }
+
+/** `?start=` → a real ISO Monday, or the CURRENT week's when absent/invalid/not-a-Monday
+ *  (WeekPage's private `resolveStart`, lifted here in mezo-d20.6.10 so every Heti page —
+ *  hub and detail alike — inherits the same week the same way). */
+export function resolveWeekStart(raw: string | null | undefined): string {
+  if (raw && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const [y, m, d] = raw.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    if (dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d && dt.getDay() === 1) return raw
+  }
+  return mondayIso()
+}

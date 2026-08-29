@@ -12,17 +12,24 @@ export type { MeWeek, MeWeekDay }
 export interface MeWeekBootstrap {
   week: MeWeek | null
   mode: 'mock' | 'live'
+  /** The real-mode fetch has not resolved yet — the Heti surfaces render a skeleton, not an
+   *  empty week (mezo-d20.6.10; the hook used to throw this away, so a cold load looked like
+   *  "no data" — a lie). Always false in mock mode, where the seed is synchronous. */
+  isPending: boolean
+  /** The fetch FAILED — a retryable error state, which is not the same as "nothing logged". */
+  isError: boolean
+  retry: () => void
 }
 
-const REAL_EMPTY: MeWeekBootstrap = { week: null, mode: 'live' }
+const REAL_EMPTY = { week: null, mode: 'live' } as const
 
 /** `startIso` — ISO Monday of the week to load. */
 export function useMeWeek(startIso: string): MeWeekBootstrap {
-  const { data } = useDualQuery<MeWeekBootstrap>({
+  const { data, isPending, isError, refetch } = useDualQuery<{ week: MeWeek | null; mode: 'mock' | 'live' }>({
     queryKey: ['meWeek', startIso],
     mockData: { week: mockMeWeek(startIso), mode: 'mock' },
     realFetch: async () => ({ week: await meWeekApi.get(startIso), mode: 'live' }),
     realEmpty: REAL_EMPTY,
   })
-  return data
+  return { ...data, isPending, isError, retry: refetch }
 }
