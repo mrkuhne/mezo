@@ -4724,12 +4724,14 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 @media (prefers-reduced-motion: reduce) {
   .mz-play .enh-gtrack .fill { animation: none; }
   .enh-goalcard, .enh-band { transition: none; }
+}
+
 /* ── Cél page re-face (mezo-d20.6.2) — prototype en-body #page-cel ×1.18:
    the guard-chip goal card (coral wash, shared .track vocabulary + the identity
    quote), the engine's recept as amber/sage segment tiles (white mcells + a
    rationale footer), the gym/futás/röplabda timeline lanes + the ⚠ fedezetlen
    gap chip, and the dashed Mesociklus/Futóblokk plan slots. Lane/bar accents
-   reuse the pre-existing --tag-*/--wash-* domain tokens (GoalTimeline's prior
+   reuse the pre-existing --tag- and --wash- domain tokens (the GoalTimeline prior
    face), not new --mz-* surfaces, so only structural rules land here. ── */
 .gc-card { border-radius: 20px; padding: 12px 14px; text-align: left; font-family: inherit;
   border: none; width: 100%; cursor: pointer; background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
