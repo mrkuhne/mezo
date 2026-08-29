@@ -1410,6 +1410,7 @@ mezo:
   train:
     gym-default-minutes: 60        # gym schedule slots carry no duration
     run-default-minutes: 45        # interval runs have no single continuous duration
+    sport-session-max-span-days: 400   # widest inclusive from..to window the sport-session log accepts
     met:                           # MET by kind — MIRROR of FE fuelConfig.MET_BY_KIND (drift-guard test)
       gym: 6.0
       sport: 4.5
