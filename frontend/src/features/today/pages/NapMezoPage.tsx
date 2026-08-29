@@ -9,16 +9,22 @@
 // stays in-tree for its remaining callers; only the hub tile now
 // navigates here instead of opening it.
 // ============================================================
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ClaySpot, type ClaySpotName } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { RefTag } from '@/shared/ui/RefTag'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { localDateString } from '@/shared/lib/dates'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
-import { useCompanionFeed, useFeedback, useTodayScenario, resolveBriefing } from '@/data/hooks'
+import { useCompanionFeed, useFeedback, useTodayScenario, resolveBriefing, useSleepGoal } from '@/data/hooks'
 import { buildMezoMessages, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
+import { deriveNudges, toNudgeMessage } from '@/features/today/logic/needsNudges'
+import { markNudgeShown, shownNudges } from '@/features/today/logic/nudgeSeen'
+import { markMessagesSeen } from '@/shared/lib/seenMessages'
+import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
+import { useNeeds } from '@/features/today/logic/useNeeds'
 
 /** Prototype: each message head carries a daypart clay spot (s-reggel / s-este /
  *  s-energia). Our messages carry a KIND, not a spot — this is the visual mapping. */
@@ -36,14 +42,41 @@ export function NapMezoPage() {
   const feed = useCompanionFeed()
   const feedIds = useMemo(() => feed.map((m) => m.id), [feed])
   const feedback = useFeedback('feed_message', feedIds)
-  const messages = useMemo(
-    () => buildMezoMessages({ feed, demoBriefing: resolveBriefing(scenario.dayState) }),
-    [feed, scenario.dayState],
+  // Életjel küszöb-nudge-ok (mezo-dhzk Task 5) — a `needsNudges.ts` termelője a Design 2.0
+  // takarításban gazdátlanul maradt (`mezoMessages`'s `nudges` paraméterének nem volt hívója,
+  // mezo-d20.11 audit): a szál gazdája ez az oldal, tehát a kézbesítés is ide tartozik. A
+  // FRISS nudge-okat egyszer elmentjük, hogy egy ring naponta legfeljebb egyszer szóljon.
+  const date = localDateString()
+  const tick = useMinuteTick()
+  const needs = useNeeds(tick)
+  const { goal: sleepGoal } = useSleepGoal()
+  const nudgeEntries = useMemo(
+    () => (needs.isPending
+      ? []
+      : deriveNudges(needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, shownNudges(date))),
+    [needs.isPending, needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, date],
   )
+  useEffect(() => {
+    for (const n of nudgeEntries) if (n.fresh) markNudgeShown(date, n.key, n.at)
+  }, [nudgeEntries, date])
+
+  const messages = useMemo(
+    () => buildMezoMessages({
+      feed,
+      demoBriefing: resolveBriefing(scenario.dayState),
+      nudges: nudgeEntries.map(toNudgeMessage),
+    }),
+    [feed, scenario.dayState, nudgeEntries],
+  )
+
+  // Prototype: „a Mezo-csempe olvasatlan-jelzése megnyitáskor törlődik" — the thread's last
+  // id is the read watermark the hub tile's unread counter reads back (shared/lib/seenMessages).
+  const lastId = messages.length > 0 ? messages[messages.length - 1].id : null
+  useEffect(() => { if (lastId) markMessagesSeen(date, lastId) }, [date, lastId])
 
   return (
     <MozaikPage tone="coral">
-      <PageHead onBack={() => navigate(-1)} />
+      <PageHead onBack={() => navigate(-1)} label="‹ Ma" />
       {/* Prototype hero order is orb → name → sub (no bignum), so the orb hero is
           composed from the mz-page-hero classes rather than PageHero's nm/row/sb recipe. */}
       <div className="mz-page-hero orb">
