@@ -4636,6 +4636,19 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   .mem-dash { animation: none; }
 }
 
+/* ── Napló re-face (mezo-d20.6.6) — prototype en-body.html #page-naplo ×1.18.
+      The gratitude tile and the gold decision card reuse the Előrejelzések/Kísérletek family's
+      `.mzp-pred`/`.mzp-top`/`.mzp-pic`/`.mzp-stch` and the Mezo hub's `.mzh-deccard`/`.mzh-dechead`/
+      `.mzh-decrow`/`.mzh-cta`/`.mzh-ghost`/`.mzh-decdone` verbatim (same tokens, same gold ring,
+      same sage acknowledgement) — only the two small pieces below are new: the gratitude tile's
+      text column, and the decision quote's own type size. The month-grouped note rows reuse the
+      Memória Napló segment's `.mem-daycard`/`.mem-dl`/`.mem-bd` — the identical "day label + one
+      paragraph" card the nightly journal embed already renders there. ── */
+.mzj-grow { flex: 1; min-width: 0; }
+.mzj-gtitle { font-size: 12px; font-weight: 700; }
+.mzj-gsub { font-size: 10px; color: var(--mz-ink-soft); margin-top: 1px; }
+.mzj-decq { font-size: 12.5px; font-weight: 400; line-height: 1.5; margin-top: 6px; color: var(--text-primary); }
+
 /* ============================================================
    Today · iOS list language (mezo-e26w)
    Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
