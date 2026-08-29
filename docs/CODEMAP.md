@@ -621,7 +621,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MealOverridesServiceIT`, `MealRepositoryIT`, `MealServiceIT`, `NutritionTargetsPropertiesIT`,
     `RecipeLogsServiceIT`, `WaterLogApiIT`
   - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryItemPopulator`, `RecipePopulator`,
-    `TrainPopulator`, `WaterLogPopulator`
+    `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
 
 ### medication
 
