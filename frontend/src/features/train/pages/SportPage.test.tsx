@@ -50,6 +50,43 @@ test('switching to Napló shows the stag-sport tag on each session row', async (
   expect(tags[0]).toHaveClass('stag', 'stag-sport')
 })
 
+// Load-bearing fix (mezo-d20.3.4): the session card previously hardcoded a
+// stag-sport RÖPI tag on every row, mislabeling cross/TRX sessions.
+test('real mode Napló renders a kind-correct tag for a cross session', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'd1f3a0e2-0000-4000-8000-000000000077', sport: 'cross', date: '2026-06-01', time: '07:30', duration: 30, rounds: 5, rpe: 6 },
+      ]),
+    ),
+  )
+  renderView()
+  await userEvent.click(await screen.findByRole('button', { name: 'Napló' }))
+  const tag = await screen.findByText('CROSS')
+  expect(tag).toHaveClass('stag', 'stag-cross')
+  expect(screen.queryByText('RÖPI')).not.toBeInTheDocument()
+  // cross sessions show Körök, not Setek.
+  expect(screen.getByText('körök')).toBeInTheDocument()
+  expect(screen.getByText('5')).toBeInTheDocument()
+})
+
+// Inline "Logold ›" on today's slot (README checklist) preselects that
+// slot's sport when opening the log sheet.
+test('real mode: today\'s slot shows an inline Logold chip that preselects the sport', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+      { id: 'sl-today', dayOfWeek: todayIdx, time: '18:00', durationMin: 60, kind: 'training', sport: 'trx', location: 'Life1 Corvin' },
+    ])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+  )
+  renderView()
+  await userEvent.click(await screen.findByRole('button', { name: 'Logold ›' }))
+  expect(await screen.findByText('Sport log · TRX')).toBeInTheDocument()
+})
+
 test('switching to Cross-load shows the read tool chip', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'Cross-load' }))
