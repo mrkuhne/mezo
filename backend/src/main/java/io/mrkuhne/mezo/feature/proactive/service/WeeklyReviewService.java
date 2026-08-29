@@ -27,7 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
  * returns the row AS-IS (no lazy generation — the WeeklyReviewJob owns that); {@code stale} is a
  * best-effort probe over the OTHER aggregates a review draws from; regenerate soft-deletes the
  * live row (if any) and re-runs {@link WeeklyReviewGenerator}, which then sees no existing row
- * and does its normal gather-and-call.
+ * and does its normal gather-and-call — archiving the week's still-open knowledge candidates
+ * alongside it, while decided ones survive untouched (mezo-d20.7.6).
  */
 @Slf4j
 @Service
@@ -44,6 +45,7 @@ public class WeeklyReviewService {
     private final SleepLogRepository sleepLogRepository;
     private final CheckInRepository checkInRepository;
     private final MealRepository mealRepository;
+    private final WeeklyLessonService weeklyLessonService;
 
     public Optional<WeeklyReviewEntity> find(UUID userId, LocalDate weekStart) {
         return weeklyReviewRepository.findByCreatedByAndWeekStart(userId, weekStart);
@@ -64,6 +66,10 @@ public class WeeklyReviewService {
                     SystemMessage.error("WEEKLY_REVIEW_WEEK_NOT_COMPLETE").build(), HttpStatus.CONFLICT);
         }
         find(userId, weekStart).ifPresent(weeklyReviewRepository::delete);
+        // mezo-d20.7.6: the STILL-OPEN weekly candidates are archived with the review they came
+        // with; the DECIDED ones stay — a regeneration must never silently undo a user decision
+        // (nor orphan the knowledge fact an accept already minted).
+        weeklyLessonService.archiveOpen(userId, weekStart);
         WeeklyReviewEntity fresh = generator.generate(userId, weekStart);
         if (fresh == null) {
             throw notFound();

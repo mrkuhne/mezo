@@ -8,10 +8,12 @@ import io.mrkuhne.mezo.api.dto.FeedRef;
 import io.mrkuhne.mezo.api.dto.MemoirAnchor;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.PredictionResponse;
+import io.mrkuhne.mezo.api.dto.WeeklyLessonResponse;
 import io.mrkuhne.mezo.api.dto.WeeklyReviewDayNote;
 import io.mrkuhne.mezo.api.dto.WeeklyReviewHighlight;
 import io.mrkuhne.mezo.api.dto.WeeklyReviewResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
+import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeRefsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
@@ -53,6 +55,11 @@ public interface ProactiveMapper {
     WeeklyReviewDayNote toWeeklyReviewDayNote(WeeklyReviewDayNotesEnvelope.DayNote note);
 
     WeeklyReviewHighlight toWeeklyReviewHighlight(WeeklyReviewHighlightsEnvelope.Highlight highlight);
+
+    /** "A hét tanulságai" (mezo-d20.7.6): the weekly read of a companion {@code learned_fact} row.
+     *  Field-compatible with {@code CompanionMapper.toFactCandidateResponse} by contract — one
+     *  entity, two surfaces (the Tudástár inbox and the week's settled list). */
+    WeeklyLessonResponse toWeeklyLessonResponse(LearnedFactEntity entity);
 
     ExperimentResponse toExperimentResponse(ExperimentEntity entity);
 

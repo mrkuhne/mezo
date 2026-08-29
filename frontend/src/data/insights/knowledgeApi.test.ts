@@ -27,6 +27,9 @@ describe('knowledgeApi wire mapping', () => {
       id: 'c-9',
       candidateText: 'Reggel edz szívesen',
       category: 'train',
+      // required since mezo-d20.7.6 — a candidate now says whether chat or the weekly
+      // review proposed it (the promoted knowledge fact inherits it)
+      source: 'chat',
       userDecision: null,
       refinedText: null,
       promotedFactId: null,
