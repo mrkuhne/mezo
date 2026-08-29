@@ -45,9 +45,14 @@ import tools.jackson.databind.ObjectMapper;
  * gather ({@link MeWeekService#week(UUID, LocalDate)}'s day rows + the week's confirmed pattern
  * events + newly-created facts + active life events + the week's memoir/predictions, plus a
  * numbered anchor-candidate list) → ONE SMART-tier call with a strict-JSON contract
- * {@code {summary, dayNotes, anchorIndexes}} — highlights are model-SELECTED from code-collected
- * candidates, never invented. Empty week (no day carries any logged data) or an unusable answer
- * ⇒ NO row. Existing row ⇒ returned untouched, no second LLM call.
+ * {@code {summary, dayNotes, anchorIndexes, candidateFacts}} — highlights are model-SELECTED from
+ * code-collected candidates, never invented. Empty week (no day carries any logged data) or an
+ * unusable answer ⇒ NO row. Existing row ⇒ returned untouched, no second LLM call.
+ *
+ * <p>{@code candidateFacts} is the round's one WRITE beyond the review row + its notification
+ * (mezo-d20.7.6): the week's lessons, handed to {@link WeeklyLessonService} which bounds-checks,
+ * dedupes and caps them onto the same {@code learned_fact} candidate flow chat extraction feeds.
+ * No usable lesson ⇒ no candidate row, same no-placeholder rule as the review itself.
  */
 @Slf4j
 @Service
@@ -64,9 +69,16 @@ public class WeeklyReviewGenerator {
             + "Elemezd Daniel hetét KIZÁRÓLAG a megadott adatokból: mi ment jól, mi tört meg, milyen "
             + "összefüggés látszik a napok között. Társ-hangnem, nem jelentés; számot kitalálni tilos; "
             + "gyógyszer-adagolást érintő javaslat tilos. Minden adatot tartalmazó naphoz írj 1-2 mondatos "
-            + "megjegyzést. Válaszolj KIZÁRÓLAG szigorú JSON-nal: {\"summary\": \"a heti elemzés szövege\", "
+            + "megjegyzést. A candidateFacts a hét TANULSÁGAI: tartós, Danielre vonatkozó megállapítás, "
+            + "amit a napokon átnyúló összefüggésből olvasol ki. Jelöltet KIZÁRÓLAG a fent megadott napi "
+            + "adatokból vagy minta-eseményekből következtethetsz — külső tudásból, feltételezésből vagy "
+            + "egyetlen napból nem —, és az evidence mezőben nevezd meg, MIRE épül (mely napok, hány nap, "
+            + "melyik minta). Ha nincs ilyen összefüggés, a candidateFacts üres tömb; kitalált jelölt tilos. "
+            + "Válaszolj KIZÁRÓLAG szigorú JSON-nal: {\"summary\": \"a heti elemzés szövege\", "
             + "\"dayNotes\": [{\"date\": \"YYYY-MM-DD\", \"note\": \"...\"}], "
-            + "\"anchorIndexes\": [a felhasznált HORGONY-JELÖLTEK sorszámai]}";
+            + "\"anchorIndexes\": [a felhasznált HORGONY-JELÖLTEK sorszámai], "
+            + "\"candidateFacts\": [{\"text\": \"...\", \"category\": \"train|fuel|health|life\", "
+            + "\"evidence\": \"mire épül\"}]}";
 
     private final WeeklyReviewRepository weeklyReviewRepository;
     private final MeWeekService meWeekService;
@@ -80,6 +92,7 @@ public class WeeklyReviewGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final AppNotificationEmitter appNotificationEmitter;
+    private final WeeklyLessonService weeklyLessonService;
 
     public record WeeklyReviewGather(String payload, List<Highlight> candidates) {
     }
@@ -87,7 +100,11 @@ public class WeeklyReviewGenerator {
     record ParsedDayNote(String date, String note) {
     }
 
-    record ParsedReview(String summary, List<ParsedDayNote> dayNotes, List<Integer> anchorIndexes) {
+    record ParsedCandidate(String text, String category, String evidence) {
+    }
+
+    record ParsedReview(String summary, List<ParsedDayNote> dayNotes, List<Integer> anchorIndexes,
+            List<ParsedCandidate> candidateFacts) {
     }
 
     @Transactional
@@ -119,6 +136,13 @@ public class WeeklyReviewGenerator {
                 resolveHighlights(parsed.anchorIndexes(), gather.candidates())));
         review.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         WeeklyReviewEntity saved = weeklyReviewRepository.saveAndFlush(review);
+        // "A hét tanulságai" (mezo-d20.7.6): the round PROPOSES onto the existing candidate flow —
+        // bounds-checked, deduped and capped inside the service, and deliberately WITHOUT a
+        // per-candidate FACT_CANDIDATE notification (the WEEKLY_REVIEW_READY below already speaks).
+        int lessons = weeklyLessonService.propose(userId, weekStart, toProposals(parsed.candidateFacts()));
+        if (lessons > 0) {
+            log.debug("Weekly review {} for {} proposed {} knowledge candidate(s)", weekStart, userId, lessons);
+        }
         appNotificationEmitter.emit(userId, AppNotificationKind.WEEKLY_REVIEW_READY,
                 "Elkészült a heti elemzés",
                 firstSentence(saved.getSummary()),
@@ -258,6 +282,16 @@ public class WeeklyReviewGenerator {
             resolved.add(new DayNote(date, note.note()));
         }
         return resolved;
+    }
+
+    private static List<WeeklyLessonService.LessonProposal> toProposals(List<ParsedCandidate> candidates) {
+        if (candidates == null) {
+            return List.of();
+        }
+        return candidates.stream()
+                .filter(c -> c != null)
+                .map(c -> new WeeklyLessonService.LessonProposal(c.text(), c.category(), c.evidence()))
+                .toList();
     }
 
     private List<Highlight> resolveHighlights(List<Integer> indexes, List<Highlight> candidates) {
