@@ -15,11 +15,13 @@
 // guarded below).
 // ============================================================
 import { useState } from 'react'
-import { useStackDay, useStackActions, useProtocolActions, useFuelDay, useRecipes } from '@/data/hooks'
+import { useStackDay, useStackActions, useProtocolActions, useFuelDay, useRecipes, useFuelWeek } from '@/data/hooks'
 import { addDays, huWeekdayFull, localDateString } from '@/shared/lib/dates'
 import { matchMealsToStack } from '@/features/fuel/logic/matchMealsToStack'
+import { isSlotDone, StackDayArc } from '@/features/fuel/components/StackDayArc'
+import { StackNextCard } from '@/features/fuel/components/StackNextCard'
 import type { StackDayEntry } from '@/features/fuel/logic/projectStackDay'
-import type { StackZoneKey } from '@/data/types'
+import type { StackZoneKey, SupplementType } from '@/data/types'
 import { StackZoneCard } from '@/features/fuel/components/StackZoneCard'
 import { StackMealMatch } from '@/features/fuel/components/StackMealMatch'
 import { StackItemSheet } from '@/features/fuel/sheets/StackItemSheet'
@@ -33,10 +35,11 @@ import { Icon } from '@/shared/ui/Icon'
 const PRIMARY_REASON_ZONES: StackZoneKey[] = ['pre_workout', 'post_workout', 'evening']
 
 export function FuelStackPage() {
-  const { slots, occurrences, dayType, wake, bed } = useStackDay()
+  const { slots, occurrences, stash, dayType, wake, bed } = useStackDay()
   const { logIntake, undoIntake } = useStackActions()
   const { addItem } = useProtocolActions()
   const { recipes } = useRecipes()
+  const { weeklyStats } = useFuelWeek()
 
   const today = localDateString()
   const yesterday = addDays(today, -1)
@@ -59,6 +62,21 @@ export function FuelStackPage() {
     entry.taken
       ? undoIntake(entry.pantryItemId, entry.persistedZone)
       : logIntake(entry.pantryItemId, entry.persistedZone, entry.dose)
+
+  const kindOf = (entry: StackDayEntry): SupplementType | undefined =>
+    stash.find(s => s.id === entry.pantryItemId)?.type
+
+  // Stat strip + timeline derivation — recomputed every render so a single tick (log/undo) or a
+  // freshly-added occurrence live-updates the hero number, the strip, the arc AND the mosaic in
+  // one pass (there is no separate "done" cache to fall out of sync).
+  const allEntries = slots.flatMap(s => s.entries)
+  const applicable = allEntries.filter(e => !e.skippedToday)
+  const takenCount = applicable.filter(e => e.taken).length
+  const totalCount = applicable.length
+  const nextIndex = slots.findIndex(s => !isSlotDone(s))
+  const nextSlot = nextIndex >= 0 ? slots[nextIndex] : null
+  const adherence = weeklyStats.supplementsAdherence
+  const now = new Date()
 
   return (
     <>
@@ -94,10 +112,65 @@ export function FuelStackPage() {
           </div>
         </div>
       ) : (
-        slots.map(slot => (
-          // key carries the time too — the stim-aware split (mezo-j6c9) can emit two pre_workout slots
-          <StackZoneCard key={`${slot.zone}-${slot.time}`} slot={slot} onToggleTaken={onToggleTaken} onOpenEntry={setOpenEntry} />
-        ))
+        <>
+          {/* Stat strip — bevéve · következő · e heti adherencia · 📌 kézi */}
+          <div style={{ padding: '0 24px 12px' }}>
+            <div className="mz-statstrip">
+              <div className="mz-statcell">
+                <b>{takenCount}/{totalCount}</b>
+                <small>bevéve ma</small>
+              </div>
+              <div className="mz-statcell">
+                <b>{nextSlot ? nextSlot.time : '✓'}</b>
+                <small>következő</small>
+              </div>
+              <div className="mz-statcell">
+                <b>{adherence == null ? '—' : `${adherence}%`}</b>
+                <small>e heti adherencia</small>
+              </div>
+              <div className="mz-statcell">
+                <b>{pinnedCount} 📌</b>
+                <small>kézi rögzítés</small>
+              </div>
+            </div>
+          </div>
+
+          {/* Day-arc timeline */}
+          <div style={{ padding: '0 24px 12px' }}>
+            <StackDayArc slots={slots} wake={wake} bed={bed} nextIndex={nextIndex} now={now} />
+          </div>
+
+          {/* Featured KÖVETKEZŐ card, or a quiet all-done state */}
+          <div style={{ padding: '0 24px 12px' }}>
+            {nextSlot ? (
+              <StackNextCard slot={nextSlot} kindOf={kindOf} onToggleTaken={onToggleTaken} onOpenEntry={setOpenEntry} />
+            ) : (
+              <div className="card stk-done">
+                <span className="stk-done-check" aria-hidden="true">✓</span>
+                <div>
+                  <div className="stk-done-title">A mai stack kész</div>
+                  <div className="stk-done-sub">Mind a {totalCount} bevétel megvan — szép ritmus.</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Remaining zones — 2-column mini-mosaic, done zones washed sage */}
+          {slots.length - (nextSlot ? 1 : 0) > 0 && (
+            <div style={{ padding: '0 24px 12px' }}>
+              <div className="stk-mosaic">
+                {slots.map((slot, i) => {
+                  if (i === nextIndex) return null
+                  return (
+                    <div key={`${slot.zone}-${slot.time}`} className={`stk-mini${isSlotDone(slot) ? ' done' : ''}`}>
+                      <StackZoneCard slot={slot} onToggleTaken={onToggleTaken} onOpenEntry={setOpenEntry} />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* + Hozzáadás a Kamrából */}
