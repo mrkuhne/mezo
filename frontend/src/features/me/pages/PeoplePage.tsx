@@ -1,5 +1,17 @@
+// ============================================================
+// Mezo · PeoplePage — Emberek re-face (mezo-d20.6.7)
+// Source of truth: docs/design_2.0/prototypes/src/en-body.html #page-emberek
+// (values ×1.18). Still a MeSection tab child (F5.1 hub hasn't landed — the
+// old .pghead-np header stays, matching every other /me/* sibling); the
+// re-face is scoped to the BODY: 2-col washed rose person tiles with an
+// affect-ring avatar (ring fill = the person's own latest affectTrend
+// reading, never a fabricated percentage), and washed mention tiles
+// carrying the FIGYELEM badge + the `kapcsolódik` pattern-tie chip verbatim.
+// Data hooks, mutations and the Mind/Hét/Jelölt filter contract: unchanged.
+// ============================================================
 import { useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { usePeople } from '@/data/hooks'
 import { PersonCard } from '@/features/me/components/PersonCard'
 import { MentionRow } from '@/features/me/components/MentionRow'
@@ -50,49 +62,51 @@ export function PeoplePage() {
         </button>
       </div>
 
-      {/* People grid */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="secthead-np">
-          <h3>Aktív kör · {people.length}</h3>
-          <span>tap → részletek</span>
-        </div>
-        <div className="col gap-sm">
-          {people.map(p => (
-            <PersonCard key={p.id} person={p} onTap={() => setDetailPerson(p)} />
-          ))}
-        </div>
-      </div>
-
-      {/* Mentions feed */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="secthead-np">
-          <h3>Mit naplóztam · friss</h3>
-          <div className="row gap-xs">
-            {FILTERS.map(f => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className="chip"
-                style={filter === f.id
-                  ? { fontSize: 9, padding: '3px 8px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
-                  : { fontSize: 9, padding: '3px 8px' }}
-              >
-                {f.label}
-              </button>
+      <EntranceGroup>
+        {/* People grid */}
+        <div style={{ padding: '0 24px 16px' }}>
+          <div className="secthead-np">
+            <h3>Aktív kör · {people.length}</h3>
+            <span>tap → részletek</span>
+          </div>
+          <div className="ppl-grid">
+            {people.map((p, i) => (
+              <PersonCard key={p.id} person={p} delayMs={i * 50} onTap={() => setDetailPerson(p)} />
             ))}
           </div>
         </div>
-        <div className="col gap-sm">
-          {visible.slice(0, 8).map(m => (
-            <MentionRow key={m.id} mention={m} person={people.find(p => p.id === m.person_id)} />
-          ))}
-          {visible.length === 0 && (
-            <div className="card" style={{ padding: 18, textAlign: 'center' }}>
-              <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ebben a szűrésben.</span>
+
+        {/* Mentions feed */}
+        <div style={{ padding: '0 24px 16px' }}>
+          <div className="secthead-np">
+            <h3>Mit naplóztam · friss</h3>
+            <div className="row gap-xs">
+              {FILTERS.map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setFilter(f.id)}
+                  className="chip"
+                  style={filter === f.id
+                    ? { fontSize: 9, padding: '3px 8px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
+                    : { fontSize: 9, padding: '3px 8px' }}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
-          )}
+          </div>
+          <div>
+            {visible.slice(0, 8).map((m, i) => (
+              <MentionRow key={m.id} mention={m} delayMs={i * 40} />
+            ))}
+            {visible.length === 0 && (
+              <div className="card" style={{ padding: 18, textAlign: 'center' }}>
+                <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ebben a szűrésben.</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </EntranceGroup>
 
       {logOpen && (
         <PersonLogSheet

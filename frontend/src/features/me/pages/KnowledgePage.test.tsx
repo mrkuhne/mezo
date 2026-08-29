@@ -64,3 +64,16 @@ test('lifts the profile node out of the Kapcsolatok groups into its own section'
   // exactly once: it must not ALSO appear under the "Belátások" group
   expect(screen.getAllByText('Rólad tanultam')).toHaveLength(1)
 })
+
+// Mozaik re-face (mezo-d20.6.7): the summary tile + node/profile tiles wear the
+// Tudástár .mz-facttile recipe, per-kind washed (mezo-d20.5.5's shared vocabulary).
+test('the summary band and node tiles wear the Mozaik wash tiles', () => {
+  const { container } = renderPage()
+  expect(container.querySelector('.tud-summary')).toBeInTheDocument()
+  // the seeded PATTERN node ("Késői evés rontja az alvást") washes sage
+  const patternTile = screen.getByText('Késői evés rontja az alvást').closest('[data-graph-node-card]')
+  expect(patternTile).toHaveClass('mz-w-sage')
+  // the profile node reuses the same tile primitive, uncolored
+  const profileTile = screen.getByText('Rólad tanultam').closest('[data-profile-node-card]')
+  expect(profileTile).toHaveClass('mz-facttile')
+})
