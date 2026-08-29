@@ -53,6 +53,7 @@ import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
 import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
+import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -195,9 +196,11 @@ export const routes: RouteObject[] = [
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
-      // WeekPage. Its four view tiles open /me/week/{elemzes,tanulsagok,napok,felfedezesek},
-      // registered by their own slices.
+      // WeekPage. Its four view tiles open full-screen siblings, NOT child routes: the
+      // Heti detail pages take the same "tile → own page" idiom as the Nap/Fuel/Mezo tabs.
+      // The browsed week rides along in `?start=` (absent = the current week).
       { path: 'me/week', element: <WeekHubPage /> },
+      { path: 'me/week/elemzes', element: <WeekAnalysisPage /> },
       { path: 'me/goals', element: <GoalsPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },

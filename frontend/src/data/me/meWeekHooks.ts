@@ -14,10 +14,13 @@ export interface MeWeekBootstrap {
   mode: 'mock' | 'live'
 }
 
-/** ADDITIVE (mezo-d20.6.10): the query's own liveness, so a screen can tell "still
- *  loading" apart from "resolved empty" and offer a retry on a genuinely failed fetch
- *  instead of a silently blank week. Existing `const { week } = useMeWeek(...)` callers
- *  are untouched — the bootstrap fields keep their names and meanings. */
+/** ADDITIVE (mezo-d20.6.10): the query's own liveness, so a screen can tell "still loading"
+ *  and "the fetch FAILED" apart from the honest "resolved, and the week is empty" — without
+ *  these three, `realEmpty` reads identically for all three cases and a failed fetch shows as
+ *  a silently blank week. Same additive treatment `useLlmCall`/`useDecisions` already carry.
+ *  Existing `const { week } = useMeWeek(...)` callers are untouched — the bootstrap fields
+ *  keep their names and meanings. Mock mode never pends (`initialData`) and never rejects,
+ *  so both flags are always false there. */
 export interface MeWeekQuery extends MeWeekBootstrap {
   isPending: boolean
   isError: boolean

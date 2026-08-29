@@ -261,6 +261,17 @@
   --mz-sc-low-1: #F0A88A; --mz-sc-low-2: #D2704C; --mz-sc-low-ring: #D2704C; --mz-sc-low-ink: #D2704C;
   --mz-sc-non-ink: #A2958A;
   --mz-wk-cur-ring: rgba(138, 118, 204, 0.75);
+
+  /* Heti elemzés-oldal (mezo-d20.6.10) — en-body.html #page-hanaly `.revcard` /
+     `.float3d` / `.hlch` values, shadows ×1.18. `Minta`/`Emlék` reuse the lav/rose
+     cell inks (identical hexes); only the gold + sky kickers need their own. */
+  --mz-hl-gold: #A8801F;
+  --mz-hl-sky: #33749C;
+  --mz-wka-revbd: #8A76CC;
+  --mz-wka-revbg: linear-gradient(150deg, #F3F0FC, #FDFCFF);
+  --mz-wka-revshadow: 0 24px 40px -17px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-wka-cardshadow: 0 21px 38px -19px rgba(43, 33, 24, 0.32), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-wka-hlshadow: 0 5px 12px -7px rgba(43, 33, 24, 0.3);
   --mz-fh-now-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
 
   /* Heti hub-csempék (mezo-d20.6.10) — en-body.html hub() inline washes/glows verbatim.
@@ -475,6 +486,15 @@
   --mz-sc-low-ring: var(--dv-coral); --mz-sc-low-ink: var(--dv-coral);
   --mz-sc-non-ink: var(--text-muted);
   --mz-wk-cur-ring: color-mix(in srgb, var(--dv-lav) 75%, transparent);
+
+  /* Heti elemzés-oldal — dark ("Pulse") derivations on the dv ramp */
+  --mz-hl-gold: var(--dv-amber);
+  --mz-hl-sky: var(--dv-sky);
+  --mz-wka-revbd: var(--dv-lav);
+  --mz-wka-revbg: var(--mz-wash-lav);
+  --mz-wka-revshadow: var(--mz-shadow);
+  --mz-wka-cardshadow: var(--mz-shadow);
+  --mz-wka-hlshadow: none;
   --mz-fh-now-shadow: var(--mz-shadow-most);
 
   /* Heti hub-csempék — dark ("Pulse") derivations on the dv ramp */
@@ -5925,6 +5945,87 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 @media (prefers-reduced-motion: reduce) {
   .wkh-skel { animation: none; }
   .wkh-wide, .wkh-sm { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Heti · elemzés-oldal (mezo-d20.6.10)
+   Source: prototypes/src/en-body.html #page-hanaly — `.dcols` (Napi pontszám
+   columns), `.revcard` + `.hlrow` / `.hlch` (the analysis card and its „amire
+   épült" anchor chips), `.chatch` (the pill actions) and the gold hand-off
+   strip. Every px is the prototype's ×1,18 (330 → 390px frame); motion
+   timings are verbatim, unscaled. The band gradients and the trendup keyframe
+   come from the Heti foundation block above — never redeclared here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.wka-headwk { margin-left: auto; }
+.wka-heroU { font-size: 17px; font-weight: 300; color: var(--mz-ink-soft); }
+
+/* ── Napi pontszám kártya ── */
+.wka-card { border-radius: 21px; padding: 12px 14px 11px; margin-bottom: 12px;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-wka-cardshadow); }
+.wka-cardhead { display: flex; align-items: center; gap: 8px; }
+.wka-hint { margin-left: auto; font-size: 8px; color: var(--mz-ink-mut); }
+
+.wka-dcols { display: flex; gap: 6px; align-items: flex-end; height: 92px; margin-top: 7px; }
+.wka-col { flex: 1; display: grid; align-content: end; justify-items: center; gap: 4px;
+  background: none; border: 0; padding: 0; font-family: inherit; cursor: pointer; }
+.wka-col .bar { width: 100%; border-radius: 6px 6px 4px 4px; min-height: 5px;
+  transform: scaleY(0); transform-origin: bottom; }
+.mz-play .wka-col .bar { animation: wk-trendup 0.6s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+  animation-delay: var(--d, 0ms); }
+.wka-col .vl { font-size: 8px; font-weight: 800; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.wka-col .dw { font-size: 8px; font-weight: 800; color: var(--mz-ink-mut); letter-spacing: 0.04em; }
+.wka-col.is-today .vl, .wka-col.is-today .dw { color: var(--mz-cell-coral-ink); }
+.wka-col.is-future { opacity: 0.4; }
+
+/* ── Elemzés-kártya ── */
+.wka-rev { border: 1px solid var(--mz-wka-revbd); border-radius: 22px; padding: 14px 15px; margin-bottom: 12px;
+  background: var(--mz-wka-revbg); box-shadow: var(--mz-wka-revshadow); }
+.wka-revhead { display: flex; align-items: center; gap: 8px; }
+.wka-revlab { color: var(--mz-cell-lav-ink); }
+.wka-stamp { margin-left: auto; font-size: 8px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.wka-prose { font-size: 12px; font-weight: 300; line-height: 1.62; margin-top: 7px; color: var(--text-primary); }
+.wka-ghost { font-size: 11px; font-weight: 300; line-height: 1.55; margin-top: 7px; color: var(--mz-ink-soft); }
+.wka-hlab { font-size: 8px; margin-top: 12px; }
+.wka-hlrow { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
+.wka-hlch { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border-radius: 11px;
+  padding: 5px 9px; font-size: 10px; font-weight: 600; color: var(--text-primary); text-align: left;
+  font-family: inherit; cursor: pointer; background: var(--mz-chipbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: var(--mz-wka-hlshadow); }
+.wka-hlch.is-inert { cursor: default; }
+.wka-hlch span { text-align: left; line-height: 1.3; }
+.wka-hlch em { display: block; font-style: normal; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--hc, var(--mz-ink-mut)); margin-bottom: 1px; }
+.wka-hlch.tone-lav  { --hc: var(--mz-cell-lav-ink); }
+.wka-hlch.tone-gold { --hc: var(--mz-hl-gold); }
+.wka-hlch.tone-sky  { --hc: var(--mz-hl-sky); }
+.wka-hlch.tone-rose { --hc: var(--mz-cell-rose-ink); }
+
+.wka-revfoot { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.wka-chatch { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px;
+  border-radius: 999px; padding: 6px 13px; font-size: 10px; font-weight: 700; font-family: inherit;
+  color: var(--mz-cell-lav-ink); background: var(--mz-chipbg); cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--mz-cell-lav-ink) 30%, transparent); }
+.wka-chatch:disabled { opacity: 0.55; cursor: default; }
+.wka-fb { margin-left: auto; }
+
+/* ── Átvezető sáv a tanulságokhoz ── */
+.wka-lessgo { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  border-radius: 21px; padding: 13px 14px; font-family: inherit; cursor: pointer;
+  background: var(--mz-wash-gold); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-gold); transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.wka-lessgo:active { transform: scale(0.96); }
+.wka-lessgo .grow { display: grid; gap: 2px; flex: 1; }
+.wka-lessgo .lb { font-size: 11px; font-weight: 700; color: var(--mz-hl-gold); }
+.wka-lessgo .sub { font-size: 9px; color: var(--mz-ink-soft); line-height: 1.35; }
+.wka-lessgo .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+
+.wka-skels { display: grid; gap: 11px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .wka-col .bar { animation: none; transform: none; }
+  .wka-lessgo { transition: none; }
 }
 
 /* ============================================================
