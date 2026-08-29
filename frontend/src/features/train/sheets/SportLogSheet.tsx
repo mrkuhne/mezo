@@ -148,6 +148,7 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
   const [rounds, setRounds] = useState(6)
   const [rpe, setRpe] = useState(7)
   const [shoulder, setShoulder] = useState(6)
+  const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const isVolleyball = kind === 'volleyball'
 
@@ -213,6 +214,30 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
                 color={shoulder >= 7 ? 'var(--warning)' : 'var(--text-secondary)'}
               />
             )}
+            {/* Notes — the contract carries `notes` on every SportSessionCreateRequest,
+                but no sheet ever surfaced it before this designed addition. */}
+            <div className="col gap-sm">
+              <span className="label-mono">Jegyzet</span>
+              <textarea
+                aria-label="Session jegyzet"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                maxLength={500}
+                rows={3}
+                placeholder="Hogy érezted magad, mi ment jól, mi fájt…"
+                style={{
+                  width: '100%',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-primary)',
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  padding: '10px 12px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
           </div>
 
           {/* Mezo observation (volleyball-specific copy) */}
@@ -244,9 +269,10 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
                 // past day's ISO date (mezo-9bbc), which the server then logs against
                 // instead of today. Volleyball logs sets + shoulder strain; cross/TRX
                 // log rounds (per the contract).
+                const noteBody = notes.trim() ? { notes: notes.trim() } : {}
                 const body: SportSessionCreateRequest = isVolleyball
-                  ? { sport: 'volleyball', duration, setsPlayed: sets, rpe, shoulderStrain: shoulder, ...(date ? { date } : {}) }
-                  : { sport: kind, duration, rpe, rounds, ...(date ? { date } : {}) }
+                  ? { sport: 'volleyball', duration, setsPlayed: sets, rpe, shoulderStrain: shoulder, ...(date ? { date } : {}), ...noteBody }
+                  : { sport: kind, duration, rpe, rounds, ...(date ? { date } : {}), ...noteBody }
                 // Defer close to the parent (runs after the log succeeds); close
                 // immediately when no handler is wired.
                 if (onSave) { setSaving(true); onSave(body, close) } else { close() }
