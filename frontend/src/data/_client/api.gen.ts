@@ -445,7 +445,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Sport (volleyball) sessions of the current user, date descending */
+        /**
+         * Sport sessions of the current user, date descending — optionally narrowed to an inclusive date range (Sport Napló trend)
+         * @description Both bounds are optional and inclusive. Omitting both keeps the historical behaviour (the whole owned log, date descending); an omitted single bound stays unbounded on that side. With both bounds present the range must be forward (`from` <= `to`) and no wider than `mezo.train.sport-session-max-span-days`.
+         */
         get: operations["listSportSessions"];
         put?: never;
         /** Log a sport session (SportLogSheet) — date/time default to now server-side */
@@ -8426,7 +8429,10 @@ export interface operations {
     };
     listSportSessions: {
         parameters: {
-            query?: never;
+            query?: {
+                from?: string;
+                to?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8440,6 +8446,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SportSessionResponse"][];
+                };
+            };
+            /** @description Invalid date range (from after to, or span too wide) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */

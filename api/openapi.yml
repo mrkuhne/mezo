@@ -1218,7 +1218,28 @@ paths:
       tags:
         - Train
       operationId: listSportSessions
-      summary: 'Sport (volleyball) sessions of the current user, date descending'
+      summary: >-
+        Sport sessions of the current user, date descending — optionally
+        narrowed to an inclusive date range (Sport Napló trend)
+      description: >-
+        Both bounds are optional and inclusive. Omitting both keeps the
+        historical behaviour (the whole owned log, date descending); an omitted
+        single bound stays unbounded on that side. With both bounds present the
+        range must be forward (`from` <= `to`) and no wider than
+        `mezo.train.sport-session-max-span-days`.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
       responses:
         '200':
           description: Sport sessions
@@ -1228,6 +1249,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SportSessionResponse'
+        '400':
+          description: 'Invalid date range (from after to, or span too wide)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
           content:

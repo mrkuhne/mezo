@@ -17,7 +17,9 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
@@ -73,6 +75,7 @@ public class TrainService {
     private final MesocycleReportService reportService;
     private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
+    private final TrainProperties trainProperties;
     // Baseline seeding (mezo-xlmp): volume-log rows born on the create-as-active/activate path,
     // behind the volume-progression switch (gate bean absent ⇔ switch off — mirrors WorkoutService).
     private final VolumeProgressionService volumeProgressionService;
@@ -131,9 +134,42 @@ public class TrainService {
         }).toList();
     }
 
-    public List<SportSessionResponse> listSportSessions(UUID createdBy) {
-        return sportSessionRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(createdBy)
-            .stream().map(mapper::toResponse).toList();
+    /**
+     * The owned sport log, newest date first, optionally narrowed to an inclusive {@code from..to}
+     * window (mezo-d20.7.1 — the Sport Napló 4-week idő+RPE trend). Both bounds are optional: with
+     * neither given this is the historical whole-log read, and a single given bound leaves the
+     * other side unbounded exactly as before. When both are present the range must be forward and
+     * no wider than {@code mezo.train.sport-session-max-span-days} — a guard against a client
+     * asking for a decade in one call; the open-ended forms are deliberately left unguarded
+     * because they are the pre-existing behaviour. Pure read: no {@code @Transactional}.
+     */
+    public List<SportSessionResponse> listSportSessions(UUID createdBy, LocalDate from, LocalDate to) {
+        if (from != null && to != null) {
+            if (from.isAfter(to)) {
+                throw new SystemRuntimeErrorException(
+                    SystemMessage.error("TRAIN_INVALID_DATE_RANGE").build(), HttpStatus.BAD_REQUEST);
+            }
+            long spanDays = ChronoUnit.DAYS.between(from, to) + 1; // inclusive
+            if (spanDays > trainProperties.sportSessionMaxSpanDays()) {
+                throw new SystemRuntimeErrorException(
+                    SystemMessage.error("TRAIN_DATE_RANGE_TOO_WIDE").build(), HttpStatus.BAD_REQUEST);
+            }
+            return map(sportSessionRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(createdBy, from, to));
+        }
+        if (from != null) {
+            return map(sportSessionRepository
+                .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(createdBy, from));
+        }
+        if (to != null) {
+            return map(sportSessionRepository
+                .findByCreatedByAndDeletedFalseAndDateLessThanEqualOrderByDateDesc(createdBy, to));
+        }
+        return map(sportSessionRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(createdBy));
+    }
+
+    private List<SportSessionResponse> map(List<SportSessionEntity> sessions) {
+        return sessions.stream().map(mapper::toResponse).toList();
     }
 
     /**

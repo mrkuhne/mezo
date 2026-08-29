@@ -73,6 +73,40 @@ class SportContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testListSportSessions_shouldNarrowToTheWindow_whenFromAndToGiven() {
+        HttpHeaders auth = ownerAuthHeaders();
+        LocalDate today = LocalDate.now();
+
+        SportSessionResponse todaySession = postForBody("/api/train/sport-sessions",
+            sessionReq().notes("ma").build(), auth, HttpStatus.CREATED, SportSessionResponse.class);
+        SportSessionResponse oldSession = postForBody("/api/train/sport-sessions",
+            sessionReq().date(today.minusDays(90)).notes("regi").build(),
+            auth, HttpStatus.CREATED, SportSessionResponse.class);
+
+        // No params -> the historical whole-log read: both rows.
+        assertThat(getForList("/api/train/sport-sessions", auth, HttpStatus.OK, SportSessionResponse.class))
+            .extracting(SportSessionResponse::getId)
+            .contains(todaySession.getId(), oldSession.getId());
+
+        // A 4-week window -> only the recent one.
+        List<SportSessionResponse> window = getForList(
+            "/api/train/sport-sessions?from=" + today.minusDays(27) + "&to=" + today,
+            auth, HttpStatus.OK, SportSessionResponse.class);
+        assertThat(window).extracting(SportSessionResponse::getId)
+            .contains(todaySession.getId())
+            .doesNotContain(oldSession.getId());
+    }
+
+    @Test
+    void testListSportSessions_shouldReturn400_whenFromIsAfterTo() {
+        LocalDate today = LocalDate.now();
+        String body = getForBody(
+            "/api/train/sport-sessions?from=" + today + "&to=" + today.minusDays(1),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_INVALID_DATE_RANGE");
+    }
+
+    @Test
     void testLogSportSession_shouldReturn400RequiredField_whenDurationMissing() {
         String body = postForBody("/api/train/sport-sessions",
             SportSessionCreateRequest.builder().setsPlayed(5).rpe(new BigDecimal("7")).shoulderStrain(6).build(),
