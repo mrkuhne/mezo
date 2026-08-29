@@ -1,16 +1,21 @@
 // ============================================================
-// Mezo · PeoplePage — Emberek re-face (mezo-d20.6.7)
+// Mezo · PeoplePage — Emberek re-face (mezo-d20.6.7, Mozaik scaffold mezo-d20.11)
 // Source of truth: docs/design_2.0/prototypes/src/en-body.html #page-emberek
-// (values ×1.18). Still a MeSection tab child (F5.1 hub hasn't landed — the
-// old .pghead-np header stays, matching every other /me/* sibling); the
-// re-face is scoped to the BODY: 2-col washed rose person tiles with an
-// affect-ring avatar (ring fill = the person's own latest affectTrend
-// reading, never a fabricated percentage), and washed mention tiles
-// carrying the FIGYELEM badge + the `kapcsolódik` pattern-tie chip verbatim.
-// Data hooks, mutations and the Mind/Hét/Jelölt filter contract: unchanged.
+// (values ×1.18). ADR 0032: the dissolved Me shell means this page owns its
+// OWN header — the prototype's `‹ Én` back chip + the `🎤 Log` page action —
+// and the prototype's page-hero (icon + the active-circle count + the
+// „aktív kör · tap → részletek" sub-line) replaces the old .pghead-np band,
+// which left the page with no way back.
+// Body: 2-col washed rose person tiles with an affect-ring avatar (ring fill =
+// the person's own latest affectTrend reading, never a fabricated percentage),
+// the .fchip filter row, and washed mention tiles carrying the FIGYELEM badge
+// + the `kapcsolódik` pattern-tie chip verbatim. Data hooks, mutations and the
+// Mind/Hét/Jelölt filter contract: unchanged.
 // ============================================================
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
+import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { usePeople } from '@/data/hooks'
 import { PersonCard } from '@/features/me/components/PersonCard'
@@ -27,6 +32,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 ]
 
 export function PeoplePage() {
+  const navigate = useNavigate()
   const { people, mentions, logMention } = usePeople()
   const [filter, setFilter] = useState<Filter>('all')
   const [logOpen, setLogOpen] = useState(false)
@@ -45,68 +51,58 @@ export function PeoplePage() {
         : mentions.filter(m => m.flagged)
 
   return (
-    <>
-      {/* Header */}
-      <div className="pghead-np lav">
-        <div>
-          <div className="over">Me · Emberek</div>
-          <h1>Kapcsolatok</h1>
-        </div>
+    <MozaikPage tone="rose">
+      <PageHead onBack={() => navigate(-1)} label="‹ Én">
         <button
           type="button"
-          className="pgact-np np-press"
+          className="pgact"
           onClick={() => { setPrechosen(undefined); setLogOpen(true) }}
-          style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
+          style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
         >
           <Icon name="mic" size={12} /> Log
         </button>
-      </div>
+      </PageHead>
 
-      <EntranceGroup>
-        {/* People grid */}
-        <div style={{ padding: '0 24px 16px' }}>
-          <div className="secthead-np">
-            <h3>Aktív kör · {people.length}</h3>
-            <span>tap → részletek</span>
-          </div>
+      <PageHero icon="i-emberek" name="Kapcsolatok" big={people.length} sub="aktív kör · tap → részletek" />
+
+      <PageBody>
+        <EntranceGroup>
           <div className="ppl-grid">
             {people.map((p, i) => (
               <PersonCard key={p.id} person={p} delayMs={i * 50} onTap={() => setDetailPerson(p)} />
             ))}
           </div>
-        </div>
 
-        {/* Mentions feed */}
-        <div style={{ padding: '0 24px 16px' }}>
-          <div className="secthead-np">
-            <h3>Mit naplóztam · friss</h3>
-            <div className="row gap-xs">
-              {FILTERS.map(f => (
-                <button
-                  key={f.id}
-                  onClick={() => setFilter(f.id)}
-                  className="chip"
-                  style={filter === f.id
-                    ? { fontSize: 9, padding: '3px 8px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
-                    : { fontSize: 9, padding: '3px 8px' }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+          <div className="tud-lsec rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+            <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-rose-ink)' }}>Mit naplóztam · friss</span>
           </div>
+
+          <div className="ppl-chiprow rise" style={{ '--d': '80ms' } as React.CSSProperties}>
+            {FILTERS.map(f => (
+              <button
+                key={f.id}
+                type="button"
+                className={filter === f.id ? 'ppl-fchip on' : 'ppl-fchip'}
+                aria-pressed={filter === f.id}
+                onClick={() => setFilter(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           <div>
             {visible.slice(0, 8).map((m, i) => (
-              <MentionRow key={m.id} mention={m} delayMs={i * 40} />
+              <MentionRow key={m.id} mention={m} delayMs={110 + i * 30} />
             ))}
             {visible.length === 0 && (
-              <div className="card" style={{ padding: 18, textAlign: 'center' }}>
+              <div className="ppl-mrowt rise" style={{ '--d': '110ms', textAlign: 'center' } as React.CSSProperties}>
                 <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ebben a szűrésben.</span>
               </div>
             )}
           </div>
-        </div>
-      </EntranceGroup>
+        </EntranceGroup>
+      </PageBody>
 
       {logOpen && (
         <PersonLogSheet
@@ -129,6 +125,6 @@ export function PeoplePage() {
           }}
         />
       )}
-    </>
+    </MozaikPage>
   )
 }

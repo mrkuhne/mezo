@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   usePushSubscription,
   useNotificationPrefs,
@@ -20,6 +21,7 @@ import { Toggle } from '@/shared/ui/Toggle'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { ClayIcon } from '@/shared/ui/clay'
+import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
 import { projectStackDay } from '@/features/fuel/logic/projectStackDay'
@@ -107,6 +109,7 @@ function deriveSubLine(category: NotificationCategoryKey, fallback: string, ctx:
  *  wrong gate for it. Instead the *button's visibility* is gated on `push.enabled` (nothing
  *  to test before a subscription exists), and it's disabled while `push.busy`. */
 export function NotificationsPage() {
+  const navigate = useNavigate()
   const push = usePushSubscription()
   const { prefs, setPref } = useNotificationPrefs()
   const [testResult, setTestResult] = useState<string | null>(null)
@@ -176,11 +179,21 @@ export function NotificationsPage() {
   // be offering controls for something the platform has already ruled out.
   if (!push.supported || !push.standalone) {
     return (
-      <div style={{ padding: '8px 24px 24px' }}>
-        <div className="col gap-md">
-          <PushInstallGate />
-        </div>
-      </div>
+      // The gate keeps the page's own Mozaik scaffold — ADR 0032: without the `‹ Én` chip the
+      // gate was a dead end with no way back (the page had no header at all before mezo-d20.11).
+      // No hero bignum here: on a platform where nothing can fire, a "5 tervezett ma" would be
+      // a number about notifications that cannot happen.
+      <MozaikPage tone="sky">
+        <PageHead onBack={() => navigate(-1)} label="‹ Én" />
+        <PageHero icon="i-ertesites" name="Értesítések" />
+        <PageBody>
+          <EntranceGroup className="col gap-md">
+            <div className="rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+              <PushInstallGate />
+            </div>
+          </EntranceGroup>
+        </PageBody>
+      </MozaikPage>
     )
   }
 
@@ -212,7 +225,18 @@ export function NotificationsPage() {
   const brainCategories = prefs.filter((p) => NOTIFICATION_CATEGORY_META[p.category].section === 'brain')
 
   return (
-    <div style={{ padding: '8px 24px 24px' }}>
+    <MozaikPage tone="sky">
+      <PageHead onBack={() => navigate(-1)} label="‹ Én" />
+      {/* Prototype #page-ertesites: the hero states today's planned volume, and the sub-line
+          qualifies the rhythm. „nyugodt ritmus" is DERIVED (no dense window in the same
+          forecast the card below draws), never asserted — a crowded day says so instead. */}
+      <PageHero
+        icon="i-ertesites"
+        name="Értesítések"
+        big={forecast.total}
+        sub={forecast.denseWindows.length === 0 ? 'tervezett ma · nyugodt ritmus' : 'tervezett ma · sűrű ablak'}
+      />
+      <PageBody>
       <EntranceGroup className="col gap-md">
         <NotificationPreviewHeader forecast={forecast} />
 
@@ -303,6 +327,7 @@ export function NotificationsPage() {
           <p className="ntf-foot">Eseményvezérelt — nem szerepel a napi terhelés előnézetben.</p>
         </div>
       </EntranceGroup>
-    </div>
+      </PageBody>
+    </MozaikPage>
   )
 }

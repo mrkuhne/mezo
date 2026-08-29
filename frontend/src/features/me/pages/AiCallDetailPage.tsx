@@ -7,6 +7,7 @@ import {
   callKindLabel, formatDateTime, formatLatency, statusLabel, statusTone,
 } from '@/features/me/logic/llmCallFormat'
 import { GhostState } from '@/shared/ui/GhostState'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 // One audited call in full (mezo-uakh) — the debug view. A separate page rather than a sheet:
 // each payload column can hold 64 000 characters, and a call is worth deep-linking to.
@@ -51,7 +52,11 @@ export function AiCallDetailPage() {
         <h1 style={{ fontSize: 16.5, fontWeight: 800, flex: 1, margin: 0 }}>Hívás részletei</h1>
       </div>
 
-      <div className="card" style={{ padding: '13px 14px' }}>
+      {/* Entrance choreography (mezo-d20.11): the detail page had no `EntranceGroup`, so its
+          cards popped in while every sibling Én page staggered. The `‹` row above stays
+          outside the group — the way back must be present on the first painted frame. */}
+      <EntranceGroup className="col gap-md">
+      <div className="card rise" style={{ padding: '13px 14px', '--d': '0ms' } as React.CSSProperties}>
         <div className="row" style={{ gap: 6, alignItems: 'center' }}>
           <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: '2px 6px', background: 'var(--surface-2)' }}>
             {/* Nullish, not truthy: toolRounds: 0 is a KNOWN value (tools were available, the model
@@ -98,11 +103,17 @@ export function AiCallDetailPage() {
         )}
       </div>
 
-      <AiCallUsage detail={data} />
+      <div className="rise" style={{ '--d': '50ms' } as React.CSSProperties}>
+        <AiCallUsage detail={data} />
+      </div>
 
-      {snapshot && <AiPriceSnapshot snapshot={snapshot} />}
+      {snapshot && (
+        <div className="rise" style={{ '--d': '90ms' } as React.CSSProperties}>
+          <AiPriceSnapshot snapshot={snapshot} />
+        </div>
+      )}
 
-      <div className="card" style={{ padding: '4px 13px 14px' }}>
+      <div className="card rise" style={{ padding: '4px 13px 14px', '--d': '130ms' } as React.CSSProperties}>
         <AiPayloadBlock label="Rendszerprompt" text={data.systemPrompt} />
         <AiPayloadBlock label="User üzenet" text={data.userMessage} />
         <AiPayloadBlock label="Válasz" text={data.responseText} />
@@ -118,6 +129,7 @@ export function AiCallDetailPage() {
           </p>
         )}
       </div>
+      </EntranceGroup>
     </div>
   )
 }
