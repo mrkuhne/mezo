@@ -2,10 +2,16 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
 import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
+import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirAnchorsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklyReviewEntity;
@@ -34,7 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
  * Weekly review generation flow over the fake LLM (mezo-p2tr, the {@code MemoirGeneratorIT}
  * idiom): gather = the week's {@code MeWeekService} day rows + the week's confirmed pattern
  * events + the week's memoir (when present), with numbered highlight candidates; strict-JSON
- * {@code {summary, dayNotes, anchorIndexes}} scripted via {@code [fake-review:{…}]} planted in
+ * {@code {summary, dayNotes, anchorIndexes, candidateFacts}} scripted via {@code [fake-review:{…}]} planted in
  * that MEMOIR'S TITLE — the ONLY candidate-bearing field the gather renders exactly ONCE (the
  * pattern/fact/life-event sections render their label BOTH in their own section AND again in the
  * numbered HORGONY-JELÖLTEK listing, so a sentinel planted there would appear twice and defeat
@@ -62,6 +68,9 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
     @Autowired private PatternEventRepository patternEventRepository;
     @Autowired private MemoirRepository memoirRepository;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private LearnedFactRepository learnedFactRepository;
+    @Autowired private KnowledgeFactRepository knowledgeFactRepository;
+    @Autowired private FactCandidateService factCandidateService;
 
     /** A day with SOME logged data — just enough to clear the empty-week gate. */
     private void seedDay(UUID owner, LocalDate date) {
@@ -190,5 +199,126 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
         assertThat(review).isNotNull();
         assertThat(review.getHighlights().highlights()).hasSize(1);
         assertThat(review.getHighlights().highlights().get(0).kind()).isEqualTo("Pattern");
+    }
+
+    // ── "A hét tanulságai" — the round's knowledge candidates (mezo-d20.7.6, handoff §6.2) ──
+
+    /** The sentinel channel is the same memoir title; {@code candidateFacts} rides along inside
+     *  it. {@code memoir.title} is {@code varchar(200)}, so the scripted payloads here stay
+     *  DELIBERATELY terse — the bounds-check/dedupe/cap matrix, which needs long and many inputs,
+     *  is exercised directly against the service in {@code WeeklyLessonServiceIT}. */
+    private static String reviewWith(String candidateFactsJson) {
+        return "[fake-review:{\"summary\":\"Jó hét.\",\"candidateFacts\":" + candidateFactsJson + "}]";
+    }
+
+    @Test
+    void proposesWeeklyKnowledgeCandidatesOnTheExistingCandidatePath() {
+        UUID user = userPopulator.createUser("wr-lesson@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START, reviewWith(
+                "[{\"text\":\"Edzés után többet alszol.\",\"category\":\"train\","
+                        + "\"evidence\":\"5 nap\"},"
+                        + "{\"text\":\"Jobb energia.\",\"category\":\"fuel\","
+                        + "\"evidence\":null}]"));
+
+        assertThat(generator.generate(user, WEEK_START)).isNotNull();
+
+        List<LearnedFactEntity> candidates = learnedFactRepository.findByCreatedByAndDeletedFalse(user);
+        assertThat(candidates).hasSize(2);
+        assertThat(candidates).allSatisfy(c -> {
+            assertThat(c.getSource()).isEqualTo(LearnedFactEntity.SOURCE_WEEKLY_REVIEW);
+            assertThat(c.getWeekStart()).isEqualTo(WEEK_START);
+            // a weekly candidate has NO chat message behind it — the week is the provenance
+            assertThat(c.getDerivedFromMessageId()).isNull();
+            assertThat(c.getUserDecision()).isNull();
+        });
+        assertThat(candidates).anySatisfy(c -> {
+            assertThat(c.getCandidateText()).isEqualTo("Edzés után többet alszol.");
+            assertThat(c.getCategory()).isEqualTo("train");
+            assertThat(c.getEvidence()).isEqualTo("5 nap");
+        });
+        // an unknown evidence stays NULL — never a fabricated evidence line
+        assertThat(candidates).anySatisfy(c -> {
+            assertThat(c.getCategory()).isEqualTo("fuel");
+            assertThat(c.getEvidence()).isNull();
+        });
+        // the weekly round emits NO per-candidate FACT_CANDIDATE — WEEKLY_REVIEW_READY already spoke
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(user))
+                .isNotEmpty()
+                .allSatisfy(n -> assertThat(n.getKind()).isEqualTo("weekly_review_ready"));
+    }
+
+    @Test
+    void noCandidateFactsWritesNoCandidateRow() {
+        UUID user = userPopulator.createUser("wr-lesson-none@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START, reviewWith("[]"));
+
+        assertThat(generator.generate(user, WEEK_START)).isNotNull();
+
+        assertThat(learnedFactRepository.findByCreatedByAndDeletedFalse(user)).isEmpty();
+    }
+
+    /** A pre-{@code candidateFacts} answer (the field simply absent) must not break the round. */
+    @Test
+    void answerWithoutCandidateFactsStillProducesTheReview() {
+        UUID user = userPopulator.createUser("wr-lesson-absent@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START,
+                "[fake-review:{\"summary\":\"Csendes hét.\",\"dayNotes\":[],\"anchorIndexes\":[]}]");
+
+        assertThat(generator.generate(user, WEEK_START)).isNotNull();
+        assertThat(learnedFactRepository.findByCreatedByAndDeletedFalse(user)).isEmpty();
+    }
+
+    @Test
+    void aRejectedLessonIsNotReOfferedByALaterWeek() {
+        UUID user = userPopulator.createUser("wr-lesson-rejected@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START, reviewWith(
+                "[{\"text\":\"Röplabda után későn fekszel.\",\"category\":\"health\","
+                        + "\"evidence\":\"4 este\"}]"));
+        assertThat(generator.generate(user, WEEK_START)).isNotNull();
+        LearnedFactEntity offered = learnedFactRepository.findByCreatedByAndDeletedFalse(user).get(0);
+        factCandidateService.decide(user, offered.getId(),
+                FactDecisionRequest.builder().decision(LearnedFactEntity.DECISION_REJECT).build());
+
+        // the NEXT week proposes the very same lesson — "amit elvetsz, nem kérdezi újra"
+        LocalDate nextWeek = WEEK_START.plusWeeks(1);
+        seedDay(user, nextWeek.plusDays(1));
+        seedMemoirWithSentinel(user, nextWeek, reviewWith(
+                "[{\"text\":\"Röplabda után későn fekszel.\",\"category\":\"health\","
+                        + "\"evidence\":\"5 este\"}]"));
+
+        assertThat(generator.generate(user, nextWeek)).isNotNull();
+
+        assertThat(learnedFactRepository.findByCreatedByAndWeekStartAndDeletedFalseOrderByCreatedAtDesc(
+                user, nextWeek)).isEmpty();
+    }
+
+    /** The promotion path: accepting a weekly candidate mints a knowledge fact whose source says
+     *  {@code weekly_review}, not {@code chat} — and it goes through {@code FactCandidateService},
+     *  the only writer that publishes {@code KnowledgeFactPromotedEvent} (graph node for free). */
+    @Test
+    void acceptingAWeeklyCandidatePromotesItWithTheWeeklySource() {
+        UUID user = userPopulator.createUser("wr-lesson-accept@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START, reviewWith(
+                "[{\"text\":\"Edzés után korán fekszel.\",\"category\":\"train\","
+                        + "\"evidence\":\"3 edzésnap\"}]"));
+        assertThat(generator.generate(user, WEEK_START)).isNotNull();
+        LearnedFactEntity candidate = learnedFactRepository.findByCreatedByAndDeletedFalse(user).get(0);
+
+        factCandidateService.decide(user, candidate.getId(),
+                FactDecisionRequest.builder().decision(LearnedFactEntity.DECISION_ACCEPT).build());
+
+        UUID promotedId = learnedFactRepository.findById(candidate.getId()).orElseThrow().getPromotedFactId();
+        assertThat(promotedId).isNotNull();
+        assertThat(knowledgeFactRepository.findById(promotedId)).hasValueSatisfying(fact -> {
+            assertThat(fact.getSource()).isEqualTo(KnowledgeFactEntity.SOURCE_WEEKLY_REVIEW);
+            assertThat(fact.getFactText()).isEqualTo("Edzés után korán fekszel.");
+            assertThat(fact.getCategory()).isEqualTo("train");
+            assertThat(fact.isIncludeInPrompt()).isTrue();
+        });
     }
 }

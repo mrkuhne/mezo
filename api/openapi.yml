@@ -4305,8 +4305,13 @@ paths:
       operationId: decideFactCandidate
       summary: >-
         Decide a candidate (V1.2) — accept/refine promote it into a knowledge
-        fact (source=chat), reject archives it. One decision per candidate;
-        confirm is an explicit L2 action, never silent.
+        fact, reject archives it. One decision per candidate; confirm is an
+        explicit L2 action, never silent.
+      description: >-
+        The promoted fact inherits the candidate's `source`: a chat-extracted
+        candidate becomes a `chat` fact, a weekly-review candidate a
+        `weekly_review` one (mezo-d20.7.6) — promotion never re-labels where the
+        insight came from.
       parameters:
         - name: candidateId
           in: path
@@ -5247,6 +5252,53 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: The week is not completed yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/weekly-review/{start}/lessons':
+    get:
+      tags:
+        - Proactive
+      operationId: getWeeklyReviewLessons
+      summary: >-
+        The week's knowledge candidates — "A hét tanulságai" (mezo-d20.7.6) —
+        WITH their decisions
+      description: >-
+        The weekly generator proposes candidates onto the SAME learned_fact path
+        chat extraction uses; this read returns the ones proposed for `{start}`,
+        newest first, including the already-decided ones (`GET
+        /api/companion/fact/candidate` only returns the undecided inbox, but a
+        closed week must be reviewable in its settled state). `evidence` names
+        what the candidate rests on. Always 200 — an empty array is the honest
+        empty state (no review, no usable candidate, or every candidate
+        rejected), never a 404. Deciding stays the shipped write path: `POST
+        /api/companion/fact/candidate/{candidateId}/decision`.
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: The ISO Monday of the wanted week
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The week's candidates with their decisions (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeeklyLessonResponse'
+        '400':
+          description: '{start} is not a Monday'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
           content:
             application/json:
               schema:
@@ -7278,6 +7330,61 @@ paths:
                 $ref: '#/components/schemas/MeWeekResponse'
         '400':
           description: start is not an ISO Monday
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/me/week/{start}/trend':
+    get:
+      tags:
+        - MeWeek
+      operationId: getMeWeekTrend
+      summary: >-
+        The persisted weekly-score trend for the N ISO weeks ending at start
+        (inclusive)
+      description: >-
+        The Heti hero's 8-week trend (mezo-d20.7.5). Points are the PERSISTED
+        weekly scores (weekly_score) — a deterministic cache, refreshed whenever
+        the week's own inputs changed after computedAt (and always for a week
+        that has not finished yet). A week whose score is null (fewer than 2
+        scored days — the "tanulom" gate) yields NO point: the series is short,
+        never padded with a zero. Oldest first.
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: >-
+            The last week of the window — its ISO Monday (400 when the date is
+            not a Monday)
+          schema:
+            type: string
+            format: date
+        - name: weeks
+          in: query
+          required: false
+          description: >-
+            How many ISO weeks the window spans, counting back from start
+            (inclusive)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        '200':
+          description: 'The window''s points (0..weeks entries, oldest first)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeWeekTrendResponse'
+        '400':
+          description: 'start is not an ISO Monday, or weeks is out of range'
           content:
             application/json:
               schema:
@@ -13431,6 +13538,7 @@ components:
         - id
         - candidateText
         - category
+        - source
         - createdAt
       properties:
         id:
@@ -13443,6 +13551,25 @@ components:
           description: >-
             'train' | 'fuel' | 'health' | 'life' — classified by the extractor
             at capture time
+        source:
+          type: string
+          description: >-
+            'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday
+            weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact
+            inherits it
+        evidence:
+          type: string
+          nullable: true
+          description: >-
+            What the candidate rests on, in the proposer's own words (weekly
+            candidates only — chat extraction does not produce one).
+        weekStart:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            The ISO Monday of the weekly review that proposed this candidate
+            (null for chat-extracted ones).
         userDecision:
           type: string
           nullable: true
@@ -14814,6 +14941,50 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WeeklyReviewPredictionRef'
+    WeeklyLessonResponse:
+      type: object
+      description: >-
+        One weekly knowledge candidate (mezo-d20.7.6). The same learned_fact row
+        the Tudástár inbox serves as a FactCandidateResponse — repeated here as
+        the weekly read's own shape so the fragment stays self-contained; the
+        two MUST stay field-compatible (one entity, one mapper). Decisions are
+        made on the companion candidate endpoint, never here.
+      required:
+        - id
+        - candidateText
+        - category
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        candidateText:
+          type: string
+        category:
+          type: string
+          description: '''train'' | ''fuel'' | ''health'' | ''life'''
+        evidence:
+          type: string
+          nullable: true
+          description: >-
+            What the candidate rests on, in the proposer's own words — null when
+            the model named nothing usable.
+        userDecision:
+          type: string
+          nullable: true
+          description: '''accept'' | ''reject'' | ''refine'' — null while still open'
+        refinedText:
+          type: string
+          nullable: true
+          description: The user-edited wording when the decision was refine.
+        promotedFactId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The knowledge fact this candidate was promoted into (accept/refine).
+        createdAt:
+          type: string
+          format: date-time
     QuestResponse:
       type: object
       required:
@@ -16792,6 +16963,59 @@ components:
         totalXp:
           type: integer
           nullable: true
+    MeWeekTrendPoint:
+      type: object
+      required:
+        - weekStart
+        - score
+        - computedAt
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: The week's ISO Monday
+        score:
+          type: integer
+          description: 0–100 — round(mean of the week's non-null day scores)
+        sleepAvg:
+          type: number
+          nullable: true
+          description: mean of the week's non-null sleep subscores; null when none
+        fuelAvg:
+          type: number
+          nullable: true
+        checkinAvg:
+          type: number
+          nullable: true
+        activityAvg:
+          type: number
+          nullable: true
+        computedAt:
+          type: string
+          format: date-time
+          description: >-
+            When this score was last computed from the week's data. The score is
+            a cache, not a truth — a retroactive log can change it; this stamp
+            is what makes the value honest.
+    MeWeekTrendResponse:
+      type: object
+      required:
+        - start
+        - weeks
+        - points
+      properties:
+        start:
+          type: string
+          format: date
+          description: 'The window''s last week (ISO Monday), echoed back'
+        weeks:
+          type: integer
+          description: The requested window width — points may be shorter
+        points:
+          type: array
+          description: Oldest first; only weeks that actually have a score. Never padded.
+          items:
+            $ref: '#/components/schemas/MeWeekTrendPoint'
     MeWeekResponse:
       type: object
       required:
