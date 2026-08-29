@@ -31,7 +31,7 @@ import { MozaikPage, PageHead, PageBody, MCells, type MCell } from '@/shared/ui/
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { NovaDot } from '@/features/fuel/components/NovaDot'
 import { AddPantryItemSheet } from '@/features/fuel/sheets/AddPantryItemSheet'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 
 // The full IngredientStock carries expires/lowExpiry; the bare { qty, unit }
 // stock shape does not. Narrow once instead of fighting `in`-narrowing in JSX.
@@ -266,7 +266,7 @@ export function KamraItemDetailPage() {
         editId={backendId}
         initial={inputFromItem(item)}
       />
-      {logOpen && <LogMealSheet prefill={{ source: 'pantry', pantryItemId: backendId }} onClose={() => setLogOpen(false)} />}
+      {logOpen && <LogFlowPage prefill={{ source: 'pantry', pantryItemId: backendId }} onClose={() => setLogOpen(false)} />}
     </MozaikPage>
   )
 }

@@ -5378,6 +5378,88 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 }
 
 /* ============================================================
+   Unified log flow (design 2.0 iterations §7, bd mezo-d20.4.2)
+   `page-log` ×1.18: a full-bleed page (not a bottom sheet), self-portaled into
+   .phone-screen like the level-up overlay — z-index sits above the tab bar (40)
+   but BELOW the sheets (200+) it hosts (KamraPickSheet / ReceptPickSheet), the
+   same tier the recipe-editor save bar already claims. Source-tile washes and
+   shadows reuse the existing --mz-wash-, --mz-shadow- and --mz-tone- tokens
+   (both :root blocks above) instead of inventing a parallel palette. ── */
+.logflow-page {
+  position: absolute; inset: 0; z-index: 60;
+  background: var(--surface-page); color: var(--text-primary);
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.logflow-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 20px 6px; position: sticky; top: 0; z-index: 1;
+  background: var(--surface-page);
+}
+.logflow-back { padding: 6px 12px; }
+.logflow-time { margin-left: auto; font-size: 9px; color: var(--text-tertiary); font-family: var(--ff-mono); }
+.logflow-body { padding: 4px 20px calc(20px + env(safe-area-inset-bottom)); }
+
+.logflow-srctiles { display: flex; gap: 7px; margin: 8px 0 2px; }
+.logflow-srct {
+  flex: 1; min-height: 44px; border: none; cursor: pointer; font-family: inherit;
+  border-radius: var(--r-2xl, 18px); padding: 11px 7px 10px;
+  display: grid; gap: 3px; justify-items: center; text-align: center;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.logflow-srct:active { transform: scale(0.94); }
+.logflow-srct b { font-size: 11.5px; color: var(--text-primary); }
+.logflow-srct small { font-size: 7.5px; font-weight: 700; color: var(--text-tertiary); }
+.logflow-srct.tone-gold { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.logflow-srct.tone-coral { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.logflow-srct.tone-lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.logflow-srct.on { box-shadow: var(--mz-shadow), inset 0 0 0 1.5px var(--lav-deep); }
+
+.logflow-aipanel {
+  border-radius: var(--r-2xl, 18px); padding: 11px 12px 12px; margin-top: 9px;
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
+}
+.logflow-aipanel textarea {
+  width: 100%; border: 1px solid var(--border-subtle); border-radius: 10px;
+  padding: 9px 11px; font-family: inherit; font-size: 12px; color: var(--text-primary);
+  background: var(--surface-card, var(--surface-1)); resize: none;
+}
+.logflow-aibusy {
+  display: flex; gap: 9px; align-items: center; font-size: 11px; font-weight: 600;
+  color: var(--lav-deep); justify-content: center;
+}
+.logflow-aibusy .np-twinkle {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--lav-deep); flex: none;
+}
+
+.logflow-lncard {
+  border-radius: 15px; padding: 10px 12px; background: var(--surface-1);
+  border-left: 2.5px solid var(--coral);
+}
+.logflow-lncard[data-tag="kamra"] { border-left-color: var(--mz-cell-gold-ink, #8A5E07); }
+.logflow-lncard[data-tag="becslés"] { border-left-color: var(--lav-deep); }
+.logflow-lntag {
+  font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 5px; flex: none;
+  background: color-mix(in srgb, var(--coral) 14%, transparent); color: var(--coral);
+}
+.logflow-lntag[data-tag="kamra"] { background: var(--mz-tone-gold); color: var(--mz-cell-gold-ink, #8A5E07); }
+.logflow-lntag[data-tag="becslés"] { background: var(--mz-tone-lav); color: var(--lav-deep); }
+.logflow-stepbtn {
+  width: 26px; height: 26px; min-width: 26px; border-radius: 8px; border: 1px solid var(--border-subtle);
+  background: var(--surface-2); font-size: 13px; color: var(--text-secondary); cursor: pointer;
+}
+.logflow-amtinput {
+  width: 52px; text-align: center; border: 1px solid var(--border-subtle); border-radius: 8px;
+  padding: 5px 2px; font-family: inherit; font-size: 12px; font-weight: 600;
+  color: var(--text-primary); background: var(--surface-2); font-variant-numeric: tabular-nums;
+}
+.logflow-lnnote { font-size: 10px; color: var(--lav-deep); margin-top: 7px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .logflow-srct { transition: none; }
+}
+
+/* ============================================================
    Today · iOS list language (mezo-e26w)
    Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
    16px-es sín — a globális `--sp-4` DS-token közvetlenül, elemenként. Árnyék

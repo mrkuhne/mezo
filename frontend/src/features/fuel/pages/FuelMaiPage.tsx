@@ -36,7 +36,6 @@ import {
   useStackDay, useToday, useTodayScenario, useWaterActions, useCompanionFeed, resolveBriefing,
 } from '@/data/hooks'
 import { useNotificationFeed } from '@/data/notification/feedHooks'
-import { localDateString } from '@/shared/lib/dates'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { buildKeretHero, aiAverage } from '@/features/fuel/logic/keretHero'
 import { buildWindowLane, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
@@ -48,9 +47,8 @@ import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { KeretHero } from '@/features/fuel/components/KeretHero'
 import { WindowLane } from '@/features/fuel/components/WindowLane'
-import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
-import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
+import type { LogFlowPrefill } from '@/features/fuel/pages/LogFlowPage'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
@@ -65,9 +63,11 @@ export function FuelMaiPage() {
   const { items: notifications } = useNotificationFeed()
 
   const [logOpen, setLogOpen] = useState(false)
-  const [aiOpen, setAiOpen] = useState(false)
-  const [aiSlot, setAiSlot] = useState<MealSlot | undefined>(undefined)
-  const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
+  // The AI path is no longer a separate sheet (mezo-d20.4.2): it opens the SAME unified
+  // log flow with its ✨ AI panel armed, so photo/text estimates and manual pantry/recipe
+  // lines can ride in one meal.
+  const [logAiOnMount, setLogAiOnMount] = useState(false)
+  const [logPrefill, setLogPrefill] = useState<LogFlowPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
   const [waterOpen, setWaterOpen] = useState(false)
   const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
@@ -136,7 +136,7 @@ export function FuelMaiPage() {
   const unreadNtf = notifications.filter(n => n.readAt === null).length
 
   // ── actions ───────────────────────────────────────────────────────────
-  const openLog = (prefill: LogMealPrefill = null, slot?: MealSlot) => {
+  const openLog = (prefill: LogFlowPrefill = null, slot?: MealSlot) => {
     setLogPrefill(prefill)
     setLogInitialSlot(slot)
     setLogOpen(true)
@@ -150,8 +150,8 @@ export function FuelMaiPage() {
     else openLog(null, tile.slotKey)
   }
   const aiFromTile = (tile: WindowTileVM) => {
-    setAiSlot(tile.slotKey)
-    setAiOpen(true)
+    setLogAiOnMount(true)
+    openLog(null, tile.slotKey)
   }
   const openScoreForMeal = (mealId: string) => {
     const meal = fuel.meals.find(m => m.id === mealId)
@@ -210,7 +210,7 @@ export function FuelMaiPage() {
             onLog={logFromTile}
             onAiLog={aiFromTile}
             onFreeLog={() => openLog()}
-            onFreeAiLog={() => { setAiSlot(undefined); setAiOpen(true) }}
+            onFreeAiLog={() => { setLogAiOnMount(true); openLog() }}
             onScore={openScoreForMeal}
           />
         </div>
@@ -254,7 +254,7 @@ export function FuelMaiPage() {
         </button>
       </EntranceGroup>
 
-      {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
+      {logOpen && <LogFlowPage prefill={logPrefill} initialSlot={logInitialSlot} aiPanelOpenOnMount={logAiOnMount} onClose={() => { setLogOpen(false); setLogAiOnMount(false) }} />}
       {waterOpen && (
         <WaterLogSheet
           currentMl={fuel.consumed.water}
@@ -266,14 +266,6 @@ export function FuelMaiPage() {
       {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {energyOpen && energyBreakdown && (
         <EnergyBreakdownSheet breakdown={energyBreakdown} initial={energyOpen} onClose={() => setEnergyOpen(null)} />
-      )}
-      {aiOpen && (
-        <AiLogSheet
-          date={localDateString()}
-          initialSlot={aiSlot}
-          onClose={() => setAiOpen(false)}
-          onManualFallback={() => { setAiOpen(false); openLog() }}
-        />
       )}
       {settingsOpen && <FuelSettingsSheet onClose={() => setSettingsOpen(false)} />}
     </div>

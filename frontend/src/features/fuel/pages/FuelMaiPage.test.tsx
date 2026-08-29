@@ -280,11 +280,15 @@ test('a window with no suggestion also seeds its own slot (the branch that alrea
   }
 })
 
-test('a window\'s ✨ AI CTA opens the AI log sheet on that window\'s slot (mezo-53su)', async () => {
+// mezo-d20.4.2: the AI path is no longer a separate sheet — it opens the SAME unified log
+// flow with its ✨ AI panel armed, still carrying that window's slot (the mezo-53su contract).
+test('a window\'s ✨ AI CTA opens the unified log flow on that window\'s slot, AI panel armed', async () => {
   hoisted.injectOpenSlot = true
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'AI naplózás · Esti snack' }))
-  expect(await screen.findByRole('dialog', { name: 'AI ételnapló' })).toBeInTheDocument()
+  const flow = await screen.findByRole('dialog', { name: 'Mit ettél?' })
+  expect(within(flow).getByRole('button', { name: 'Snack', pressed: true })).toBeInTheDocument()
+  expect(within(flow).getByPlaceholderText(/csirkés wrap/)).toBeInTheDocument()
 })
 
 // ── the standing out-of-window tile (mezo-66te) ──────────────────────────────
@@ -302,13 +306,14 @@ test('an all-done day still offers meal logging: the out-of-window tile opens Lo
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
 
-test('an all-done day still offers AI logging: the out-of-window ✨ AI napló opens AiLogSheet', async () => {
+test('an all-done day still offers AI logging: the out-of-window ✨ AI napló arms the flow\'s AI panel', async () => {
   hoisted.overrideSlots = [
     { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
   ]
   renderView()
   await userEvent.click(screen.getByRole('button', { name: '✨ AI napló' }))
-  expect(await screen.findByText('AI naplózás · mai nap')).toBeInTheDocument()
+  const flow = await screen.findByRole('dialog', { name: 'Mit ettél?' })
+  expect(within(flow).getByPlaceholderText(/csirkés wrap/)).toBeInTheDocument()
 })
 
 test('an empty day (no meal slots) leads the lane with the üres-nap tile → /fuel/plan', async () => {
