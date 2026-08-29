@@ -2,18 +2,14 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-08-27
+updated: 2026-08-29
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
-  - backend/src/main/java/io/mrkuhne/mezo/feature/journal/service/DecisionService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/DecisionEmbeddingListener.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DecisionContextAssemblerAdapter.java
   - frontend/src/data/journal
   - frontend/src/features/me/sheets/JournalSheet.tsx
-  - frontend/src/features/me/sheets/DecisionReviewSheet.tsx
   - frontend/src/features/me/pages/JournalPage.tsx
   - api/feature/journal/journal.yml
 related: [me, companion, ritual, _platform-data-layer, _platform-api-backend, _platform-notifications]
@@ -26,9 +22,9 @@ related: [me, companion, ritual, _platform-data-layer, _platform-api-backend, _p
 > `decision_entry` decisions + their later review (W1.4, `mezo-b3pp.4`), captured via the same
 > `JournalSheet` in a „Döntés" mode. Both persist server-side and embed post-commit into the
 > companion's `memory_embedding` vector store (`kind=journal_entry` / `kind=decision`).
-> **Status: ✅ done** (backend + FE real + FE mock, all three aggregates). Lives under the `Me` tab
-> (`ME_TABS` entry `journal`, `/me/naplo`) — see [`me.md`](me.md) §2 for the surface, this doc for
-> the domain. **W1.1 + W1.4 of the Phase 5 "deep memory & personalization" epic** (`mezo-b3pp`).
+> **Status: ✅ done** (backend + FE real + FE mock, all three aggregates). Lives under the `Én` tab
+> (`/me/naplo`, a full-page sibling behind the Én hub's „Napló" tile since the Design 2.0 shell
+> dissolution — see [`me.md`](me.md) §2 for the surface, this doc for the domain). **W1.1 + W1.4 of the Phase 5 "deep memory & personalization" epic** (`mezo-b3pp`).
 > **W1.3 (gratitude entries, `mezo-b3pp.3`) is also ✅ done** — a third aggregate in the same
 > package with `kind=gratitude` embedding, capture via `JournalSheet` gratitude mode and QuickInput
 > Hála tile, and a derived streak card on `/me/naplo`.
@@ -78,14 +74,31 @@ decision-journal slice spec), §11 (cross-cutting conventions). Plans of record:
 
 ## 2. User-facing behavior
 
-Two entry points into the **same** `JournalSheet`, plus a dedicated read/manage page:
+Two entry points into the **same** `JournalSheet`, plus a dedicated read/manage page.
 
-### QuickInput's „Napló" tile → a two-option picker
-`QuickInputSheet`'s „Napló" tile used to jump straight into the activity log. It now opens an
-in-place picker phase (`'naplo-pick'`, `QuickInputSheet.tsx:79-88`) titled **„Mit naplózol?"** with
-two tiles: **„✍️ Aktivitás"** (unchanged — opens `ActivityLogSheet`, the XP-earning activity log)
-and **„📓 Napló"** (opens `JournalSheet` in create mode). Both replace the picker in place — closing
-either closes the whole QuickInput stack (`QuickInputSheet.tsx:61-63`).
+**Design 2.0 note (`mezo-d20`, [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md) + [ADR 0033](../decisions/0033-mozaik-2-tile-language.md)):**
+the journal **domain** is untouched by the redesign — same three tables, same contract, same
+embedding pipeline, same hooks. What changed is the frame around it: the Me section shell
+(`MeSection.tsx` + `ME_TABS`) is deleted, so `/me/naplo` is now a **full-page sibling** of the Én
+hub rather than a sub-tab, reached by the hub's own „Napló" `Tile` (`EnHubPage.tsx`, whose tile
+line reads „{n} napos hála-sorozat · {m} nyitott döntés" from the same `useGratitudeEntries` /
+`useDecisions` reads the page uses — honest-empty, no line at all when neither is true); and the
+quick-log entry moved from the retired centre-FAB tab bar onto the floating coral
+**`QuickLogFab`** (`frontend/src/app/QuickLogFab.tsx`), which still opens the same
+`QuickInputSheet`.
+
+### QuickInput's „Napló" tile → a three-option picker
+`QuickInputSheet`'s „Napló" tile used to jump straight into the activity log. It opens an in-place
+picker phase (`'naplo-pick'`) titled **„Mit naplózol?"** with three tiles: **„Aktivitás"**
+(`ActivityLogSheet`, the XP-earning activity log), **„Napló"** (`JournalSheet` in create mode) and
+**„Hála"** (`JournalSheet` with `initialMode="gratitude"`, W1.3). Each replaces the picker in
+place; every one of them takes an `onBack` that returns to the picker, and closing any of them
+closes the whole QuickInput stack. Since the quick-log v2 pass (`mezo-d20.1.6`) the tiles are
+`ClayIcon`-backed Mozaik `Tile`s rather than emoji rows (`i-lang` / `i-naplo` / `i-growth`), and
+the menu row that opens the picker advertises `sub="3 mód"` — the emoji labels the old doc quoted
+(„✍️ Aktivitás", „📓 Napló") are gone with the clay-icon pass
+([ADR 0033](../decisions/0033-mozaik-2-tile-language.md)). The sheet itself is reached from the
+floating `QuickLogFab`, not from a tab-bar centre button.
 
 ### `JournalSheet` (`features/me/sheets/JournalSheet.tsx`) — create + edit + delete, plus „Döntés" and „Hála" capture modes
 One free-text `<textarea>` (no length cap, placeholder „Írd le, mi jár a fejedben…", autofocus) plus
@@ -138,13 +151,26 @@ gratitude mode never renders — so a transcription taken while capturing gratit
 lost; the extraction fixed it.
 
 ### `/me/naplo` — `JournalPage` (`features/me/pages/JournalPage.tsx`)
-The read + manage surface, reached via the `Napló` tab in `ME_TABS` (right after `Growth`). Header
-`Me · Napló` / `Napló` with a `+ Új bejegyzés` action opening `JournalSheet` in create mode. Entries
+The read + manage surface. **Re-faced onto Mozaik 2.0 in `mezo-d20.6.6`** (source: the
+`en-body.html` `#page-naplo` prototype) and reached from the Én hub's „Napló" tile, not from a
+sub-nav tab — `ME_TABS` no longer exists. The page is a `MozaikPage tone="sage"` with a
+`PageHead` carrying the **`‹ Én` back chip** (`navigate(-1)`) and the `+ Új bejegyzés` action
+(opens `JournalSheet` in create mode), then a `PageHero` whose big number is the **hála streak**
+(`gratitudeStreakDays`, sub-line „napos hála-sorozat · {n} bejegyzés"; both suppressed while the
+gratitude read is pending rather than flashing a `0`) — the same number `GratitudeStreakCard`
+derives for the tile below it, costing no extra round trip because both hooks share one react-query
+key. Body content sits in a `PageBody` inside an `EntranceGroup`, so the streak card, the decision
+cards and the note cards rise in a one-shot 30–50 ms stagger and then hold still. **Every behavior
+below is the prior sheet-era page's, verbatim** — dual mode, honest states, the widening window,
+create/edit via `JournalSheet`. Entries
 render **month-grouped, newest first** (`monthLabel` via `hu-HU` `{year, month: 'long'}`, the
 `MemoryJournalPanel`/`GrowthJournalCard` idiom) over a **widening date window**: `monthsBack` starts
 at 3 (this month + the two before), and a **„Korábbi hónapok"** ghost button at the list's foot
-grows it by 3 more months per tap (`windowFrom`, pure integer month arithmetic — never a fresh
-`new Date()` re-entry). Tapping any entry card reopens `JournalSheet` with `entry` set (edit mode).
+grows it by 3 more months per tap (`windowFrom`, pure integer month arithmetic on the same `today`
+ISO string the page already computed — never a fresh `new Date()` re-entry, so both ends of the
+window share one source of truth for „now"). Tapping any entry card reopens `JournalSheet` with
+`entry` set (edit mode). The cards themselves are the `mem-daycard` idiom reused verbatim from the
+Memória Napló segment, with `mz-eyebrow` month separators.
 
 **States:**
 - **Loading** — three `SkeletonCard` rows under a `role="status"` „Betöltés…" landmark.
@@ -163,12 +189,24 @@ Above the notes list, `JournalPage` renders a **„Döntések"** block — but o
 decision is unreviewed (`reviewedAt === null`); a fully-reviewed history has no dedicated surface in
 this slice. Each card shows the decided-on day label and a chip: **„Nézd vissza"** (amber wash) once
 the decision's own `reviewDue` day has arrived (`isDecisionDue`, `data/journal/decisionHooks.ts`), or
-**„Visszanézés: {reviewDue}"** while it's still ripening. Tapping a card opens
-**`DecisionReviewSheet`** (`features/me/sheets/DecisionReviewSheet.tsx`) — title „Hogyan sült el?",
-eyebrow „Döntés · {dayLabel}", a required 1–5 rating (`role="group"` of `aria-pressed` chips, label
-„Mennyire vált be? (1–5)"), an optional outcome textarea (accessible name „Hogyan sült el —
-részletek"), CTAs „Mégse" / „Mentem" (disabled until a rating is chosen). Save calls `reviewDecision`
-(`useDecisionActions`) — no delete, no edit, neither endpoint exists for a decision. A failed
+**„Visszanézés: {reviewDue}"** while it's still ripening.
+
+**Since `mezo-d20.6.6` the review is INLINE and `DecisionReviewSheet` no longer opens.** The gold
+`mzh-deccard` carries the decision text and a `role="group"` row of five buttons labelled
+„Mennyire vált be? (1–5)" (the 5 reads „5 · bevált"); tapping one replaces the card **in place**
+with a sage `✓ Visszanézve · {n}/5` line carrying the `s-orb-unnepel` clay spot. This is a
+deliberate **fidelity deviation in the prototype's favour** (the prototype's review is fully
+inline, no sheet, no prose step) and it is documented as such in the page's own header comment.
+Two consequences worth naming plainly: the sheet's **optional outcome textarea has no surface any
+more** — `reviewDecision(id, rating)` is called without its third argument, so a review can no
+longer carry prose (§9); and the acknowledgement is driven by a **local `decidedRatings` map keyed
+by decision id**, so the sage line paints on the same render pass rather than waiting for the
+mutation's cache update, with the mutation fired-and-forgotten (`void … .catch(() => {})`) and
+reconciled by the next `useDecisions` refetch rather than rolled back. `openDecisions` therefore
+keeps a just-rated row visible (`reviewedAt === null || decidedRatings[id] !== undefined`) until
+it naturally falls out of the data. **`DecisionReviewSheet.tsx` itself was NOT deleted** — it is
+still exported and still tested, it simply has no caller (§9). There is still no delete and no
+edit: neither endpoint exists for a decision. A failed
 decisions fetch (`isError && openDecisions.length === 0`) renders a compact one-line `GhostState`
 („Nem sikerült betölteni a döntéseket." + „Újra" retry) instead of silently vanishing; a
 stale-but-present list on a later failed refetch falls through to the normal block, matching the
@@ -576,7 +614,9 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
   0029](../decisions/0029-invert-journal-companion-decision-context-port.md).
 - **← QuickInput (wired):** the global `QuickInputSheet` „Napló" tile is journal's other write
   entry point, alongside `Me`'s own `+ Új bejegyzés`. See §2.
-- **↔ Me (wired, hosting):** `/me/naplo` is a `ME_TABS` tab; `JournalSheet`/`JournalPage`/
+- **↔ Me (wired, hosting):** `/me/naplo` is a full-page sibling of the Én hub, reached from that
+  hub's „Napló" tile (`ME_TABS` and `MeSection.tsx` are deleted — Design 2.0,
+  [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md)); `JournalSheet`/`JournalPage`/
   `DecisionReviewSheet` live under `frontend/src/features/me/` even though the journal **domain**
   (types/hooks/API client for both aggregates) has its own `data/journal/` module — the same "hosted
   in Me, owned by its own data module" shape `growth.md` uses for the Growth page's history reads.
@@ -811,15 +851,21 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   `addNote`; edit prefills + calls `updateNote`; delete needs the second confirm tap; the „Döntés"
   mode toggle saves via `addDecision` and is hidden in edit mode); the
   `features/quickinput/sheets/QuickInputSheet.test.tsx` picker-phase tests (the „Napló" tile opens
-  „Mit naplózol?"; picking „Aktivitás"/„Napló" swaps to the respective sheet without closing the
-  stack); `features/me/pages/JournalPage.test.tsx` (month-separator grouping, edit-on-tap, the add
+  „Mit naplózol?"; picking „Aktivitás"/„Napló"/„Hála" swaps to the respective sheet without closing
+  the stack); `features/me/pages/JournalPage.test.tsx` (month-separator grouping, edit-on-tap, the add
   button, the empty/loading/error states, the widening „Korábbi hónapok" CTA including the
-  empty-but-widenable case, the „Döntések" block's due/ripening chips and its own error-retry state);
+  empty-but-widenable case, the „Döntések" block's due/ripening chips and its own error-retry state,
+  and — since the Mozaik re-face `mezo-d20.6.6` — the `‹ Én` back chip, the hero's honest
+  streak line (suppressed while the gratitude read is pending, „napos hála-sorozat · N bejegyzés"
+  once resolved) and the **inline** review's `✓ Visszanézve · {n}/5` acknowledgement in place of
+  the retired sheet hand-off);
   `data/journal/decisionHooks.test.tsx` (dual-mode read + write, the `addDays`-based mock `reviewDue`
   pinned against a UTC-reserialization regression at a month boundary);
   `features/me/sheets/DecisionReviewSheet.test.tsx` (rating required to enable save, calls
-  `reviewDecision`); `data/hooks.reexport.test.ts` + `features/me/pages/MeSection.test.tsx` (barrel
-  identity + the `Napló` tab label in the sub-nav loop);
+  `reviewDecision`) — **still green, but now the only thing that mounts that sheet** (§9);
+  `data/hooks.reexport.test.ts` (barrel identity). **`features/me/pages/MeSection.test.tsx` is
+  deleted** with the Me shell (F8, `mezo-d20.9.1`) — there is no sub-nav loop to assert a tab label
+  in; the Én hub's own „Napló" tile is covered by `features/me/pages/EnHubPage.test.tsx`;
   `features/me/components/GratitudeRows.test.tsx` (`mezo-b3pp.25`) — the extracted block: one row
   by default, „+ Még egy" up to the cap and gone at it, a `max` below 3 honoured (the ritual's
   remaining slots), the life-area chip toggling both ways, and the two voice cases that pin the
@@ -1027,7 +1073,29 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
   lifecycle follow-up (`mezo-b3pp.26`, the three bullets above) now closed except the one
   documented residue. **W1.3b** (`mezo-b3pp.25`) — gratitude rows in the ritual `ReflectionStep`,
   §2 above — has also shipped, reusing the seam in §5 with no new embed pipeline. Nothing open
-  remains in this domain.
+  remains in the *domain*; the two Design 2.0 residues below are view-layer, not model.
+
+- **The Design 2.0 re-face touched only the frame — and that is the whole point.** Mozaik 2.0
+  ([ADR 0033](../decisions/0033-mozaik-2-tile-language.md)) is the Nth render layer over an
+  unchanged journal model: `journal_entry` / `decision_entry` / `gratitude_entry`, the
+  `mezo.feature.journal.enabled` gate, `JournalApi`, the embedding listeners and the whole
+  `data/journal/` hook layer are byte-for-byte what W1.1–W1.5 shipped. What changed: `/me/naplo`
+  stopped being a `ME_TABS` sub-tab and became a full-page sibling behind the Én hub's tile
+  ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md)); the page swapped its
+  header for `MozaikPage`/`PageHead`/`PageHero`/`PageBody` + an `EntranceGroup`; and the decision
+  review went inline.
+
+- **DEFERRED — `DecisionReviewSheet.tsx` is orphaned, and with it the outcome prose.** The inline
+  review (`mezo-d20.6.6`, §2) follows the prototype, which has no sheet — so nothing in the app
+  mounts `features/me/sheets/DecisionReviewSheet.tsx` any more, though the file, its export and
+  `DecisionReviewSheet.test.tsx` are all still in the tree and green. The functional loss is real
+  and is not papered over: `reviewDecision(id, rating)` is now always called **without** its
+  optional third argument, so **a review can no longer record outcome prose**. The
+  `DecisionReviewRequest.outcome` field, the column and the embedding path that reads it are all
+  still live on the backend — they simply have no writer from the UI. Resolving this needs a
+  designed surface (a prose step inside the inline flow, or the sheet re-hung off a „részletek"
+  affordance), not a hurried re-insert; until then the sheet is dead code by the F8 definition and
+  is recorded here as such.
 
 ## 10. Key files
 
@@ -1102,11 +1170,12 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
 
 **Frontend — UI**
 - `frontend/src/features/me/sheets/JournalSheet.tsx` — create/edit/delete sheet + the „Napló" / „Döntés" / „Hála" mode toggle (create mode only); `initialMode` prop for QuickInput.
-- `frontend/src/features/me/sheets/DecisionReviewSheet.tsx` — the rating + outcome review sheet.
-- `frontend/src/features/me/pages/JournalPage.tsx` — `/me/naplo`, month-grouped notes view + the „Döntések" open-decisions block + the `GratitudeStreakCard`.
-- `frontend/src/features/me/pages/tabs.ts:11` — `ME_TABS` `journal` entry.
-- `frontend/src/app/router.tsx:50,155` — `JournalPage` import + `naplo` child route.
-- `frontend/src/features/quickinput/sheets/QuickInputSheet.tsx:22,63-65,79-89` — the three-option picker phase (`naplo-pick` with Aktivitás/Napló/Hála); `'gratitude'` phase renders JournalSheet with `initialMode="gratitude"`.
+- `frontend/src/features/me/sheets/DecisionReviewSheet.tsx` — the rating + outcome review sheet. **Consumer-less since `mezo-d20.6.6`** (the review is inline on `JournalPage` now) — still exported, still tested, see §9.
+- `frontend/src/features/me/pages/JournalPage.tsx` — `/me/naplo`, a `MozaikPage` full-page sibling of the Én hub (`PageHead` `‹ Én` + `+ Új bejegyzés`, `PageHero` streak number, `PageBody`/`EntranceGroup`): the month-grouped notes view + the „Döntések" block with its **inline** 1–5 review + the `GratitudeStreakCard`.
+- `frontend/src/features/me/pages/EnHubPage.tsx` — the Én hub's „Napló" `Tile` → `/me/naplo`, with the honest „{n} napos hála-sorozat · {m} nyitott döntés" line (no line when neither holds). **`features/me/pages/tabs.ts` (`ME_TABS`) and `MeSection.tsx` are deleted** (F8, `mezo-d20.9.1`).
+- `frontend/src/app/router.tsx` — `JournalPage` import + the flat `me/naplo` route.
+- `frontend/src/shared/ui/mozaik/` (`MozaikPage`/`PageHead`/`PageHero`/`PageBody`, `Tile`) + `mozaik/motion.tsx` (`EntranceGroup`) + `frontend/src/shared/ui/clay/` (`ClaySpot name="s-orb-unnepel"` on the reviewed line) — the Mozaik 2.0 primitives the page renders through ([ADR 0033](../decisions/0033-mozaik-2-tile-language.md)).
+- `frontend/src/features/quickinput/sheets/QuickInputSheet.tsx` — the three-option picker phase (`naplo-pick` with Aktivitás/Napló/Hála as clay `Tile`s); the `'gratitude'` phase renders `JournalSheet` with `initialMode="gratitude"`, and every branch takes an `onBack` returning to the picker. Opened from `frontend/src/app/QuickLogFab.tsx`, the floating coral FAB that replaced the centre-FAB tab bar ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md)).
 - `frontend/src/features/me/logic/gratitudeStreak.ts` — `gratitudeStreakDays()` (consecutive days derived from entry dates, yesterday-grace).
 - `frontend/src/features/me/components/GratitudeStreakCard.tsx` — streak card rendered on `/me/naplo` above the open-decisions block.
 - `frontend/src/features/me/components/GratitudeRows.tsx` — the shared, state-free gratitude capture block (W1.3b, `mezo-b3pp.25`), extracted out of `JournalSheet` and reused by `features/ritual/components/ReflectionStep.tsx` (see [`ritual.md`](ritual.md) §2/§10).
@@ -1119,7 +1188,7 @@ const streak = gratitudeStreakDays(entries.map(e => e.occurredOn), localDateStri
 - `frontend/src/features/me/logic/gratitudeStreak.test.ts` (consecutive-day counting, yesterday-grace)
 - `frontend/src/features/me/components/GratitudeStreakCard.test.tsx` (derived streak rendering, ghost copy)
 - `frontend/src/features/me/components/GratitudeRows.test.tsx` (W1.3b, `mezo-b3pp.25` — §8)
-- `frontend/src/data/hooks.reexport.test.ts` + `frontend/src/features/me/pages/MeSection.test.tsx` (barrel identity + tab label).
+- `frontend/src/data/hooks.reexport.test.ts` (barrel identity) + `frontend/src/features/me/pages/EnHubPage.test.tsx` (the hub's Napló tile) — `MeSection.test.tsx` was deleted with the shell.
 
 **Docs**
 - Design spec: [`docs/superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md) §4.1, §4.3, §5.1, §5.4, §11.
