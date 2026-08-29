@@ -118,3 +118,36 @@ tartalom volt kirenderelve, és a koreográfia valóban hiányzik. **Két meglep
 külön megnézni: az `ExercisesPage` és a `RecipesPage` **importál** `EntranceGroup`-ot, mégis nulla
 `.mz-play` van a DOM-ban — vagy holt import, vagy egy olyan ágban van, ami sosem fut. Ez a fajta
 „fél-bekötött" koreográfia rosszabb, mint a hiányzó, mert a kódot olvasva késznek látszik.
+
+---
+
+## Az audit eredménye (2026-08-29 este)
+
+Öt tab, három PR ([#294](https://github.com/mrkuhne/mezo/pull/294) Nap+Edzés,
+[#295](https://github.com/mrkuhne/mezo/pull/295) Fuel+Mezo, [#296](https://github.com/mrkuhne/mezo/pull/296) Én),
+plusz ez a kereszt-metsző kör. A módszer bevált: **a prototípus forrását a kód mellé olvasva**
+minden szelet talált olyat is, ami a képernyőn nem tűnt fel.
+
+**Amit a mérés utólag igazolt:** a fenti A/B/C mozgás-csoportok mindegyike valós volt. A B) csoport
+(„armed `EntranceGroup`, nulla `.rise`") a legalattomosabb: a kód olvasva késznek látszik.
+
+**Amit a képernyő nem mutatott meg, csak a kód:**
+- a `--error-deep` sötét témában `#F7B3AE`, azaz **piros** — és a minta-döntés sor ezt használta
+  az „Elvetem" gombon, szemben a „sosem piros" guardraillel;
+- hét `/mezo/*` oldalról **teljesen hiányzott a kiút** (nincs `PageHead`), mert a feloldott
+  `InsightsScreen` shell hordozta korábban;
+- az érme-gazdaság **nyelő nélkül** maradt (`TitleShopSheet`/`StreakSheet` gazdátlan), a
+  döntés-visszanézés pedig **nem tudott szöveges kimenetet rögzíteni**, pedig a mező, az oszlop és
+  az azt olvasó embedding-út is él.
+
+**Amit szándékosan NEM javítottunk, és miért:** a Sport `+XP e héten` és a Futás
+`RPE sprint cél 8–9` cellája a prototípusban kitalált érték (`logged × 30`, illetve konstans) —
+ezeket eldobtuk, nem lemásoltuk. A Fuel Napló-csempe trend-nyila és a heti Napló-oldal
+adatforrás nélkül maradt (F3.6/F6.2). A chat-oldalnak és az Adat-egészség gyűrűknek **a
+prototípusban sincs** belépő animációja — a „hiányzó mozgás" listáról ezek lekerültek.
+
+**Ami a következő körre marad** (`mezo-d20.11.1`): a `PageHero` ikonmérete oldalanként eltér a
+prototípusokban (48–92 px, a 72 és az 54 holtversenyben) — nincs egyetlen hű alapérték, ezért
+`iconSize` propot kapott, és az oldalankénti beállítás az F7-es körökre marad. A mini conic
+gyűrűk töltésére **nem** vezettünk be `@property --v`-t: a `useCountUp`-pal hajtott `--v` már
+bevált recept (WeekScoreRing, Fuel swimlane), és két párhuzamos mechanizmus rosszabb, mint egy.

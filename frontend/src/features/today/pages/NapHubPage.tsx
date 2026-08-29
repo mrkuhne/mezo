@@ -511,6 +511,16 @@ export function NapHubPage() {
               {questTile(110)}
               {checkTile(150)}
               {mezoTile(190)}
+              {/* Éjszakai mód's Nap-side door. It died with `IslandEvening` when the Today view
+                  layer went (mezo-d20.11): the Alvás page's row survived, but that row was
+                  designed as the TWIN of a timed evening entry, not its replacement. Timed, as
+                  it always was — inside the wind-down window (lights-out − 90 min), so it does
+                  not sit on the mosaic all evening. */}
+              {bedIn <= 90 && bedIn > 0 && (
+                <Tile key="night" wash="lav" icon="i-alvas" eyebrow="Éjszakai mód" delayMs={230}
+                  line={`indul ${sleepGoal.bedTime} előtt`}
+                  onClick={() => navigate('/me/sleep/night')} aria-label="Éjszakai mód" />
+              )}
             </Mosaic>
             {/* prototype: the este panel closes on the day's stat strip (kcal · edzés · XP).
                 A statistic with no source renders `—`, never a fabricated zero. */}

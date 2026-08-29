@@ -43,7 +43,7 @@ export const patterns: Pattern[] = [
     id: 'p2',
     pairKey: 'late-meal~next-sleep-quality',
     category: 'trigger',
-    categoryLabel: 'Trigger',
+    categoryLabel: 'Kiváltó',
     confidence: 0.78,
     title: 'Késő szénhidrát (>20:00 · >60g) → másnap reggeli RPE +1',
     mechanism:
@@ -57,7 +57,7 @@ export const patterns: Pattern[] = [
     id: 'p3',
     pairKey: 'hyp-3fa1c2d9',
     category: 'response',
-    categoryLabel: 'Response',
+    categoryLabel: 'Válasz',
     confidence: 0.69,
     title: 'Caffeine 14:00 utáni dózis → sleep onset +24 perc',
     mechanism: 'A 14:00 utáni koffein (>40mg) átlagosan 24 perccel kitolja az alvás kezdetét.',
@@ -178,7 +178,7 @@ export const patternMonitor: PatternMonitor = {
     {
       key: 'checkin-stress~sleep-quality',
       title: 'Stressz-szint ↔ aznapi alvásminőség',
-      category: 'trigger', categoryLabel: 'Trigger', lagDays: 0,
+      category: 'trigger', categoryLabel: 'Kiváltó', lagDays: 0,
       metricAKey: 'checkin-stress', metricALabel: 'stressz-szint',
       metricBKey: 'sleep-quality', metricBLabel: 'alvásminőség',
       mechanismHu: 'A stresszes nap ronthatja az aznapi alvásminőséget.',
@@ -206,7 +206,7 @@ export const patternMonitor: PatternMonitor = {
     {
       key: 'late-meal~next-sleep-quality',
       title: 'Késői étkezés ↔ rákövetkező alvásminőség',
-      category: 'trigger', categoryLabel: 'Trigger', lagDays: 1,
+      category: 'trigger', categoryLabel: 'Kiváltó', lagDays: 1,
       metricAKey: 'late-meal-hour', metricALabel: 'utolsó étkezés ideje',
       metricBKey: 'sleep-quality', metricBLabel: 'alvásminőség',
       mechanismHu: 'A késői étkezés ronthatja a rákövetkező éjszaka minőségét.',
@@ -224,7 +224,7 @@ export const patternMonitor: PatternMonitor = {
     {
       key: 'daily-kcal~next-morning-weight-delta',
       title: 'Napi kalória ↔ másnap reggeli súlyváltozás',
-      category: 'response', categoryLabel: 'Response', lagDays: 1,
+      category: 'response', categoryLabel: 'Válasz', lagDays: 1,
       metricAKey: 'daily-kcal', metricALabel: 'napi kalória',
       metricBKey: 'weight-delta-kg', metricBLabel: 'reggeli súlyváltozás',
       mechanismHu: 'A napi bevitel a másnap reggeli súlyban csapódhat le.',
@@ -238,7 +238,7 @@ export const patternMonitor: PatternMonitor = {
     {
       key: 'sport-load~next-day-gym-volume',
       title: 'Sportterhelés ↔ másnapi gym-volumen',
-      category: 'response', categoryLabel: 'Response', lagDays: 1,
+      category: 'response', categoryLabel: 'Válasz', lagDays: 1,
       metricAKey: 'sport-load-min', metricALabel: 'sportterhelés',
       metricBKey: 'gym-volume-kg', metricBLabel: 'gym-volumen',
       mechanismHu: 'A sportterhelés másnapra elvehet a gym-teljesítményből.',

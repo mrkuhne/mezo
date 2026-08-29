@@ -94,11 +94,12 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 // DELETES ?dp when the clicked face IS the now-face — on a CI runner whose clock lands
 // in the este band, the dp=este assertion below would flip vacuously (this exact flake
 // failed CI run 33144018103). 13:42 → nowFace 'nap', deterministic everywhere.
+const clock = vi.hoisted(() => ({ now: new Date('2026-05-22T13:42:00') }))
 vi.mock('@/features/today/logic/useMinuteTick', () => ({
-  useMinuteTick: () => new Date('2026-05-22T13:42:00'),
+  useMinuteTick: () => clock.now,
 }))
 
-beforeEach(() => { waterStore.reset(); habitStore.reset() })
+beforeEach(() => { waterStore.reset(); habitStore.reset(); clock.now = new Date('2026-05-22T13:42:00') })
 
 // Nap hub (mezo-d20.2.1) — the day spine's Mozaik face: header recipe (date eyebrow +
 // daypart switch + bell + orb avatar), one hero per daypart panel, then the 2-column
@@ -302,4 +303,39 @@ test('a horgony row ticks in place', async () => {
   expect(btn.querySelector('.nap-htick.f')).toBeNull()
   await userEvent.click(btn)
   expect(btn.querySelector('.nap-htick.f')).not.toBeNull()
+})
+
+// ── Éjszakai mód: the Nap-side door restored (mezo-d20.11) ──────────────────
+// It died with `IslandEvening` when the Today view layer went. The Alvás page's row
+// survived, but that row was designed as the TWIN of a timed evening entry, not its
+// replacement — so the entry is timed here too, not a permanent tile.
+function renderEste() {
+  return render(
+    <QueryWrapper>
+      <ToastProvider>
+        <LevelUpProvider>
+          <MemoryRouter initialEntries={['/nap?dp=este']}>
+            <Routes>
+              <Route path="/nap" element={<NapHubPage />} />
+              <Route path="/me/sleep/night" element={<div>night-page</div>} />
+            </Routes>
+          </MemoryRouter>
+        </LevelUpProvider>
+      </ToastProvider>
+    </QueryWrapper>,
+  )
+}
+
+test('the Éjszakai mód tile appears inside the wind-down window and opens the night surface', async () => {
+  clock.now = new Date('2026-05-22T22:10:00')
+  renderEste()
+  await userEvent.click(await screen.findByRole('button', { name: 'Éjszakai mód' }))
+  expect(await screen.findByText('night-page')).toBeInTheDocument()
+})
+
+test('the Éjszakai mód tile stays away earlier in the evening — a timed door, not a permanent tile', async () => {
+  clock.now = new Date('2026-05-22T19:00:00')
+  renderEste()
+  await screen.findByRole('button', { name: 'Zárjuk le a napot' })
+  expect(screen.queryByRole('button', { name: 'Éjszakai mód' })).toBeNull()
 })
