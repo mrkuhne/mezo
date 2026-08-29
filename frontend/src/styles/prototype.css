@@ -4494,6 +4494,7 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 .mz-facttile.mz-w-sage { box-shadow: var(--mz-shadow-sage); }
 .mz-facttile.mz-w-sky  { box-shadow: var(--mz-shadow-sky); }
 .mz-facttile.mz-w-gold { box-shadow: var(--mz-shadow-gold); }
+.mz-facttile.mz-w-lav  { box-shadow: var(--mz-shadow-lav); }
 .mz-fic { width: 35px; height: 35px; border-radius: 13px; display: grid; place-items: center; flex: none;
   background: var(--mz-fic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
 .mz-fact-grow { flex: 1; min-width: 0; }
@@ -4634,6 +4635,53 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 
 @media (prefers-reduced-motion: reduce) {
   .mem-dash { animation: none; }
+}
+
+/* ── Emberek + Tudás re-face (mezo-d20.6.7) — prototype en-body #page-emberek /
+      #page-tudas ×1.18 (330→390px frame). Person tiles: 2-col grid, conic-gradient
+      affect ring (--ac/--av are element-local, same LOCAL_PROPS exemption as the
+      .mcells --mw/--md pair — not tokens, set inline per avatar). Mention tiles:
+      washed card, FIGYELEM badge on the amber cell tokens, the pattern-tie chip.
+      Tudás summary tile reuses --mz-wash-lav/--mz-shadow-lav; node/profile tiles
+      reuse .mz-facttile + .mz-fic + .mz-decbtn verbatim (mezo-d20.5.5). ── */
+.ppl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.ppl-tile { border-radius: 20px; padding: 12px 13px; display: grid; gap: 4px; justify-items: center;
+  text-align: center; font-family: inherit; border: none; min-height: 44px; cursor: pointer;
+  background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.ppl-tile:active { transform: scale(0.97); }
+.ppl-avat { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--ac) var(--av), rgba(43, 33, 24, 0.1) 0); }
+.ppl-avin { width: 32px; height: 32px; border-radius: 50%; background: var(--mz-stripbg); display: grid; place-items: center;
+  font-family: var(--ff-display); font-size: 13px; font-weight: 700; }
+.ppl-nm { font-size: 12.5px; font-weight: 700; color: var(--text-primary); }
+.ppl-rl { font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.ppl-mt { font-size: 9.5px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+
+.ppl-mrowt { border-radius: 18px; padding: 11px 13px; margin-bottom: 8px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.ppl-mtop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.ppl-mtime { font-size: 9px; font-weight: 800; color: var(--mz-ink-mut); }
+.ppl-mname { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.ppl-msrc { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--mz-ink-mut); }
+.ppl-figy { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 7px;
+  background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); flex: none; margin-left: auto; }
+.ppl-mx { font-size: 12px; font-style: italic; font-weight: 300; line-height: 1.5; margin: 6px 0 0; color: var(--text-primary); }
+.ppl-mtie { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.ppl-mtie > .ppl-mtielbl { font-size: 9px; font-weight: 800; color: var(--mz-cell-rose-ink); }
+.ppl-mtiechip { font-size: 10px; font-weight: 700; color: var(--mz-ink-soft);
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); border-radius: 999px; padding: 2px 8px; }
+
+.tud-summary { border-radius: 20px; padding: 14px 15px;
+  background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
+.tud-summary-link { display: block; margin-top: 10px; font-size: 11px; font-weight: 700;
+  color: var(--mz-cell-lav-ink); text-decoration: none; }
+.tud-lsec { display: flex; align-items: center; gap: 6px; padding: 10px 2px 6px; }
+.tud-cnt { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ppl-tile:active { transform: none; }
 }
 
 /* ============================================================

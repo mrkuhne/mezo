@@ -1,42 +1,31 @@
+import { ClayIcon } from '@/shared/ui/clay'
+import { KIND_ICON, KIND_WASH } from '@/features/me/logic/knowledgeNodeVisuals'
 import type { KnowledgeGraphNode } from '@/data/types'
 
 /** One active knowledge-graph node in the Tudástár "Kapcsolatok" section (W2.6, mezo-b3pp.11) —
- *  the Napiv row-card idiom (flat surface, no left accent bar), plus the
- *  backend-rendered `topEdges` lines and an L2 archive action. */
+ *  Mozaik re-face (mezo-d20.6.7): a per-kind washed .mz-facttile with a clay icon disc, the
+ *  backend-rendered `topEdges` lines, and the L2 archive action (.mz-decbtn, mezo-d20.5.5). */
 export function KnowledgeGraphNodeCard({ node, onArchive }: {
   node: KnowledgeGraphNode
   onArchive: () => void
 }) {
   return (
-    <div
-      data-graph-node-card
-      style={{ background: 'var(--surface)', borderRadius: 16, boxShadow: 'var(--np-shadow-row)', padding: 10 }}
-    >
-      <div className="row" style={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.4, flex: 1 }}>{node.title}</span>
-        <button
-          type="button"
-          className="chip"
-          onClick={onArchive}
-          style={{ fontSize: 10, color: 'var(--text-tertiary)', flexShrink: 0 }}
-        >
-          Archivál
-        </button>
+    <div data-graph-node-card className={`mz-facttile mz-w-${KIND_WASH[node.kind]}`}>
+      <div className="mz-fic"><ClayIcon name={KIND_ICON[node.kind]} size={20} /></div>
+      <div className="mz-fact-grow">
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+          <span className="mz-fact-tx">{node.title}</span>
+          <button type="button" className="mz-decbtn" onClick={onArchive}>Archivál</button>
+        </div>
+        {node.summary && <p className="mz-fact-origin" style={{ marginTop: 4 }}>{node.summary}</p>}
+        {node.topEdges.length > 0 && (
+          <ul style={{ margin: '6px 0 0', padding: 0, listStyle: 'none' }}>
+            {node.topEdges.map((line) => (
+              <li key={line} className="mz-fact-sb">{line}</li>
+            ))}
+          </ul>
+        )}
       </div>
-      {node.summary && (
-        <p className="text-secondary" style={{ fontSize: 11, lineHeight: 1.5, margin: '6px 0 0' }}>
-          {node.summary}
-        </p>
-      )}
-      {node.topEdges.length > 0 && (
-        <ul style={{ margin: '6px 0 0', padding: 0, listStyle: 'none' }}>
-          {node.topEdges.map((line) => (
-            <li key={line} className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.6 }}>
-              {line}
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   )
 }
