@@ -35,7 +35,7 @@ test('Train opens on Mai and the sub-nav switches between sub-tabs', async () =>
   // Open dropdown and click Medálok (mezo-wp6n — the cabinet's sub-nav entry)
   await userEvent.click(screen.getByRole('button', { name: 'Sport' }))
   await userEvent.click(screen.getByRole('menuitem', { name: 'Medálok' }))
-  expect(screen.getByRole('heading', { level: 1, name: 'Medálok' })).toBeInTheDocument()
+  expect(document.querySelector('.mz-hero-nm')).toHaveTextContent('Medálok')
 
   // Open dropdown and click Mesociklusok
   await userEvent.click(screen.getByRole('button', { name: 'Medálok' }))
