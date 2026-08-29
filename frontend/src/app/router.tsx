@@ -52,7 +52,7 @@ import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
-import { WeekPage } from '@/features/me/pages/WeekPage'
+import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -171,7 +171,7 @@ export const routes: RouteObject[] = [
       // index — lives at /mezo/patterns, next to the pattern-pair detail leaf above.
       { path: 'mezo', element: <MezoHubPage /> },
       { path: 'mezo/patterns', element: <PatternsPage /> },
-      // Heti retired (mezo-p2tr): the review moved to /me/week (WeekPage) — including the
+      // Heti retired (mezo-p2tr): the review moved to /me/week (WeekHubPage) — including the
       // score hero, the growth card and the weekly tervjavaslat prose. The route survives as
       // an honest redirect so any old bookmark/link still lands somewhere sensible.
       { path: 'mezo/weekly', element: <Navigate to="/me/week" replace /> },
@@ -194,7 +194,10 @@ export const routes: RouteObject[] = [
       { path: 'me', element: <EnHubPage /> },
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
-      { path: 'me/week', element: <WeekPage /> },
+      // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
+      // WeekPage. Its four view tiles open /me/week/{elemzes,tanulsagok,napok,felfedezesek},
+      // registered by their own slices.
+      { path: 'me/week', element: <WeekHubPage /> },
       { path: 'me/goals', element: <GoalsPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },
