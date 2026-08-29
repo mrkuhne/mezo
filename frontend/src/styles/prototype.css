@@ -236,6 +236,12 @@
   --mz-shadow-coral: 0 17px 31px -17px rgba(216, 72, 31, 0.32), 0 2px 6px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --mz-mem-dash: #B4A8D8;
   --mz-mem-ink: #8A76CC;
+  /* Én hub (mezo-d20.6.1) — prototype en-body .idhero/.goalcard/.mezotile hexes verbatim */
+  --mz-titlech-bg: rgba(201, 150, 46, 0.14);
+  --mz-titlech-ink: #A8801F;
+  --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
+  --mz-goaldot: #FF5B36;
+  --mz-wash-band: linear-gradient(150deg, #FFEDE4, #FFF8F4);
 
 }
 
@@ -394,6 +400,13 @@
   --mz-shadow-coral: var(--mz-shadow);
   --mz-mem-dash: color-mix(in srgb, var(--dv-lav) 65%, transparent);
   --mz-mem-ink: var(--dv-lav);
+  /* Én hub (mezo-d20.6.1) — title chip / goal track / settings band on the dark dv ramp.
+     The goal fill + its dot stay saturated coral in both themes (like the MOST ring). */
+  --mz-titlech-bg: color-mix(in srgb, var(--dv-amber) 18%, var(--surface-card));
+  --mz-titlech-ink: var(--dv-amber);
+  --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
+  --mz-goaldot: #FF5B36;
+  --mz-wash-band: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
 
 }
 
@@ -4634,6 +4647,83 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 
 @media (prefers-reduced-motion: reduce) {
   .mem-dash { animation: none; }
+}
+
+/* ── Én hub (mezo-d20.6.1) — prototype en-body.html hub section ×1.18 (330→390px).
+   Anatomy: identity hero (conic in-level XP ring around the initial, name, equipped
+   title chip, Lv · XP · 🔥 · 🪙 row, bio line that vanishes when empty) → the
+   coral-ringed GOAL CARD (trajectory eyebrow, animated track with indulás/most/cél
+   labels, Hátra · Tempó · ETA mini-cells; a maintain goal drops the track and reads
+   „tartás") → the 9-tile mosaic → the Beállítások band. Every surface is --mz-*. ── */
+.enh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
+.enh-panel { display: flex; flex-direction: column; gap: 11px; }
+
+.enh-idhero { display: grid; justify-items: center; text-align: center; gap: 4px; padding: 9px 14px 12px; }
+.enh-idring { width: 78px; height: 78px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: conic-gradient(#FF6B4A calc(var(--xp, 0) * 1%), var(--mz-gbar-bg) 0); }
+.enh-idring i { width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center;
+  font-style: normal; font-size: 26px; font-weight: 700;
+  background: var(--mz-wash-coral); color: var(--mz-cell-coral-ink); }
+.enh-nm { font-size: 19px; font-weight: 700; margin-top: 3px; }
+.enh-titlech { font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--mz-titlech-bg); color: var(--mz-titlech-ink); border-radius: 999px; padding: 4px 12px; }
+.enh-idstats { display: flex; gap: 12px; margin-top: 6px; font-size: 10.5px; font-weight: 700;
+  color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.enh-bio { border: none; background: none; font-family: inherit; cursor: pointer;
+  min-height: 44px; padding: 4px 12px; font-size: 10px; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums; }
+.enh-bio:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
+
+.enh-goalcard { border: 1px solid #FF6B4A; border-radius: 21px; background: var(--mz-stripbg);
+  padding: 13px 15px 14px; width: 100%; text-align: left; font-family: inherit; color: var(--text-primary);
+  cursor: pointer; box-shadow: var(--mz-shadow-most);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.enh-goalcard:active { transform: scale(0.97); }
+.enh-goalhead { display: flex; align-items: center; gap: 8px; }
+.enh-goalhead .mz-eyebrow { color: var(--mz-cell-coral-ink); }
+.enh-stch { margin-left: auto; flex: none; font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
+  border-radius: 7px; padding: 3px 9px; background: var(--mz-stch-ok-bg); color: var(--mz-stch-ok-ink); }
+.enh-gtrack { position: relative; height: 8px; border-radius: 5px; background: var(--mz-gbar-bg); margin-top: 12px; }
+.enh-gtrack .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px;
+  width: var(--p); background: var(--mz-goalfill); }
+.mz-play .enh-gtrack .fill { animation: enh-gfill 0.9s cubic-bezier(0.25, 0.8, 0.35, 1) 0.4s backwards; }
+@keyframes enh-gfill { from { width: 0; } }
+.enh-gtrack .dot { position: absolute; top: 50%; left: var(--p); transform: translate(-50%, -50%);
+  width: 15px; height: 15px; border-radius: 50%; background: var(--mz-stripbg);
+  border: 3px solid var(--mz-goaldot); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.4); }
+.enh-gtlbl { display: flex; justify-content: space-between; margin-top: 6px; font-size: 8.5px;
+  font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.enh-gtlbl b { color: var(--text-primary); }
+.enh-goalcard .mz-mcells { margin-top: 11px; }
+.enh-newgoal { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+  min-height: 44px; border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 20px;
+  padding: 14px 0; font-family: inherit; font-size: 12.5px; font-weight: 700;
+  color: var(--mz-ink-soft); cursor: pointer; }
+
+/* tile washes + eyebrow inks — prototype .t-minta / .t-water / .t-habe / .t-kreed /
+   .t-check / .t-quest / .t-stack / .t-vital, one per hub tile */
+.enh-t-minta { --mz-wash: var(--mz-wash-minta); box-shadow: var(--mz-shadow-lav); }
+.enh-t-kreed { --mz-wash: var(--mz-wash-kreed); }
+.enh-eb-lav .mz-eyebrow   { color: var(--mz-cell-lav-ink); }
+.enh-eb-sky .mz-eyebrow   { color: var(--mz-cell-sky-ink); }
+.enh-eb-coral .mz-eyebrow { color: var(--mz-cell-coral-ink); }
+.enh-eb-rose .mz-eyebrow  { color: var(--mz-cell-rose-ink); }
+.enh-eb-gold .mz-eyebrow  { color: var(--mz-qxp-ink); }
+.enh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
+
+.enh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
+  cursor: pointer; border-radius: 20px; padding: 12px 14px; font-family: inherit; text-align: left;
+  color: var(--text-primary); background: var(--mz-wash-band);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-coral);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.enh-band:active { transform: scale(0.97); }
+.enh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
+.enh-band .txt b { font-weight: 700; }
+.enh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .enh-gtrack .fill { animation: none; }
+  .enh-goalcard, .enh-band { transition: none; }
 }
 
 /* ============================================================

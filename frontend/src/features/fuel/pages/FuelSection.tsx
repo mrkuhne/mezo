@@ -7,8 +7,9 @@ import { Icon } from '@/shared/ui/Icon'
 import { SubNavDropdown } from '@/shared/ui/SubNavDropdown'
 
 // Fuel-beállítások entry point (mezo-c9t5 — the keret-hero iteration): the retired `KeretBelt`'s
-// own "szerkeszt ›" trigger moves here, the Me `SubNavDropdown` `extraAction` pattern
-// (`features/me/pages/MeSection.tsx`) — `KeretHero` carries no settings entry of its own.
+// own "szerkeszt ›" trigger moves here, following the `SubNavDropdown` `extraAction` pattern the
+// retired Me shell used (its settings action now lives on the Én hub's Beállítások band,
+// mezo-d20.6.1) — `KeretHero` carries no settings entry of its own.
 export function FuelSection() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   return (

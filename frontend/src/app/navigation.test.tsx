@@ -29,14 +29,27 @@ test('Me screen theme selector flips data-theme', async () => {
   // Default is now circadian-auto (wall-clock dependent); preset manual light so this
   // navigation smoke test stays deterministic. Auto/circadian resolution is covered by
   // CircadianTheme.test + ThemeProvider.test.
+  // The Me shell dissolved (mezo-d20.6.1): the settings sheet now opens from the Én hub's
+  // Beállítások band, not from the retired SubNavDropdown's ⚙️ extra action.
   localStorage.setItem('mezo-theme', 'light')
   renderApp('/me')
-  await userEvent.click(screen.getByRole('button', { name: 'Profil' }))
-  await userEvent.click(screen.getByRole('menuitem', { name: 'Beállítások' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Beállítások' }))
   // Manual light => no attribute (light is the CSS base); choosing Sötét flips to dark.
   expect(document.documentElement.getAttribute('data-theme')).toBeNull()
   await userEvent.click(screen.getByRole('button', { name: /Sötét/ }))
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+})
+
+test('the Én tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.6.1)', async () => {
+  renderApp('/me')
+  expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Súly' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Me alnavigáció')).not.toBeInTheDocument()
+})
+
+test('/me/people stays a stable full-page sibling of the hub', async () => {
+  renderApp('/me/people')
+  expect(await screen.findByRole('heading', { level: 1, name: /Kapcsolatok/ })).toBeInTheDocument()
 })
 test('the tab bar stays visible on the regular Train tab', () => {
   const { container } = renderApp('/train')
