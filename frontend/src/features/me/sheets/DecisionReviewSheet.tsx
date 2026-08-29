@@ -16,11 +16,13 @@ interface DecisionReviewSheetProps {
 }
 
 // The review half of the decision journal (mezo-b3pp.4): re-reads the decision as it was written,
-// then records how it turned out (1-5 + optional prose). Today `JournalPage` only ever opens this
-// on an OPEN decision (its `openDecisions` filter excludes `reviewedAt !== null`), so the prefill
-// below is currently unreachable dead code, not a live re-review flow — it is kept (and correct)
-// because the backend PUT is re-runnable, so a future "review history" surface can reopen this
-// same sheet on an already-reviewed decision and reuse it as-is.
+// then records how it turned out (1-5 + optional prose). Since the Mozaik re-face (mezo-d20.6.6),
+// `JournalPage` no longer opens this sheet — its gold decision card reviews INLINE (the
+// prototype's own #page-naplo .decrow), reusing the same `reviewDecision` mutation without the
+// optional outcome-text step. This component (and its own test) is kept unchanged and unreferenced
+// from there on purpose: the backend PUT it wraps is re-runnable, so a future "review history"
+// surface — or any flow wanting the richer prose field — can still mount this sheet, prefill
+// included, on an already-reviewed decision and reuse it as-is.
 export function DecisionReviewSheet({ decision, today, onClose }: DecisionReviewSheetProps) {
   const { reviewDecision, pending } = useDecisionActions()
   const [rating, setRating] = useState<number | null>(decision.outcomeRating)
