@@ -161,7 +161,7 @@ export function NapHubPage() {
       <span className="mz-eyebrow nap-coral">Mezo</span>
       <div className="mz-spotwrap">
         <span className="nap-anchorwrap">
-          <ClayIcon name="i-level" size={45} />
+          <ClayIcon name="i-level" size={47} />
           {unreadMsgs > 0 && <span className="nap-unread" aria-hidden="true">{unreadMsgs}</span>}
         </span>
       </div>
@@ -174,7 +174,7 @@ export function NapHubPage() {
       style={{ '--d': `${delay}ms` } as React.CSSProperties}
       onClick={() => navigate('/nap/kuldetesek')} aria-label="Napi küldetések">
       <span className="mz-eyebrow nap-gold">Küldetések</span>
-      <div className="mz-spotwrap"><ClaySpot name="s-hajtas" size={45} /></div>
+      <div className="mz-spotwrap"><ClaySpot name="s-hajtas" size={47} /></div>
       {/* prototype: ONE big dot per quest (filled = done) + the day's XP pot — the
           count is shown visually, so it is NOT repeated as text. */}
       <div className="nap-bigdots">
@@ -238,7 +238,7 @@ export function NapHubPage() {
         onClick={open}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } }}>
         <span className={cn('mz-eyebrow', f === 'este' ? 'nap-lav' : 'nap-gold')}>Rutin</span>
-        <div className="mz-spotwrap"><ClayIcon name={icon} size={45} /></div>
+        <div className="mz-spotwrap"><ClayIcon name={icon} size={47} /></div>
         <div className="nap-habname">{name}</div>
         <div className="nap-habfoot">
           <span className="nap-habcount">{done}/{items.length}</span>
@@ -293,7 +293,7 @@ export function NapHubPage() {
                 <div key={a.title} className="mz-tile mz-w-white rise"
                   style={{ '--d': `${70 + i * 40}ms` } as React.CSSProperties}>
                   <span className="mz-eyebrow">{a.sub}</span>
-                  <div className="mz-spotwrap"><ClayIcon name={a.icon} size={45} /></div>
+                  <div className="mz-spotwrap"><ClayIcon name={a.icon} size={47} /></div>
                   <div className="nap-habname">{a.title}</div>
                   <div className="nap-habfoot">
                     <span className="nap-habcount" />
