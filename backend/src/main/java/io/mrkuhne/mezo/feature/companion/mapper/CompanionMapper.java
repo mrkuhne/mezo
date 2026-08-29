@@ -53,7 +53,15 @@ public interface CompanionMapper {
     }
 
     default PatternResponse toPatternResponse(PatternEntity entity) {
+        return toPatternResponse(entity, null);
+    }
+
+    /** mezo-d20.7.7: {@code citedWeeks} rides BESIDE the statistic, never inside it — a weekly
+     *  citation cannot move {@code confidence} or {@code status} (see
+     *  {@code HighlightCitationSource}); {@code null} = not measurable, never a stand-in zero. */
+    default PatternResponse toPatternResponse(PatternEntity entity, Integer citedWeeks) {
         return PatternResponse.builder()
+                .citedWeeks(citedWeeks)
                 .id(entity.getId())
                 .kind(entity.getKind())
                 .pairKey(entity.getPairKey())
@@ -96,12 +104,21 @@ public interface CompanionMapper {
     }
 
     default KnowledgeFactResponse toKnowledgeFactResponse(KnowledgeFactEntity entity) {
-        return toKnowledgeFactResponse(entity, null);
+        return toKnowledgeFactResponse(entity, null, null);
     }
 
     /** V3.3: the list surface joins the promoting pattern's title (evidence link). */
     default KnowledgeFactResponse toKnowledgeFactResponse(KnowledgeFactEntity entity, String patternTitle) {
+        return toKnowledgeFactResponse(entity, patternTitle, null);
+    }
+
+    /** mezo-d20.7.7: {@code citedWeeks} is the weekly review's highlight feedback — a SEPARATE,
+     *  weaker signal than {@code reinforcementCount}, which keeps meaning "the USER re-stated
+     *  this" (see {@code HighlightCitationSource}); {@code null} = not measurable. */
+    default KnowledgeFactResponse toKnowledgeFactResponse(
+            KnowledgeFactEntity entity, String patternTitle, Integer citedWeeks) {
         return KnowledgeFactResponse.builder()
+                .citedWeeks(citedWeeks)
                 .id(entity.getId())
                 .factText(entity.getFactText())
                 .category(entity.getCategory())

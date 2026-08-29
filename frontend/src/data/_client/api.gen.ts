@@ -5512,6 +5512,8 @@ export interface components {
             createdAt: string;
             /** @description The promoting pattern's title (source=pattern facts only) — the V3.3 evidence link. */
             patternTitle?: string | null;
+            /** @description In how many of the recent weekly reviews the companion cited this fact as something the week was built on (mezo-d20.7.7). A SEPARATE, weaker signal than reinforcementCount — the model citing its own knowledge is not the user re-confirming it — derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
+            citedWeeks?: number | null;
         };
         CreateFactRequest: {
             factText: string;
@@ -5600,6 +5602,8 @@ export interface components {
             lastDetectedAt: string;
             /** @description The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete'; null on statistical rows. */
             thinking?: string | null;
+            /** @description In how many of the recent weekly reviews the companion cited this pattern as something the week was built on (mezo-d20.7.7). Deliberately NOT folded into confidence — confidence is a statistic (r/n/p, or the V3.2 critique score), a citation is the model selecting its own material; it is shown beside the statistic, never inside it, and never moves status. Derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
+            citedWeeks?: number | null;
         };
         /** @description The V3.2 4-factor critique (0..1 each) — null until the hypothesis loop lands. */
         PatternCritique: {

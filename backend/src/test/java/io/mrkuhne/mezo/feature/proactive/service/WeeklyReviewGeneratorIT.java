@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
 import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
+import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
@@ -15,6 +16,7 @@ import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirAnchorsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklyReviewEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.WeeklyReviewHighlightsEnvelope.Highlight;
 import io.mrkuhne.mezo.feature.proactive.repository.MemoirRepository;
 import io.mrkuhne.mezo.feature.proactive.repository.WeeklyReviewRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -71,6 +73,8 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
     @Autowired private LearnedFactRepository learnedFactRepository;
     @Autowired private KnowledgeFactRepository knowledgeFactRepository;
     @Autowired private FactCandidateService factCandidateService;
+    @Autowired private HighlightCitationSource citationSource;
+    @Autowired private WeeklyReviewService weeklyReviewService;
 
     /** A day with SOME logged data — just enough to clear the empty-week gate. */
     private void seedDay(UUID owner, LocalDate date) {
@@ -294,6 +298,67 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
 
         assertThat(learnedFactRepository.findByCreatedByAndWeekStartAndDeletedFalseOrderByCreatedAtDesc(
                 user, nextWeek)).isEmpty();
+    }
+
+    // ── highlight feedback — the write side (mezo-d20.7.7, handoff §6.4/B) ──────────────────
+
+    /**
+     * A persisted highlight is a REF, not just a chip label: the candidate carries the id of the
+     * entity it was collected from, which is what lets a citation be counted against the thing
+     * itself. The Pattern candidate carries the PATTERN's id (not the event's) — a citation is
+     * about the pattern.
+     */
+    @Test
+    void generatedHighlightsCarryTheCitedEntitysId() {
+        UUID user = userPopulator.createUser("wr-refids@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedConfirmedPatternEvent(user, WEEK_START);
+        seedMemoirWithSentinel(user, WEEK_START,
+                "[fake-review:{\"summary\":\"Vegyes hét.\",\"dayNotes\":[],\"anchorIndexes\":[0,1]}]");
+
+        WeeklyReviewEntity review = generator.generate(user, WEEK_START);
+
+        assertThat(review).isNotNull();
+        UUID patternId = patternEventRepository.findByCreatedByAndKindAndOccurredAtAfterAndDeletedFalse(
+                user, PatternEventEntity.KIND_CONFIRMED, Instant.EPOCH).get(0).getPatternId();
+        UUID memoirId = memoirRepository.findByCreatedByAndWeekStart(user, WEEK_START).orElseThrow().getId();
+        assertThat(review.getHighlights().highlights()).satisfiesExactly(
+                pattern -> {
+                    assertThat(pattern.kind()).isEqualTo(Highlight.KIND_PATTERN);
+                    assertThat(pattern.refId()).isEqualTo(patternId);
+                },
+                memory -> {
+                    assertThat(memory.kind()).isEqualTo(Highlight.KIND_MEMORY);
+                    assertThat(memory.refId()).isEqualTo(memoirId);
+                });
+        assertThat(citationSource.citedWeeks(user, HighlightCitationSource.KIND_PATTERN))
+                .containsEntry(patternId, 1);
+    }
+
+    /**
+     * Idempotence over regeneration: {@code regenerate} soft-deletes the week's row and writes a
+     * fresh one, so the week must still count ONCE. It does so structurally — the signal is
+     * derived from the LIVE rows, and there is only ever one live row per week (partial unique).
+     * The mezo-d20.7.6 stance on the same problem, one layer down: nothing to reconcile.
+     */
+    @Test
+    void regeneratingTheSameWeekDoesNotDoubleCountItsCitations() {
+        UUID user = userPopulator.createUser("wr-recite@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedConfirmedPatternEvent(user, WEEK_START);
+        seedMemoirWithSentinel(user, WEEK_START,
+                "[fake-review:{\"summary\":\"Vegyes hét.\",\"dayNotes\":[],\"anchorIndexes\":[0]}]");
+        assertThat(generator.generate(user, WEEK_START)).isNotNull();
+        UUID patternId = patternEventRepository.findByCreatedByAndKindAndOccurredAtAfterAndDeletedFalse(
+                user, PatternEventEntity.KIND_CONFIRMED, Instant.EPOCH).get(0).getPatternId();
+        assertThat(citationSource.citedWeeks(user, HighlightCitationSource.KIND_PATTERN))
+                .containsEntry(patternId, 1);
+
+        weeklyReviewService.regenerate(user, WEEK_START);
+
+        assertThat(repository.count()).isEqualTo(1);
+        assertThat(citationSource.citedWeeks(user, HighlightCitationSource.KIND_PATTERN))
+                .containsEntry(patternId, 1);
     }
 
     /** The promotion path: accepting a weekly candidate mints a knowledge fact whose source says
