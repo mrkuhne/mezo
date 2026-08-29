@@ -252,6 +252,15 @@
   --mz-fh-add-bd: rgba(43, 33, 24, 0.2);
   --mz-fh-kcal-bg: rgba(255, 255, 255, 0.88);
   --mz-fh-ringhole: #FFFDF8;
+
+  /* Heti pontszám-sávok (mezo-d20.6.10) — en-body.html .sc-* + ringTo(), verbatim.
+     Three bands only, and the lowest is terracotta: the guardrail is "never red". */
+  --mz-sc-track: rgba(43, 33, 24, 0.09);
+  --mz-sc-hi-1: #A9C69A;  --mz-sc-hi-2: #6E8B5E;  --mz-sc-hi-ring: #8FAF7E;  --mz-sc-hi-ink: #6E8B5E;
+  --mz-sc-mid-1: #E5C46B; --mz-sc-mid-2: #B58E28; --mz-sc-mid-ring: #C9962E; --mz-sc-mid-ink: #B58E28;
+  --mz-sc-low-1: #F0A88A; --mz-sc-low-2: #D2704C; --mz-sc-low-ring: #D2704C; --mz-sc-low-ink: #D2704C;
+  --mz-sc-non-ink: #A2958A;
+  --mz-wk-cur-ring: rgba(138, 118, 204, 0.75);
   --mz-fh-now-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
 
   /* Receptek v2 (mezo-d20.4.4) — category band gradients (fuel-body.html #page-recept
@@ -436,6 +445,17 @@
   --mz-fh-add-bd: color-mix(in srgb, var(--text-primary) 20%, transparent);
   --mz-fh-kcal-bg: color-mix(in srgb, var(--surface-card) 88%, transparent);
   --mz-fh-ringhole: var(--surface-card);
+
+  /* Heti pontszám-sávok — dark ("Pulse") derivations on the dv ramp */
+  --mz-sc-track: rgba(245, 239, 230, 0.1);
+  --mz-sc-hi-1: color-mix(in srgb, var(--dv-sage) 70%, #fff);  --mz-sc-hi-2: var(--dv-sage);
+  --mz-sc-hi-ring: var(--dv-sage);  --mz-sc-hi-ink: var(--dv-sage);
+  --mz-sc-mid-1: color-mix(in srgb, var(--dv-amber) 70%, #fff); --mz-sc-mid-2: var(--dv-amber);
+  --mz-sc-mid-ring: var(--dv-amber); --mz-sc-mid-ink: var(--dv-amber);
+  --mz-sc-low-1: color-mix(in srgb, var(--dv-coral) 70%, #fff); --mz-sc-low-2: var(--dv-coral);
+  --mz-sc-low-ring: var(--dv-coral); --mz-sc-low-ink: var(--dv-coral);
+  --mz-sc-non-ink: var(--text-muted);
+  --mz-wk-cur-ring: color-mix(in srgb, var(--dv-lav) 75%, transparent);
   --mz-fh-now-shadow: var(--mz-shadow-most);
 
   /* Receptek v2 (mezo-d20.4.4) — dark ("Pulse") derivations on the dv ramp */
@@ -5691,6 +5711,57 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fmd-doserow + .fmd-doserow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
 .fmd-doserow .nt { font-size: 10px; font-style: italic; color: var(--mz-ink-mut); }
 .fmd-doserow .dd { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-cell-lav-ink); font-variant-numeric: tabular-nums; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Heti · pontszám-gyűrű + trend (mezo-d20.6.10)
+   Source: prototypes/src/en-body.html `.wkring` / `.wktrend` / `.wkdelta` /
+   `.minibars` / `.sc-*`, scaled ×1.18 (330 → 390px frame). Shared by the Heti
+   hub hero, the day tiles and the day page, so it lives here rather than in a
+   page block. Band thresholds are the pure `scoreBand()` module's, not CSS's.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sc-hi  { background: linear-gradient(180deg, var(--mz-sc-hi-1), var(--mz-sc-hi-2)); }
+.sc-mid { background: linear-gradient(180deg, var(--mz-sc-mid-1), var(--mz-sc-mid-2)); }
+.sc-low { background: linear-gradient(180deg, var(--mz-sc-low-1), var(--mz-sc-low-2)); }
+.sc-non { background: var(--mz-sc-track); }
+
+/* The ring: a conic-gradient whose sweep is driven by --v (0–100) and whose
+   colour is the band's --c. The count-up hook animates --v in React state, so
+   reduced motion needs no CSS branch here — useCountUp jumps to the target. */
+.wk-ring { width: 97px; height: 97px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: conic-gradient(var(--c, var(--mz-sc-non-ink)) calc(var(--v, 0) * 1%), var(--mz-sc-track) 0); }
+.wk-ring .in { width: 78px; height: 78px; border-radius: 50%; background: var(--mz-fh-ringhole);
+  display: grid; place-items: center; box-shadow: inset 0 1px 3px rgba(43, 33, 24, 0.08); }
+.wk-ring b { font-size: 32px; font-weight: 200; letter-spacing: -0.03em; line-height: 1;
+  font-variant-numeric: tabular-nums; }
+.wk-ring b.is-learning { font-size: 15px; font-weight: 600; color: var(--mz-sc-non-ink); }
+.wk-ring small { font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--mz-sc-non-ink); }
+
+.wk-delta { font-size: 13px; font-weight: 800; border-radius: 999px; padding: 3px 11px; display: inline-block;
+  font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.wk-delta.is-down { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.wk-delta.is-flat { background: var(--mz-chipbg); color: var(--mz-ink-mut); }
+.wk-prev { font-size: 9px; color: var(--mz-ink-mut); margin-left: 6px; }
+
+.wk-trend { display: flex; align-items: flex-end; gap: 3.5px; height: 35px; margin-top: 4px; }
+.wk-trend i { flex: 1; border-radius: 3px 3px 2px 2px; min-height: 4px;
+  transform: scaleY(0); transform-origin: bottom; }
+.mz-play .wk-trend i { animation: wk-trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+  animation-delay: var(--d, 0ms); }
+.wk-trend i.is-current { box-shadow: 0 0 0 1.5px var(--mz-fh-ringhole), 0 0 0 3px var(--mz-wk-cur-ring); }
+
+.wk-minibars { display: flex; align-items: flex-end; gap: 3.5px; height: 26px; margin-top: 11px; }
+.wk-minibars i { flex: 1; border-radius: 2px 2px 1px 1px; min-height: 4px;
+  transform: scaleY(0); transform-origin: bottom; }
+.mz-play .wk-minibars i { animation: wk-trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+  animation-delay: var(--d, 0ms); }
+
+@keyframes wk-trendup { to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .wk-trend i, .mz-play .wk-minibars i { animation: none; transform: none; }
+}
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
