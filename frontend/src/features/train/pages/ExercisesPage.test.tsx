@@ -22,6 +22,23 @@ test('own header: pghead-np over + h1', async () => {
   expect(screen.getByRole('heading', { level: 1, name: 'Gyakorlatok' })).toBeInTheDocument()
 })
 
+// Mozaik re-face (mezo-d20.3.3): compact hero (icon + catalog count) + an honest
+// 3-cell stat strip (rekord/saját/videóval) below the header — the prototype's
+// 4th cell ("PR e héten") is dropped: no dated week-boundary contract exists to
+// derive it truthfully (honest states over placeholder theatre).
+test('compact hero shows the catalog count + an honest record/saját/videóval stat strip', async () => {
+  renderView()
+  await screen.findByText('Top gyakorlatok · rekordjaid')
+  expect(screen.getByText('6')).toBeInTheDocument() // catalog size (fixture: 6 rows)
+  const strip = screen.getByLabelText('Katalógus áttekintés')
+  expect(within(strip).getByText('4')).toBeInTheDocument() // rekord (4 records in fixture)
+  expect(within(strip).getByText('rekord')).toBeInTheDocument()
+  expect(within(strip).getByText('1')).toBeInTheDocument() // saját (Chest Supported Row only)
+  expect(within(strip).getByText('saját')).toBeInTheDocument()
+  expect(within(strip).getByText('2')).toBeInTheDocument() // videóval (Chest Supported Row + Hip Thrust)
+  expect(within(strip).getByText('videóval')).toBeInTheDocument()
+})
+
 test('default state ranks top exercises with best set and e1RM chip', async () => {
   renderView()
   expect(await screen.findByText('Top gyakorlatok · rekordjaid')).toBeInTheDocument()
