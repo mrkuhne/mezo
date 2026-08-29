@@ -243,6 +243,15 @@
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, #FFEDE4, #FFF8F4);
 
+  /* Receptek v2 (mezo-d20.4.4) — category band gradients (fuel-body.html #page-recept
+     card seeds, verbatim) + the NOVA dot ramp. NOVA 4 stays terracotta, never red. */
+  --mz-rcp-breakfast-bw: #F6E7C6; --mz-rcp-breakfast-bd: #C9962E; --mz-rcp-breakfast-shadow: rgba(201, 150, 46, 0.4);
+  --mz-rcp-lunch-bw:     #FFE3D8; --mz-rcp-lunch-bd:     #E05535; --mz-rcp-lunch-shadow:     rgba(224, 85, 53, 0.4);
+  --mz-rcp-dinner-bw:    #FAE3ED; --mz-rcp-dinner-bd:    #C46FA0; --mz-rcp-dinner-shadow:    rgba(196, 111, 160, 0.4);
+  --mz-rcp-snack-bw:     #E4EEDD; --mz-rcp-snack-bd:     #8FAF7E; --mz-rcp-snack-shadow:     rgba(143, 175, 126, 0.4);
+  --mz-nova-1:   #8FAF7E;
+  --mz-nova-mid: #C9962E;
+  --mz-nova-4:   #A8462E;
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -408,6 +417,14 @@
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
 
+  /* Receptek v2 (mezo-d20.4.4) — dark ("Pulse") derivations on the dv ramp */
+  --mz-rcp-breakfast-bw: color-mix(in srgb, var(--dv-amber) 20%, var(--surface-card)); --mz-rcp-breakfast-bd: var(--dv-amber); --mz-rcp-breakfast-shadow: color-mix(in srgb, var(--dv-amber) 40%, transparent);
+  --mz-rcp-lunch-bw:     color-mix(in srgb, var(--dv-coral) 20%, var(--surface-card)); --mz-rcp-lunch-bd:     var(--dv-coral); --mz-rcp-lunch-shadow:     color-mix(in srgb, var(--dv-coral) 40%, transparent);
+  --mz-rcp-dinner-bw:    color-mix(in srgb, var(--dv-rose) 20%, var(--surface-card));  --mz-rcp-dinner-bd:    var(--dv-rose);  --mz-rcp-dinner-shadow:    color-mix(in srgb, var(--dv-rose) 40%, transparent);
+  --mz-rcp-snack-bw:     color-mix(in srgb, var(--dv-sage) 20%, var(--surface-card));  --mz-rcp-snack-bd:     var(--dv-sage);  --mz-rcp-snack-shadow:     color-mix(in srgb, var(--dv-sage) 40%, transparent);
+  --mz-nova-1:   var(--dv-sage);
+  --mz-nova-mid: var(--dv-amber);
+  --mz-nova-4:   var(--primary-deep);
 }
 
 /* ===== Legacy alias bridge — Deep-Current / early-token names → DS tokens =====
@@ -5031,6 +5048,47 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 
 @media (prefers-reduced-motion: reduce) {
   .aiu-bar .gbar div, .mz-play .aiu-bar .gbar div { transform: none; animation: none; }
+}
+
+/* ── Receptek v2 (mezo-d20.4.4) — prototype fuel-body.html #page-recept .rcpcard,
+   ×1.18 (330→390px frame: 66px band → 78px). Spacious, alive cards: tall halo band,
+   tinted macro mini-tiles (`.mz-mcells`, reused from the Mozaik primitives), and a
+   live footer surfacing timesLogged/avgScore/lastLogged (audit gap #7). ── */
+.mz-rcpcard { position: relative; width: 100%; text-align: left; display: block;
+  border-radius: 22px; margin-bottom: 13px; overflow: hidden; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 19px 35px -19px var(--rcp-shadow, rgba(43, 33, 24, 0.32)), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); cursor: pointer; }
+.mz-rcpcard:active { transform: scale(0.975); }
+.mz-rcp-breakfast { --bw: var(--mz-rcp-breakfast-bw); --bd: var(--mz-rcp-breakfast-bd); --rcp-shadow: var(--mz-rcp-breakfast-shadow); }
+.mz-rcp-lunch     { --bw: var(--mz-rcp-lunch-bw);     --bd: var(--mz-rcp-lunch-bd);     --rcp-shadow: var(--mz-rcp-lunch-shadow); }
+.mz-rcp-dinner    { --bw: var(--mz-rcp-dinner-bw);    --bd: var(--mz-rcp-dinner-bd);    --rcp-shadow: var(--mz-rcp-dinner-shadow); }
+.mz-rcp-snack     { --bw: var(--mz-rcp-snack-bw);     --bd: var(--mz-rcp-snack-bd);     --rcp-shadow: var(--mz-rcp-snack-shadow); }
+.mz-rcpband { position: relative; height: 78px; overflow: hidden;
+  background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.18) 0 9px, transparent 9px 19px), linear-gradient(135deg, var(--bw), var(--bd)); }
+.mz-rcpband .mz-rcp-halo { position: absolute; right: 16px; top: 50%; width: 61px; height: 61px; border-radius: 50%;
+  transform: translateY(-50%); background: rgba(255, 253, 248, 0.55); display: grid; place-items: center;
+  box-shadow: 0 7px 16px -7px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.mz-rcpband .mz-rcp-slotch { position: absolute; left: 12px; top: 10px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #2B2118; background: rgba(255, 255, 255, 0.88); border-radius: 7px; padding: 3px 9px; }
+.mz-rcpband .mz-rcp-rolet { position: absolute; left: 12px; bottom: 10px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.08em; color: #fff; background: rgba(43, 33, 24, 0.45); border-radius: 7px; padding: 3px 9px; }
+.mz-rcpband .mz-rcp-star { position: absolute; right: 90px; top: 9px; font-size: 13px; color: #fff; text-shadow: 0 1px 3px rgba(43, 33, 24, 0.45); line-height: 1; }
+.mz-rcpband .mz-rcp-fitb { position: absolute; right: 12px; bottom: 10px; font-size: 9px; font-weight: 800; color: var(--mz-cell-sage-ink); background: rgba(255, 255, 255, 0.92); border-radius: 999px; padding: 3.5px 10.5px; font-variant-numeric: tabular-nums; box-shadow: 0 2px 7px rgba(43, 33, 24, 0.15); }
+.mz-rcpband .mz-rcp-fitb.pending { color: var(--mz-ink-mut); }
+.mz-rcpbody { padding: 12px 14px 12px; }
+.mz-rcpbody .mz-rcp-nm { font-family: var(--ff-display); font-size: 15px; font-weight: 600; letter-spacing: -0.01em; text-transform: uppercase; color: var(--text-primary); }
+.mz-rcpmeta { display: flex; align-items: center; gap: 6px; margin-top: 3.5px; font-size: 10px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.mz-rcp-novadot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.mz-rcp-novadot.n1 { background: var(--mz-nova-1); }
+.mz-rcp-novadot.n2, .mz-rcp-novadot.n3 { background: var(--mz-nova-mid); }
+.mz-rcp-novadot.n4 { background: var(--mz-nova-4); }
+.mz-rcpbody .mz-mcells { margin-top: 8px; }
+.mz-rcpfoot { display: flex; align-items: center; gap: 7px; margin-top: 10.5px; padding-top: 8px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); font-size: 10px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.mz-rcpfoot .mz-rcp-avg { font-weight: 800; color: var(--mz-cell-amber-ink); }
+.mz-rcpfoot .mz-rcp-last { margin-left: auto; color: var(--mz-ink-mut); }
+.mz-rcpfoot .mz-rcp-unlogged { color: var(--mz-ink-mut); font-style: italic; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-rcpcard { transition: none; }
 }
 
 /* ============================================================

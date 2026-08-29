@@ -67,20 +67,28 @@ test('Új navigates to the editor route', async () => {
 
 test('tapping a card navigates to the detail route', async () => {
   renderView()
-  const firstName = screen.getAllByText(/.+/).find(() => true)
-  // click the first recipe card by its visible name (Antonio overlay) — use the
-  // first card button.
-  const cards = screen.getAllByRole('button').filter(b => b.className.includes('rad-24'))
+  const cards = screen.getAllByRole('button').filter(b => b.className.includes('mz-rcpcard'))
+  expect(cards.length).toBeGreaterThan(0)
   await userEvent.click(cards[0])
   expect(screen.getByTestId('location').textContent).toMatch(/^\/fuel\/recipes\/.+/)
-  void firstName
+})
+
+// Snack segment (design-2.0 iterations §3 / audit gap #18): the typebar had no snack
+// segment even though FilterId always supported it — snack recipes were only
+// reachable under "Mind".
+test('the typebar has a Snack segment with a live count matching the snack recipes', () => {
+  renderView()
+  const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
+  const snackCount = result.current.recipes.filter(r => r.category === 'snack').length
+  const snackTab = screen.getByRole('button', { name: /^Snack/ })
+  expect(snackTab).toHaveTextContent(String(snackCount))
 })
 
 // Role tag (mezo-uavr) — the card names a non-standard rubric; „Általános" is the
 // implicit default and never earns a tag.
 test('the library card tags a non-standard role, and only that card (mezo-uavr)', () => {
   renderView()
-  const cards = screen.getAllByRole('button').filter(b => b.className.includes('rad-24'))
+  const cards = screen.getAllByRole('button').filter(b => b.className.includes('mz-rcpcard'))
   const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
   const nonStandard = result.current.recipes.filter(r => r.role !== 'standard')
   // the seed must actually mix roles, otherwise this asserts nothing

@@ -23,6 +23,7 @@ const FILTERS: { id: FilterId; label: string }[] = [
   { id: 'breakfast', label: 'Reggeli' },
   { id: 'lunch', label: 'Ebéd' },
   { id: 'dinner', label: 'Vacsi' },
+  { id: 'snack', label: 'Snack' },
   { id: 'starred', label: '★' },
 ]
 
@@ -88,9 +89,9 @@ export function FuelRecipesPage() {
         </div>
       </div>
 
-      {/* List */}
+      {/* List — each .mz-rcpcard carries its own margin-bottom (Receptek v2), no flex gap here */}
       <div style={{ padding: '0 24px 32px' }}>
-        <div className="col" style={{ gap: 13 }}>
+        <div className="col">
           {filtered.map(r => (
             <RecipeCard key={r.id} recipe={r} onOpen={() => navigate(`/fuel/recipes/${r.id}`)} />
           ))}
