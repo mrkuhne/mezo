@@ -56,6 +56,8 @@ import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
 import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
 import { WeekDaysPage } from '@/features/me/pages/WeekDaysPage'
 import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
+import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
+import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -208,6 +210,8 @@ export const routes: RouteObject[] = [
       // `:date` when `?start=` is absent.
       { path: 'me/week/napok', element: <WeekDaysPage /> },
       { path: 'me/week/napok/:date', element: <WeekDayPage /> },
+      { path: 'me/week/tanulsagok', element: <WeekLessonsPage /> },
+      { path: 'me/week/felfedezesek', element: <WeekDiscoveriesPage /> },
       { path: 'me/goals', element: <GoalsPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },

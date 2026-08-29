@@ -281,6 +281,18 @@
   --mz-wk-bar-sage: linear-gradient(90deg, #A9C69A, #8FAF7E);
   --mz-wk-thin-bg: rgba(255, 255, 255, 0.5);
   --mz-wk-navt-bg: rgba(255, 255, 255, 0.7);
+  /* Heti · tanulságok + felfedezések (mezo-d20.6.10) — en-body.html .lesst / .dsct /
+     .ghost hexes verbatim. The prediction tile's wash is the lighter sage the
+     prototype uses there, which is already tokenized as --mz-qdone-bg. */
+  --mz-wkl-off-bg: rgba(255, 255, 255, 0.5);
+  --mz-wkl-ghost-bg: rgba(255, 255, 255, 0.55);
+  --mz-ghostbtn-bg: rgba(43, 33, 24, 0.06);
+  --mz-wkd-life-ink: #33749C;
+  --mz-wkd-glow-lav: rgba(93, 79, 160, 0.4);
+  --mz-wkd-glow-gold: rgba(181, 126, 20, 0.4);
+  --mz-wkd-glow-sky: rgba(78, 143, 184, 0.4);
+  --mz-wkd-glow-rose: rgba(142, 63, 111, 0.38);
+  --mz-wkd-glow-sage: rgba(110, 139, 94, 0.4);
   --mz-fh-now-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
 
   /* Heti hub-csempék (mezo-d20.6.10) — en-body.html hub() inline washes/glows verbatim.
@@ -511,6 +523,16 @@
   --mz-wk-bar-sage: linear-gradient(90deg, color-mix(in srgb, var(--dv-sage) 55%, var(--surface-card)), var(--dv-sage));
   --mz-wk-thin-bg: color-mix(in srgb, var(--surface-card) 50%, transparent);
   --mz-wk-navt-bg: color-mix(in srgb, var(--surface-card) 70%, transparent);
+  /* Heti · tanulságok + felfedezések — dark ("Pulse") derivations on the dv ramp */
+  --mz-wkl-off-bg: color-mix(in srgb, var(--surface-card) 50%, transparent);
+  --mz-wkl-ghost-bg: color-mix(in srgb, var(--surface-card) 55%, transparent);
+  --mz-ghostbtn-bg: var(--surface-recess);
+  --mz-wkd-life-ink: var(--dv-sky);
+  --mz-wkd-glow-lav: color-mix(in srgb, var(--dv-lav) 40%, transparent);
+  --mz-wkd-glow-gold: color-mix(in srgb, var(--dv-amber) 40%, transparent);
+  --mz-wkd-glow-sky: color-mix(in srgb, var(--dv-sky) 40%, transparent);
+  --mz-wkd-glow-rose: color-mix(in srgb, var(--dv-rose) 38%, transparent);
+  --mz-wkd-glow-sage: color-mix(in srgb, var(--dv-sage) 40%, transparent);
   --mz-fh-now-shadow: var(--mz-shadow-most);
 
   /* Heti hub-csempék — dark ("Pulse") derivations on the dv ramp */
@@ -6252,6 +6274,122 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   .wkd-skel { animation: none; }
   .wkd-tile { transition: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Heti · tanulságok + felfedezések (mezo-d20.6.10)
+   Source: en-body.html `#page-hless` / `#page-hdisc` — `.lesst`, `.decrow`,
+   `.foot9`, `.predtile.lav`, `.dscgrid`, `.dsct`, `.stch` — scaled ×1.18
+   (330 → 390px frame). Only the decision buttons break the pure scale: they
+   grow to the 44pt touch floor (the `.mz-qbtn` precedent).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* the browsed week, right-aligned in the page head */
+.wkl-wk { margin-left: auto; }
+
+/* the shared `.sk` shimmer block, wearing the page's tile geometry */
+.wk-skel { border-radius: 20px; margin-bottom: 11px; }
+
+/* lav head card — the `.predtile.lav` recipe with its padding override */
+.wkl-head {
+  border-radius: 21px; padding: 11px 13px; margin-bottom: 12px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
+  font-size: 11px; font-weight: 300; line-height: 1.5;
+}
+
+/* -- A hét tanulságai -- */
+.wkl-tile {
+  border-radius: 20px; padding: 13px 14px; margin-bottom: 11px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold);
+}
+.wkl-tile.ok { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.wkl-tile.no {
+  background: var(--mz-wkl-off-bg); box-shadow: none;
+  border: 1px dashed var(--mz-fh-add-bd); opacity: 0.6;
+}
+.wkl-row { display: flex; align-items: flex-start; gap: 9px; }
+.wkl-grow { flex: 1; min-width: 0; }
+.wkl-pic {
+  width: 33px; height: 33px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08);
+}
+.wkl-tx { font-size: 12px; font-weight: 600; line-height: 1.45; }
+.wkl-ev { font-size: 9px; color: var(--mz-ink-soft); margin-top: 5px; font-variant-numeric: tabular-nums; }
+.wkl-done { font-size: 10px; font-weight: 700; color: var(--mz-cell-sage-ink); margin-top: 8px; }
+.wkl-off { font-size: 10px; font-weight: 700; color: var(--mz-ink-mut); margin-top: 8px; }
+
+.wkl-dec { display: flex; gap: 7px; margin-top: 11px; }
+.wkl-btn {
+  flex: 1; min-height: 44px; padding: 0 13px; text-align: center;
+  border: none; border-radius: 999px; font-family: inherit; cursor: pointer;
+  font-size: 11px; font-weight: 600;
+  background: var(--mz-ghostbtn-bg); color: var(--mz-ink-soft);
+}
+.wkl-btn.primary {
+  background: var(--gradient-cta); color: var(--text-inverse);
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55);
+}
+.wkl-btn:disabled { opacity: 0.45; cursor: default; }
+.wkl-btn:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
+
+.wkl-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; }
+
+/* the dashed honest-empty / error card (both Heti detail pages) */
+.wkl-ghost {
+  border-radius: 21px; padding: 13px 15px; margin-bottom: 12px;
+  background: var(--mz-wkl-ghost-bg); border: 1px dashed var(--mz-fh-add-bd); box-shadow: none;
+}
+.wkl-ghost-tx { font-size: 11px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); }
+.wkl-retry { flex: none; margin-top: 11px; min-width: 108px; }
+
+/* -- Heti felfedezések -- */
+.wkd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 12px; }
+.wkd-tile {
+  border-radius: 19px; padding: 12px 13px; display: grid; gap: 6px; cursor: pointer;
+  text-decoration: none; color: var(--text-primary);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 14px 26px -15px var(--wkd-glow, rgba(43, 33, 24, 0.3)),
+              inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.wkd-tile:active { transform: scale(0.96); }
+.wkd-tile.wide { grid-column: 1 / -1; }
+.wkd-tile.lav  { background: var(--mz-wash-lav);  --wkd-glow: var(--mz-wkd-glow-lav); }
+.wkd-tile.gold { background: var(--mz-wash-gold); --wkd-glow: var(--mz-wkd-glow-gold); }
+.wkd-tile.sky  { background: var(--mz-wash-sky);  --wkd-glow: var(--mz-wkd-glow-sky); }
+.wkd-tile.rose { background: var(--mz-wash-rose); --wkd-glow: var(--mz-wkd-glow-rose); }
+.wkd-tile.pred { background: var(--mz-qdone-bg);  --wkd-glow: var(--mz-wkd-glow-sage); }
+.wkd-row { display: flex; align-items: center; gap: 9px; }
+.wkd-grow { flex: 1; min-width: 0; }
+.wkd-pic {
+  width: 33px; height: 33px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08);
+}
+.wkd-tile b { font-size: 11px; font-weight: 700; line-height: 1.32; }
+.wkd-meta { font-size: 9px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.wkd-eb {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mz-ink-mut);
+}
+.wkd-eb.lav  { color: var(--mz-cell-lav-ink); }
+.wkd-eb.gold { color: var(--mz-stch-prop-ink); }
+.wkd-eb.sky  { color: var(--mz-wkd-life-ink); }
+.wkd-eb.rose { color: var(--mz-cell-rose-ink); }
+.wkd-eb.pred { color: var(--mz-stch-ok-ink); }
+.wkd-chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+.wkd-stch {
+  font-size: 8px; font-weight: 800; letter-spacing: 0.08em; border-radius: 7px; padding: 2px 8px; flex: none;
+}
+.wkd-stch.ok   { background: var(--mz-stch-ok-bg);   color: var(--mz-stch-ok-ink); }
+.wkd-stch.lav  { background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
+.wkd-stch.warn { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.wkd-stch.mut  { background: var(--mz-stch-mut-bg);  color: var(--mz-stch-mut-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wkd-tile { transition: none; }
+}
+
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
