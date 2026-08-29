@@ -1,103 +1,57 @@
 // ============================================================
-// Mezo · MesoOverviewPage — read-only full-screen mesocycle overview
-// (Phase B, Task B5). Sibling route to MesocycleBuilderPage, reached from
-// Gym/Mai entry chips (B6, not built here). Sticky breadcrumb (smart back
-// via useBackNav, falls back to Gym), a status-aware progress header
-// (statusEyebrow + title + goal + PhaseCurveBars lg + start/remaining/end
-// meta), then the per-muscle VolumeArcChart behind a muscle switch — the switch
-// itself is the shared MuscleArcSwitch (also used by MesoReportPage's frozen
-// arc, mezo-meyc.2), so the two arc surfaces cannot drift. No
-// actions/mutations — the builder (MesocycleBuilderPage) owns those.
-// Mirrors MesocycleBuilderPage's shell + MesoVolume's planned/archived guard.
+// Mezo · MesoOverviewPage — the Mezociklus hub's "Volumen" tile subpage
+// (mezo-d20.3.6). Mozaik re-face: source of truth is the mezociklus
+// prototype's #page-vol (meso-body.html, px ×1.18) — live-system banner,
+// "Honnan jönnek a számok?" intro, one provenance bar per muscle group
+// (MEV/MAV/MRV zones + the tappable 01 Baseline → 02 Daniel-személyre
+// szabás → 03 Eredő·most derivation), Mezo suggestion card, closing
+// principle line. That whole anatomy already exists as `MesoVolume` +
+// `VolumeBar` (ported from the pre-redesign builder tab) — reused
+// UNCHANGED here (recompose, not reinvent): this page only supplies the
+// new subpage scaffold (MozaikPage/PageHead/PageHero) around it. Sibling
+// route to MesocycleBuilderPage, reached from the hub's `Volumen` tile;
+// its own guard (planned/archived → no live volume profile) is
+// `MesoVolume`'s, unchanged.
 // ============================================================
 import { useParams } from 'react-router-dom'
-import { useTrain, useMesocycleVolumeArc } from '@/data/hooks'
+import { useTrain } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
-import { PhaseCurveBars } from '@/features/train/components/PhaseCurveBars'
-import { MuscleArcSwitch } from '@/features/train/components/MuscleArcSwitch'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { MesoVolume } from '@/features/train/components/MesoVolume'
+import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { CtaGhost } from '@/shared/ui/Cta'
 
 export function MesoOverviewPage() {
   const { id } = useParams<{ id: string }>()
-  const goBack = useBackNav('/train/gym')
+  const goBack = useBackNav('/train/mesocycles')
   const { mesocycles } = useTrain()
-  const { arc, pending } = useMesocycleVolumeArc(id ?? null)
   const meso = mesocycles.find((m) => m.id === id)
 
   if (!meso) {
     return (
-      <div style={{ padding: '24px' }}>
-        <p className="text-secondary" style={{ fontSize: 13 }}>
-          Ez a mesociklus nem található.
-        </p>
-        <div className="mt-lg">
-          <CtaGhost onClick={goBack}>← Gym</CtaGhost>
-        </div>
-      </div>
+      <MozaikPage tone="coral">
+        <PageHead onBack={goBack} label="‹ Mezociklus" />
+        <PageBody>
+          <p className="text-secondary" style={{ fontSize: 13 }}>
+            Ez a mesociklus nem található.
+          </p>
+          <div className="mt-lg">
+            <CtaGhost onClick={goBack}>← Mezociklus</CtaGhost>
+          </div>
+        </PageBody>
+      </MozaikPage>
     )
   }
 
-  const statusEyebrow =
-    meso.status === 'active'
-      ? `Aktív · Week ${meso.currentWeek}/${meso.weeks}`
-      : meso.status === 'planned'
-        ? 'Tervezett'
-        : 'Archív'
-
-  const weeksRemaining = Math.max(0, meso.weeks - meso.currentWeek)
-  const muscles = arc?.muscles ?? []
-
   return (
-    // Inside AppLayout's .screen-content scroller — no nested wrapper (mirrors MesocycleBuilderPage).
-    <div>
-      {/* Breadcrumb — pinned below the status bar like native nav chrome */}
-      <div className="sticky-top" style={{ padding: '8px 24px' }}>
-        <button type="button" onClick={goBack} className="row gap-sm">
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
-          <span className="eyebrow">Vissza</span>
-        </button>
-      </div>
-      {/* Header */}
-      <div style={{ padding: '6px 24px 0' }}>
-        <span className={meso.status === 'active' ? 'eyebrow brand' : 'eyebrow'}>{statusEyebrow}</span>
-      </div>
-      <div className="pghead-np">
-        <div>
-          <div className="over">Edzés · Mezociklus</div>
-          <h1>{meso.title}</h1>
-        </div>
-      </div>
-      <div style={{ padding: '6px 24px 4px' }}>
-        <span className="text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>
-          {meso.goal}
-        </span>
-      </div>
-
-      {/* Progress meta: phase-curve hero bars + start/remaining/end */}
-      <div style={{ padding: '16px 24px 8px' }}>
-        <PhaseCurveBars phases={meso.phaseCurve} currentWeek={meso.currentWeek} size="lg" status={meso.status} />
-      </div>
-      <div className="row gap-md" style={{ padding: '4px 24px 8px' }}>
-        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-          Kezdés {meso.startDate}
-        </span>
-        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-          {weeksRemaining} hét hátra
-        </span>
-        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-          Vége {meso.endDate}
-        </span>
-      </div>
-
-      {/* Volume arc section */}
-      {muscles.length === 0
-        ? (!pending && (
-            <div style={{ padding: '12px 24px' }}>
-              <Eyebrow>Volumen-ív csak aktív mesocikluson érhető el.</Eyebrow>
-            </div>
-          ))
-        : <MuscleArcSwitch muscles={muscles} />}
-    </div>
+    <MozaikPage tone="coral">
+      <PageHead onBack={goBack} label="‹ Mezociklus" />
+      <EntranceGroup>
+        <PageHero icon="i-meso" big={`W${meso.currentWeek}`} name="Volumen · élő rendszer" />
+        <PageBody principle="A módosítás a következő heti görgetésnél lép életbe. A baseline sosem íródik felül — csak igazítások rétegződnek rá.">
+          <MesoVolume meso={meso} />
+        </PageBody>
+      </EntranceGroup>
+    </MozaikPage>
   )
 }

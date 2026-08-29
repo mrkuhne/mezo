@@ -31,9 +31,9 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
 
   it('heads the page with the run title and its frozen window', () => {
     renderAt('meso-rec-03')
-    expect(screen.getByRole('heading', { level: 1, name: 'Recovery rebuild · Tél' })).toBeInTheDocument()
+    expect(screen.getByText('Recovery rebuild · Tél · riport')).toBeInTheDocument()
     expect(screen.getByText('Feb 12 → Ápr 23')).toBeInTheDocument()
-    expect(screen.getByText('8 hét')).toBeInTheDocument()
+    expect(screen.getByText(/8 hét/, { selector: '.mz-hero-sb' })).toBeInTheDocument()
   })
 
   it('renders the adherence stat strip', () => {
