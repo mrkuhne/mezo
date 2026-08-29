@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · RunningPage (Futás) — the 6th Train sub-tab, READ-ONLY in R1.
-// Thin TrainSection shell ⇒ this view owns its own .pghead-np (over
+// A full-page sibling of the Edzés hub — it owns its own .pghead-np (over
 // `Edzés · Futás`, title `Intervallum`) and a 3-button view-switcher:
 // E heti edzés · Napló · Tervek. Mirrors SportPage's DNA (own header, hero
 // .card with left accent strip + radial glow + <Display>, ghost

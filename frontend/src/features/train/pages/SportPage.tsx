@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · SportPage (Sport) — volleyball schedule + session log +
-// cross-system load. Thin TrainSection shell ⇒ this view owns its own
+// cross-system load. A full-page sibling of the Edzés hub — it owns its own
 // .pghead-np (over `Edzés · Sport`, h1 `Röplabda`, `+ Log` pgact-np chip).
 // Ported from prototype sport.jsx (SportPage + SportWeekView +
 // SportLogView + SportCrossloadView). All sport rose accents use the

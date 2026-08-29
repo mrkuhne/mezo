@@ -17,7 +17,7 @@
 // no extra plumbing.
 //
 // The FACE changed; mutations/contracts (usePantryActions, the 'stash-'
-// backend-id strip, AddPantryItemSheet prefill, LogMealSheet prefill) are
+// backend-id strip, AddPantryItemSheet prefill, LogFlowPage prefill) are
 // untouched.
 // ============================================================
 import { useState } from 'react'

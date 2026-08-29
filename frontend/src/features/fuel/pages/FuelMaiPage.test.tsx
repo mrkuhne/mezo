@@ -250,7 +250,7 @@ test('Pótold on a suggestion-carrying window logs into THAT window\'s slot, not
     { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
       kcal: 660, p: 48, c: 62, f: 14, suggestedRecipeId: 'rec-1' },
   ]
-  // 16:35 wall clock → LogMealSheet's `defaultSlot()` returns 'dinner'. The tapped window is lunch.
+  // 16:35 wall clock → LogFlowPage's `defaultMealSlot()` returns 'dinner'. The tapped window is lunch.
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-07-02T16:35:00'))
   try {
@@ -295,7 +295,7 @@ test('a window\'s ✨ AI CTA opens the unified log flow on that window\'s slot, 
 // Every window CTA vanishes once the day is done, and the + FAB's Étkezés tile only
 // navigates here — so the lane must always end with a log door.
 
-test('an all-done day still offers meal logging: the out-of-window tile opens LogMealSheet', async () => {
+test('an all-done day still offers meal logging: the out-of-window tile opens LogFlowPage', async () => {
   hoisted.overrideSlots = [
     { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
     { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },

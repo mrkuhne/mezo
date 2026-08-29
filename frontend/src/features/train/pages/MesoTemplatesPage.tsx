@@ -4,7 +4,7 @@
 // lives HERE instead of on top of the run library (which became runs-only and
 // keeps a Mosaic tile pointing at this page): a blueprint list is a
 // different job from "how are my blocks going", and templates gained enough
-// actions to need the room. A Train TAB (children of TrainSection, mezo-d20.3.6
+// actions to need the room. A Train page (a full-page sibling of the Edzés hub, mezo-d20.3.6
 // hub slice) — it keeps the Train sub-nav around it, NOT a full-screen sibling
 // (train.nav.test.tsx pins this), so it stays on the plain DS page-header shell
 // rather than the MozaikPage/PageHero scaffold its full-screen siblings

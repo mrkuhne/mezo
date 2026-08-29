@@ -153,7 +153,7 @@ test('Törlés removes the recipe and navigates back to the library', async () =
   expect(screen.getByTestId('location').textContent).toBe('/fuel/recipes')
 })
 
-test('opens LogMealSheet pre-filled when "+ Mai étkezéshez" is tapped', async () => {
+test('opens LogFlowPage pre-filled when "+ Mai étkezéshez" is tapped', async () => {
   const qc = newQc()
   const r = firstId(qc)
   renderDetail(r.id, qc)

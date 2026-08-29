@@ -9,13 +9,13 @@ key_files:
   - frontend/src/features/ritual
   - frontend/src/data/ritual
   - api/feature/ritual/ritual.yml
-  - frontend/src/features/today/components/DaypartEvening.tsx
+  - frontend/src/features/today/pages/NapHubPage.tsx
 related: [today, habit, growth, intention, proactive, _platform-design-system, needs, companion, journal]
 ---
 
 # Ritual — Napzárás Sleep-Anchored Daily Closing
 
-> A full-screen, sleep-anchored **6-act evening closing ritual** at route `/ritual` (`AppLayout` child, tab bar hidden — the `train/session` precedent), entered from the Today evening daypart's **Napzárás CTA** (`DaypartEvening`, the `IslandEvening` successor — see [today.md](today.md)) or the evening habit chain. **Status: ✅ done** (backend R1+R2 + FE R3); `/ritual` visual goldens + the formal reduced-motion audit shipped in **R4** (`mezo-mzbz`).
+> A full-screen, sleep-anchored **6-act evening closing ritual** at route `/ritual` (`AppLayout` child, tab bar hidden — the `train/session` precedent), entered from the Nap hub's Este panel **Napzárás CTA** (`NapHubPage`, the `DaypartEvening` successor since mezo-d20.2.1 — see [today.md](today.md)) or the evening habit chain. **Status: ✅ done** (backend R1+R2 + FE R3); `/ritual` visual goldens + the formal reduced-motion audit shipped in **R4** (`mezo-mzbz`).
 
 ## 1. Summary
 

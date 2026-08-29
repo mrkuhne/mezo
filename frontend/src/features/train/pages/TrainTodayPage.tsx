@@ -6,7 +6,7 @@
 // a reload, a back/forward step and the `Mai` sub-nav entry all agree with what
 // the page renders. The weekly list + load tiles + provenance note now
 // live on TrainWeekPage (/train/week, "Heti").
-// Thin TrainSection shell ⇒ this view owns its own .page-header.
+// A full-page sibling of the Edzés hub — it owns its own .page-header.
 // ============================================================
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
