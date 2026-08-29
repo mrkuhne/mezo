@@ -19,6 +19,8 @@ import { NotificationCategoryRow } from '@/features/me/components/NotificationCa
 import { Toggle } from '@/shared/ui/Toggle'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { ClayIcon } from '@/shared/ui/clay'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
 import { projectStackDay } from '@/features/fuel/logic/projectStackDay'
 import { buildScheduleEntries } from '@/data/notification/notificationScheduleWriter'
@@ -211,42 +213,42 @@ export function NotificationsPage() {
 
   return (
     <div style={{ padding: '8px 24px 24px' }}>
-      <div className="col gap-md">
+      <EntranceGroup className="col gap-md">
         <NotificationPreviewHeader forecast={forecast} />
 
-        <div className="card" style={{ padding: 14 }}>
-          <div className="row gap-sm" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <div className="col">
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-                Push értesítések
-              </span>
-              <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
-                {statusLine}
-              </span>
-            </div>
-            {/* Visible-but-inert when denied — the status line already tells the user it's
-                recoverable in iOS settings, so the switch stays present and honestly marked
-                dead rather than hidden (unlike an unrecoverable dead control, which would be
-                hidden instead). Also disabled mid-flight to prevent re-entrant taps. */}
-            <Toggle
-              on={push.enabled}
-              onToggle={onToggle}
-              ariaLabel="Push értesítések"
-              disabled={push.busy || push.permission === 'denied'}
-            />
+        <div className="ntf-masterrow rise" style={{ '--d': '40ms' } as React.CSSProperties}>
+          <span className="ntf-mic" aria-hidden="true"><ClayIcon name="i-ertesites" size={24} /></span>
+          <div className="col" style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+              Push értesítések
+            </span>
+            <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
+              {statusLine}
+            </span>
           </div>
-          {/* The whole point of the hook's `error`: without this line a failed subscribe is a
-              toggle that flips back to off with the status line still reading „Nincs
-              engedélyezve" — indistinguishable from a tap that never registered. */}
-          {push.error && (
-            <p className="text-error" style={{ fontSize: 11, marginTop: 10 }} role="alert">
-              {PUSH_ERROR_COPY[push.error]}
-            </p>
-          )}
+          {/* Visible-but-inert when denied — the status line already tells the user it's
+              recoverable in iOS settings, so the switch stays present and honestly marked
+              dead rather than hidden (unlike an unrecoverable dead control, which would be
+              hidden instead). Also disabled mid-flight to prevent re-entrant taps. */}
+          <Toggle
+            on={push.enabled}
+            onToggle={onToggle}
+            ariaLabel="Push értesítések"
+            disabled={push.busy || push.permission === 'denied'}
+          />
         </div>
+        {/* The whole point of the hook's `error`: without this line a failed subscribe is a
+            toggle that flips back to off with the status line still reading „Nincs
+            engedélyezve" — indistinguishable from a tap that never registered. Lives outside
+            the washed row (an alert reads oddly nested in a colored tile). */}
+        {push.error && (
+          <p className="text-error" style={{ fontSize: 11, margin: '-6px 2px 0' }} role="alert">
+            {PUSH_ERROR_COPY[push.error]}
+          </p>
+        )}
 
         {push.enabled && (
-          <div className="card" style={{ padding: 14 }}>
+          <div className="ntf-testrow rise" style={{ '--d': '70ms' } as React.CSSProperties}>
             <CtaPrimary onClick={onTest} disabled={push.busy}>
               Teszt értesítés küldése
             </CtaPrimary>
@@ -258,9 +260,9 @@ export function NotificationsPage() {
           </div>
         )}
 
-        <div>
+        <div className="rise" style={{ '--d': '100ms' } as React.CSSProperties}>
           <Eyebrow>Mezo megszólal</Eyebrow>
-          <div className="card" style={{ padding: '0 14px', marginTop: 8 }}>
+          <div className="mt-sm">
             {proseCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
@@ -272,26 +274,9 @@ export function NotificationsPage() {
           </div>
         </div>
 
-        <div>
-          <Eyebrow>Az agy eseményei</Eyebrow>
-          <p className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
-            Eseményvezérelt — nem szerepel a napi terhelés előnézetben.
-          </p>
-          <div className="card" style={{ padding: '0 14px', marginTop: 8 }}>
-            {brainCategories.map((pref) => (
-              <NotificationCategoryRow
-                key={pref.category}
-                pref={pref}
-                subLine={deriveSubLine(pref.category, NOTIFICATION_CATEGORY_META[pref.category].description, subLineCtx)}
-                onToggle={() => setPref(pref.category, { enabled: !pref.enabled })}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
+        <div className="rise" style={{ '--d': '140ms' } as React.CSSProperties}>
           <Eyebrow>Emlékeztetők</Eyebrow>
-          <div className="card" style={{ padding: '0 14px', marginTop: 8 }}>
+          <div className="mt-sm">
             {reminderCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
@@ -302,7 +287,22 @@ export function NotificationsPage() {
             ))}
           </div>
         </div>
-      </div>
+
+        <div className="rise" style={{ '--d': '180ms' } as React.CSSProperties}>
+          <Eyebrow>Az agy eseményei</Eyebrow>
+          <div className="mt-sm">
+            {brainCategories.map((pref) => (
+              <NotificationCategoryRow
+                key={pref.category}
+                pref={pref}
+                subLine={deriveSubLine(pref.category, NOTIFICATION_CATEGORY_META[pref.category].description, subLineCtx)}
+                onToggle={() => setPref(pref.category, { enabled: !pref.enabled })}
+              />
+            ))}
+          </div>
+          <p className="ntf-foot">Eseményvezérelt — nem szerepel a napi terhelés előnézetben.</p>
+        </div>
+      </EntranceGroup>
     </div>
   )
 }
