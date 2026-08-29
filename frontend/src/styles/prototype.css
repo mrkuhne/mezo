@@ -4976,6 +4976,59 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 
 @media (prefers-reduced-motion: reduce) {
   .ppl-tile:active { transform: none; }
+/* ── Értesítés + AI-napló re-face (mezo-d20.6.8) — prototype en-body
+   #page-ertesites / #page-ai ×1.18. The dark daily-load card stays a fixed
+   dark surface in BOTH themes (prototype .ntfprev — a deliberately-nocturnal
+   panel, not a wash) and keeps its hexes as component inline style rather
+   than tokens here, same idiom NotificationPreviewHeader already used.
+   Category rows wear the category's EXISTING --wash-* icon token (data/
+   types.ts NOTIFICATION_CATEGORY_META.iconBg) as the whole row's wash via
+   the local --cw custom prop — the wash-per-category mapping the prototype's
+   .catrow rows already draw, without inventing a second color table. AI-napló
+   reuses the same statcell2/aibar/callt family (prototype .ai section);
+   status rails keep the tones the page already had (sage/terracotta/amber —
+   the ok/error/cancelled split), just placed on the Mozaik card shape. ── */
+.ntf-masterrow { display: flex; align-items: center; gap: 11px; border-radius: 21px; padding: 14px 15px;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.ntf-masterrow .ntf-mic { width: 41px; height: 41px; border-radius: 14px; display: grid; place-items: center;
+  flex: none; background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.ntf-testrow { border-radius: 21px; padding: 14px 15px; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.ntf-catrow { display: flex; align-items: center; gap: 11px; border-radius: 18px; padding: 11px 13px;
+  margin-bottom: 9px; background: var(--cw, var(--mz-wash-white));
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 24px -15px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+.ntf-catrow .ntf-cic { width: 35px; height: 35px; border-radius: 13px; display: grid; place-items: center;
+  flex: none; background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+.ntf-catrow.off { opacity: 0.55; }
+.ntf-catrow.off .ntf-cic { filter: grayscale(1); }
+.ntf-cat-nm { font-size: 12px; font-weight: 700; }
+.ntf-cat-sb { font-size: 9px; color: var(--mz-ink-soft); margin-top: 1px; }
+.ntf-leadch { font-size: 8px; font-weight: 800; border-radius: 999px; padding: 2px 8px; flex: none;
+  background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); font-variant-numeric: tabular-nums; }
+.ntf-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; }
+
+.aiu-segtabs { display: flex; gap: 4px; background: var(--surface-recess); border-radius: 999px; padding: 4px; margin-bottom: 4px; }
+.aiu-segtabs button { flex: 1; min-height: 44px; border: none; background: none; border-radius: 999px;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.aiu-segtabs button.on { background: var(--gradient-cta); color: #fff; box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+.aiu-fcard { border-radius: 21px; padding: 13px 0 5px; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.aiu-bar { display: flex; align-items: center; gap: 9px; padding: 7px 15px; }
+.aiu-bar .nm { font-size: 11px; font-weight: 600; flex: 1; }
+.aiu-bar .gbar { flex: 1.4; height: 6px; border-radius: 3px; background: var(--mz-gbar-bg); overflow: hidden; }
+.aiu-bar .gbar div { height: 100%; border-radius: 3px; background: var(--coral);
+  transform: scaleX(0); transform-origin: left; }
+.mz-play .aiu-bar .gbar div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+.aiu-bar .vl { font-size: 9px; font-weight: 700; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; flex: none; }
+.aiu-callt { border-radius: 18px; padding: 11px 13px 11px 15px; margin-bottom: 9px; position: relative;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 12px 24px -15px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.aiu-callt::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px;
+  border-radius: 2px; background: var(--rc); }
+.aiu-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; text-align: center; margin-top: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aiu-bar .gbar div, .mz-play .aiu-bar .gbar div { transform: none; animation: none; }
 }
 
 /* ============================================================
