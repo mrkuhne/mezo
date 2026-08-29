@@ -5458,6 +5458,50 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 @media (prefers-reduced-motion: reduce) {
   .logflow-srct { transition: none; }
 }
+/* ── Fuel · Terv + Gyógyszer re-face (mezo-d20.4.7) — prototype fuel-body
+   #page-terv / #page-gyogyszer ×1.18 (330→390px frame). The week-rhythm
+   rows/track/markers (.fpl-*, prototype .rhyrow/.rhytrack/.rhyleg) and the
+   medication card + cycle bar (.fmd-*, prototype .medcard/.cyc/.doserow)
+   reuse the existing --mz-* cell/no-ink tokens for phase tints instead of
+   inventing new ones. The medication peak deliberately does NOT ride
+   --error (an actual-red token in dark mode) — it uses --mz-no-ink, the
+   shared terracotta the app already reserves for "high but not alarming"
+   (NOVA 4, the low-Mozgás skin): the peak (appetite-suppression) window is
+   information, never a warning (handoff §2 — phase hue never red). ── */
+.fpl-rhyrow { display: flex; align-items: center; gap: 9px; padding: 7px 0; }
+.fpl-rhyrow + .fpl-rhyrow { border-top: 0.5px solid rgba(43, 33, 24, 0.06); }
+.fpl-dl { width: 35px; flex: none; font-size: 10px; font-weight: 800; color: var(--mz-ink-soft); text-align: center; }
+.fpl-dl .ma { display: block; font-size: 7px; font-weight: 800; letter-spacing: 0.12em; color: var(--mz-cell-amber-ink); }
+.fpl-track { flex: 1; position: relative; height: 16px; border-radius: 8px; background: rgba(43, 33, 24, 0.05); }
+.fpl-blk { position: absolute; top: 2px; bottom: 2px; border-radius: 6px; }
+.fpl-blk.gym { background: var(--mz-goalfill); }
+.fpl-blk.vb { background: var(--cat-tendency); }
+.fpl-mk { position: absolute; top: -2px; bottom: -2px; width: 2px; border-radius: 2px; }
+.fpl-mk.kc { background: var(--mz-ink-mut); opacity: 0.6; }
+.fpl-mk.cf { background: var(--warning); opacity: 0.8; }
+.fpl-rest { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 9px; letter-spacing: 0.1em; color: var(--mz-ink-mut); }
+.fpl-leg { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 9px; font-size: 9px; color: var(--mz-ink-soft); font-weight: 600; }
+.fpl-leg i { display: inline-block; width: 11px; height: 7px; border-radius: 4px; margin-right: 4px; vertical-align: 0.5px; }
+
+.fmd-medcard { border-radius: 19px; padding: 13px 14px 14px 18px; margin-bottom: 12px; position: relative;
+  overflow: hidden; background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.fmd-medcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--mz-cell-lav-ink); }
+.fmd-cyc { display: flex; gap: 5px; margin-top: 14px; list-style: none; padding: 0; }
+.fmd-cyc li { flex: 1; height: 35px; border-radius: 11px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 4px; background: rgba(43, 33, 24, 0.05); color: var(--mz-ink-soft); position: relative; }
+.fmd-cyc li.peak { background: color-mix(in srgb, var(--mz-no-ink) 16%, transparent); color: var(--mz-no-ink); }
+.fmd-cyc li.stable { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.fmd-cyc li.trough { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.fmd-cyc li.cur { box-shadow: 0 0 0 2px color-mix(in srgb, var(--mz-cell-amber-ink) 50%, transparent); }
+.fmd-cyc li.cur::after { content: 'MA'; position: absolute; top: -13px; font-size: 6.5px; font-weight: 800;
+  letter-spacing: 0.14em; color: var(--mz-cell-amber-ink); }
+.fmd-cyc-glyph { font-size: 9px; font-weight: 800; }
+.fmd-cyc-day { font-variant-numeric: tabular-nums; font-size: 8px; font-weight: 600; color: var(--mz-ink-mut); }
+.fmd-doserow { display: flex; align-items: baseline; gap: 9px; padding: 9px 2px; font-size: 12px; list-style: none; }
+.fmd-doserow + .fmd-doserow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.fmd-doserow .nt { font-size: 10px; font-style: italic; color: var(--mz-ink-mut); }
+.fmd-doserow .dd { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-cell-lav-ink); font-variant-numeric: tabular-nums; }
 
 /* ============================================================
    Today · iOS list language (mezo-e26w)
