@@ -242,6 +242,9 @@
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+  /* Edzés hub (mezo-d20.3.1) — prototype edzes-body hub hero + .coach hexes verbatim */
+  --mz-wash-trainhero: linear-gradient(140deg, #FFE7DC, #FFFFFF 70%);
+  --mz-coach-bg: #FFF4EF;
   /* Fuel hub (mezo-d20.4.1) — prototype fuel-head/body .wtile + .mezotile hexes verbatim.
      The MOST ring keeps its saturated coral in BOTH themes (the .mz-w-most precedent). */
   --mz-fh-now-ring: #FF6B4A;
@@ -424,6 +427,9 @@
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
+  /* Edzés hub (mezo-d20.3.1) — the hub hero wash + coach bubble on the dark dv ramp */
+  --mz-wash-trainhero: linear-gradient(140deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), var(--surface-card) 70%);
+  --mz-coach-bg: color-mix(in srgb, var(--dv-coral) 12%, var(--surface-card));
   /* Fuel hub (mezo-d20.4.1) — the swimlane surfaces on the dark dv ramp. */
   --mz-fh-now-ring: #FF6B4A;
   --mz-fh-miss-bd: color-mix(in srgb, var(--dv-amber) 55%, transparent);
@@ -3580,7 +3586,10 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   display: flex;
   align-items: stretch;
   overflow: hidden;                   /* clips the rail square against the card radius */
-  background: var(--surface-1);
+  /* Mozaik tile pass (mezo-d20.3.3): the muscle wash sits ON the card (handoff §10
+     "domain wash ON the tile" relaxation) — --ex-wash comes in inline from
+     muscleColor(...).wash per row, same token the Tag stamp already uses. */
+  background: var(--ex-wash, var(--surface-1));
   border: 1px solid var(--card-border);
   border-radius: var(--r-2xl);
   filter: var(--card-elevation);
@@ -5065,6 +5074,225 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   .aiu-bar .gbar div, .mz-play .aiu-bar .gbar div { transform: none; animation: none; }
 }
 
+/* ── Edzés hub (mezo-d20.3.1) — prototype edzes-body.html hub section ×1.18:
+      one long hero (clay spot + eyebrow + session title + the companion coach
+      bubble + ONE primary CTA) over the six-tile mosaic. The hero's states are
+      Mai's honest ones — done bar, resume, start, rest day, meso-less ghost —
+      so the CTA row has exactly one occupant at a time. ── */
+.eh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
+.eh-panel { display: flex; flex-direction: column; gap: 11px; }
+
+.eh-hero {
+  border-radius: 21px; padding: 14px 15px;
+  background: var(--mz-wash-trainhero);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow);
+}
+.eh-hero-rose { background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose); }
+.eh-hero-sky { background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
+.eh-hero-ghost { background: var(--mz-stripbg); }
+.eh-hero-row { display: flex; align-items: center; gap: 9px; }
+.eh-hero-grow { flex: 1; min-width: 0; }
+.eh-hero-t { font-size: 35px; font-weight: 200; letter-spacing: -0.02em; line-height: 1.1; margin-top: 2px; }
+.eh-hero-ln { font-size: 13px; font-weight: 300; color: var(--mz-ink-soft); margin: 9px 0 0; line-height: 1.45; }
+.eh-eb-coral { color: var(--mz-cell-coral-ink); }
+.eh-eb-rose { color: var(--mz-cell-rose-ink); }
+.eh-eb-sky { color: var(--mz-cell-sky-ink); }
+.eh-eb-sage { color: var(--mz-cell-sage-ink); }
+.eh-eb-gold { color: var(--mz-cell-gold-ink); }
+
+/* the companion's one pre-session sentence */
+.eh-coach { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px;
+  background: var(--mz-coach-bg); border-radius: 12px; padding: 8px 11px;
+  font-size: 12.5px; font-weight: 300; color: var(--text-primary); line-height: 1.45; }
+.eh-coach .dot { width: 17px; height: 17px; border-radius: 50%; flex: none; margin-top: 1px;
+  background: var(--gradient-cta); }
+
+/* one primary CTA per hero — the prototype pill grown to the 44pt touch floor */
+.eh-cta { width: 100%; margin-top: 11px; min-height: 44px; padding: 0 15px; border: none;
+  border-radius: 999px; font-family: inherit; font-size: 14px; font-weight: 700; color: #fff;
+  cursor: pointer; background: var(--gradient-cta);
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+.eh-ghostcta { width: 100%; margin-top: 9px; min-height: 44px; padding: 0 15px;
+  border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 999px;
+  font-family: inherit; font-size: 13px; font-weight: 600; color: var(--mz-ink-soft); cursor: pointer; }
+.eh-cta:active, .eh-ghostcta:active { transform: scale(0.97); }
+
+/* logged state — sage, never a second CTA (Mai's DoneBar language) */
+.eh-donebar { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 11px;
+  min-height: 44px; padding: 0 14px; border: none; border-radius: 15px; text-align: left;
+  font-family: inherit; cursor: pointer;
+  background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.eh-donebar.is-static { cursor: default; }
+.eh-donebar b { font-size: 13px; font-weight: 700; }
+.eh-donebar span { margin-left: auto; font-size: 11px; font-weight: 600; }
+
+/* Heti tile — the prototype's 7-dot week strip (.wk) instead of a clay spot */
+.eh-wk { display: flex; gap: 6px; justify-content: center; }
+.eh-wk .d { display: grid; gap: 4px; justify-items: center;
+  font-size: 9px; font-weight: 700; color: var(--mz-ink-mut); }
+.eh-wk .d i { width: 12px; height: 12px; border-radius: 50%; background: var(--mz-gbar-bg); }
+.eh-wk .d i.f { background: var(--dv-sage); }
+.eh-wk .d i.now { background: var(--dv-amber);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dv-amber) 25%, transparent); }
+
+/* the prototype's centered `.big` tile datum (Mesociklus W3/5, Medálok 12) */
+.eh-tbig { font-size: 19px; font-weight: 200; letter-spacing: -0.02em; text-align: center;
+  font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .eh-cta, .eh-ghostcta { transition: none; }
+  .eh-cta:active, .eh-ghostcta:active { transform: none; }
+}
+/* ── Heti re-face (mezo-d20.3.2) — prototype edzes-body.html #page-heti
+   ×1.18 (330→390px frame). A static, non-collapsible panel for the folded-in
+   izom-zóna card (GymPage's meta card content, minus the retired Fázis/Split
+   cells now that the Mezociklus áttekintő chip covers those) — same
+   stripbg/shadow/radius as .mz-colstrip, just without the toggle chrome. ── */
+.mz-panel { background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
+  border-radius: 18px; padding: 12px 14px; box-shadow: var(--mz-shadow); margin-bottom: 12px; }
+/* ── Edzés · session prep mosaic (mezo-d20.3.8) — prototype session-body
+   #prepPanel + tile pages ×1.18. The long hero-tile (eyebrow + title + the
+   4 mini stat cells + the CTA above the fold), the 6-tile mosaic, and the
+   Gyakorlatok page's tile-styled exercise cards (family wash + rail, clay
+   disc, labeled Cél · Induló súly columns, mini set dots, 1RM medal, a
+   múlt-hét → progresszió footer). Küldetések/Niggle badges reuse the
+   anchor+badge idiom (a numbered/exclamation dot pinned on the tile icon). */
+.tp-hero { padding: 15px 16px 16px; display: flex; flex-direction: column; gap: 9px;
+  background: linear-gradient(140deg, var(--mz-wash-coral), var(--surface-card) 72%); }
+.tp-title { font-family: var(--ff-display); font-weight: 700; font-size: 23px; line-height: 1.15; }
+.tp-cta { width: 100%; margin-top: 2px; }
+.tp-anchor { position: relative; display: inline-flex; }
+.tp-badge { position: absolute; top: -3px; right: -5px; min-width: 17px; height: 17px; padding: 0 3px;
+  border-radius: 999px; background: #FF6B4A; color: #fff; font-size: 9.5px; font-weight: 800;
+  display: grid; place-items: center; box-shadow: 0 2px 6px rgba(255, 107, 74, 0.5); }
+.tp-niggle { background: linear-gradient(150deg, var(--mz-cell-gold-bg), var(--mz-wash-white)); }
+.tp-niggle .tp-badge { background: var(--mz-strength); box-shadow: 0 3px 8px -2px rgba(201, 150, 46, 0.6); }
+
+/* Gyakorlatok tile page — .gx-tile exercise card */
+.gx-tile { border-radius: 19px; padding: 12px 13px 11px; background: var(--fw, var(--mz-stripbg));
+  box-shadow: inset 3px 0 0 var(--fr, transparent), 0 12px 22px -16px rgba(43, 33, 24, 0.28); }
+.gx-top { display: flex; align-items: flex-start; gap: 9px; }
+.gx-disc { width: 32px; height: 32px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: rgba(255, 255, 255, 0.8); }
+.gx-grow { flex: 1; min-width: 0; }
+.gx-name { font-size: 13px; font-weight: 700; margin-top: 1px; }
+.gx-medal { flex: none; text-align: right; font-size: 11px; font-weight: 800; color: var(--amber-deep, #A8801F); }
+.gx-medal small { display: block; font-size: 7px; font-weight: 700; letter-spacing: 0.08em; }
+.gx-cols { display: flex; gap: 16px; margin-top: 9px; }
+.gx-cols small { display: block; font-size: 8.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.gx-cols b { font-size: 12px; font-weight: 700; }
+.gx-dots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.gx-dot { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 8px; font-weight: 800; flex: none; }
+.gx-dot-wu { border: 1.5px dashed var(--fd, var(--text-tertiary)); color: var(--fd, var(--text-tertiary)); }
+.gx-dot-wk { background: var(--fr, var(--text-tertiary)); color: #fff; }
+.gx-foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+  padding-top: 8px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); font-size: 10px; color: var(--mz-ink-soft); }
+.gx-foot b { font-weight: 700; color: var(--text-primary); }
+.gx-arr { color: var(--mz-ink-mut); }
+.gx-chip { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 999px; color: #fff; background: var(--fr); }
+.gx-chip[data-lever='deload'] { background: var(--amber-deep, #A8801F); }
+.gx-chip[data-lever='rep'] { background: var(--sage, #7FA06C); }
+.gx-challenge { margin-left: auto; display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; color: #A84A26; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .gx-tile.rise { opacity: 1; transform: none; animation: none; }
+}
+
+/* ── Edzés · élő session (mezo-d20.3.9) — prototype session-body #page-active
+   ×1.18 (330→390px frame). The CALM DEFAULT: the execution card is the only
+   expanded surface — a single-line name with small round media buttons, a muted
+   metaline, a one-line note pill, and ONE white "Logolás" panel. Progresszió and
+   Szettek became thin .mz-colstrip reference strips whose closed header already
+   carries the summary ("a kártyán logolsz, a sávokban utánanézel").
+   Deviation from the prototype, deliberate: the ± stepper and RIR/oldal controls
+   keep 44pt touch targets (the prototype draws them at 28 and 26 px) and the
+   rest bar keeps the app's own .restbar geometry. ── */
+
+/* header: the title button centers, the exercise dots got their own row */
+.wkx-tt { flex: 1; text-align: center; }
+.wk-top .wkx-tt .t1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exdots { margin-left: 0; justify-content: center; padding: 8px 24px 0; }
+.exdots button { border: 0; background: none; padding: 4px; line-height: 0; cursor: pointer; }
+/* the dot itself is an inline <i> — it needs a box to take its 8px square */
+.exdots i { display: block; }
+
+/* ① head — single-line name + small round media buttons */
+.wkx-exhead { display: flex; align-items: flex-start; gap: 8px; }
+.wkx-exhead-grow { flex: 1; min-width: 0; }
+.excard.wkx-excard .wkx-exhead h2 { font-size: 20px; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wkx-mbtn { width: 31px; height: 31px; border-radius: 50%; flex: none; padding: 0; cursor: pointer;
+  display: grid; place-items: center; font-size: 12px; color: var(--text-secondary);
+  border: 0.5px solid var(--border-subtle); background: var(--mz-stripbg); font-family: inherit; }
+.wkx-mbtn.on { border-color: var(--fam-rail); box-shadow: 0 4px 10px -4px var(--fam-rail); }
+
+/* ② metaline — the muted one-liner that replaced the 3-cell stat strip */
+.wkx-metaline { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 4px;
+  font-size: 11px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.wkx-metaline .hot { color: var(--coral-deep); }
+.wkx-metaline .cool { color: var(--sage-deep); }
+.wkx-chmini { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px;
+  font-size: 10px; font-weight: 700; color: var(--coral-deep);
+  border: 1px dashed var(--fam-rail); background: var(--mz-stripbg); }
+
+/* one-line durable note pill */
+.wkx-notepill { display: flex; align-items: flex-start; gap: 7px; margin-top: 9px; padding: 7px 11px;
+  border-radius: 11px; border-left: 3px solid var(--fam-rail); background: var(--mz-stripbg);
+  font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+.wkx-notepill .ntext { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* tap-to-reveal media */
+.wkx-media { margin-top: 9px; border-radius: 15px; overflow: hidden; position: relative; }
+.wkx-media.exvideo { background: var(--surface-2); }
+.wkx-media.exvideo iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+/* ③ THE logging panel — the one clearly bounded input zone */
+.wkx-logbox { margin-top: 10px; border-radius: 19px; padding: 11px 13px 12px;
+  background: var(--mz-stripbg); border: 0.5px solid var(--border-subtle);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 10px 20px -14px rgba(43, 33, 24, 0.3); }
+.wkx-logtop { display: flex; align-items: baseline; gap: 6px; }
+/* the slot label carries a target, so it runs long: tighter than the DS eyebrow
+   (12/0.22em) at the prototype's own 8.5px×1.18 ≈ 10px, and it yields first —
+   the working-set counter must never be clipped. */
+.wkx-logtop .eyebrow { font-size: 10px; letter-spacing: .09em;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wkx-lgoal { font-size: 10px; font-weight: 700; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; flex: none; }
+.wkx-logbox .setdots { margin-top: 10px; gap: 7px; }
+.wkx-logbox .setdots .sd { width: 30px; height: 30px; font-size: 11px; }
+/* compact 2-column steppers — prototype .bigsteps/.bstep, with 44pt buttons */
+.wkx-logbox .steprow { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
+.wkx-logbox .steprow .stepper { padding: 9px 10px 8px; border-radius: 16px; border-width: 0.5px; background: var(--surface-2); }
+.wkx-logbox .steprow .stepper .k { font-size: 9px; }
+.wkx-logbox .steprow .stepper .n { font-size: 24px; margin-top: 2px; }
+.wkx-logbox .steprow .stepper .row { gap: 16px; margin-top: 6px; }
+.wkx-logbox .steprow .stepper .b { flex: 0 0 44px; width: 44px; height: 44px; }
+.wkx-logbox .rirrow { margin-top: 10px; }
+.wkx-logbox .rirrow button { min-height: 44px; }
+.wkx-logbox .setnote { margin-top: 10px; }
+.wkx-notetoggle { display: block; width: 100%; min-height: 44px; padding: 10px 0 0; border: 0; background: none;
+  font-family: inherit; font-size: 11px; font-weight: 600; color: var(--mz-ink-mut); text-align: left; cursor: pointer; }
+.wkx-alldone { margin-top: 12px; text-align: center; font-size: 12px; font-weight: 700; color: var(--sage-deep); }
+
+/* Progresszió + Szettek as thin reference strips */
+.wkx-strip { margin: 10px 24px 0; }
+.wkx-strip:last-child { margin-bottom: 20px; }
+.wkx-pochip { flex: none; padding: 3px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 700;
+  color: var(--coral-deep); background: var(--mz-cell-coral-bg); }
+.wkx-pochip[data-lever='rep'] { color: var(--sage-deep); background: var(--mz-cell-sage-bg); }
+.wkx-pochip[data-lever='hold'], .wkx-pochip[data-lever='deload'] { color: var(--amber-deep); background: var(--mz-cell-gold-bg); }
+/* nested in a strip body the banner/table drop their own frame + gutters */
+.mz-colbody .pobanner { margin: 0; padding: 0; border: 0; background: none; }
+.mz-colbody .wkx-slist { margin: 0; border: 0; border-radius: 0; background: none; }
+.mz-colbody .wkx-shead { padding: 0 0 6px; align-items: center; }
+.wkx-shint { font-size: 9.5px; color: var(--mz-ink-mut); min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+.mz-colbody .wkx-srow { padding-left: 0; padding-right: 0; }
+
+/* the closing/closed report's quiet principle line (prototype .habnote) */
+.wsum-principle { font-size: 11px; font-weight: 300; line-height: 1.5; color: var(--text-tertiary);
+  margin: 14px 24px 20px; }
 /* ── Fuel hub re-face (mezo-d20.4.1) — prototype fuel-body hub section ×1.18:
    the keret-hero as a rounded sage card (ONE number, hub v3), the WINDOW SWIMLANE
    (.fh-lane / .fh-wtile with its kcal mini-tile and three mini macro rings), the

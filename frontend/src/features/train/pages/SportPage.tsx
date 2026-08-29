@@ -53,8 +53,13 @@ export function SportPage() {
   // Sticky so returning here restores the segment the user left from — see useStickyTab.
   const [view, setView] = useStickyTab<SportSubView>('train.sport.view', 'week')
   const [logOpen, setLogOpen] = useState(false)
+  const [logInitialSport, setLogInitialSport] = useState<SportKind | undefined>(undefined)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [eventOpen, setEventOpen] = useState(false)
+  const openLog = (initial?: SportKind) => {
+    setLogInitialSport(initial)
+    setLogOpen(true)
+  }
 
   // Loading skeleton (real mode): while the sport-sessions query (sportPending) is
   // unresolved, render the layout-matched skeleton before the first render. Placed
@@ -85,7 +90,7 @@ export function SportPage() {
           <Eyebrow brand>Edzés · Sport</Eyebrow>
           <PageTitle style={{ marginTop: 4 }}>Röplabda</PageTitle>
         </div>
-        <button type="button" onClick={() => setLogOpen(true)} className="pgact">
+        <button type="button" onClick={() => openLog()} className="pgact">
           + Log
         </button>
       </div>
@@ -181,6 +186,7 @@ export function SportPage() {
             <SportWeekView
               schedule={volleyball}
               onEdit={isMockMode() ? undefined : () => setScheduleOpen(true)}
+              onLogSlot={openLog}
             />
           ) : (
             <div style={{ padding: '8px 24px 16px' }}>
@@ -211,6 +217,7 @@ export function SportPage() {
 
       {logOpen && (
         <SportLogSheet
+          initialSport={logInitialSport}
           onClose={() => setLogOpen(false)}
           onSave={(body, done) => logSportSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
@@ -233,7 +240,12 @@ export function SportPage() {
 }
 
 // === Week view: 7-day schedule with volleyball slots ===
-function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyball']; onEdit?: () => void }) {
+function SportWeekView({ schedule, onEdit, onLogSlot }: {
+  schedule: SportSchedule['volleyball']
+  onEdit?: () => void
+  /** Inline "Logold ›" on today's slot — preselects that slot's sport in the log sheet. */
+  onLogSlot?: (initial: SportKind) => void
+}) {
   return (
     <div style={{ padding: '8px 24px 16px' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -313,6 +325,16 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                                 >
                                   EGYSZERI
                                 </span>
+                              )}
+                              {session.today && onLogSlot && (
+                                <button
+                                  type="button"
+                                  className="chip tapchip"
+                                  style={{ marginLeft: 'auto', padding: '4px 8px', fontSize: 11 }}
+                                  onClick={() => onLogSlot(kind)}
+                                >
+                                  Logold ›
+                                </button>
                               )}
                             </div>
                             <span

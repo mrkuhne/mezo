@@ -69,6 +69,18 @@ test('the tab bar stays visible on the regular Train tab', () => {
   const { container } = renderApp('/train')
   expect(container.querySelector('.tab-bar')).toBeTruthy()
 })
+
+test('the Edzés tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.3.1)', async () => {
+  renderApp('/train')
+  expect(await screen.findByRole('button', { name: 'Heti terv' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Train alnavigáció')).not.toBeInTheDocument()
+})
+
+test('/train/sport stays a stable full-page sibling of the hub', async () => {
+  renderApp('/train/sport')
+  expect(await screen.findByRole('heading', { level: 1, name: 'Röplabda' })).toBeInTheDocument()
+})
 test('the tab bar hides on the full-screen active-workout session (mezo-8141)', () => {
   const { container } = renderApp('/train/session')
   expect(container.querySelector('.tab-bar')).toBeNull()

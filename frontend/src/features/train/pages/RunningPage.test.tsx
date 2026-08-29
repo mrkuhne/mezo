@@ -50,6 +50,13 @@ describe('RunningPage (mock mode)', () => {
     expect(screen.getByText(/Cross-load/i)).toBeInTheDocument()
   })
 
+  test('the pyramid session pills join its work segments and honestly note the derived rest', () => {
+    renderView()
+    // Week 3 fri-pyramid: [15, 30, 45, 45, 30, 15] seconds.
+    expect(screen.getByText('15／30／45／45／30／15 mp')).toBeInTheDocument()
+    expect(screen.getByText('pihenő = szakasz × 2')).toBeInTheDocument()
+  })
+
   test('each prescribed session row carries the stag-run FUTÁS tag', () => {
     renderView()
     const tags = screen.getAllByText('FUTÁS')
@@ -65,6 +72,17 @@ describe('RunningPage (mock mode)', () => {
     expect(screen.getByText('Sprint')).toBeInTheDocument()
     // Napló rows also carry the stag-run FUTÁS type tag (mirrors the week view cards).
     expect(screen.getAllByText('FUTÁS')[0]).toHaveClass('stag', 'stag-run')
+  })
+
+  test('Napló shows the pulzus-megnyugvás (HR-recovery) trend — hrRecoverySec already exists on both fixtures', async () => {
+    renderView()
+    await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
+    expect(screen.getByText(/Pulzus-megnyugvás/)).toBeInTheDocument()
+    // rs-02 (jún 26, hr 50) -> rs-01 (jún 30, hr 42): improvement, so a non-positive
+    // delta, rendered without a leading "+" (never punished, never red).
+    expect(screen.getByText('-8 mp')).toBeInTheDocument()
+    expect(screen.getByText('42')).toBeInTheDocument()
+    expect(screen.getByText('50')).toBeInTheDocument()
   })
 
   test('Tervek switcher renders the full block library (all three titles)', async () => {
@@ -87,23 +105,59 @@ describe('RunningPage (mock mode)', () => {
     expect(screen.getByText('Robbanékonyság 01')).toBeInTheDocument()
   })
 
-  test('logging a prescribed session opens the RunLogSheet (date-independent)', async () => {
-    renderView()
-    // Each RunSessionCard in the E-heti view exposes a "Naplózás ▸" button.
-    const logButtons = screen.getAllByRole('button', { name: /Naplózás/ })
-    expect(logButtons.length).toBeGreaterThan(0)
-    await userEvent.click(logButtons[0])
-    // Sheet title appears; "Mentés" saves without crashing.
-    expect(await screen.findByText('Hogy ment?')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-  })
+  // The three-way CTA (MA→Naplózd / múlt→Pótold / jövő→disabled Naplózás / KÉSZ)
+  // is keyed on the real weekday vs. each prescribed session's dayOfWeek, so
+  // these tests pin the clock. Week 3's tue-sprint already has a log (rs-01)
+  // → always KÉSZ; fri-pyramid has none, so its CTA is date-driven.
+  describe('three-way CTA (pinned clock)', () => {
+    beforeEach(() => vi.useFakeTimers({ toFake: ['Date'] }))
+    afterEach(() => vi.useRealTimers())
 
-  test('logging a run presents the level-up overlay (mock fixture)', async () => {
-    renderView()
-    await userEvent.click(screen.getAllByRole('button', { name: /Naplózás/ })[0])
-    await userEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
-    // The mock logRunSession returns a seeded LevelUpResult → the overlay shows.
-    expect(await screen.findByRole('dialog', { name: 'Szintlépés' })).toBeInTheDocument()
+    test('MA: today is the pyramid session\'s weekday (Friday) → "Naplózd ›"', async () => {
+      vi.setSystemTime(new Date('2026-07-17T12:00:00')) // Friday
+      renderView()
+      expect(screen.getByText('MA')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Naplózd/ })).toBeInTheDocument()
+      // The already-logged sprint session shows the done badge, not a button.
+      expect(screen.getByText('KÉSZ ✓')).toBeInTheDocument()
+    })
+
+    test('múlt: today is after the pyramid\'s weekday → "Pótold ›" opens the RunLogSheet', async () => {
+      vi.setSystemTime(new Date('2026-07-18T12:00:00')) // Saturday — Friday's session is in the past
+      renderView()
+      const potold = screen.getByRole('button', { name: /Pótold/ })
+      await userEvent.click(potold)
+      expect(await screen.findByText('Hogy ment?')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+    })
+
+    test('jövő: today is before the pyramid\'s weekday → disabled grey "Naplózás ▸", not a button', () => {
+      vi.setSystemTime(new Date('2026-07-15T12:00:00')) // Wednesday — Friday's session hasn't happened yet
+      renderView()
+      expect(screen.queryByRole('button', { name: /Naplózás/ })).not.toBeInTheDocument()
+      expect(screen.getByText('Naplózás ▸')).toBeInTheDocument()
+    })
+
+    test('pyramid log sheet ALSO shows the completed-rounds stepper (the honest capture for the F6.3 scoring fix)', async () => {
+      vi.setSystemTime(new Date('2026-07-17T12:00:00')) // Friday → the pyramid session is "MA"
+      renderView()
+      await userEvent.click(screen.getByRole('button', { name: /Naplózd/ }))
+      expect(await screen.findByText('Hogy ment?')).toBeInTheDocument()
+      // Week 3's fri-pyramid has 6 prescribed work segments — the default honestly
+      // mirrors the ladder length (pyramid has no explicit `rounds` field).
+      expect(screen.getByText('Teljesített körök')).toBeInTheDocument()
+      expect(screen.getByText('piramis-szakaszok · a haladás ebből számol')).toBeInTheDocument()
+      expect(screen.getByLabelText('Teljesített körök')).toHaveValue('6')
+    })
+
+    test('logging a run presents the level-up overlay (mock fixture)', async () => {
+      vi.setSystemTime(new Date('2026-07-18T12:00:00')) // Saturday → the pyramid session is loggable ("Pótold")
+      renderView()
+      await userEvent.click(screen.getByRole('button', { name: /Pótold/ }))
+      await userEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
+      // The mock logRunSession returns a seeded LevelUpResult → the overlay shows.
+      expect(await screen.findByRole('dialog', { name: 'Szintlépés' })).toBeInTheDocument()
+    })
   })
 })
 
