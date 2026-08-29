@@ -1,20 +1,30 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import { MemoryRouter } from 'react-router-dom'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
 
-const renderPage = () => render(<ExperimentsPage />, { wrapper: QueryWrapper })
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <ExperimentsPage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
 
 describe('ExperimentsPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders the count, an active + a completed experiment, and the inert propose CTA', () => {
+  test('renders the count, an active + a completed experiment, and the inert propose CTA', async () => {
     renderPage()
-    expect(screen.getByText('N=1 kísérletek · 2')).toBeInTheDocument()
+    // Prototype #page-kiserlet hero (mezo-d20.11): i-lombik + the count + the principle line.
+    expect(screen.getByText('N=1 kísérletek')).toBeInTheDocument()
+    await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('2'))
+    expect(screen.getByText('a saját testeden bizonyítjuk')).toBeInTheDocument()
     expect(screen.getByText('Glikogén-feltöltés volleyball előtt')).toBeInTheDocument()
     expect(screen.getByText('◐ Aktív')).toBeInTheDocument()
     expect(screen.getByText('✓ Megerősítve')).toBeInTheDocument()
@@ -99,6 +109,7 @@ describe('ExperimentsPage (real mode)', () => {
     expect(
       await screen.findByText('Az első N=1 kísérletet a megerősített mintákból javasolja Mezo.'),
     ).toBeInTheDocument()
-    await waitFor(() => expect(screen.queryByText('N=1 kísérletek · 0')).not.toBeInTheDocument())
+    // no fabricated 0 in the hero — the empty branch renders no big number at all
+    await waitFor(() => expect(document.querySelector('.mz-bignum')).toBeNull())
   })
 })

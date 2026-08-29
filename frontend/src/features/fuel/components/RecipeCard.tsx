@@ -21,7 +21,13 @@ const CAT_BAND_CLASS: Record<RecipeCategory, string> = {
   breakfast: 'mz-rcp-breakfast', lunch: 'mz-rcp-lunch', dinner: 'mz-rcp-dinner', snack: 'mz-rcp-snack',
 }
 
-export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Recipe) => void }) {
+export function RecipeCard({ recipe, onOpen, delayMs }: {
+  recipe: Recipe
+  onOpen: (r: Recipe) => void
+  /** Entrance stagger (prototype `.rcpcard.rise` with `--d: 30 + i*30ms`); only animates
+   *  inside an EntranceGroup, which is exactly where the list renders it. */
+  delayMs?: number
+}) {
   const totalMins = recipe.prepMins + recipe.cookMins
   const bandClass = CAT_BAND_CLASS[recipe.category]
   const pending = recipe.mezoFit.score == null
@@ -41,7 +47,8 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
     <button
       onClick={() => onOpen(recipe)}
       aria-label={recipe.name}
-      className={`mz-rcpcard ${bandClass}`}
+      className={`mz-rcpcard ${bandClass}${delayMs !== undefined ? ' rise' : ''}`}
+      style={delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined}
     >
       <div className="mz-rcpband">
         <span className="mz-rcp-halo"><ClayIcon name={CAT_ICON[recipe.category]} size={45} /></span>

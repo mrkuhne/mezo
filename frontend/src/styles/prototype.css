@@ -6528,6 +6528,86 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .spw-ma { color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg); }
 .spw-one { color: var(--mz-cell-rose-ink); background: var(--mz-cell-rose-bg); }
 .spw-logbtn { margin-left: auto; flex: none; min-height: 44px; }
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fuel · 1:1 hűség-audit — hiányzó mozgás + a Stack/Receptek Mozaik-arca
+   (mezo-d20.11). Forrás: prototypes/src/fuel-body.html #page-stack / #page-recept
+   (a `.segtabs` szűrő és a `.lsthead` lista-fejléc), ×1.18 (330 → 390 px keret).
+   A sáv-töltés a Heti `.wk-trend` / `.aiu-bar` receptjét viszi tovább: a nyugalmi
+   állapot a `.mz-play` alatt indul nulláról, a reduced-motion ág pedig a kész
+   végállapotot mutatja — így a koreográfia nélküli oldalon semmi nem tűnik el.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Stack nap-ív: a „bevéve eddig" sáv belépéskor nő ki balról. A `.stk-arc-dot.next`
+   arany lüktetése RÉGÓTA `.mz-play`-re várt (5514. sor) — a Stack oldal csak most
+   kapott EntranceGroup-ot, ezért volt eddig néma. */
+.stk-arc-head { display: flex; align-items: baseline; gap: 8px; }
+.stk-arc-note { margin-left: auto; font-size: 9.5px; font-weight: 700; color: var(--mz-ink-soft);
+  font-variant-numeric: tabular-nums; }
+/* The zone mini-mosaic hosts the page-wide `.zcard` (its own `margin: 0 24px`), which
+   overflows a 1fr grid column — the cards were clipped at the right edge. Inside a mosaic
+   cell the card owns the full column. */
+.stk-mini { min-width: 0; }
+.stk-mini .zcard { margin-left: 0; margin-right: 0; }
+.stk-autosave { font-size: 10px; color: var(--mz-ink-mut); text-align: center; padding: 4px 8px 0;
+  font-variant-numeric: tabular-nums; }
+.stk-arc-fill { transform-origin: left; }
+.mz-play .stk-arc-fill {
+  transform: scaleX(0);
+  animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+  animation-delay: var(--d, 260ms);
+}
+
+/* Receptek · szegmens-szűrő (prototípus `.segtabs`, ×1.18) — a kiválasztott
+   szegmens a CTA-gradienst viseli, alatta a darabszám kisebb súllyal. */
+.fh-segtabs { display: flex; gap: 5px; background: var(--surface-recess); border-radius: 999px;
+  padding: 4px; margin-bottom: 13px; }
+.fh-segtabs button { flex: 1; min-width: 0; min-height: 44px; border: none; background: none;
+  border-radius: 999px; padding: 7px 0; font-family: inherit; font-size: 10px; font-weight: 700;
+  color: var(--mz-ink-soft); cursor: pointer; }
+.fh-segtabs button small { display: block; font-size: 8px; font-weight: 700; opacity: 0.75;
+  font-variant-numeric: tabular-nums; }
+.fh-segtabs button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+
+/* Lista-fejléc (prototípus `.lsthead`): bal oldalt az eyebrow, jobbra a darabszám. */
+.fh-lsthead { display: flex; align-items: baseline; gap: 7px; padding: 2px 2px 8px; }
+.fh-lsthead .cnt { margin-left: auto; font-size: 10.5px; font-weight: 700; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums; }
+
+/* Üres/„nincs találat" sor a Receptek és a Kamra listái alatt (prototípus `.nohit`). */
+.fh-nohit { text-align: center; font-size: 12.5px; color: var(--mz-ink-soft); padding: 31px 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .stk-arc-fill { animation: none; transform: none; }
+}
+/* ── Mezo tab · 1:1 hűség-javítás (mezo-d20.11) ────────────────────────────
+   A Mezo-testvérek megkapják a Mozaik-scaffoldot (MozaikPage + PageHead +
+   PageHero + PageBody), ami a lap-margót is hozza; ezek a szabályok csak azt
+   a néhány prototípus-részletet pótolják, aminek nem volt osztálya:
+   a hero-szám mellé írt egység (#page-josla „68%", #page-memoria „47/60"),
+   és a chat #page-chat saját elrendezése (page-head jobbra tolt pgact
+   chipekkel, chsub sáv, majd a 17px-es oldalmargós szál + composer).
+   Minden érték a prototípus px-e ×1.18. ── */
+.mzp-heropct { font-size: 19px; font-weight: 200; }
+/* a döntés-kártya már meghozott döntése (a prototípus decdone-ra vált; itt a gomb marad,
+   ezért a kiválasztott ghost halkan tintázódik — soha nem pirossal) */
+.mzh-ghost[aria-pressed="true"] { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.mzh-ghost.is-no[aria-pressed="true"] { background: var(--mz-stch-mut-bg); color: var(--mz-no-ink); }
+.mem-herounit { font-size: 18px; font-weight: 400; color: var(--mz-ink-soft); }
+
+/* #page-chat: a page-head két pgact chipje jobbra ül (prototípus .pgact margin-left:auto) */
+.mz-page-head .mzc-pgact:first-of-type { margin-left: auto; }
+/* A prototípusban a page-head FIX, alatta a .chthread görget. Az appban egyetlen görgető van
+   (.screen-content), ezért a fejléc kitapad — különben egy hosszú szál aljáról a kiút ismét
+   csak a tabbar lenne, azaz visszaesnénk a javított hibába. */
+.mzc > .mz-page-head { position: sticky; top: 0; z-index: 30;
+  padding-top: 9px; padding-bottom: 6px; background: var(--canvas); }
+/* prototípus .chsub { padding: 2px 16px 6px } */
+.mzc-chsub { padding: 2px 19px 0; }
+/* prototípus .chthread { padding: 4px 14px 10px } / .composer { margin: 6px 12px 10px } */
+.mzc .chat-thread { padding: 5px 17px 12px; }
+.mzc .mzc-composer { margin-left: 14px; margin-right: 14px; }
+
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)

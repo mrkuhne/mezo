@@ -1,12 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import { MemoryRouter } from 'react-router-dom'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { MemoirPage } from '@/features/insights/pages/MemoirPage'
 
-const renderPage = () => render(<MemoirPage />, { wrapper: QueryWrapper })
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <MemoirPage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
 
 const FEEDBACK_GROUP = 'Visszajelzés a heti memoárról'
 

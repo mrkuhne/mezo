@@ -180,6 +180,19 @@ test('every eating window gets its own lane tile, carrying a kcal mini-tile and 
   expect(screen.queryByText('Étkezési ablakok')).toBeNull()
 })
 
+// Fidelity audit (mezo-d20.11): the mini macro rings rendered already-full. They now FILL —
+// the WeekScoreRing recipe, `useCountUp` driving the conic `--v` (which is also the
+// reduced-motion guard, since the hook jumps to the target itself).
+test('the lane mini rings fill up rather than appearing already swept', async () => {
+  hoisted.overrideSlots = [
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20 },
+  ]
+  const { container } = renderView()
+  const ring = container.querySelector('.fh-wtile.is-now .fh-wring i') as HTMLElement
+  expect(ring.style.getPropertyValue('--v')).toBe('0')
+  await waitFor(() => expect(Number(ring.style.getPropertyValue('--v'))).toBeGreaterThan(0))
+})
+
 test('a done window wears the KÉSZ stamp, the meal name and its AI-score chip', () => {
   const { container } = renderView()
   const done = container.querySelectorAll('.fh-wtile.is-done')

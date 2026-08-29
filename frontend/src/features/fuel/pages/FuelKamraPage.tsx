@@ -21,6 +21,7 @@ import { usePantry } from '@/data/hooks'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
 import { Icon } from '@/shared/ui/Icon'
 import { MozaikPage, PageHead, PageHero, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
+import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { KamraCard } from '@/features/fuel/components/KamraCard'
 import { SuggestionCard } from '@/features/fuel/components/SuggestionCard'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
@@ -95,6 +96,9 @@ export function FuelKamraPage() {
   const lowStock = stash.filter(s => s.stock !== null && s.stock < 15).length
 
   const isEmpty = allItems.length === 0
+  // The hero number counts up (the prototype's big number arrives with the page, and
+  // `useCountUp` settles instantly under prefers-reduced-motion).
+  const heroCount = useCountUp(allItems.length)
 
   // Real-mode loading window — skeleton before the empty-state branch (hooks are
   // all above, so hook order stays stable). Mock mode never sets pending (mezo-f2z).
@@ -111,7 +115,8 @@ export function FuelKamraPage() {
         </button>
       </PageHead>
 
-      <PageHero icon="i-kamra" big={allItems.length} name="Kamra" />
+      <EntranceGroup>
+      <PageHero icon="i-kamra" big={heroCount} name="Kamra" />
 
       <PageBody>
         {isEmpty ? (
@@ -127,7 +132,8 @@ export function FuelKamraPage() {
         ) : (
           <>
             {/* Stats strip */}
-            <StatStrip className="rise" >
+            <div className="rise" style={{ '--d': '20ms' } as React.CSSProperties}>
+            <StatStrip>
               <StatCell value={allItems.length} label="tétel" />
               <StatCell value={counts.food ?? 0} label="étel" />
               <StatCell value={counts.med ?? 0} label="protokollos" />
@@ -139,6 +145,7 @@ export function FuelKamraPage() {
                 </>
               )}
             </StatStrip>
+            </div>
 
             {/* Needs-attention strip (stock expiry — deferred, mezo-6nu) */}
             {SHOW_PANTRY_STOCK && lowExpiry > 0 && (
@@ -150,7 +157,7 @@ export function FuelKamraPage() {
             )}
 
             {/* Type switcher — the primary axis; med gets its OWN segment now (audit gap #19) */}
-            <div className="row rise" style={{ gap: 5, padding: 5, margin: '11px 0 12px', background: 'var(--mz-cellbg)', border: '1px solid var(--border-subtle)', borderRadius: 14 }}>
+            <div className="row rise" style={{ '--d': '40ms', gap: 5, padding: 5, margin: '11px 0 12px', background: 'var(--mz-cellbg)', border: '1px solid var(--border-subtle)', borderRadius: 14 } as React.CSSProperties}>
               {TYPE_SWITCHER.map(t => {
                 const active = typeFilter === t.id
                 return (
@@ -168,7 +175,7 @@ export function FuelKamraPage() {
             </div>
 
             {/* Search + Szűrők */}
-            <div className="row gap-sm rise" style={{ marginBottom: 8, alignItems: 'stretch' }}>
+            <div className="row gap-sm rise" style={{ '--d': '60ms', marginBottom: 8, alignItems: 'stretch' } as React.CSSProperties}>
               <div className="rad-16 row gap-sm flex-1" style={{ padding: '9px 12px', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', alignItems: 'center' }}>
                 <Icon name="search" size={12} color="var(--text-tertiary)" />
                 <input
@@ -228,14 +235,12 @@ export function FuelKamraPage() {
             {categoryFilter.length === 0 && <div style={{ height: 8 }} />}
 
             {/* Type-grouped list — "Polc" (shelf) list-section head, prototype .lsthead */}
-            <div className="row" style={{ alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
+            <div className="fh-lsthead rise" style={{ '--d': '90ms' } as React.CSSProperties}>
               <span className="mz-eyebrow">Polc</span>
-              <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>{filtered.length} / {allItems.length}</span>
+              <span className="cnt">{filtered.length} / {allItems.length}</span>
             </div>
             {filtered.length === 0 && (
-              <div className="card" style={{ padding: 20, textAlign: 'center' }}>
-                <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs egyező tétel.</span>
-              </div>
+              <div className="fh-nohit rise" style={{ '--d': '110ms' } as React.CSSProperties}>Nincs egyező tétel.</div>
             )}
             {TYPE_ORDER.filter(k => byType[k]?.length).map(kind => (
               <div key={kind} style={{ marginBottom: 16 }}>
@@ -253,7 +258,7 @@ export function FuelKamraPage() {
 
             {/* Mezo suggestions — deterministic swap heuristics (P6, mezo-bka); hidden when empty */}
             {suggestions.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
+              <div className="rise" style={{ '--d': '120ms', marginBottom: 20 } as React.CSSProperties}>
                 <div className="row" style={{ marginBottom: 9, alignItems: 'center', gap: 8 }}>
                   <Icon name="sparkle" size={11} color="var(--mz-cell-sage-ink)" />
                   <span className="mz-eyebrow">Mezo javaslatok</span>
@@ -266,7 +271,7 @@ export function FuelKamraPage() {
 
             {/* Recent imports feed (P6, mezo-bka); hidden when empty */}
             {imports.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
+              <div className="rise" style={{ '--d': '150ms', marginBottom: 12 } as React.CSSProperties}>
                 <div className="row" style={{ marginBottom: 9, alignItems: 'center', gap: 8 }}>
                   <span className="mz-eyebrow">Legutóbbi importok</span>
                 </div>
@@ -285,6 +290,7 @@ export function FuelKamraPage() {
           </>
         )}
       </PageBody>
+      </EntranceGroup>
 
       {filterOpen && (
         <CategoryFilterSheet

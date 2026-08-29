@@ -31,8 +31,8 @@ describe('PatternDetailPage (mock mode)', () => {
   test('confirmed showcase pair renders all five blocks in order + the judged header', () => {
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     // the house full-page header row (AiUsagePage idiom): back chevron + h1
-    expect(screen.getByRole('link', { name: 'Vissza' })).toHaveAttribute('href', '/mezo')
-    expect(screen.getByRole('heading', { name: 'Minta részletei' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Minták')
+    expect(screen.getByText('Minta részletei')).toBeInTheDocument()
     expect(screen.getByText('Hogyan erősödött a jel')).toBeInTheDocument()
     expect(screen.getByText(/nap, amiből ez kijött/)).toBeInTheDocument()
     expect(screen.getByText('A minta története')).toBeInTheDocument()
@@ -107,9 +107,11 @@ describe('PatternDetailPage (mock mode)', () => {
     expect(screen.queryByRole('button', { name: /Megerősítem/ })).not.toBeInTheDocument()
   })
 
-  test('unknown key renders the honest not-found state with a back link', () => {
+  test('unknown key renders the honest not-found state with a back chip', () => {
     renderAt('/mezo/patterns/nonsense~key')
-    expect(screen.getByRole('link', { name: 'Vissza' })).toHaveAttribute('href', '/mezo')
+    // mezo-d20.11: the ad-hoc chevron became the house PageHead chip, and it goes back to the
+    // LIST the detail was opened from, not the hub.
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Minták')
     expect(screen.getByText(/Nincs ilyen minta/)).toBeInTheDocument()
   })
 })

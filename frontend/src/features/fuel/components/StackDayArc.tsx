@@ -21,12 +21,15 @@ export function StackDayArc({
   bed,
   nextIndex,
   now,
+  note,
 }: {
   slots: StackDaySlot[]
   wake: string
   bed: string
   nextIndex: number
   now: Date
+  /** Right-aligned corner note in the card head — the prototype's `edzésnap 17:30`. */
+  note?: string
 }) {
   const startMin = toMin(wake)
   const span = Math.max(toMin(bed) - startMin, 1)
@@ -38,6 +41,7 @@ export function StackDayArc({
     <div className="card stk-arc">
       <div className="stk-arc-head">
         <span className="eyebrow">Nap-ív · {wake} → {bed}</span>
+        {note && <span className="stk-arc-note">{note}</span>}
       </div>
       <div className="stk-arc-track">
         <div className="stk-arc-fill" style={{ width: `${nowPct}%` }} />
