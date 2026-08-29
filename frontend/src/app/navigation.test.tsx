@@ -47,6 +47,20 @@ test('the Én tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.
   expect(screen.queryByLabelText('Me alnavigáció')).not.toBeInTheDocument()
 })
 
+test('the Fuel tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.4.1)', async () => {
+  renderApp('/fuel')
+  // The Fuel-beállítások band (the retired SubNavDropdown's ⚙️ extra action, re-homed)
+  // and the tile mosaic are the face-independent landmarks.
+  expect(await screen.findByRole('button', { name: 'Fuel-beállítások' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Receptek' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Fuel alnavigáció')).not.toBeInTheDocument()
+})
+
+test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () => {
+  renderApp('/fuel/stack')
+  expect(await screen.findByRole('heading', { level: 1, name: 'Napi protokoll' })).toBeInTheDocument()
+})
+
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   expect(await screen.findByRole('heading', { level: 1, name: /Kapcsolatok/ })).toBeInTheDocument()

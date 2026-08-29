@@ -242,6 +242,14 @@
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+  /* Fuel hub (mezo-d20.4.1) — prototype fuel-head/body .wtile + .mezotile hexes verbatim.
+     The MOST ring keeps its saturated coral in BOTH themes (the .mz-w-most precedent). */
+  --mz-fh-now-ring: #FF6B4A;
+  --mz-fh-miss-bd: rgba(201, 150, 46, 0.55);
+  --mz-fh-add-bd: rgba(43, 33, 24, 0.2);
+  --mz-fh-kcal-bg: rgba(255, 255, 255, 0.88);
+  --mz-fh-ringhole: #FFFDF8;
+  --mz-fh-now-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
 
 }
 
@@ -407,6 +415,13 @@
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
+  /* Fuel hub (mezo-d20.4.1) — the swimlane surfaces on the dark dv ramp. */
+  --mz-fh-now-ring: #FF6B4A;
+  --mz-fh-miss-bd: color-mix(in srgb, var(--dv-amber) 55%, transparent);
+  --mz-fh-add-bd: color-mix(in srgb, var(--text-primary) 20%, transparent);
+  --mz-fh-kcal-bg: color-mix(in srgb, var(--surface-card) 88%, transparent);
+  --mz-fh-ringhole: var(--surface-card);
+  --mz-fh-now-shadow: var(--mz-shadow-most);
 
 }
 
@@ -5031,6 +5046,122 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 
 @media (prefers-reduced-motion: reduce) {
   .aiu-bar .gbar div, .mz-play .aiu-bar .gbar div { transform: none; animation: none; }
+}
+
+/* ── Fuel hub re-face (mezo-d20.4.1) — prototype fuel-body hub section ×1.18:
+   the keret-hero as a rounded sage card (ONE number, hub v3), the WINDOW SWIMLANE
+   (.fh-lane / .fh-wtile with its kcal mini-tile and three mini macro rings), the
+   Mezo counter banner, the 6-tile mosaic's eyebrow inks and the Fuel-beállítások
+   band. The hero's own internals keep the shipped .khero family — only its frame
+   changes here. Every CTA is a 44pt target. ── */
+.fh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
+.fh-panel { display: flex; flex-direction: column; gap: 11px; }
+
+.fh-hero { border-radius: 21px; overflow: hidden;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-sage); }
+
+/* ═══ window swimlane ═══ */
+.fh-lanewrap { margin: 0; }
+.fh-lane { display: flex; gap: 9px; overflow-x: auto; scrollbar-width: none;
+  padding: 4px 2px 12px; scroll-snap-type: x proximity; }
+.fh-lane::-webkit-scrollbar { display: none; }
+
+.fh-wtile { flex: none; width: 151px; border-radius: 20px; padding: 11px 12px 12px;
+  scroll-snap-align: center; display: flex; flex-direction: column; gap: 5px; text-align: left;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow); }
+.fh-wtile.is-done { background: var(--mz-qdone-bg); }
+.fh-wtile.is-now { border: 1px solid var(--mz-fh-now-ring); box-shadow: var(--mz-fh-now-shadow); }
+.fh-wtile.is-missed { background: none; box-shadow: none; border: 1.4px dashed var(--mz-fh-miss-bd); }
+.fh-wtile.is-add { background: none; box-shadow: none; border: 1.4px dashed var(--mz-fh-add-bd);
+  align-items: center; justify-content: center; gap: 8px; }
+
+.fh-wtop { display: flex; align-items: center; gap: 5px; min-height: 16px; }
+.fh-wtop time { font-size: 10.5px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--mz-ink-soft); }
+.fh-wstamp { margin-left: auto; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
+  border-radius: 6px; padding: 2px 6px; flex: none; }
+.fh-st-now { background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }
+.fh-st-done { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.fh-st-miss { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+
+.fh-wicon { display: grid; place-items: center; padding: 2px 0 1px; }
+.fh-wlbl { font-size: 7.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--mz-ink-mut); text-align: center; }
+.fh-wname { font-size: 11px; font-weight: 700; line-height: 1.3; text-align: center; min-height: 30px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fh-wname.is-ghost { color: var(--mz-ink-mut); font-weight: 600; }
+.fh-wmeta { font-size: 9px; color: var(--mz-ink-soft); text-align: center; font-variant-numeric: tabular-nums; }
+
+.fh-wkcal { border-radius: 13px; padding: 5px 2px 4px; text-align: center; margin-top: 2px;
+  background: var(--mz-fh-kcal-bg);
+  box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06), 0 2px 6px rgba(43, 33, 24, 0.06); }
+.fh-wkcal b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.fh-wkcal small { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin-left: 3px; }
+
+.fh-wrings { display: flex; justify-content: space-between; padding: 0 8px; margin-top: 4px; }
+.fh-wring { display: grid; gap: 2px; justify-items: center; flex: none; }
+.fh-wring i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-gbar-bg) 0); }
+.fh-wring i::after { content: attr(data-l); width: 15px; height: 15px; border-radius: 50%;
+  background: var(--mz-fh-ringhole); display: grid; place-items: center;
+  font-size: 7px; font-weight: 800; color: var(--mz-ink-soft); }
+.fh-wring small { font-size: 7.5px; font-weight: 700; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.fh-wtile.is-missed .fh-wkcal, .fh-wtile.is-missed .fh-wrings { opacity: 0.65; }
+
+.fh-wscore { display: flex; justify-content: center; margin-top: 3px; min-height: 44px; align-items: center; }
+.fh-wcta { margin-top: 3px; width: 100%; min-height: 44px; border-radius: 14px; font-family: inherit;
+  font-size: 10.5px; font-weight: 700; cursor: pointer; text-align: center;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.fh-wcta:active { transform: scale(0.96); }
+.fh-wcta.is-primary { border: none; color: #fff; background: var(--gradient-cta);
+  box-shadow: 0 5px 12px -3px rgba(255, 91, 54, 0.5); }
+.fh-wcta.is-ghost { border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg); color: var(--mz-ink-soft); }
+
+.fh-scorech { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none;
+  font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.fh-scorech.is-mid { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.fh-scorech.is-pend { background: var(--mz-chat-refch-bg); color: var(--mz-ink-mut); }
+button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-height: 44px; padding: 3px 14px; }
+
+/* ═══ Mezo counter banner + Fuel-beállítások band (the .enh-band shape) ═══ */
+.fh-mezotile, .fh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
+  cursor: pointer; border-radius: 20px; padding: 12px 14px; font-family: inherit; text-align: left;
+  color: var(--text-primary); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.fh-mezotile { background: var(--mz-wash-band); box-shadow: var(--mz-shadow-coral); }
+.fh-band { background: var(--mz-wash-white); box-shadow: var(--mz-shadow); }
+.fh-mezotile:active, .fh-band:active { transform: scale(0.97); }
+.fh-mezotile .txt, .fh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
+.fh-mezotile .txt b, .fh-band .txt b { font-weight: 700; }
+.fh-mezotile .chev, .fh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+.fh-mzdot { width: 8px; height: 8px; border-radius: 50%; background: var(--mz-fh-now-ring); flex: none; }
+
+/* mosaic eyebrow inks — one per hub tile (the .enh-eb- family precedent) */
+.fh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
+.fh-eb-coral .mz-eyebrow { color: var(--mz-cell-coral-ink); }
+.fh-eb-gold .mz-eyebrow  { color: var(--mz-qxp-ink); }
+.fh-eb-lav .mz-eyebrow   { color: var(--mz-cell-lav-ink); }
+.fh-eb-sky .mz-eyebrow   { color: var(--mz-cell-sky-ink); }
+
+/* ═══ Mezo · Fuel message thread + Napló rows ═══ */
+.fh-mzmsg { border-radius: 20px; padding: 13px 15px; margin-bottom: 9px;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.fh-mzmsg-eb { display: block; padding: 0 0 5px; color: var(--mz-cell-coral-ink); }
+.fh-mzmsg-tx { font-size: 13px; font-weight: 300; line-height: 1.55; margin: 0 0 6px; }
+.fh-mzmsg-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.fh-mzmsg-meta { font-size: 10px; color: var(--mz-ink-mut); margin-top: 6px; }
+
+.fh-naplorow { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 9px; border-radius: 18px;
+  padding: 11px 13px; margin-bottom: 9px; background: var(--mz-wash-white);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.fh-naplorow-t { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; }
+.fh-naplorow-x { width: 100%; font-size: 10px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.fh-naplo-empty { font-size: 12px; font-weight: 300; color: var(--mz-ink-soft); padding: 8px 2px; margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fh-wcta, .fh-mezotile, .fh-band { transition: none; }
+  .fh-wcta:active, .fh-mezotile:active, .fh-band:active { transform: none; }
 }
 
 /* ============================================================
