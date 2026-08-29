@@ -18,9 +18,15 @@ import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 export function BiometricSheet({
   onClose,
   profile,
+  onExplainEnergy,
 }: {
   onClose: () => void
   profile: BiometricProfileResponse | null
+  /** Opens the shared EnergyBreakdownSheet on the split-TDEE row (mezo-d20.11).
+   *  Absent → the row still renders read-only; the host decides whether it can
+   *  swap sheets. `BiometricCard` was the only Én-side door into the breakdown
+   *  and the card lost its host — this is the replacement (me.md §9). */
+  onExplainEnergy?: () => void
 }) {
   const { upsert, pending } = useBiometricActions()
   const [sex, setSex] = useState<'M' | 'F'>(profile?.sex ?? 'M')
@@ -173,6 +179,26 @@ export function BiometricSheet({
             </div>
           </div>
 
+
+          {/* Split-TDEE readout — the persisted bootstrap, never a recomputation.
+              No `tdeeBootstrap` (engine not run yet) → nothing renders; a number
+              is never fabricated here. */}
+          {profile?.tdeeBootstrap && (
+            <div className="col gap-sm" style={{ marginTop: 14 }}>
+              <span style={SECTION_LABEL}>Fenntartó energia</span>
+              {onExplainEnergy ? (
+                <button type="button" className="tdee tdee-split card" style={{ padding: '10px 12px', marginTop: 0 }}
+                  onClick={onExplainEnergy} aria-label="Energia-bontás magyarázata">
+                  <TdeeRows tdee={profile.tdeeBootstrap} explainable />
+                </button>
+              ) : (
+                <div className="tdee tdee-split card" style={{ padding: '10px 12px', marginTop: 0 }}>
+                  <TdeeRows tdee={profile.tdeeBootstrap} />
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="row gap-sm mt-lg">
             <button className="cta-ghost flex-1" onClick={close}>
               Mégse
@@ -188,5 +214,32 @@ export function BiometricSheet({
         </div>
       )}
     </Sheet>
+  )
+}
+
+/** The three-row split (Alaphő · NEAT / Betáblázott mozgás / Fenntartó) — lifted
+ *  verbatim from the retired `BiometricCard`, the surface that used to carry it. */
+function TdeeRows({ tdee, explainable }: {
+  tdee: NonNullable<BiometricProfileResponse['tdeeBootstrap']>
+  explainable?: boolean
+}) {
+  return (
+    <>
+      <div className="row">
+        <span className="lab"><span className="dot dot-sage" />Alaphő · NEAT</span>
+        <span className="amt">{Math.round(tdee.neatBaselineKcal)}</span>
+      </div>
+      <div className="row">
+        <span className="lab"><span className="dot dot-amber" />Betábl. mozgás</span>
+        <span className="amt">+{Math.round(tdee.weeklyEatKcalPerDay)}</span>
+      </div>
+      <div className="row total">
+        <span className="lab">
+          Fenntartó · {tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'}
+          {explainable && <span className="infochev"> ⓘ</span>}
+        </span>
+        <span className="amt">≈{Math.round(tdee.tdee)} <small>kcal/nap</small></span>
+      </div>
+    </>
   )
 }

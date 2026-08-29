@@ -67,7 +67,9 @@ test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () =>
 
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
-  expect(await screen.findByRole('heading', { level: 1, name: /Kapcsolatok/ })).toBeInTheDocument()
+  // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's
+  // page hero (and the page finally owns a `‹ Én` back chip) — the route is unchanged.
+  expect(await screen.findByText('Kapcsolatok', { selector: '.mz-hero-nm' })).toBeInTheDocument()
 })
 test('the tab bar stays visible on the regular Train tab', () => {
   const { container } = renderApp('/train')

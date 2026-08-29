@@ -12,12 +12,27 @@ import { API_BASE } from '@/test/msw/handlers'
 // unchanged: same hooks, same honest states, same log-sheet cascade.
 
 function renderPage() {
-  render(
+  return render(
     <MemoryRouter>
       <QueryWrapper><WeightPage /></QueryWrapper>
     </MemoryRouter>,
   )
 }
+
+// ── entrance choreography (mezo-d20.11) ──
+// The prototype (#page-suly) staggers the whole body: statstrip 0 · chips 40 ·
+// chart 80 · „Heti előzmény" 120 · weekly tiles 150/190/230 · pager 260.
+test('the Súly body staggers — stat strip, chips, chart, section label and the weekly tiles', () => {
+  const { container } = renderPage()
+  const rises = [...container.querySelectorAll('.rise')]
+  expect(rises.length).toBeGreaterThanOrEqual(5)
+  for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+  expect(container.querySelector('.mz-statstrip')).toHaveClass('rise')
+  expect(container.querySelector('.wt-lsec')).toHaveClass('rise')
+  const weekDelays = [...container.querySelectorAll('.wt-week')]
+    .map((w) => (w as HTMLElement).style.getPropertyValue('--d'))
+  expect(weekDelays.slice(0, 3)).toEqual(['150ms', '190ms', '230ms'])
+})
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())

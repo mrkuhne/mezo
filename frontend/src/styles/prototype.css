@@ -2612,7 +2612,8 @@ button.itemrow { cursor: pointer; }
 .skl .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lav), #B7A8E0); }
 .skl .lv { width: 36px; text-align: right; font-size: 12px; font-weight: 800; color: var(--lav-deep); }
 @media (prefers-reduced-motion: no-preference) {
-  .skl .bar i { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .45s var(--np-ease-ios) forwards; }
+  .skl .bar i { transform-origin: left; transform: scaleX(0);
+                animation: np-grow .9s var(--np-ease-ios) forwards; animation-delay: var(--d, .45s); }
 }
 
 /* ===== AppHero v2 — compact single-row sticky header on all 5 sections (mezo-ugqb).
@@ -6608,6 +6609,42 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .mzc .chat-thread { padding: 5px 17px 12px; }
 .mzc .mzc-composer { margin-left: 14px; margin-right: 14px; }
 
+
+/* ── Én hub · a coin-sink és a sorozat ajtaja (mezo-d20.11, PROVIZÓRIKUS az F7.4-ig) ──
+   Az AppHero törlésével a TitleShopSheet és a StreakSheet gazdátlan maradt, az érme
+   így csak gyűlt. Az identitás-hero cím-chipje és a számláló-sora most maguk a kapuk:
+   a cím-chip + az érme-statisztika a cím-boltot, a láng a sorozat-lapot nyitja.
+   A prototípus geometriája változatlan (en-body `.titlech` / `.idstats`) — a 44pt-os
+   érintőfelület egy kiterjesztett ::after találati zónából jön, hogy a szöveg mérete
+   és a sor magassága 1:1 maradjon. ── */
+.enh-titlech { border: none; font-family: inherit; cursor: pointer; position: relative; }
+.enh-titlech.is-none { background: var(--mz-stch-mut-bg); color: var(--mz-stch-mut-ink); }
+.enh-idstats button.enh-idstat { border: none; background: none; padding: 0; margin: 0;
+  font: inherit; color: inherit; cursor: pointer; position: relative;
+  font-variant-numeric: tabular-nums; }
+.enh-titlech::after, .enh-idstats button.enh-idstat::after {
+  content: ''; position: absolute; left: -6px; right: -6px; top: 50%;
+  height: 44px; transform: translateY(-50%); }
+.enh-titlech:focus-visible, .enh-idstats button.enh-idstat:focus-visible {
+  outline: 2px solid var(--primary-deep); outline-offset: 3px; }
+
+/* ── Én · hűség-audit pótlások (mezo-d20.11) — prototype en-body.html
+      #page-emberek `.chiprow`/`.fchip` és #page-naplo `.decrow` alatti `.foot9`,
+      ×1.18 (330→390px keret). A szűrő-chipsor eddig a generikus `.chip`-et
+      viselte inline stílusokkal; itt kapja meg a prototípus saját alakját.
+      A „Mi lett belőle?" gomb NEM a prototípusból jön: az elveszett
+      outcome-prózát hozza vissza a visszaigazoló soron (lásd JournalPage.tsx
+      LOST-FUNCTION REPAIR jegyzetét) — a Mozaik meglévő szókincsével. ── */
+.ppl-chiprow { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+.ppl-fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-stripbg); border-radius: 999px;
+  padding: 5px 13px; min-height: 44px; font-size: 11px; font-weight: 600; color: var(--mz-ink-soft);
+  cursor: pointer; font-family: inherit; }
+.ppl-fchip.on { background: var(--mz-cell-coral-bg); border-color: var(--coral); color: var(--mz-cell-coral-ink); }
+
+.mzj-decfoot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; margin: 0; }
+.mzj-decprose { margin-left: auto; flex: none; min-height: 44px; border: 1px solid rgba(43, 33, 24, 0.14);
+  background: var(--mz-stripbg); border-radius: 999px; padding: 5px 13px; font-size: 11px; font-weight: 700;
+  color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)

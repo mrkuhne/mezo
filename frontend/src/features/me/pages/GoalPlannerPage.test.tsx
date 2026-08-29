@@ -320,3 +320,26 @@ describe('GoalPlannerPage (mock mode)', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 })
+
+// ── entrance choreography (mezo-d20.11) ──
+// The audit measured /me/goals/new with NO choreography at all (play: 0, rise: 0) —
+// the one Én sibling with neither an EntranceGroup nor a single `.rise`.
+test('the wizard is choreographed — .rise steps inside a .mz-play group, re-armed per step', async () => {
+  const { container } = render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/me/goals/new']}>
+        <GoalPlannerPage />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  await waitForWizard()
+  expect(container.querySelector('.mz-play')).not.toBeNull()
+  const rises = [...container.querySelectorAll('.rise')]
+  expect(rises.length).toBeGreaterThanOrEqual(4)
+  for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+
+  fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
+  fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
+  await waitFor(() => expect(screen.getByText('Mennyi időnk van?')).toBeInTheDocument())
+  for (const r of container.querySelectorAll('.rise')) expect(r.closest('.mz-play')).not.toBeNull()
+})

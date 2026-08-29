@@ -212,3 +212,36 @@ test('the Beállítások band opens the theme sheet and the selector flips data-
   await userEvent.click(screen.getByRole('button', { name: /Sötét/ }))
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
+
+// ── the coin sink's re-homed doors (mezo-d20.11, provisional pending F7.4) ──
+// AppHero was TitleShopSheet's and StreakSheet's only host and it was deleted, so
+// buying/equipping a title and buying a streak saver became unreachable while
+// useGamificationActions stayed canMutate in both modes — coins accumulated with no
+// sink at all. The identity hero is the replacement host.
+
+test('the title chip opens the title shop — the only coin sink there is', async () => {
+  renderHub()
+  await screen.findByText('Lv 12')
+  const chip = document.querySelector<HTMLButtonElement>('button.enh-titlech')
+  expect(chip).not.toBeNull()
+  await userEvent.click(chip!)
+  expect(await screen.findByRole('heading', { name: 'Title-ök' })).toBeInTheDocument()
+})
+
+test('the coin stat opens the shop too, and the streak stat opens the streak sheet', async () => {
+  renderHub()
+  await userEvent.click(await screen.findByRole('button', { name: 'Érme — cím-bolt' }))
+  expect(await screen.findByRole('heading', { name: 'Title-ök' })).toBeInTheDocument()
+  await userEvent.keyboard('{Escape}')
+
+  await userEvent.click(await screen.findByRole('button', { name: 'Sorozat részletei' }))
+  expect(await screen.findByRole('heading', { name: /6 napos sorozat/ })).toBeInTheDocument()
+})
+
+test('the entrance choreography is armed — every .rise sits inside .mz-play', async () => {
+  const { container } = renderHub()
+  await screen.findByRole('button', { name: 'Hosszú cél' })
+  const rises = container.querySelectorAll('.rise')
+  expect(rises.length).toBeGreaterThan(0)
+  for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+})

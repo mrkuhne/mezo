@@ -8,6 +8,7 @@ import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { isDecisionDue, useDecisionActions, useDecisions, useGratitudeEntries, useJournalNotes } from '@/data/hooks'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
+import { DecisionReviewSheet } from '@/features/me/sheets/DecisionReviewSheet'
 import { GratitudeStreakCard } from '@/features/me/components/GratitudeStreakCard'
 import { dayLabel } from '@/features/me/logic/growthJournal'
 import { gratitudeStreakDays } from '@/features/me/logic/gratitudeStreak'
@@ -42,13 +43,17 @@ function windowFrom(monthsBack: number, todayIso: string): string {
 // (loading → skeletons, a genuinely failed fetch ≠ an honest empty window, isError && length===0
 // is the only tell), the widening "Korábbi hónapok" window, create/edit via JournalSheet.
 //
-// DEVIATION (fidelity rule, prototype wins): the prototype's decision review is fully inline —
-// tapping 1–5 replaces the gold card with a sage "✓ Visszanézve" line, no sheet, no optional
-// prose field. This re-face follows the prototype and drops the outcome-text step the old
-// DecisionReviewSheet offered; DecisionReviewSheet.tsx itself is untouched (still exported, still
-// tested) — nothing here deletes it, this page just no longer opens it. The still-live
-// `reviewDecision` mutation is reused unchanged; only the last argument (optional outcome text)
-// is never passed.
+// The rating flow follows the prototype exactly: tapping 1–5 commits immediately and replaces the
+// gold card with the sage "✓ Visszanézve" line — no sheet in the primary path.
+//
+// LOST-FUNCTION REPAIR (mezo-d20.11): the re-face left `DecisionReviewSheet` with no host, so
+// `reviewDecision` was permanently called without its third argument and a decision review could
+// no longer record outcome PROSE — even though `DecisionReviewRequest.outcome`, its column and
+// the embedding path that reads it are all live. Rather than move the whole review back into a
+// sheet (which would lose the prototype's one-tap inline review), the sage acknowledgement now
+// carries a follow-up affordance that opens the still-live sheet prefilled with the rating just
+// given; saving re-runs the SAME idempotent PUT, this time with the prose. The prototype's card
+// is untouched — this is purely additive, on a row the prototype leaves empty.
 export function JournalPage() {
   const navigate = useNavigate()
   const [monthsBack, setMonthsBack] = useState(3)
@@ -60,6 +65,9 @@ export function JournalPage() {
   // data. Once that happens the id simply falls out of `decisions` too — harmless, the local
   // entry just stops being read.
   const [decidedRatings, setDecidedRatings] = useState<Record<string, number>>({})
+  // The outcome-prose follow-up (see the LOST-FUNCTION REPAIR note above): the decision whose
+  // review sheet is open, already carrying the rating the inline row committed.
+  const [outcomeFor, setOutcomeFor] = useState<DecisionEntry | null>(null)
 
   const today = localDateString()
   const from = windowFrom(monthsBack, today)
@@ -129,6 +137,15 @@ export function JournalPage() {
                     <div key={decision.id} className="mzh-decdone rise" style={{ '--d': `${i * 50}ms` } as React.CSSProperties}>
                       <ClaySpot name="s-orb-unnepel" size={26} />
                       <span>✓ Visszanézve · {rating}/5</span>
+                      {/* The outcome-prose door (mezo-d20.11). The PUT behind it is re-runnable,
+                          so this simply re-saves the same rating with the text attached. */}
+                      <button
+                        type="button"
+                        className="mzj-decprose"
+                        onClick={() => setOutcomeFor({ ...decision, outcomeRating: rating })}
+                      >
+                        Mi lett belőle?
+                      </button>
                     </div>
                   )
                 }
@@ -154,6 +171,9 @@ export function JournalPage() {
                         </button>
                       ))}
                     </div>
+                    {/* The prototype prints the question under the row (.foot9) — it was only an
+                        aria-label here, so a sighted user saw five bare digits with no prompt. */}
+                    <p className="mzj-decfoot">Mennyire vált be? (1–5)</p>
                   </div>
                 )
               })}
@@ -215,6 +235,9 @@ export function JournalPage() {
         </EntranceGroup>
       </PageBody>
 
+      {outcomeFor && (
+        <DecisionReviewSheet decision={outcomeFor} today={today} onClose={() => setOutcomeFor(null)} />
+      )}
       {addOpen && <JournalSheet onClose={() => setAddOpen(false)} />}
       {editNote && <JournalSheet entry={editNote} onClose={() => setEditNote(null)} />}
     </MozaikPage>

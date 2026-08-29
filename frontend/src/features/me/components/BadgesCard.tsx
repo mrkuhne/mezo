@@ -22,11 +22,12 @@ export function BadgesCard({ badges }: { badges: GrowthBadge[] }) {
             {b.achieved ? (
               <small style={{ color: 'var(--mz-cell-sage-ink)', fontWeight: 800 }}>✓</small>
             ) : (
+              /* prototype `.bdg` order: name → count → bar (en-body #page-growth) */
               <>
+                <small>{b.current.toLocaleString('hu-HU').replace(/[  ]/g, ' ')} / {b.target.toLocaleString('hu-HU').replace(/[  ]/g, ' ')}</small>
                 <div className="gr-bdg-bar">
                   <div style={{ width: `${Math.min(100, (b.current / b.target) * 100)}%`, '--d': `${350 + i * 60}ms` } as React.CSSProperties} />
                 </div>
-                <small>{b.current.toLocaleString('hu-HU').replace(/[  ]/g, ' ')} / {b.target.toLocaleString('hu-HU').replace(/[  ]/g, ' ')}</small>
               </>
             )}
           </div>

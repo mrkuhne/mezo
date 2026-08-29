@@ -17,6 +17,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import { SortableList } from '@/shared/ui/SortableList'
 import { Toggle } from '@/shared/ui/Toggle'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import type { HabitChainInfo, HabitDaypart, HabitDefInfo } from '@/data/types'
 
 const DAYPART_EMOJI: Record<HabitDaypart, string> = { MORNING: '🌅', DAY: '☀️', EVENING: '🌙' }
@@ -64,11 +65,15 @@ export function RoutineEditorPage() {
         // gets the retry ghost.
         <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
       ) : (
-        <div className="col gap-md">
-          {chains.map((chain) => (
+        // Entrance choreography (mezo-d20.11 audit group A: this page had none at all — the
+        // chain cards popped in). One `EntranceGroup` arms the whole list; each chain card and
+        // the trailing CTA row carry `.rise` + their own `--d` stagger.
+        <EntranceGroup className="col gap-md">
+          {chains.map((chain, i) => (
             <ChainCard
               key={chain.id}
               chain={chain}
+              delayMs={i * 50}
               disabled={pending}
               onToggle={() => updateChain(chain.id, { isActive: !chain.isActive })}
               onEdit={() => setChainSheet({ chain })}
@@ -78,7 +83,7 @@ export function RoutineEditorPage() {
               onAddHabit={() => setHabitSheet({ chainKey: chain.chainKey })}
             />
           ))}
-          <div className="row gap-sm">
+          <div className="row gap-sm rise" style={{ '--d': `${chains.length * 50 + 40}ms` } as React.CSSProperties}>
             <button type="button" className="cta-primary" style={{ flex: 1.8 }} onClick={() => setChainSheet({})}>
               <Icon name="plus" size={14} /> Új rutin
             </button>
@@ -86,7 +91,7 @@ export function RoutineEditorPage() {
               <span aria-hidden="true">✨</span> AI javaslat
             </button>
           </div>
-        </div>
+        </EntranceGroup>
       )}
 
       {chainSheet && <ChainEditSheet chain={chainSheet.chain} onClose={() => setChainSheet(null)} />}
@@ -101,9 +106,10 @@ export function RoutineEditorPage() {
 }
 
 function ChainCard({
-  chain, disabled, onToggle, onEdit, onReorder, onToggleDef, onEditDef, onAddHabit,
+  chain, delayMs, disabled, onToggle, onEdit, onReorder, onToggleDef, onEditDef, onAddHabit,
 }: {
   chain: HabitChainInfo
+  delayMs: number
   disabled: boolean
   onToggle: () => void
   onEdit: () => void
@@ -116,7 +122,7 @@ function ChainCard({
   return (
     // Inactive chains stay fully editable (`.is-inert` only dims — no control below is disabled
     // by it), so a chain can be paused and still tuned before re-activating it.
-    <div className={cn('card', !chain.isActive && 'is-inert')} style={{ padding: '14px 16px' }}>
+    <div className={cn('card', 'rise', !chain.isActive && 'is-inert')} style={{ padding: '14px 16px', '--d': `${delayMs}ms` } as React.CSSProperties}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div className="row" style={{ alignItems: 'center', gap: 7 }}>
           <span aria-hidden="true">{DAYPART_EMOJI[chain.daypart]}</span>
