@@ -52,7 +52,12 @@ import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
-import { WeekPage } from '@/features/me/pages/WeekPage'
+import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
+import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
+import { WeekDaysPage } from '@/features/me/pages/WeekDaysPage'
+import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
+import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
+import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -171,7 +176,7 @@ export const routes: RouteObject[] = [
       // index — lives at /mezo/patterns, next to the pattern-pair detail leaf above.
       { path: 'mezo', element: <MezoHubPage /> },
       { path: 'mezo/patterns', element: <PatternsPage /> },
-      // Heti retired (mezo-p2tr): the review moved to /me/week (WeekPage) — including the
+      // Heti retired (mezo-p2tr): the review moved to /me/week (WeekHubPage) — including the
       // score hero, the growth card and the weekly tervjavaslat prose. The route survives as
       // an honest redirect so any old bookmark/link still lands somewhere sensible.
       { path: 'mezo/weekly', element: <Navigate to="/me/week" replace /> },
@@ -194,7 +199,19 @@ export const routes: RouteObject[] = [
       { path: 'me', element: <EnHubPage /> },
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
-      { path: 'me/week', element: <WeekPage /> },
+      // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
+      // WeekPage. Its four view tiles open full-screen siblings, NOT child routes: the
+      // Heti detail pages take the same "tile → own page" idiom as the Nap/Fuel/Mezo tabs.
+      // The browsed week rides along in `?start=` (absent = the current week).
+      { path: 'me/week', element: <WeekHubPage /> },
+      { path: 'me/week/elemzes', element: <WeekAnalysisPage /> },
+      // The day mosaic, and ONE day as its own deep-linkable route (audit gap §8.3/6 —
+      // a push notification can point at a day). The day page derives the week from
+      // `:date` when `?start=` is absent.
+      { path: 'me/week/napok', element: <WeekDaysPage /> },
+      { path: 'me/week/napok/:date', element: <WeekDayPage /> },
+      { path: 'me/week/tanulsagok', element: <WeekLessonsPage /> },
+      { path: 'me/week/felfedezesek', element: <WeekDiscoveriesPage /> },
       { path: 'me/goals', element: <GoalsPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },

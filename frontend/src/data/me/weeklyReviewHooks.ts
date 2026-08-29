@@ -28,6 +28,13 @@ export interface WeeklyReviewBootstrap {
   regenerate: () => Promise<void>
   regenerating: boolean
   mode: 'mock' | 'live'
+  /** Additive (mezo-d20.6.10): the Heti detail pages owe a skeleton and a retryable
+   *  error instead of reading an unresolved/failed fetch as an honest empty week
+   *  (handoff §4, the "töltés / hiba — ma egyik sincs" row). True while EITHER read is
+   *  unresolved / has failed. Mock mode seeds synchronously, so both stay false there. */
+  isPending: boolean
+  isError: boolean
+  refetch: () => void
 }
 
 /** `startIso` — ISO Monday of the week to load. */
@@ -36,7 +43,7 @@ export function useWeeklyReview(startIso: string): WeeklyReviewBootstrap {
   const qc = useQueryClient()
   const [regenerating, setRegenerating] = useState(false)
 
-  const { data: review } = useDualQuery<WeeklyReview | null>({
+  const { data: review, isPending: reviewPending, isError: reviewError, refetch: refetchReview } = useDualQuery<WeeklyReview | null>({
     queryKey: ['weeklyReview', startIso],
     mockData: mockWeeklyReview(startIso),
     realFetch: async () => {
@@ -50,7 +57,7 @@ export function useWeeklyReview(startIso: string): WeeklyReviewBootstrap {
     realEmpty: null,
   })
 
-  const { data: digest } = useDualQuery<WeeklyReviewDigest>({
+  const { data: digest, isPending: digestPending, isError: digestError, refetch: refetchDigest } = useDualQuery<WeeklyReviewDigest>({
     queryKey: ['weeklyReviewDigest', startIso],
     mockData: mockWeeklyReviewDigest(startIso),
     realFetch: () => weeklyReviewApi.digest(startIso),
@@ -70,5 +77,12 @@ export function useWeeklyReview(startIso: string): WeeklyReviewBootstrap {
     }
   }, [mock, qc, startIso])
 
-  return { review, digest, regenerate, regenerating, mode: mock ? 'mock' : 'live' }
+  const refetch = useCallback(() => { refetchReview(); refetchDigest() }, [refetchReview, refetchDigest])
+
+  return {
+    review, digest, regenerate, regenerating, mode: mock ? 'mock' : 'live',
+    isPending: reviewPending || digestPending,
+    isError: reviewError || digestError,
+    refetch,
+  }
 }

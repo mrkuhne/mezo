@@ -2,11 +2,11 @@ import { render } from '@testing-library/react'
 import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 
 // The clay sprites are the design_2.0 asset contract: docs/design_2.0/assets/clay-icons.svg
-// (42 symbols) + clay-spots.svg (14 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
+// (43 symbols) + clay-spots.svg (14 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
 
-test('ClaySprites mounts all 42 icon symbols and 14 spot symbols', () => {
+test('ClaySprites mounts all 43 icon symbols and 14 spot symbols', () => {
   render(<ClaySprites />)
-  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(42)
+  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(43)
   expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(14)
 })
 

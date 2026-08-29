@@ -1372,6 +1372,11 @@ export const handlers = [
       stale: false,
     })
   }),
+  // A hét tanulságai (mezo-d20.6.10) — the weekly knowledge-candidate read handoff §6.2
+  // specifies. F6.5 has NOT shipped it, so the default is a 404: exactly what a real client
+  // gets today, and exactly what the page must render as "nincs javaslat ehhez a héthez".
+  // Tests that want the lit-up page override with server.use().
+  http.get(`${API_BASE}/api/proactive/weekly-review/:start/lessons`, () => new HttpResponse(null, { status: 404 })),
   http.get(`${API_BASE}/api/proactive/weekly-review/:start/digest`, ({ params }) => {
     const start = params.start as string
     return HttpResponse.json({
