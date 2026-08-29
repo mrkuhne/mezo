@@ -34,7 +34,9 @@ function renderApp(path: string) {
   )
 }
 
-test('TrainTodayPage shows the ghost hero with a wizard CTA on an empty backend', async () => {
+// /train is the Edzés hub since mezo-d20.3.1 — its hero inherits Mai's meso-less ghost
+// (same copy, same wizard CTA, same Saját edzés escape hatch) instead of inventing one.
+test('the Edzés hub shows the ghost hero with a wizard CTA on an empty backend', async () => {
   renderApp('/train')
   await waitFor(() => expect(screen.getByText(/Itt fog élni a mai edzésed/i)).toBeInTheDocument())
   expect(screen.getByRole('button', { name: /tervezz mesociklust/i })).toBeInTheDocument()
@@ -54,7 +56,7 @@ test('GymPage shows a ghost when there is no active meso', async () => {
 
 test('ActiveWorkoutPage redirects to /train when there is no workout', async () => {
   renderApp('/train/session')
-  // lands back on the Train Today ghost instead of crashing
+  // lands back on the Edzés hub's ghost hero instead of crashing
   await waitFor(() => expect(screen.getByText(/Itt fog élni a mai edzésed/i)).toBeInTheDocument())
 })
 

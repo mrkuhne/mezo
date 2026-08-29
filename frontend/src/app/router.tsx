@@ -1,4 +1,4 @@
-import { Navigate, type RouteObject, useLocation } from 'react-router-dom'
+import { Navigate, type RouteObject, useLocation, useSearchParams } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
@@ -6,7 +6,7 @@ import { NapRutinPage } from '@/features/today/pages/NapRutinPage'
 import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
 import { NapCheckinPage } from '@/features/today/pages/NapCheckinPage'
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
-import { TrainSection } from '@/features/train/pages/TrainSection'
+import { EdzesHubPage } from '@/features/train/pages/EdzesHubPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 import { GymPage } from '@/features/train/pages/GymPage'
@@ -70,6 +70,16 @@ function LegacyPathRedirect({ prefix, to }: { prefix: string; to: string }) {
   return <Navigate to={location.pathname.replace(prefix, to) + location.search} replace />
 }
 
+/** `/train` is the Edzés hub — except for the Heti drill-in, which still speaks
+ *  `?day={0..6}`: that deep link belongs to the full day view and is forwarded to
+ *  `/train/mai` with the selection intact (Mai derives it from the URL). */
+function TrainIndex() {
+  const [params] = useSearchParams()
+  const day = params.get('day')
+  if (day !== null && day !== '') return <Navigate to={`/train/mai?day=${day}`} replace />
+  return <EdzesHubPage />
+}
+
 export const routes: RouteObject[] = [
   {
     path: '/',
@@ -87,23 +97,24 @@ export const routes: RouteObject[] = [
       // Nap detail pages (F1.2–F1.6) — full-page siblings, tile → own page (Huawei pattern).
       { path: 'nap/eletjel', element: <EletjelPage /> },
       { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
-      {
-        path: 'train',
-        element: <TrainSection />,
-        children: [
-          { index: true, element: <TrainTodayPage /> },
-          { path: 'week', element: <TrainWeekPage /> },
-          { path: 'gym', element: <GymPage /> },
-          { path: 'sport', element: <SportPage /> },
-          { path: 'futas', element: <RunningPage /> },
-          { path: 'exercises', element: <ExercisesPage /> },
-          { path: 'medals', element: <MedalsPage /> },
-          { path: 'mesocycles', element: <MesocycleLibraryPage /> },
-          // The `Sablonok` tab (mezo-tlwa) — a Train tab like the ones above (keeps the
-          // sub-nav), NOT a full-screen sibling; the template EDITOR below still is one.
-          { path: 'templates', element: <MesoTemplatesPage /> },
-        ],
-      },
+      // Edzés tab — Design 2.0 shell dissolution (mezo-d20.3.1): the Train shell
+      // (AppHero + SubNavDropdown over an <Outlet>) is gone. /train is the hub Mozaik
+      // face (hero + six tiles); the former sub-tabs are FULL-PAGE SIBLINGS on their
+      // stable paths, keeping their current faces until their own F2 slices land —
+      // the idiom the Mezo (d20.5.1) and Én (d20.6.1) tabs took. Mai — previously the
+      // /train index — keeps its whole day view at /train/mai.
+      { path: 'train', element: <TrainIndex /> },
+      { path: 'train/mai', element: <TrainTodayPage /> },
+      { path: 'train/week', element: <TrainWeekPage /> },
+      { path: 'train/gym', element: <GymPage /> },
+      { path: 'train/sport', element: <SportPage /> },
+      { path: 'train/futas', element: <RunningPage /> },
+      { path: 'train/exercises', element: <ExercisesPage /> },
+      { path: 'train/medals', element: <MedalsPage /> },
+      { path: 'train/mesocycles', element: <MesocycleLibraryPage /> },
+      // Sablonok (mezo-tlwa) folds into the Mesociklus page in the new IA, but the
+      // route stays reachable (the library's nav row still links here).
+      { path: 'train/templates', element: <MesoTemplatesPage /> },
       { path: 'train/session', element: <ActiveWorkoutPage /> },
       { path: 'train/review/:workoutId', element: <WorkoutReviewPage /> },
       { path: 'train/mesocycles/new', element: <MesocyclePlannerPage /> },

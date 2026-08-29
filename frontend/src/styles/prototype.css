@@ -242,6 +242,9 @@
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+  /* Edzés hub (mezo-d20.3.1) — prototype edzes-body hub hero + .coach hexes verbatim */
+  --mz-wash-trainhero: linear-gradient(140deg, #FFE7DC, #FFFFFF 70%);
+  --mz-coach-bg: #FFF4EF;
 
 }
 
@@ -407,6 +410,9 @@
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
   --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
+  /* Edzés hub (mezo-d20.3.1) — the hub hero wash + coach bubble on the dark dv ramp */
+  --mz-wash-trainhero: linear-gradient(140deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), var(--surface-card) 70%);
+  --mz-coach-bg: color-mix(in srgb, var(--dv-coral) 12%, var(--surface-card));
 
 }
 
@@ -5031,6 +5037,77 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 
 @media (prefers-reduced-motion: reduce) {
   .aiu-bar .gbar div, .mz-play .aiu-bar .gbar div { transform: none; animation: none; }
+}
+
+/* ── Edzés hub (mezo-d20.3.1) — prototype edzes-body.html hub section ×1.18:
+      one long hero (clay spot + eyebrow + session title + the companion coach
+      bubble + ONE primary CTA) over the six-tile mosaic. The hero's states are
+      Mai's honest ones — done bar, resume, start, rest day, meso-less ghost —
+      so the CTA row has exactly one occupant at a time. ── */
+.eh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
+.eh-panel { display: flex; flex-direction: column; gap: 11px; }
+
+.eh-hero {
+  border-radius: 21px; padding: 14px 15px;
+  background: var(--mz-wash-trainhero);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow);
+}
+.eh-hero-rose { background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose); }
+.eh-hero-sky { background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
+.eh-hero-ghost { background: var(--mz-stripbg); }
+.eh-hero-row { display: flex; align-items: center; gap: 9px; }
+.eh-hero-grow { flex: 1; min-width: 0; }
+.eh-hero-t { font-size: 35px; font-weight: 200; letter-spacing: -0.02em; line-height: 1.1; margin-top: 2px; }
+.eh-hero-ln { font-size: 13px; font-weight: 300; color: var(--mz-ink-soft); margin: 9px 0 0; line-height: 1.45; }
+.eh-eb-coral { color: var(--mz-cell-coral-ink); }
+.eh-eb-rose { color: var(--mz-cell-rose-ink); }
+.eh-eb-sky { color: var(--mz-cell-sky-ink); }
+.eh-eb-sage { color: var(--mz-cell-sage-ink); }
+.eh-eb-gold { color: var(--mz-cell-gold-ink); }
+
+/* the companion's one pre-session sentence */
+.eh-coach { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px;
+  background: var(--mz-coach-bg); border-radius: 12px; padding: 8px 11px;
+  font-size: 12.5px; font-weight: 300; color: var(--text-primary); line-height: 1.45; }
+.eh-coach .dot { width: 17px; height: 17px; border-radius: 50%; flex: none; margin-top: 1px;
+  background: var(--gradient-cta); }
+
+/* one primary CTA per hero — the prototype pill grown to the 44pt touch floor */
+.eh-cta { width: 100%; margin-top: 11px; min-height: 44px; padding: 0 15px; border: none;
+  border-radius: 999px; font-family: inherit; font-size: 14px; font-weight: 700; color: #fff;
+  cursor: pointer; background: var(--gradient-cta);
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+.eh-ghostcta { width: 100%; margin-top: 9px; min-height: 44px; padding: 0 15px;
+  border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 999px;
+  font-family: inherit; font-size: 13px; font-weight: 600; color: var(--mz-ink-soft); cursor: pointer; }
+.eh-cta:active, .eh-ghostcta:active { transform: scale(0.97); }
+
+/* logged state — sage, never a second CTA (Mai's DoneBar language) */
+.eh-donebar { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 11px;
+  min-height: 44px; padding: 0 14px; border: none; border-radius: 15px; text-align: left;
+  font-family: inherit; cursor: pointer;
+  background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.eh-donebar.is-static { cursor: default; }
+.eh-donebar b { font-size: 13px; font-weight: 700; }
+.eh-donebar span { margin-left: auto; font-size: 11px; font-weight: 600; }
+
+/* Heti tile — the prototype's 7-dot week strip (.wk) instead of a clay spot */
+.eh-wk { display: flex; gap: 6px; justify-content: center; }
+.eh-wk .d { display: grid; gap: 4px; justify-items: center;
+  font-size: 9px; font-weight: 700; color: var(--mz-ink-mut); }
+.eh-wk .d i { width: 12px; height: 12px; border-radius: 50%; background: var(--mz-gbar-bg); }
+.eh-wk .d i.f { background: var(--dv-sage); }
+.eh-wk .d i.now { background: var(--dv-amber);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dv-amber) 25%, transparent); }
+
+/* the prototype's centered `.big` tile datum (Mesociklus W3/5, Medálok 12) */
+.eh-tbig { font-size: 19px; font-weight: 200; letter-spacing: -0.02em; text-align: center;
+  font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .eh-cta, .eh-ghostcta { transition: none; }
+  .eh-cta:active, .eh-ghostcta:active { transform: none; }
 }
 
 /* ============================================================
