@@ -4789,6 +4789,50 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 @media (prefers-reduced-motion: reduce) {
   .gc-card { transition: none; }
 }
+/* ── Súly re-face (mezo-d20.6.3) — prototype en-body.html #page-suly ×1.18
+   (330→390px frame). Hero (goal delta + start→latest) lives in the shared
+   MozaikPage/PageHero scaffold; this section carries the page's own bits:
+   the page-head log CTA, the trend chart card + legend, and the weekly
+   tiles (delta pill + H K Sz Cs P Sz V direction row). Direction/delta
+   color is ALWAYS sage (improvement) or amber (not) — never red, per the
+   handoff §2 guardrail; the prototype itself never used red here either
+   (its `.deltap.up` is amber, not error). ── */
+.mz-pgact {
+  margin-left: auto; border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg);
+  border-radius: 999px; padding: 6px 14px; min-height: 44px;
+  font-size: 11px; font-weight: 700; color: var(--mz-ink-soft);
+  font-family: inherit; cursor: pointer; white-space: nowrap;
+}
+.mz-hero-unit { font-size: 18px; font-weight: 400; color: var(--mz-ink-soft); }
+.wt-lsec { display: flex; align-items: center; gap: 7px; padding: 12px 2px 8px; }
+.wt-cnt { margin-left: auto; font-size: 10px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.wt-4wk { font-size: 12px; color: var(--mz-ink-mut); text-align: center; margin-top: 8px; }
+.wt-goalpill { display: inline-flex; margin-top: 10px; font-size: 12px; font-weight: 700;
+  color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); padding: 5px 12px; border-radius: 999px; }
+
+.wt-chart { border-radius: 21px; padding: 13px 15px 10px; background: var(--mz-stripbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 17px 31px -19px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  margin-bottom: 12px; }
+.wt-leg { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; font-size: 10px; font-weight: 600; color: var(--mz-ink-soft); }
+.wt-leg i { display: inline-block; width: 11px; height: 4px; border-radius: 2px; margin-right: 5px; vertical-align: 2px; }
+
+.wt-week { border-radius: 20px; padding: 12px 14px; margin-bottom: 11px; background: var(--mz-stripbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+.wt-week-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center;
+  background: transparent; border: none; padding: 0; cursor: pointer; min-height: 44px; }
+.wt-dl { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.wt-deltap { font-size: 10px; font-weight: 800; border-radius: 999px; padding: 3px 10px; flex: none;
+  font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.wt-deltap.is-up { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.wt-days { display: flex; justify-content: space-between; align-items: center; margin-top: 7px;
+  font-size: 10px; font-weight: 700; color: var(--mz-ink-mut); letter-spacing: 0.1em; text-transform: uppercase; }
+.wt-dir { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mz-cell-sage-ink); }
+.wt-dir.is-warn { color: var(--mz-cell-amber-ink); }
+.wt-dayrow { display: flex; justify-content: space-between; padding: 10px 12px; background: var(--mz-cellbg); border-radius: 14px; }
+.wt-dod { font-size: 11px; color: var(--mz-cell-sage-ink); font-variant-numeric: tabular-nums; }
+.wt-dod.is-up { color: var(--mz-cell-amber-ink); }
 
 /* ============================================================
    Today · iOS list language (mezo-e26w)
