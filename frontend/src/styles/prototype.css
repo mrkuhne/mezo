@@ -5163,6 +5163,90 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   .fh-wcta, .fh-mezotile, .fh-band { transition: none; }
   .fh-wcta:active, .fh-mezotile:active, .fh-band:active { transform: none; }
 }
+/* ── Fuel · Stack v2 (mezo-d20.4.3) — day-arc timeline + featured KÖVETKEZŐ card + zone
+   mini-mosaic. Values follow the Mozaik 2.0 recipe (mz-cell-, mz-wash- and mz-shadow- tokens
+   above) rather than the prototype's own hand-rolled hexes — Stack has no head/body split in
+   the prototype build (fuel-head.html never defines .sstrip/.szdot/.znext/.zmini at all, which
+   is exactly Daniel's "puritan" complaint), so this section composes from the shared tokens
+   instead of porting undefined classes 1:1. ── */
+.stk-arc { padding: 13px 14px 11px; }
+.stk-arc-head { margin-bottom: 9px; }
+.stk-arc-track {
+  position: relative; height: 40px; margin: 0 4px;
+  border-top: 1.5px solid var(--border-subtle);
+}
+.stk-arc-fill { position: absolute; top: -1.5px; left: 0; height: 1.5px; background: var(--dv-amber); }
+.stk-arc-now {
+  position: absolute; top: -7px; width: 2px; height: 14px; margin-left: -1px;
+  background: var(--dv-amber); border-radius: 1px;
+}
+.stk-arc-dot {
+  position: absolute; top: -7px; width: 14px; height: 14px; margin-left: -7px;
+  border-radius: 50%; display: grid; place-items: center;
+  font-size: 8px; font-weight: 800; color: var(--text-inverse);
+  border: 1.5px solid var(--surface-card);
+}
+.stk-arc-dot.done { background: var(--dv-sage); }
+.stk-arc-dot.todo { background: var(--surface-card); border: 1.5px solid var(--border-strong); }
+.stk-arc-dot.next {
+  background: var(--dv-amber); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.mz-play .stk-arc-dot.next { animation: stk-pulse 1.8s ease-in-out infinite; }
+@keyframes stk-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--dv-amber) 30%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--dv-amber) 12%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .stk-arc-dot.next { animation: none; } }
+.stk-arc-lbl {
+  position: absolute; top: 12px; transform: translateX(-50%);
+  font-size: 8.5px; font-weight: 600; color: var(--mz-ink-mut); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.stk-arc-lbl.alt { top: 24px; }
+.stk-arc-legend {
+  display: flex; flex-wrap: wrap; gap: 9px; margin-top: 10px;
+  font-size: 8.5px; font-weight: 600; color: var(--mz-ink-mut);
+}
+.stk-leg-done { color: var(--dv-sage); }
+.stk-leg-next { color: var(--dv-amber); }
+.stk-leg-ma { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.stk-next {
+  padding: 13px 14px 12px;
+  background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold);
+  border: 1px solid color-mix(in srgb, var(--dv-amber) 35%, transparent);
+}
+.stk-next-eyebrow { color: var(--mz-cell-amber-ink); white-space: normal; display: block; margin-bottom: 9px; }
+.stk-next-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.stk-htick {
+  flex: none; width: 30px; height: 30px; border-radius: 50%; padding: 0; cursor: pointer;
+  display: grid; place-items: center;
+  border: 2px solid var(--border-strong); background: var(--surface-card);
+}
+.stk-htick.f { border: none; background: var(--dv-sage); }
+.stk-kdot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+.stk-k-sage { background: var(--dv-sage); }
+.stk-k-amber { background: var(--dv-amber); }
+.stk-k-lav { background: var(--dv-lav); }
+.stk-next-label {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;
+  text-align: left; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer;
+}
+.stk-next-label .nm { font-size: 13px; font-weight: 700; }
+.stk-next-label .ds { font-size: 10.5px; color: var(--mz-ink-soft); }
+.stk-next-note {
+  display: flex; align-items: flex-start; gap: 7px; margin: 9px 0 0;
+  font-size: 10.5px; line-height: 1.5; color: var(--text-secondary);
+}
+.stk-next-note .dot { flex: none; width: 5px; height: 5px; border-radius: 50%; margin-top: 5px; background: var(--dv-amber); }
+
+.stk-done { display: flex; align-items: center; gap: 10px; padding: 13px 14px; background: var(--mz-wash-sage); }
+.stk-done-check { flex: none; font-size: 16px; color: var(--dv-sage); }
+.stk-done-title { font-size: 12.5px; font-weight: 700; }
+.stk-done-sub { font-size: 10px; color: var(--mz-ink-soft); margin-top: 1px; }
+
+.stk-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stk-mini.done .zcard { background: var(--mz-wash-sage); }
 
 /* ============================================================
    Today · iOS list language (mezo-e26w)

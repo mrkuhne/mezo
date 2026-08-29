@@ -109,12 +109,35 @@ describe('FuelStackPage (mock mode)', () => {
     expect(link).toHaveAttribute('href', '/fuel/recipes/rec-2')
     expect(screen.getAllByText('✓').length).toBeGreaterThan(0)
   })
+
+  // Stack v2 (mezo-d20.4.3) — stat strip, day-arc timeline, featured KÖVETKEZŐ card, mosaic.
+  test('the stat strip shows bevéve · következő · e heti adherencia · kézi rögzítés', () => {
+    renderView()
+    expect(screen.getByText('bevéve ma')).toBeInTheDocument()
+    expect(screen.getByText('következő')).toBeInTheDocument()
+    expect(screen.getByText('e heti adherencia')).toBeInTheDocument()
+    // mock seed's weeklyStats.supplementsAdherence is 92 (fuelWeek.ts) — honest number, not a dash.
+    expect(screen.getByText('92%')).toBeInTheDocument()
+    expect(screen.getByText('kézi rögzítés')).toBeInTheDocument()
+  })
+
+  test('the day-arc timeline renders between the real wake/lefekvés anchors', () => {
+    renderView()
+    expect(screen.getByText(/Nap-ív ·/)).toBeInTheDocument()
+  })
+
+  test('the seed pre_workout zone (Origin PWO, untaken, earliest not-done zone) is the featured KÖVETKEZŐ card', () => {
+    renderView()
+    expect(screen.getByText(/KÖVETKEZŐ · EDZÉS ELŐTT/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Origin PWO bevétel' })).toBeInTheDocument()
+  })
+
 })
 
 describe('FuelStackPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
-  test('one active occurrence (kreatin/wake) renders exactly one zone card', async () => {
+  test('one active, untaken occurrence (kreatin/wake) renders as the sole featured KÖVETKEZŐ card, no mosaic', async () => {
     server.use(
       http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [kreatinStashRow] })),
       http.get(`${API_BASE}/api/fuel/protocol`, () => HttpResponse.json({
@@ -127,8 +150,10 @@ describe('FuelStackPage (real mode)', () => {
     )
     const { container } = renderView()
     await screen.findByRole('heading', { name: 'Napi protokoll' })
-    await waitFor(() => expect(container.querySelectorAll('.zcard')).toHaveLength(1))
+    await waitFor(() => expect(screen.getByText(/KÖVETKEZŐ · ÉBREDÉS/)).toBeInTheDocument())
     expect(screen.getByRole('button', { name: 'Kreatin beállítások' })).toBeInTheDocument()
+    // The only occurrence IS the next zone — nothing left over for the mini-mosaic.
+    expect(container.querySelectorAll('.zcard')).toHaveLength(0)
   })
 
   test('an unresolved protocol renders the empty-stack dashed card, never the mock seed', async () => {
