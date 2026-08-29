@@ -46,18 +46,29 @@ async function completeExerciseSets(user: ReturnType<typeof userEvent.setup>) {
   }
 }
 
-test('prep screen shows the workout title, challenges carousel and the start CTA', () => {
+test('prep screen shows the workout title, the mosaic tiles and the start CTA above the fold', () => {
   setup()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  expect(screen.getByText('⚔️ A mai küldetések · 4')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'A mai küldetések' })).toBeInTheDocument()
+  expect(screen.getByText('0/4 elfogadva')).toBeInTheDocument()
   expect(screen.getByText(/Kezdjük el/)).toBeInTheDocument()
 })
 
-// --- mission-briefing prep phase (mezo-bxpg, T4): hero, muscle sections, 1RM honesty ---
+// --- mission-briefing prep hero + mosaic (mezo-bxpg → mezo-d20.3.8 tile re-face) ---
 
-test('mock mode: prep renders the mission-briefing hero (VÁRHATÓ XP) and the muscle-sectioned exercise cards', () => {
+test('mock mode: the hero shows the 4 mini stat cells (várható XP / szett / idő / izomcsoport)', () => {
+  const { container } = setup()
+  const strip = container.querySelector('.tp-hero .mz-statstrip')
+  expect(strip).toHaveTextContent('várható XP')
+  expect(strip).toHaveTextContent('szett')
+  expect(strip).toHaveTextContent('idő')
+  expect(strip).toHaveTextContent('izomcsoport')
+})
+
+test('mock mode: the Gyakorlatok tile opens the muscle-sectioned exercise-tile page', async () => {
+  const user = userEvent.setup()
   setup()
-  expect(screen.getByText('VÁRHATÓ XP')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
   // Pull Day (mock): ex1/ex2/ex3 back-mid+lats+back-mid -> Hát (3), ex4 biceps -> Kar (1),
   // ex5 rear-delt -> Váll (1) — plan-order-preserving muscle-color family sections.
   expect(screen.getByText('Hát · 3 gyakorlat')).toBeInTheDocument()
@@ -66,24 +77,32 @@ test('mock mode: prep renders the mission-briefing hero (VÁRHATÓ XP) and the m
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
 })
 
-test('mock mode: the 1RM badge is omitted (mock exerciseRecords is always empty — never fabricated)', () => {
+test('mock mode: the 1RM medal is omitted on the Gyakorlatok tile page (mock exerciseRecords is always empty — never fabricated)', async () => {
+  const user = userEvent.setup()
   setup()
-  expect(screen.queryByText('1RM REKORD')).not.toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
+  expect(screen.queryByText('1RM')).not.toBeInTheDocument()
   expect(screen.queryByText(/🏆/)).not.toBeInTheDocument()
 })
 
 // Byte-parity guard: the Phase-1 mock seed still renders its fabricated confidence
-// (0.72 → "conf 72%") + the tool-transparency chips exactly as before the live wiring.
-test('mock mode: the seed challenge renders conf 72% and its tool chips (byte parity)', () => {
+// (0.72 → "conf 72%") + the tool-transparency chips exactly as before the live wiring —
+// now inside the Küldetések tile's own page.
+test('mock mode: the seed challenge renders conf 72% and its tool chips (byte parity)', async () => {
+  const user = userEvent.setup()
   setup()
+  await user.click(screen.getByRole('button', { name: 'A mai küldetések' }))
   expect(screen.getByText('conf 72%')).toBeInTheDocument()
   expect(screen.getByText('get_pr_history(ex=chest_row)')).toBeInTheDocument()
   expect(screen.queryByText('tanulom')).not.toBeInTheDocument()
 })
 
-test('prep screen flags the active niggle pre-flight', () => {
+test('prep screen shows the Niggle tile, and its page carries the pre-flight message', async () => {
+  const user = userEvent.setup()
   setup()
-  expect(screen.getByText('Jobb váll · aktív niggle')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Aktív niggle' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Aktív niggle' }))
+  expect(screen.getByText(/Jobb váll/)).toBeInTheDocument()
   expect(screen.getByText('Értem · jó így')).toBeInTheDocument()
 })
 
@@ -1026,9 +1045,11 @@ test('real mode: the 1RM badge renders when an exercise record matches the worko
       ]),
     ),
   )
+  const user = userEvent.setup()
   setup()
+  await user.click(await screen.findByRole('button', { name: 'Gyakorlatok' }))
   expect(await screen.findByText('🏆 133 kg')).toBeInTheDocument()
-  expect(screen.getByText('1RM REKORD')).toBeInTheDocument()
+  expect(screen.getByText('1RM')).toBeInTheDocument()
 })
 
 test('real mode: starting creates the instance and Szett kész posts the set', async () => {
@@ -1625,8 +1646,10 @@ test('real mode: a proposed challenge with null confidence renders "tanulom" and
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire()], calls)
+  const user = userEvent.setup()
   setup()
-  // prep screen — the carousel shows the live challenge
+  // prep hub — the Küldetések tile opens the live challenge's own page.
+  await user.click(await screen.findByRole('button', { name: 'A mai küldetések' }))
   expect(await screen.findByText('conf tanulom')).toBeInTheDocument()
   expect(screen.queryByText(/get_pr_history/)).not.toBeInTheDocument() // live sends no tools
   expect(screen.getByText('⚔️ Elfogadom')).toBeInTheDocument()
@@ -1638,6 +1661,7 @@ test('real mode: clicking "⚔️ Elfogadom" POSTs an accept decision for the ch
   useChallengeHandlers([challengeWire()], calls)
   const user = userEvent.setup()
   setup()
+  await user.click(await screen.findByRole('button', { name: 'A mai küldetések' }))
   await user.click(await screen.findByText('⚔️ Elfogadom'))
   await waitFor(() => expect(calls).toContain('decide:chal-1:accept'))
 })
@@ -1649,7 +1673,9 @@ test('real mode: a resolved (hit) challenge shows the ✓ Megerősítve chip + o
     [challengeWire({ status: 'hit', outcome: '110 kg × 8 — cél igazolva (+2.5 kg)', outcomeGood: true })],
     calls,
   )
+  const user = userEvent.setup()
   setup()
+  await user.click(await screen.findByRole('button', { name: 'A mai küldetések' }))
   expect(await screen.findByText('✓ Megerősítve')).toBeInTheDocument()
   expect(screen.getByText('110 kg × 8 — cél igazolva (+2.5 kg)')).toBeInTheDocument()
   // the workout is decided → the accept/skip row is hidden
