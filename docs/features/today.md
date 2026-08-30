@@ -6,10 +6,10 @@ updated: 2026-08-30
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs]
 key_files:
   - frontend/src/features/today/pages/NapHubPage.tsx
-  - frontend/src/app/AppHeader.tsx
   - frontend/src/features/today/logic
   - frontend/src/shared/ui/mozaik
   - frontend/src/shared/ui/clay
+  - frontend/src/app/router.tsx
   - frontend/src/data/today
   - api/feature/checkin/checkin.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin
