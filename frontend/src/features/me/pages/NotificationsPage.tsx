@@ -185,7 +185,7 @@ export function NotificationsPage() {
       // No hero bignum here: on a platform where nothing can fire, a "5 tervezett ma" would be
       // a number about notifications that cannot happen.
       <MozaikPage tone="sky">
-        <PageHead onBack={() => navigate(-1)} label="‹ Értesítések" />
+        <PageHead onBack={() => navigate('/me/ertesitesek')} label="‹ Értesítések" />
         <PageHero icon="i-ertesites" name="Értesítés-beállítások" />
         <PageBody>
           <EntranceGroup className="col gap-md">
@@ -227,7 +227,7 @@ export function NotificationsPage() {
 
   return (
     <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate(-1)} label="‹ Értesítések" />
+      <PageHead onBack={() => navigate('/me/ertesitesek')} label="‹ Értesítések" />
       {/* Prototype #page-ertesites: the hero states today's planned volume, and the sub-line
           qualifies the rhythm. „nyugodt ritmus" is DERIVED (no dense window in the same
           forecast the card below draws), never asserted — a crowded day says so instead. */}

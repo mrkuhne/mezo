@@ -54,3 +54,14 @@ test('a fejléc olvasatlan-badge-e eltűnik, miután megnyitottuk a feedet', asy
   const after = await screen.findByRole('button', { name: 'Értesítések' })
   expect(after.querySelector('.nap-badge')).toBeNull()
 })
+
+// Fix round 1 (task review, Important): a beállítások oldal `‹ Értesítések` címkéje a
+// hub-csempéről érkezve hazudott, amíg a vissza gomb `navigate(-1)`-et hívott — onnan a Hub-ra
+// vitt volna, nem a feedre. Most fix célponttal navigál, a `features/insights/pages/`
+// testvéreinek (MemoirPage stb.) idiómája szerint.
+test('a beállítások vissza gombja a feedre visz, nem a belépési pontra', async () => {
+  renderAt('/me/ertesitesek/beallitasok')
+  await screen.findByText('Értesítés-beállítások')
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(await screen.findByText('Ma')).toBeInTheDocument()
+})
