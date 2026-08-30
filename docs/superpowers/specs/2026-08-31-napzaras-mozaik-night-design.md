@@ -137,8 +137,11 @@ este-panel lavenderének telített rokona, tehát az átmenet folytonos. Nincs �
   **mindkét** `:root` blokkban deklarálva van — ez a Mozaik-tokenek bevált mintája, és pontosan
   azt a hibaosztályt fogja meg (az egyik blokkból kimarad egy token), amit a panel-ritmus
   esete tanított.
-- **Reduced-motion guard**: a meglévő `reducedMotionGuard.test.ts` kibővül az új
-  animációkkal (`.rz-stars i`, `.rz-glow`, `.rz-screen` háttér-átmenet).
+- **Reduced-motion guard**: a meglévő `reducedMotionGuard.test.ts` **nem szorul bővítésre** —
+  automatikus parser, amely magától megtalálja az összes `.rz-*` szelektort aktív animációval,
+  és megköveteli hozzá a `prefers-reduced-motion: reduce` blokkban az `animation: none`-t.
+  A dolgunk tehát csak annyi, hogy a három új animációt (`rz-twinkle`, `rz-loopbreath`,
+  `rz-glowin`) ott semlegesítsük — a guard ezt magától számonkéri.
 - **Vizuális goldenek**: a meglévő `/ritual` Arrival + Harvest készletek újragenerálódnak;
   a sötétedő ív miatt érdemes egy harmadik felvételt is felvenni az **Elengedésről** (act 6),
   mert az ív két végpontja a lényeg.
