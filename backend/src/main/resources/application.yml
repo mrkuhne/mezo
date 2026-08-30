@@ -282,6 +282,10 @@ mezo:
       # off = the DailySummaryJob bean does not exist
       daily-summary-job:
         enabled: true
+      # Karakter nightly observation pass (mezo-1gim.3, schedule: mezo.character.observation.cron);
+      # off = the CharacterObservationJob bean does not exist
+      character-observation-job:
+        enabled: true
       # V3.1 nightly statistical pattern detection (schedule: mezo.companion.patterns.cron);
       # off = the PatternDetectionJob bean does not exist
       pattern-detection-job:
@@ -1074,6 +1078,19 @@ mezo:
       sleep-target-h: 8.0
       kcal-band: 0.25
       xp-baseline: 150
+  # Karakter S2 nightly expert observation pass (mezo-1gim.3, spec §5/§6) — the 7-expert team
+  # writes observations onto the CORE dimensions; the job switch lives under mezo.techcore.cron.
+  character:
+    observation:
+      # 02:50 — the brief's suggested 02:40 collides with mezo.companion.patterns.cron (line
+      # above); free dawn slots taken so far: 02:20 summary, 02:40 patterns, 03:00 SUN hypotheses,
+      # 03:10 feedback-learning, 03:20 graph, 03:30 MON weekly rung, 03:40 llm-log retention,
+      # 03:45 MON profile, 03:50 monthly rung, 04:00 quarterly.
+      cron: "0 50 2 * * *"
+      # Finished days back the job checks and self-heals (the summary catch-up idiom)
+      catch-up-days: 3
+    # Per-detector kill switches (spec §5) — empty = every detector enabled; keyed by detector key.
+    detector: {}
   proactive:
     weekly:
       # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week
