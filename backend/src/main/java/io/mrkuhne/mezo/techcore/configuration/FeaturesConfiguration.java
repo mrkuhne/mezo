@@ -29,6 +29,10 @@ public class FeaturesConfiguration {
     public static final String CHARACTER_OBSERVATION_JOB_SWITCH =
             "mezo.techcore.cron.character-observation-job.enabled";
 
+    /** Karakter weekly konzílium pass (mezo-1gim.5) — the Sunday-evening cron (spec §6). */
+    public static final String CHARACTER_CONFERENCE_JOB_SWITCH =
+            "mezo.techcore.cron.character-conference-job.enabled";
+
     /** V3.1 nightly statistical pattern-detection job — techcore cron zone. */
     public static final String PATTERN_DETECTION_JOB_SWITCH = "mezo.techcore.cron.pattern-detection-job.enabled";
 

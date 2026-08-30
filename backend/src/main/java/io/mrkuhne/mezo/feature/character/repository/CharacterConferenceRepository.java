@@ -16,6 +16,12 @@ public interface CharacterConferenceRepository extends JpaRepository<CharacterCo
 
     Optional<CharacterConferenceEntity> findFirstByCreatedByOrderByGeneratedAtDesc(UUID createdBy);
 
+    /** The idempotency lookup for the weekly konzílium (Karakter spec §6, mezo-1gim.5): a live
+     *  WEEKLY row already exists for this owner+week -> the service returns it instead of running
+     *  the round again. */
+    Optional<CharacterConferenceEntity> findByCreatedByAndKindAndWeekStart(UUID createdBy, String kind,
+                                                                            LocalDate weekStart);
+
     /** Projection so the list endpoint never loads full transcripts. */
     interface Summary {
         UUID getId();

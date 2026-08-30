@@ -15,6 +15,7 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "mezo.character")
 public record CharacterProperties(
         @NotNull @Valid Observation observation,
+        @NotNull @Valid Conference conference,
         /** Per-detector kill switches (spec §5): key = detector key. Absent key = enabled. */
         @NotNull Map<String, Detector> detector) {
 
@@ -31,6 +32,12 @@ public record CharacterProperties(
             @NotBlank String cron,
             /** How many finished days back the job heals (the summary catch-up idiom). */
             @Min(1) @Max(30) int catchUpDays) {}
+
+    public record Conference(
+            /** Weekly konzílium cron (server zone) — fires for the week that just finished. */
+            @NotBlank String cron,
+            /** How many finished weeks back the job heals (the observation catch-up idiom). */
+            @Min(1) @Max(8) int catchUpWeeks) {}
 
     public record Detector(boolean enabled) {}
 
