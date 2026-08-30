@@ -1,13 +1,20 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import { MemoryRouter } from 'react-router-dom'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { predictions as mockPredictions } from '@/data/insights/insights'
 
-const renderPage = () => render(<PredictionsPage />, { wrapper: QueryWrapper })
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <PredictionsPage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
 
 const FEEDBACK_GROUP = 'Visszajelzés az előrejelzésről'
 
@@ -15,11 +22,14 @@ describe('PredictionsPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders the header, pending + validated states, confidence and outcome — Hungarian chips (mezo-d20.5.6)', () => {
+  test('renders the header, pending + validated states, confidence and outcome — Hungarian chips (mezo-d20.5.6)', async () => {
     renderPage()
     expect(screen.getByText('Aktív predikciók')).toBeInTheDocument()
+    // Prototype #page-josla hero (mezo-d20.11): i-kristaly + „68%" + „2 bevált · 60 napos pontosság".
+    expect(screen.getByText('Előrejelzések')).toBeInTheDocument()
+    await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('68%'))
     // mock keeps the Phase-1 literal, localized view-side (the shipped English header was a designed fix)
-    expect(screen.getByText('2 bevált · 60 napos pontosság 68%')).toBeInTheDocument()
+    expect(screen.getByText('2 bevált · 60 napos pontosság')).toBeInTheDocument()
     expect(screen.getByText('Csütörtök Pull Day · Chest Row PR (107.5 × 8)')).toBeInTheDocument()
     expect(screen.getAllByText('◐ Folyamatban').length).toBeGreaterThan(0)
     expect(screen.getAllByText('✓ Bevált').length).toBeGreaterThan(0)
@@ -97,10 +107,12 @@ describe('PredictionsPage (real mode)', () => {
     expect(await screen.findByText('Hét 27 testsúly csökken')).toBeInTheDocument()
     // null confidence renders the honest „tanulom" chip, not a fabricated %
     expect(screen.getAllByText('tanulom').length).toBeGreaterThan(0)
-    // one validated of one closed row → derived header, Hungarian
-    expect(screen.getByText('1 bevált · pontosság 100%')).toBeInTheDocument()
+    // one validated of one closed row → the derived hero, Hungarian (mezo-d20.11: the header
+    // moved into the prototype's page-hero — big number + sub line)
+    await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('100%'))
+    expect(screen.getByText('1 bevált · pontosság')).toBeInTheDocument()
     expect(screen.queryByText('hamarosan')).not.toBeInTheDocument()
-    expect(screen.queryByText('2 bevált · 60 napos pontosság 68%')).not.toBeInTheDocument()
+    expect(screen.queryByText('2 bevált · 60 napos pontosság')).not.toBeInTheDocument()
     expect(screen.queryByText(/validated/)).not.toBeInTheDocument()
     // The chips are not mock-only — both live rows carry their own row.
     expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2)

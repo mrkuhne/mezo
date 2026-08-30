@@ -33,7 +33,7 @@ function renderView() {
 
 test('renders the title and the segmented typebar', () => {
   renderView()
-  expect(screen.getByRole('heading', { name: 'Receptek' })).toBeInTheDocument()
+  expect(screen.getByText('Receptek')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Reggeli/ })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Mind/ })).toBeInTheDocument()
 })
@@ -44,12 +44,43 @@ test('the fake "Avg fit" stat is gone', () => {
   expect(screen.queryByText(/Avg fit/)).not.toBeInTheDocument()
 })
 
-test('own header: pghead-np sage over + h1 + pgact-np action chip', () => {
+// Mozaik face (fidelity audit, mezo-d20.11): the page wore the pre-Mozaik `.pghead-np`
+// header; the prototype's #page-recept is a coral MozaikPage with a ‹ Fuel back chip, a
+// `＋ Új` head action and the icon + count hero.
+test('Mozaik scaffold: coral page, ‹ Fuel back chip, i-recept hero with the catalog count', () => {
   const { container } = renderView()
-  expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
-  expect(screen.getByText('Fuel · Receptek')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Receptek' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Új/ })).toHaveClass('pgact-np', 'np-press')
+  expect(container.querySelector('.pghead-np')).toBeNull()
+  expect(container.querySelector('.mz-page.mz-p-coral')).toBeInTheDocument()
+  expect(screen.getByText('‹ Fuel')).toBeInTheDocument()
+  expect(screen.getByText('Receptek')).toBeInTheDocument()
+  expect(container.querySelector('.mz-bignum')).not.toBeNull()
+  expect(screen.getByRole('button', { name: /Új/ })).toHaveClass('pgact')
+})
+
+// Entrance choreography (audit group A: the page had play:0 / rise:0).
+test('the filter, the list head and every card rise inside one EntranceGroup', () => {
+  const { container } = renderView()
+  const play = container.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  expect(play!.querySelector('.fh-segtabs.rise')).not.toBeNull()
+  expect(play!.querySelector('.fh-lsthead.rise')).not.toBeNull()
+  const cards = [...play!.querySelectorAll('.mz-rcpcard')]
+  expect(cards.length).toBeGreaterThan(0)
+  expect(cards.every(c => c.classList.contains('rise'))).toBe(true)
+  // the prototype's 30 + i*30 ms stagger
+  expect((cards[0] as HTMLElement).style.getPropertyValue('--d')).toBe('30ms')
+  expect((cards[1] as HTMLElement).style.getPropertyValue('--d')).toBe('60ms')
+})
+
+// The list head the prototype's `.lsthead` carries — a live hit count next to "Katalógus".
+test('the Katalógus list head counts the hits against the catalog', async () => {
+  renderView()
+  const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
+  const total = result.current.recipes.length
+  expect(screen.getByText(`${total} / ${total}`)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /^Snack/ }))
+  const snacks = result.current.recipes.filter(r => r.category === 'snack').length
+  expect(screen.getByText(`${snacks} / ${total}`)).toBeInTheDocument()
 })
 
 test('filtering to a category with no recipes shows the empty state', async () => {

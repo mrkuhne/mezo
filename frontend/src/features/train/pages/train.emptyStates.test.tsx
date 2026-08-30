@@ -64,12 +64,18 @@ test('ActiveWorkoutPage redirects to /train when there is no workout', async () 
 })
 
 test('SportPage ghosts the weekly plan and shows an empty log message', async () => {
-  renderApp('/train/sport')
-  // hero stats ghost + week-tab ghost (week is the default tab)
+  const { container } = renderApp('/train/sport')
+  // Mozaik re-face (mezo-d20.11): the hero-stats GhostState is gone — with no
+  // schedule the hero big number and every stat cell render `—` (an honest
+  // missing statistic), and the week tab keeps its own ghost + CTA.
   await waitFor(() =>
-    expect(screen.getByText(/A statisztikáid az első logolt session után jelennek meg/i)).toBeInTheDocument(),
+    expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument(),
   )
-  expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument()
+  expect(container.querySelector('.mz-bignum')).toHaveTextContent('—')
+  expect(container.querySelectorAll('.mz-statstrip .mz-statcell b')).toHaveLength(3)
+  container.querySelectorAll('.mz-statstrip .mz-statcell b').forEach((b) => {
+    expect(b).toHaveTextContent('—')
+  })
   await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
   expect(await screen.findByText(/Még nincs logolt session/i)).toBeInTheDocument()
 })

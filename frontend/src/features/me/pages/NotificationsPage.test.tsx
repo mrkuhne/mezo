@@ -292,4 +292,29 @@ describe('NotificationsPage', () => {
     expect(master).not.toBeNull()
     expect(master?.querySelector('svg')).not.toBeNull()
   })
+
+  // ── mezo-d20.11 (1:1 fidelity audit) ──────────────────────────────────────────────────────
+  // ADR 0032: the page had NO header at all — no title, no way back. The prototype
+  // (#page-ertesites) gives it the `‹ Én` chip and a hero stating today's planned volume.
+  it('wears the prototype header and hero, with a way back', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    const { container } = renderPage()
+    expect(await screen.findByText('Értesítések')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+    expect(screen.getByText('‹ Én')).toBeInTheDocument()
+    expect(container.querySelector('.mz-bignum')).not.toBeNull()
+  })
+
+  // The install gate REPLACES the page — before mezo-d20.11 that left the user on a screen with
+  // no title and no way back at all. The gate keeps the scaffold, but no hero bignum: on a
+  // platform where nothing can fire, a planned-volume number would be a number about nothing.
+  it('the install gate keeps the header and the way back, without a volume number', () => {
+    hooks.usePushSubscription.mockReturnValue(push({ supported: false, standalone: false }))
+    const { container } = renderPage()
+    expect(screen.getByText('Értesítések')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+    expect(container.querySelector('.mz-bignum')).toBeNull()
+    // …and it is no longer the only Én page with zero entrance choreography (audit group A).
+    expect(container.querySelector('.mz-play .rise')).not.toBeNull()
+  })
 })

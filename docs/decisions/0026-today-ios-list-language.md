@@ -1,6 +1,6 @@
 # ADR 0026 — Today becomes one iOS list language: an inset grouped list on a 16px rail, the companion's voice a chip + sheet
 
-- **Status:** accepted (2026-08-11)
+- **Status:** Superseded by [ADR 0033](0033-mozaik-2-tile-language.md) (2026-08-29) — the `.td-*` iOS-list render layer is gone; the day model, act-anywhere/dedup and the honest-state discipline this ADR carried forward all survive into Mozaik 2.0.
 - **Driving bd:** `mezo-e26w`
 - **Spec:** [`docs/superpowers/specs/2026-08-11-today-ios-redesign-design.md`](../superpowers/specs/2026-08-11-today-ios-redesign-design.md) (+ the validated mockup [`assets/2026-08-11-today-ios-redesign-mockup.html`](../superpowers/specs/assets/2026-08-11-today-ios-redesign-mockup.html) and the three-variant decision mockup [`assets/2026-08-11-today-message-variants-mockup.html`](../superpowers/specs/assets/2026-08-11-today-message-variants-mockup.html))
 - **Supersedes:** [ADR 0025](0025-today-daypart-tabs.md) (the `.segtabs` daypart switcher, the full-bleed never-truncated `.coach-bubble.cb-band` briefing band, and the frameless `.dayview` panel's `.dv-hero*`/`.dv-act`/`.dv-done*` classes + its `.isl-*` micro-component reuse). ADR 0014's day model, act-anywhere and dedup decisions remain in force through all four render layers now, as does [ADR 0010](0010-gamified-growth-xp-feedback-not-payment.md) (nothing self-completes) — this is the render layer's **fourth** iteration over the same unchanged foundation (`dayFace.ts`, `todayItems.ts` — minus one line, `islandFacts.ts`, `questAction`/`habitAction`, `windDown.ts`).

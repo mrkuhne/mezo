@@ -481,7 +481,10 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 - **An eighth owned table** — `weekly_review` (UUID PK, `created_by`, soft-delete; `week_start
   date` = the ISO Monday the review is FOR, `summary text` = the review prose, `day_notes jsonb` =
   a typed envelope of short per-day comments, `highlights jsonb` = a typed envelope of
-  code-collected, model-selected refs (the `memoir.anchors` idiom), `generated_at`). A **partial**
+  code-collected, model-selected refs (the `memoir.anchors` idiom — since `mezo-d20.7.7` each entry
+  also carries a nullable `refId`, the id of the pattern/fact/life-event/memoir it was collected
+  from, so a citation can be counted against the entity rather than a display label; rows written
+  before that slice have none and are never label-matched back), `generated_at`). A **partial**
   unique index (one LIVE review per user+week; soft-delete + reinsert = regeneration, the
   `weekly_suggestion`/`memoir` precedent) — unlike W1, WR **does** ship an on-demand regeneration
   path (below).
@@ -520,6 +523,56 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   to DTOs (patterns/newFacts/lifeEvents/memoir boolean/predictions) — `400` on a non-Monday
   `start`, otherwise always `200`, empty lists the honest empty state, independent of whether the
   review row itself exists (`/me/week`'s `WeekDiscoveries` card's source).
+- **„A hét tanulságai" — the round's knowledge candidates (`mezo-d20.7.6`)** — until this slice the
+  weekly pipeline **never wrote to knowledge** (the generator only read; its single write was the
+  review row + the notification). Now the strict-JSON contract gains a fourth field
+  **`candidateFacts: [{text, category, evidence}]`** (prompt rule: a candidate may be inferred ONLY
+  from the supplied day data / pattern events, and `evidence` must name what it rests on), and
+  `WeeklyLessonService` writes the survivors onto the **existing companion candidate flow**
+  (`learned_fact` → user decision → `knowledge_fact`) rather than a new write path — deliberately,
+  because `FactCandidateService.decide` is the only promoter that publishes
+  `KnowledgeFactPromotedEvent`, so an accepted lesson gets its graph node for free
+  (`KnowledgeFactService.create` and `PatternService.promote` do not). Provenance: `learned_fact`
+  gained `source` (`chat|weekly_review`), `week_start` and `evidence`
+  (`derived_from_message_id` stays null for a weekly candidate — its FK is already
+  `on delete set null`), and `knowledge_fact` a **fourth** source constant `weekly_review`
+  (drop + re-add of `ck_knowledge_fact_source`, the feedback-kind migration idiom), which
+  `decide` INHERITS from the candidate — otherwise promotion would claim `chat`. The write carries
+  the chat extraction's discipline: bounds-check (blank/over-long text, unknown category),
+  normalised dedupe against confirmed facts + **every** existing candidate (a rejected lesson must
+  not return next Monday) + the batch, and the `max-candidates-per-turn` ceiling reused as the
+  per-round cap. **No usable lesson ⇒ no row** — never a placeholder, and an unknown `evidence`
+  stays null. **No per-candidate `FACT_CANDIDATE` notification** (unlike chat extraction): Monday's
+  `WEEKLY_REVIEW_READY` already speaks, and the count shows on the Heti tile + the Tudástár inbox
+  counter. Read path: **`GET …/{start}/lessons`** returns the week's candidates **with their
+  decisions** (the pending inbox only returns undecided ones; a closed week must be reviewable in
+  its settled state) — always `200`, empty list = honest empty. `POST …/regenerate` archives the
+  week's still-OPEN candidates with the old review and leaves DECIDED ones untouched — a
+  regeneration must never undo a user decision.
+- **The WIDER gather input (`mezo-d20.7.8`)** — `WeeklyReviewContextSources` adds the six sources
+  the design spec listed as input and the first cut dropped, rendered into the payload **after**
+  the predictions block and **before** the numbered anchor list: **journal entries**
+  (`occurredOn` in-week, prose clipped to 180 chars, max 7), **decisions** (recorded in-week +
+  **reviewed** in-week with their 1–5 rating, text clipped to 140, max 6 combined), **N=1
+  experiments** whose `[startDate, startDate+totalDays)` window *intersects* the week (title +
+  status + window position or outcome; `proposed` rows never ran, so they are excluded),
+  **people mentions** aggregated to a **per-person COUNT** (top 5), the **medication cycle**
+  position on the week's first and last day (one line, derived via `MedicationCycleService`), and
+  the week's consolidated **`period_summary(week)`** narrative (clipped to 600 — its `03:30 MON`
+  consolidation cron runs three hours before the `06:50` review cron on the SAME `weekStart`).
+  Three disciplines make this a widening rather than a bloat: it is **data only** (the prompt is
+  byte-identical and mints no new anchor kinds — the `Pattern|Fact|LifeEvent|Memory` RefTag
+  vocabulary is unchanged, and every candidate costs double tokens because it renders in its own
+  section *and* in the anchor list); **each source is capped and clipped** at the coarsest
+  granularity that still carries its signal, with mention excerpts/tone, gratitude entries,
+  `daily_summary` narratives (the `period_summary` rung IS their consolidation), the decision
+  `contextSnapshot` and the dose ledger deliberately **left out as noise**; and **an absent source
+  renders no scaffolding at all** — no header, no placeholder, an unknown cycle day or ungraded
+  review printing the house `–`. Cross-feature edges: `proactive → journal`, `proactive → people`
+  and `proactive → medication` are new, all three verified acyclic (ADR 0012 prescribes a
+  consumer-owned port where the direct edge would *close* a cycle; `CheckInNoteSourceAdapter` is
+  the standing precedent for a plain read when the direction is already safe), so no port was
+  minted and the ArchUnit freeze store is unchanged.
 - **Notifications** — `AppNotificationKind.WEEKLY_REVIEW_READY` (`/me/week` deeplink, no
   `familyKey` since the push category below already covers the event) fires on generation. The
   `NotificationCategory.WEEKLY_REVIEW` push fires **Monday 10:00, fixed** (`AnchorResolver.
@@ -1558,6 +1611,42 @@ the dedup-key shapes, and the load-bearing rule that any emit-reachable IT test 
 class-level `@Transactional` (the emitter's `REQUIRES_NEW` transaction otherwise FK-deadlocks against
 the test's own uncommitted fixtures).
 
+### 5.12 Proactive → Companion, highlight feedback (✅ `mezo-d20.7.7` wired — third port inversion)
+
+The weekly round already names which pattern / fact / life event / memory the week was built on
+(`weekly_review.highlights`); until this slice nothing read it back. `HighlightCitationSourceAdapter`
+(`feature.proactive.service`) implements the companion-owned `HighlightCitationSource` port — the
+same inversion as `PatternImpactSource` (§5.1) and `FeedMessageKindSource`, so the import direction
+stays proactive → companion. It answers one question: *in how many of the last
+`mezo.proactive.weekly-review.citation-window-weeks` (12) live weekly reviews was this entity
+cited?*
+
+Four decisions worth keeping:
+
+- **Derived on read, never accumulated.** The count is a fold over the LIVE `weekly_review` rows,
+  not a stored counter. Regeneration therefore cannot double-count (soft-delete + reinsert leaves
+  exactly one live row per week — the partial unique index), and a soft-deleted review stops
+  contributing immediately instead of leaving an unexplainable bump behind. There is no ledger to
+  reconcile and nothing that can drift out of sync with the reviews themselves.
+- **Weeks, not mentions** — one review naming the same pattern twice (a confirmed AND a reinforced
+  event in the same week are two candidates over one pattern) is one week of evidence.
+- **It never becomes a statistic.** `PatternEntity.confidence` stays untouched (and stays NULL for
+  statistical rows — honest small-n); a citation cannot promote a pattern or move its status. It is
+  exposed as a separate `citedWeeks` field on `PatternResponse`, rendered beside the statistic.
+- **It does not widen `reinforcementCount`.** That field means "the USER re-stated this"; the model
+  citing its own knowledge is not that — the same call `WeeklyLessonService` made when it refused to
+  reinforce on a weekly duplicate (`mezo-d20.7.6`). `KnowledgeFactResponse.citedWeeks` carries it
+  separately, and the only place it ACTS is `KnowledgeFactService.renderPromptBlock`, as a
+  tie-breaker *under* reinforcement: it can order two equally-confirmed facts, never outrank one the
+  user confirmed more often. With the proactive switch off the port is absent and `citedWeeks` is
+  `null` — not measurable, never a stand-in zero.
+
+Life-event and memory highlights carry their refId too but feed **nothing** yet, deliberately: a
+`LIFE_EVENT` node's state is the user's own (`active`/`ended`), with no salience field a citation
+could honestly inform, and a memoir belongs to exactly one week, so "cited in N weeks" over memoirs
+is structurally 0-or-1 and carries no information. The refs are recorded so a later loop has data to
+work with.
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -2326,18 +2415,19 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 
 **Weekly review — WR (`mezo-p2tr`)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{WeeklyReviewEntity,WeeklyReviewDayNotesEnvelope,WeeklyReviewHighlightsEnvelope}.java` — the owned entity (`weekStart`/`summary`/`generatedAt` + two typed jsonb envelopes).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java` — pure-code `gather` (the week's `MeWeekService.renderDayLine`s + confirmed pattern events + new facts + life events + memoir + predictions + a numbered anchor-candidate list) + one `CompanionLlm.completeSmart` + strict-JSON `{summary, dayNotes, anchorIndexes}` parse + bounds-checked/deduped highlight resolution; `WEEKLY_REVIEW_MARKER = "HETI-ELEMZES-FELADAT"` + `PROMPT`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java` — pure-code `gather` (the week's `MeWeekService.renderDayLine`s + confirmed pattern events + new facts + life events + memoir + predictions + a numbered anchor-candidate list) + one `CompanionLlm.completeSmart` + strict-JSON `{summary, dayNotes, anchorIndexes, candidateFacts}` parse + bounds-checked/deduped highlight resolution; `WEEKLY_REVIEW_MARKER = "HETI-ELEMZES-FELADAT"` + `PROMPT`; hands `candidateFacts` to `WeeklyLessonService` (mezo-d20.7.6).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyLessonService.java` (mezo-d20.7.6) — „A hét tanulságai": `propose` (bounds-check + normalised dedupe against confirmed facts and EVERY existing candidate + the reused `max-candidates-per-turn` cap, writing `learned_fact` rows with `source=weekly_review`/`week_start`/`evidence`, no notification), `list` (the week's candidates WITH their decisions) and `archiveOpen` (the regenerate policy: decided candidates survive, open ones are archived with the review).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewJob.java` — the backward-looking Monday-06:50 `@Scheduled` cron (`weekStart = previousOrSame(MONDAY).minusWeeks(1)`, three-switch-gated `WEEKLY_REVIEW_JOB_SWITCH`, no backfill).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewService.java` — the read/regenerate service (`find`/`getResponse` with the `stale` best-effort probe; `regenerate` soft-delete + re-generate + RE-PROBES `stale` against the fresh row, 409 while the week is in progress).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewDigestService.java` — the week-window-refs read (400 on a non-Monday `start` via the controller's shared `requireMonday`, otherwise always 200; `WeeklyReviewWeekWindow`-shared reads, mapped straight to DTOs; an event whose backing pattern is missing/deleted logs a warn and drops the orphan ref).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewWeekWindow.java` — the shared window-query helper (`since`/`until`/`patternEvents`/`facts`/`lifeEvents`) both the generator's gather and the digest service read through, so they can never disagree on the candidate set.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeekReviewSourceAdapter.java` — implements companion's `WeekReviewSource` port (plain repository read + map, deliberately NOT `WeeklyReviewGenerator`, to keep `companion → proactive` out of the dependency graph entirely).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklyReviewRepository.java` — `findByCreatedByAndWeekStart` (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `getWeeklyReview`/`regenerateWeeklyReview`/`getWeeklyReviewDigest` (`requireMonday` 400 guard shared across all three).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `getWeeklyReview`/`regenerateWeeklyReview`/`getWeeklyReviewDigest`/`getWeeklyReviewLessons` (`requireMonday` 400 guard shared across all four).
 - **Companion-owned (the data layer + chat anchoring this stage narrates over/rides on) — see [me.md §4](me.md) and [companion.md](companion.md), not restated here:** `feature/companion/service/{DayScoreService,MeWeekService,WeekContextRenderer}.java`, `feature/companion/controller/MeWeekController.java`, `feature/companion/config/MeWeekProperties.java`, `feature/companion/WeekReviewSource.java`, `feature/companion/service/{ChatService,ConversationService}.java`, `ai_conversation.context_kind`/`.context_date`.
 - Contract: `api/feature/proactive/proactive.yml` (weekly-review paths + `WeeklyReview*` schemas), `api/feature/me-week/me-week.yml`, `api/feature/companion/companion.yml` (`CreateConversationRequest.context`).
-- Migrations: `...202608271200_mezo-p2tr_create_weekly_review.sql`, `...202608271500_mezo-p2tr_feedback_weekly_review_kind.sql`, `...202608271800_mezo-p2tr_ai_conversation_context.sql`.
-- Tests: `feature/proactive/service/WeeklyReviewGeneratorIT.java`, `feature/proactive/controller/WeeklyReviewControllerIT.java`, `support/populator/WeeklyReviewPopulator.java`; companion-side `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `AnchoredConversationIT`.
+- Migrations: `...202608271200_mezo-p2tr_create_weekly_review.sql`, `...202608271500_mezo-p2tr_feedback_weekly_review_kind.sql`, `...202608271800_mezo-p2tr_ai_conversation_context.sql`, `...202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql` (learned_fact `source`/`week_start`/`evidence` + the fourth `knowledge_fact` source).
+- Tests: `feature/proactive/service/WeeklyReviewGeneratorIT.java`, `feature/proactive/service/WeeklyLessonServiceIT.java`, `feature/proactive/controller/WeeklyReviewControllerIT.java`, `support/populator/{WeeklyReviewPopulator,LearnedFactPopulator}.java`; companion-side `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `AnchoredConversationIT`.
 - FE consumer: `frontend/src/data/me/{weeklyReviewApi.ts,weeklyReviewHooks.ts,weeklyReviewMock.ts}`, `frontend/src/features/me/{pages/WeekPage.tsx,components/{WeekReviewCard,WeekDiscoveries}.tsx,logic/useChatHandoff.ts}` — full anatomy [me.md](me.md) `Heti` §2/§10. **RETIRED alongside this slice:** the Insights Weekly consumer block just above (`useWeekly`/`WeeklyPage`) — WR does not extend it, it replaces it.
 
 **Docs (link, don't duplicate)**

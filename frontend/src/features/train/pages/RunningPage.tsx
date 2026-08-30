@@ -1,27 +1,32 @@
 // ============================================================
-// Mezo · RunningPage (Futás) — the 6th Train sub-tab, READ-ONLY in R1.
-// Thin TrainSection shell ⇒ this view owns its own .pghead-np (over
-// `Edzés · Futás`, title `Intervallum`) and a 3-button view-switcher:
-// E heti edzés · Napló · Tervek. Mirrors SportPage's DNA (own header, hero
-// .card with left accent strip + radial glow + <Display>, ghost
-// states) using the Napiv --tag-run/--wash-run sky vocabulary (running
-// accent) and a stag-run FUTÁS type tag on session rows/cards.
-// Ported from the approved mockups futas-app-faithful.html (week landing)
-// and futas-blocks-builder.html (Tervek library). No writes, no builder
-// navigation, no Mai/cross-load — those are later R-steps.
+// Mezo · RunningPage (Futás) — Mozaik 2.0 re-face (mezo-d20.11).
+// Source of truth: docs/design_2.0/prototypes/src/edzes-body.html #page-futas
+// (p-sky tone, ×1.18): page-head (‹ Edzés + the Tervek-only `＋ Új terv`
+// pgact) → compact hero (page name, i-futas clay spot + `Hét cur/weeks`) →
+// the live stat strip → three segments (E heti edzés · Napló · Tervek).
+//
+// The old face — an `Edzés · Futás` eyebrow + an `Intervallum` h1, with the
+// week number and stat row repeated INSIDE the week view's block card — is
+// gone: the number is now stated exactly once, in the page hero. The block
+// card keeps what only it can say (goal eyebrow, phase label, week strip).
+// With no active block the big number is `—`, never a fabricated `0/0`.
+//
+// Napiv --tag-run/--wash-run sky vocabulary and the stag-run FUTÁS type tag on
+// session rows/cards are unchanged, as is every data hook and mutation.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { useRunning } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import type { RunningBlockResponse, RunSessionLogResponse, RunSessionLogRequest, RunPrescribedSession } from '@/data/train/runningApi'
 import { newDraft } from '@/data/train/runningDraft'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Icon } from '@/shared/ui/Icon'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Display } from '@/shared/ui/Display'
+import { ClayIcon } from '@/shared/ui/clay'
+import { MozaikPage, PageHead, PageBody, StatCell } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import { RunWeekStrip } from '@/features/train/components/RunWeekStrip'
 import { RunSessionCard, type RunCtaState } from '@/features/train/components/RunSessionCard'
@@ -69,43 +74,84 @@ export function RunningPage() {
     saveRunningBlock(null, newDraft(start, end), { onSuccess: (b) => openBuilder(b.id) })
   }
 
+  // Hero + stat strip (prototype #page-futas): `Hét cur/weeks` over the active
+  // block, and the three live cells beneath it. With NO active block the big
+  // number is `—` (never a fabricated 0/0) and the strip switches to the
+  // library's own honest counts — the prototype's own no-block branch.
+  const activeWeek = activeRunningBlock?.structure.weeks.find(
+    (w) => w.weekNumber === activeRunningBlock.currentWeek,
+  )
+  const prescribed = activeWeek?.sessions ?? []
+  const doneThisWeek = prescribed.filter((s) =>
+    runSessions.some(
+      (l) => l.blockId === activeRunningBlock?.id
+        && l.weekNumber === activeRunningBlock?.currentWeek
+        && l.sessionKey === s.key,
+    ),
+  ).length
+
   return (
-    <>
-      {/* Header — `＋ Új terv` chip lives on the Tervek (blocks) segment */}
-      <div className="page-header">
-        <div>
-          <Eyebrow brand>Edzés · Futás</Eyebrow>
-          <PageTitle style={{ marginTop: 4 }}>Intervallum</PageTitle>
-        </div>
+    <MozaikPage tone="sky">
+      <PageHead onBack={() => navigate('/train')} label="‹ Edzés">
+        {/* `＋ Új terv` chip lives on the Tervek (blocks) segment */}
         {view === 'blocks' && (
-          <button type="button" onClick={createBlock} className="pgact">
-            <Icon name="plus" size={14} /> Új terv
+          <button type="button" onClick={createBlock} className="mz-pgact">
+            ＋ Új terv
           </button>
         )}
-      </div>
+      </PageHead>
+      {/* One-shot entrance choreography, re-armed on a segment switch. */}
+      <EntranceGroup replayKey={view}>
+        <div className="mz-page-hero">
+          <div className="mz-hero-nm">Futás</div>
+          <div className="mz-hero-row">
+            <ClayIcon name="i-futas" size={85} />
+            <span className="mz-bignum">
+              {activeRunningBlock ? `${activeRunningBlock.currentWeek}/${activeRunningBlock.weeks}` : '—'}
+            </span>
+          </div>
+        </div>
+        <PageBody>
+          <div className="mz-statstrip rise" style={{ '--d': '30ms' } as React.CSSProperties}>
+            {activeRunningBlock ? (
+              <>
+                <StatCell value={`${doneThisWeek}/${prescribed.length}`} label="e heti edzés" />
+                <StatCell value={`${prescribed.length}×`} label="/ hét" />
+                <StatCell value={`${activeRunningBlock.weeks} hét`} label="blokk" />
+              </>
+            ) : (
+              <>
+                <StatCell value={0} label="aktív terv" />
+                <StatCell value={runningBlocks.filter((b) => b.status === 'planned').length} label="tervezett" />
+                <StatCell value={runSessions.length} label="logolt futás" />
+              </>
+            )}
+          </div>
 
-      {/* View switcher */}
-      {/* Same `.segtabs` control Sport uses (mezo-setx.6.5): the selected segment
-          speaks PRIMARY, because ADR 0018 D5 keeps the run sky in the data-viz
-          band and off buttons. */}
-      <div className="segtabs" style={{ padding: '0 24px 12px' }}>
-        {SUB_VIEWS.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            aria-pressed={view === v.id}
-            onClick={() => setView(v.id)}
-            className="segtab"
-          >
-            {v.label}
-          </button>
-        ))}
-      </div>
+          {/* View switcher */}
+          {/* Same `.segtabs` control Sport uses (mezo-setx.6.5): the selected segment
+              speaks PRIMARY, because ADR 0018 D5 keeps the run sky in the data-viz
+              band and off buttons. */}
+          <div className="segtabs rise" style={{ '--d': '60ms', marginTop: 12 } as React.CSSProperties}>
+            {SUB_VIEWS.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                aria-pressed={view === v.id}
+                onClick={() => setView(v.id)}
+                className="segtab"
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
 
-      {view === 'week' && <RunWeekView block={activeRunningBlock} sessions={runSessions} pending={runningPending} onLog={logRunSession} />}
-      {view === 'log' && <RunLogView sessions={runSessions} />}
-      {view === 'blocks' && <RunBlocksView blocks={runningBlocks} onOpen={openBuilder} />}
-    </>
+          {view === 'week' && <RunWeekView block={activeRunningBlock} sessions={runSessions} pending={runningPending} onLog={logRunSession} />}
+          {view === 'log' && <RunLogView sessions={runSessions} />}
+          {view === 'blocks' && <RunBlocksView blocks={runningBlocks} onOpen={openBuilder} />}
+        </PageBody>
+      </EntranceGroup>
+    </MozaikPage>
   )
 }
 
@@ -124,7 +170,7 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
   // synchronous (pending === false) so this never triggers there.
   if (pending) {
     return (
-      <div style={{ padding: '8px 24px 16px' }}>
+      <div style={{ paddingTop: 8 }}>
         <GhostState lines={3} message="Betöltés…" />
       </div>
     )
@@ -132,7 +178,7 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
 
   if (!block) {
     return (
-      <div style={{ padding: '8px 24px 16px' }}>
+      <div style={{ paddingTop: 8 }}>
         <GhostState lines={3} message="Nincs aktív futóterved — a Tervek fülön aktiválj egyet." />
       </div>
     )
@@ -146,10 +192,13 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
     isDone(s.key) ? 'done' : s.dayOfWeek === today ? 'today' : s.dayOfWeek < today ? 'past' : 'future'
 
   return (
-    <div style={{ padding: '0 24px 16px' }}>
-      {/* Hero */}
+    <div style={{ paddingTop: 8 }}>
+      {/* Block card — the prototype's `blokk-kártya`: goal eyebrow, phase label
+          and the week strip. The `Hét cur/weeks` big number and the stat row it
+          used to repeat now live in the PAGE hero + strip (mezo-d20.11), so the
+          number is stated once. */}
       <div
-        className="card"
+        className="card rise"
         style={{
           padding: 18,
           background:
@@ -158,7 +207,8 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
           position: 'relative',
           overflow: 'hidden',
           marginBottom: 16,
-        }}
+          '--d': '90ms',
+        } as React.CSSProperties}
       >
         <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: RUN }} />
         <span
@@ -174,57 +224,49 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
         />
         <div style={{ position: 'relative' }}>
           <span className="eyebrow" style={{ color: RUN }}>{block.goal || 'Intervallum-blokk'}</span>
-          <div style={{ marginTop: 6 }}>
-            <Display size="lg">Hét {block.currentWeek} / {block.weeks}</Display>
-          </div>
           {week?.phaseLabel && (
-            <span className="text-secondary mt-sm" style={{ fontSize: 14 }}>{week.phaseLabel}</span>
+            <div className="text-secondary" style={{ fontSize: 14, marginTop: 4 }}>{week.phaseLabel}</div>
           )}
-
           <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
-
-          {/* Stat row */}
-          <div
-            className="row gap-md mt-lg"
-            style={{ paddingTop: 14, borderTop: '1px solid var(--divider)' }}
-          >
-            <RunStat val={`${block.weeks}`} unit="hét" label="blokk" />
-            <RunStat val={`${prescribed.length}`} unit="×/hét" label="edzés" />
-            <RunStat val="RPE" label="intervallum cél" />
-          </div>
         </div>
       </div>
 
       {/* This week's sessions */}
       {week ? (
         <>
-          <div style={{ marginBottom: 12 }}><Eyebrow>E hét · {prescribed.length} edzés</Eyebrow></div>
+          <div className="rise" style={{ marginBottom: 12, '--d': '120ms' } as React.CSSProperties}>
+            <Eyebrow>E hét · {prescribed.length} edzés</Eyebrow>
+          </div>
           <div className="col gap-sm">
-            {prescribed.map((s) => {
+            {prescribed.map((s, i) => {
               const cta = ctaStateFor(s)
               const loggable = cta === 'today' || cta === 'past'
               return (
-                <RunSessionCard
-                  key={s.key}
-                  session={s}
-                  ctaState={cta}
-                  onLog={loggable ? () => setLogCtx({
-                    blockId: block.id,
-                    weekNumber: block.currentWeek,
-                    sessionKey: s.key,
-                    label: s.label,
-                    isSprint: s.kind === 'sprint',
-                    // Sprint carries an explicit round count; pyramid has none (it's a
-                    // ladder), so the honest default is its prescribed segment count.
-                    defaultRounds: s.rounds ?? s.segments.filter((seg) => seg.type === 'work').length,
-                    date: dateForDayOfWeek(s.dayOfWeek),
-                  }) : undefined}
-                />
+                <div key={s.key} className="rise" style={{ '--d': `${150 + i * 45}ms` } as React.CSSProperties}>
+                  <RunSessionCard
+                    session={s}
+                    ctaState={cta}
+                    onLog={loggable ? () => setLogCtx({
+                      blockId: block.id,
+                      weekNumber: block.currentWeek,
+                      sessionKey: s.key,
+                      label: s.label,
+                      isSprint: s.kind === 'sprint',
+                      // Sprint carries an explicit round count; pyramid has none (it's a
+                      // ladder), so the honest default is its prescribed segment count.
+                      defaultRounds: s.rounds ?? s.segments.filter((seg) => seg.type === 'work').length,
+                      date: dateForDayOfWeek(s.dayOfWeek),
+                    }) : undefined}
+                  />
+                </div>
               )
             })}
           </div>
           {/* Derived cross-load → gym leg volume (static in Phase 2) */}
-          <div style={{ marginTop: 16 }}>
+          <div
+            className="rise"
+            style={{ marginTop: 16, '--d': `${150 + prescribed.length * 45}ms` } as React.CSSProperties}
+          >
             <RunCrossLoadCard />
           </div>
         </>
@@ -246,28 +288,14 @@ function RunWeekView({ block, sessions: logs, pending, onLog }: {
   )
 }
 
-// Compact hero stat (mockup .stat): Antonio value + optional mono unit + mono label.
-function RunStat({ val, unit, label }: { val: string; unit?: string; label: string }) {
-  return (
-    <div className="col">
-      <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, color: 'var(--text-primary)' }}>
-        {val}
-        {unit && (
-          <span style={{ fontSize: 14, color: 'var(--text-tertiary)', marginLeft: 2 }}>{unit}</span>
-        )}
-      </div>
-      <span className="statstrip-l" style={{ marginTop: 3 }}>
-        {label}
-      </span>
-    </div>
-  )
-}
+// (RunStat retired with the duplicated in-card stat row, mezo-d20.11 — the
+//  page-level `.mz-statstrip` + StatCell is the one stat vocabulary now.)
 
 // === Napló: logged run sessions, newest first ===
 function RunLogView({ sessions }: { sessions: RunSessionLogResponse[] }) {
   if (sessions.length === 0) {
     return (
-      <div style={{ padding: '8px 24px 16px' }}>
+      <div style={{ paddingTop: 8 }}>
         <span className="text-meta-sm text-tertiary">
           Még nincs logolt futás.
         </span>
@@ -276,12 +304,18 @@ function RunLogView({ sessions }: { sessions: RunSessionLogResponse[] }) {
   }
   const ordered = [...sessions].sort((a, b) => b.date.localeCompare(a.date))
   return (
-    <div style={{ padding: '8px 24px 16px' }}>
-      <RunHrTrend logs={ordered} />
-      <div style={{ marginBottom: 12 }}><Eyebrow>Utolsó {ordered.length} futás</Eyebrow></div>
+    <div style={{ paddingTop: 8 }}>
+      <div className="rise" style={{ '--d': '30ms' } as React.CSSProperties}>
+        <RunHrTrend logs={ordered} />
+      </div>
+      <div className="rise" style={{ marginBottom: 12, '--d': '60ms' } as React.CSSProperties}>
+        <Eyebrow>Utolsó {ordered.length} futás</Eyebrow>
+      </div>
       <div className="col gap-sm">
-        {ordered.map((s) => (
-          <RunLogCard key={s.id} session={s} />
+        {ordered.map((s, i) => (
+          <div key={s.id} className="rise" style={{ '--d': `${90 + i * 45}ms` } as React.CSSProperties}>
+            <RunLogCard session={s} />
+          </div>
         ))}
       </div>
     </div>
@@ -372,37 +406,53 @@ function RunBlocksView({ blocks, onOpen }: { blocks: RunningBlockResponse[]; onO
 
   if (blocks.length === 0) {
     return (
-      <div style={{ padding: '8px 24px 16px' }}>
+      <div style={{ paddingTop: 8 }}>
         <GhostState lines={2} message="Még nincs futóterved — itt fognak élni a blokkjaid." />
       </div>
     )
   }
 
+  // One running stagger index across the three status sections, so the whole
+  // library reads as a single entrance rather than three restarts.
+  let d = 30
+  const nextD = () => { const v = d; d += 45; return v }
   return (
     <>
-      <div style={{ padding: '8px 24px 16px' }}>
-        <div style={{ marginBottom: 12 }}><Eyebrow>Aktív · {active.length}</Eyebrow></div>
+      <div style={{ paddingTop: 8 }}>
+        <div className="rise" style={{ marginBottom: 12, '--d': `${nextD()}ms` } as React.CSSProperties}>
+          <Eyebrow>Aktív · {active.length}</Eyebrow>
+        </div>
         <div className="col gap-sm">
           {active.map((b) => (
-            <RunActiveBlockCard key={b.id} block={b} onOpen={onOpen} />
+            <div key={b.id} className="rise" style={{ '--d': `${nextD()}ms` } as React.CSSProperties}>
+              <RunActiveBlockCard block={b} onOpen={onOpen} />
+            </div>
           ))}
         </div>
       </div>
 
-      <div style={{ padding: '0 24px 16px' }}>
-        <div style={{ marginBottom: 12 }}><Eyebrow>Tervezett · {planned.length}</Eyebrow></div>
+      <div style={{ paddingTop: 4 }}>
+        <div className="rise" style={{ marginBottom: 12, '--d': `${nextD()}ms` } as React.CSSProperties}>
+          <Eyebrow>Tervezett · {planned.length}</Eyebrow>
+        </div>
         <div className="col gap-sm">
           {planned.map((b) => (
-            <RunCompactBlockCard key={b.id} block={b} onOpen={onOpen} />
+            <div key={b.id} className="rise" style={{ '--d': `${nextD()}ms` } as React.CSSProperties}>
+              <RunCompactBlockCard block={b} onOpen={onOpen} />
+            </div>
           ))}
         </div>
       </div>
 
-      <div style={{ padding: '0 24px 24px' }}>
-        <div style={{ marginBottom: 12 }}><Eyebrow>Archív · {archived.length}</Eyebrow></div>
+      <div style={{ paddingTop: 4 }}>
+        <div className="rise" style={{ marginBottom: 12, '--d': `${nextD()}ms` } as React.CSSProperties}>
+          <Eyebrow>Archív · {archived.length}</Eyebrow>
+        </div>
         <div className="col gap-sm">
           {archived.map((b) => (
-            <RunCompactBlockCard key={b.id} block={b} onOpen={onOpen} />
+            <div key={b.id} className="rise" style={{ '--d': `${nextD()}ms` } as React.CSSProperties}>
+              <RunCompactBlockCard block={b} onOpen={onOpen} />
+            </div>
           ))}
         </div>
       </div>

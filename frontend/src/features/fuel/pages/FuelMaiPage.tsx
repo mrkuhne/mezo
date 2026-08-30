@@ -10,7 +10,7 @@
 // The settings entry the dropdown owned moves onto this hub's Fuel-beállítások band.
 //
 // Anatomy top→bottom:
-//   header recipe (date · bell · avatar)
+//   the shell fejléc (app/AppHeader.tsx, mezo-atry)
 //   keret-hero — ONE number, the kcal consumed today; day-bar + gold now-marker;
 //     Alap/Mozgás/Cél chips that VANISH on static energy; 5 rings, víz = a button
 //   window swimlane — one scroll-snap tile per eating window, no header (iterations §1)
@@ -23,7 +23,7 @@
 // vanishes rather than fabricating a number, an unscored meal reads "✨ folyamatban",
 // a missed window says "Pótold", never shame.
 //
-// Retired here (component files stay in-tree until F8): DoneWindowsCapsule,
+// Retired and DELETED in F8 (mezo-d20.9.1): DoneWindowsCapsule,
 // WindowIsland + the `?w=` selection URL state, EmptyDayIsland, the `.mai-logrow`
 // standing row (absorbed by the lane's trailing out-of-window tile), the sky shell.
 // ============================================================
@@ -33,9 +33,8 @@ import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import type { FuelMeal, MealSlot } from '@/data/types'
 import {
   useFuelDay, useFuelTimeline, useFuelWeek, useMedication, usePantry, useRecipes,
-  useStackDay, useToday, useTodayScenario, useWaterActions, useCompanionFeed, resolveBriefing,
+  useStackDay, useTodayScenario, useWaterActions, useCompanionFeed, resolveBriefing,
 } from '@/data/hooks'
-import { useNotificationFeed } from '@/data/notification/feedHooks'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { buildKeretHero, aiAverage } from '@/features/fuel/logic/keretHero'
 import { buildWindowLane, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
@@ -56,11 +55,9 @@ import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
 
 export function FuelMaiPage() {
   const navigate = useNavigate()
-  const { today } = useToday()
   const { fuel } = useFuelDay()
   const { plan, budget, nowHHmm, energyBreakdown } = useFuelTimeline()
   const { logWater } = useWaterActions()
-  const { items: notifications } = useNotificationFeed()
 
   const [logOpen, setLogOpen] = useState(false)
   // The AI path is no longer a separate sheet (mezo-d20.4.2): it opens the SAME unified
@@ -73,7 +70,6 @@ export function FuelMaiPage() {
   const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [ntfOpen, setNtfOpen] = useState(false)
 
   // ── keret-hero (unchanged VM, v3 face) ────────────────────────────────
   // Static-fallback energy (real mode, no BMR): base equals the FULL segment kcal and
@@ -133,8 +129,6 @@ export function FuelMaiPage() {
   const todayAvg = aiAverage(fuel.meals.map(m => (m.score != null ? Math.round(m.score * 100) : null)))
   const naploLine = todayAvg == null ? undefined : `AI-átlag ${todayAvg}`
 
-  const unreadNtf = notifications.filter(n => n.readAt === null).length
-
   // ── actions ───────────────────────────────────────────────────────────
   const openLog = (prefill: LogFlowPrefill = null, slot?: MealSlot) => {
     setLogPrefill(prefill)
@@ -160,40 +154,7 @@ export function FuelMaiPage() {
 
   return (
     <div className="fh-hub">
-      <div className="nap-head">
-        <div className="nap-head-grow">
-          <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
-        </div>
-        <div className="nap-dpwrap">
-          <button type="button" className="nap-roundbtn" aria-expanded={ntfOpen}
-            aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
-            onClick={() => setNtfOpen(o => !o)}>
-            <ClayIcon name="i-ertesites" size={21} />
-            {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
-          </button>
-          {ntfOpen && (
-            <div className="nap-ntfmenu" role="menu">
-              <span className="mz-eyebrow">Értesítések · ma</span>
-              {notifications.slice(0, 3).map(n => (
-                <button key={n.id} type="button" role="menuitem" className="nap-ntfrow"
-                  onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
-                  <span className="nap-ntf-t">{n.title}</span>
-                  <span className="nap-ntf-x">{n.body}</span>
-                </button>
-              ))}
-              <button type="button" role="menuitem" className="nap-ntffoot"
-                onClick={() => { setNtfOpen(false); navigate('/me/ertesitesek') }}>
-                Összes értesítés ›
-              </button>
-            </div>
-          )}
-        </div>
-        <button type="button" className="nap-avatar" aria-label="Profil" onClick={() => navigate('/me')}>
-          <ClayIcon name="i-mezo" size={19} />
-        </button>
-      </div>
-
-      <EntranceGroup className="fh-panel">
+      <EntranceGroup className="mz-panel-stack">
         <div className="fh-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <KeretHero
             vm={keretHeroVm}

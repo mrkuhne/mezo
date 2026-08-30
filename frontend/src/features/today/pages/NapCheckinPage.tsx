@@ -80,7 +80,7 @@ export function NapCheckinPage() {
 
   return (
     <MozaikPage tone="rose">
-      <PageHead onBack={() => navigate(-1)} />
+      <PageHead onBack={() => navigate(-1)} label="‹ Ma" />
       <PageHero icon="i-checkin" big={`${done}/${checkins.length}`} name="Check-in"
         sub="négy pillanatkép a napodról" />
       <PageBody principle="A kimaradt slot nem vész el — Pótold bármikor, a társ nem büntet.">

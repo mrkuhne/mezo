@@ -1,22 +1,52 @@
 // ============================================================
 // Mezo · useMinuteTick — a `Date` that re-renders its subscriber once a minute (mezo-dhzk).
-// Mirrors the `useWindDownPhase` ticking idiom (useWindDownPhase.ts:20-29): `useState(() =>
-// new Date())` seeds synchronously so the first render already has a real `now`, and a single
-// `setInterval` (empty deps — one timer for the component's lifetime) advances it. The needs
-// rings decay continuously, so a 60s cadence keeps the displayed pct visibly live without
-// re-rendering on every tick of a faster clock.
+// EGYETLEN, MODUL-SZINTŰ óra (mezo-atry): korábban minden hívó saját `setInterval`-t
+// indított a saját mountjakor, így két egyidejű fogyasztó (a shell fejléce és a Nap oldal)
+// akár 60 s-ot csúszhatott egymáshoz képest — egy napszak-határon MÁS napszakot vezettek
+// le ugyanabban a pillanatban. Egy `useSyncExternalStore` fölé tett közös óra megszünteti a
+// fáziscsúszást (és mellesleg egyetlen timert tart életben): minden fogyasztó UGYANAZT a
+// `Date` példányt kapja, tehát a rá épülő `useMemo`-k is stabilak.
+// A needs-ringek folyamatosan apadnak, ezért a 60 s-os kadencia élőn tartja a kijelzett
+// pct-t anélkül, hogy egy sűrűbb óra minden ütemére újrarenderelnénk.
 // ============================================================
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
 const TICK_MS = 60_000
 
-export function useMinuteTick(): Date {
-  const [now, setNow] = useState(() => new Date())
+let now = new Date()
+let timer: ReturnType<typeof setInterval> | null = null
+const subscribers = new Set<() => void>()
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), TICK_MS)
-    return () => clearInterval(id)
-  }, [])
+function subscribe(onChange: () => void): () => void {
+  subscribers.add(onChange)
+  if (timer === null) {
+    timer = setInterval(() => {
+      now = new Date()
+      for (const s of subscribers) s()
+    }, TICK_MS)
+  }
+  return () => {
+    subscribers.delete(onChange)
+    if (subscribers.size === 0 && timer !== null) {
+      clearInterval(timer)
+      timer = null
+    }
+  }
+}
 
+const minuteOf = (ms: number) => Math.floor(ms / TICK_MS)
+
+/** `getSnapshot` MUSZÁJ ugyanazt a példányt adja egy renderen belül (különben React ciklusba
+ *  esik), ezért a gyorsítótárazott `now` csak akkor frissül, ha épp NINCS feliratkozó (tehát
+ *  a timer sem jár) ÉS a fali óra másik percben tart — bármelyik irányban: felfüggesztett tab
+ *  után előre, teszt `setSystemTime` után akár vissza. A frissítés idempotens: a második
+ *  hívásra a feltétel már nem teljesül, tehát egy renderen belül egyetlen példány jár körbe. */
+function getSnapshot(): Date {
+  const t = Date.now()
+  if (subscribers.size === 0 && minuteOf(t) !== minuteOf(now.getTime())) now = new Date(t)
   return now
+}
+
+export function useMinuteTick(): Date {
+  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }

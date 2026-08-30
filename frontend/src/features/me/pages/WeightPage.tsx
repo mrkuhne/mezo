@@ -52,13 +52,13 @@ export function WeightPage() {
         <WeightHero log={weightLog} weightTrends={weightTrends} goal={goal} />
 
         <PageBody>
-          <StatStrip>
+          <StatStrip className="rise">
             <StatCell value={latest === null ? '—' : latest.toFixed(1)} label="Jelenleg" />
             <StatCell value={<span style={{ color: statRateColor(rate, goal?.kind) }}>{fmtSigned(rate)}</span>} label="7-nap/hét" />
             <StatCell value={eta === null ? '—' : `${eta}h`} label="ETA" />
           </StatStrip>
 
-          <div className="row gap-xs" style={{ marginTop: 12, marginBottom: 10 }}>
+          <div className="row gap-xs rise" style={{ '--d': '40ms', marginTop: 12, marginBottom: 10 } as React.CSSProperties}>
             {PERIODS.map(p => (
               <button
                 key={p}
@@ -71,9 +71,11 @@ export function WeightPage() {
             ))}
           </div>
 
-          <WeightTrendChart log={weightLog} goalResponse={goalResponse} period={period} />
+          <div className="rise" style={{ '--d': '80ms' } as React.CSSProperties}>
+            <WeightTrendChart log={weightLog} goalResponse={goalResponse} period={period} />
+          </div>
 
-          <div className="wt-lsec">
+          <div className="wt-lsec rise" style={{ '--d': '120ms' } as React.CSSProperties}>
             <span className="mz-eyebrow">Heti előzmény</span>
             {weeks.length > 0 && (
               <span className="wt-cnt">{Math.min(visibleWeeks, weeks.length)} / {weeks.length} hét</span>
@@ -87,11 +89,12 @@ export function WeightPage() {
               expanded={effectiveExpanded === week.startIso}
               onToggle={() => setExpandedIso(effectiveExpanded === week.startIso ? null : week.startIso)}
               goalKind={goal?.kind}
-              delayMs={40 + i * 30}
+              delayMs={150 + i * 40}
             />
           ))}
           {weeks.length > visibleWeeks && (
-            <button type="button" className="mzp-new" onClick={() => setVisibleWeeks(v => v + WEEK_STEP)}>
+            <button type="button" className="mzp-new rise" style={{ '--d': '260ms' } as React.CSSProperties}
+              onClick={() => setVisibleWeeks(v => v + WEEK_STEP)}>
               Régebbi hetek <Icon name="chevron-down" size={12} />
             </button>
           )}

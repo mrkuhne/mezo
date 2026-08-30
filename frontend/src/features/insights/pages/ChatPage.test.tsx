@@ -27,7 +27,7 @@ describe('ChatPage (mock mode)', () => {
   test('seeds the conversation and the composer', () => {
     renderPage()
     expect(screen.getByText(/Jó reggelt\. Tegnap a Push Day/)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Mondj valamit...')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Mondj valamit…')).toBeInTheDocument()
     // assistant tool-transparency chip
     expect(screen.getByText('get_recent_workouts(days=3)')).toBeInTheDocument()
     // V1.3: the mock seed never carries a degraded answer — no badge
@@ -36,7 +36,7 @@ describe('ChatPage (mock mode)', () => {
 
   test('the composer wraps instead of scrolling sideways (mezo-a837)', () => {
     renderPage()
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     // A textarea az, ami tördel — egy <input> vízszintesen csúsztatná el a hosszú üzenetet.
     expect(input.tagName).toBe('TEXTAREA')
     expect(input).toHaveAttribute('rows', '1')
@@ -44,7 +44,7 @@ describe('ChatPage (mock mode)', () => {
 
   test('Shift+Enter breaks a line instead of sending (mezo-a837)', () => {
     renderPage()
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Első sor' } })
     fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })
     // nem ment el: a piszkozat a mezőben marad, a szálban nem jelenik meg buborékként
@@ -66,7 +66,7 @@ describe('ChatPage (mock mode)', () => {
     // ImportItemSheet.test.tsx for the documented environment issue.
     vi.useFakeTimers()
     renderPage()
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(screen.getByText('Fáradt vagyok')).toBeInTheDocument()
@@ -165,7 +165,7 @@ describe('ChatPage (real mode)', () => {
   test('sending a message streams the reply into the thread', async () => {
     renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     // waitFor + getByText (not findByText): the optimistic turn bubble is replaced by the
@@ -187,7 +187,7 @@ describe('ChatPage (real mode)', () => {
     // the persisted history's first answer already discloses what it recalled
     expect(screen.getByText(/Emlékek · 2/)).toBeInTheDocument()
 
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
@@ -230,7 +230,7 @@ describe('ChatPage (real mode)', () => {
 
     renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
@@ -275,7 +275,7 @@ describe('ChatPage (real mode)', () => {
 
     const { container } = renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
@@ -309,7 +309,7 @@ describe('ChatPage (real mode)', () => {
     renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
     expect(screen.queryByText('nem ellenőrzött')).not.toBeInTheDocument()
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Mennyit emeljek?' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(screen.getByText('bizonytalan válasz')).toBeInTheDocument())
@@ -335,7 +335,7 @@ describe('ChatPage (real mode)', () => {
     }))
     const { container } = renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Hogy állok?' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
@@ -362,7 +362,7 @@ describe('ChatPage (real mode)', () => {
       )
     }))
     renderPage('/mezo/chat?c=new')
-    const input = await screen.findByPlaceholderText('Mondj valamit...')
+    const input = await screen.findByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(created).toHaveLength(1))
@@ -405,7 +405,7 @@ describe('ChatPage (real mode)', () => {
     // The MSW history is assistant / user / assistant — two votable answers.
     await waitFor(() => expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2))
 
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
@@ -445,6 +445,6 @@ describe('ChatPage (real mode)', () => {
       HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND', message: 'off' }], { status: 404 })))
     renderPage()
     expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva/)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Mondj valamit...')).toBeDisabled()
+    expect(screen.getByPlaceholderText('Mondj valamit…')).toBeDisabled()
   })
 })

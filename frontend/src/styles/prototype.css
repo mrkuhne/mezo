@@ -252,7 +252,67 @@
   --mz-fh-add-bd: rgba(43, 33, 24, 0.2);
   --mz-fh-kcal-bg: rgba(255, 255, 255, 0.88);
   --mz-fh-ringhole: #FFFDF8;
+
+  /* Heti pontszám-sávok (mezo-d20.6.10) — en-body.html .sc-* + ringTo(), verbatim.
+     Three bands only, and the lowest is terracotta: the guardrail is "never red". */
+  --mz-sc-track: rgba(43, 33, 24, 0.09);
+  --mz-sc-hi-1: #A9C69A;  --mz-sc-hi-2: #6E8B5E;  --mz-sc-hi-ring: #8FAF7E;  --mz-sc-hi-ink: #6E8B5E;
+  --mz-sc-mid-1: #E5C46B; --mz-sc-mid-2: #B58E28; --mz-sc-mid-ring: #C9962E; --mz-sc-mid-ink: #B58E28;
+  --mz-sc-low-1: #F0A88A; --mz-sc-low-2: #D2704C; --mz-sc-low-ring: #D2704C; --mz-sc-low-ink: #D2704C;
+  --mz-sc-non-ink: #A2958A;
+  --mz-wk-cur-ring: rgba(138, 118, 204, 0.75);
+
+  /* Heti elemzés-oldal (mezo-d20.6.10) — en-body.html #page-hanaly `.revcard` /
+     `.float3d` / `.hlch` values, shadows ×1.18. `Minta`/`Emlék` reuse the lav/rose
+     cell inks (identical hexes); only the gold + sky kickers need their own. */
+  --mz-hl-gold: #A8801F;
+  --mz-hl-sky: #33749C;
+  --mz-wka-revbd: #8A76CC;
+  --mz-wka-revbg: linear-gradient(150deg, #F3F0FC, #FDFCFF);
+  --mz-wka-revshadow: 0 24px 40px -17px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-wka-cardshadow: 0 21px 38px -19px rgba(43, 33, 24, 0.32), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mz-wka-hlshadow: 0 5px 12px -7px rgba(43, 33, 24, 0.3);
+  /* Heti nap-mozaik + nap-oldal (mezo-d20.6.10) — the four sub-score hues
+     (en-body.html `SUBC`) and the day tile's dashed/thin surfaces. */
+  --mz-wk-sub-sleep: #4E8FB8;
+  --mz-wk-sub-fuel: #8FAF7E;
+  --mz-wk-sub-checkin: #C46FA0;
+  --mz-wk-sub-activity: #FF6B4A;
+  --mz-wk-bar-sage: linear-gradient(90deg, #A9C69A, #8FAF7E);
+  --mz-wk-thin-bg: rgba(255, 255, 255, 0.5);
+  --mz-wk-navt-bg: rgba(255, 255, 255, 0.7);
+  /* Heti · tanulságok + felfedezések (mezo-d20.6.10) — en-body.html .lesst / .dsct /
+     .ghost hexes verbatim. The prediction tile's wash is the lighter sage the
+     prototype uses there, which is already tokenized as --mz-qdone-bg. */
+  --mz-wkl-off-bg: rgba(255, 255, 255, 0.5);
+  --mz-wkl-ghost-bg: rgba(255, 255, 255, 0.55);
+  --mz-ghostbtn-bg: rgba(43, 33, 24, 0.06);
+  --mz-wkd-life-ink: #33749C;
+  --mz-wkd-glow-lav: rgba(93, 79, 160, 0.4);
+  --mz-wkd-glow-gold: rgba(181, 126, 20, 0.4);
+  --mz-wkd-glow-sky: rgba(78, 143, 184, 0.4);
+  --mz-wkd-glow-rose: rgba(142, 63, 111, 0.38);
+  --mz-wkd-glow-sage: rgba(110, 139, 94, 0.4);
   --mz-fh-now-shadow: 0 24px 40px -17px rgba(255, 107, 74, 0.42), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+
+  /* Heti hub-csempék (mezo-d20.6.10) — en-body.html hub() inline washes/glows verbatim.
+     The four view tiles are LIGHTER than the generic --mz-wash-* family (the hub reads as
+     one calm surface with four tinted panes), so they get their own tokens. */
+  --mz-wkh-rev-wash:  linear-gradient(150deg, #F3F0FC, #FDFCFF);
+  --mz-wkh-rev-bd:    #8A76CC;
+  --mz-wkh-rev-glow:  rgba(93, 79, 160, 0.4);
+  --mz-wkh-less-wash: linear-gradient(150deg, #FFF1D6, #FFFAF0);
+  --mz-wkh-less-glow: rgba(181, 126, 20, 0.4);
+  --mz-wkh-days-wash: linear-gradient(150deg, #E9F1E2, #F7FBF3);
+  --mz-wkh-days-glow: rgba(110, 139, 94, 0.42);
+  --mz-wkh-disc-wash: linear-gradient(150deg, #DFEDF5, #F7FBFD);
+  --mz-wkh-disc-glow: rgba(78, 143, 184, 0.4);
+  --mz-wkh-dot-pattern:    #8A76CC;
+  --mz-wkh-dot-fact:       #C9962E;
+  --mz-wkh-dot-life:       #4E8FB8;
+  --mz-wkh-dot-memoir:     #C46FA0;
+  --mz-wkh-dot-prediction: #8FAF7E;
+  --mz-wkh-hair: rgba(43, 33, 24, 0.14);
 
   /* Receptek v2 (mezo-d20.4.4) — category band gradients (fuel-body.html #page-recept
      card seeds, verbatim) + the NOVA dot ramp. NOVA 4 stays terracotta, never red. */
@@ -263,6 +323,13 @@
   --mz-nova-1:   #8FAF7E;
   --mz-nova-mid: #C9962E;
   --mz-nova-4:   #A8462E;
+
+  /* Nap hub 1:1 audit (mezo-d20.11) — nap-head.html tile internals: the water
+     bar's track/fill, the sage tick fill and the „nehéz nap" horgony wash. */
+  --mz-water-track: #D8E7F0;
+  --mz-water-fill:  linear-gradient(90deg, #7FB6D9, #4E8FB8);
+  --mz-tickfill:    linear-gradient(135deg, #8FAF7E, #6E8B5E);
+  --mz-wash-anchor: linear-gradient(140deg, #F7EEE2, #FFFBF6 75%);
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -436,7 +503,61 @@
   --mz-fh-add-bd: color-mix(in srgb, var(--text-primary) 20%, transparent);
   --mz-fh-kcal-bg: color-mix(in srgb, var(--surface-card) 88%, transparent);
   --mz-fh-ringhole: var(--surface-card);
+
+  /* Heti pontszám-sávok — dark ("Pulse") derivations on the dv ramp */
+  --mz-sc-track: rgba(245, 239, 230, 0.1);
+  --mz-sc-hi-1: color-mix(in srgb, var(--dv-sage) 70%, #fff);  --mz-sc-hi-2: var(--dv-sage);
+  --mz-sc-hi-ring: var(--dv-sage);  --mz-sc-hi-ink: var(--dv-sage);
+  --mz-sc-mid-1: color-mix(in srgb, var(--dv-amber) 70%, #fff); --mz-sc-mid-2: var(--dv-amber);
+  --mz-sc-mid-ring: var(--dv-amber); --mz-sc-mid-ink: var(--dv-amber);
+  --mz-sc-low-1: color-mix(in srgb, var(--dv-coral) 70%, #fff); --mz-sc-low-2: var(--dv-coral);
+  --mz-sc-low-ring: var(--dv-coral); --mz-sc-low-ink: var(--dv-coral);
+  --mz-sc-non-ink: var(--text-muted);
+  --mz-wk-cur-ring: color-mix(in srgb, var(--dv-lav) 75%, transparent);
+
+  /* Heti elemzés-oldal — dark ("Pulse") derivations on the dv ramp */
+  --mz-hl-gold: var(--dv-amber);
+  --mz-hl-sky: var(--dv-sky);
+  --mz-wka-revbd: var(--dv-lav);
+  --mz-wka-revbg: var(--mz-wash-lav);
+  --mz-wka-revshadow: var(--mz-shadow);
+  --mz-wka-cardshadow: var(--mz-shadow);
+  --mz-wka-hlshadow: none;
+  --mz-wk-sub-sleep: var(--dv-sky);
+  --mz-wk-sub-fuel: var(--dv-sage);
+  --mz-wk-sub-checkin: var(--dv-rose);
+  --mz-wk-sub-activity: var(--primary-base);
+  --mz-wk-bar-sage: linear-gradient(90deg, color-mix(in srgb, var(--dv-sage) 55%, var(--surface-card)), var(--dv-sage));
+  --mz-wk-thin-bg: color-mix(in srgb, var(--surface-card) 50%, transparent);
+  --mz-wk-navt-bg: color-mix(in srgb, var(--surface-card) 70%, transparent);
+  /* Heti · tanulságok + felfedezések — dark ("Pulse") derivations on the dv ramp */
+  --mz-wkl-off-bg: color-mix(in srgb, var(--surface-card) 50%, transparent);
+  --mz-wkl-ghost-bg: color-mix(in srgb, var(--surface-card) 55%, transparent);
+  --mz-ghostbtn-bg: var(--surface-recess);
+  --mz-wkd-life-ink: var(--dv-sky);
+  --mz-wkd-glow-lav: color-mix(in srgb, var(--dv-lav) 40%, transparent);
+  --mz-wkd-glow-gold: color-mix(in srgb, var(--dv-amber) 40%, transparent);
+  --mz-wkd-glow-sky: color-mix(in srgb, var(--dv-sky) 40%, transparent);
+  --mz-wkd-glow-rose: color-mix(in srgb, var(--dv-rose) 38%, transparent);
+  --mz-wkd-glow-sage: color-mix(in srgb, var(--dv-sage) 40%, transparent);
   --mz-fh-now-shadow: var(--mz-shadow-most);
+
+  /* Heti hub-csempék — dark ("Pulse") derivations on the dv ramp */
+  --mz-wkh-rev-wash:  linear-gradient(150deg, color-mix(in srgb, var(--dv-lav) 16%, var(--surface-card)), var(--surface-card));
+  --mz-wkh-rev-bd:    var(--dv-lav);
+  --mz-wkh-rev-glow:  color-mix(in srgb, var(--dv-lav) 40%, transparent);
+  --mz-wkh-less-wash: linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 16%, var(--surface-card)), var(--surface-card));
+  --mz-wkh-less-glow: color-mix(in srgb, var(--dv-amber) 40%, transparent);
+  --mz-wkh-days-wash: linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 16%, var(--surface-card)), var(--surface-card));
+  --mz-wkh-days-glow: color-mix(in srgb, var(--dv-sage) 42%, transparent);
+  --mz-wkh-disc-wash: linear-gradient(150deg, color-mix(in srgb, var(--dv-sky) 16%, var(--surface-card)), var(--surface-card));
+  --mz-wkh-disc-glow: color-mix(in srgb, var(--dv-sky) 40%, transparent);
+  --mz-wkh-dot-pattern:    var(--dv-lav);
+  --mz-wkh-dot-fact:       var(--dv-amber);
+  --mz-wkh-dot-life:       var(--dv-sky);
+  --mz-wkh-dot-memoir:     var(--dv-rose);
+  --mz-wkh-dot-prediction: var(--dv-sage);
+  --mz-wkh-hair: color-mix(in srgb, var(--text-primary) 22%, transparent);
 
   /* Receptek v2 (mezo-d20.4.4) — dark ("Pulse") derivations on the dv ramp */
   --mz-rcp-breakfast-bw: color-mix(in srgb, var(--dv-amber) 20%, var(--surface-card)); --mz-rcp-breakfast-bd: var(--dv-amber); --mz-rcp-breakfast-shadow: color-mix(in srgb, var(--dv-amber) 40%, transparent);
@@ -446,6 +567,12 @@
   --mz-nova-1:   var(--dv-sage);
   --mz-nova-mid: var(--dv-amber);
   --mz-nova-4:   var(--primary-deep);
+
+  /* Nap hub 1:1 audit (mezo-d20.11) — dark ("Pulse") derivations on the dv ramp */
+  --mz-water-track: color-mix(in srgb, var(--dv-sky) 22%, var(--surface-card));
+  --mz-water-fill:  linear-gradient(90deg, color-mix(in srgb, var(--dv-sky) 55%, var(--surface-card)), var(--dv-sky));
+  --mz-tickfill:    linear-gradient(135deg, color-mix(in srgb, var(--dv-sage) 65%, var(--surface-card)), var(--dv-sage));
+  --mz-wash-anchor: linear-gradient(140deg, color-mix(in srgb, var(--dv-amber) 10%, var(--surface-card)), var(--surface-card) 75%);
 }
 
 /* ===== Legacy alias bridge — Deep-Current / early-token names → DS tokens =====
@@ -2485,7 +2612,8 @@ button.itemrow { cursor: pointer; }
 .skl .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lav), #B7A8E0); }
 .skl .lv { width: 36px; text-align: right; font-size: 12px; font-weight: 800; color: var(--lav-deep); }
 @media (prefers-reduced-motion: no-preference) {
-  .skl .bar i { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .45s var(--np-ease-ios) forwards; }
+  .skl .bar i { transform-origin: left; transform: scaleX(0);
+                animation: np-grow .9s var(--np-ease-ios) forwards; animation-delay: var(--d, .45s); }
 }
 
 /* ===== AppHero v2 — compact single-row sticky header on all 5 sections (mezo-ugqb).
@@ -2684,13 +2812,10 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   border-radius: var(--r-full); padding: 7px 11px; font-family: var(--ff-body); font-style: normal; cursor: pointer;
   background: color-mix(in srgb, var(--surface-card) 70%, transparent); white-space: nowrap; }
 
-/* evening reflect — content padding only (mezo-e26w): the box chrome (border, background,
-   radius, the 16px rail) now comes from the `.td-list` it sits inside (IntentionBanner wraps
-   it in a `TodayList label="Reflexió"`), same precedent as `.td-creed` below. `.reflect` used
-   to BE its own card before the ONE-box-language pass; it never renders anywhere else now, so
-   there is no second consumer relying on the old standalone chrome. */
-.reflect { padding: 14px; }
-.reflect-q { font: 600 14px/1.4 var(--ff-body); color: var(--text-primary); margin-bottom: 10px; }
+/* evening reflect — the option row of `ReflectSheet` (its only consumer). The wrapper
+   `.reflect`/`.reflect-q` and the `.reflect-done` confirmation belonged to the retired
+   IntentionBanner's `variant="reflect"` block, deleted with it in mezo-d20.9.1; the sheet
+   brings its own heading and closes on answer, so only the options language survives. */
 .reflect-opts { display: flex; gap: 8px; }
 .reflect-opt {
   flex: 1; min-height: 44px; padding: 10px 6px; border: 0; border-radius: var(--r-md);
@@ -2700,9 +2825,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 }
 .reflect-opt:active { transform: scale(.97); }
 .reflect-opt.on-yes { background: var(--success-bg); color: var(--success-hover); box-shadow: inset 0 0 0 1.5px var(--success-soft); }
-.reflect-done { display: inline-flex; align-items: center; gap: 6px; font: 700 13px/1.35 var(--ff-body); color: var(--success-hover);
-  background: var(--success-bg); border: 1px solid var(--success-soft); padding: 9px 12px; border-radius: var(--r-md); }
-.reflect-done svg { width: 14px; height: 14px; }
 
 /* ===== StatStrip — the DS 3-cell glance strip (shared/ui/StatStrip, mezo-setx.5.1) ===== */
 .statstrip { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 1px;
@@ -2877,7 +2999,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
                 color: var(--sub); text-align: left; flex: none; }
 .isl-anchor-rows { margin-top: 18px; text-align: left; }
 .isl-anchor-rows .itemrow { margin-bottom: 6px; }
-@keyframes isl-phasein { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 /* night: light-on-dark text pairs (theme-invariant dark surface) */
 .isl-night .isl-hero-v { color: #F5EFE6; }
 .isl-night .isl-hero-u, .isl-night .isl-hero-sub { color: #9c92b8; }
@@ -3796,38 +3917,6 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   .segtab { transition: none; }
   .segtab:active { transform: none; }
 }
-
-/* ═══ Mai · napszak-nézet (mezo-puci) ═══
-   No card: the content sits on the canvas. Boxes only inside — the fact
-   strip, the ItemRows, the chips. The .isl-* micro-components are reused
-   as-is (they are Fuel's language too), only the frame is new. */
-/* A Today lapnyelve a 16px-es sínt ELEMENKÉNT hordozza (a globális `--sp-4` DS-token),
-   nem a panelen — így a listadobozok, a hero és a CTA mind pontosan egy vonalban ülnek.
-   A `.dayview` megmarad, mert ő viszi a tabváltás `isl-phasein` fade-jét és az `is-night`
-   állapotot (lásd `todayReducedMotion.test.ts`). */
-.dayview { padding: 2px 0 6px; }
-/* Anchor melt (`/today?day=rough`, `AnchorIsland.tsx`) — its `.isl-openhead`/`.isl-hero-v`/
-   `.isl-hero-sub` used to inherit their inset from `.dayview`'s old padding above; scoped to
-   `.anch-melt` (the melt's own wrapper) rather than the bare selectors, because Fuel's "Mai"
-   window flow (`WindowIsland.tsx`) renders the SAME `.isl-*` classes through `shared/ui/Island`'s
-   `.isl-bigview` shell, which already carries its own padding — must not double up there
-   (pre-merge review Finding 1). The row cards (`.isl-anchor-rows` → `ItemRow`) and the exit
-   button (`.isl-act`, centered) already carry their own inset and need no rule here. */
-.anch-melt .isl-openhead, .anch-melt .isl-hero-v, .anch-melt .isl-hero-sub { padding: 0 var(--sp-4); }
-:where(.dayview) { animation: isl-phasein .32s ease both; }
-/* night: the view itself goes theme-invariant dark (the .isl-night heritage) */
-.dayview.is-night { background: linear-gradient(165deg, #28223c, #1d1930); border-radius: var(--r-xl);
-                    padding: 18px 20px 14px; margin: 0 6px; }
-.dayview.is-night .td-hero-v { color: #F5EFE6; }
-.dayview.is-night .td-hero-u, .dayview.is-night .td-hero-s { color: #9c92b8; }
-.dv-nightrow { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 14px;
-               background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10);
-               border-radius: var(--r-xl); color: #E8E2F5; font-size: 13px; font-weight: 600;
-               text-decoration: none; }
-.dv-nightrow-arr { margin-left: auto; color: #9c92b8; }
-@media (prefers-reduced-motion: reduce) {
-  .dayview { animation: none; }
-}
 /* ===== WorkoutSummary redesign (mezo-w943) — hero+halo, region pills,
    mérleg strip, medal cards, challenge rows, set-chip map. Feature-scoped
    vocabulary (same precedent as .setdots/.excard); tokens only. ===== */
@@ -3986,6 +4075,14 @@ ol.md-list { list-style: decimal; }
 
 .mz-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 
+/* The panel's own vertical rhythm — the prototype's `.dp-panel { gap: 9px }` at ×1.18,
+   the same 11px the mosaic uses between tiles, so a hero, a mosaic and a stat strip are
+   spaced like tiles rather than by whatever margins their components happen to carry.
+   This lived as four identical per-tab copies (.eh-/.enh-/.fh-/.mzh-panel), which is
+   exactly why the two pages that forgot to declare one — the Nap daypart panels and the
+   Heti hub — had their children touching at 0px (mezo-d20.11.2). One class now. */
+.mz-panel-stack { display: flex; flex-direction: column; gap: 11px; }
+
 .mz-tile {
   border-radius: 20px; padding: 12px 13px; min-height: 104px;
   display: flex; flex-direction: column; text-align: left;
@@ -4012,6 +4109,12 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-tile-top { display: flex; align-items: center; }
 .mz-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-ink-mut); }
 .mz-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
+/* The counted sibling of .mz-dot (prototype `.badge.unread`). A number already carries the
+   "there is something here" signal, so a tile renders one or the other, never both. */
+.mz-badge { min-width: 18px; height: 18px; margin-left: auto; flex: none; border-radius: 999px;
+  padding: 0 5px; display: grid; place-items: center; background: var(--gradient-cta); color: #fff;
+  font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.6); }
 .mz-spotwrap { flex: 1; display: grid; place-items: center; padding: 5px 0; }
 .mz-tile-line { font-size: 11px; font-weight: 600; text-align: center;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -4080,6 +4183,13 @@ button.mz-tile:active { transform: scale(0.96); }
 /* ── Nap hub (mezo-d20.2.1) — header recipe + panel heroes + tile extras ── */
 .nap-hub { display: flex; flex-direction: column; gap: 13px; padding: 6px 0 8px; }
 .nap-head { display: flex; align-items: center; gap: 9px; }
+/* A shell-szintű fejléc (mezo-atry) függőleges ritmusa. Korábban a hub-konténerek
+   `padding: 6px 0 8px` + `gap` adta a rést a fejléc alatt — a `.nap-hub`-on pontosan
+   13px-et (gap: 13px), a másik négyen (`.eh-hub`/`.fh-hub`/`.mzh-hub`/`.enh-hub`) 11px-et
+   (gap: 11px). A fejléc kikerült a konténerekből, a 7px margó pedig szándékosan egységes:
+   a Nap 13px-ét pontosan visszaadja, a másik négyet 11-ről 13-ra emeli — egy közös fejléc
+   alatt egy közös rés jár, a 2px a megosztásért fizetett ár. */
+.app-head { padding-top: 6px; margin-bottom: 7px; }
 .nap-head-grow { flex: 1; min-width: 0; }
 .nap-dpwrap { position: relative; }
 .nap-roundbtn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
@@ -4112,25 +4222,108 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-big { font-weight: 200; font-size: 42px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .nap-mut { font-size: 12px; color: var(--mz-ink-soft); }
 .nap-mut b { color: var(--text-primary); }
-.nap-hero-sub { display: flex; gap: 17px; margin-top: 7px; }
+/* Prototype keeps `Súly … ↘` and `Fókusz …` on ONE row (nap-body reggel hero): the
+   focus text is the only elastic half, so it ellipsises instead of wrapping the row. */
+.nap-hero-sub { display: flex; flex-wrap: nowrap; gap: 17px; margin-top: 7px; }
+.nap-hero-sub > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nap-hero-sub > span:first-child { flex: none; }
 .nap-lav { color: #6C5FA3; }
 .nap-sage { color: #5F7A52; }
 .nap-coral { color: var(--primary-deep); }
+.nap-gold { color: var(--mz-qxp-ink); }
 .nap-dusk { background: linear-gradient(140deg, var(--mz-tone-lav), var(--mz-wash-white) 75%); }
 .nap-cta-lav { width: 100%; margin-top: 11px; padding: 10px 0; border-radius: 999px; border: none;
   font-family: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
   background: linear-gradient(135deg, #8A6BC9, #5D4FA0);
   box-shadow: 0 10px 22px -8px rgba(93, 79, 160, 0.55); }
 .daybar { display: flex; gap: 4px; margin-top: 9px; align-items: center; }
-.daybar i { height: 6px; border-radius: 4px; flex: 1; background: rgba(43, 33, 24, 0.1); }
+.daybar i { height: 6px; border-radius: 4px; flex: 1; background: rgba(43, 33, 24, 0.1);
+  transform: scaleX(1); transform-origin: left; }
 .daybar i.f { background: var(--dv-sage); }
 .daybar i.now { background: var(--dv-amber); }
+/* prototype `.play .daybar i { animation: segf … }` — the segments SWEEP in on the
+   panel's entrance, and the current window keeps a slow amber halo (mezo-d20.11). */
+.mz-play .daybar i { transform: scaleX(0);
+  animation: nap-segfill 0.4s ease-out forwards; animation-delay: var(--d, 0ms); }
+@keyframes nap-segfill { to { transform: scaleX(1); } }
+.mz-play .daybar i.now {
+  animation: nap-segfill 0.4s ease-out forwards, nap-nowpulse 2.6s ease-in-out 1.4s infinite; }
+@keyframes nap-nowpulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(201, 150, 46, 0.3); }
+}
 .nap-ckdots { display: flex; justify-content: center; gap: 7px; }
 .nap-ckdots .hd, .hprog .hd { width: 9px; height: 9px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); display: inline-block; }
 .nap-ckdots .hd.f { background: var(--dv-rose); }
 .nap-bigring { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; }
 .nap-ringhole { width: 42px; height: 42px; border-radius: 50%; background: var(--mz-wash-white);
   display: grid; place-items: center; }
+
+/* ── Nap hub · a prototípus csempe-belsői (mezo-d20.11, 1:1 hűség-audit) ──
+   nap-body.html reggel/nap/este panel: a Mezo-spot olvasatlan-SZÁMLÁLÓJA, a Rutin
+   per-szokás ikon + név + helyben pipálás, a küldetés-pöttyök, a víz-sáv és a
+   Kreed idézet. Értékek nap-head.html ×1.18; minden szín token. */
+.nap-anchorwrap { position: relative; display: grid; place-items: center; }
+.nap-unread { position: absolute; top: -6px; right: -11px; min-width: 20px; height: 20px;
+  border-radius: 999px; background: var(--gradient-cta); color: #fff;
+  font-size: 11px; font-weight: 700; display: grid; place-items: center; padding: 0 5px;
+  font-variant-numeric: tabular-nums; box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.6); }
+.nap-tilemore { font-size: 11px; font-weight: 600; text-align: center; }
+
+.nap-habname { font-size: 13.5px; font-weight: 700; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nap-habfoot { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+.nap-habcount { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600;
+  color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+/* 30px artwork inside a 44pt hit box (the .nr-tickbtn precedent) — the negative
+   margin keeps the prototype's row height while the target clears the floor. */
+.nap-htickbtn { width: 44px; height: 44px; flex: none; margin: -7px -7px -7px 0;
+  display: grid; place-items: center; border: none; background: none; padding: 0;
+  font-family: inherit; cursor: pointer; }
+.nap-htickbtn:disabled { cursor: default; opacity: 0.6; }
+span.nap-htickbtn { cursor: default; }
+.nap-htick { width: 30px; height: 30px; border-radius: 50%;
+  border: 2px solid rgba(43, 33, 24, 0.18); background: var(--mz-chipbg);
+  display: grid; place-items: center; color: #fff; font-size: 15px;
+  transition: transform 0.12s ease; }
+button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
+.nap-htick.f { border-color: transparent; background: var(--mz-tickfill);
+  box-shadow: 0 7px 14px -5px rgba(110, 139, 94, 0.6); }
+.mz-play .nap-htick.f { animation: nap-tickpop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1); }
+@keyframes nap-tickpop { 0% { transform: scale(0); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+.nap-bigdots { display: flex; justify-content: center; align-items: center; gap: 7px; }
+.nap-bigdots .hd { width: 13px; height: 13px; border-radius: 50%; display: inline-block;
+  background: rgba(43, 33, 24, 0.12); }
+.nap-bigdots .hd.f { background: var(--mz-daydot-f); }
+.nap-qxp { font-size: 12px; font-weight: 700; color: var(--mz-qxp-ink); margin-left: 5px;
+  font-variant-numeric: tabular-nums; }
+
+.nap-kreedq { font-size: 12px; font-weight: 300;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.nap-tilegap { flex: 1; }
+
+.nap-watertop { display: flex; align-items: center; gap: 8px; }
+.nap-waterval { display: flex; align-items: baseline; gap: 4px; }
+.nap-waterbig { font-weight: 200; font-size: 22px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.nap-watermut { font-size: 10px; color: var(--mz-ink-soft); }
+.nap-waterfill { height: 8px; border-radius: 5px; background: var(--mz-water-track); overflow: hidden; }
+.nap-waterfill div { height: 100%; border-radius: 5px; background: var(--mz-water-fill);
+  transform: scaleX(var(--w, 0)); transform-origin: left; }
+.mz-play .nap-waterfill div { transform: scaleX(0);
+  animation: nap-waterfill 1s cubic-bezier(0.25, 0.8, 0.35, 1) 0.9s forwards; }
+@keyframes nap-waterfill { to { transform: scaleX(var(--w, 0)); } }
+.nap-waterhint { font-size: 10px; color: var(--mz-ink-mut); margin-top: 5px; }
+.nap-stackbig { font-size: 20px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* ── „Nehéz nap" horgony-olvadás (`?day=rough`, mezo-d20.11 — PROVIZÓRIKUS) ──
+   A törölt AnchorIsland utódja a Mozaik nyelvén: egy meleg hero + három horgony-
+   csempe + a kilépés. F7-ig ez tartja életben a módot, nem új képernyő. */
+.nap-anch-hero { background: var(--mz-wash-anchor); }
+.nap-anch-say { font-size: 13px; font-weight: 300; margin: 7px 0 0; }
+.nap-anch-exit { width: 100%; min-height: 44px; border-radius: 999px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; color: var(--mz-ink-soft);
+  background: rgba(43, 33, 24, 0.06); }
 
 /* ── Mezo üzenetei page (mezo-d20.2.2) — prototype #page-mezo: breathing-orb
    hero + the day's companion thread. Values verbatim from nap-head.html ×1.18. ── */
@@ -4233,6 +4426,11 @@ button.mz-tile:active { transform: scale(0.96); }
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev { transition: none; }
   .mz-page-hero.orb svg { animation: none; }
+  /* Nap hub entrance choreography (mezo-d20.11) — end states kept, motion dropped. */
+  .daybar i, .mz-play .daybar i, .mz-play .daybar i.now { animation: none; transform: scaleX(1); }
+  .nap-htick { transition: none; }
+  .mz-play .nap-htick.f { animation: none; }
+  .nap-waterfill div, .mz-play .nap-waterfill div { animation: none; transform: scaleX(var(--w, 0)); }
 }
 
 /* ── Nap · Rutin oldal (mezo-d20.2.3) — prototype #page-hab, ×1.18 ── */
@@ -4263,7 +4461,15 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
   text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
 .nr-anchor { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); }
 .nr-str { height: 6px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 5px; }
-.nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength); }
+.nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength);
+  transform: scaleX(1); transform-origin: left; }
+/* the lánc-erő bars FILL on the page's entrance (mezo-d20.11) — the `.mnt-gbar` recipe */
+.mz-play .nr-str div { transform: scaleX(0);
+  animation: nap-segfill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+/* a habit carrying its own external content (linkUrl — e.g. the morning video) keeps
+   that affordance on the row title; the tick stays the row's separate control. */
+a.nr-nm { color: var(--primary-deep); text-decoration: none; }
+a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
 .nr-pct { font-size: 10.5px; font-weight: 700; color: #A8801F; flex: none; width: 35px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ── Mezo hub (mezo-d20.5.1) — prototype mezo-body.html hub section ×1.18:
@@ -4271,7 +4477,6 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
       composer-shaped chat opener, the motor's single decision card in a gold
       ring, 6-tile mosaic, and the full-width L0→L3 memory band. ── */
 .mzh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
-.mzh-panel { display: flex; flex-direction: column; gap: 11px; }
 
 .mzh-orbhero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 12px 14px 14px; }
 .mzh-orbhero svg:first-child { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
@@ -4341,6 +4546,7 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev, .nr-tick { transition: none; }
+  .nr-str div, .mz-play .nr-str div { animation: none; transform: scaleX(1); }
   .nck-fill { transition: none; }
   .mzh-orbhero svg:first-child { animation: none; }
   .mzh-chatopen, .mzh-membnd { transition: none; }
@@ -4698,7 +4904,6 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
    labels, Hátra · Tempó · ETA mini-cells; a maintain goal drops the track and reads
    „tartás") → the 9-tile mosaic → the Beállítások band. Every surface is --mz-*. ── */
 .enh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
-.enh-panel { display: flex; flex-direction: column; gap: 11px; }
 
 .enh-idhero { display: grid; justify-items: center; text-align: center; gap: 4px; padding: 9px 14px 12px; }
 .enh-idring { width: 78px; height: 78px; border-radius: 50%; display: grid; place-items: center; flex: none;
@@ -5080,7 +5285,6 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
       Mai's honest ones — done bar, resume, start, rest day, meso-less ghost —
       so the CTA row has exactly one occupant at a time. ── */
 .eh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
-.eh-panel { display: flex; flex-direction: column; gap: 11px; }
 
 .eh-hero {
   border-radius: 21px; padding: 14px 15px;
@@ -5300,7 +5504,6 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
    band. The hero's own internals keep the shipped .khero family — only its frame
    changes here. Every CTA is a 44pt target. ── */
 .fh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
-.fh-panel { display: flex; flex-direction: column; gap: 11px; }
 
 .fh-hero { border-radius: 21px; overflow: hidden;
   border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-sage); }
@@ -5731,64 +5934,756 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fmd-doserow .nt { font-size: 10px; font-style: italic; color: var(--mz-ink-mut); }
 .fmd-doserow .dd { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-cell-lav-ink); font-variant-numeric: tabular-nums; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Heti · pontszám-gyűrű + trend (mezo-d20.6.10)
+   Source: prototypes/src/en-body.html `.wkring` / `.wktrend` / `.wkdelta` /
+   `.minibars` / `.sc-*`, scaled ×1.18 (330 → 390px frame). Shared by the Heti
+   hub hero, the day tiles and the day page, so it lives here rather than in a
+   page block. Band thresholds are the pure `scoreBand()` module's, not CSS's.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sc-hi  { background: linear-gradient(180deg, var(--mz-sc-hi-1), var(--mz-sc-hi-2)); }
+.sc-mid { background: linear-gradient(180deg, var(--mz-sc-mid-1), var(--mz-sc-mid-2)); }
+.sc-low { background: linear-gradient(180deg, var(--mz-sc-low-1), var(--mz-sc-low-2)); }
+.sc-non { background: var(--mz-sc-track); }
+
+/* The ring: a conic-gradient whose sweep is driven by --v (0–100) and whose
+   colour is the band's --c. The count-up hook animates --v in React state, so
+   reduced motion needs no CSS branch here — useCountUp jumps to the target. */
+.wk-ring { width: 97px; height: 97px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: conic-gradient(var(--c, var(--mz-sc-non-ink)) calc(var(--v, 0) * 1%), var(--mz-sc-track) 0); }
+.wk-ring .in { width: 78px; height: 78px; border-radius: 50%; background: var(--mz-fh-ringhole);
+  display: grid; place-items: center; box-shadow: inset 0 1px 3px rgba(43, 33, 24, 0.08); }
+.wk-ring b { font-size: 32px; font-weight: 200; letter-spacing: -0.03em; line-height: 1;
+  font-variant-numeric: tabular-nums; }
+.wk-ring b.is-learning { font-size: 15px; font-weight: 600; color: var(--mz-sc-non-ink); }
+.wk-ring small { font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--mz-sc-non-ink); }
+
+.wk-delta { font-size: 13px; font-weight: 800; border-radius: 999px; padding: 3px 11px; display: inline-block;
+  font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.wk-delta.is-down { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.wk-delta.is-flat { background: var(--mz-chipbg); color: var(--mz-ink-mut); }
+.wk-prev { font-size: 9px; color: var(--mz-ink-mut); margin-left: 6px; }
+
+.wk-trend { display: flex; align-items: flex-end; gap: 3.5px; height: 35px; margin-top: 4px; }
+.wk-trend i { flex: 1; border-radius: 3px 3px 2px 2px; min-height: 4px;
+  transform: scaleY(0); transform-origin: bottom; }
+.mz-play .wk-trend i { animation: wk-trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+  animation-delay: var(--d, 0ms); }
+.wk-trend i.is-current { box-shadow: 0 0 0 1.5px var(--mz-fh-ringhole), 0 0 0 3px var(--mz-wk-cur-ring); }
+
+.wk-minibars { display: flex; align-items: flex-end; gap: 3.5px; height: 26px; margin-top: 11px; }
+.wk-minibars i { flex: 1; border-radius: 2px 2px 1px 1px; min-height: 4px;
+  transform: scaleY(0); transform-origin: bottom; }
+.mz-play .wk-minibars i { animation: wk-trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+  animation-delay: var(--d, 0ms); }
+
+@keyframes wk-trendup { to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .wk-trend i, .mz-play .wk-minibars i { animation: none; transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Heti hub (mezo-d20.6.10)
+   Source: prototypes/src/en-body.html — `#page-heti` + the `hub()` function in
+   the „Heti áttekintés" IIFE (.wknav / .hwide / .hduo / .hsm / .miniring /
+   .dscdots / .lsec / .foot9 / .stch / .skel), scaled x1.18 (330 -> 390px frame).
+   Geometry and proportions are the prototype's; every colour is a token so the
+   page flips with the theme. The score ring, the 8-week spark and the .sc-*
+   bands are the shared Heti foundation above — not repeated here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── week stepper in the page head ─────────────────────────────────────── */
+.wkh-nav { display: flex; gap: 6px; margin-left: auto; }
+.wkh-nav button { position: relative; width: 31px; height: 31px; border-radius: 50%;
+  border: 1px solid var(--mz-wkh-hair); background: var(--mz-chipbg);
+  font-family: inherit; font-size: 13px; color: var(--mz-ink-soft); cursor: pointer;
+  display: grid; place-items: center; }
+/* 44pt hit area around a 31px circle — the visual stays the prototype's. */
+.wkh-nav button::after { content: ''; position: absolute; inset: -7px; border-radius: 50%; }
+.wkh-nav button:disabled { opacity: 0.3; cursor: default; }
+.wkh-nav button:disabled::after { display: none; }
+
+/* ── hero: ring + delta/trend column ───────────────────────────────────── */
+.wkh-herorow { display: flex; align-items: center; justify-content: center; gap: 17px; margin-top: 5px; }
+.wkh-heroside { width: 125px; text-align: left; }
+.wkh-prev { font-size: 9px; color: var(--mz-ink-mut); margin-left: 6px; }
+.wkh-trendlbl { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin-top: 7px; }
+
+/* ── section label + closing footnote ──────────────────────────────────── */
+.wkh-lsec { display: flex; align-items: center; gap: 7px; padding: 12px 2px 7px; }
+.wkh-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; line-height: 1.5; padding: 7px 2px 0; }
+
+/* ── shared tile furniture ─────────────────────────────────────────────── */
+.wkh-row { display: flex; align-items: center; gap: 8px; }
+.wkh-grow { flex: 1; min-width: 0; text-align: left; }
+.wkh-chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+.wkh-stch { font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 7px;
+  padding: 2.5px 8px; flex: none; }
+.wkh-stch.lav  { background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
+.wkh-stch.warn { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.wkh-pic { width: 33px; height: 33px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08); }
+
+/* ── the two wide tiles (elemzés, felfedezések) ────────────────────────── */
+.wkh-wide { display: block; width: 100%; text-align: left; font-family: inherit; color: inherit;
+  border-radius: 22px; padding: 14px 15px; cursor: pointer;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-stripbg);
+  box-shadow: 0 19px 35px -18px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.wkh-wide:active { transform: scale(0.975); }
+.wkh-wide.rev { background: var(--mz-wkh-rev-wash); border: 1px solid var(--mz-wkh-rev-bd);
+  box-shadow: 0 19px 35px -18px var(--mz-wkh-rev-glow), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.wkh-wide.disc { background: var(--mz-wkh-disc-wash);
+  box-shadow: 0 19px 35px -18px var(--mz-wkh-disc-glow), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.wkh-snip { font-size: 11px; font-weight: 300; line-height: 1.5; margin-top: 7px;
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wkh-widefoot { display: flex; align-items: center; margin-top: 7px; font-size: 9px; color: var(--mz-ink-mut); }
+.wkh-open { margin-left: auto; font-size: 9.5px; font-weight: 700; color: var(--mz-cell-lav-ink); }
+.wkh-disctitle { font-size: 12.5px; font-weight: 700; margin-top: 1px; }
+.wkh-discparts { font-size: 9.5px; color: var(--mz-ink-soft); }
+.wkh-discempty { font-size: 10px; color: var(--mz-ink-soft); margin-top: 6px; }
+
+/* „✦ Készítsd el most" — the closed-week-without-analysis repair action. It is a
+   sibling of the tile, not a child: a button inside a button is invalid markup. */
+.wkh-genbtn { display: block; width: 100%; margin: -4px 0 11px; padding: 11px 14px; min-height: 44px;
+  border-radius: 14px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  color: var(--mz-cell-lav-ink); background: var(--mz-chipbg);
+  border: 1px solid var(--mz-wkh-rev-bd); }
+.wkh-genbtn:disabled { opacity: 0.55; cursor: default; }
+
+/* ── the two small tiles (tanulságok, napok) ───────────────────────────── */
+.wkh-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+.wkh-sm { text-align: left; font-family: inherit; color: inherit; border-radius: 21px; padding: 13px 14px;
+  cursor: pointer; display: grid; gap: 5px; align-content: start;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-stripbg);
+  box-shadow: 0 17px 31px -17px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.wkh-sm:active { transform: scale(0.96); }
+.wkh-sm.less { background: var(--mz-wkh-less-wash);
+  box-shadow: 0 17px 31px -17px var(--mz-wkh-less-glow), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.wkh-sm.days { background: var(--mz-wkh-days-wash);
+  box-shadow: 0 17px 31px -17px var(--mz-wkh-days-glow), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.wkh-sm .picrow { display: flex; align-items: center; gap: 7px; }
+.wkh-sm .big { font-size: 26px; font-weight: 200; letter-spacing: -0.02em; line-height: 1.05;
+  font-variant-numeric: tabular-nums; }
+.wkh-sm .big span { font-size: 11px; font-weight: 700; color: var(--mz-ink-soft); }
+.wkh-sm .lb { font-size: 11px; font-weight: 700; }
+.wkh-sm .lb.less { color: var(--mz-stch-prop-ink); }
+.wkh-sm .lb.days { color: var(--mz-cell-sage-ink); }
+.wkh-sm .sub { font-size: 9px; color: var(--mz-ink-soft); line-height: 1.35; }
+
+/* seven per-day rings on the „A hét napjai" tile */
+.wkh-miniring { display: flex; gap: 3.5px; margin-top: 2px; }
+.wkh-miniring i { width: 15px; height: 15px; border-radius: 50%; flex: none;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-sc-track) 0); }
+.wkh-miniring i::after { content: ''; display: block; margin: 4px; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--mz-fh-ringhole); }
+.wkh-miniring i.is-nodata { background: none; box-shadow: inset 0 0 0 1.5px var(--mz-wkh-hair); }
+.wkh-miniring i.is-nodata::after { background: none; }
+.wkh-miniring i.is-future { opacity: 0.45; background: none;
+  box-shadow: inset 0 0 0 1.5px var(--mz-wkh-hair); }
+.wkh-miniring i.is-future::after { background: none; }
+
+/* category dots on the „Heti felfedezések" tile */
+.wkh-dots { display: flex; gap: 5px; margin-left: auto; }
+.wkh-dots i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+.wkh-dots i.pattern    { background: var(--mz-wkh-dot-pattern); }
+.wkh-dots i.fact       { background: var(--mz-wkh-dot-fact); }
+.wkh-dots i.life       { background: var(--mz-wkh-dot-life); }
+.wkh-dots i.memoir     { background: var(--mz-wkh-dot-memoir); }
+.wkh-dots i.prediction { background: var(--mz-wkh-dot-prediction); }
+
+/* ── the eight mini-cells: two rows of four ────────────────────────────── */
+/* The two mini-cell rows are ONE unit — the prototype pairs them 5px apart (→6) inside the
+   panel's own 11px rhythm, so they sit in a wrapper rather than as two panel children. */
+.wkh-cellstack { display: flex; flex-direction: column; gap: 6px; }
+.wkh-cellunit { font-size: 8.5px; font-weight: 700; }
+
+/* ── loading skeleton (the prototype's .skel shimmer) ──────────────────── */
+.wkh-skel { border-radius: 20px; margin-bottom: 11px;
+  background: linear-gradient(100deg, rgba(43, 33, 24, 0.05) 30%, rgba(43, 33, 24, 0.11) 50%, rgba(43, 33, 24, 0.05) 70%);
+  background-size: 300% 100%; animation: wkh-shim 1.2s linear infinite; }
+.wkh-skel.ring { width: 97px; height: 97px; border-radius: 50%; margin: 0 auto 11px; }
+@keyframes wkh-shim { to { background-position: -200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .wkh-skel { animation: none; }
+  .wkh-wide, .wkh-sm { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Heti · elemzés-oldal (mezo-d20.6.10)
+   Source: prototypes/src/en-body.html #page-hanaly — `.dcols` (Napi pontszám
+   columns), `.revcard` + `.hlrow` / `.hlch` (the analysis card and its „amire
+   épült" anchor chips), `.chatch` (the pill actions) and the gold hand-off
+   strip. Every px is the prototype's ×1,18 (330 → 390px frame); motion
+   timings are verbatim, unscaled. The band gradients and the trendup keyframe
+   come from the Heti foundation block above — never redeclared here.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.wka-headwk { margin-left: auto; }
+.wka-heroU { font-size: 17px; font-weight: 300; color: var(--mz-ink-soft); }
+
+/* ── Napi pontszám kártya ── */
+.wka-card { border-radius: 21px; padding: 12px 14px 11px; margin-bottom: 12px;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-wka-cardshadow); }
+.wka-cardhead { display: flex; align-items: center; gap: 8px; }
+.wka-hint { margin-left: auto; font-size: 8px; color: var(--mz-ink-mut); }
+
+.wka-dcols { display: flex; gap: 6px; align-items: flex-end; height: 92px; margin-top: 7px; }
+.wka-col { flex: 1; display: grid; align-content: end; justify-items: center; gap: 4px;
+  background: none; border: 0; padding: 0; font-family: inherit; cursor: pointer; }
+.wka-col .bar { width: 100%; border-radius: 6px 6px 4px 4px; min-height: 5px;
+  transform: scaleY(0); transform-origin: bottom; }
+.mz-play .wka-col .bar { animation: wk-trendup 0.6s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+  animation-delay: var(--d, 0ms); }
+.wka-col .vl { font-size: 8px; font-weight: 800; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.wka-col .dw { font-size: 8px; font-weight: 800; color: var(--mz-ink-mut); letter-spacing: 0.04em; }
+.wka-col.is-today .vl, .wka-col.is-today .dw { color: var(--mz-cell-coral-ink); }
+.wka-col.is-future { opacity: 0.4; }
+
+/* ── Elemzés-kártya ── */
+.wka-rev { border: 1px solid var(--mz-wka-revbd); border-radius: 22px; padding: 14px 15px; margin-bottom: 12px;
+  background: var(--mz-wka-revbg); box-shadow: var(--mz-wka-revshadow); }
+.wka-revhead { display: flex; align-items: center; gap: 8px; }
+.wka-revlab { color: var(--mz-cell-lav-ink); }
+.wka-stamp { margin-left: auto; font-size: 8px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.wka-prose { font-size: 12px; font-weight: 300; line-height: 1.62; margin-top: 7px; color: var(--text-primary); }
+.wka-ghost { font-size: 11px; font-weight: 300; line-height: 1.55; margin-top: 7px; color: var(--mz-ink-soft); }
+.wka-hlab { font-size: 8px; margin-top: 12px; }
+.wka-hlrow { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
+.wka-hlch { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border-radius: 11px;
+  padding: 5px 9px; font-size: 10px; font-weight: 600; color: var(--text-primary); text-align: left;
+  font-family: inherit; cursor: pointer; background: var(--mz-chipbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: var(--mz-wka-hlshadow); }
+.wka-hlch.is-inert { cursor: default; }
+.wka-hlch span { text-align: left; line-height: 1.3; }
+.wka-hlch em { display: block; font-style: normal; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--hc, var(--mz-ink-mut)); margin-bottom: 1px; }
+.wka-hlch.tone-lav  { --hc: var(--mz-cell-lav-ink); }
+.wka-hlch.tone-gold { --hc: var(--mz-hl-gold); }
+.wka-hlch.tone-sky  { --hc: var(--mz-hl-sky); }
+.wka-hlch.tone-rose { --hc: var(--mz-cell-rose-ink); }
+
+.wka-revfoot { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.wka-chatch { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px;
+  border-radius: 999px; padding: 6px 13px; font-size: 10px; font-weight: 700; font-family: inherit;
+  color: var(--mz-cell-lav-ink); background: var(--mz-chipbg); cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--mz-cell-lav-ink) 30%, transparent); }
+.wka-chatch:disabled { opacity: 0.55; cursor: default; }
+.wka-fb { margin-left: auto; }
+
+/* ── Átvezető sáv a tanulságokhoz ── */
+.wka-lessgo { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  border-radius: 21px; padding: 13px 14px; font-family: inherit; cursor: pointer;
+  background: var(--mz-wash-gold); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-gold); transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.wka-lessgo:active { transform: scale(0.96); }
+.wka-lessgo .grow { display: grid; gap: 2px; flex: 1; }
+.wka-lessgo .lb { font-size: 11px; font-weight: 700; color: var(--mz-hl-gold); }
+.wka-lessgo .sub { font-size: 9px; color: var(--mz-ink-soft); line-height: 1.35; }
+.wka-lessgo .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+
+.wka-skels { display: grid; gap: 11px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .wka-col .bar { animation: none; transform: none; }
+  .wka-lessgo { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Heti · nap-mozaik + nap-oldal (mezo-d20.6.10)
+   Source: prototypes/src/en-body.html `.dgrid` / `.dcard` / `.sparks` /
+   `.dchip` / `.phleg` (page-hdays) and `.dayring` / `.subrings` / `.sring` /
+   `.tgrow` / `.daynav` / `.dnavt` (page-hday), scaled ×1.18 (330 → 390px
+   frame). Washes and colored shadows reuse the shared --mz-wash- / --mz-shadow-
+   tokens instead of a parallel palette, so both themes follow.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.wkd-headtitle { margin-left: auto; }
+.wkd-bigunit { font-size: 17px; font-weight: 400; color: var(--mz-ink-soft); }
+.wkd-cells { margin-bottom: 12px; }
+
+/* ── nap-mozaik ──────────────────────────────────────────────────────────── */
+.wkd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+
+.wkd-tile {
+  border-radius: 21px; padding: 12px 13px 11px; display: grid; gap: 7px; align-content: start;
+  text-align: left; font-family: inherit; color: var(--text-primary); cursor: pointer;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.wkd-tile:active { transform: scale(0.96); }
+.wkd-tile.is-hi  { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.wkd-tile.is-mid { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.wkd-tile.is-low { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.wkd-tile.is-thin {
+  background: var(--mz-wk-thin-bg); border: 1px dashed rgba(43, 33, 24, 0.16); box-shadow: none;
+}
+.wkd-tile.is-future {
+  background: none; border: 1px dashed rgba(43, 33, 24, 0.14); box-shadow: none;
+  opacity: 0.55; cursor: default;
+}
+
+.wkd-trow { display: flex; align-items: center; gap: 6px; }
+.wkd-dow { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
+.wkd-dow.is-mut { color: var(--mz-ink-mut); }
+.wkd-dte {
+  margin-left: auto; font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--mz-ink-mut);
+}
+.wkd-chv { font-size: 13px; color: var(--mz-ink-mut); flex: none; }
+.wkd-ma {
+  font-size: 7px; font-weight: 800; letter-spacing: 0.1em; border-radius: 6px; padding: 2.5px 7px;
+  flex: none; background: var(--mz-cell-sky-bg); color: var(--mz-cell-sky-ink);
+}
+.wkd-scnum {
+  font-size: 32px; font-weight: 200; letter-spacing: -0.03em; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.wkd-scnum small { font-size: 9.5px; font-weight: 700; color: var(--mz-ink-mut); }
+.wkd-scnum.is-dash { font-size: 20px; color: var(--mz-ink-mut); }
+
+.wkd-sparks { display: flex; gap: 3.5px; align-items: flex-end; height: 28px; margin-left: auto; }
+.wkd-sparks i { width: 6px; border-radius: 2px; min-height: 3.5px; transform: scaleY(0); transform-origin: bottom; }
+.wkd-sparks i.is-sleep { background: var(--mz-wk-sub-sleep); }
+.wkd-sparks i.is-fuel { background: var(--mz-wk-sub-fuel); }
+.wkd-sparks i.is-checkin { background: var(--mz-wk-sub-checkin); }
+.wkd-sparks i.is-activity { background: var(--mz-wk-sub-activity); }
+.wkd-sparks i.is-none { background: var(--mz-sc-track); }
+.mz-play .wkd-sparks i {
+  animation: wk-trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 300ms);
+}
+
+.wkd-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.wkd-chip {
+  display: inline-flex; align-items: center; gap: 3.5px; font-size: 9px; font-weight: 700;
+  color: var(--mz-ink-soft); background: var(--mz-chipbg); border-radius: 8px; padding: 3px 7px;
+  font-variant-numeric: tabular-nums;
+}
+.wkd-chip.is-mut { color: var(--mz-ink-mut); }
+.wkd-chip.is-note { color: var(--mz-cell-lav-ink); }
+.wkd-note { font-size: 9px; font-weight: 300; line-height: 1.4; color: var(--mz-ink-mut); }
+
+.wkd-legend {
+  display: flex; gap: 11px; flex-wrap: wrap; margin-top: 12px;
+  font-size: 8.5px; font-weight: 600; color: var(--mz-ink-soft);
+}
+.wkd-legend i {
+  display: inline-block; width: 9.5px; height: 9.5px; border-radius: 3.5px; margin-right: 3.5px;
+  vertical-align: -1px;
+}
+.wkd-legend i.is-sleep { background: var(--mz-wk-sub-sleep); }
+.wkd-legend i.is-fuel { background: var(--mz-wk-sub-fuel); }
+.wkd-legend i.is-checkin { background: var(--mz-wk-sub-checkin); }
+.wkd-legend i.is-activity { background: var(--mz-wk-sub-activity); }
+.wkd-foot { font-size: 10px; font-weight: 300; color: var(--mz-ink-mut); padding: 7px 2px 0; }
+.wkd-empty { font-size: 11px; color: var(--mz-ink-soft); padding: 14px 2px; text-align: center; }
+
+/* ── töltés + hiba (handoff §4: ma egyik sincs) ──────────────────────────── */
+.wkd-skelwrap { display: grid; gap: 11px; }
+.wkd-skel {
+  border-radius: 20px;
+  background: linear-gradient(100deg, rgba(43, 33, 24, 0.05) 30%, rgba(43, 33, 24, 0.11) 50%, rgba(43, 33, 24, 0.05) 70%);
+  background-size: 300% 100%; animation: wkd-shim 1.2s linear infinite;
+}
+@keyframes wkd-shim { to { background-position: -200% 0; } }
+.wkd-errbox { display: grid; gap: 11px; justify-items: center; padding: 19px 2px; text-align: center; }
+.wkd-errbox p { font-size: 12px; color: var(--mz-ink-soft); }
+.wkd-retry {
+  min-height: 44px; padding: 0 17px; border: none; border-radius: 999px; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 700; color: var(--text-primary);
+  background: var(--mz-chipbg); box-shadow: 0 7px 17px -9px rgba(43, 33, 24, 0.3);
+}
+
+/* ── nap-oldal ───────────────────────────────────────────────────────────── */
+.wkd-heronm-date { font-weight: 300; color: var(--mz-ink-soft); }
+.wkd-heroma { margin-left: 7px; vertical-align: 2px; }
+.wkd-herorow { display: flex; align-items: center; justify-content: center; gap: 15px; margin-top: 5px; }
+.wkd-herochips { max-width: 156px; }
+
+.wk-ring.is-day { width: 87px; height: 87px; }
+.wk-ring.is-day .in { width: 71px; height: 71px; }
+.wk-ring.is-day b { font-size: 28px; }
+.wk-ring.is-day b.is-learning { font-size: 14px; }
+.wk-ring.is-day small { font-size: 7px; }
+
+.wkd-card {
+  border-radius: 21px; padding: 13px 15px 12px; margin-bottom: 12px;
+  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow);
+}
+.wkd-card .mz-eyebrow { display: block; padding-bottom: 9px; }
+.wkd-subrings { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.wkd-subring { display: grid; justify-items: center; gap: 3.5px; }
+.wkd-subring small {
+  font-size: 7px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--mz-ink-mut);
+}
+.wkd-sring {
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-sc-track) 0);
+}
+.wkd-sring i {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--mz-fh-ringhole);
+  display: grid; place-items: center; font-style: normal; font-size: 10.5px; font-weight: 700;
+  color: var(--c); font-variant-numeric: tabular-nums;
+}
+.wkd-sring.is-dash { background: none; box-shadow: inset 0 0 0 1.5px rgba(43, 33, 24, 0.12); }
+.wkd-sring.is-dash i { background: none; color: var(--mz-ink-mut); }
+.wkd-note-block { margin-top: 11px; }
+
+.wkd-tgrow { display: flex; align-items: center; gap: 8px; padding: 3.5px 0; }
+.wkd-tgrow .nm {
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--mz-ink-mut); width: 47px; flex: none;
+}
+.wkd-tgrow .vl {
+  font-size: 10px; font-weight: 700; width: 97px; text-align: right; flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.wkd-gbar { flex: 1; height: 6px; border-radius: 3.5px; background: var(--mz-gbar-bg); overflow: hidden; }
+.wkd-gbar div {
+  height: 100%; border-radius: 3.5px; transform: scaleX(0); transform-origin: left;
+}
+.wkd-gbar div.is-coral { background: var(--mz-goalfill); }
+.wkd-gbar div.is-sage { background: var(--mz-wk-bar-sage); }
+.wkd-gbar div.is-gold { background: var(--mz-strength); }
+.mz-play .wkd-gbar div {
+  animation: wkd-segfill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms);
+}
+@keyframes wkd-segfill { to { transform: none; } }
+
+.wkd-orbcard {
+  border-radius: 22px; padding: 14px 15px; margin-top: 12px; border: 1px solid var(--mz-mem-ink);
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
+}
+.wkd-orbrow { display: flex; align-items: center; gap: 8px; }
+.wkd-orb-eyebrow { color: var(--mz-cell-lav-ink); }
+.wkd-prose { font-size: 12.5px; font-weight: 300; line-height: 1.62; margin-top: 7px; color: var(--text-primary); }
+.wkd-orbfoot { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.wkd-chatch {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px;
+  border: 1px solid rgba(93, 79, 160, 0.3); background: var(--mz-chipbg); border-radius: 999px;
+  padding: 0 13px; font-size: 10px; font-weight: 700; color: var(--mz-cell-lav-ink);
+  font-family: inherit; cursor: pointer;
+}
+.wkd-chatch:disabled { opacity: 0.55; cursor: default; }
+
+.wkd-ghost {
+  border-radius: 21px; padding: 13px 15px; margin-top: 12px;
+  background: var(--mz-wk-thin-bg); border: 1px dashed rgba(43, 33, 24, 0.18); box-shadow: none;
+  display: grid; justify-items: start; gap: 10px;
+}
+.wkd-ghost p { font-size: 11px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); }
+
+.wkd-daynav { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 14px; }
+.wkd-navt {
+  border-radius: 18px; padding: 11px 13px; min-height: 44px; cursor: pointer; text-align: left;
+  font-family: inherit; color: var(--text-primary);
+  border: 0.5px solid rgba(43, 33, 24, 0.07); background: var(--mz-wk-navt-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 9px 19px -12px rgba(43, 33, 24, 0.25);
+}
+.wkd-navt:disabled { opacity: 0.35; cursor: default; }
+.wkd-navt.is-right { text-align: right; }
+.wkd-navt .k {
+  font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--mz-ink-mut);
+}
+.wkd-navt .v { font-size: 12px; font-weight: 700; margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .wkd-sparks i { animation: none; transform: none; }
+  .mz-play .wkd-gbar div { animation: none; transform: none; }
+  .wkd-skel { animation: none; }
+  .wkd-tile { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Heti · tanulságok + felfedezések (mezo-d20.6.10)
+   Source: en-body.html `#page-hless` / `#page-hdisc` — `.lesst`, `.decrow`,
+   `.foot9`, `.predtile.lav`, `.dscgrid`, `.dsct`, `.stch` — scaled ×1.18
+   (330 → 390px frame). Only the decision buttons break the pure scale: they
+   grow to the 44pt touch floor (the `.mz-qbtn` precedent).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* the browsed week, right-aligned in the page head */
+.wkl-wk { margin-left: auto; }
+
+/* the shared `.sk` shimmer block, wearing the page's tile geometry */
+.wk-skel { border-radius: 20px; margin-bottom: 11px; }
+
+/* lav head card — the `.predtile.lav` recipe with its padding override */
+.wkl-head {
+  border-radius: 21px; padding: 11px 13px; margin-bottom: 12px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
+  font-size: 11px; font-weight: 300; line-height: 1.5;
+}
+
+/* -- A hét tanulságai -- */
+.wkl-tile {
+  border-radius: 20px; padding: 13px 14px; margin-bottom: 11px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold);
+}
+.wkl-tile.ok { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.wkl-tile.no {
+  background: var(--mz-wkl-off-bg); box-shadow: none;
+  border: 1px dashed var(--mz-fh-add-bd); opacity: 0.6;
+}
+.wkl-row { display: flex; align-items: flex-start; gap: 9px; }
+.wkl-grow { flex: 1; min-width: 0; }
+.wkl-pic {
+  width: 33px; height: 33px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08);
+}
+.wkl-tx { font-size: 12px; font-weight: 600; line-height: 1.45; }
+.wkl-ev { font-size: 9px; color: var(--mz-ink-soft); margin-top: 5px; font-variant-numeric: tabular-nums; }
+.wkl-done { font-size: 10px; font-weight: 700; color: var(--mz-cell-sage-ink); margin-top: 8px; }
+.wkl-off { font-size: 10px; font-weight: 700; color: var(--mz-ink-mut); margin-top: 8px; }
+
+.wkl-dec { display: flex; gap: 7px; margin-top: 11px; }
+.wkl-btn {
+  flex: 1; min-height: 44px; padding: 0 13px; text-align: center;
+  border: none; border-radius: 999px; font-family: inherit; cursor: pointer;
+  font-size: 11px; font-weight: 600;
+  background: var(--mz-ghostbtn-bg); color: var(--mz-ink-soft);
+}
+.wkl-btn.primary {
+  background: var(--gradient-cta); color: var(--text-inverse);
+  box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55);
+}
+.wkl-btn:disabled { opacity: 0.45; cursor: default; }
+.wkl-btn:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
+
+.wkl-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; }
+
+/* the dashed honest-empty / error card (both Heti detail pages) */
+.wkl-ghost {
+  border-radius: 21px; padding: 13px 15px; margin-bottom: 12px;
+  background: var(--mz-wkl-ghost-bg); border: 1px dashed var(--mz-fh-add-bd); box-shadow: none;
+}
+.wkl-ghost-tx { font-size: 11px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); }
+.wkl-retry { flex: none; margin-top: 11px; min-width: 108px; }
+
+/* -- Heti felfedezések -- */
+.wkd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 12px; }
+.wkd-tile {
+  border-radius: 19px; padding: 12px 13px; display: grid; gap: 6px; cursor: pointer;
+  text-decoration: none; color: var(--text-primary);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 14px 26px -15px var(--wkd-glow, rgba(43, 33, 24, 0.3)),
+              inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.wkd-tile:active { transform: scale(0.96); }
+.wkd-tile.wide { grid-column: 1 / -1; }
+.wkd-tile.lav  { background: var(--mz-wash-lav);  --wkd-glow: var(--mz-wkd-glow-lav); }
+.wkd-tile.gold { background: var(--mz-wash-gold); --wkd-glow: var(--mz-wkd-glow-gold); }
+.wkd-tile.sky  { background: var(--mz-wash-sky);  --wkd-glow: var(--mz-wkd-glow-sky); }
+.wkd-tile.rose { background: var(--mz-wash-rose); --wkd-glow: var(--mz-wkd-glow-rose); }
+.wkd-tile.pred { background: var(--mz-qdone-bg);  --wkd-glow: var(--mz-wkd-glow-sage); }
+.wkd-row { display: flex; align-items: center; gap: 9px; }
+.wkd-grow { flex: 1; min-width: 0; }
+.wkd-pic {
+  width: 33px; height: 33px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: var(--mz-pic-bg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08);
+}
+.wkd-tile b { font-size: 11px; font-weight: 700; line-height: 1.32; }
+.wkd-meta { font-size: 9px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+.wkd-eb {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--mz-ink-mut);
+}
+.wkd-eb.lav  { color: var(--mz-cell-lav-ink); }
+.wkd-eb.gold { color: var(--mz-stch-prop-ink); }
+.wkd-eb.sky  { color: var(--mz-wkd-life-ink); }
+.wkd-eb.rose { color: var(--mz-cell-rose-ink); }
+.wkd-eb.pred { color: var(--mz-stch-ok-ink); }
+.wkd-chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+.wkd-stch {
+  font-size: 8px; font-weight: 800; letter-spacing: 0.08em; border-radius: 7px; padding: 2px 8px; flex: none;
+}
+.wkd-stch.ok   { background: var(--mz-stch-ok-bg);   color: var(--mz-stch-ok-ink); }
+.wkd-stch.lav  { background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
+.wkd-stch.warn { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.wkd-stch.mut  { background: var(--mz-stch-mut-bg);  color: var(--mz-stch-mut-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .wkd-tile { transition: none; }
+}
+
+/* ── Edzés · Sport heti ritmus (mezo-d20.11) — prototype edzes-body.html
+   #page-sport `.sday` / `.slotrow` / `.mastamp` / `.onestamp` ×1.18
+   (330→390px frame). Every day of the week renders: a day WITHOUT a session
+   is a dashed empty row (`.spw-day.empty`), never omitted — the prototype's
+   „nincs session" line. Colours are the rose Mozaik wash/shadow tokens; the
+   MA stamp rides the amber cell pair, the same marker the rest of the app uses. ── */
+.spw-day { position: relative; display: flex; gap: 12px; align-items: flex-start;
+  border-radius: 18px; padding: 9px 13px 9px 17px; margin-bottom: 8px; overflow: hidden;
+  background: var(--mz-stripbg); box-shadow: var(--mz-shadow); }
+.spw-day .spw-dlbl { width: 39px; flex: none; font-size: 11px; font-weight: 800;
+  color: var(--mz-ink-soft); padding-top: 2px; }
+.spw-day.has .spw-dlbl { color: var(--mz-cell-rose-ink); }
+.spw-day.today { background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose); }
+.spw-day.today::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 5px; background: var(--mz-cell-rose-ink); }
+.spw-day.empty { background: transparent; box-shadow: none;
+  border: 1.4px dashed var(--border-subtle); }
+.spw-day.empty .spw-none { font-size: 10.5px; color: var(--mz-ink-mut); padding-top: 2px; }
+.spw-slot + .spw-slot { margin-top: 8px; padding-top: 8px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.spw-l1 { display: flex; align-items: center; gap: 7px; font-size: 13px; flex-wrap: wrap; }
+.spw-l1 b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.spw-l1 .dur { font-size: 10.5px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.spw-l2 { font-size: 10px; color: var(--mz-ink-mut); margin-top: 2px; }
+.spw-ma, .spw-one { font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em;
+  border-radius: 6px; padding: 2px 6px; flex: none; }
+.spw-ma { color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg); }
+.spw-one { color: var(--mz-cell-rose-ink); background: var(--mz-cell-rose-bg); }
+.spw-logbtn { margin-left: auto; flex: none; min-height: 44px; }
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fuel · 1:1 hűség-audit — hiányzó mozgás + a Stack/Receptek Mozaik-arca
+   (mezo-d20.11). Forrás: prototypes/src/fuel-body.html #page-stack / #page-recept
+   (a `.segtabs` szűrő és a `.lsthead` lista-fejléc), ×1.18 (330 → 390 px keret).
+   A sáv-töltés a Heti `.wk-trend` / `.aiu-bar` receptjét viszi tovább: a nyugalmi
+   állapot a `.mz-play` alatt indul nulláról, a reduced-motion ág pedig a kész
+   végállapotot mutatja — így a koreográfia nélküli oldalon semmi nem tűnik el.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Stack nap-ív: a „bevéve eddig" sáv belépéskor nő ki balról. A `.stk-arc-dot.next`
+   arany lüktetése RÉGÓTA `.mz-play`-re várt (5514. sor) — a Stack oldal csak most
+   kapott EntranceGroup-ot, ezért volt eddig néma. */
+.stk-arc-head { display: flex; align-items: baseline; gap: 8px; }
+.stk-arc-note { margin-left: auto; font-size: 9.5px; font-weight: 700; color: var(--mz-ink-soft);
+  font-variant-numeric: tabular-nums; }
+/* The zone mini-mosaic hosts the page-wide `.zcard` (its own `margin: 0 24px`), which
+   overflows a 1fr grid column — the cards were clipped at the right edge. Inside a mosaic
+   cell the card owns the full column. */
+.stk-mini { min-width: 0; }
+.stk-mini .zcard { margin-left: 0; margin-right: 0; }
+.stk-autosave { font-size: 10px; color: var(--mz-ink-mut); text-align: center; padding: 4px 8px 0;
+  font-variant-numeric: tabular-nums; }
+.stk-arc-fill { transform-origin: left; }
+.mz-play .stk-arc-fill {
+  transform: scaleX(0);
+  animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards;
+  animation-delay: var(--d, 260ms);
+}
+
+/* Receptek · szegmens-szűrő (prototípus `.segtabs`, ×1.18) — a kiválasztott
+   szegmens a CTA-gradienst viseli, alatta a darabszám kisebb súllyal. */
+.fh-segtabs { display: flex; gap: 5px; background: var(--surface-recess); border-radius: 999px;
+  padding: 4px; margin-bottom: 13px; }
+.fh-segtabs button { flex: 1; min-width: 0; min-height: 44px; border: none; background: none;
+  border-radius: 999px; padding: 7px 0; font-family: inherit; font-size: 10px; font-weight: 700;
+  color: var(--mz-ink-soft); cursor: pointer; }
+.fh-segtabs button small { display: block; font-size: 8px; font-weight: 700; opacity: 0.75;
+  font-variant-numeric: tabular-nums; }
+.fh-segtabs button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+
+/* Lista-fejléc (prototípus `.lsthead`): bal oldalt az eyebrow, jobbra a darabszám. */
+.fh-lsthead { display: flex; align-items: baseline; gap: 7px; padding: 2px 2px 8px; }
+.fh-lsthead .cnt { margin-left: auto; font-size: 10.5px; font-weight: 700; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums; }
+
+/* Üres/„nincs találat" sor a Receptek és a Kamra listái alatt (prototípus `.nohit`). */
+.fh-nohit { text-align: center; font-size: 12.5px; color: var(--mz-ink-soft); padding: 31px 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-play .stk-arc-fill { animation: none; transform: none; }
+}
+/* ── Mezo tab · 1:1 hűség-javítás (mezo-d20.11) ────────────────────────────
+   A Mezo-testvérek megkapják a Mozaik-scaffoldot (MozaikPage + PageHead +
+   PageHero + PageBody), ami a lap-margót is hozza; ezek a szabályok csak azt
+   a néhány prototípus-részletet pótolják, aminek nem volt osztálya:
+   a hero-szám mellé írt egység (#page-josla „68%", #page-memoria „47/60"),
+   és a chat #page-chat saját elrendezése (page-head jobbra tolt pgact
+   chipekkel, chsub sáv, majd a 17px-es oldalmargós szál + composer).
+   Minden érték a prototípus px-e ×1.18. ── */
+.mzp-heropct { font-size: 19px; font-weight: 200; }
+/* a döntés-kártya már meghozott döntése (a prototípus decdone-ra vált; itt a gomb marad,
+   ezért a kiválasztott ghost halkan tintázódik — soha nem pirossal) */
+.mzh-ghost[aria-pressed="true"] { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
+.mzh-ghost.is-no[aria-pressed="true"] { background: var(--mz-stch-mut-bg); color: var(--mz-no-ink); }
+.mem-herounit { font-size: 18px; font-weight: 400; color: var(--mz-ink-soft); }
+
+/* #page-chat: a page-head két pgact chipje jobbra ül (prototípus .pgact margin-left:auto) */
+.mz-page-head .mzc-pgact:first-of-type { margin-left: auto; }
+/* A prototípusban a page-head FIX, alatta a .chthread görget. Az appban egyetlen görgető van
+   (.screen-content), ezért a fejléc kitapad — különben egy hosszú szál aljáról a kiút ismét
+   csak a tabbar lenne, azaz visszaesnénk a javított hibába. */
+.mzc > .mz-page-head { position: sticky; top: 0; z-index: 30;
+  padding-top: 9px; padding-bottom: 6px; background: var(--canvas); }
+/* prototípus .chsub { padding: 2px 16px 6px } */
+.mzc-chsub { padding: 2px 19px 0; }
+/* prototípus .chthread { padding: 4px 14px 10px } / .composer { margin: 6px 12px 10px } */
+.mzc .chat-thread { padding: 5px 17px 12px; }
+.mzc .mzc-composer { margin-left: 14px; margin-right: 14px; }
+
+
+/* ── Én hub · a coin-sink és a sorozat ajtaja (mezo-d20.11, PROVIZÓRIKUS az F7.4-ig) ──
+   Az AppHero törlésével a TitleShopSheet és a StreakSheet gazdátlan maradt, az érme
+   így csak gyűlt. Az identitás-hero cím-chipje és a számláló-sora most maguk a kapuk:
+   a cím-chip + az érme-statisztika a cím-boltot, a láng a sorozat-lapot nyitja.
+   A prototípus geometriája változatlan (en-body `.titlech` / `.idstats`) — a 44pt-os
+   érintőfelület egy kiterjesztett ::after találati zónából jön, hogy a szöveg mérete
+   és a sor magassága 1:1 maradjon. ── */
+.enh-titlech { border: none; font-family: inherit; cursor: pointer; position: relative; }
+.enh-titlech.is-none { background: var(--mz-stch-mut-bg); color: var(--mz-stch-mut-ink); }
+.enh-idstats button.enh-idstat { border: none; background: none; padding: 0; margin: 0;
+  font: inherit; color: inherit; cursor: pointer; position: relative;
+  font-variant-numeric: tabular-nums; }
+.enh-titlech::after, .enh-idstats button.enh-idstat::after {
+  content: ''; position: absolute; left: -6px; right: -6px; top: 50%;
+  height: 44px; transform: translateY(-50%); }
+.enh-titlech:focus-visible, .enh-idstats button.enh-idstat:focus-visible {
+  outline: 2px solid var(--primary-deep); outline-offset: 3px; }
+
+/* ── Én · hűség-audit pótlások (mezo-d20.11) — prototype en-body.html
+      #page-emberek `.chiprow`/`.fchip` és #page-naplo `.decrow` alatti `.foot9`,
+      ×1.18 (330→390px keret). A szűrő-chipsor eddig a generikus `.chip`-et
+      viselte inline stílusokkal; itt kapja meg a prototípus saját alakját.
+      A „Mi lett belőle?" gomb NEM a prototípusból jön: az elveszett
+      outcome-prózát hozza vissza a visszaigazoló soron (lásd JournalPage.tsx
+      LOST-FUNCTION REPAIR jegyzetét) — a Mozaik meglévő szókincsével. ── */
+.ppl-chiprow { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+.ppl-fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-stripbg); border-radius: 999px;
+  padding: 5px 13px; min-height: 44px; font-size: 11px; font-weight: 600; color: var(--mz-ink-soft);
+  cursor: pointer; font-family: inherit; }
+.ppl-fchip.on { background: var(--mz-cell-coral-bg); border-color: var(--coral); color: var(--mz-cell-coral-ink); }
+
+.mzj-decfoot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; margin: 0; }
+.mzj-decprose { margin-left: auto; flex: none; min-height: 44px; border: 1px solid rgba(43, 33, 24, 0.14);
+  background: var(--mz-stripbg); border-radius: 999px; padding: 5px 13px; font-size: 11px; font-weight: 700;
+  color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+
 /* ============================================================
-   Today · iOS list language (mezo-e26w)
-   Egyetlen doboznyelv: „inset grouped list". Minden vízszintes él ugyanaz a
-   16px-es sín — a globális `--sp-4` DS-token közvetlenül, elemenként. Árnyék
-   helyett .5px hajszálvonal. A sorelválasztó a vezető ikon szélességétől
-   (52px) indul, nem a doboz élétől.
-   Kizárólag meglévő DS-tokenekből épül — nincs új szín, nincs új token.
-   (Korábban egy lokálisan skálázott `--td-gut` property vitte ugyanezt a
-   16px-et, `.dayview, .daytabs, .todaychip`-re scope-olva — de a `.todaychip`
-   szelektor sosem létezett, így a deklaráció minden, e két alfán KÍVÜLI
-   gyökéren [`.td-chip`, a skeletonok] érvénytelenné vált computed-value
-   időben, és a property csendben nullára esett. A property most már nem
-   létezik: minden korábbi felhasználás közvetlenül `--sp-4`-et olvas — lásd
-   `todayCssTokens.test.ts`.)
+   Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
+   Ez a szekció EGYKOR a Mai oldal teljes „inset grouped list" lapnyelvét vitte
+   (napszak-váltó, hero, statisztika-doboz, CTA, sorok, Életjel-ringek,
+   NeedRingSheet, betöltő váz). A Design 2.0 takarításával (mezo-d20.9.1) a
+   TodayPage és minden nézet-komponense kikerült a fából, így az a CSS is —
+   ami itt maradt, az KIZÁRÓLAG a két túlélő felület nyelve:
+     • `MezoMessagesSheet` (`.td-sheet-h`, `.td-thread`, `.td-daysep`,
+       `.td-msg`, `.td-av`, `.td-bub*`) — a NapHubPage nyitja,
+     • `DailyQuestsSheet` + `DailyQuestsCard` (`.td-quest-*`, plusz a
+       `.daily-quests-card .td-quest-list` felülírás).
+   Minden vízszintes él továbbra is a globális `--sp-4` DS-tokenből jön,
+   elemenként — nincs feature-scope-olt custom property (a `--td-gut` csapdája
+   miatt, lásd `todayCssTokens.test.ts`, ami pontosan ezt az invariánst őrzi).
    ============================================================ */
 
-/* ── szegmentált napszak-váltó — egy vályú + csúszó bélyeg ──
-   min-height 44px a tap-target-minimumhoz (code review, mezo-e26w Finding 2) — a vályú emiatt
-   50px-re nő (3px padding + 44px gomb + 3px padding), ez szándékos. */
-.td-segwrap { padding: 6px var(--sp-4) 14px; }
-.td-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
-          background: var(--surface-recess); border-radius: var(--r-full); padding: 3px; }
-.td-seg button { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-                 min-height: 44px; border: 0; background: transparent; border-radius: var(--r-full);
-                 font-family: var(--ff-body); font-size: 13.5px; font-weight: 600; letter-spacing: -.01em;
-                 color: var(--text-secondary); cursor: pointer;
-                 transition: background var(--duration-fast) var(--ease-out),
-                             color var(--duration-fast) var(--ease-out); }
-.td-seg button em { font-style: normal; font-size: 13px; opacity: .9; }
-.td-seg button[aria-pressed='true'] { background: var(--surface-card); color: var(--text-primary);
-                                      box-shadow: 0 1px 3px rgba(43, 33, 24, .10),
-                                                  0 0 0 .5px rgba(43, 33, 24, .04); }
-.td-now { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-base);
-          box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--accent-base) 24%, transparent); }
-
-/* ── MezoChip ── */
-.td-chip { display: flex; align-items: center; gap: 10px; width: calc(100% - 2 * var(--sp-4));
-           margin: 0 var(--sp-4) 18px; padding: 11px 14px; min-height: 44px;
-           border-radius: var(--r-lg); background: var(--surface-card);
-           border: .5px solid var(--divider); cursor: pointer; text-align: left;
-           box-shadow: 0 1px 2px rgba(43, 33, 24, .05); font-family: var(--ff-body); }
 .td-av { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; position: relative;
          background: var(--gradient-cta); color: var(--text-inverse); display: grid;
          place-items: center; font-size: 12px; box-shadow: 0 2px 6px rgba(255, 91, 54, .30); }
-.td-av.is-unread::after { content: ''; position: absolute; top: -1px; right: -1px;
-                          width: 9px; height: 9px; border-radius: 50%; background: var(--primary-base);
-                          box-shadow: 0 0 0 2px var(--surface-card); }
-.td-chip-t { flex: 1; min-width: 0; }
-.td-chip-t b { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary);
-               letter-spacing: -.01em; }
-.td-chip-t i { display: block; font-style: normal; font-size: 12px; color: var(--text-muted);
-               white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
-.td-chip-n { flex: 0 0 auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--r-full);
-             background: var(--primary-base); color: var(--text-inverse); font-size: 11.5px;
-             font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
-.td-chev { flex: 0 0 auto; color: var(--text-disabled); font-size: 16px; font-weight: 600; }
-.td-quest-chip { margin-top: -8px; margin-bottom: 8px; }
-.td-quest-av { background: var(--accent-soft); color: var(--accent-deep); box-shadow: none; }
 
 /* ── Napi küldetések sheet ── */
 .td-quest-sheet { max-height: 76%; overflow-y: auto; }
@@ -5823,140 +6718,6 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .td-quest-empty { padding: 18px var(--sp-4) 24px; text-align: center;
                   font-size: 13px; color: var(--text-muted); }
 
-/* ── napszak-hero ── */
-.td-hero { padding: 2px var(--sp-4) 0; }
-.td-hero-l { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
-.td-hero-v { font-family: var(--ff-display); font-size: 36px; font-weight: 250; line-height: 1.05;
-             letter-spacing: -.035em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.td-hero-u { font-size: 15px; font-weight: 400; color: var(--text-secondary); letter-spacing: -.01em; }
-.td-hero-s { display: block; font-family: var(--ff-body); font-size: 12.5px; color: var(--text-muted);
-             margin-top: 5px; letter-spacing: -.005em; }
-
-/* ── statisztika-csoport: EGY doboz, függőleges hajszálvonallal ── */
-.td-stats { display: grid; margin: 14px var(--sp-4) 0; background: var(--surface-card);
-            border: .5px solid var(--divider); border-radius: var(--r-lg); overflow: hidden; }
-.td-stat { padding: 12px 14px; }
-.td-stat + .td-stat { border-left: .5px solid var(--divider); }
-.td-stat-v { font-family: var(--ff-display); font-size: 21px; font-weight: 400; letter-spacing: -.02em;
-             color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.td-stat-v small { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-left: 2px; }
-.td-stat-l { font-family: var(--ff-body); font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
-             text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
-.td-stat-d { font-family: var(--ff-body); font-size: 11.5px; margin-top: 4px; color: var(--text-secondary); }
-.td-stat-d.is-good { color: var(--success-hover); }
-.td-stat-d.is-warn { color: var(--warning-hover); }
-.td-stat-d.is-muted { color: var(--text-muted); }
-
-/* ── elsődleges CTA + ghost ── */
-.td-cta { display: flex; align-items: center; justify-content: center; gap: 8px;
-          width: calc(100% - 2 * var(--sp-4)); margin: 16px var(--sp-4) 0; min-height: 50px;
-          border: 0; border-radius: var(--r-lg); background: var(--gradient-cta);
-          color: var(--text-inverse); font-family: var(--ff-body); font-size: 16px; font-weight: 600;
-          letter-spacing: -.01em; box-shadow: var(--shadow-cta); cursor: pointer; }
-.td-cta.is-lav { background: linear-gradient(135deg, #A99BD3, #8B7CC0);
-                 box-shadow: 0 8px 20px rgba(139, 124, 192, .32); }
-.td-ghost { display: block; width: calc(100% - 2 * var(--sp-4)); margin: 8px var(--sp-4) 0;
-            min-height: 44px; border-radius: var(--r-lg); border: .5px solid var(--divider);
-            background: var(--surface-card); font-family: var(--ff-body); font-size: 14.5px;
-            font-weight: 600; color: var(--text-secondary); cursor: pointer; }
-
-/* ── szekció + inset grouped list ── */
-.td-sec { margin-top: 26px; }
-.td-sech { display: flex; align-items: baseline; padding: 0 var(--sp-4) 7px; }
-.td-sech b { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .075em;
-             text-transform: uppercase; color: var(--text-muted); }
-.td-sech a, .td-sech button { margin-left: auto; font-family: var(--ff-body); font-size: 12.5px;
-                              font-weight: 600; color: var(--primary-hover); text-decoration: none;
-                              letter-spacing: -.005em; border: 0; background: none; cursor: pointer;
-                              padding: 6px 0 6px 8px; }
-.td-list { margin: 0 var(--sp-4); background: var(--surface-card); border: .5px solid var(--divider);
-           border-radius: var(--r-lg); overflow: hidden; }
-.td-row { display: flex; align-items: center; gap: 11px; padding: 9px 13px; min-height: 56px;
-          position: relative; background: transparent; width: 100%; text-align: left;
-          font-family: var(--ff-body); }
-/* iOS-elválasztó: a vezető ikon szélességétől indul, nem a doboz élétől */
-.td-row + .td-row::before { content: ''; position: absolute; top: 0; left: 52px; right: 0;
-                            border-top: .5px solid var(--divider); }
-.td-ic { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; display: grid;
-         place-items: center; font-size: 15px; background: var(--surface-recess); }
-.td-ic.t-habit { background: color-mix(in srgb, var(--dv-lav) 18%, transparent); }
-.td-ic.t-quest { background: color-mix(in srgb, var(--accent-base) 20%, transparent); }
-.td-ic.t-fuel  { background: color-mix(in srgb, var(--dv-sage) 22%, transparent); }
-.td-ic.t-check { background: color-mix(in srgb, var(--dv-rose) 20%, transparent); }
-.td-ic.t-train { background: color-mix(in srgb, var(--primary-base) 16%, transparent); }
-.td-tx { flex: 1; min-width: 0; }
-.td-t1 { display: block; font-size: 15.5px; font-weight: 500; letter-spacing: -.015em;
-         color: var(--text-primary); line-height: 1.25; }
-.td-t2 { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px;
-         letter-spacing: -.005em; line-height: 1.3; }
-.td-tm { flex: 0 0 auto; font-size: 13px; font-weight: 600; color: var(--text-muted);
-         font-variant-numeric: tabular-nums; }
-/* kísérő #1 — tintás szöveggomb (NEM szürke pirula). `min-height: 44px` + a saját
-   `display: flex; align-items: center` a tap-target-minimum (pre-merge review Finding 3) — a
-   sor legtöbbet koppintott kísérője volt az egyetlen `.td-*` kontroll, ami kimaradt a
-   `.td-tick`/`.td-seg button` 44px-őrből (`todayTapTargets.test.ts`). A `.td-row` saját
-   56px-es `min-height`-je + `align-items: center`-je miatt a sor magassága nem nő; a belső
-   flex-centrírozás csak a föliratot tartja középen a magasabb dobozban, a padding változatlan. */
-.td-act { flex: 0 0 auto; border: 0; background: none; padding: 12px 2px 12px 10px; cursor: pointer;
-          font-family: var(--ff-body); font-size: 14.5px; font-weight: 600; letter-spacing: -.01em;
-          color: var(--primary-hover); white-space: nowrap; min-height: 44px; display: flex;
-          align-items: center; }
-.td-act.is-inert { color: var(--text-disabled); cursor: default; }
-/* kísérő #2 — pipáló karika: a GOMB 44×44 (tap-target-minimum), a látható 26px kör csak a
-   rajz — a `::before`-ban, a gombon belül középre igazítva, hogy a nagyobb találati felület
-   ne nagyítsa fel magát a kört (code review, mezo-e26w Finding 1). Az `isolation: isolate` +
-   a kör negatív z-indexe a rétegsorrendet a gombon BELÜLRE zárja: a pipa-glyph (a gomb
-   szövegtartalma) így mindig a kör fölött fest, anélkül hogy a kör kiszökne a `.td-list`
-   kártya háttere mögé. */
-.td-tick { flex: 0 0 auto; position: relative; isolation: isolate; width: 44px; height: 44px;
-           border: 0; background: none; cursor: pointer;
-           display: grid; place-items: center; font-size: 14px; color: transparent; }
-.td-tick::before { content: ''; position: absolute; inset: 0; margin: auto; z-index: -1;
-                    width: 26px; height: 26px; border-radius: 50%;
-                    border: 1.6px solid var(--text-disabled); }
-.td-tick.is-done { color: var(--text-inverse); }
-.td-tick.is-done::before { border-color: var(--success-base); background: var(--success-base); }
-.td-link { flex: 0 0 auto; width: 44px; height: 44px; display: inline-flex; align-items: center;
-           justify-content: center; color: var(--text-muted); text-decoration: none; font-size: 14px; }
-/* az egész-sor-gomb alak: a találati felület a soron BELÜL él, hogy a `↗` link a
-   testvére lehessen (sosem a gombba ágyazva — érvénytelen HTML + kattintás-ütközés).
-   `align-self: stretch` a gombot a `.td-row` tartalmi dobozának teljes magasságára
-   nyújtja; a negatív `margin-block` + az őt kompenzáló `padding-block` visszanyúlik a
-   sor saját 9px függőleges paddingjébe, így a találati terület lefedi a sor teljes
-   56px-es magasságát (tap target ≥ 44px), a vizuális elrendezés egyetlen pixelt sem
-   mozdul (code review, mezo-e26w Task 6 fix — a gomb korábban a 28px ikon
-   tartalommagasságára zsugorodott). */
-.td-row-hit { display: flex; align-items: center; gap: 11px; flex: 1; min-width: 0;
-              background: none; border: 0; padding: 0; text-align: left; cursor: pointer;
-              font-family: inherit; color: inherit; align-self: stretch; margin-block: -9px;
-              padding-block: 9px; }
-.td-row.is-done .td-t1 { color: var(--text-muted); text-decoration: line-through; }
-.td-row.is-done .td-ic { opacity: .45; }
-
-/* ── lábjegyzet a csoport alatt — doboz nélkül ── */
-.td-foot { padding: 7px var(--sp-4) 0; font-family: var(--ff-body); font-size: 12px;
-           line-height: 1.45; color: var(--text-muted); letter-spacing: -.005em; }
-.td-foot.is-warn { color: var(--warning-hover); }
-/* A CTA helyén álló kész-felirat (mezo-v84m) — a `.is-warn` testvére, ugyanaz a lábjegyzet-sor,
-   csak a siker-tokennel; nem új szín, és nem lesz belőle gomb (a kész edzés nem indítható újra). */
-.td-foot.is-done { color: var(--success-hover); font-weight: 600; }
-
-/* ── kész-hajtás ── */
-.td-done { display: flex; align-items: center; gap: 6px; width: calc(100% - 2 * var(--sp-4));
-           margin: 12px var(--sp-4) 0; padding: 11px 14px; min-height: 44px; border-radius: var(--r-lg);
-           background: transparent; border: .5px dashed var(--divider); cursor: pointer;
-           font-family: var(--ff-body); font-size: 13px; font-weight: 600;
-           color: var(--success-hover); letter-spacing: -.005em; }
-.td-done span { margin-left: auto; color: var(--text-disabled); }
-.td-dayxp { text-align: center; font-family: var(--ff-body); font-size: 12px; font-weight: 700;
-            color: var(--success-hover); padding: 10px var(--sp-4) 0; }
-
-/* ── fókusz (creed) — ugyanaz a listadoboz, halk levendula fejjel ── */
-.td-creed { padding: 12px 14px; background: color-mix(in srgb, var(--dv-lav) 9%, var(--surface-card)); }
-.td-creed-q { display: block; width: 100%; text-align: left; border: 0; background: none;
-              cursor: pointer; font-family: var(--ff-display); font-size: 14.5px; font-style: italic;
-              font-weight: 300; color: var(--secondary-base); line-height: 1.45; }
-
 /* ── MezoMessagesSheet ── */
 .td-sheet-h { display: flex; align-items: center; padding: 4px 16px 12px;
               border-bottom: .5px solid var(--divider); }
@@ -5985,59 +6746,3 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .td-bub-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .td-bub-meta { font-family: var(--ff-body); font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
                text-transform: uppercase; color: var(--text-disabled); margin-top: 9px; }
-
-/* a betöltő váz elrendezése — inline style helyett, hogy a lap CSS-e egy helyen éljen */
-.td-skel { padding: 0 var(--sp-4); }
-.td-skel-chip  { padding-bottom: 18px; }
-.td-skel-needs { padding-bottom: 18px; }
-.td-skel-hero  { padding-top: 2px; }
-.td-skel-stats { padding-top: 14px; }
-.td-skel-list  { padding-top: 26px; }
-
-/* ── Életjel-ringek (mezo-dhzk) ── */
-.td-needs { display: flex; justify-content: space-between; padding: 0 var(--sp-4); margin: 0 0 16px; }
-.td-need { display: grid; place-items: center; flex: 0 0 auto; min-width: 44px; min-height: 44px;
-           border-radius: var(--r-full); }
-:where(.td-need) .td-need-halo { animation: td-need-pulse 2s var(--ease-in-out) infinite; }
-@keyframes td-need-pulse { 0%, 100% { opacity: .25; } 50% { opacity: .7; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .td-need-halo { animation: none; opacity: .45; }
-}
-
-/* ── NeedRingSheet (mezo-dhzk, Task 4) ── */
-.td-need-head { display: flex; align-items: center; gap: 12px; padding: 6px var(--sp-4) 4px; }
-.td-need-head-info { flex: 1; min-width: 0; }
-.td-need-head-name { font-family: var(--ff-body); font-size: 16px; font-weight: 700;
-                      color: var(--text-primary); letter-spacing: -.01em; }
-.td-need-head-last { font-family: var(--ff-body); font-size: 12px; color: var(--text-muted);
-                      margin-top: 2px; }
-.td-need-head-pct { text-align: right; font-variant-numeric: tabular-nums; }
-.td-need-head-pct b { display: block; font-family: var(--ff-body); font-size: 20px; font-weight: 800;
-                       color: var(--text-primary); }
-.td-need-head-pct.is-warn b { color: var(--error-base); }
-.td-need-head-pct span { display: block; font-family: var(--ff-body); font-size: 11px;
-                          color: var(--text-muted); margin-top: 1px; }
-.td-need-cast { margin: 12px var(--sp-4) 0; padding: 12px 14px; border-radius: var(--r-lg);
-                background: var(--surface-recess); font-family: var(--ff-body); font-size: 13px;
-                line-height: 1.45; color: var(--text-secondary); }
-.td-need-fills { margin: 2px var(--sp-4) 0; border-radius: var(--r-lg);
-                  background: var(--surface-recess); overflow: hidden; }
-.td-need-fills div { padding: 11px 14px; font-family: var(--ff-body); font-size: 13px;
-                      color: var(--text-secondary); }
-.td-need-fills div + div { border-top: .5px solid var(--divider); }
-.td-need-tl { position: relative; height: 56px; margin: 2px var(--sp-4) 0;
-              border-top: .5px solid var(--divider); }
-.td-need-tl-dot { position: absolute; top: 14px; display: flex; flex-direction: column;
-                   align-items: center; transform: translateX(-50%); }
-.td-need-tl-dot i { display: block; width: 8px; height: 8px; border-radius: var(--r-full);
-                     background: var(--text-muted); }
-.td-need-tl-dot span { margin-top: 5px; font-family: var(--ff-body); font-size: 10px;
-                        font-variant-numeric: tabular-nums; color: var(--text-muted);
-                        white-space: nowrap; }
-.td-need-tl-now { position: absolute; top: 0; bottom: 8px; width: 1px; background: var(--divider); }
-.td-need-tl-now span { position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
-                        font-family: var(--ff-body); font-size: 9.5px; font-weight: 700;
-                        letter-spacing: .03em; color: var(--text-disabled); white-space: nowrap; }
-.td-need-tl-empty { margin: 2px var(--sp-4) 0; padding: 14px; text-align: center;
-                     font-family: var(--ff-body); font-size: 12.5px; color: var(--text-muted); }

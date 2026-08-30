@@ -14,6 +14,7 @@ import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -28,6 +29,10 @@ import java.util.UUID;
 @SQLDelete(sql = "update learned_fact set is_deleted = true where id = ?")
 @SQLRestriction("is_deleted = false")
 public class LearnedFactEntity extends OwnedEntity {
+
+    /** Mirrors ck_learned_fact_source — where the proposal came from (the promoted fact inherits it). */
+    public static final String SOURCE_CHAT = "chat";
+    public static final String SOURCE_WEEKLY_REVIEW = "weekly_review";
 
     public static final String DECISION_ACCEPT = "accept";
     public static final String DECISION_REJECT = "reject";
@@ -49,7 +54,27 @@ public class LearnedFactEntity extends OwnedEntity {
     @Column(nullable = false, length = 16)
     private String category;
 
-    /** The chat message the candidate was extracted from (loose ref — ON DELETE SET NULL). */
+    /** Mirrors ck_learned_fact_source: 'chat' = V1.2 post-turn extraction, 'weekly_review' = the
+     *  Monday weekly round's proposal (mezo-d20.7.6). {@code FactCandidateService.decide} derives
+     *  the promoted knowledge fact's source from this — promotion must not re-label the origin. */
+    @NotNull
+    @Size(max = 16)
+    @Pattern(regexp = "chat|weekly_review")
+    @Column(nullable = false, length = 16)
+    private String source = SOURCE_CHAT;
+
+    /** The ISO Monday of the weekly review that proposed this — NOT NULL exactly for
+     *  source='weekly_review' (ck_learned_fact_week_start_source), null for chat candidates. */
+    @Column(name = "week_start")
+    private LocalDate weekStart;
+
+    /** What the candidate rests on, in the proposer's own words — weekly candidates only; the
+     *  chat extractor produces none, and an unknown evidence stays null (never a placeholder). */
+    @Column(columnDefinition = "text")
+    private String evidence;
+
+    /** The chat message the candidate was extracted from (loose ref — ON DELETE SET NULL);
+     *  null for a weekly candidate, which has no message behind it. */
     @Column(name = "derived_from_message_id", columnDefinition = "uuid")
     private UUID derivedFromMessageId;
 

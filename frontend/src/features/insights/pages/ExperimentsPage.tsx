@@ -10,11 +10,26 @@
 // contracts preserved: honest empty state, actions gated on live and
 // disabled while pending, the propose CTA inert in mock (byte-parity).
 // ============================================================
+import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { ClayIcon } from '@/shared/ui/clay'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useExperiments, useExperimentActions } from '@/data/hooks'
 import type { Experiment } from '@/data/types'
+
+/** The page frame every branch renders inside — the way back must exist on all of them. */
+function ExpFrame({ big, children }: { big?: ReactNode; children: ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <MozaikPage tone="gold">
+      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
+      <PageHero icon="i-lombik" name="N=1 kísérletek" big={big} sub="a saját testeden bizonyítjuk" />
+      <PageBody>{children}</PageBody>
+    </MozaikPage>
+  )
+}
 
 /** Hungarian status chips (prototype .stch classes). */
 function chipOf(e: Experiment): { label: string; chip: string; wash?: string } {
@@ -39,22 +54,25 @@ export function ExperimentsPage() {
   const { experiments, mode } = useExperiments()
   const { decide, propose, pending } = useExperimentActions()
   const live = mode === 'live'
+  // Prototype hero big number (#kisBig) — spins up, reduced-motion aware in the hook itself.
+  const heroCount = useCountUp(experiments.length)
 
   if (experiments.length === 0) {
     return (
-      <div className="card" style={{ padding: 18, textAlign: 'center' }}>
-        <span className="eyebrow text-tertiary">tanulom</span>
-        <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          Az első N=1 kísérletet a megerősített mintákból javasolja Mezo.
-        </p>
-      </div>
+      <ExpFrame>
+        <div className="card" style={{ padding: 18, textAlign: 'center' }}>
+          <span className="eyebrow text-tertiary">tanulom</span>
+          <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            Az első N=1 kísérletet a megerősített mintákból javasolja Mezo.
+          </p>
+        </div>
+      </ExpFrame>
     )
   }
 
   return (
+    <ExpFrame big={heroCount}>
     <EntranceGroup className="col gap-md">
-      <span className="eyebrow">N=1 kísérletek · {experiments.length}</span>
-
       {experiments.map((e, i) => {
         const meta = chipOf(e)
         return (
@@ -113,5 +131,6 @@ export function ExperimentsPage() {
         ＋ Új kísérletet javasol Mezo
       </button>
     </EntranceGroup>
+    </ExpFrame>
   )
 }

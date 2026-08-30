@@ -268,7 +268,9 @@ export function SleepPage() {
               {/* Fixed window (whole-branch review FIX 4) — the 7d/14d chips that used to drive this
                   live in the Trend block BELOW this card; tapping one retitled or removed a card
                   above it. The card's own heading already discloses its N ("...· N éjszakából"). */}
-              <PhaseAverageCard entries={sleepLog} windowDays={14} />
+              <div className="rise" style={{ '--d': '190ms' } as React.CSSProperties}>
+                <PhaseAverageCard entries={sleepLog} windowDays={14} />
+              </div>
 
               {/* Duration + quality chart — the 7-night stacked phase columns + quality dots */}
               <div className="rise" style={{ '--d': '210ms', marginBottom: 16 } as React.CSSProperties}>
@@ -292,7 +294,9 @@ export function SleepPage() {
                 <SleepChart entries={sleepLog} period={period} />
               </div>
 
-              <RemDurationCard entries={sleepLog} />
+              <div className="rise" style={{ '--d': '230ms' } as React.CSSProperties}>
+                <RemDurationCard entries={sleepLog} />
+              </div>
 
               {/* Recent log */}
               <div className="rise" style={{ '--d': '250ms' } as React.CSSProperties}>

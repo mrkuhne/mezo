@@ -5,15 +5,19 @@ import { describe, expect, test } from 'vitest'
 import rawCss from '@/styles/prototype.css?raw'
 
 /**
- * Guard (mezo-1khu heritage, re-anchored onto the three-islands CSS by mezo-euze, and again
- * onto the daypart-tabs CSS by mezo-puci): the `.isl-*` blob morph, floating capsules and L1
- * row stagger are now Fuel's alone (`shared/ui/Island.tsx` + `features/fuel/components/
- * WindowIsland.tsx` — the „Mai" window island) and the evening phase-swap (`.isl-phase`) that
- * used to live here was retired with the island components. Today's own motion is now the
- * `.dayview` fade-in (`isl-phasein`, reused). Every one of these must be neutralized under
+ * Guard (mezo-1khu heritage, re-anchored onto the three-islands CSS by mezo-euze): the `.isl-*`
+ * blob morph, floating capsules and L1 row stagger must be neutralized under
  * `prefers-reduced-motion`, or the Playwright goldens (which run `reducedMotion: 'reduce'`)
- * flake on in-flight frames — Fuel's islands and Today's day view share the same CSS file and
- * the same guard, so this file keeps testing both.
+ * flake on in-flight frames.
+ *
+ * Two subjects this file used to guard are GONE after the Design 2.0 cleanup (mezo-d20.9.1),
+ * and their tests went with the CSS they measured:
+ *   · Today's `.dayview` fade-in (`isl-phasein`) — deleted with `TodayPage` and its daypart views;
+ *   · `WindowIsland` — retired by the Fuel hub's window swimlane, so the surviving `.isl-*`
+ *     rules are carried by Fuel's own belt/keret surfaces.
+ * The file keeps its name and its home under `features/today/` because the cascade scanner
+ * below is the general-purpose part and still guards Fuel's three families in the same
+ * stylesheet.
  *
  * Structural contract carried over from the retired `.faceswap` guard: every modifier
  * qualifier (delay variants, nth-child stagger) is `:where()`-wrapped, so no active selector
@@ -24,9 +28,9 @@ const REDUCED_BLOCKS = [...rawCss.matchAll(/@media \(prefers-reduced-motion: red
   .map((m) => m[1])
   .join('\n')
 
-describe('the island family (now Fuel-owned) and Today day-view motion are reduced-motion safe', () => {
+describe('the island family (Fuel-owned) is reduced-motion safe', () => {
   // These three are Fuel's — the `.isl`/`.isl-l1` shell lives in `shared/ui/Island.tsx` and
-  // `features/fuel/components/WindowIsland.tsx` now, not Today.
+  // Fuel's belt/keret components now, not Today.
   test.each([
     ':where(.isl.isl-big) .isl-blob',
     ':where(.isl:not(.isl-big))',
@@ -35,14 +39,14 @@ describe('the island family (now Fuel-owned) and Today day-view motion are reduc
     expect(REDUCED_BLOCKS).toContain(selector)
   })
 
-  test('the day view animation is guarded by a :where()-wrapped reduce override', () => {
-    expect(rawCss).toMatch(/:where\(\.dayview\)\s*\{\s*animation:\s*isl-phasein/)
-    const reduce = rawCss.slice(rawCss.indexOf('@media (prefers-reduced-motion: reduce)'))
-    expect(reduce).toMatch(/\.dayview\s*\{\s*animation:\s*none/)
+  test('the retired Today day-view motion really is gone from the stylesheet (no orphan rule ' +
+    'left running unguarded)', () => {
+    expect(rawCss).not.toContain('.dayview')
+    expect(rawCss).not.toContain('isl-phasein')
   })
 
-  test('every island-motion keyframe (Fuel + Today) has a matching reduce rule', () => {
-    for (const name of ['isl-morph', 'isl-floaty', 'isl-rowin', 'isl-phasein']) {
+  test('every island-motion keyframe (Fuel) has a matching reduce rule', () => {
+    for (const name of ['isl-morph', 'isl-floaty', 'isl-rowin']) {
       expect(rawCss).toContain(`@keyframes ${name}`)
     }
     expect(REDUCED_BLOCKS).toMatch(/animation:\s*none/)
@@ -152,10 +156,11 @@ const rules = parseRules(rawCss)
 const isActive = (r: Rule) => r.media !== 'reduce' && r.media !== 'no-preference'
 
 /** The three island motion families (Fuel-owned: `shared/ui/Island.tsx` +
- *  `features/fuel/components/WindowIsland.tsx`): which ACTIVE selectors belong to each (by
- *  token) and which reduce-block override must dominate them. The fourth family this guard
- *  used to cover — the evening `.isl-phase` swap — was retired with the island components
- *  (mezo-puci); Today's own phase-in motion is `.dayview`, covered separately above. */
+ *  Fuel's belt/keret surfaces): which ACTIVE selectors belong to each (by token) and which
+ *  reduce-block override must dominate them. Three families this guard used to cover are
+ *  retired: the evening `.isl-phase` swap (with the island components, mezo-puci), Today's
+ *  `.dayview` phase-in (with TodayPage, mezo-d20.9.1) and WindowIsland (with the Fuel
+ *  swimlane, mezo-d20.9.1). */
 const FAMILIES = [
   { name: 'blob morph', token: '.isl-blob', override: ':where(.isl.isl-big) .isl-blob' },
   { name: 'capsule floaty', token: ':not(.isl-big)', override: ':where(.isl:not(.isl-big))' },

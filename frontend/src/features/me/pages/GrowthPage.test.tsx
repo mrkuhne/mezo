@@ -157,3 +157,30 @@ test('switching to Rutin renders the routine chains from the habit catalog', asy
   expect(screen.getByText('Reggeli rutin')).toBeInTheDocument()
   expect(screen.getByText('Esti rutin')).toBeInTheDocument()
 })
+
+// ── entrance choreography (mezo-d20.11) ──
+// The fidelity audit measured /me/growth as `play: 1, rise: 0` — an armed
+// EntranceGroup with nothing to animate: the default Skillek tab's children never
+// carried `.rise`. The prototype (#page-growth `GR.skill`) staggers every band.
+
+test('the Skillek tab staggers its panel — .rise children, all inside .mz-play', () => {
+  const { container } = renderPage()
+  const play = container.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  const rises = container.querySelectorAll('.rise')
+  expect(rises.length).toBeGreaterThanOrEqual(4) // Ma block + three skill bands
+  for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+  const bands = [...container.querySelectorAll('.gr-band')]
+  expect(bands.map((b) => (b as HTMLElement).style.getPropertyValue('--d')))
+    .toEqual(['60ms', '120ms', '180ms'])
+})
+
+test('every segment keeps its stagger when the tab switches (replayKey re-arms)', async () => {
+  const { container } = renderPage()
+  for (const tab of ['Rutin', 'Napló', 'Kitüntetések']) {
+    await userEvent.click(screen.getByRole('tab', { name: tab }))
+    const rises = container.querySelectorAll('.rise')
+    expect(rises.length).toBeGreaterThan(0)
+    for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+  }
+})

@@ -67,7 +67,10 @@ export function FuelMedicationPage() {
       <MozaikPage tone="lav">
         <PageHead onBack={() => navigate(-1)} label="‹ Fuel" />
         <PageBody>
-          <div data-testid="medication-empty" className="mz-qcard" style={{ textAlign: 'center', padding: 24 }}>
+          {/* The empty branch is choreographed too — it was the ONLY branch the mock day ever
+              reaches, which is why /fuel/gyogyszer measured as "no entrance choreography". */}
+          <EntranceGroup>
+          <div data-testid="medication-empty" className="mz-qcard rise" style={{ textAlign: 'center', padding: 24 }}>
             <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
               Nincs aktív gyógyszer
             </span>
@@ -75,6 +78,7 @@ export function FuelMedicationPage() {
               Nem követsz gyógyszert. Jelenleg nincs felvételi út a felületen — ha kellene, az külön fejlesztés.
             </span>
           </div>
+          </EntranceGroup>
         </PageBody>
       </MozaikPage>
     )
@@ -127,16 +131,16 @@ export function FuelMedicationPage() {
 
           {/* Beadások — the dose log, newest first (the hook already returns recentDoses newest-first),
               now surfacing dose.note (audit gap #10: captured by LogDoseSheet, never shown before). */}
-          <div className="row" style={{ alignItems: 'center', margin: '18px 2px 10px' }}>
+          <div className="row rise" style={{ '--d': '70ms', alignItems: 'center', margin: '18px 2px 10px' } as React.CSSProperties}>
             <span className="mz-eyebrow">Beadások</span>
           </div>
 
           {doses.length === 0 ? (
-            <div className="mz-qcard" style={{ textAlign: 'center' }}>
+            <div className="mz-qcard rise" style={{ '--d': '100ms', textAlign: 'center' } as React.CSSProperties}>
               <span className="text-tertiary" style={{ fontSize: 12 }}>Még nincs rögzített beadás.</span>
             </div>
           ) : (
-            <ul role="list" aria-label="Beadások" className="mz-qcard" style={{ padding: '4px 14px', listStyle: 'none', margin: 0 }}>
+            <ul role="list" aria-label="Beadások" className="mz-qcard rise" style={{ '--d': '100ms', padding: '4px 14px', listStyle: 'none', margin: 0 } as React.CSSProperties}>
               {doses.map((dose) => (
                 <li key={dose.id} className="fmd-doserow">
                   <span style={{ color: 'var(--text-primary)' }}>

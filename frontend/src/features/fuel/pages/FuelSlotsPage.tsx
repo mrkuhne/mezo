@@ -27,6 +27,7 @@ import { useFuelSettings, useFuelTimeline, useSlotTemplateActions, useSlotTempla
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { compileTemplate, resolveAnchorTimes } from '@/features/fuel/logic/compileTemplate'
 import { validateSlotPlan } from '@/features/fuel/logic/validateSlotPlan'
 import { placeWindows, splitBudget, splitBudgetPct } from '@/features/fuel/logic/buildDayPlan'
@@ -327,7 +328,11 @@ export function FuelSlotsPage() {
             aria-label="Vissza"
           >‹</button>
         </div>
-        <div className="pghead-np sage" style={{ padding: '8px 0 14px' }}>
+        {/* Entrance choreography (fidelity audit, mezo-d20.11): the page had none. The FACE
+            stays the pre-Mozaik `.pghead-np` one deliberately — the prototype does not cover
+            the meal-window EDITOR, so re-facing it is the F7.3 design round, not this audit. */}
+        <EntranceGroup>
+        <div className="pghead-np sage rise" style={{ '--d': '0ms', padding: '8px 0 14px' } as React.CSSProperties}>
           <div>
             <div className="over">Fuel · Beállítások</div>
             <h1>Étkezési ablakok</h1>
@@ -335,7 +340,7 @@ export function FuelSlotsPage() {
         </div>
 
         {/* Day-type switcher */}
-        <div role="tablist" aria-label="Naptípusok" className="row gap-xs" style={{ marginBottom: 14 }}>
+        <div role="tablist" aria-label="Naptípusok" className="row gap-xs rise" style={{ '--d': '40ms', marginBottom: 14 } as React.CSSProperties}>
           {DAY_TYPES.map(dt => (
             <SegButton key={dt.id} on={dayType === dt.id} onClick={() => setDayType(dt.id)}>{dt.label}</SegButton>
           ))}
@@ -343,7 +348,7 @@ export function FuelSlotsPage() {
 
         {!editing ? (
           <>
-            <div className="col gap-sm" style={{ marginBottom: 12 }}>
+            <div className="col gap-sm rise" style={{ '--d': '80ms', marginBottom: 12 } as React.CSSProperties}>
               {recommendedWindows.map((w, i) => (
                 <div key={i} className="zcard" style={{ padding: '11px 12px', marginLeft: 0, marginRight: 0 }}>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
@@ -360,13 +365,13 @@ export function FuelSlotsPage() {
                 this day type — Mentés would silently overwrite the real template with the fork.
                 Mock mode resolves `isPending` synchronously (`useDualQuery`'s `initialData`), so the
                 button is never disabled there. */}
-            <button className="cta-primary" onClick={fork} disabled={templatesPending} style={{ width: '100%' }}>
+            <button className="cta-primary rise" onClick={fork} disabled={templatesPending} style={{ '--d': '120ms', width: '100%' } as React.CSSProperties}>
               <Icon name="pencil" size={14} /> Testreszabás
             </button>
           </>
         ) : (
           <>
-            <div className="col gap-sm" style={{ marginBottom: 12 }}>
+            <div className="col gap-sm rise" style={{ '--d': '80ms', marginBottom: 12 } as React.CSSProperties}>
               {rows.map((row, i) => (
                 <div key={i} className="zcard" style={{ padding: '11px 12px', marginLeft: 0, marginRight: 0 }}>
                   <div className="row" style={{ alignItems: 'center', gap: 8 }}>
@@ -561,6 +566,7 @@ export function FuelSlotsPage() {
             )}
           </>
         )}
+        </EntranceGroup>
       </div>
 
       {/* Save bar — portaled into the phone screen (RecipeEditorPage.tsx:354-365 idiom) so it pins

@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · needsNudges — küszöb-nudge-ok az "Életjel-ringekből" a mezo-szálba (mezo-dhzk,
 // Task 5). Pure, no I/O: a ring-állapotokból (`NeedState[]`) és a nap eddig megjelent
-// nudge-jaiból (`shared/lib/nudgeSeen.ts`) vezeti le a nap TELJES nudge-listáját — a már
+// nudge-jaiból (`logic/nudgeSeen.ts`) vezeti le a nap TELJES nudge-listáját — a már
 // megjelentek `fresh: false`-szal áthaladnak, az újonnan piros/kritikusba fordult ringek
 // `fresh: true`-val csatlakoznak. A hívó (`TodayPage`) a friss elemeket egyszer elmenti
 // (`markNudgeShown`) és a szál VÉGÉRE fűzi (`mezoMessages.ts`'s `nudges` paramétere).
@@ -12,7 +12,7 @@
 // ============================================================
 import type { NeedKey, NeedState } from '@/features/today/logic/needs'
 import type { MezoMessageItem } from '@/features/today/logic/mezoMessages'
-import type { NudgeSeenEntry } from '@/shared/lib/nudgeSeen'
+import type { NudgeSeenEntry } from '@/features/today/logic/nudgeSeen'
 
 export const NUDGE_COPY: Record<NeedKey, string> = {
   energia: '🍽️ Ideje enni valamit — az utolsó étkezésed régen volt, az Energia-ringed leapadt.',

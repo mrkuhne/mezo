@@ -26,7 +26,7 @@ import { useTrain, useRunning, useWeekWorkouts, useWeekMuscleLog, useMedals } fr
 import { DAY_ORDER } from '@/data/train/train'
 import { huMonthDayDow } from '@/shared/lib/dates'
 import { GhostState } from '@/shared/ui/GhostState'
-import { MozaikPage, PageHead, PageHero, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
+import { MozaikPage, PageHead, PageHero, PageBody, StatCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { LoadTiles } from '@/features/train/components/LoadTiles'
 import { WeeklyDayRow } from '@/features/train/components/WeeklyDayRow'
@@ -134,16 +134,19 @@ export function TrainWeekPage() {
       <EntranceGroup>
         <PageHero icon="i-edzes" big={`${doneCount}/${sessionCount}`} name="Heti edzések" />
         <PageBody>
-          <StatStrip>
+          {/* The prototype's #page-heti stagger: strip 40ms, the day list 100ms,
+              the zone panel 160ms — .rise inside the armed .mz-play wrapper
+              (adding one without the other is the silent-static bug). */}
+          <div className="mz-statstrip rise" style={{ '--d': '40ms' } as React.CSSProperties}>
             <StatCell value={totalSets} label="szett terv" />
             <StatCell value={`${doneGymDays}/${gymDays.length}`} label="gym nap kész" />
             <StatCell value={weekMedalCount} label="medál e héten" />
-          </StatStrip>
+          </div>
 
           <div className="col gap-sm mt-md">
-            {agenda.map((a) => (
+            {agenda.map((a, i) => (
+              <div key={a.day} className="rise" style={{ '--d': `${100 + i * 40}ms` } as React.CSSProperties}>
               <WeeklyDayRow
-                key={a.day}
                 agenda={a}
                 gymLogged={Boolean(a.date) && gymDoneDates.includes(a.date!)}
                 gymInProgress={Boolean(a.isToday && todaySession?.openWorkout)}
@@ -161,22 +164,35 @@ export function TrainWeekPage() {
                 onLogRun={() => toMai(a.day)}
                 onReviewCustom={(wid) => navigate(`/train/review/${wid}`)}
               />
+              </div>
             ))}
           </div>
 
-          <LoadTiles tiles={weeklyLoad(agenda)} />
+          <div className="rise" style={{ '--d': '380ms' } as React.CSSProperties}>
+            <LoadTiles tiles={weeklyLoad(agenda)} />
+          </div>
 
-          <button type="button" onClick={() => setCustomOpen(true)} className="card dashedcta mt-md">
+          <button
+            type="button"
+            onClick={() => setCustomOpen(true)}
+            className="card dashedcta mt-md rise"
+            style={{ '--d': '410ms' } as React.CSSProperties}
+          >
             + Saját edzés
           </button>
 
           {zoneRows.length > 0 && (
             <>
-              <span className="mz-eyebrow" style={{ display: 'block', padding: '14px 2px 8px' }}>Izom-zónák · e hét</span>
+              <span
+                className="mz-eyebrow rise"
+                style={{ display: 'block', padding: '14px 2px 8px', '--d': '440ms' } as React.CSSProperties}
+              >
+                Izom-zónák · e hét
+              </span>
               <button
                 type="button"
-                className="mz-panel"
-                style={{ width: '100%', textAlign: 'left', border: '0.5px solid rgba(43, 33, 24, 0.07)', cursor: 'pointer' }}
+                className="mz-panel rise"
+                style={{ width: '100%', textAlign: 'left', border: '0.5px solid rgba(43, 33, 24, 0.07)', cursor: 'pointer', '--d': '470ms' } as React.CSSProperties}
                 onClick={() => setMuscleOpen(true)}
                 aria-label="Heti izomterhelés — részletek"
               >
@@ -185,7 +201,10 @@ export function TrainWeekPage() {
             </>
           )}
 
-          <div className="card" style={{ marginTop: 12, padding: 'var(--sp-4)', background: 'var(--primary-bg)' }}>
+          <div
+            className="card rise"
+            style={{ marginTop: 12, padding: 'var(--sp-4)', background: 'var(--primary-bg)', '--d': '500ms' } as React.CSSProperties}
+          >
             <p style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
               A gym a mesociklus szerint, a sport (röpi/cross/TRX) recurring · független. A két ütemterv együtt-mozgatja a
               pacing-et, alvás-onsetet és a vacsora-időt.

@@ -23,7 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
  * delegates to the shared {@link LogFreshnessProbe} over the OTHER aggregates a review draws
  * from (mezo-hqfi.1); regenerate soft-deletes the live row (if any) and re-runs
  * {@link WeeklyReviewGenerator}, which then sees no existing row and does its normal
- * gather-and-call.
+ * gather-and-call — archiving the week's still-open knowledge candidates alongside it, while
+ * decided ones survive untouched (mezo-d20.7.6).
  */
 @Service
 @RequiredArgsConstructor
@@ -35,7 +36,10 @@ public class WeeklyReviewService {
     private final WeeklyReviewRepository weeklyReviewRepository;
     private final WeeklyReviewGenerator generator;
     private final ProactiveMapper mapper;
+    // The four log repositories main injected here are gone: staleSince now delegates to the
+    // shared LogFreshnessProbe (mezo-hqfi.1), which owns them.
     private final LogFreshnessProbe logFreshnessProbe;
+    private final WeeklyLessonService weeklyLessonService;
 
     public Optional<WeeklyReviewEntity> find(UUID userId, LocalDate weekStart) {
         return weeklyReviewRepository.findByCreatedByAndWeekStart(userId, weekStart);
@@ -56,6 +60,10 @@ public class WeeklyReviewService {
                     SystemMessage.error("WEEKLY_REVIEW_WEEK_NOT_COMPLETE").build(), HttpStatus.CONFLICT);
         }
         find(userId, weekStart).ifPresent(weeklyReviewRepository::delete);
+        // mezo-d20.7.6: the STILL-OPEN weekly candidates are archived with the review they came
+        // with; the DECIDED ones stay — a regeneration must never silently undo a user decision
+        // (nor orphan the knowledge fact an accept already minted).
+        weeklyLessonService.archiveOpen(userId, weekStart);
         WeeklyReviewEntity fresh = generator.generate(userId, weekStart);
         if (fresh == null) {
             throw notFound();

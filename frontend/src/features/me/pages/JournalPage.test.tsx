@@ -318,3 +318,39 @@ test('a decisions error with stale-but-present open decisions falls through to t
   expect(screen.getByText('Döntések')).toBeInTheDocument()
   expect(screen.queryByText('Nem sikerült betölteni a döntéseket.')).not.toBeInTheDocument()
 })
+
+// ── mezo-d20.11 (1:1 fidelity audit) ────────────────────────────────────────────────────────
+
+// The prototype prints the question under the 1–5 row (#page-naplo .decrow + .foot9). It was
+// only an aria-label here, so a sighted user saw five bare digits with no prompt.
+test('the decision card prints the 1–5 question visibly, not just as an aria-label', () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({ data: [decision()], isPending: false, isError: false, refetch: vi.fn() })
+  renderPage()
+
+  expect(screen.getByText('Mennyire vált be? (1–5)')).toBeInTheDocument()
+})
+
+// LOST-FUNCTION REPAIR: between mezo-d20.6.6 and mezo-d20.11 nothing mounted DecisionReviewSheet,
+// so `reviewDecision` was permanently called WITHOUT its third argument and a review could no
+// longer record outcome prose — even though DecisionReviewRequest.outcome, its column and the
+// embedding path that reads it are all live. The sage acknowledgement now carries the door to it.
+test('the sage acknowledgement re-opens the review sheet so outcome prose can still be recorded', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({ data: [decision()], isPending: false, isError: false, refetch: vi.fn() })
+  const reviewDecision = vi.fn().mockResolvedValue(undefined)
+  hooks.useDecisionActions.mockReturnValue({ addDecision: vi.fn(), reviewDecision, pending: false })
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click(screen.getByRole('button', { name: '4' }))
+  expect(reviewDecision).toHaveBeenLastCalledWith('dec2', 4)
+
+  await user.click(screen.getByRole('button', { name: 'Mi lett belőle?' }))
+  // The sheet opens PREFILLED with the rating the inline row just committed — so the second
+  // save is the same review, now carrying the prose, not a fresh unrated one.
+  await user.type(screen.getByRole('textbox', { name: /Hogyan sült el/i }), 'Végül tartotta magát.')
+  await user.click(screen.getByRole('button', { name: 'Mentem' }))
+
+  expect(reviewDecision).toHaveBeenLastCalledWith('dec2', 4, 'Végül tartotta magát.')
+})

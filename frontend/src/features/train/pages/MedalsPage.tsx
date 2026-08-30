@@ -146,17 +146,35 @@ export function MedalsPage() {
               <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5, margin: '10px 0 16px' }}>
                 A medálok visszamenőleg, a korábban logolt szetteid alapján épültek fel — nem mindegyiket élőben szerezted.
               </p>
+              {/* The prototype's #page-medal stagger: each date group's eyebrow +
+                  its cards ride one running 60ms cadence (40 · 100 · 160 …). The
+                  armed EntranceGroup above was shipping with nothing to animate. */}
               <div className="col gap-md">
-                {groups.map((g) => (
-                  <div key={g.date}>
-                    <span className="mz-eyebrow" style={{ display: 'block', marginBottom: 8 }}>{huMonthDayDow(g.date)}</span>
-                    <div className="col gap-sm">
-                      {g.medals.map((m, i) => (
-                        <MedalRow key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`} medal={m} />
-                      ))}
+                {(() => {
+                  let d = 40
+                  const nextD = () => { const v = d; d += 60; return v }
+                  return groups.map((g) => (
+                    <div key={g.date}>
+                      <span
+                        className="mz-eyebrow rise"
+                        style={{ display: 'block', marginBottom: 8, '--d': `${nextD()}ms` } as React.CSSProperties}
+                      >
+                        {huMonthDayDow(g.date)}
+                      </span>
+                      <div className="col gap-sm">
+                        {g.medals.map((m, i) => (
+                          <div
+                            key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`}
+                            className="rise"
+                            style={{ '--d': `${nextD()}ms` } as React.CSSProperties}
+                          >
+                            <MedalRow medal={m} />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                })()}
               </div>
             </>
           )}

@@ -414,3 +414,17 @@ describe('Új cél hard gate (complete biometric profile)', () => {
     expect(screen.queryByText(/Előbb: a/)).not.toBeInTheDocument()
   })
 })
+
+// ── entrance choreography (mezo-d20.11) ──
+// The audit found exactly ONE `.rise` on /me/goals; the prototype (#page-cel)
+// staggers the whole body (--d 0 / 60 / 90 / 130 / 160 / 190 / 220 / 260 ms).
+test('the Cél body staggers — recept, idővonal and plan slots all rise inside .mz-play', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+  await waitFor(() => expect(container.querySelector('.gc-card')).not.toBeNull())
+  const rises = [...container.querySelectorAll('.rise')]
+  expect(rises.length).toBeGreaterThanOrEqual(4)
+  for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+  const delays = rises.map((r) => (r as HTMLElement).style.getPropertyValue('--d'))
+  expect(new Set(delays).size).toBe(delays.length) // a real stagger, not one shared delay
+})

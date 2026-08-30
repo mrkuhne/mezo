@@ -148,4 +148,18 @@ describe('RoutineEditorPage', () => {
     expect(card).toHaveClass('is-inert')
     expect(container.querySelectorAll('[data-sortable-row]')).toHaveLength(15)
   })
+
+  // mezo-d20.11 (1:1 fidelity audit, group A): this page had no entrance choreography at all —
+  // the chain cards popped in. One EntranceGroup now arms the list, and every `.rise` must sit
+  // INSIDE that `.mz-play` wrapper (a `.rise` outside it is the silent-static bug).
+  it('staggers the chain cards inside an armed EntranceGroup', () => {
+    useHabitCatalog.mockReturnValue({ catalog: { chains: [MORNING, EVENING] }, isPending: false })
+    const { container } = renderPage()
+    const play = container.querySelector('.mz-play')
+    expect(play).not.toBeNull()
+    const rises = container.querySelectorAll('.rise')
+    expect(rises.length).toBeGreaterThanOrEqual(3) // two chain cards + the CTA row
+    for (const el of rises) expect(play!.contains(el)).toBe(true)
+    expect(screen.getByText('Reggeli rutin').closest('.card')).toHaveClass('rise')
+  })
 })
