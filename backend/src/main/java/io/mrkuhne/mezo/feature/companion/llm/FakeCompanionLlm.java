@@ -134,6 +134,19 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** The proposal numbering the konzílium user messages carry — the canned answers count these. */
     private static final Pattern CHAR_PROPOSAL_INDEX = Pattern.compile("(?m)^P(\\d+)\\. ");
 
+    /** Mirror of PortraitWriter.PORTRAIT_MARKER (feature/character) — LITERAL, cycle rule. */
+    public static final String PORTRAIT_MARKER_MIRROR = "KARAKTER-PORTRE-FELADAT";
+
+    /** Scripted portrait rewrite (mezo-1gim.5): {@code [fake-char-portrait:<text>]} planted in a
+     *  claim's TEXT (the user message renders every active claim's text) is returned verbatim —
+     *  including an EMPTY payload ({@code [fake-char-portrait:]}), which surfaces as a blank
+     *  answer so tests can drill the portrait-failure-isolation path; otherwise a canned portrait
+     *  sentence keeps the pipeline deterministic. */
+    public static final Pattern CHAR_PORTRAIT_SENTINEL =
+            Pattern.compile("\\[fake-char-portrait:([^\\]]*)]", Pattern.DOTALL);
+    private static final String CHAR_PORTRAIT_CANNED_ANSWER =
+            "Ezen a héten a fegyelem képe formálódik. Figyeljük tovább.";
+
     /** Scripted scrape (mezo-8vum): {@code [fake-scrape:{json}]} payload is returned verbatim. */
     public static final Pattern SCRAPE_SENTINEL =
             Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
@@ -437,6 +450,10 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(INTEGRATOR_MARKER_MIRROR)) {
             Matcher m = CHAR_INTEGRATOR_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : integratorCannedAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(PORTRAIT_MARKER_MIRROR)) {
+            Matcher m = CHAR_PORTRAIT_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : CHAR_PORTRAIT_CANNED_ANSWER;
         }
         if (systemPrompt.startsWith(TurnVerdictCheck.VERDICT_MARKER)) {
             return verdictAnswer(userMessage);
