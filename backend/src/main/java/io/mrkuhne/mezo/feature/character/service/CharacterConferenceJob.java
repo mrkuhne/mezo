@@ -35,11 +35,7 @@ public class CharacterConferenceJob {
 
     @Scheduled(cron = "${mezo.character.conference.cron}")
     public void run() {
-        // A Sunday run targets the week that is ENDING today: minusDays(6) lands back inside
-        // that week (any day between Mon..Sun), then previousOrSame(MONDAY) resolves to its
-        // ISO Monday — the same derivation the IT seeds its observations against.
-        LocalDate latestWeekStart = LocalDate.now().minusDays(6)
-                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate latestWeekStart = latestWeekStart(LocalDate.now());
         LocalDate earliestWeekStart = latestWeekStart.minusWeeks(properties.conference().catchUpWeeks() - 1L);
         for (AppUserEntity user : appUserRepository.findAll()) {
             int held = 0;
@@ -56,5 +52,17 @@ public class CharacterConferenceJob {
             log.info("Character conference run for user {}: {} konzílium(s) held in window {}..{}",
                     user.getId(), held, earliestWeekStart, latestWeekStart);
         }
+    }
+
+    /**
+     * The ISO Monday of the week that is ENDING as of {@code today}: {@code minusDays(6)} lands
+     * back inside that week (any day between Mon..Sun of it), then {@code previousOrSame(MONDAY)}
+     * resolves to its ISO Monday. Public + pure (no Spring/DB) so
+     * {@code CharacterConferenceWeekDerivationTest} — in the sibling {@code feature.character}
+     * test package alongside the job's other tests — can pin the direction of "Sunday targets the
+     * week that is ending" against hardcoded dates, independent of {@link #run()}.
+     */
+    public static LocalDate latestWeekStart(LocalDate today) {
+        return today.minusDays(6).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
 }
