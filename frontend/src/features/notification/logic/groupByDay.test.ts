@@ -50,6 +50,18 @@ describe('groupByDay', () => {
     expect(groupByDay([], '2026-08-18')).toEqual([])
   })
 
+  // A csoport IDENTITÁSA a dátum, nem a megjelenített címke — különben két, pontosan egy évre
+  // lévő elem ugyanabba a csoportba esne (mezo-nol0).
+  it('keeps same-day-different-year items in separate groups', () => {
+    const groups = groupByDay([
+      item('new', '2026-08-15T12:00:00.000Z'),
+      item('old', '2025-08-15T12:00:00.000Z'),
+    ], '2026-08-18')
+    expect(groups).toHaveLength(2)
+    expect(groups[0].items.map((i) => i.id)).toEqual(['new'])
+    expect(groups[1].items.map((i) => i.id)).toEqual(['old'])
+  })
+
   // Hónapforduló: a „tegnap" a hónap utolsó napja, az azelőtti pedig dátum-címkét kap.
   it('crosses a month boundary without mislabelling', () => {
     const groups = groupByDay([

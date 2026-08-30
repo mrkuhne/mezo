@@ -18,13 +18,16 @@ export function groupByDay(items: AppNotificationView[], today: string): FeedGro
   const yesterday = addDays(today, -1)
   const sorted = [...items].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
   // Map: a beszúrási sorrend = a rendezett sorrend, tehát a csoportok maguktól csökkenőek.
-  const byLabel = new Map<string, AppNotificationView[]>()
+  // KULCS a naptári nap (pl. „2025-08-15"), NEM a megjelenített címke: két, pontosan egy évre
+  // lévő elem ugyanazt az „aug. 15." címkét kapná, de a csoport IDENTITÁSA nem eshet egybe
+  // (mezo-nol0).
+  const byDay = new Map<string, FeedGroup>()
   for (const n of sorted) {
     const day = localDateString(new Date(n.occurredAt))
     const label = day === today ? 'Ma' : day === yesterday ? 'Tegnap' : dateLabel(n.occurredAt)
-    const bucket = byLabel.get(label)
-    if (bucket) bucket.push(n)
-    else byLabel.set(label, [n])
+    const group = byDay.get(day)
+    if (group) group.items.push(n)
+    else byDay.set(day, { label, items: [n] })
   }
-  return [...byLabel].map(([label, groupItems]) => ({ label, items: groupItems }))
+  return [...byDay.values()]
 }
