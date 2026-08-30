@@ -201,6 +201,16 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern WEEKLY_REVIEW_SENTINEL =
             Pattern.compile("\\[fake-review:(\\{.*})]", Pattern.DOTALL);
 
+    /** Mirror of DiagnosisGenerator.DIAGNOSIS_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    public static final String DIAGNOSIS_MARKER_MIRROR = "FARADTSAG-DIAGNOZIS-FELADAT";
+
+    /** Scripted diagnosis (mezo-hqfi): {@code [fake-diagnosis:{…}]} planted in ANY candidate
+     *  label — unlike the weekly gather, the diagnosis payload renders every candidate EXACTLY
+     *  ONCE, so there is no duplicate-occurrence hazard wherever it is planted. GREEDY for the
+     *  same nested-object reason as WEEKLY_REVIEW_SENTINEL. */
+    public static final Pattern DIAGNOSIS_SENTINEL =
+            Pattern.compile("\\[fake-diagnosis:(\\{.*})]", Pattern.DOTALL);
+
     /** Mirror of CompanionMessageGenerator.WINDOW_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT";
 
@@ -416,6 +426,11 @@ public class FakeCompanionLlm implements CompanionLlm {
             Matcher m = WEEKLY_REVIEW_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1)
                     : "{\"summary\":\"FAKE-HETI-ELEMZES\",\"dayNotes\":[],\"anchorIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(DIAGNOSIS_MARKER_MIRROR)) {
+            Matcher m = DIAGNOSIS_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1)
+                    : "{\"verdict\":\"FAKE-DIAGNOZIS\",\"confidence\":\"weak\",\"suspects\":[]}";
         }
         if (systemPrompt.startsWith(HEARTBEAT_MARKER_MIRROR)) {
             // mezo-106s: run the scripted [fake-tool:…] sentinels for their audit side
