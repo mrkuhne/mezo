@@ -1,5 +1,6 @@
 import type { IconName } from '@/shared/ui/Icon'
 import type { Tool } from '@/shared/ui/ToolChip'
+import type { ClayIconName } from '@/shared/ui/clay'
 import type { NovaGroup } from '@/data/nova'
 import type { PantrySourceKey } from '@/data/pantrySources'
 
@@ -1513,17 +1514,19 @@ export interface AppNotificationView {
 }
 
 /** Per-kind panel icon + tint class suffix (the mockup's family colors). */
-export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, { emoji: string; tint: string }> = {
-  pattern_inbox: { emoji: '🧩', tint: 'pattern' },
-  pattern_signal: { emoji: '🧩', tint: 'pattern' },
-  hypothesis_new: { emoji: '🧩', tint: 'pattern' },
-  fact_candidate: { emoji: '📚', tint: 'knowledge' },
-  fact_reinforced: { emoji: '📚', tint: 'knowledge' },
-  memoir_ready: { emoji: '✍️', tint: 'memoir' },
-  prediction_new: { emoji: '🔮', tint: 'prediction' },
-  prediction_outcome: { emoji: '🔮', tint: 'prediction' },
-  experiment_proposed: { emoji: '🧪', tint: 'experiment' },
-  experiment_closed: { emoji: '🧪', tint: 'experiment' },
-  challenge_event: { emoji: '🏆', tint: 'experiment' },
-  memory_note: { emoji: '🗂', tint: 'memory' },
+/** Per-kind panel icon + tint class suffix (the mockup's family colors). A `clay` a Mozaik-nyelv
+ *  ikonja (mezo-nol0): a feed-oldal ezt rendereli, az `emoji` a régi dropdown-panel öröksége. */
+export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, { emoji: string; tint: string; clay: ClayIconName }> = {
+  pattern_inbox: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
+  pattern_signal: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
+  hypothesis_new: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
+  fact_candidate: { emoji: '📚', tint: 'knowledge', clay: 'i-tudas' },
+  fact_reinforced: { emoji: '📚', tint: 'knowledge', clay: 'i-tudas' },
+  memoir_ready: { emoji: '✍️', tint: 'memoir', clay: 'i-memoar' },
+  prediction_new: { emoji: '🔮', tint: 'prediction', clay: 'i-kristaly' },
+  prediction_outcome: { emoji: '🔮', tint: 'prediction', clay: 'i-kristaly' },
+  experiment_proposed: { emoji: '🧪', tint: 'experiment', clay: 'i-lombik' },
+  experiment_closed: { emoji: '🧪', tint: 'experiment', clay: 'i-lombik' },
+  challenge_event: { emoji: '🏆', tint: 'experiment', clay: 'i-kihivas' },
+  memory_note: { emoji: '🗂', tint: 'memory', clay: 'i-rend' },
 }
