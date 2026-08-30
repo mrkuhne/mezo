@@ -4183,10 +4183,12 @@ button.mz-tile:active { transform: scale(0.96); }
 /* ── Nap hub (mezo-d20.2.1) — header recipe + panel heroes + tile extras ── */
 .nap-hub { display: flex; flex-direction: column; gap: 13px; padding: 6px 0 8px; }
 .nap-head { display: flex; align-items: center; gap: 9px; }
-/* A shell-szintű fejléc (mezo-atry) függőleges ritmusa. Korábban a `.nap-hub`/`.eh-hub`/…
-   konténerek `padding: 6px 0 8px` + `gap: 11–13px` adta; a fejléc kikerült belőlük, ezért a
-   6px felső margót maga hozza, az alsó rést pedig 7px-re méretezi — a hub-konténer saját 6px
-   padding-topjával együtt ez adja vissza a régi 13px-et. */
+/* A shell-szintű fejléc (mezo-atry) függőleges ritmusa. Korábban a hub-konténerek
+   `padding: 6px 0 8px` + `gap` adta a rést a fejléc alatt — a `.nap-hub`-on pontosan
+   13px-et (gap: 13px), a másik négyen (`.eh-hub`/`.fh-hub`/`.mzh-hub`/`.enh-hub`) 11px-et
+   (gap: 11px). A fejléc kikerült a konténerekből, a 7px margó pedig szándékosan egységes:
+   a Nap 13px-ét pontosan visszaadja, a másik négyet 11-ről 13-ra emeli — egy közös fejléc
+   alatt egy közös rés jár, a 2px a megosztásért fizetett ár. */
 .app-head { padding-top: 6px; margin-bottom: 7px; }
 .nap-head-grow { flex: 1; min-width: 0; }
 .nap-dpwrap { position: relative; }
