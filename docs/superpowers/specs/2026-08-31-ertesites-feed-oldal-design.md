@@ -87,17 +87,25 @@ előtt attól, hogy a `markAllRead` lefutott —, a `sub` pedig az összes elem 
 
 ### Nap-csoportosítás
 
-Tiszta függvény, `frontend/src/features/me/logic/notificationGroups.ts`:
+**Nem írunk újat.** `frontend/src/features/notification/logic/groupByDay.ts` már létezik és
+tesztelt (`groupByDay.test.ts`); ma egyetlen hívója a törlésre ítélt `NotificationPanel`. A
+függvényt **kiszélesítjük**, nem duplikáljuk:
 
 ```ts
-groupByDay(items: AppNotificationView[], now: Date): { label: string; items: AppNotificationView[] }[]
+export interface FeedGroup { label: string; items: AppNotificationView[] }
+export function groupByDay(items: AppNotificationView[], today: string): FeedGroup[]
 ```
 
-- Az elemek `occurredAt` szerint csökkenő sorrendben, a csoportok is.
-- A címke a **helyi** naptári nap alapján: ma → `Ma`, tegnap → `Tegnap`, egyébként `aug 28.`
-  (`toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })`).
-- Pure: nincs React, nincs hook, nincs `new Date()` a törzsben — a `now` paraméter jön kívülről,
-  hogy a teszt fagyaszthassa az órát.
+- A `label` típusa a mai `'Ma' | 'Tegnap' | 'Korábban'` unióról `string`-re szélesedik.
+- A `Ma` és a `Tegnap` bucket változatlan.
+- A `Korábban` egyetlen gyűjtőbucketje **naponkénti csoportokra** bomlik, `aug 28.` alakú
+  címkékkel (`toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })`) — egy teljes
+  oldalon a „Korábban" alá söpört két hét használhatatlan, a dropdown 3 sorában viszont pont jó
+  volt. A dátum-csoportok egymás közt csökkenő sorrendben, a `Tegnap` után.
+- A `today` paraméter marad `string` (`localDateString()` a hívó oldalán), tehát a függvény
+  továbbra is pure és fagyasztható órával tesztelhető.
+
+A szélesítés a mai egyetlen hívót nem érinti, mert az ugyanabban a körben törlődik.
 
 ## Olvasottság
 
@@ -143,15 +151,25 @@ kivezetés blokkolója — akkor marad, és a terv ezt jelzi. Lezárja: `mezo-h6
 
 ## CSS
 
-Új blokk a `prototype.css` végére, `.nf-*` prefixszel: `.nf-daylabel`, `.nf-row`, `.nf-row.unread`,
-`.nf-ico` + a hat `.nf-t-<tint>` variáns, `.nf-t` (cím), `.nf-x` (törzs, 2 soros clamp),
-`.nf-time`, `.nf-dot`. A színek meglévő tokenekből jönnek — új nyers hex nem kerül a fájlba.
+A családi tint-paletta **már létezik**, csak rossz helyen: a `.nf-panel .nf-ico.pattern` …
+`.nf-ico.memory` szabályok (`prototype.css` ~2722–2728) a törlésre ítélt panel alá vannak
+skópolva, és a `.nf-dot` is. Ezeket **kiskópoljuk** (`.nf-panel ` prefix nélkül), a panel többi
+szabálya (`.nf-panel`, `.nf-bell`, `.bell-badge`, `.nf-head`, `.nf-title`, `.nf-scroll`,
+`.nf-empty`, `.nf-item`, `.nf-txt`, `.nf-b`) pedig a komponenssel együtt törlődik. Az `.nf-ico`
+mérete 32px marad, de a tartalma emoji helyett `ClayIcon` lesz.
+
+Új szabály csak arra kell, amit az oldal hoz: `.nf-page` scope alatt `.nf-daylabel` (a
+`.nf-group` uppercase-recept átemelve), `.nf-row`, `.nf-row.unread`, `.nf-t`, `.nf-x` (2 soros
+clamp), `.nf-time`. Színek kizárólag meglévő tokenekből (`--dv-lav`, `--dv-sage`, `--dv-sky`,
+`--dv-amber`, `--primary-base`, `--surface-recess`, `--divider`, `--text-*`) — új nyers hex nem
+kerül a fájlba.
 
 ## Tesztek
 
-`frontend/src/features/me/logic/notificationGroups.test.ts` — a pure függvény: ma/tegnap/dátum
-címkék fagyasztott órával, csökkenő rendezés csoporton belül és csoportok között, üres bemenet,
-és a hónapforduló (aug 31. → júl. 31-i elem `júl. 31.` címkét kap, nem `Tegnap`-ot).
+`frontend/src/features/notification/logic/groupByDay.test.ts` — a meglévő teszt kibővítve: a
+`Ma`/`Tegnap` esetek maradnak, plusz a `Korábban` felbontása naponkénti címkékre, a dátum-csoportok
+csökkenő sorrendje, üres bemenet, és a hónapforduló (aug 1-jén egy júl. 31-i elem `Tegnap`-ot kap,
+egy júl. 30-i pedig `júl. 30.` címkét).
 
 `frontend/src/features/me/pages/NotificationFeedPage.test.tsx`:
 
