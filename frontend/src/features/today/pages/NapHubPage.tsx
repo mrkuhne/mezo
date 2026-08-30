@@ -1,9 +1,10 @@
 // ============================================================
 // Mezo · NapHubPage — the Nap spine's Mozaik face (mezo-d20.2.1)
-// Source of truth: docs/design_2.0/prototypes/src/nap-body.html. Header recipe
-// (date eyebrow · daypart switch with menu · clay bell + dropdown · orb
-// avatar), then ONE hero per daypart panel + the 2-column tile mosaic; every
-// tile navigates to its own page (Huawei pattern).
+// Source of truth: docs/design_2.0/prototypes/src/nap-body.html. The header
+// (date eyebrow · daypart switch · bell · avatar) now lives in the shell
+// (`app/AppHeader.tsx`, mezo-atry) — this page only picks the panel from
+// `?dp=`, then renders ONE hero per daypart panel + the 2-column tile mosaic;
+// every tile navigates to its own page (Huawei pattern).
 //
 // 1:1 fidelity audit (mezo-d20.11) — what this page owes the prototype and now
 // pays: the Mezo tile carries an unread COUNT (not a bare dot), the Rutin tile
@@ -29,7 +30,6 @@ import {
   useWaterActions, useSleep, useWeight, useIntentionDay, useIntentionActions,
   useCompanionFeed, useStackDay, useGamificationDay,
 } from '@/data/hooks'
-import { useNotificationFeed } from '@/data/notification/feedHooks'
 import { buildHabitRewardToast } from '@/features/progression/logic/rewardToast'
 import { DAY_FACES, dayFace, type DayFace } from '@/features/today/logic/dayFace'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
@@ -43,11 +43,6 @@ import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import type { HabitItem } from '@/data/types'
 
 const isFace = (v: string | null): v is DayFace => v !== null && (DAY_FACES as readonly string[]).includes(v)
-
-const FACE_ICON: Record<DayFace, 'i-hajnal' | 'i-nap' | 'i-alvas'> = {
-  reggel: 'i-hajnal', nap: 'i-nap', este: 'i-alvas',
-}
-const FACE_LABEL: Record<DayFace, string> = { reggel: 'Reggel', nap: 'Nap', este: 'Este' }
 
 function fmtHm(mins: number): string {
   const h = Math.floor(mins / 60)
@@ -65,7 +60,7 @@ const ANCHORS: { title: string; sub: string; icon: 'i-viz' | 'i-reggeli' | 'i-fu
 export function NapHubPage() {
   const date = localDateString()
   const navigate = useNavigate()
-  const [params, setSearchParams] = useSearchParams()
+  const [params] = useSearchParams()
 
   const { today, workoutDone, workoutDoneSets } = useToday()
   const scenario = useTodayScenario()
@@ -74,12 +69,6 @@ export function NapHubPage() {
   const nowFace = dayFace(tick, sleepGoal)
   const dpParam = params.get('dp')
   const face: DayFace = isFace(dpParam) ? dpParam : nowFace
-  const setFace = (f: DayFace) => {
-    const next = new URLSearchParams(params)
-    if (f === nowFace) next.delete('dp')
-    else next.set('dp', f)
-    setSearchParams(next, { replace: true })
-  }
 
   // ── data for heroes + tiles ─────────────────────────────────────────
   const { fuel } = useFuelDay(date)
@@ -98,16 +87,13 @@ export function NapHubPage() {
   const { addFocus } = useIntentionActions(date)
   const needs = useNeeds(tick)
   const { slots: stackSlots } = useStackDay(date)
-  const { items: notifications } = useNotificationFeed()
   const { data: gamDay } = useGamificationDay(date)
 
   const feed = useCompanionFeed()
   const messages = useMemo(() => buildMezoMessages({ feed, demoBriefing: resolveBriefing(scenario.dayState) }), [feed, scenario.dayState])
   const intention = intentionData ?? { date, creed: null, foci: [], reflection: null }
 
-  // ── header popovers + the one sheet the hub still owns (Kreed) ──────
-  const [dpOpen, setDpOpen] = useState(false)
-  const [ntfOpen, setNtfOpen] = useState(false)
+  // ── the one sheet the hub still owns (Kreed) ─────────────────────────
   const [focusOpen, setFocusOpen] = useState(false)
   const [anchorsDone, setAnchorsDone] = useState<Set<number>>(() => new Set())
 
@@ -145,7 +131,6 @@ export function NapHubPage() {
   const mealSlots = plan.slots.filter((s) => s.slotKey !== undefined)
   const nowWindow = mealSlots.find((s) => s.state === 'now')
   const stackTaken = stackSlots.filter((sl) => sl.entries.filter((e) => !e.skippedToday).every((e) => e.taken)).length
-  const unreadNtf = notifications.filter((n) => n.readAt === null).length
   const waterPct = fuel.targets.water > 0
     ? Math.min(1, fuel.consumed.water / fuel.targets.water)
     : 0
@@ -264,14 +249,6 @@ export function NapHubPage() {
   if (scenario.anchorMode) {
     return (
       <div className="nap-hub">
-        <div className="nap-head">
-          <div className="nap-head-grow">
-            <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
-          </div>
-          <button type="button" className="nap-avatar" aria-label="Profil" onClick={() => navigate('/me')}>
-            <ClayIcon name="i-mezo" size={19} />
-          </button>
-        </div>
         <EntranceGroup className="mz-panel-stack">
           <div className="mz-tile nap-hero nap-anch-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
             <div className="nap-hero-row">
@@ -322,57 +299,6 @@ export function NapHubPage() {
 
   return (
     <div className="nap-hub">
-      <div className="nap-head">
-        <div className="nap-head-grow">
-          <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
-        </div>
-        <div className="nap-dpwrap">
-          <button type="button" className="nap-roundbtn" aria-label="Napszak váltása" aria-expanded={dpOpen}
-            onClick={() => setDpOpen((o) => !o)}>
-            <ClayIcon name={FACE_ICON[face]} size={22} />
-            {face !== nowFace && <span className="nap-offnow" aria-hidden="true" />}
-          </button>
-          {dpOpen && (
-            <div className="nap-dpmenu" role="menu">
-              {DAY_FACES.map((f) => (
-                <button key={f} type="button" role="menuitem" aria-label={FACE_LABEL[f]}
-                  className={cn(f === face && 'on')}
-                  onClick={() => { setFace(f); setDpOpen(false) }}>
-                  <ClayIcon name={FACE_ICON[f]} size={22} />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="nap-dpwrap">
-          <button type="button" className="nap-roundbtn" aria-expanded={ntfOpen}
-            aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
-            onClick={() => setNtfOpen((o) => !o)}>
-            <ClayIcon name="i-ertesites" size={21} />
-            {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
-          </button>
-          {ntfOpen && (
-            <div className="nap-ntfmenu" role="menu">
-              <span className="mz-eyebrow">Értesítések · ma</span>
-              {notifications.slice(0, 3).map((n) => (
-                <button key={n.id} type="button" role="menuitem" className="nap-ntfrow"
-                  onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
-                  <span className="nap-ntf-t">{n.title}</span>
-                  <span className="nap-ntf-x">{n.body}</span>
-                </button>
-              ))}
-              <button type="button" role="menuitem" className="nap-ntffoot"
-                onClick={() => { setNtfOpen(false); navigate('/me/ertesitesek') }}>
-                Összes értesítés ›
-              </button>
-            </div>
-          )}
-        </div>
-        <button type="button" className="nap-avatar" aria-label="Profil" onClick={() => navigate('/me')}>
-          <ClayIcon name="i-mezo" size={19} />
-        </button>
-      </div>
-
       <EntranceGroup replayKey={face} className="mz-panel-stack">
         {face === 'reggel' && (
           <>

@@ -3,7 +3,7 @@
 // Source of truth: docs/design_2.0/prototypes/src/mezo-body.html hub section
 // (values ×1.18). The Insights shell (AppHero + SubNavDropdown) dissolves:
 // this page IS the /mezo index, the former sub-tabs are full-page siblings.
-// Anatomy: header recipe (date · bell · avatar) → breathing orb hero (NO
+// Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → breathing orb hero (NO
 // number — one companion sentence + the quiet status line) → composer-shaped
 // chat opener → the motor's SINGLE decision card in a gold ring (the same
 // decide mutation PatternsPage uses; deciding flips it to the sage
@@ -19,11 +19,10 @@ import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import {
-  useToday, useTodayScenario, resolveBriefing, useCompanionFeed, useConversations,
+  useTodayScenario, resolveBriefing, useCompanionFeed, useConversations,
   usePatterns, usePatternMonitor, usePatternActions, useMemoryOverview,
   useMeWeek, useMemoir, useKnowledge, usePredictions, useExperiments,
 } from '@/data/hooks'
-import { useNotificationFeed } from '@/data/notification/feedHooks'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
 import { bucketize } from '@/features/insights/logic/lifecycle'
@@ -41,10 +40,7 @@ const DECIDED_MSG: Record<PatternStatus, string> = {
 
 export function MezoHubPage() {
   const navigate = useNavigate()
-  const { today } = useToday()
   const scenario = useTodayScenario()
-  const { items: notifications } = useNotificationFeed()
-  const [ntfOpen, setNtfOpen] = useState(false)
 
   // ── orb hero: companion voice + status line ─────────────────────────
   const feed = useCompanionFeed()
@@ -128,43 +124,9 @@ export function MezoHubPage() {
   // ── memory band counts — the real L0→L3 overview, no numbers without it ──
   const l2Count = overview?.l2.patterns.reduce((s, p) => s + p.count, 0) ?? null
   const l3Count = overview?.l3.facts.reduce((s, f) => s + f.count, 0) ?? null
-  const unreadNtf = notifications.filter((n) => n.readAt === null).length
 
   return (
     <div className="mzh-hub">
-      <div className="nap-head">
-        <div className="nap-head-grow">
-          <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
-        </div>
-        <div className="nap-dpwrap">
-          <button type="button" className="nap-roundbtn" aria-expanded={ntfOpen}
-            aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
-            onClick={() => setNtfOpen((o) => !o)}>
-            <ClayIcon name="i-ertesites" size={21} />
-            {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
-          </button>
-          {ntfOpen && (
-            <div className="nap-ntfmenu" role="menu">
-              <span className="mz-eyebrow">Értesítések · ma</span>
-              {notifications.slice(0, 3).map((n) => (
-                <button key={n.id} type="button" role="menuitem" className="nap-ntfrow"
-                  onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
-                  <span className="nap-ntf-t">{n.title}</span>
-                  <span className="nap-ntf-x">{n.body}</span>
-                </button>
-              ))}
-              <button type="button" role="menuitem" className="nap-ntffoot"
-                onClick={() => { setNtfOpen(false); navigate('/me/ertesitesek') }}>
-                Összes értesítés ›
-              </button>
-            </div>
-          )}
-        </div>
-        <button type="button" className="nap-avatar" aria-label="Profil" onClick={() => navigate('/me')}>
-          <ClayIcon name="i-mezo" size={19} />
-        </button>
-      </div>
-
       <EntranceGroup className="mz-panel-stack">
         {/* ===== orb hero — no number, one sentence, quiet status ===== */}
         <div className="mzh-orbhero rise" style={{ '--d': '0ms' } as React.CSSProperties}>

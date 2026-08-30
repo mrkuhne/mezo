@@ -7,7 +7,7 @@
 // their own F2 slices land) — the idiom the Mezo (d20.5.1) and Én (d20.6.1) hubs
 // took. Sablonok folds into the Mesociklus page and the Gym muscle-zone view into
 // Heti (both routes stay reachable); session/planner/builder stay full-screen.
-// Anatomy: header recipe (date · bell · orb) → today's-session hero (clay spot +
+// Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → today's-session hero (clay spot +
 // eyebrow + title + the companion coach line + ONE primary CTA) → the six-tile
 // mosaic with live bottom lines from each page's OWN hook.
 // The hero is TrainTodayPage's today logic, verbatim in its honest states:
@@ -26,8 +26,7 @@ import { useNavigate } from 'react-router-dom'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { useMedals, useRunning, useToday, useTodayScenario, useTrain, useWeekWorkouts } from '@/data/hooks'
-import { useNotificationFeed } from '@/data/notification/feedHooks'
+import { useMedals, useRunning, useTodayScenario, useTrain, useWeekWorkouts } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { buildWeekAgenda } from '@/features/train/logic/weekAgenda'
 import { daySessions } from '@/features/train/logic/agenda'
@@ -45,11 +44,8 @@ type RunLogCtx ={ blockId: string; weekNumber: number; sessionKey: string; label
 
 export function EdzesHubPage() {
   const navigate = useNavigate()
-  const { today } = useToday()
   const scenario = useTodayScenario()
   const { showLevelUp } = useLevelUp()
-  const { items: notifications } = useNotificationFeed()
-  const [ntfOpen, setNtfOpen] = useState(false)
   const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
   const [customOpen, setCustomOpen] = useState(false)
@@ -300,43 +296,8 @@ export function EdzesHubPage() {
     ? undefined
     : `${exerciseLibrary.length}${exerciseRecords.length > 0 ? ` · ${exerciseRecords.length} rekord` : ''}`
 
-  const unreadNtf = notifications.filter((n) => n.readAt === null).length
-
   return (
     <div className="eh-hub">
-      <div className="nap-head">
-        <div className="nap-head-grow">
-          <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
-        </div>
-        <div className="nap-dpwrap">
-          <button type="button" className="nap-roundbtn" aria-expanded={ntfOpen}
-            aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
-            onClick={() => setNtfOpen((o) => !o)}>
-            <ClayIcon name="i-ertesites" size={21} />
-            {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
-          </button>
-          {ntfOpen && (
-            <div className="nap-ntfmenu" role="menu">
-              <span className="mz-eyebrow">Értesítések · ma</span>
-              {notifications.slice(0, 3).map((n) => (
-                <button key={n.id} type="button" role="menuitem" className="nap-ntfrow"
-                  onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
-                  <span className="nap-ntf-t">{n.title}</span>
-                  <span className="nap-ntf-x">{n.body}</span>
-                </button>
-              ))}
-              <button type="button" role="menuitem" className="nap-ntffoot"
-                onClick={() => { setNtfOpen(false); navigate('/me/ertesitesek') }}>
-                Összes értesítés ›
-              </button>
-            </div>
-          )}
-        </div>
-        <button type="button" className="nap-avatar" aria-label="Profil" onClick={() => navigate('/me')}>
-          <ClayIcon name="i-mezo" size={19} />
-        </button>
-      </div>
-
       <EntranceGroup className="mz-panel-stack">
         {hero}
 

@@ -83,10 +83,9 @@ const renderView = (path = '/fuel') =>
 
 // ── shell dissolution + page anatomy ─────────────────────────────────────────
 
-test('the hub is the Mozaik face: header recipe → hero → swimlane → Mezo banner → mosaic → band, no sub-nav shell', () => {
+test('the hub is the Mozaik face: hero → swimlane → Mezo banner → mosaic → band, no sub-nav shell', () => {
   const { container } = renderView()
   expect(container.querySelector('.fh-hub')).toBeInTheDocument()
-  expect(container.querySelector('.nap-head')).toBeInTheDocument()
   expect(screen.queryByLabelText('Fuel alnavigáció')).toBeNull()
   const hero = container.querySelector('.fh-hero')
   const lane = container.querySelector('.fh-lane')

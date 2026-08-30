@@ -4,7 +4,7 @@
 // (values ×1.18). The Me shell (AppHero + SubNavDropdown) dissolves: this page
 // IS the /me index, the former sub-tabs are full-page siblings on their stable
 // routes (they keep their current faces until their own F5 slices land).
-// Anatomy: header recipe (date · bell) → identity hero (in-level XP ring around
+// Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → identity hero (in-level XP ring around
 // the initial, name, equipped title chip, Lv · XP · 🔥 · 🪙, bio line) → the
 // coral-ringed GOAL CARD (animated track + Hátra/Tempó/ETA cells) → the 9-tile
 // mosaic with live bottom lines from the subpages' OWN hooks → the Beállítások
@@ -27,9 +27,8 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
   useBiometricProfile, useDecisions, useGamification, useGoal, useGratitudeEntries,
   useKnowledge, useLlmUsageSummary, useMeWeek, useNotificationPrefs, usePeople,
-  useProfile, useProgressionProfile, useSleep, useTitles, useToday, useWeight,
+  useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
 } from '@/data/hooks'
-import { useNotificationFeed } from '@/data/notification/feedHooks'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
 import { SettingsSheet } from '@/features/me/sheets/SettingsSheet'
@@ -54,10 +53,7 @@ const huSigned = (n: number): string => `${n > 0 ? '+' : n < 0 ? '−' : ''}${hu
 
 export function EnHubPage() {
   const navigate = useNavigate()
-  const { today } = useToday()
   const { mode: themeMode } = useTheme()
-  const { items: notifications } = useNotificationFeed()
-  const [ntfOpen, setNtfOpen] = useState(false)
   // The identity hero is the coin SINK's only host since AppHero was deleted
   // (mezo-d20.11, provisional pending F7.4): the title chip and the 🪙 stat open
   // TitleShopSheet, the 🔥 stat opens StreakSheet. Both sheets were unreachable
@@ -208,40 +204,8 @@ export function EnHubPage() {
     ? undefined
     : `${llm.week.callCount} hívás · ${formatRollupCost(llm.week.costUsd)} / hét`
 
-  const unreadNtf = notifications.filter((n) => n.readAt === null).length
-
   return (
     <div className="enh-hub">
-      <div className="nap-head">
-        <div className="nap-head-grow">
-          <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
-        </div>
-        <div className="nap-dpwrap">
-          <button type="button" className="nap-roundbtn" aria-expanded={ntfOpen}
-            aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
-            onClick={() => setNtfOpen((o) => !o)}>
-            <ClayIcon name="i-ertesites" size={21} />
-            {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
-          </button>
-          {ntfOpen && (
-            <div className="nap-ntfmenu" role="menu">
-              <span className="mz-eyebrow">Értesítések · ma</span>
-              {notifications.slice(0, 3).map((n) => (
-                <button key={n.id} type="button" role="menuitem" className="nap-ntfrow"
-                  onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
-                  <span className="nap-ntf-t">{n.title}</span>
-                  <span className="nap-ntf-x">{n.body}</span>
-                </button>
-              ))}
-              <button type="button" role="menuitem" className="nap-ntffoot"
-                onClick={() => { setNtfOpen(false); navigate('/me/ertesitesek') }}>
-                Összes értesítés ›
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
       <EntranceGroup className="mz-panel-stack">
         {/* ===== identity hero ===== */}
         <div className="enh-idhero rise" style={{ '--d': '0ms' } as React.CSSProperties}>

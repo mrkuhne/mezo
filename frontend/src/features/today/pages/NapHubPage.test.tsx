@@ -101,9 +101,10 @@ vi.mock('@/features/today/logic/useMinuteTick', () => ({
 
 beforeEach(() => { waterStore.reset(); habitStore.reset(); clock.now = new Date('2026-05-22T13:42:00') })
 
-// Nap hub (mezo-d20.2.1) — the day spine's Mozaik face: header recipe (date eyebrow +
-// daypart switch + bell + orb avatar), one hero per daypart panel, then the 2-column
-// mosaic. Detail pages are F1.2–F1.6; until they land the tiles open the existing sheets.
+// Nap hub (mezo-d20.2.1) — the day spine's Mozaik face: one hero per daypart panel
+// (the panel picked from `?dp=`; the header itself moved to the shell, mezo-atry), then
+// the 2-column mosaic. Detail pages are F1.2–F1.6; until they land the tiles open the
+// existing sheets.
 
 function LocationProbe() {
   return <div data-testid="loc">{useLocation().pathname + useLocation().search}</div>
@@ -123,21 +124,11 @@ function renderHub(path = '/nap?dp=nap') {
   )
 }
 
-test('the header carries the date eyebrow, the daypart switch, the bell and the orb avatar', async () => {
-  renderHub()
-  expect(await screen.findByRole('button', { name: 'Napszak váltása' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Értesítések/ })).toBeInTheDocument()
-  expect(document.querySelector('.nap-avatar use[href="#i-mezo"]')).not.toBeNull()
-})
-
-test('the daypart switch opens a 3-option menu and switching re-renders the panel + updates ?dp', async () => {
-  renderHub('/nap?dp=nap')
-  await userEvent.click(await screen.findByRole('button', { name: 'Napszak váltása' }))
-  const menu = screen.getByRole('menu')
-  await userEvent.click(screen.getByRole('menuitem', { name: 'Este' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('dp=este')
+test('a panel a ?dp paraméterből következik — a váltó maga a shell fejlécében él (mezo-atry)', async () => {
+  renderHub('/nap?dp=este')
   expect(await screen.findByText('Villanyoltásig')).toBeInTheDocument()
-  expect(menu).not.toBeInTheDocument()
+  // A napszakváltó gomb NEM az oldalé többé.
+  expect(screen.queryByRole('button', { name: 'Napszak váltása' })).toBeNull()
 })
 
 test('the Nap panel hero is the keret: remaining kcal + day-bar', async () => {
