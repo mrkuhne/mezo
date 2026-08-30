@@ -40,11 +40,21 @@ describe('Napzárás night-sky tokens', () => {
     }
   })
 
-  it('keeps the night-wash primitive declared once, not copied per act', () => {
-    // The `.rz-nw` tile is the one carrier of the night-washed surface. A per-act copy is the
-    // exact shape of the panel-rhythm bug, so the guard is single-declaration, not the value.
-    const copies = [...rawCss.matchAll(/\.rz-[a-z-]*\s*\{([^}]*)\}/g)]
-      .filter(([, body]) => body.includes('var(--rz-nw-wash)'))
-    expect(copies).toHaveLength(1)
+  it('never inlines the night-wash values — consumers must go through the token', () => {
+    // The point is NOT that one rule may use `var(--rz-nw-wash)`: consuming a token in several
+    // places is exactly what a token is for, and several ritual surfaces legitimately do. What
+    // must never happen is a rule re-typing the literal gradient, because that is how the
+    // panel-rhythm regression happened (mezo-d20.11.2) — a value copied per surface, until the
+    // next surface quietly gets a slightly different one and nothing fails.
+    const WASH_LITERAL = 'linear-gradient(150deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05))'
+    // Comments are stripped first: a `/* … */` block sitting above a rule would otherwise be
+    // swallowed into the selector capture, and this file's rules are heavily commented.
+    const bare = rawCss.replace(/\/\*[\s\S]*?\*\//g, '')
+    const inlined = [...bare.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .filter(([, sel, body]) => body.includes(WASH_LITERAL) && !sel.trim().startsWith(':root'))
+      .map(([, sel]) => sel.trim())
+    expect(inlined).toEqual([])
+    // …and the token itself is declared in both roots, like every other --rz-* token.
+    expect(rootBlocks().filter((b) => b.includes('--rz-nw-wash:'))).toHaveLength(2)
   })
 })

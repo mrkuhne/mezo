@@ -3406,9 +3406,13 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   color: color-mix(in srgb, var(--text-primary) 55%, transparent); }
 .rz-reflect-gratitude { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
 .rz-gratitude-saved { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+/* The saved lines sit on the night wash, not on --surface-2: that token is an opaque warm
+   graphite from the DS ramp, and an opaque brown block on the violet night sky reads as a
+   foreign element (mezo-d20.8.1.1). */
 .rz-gratitude-saved li { font-family: var(--ff-body); font-size: 13px; line-height: 1.4;
   color: color-mix(in srgb, var(--text-primary) 65%, transparent);
-  padding: 8px 10px; background: var(--surface-2); border-radius: 10px; }
+  padding: 8px 10px; border-radius: 10px;
+  background: var(--rz-nw-wash); border: 0.5px solid var(--rz-nw-line); }
 /* the CTA sits right under the box here — the shared .rz-cta 56px top margin is tuned for the
    short arrival/story acts and would strand it off-screen below a 160px textarea. */
 .rz-reflect .rz-cta { margin-top: 26px; }
