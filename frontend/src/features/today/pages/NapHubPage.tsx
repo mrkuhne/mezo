@@ -7,28 +7,27 @@
 // every tile navigates to its own page (Huawei pattern).
 //
 // 1:1 fidelity audit (mezo-d20.11) — what this page owes the prototype and now
-// pays: the Mezo tile carries an unread COUNT (not a bare dot), the Rutin tile
-// carries the NEXT habit's own clay icon + its name + `n/m` + an in-place tick,
+// pays: the Rutin tile carries the NEXT habit's own clay icon + its name +
+// `n/m` + an in-place tick,
 // the Küldetés tile shows one big dot per quest (not a text count), the Kreed
 // tile has NO icon and carries the `n fókusz ›` more-line, the reggel hero keeps
 // `Súly … ↘` and `Fókusz …` on ONE row, the day-bar segments and the water bar
 // FILL on entrance, the este panel closes with the day's stat strip, and
 // `?day=rough` renders the horgony melt again (provisional, F7).
 // ============================================================
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { Mosaic, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
-import { lastSeenMessage } from '@/shared/lib/seenMessages'
 import { emitToast } from '@/shared/lib/toastBus'
 import {
-  useToday, useTodayScenario, resolveBriefing, useCheckins, useSleepGoal, useDailyQuests,
+  useToday, useTodayScenario, useCheckins, useSleepGoal, useDailyQuests,
   useHabitDay, useHabitCatalog, useHabitActions, useFuelPreview, useFuelDay,
   useWaterActions, useSleep, useWeight, useIntentionDay, useIntentionActions,
-  useCompanionFeed, useStackDay, useGamificationDay,
+  useStackDay, useGamificationDay,
 } from '@/data/hooks'
 import { buildHabitRewardToast } from '@/features/progression/logic/rewardToast'
 import { DAY_FACES, dayFace, type DayFace } from '@/features/today/logic/dayFace'
@@ -36,7 +35,6 @@ import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { useNeeds } from '@/features/today/logic/useNeeds'
 import { needRingGradient } from '@/features/today/logic/needs'
 import { minsToBed } from '@/features/today/logic/windDown'
-import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
 import { habitAction } from '@/features/today/logic/habitAction'
 import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
@@ -89,8 +87,6 @@ export function NapHubPage() {
   const { slots: stackSlots } = useStackDay(date)
   const { data: gamDay } = useGamificationDay(date)
 
-  const feed = useCompanionFeed()
-  const messages = useMemo(() => buildMezoMessages({ feed, demoBriefing: resolveBriefing(scenario.dayState) }), [feed, scenario.dayState])
   const intention = intentionData ?? { date, creed: null, foci: [], reflection: null }
 
   // ── the one sheet the hub still owns (Kreed) ─────────────────────────
@@ -98,15 +94,6 @@ export function NapHubPage() {
   const [anchorsDone, setAnchorsDone] = useState<Set<number>>(() => new Set())
 
   // ── derived tile facts ──────────────────────────────────────────────
-  // Unread Mezo messages: everything past the day's read watermark (the Mezo page
-  // stamps it on open — prototype: „az olvasatlan-pötty megnyitáskor törlődik").
-  const unreadMsgs = useMemo(() => {
-    const seen = lastSeenMessage(date)
-    if (seen === null) return messages.length
-    const idx = messages.findIndex((m) => m.id === seen)
-    return idx < 0 ? messages.length : messages.length - (idx + 1)
-  }, [date, messages])
-
   const questXp = quests.reduce((s, q) => s + q.xp, 0)
   const habitsFor = (f: DayFace) => {
     const keys = new Set(
@@ -135,25 +122,9 @@ export function NapHubPage() {
     ? Math.min(1, fuel.consumed.water / fuel.targets.water)
     : 0
 
-  // ── shared tiles (Mezo / Küldetések / Check-in appear on every panel) ──
+  // ── shared tiles (Küldetések / Check-in appear on every panel) ──
   // These carry prototype-specific internals (a count badge, quest dots), so they are
   // composed from the Mozaik `mz-*` classes rather than the generic `Tile` recipe.
-  const mezoTile = (delay: number) => (
-    <button key="mezo" type="button" className="mz-tile mz-w-coral rise"
-      style={{ '--d': `${delay}ms` } as React.CSSProperties}
-      onClick={() => navigate('/nap/uzenetek')}
-      aria-label={unreadMsgs > 0 ? `Mezo üzenetei, ${unreadMsgs} olvasatlan` : 'Mezo üzenetei'}>
-      <span className="mz-eyebrow nap-coral">Mezo</span>
-      <div className="mz-spotwrap">
-        <span className="nap-anchorwrap">
-          <ClayIcon name="i-level" size={47} />
-          {unreadMsgs > 0 && <span className="nap-unread" aria-hidden="true">{unreadMsgs}</span>}
-        </span>
-      </div>
-      <div className="nap-tilemore nap-coral">Üzenetek ›</div>
-    </button>
-  )
-
   const questTile = (delay: number) => (
     <button key="quest" type="button" className="mz-tile mz-w-gold rise"
       style={{ '--d': `${delay}ms` } as React.CSSProperties}
@@ -331,13 +302,12 @@ export function NapHubPage() {
               </div>
             </div>
             <Mosaic>
-              {mezoTile(70)}
-              {habitTile('reggel', 110)}
-              {questTile(150)}
-              {checkTile(190)}
+              {habitTile('reggel', 70)}
+              {questTile(110)}
+              {checkTile(150)}
               {/* prototype .t-kreed: NO icon — the creed with a 3-line clamp, then the more-line */}
               <button type="button" className="mz-tile mz-w-white rise"
-                style={{ '--d': '230ms' } as React.CSSProperties}
+                style={{ '--d': '190ms' } as React.CSSProperties}
                 onClick={() => setFocusOpen(true)} aria-label="Kreed">
                 <span className="mz-eyebrow nap-coral">Kreed</span>
                 <div className="nap-kreedq">{intention.creed ?? 'Mi a mai szándék?'}</div>
@@ -408,9 +378,8 @@ export function NapHubPage() {
               <Tile wash="sage" icon="i-stack" eyebrow="Stack" delayMs={230}
                 line={<span className="nap-stackbig">{stackTaken}/{stackSlots.length}</span>}
                 onClick={() => navigate('/fuel/stack')} aria-label="Stack" />
-              {mezoTile(270)}
-              {questTile(310)}
-              {checkTile(350)}
+              {questTile(270)}
+              {checkTile(310)}
             </Mosaic>
           </>
         )}
@@ -436,14 +405,13 @@ export function NapHubPage() {
               {habitTile('este', 70)}
               {questTile(110)}
               {checkTile(150)}
-              {mezoTile(190)}
               {/* Éjszakai mód's Nap-side door. It died with `IslandEvening` when the Today view
                   layer went (mezo-d20.11): the Alvás page's row survived, but that row was
                   designed as the TWIN of a timed evening entry, not its replacement. Timed, as
                   it always was — inside the wind-down window (lights-out − 90 min), so it does
                   not sit on the mosaic all evening. */}
               {bedIn <= 90 && bedIn > 0 && (
-                <Tile key="night" wash="lav" icon="i-alvas" eyebrow="Éjszakai mód" delayMs={230}
+                <Tile key="night" wash="lav" icon="i-alvas" eyebrow="Éjszakai mód" delayMs={190}
                   line={`indul ${sleepGoal.bedTime} előtt`}
                   onClick={() => navigate('/me/sleep/night')} aria-label="Éjszakai mód" />
               )}

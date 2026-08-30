@@ -165,31 +165,11 @@ test('the Este panel offers the Napzárás CTA which navigates to /ritual', asyn
   expect(await screen.findByText('ritual-page')).toBeInTheDocument()
 })
 
-test('the mosaic tiles render with clay spots — Mezo, Küldetések, Check-in, Életjel', async () => {
+test('the mosaic tiles render with clay spots — Küldetések, Check-in, Életjel', async () => {
   renderHub('/nap?dp=nap')
-  expect(await screen.findByRole('button', { name: /Mezo üzenetei/ })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Napi küldetések' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Napi küldetések' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Check-in' })).toBeInTheDocument()
   expect(document.querySelector('.nap-bigring')).not.toBeNull()
-})
-
-test('the Mezo tile navigates to the Mezo üzenetei page (mezo-d20.2.2)', async () => {
-  render(
-    <QueryWrapper>
-      <ToastProvider>
-        <LevelUpProvider>
-          <MemoryRouter initialEntries={['/nap?dp=nap']}>
-            <Routes>
-              <Route path="/nap" element={<NapHubPage />} />
-              <Route path="/nap/uzenetek" element={<div>uzenetek-page</div>} />
-            </Routes>
-          </MemoryRouter>
-        </LevelUpProvider>
-      </ToastProvider>
-    </QueryWrapper>,
-  )
-  await userEvent.click(await screen.findByRole('button', { name: /Mezo üzenetei/ }))
-  expect(await screen.findByText('uzenetek-page')).toBeInTheDocument()
 })
 
 test('the water tile logs +2,5 dl in place and the counter moves', async () => {
@@ -201,16 +181,6 @@ test('the water tile logs +2,5 dl in place and the counter moves', async () => {
 })
 
 // ── 1:1 fidelity audit (mezo-d20.11) — the prototype's tile internals ────────────
-
-test('the Mezo tile carries the unread COUNT, not a bare dot', async () => {
-  renderHub('/nap?dp=nap')
-  const tile = await screen.findByRole('button', { name: /Mezo üzenetei/ })
-  const badge = tile.querySelector('.nap-unread')
-  expect(badge).not.toBeNull()
-  expect(Number(badge!.textContent)).toBeGreaterThan(0)
-  expect(tile.querySelector('.mz-dot')).toBeNull() // the old dot lost the number
-  expect(tile).toHaveTextContent('Üzenetek ›')
-})
 
 test('the Küldetés tile shows ONE big dot per quest + the XP pot — the count is never repeated as text', async () => {
   renderHub('/nap?dp=nap')
@@ -329,4 +299,14 @@ test('the Éjszakai mód tile stays away earlier in the evening — a timed door
   renderEste()
   await screen.findByRole('button', { name: 'Zárjuk le a napot' })
   expect(screen.queryByRole('button', { name: 'Éjszakai mód' })).toBeNull()
+})
+
+// mezo-atry: az Üzenetek a mozaikból a shell fejlécébe költözött — háromszori csempe-
+// ismétlés helyett egy karika. A csempének mind a három napszakon el kell tűnnie.
+test.each(['reggel', 'nap', 'este'])('a(z) %s panel mozaikjában nincs Mezo-üzenetek csempe', async (dp) => {
+  renderHub(`/nap?dp=${dp}`)
+  // Egy napszak-független horgony, hogy a panel biztosan felépüljön.
+  expect(await screen.findByRole('button', { name: 'Napi küldetések' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Mezo üzenetei/ })).toBeNull()
+  expect(document.querySelector('.nap-unread')).toBeNull()
 })
