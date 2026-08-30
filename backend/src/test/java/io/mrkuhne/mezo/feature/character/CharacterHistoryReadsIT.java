@@ -83,4 +83,28 @@ class CharacterHistoryReadsIT extends ApiIntegrationTest {
                 .singleElement()
                 .satisfies(e -> assertThat(String.join("\n", e.lines())).contains("Hétvégén rendszerint többet alszik."));
     }
+
+    @Test
+    void gatherHistory_moreFactsThanCap_rendersOnlyTheTopCappedFacts() {
+        UUID owner = ownerId();
+        // 45 prompt-eligible "life" facts, all routing to antropologus — one more than the
+        // history reader's cap (40, mirroring KnowledgeFactService.topFactsForPrompt's own bound
+        // on this repository method).
+        for (int i = 0; i < 45; i++) {
+            knowledgeFactPopulator.fact(owner, "Tény #" + i, "life", i);
+        }
+
+        List<ExpertEvidence> evidence = historyReads.gatherHistory(owner);
+
+        assertThat(evidence).filteredOn(e -> e.expertKey().equals("antropologus"))
+                .singleElement()
+                .satisfies(e -> {
+                    // capped at 40, not 45
+                    assertThat(e.lines()).hasSize(40);
+                    // ordering is reinforcement-count desc — the 5 lowest-reinforcement facts
+                    // (#0..#4) are the ones dropped by the cap
+                    String rendered = String.join("\n", e.lines());
+                    assertThat(rendered).contains("Tény #44").doesNotContain("Tény #4\n").doesNotContain("Tény #0");
+                });
+    }
 }

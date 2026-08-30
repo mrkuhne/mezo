@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +38,11 @@ import org.springframework.transaction.annotation.Transactional;
  *       expert).</li>
  *   <li>a prompt-eligible knowledge fact goes to the expert whose dimension its {@code category}
  *       matches, via {@link #FACT_CATEGORY_EXPERT} (mirrors {@code ck_knowledge_fact_category}:
- *       train|fuel|health|life); unmatched → {@code antropologus} (life context).</li>
+ *       train|fuel|health|life); unmatched → {@code antropologus} (life context). Capped at the
+ *       top {@value #HISTORY_FACT_CAP} facts (by reinforcement count, then newest — the same
+ *       ordering {@code KnowledgeFactService.topFactsForPrompt} uses), each fact's text capped at
+ *       {@value #FACT_TEXT_CAP_CHARS} chars — {@code includeInPrompt} is persistent, so an
+ *       unbounded read here would let a heavy user's fact set blow up the bootstrap prompt.</li>
  * </ul>
  * Every line carries the source row's real id in {@code refIds} as {@code "<kind>:<uuid>"}.
  */
@@ -53,6 +57,17 @@ public class CharacterHistoryReads {
     static final int HISTORY_SUMMARY_CAP = 60;
 
     private static final int NARRATIVE_CAP_CHARS = 300;
+
+    /** Top-N prompt-eligible knowledge facts carried into the history evidence, ordered by
+     *  reinforcement count then newest (same ordering the repository method's other caller,
+     *  {@code KnowledgeFactService.topFactsForPrompt}, uses before anything reaches a prompt).
+     *  {@code includeInPrompt} is a persistent flag with no natural upper bound, so this read is
+     *  capped the same deterministic way the narrative read is — a local default rather than
+     *  {@code CompanionProperties.Facts.topN()} to avoid a cross-feature config dependency. */
+    static final int HISTORY_FACT_CAP = 40;
+
+    /** Per-fact text cap (chars) — mirrors {@link #NARRATIVE_CAP_CHARS}'s treatment of narratives. */
+    private static final int FACT_TEXT_CAP_CHARS = 300;
 
     /** Practical "since forever" floor for the narrative read — {@link LocalDate#MIN} overflows
      *  postgres's {@code date} range (4713 BC..294276 AD, but the JDBC/text round-trip chokes on
@@ -146,11 +161,11 @@ public class CharacterHistoryReads {
                            Map<String, List<String>> refIdsByExpert) {
         List<KnowledgeFactEntity> facts = knowledgeFactRepository
                 .findByCreatedByAndIncludeInPromptTrueAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
-                        owner, Pageable.unpaged());
+                        owner, PageRequest.of(0, HISTORY_FACT_CAP));
         for (KnowledgeFactEntity fact : facts) {
             String expertKey = FACT_CATEGORY_EXPERT.getOrDefault(fact.getCategory(), FALLBACK_FACT_EXPERT);
             String refId = "knowledge-fact:" + fact.getId();
-            append(linesByExpert, refIdsByExpert, expertKey, fact.getFactText(), refId);
+            append(linesByExpert, refIdsByExpert, expertKey, cap(fact.getFactText(), FACT_TEXT_CAP_CHARS), refId);
         }
     }
 
