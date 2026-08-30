@@ -10,6 +10,7 @@ key_files:
   - frontend/src/data/ritual
   - api/feature/ritual/ritual.yml
   - frontend/src/features/today/pages/NapHubPage.tsx
+  - docs/design_2.0/prototypes/napzaras.html
 related: [today, habit, growth, intention, proactive, _platform-design-system, needs, companion, journal]
 ---
 
