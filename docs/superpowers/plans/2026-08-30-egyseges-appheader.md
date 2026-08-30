@@ -339,10 +339,10 @@ Ha az „1 olvasatlan üzenet" assert elhasal, NE a számot igazítsd a valósá
 a teszt-elvárás (`1`) rossz feltevésen alapul; ekkor az assert `0`-ra javítandó, és a badge
 hiányát kell pinnelni (`expect(btn.querySelector('.nap-badge')).toBeNull()`).
 
-- [ ] **Step 5: Lint + típusellenőrzés**
+- [ ] **Step 5: Típusellenőrzés**
 
 ```bash
-cd frontend && pnpm exec tsc -b --noEmit && pnpm exec eslint src/app/AppHeader.tsx src/app/AppHeader.test.tsx
+cd frontend && pnpm exec tsc --noEmit -p tsconfig.json
 ```
 
 Expected: hibamentes.
@@ -541,8 +541,9 @@ FONTOS: a `useToday()` / `today` és a `ClayIcon` MARAD mindegyik fájlban — a
 máshol is használja őket. A `useState` importot csak akkor vedd ki, ha az adott fájlban nem
 maradt más `useState` hívás. A `navigate` mindenhol marad.
 
-A biztos módszer a maradékra: futtasd az eslintet (Step 8), és pontosan azt töröld, amit
-`@typescript-eslint/no-unused-vars` jelez.
+A biztos módszer a maradékra: futtasd a típusellenőrzést (Step 8) — a `noUnusedLocals`
+pontosan a használatlanná vált szimbólumokat sorolja fel. (A repóban NINCS eslint: a `tsc` és a
+vitest a valódi kapu.)
 
 - [ ] **Step 7: Igazítsd a két érintett oldal-tesztet**
 
@@ -573,10 +574,10 @@ test('a panel a ?dp paraméterből következik — a váltó maga a shell fejlé
 })
 ```
 
-- [ ] **Step 8: Lint + típusellenőrzés**
+- [ ] **Step 8: Típusellenőrzés**
 
 ```bash
-cd frontend && pnpm exec tsc -b --noEmit && pnpm exec eslint src
+cd frontend && pnpm exec tsc --noEmit -p tsconfig.json
 ```
 
 Expected: hibamentes. Ha `no-unused-vars` jelez a Step 6 fájljaiban, töröld a jelzett szimbólumot
@@ -674,7 +675,7 @@ Expected: FAIL — a három új `test.each` eset elhasal (`expected null, receiv
      kommenttel együtt
    - az importokból: `lastSeenMessage` (`@/shared/lib/seenMessages`), `buildMezoMessages`
      (`@/features/today/logic/mezoMessages`), és a `@/data/hooks` listájából `useCompanionFeed`
-     és `resolveBriefing` — de CSAK ha az eslint valóban használatlannak jelzi őket (a `scenario`
+     és `resolveBriefing` — de CSAK ha a `tsc` valóban használatlannak jelzi őket (a `scenario`
      maga máshol is kell, az marad).
 
 3. **reggel panel** — a `<Mosaic>` első négy sora legyen:
@@ -721,10 +722,10 @@ cd frontend && VITE_USE_MOCK=true pnpm vitest run src/features/today
 
 Expected: PASS.
 
-- [ ] **Step 5: Lint + típusellenőrzés**
+- [ ] **Step 5: Típusellenőrzés**
 
 ```bash
-cd frontend && pnpm exec tsc -b --noEmit && pnpm exec eslint src
+cd frontend && pnpm exec tsc --noEmit -p tsconfig.json
 ```
 
 Expected: hibamentes.
