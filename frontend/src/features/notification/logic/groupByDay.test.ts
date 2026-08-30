@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { groupByDay } from '@/features/notification/logic/groupByDay'
 import type { AppNotificationView } from '@/data/types'
 
-// Minden időbélyeg DÉLI UTC: így a futtató gép időzónája (±12 h) nem tolhatja át az elemet
+// Minden időbélyeg dél körüli UTC: így a futtató gép időzónája (±12 h) nem tolhatja át az elemet
 // egy szomszédos naptári napra, és a teszt CI-ben (UTC) is ugyanazt jelenti, mint itthon.
 const item = (id: string, occurredAt: string): AppNotificationView => ({
   id, kind: 'memory_note', title: 't', body: null, deeplink: '/insights', occurredAt, readAt: null,
@@ -34,14 +34,14 @@ describe('groupByDay', () => {
   it('sorts newest-first inside a group and across groups, whatever order it is given', () => {
     const groups = groupByDay([
       item('old', '2026-08-14T12:00:00.000Z'),
-      item('now2', '2026-08-18T15:00:00.000Z'),
-      item('now1', '2026-08-18T09:00:00.000Z'),
+      item('now2', '2026-08-18T14:00:00.000Z'),
+      item('now1', '2026-08-18T10:00:00.000Z'),
     ], '2026-08-18')
     expect(groups.map((g) => g.label)).toEqual(['Ma', 'aug. 14.'])
     expect(groups[0].items.map((i) => i.id)).toEqual(['now2', 'now1'])
   })
 
-  it('omits empty groups', () => {
+  it('returns exactly one group for a single-day feed', () => {
     const groups = groupByDay([item('a', '2026-08-18T12:00:00.000Z')], '2026-08-18')
     expect(groups.map((g) => g.label)).toEqual(['Ma'])
   })
@@ -60,6 +60,7 @@ describe('groupByDay', () => {
     expect(groups).toHaveLength(2)
     expect(groups[0].items.map((i) => i.id)).toEqual(['new'])
     expect(groups[1].items.map((i) => i.id)).toEqual(['old'])
+    expect(groups.map((g) => g.day)).toEqual(['2026-08-15', '2025-08-15'])
   })
 
   // Hónapforduló: a „tegnap" a hónap utolsó napja, az azelőtti pedig dátum-címkét kap.
