@@ -2,6 +2,9 @@ package io.mrkuhne.mezo.feature.proactive.mapper;
 
 import io.mrkuhne.mezo.api.dto.ChallengeRef;
 import io.mrkuhne.mezo.api.dto.ChallengeResponse;
+import io.mrkuhne.mezo.api.dto.DiagnosisEvidenceItem;
+import io.mrkuhne.mezo.api.dto.DiagnosisResponse;
+import io.mrkuhne.mezo.api.dto.DiagnosisSuspect;
 import io.mrkuhne.mezo.api.dto.ExperimentResponse;
 import io.mrkuhne.mezo.api.dto.FeedMessageResponse;
 import io.mrkuhne.mezo.api.dto.FeedRef;
@@ -16,6 +19,9 @@ import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeRefsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
+import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEvidenceEnvelope;
+import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisSuspectsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirAnchorsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
@@ -55,6 +61,18 @@ public interface ProactiveMapper {
     WeeklyReviewHighlight toWeeklyReviewHighlight(WeeklyReviewHighlightsEnvelope.Highlight highlight);
 
     ExperimentResponse toExperimentResponse(ExperimentEntity entity);
+
+    /** {@code stale} is NOT mapped — it is a live probe result over OTHER aggregates' rows,
+     *  computed by {@code DiagnosisService} and set on the returned DTO after this call (the
+     *  {@code toWeeklyReviewResponse} precedent, mezo-hqfi). */
+    @Mapping(target = "evidence", source = "evidence.items")
+    @Mapping(target = "suspects", source = "suspects.suspects")
+    @Mapping(target = "stale", ignore = true)
+    DiagnosisResponse toDiagnosisResponse(DiagnosisEntity entity);
+
+    DiagnosisEvidenceItem toDiagnosisEvidenceItem(DiagnosisEvidenceEnvelope.EvidenceItem item);
+
+    DiagnosisSuspect toDiagnosisSuspect(DiagnosisSuspectsEnvelope.Suspect suspect);
 
     @Mapping(target = "exercise", source = "exerciseName")
     @Mapping(target = "refs", source = "refs.refs")
