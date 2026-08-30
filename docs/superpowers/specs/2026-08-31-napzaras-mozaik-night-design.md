@@ -148,6 +148,14 @@ este-panel lavenderének telített rokona, tehát az átmenet folytonos. Nincs �
 - A **`?day=rough`** melt és a Napzárás viszonya: a nehéz nap jelenleg nem befolyásolja a
   rituálé színpadát. Elképzelhető egy halkabb ív (kevesebb csillag, tompább arany), de ez
   önálló döntés — most nem valósul meg.
+- **Az act 3 életterület-chipjei** (🧘 Tudatosság, 🌱 Egészség, …) emojik maradnak. Ezek a
+  `levelUpMeta.ts` `LIFE_SKILLS` listájából jönnek, amit a Growth, a SkillBandCard, a
+  LevelUpScreen és a JournalSheet is fogyaszt — egyiknek sem volt tervezői köre. Ugyanaz a
+  „egyszerre egy felület" szabály, ami a `CHIP_ICON_BY_SOURCE`-ot is érintetlenül hagyta;
+  ráadásul a clay készletben a nyolc életterület többségének (pénzügy, tanulás, kapcsolatok)
+  nincs megfelelője, és egy fél-clay sorozat rosszabb lenne a következetes emojinál.
+  Ez a Napzárásban maradt egyetlen látható emoji-csoport — az F7.4 Én-kör hozza el a
+  megoldását, mert ott dől el az életterület-ikonográfia egésze.
 - **Act 3 diktálás**: a `useVoiceInput` chip a DS `Icon` `mic`/`voice-wave` jelét használja,
   nem clay-t — nincs clay mikrofon-állapotpár (felvétel/leállítás), és egy fél-clay pár
   rosszabb lenne, mint a következetes DS ikon. A `i-mikrofon` clay létezik, de statikus.

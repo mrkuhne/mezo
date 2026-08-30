@@ -183,7 +183,7 @@ test('act 3 (Ma milyen volt) sits between A napod íve and Nyitott hurkok, and t
   const { saveReflection } = setupCloseSpies()
   const user = userEvent.setup()
   renderApp()
-  await user.click(screen.getByRole('button', { name: 'Kezdjük 🌙' })) // act 1 -> act 2
+  await user.click(screen.getByRole('button', { name: 'Kezdjük' })) // act 1 -> act 2
   await user.click(screen.getByRole('button', { name: 'Tovább' })) // act 2 -> act 3
 
   expect(screen.getByText('Milyen volt a napod valójában?')).toBeInTheDocument()
@@ -199,7 +199,7 @@ test('act 3 Tovább with prose saves it once, then advances to Nyitott hurkok', 
   const { saveReflection } = setupCloseSpies()
   const user = userEvent.setup()
   renderApp()
-  await user.click(screen.getByRole('button', { name: 'Kezdjük 🌙' })) // act 1 -> act 2
+  await user.click(screen.getByRole('button', { name: 'Kezdjük' })) // act 1 -> act 2
   await user.click(screen.getByRole('button', { name: 'Tovább' })) // act 2 -> act 3
 
   await user.type(screen.getByRole('textbox', { name: /napod/i }), 'Nehéz nap volt.')

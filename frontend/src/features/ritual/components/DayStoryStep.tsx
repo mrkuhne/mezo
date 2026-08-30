@@ -3,6 +3,7 @@ import { buildArcPoints, pointXY } from '@/features/today/logic/dayArc'
 import type { ArcPoint } from '@/features/today/logic/dayArc'
 import { useCheckins, useDayRecap } from '@/data/hooks'
 import { localDateString } from '@/shared/lib/dates'
+import { ClayIcon } from '@/shared/ui/clay'
 
 // Same P0(22,100) C(182,-28) P2(342,100) Bézier as dayArc.ts/DayArc.tsx. The np-draw
 // reveal's stroke-dasharray (400, rounded up from the path's real length) lives in
@@ -59,8 +60,8 @@ export function DayStoryStep({ onNext }: { onNext: () => void }) {
       {thinDay && <p className="rz-thin">Ma ennyi fért bele. Az is számít.</p>}
       <div className="rz-events">
         {events.map((ev, i) => (
-          <div key={`${ev.icon}-${ev.label}-${i}`} className="rz-ev np-anim" style={{ '--i': i } as CSSProperties}>
-            <span className="rz-ev-icon" aria-hidden="true">{ev.icon}</span>
+          <div key={`${ev.icon}-${ev.label}-${i}`} className="rz-ev rz-nw np-anim" style={{ '--i': i } as CSSProperties}>
+            <span className="rz-ev-icon rz-nw-spot" aria-hidden="true"><ClayIcon name={ev.icon} size={19} /></span>
             <span className="rz-ev-label">{ev.label}</span>
             <span className={ev.done ? 'rz-ev-meta ok' : 'rz-ev-meta'}>{ev.meta}</span>
           </div>

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Self-baselined visual goldens: 19 goto screens + the /ritual Harvest click-through
+ * Self-baselined visual goldens: 19 goto screens + the /ritual Harvest + Release click-throughs
  * = 20 screens × 2 themes = 40 snapshots per platform (mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
  * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
@@ -89,7 +89,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
       await page.goto('/ritual')
       await page.waitForLoadState('networkidle')
-      await page.getByRole('button', { name: 'Kezdjük 🌙' }).click()  // act 1 → 2
+      await page.getByRole('button', { name: 'Kezdjük' }).click()  // act 1 → 2
       await page.getByRole('button', { name: 'Tovább' }).click()       // act 2 → 3
       await page.getByRole('button', { name: 'Ma nem írok' }).click()  // act 3 → 4 (reflection skipped)
       await page.getByRole('button', { name: 'Tovább' }).click()       // act 4 → 5
@@ -108,6 +108,29 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(toasts).toHaveCount(0)
       await page.evaluate(() => document.fonts.ready)
       await expect(page).toHaveScreenshot(`ritual-harvest-${theme}.png`)
+    })
+
+    // Napzárás act 6 (Elengedés) — the far end of the darkening arc (mezo-d20.8.1.1). Act 1 and
+    // act 6 are the two shots that prove the arc: the Arrival golden is dusk lavender, this one
+    // is the deepest night with the closing circle drawn around the clay moon. Reached by one
+    // more Tovább past Harvest; the same toast wait applies because entering act 5 is what fires
+    // the mock close() awards, and they can still be on screen when act 6 mounts.
+    test('ritual-release', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await page.goto('/ritual')
+      await page.waitForLoadState('networkidle')
+      await page.getByRole('button', { name: 'Kezdjük' }).click()      // act 1 → 2
+      await page.getByRole('button', { name: 'Tovább' }).click()       // act 2 → 3
+      await page.getByRole('button', { name: 'Ma nem írok' }).click()  // act 3 → 4
+      await page.getByRole('button', { name: 'Tovább' }).click()       // act 4 → 5
+      await page.locator('.rz-harvest .rz-xp-num').waitFor()
+      await page.getByRole('button', { name: 'Tovább' }).click()       // act 5 → 6
+      await page.locator('.rz-release .rz-handoff').waitFor()
+      const toasts = page.locator('.toast')
+      await expect(toasts).toHaveCount(0)
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`ritual-release-${theme}.png`)
     })
   })
 }
