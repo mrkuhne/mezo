@@ -286,6 +286,10 @@ mezo:
       # off = the CharacterObservationJob bean does not exist
       character-observation-job:
         enabled: true
+      # Karakter weekly konzílium pass (mezo-1gim.5, schedule: mezo.character.conference.cron);
+      # off = the CharacterConferenceJob bean does not exist
+      character-conference-job:
+        enabled: true
       # V3.1 nightly statistical pattern detection (schedule: mezo.companion.patterns.cron);
       # off = the PatternDetectionJob bean does not exist
       pattern-detection-job:
@@ -1089,6 +1093,12 @@ mezo:
       cron: "0 50 2 * * *"
       # Finished days back the job checks and self-heals (the summary catch-up idiom)
       catch-up-days: 3
+    conference:
+      # Sunday 19:30 — the week that is ending; 19:30 slot free (checked against every other
+      # cron in this file before landing here, mezo-1gim.5).
+      cron: "0 30 19 * * SUN"
+      # Finished weeks back the job checks and self-heals (the observation catch-up idiom)
+      catch-up-weeks: 2
     # Per-detector kill switches (spec §5) — empty = every detector enabled; keyed by detector key.
     detector: {}
   proactive:
