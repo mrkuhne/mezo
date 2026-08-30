@@ -1513,10 +1513,16 @@ export interface AppNotificationView {
   readAt: string | null
 }
 
-/** Per-kind panel icon + tint class suffix (the mockup's family colors). */
-/** Per-kind panel icon + tint class suffix (the mockup's family colors). A `clay` a Mozaik-nyelv
- *  ikonja (mezo-nol0): a feed-oldal ezt rendereli, az `emoji` a régi dropdown-panel öröksége. */
-export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, { emoji: string; tint: string; clay: ClayIconName }> = {
+/** Per-kind ikon + tint osztály-utótag (a mockup családi színei). A `tint` a sor ikon-tokjának
+ *  washát adja, a `clay` a Mozaik-nyelv ikonját — a feed-oldal (`NotificationFeedPage`) ezt a
+ *  kettőt rendereli. Az `emoji` a törölt dropdown-panel öröksége, olvasója már nincs. */
+export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
+  /** @deprecated Nincs olvasója a repóban a NotificationPanel törlése óta (mezo-nol0) — a feed
+   *  a `clay` ikont rajzolja. Nem törlöm: a 12 soros literál nyesése ezt az ágat túllépő változás. */
+  emoji: string
+  tint: string
+  clay: ClayIconName
+}> = {
   pattern_inbox: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
   pattern_signal: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
   hypothesis_new: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },

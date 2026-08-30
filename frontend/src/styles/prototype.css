@@ -6726,7 +6726,11 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-lg);
 }
 .nf-page .nf-row + .nf-row { margin-top: 7px; }
-.nf-page .nf-row.unread { background: color-mix(in srgb, var(--primary-base) 5%, transparent); }
+/* A kiemelés a KÁRTYÁRA komponál, nem a semmire. A szabály a törölt dropdown-panelből jött, ahol
+   egy átlátszatlan kártya-hátterű panel fölött ült; egy `MozaikPage`-en a `transparent` alap az
+   oldal-vásznat engedte át, így az olvasatlan sor a kártyák oszlopában LYUKNAK látszott — pont
+   fordítva, mint amit a nyitáskori pillanatkép egész gépezete meg akar őrizni. */
+.nf-page .nf-row.unread { background: color-mix(in srgb, var(--primary-base) 8%, var(--surface-card)); }
 .nf-page .nf-txt { min-width: 0; flex: 1; display: block; }
 .nf-page .nf-t { display: block; font: 700 12.5px/1.25 var(--ff-body); color: var(--text-primary); }
 .nf-page .nf-x {

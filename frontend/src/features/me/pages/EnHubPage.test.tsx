@@ -187,6 +187,30 @@ test('the mosaic carries the nine tiles and each opens its own page', async () =
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/weight')
 })
 
+// A fenti teszt neve ígéretet tett („each opens its own page"), amit a ciklus nem tartott be: csak a
+// `[label]`-t bontotta ki, tehát a `Súly`-on kívül MINDEN útvonal holt adat volt a tuple-ökben — a
+// mezo-nol0 által átirányított `/me/ertesitesek/beallitasok` bejegyzés semmit nem állított, miközben
+// ez az ág épp rá támaszkodik. A hub navigálás után lecsatolódik, ezért csempénként friss render.
+test('a kilenc csempe mindegyike a saját oldalára navigál', async () => {
+  const TILES: [string, string][] = [
+    ['Heti áttekintés', '/me/week'],
+    ['Súly', '/me/weight'],
+    ['Alvás', '/me/sleep'],
+    ['Growth', '/me/growth'],
+    ['Napló', '/me/naplo'],
+    ['Emberek', '/me/people'],
+    ['Tudás', '/me/knowledge'],
+    ['Értesítések beállításai', '/me/ertesitesek/beallitasok'],
+    ['AI-napló', '/me/ai-usage'],
+  ]
+  for (const [label, path] of TILES) {
+    const { unmount } = renderHub()
+    await userEvent.click(await screen.findByRole('button', { name: label }))
+    expect(screen.getByTestId('loc')).toHaveTextContent(path)
+    unmount()
+  }
+})
+
 test('tile bottom lines come from the pages own hooks — the Súly and Alvás lines are live', async () => {
   renderHub()
   const suly = await screen.findByRole('button', { name: 'Súly' })

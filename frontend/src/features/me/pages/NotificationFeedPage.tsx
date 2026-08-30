@@ -44,23 +44,42 @@ export function NotificationFeedPage() {
   useEffect(() => {
     if (marked.current || wasUnread.size === 0) return
     marked.current = true
-    void markAllRead()
+    // A repó fire-and-forget idiómája (JournalPage.tsx, ReflectionStep.tsx): a `.catch(() => {})`
+    // KIÍRVA. A `markAllRead` egy `mutateAsync(...).then(...)`, ami real-módban elszálló POST-nál
+    // elutasít; a `void` csak a lintet hallgattatná el, a rejectiont nem. A visszagörgetést az
+    // `onError` már elvégezte, tehát a rejection nem hordoz információt — csak uncaught error lenne.
+    void markAllRead().catch(() => {})
   }, [wasUnread, markAllRead])
 
   const groups = useMemo(() => groupByDay(items, localDateString()), [items])
 
   return (
     <MozaikPage tone="sky" className="nf-page">
-      <PageHead onBack={() => navigate(-1)}>
+      {/* Fix célpont, nem `navigate(-1)`: a beállítások vissza gombja ide (`/me/ertesitesek`) mutat,
+          tehát egy history-alapú vissza a feedről oda-vissza hurkot csinált a két lappal, és az Én
+          hub csak a tab-sávról volt elérhető. A Me-allap idióma (GoalsPage, GrowthPage, WeekHubPage)
+          fix `/me` + kiírt `‹ Én` címke — így a létra beállítások → feed → hub kifelé vezet. */}
+      <PageHead onBack={() => navigate('/me')} label="‹ Én">
+        {/* A `marginLeft` szándékosan inline, ne „rendezd" vissza az osztályra: a
+            `.mz-page-head .mzc-pgact:first-of-type { margin-left: auto }` (prototype.css) SOSEM
+            illeszkedik, mert a `:first-of-type` az első <button> testvért jelenti, azt pedig a
+            `PageHead` saját `.mz-backbtn`-je foglalja. Ez a repó uralkodó idiómája is
+            (GoalsPage, FuelRecipesPage, FuelStackPage). A szelektor javítása külön ügy (mezo-wd02). */}
         <button type="button" className="mzc-pgact" aria-label="Beállítások"
+          style={{ marginLeft: 'auto' }}
           onClick={() => navigate('/me/ertesitesek/beallitasok')}>
           Beállítások ›
         </button>
       </PageHead>
       {/* A `big`/`sub` az ÉLŐ `items`-ből olvasna 0-t a real-módú hideg-fetch alatt, ami a
           „nincs értesítésed" hazugságot ismételné a fejlécben is — pending alatt egyiket sem
-          mutatjuk, ahelyett hogy egy még-be-nem-töltött 0-t állítanánk (fix round 1, item 1). */}
-      <PageHero icon="i-ertesites" name="Értesítések" big={isPending ? undefined : wasUnread.size}
+          mutatjuk, ahelyett hogy egy még-be-nem-töltött 0-t állítanánk (fix round 1, item 1).
+          A `|| undefined` pedig a nulla olvasatlant tünteti el: a `big` NYITÁSKORI pillanatkép,
+          a `sub` élő, tehát minden későbbi látogatáson egy nagy `0` állna a „6 értesítés" fölött.
+          A `PageHero` `undefined`-ra kapuz, így bignum nélkül rajzol — ugyanaz az elv, amit a
+          beállítások oldal mond ki magára („egy szám olyan értesítésekről, amik nem történhetnek"). */}
+      <PageHero icon="i-ertesites" name="Értesítések"
+        big={isPending ? undefined : wasUnread.size || undefined}
         sub={isPending ? undefined : `${items.length} értesítés`} />
       <PageBody>
         {isPending ? (
@@ -79,16 +98,26 @@ export function NotificationFeedPage() {
         ) : (
           <EntranceGroup>
             {groups.map((g, gi) => (
-              <div key={g.day} className="nf-group rise"
+              // Teljes oldalon a napcímkék a dokumentum SZERKEZETE (a 3 soros dropdownban még nem
+              // voltak azok): `<h2>` + `role="group"`/`aria-labelledby`, különben a képernyőolvasó
+              // egy tagolatlan gomb-futamot kap a nap szerint rendezett feed helyett.
+              <div key={g.day} className="nf-group rise" role="group" aria-labelledby={`nf-day-${g.day}`}
                 style={{ '--d': `${gi * 60}ms` } as React.CSSProperties}>
-                <div className="nf-daylabel">{g.label}</div>
+                <h2 id={`nf-day-${g.day}`} className="nf-daylabel">{g.label}</h2>
                 {g.items.map((n) => {
                   const meta = APP_NOTIFICATION_KIND_META[n.kind]
                   return (
                     <button key={n.id} type="button"
                       className={cn('nf-row', wasUnread.has(n.id) && 'unread')}
-                      onClick={() => navigate(n.deeplink)}>
-                      {wasUnread.has(n.id) && <span className="nf-dot" aria-hidden="true" />}
+                      // Védőőr, mint a fejléc peekjében (`AppHeader.tsx`): a backend oszlop non-null,
+                      // de két felület, ami ugyanazt a mezőt olvassa, ne mondjon két különbözőt.
+                      onClick={() => { if (n.deeplink) navigate(n.deeplink) }}>
+                      {wasUnread.has(n.id) && <>
+                        <span className="nf-dot" aria-hidden="true" />
+                        {/* Az olvasatlanság eddig CSAK látó felhasználónak létezett (osztály + egy
+                            aria-hidden pötty). A repó `sr-only` helperje viszi hangba is. */}
+                        <span className="sr-only">Olvasatlan</span>
+                      </>}
                       <span className={cn('nf-ico', meta.tint)} aria-hidden="true">
                         <ClayIcon name={meta.clay} size={20} />
                       </span>
