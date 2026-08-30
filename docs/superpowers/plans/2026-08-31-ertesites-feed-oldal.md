@@ -54,7 +54,7 @@
 
 **Interfaces:**
 - Consumes: `AppNotificationView` (`@/data/types`), `localDateString(d?: Date): string` és `addDays(iso: string, n: number): string` (`@/shared/lib/dates`).
-- Produces: `export interface FeedGroup { label: string; items: AppNotificationView[] }` és
+- Produces: `export interface FeedGroup { label: string; day: string; items: AppNotificationView[] }` és
   `export function groupByDay(items: AppNotificationView[], today: string): FeedGroup[]`.
   A Task 2 oldala ezt hívja `groupByDay(items, localDateString())` alakban.
 
@@ -213,7 +213,7 @@ git add frontend/src/features/notification/logic && git commit -m "feat(fe): gro
 - Test: `frontend/src/features/me/pages/NotificationFeedPage.test.tsx`
 
 **Interfaces:**
-- Consumes: `groupByDay(items, today)` + `FeedGroup` a Task 1-ből; `useNotificationFeed(): { items: AppNotificationView[]; isPending: boolean }` és `useNotificationFeedActions(): { markAllRead: () => Promise<void> }` (`@/data/notification/feedHooks`); `MozaikPage`, `PageHead`, `PageHero`, `PageBody` (`@/shared/ui/mozaik`); `EntranceGroup` (`@/shared/ui/mozaik/motion`); `ClayIcon` (`@/shared/ui/clay`); `GhostState` (`@/shared/ui/GhostState`); `cn` (`@/shared/lib/cn`); `localDateString` (`@/shared/lib/dates`).
+- Consumes: `groupByDay(items, today)` + `FeedGroup` (`label` · `day` · `items`) a Task 1-ből — a React `key` a `day`, NEM a `label`: két, pontosan egy évre lévő csoport ugyanazt a címkét viseli; `useNotificationFeed(): { items: AppNotificationView[]; isPending: boolean }` és `useNotificationFeedActions(): { markAllRead: () => Promise<void> }` (`@/data/notification/feedHooks`); `MozaikPage`, `PageHead`, `PageHero`, `PageBody` (`@/shared/ui/mozaik`); `EntranceGroup` (`@/shared/ui/mozaik/motion`); `ClayIcon` (`@/shared/ui/clay`); `GhostState` (`@/shared/ui/GhostState`); `cn` (`@/shared/lib/cn`); `localDateString` (`@/shared/lib/dates`).
 - Produces: `export function NotificationFeedPage(): JSX.Element` — paraméter nélküli oldal-komponens. A Task 3 route-olja.
 
 - [ ] **Step 1: Írd meg a bukó tesztet**
@@ -472,7 +472,7 @@ export function NotificationFeedPage() {
         ) : (
           <EntranceGroup>
             {groups.map((g, gi) => (
-              <div key={g.label} className="nf-group rise"
+              <div key={g.day} className="nf-group rise"
                 style={{ '--d': `${gi * 60}ms` } as React.CSSProperties}>
                 <div className="nf-daylabel">{g.label}</div>
                 {g.items.map((n) => {
