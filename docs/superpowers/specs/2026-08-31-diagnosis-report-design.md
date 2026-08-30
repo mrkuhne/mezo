@@ -106,7 +106,7 @@ Suspect {
   claim: string
   evidenceIndexes: int[]             # indexes into evidence[] — never free text
   strength: strong | moderate | weak
-  probe: { text, metricKey, expectedDirection, totalDays }
+  probe: { text, metricKey, expectedDirection, totalDays }   # expectedDirection: up|down|stable
 }
 
 EvidenceItem {
@@ -174,7 +174,7 @@ took.
 One **SMART-tier** call (`CallKind.SMART` — per `GeminiCompanionLlm`, the pipeline
 tier, never chat turns), strict JSON. On the way in, bounds-check everything:
 2–4 suspects; `evidenceIndexes` in range and non-empty; `metricKey` in the
-whitelist; `expectedDirection ∈ {up, down}`; `totalDays` in 3..28; text lengths
+whitelist; `expectedDirection ∈ {up, down, stable}` (the `ExperimentEntity` vocabulary verbatim); `totalDays` in 3..28; text lengths
 bounded. Failing suspects are dropped; zero survivors → no row.
 
 The system prompt inherits the weekly generator's prohibitions (numbers may not be
@@ -229,13 +229,28 @@ answer is structurally incapable of this.
 **`stale`** — the newest log timestamp (sleep, check-in, meal, weight, workout)
 after `generatedAt`.
 
-The weekly review already has this probe, but the Heti feature audit (§8.3) records
-it as wrong: it watches `createdAt` only (an edited log never marks stale) and
-ignores workout logs entirely. **Extract a shared `LogFreshnessProbe`
-(`feature.proactive`), fix it there, and move the weekly review onto it.** This is
-the first genuine framework extraction — small, safe, and it fixes an existing bug
-as a side effect. Best-effort max-timestamp probe; `false` on probe failure, as
-today.
+The weekly review already has this probe (`WeeklyReviewService#isStale`), over
+weight / sleep / check-in / meal logs. **Extract it into a shared
+`LogFreshnessProbe` (`feature.proactive`) parameterised by an arbitrary date
+window** — the diagnosis needs a rolling 14-day window, not an ISO week — and move
+`WeeklyReviewService` onto it. Best-effort max-timestamp probe; `false` on ANY probe
+failure, as today: staleness is a hint, never a reason to fail a read.
+
+> **Correction to an earlier reading of the Heti feature audit (§8.3).** The audit
+> lists two probe shortcomings; neither is a bug this epic can fix, and the
+> extraction is therefore **behaviour-preserving**, not a fix.
+>
+> - *Workout logs are not probed.* This is **deliberate and documented** in
+>   `WeeklyReviewService#isStale`: `WorkoutSessionEntity.date` is nullable on
+>   template rows, so there is no clean date-window read. Carry the same omission
+>   and the same rationale forward.
+> - *Only `createdAt` is watched, so an edited log never marks stale.* This is not a
+>   probe defect: **`OwnedEntity` has no `updatedAt` column at all** — it carries
+>   `createdBy`, `isDeleted` and a `@CreationTimestamp createdAt`, nothing else.
+>   Making edits observable means adding `@UpdateTimestamp` plus a migration to the
+>   sleep / check-in / meal / weight (and any other probed) entities across five
+>   domains. That is its own change with its own risk, filed separately; it is out
+>   of scope here.
 
 **Quota V1** — `mezo.proactive.diagnosis.max-per-day`, default **3**, counted from
 rows generated today **including soft-deleted ones**, so regenerate-spam counts.
@@ -300,7 +315,7 @@ regenerate `docs/CODEMAP.md` in the same change.
 1. Queued d20 Heti work lands first: F5.9 (FE), F6.5 (`mezo-d20.7.6`, weekly
    `candidateFacts[]`), F6.6 (`mezo-d20.7.5`, persisted weekly score).
 2. **`mezo-hqfi.1`** — `LogFreshnessProbe` extraction + weekly review moved onto it
-   (small, standalone, fixes the audit bug — can land independently and early).
+   (small, standalone, behaviour-preserving — can land independently and early).
 3. **`mezo-hqfi.2`** — diagnosis backend: collector → generator → entity → endpoints.
 4. **`mezo-hqfi.3`** — `ExperimentEntity` source widening + the experiment endpoint.
 5. **`mezo-hqfi.4`** — diagnosis frontend: list + detail pages.
