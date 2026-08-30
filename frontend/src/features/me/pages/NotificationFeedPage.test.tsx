@@ -5,7 +5,7 @@ import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // A mock seed (data/notification/feedMock.ts) MAI napra van kötve (`at(daysAgo, hh:mm)`):
-// 3 olvasatlan ma (nf-1..nf-3), 1 olvasott tegnap-előtti napokon szétosztva (nf-4..nf-6).
+// 3 olvasatlan ma (nf-1..nf-3), 3 olvasott tegnap-előtti napokon szétosztva (nf-4..nf-6).
 // Ezért a mód kényszerítve van, hogy a real-módú CI-futás is ugyanezt lássa.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())

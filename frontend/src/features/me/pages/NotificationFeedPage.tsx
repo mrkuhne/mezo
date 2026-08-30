@@ -15,15 +15,21 @@ import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ClayIcon } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 
 const timeLabel = (occurredAt: string) =>
   new Date(occurredAt).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
 
+// Stable fallback identity for `wasUnread` before the snapshot is captured — a fresh `new Set()`
+// on every render would change the `useEffect` dependency each time and re-run its (no-op) body
+// throughout the real-mode loading window (fix round 1, item 2).
+const EMPTY: ReadonlySet<string> = new Set()
+
 export function NotificationFeedPage() {
   const navigate = useNavigate()
-  const { items } = useNotificationFeed()
+  const { items, isPending } = useNotificationFeed()
   const { markAllRead } = useNotificationFeedActions()
 
   // Nyitáskori pillanatkép: a lista ebből rajzolja a kiemelést, nem az élő `readAt`-ból —
@@ -32,7 +38,7 @@ export function NotificationFeedPage() {
   if (snapshot.current === null && items.length > 0) {
     snapshot.current = new Set(items.filter((n) => n.readAt === null).map((n) => n.id))
   }
-  const wasUnread = snapshot.current ?? new Set<string>()
+  const wasUnread = snapshot.current ?? EMPTY
 
   const marked = useRef(false)
   useEffect(() => {
@@ -51,10 +57,24 @@ export function NotificationFeedPage() {
           Beállítások ›
         </button>
       </PageHead>
-      <PageHero icon="i-ertesites" name="Értesítések" big={wasUnread.size}
-        sub={`${items.length} értesítés`} />
+      {/* A `big`/`sub` az ÉLŐ `items`-ből olvasna 0-t a real-módú hideg-fetch alatt, ami a
+          „nincs értesítésed" hazugságot ismételné a fejlécben is — pending alatt egyiket sem
+          mutatjuk, ahelyett hogy egy még-be-nem-töltött 0-t állítanánk (fix round 1, item 1). */}
+      <PageHero icon="i-ertesites" name="Értesítések" big={isPending ? undefined : wasUnread.size}
+        sub={isPending ? undefined : `${items.length} értesítés`} />
       <PageBody>
-        {groups.length === 0 ? (
+        {isPending ? (
+          // Real-mode cold-load window: `useDualQuery`'s `realEmpty: []` makes an unresolved
+          // feed indistinguishable from a genuinely empty one — showing the ghost state here
+          // would tell the user "nincs értesítésed" and then immediately contradict itself
+          // once the feed resolves (fix round 1, item 1). No distinctive feed-row shape to
+          // mirror yet, so a generic skeleton stands in (WeekAnalysisPage.tsx idiom).
+          <div className="col gap-sm" role="status" aria-label="Betöltés…">
+            <Skeleton variant="card" height={64} />
+            <Skeleton variant="card" height={64} />
+            <Skeleton variant="card" height={64} />
+          </div>
+        ) : groups.length === 0 ? (
           <GhostState message="Még nincs értesítésed." />
         ) : (
           <EntranceGroup>
