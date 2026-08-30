@@ -57,18 +57,26 @@ describe('HarvestStep', () => {
   test('renders the eyebrow, XP total, HU-labelled source chips, coin chips, the skill highlight, and an alive streak', () => {
     stubReduced()
     setup()
-    render(<HarvestStep onNext={vi.fn()} />)
+    const { container } = render(<HarvestStep onNext={vi.fn()} />)
 
     expect(screen.getByText('A MAI TERMÉS')).toBeInTheDocument()
     expect(screen.getByText('115')).toBeInTheDocument()
 
-    expect(screen.getByText('📜 Küldetések +45')).toBeInTheDocument()
-    expect(screen.getByText('☀️ Rutin +35')).toBeInTheDocument()
-    expect(screen.getByText('✍️ Napló +15')).toBeInTheDocument()
-    expect(screen.getByText('🏋️ Edzés +20')).toBeInTheDocument()
+    // Label and amount are separate spans since the Mozaik night pass (mezo-d20.8.1.1) — the
+    // chip is a night-washed tile with a clay spot, not one emoji-prefixed string.
+    expect(screen.getByText('Küldetések')).toBeInTheDocument()
+    expect(container.querySelector('.rz-chip-xp')).toHaveTextContent('+45')
+    expect(screen.getByText('Rutin')).toBeInTheDocument()
+    expect(screen.getByText('Napló')).toBeInTheDocument()
+    expect(screen.getByText('Edzés')).toBeInTheDocument()
+    // One clay spot per visible source, and the quest source resolves to i-kihivas.
+    expect(container.querySelectorAll('.rz-chip .rz-nw-spot')).toHaveLength(4)
+    expect(container.querySelector('.rz-chip use')).toHaveAttribute('href', '#i-kihivas')
 
-    expect(screen.getByText('🪙 +10')).toBeInTheDocument()
-    expect(screen.getByText('🪙 +20')).toBeInTheDocument()
+    // Scoped to the coin row: a source chip also reads +20 (GYM), so a bare text query is ambiguous.
+    const coins = [...container.querySelectorAll('.rz-coin-chip')].map((c) => c.textContent?.trim())
+    expect(coins).toEqual(['+10', '+20'])
+    expect(container.querySelectorAll('.rz-coin-chip use')).toHaveLength(2)
 
     // Skill highlight = the LIFE skill with the highest progressPct < 100 in the mock
     // profile: `connection` (Kapcsolatok, progressPct 60, Lv 1) — bar + level only, the
@@ -78,7 +86,7 @@ describe('HarvestStep', () => {
     expect(screen.getByText('Lv 1')).toBeInTheDocument()
     expect(screen.queryByText(/még.*XP/)).not.toBeInTheDocument()
 
-    expect(screen.getByText('🔥 12 napos sorozat él')).toBeInTheDocument()
+    expect(screen.getByText(/12 napos sorozat él/)).toBeInTheDocument()
   })
 
   test('a dead streak dims the row and appends "— megszakadt" (the AppHero precedent)', () => {
@@ -86,7 +94,7 @@ describe('HarvestStep', () => {
     setup({ streakAlive: false })
     const { container } = render(<HarvestStep onNext={vi.fn()} />)
 
-    expect(screen.getByText('🔥 12 napos sorozat — megszakadt')).toBeInTheDocument()
+    expect(screen.getByText(/12 napos sorozat — megszakadt/)).toBeInTheDocument()
     expect(container.querySelector('.rz-streak')).toHaveClass('dim')
   })
 
@@ -108,7 +116,7 @@ describe('HarvestStep', () => {
     stubReduced()
     setup({ xpBySource: [{ source: 'MEAL', xp: 5 }, { source: 'QUEST', xp: 45 }] })
     render(<HarvestStep onNext={vi.fn()} />)
-    expect(screen.getByText('📜 Küldetések +45')).toBeInTheDocument()
+    expect(screen.getByText('Küldetések')).toBeInTheDocument()
     expect(screen.queryByText(/\+5\b/)).not.toBeInTheDocument()
   })
 
@@ -116,7 +124,7 @@ describe('HarvestStep', () => {
     stubReduced()
     setup({}, 4)
     render(<HarvestStep onNext={vi.fn()} />)
-    expect(screen.getByText('🛟 4 napja életben')).toBeInTheDocument()
+    expect(screen.getByText(/4 napja életben/)).toBeInTheDocument()
   })
 
   test('a zero needs streak renders no "napja életben" line', () => {
