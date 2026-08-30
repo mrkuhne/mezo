@@ -63,11 +63,9 @@ export function AppHeader() {
   // Útvonalváltáskor minden popover bezárul — a shellben élő fejléc nem remountol.
   useEffect(() => { setDpOpen(false); setNtfOpen(false) }, [pathname])
 
-  // Mindig explicit `dp` paraméterrel navigálunk — a választás nem a pillanatnyi valós
-  // napszaktól függ, különben a viselkedés az óra állásától válna determinisztikátlanná.
   const pickFace = (f: DayFace) => {
     setDpOpen(false)
-    navigate(`/nap?dp=${f}`)
+    navigate(f === nowFace ? '/nap' : `/nap?dp=${f}`)
   }
 
   return (
@@ -80,7 +78,7 @@ export function AppHeader() {
         <button type="button" className="nap-roundbtn" aria-label="Napszak váltása" aria-expanded={dpOpen}
           onClick={() => { setNtfOpen(false); setDpOpen((o) => !o) }}>
           <ClayIcon name={FACE_ICON[face]} size={22} />
-          {onNap && isFace(dpParam) && <span className="nap-offnow" aria-hidden="true" />}
+          {onNap && face !== nowFace && <span className="nap-offnow" aria-hidden="true" />}
         </button>
         {dpOpen && (
           <div className="nap-dpmenu" role="menu">
