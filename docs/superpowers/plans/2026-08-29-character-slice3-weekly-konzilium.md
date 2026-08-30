@@ -277,16 +277,38 @@ Write both files out fully, following `CharacterObservationServiceIT`'s owner/se
 
 Run: `cd backend && ./mvnw test -Dtest='KonziliumVerdictRoundIT,ClaimLifecycleIT' -Dmezo.test.use-testcontainers=true`
 
-- [ ] **Step 3: Implement** the three classes + the two fake branches (mirrors + sentinels
-  `CHAR_SKEPTIC_SENTINEL = Pattern.compile("\\[fake-char-skeptic:(\\[.*])]", Pattern.DOTALL)` and
-  `CHAR_INTEGRATOR_SENTINEL = Pattern.compile("\\[fake-char-integrator:(\\{.*})]", Pattern.DOTALL)`;
-  canned fallbacks: skeptic ⇒ `KEEP` for every index it can count in the user message (count the
-  `"\n1. "`-style numbering; simplest deterministic fallback: return `[]`, which the parser
-  defaults to all-KEEP), integrator ⇒
-  `{"rulings":[{"index":0,"accept":true,"confidence":0.6,"reason":"Fake döntés."}],"chapters":[]}`
-  — extend the canned rulings to every index the same counting way, or return the honest empty
-  `{"rulings":[],"chapters":[]}` and let the IT assert the default-reject path; PICK ONE and make
-  the IT assert exactly that behavior).
+- [ ] **Step 3: Implement** the three classes + the two fake branches.
+
+**Proposal numbering (load-bearing — the fake keys off it):** `KonziliumVerdictRound` numbers the
+proposals in BOTH user messages as lines starting `"P<index>. "` (`P0. `, `P1. `, …).
+
+Fake additions (mirrors + sentinels, next to the Task-1 proposal branch):
+
+```java
+    /** Mirror of KonziliumVerdictRound.SKEPTIC_MARKER (feature/character) — LITERAL, cycle rule. */
+    public static final String SKEPTIC_MARKER_MIRROR = "KARAKTER-SZKEPTIKUS-FELADAT";
+    /** Mirror of KonziliumVerdictRound.INTEGRATOR_MARKER (feature/character) — LITERAL, cycle rule. */
+    public static final String INTEGRATOR_MARKER_MIRROR = "KARAKTER-INTEGRATOR-FELADAT";
+
+    public static final Pattern CHAR_SKEPTIC_SENTINEL =
+            Pattern.compile("\\[fake-char-skeptic:(\\[.*])]", Pattern.DOTALL);
+    public static final Pattern CHAR_INTEGRATOR_SENTINEL =
+            Pattern.compile("\\[fake-char-integrator:(\\{.*})]", Pattern.DOTALL);
+    /** The proposal numbering the konzílium user messages carry — the canned answers count these. */
+    private static final Pattern CHAR_PROPOSAL_INDEX = Pattern.compile("(?m)^P(\\d+)\\. ");
+```
+
+Canned fallbacks (deterministic, index-complete):
+
+- **Szkeptikus** — for every `P<n>` found in the user message, emit
+  `{"index":n,"verdict":"KEEP","argument":"Fake ellenérv: elfogadható."}`; no matches ⇒ `[]`.
+- **Integrátor** — for every `P<n>` found, emit
+  `{"index":n,"accept":true,"confidence":0.6,"reason":"Fake döntés."}` inside
+  `{"rulings":[…],"chapters":[]}`; no matches ⇒ `{"rulings":[],"chapters":[]}`.
+
+The verdict-round ITs assert exactly this: every canned proposal is ACCEPTED at confidence
+`0.60`, and the default-reject path is exercised only through the `[fake-char-integrator:{…}]`
+sentinel (a ruling list that omits an index).
 
 - [ ] **Step 4: Run — expect PASS** (same command) + `./mvnw test -Dtest=ArchitectureTest`.
 
@@ -356,10 +378,11 @@ have non-empty portraits with `version = 1` and a matching `character_portrait_r
 `outcome.changes()` contains `CLAIM_ACCEPTED` + `PORTRAIT_REWRITTEN` kinds;
 (c) **idempotency** ⇒ a second `runWeekly` for the same week returns the same row id and creates no
 new claims/revisions;
-(d) **portrait failure isolation** ⇒ with `[fake-empty]` planted so the portrait call returns blank
-(check `FakeCompanionLlm.EMPTY_ANSWER`'s exact dispatch conditions first and plant it so ONLY the
-portrait call is affected — if that is not separable, assert instead that a blank portrait answer
-leaves `portrait` empty and `version` 0 while the claims still landed);
+(d) **portrait failure isolation** ⇒ plant the portrait sentinel with an EMPTY payload
+(`[fake-char-portrait:]`, which the branch returns verbatim as a blank answer) in an observation's
+text, so only the portrait call degrades: assert the dimension keeps `portrait` empty with
+`version` 0 and no `character_portrait_revision` row, while the accepted claims DID land and the
+conference row exists (with no `PORTRAIT_REWRITTEN` change);
 (e) **chapter opening** ⇒ an integrator sentinel proposing a chapter creates a `CHAPTER` dimension
 with the slugged key and a `CHAPTER_OPENED` change.
 
