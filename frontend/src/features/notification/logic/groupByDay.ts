@@ -1,27 +1,30 @@
 import type { AppNotificationView } from '@/data/types'
-import { localDateString } from '@/shared/lib/dates'
+import { addDays, localDateString } from '@/shared/lib/dates'
 
 export interface FeedGroup {
-  label: 'Ma' | 'Tegnap' | 'Korábban'
+  /** `Ma` · `Tegnap` · vagy a nap saját dátum-címkéje (`aug. 15.`). */
+  label: string
   items: AppNotificationView[]
 }
 
-/** Day-buckets the feed for the panel. `today` is injectable for pure tests
- *  (`localDateString()` at the call site). Items arrive newest-first and stay that way. */
-export function groupByDay(items: AppNotificationView[], today: string): FeedGroup[] {
-  const todayDate = new Date(`${today}T00:00:00`)
-  const yesterday = new Date(todayDate)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = localDateString(yesterday)
+const dateLabel = (occurredAt: string) =>
+  new Date(occurredAt).toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' })
 
-  const buckets: Record<FeedGroup['label'], AppNotificationView[]> = { Ma: [], Tegnap: [], Korábban: [] }
-  for (const n of items) {
+/** Day-buckets the feed. `today` is injectable for pure tests (`localDateString()` at the call
+ *  site). A „Korábban" gyűjtőbucket helyett minden régebbi nap SAJÁT dátum-címkét kap
+ *  (mezo-nol0): a 3 soros dropdownban egy gyűjtőcím elég volt, a teljes oldalon nem. A rendezés
+ *  itt történik, nem a hívónál — ISO-időbélyegek lexikografikus sorrendje = időrend. */
+export function groupByDay(items: AppNotificationView[], today: string): FeedGroup[] {
+  const yesterday = addDays(today, -1)
+  const sorted = [...items].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))
+  // Map: a beszúrási sorrend = a rendezett sorrend, tehát a csoportok maguktól csökkenőek.
+  const byLabel = new Map<string, AppNotificationView[]>()
+  for (const n of sorted) {
     const day = localDateString(new Date(n.occurredAt))
-    if (day === today) buckets.Ma.push(n)
-    else if (day === yesterdayStr) buckets.Tegnap.push(n)
-    else buckets.Korábban.push(n)
+    const label = day === today ? 'Ma' : day === yesterday ? 'Tegnap' : dateLabel(n.occurredAt)
+    const bucket = byLabel.get(label)
+    if (bucket) bucket.push(n)
+    else byLabel.set(label, [n])
   }
-  return (['Ma', 'Tegnap', 'Korábban'] as const)
-    .filter((label) => buckets[label].length > 0)
-    .map((label) => ({ label, items: buckets[label] }))
+  return [...byLabel].map(([label, groupItems]) => ({ label, items: groupItems }))
 }
