@@ -9,4 +9,8 @@ public interface CharacterClaimRepository extends JpaRepository<CharacterClaimEn
 
     List<CharacterClaimEntity> findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(
             UUID createdBy, UUID dimensionId, String status);
+
+    /** Every ACTIVE claim for an owner, across all dimensions (Karakter spec §6, mezo-1gim.5) —
+     *  the konzílium round's "meglévő aktív állítások" context, filtered per expert by dimension. */
+    List<CharacterClaimEntity> findByCreatedByAndStatusOrderByConfidenceDesc(UUID createdBy, String status);
 }

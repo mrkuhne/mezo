@@ -105,6 +105,23 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern CHAR_OBS_SENTINEL =
             Pattern.compile("\\[fake-char-obs:(\\[.*?])]", Pattern.DOTALL);
 
+    /** Mirror of KonziliumProposalRound.PROPOSAL_MARKER (feature/character) — LITERAL, cycle rule
+     *  (see {@link #OBSERVATION_MARKER_MIRROR} for the full rationale). Drift is caught by an IT's
+     *  equality assertion against the real constant. */
+    public static final String PROPOSAL_MARKER_MIRROR = "KARAKTER-JAVASLAT-FELADAT";
+
+    /** Scripted konzílium proposals (mezo-1gim.5): {@code [fake-char-proposals:[…]]} planted in an
+     *  observation's TEXT (the user message renders it) is returned verbatim; otherwise a canned
+     *  single-proposal array keeps the pipeline deterministic, keyed on the expert's own
+     *  "Alapértelmezett dimenzió: <key>" line KonziliumProposalRound always appends. */
+    public static final Pattern CHAR_PROPOSALS_SENTINEL =
+            Pattern.compile("\\[fake-char-proposals:(\\[.*])]", Pattern.DOTALL);
+
+    /** Resolves KonziliumProposalRound's trailing "Alapértelmezett dimenzió: <key>" line so the
+     *  canned proposal always names a dimension the round's own validation will accept. */
+    private static final Pattern PROPOSAL_DEFAULT_DIMENSION =
+            Pattern.compile("Alapértelmezett dimenzió: ([a-z]+)");
+
     /** Scripted scrape (mezo-8vum): {@code [fake-scrape:{json}]} payload is returned verbatim. */
     public static final Pattern SCRAPE_SENTINEL =
             Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
@@ -390,6 +407,16 @@ public class FakeCompanionLlm implements CompanionLlm {
                 return obs.group(1);
             }
             return "[{\"text\":\"Fake megfigyelés.\",\"salience\":3,\"dimensionKeys\":[\"discipline\"]}]";
+        }
+        if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR)) {
+            Matcher proposals = CHAR_PROPOSALS_SENTINEL.matcher(userMessage);
+            if (proposals.find()) {
+                return proposals.group(1);
+            }
+            Matcher dim = PROPOSAL_DEFAULT_DIMENSION.matcher(userMessage);
+            String dimensionKey = dim.find() ? dim.group(1) : "discipline";
+            return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
+                    + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"Fake indoklás.\"}]";
         }
         if (systemPrompt.startsWith(TurnVerdictCheck.VERDICT_MARKER)) {
             return verdictAnswer(userMessage);

@@ -12,4 +12,8 @@ public interface CharacterObservationRepository extends JpaRepository<CharacterO
     List<CharacterObservationEntity> findByCreatedByOrderByDayDescCreatedAtDesc(UUID createdBy, Pageable pageable);
 
     boolean existsByCreatedByAndExpertKeyAndDay(UUID createdBy, String expertKey, LocalDate day);
+
+    /** The week's not-yet-consumed observations, oldest first (Karakter spec §6, mezo-1gim.5). */
+    List<CharacterObservationEntity> findByCreatedByAndDayBetweenAndConsumedByConferenceIdIsNullOrderByDayAscCreatedAtAsc(
+            UUID createdBy, LocalDate from, LocalDate to);
 }
