@@ -93,7 +93,7 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Weight goal + log ("Cél") | `/me/goals` | [`me.md`](me.md) §2–§4 (weight ✅ backed) |
 | Sleep log ("Alvás") | `/me/sleep` | [`me.md`](me.md) §2–§4 (sleep ✅ backed) |
 | People / "Mizu Velünk" 1:1 ritual ("Emberek") | `/me/people` | [`me.md`](me.md) §2 (mock-only) |
-| Push-notification opt-in ("Értesítés") — install-gate, subscribe toggle, test push | `/me/ertesitesek` | [`me.md`](me.md) §2, §5.8 · protocol/data-model/categories: [`_platform-notifications.md`](_platform-notifications.md) |
+| Push-notification opt-in ("Értesítés") — install-gate, subscribe toggle, test push | `/me/ertesitesek/beallitasok` | [`me.md`](me.md) §2, §5.8 · protocol/data-model/categories: [`_platform-notifications.md`](_platform-notifications.md) |
 | Free-prose journal ("Napló") — write/edit/delete, month-grouped read view | `/me/naplo` | [`journal.md`](journal.md) §2 · Me surface: [`me.md`](me.md) §2 |
 | The `useX()` hooks / mock-vs-real / ghost-guard rule | — | [`_platform-data-layer.md`](_platform-data-layer.md) §2, §4 |
 | OpenAPI contract / `api/feature/<x>.yml` / codegen | — | [`_platform-api-backend.md`](_platform-api-backend.md) §3–§4 |
