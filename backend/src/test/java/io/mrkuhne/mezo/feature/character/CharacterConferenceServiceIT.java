@@ -223,6 +223,29 @@ class CharacterConferenceServiceIT extends ApiIntegrationTest {
                 });
     }
 
+    @Test
+    void runWeekly_priorWeekUnconsumedStraggler_sweptIntoTargetWeeksConference_bothConsumed() {
+        // CharacterObservationJob only writes day D's observations at 02:50 on D+1, so the Sunday
+        // 19:30 konzílium for the week ending TODAY never sees that Sunday's own observations —
+        // they land as unconsumed stragglers dated in the PREVIOUS week from the next konzílium's
+        // point of view (final-review finding I2, mezo-1gim.5).
+        UUID owner = ownerId();
+        seedDimension(owner, "discipline", "drill");
+        CharacterObservationEntity straggler =
+                seedObservation(owner, "drill", WEEK_START.minusDays(1), "Előző heti, fel nem dolgozott jel.",
+                        (short) 4);
+        CharacterObservationEntity inWeek =
+                seedObservation(owner, "drill", WEEK_START.plusDays(1), "3 napja nincs kaja-log.", (short) 4);
+
+        CharacterConferenceEntity conference = conferenceService.runWeekly(owner, WEEK_START);
+
+        assertThat(conference).isNotNull();
+        CharacterObservationEntity refreshedStraggler = observationRepository.findById(straggler.getId()).orElseThrow();
+        CharacterObservationEntity refreshedInWeek = observationRepository.findById(inWeek.getId()).orElseThrow();
+        assertThat(refreshedStraggler.getConsumedByConferenceId()).isEqualTo(conference.getId());
+        assertThat(refreshedInWeek.getConsumedByConferenceId()).isEqualTo(conference.getId());
+    }
+
     /** Escapes a JSON string value's double quotes/backslashes so it can be nested as another
      *  JSON string's content (the integrator sentinel embedded inside a proposal's rationale). */
     private static String escape(String raw) {

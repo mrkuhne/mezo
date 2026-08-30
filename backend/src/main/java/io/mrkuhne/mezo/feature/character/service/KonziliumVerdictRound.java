@@ -281,7 +281,8 @@ public class KonziliumVerdictRound {
     }
 
     private static String numberedProposals(LocalDate weekStart, List<ClaimProposal> proposals) {
-        StringBuilder sb = new StringBuilder("Hét: ").append(weekStart).append(" – ").append(weekStart.plusDays(6));
+        StringBuilder sb = new StringBuilder("Hét: ").append(weekStart).append(" – ").append(weekStart.plusDays(6))
+                .append(" (a javaslatok korábbi, még fel nem dolgozott megfigyelésekből is származhatnak)");
         for (int i = 0; i < proposals.size(); i++) {
             ClaimProposal p = proposals.get(i);
             String target = NEW_KIND.equals(p.kind()) ? p.dimensionKey() : String.valueOf(p.claimId());

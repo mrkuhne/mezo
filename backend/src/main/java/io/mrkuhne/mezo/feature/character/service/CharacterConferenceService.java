@@ -27,7 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Orchestrates the weekly konzílium end to end (Karakter spec §6, mezo-1gim.5): gathers the
- * week's not-yet-consumed observations, runs the proposal round then the verdict round, persists
+ * week's not-yet-consumed observations — plus any still-unconsumed observations from the PRIOR
+ * week, since {@code CharacterObservationJob} only writes a day's observations the following
+ * 02:50 and the target week's own Sunday can never be ready in time for this run — runs the
+ * proposal round then the verdict round, persists
  * the conference row FIRST so claims can reference its id, applies the rulings/chapter openings,
  * rewrites the portrait of every dimension an accepted ruling (or a chapter opened this run)
  * touched, and finally marks every gathered observation consumed. One {@code @Transactional}
@@ -68,10 +71,17 @@ public class CharacterConferenceService {
             return existing.get();
         }
 
+        // Lower bound reaches back a full week: CharacterObservationJob only writes day D's
+        // observations at 02:50 on D+1, so the LAST day of the target week (Sunday) never has
+        // its observations yet when this runs at Sunday 19:30 the same day it's harvesting — and
+        // once this week's WEEKLY row exists, runWeekly short-circuits on it forever, so those
+        // stragglers could never be picked up on a later run without this sweep. Already-consumed
+        // rows are excluded by ConsumedByConferenceIdIsNull, so nothing is double-counted.
+        LocalDate gatherStart = weekStart.minusDays(7);
         LocalDate weekEnd = weekStart.plusDays(6);
         List<CharacterObservationEntity> weekObservations = observationRepository
                 .findByCreatedByAndDayBetweenAndConsumedByConferenceIdIsNullOrderByDayAscCreatedAtAsc(
-                        owner, weekStart, weekEnd);
+                        owner, gatherStart, weekEnd);
         if (weekObservations.isEmpty()) {
             return null;
         }

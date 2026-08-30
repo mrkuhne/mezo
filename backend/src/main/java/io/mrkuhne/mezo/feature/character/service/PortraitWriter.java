@@ -129,12 +129,14 @@ public class PortraitWriter {
         return """
                 Írj 2–5 mondatos, egyszerű magyar nyelvű portré-szöveget Danielről, második \
                 személyben (Te szólítással), társ hangon. KIZÁRÓLAG a felsorolt állításokra \
-                alapozz — ne találj ki számot vagy tényt, ami nincs köztük. Az érzékeny \
-                állításokat tükörként vagy kérdésként fogalmazd meg, sosem ítélkezve. Ne \
-                használj felsorolást vagy formázást, csak folyó szöveget, magyarázat nélkül.""";
+                alapozz — ne találj ki számot vagy tényt, ami nincs köztük. A(z) ÉRZÉKENY \
+                jelöléssel ellátott állításokat tükörként vagy kérdésként fogalmazd meg, sosem \
+                ítélkezve. Ne használj felsorolást vagy formázást, csak folyó szöveget, \
+                magyarázat nélkül.""";
     }
 
-    private static String userMessage(CharacterDimensionEntity dimension, List<CharacterClaimEntity> activeClaims) {
+    /** Package-visible for focused unit-style testing of the ÉRZÉKENY marker without an LLM. */
+    static String userMessage(CharacterDimensionEntity dimension, List<CharacterClaimEntity> activeClaims) {
         StringBuilder sb = new StringBuilder("Dimenzió: ").append(dimension.getTitle());
         sb.append('\n').append("Korábbi portré: ")
                 .append(dimension.getPortrait() == null || dimension.getPortrait().isBlank()
@@ -144,7 +146,8 @@ public class PortraitWriter {
             sb.append('\n').append(NONE);
         } else {
             for (CharacterClaimEntity claim : activeClaims) {
-                sb.append('\n').append(confidenceWord(claim.getConfidence())).append(": ").append(claim.getText());
+                sb.append('\n').append(confidenceWord(claim.getConfidence())).append(": ").append(claim.getText())
+                        .append(Boolean.TRUE.equals(claim.getSensitive()) ? ", ÉRZÉKENY" : "");
             }
         }
         return sb.toString();

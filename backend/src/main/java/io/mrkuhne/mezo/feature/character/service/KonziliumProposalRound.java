@@ -228,7 +228,9 @@ public class KonziliumProposalRound {
     private static String userMessage(LocalDate weekStart, List<CharacterObservationEntity> observations,
                                        List<CharacterClaimEntity> expertActiveClaims,
                                        CharacterExpertCatalog.Expert expert) {
-        StringBuilder sb = new StringBuilder("Hét: ").append(weekStart).append(" – ").append(weekStart.plusDays(6));
+        StringBuilder sb = new StringBuilder("Hét: ").append(weekStart).append(" – ").append(weekStart.plusDays(6))
+                .append(" (korábbi, még fel nem dolgozott megfigyelések is szerepelhetnek — lásd az egyes ")
+                .append("tételek dátumát)");
         int i = 1;
         for (CharacterObservationEntity observation : observations) {
             sb.append('\n').append(i++).append(". ").append(observation.getDay())
