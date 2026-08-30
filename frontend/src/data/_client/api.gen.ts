@@ -445,7 +445,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Sport (volleyball) sessions of the current user, date descending */
+        /**
+         * Sport sessions of the current user, date descending — optionally narrowed to an inclusive date range (Sport Napló trend)
+         * @description Both bounds are optional and inclusive. Omitting both keeps the historical behaviour (the whole owned log, date descending); an omitted single bound stays unbounded on that side. With both bounds present the range must be forward (`from` <= `to`) and no wider than `mezo.train.sport-session-max-span-days`.
+         */
         get: operations["listSportSessions"];
         put?: never;
         /** Log a sport session (SportLogSheet) — date/time default to now server-side */
@@ -1661,7 +1664,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact (source=chat), reject archives it. One decision per candidate; confirm is an explicit L2 action, never silent. */
+        /**
+         * Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact, reject archives it. One decision per candidate; confirm is an explicit L2 action, never silent.
+         * @description The promoted fact inherits the candidate's `source`: a chat-extracted candidate becomes a `chat` fact, a weekly-review candidate a `weekly_review` one (mezo-d20.7.6) — promotion never re-labels where the insight came from.
+         */
         post: operations["decideFactCandidate"];
         delete?: never;
         options?: never;
@@ -2075,6 +2081,26 @@ export interface paths {
          * @description 409 while the week is still in progress (`{start} + 7 days` must be on/before today — the same completed-week gate the generator idiom uses elsewhere). 404 when the regenerated week still has no logged data (empty-week ⇒ no row, the generator's own rule).
          */
         post: operations["regenerateWeeklyReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/weekly-review/{start}/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The week's knowledge candidates — "A hét tanulságai" (mezo-d20.7.6) — WITH their decisions
+         * @description The weekly generator proposes candidates onto the SAME learned_fact path chat extraction uses; this read returns the ones proposed for `{start}`, newest first, including the already-decided ones (`GET /api/companion/fact/candidate` only returns the undecided inbox, but a closed week must be reviewable in its settled state). `evidence` names what the candidate rests on. Always 200 — an empty array is the honest empty state (no review, no usable candidate, or every candidate rejected), never a 404. Deciding stays the shipped write path: `POST /api/companion/fact/candidate/{candidateId}/decision`.
+         */
+        get: operations["getWeeklyReviewLessons"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3106,6 +3132,26 @@ export interface paths {
         };
         /** The week's per-day data + deterministic day scores + weekly aggregates (live for the current week) */
         get: operations["getMeWeek"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/week/{start}/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The persisted weekly-score trend for the N ISO weeks ending at start (inclusive)
+         * @description The Heti hero's 8-week trend (mezo-d20.7.5). Points are the PERSISTED weekly scores (weekly_score) — a deterministic cache, refreshed whenever the week's own inputs changed after computedAt (and always for a week that has not finished yet). A week whose score is null (fewer than 2 scored days — the "tanulom" gate) yields NO point: the series is short, never padded with a zero. Oldest first.
+         */
+        get: operations["getMeWeekTrend"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5031,6 +5077,10 @@ export interface components {
             /** Format: date */
             start: string;
             days: components["schemas"]["FuelDayRollup"][];
+            /** @description Weekly "AI-atlag": the mean of the deterministic meal scores (0..1, mezo-yta) of the week's scored meals, rounded to 3 decimals. NULL when no meal in start..start+6 carries a score (honest-state: never 0-as-a-fake). Derived at read from meal.score, not stored. */
+            mealScoreAvg?: number | null;
+            /** @description Weekly weight average in kg, rounded to 2 decimals: one value per day that has a weigh-in (that day's LATEST entry, so a multi-weigh-in day is not over-weighted), averaged over those days. NULL when the week has no weigh-in at all. */
+            weightAvgKg?: number | null;
         };
         RecipeLogResponse: {
             /** Format: uuid */
@@ -5462,6 +5512,8 @@ export interface components {
             createdAt: string;
             /** @description The promoting pattern's title (source=pattern facts only) — the V3.3 evidence link. */
             patternTitle?: string | null;
+            /** @description In how many of the recent weekly reviews the companion cited this fact as something the week was built on (mezo-d20.7.7). A SEPARATE, weaker signal than reinforcementCount — the model citing its own knowledge is not the user re-confirming it — derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
+            citedWeeks?: number | null;
         };
         CreateFactRequest: {
             factText: string;
@@ -5479,6 +5531,15 @@ export interface components {
             candidateText: string;
             /** @description 'train' | 'fuel' | 'health' | 'life' — classified by the extractor at capture time */
             category: string;
+            /** @description 'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact inherits it */
+            source: string;
+            /** @description What the candidate rests on, in the proposer's own words (weekly candidates only — chat extraction does not produce one). */
+            evidence?: string | null;
+            /**
+             * Format: date
+             * @description The ISO Monday of the weekly review that proposed this candidate (null for chat-extracted ones).
+             */
+            weekStart?: string | null;
             /** @description 'accept' | 'reject' | 'refine' — null while pending */
             userDecision?: string | null;
             /** @description The user-edited wording when the decision was refine. */
@@ -5541,6 +5602,8 @@ export interface components {
             lastDetectedAt: string;
             /** @description The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete'; null on statistical rows. */
             thinking?: string | null;
+            /** @description In how many of the recent weekly reviews the companion cited this pattern as something the week was built on (mezo-d20.7.7). Deliberately NOT folded into confidence — confidence is a statistic (r/n/p, or the V3.2 critique score), a citation is the model selecting its own material; it is shown beside the statistic, never inside it, and never moves status. Derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
+            citedWeeks?: number | null;
         };
         /** @description The V3.2 4-factor critique (0..1 each) — null until the hypothesis loop lands. */
         PatternCritique: {
@@ -6091,6 +6154,27 @@ export interface components {
             /** @description Whether a memoir row exists for this week */
             memoir: boolean;
             predictions: components["schemas"]["WeeklyReviewPredictionRef"][];
+        };
+        /** @description One weekly knowledge candidate (mezo-d20.7.6). The same learned_fact row the Tudástár inbox serves as a FactCandidateResponse — repeated here as the weekly read's own shape so the fragment stays self-contained; the two MUST stay field-compatible (one entity, one mapper). Decisions are made on the companion candidate endpoint, never here. */
+        WeeklyLessonResponse: {
+            /** Format: uuid */
+            id: string;
+            candidateText: string;
+            /** @description 'train' | 'fuel' | 'health' | 'life' */
+            category: string;
+            /** @description What the candidate rests on, in the proposer's own words — null when the model named nothing usable. */
+            evidence?: string | null;
+            /** @description 'accept' | 'reject' | 'refine' — null while still open */
+            userDecision?: string | null;
+            /** @description The user-edited wording when the decision was refine. */
+            refinedText?: string | null;
+            /**
+             * Format: uuid
+             * @description The knowledge fact this candidate was promoted into (accept/refine).
+             */
+            promotedFactId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
         };
         QuestResponse: {
             /** Format: uuid */
@@ -6926,6 +7010,36 @@ export interface components {
             /** @description EWMA weekly rate from the weight trend */
             weightWeeklyRateKg?: number | null;
             totalXp?: number | null;
+        };
+        MeWeekTrendPoint: {
+            /**
+             * Format: date
+             * @description The week's ISO Monday
+             */
+            weekStart: string;
+            /** @description 0–100 — round(mean of the week's non-null day scores) */
+            score: number;
+            /** @description mean of the week's non-null sleep subscores; null when none */
+            sleepAvg?: number | null;
+            fuelAvg?: number | null;
+            checkinAvg?: number | null;
+            activityAvg?: number | null;
+            /**
+             * Format: date-time
+             * @description When this score was last computed from the week's data. The score is a cache, not a truth — a retroactive log can change it; this stamp is what makes the value honest.
+             */
+            computedAt: string;
+        };
+        MeWeekTrendResponse: {
+            /**
+             * Format: date
+             * @description The window's last week (ISO Monday), echoed back
+             */
+            start: string;
+            /** @description The requested window width — points may be shorter */
+            weeks: number;
+            /** @description Oldest first; only weeks that actually have a score. Never padded. */
+            points: components["schemas"]["MeWeekTrendPoint"][];
         };
         MeWeekResponse: {
             /** Format: date */
@@ -8426,7 +8540,10 @@ export interface operations {
     };
     listSportSessions: {
         parameters: {
-            query?: never;
+            query?: {
+                from?: string;
+                to?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8440,6 +8557,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SportSessionResponse"][];
+                };
+            };
+            /** @description Invalid date range (from after to, or span too wide) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */
@@ -13292,6 +13418,47 @@ export interface operations {
             };
         };
     };
+    getWeeklyReviewLessons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ISO Monday of the wanted week */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The week's candidates with their decisions (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyLessonResponse"][];
+                };
+            };
+            /** @description {start} is not a Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getWeeklyReviewDigest: {
         parameters: {
             query?: never;
@@ -15688,6 +15855,50 @@ export interface operations {
                 };
             };
             /** @description start is not an ISO Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMeWeekTrend: {
+        parameters: {
+            query?: {
+                /** @description How many ISO weeks the window spans, counting back from start (inclusive) */
+                weeks?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The last week of the window — its ISO Monday (400 when the date is not a Monday) */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The window's points (0..weeks entries, oldest first) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeWeekTrendResponse"];
+                };
+            };
+            /** @description start is not an ISO Monday, or weeks is out of range */
             400: {
                 headers: {
                     [name: string]: unknown;

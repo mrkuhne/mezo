@@ -1,6 +1,36 @@
+import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { Toggle } from '@/shared/ui/Toggle'
+import { cn } from '@/shared/lib/cn'
 import { NOTIFICATION_CATEGORY_META } from '@/data/types'
-import type { NotificationPrefView } from '@/data/types'
+import type { NotificationCategoryKey, NotificationPrefView } from '@/data/types'
+
+/** One clay icon per category (mezo-d20.6.8 re-face) — a tile pass over the old flat
+ *  emoji rows, house pattern (handoff §10 "Tile pass"). Chosen for the closest available
+ *  Clay 3D icon (clay-icons.svg's 41-name set); no new sprite art needed for this slice. */
+const CATEGORY_ICON: Record<NotificationCategoryKey, ClayIconName> = {
+  briefing: 'i-hajnal',
+  midday: 'i-mezo',
+  weekly_review: 'i-naplo',
+  memoir: 'i-naplo',
+  gym: 'i-edzes',
+  medication: 'i-injekcio',
+  ritual: 'i-idozito',
+  lights_out: 'i-alvas',
+  wind_down: 'i-alvas',
+  checkin: 'i-checkin',
+  fuel_slot: 'i-fuel',
+  evening: 'i-mezo',
+  sleep_reaction: 'i-alvas',
+  weight_reaction: 'i-suly',
+  pattern: 'i-minta',
+  knowledge: 'i-tudas',
+  prediction: 'i-kristaly',
+  experiment: 'i-lombik',
+  challenge: 'i-kihivas',
+  memory: 'i-retegek',
+  decision_review: 'i-cel',
+  intervention: 'i-cel',
+}
 
 interface NotificationCategoryRowProps {
   pref: NotificationPrefView
@@ -15,63 +45,31 @@ interface NotificationCategoryRowProps {
 }
 
 /**
- * One settings-list row for a push-notification category (mockup direction C, §2 "A ·
- * Kategória-lista"). Presentational only — no `@/data/*Hooks`/`@/data/hooks` import: label,
- * emoji and lead-chip visibility come from `NOTIFICATION_CATEGORY_META` (data/types.ts), so
- * this file never hardcodes Hungarian copy; the sub-line is either the caller-supplied derived
- * `subLine` or that same meta's static description. bd mezo-h4wp.6.2/.3.
+ * One settings-list row for a push-notification category — the prototype's washed `.catrow`
+ * (en-body.html §értesítés, ×1.18): a category-tinted tile (the row wears the SAME `--wash-*`
+ * token `NOTIFICATION_CATEGORY_META.iconBg` already assigned it, rather than a second color
+ * table) with a clay icon disc, not a flat list row. Presentational only — no `@/data/*Hooks`/
+ * `@/data/hooks` import: label, icon and lead-chip visibility come from
+ * `NOTIFICATION_CATEGORY_META` (data/types.ts), so this file never hardcodes Hungarian copy;
+ * the sub-line is either the caller-supplied derived `subLine` or that same meta's static
+ * description. bd mezo-h4wp.6.2/.3, mezo-d20.6.8.
  */
 export function NotificationCategoryRow({ pref, onToggle, disabled = false, subLine }: NotificationCategoryRowProps) {
   const meta = NOTIFICATION_CATEGORY_META[pref.category]
   return (
-    <div className="row gap-sm" style={{ padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
-      <div
-        aria-hidden="true"
-        style={{
-          width: 30,
-          height: 30,
-          borderRadius: 9,
-          flex: 'none',
-          display: 'grid',
-          placeItems: 'center',
-          fontSize: 14,
-          background: `var(${meta.iconBg})`,
-          filter: pref.enabled ? 'none' : 'grayscale(1)',
-          opacity: pref.enabled ? 1 : 0.45,
-        }}
-      >
-        {meta.emoji}
-      </div>
+    <div
+      className={cn('ntf-catrow rise', !pref.enabled && 'off')}
+      style={{ '--cw': `var(${meta.iconBg})` } as React.CSSProperties}
+    >
+      <span className="ntf-cic" aria-hidden="true">
+        <ClayIcon name={CATEGORY_ICON[pref.category]} size={22} />
+      </span>
       <div className="col" style={{ flex: 1, minWidth: 0 }}>
-        <span
-          style={{
-            fontSize: 13.5,
-            fontWeight: 600,
-            color: pref.enabled ? 'var(--text-primary)' : 'var(--text-tertiary)',
-          }}
-        >
-          {meta.label}
-        </span>
-        <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
-          {subLine ?? meta.description}
-        </span>
+        <span className="ntf-cat-nm">{meta.label}</span>
+        <span className="ntf-cat-sb">{subLine ?? meta.description}</span>
       </div>
       {meta.showLeadChip && pref.enabled && (
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: 'var(--text-secondary)',
-            background: 'var(--warm)',
-            border: '1px solid var(--line)',
-            padding: '6px 8px',
-            borderRadius: 999,
-            flex: 'none',
-            fontVariantNumeric: 'tabular-nums',
-          }}
-        >
-          −{pref.leadMinutes} perc
-        </span>
+        <span className="ntf-leadch">−{pref.leadMinutes} perc</span>
       )}
       <Toggle on={pref.enabled} onToggle={onToggle} ariaLabel={meta.label} disabled={disabled} />
     </div>

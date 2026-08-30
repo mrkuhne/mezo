@@ -1,5 +1,19 @@
+// ============================================================
+// Mezo · GrowthPage — Mozaik 2.0 reface (mezo-d20.6.5).
+// Source of truth: docs/design_2.0/prototypes/src/en-body.html #page-growth
+// (p-gold tone, ×1.18): a page hero (i-growth clay icon + big "{XP} XP" +
+// "Fegyelem {n}% · Ritmus {n} hét" subline), then a 4-way segmented switch
+// (Skillek/Rutin/Napló/Kitüntetések) driving one Mozaik panel below. Every
+// data hook, mutation and behavioral contract is verbatim from before this
+// slice — only the face changed. ADR 0010: traits (Fegyelem/Ritmus) are
+// FE-computed, never self-claimed; XP is feedback, never payment, so the
+// hero never gates or rewards anything by itself.
+// ============================================================
 import { useState } from 'react'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { useNavigate } from 'react-router-dom'
+import { ClayIcon } from '@/shared/ui/clay'
+import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useAchievements, useActivityHistory, useProgressionProfile, useQuestHistory } from '@/data/hooks'
 import { SkillBandCard, type SkillRowVM } from '@/features/me/components/SkillBandCard'
 import { GrowthJournalCard } from '@/features/me/components/GrowthJournalCard'
@@ -22,10 +36,16 @@ const isoDaysAgo = (n: number) => {
   return localDateString(d)
 }
 
-type Tab = 'skills' | 'journal' | 'awards' | 'routines'
+type Tab = 'skills' | 'routines' | 'journal' | 'awards'
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'skills', label: 'Skillek' },
+  { key: 'routines', label: 'Rutin' },
+  { key: 'journal', label: 'Napló' },
+  { key: 'awards', label: 'Kitüntetések' },
+]
 
 // Normalise hu-HU's NBSP / narrow-NBSP thousands separators to a plain space.
-const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[\u00a0\u202f]/g, ' ')
+const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
 
 const byLevelXpDesc = (a: SkillLevel, b: SkillLevel) =>
   b.level - a.level || b.cumulativeXp - a.cumulativeXp
@@ -38,6 +58,7 @@ function toRows(skills: SkillLevel[], iconOf: (key: string) => string, nameOf: (
 }
 
 export function GrowthPage() {
+  const navigate = useNavigate()
   const { data: profile } = useProgressionProfile()
   const [tab, setTab] = useState<Tab>('skills')
 
@@ -54,30 +75,28 @@ export function GrowthPage() {
   const athMeta = (k: string) => ATHLETIC_META[k]
 
   return (
-    <>
-      <div className="pghead-np lav">
-        <div>
-          <div className="over">Me · Growth</div>
-          <h1>Growth</h1>
-        </div>
-      </div>
-      <div style={{ padding: '8px 24px 24px' }}>
-        <div className="col gap-md">
-          {/* hero trio — always visible */}
-          <div className="card" style={{ padding: '10px 12px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-              <HeroStat value={fmt(totalXp)} label="Össz XP" />
-              <HeroStat value={disc == null ? '–' : `${disc}%`} label="Fegyelem" />
-              <HeroStat value={`${weeks} hét`} label="Ritmus" />
-            </div>
+    <MozaikPage tone="gold">
+      <PageHead onBack={() => navigate('/me')} label="‹ Én" />
+      <EntranceGroup replayKey={tab}>
+        <div className="mz-page-hero">
+          <div className="mz-hero-nm">Growth</div>
+          <div className="mz-hero-row">
+            <ClayIcon name="i-growth" size={45} />
+            <span className="gr-xpwrap">
+              <span className="mz-bignum">{fmt(totalXp)}</span>
+              <span className="gr-unit">XP</span>
+            </span>
           </div>
-
-          {/* segmented control */}
-          <div className="row" role="tablist" aria-label="Growth nézetek" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 5, padding: 3, gap: 3 }}>
-            <SegButton on={tab === 'skills'} onClick={() => setTab('skills')}>Skillek</SegButton>
-            <SegButton on={tab === 'routines'} onClick={() => setTab('routines')}>Rutin</SegButton>
-            <SegButton on={tab === 'journal'} onClick={() => setTab('journal')}>Napló</SegButton>
-            <SegButton on={tab === 'awards'} onClick={() => setTab('awards')}>Kitüntetések</SegButton>
+          <div className="mz-hero-sb">Fegyelem {disc == null ? '–' : `${disc}%`} · Ritmus {weeks} hét</div>
+        </div>
+        <PageBody>
+          <div className="gr-seg" role="tablist" aria-label="Growth nézetek">
+            {TABS.map((t) => (
+              <button key={t.key} type="button" role="tab" aria-selected={tab === t.key}
+                className={tab === t.key ? 'on' : undefined} onClick={() => setTab(t.key)}>
+                {t.label}
+              </button>
+            ))}
           </div>
 
           {tab === 'skills' && (
@@ -85,61 +104,50 @@ export function GrowthPage() {
               {/* "Ma" block: Growth keeps the full quest + activity cards. Today reads the
                   same query through its standing DailyQuestsChip/Sheet; both surfaces share
                   DailyQuestList, while Growth additionally owns the activity-log overview. */}
-              <div>
-                <Eyebrow>Ma</Eyebrow>
-                <DailyQuestsCard />
-                <ActivityLogCard />
+              <div className="mt-md rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+                <span className="mz-eyebrow">Ma</span>
+                <div className="mt-sm">
+                  <DailyQuestsCard />
+                  <ActivityLogCard />
+                </div>
               </div>
-              <SkillBandCard
-                eyebrow="LIFE"
-                chip={`8 skill · ${fmt(lifeXp)} XP`}
-                rows={toRows(life, (k) => lifeMeta(k)?.icon ?? '✨', (k) => lifeMeta(k)?.name ?? k)}
-                footer={typeof savings === 'number' && savings > 0 ? (
-                  <div className="row" style={{ justifyContent: 'space-between', marginTop: 11, paddingTop: 9, borderTop: '1px solid var(--border-subtle)' }}>
-                    <span className="text-secondary" style={{ fontSize: 12 }}>Megtakarítás (30 nap)</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--sage-deep)' }}>{fmt(savings)} Ft</span>
-                  </div>
-                ) : undefined}
-              />
-              <SkillBandCard
-                eyebrow="Atlétikus"
-                chip={`12 skill · átlag ${profile.athleteLevel ?? '–'}`}
-                rows={toRows(athletic, (k) => athMeta(k)?.icon ?? '✨', (k) => athMeta(k)?.name ?? k)}
-              />
-              <SkillBandCard
-                eyebrow="Izom"
-                chip={`13 izom · legjobb Lv ${muscle.length ? Math.max(...muscle.map((m) => m.level)) : 1}`}
-                rows={toRows(muscle, () => '💪', (k) => MUSCLE_LABELS[k] ?? k)}
-              />
+              <div className="mt-md">
+                <SkillBandCard
+                  delayMs={60}
+                  wash="lav"
+                  eyebrow="LIFE"
+                  chip={`8 skill · ${fmt(lifeXp)} XP`}
+                  rows={toRows(life, (k) => lifeMeta(k)?.icon ?? '✨', (k) => lifeMeta(k)?.name ?? k)}
+                  footer={typeof savings === 'number' && savings > 0 ? (
+                    <>
+                      <span style={{ color: 'var(--mz-ink-soft)' }}>Megtakarítás (30 nap)</span>
+                      <span style={{ fontWeight: 700, color: 'var(--mz-cell-sage-ink)' }}>{fmt(savings)} Ft</span>
+                    </>
+                  ) : undefined}
+                />
+                <SkillBandCard
+                  delayMs={120}
+                  wash="sage"
+                  eyebrow="Atlétikus"
+                  chip={`12 skill · átlag ${profile.athleteLevel ?? '–'}`}
+                  rows={toRows(athletic, (k) => athMeta(k)?.icon ?? '✨', (k) => athMeta(k)?.name ?? k)}
+                />
+                <SkillBandCard
+                  delayMs={180}
+                  wash="amber"
+                  eyebrow="Izom"
+                  chip={`13 izom · legjobb Lv ${muscle.length ? Math.max(...muscle.map((m) => m.level)) : 1}`}
+                  rows={toRows(muscle, () => '💪', (k) => MUSCLE_LABELS[k] ?? k)}
+                />
+              </div>
             </>
           )}
           {tab === 'routines' && <RoutinesTab />}
           {tab === 'journal' && <JournalTab />}
           {tab === 'awards' && <AwardsTab />}
-        </div>
-      </div>
-    </>
-  )
-}
-
-function HeroStat({ value, label }: { value: string; label: string }) {
-  return (
-    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 4, padding: '11px 6px 9px', textAlign: 'center' }}>
-      <div style={{ fontFamily: 'var(--ff-display)', fontSize: 23, color: 'var(--lav-deep)' }}>{value}</div>
-      <div className="eyebrow" style={{ marginTop: 3 }}>{label}</div>
-    </div>
-  )
-}
-
-function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void; children: string }) {
-  return (
-    <button role="tab" aria-selected={on} onClick={onClick}
-      className="rad-12"
-      style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', padding: '7px 0', borderRadius: 3,
-        color: on ? 'var(--lav-deep)' : 'var(--text-tertiary)',
-        background: on ? 'var(--wash-lav)' : 'transparent' }}>
-      {children}
-    </button>
+        </PageBody>
+      </EntranceGroup>
+    </MozaikPage>
   )
 }
 
@@ -157,9 +165,9 @@ function JournalTab() {
 function AwardsTab() {
   const { data } = useAchievements()
   return (
-    <>
+    <div className="col gap-md">
       <BadgesCard badges={data.badges} />
       <PerksCard perks={data.perks} />
-    </>
+    </div>
   )
 }

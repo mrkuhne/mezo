@@ -1,4 +1,4 @@
-import { Navigate, type RouteObject, useLocation } from 'react-router-dom'
+import { Navigate, type RouteObject, useLocation, useSearchParams } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
@@ -6,7 +6,7 @@ import { NapRutinPage } from '@/features/today/pages/NapRutinPage'
 import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
 import { NapCheckinPage } from '@/features/today/pages/NapCheckinPage'
 import { EletjelPage } from '@/features/today/pages/EletjelPage'
-import { TrainSection } from '@/features/train/pages/TrainSection'
+import { EdzesHubPage } from '@/features/train/pages/EdzesHubPage'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
 import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 import { GymPage } from '@/features/train/pages/GymPage'
@@ -26,8 +26,9 @@ import { MesoComparePage } from '@/features/train/pages/MesoComparePage'
 import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEditorPage'
 import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
-import { FuelSection } from '@/features/fuel/pages/FuelSection'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
+import { FuelMezoPage } from '@/features/fuel/pages/FuelMezoPage'
+import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
 import { FuelRecipesPage } from '@/features/fuel/pages/FuelRecipesPage'
@@ -46,13 +47,17 @@ import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
 import { MemoryPage } from '@/features/insights/pages/MemoryPage'
-import { MeSection } from '@/features/me/pages/MeSection'
+import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
-import { ProfilePage } from '@/features/me/pages/ProfilePage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
-import { WeekPage } from '@/features/me/pages/WeekPage'
+import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
+import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
+import { WeekDaysPage } from '@/features/me/pages/WeekDaysPage'
+import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
+import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
+import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -69,6 +74,16 @@ import { RitualPage } from '@/features/ritual/pages/RitualPage'
 function LegacyPathRedirect({ prefix, to }: { prefix: string; to: string }) {
   const location = useLocation()
   return <Navigate to={location.pathname.replace(prefix, to) + location.search} replace />
+}
+
+/** `/train` is the Edzés hub — except for the Heti drill-in, which still speaks
+ *  `?day={0..6}`: that deep link belongs to the full day view and is forwarded to
+ *  `/train/mai` with the selection intact (Mai derives it from the URL). */
+function TrainIndex() {
+  const [params] = useSearchParams()
+  const day = params.get('day')
+  if (day !== null && day !== '') return <Navigate to={`/train/mai?day=${day}`} replace />
+  return <EdzesHubPage />
 }
 
 export const routes: RouteObject[] = [
@@ -88,23 +103,24 @@ export const routes: RouteObject[] = [
       // Nap detail pages (F1.2–F1.6) — full-page siblings, tile → own page (Huawei pattern).
       { path: 'nap/eletjel', element: <EletjelPage /> },
       { path: 'today/*', element: <LegacyPathRedirect prefix="/today" to="/nap" /> },
-      {
-        path: 'train',
-        element: <TrainSection />,
-        children: [
-          { index: true, element: <TrainTodayPage /> },
-          { path: 'week', element: <TrainWeekPage /> },
-          { path: 'gym', element: <GymPage /> },
-          { path: 'sport', element: <SportPage /> },
-          { path: 'futas', element: <RunningPage /> },
-          { path: 'exercises', element: <ExercisesPage /> },
-          { path: 'medals', element: <MedalsPage /> },
-          { path: 'mesocycles', element: <MesocycleLibraryPage /> },
-          // The `Sablonok` tab (mezo-tlwa) — a Train tab like the ones above (keeps the
-          // sub-nav), NOT a full-screen sibling; the template EDITOR below still is one.
-          { path: 'templates', element: <MesoTemplatesPage /> },
-        ],
-      },
+      // Edzés tab — Design 2.0 shell dissolution (mezo-d20.3.1): the Train shell
+      // (AppHero + SubNavDropdown over an <Outlet>) is gone. /train is the hub Mozaik
+      // face (hero + six tiles); the former sub-tabs are FULL-PAGE SIBLINGS on their
+      // stable paths, keeping their current faces until their own F2 slices land —
+      // the idiom the Mezo (d20.5.1) and Én (d20.6.1) tabs took. Mai — previously the
+      // /train index — keeps its whole day view at /train/mai.
+      { path: 'train', element: <TrainIndex /> },
+      { path: 'train/mai', element: <TrainTodayPage /> },
+      { path: 'train/week', element: <TrainWeekPage /> },
+      { path: 'train/gym', element: <GymPage /> },
+      { path: 'train/sport', element: <SportPage /> },
+      { path: 'train/futas', element: <RunningPage /> },
+      { path: 'train/exercises', element: <ExercisesPage /> },
+      { path: 'train/medals', element: <MedalsPage /> },
+      { path: 'train/mesocycles', element: <MesocycleLibraryPage /> },
+      // Sablonok (mezo-tlwa) folds into the Mesociklus page in the new IA, but the
+      // route stays reachable (the library's nav row still links here).
+      { path: 'train/templates', element: <MesoTemplatesPage /> },
       { path: 'train/session', element: <ActiveWorkoutPage /> },
       { path: 'train/review/:workoutId', element: <WorkoutReviewPage /> },
       { path: 'train/mesocycles/new', element: <MesocyclePlannerPage /> },
@@ -124,27 +140,30 @@ export const routes: RouteObject[] = [
       { path: 'train/custom/new', element: <CustomWorkoutBuilderPage /> },
       { path: 'train/custom/:id', element: <CustomWorkoutBuilderPage /> },
       { path: 'train/futas/:id', element: <RunningBlockBuilderPage /> },
-      {
-        path: 'fuel',
-        element: <FuelSection />,
-        children: [
-          { index: true, element: <FuelMaiPage /> },
-          { path: 'plan', element: <FuelPlanPage /> },
-          { path: 'stack', element: <FuelStackPage /> },
-          { path: 'recipes', element: <FuelRecipesPage /> },
-          { path: 'kamra', element: <FuelKamraPage /> },
-          { path: 'kamra/:id', element: <KamraItemDetailPage /> },
-          { path: 'gyogyszer', element: <FuelMedicationPage /> },
-        ],
-      },
-      // Recipe detail + editor are full pages (no Fuel sub-nav chrome), mirroring
-      // train/session — siblings of the `fuel` group, not nested children. `new`
-      // is listed before `:id` for clarity (React Router ranks static over dynamic).
+      // Fuel tab — Design 2.0 shell dissolution (mezo-d20.4.1): the Fuel shell
+      // (AppHero + SubNavDropdown + its ⚙️ Fuel-beállítások action) is gone. /fuel is
+      // the hub Mozaik face, which carries the settings band itself; the former
+      // sub-tabs are FULL-PAGE SIBLINGS on their stable routes (they keep their
+      // current faces until their own F3 slices land) — the same idiom the Mezo
+      // (mezo-d20.5.1) and Én (mezo-d20.6.1) tabs took.
+      { path: 'fuel', element: <FuelMaiPage /> },
+      // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
+      { path: 'fuel/uzenetek', element: <FuelMezoPage /> },
+      { path: 'fuel/plan', element: <FuelPlanPage /> },
+      { path: 'fuel/stack', element: <FuelStackPage /> },
+      { path: 'fuel/kamra', element: <FuelKamraPage /> },
+      { path: 'fuel/kamra/:id', element: <KamraItemDetailPage /> },
+      { path: 'fuel/gyogyszer', element: <FuelMedicationPage /> },
+      // Napló — the hub's 6th tile. Week-centric trend depth is F3.6 (+ the F6.2
+      // backend series); this route is its honest destination today.
+      { path: 'fuel/naplo', element: <FuelNaploPage /> },
+      // `new` is listed before `:id` for clarity (React Router ranks static over dynamic).
       { path: 'fuel/recipes/new', element: <RecipeEditorPage /> },
+      { path: 'fuel/recipes', element: <FuelRecipesPage /> },
       { path: 'fuel/recipes/:id', element: <RecipeDetailPage /> },
       { path: 'fuel/recipes/:id/edit', element: <RecipeEditorPage /> },
-      // Meal-slot template editor (mezo-7102) — a full page, same sibling idiom as the recipe
-      // editor above (no Fuel sub-nav chrome).
+      // Meal-slot template editor (mezo-7102) — reachable only from FuelSettingsSheet,
+      // which now opens from the hub's Fuel-beállítások band.
       { path: 'fuel/slots', element: <FuelSlotsPage /> },
       // Pattern-pair detail (mezo-tk88.5) — a full leaf page, same sibling idiom as
       // fuel/recipes/:id above (no Insights sub-nav chrome).
@@ -157,7 +176,7 @@ export const routes: RouteObject[] = [
       // index — lives at /mezo/patterns, next to the pattern-pair detail leaf above.
       { path: 'mezo', element: <MezoHubPage /> },
       { path: 'mezo/patterns', element: <PatternsPage /> },
-      // Heti retired (mezo-p2tr): the review moved to /me/week (WeekPage) — including the
+      // Heti retired (mezo-p2tr): the review moved to /me/week (WeekHubPage) — including the
       // score hero, the growth card and the weekly tervjavaslat prose. The route survives as
       // an honest redirect so any old bookmark/link still lands somewhere sensible.
       { path: 'mezo/weekly', element: <Navigate to="/me/week" replace /> },
@@ -172,22 +191,33 @@ export const routes: RouteObject[] = [
       // somewhere sensible.
       { path: 'mezo/motor', element: <Navigate to="/mezo/patterns" replace /> },
       { path: 'mezo/memoria', element: <MemoryPage /> },
-      {
-        path: 'me',
-        element: <MeSection />,
-        children: [
-          { index: true, element: <ProfilePage /> },
-          { path: 'growth', element: <GrowthPage /> },
-          { path: 'naplo', element: <JournalPage /> },
-          { path: 'week', element: <WeekPage /> },
-          { path: 'goals', element: <GoalsPage /> },
-          { path: 'weight', element: <WeightPage /> },
-          { path: 'sleep', element: <SleepPage /> },
-          { path: 'people', element: <PeoplePage /> },
-          { path: 'knowledge', element: <KnowledgePage /> },
-          { path: 'ertesitesek', element: <NotificationsPage /> },
-        ],
-      },
+      // Én tab — Design 2.0 shell dissolution (mezo-d20.6.1): the Me shell
+      // (AppHero + SubNavDropdown + its ⚙️ Beállítások action) is gone. /me is the hub
+      // Mozaik face, which carries the settings band itself; the former sub-tabs are
+      // full-page siblings on their stable routes (they keep their current faces until
+      // their own F5 slices land) — the same idiom the Mezo tab took in mezo-d20.5.1.
+      { path: 'me', element: <EnHubPage /> },
+      { path: 'me/growth', element: <GrowthPage /> },
+      { path: 'me/naplo', element: <JournalPage /> },
+      // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
+      // WeekPage. Its four view tiles open full-screen siblings, NOT child routes: the
+      // Heti detail pages take the same "tile → own page" idiom as the Nap/Fuel/Mezo tabs.
+      // The browsed week rides along in `?start=` (absent = the current week).
+      { path: 'me/week', element: <WeekHubPage /> },
+      { path: 'me/week/elemzes', element: <WeekAnalysisPage /> },
+      // The day mosaic, and ONE day as its own deep-linkable route (audit gap §8.3/6 —
+      // a push notification can point at a day). The day page derives the week from
+      // `:date` when `?start=` is absent.
+      { path: 'me/week/napok', element: <WeekDaysPage /> },
+      { path: 'me/week/napok/:date', element: <WeekDayPage /> },
+      { path: 'me/week/tanulsagok', element: <WeekLessonsPage /> },
+      { path: 'me/week/felfedezesek', element: <WeekDiscoveriesPage /> },
+      { path: 'me/goals', element: <GoalsPage /> },
+      { path: 'me/weight', element: <WeightPage /> },
+      { path: 'me/sleep', element: <SleepPage /> },
+      { path: 'me/people', element: <PeoplePage /> },
+      { path: 'me/knowledge', element: <KnowledgePage /> },
+      { path: 'me/ertesitesek', element: <NotificationsPage /> },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },
       // Full-screen routine editor (mezo-n5e9.2) — same sibling idiom (no Me sub-nav chrome).
       { path: 'me/routines/edit', element: <RoutineEditorPage /> },

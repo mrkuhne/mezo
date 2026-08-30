@@ -39,11 +39,15 @@ export const SYSTEM_LABELS: Record<string, { label: string; color: string; icon:
   Insights: { label: 'Patterns', color: 'var(--cat-physiology)', icon: 'insights' },
 }
 
+// Prototype fidelity (meso-body.html PSTYLE): the tappable phase curve must read at a
+// glance, so each phase carries a visually distinct hue — sage (ramp-up) → coral
+// (progression) → deep coral (peak) → amber (deload) — instead of three near-identical
+// coral tones that would defeat the point of a scannable curve (mezo-d20.3.7).
 export const MESOCYCLE_PHASE_COLORS: Record<MesoPhase, string> = {
-  MEV: 'var(--coral-deep, var(--coral))',
+  MEV: 'var(--sage)',
   MAV: 'var(--coral)',
-  MRV: 'var(--coral)',
-  Deload: 'var(--text-tertiary)',
+  MRV: 'var(--coral-deep, var(--coral))',
+  Deload: 'var(--amber)',
 }
 // Bar heights per phase, used by the phase-curve mini bars (small variant).
 export function phaseBarHeight(p: MesoPhase): number {
@@ -1042,11 +1046,11 @@ export const sport: Sport = {
     },
   },
   sessions: [
-    { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
-    { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
-    { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },
-    { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null },
-    { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem' },
+    { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
+    { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
+    { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },
+    { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null },
+    { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem' },
   ],
   week: {
     label: 'Hét 21 · Máj 18-24',

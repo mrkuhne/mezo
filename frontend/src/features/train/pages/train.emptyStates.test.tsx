@@ -34,7 +34,9 @@ function renderApp(path: string) {
   )
 }
 
-test('TrainTodayPage shows the ghost hero with a wizard CTA on an empty backend', async () => {
+// /train is the Edzés hub since mezo-d20.3.1 — its hero inherits Mai's meso-less ghost
+// (same copy, same wizard CTA, same Saját edzés escape hatch) instead of inventing one.
+test('the Edzés hub shows the ghost hero with a wizard CTA on an empty backend', async () => {
   renderApp('/train')
   await waitFor(() => expect(screen.getByText(/Itt fog élni a mai edzésed/i)).toBeInTheDocument())
   expect(screen.getByRole('button', { name: /tervezz mesociklust/i })).toBeInTheDocument()
@@ -46,25 +48,34 @@ test('TrainTodayPage shows the ghost hero with a wizard CTA on an empty backend'
   expect(screen.getByRole('button', { name: /Saját edzés/i })).toBeInTheDocument()
 })
 
-test('GymPage shows a ghost when there is no active meso', async () => {
+// GymPage folded into Heti (mezo-d20.3.2): /train/gym now renders the same
+// page, so the same ghost message shows on either path — no more distinct
+// "Nincs aktív mesociklus" copy.
+test('GymPage (folded into Heti) shows the Heti ghost when there is no active meso', async () => {
   renderApp('/train/gym')
-  await waitFor(() => expect(screen.getByText(/Nincs aktív mesociklus/i)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument())
   expect(screen.getByRole('button', { name: /tervezz mesociklust/i })).toBeInTheDocument()
 })
 
 test('ActiveWorkoutPage redirects to /train when there is no workout', async () => {
   renderApp('/train/session')
-  // lands back on the Train Today ghost instead of crashing
+  // lands back on the Edzés hub's ghost hero instead of crashing
   await waitFor(() => expect(screen.getByText(/Itt fog élni a mai edzésed/i)).toBeInTheDocument())
 })
 
 test('SportPage ghosts the weekly plan and shows an empty log message', async () => {
-  renderApp('/train/sport')
-  // hero stats ghost + week-tab ghost (week is the default tab)
+  const { container } = renderApp('/train/sport')
+  // Mozaik re-face (mezo-d20.11): the hero-stats GhostState is gone — with no
+  // schedule the hero big number and every stat cell render `—` (an honest
+  // missing statistic), and the week tab keeps its own ghost + CTA.
   await waitFor(() =>
-    expect(screen.getByText(/A statisztikáid az első logolt session után jelennek meg/i)).toBeInTheDocument(),
+    expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument(),
   )
-  expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument()
+  expect(container.querySelector('.mz-bignum')).toHaveTextContent('—')
+  expect(container.querySelectorAll('.mz-statstrip .mz-statcell b')).toHaveLength(3)
+  container.querySelectorAll('.mz-statstrip .mz-statcell b').forEach((b) => {
+    expect(b).toHaveTextContent('—')
+  })
   await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
   expect(await screen.findByText(/Még nincs logolt session/i)).toBeInTheDocument()
 })

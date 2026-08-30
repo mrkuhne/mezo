@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Én tab</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
 <style>
@@ -1382,7 +1383,6 @@
     box-shadow: 0 14px 26px -14px var(--dcg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.78);
     transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
   .dcard:active { transform: scale(0.96); }
-  .dcard.op { grid-column: 1 / -1; }
   .dcard.thin { background: rgba(255, 255, 255, 0.5); border: 1px dashed rgba(43, 33, 24, 0.16); box-shadow: none; }
   .dcard.fut { background: none; border: 1px dashed rgba(43, 33, 24, 0.14); box-shadow: none; opacity: 0.55; cursor: default; }
   .dcard .dow { font-size: 11px; font-weight: 700; letter-spacing: -0.01em; }
@@ -1397,9 +1397,24 @@
   .dchip { display: inline-flex; align-items: center; gap: 3px; font-size: 7.5px; font-weight: 700; color: #6E6257;
     background: rgba(255, 255, 255, 0.72); border-radius: 7px; padding: 2.5px 6px; font-variant-numeric: tabular-nums; }
   .dchip.mute { color: #A2958A; }
-  .dchv { font-size: 11px; color: #A2958A; flex: none; transition: transform 0.2s ease; }
-  .dcard.op .dchv { transform: rotate(180deg); }
+  .dchv { font-size: 11px; color: #A2958A; flex: none; }
   .dnote { font-size: 7.5px; font-weight: 300; line-height: 1.4; color: #A2958A; }
+  /* ===== HETI: nap-oldal ===== */
+  .dayring { width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; flex: none;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.09) 0); }
+  .dayring .in { width: 60px; height: 60px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center;
+    box-shadow: inset 0 1px 3px rgba(43, 33, 24, 0.08); }
+  .dayring b { font-size: 24px; font-weight: 200; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .dayring b.thin { font-size: 12px; font-weight: 600; color: #A2958A; }
+  .dayring small { font-size: 6px; font-weight: 800; letter-spacing: 0.12em; color: #A2958A; text-transform: uppercase; }
+  .daynav { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 2px; }
+  .dnavt { border-radius: 15px; padding: 9px 11px; cursor: pointer; text-align: left; font-family: inherit;
+    border: 0.5px solid rgba(43, 33, 24, 0.07); background: rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25); }
+  .dnavt:disabled { opacity: 0.35; cursor: default; }
+  .dnavt .k { font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; }
+  .dnavt .v { font-size: 10px; font-weight: 700; margin-top: 2px; }
+  .dnavt.r { text-align: right; }
   /* ===== HETI: hub-csempék ===== */
   .hwide { border-radius: 19px; padding: 12px 13px; margin-bottom: 9px; cursor: pointer;
     border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--hw, #fff);
@@ -2125,6 +2140,20 @@
         <div class="page-body" id="hdBody"></div>
       </div>
 
+      <!-- ---- Heti → napok → egy nap ---- -->
+      <div class="page p-sage" id="page-hday">
+        <div class="page-head"><button class="backbtn" data-back="page-hday">‹ Napok</button><span class="p-eyebrow" id="hdyWk" style="margin-left:auto;"></span></div>
+        <div class="page-hero">
+          <div class="nm" id="hdyNm">Szerda</div>
+          <div class="mrow" style="justify-content:center;gap:13px;margin-top:4px;">
+            <div class="dayring" id="hdyRing"><div class="in"><b id="hdyScore">85</b><small id="hdyU">/ 100</small></div></div>
+            <div style="text-align:left;" id="hdyChips"></div>
+          </div>
+          <div class="sb" id="hdySub"></div>
+        </div>
+        <div class="page-body" id="hdyBody"></div>
+      </div>
+
       <!-- ---- Heti → felfedezések ---- -->
       <div class="page p-sky" id="page-hdisc">
         <div class="page-head"><button class="backbtn" data-back="page-hdisc">‹ Heti</button><span class="p-eyebrow" id="hsTitle" style="margin-left:auto;"></span></div>
@@ -2276,13 +2305,17 @@
           terrakotta), nagy pontszámmal, a négy részpontszám <strong>animált pálcikáival</strong>
           (alvás égszín · fuel zsálya · check-in rózsa · aktivitás korall) és clay-ikonos
           adat-chipekkel (kcal · alvás · edzés · check-in n/4 · „jegyzet", ha a Mezo írt a napról).
-          Fölötte mini-cellák: <em>legjobb nap · leggyengébb · tanulom</em>. A csempe koppintásra
-          <strong>teljes szélességűre nő</strong> és ott nyílik ki a részletes nézet: négy
-          részpontszám-gyűrű, kcal <strong>és</strong> fehérje a cél ellenében, alvás · edzés · XP
-          cellák, a Mezo jegyzete orb-os buborékban és a „Beszélgess a napról". Becsületes
-          különbségtétel: <strong>„tanulom"</strong> = kevesebb mint két területről van adat ·
-          <strong>„nincs adat"</strong> = azon a napon nem logoltál (szaggatott csempe) · jövő nap
-          halvány szaggatott, nem nyílik.</li>
+          Fölötte mini-cellák: <em>legjobb nap · leggyengébb · tanulom</em>.</li>
+          <li><strong>3b · Nap-oldal</strong> — a csempe koppintásra <strong>saját teljes oldalt</strong>
+          nyit (a helyben kinyíló változat kilyukasztotta a rácsot): hero a nap pontszám-gyűrűjével és
+          az adat-chipekkel, „Miből jött össze" a négy részpontszám-gyűrűvel, „Fuel · a cél ellenében"
+          három sávval, alvás · edzés · súly · XP cellák, a Mezo jegyzete <strong>orb-os
+          kártyán</strong> visszajelzéssel és a „Beszélgess a napról" — végül
+          <strong>‹ előző nap / következő nap ›</strong> csempék a szomszéd napok pontszámával, hogy
+          a hét végigléptethető legyen kilépés nélkül. Becsületes különbségtétel: <strong>„tanulom"</strong>
+          = kevesebb mint két területről van adat („kitalálni nem fog") · <strong>„nincs adat"</strong>
+          = azon a napon nem logoltál, a heti pontszámba sem számít bele · jövő nap saját, üres
+          oldallal. Ha az elemzés nem írt a napról, azt is kimondja, nem hallgat róla.</li>
           <li><strong>4 · Heti felfedezések csempe</strong> — „5 új nyom a memóriában" + a
           kategória-pöttyök; az aloldalon a mozaik státusz-chipekkel: minta-esemény
           (✓ Megerősítve · ▲ Erősödött · ★ Előléptetve), új tudás, életesemény dátummal,
@@ -3036,7 +3069,7 @@
         'stabil, ott nincs mit igazítani.'
   };
 
-  var cur = 'w1', today = 'Máj 28', opened = null;
+  var cur = 'w1', today = 'Máj 28', cursDay = null;
 
   var elTitle = document.getElementById('wkTitle'), elSub = document.getElementById('wkSub');
   var elRing = document.getElementById('wkRing'), elScore = document.getElementById('wkScore');
@@ -3309,32 +3342,105 @@
     return '<div class="subring"><div class="sring' + (v == null ? ' dash' : '') + '" style="--c:' + bandC(v) + ';--v:' +
       (v == null ? 0 : v) + ';"><i>' + (v == null ? '—' : v) + '</i></div><small>' + lbl + '</small></div>';
   }
-  function dayBody(d) {
-    var h = '<div class="dbody">';
-    h += '<div class="p-eyebrow" style="font-size:7px;padding-bottom:6px;">miből jött össze</div>';
-    h += '<div class="subrings">' + subRing(d.sub.s, 'alvás') + subRing(d.sub.f, 'fuel') +
+  function dayPage(i) {
+    var w = W[cur], d = w.days[i], k;
+    cursDay = i;
+    document.getElementById('hdyWk').textContent = w.t;
+    document.getElementById('hdyNm').innerHTML = d.dow + ' <span style="font-weight:300;color:#6E6257;">· ' +
+      d.dt.replace('Máj ', 'máj ') + '</span>' + (d.dt === today && w.cur ? ' <span class="bflag">MA</span>' : '');
+    var ring = document.getElementById('hdyRing'), sc = document.getElementById('hdyScore'), un = document.getElementById('hdyU');
+    var empty = d.sc == null && d.kcal == null && d.slm == null && !d.cn && !d.wo;
+    if (d.sc == null) {
+      ring.style.background = 'conic-gradient(rgba(43,33,24,0.09) 100%, rgba(43,33,24,0.09) 0)';
+      sc.textContent = empty ? 'nincs' : 'tanulom'; sc.className = 'thin'; un.textContent = empty ? 'adat' : 'még gyűlik';
+    } else {
+      sc.className = ''; un.textContent = '/ 100';
+      ring.style.background = 'conic-gradient(' + bandC(d.sc) + ' ' + d.sc + '%, rgba(43,33,24,0.09) 0)';
+      sc.textContent = d.sc; sc.style.color = bandC(d.sc);
+    }
+    var ch = '';
+    if (d.kcal != null) ch += '<span class="dchip"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>' + huInt(d.kcal) + ' kcal</span> ';
+    if (d.slm != null) ch += '<span class="dchip"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-alvas"/></svg>' + slh(d.slm) + (d.q ? ' · Q' + d.q : '') + '</span> ';
+    if (d.wo) ch += '<span class="dchip"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>' + d.wo + '× edzés</span> ';
+    ch += '<span class="dchip' + (d.cn ? '' : ' mute') + '"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-checkin"/></svg>' + d.cn + '/4 check-in</span>';
+    document.getElementById('hdyChips').innerHTML = '<div class="dchips" style="max-width:132px;">' + ch + '</div>';
+    document.getElementById('hdySub').textContent = d.fut ? 'még előtted'
+      : (d.sc == null ? (empty ? 'ezen a napon nem logoltál' : 'kevés adat a pontszámhoz') : 'a hét ' +
+        (d.sc === bestOf(w) ? 'legjobb' : 'egyik') + ' napja');
+
+    var h = '';
+    if (d.fut) {
+      h += '<div class="predtile rise" style="--d:0ms;background:rgba(255,255,255,0.55);border:1px dashed rgba(43,33,24,0.18);box-shadow:none;">' +
+        '<div style="font-size:9.5px;font-weight:300;color:#6E6257;">Ez a nap még előtted van — ide majd a logolt adatai kerülnek.</div></div>';
+      document.getElementById('hdyBody').innerHTML = h + dayNav(i, w);
+      return;
+    }
+
+    /* miből jött össze */
+    h += '<div class="float3d rise" style="--d:0ms;border-radius:18px;padding:11px 13px 10px;margin-bottom:10px;">' +
+      '<div class="p-eyebrow" style="padding-bottom:8px;">Miből jött össze</div>' +
+      '<div class="subrings">' + subRing(d.sub.s, 'alvás') + subRing(d.sub.f, 'fuel') +
       subRing(d.sub.c, 'check-in') + subRing(d.sub.a, 'aktív') + '</div>';
+    if (d.sc == null) {
+      h += '<div class="dnote" style="margin-top:9px;">' + (empty
+        ? 'Egyik területről sincs adat — a nap a heti pontszámba sem számít bele.'
+        : 'Kettőnél kevesebb területről van adat, ezért a Mezo nem ad pontszámot: kitalálni nem fog.') + '</div>';
+    }
+    h += '</div>';
+
+    /* fuel a cél ellenében */
     if (d.kcal != null) {
       var kp = Math.min(100, Math.round(d.kcal / KT * 100)), pp = Math.min(100, Math.round(d.p / PT * 100));
-      h += '<div style="margin-top:9px;">' +
-        '<div class="tgrow"><span class="nm">kcal</span><div class="gbar"><div class="coral" style="--d:120ms;width:' + kp + '%;"></div></div>' +
+      h += '<div class="float3d rise" style="--d:50ms;border-radius:18px;padding:11px 13px 10px;margin-bottom:10px;">' +
+        '<div class="p-eyebrow" style="padding-bottom:6px;">Fuel · a cél ellenében</div>' +
+        '<div class="tgrow"><span class="nm">kcal</span><div class="gbar"><div class="coral" style="--d:150ms;width:' + kp + '%;"></div></div>' +
         '<span class="vl">' + huInt(d.kcal) + ' / ' + huInt(KT) + '</span></div>' +
-        '<div class="tgrow"><span class="nm">fehérje</span><div class="gbar"><div class="sage" style="--d:200ms;width:' + pp + '%;"></div></div>' +
+        '<div class="tgrow"><span class="nm">fehérje</span><div class="gbar"><div class="sage" style="--d:230ms;width:' + pp + '%;"></div></div>' +
         '<span class="vl">' + d.p + ' / ' + PT + ' g</span></div>' +
-        '<div class="tgrow"><span class="nm">c · f</span><div class="gbar"><div class="gold" style="--d:280ms;width:' +
+        '<div class="tgrow"><span class="nm">c · f</span><div class="gbar"><div class="gold" style="--d:310ms;width:' +
         Math.min(100, Math.round(d.cb / 400 * 100)) + '%;"></div></div><span class="vl">' + d.cb + ' g · ' + d.ft + ' g</span></div></div>';
     }
-    h += '<div class="mcells" style="margin-top:9px;">' +
+
+    /* nap-cellák */
+    h += '<div class="mcells rise" style="--d:90ms;margin-bottom:10px;">' +
       '<span style="--mw:#EBE6F8;--md:#5D4FA0;"><b>' + (d.slm == null ? '—' : slh(d.slm)) + '</b><small>alvás' + (d.q ? ' · Q' + d.q : '') + '</small></span>' +
       '<span style="--mw:#FFE3D8;--md:#A84A26;"><b>' + d.wo + '×</b><small>edzés</small></span>' +
+      '<span style="--mw:#DCEBF4;--md:#33749C;"><b>' + (d.w == null ? '—' : hu1(d.w)) + '</b><small>súly · kg</small></span>' +
       '<span style="--mw:#FFF1D6;--md:#A8801F;"><b>' + (d.xp == null ? '—' : d.xp) + '</b><small>xp</small></span></div>';
+
+    /* Mezo jegyzete */
     if (d.note) {
-      h += '<div class="notebub"><svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
-        '<div><div class="t">Mezo · a napról</div><div class="x">' + d.note + '</div></div></div>';
+      h += '<div class="revcard rise" style="--d:130ms;">' +
+        '<div class="mrow"><svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>' +
+        '<span class="p-eyebrow" style="color:#5D4FA0;">Mezo · erről a napról</span></div>' +
+        '<div class="prose">' + d.note + '</div>' +
+        '<div class="revfoot"><button class="chatch" data-chat="day" data-d="' + d.dt + '">💬 Beszélgess a napról ›</button>' +
+        '<span class="fbch"><button data-fb="upd">👍</button><button data-fb="downd">👎</button></span></div></div>';
+    } else {
+      h += '<div class="predtile rise" style="--d:130ms;background:rgba(255,255,255,0.55);border:1px dashed rgba(43,33,24,0.16);box-shadow:none;">' +
+        '<div style="font-size:9px;font-weight:300;line-height:1.5;color:#6E6257;">A heti elemzés nem írt külön ehhez a naphoz — ' +
+        (w.rev ? 'a Mezo csak azokhoz a napokhoz ír, ahol volt mit mondani.' : 'az elemzés még nem készült el.') + '</div>' +
+        '<button class="chatch" data-chat="day" data-d="' + d.dt + '">💬 Beszélgess a napról ›</button></div>';
     }
-    if (!d.fut) h += '<button class="chatch" data-chat="day" data-d="' + d.dt + '">💬 Beszélgess a napról ›</button>';
-    return h + '</div>';
+    document.getElementById('hdyBody').innerHTML = h + dayNav(i, w);
   }
+
+  function bestOf(w) {
+    var b = null, i;
+    for (i = 0; i < w.days.length; i++) if (w.days[i].sc != null && (b === null || w.days[i].sc > b)) b = w.days[i].sc;
+    return b;
+  }
+
+  function dayNav(i, w) {
+    var pi = i - 1, ni = i + 1;
+    var p = pi >= 0 ? w.days[pi] : null, n = ni < w.days.length ? w.days[ni] : null;
+    return '<div class="daynav rise" style="--d:180ms;">' +
+      '<button class="dnavt" ' + (p ? 'data-dgo="' + pi + '"' : 'disabled') + '>' +
+      '<div class="k">‹ előző nap</div><div class="v">' + (p ? p.dow + ' · ' + (p.sc == null ? '—' : p.sc) : '—') + '</div></button>' +
+      '<button class="dnavt r" ' + (n ? 'data-dgo="' + ni + '"' : 'disabled') + '>' +
+      '<div class="k">következő nap ›</div><div class="v">' + (n ? n.dow + ' · ' + (n.sc == null ? '—' : n.sc) : '—') + '</div></button></div>';
+  }
+
   function dayWash(sc) {
     if (sc == null) return ['rgba(255,255,255,0.5)', 'rgba(43,33,24,0.2)'];
     if (sc >= 80) return ['linear-gradient(150deg,#E9F1E2,#F7FBF3)', 'rgba(110,139,94,0.42)'];
@@ -3346,7 +3452,7 @@
   function dayCard(d, i, w) {
     var wash = dayWash(d.sc), h = '';
     if (d.fut) {
-      return '<div class="dcard fut rise" style="--d:' + (i * 30) + 'ms;" id="dt' + i + '">' +
+      return '<div class="dcard fut rise" style="--d:' + (i * 30) + 'ms;" id="dt' + i + '" data-day="' + i + '">' +
         '<div class="mrow"><span class="dow" style="color:#A2958A;">' + d.dow + '</span>' +
         '<span class="dte" style="margin-left:auto;">' + d.dt.replace('Máj ', 'máj ') + '</span></div>' +
         '<div class="scnum dash">·</div><div class="dnote">még előtted — ide majd a nap adatai jönnek</div></div>';
@@ -3408,7 +3514,6 @@
     h += '<div class="foot9 rise" style="--d:' + (90 + w.days.length * 30) + 'ms;">A négy pálcika a nap részpontszáma. ' +
       'A „tanulom" azt jelenti: kevesebb mint két területről van adat — nem azt, hogy nulla volt a nap.</div>';
     document.getElementById('hdBody').innerHTML = h;
-    opened = null;
   }
 
   /* ---------- ALOLDAL: felfedezések ---------- */
@@ -3491,19 +3596,8 @@
   }
 
   function openDay(i) {
-    var w = W[cur];
-    if (opened !== null) {
-      var prev = document.getElementById('dt' + opened);
-      if (prev) {
-        prev.classList.remove('op');
-        var b = prev.querySelector('.dbody'); if (b) b.remove();
-      }
-    }
-    if (opened === i) { opened = null; return; }
-    var el = document.getElementById('dt' + i);
-    el.classList.add('op');
-    el.insertAdjacentHTML('beforeend', dayBody(w.days[i]));
-    opened = i;
+    dayPage(i);
+    openPg('page-hday');
   }
 
   function wire(root) {
@@ -3517,10 +3611,7 @@
       if (t) {
         var ji = +t.getAttribute('data-jump');
         openPg('page-hdays');
-        setTimeout(function () {
-          var tile = document.getElementById('dt' + ji);
-          if (tile) { tile.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (!w.days[ji].fut) openDay(ji); }
-        }, 260);
+        setTimeout(function () { openDay(ji); }, 240);
         return;
       }
       t = e.target.closest('[data-lyes]');
@@ -3590,12 +3681,15 @@
         toast(t.getAttribute('data-fb').indexOf('up') === 0 ? 'Köszi — ezt megjegyzem' : 'Értem — igazítok a hangnemen');
         return;
       }
+      t = e.target.closest('[data-dgo]');
+      if (t) { dayPage(+t.getAttribute('data-dgo')); document.getElementById('hdyBody').scrollTop = 0; return; }
       t = e.target.closest('[data-day]');
-      if (t) { var i = +t.getAttribute('data-day'); if (!w.days[i].fut) openDay(i); }
+      if (t) { openDay(+t.getAttribute('data-day')); }
     });
   }
   [elBody, document.getElementById('haBody'), document.getElementById('hlBody'),
-   document.getElementById('hdBody'), document.getElementById('hsBody')].forEach(wire);
+   document.getElementById('hdBody'), document.getElementById('hdyBody'),
+   document.getElementById('hsBody')].forEach(wire);
 
   document.querySelector('[data-page="page-heti"]').addEventListener('click', function () { render(); });
   render();

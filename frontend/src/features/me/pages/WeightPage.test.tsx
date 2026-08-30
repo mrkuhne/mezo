@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { WeightPage } from '@/features/me/pages/WeightPage'
@@ -6,13 +7,40 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
+// Súly re-face (mezo-d20.6.3) — MozaikPage subpage scaffold (‹ Én back chip,
+// page-head CTA, hero, stat strip, trend chart, weekly tiles). Behavior is
+// unchanged: same hooks, same honest states, same log-sheet cascade.
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <QueryWrapper><WeightPage /></QueryWrapper>
+    </MemoryRouter>,
+  )
+}
+
+// ── entrance choreography (mezo-d20.11) ──
+// The prototype (#page-suly) staggers the whole body: statstrip 0 · chips 40 ·
+// chart 80 · „Heti előzmény" 120 · weekly tiles 150/190/230 · pager 260.
+test('the Súly body staggers — stat strip, chips, chart, section label and the weekly tiles', () => {
+  const { container } = renderPage()
+  const rises = [...container.querySelectorAll('.rise')]
+  expect(rises.length).toBeGreaterThanOrEqual(5)
+  for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+  expect(container.querySelector('.mz-statstrip')).toHaveClass('rise')
+  expect(container.querySelector('.wt-lsec')).toHaveClass('rise')
+  const weekDelays = [...container.querySelectorAll('.wt-week')]
+    .map((w) => (w as HTMLElement).style.getPropertyValue('--d'))
+  expect(weekDelays.slice(0, 3)).toEqual(['150ms', '190ms', '230ms'])
+})
+
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('renders the hero, trend chart, weekly history, and opens the log sheet', () => {
-  render(<WeightPage />, { wrapper: QueryWrapper })
+test('renders the ‹ Én back chip, hero, stat strip, trend chart, weekly history, and opens the log sheet', () => {
+  renderPage()
+  expect(screen.getByText('‹ Én')).toBeInTheDocument()
   expect(screen.getByText('Napi súly')).toBeInTheDocument()
-  expect(screen.getByText('Induláshoz képest')).toBeInTheDocument()
   expect(screen.getByText('Jelenleg')).toBeInTheDocument()
   expect(screen.getByText('Heti előzmény')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: /naplózás/i }))
@@ -20,7 +48,7 @@ test('renders the hero, trend chart, weekly history, and opens the log sheet', (
 })
 
 test('newest week is expanded by default and a day row is visible', () => {
-  render(<WeightPage />, { wrapper: QueryWrapper })
+  renderPage()
   // mock spine ends 2026-05-22 (Fri); huMonthDayDow → "Máj 22 · Pén"
   expect(screen.getByText('Máj 22 · Pén')).toBeInTheDocument()
 })
@@ -37,6 +65,6 @@ test('real mode: the 7-nap/hét stat reads the backend EWMA weekly rate', async 
       }),
     ),
   )
-  render(<WeightPage />, { wrapper: QueryWrapper })
-  await waitFor(() => expect(screen.getByText('−0.5')).toBeInTheDocument()) // hero 7-nap/hét = fmtSigned(-0.5)
+  renderPage()
+  await waitFor(() => expect(screen.getByText('−0.5')).toBeInTheDocument()) // stat cell = fmtSigned(-0.5)
 })

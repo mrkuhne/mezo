@@ -16,14 +16,15 @@
 // batch-clearing "Mind" chip, `?pair=` redirect.
 // ============================================================
 import { useState, type ReactNode } from 'react'
-import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { ClayIcon, ClaySpot, type ClayIconName } from '@/shared/ui/clay'
+import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { GhostState } from '@/shared/ui/GhostState'
 import { usePatterns, usePatternMonitor, usePatternActions } from '@/data/hooks'
 import { PatternDecisionCard } from '@/features/insights/components/PatternDecisionCard'
-import { lastSeenLabel } from '@/features/insights/components/MetricCoverageRing'
+import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 import { DOMAIN_META, DOMAIN_ORDER } from '@/features/insights/logic/domains'
 import { bucketize, BUCKET_ORDER, type LifecycleBucket, type LifecycleEntry } from '@/features/insights/logic/lifecycle'
 import { confidenceMeta, findingSentence } from '@/features/insights/logic/findings'
@@ -114,7 +115,7 @@ function PatternTile({ entry, skin, chip, sb, barPct, delayMs }: {
   const style = { '--d': `${delayMs}ms` } as React.CSSProperties
   if (!entry.pair) return <div className={cls} style={style}>{inner}</div>
   return (
-    <Link to={`/insights/patterns/${entry.key}`} className={cls} style={style}>
+    <Link to={`/mezo/patterns/${entry.key}`} className={cls} style={style}>
       {inner}
     </Link>
   )
@@ -129,6 +130,27 @@ function Lsec({ title, ink, count, countTestId, delayMs }: {
       <span className="mz-eyebrow" style={{ color: ink }}>{title}</span>
       {count !== undefined && <span className="mnt-cnt" data-testid={countTestId}>{count}</span>}
     </div>
+  )
+}
+
+/** A Minták oldal kerete — a `‹ Mezo` fejléc MINDEN ágon (ADR 0032 / mezo-d20.11 hűség-audit:
+ *  az oldal korábban semmilyen PageHead-et nem rendelt, így zsákutca volt). A hero a
+ *  prototípus #page-mintak page-hero-ja: i-minta + a megerősített összefüggések nagy száma. */
+function MintakFrame({ big, children }: { big?: ReactNode; children: ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <MozaikPage tone="gold">
+      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
+      <div className="mz-page-hero">
+        <div className="mz-hero-nm">Minták</div>
+        <div className="mz-hero-row">
+          <ClayIcon name="i-minta" size={64} />
+          {big !== undefined && <span className="mz-bignum">{big}</span>}
+        </div>
+        <div className="mz-hero-sb">megerősített összefüggés él a tudásban</div>
+      </div>
+      <PageBody>{children}</PageBody>
+    </MozaikPage>
   )
 }
 
@@ -169,7 +191,7 @@ export function PatternsPage() {
   // A Motor „Minta megnyitása →" / a régi inbox `?pair=` horgonya (mezo-18bx örököse): a
   // részletoldalra irányít — a lista maga már nem highlightol semmit, a részlet a cél.
   const targetPairKey = params.get('pair')
-  if (targetPairKey) return <Navigate to={`/insights/patterns/${targetPairKey}`} replace />
+  if (targetPairKey) return <Navigate to={`/mezo/patterns/${targetPairKey}`} replace />
 
   const isPending = patternsPending || monitorPending
 
@@ -179,34 +201,40 @@ export function PatternsPage() {
   // hero would reach a live user during the unresolved window (the mezo-yew/mezo-0xl bug class).
   // Gate on EITHER query pending — the hero needs both to render its real numbers honestly.
   if (isPending) {
-    return <GhostState message="A minták betöltése…" />
+    return <MintakFrame><GhostState message="A minták betöltése…" /></MintakFrame>
   }
 
   // Genuinely failed fetch (500, network) — külön a 404-degraded ÉS a betöltés-alatti ablaktól
   // (mindkettő `monitor === null`-ként olvasna, review fix wave mezo-viqs precedens).
   if (monitorIsError) {
     return (
-      <GhostState message="Nem sikerült betölteni a motor állapotát." ctaLabel="Újra" onCta={monitorRefetch} />
+      <MintakFrame>
+        <GhostState message="Nem sikerült betölteni a motor állapotát." ctaLabel="Újra" onCta={monitorRefetch} />
+      </MintakFrame>
     )
   }
 
   if (patternsDegraded && monitorDegraded) {
     return (
-      <div className="card" style={{ padding: 16, textAlign: 'center' }}>
-        <p className="text-tertiary" style={{ fontSize: 12 }}>
-          A minta-motor most nem elérhető — a felismert minták itt jelennek majd meg.
-        </p>
-      </div>
+      <MintakFrame>
+        <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+          <p className="text-tertiary" style={{ fontSize: 12 }}>
+            A minta-motor most nem elérhető — a felismert minták itt jelennek majd meg.
+          </p>
+        </div>
+      </MintakFrame>
     )
   }
 
   if (patterns.length === 0 && (monitor?.pairs.length ?? 0) === 0) {
     return (
-      <div className="card" style={{ padding: 16, textAlign: 'center' }}>
-        <p className="text-tertiary" style={{ fontSize: 12 }}>
-          Még nincs felismert minta — az éjszakai elemzés magától tölti, ahogy gyűlnek a napok.
-        </p>
-      </div>
+      <MintakFrame>
+        <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+          <p className="text-tertiary" style={{ fontSize: 12 }}>
+            Még nincs felismert minta — az éjszakai elemzés magától tölti, ahogy gyűlnek a napok.
+          </p>
+        </div>
+      </MintakFrame>
     )
   }
 
@@ -244,17 +272,8 @@ export function PatternsPage() {
   }
 
   return (
+    <MintakFrame big={heroCount}>
     <EntranceGroup className="mnt-root">
-      {/* ── Hero: i-minta + a megerősített összefüggések nagy száma (prototípus page-hero) ── */}
-      <div className="mz-page-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-        <div className="mz-hero-nm">Minták</div>
-        <div className="mz-hero-row">
-          <ClayIcon name="i-minta" size={64} />
-          <span className="mz-bignum">{heroCount}</span>
-        </div>
-        <div className="mz-hero-sb">megerősített összefüggés él a tudásban</div>
-      </div>
-
       {/* ── A motor állapota: próza három félkövér számmal + a 3×2 életciklus-rács ── */}
       <div className="mnt-motor rise" style={{ '--d': '40ms' } as React.CSSProperties}>
         <div className="row" style={{ alignItems: 'center' }}>
@@ -443,6 +462,16 @@ export function PatternsPage() {
           </div>
         </>
       )}
+
+      {/* ── Memória ↔ Minták: a visszairány (mezo-d20.11). A Memória degraded-ága eddig is
+             ide mutatott, innen viszont nem vezetett út oda — a motor bemenete (L0→L3) és a
+             kimenete (a minták) egymás szomszédjai. ── */}
+      <p className="mnt-foot rise" style={{ '--d': '540ms' } as React.CSSProperties}>
+        <Link to="/mezo/memoria" style={{ color: 'var(--lav-deep)', fontWeight: 600, textDecoration: 'none' }}>
+          A motor bemenete: memória-rétegek →
+        </Link>
+      </p>
     </EntranceGroup>
+    </MintakFrame>
   )
 }

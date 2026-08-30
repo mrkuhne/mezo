@@ -126,8 +126,8 @@ public class TrainController implements TrainApi {
     }
 
     @Override
-    public List<SportSessionResponse> listSportSessions() {
-        return service.listSportSessions(currentUserId.get());
+    public List<SportSessionResponse> listSportSessions(LocalDate from, LocalDate to) {
+        return service.listSportSessions(currentUserId.get(), from, to);
     }
 
     @Override

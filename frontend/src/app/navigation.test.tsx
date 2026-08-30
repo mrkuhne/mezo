@@ -29,18 +29,65 @@ test('Me screen theme selector flips data-theme', async () => {
   // Default is now circadian-auto (wall-clock dependent); preset manual light so this
   // navigation smoke test stays deterministic. Auto/circadian resolution is covered by
   // CircadianTheme.test + ThemeProvider.test.
+  // The Me shell dissolved (mezo-d20.6.1): the settings sheet now opens from the Én hub's
+  // Beállítások band, not from the retired SubNavDropdown's ⚙️ extra action.
   localStorage.setItem('mezo-theme', 'light')
   renderApp('/me')
-  await userEvent.click(screen.getByRole('button', { name: 'Profil' }))
-  await userEvent.click(screen.getByRole('menuitem', { name: 'Beállítások' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Beállítások' }))
   // Manual light => no attribute (light is the CSS base); choosing Sötét flips to dark.
   expect(document.documentElement.getAttribute('data-theme')).toBeNull()
   await userEvent.click(screen.getByRole('button', { name: /Sötét/ }))
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
+
+test('the Én tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.6.1)', async () => {
+  renderApp('/me')
+  expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Súly' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Me alnavigáció')).not.toBeInTheDocument()
+})
+
+test('the Fuel tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.4.1)', async () => {
+  renderApp('/fuel')
+  // The Fuel-beállítások band (the retired SubNavDropdown's ⚙️ extra action, re-homed)
+  // and the tile mosaic are the face-independent landmarks.
+  expect(await screen.findByRole('button', { name: 'Fuel-beállítások' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Receptek' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Fuel alnavigáció')).not.toBeInTheDocument()
+})
+
+test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () => {
+  const { container } = renderApp('/fuel/stack')
+  // Mozaik face since the fidelity audit (mezo-d20.11): the `.pghead-np` h1 "Napi protokoll"
+  // became a sage MozaikPage with the prototype's "Stack" hero — the ROUTE is what this
+  // navigation test pins, so it asserts the page scaffold, not the retired headline.
+  expect(await screen.findByText('Stack')).toBeInTheDocument()
+  expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
+})
+
+test('/me/people stays a stable full-page sibling of the hub', async () => {
+  renderApp('/me/people')
+  // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's
+  // page hero (and the page finally owns a `‹ Én` back chip) — the route is unchanged.
+  expect(await screen.findByText('Kapcsolatok', { selector: '.mz-hero-nm' })).toBeInTheDocument()
+})
 test('the tab bar stays visible on the regular Train tab', () => {
   const { container } = renderApp('/train')
   expect(container.querySelector('.tab-bar')).toBeTruthy()
+})
+
+test('the Edzés tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.3.1)', async () => {
+  renderApp('/train')
+  expect(await screen.findByRole('button', { name: 'Heti terv' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument()
+  expect(screen.queryByLabelText('Train alnavigáció')).not.toBeInTheDocument()
+})
+
+test('/train/sport stays a stable full-page sibling of the hub', async () => {
+  renderApp('/train/sport')
+  // Mozaik 2.0 re-face (mezo-d20.11): the `Röplabda` h1 became the prototype's
+  // page hero — the route itself is unchanged.
+  expect(await screen.findByText('Sport', { selector: '.mz-hero-nm' })).toBeInTheDocument()
 })
 test('the tab bar hides on the full-screen active-workout session (mezo-8141)', () => {
   const { container } = renderApp('/train/session')

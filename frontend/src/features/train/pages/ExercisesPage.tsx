@@ -16,7 +16,7 @@
 // (edit + delete live there); ▶ opens VideoUrlSheet. Mock mode has no set
 // history -> records are empty, the catalog search still works.
 // ============================================================
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { muscleColor } from '@/features/train/logic/muscleColors'
@@ -29,6 +29,8 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
+import { ClayIcon } from '@/shared/ui/clay'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { cn } from '@/shared/lib/cn'
 import { ExerciseRecordSheet } from '@/features/train/sheets/ExerciseRecordSheet'
 import { CatalogExerciseSheet } from '@/features/train/sheets/CatalogExerciseSheet'
@@ -79,10 +81,11 @@ function Roundel({ label, onClick, bg, color, children }: {
   )
 }
 
-function RecordRow({ record, rank, lib, onOpen, onVideo, onEdit }: {
+function RecordRow({ record, rank, lib, delayMs, onOpen, onVideo, onEdit }: {
   record: ExerciseRecordResponse
   rank: number | null
   lib?: ExerciseLibraryItem
+  delayMs?: number
   onOpen: () => void
   onVideo?: () => void
   onEdit?: () => void
@@ -95,7 +98,10 @@ function RecordRow({ record, rank, lib, onOpen, onVideo, onEdit }: {
   const weighted = (r.bestSet?.weightKg ?? 0) > 0
   const best = maxRep(r)
   return (
-    <div className="excat">
+    <div
+      className="excat rise"
+      style={{ '--ex-wash': mc.wash, '--d': `${delayMs ?? 0}ms` } as CSSProperties}
+    >
       <div className="excat-rail" style={{ background: mc.rail }} aria-hidden="true" />
       <button className="excat-open" onClick={onOpen}>
         <div className="row" style={{ alignItems: 'center', gap: 10 }}>
@@ -167,14 +173,15 @@ function RecordRow({ record, rank, lib, onOpen, onVideo, onEdit }: {
   )
 }
 
-function GhostRow({ item, onVideo, onEdit }: {
+function GhostRow({ item, delayMs, onVideo, onEdit }: {
   item: ExerciseLibraryItem
+  delayMs?: number
   onVideo?: () => void
   onEdit?: () => void
 }) {
   const mc = muscleColor(item.muscle)
   return (
-    <div className="excat ghost">
+    <div className="excat ghost rise" style={{ '--d': `${delayMs ?? 0}ms` } as CSSProperties}>
       <div className="excat-rail" style={{ background: mc.rail }} aria-hidden="true" />
       {/* No record yet ⇒ nothing to open: the body is a plain div, not a dead button. */}
       <div className="excat-open">
@@ -284,9 +291,29 @@ export function ExercisesPage() {
         </button>
       </div>
 
+      {/* Compact hero (icon + catalog count) + an honest stat strip — prototype
+          edzes-body #page-gyak ×1.18. The prototype's 4th "PR e héten" cell is
+          dropped: no dated week-boundary contract exists to derive it truthfully.
+          The page chrome gets its OWN one-shot entrance (prototype stagger:
+          strip 30ms, search field 60ms, chip row 90ms, list head 120ms); the
+          result list below keeps its own group, which re-arms on every filter
+          change (mezo-d20.11 — the chrome must not re-animate with it). */}
+      <EntranceGroup>
+      <div style={{ padding: '0 24px 4px' }}>
+        <div className="row" style={{ justifyContent: 'center', alignItems: 'center', gap: 14, margin: '2px 0 12px' }}>
+          <ClayIcon name="i-polc" size={57} />
+          <span className="mz-bignum">{exerciseLibrary.length}</span>
+        </div>
+        <div className="mz-statstrip rise" style={{ '--d': '30ms' } as CSSProperties} aria-label="Katalógus áttekintés">
+          <div className="mz-statcell"><b>{exerciseRecords.length}</b><small>rekord</small></div>
+          <div className="mz-statcell"><b>{exerciseLibrary.filter((e) => e.editable).length}</b><small>saját</small></div>
+          <div className="mz-statcell"><b>{exerciseLibrary.filter((e) => e.videoUrl).length}</b><small>videóval</small></div>
+        </div>
+      </div>
+
       <div style={{ padding: '0 24px 8px' }}>
         {/* Search — the DS SearchInput: leading glyph + a borderless 16px field. */}
-        <div className="searchfield" style={{ marginBottom: 10 }}>
+        <div className="searchfield rise" style={{ marginBottom: 10, '--d': '60ms' } as CSSProperties}>
           <Icon name="search" size={16} color="var(--text-tertiary)" />
           <input
             aria-label="Keresés a gyakorlatok között"
@@ -296,7 +323,7 @@ export function ExercisesPage() {
           />
         </div>
         {/* Muscle filter — level 1: régiók */}
-        <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: subs.length ? 6 : 4, paddingBottom: 4 }}>
+        <div className="row gap-xs rise" style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: subs.length ? 6 : 4, paddingBottom: 4, '--d': '90ms' } as CSSProperties}>
           {TOP_FILTERS.map((m) => (
             <button
               key={m}
@@ -328,7 +355,7 @@ export function ExercisesPage() {
       </div>
 
       <div style={{ padding: '0 24px 32px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', margin: '10px 0' }}>
+        <div className="row rise" style={{ justifyContent: 'space-between', margin: '10px 0', '--d': '120ms' } as CSSProperties}>
           <span className="eyebrow">{searching ? 'Találatok · teljes katalógus' : 'Top gyakorlatok · rekordjaid'}</span>
           <span className="label-mono text-tertiary">
             {searching ? `${records.length + ghosts.length} / ${exerciseLibrary.length}` : `${exerciseRecords.length} PR`}
@@ -338,7 +365,7 @@ export function ExercisesPage() {
         {!searching && records.length === 0 ? (
           <GhostState lines={3} message="Az első logolt edzés után itt nőnek a rekordjaid — keresni már most tudsz a katalógusban." />
         ) : (
-          <div className="col gap-sm">
+          <EntranceGroup className="col gap-sm" replayKey={searching ? `${top}:${sub}:${q}` : 'default'}>
             {records.map((r, i) => {
               const lib = resolveCatalogRow(r)
               return (
@@ -347,16 +374,18 @@ export function ExercisesPage() {
                   record={r}
                   rank={searching ? null : i + 1}
                   lib={lib}
+                  delayMs={Math.min(i, 8) * 50}
                   onOpen={() => setOpenRecord(r)}
                   onVideo={lib?.catalogId ? () => setVideoFor({ id: lib.catalogId!, name: lib.name, videoUrl: lib.videoUrl ?? null }) : undefined}
                   onEdit={lib?.editable ? () => setCatalog({ edit: lib }) : undefined}
                 />
               )
             })}
-            {ghosts.map((g) => (
+            {ghosts.map((g, i) => (
               <GhostRow
                 key={g.id}
                 item={g}
+                delayMs={Math.min(records.length + i, 8) * 50}
                 onVideo={g.catalogId ? () => setVideoFor({ id: g.catalogId ?? g.id, name: g.name, videoUrl: g.videoUrl ?? null }) : undefined}
                 onEdit={g.editable ? () => setCatalog({ edit: g }) : undefined}
               />
@@ -366,9 +395,10 @@ export function ExercisesPage() {
                 Nincs találat ezzel a szűrővel.
               </p>
             )}
-          </div>
+          </EntranceGroup>
         )}
       </div>
+      </EntranceGroup>
 
       {openRecord && (
         <ExerciseRecordSheet

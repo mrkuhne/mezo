@@ -94,23 +94,23 @@ describe('mock mode (demo goal)', () => {
 
   test('renders the goal hero, weights and identity frame', () => {
     render(<GoalsPage />, { wrapper: Wrapper })
-    expect(screen.getByRole('heading', { level: 1, name: /Hosszú cél/ })).toBeInTheDocument()
+    expect(screen.getByText('Hosszú cél')).toBeInTheDocument()
     expect(screen.getByText('Fogyás · aktív')).toBeInTheDocument()
-    expect(screen.getAllByText('78.6').length).toBeGreaterThan(0) // current weight
+    // current weight — the track-l label speaks hu1's Hungarian decimal comma.
+    expect(screen.getAllByText(/78,6/).length).toBeGreaterThan(0)
     expect(screen.getByText(/Egészséges erő/)).toBeInTheDocument() // identityFrame
     expect(screen.queryByText('7 nap')).not.toBeInTheDocument() // trend cells moved to /me/weight
   })
 
-  // Napiv re-skin (Task 5, mezo-8141): own header is `.pghead-np lav` (over "Me ·
-  // Cél" / h1 "Hosszú cél"), the "Új cél" chip is a `.pgact-np np-press` pill, and
-  // the hero's weight progress reuses the shared `.track/.fill/.dot/.track-l`
-  // vocabulary (Task 3) instead of a bespoke bar.
-  test('own header: pghead-np lav over + h1 + pgact-np action chip', () => {
+  // Mozaik re-face (mezo-d20.6.2): own scaffold is the tile→page Huawei pattern —
+  // `.mz-page.mz-p-coral` with a `‹ Én` back chip (PageHead) and a `.pgact`
+  // "＋ Új cél" header action; the hero's weight progress reuses the shared
+  // `.track/.fill/.dot/.track-l` vocabulary (Task 3) instead of a bespoke bar.
+  test('own scaffold: mz-page mz-p-coral + ‹ Én back chip + pgact action', () => {
     const { container } = render(<GoalsPage />, { wrapper: Wrapper })
-    expect(container.querySelector('.pghead-np.lav')).toBeInTheDocument()
-    expect(screen.getByText('Me · Cél')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Hosszú cél' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Új cél/ })).toHaveClass('pgact-np', 'np-press')
+    expect(container.querySelector('.mz-page.mz-p-coral')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Én')
+    expect(screen.getByRole('button', { name: /Új cél/ })).toHaveClass('pgact')
   })
 
   test('hero reuses the shared .track/.fill/.dot/.track-l progress vocabulary', () => {
@@ -302,18 +302,17 @@ describe('real mode (no goal)', () => {
     expect(screen.queryByText('Fogyás · Nyári forma')).not.toBeInTheDocument()
   })
 
-  // Napiv re-skin (Task 5): the empty-state branch gets the same `.pghead-np lav`
-  // header as the active-goal branch (binding rule — BOTH branches).
-  test('empty state also gets the pghead-np lav own header', async () => {
+  // Mozaik re-face: the empty-state branch gets the same `.mz-page.mz-p-coral`
+  // scaffold as the active-goal branch (binding rule — BOTH branches).
+  test('empty state also gets the mz-page mz-p-coral own scaffold', async () => {
     server.use(
       http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
       http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
     )
     const { container } = render(<GoalsPage />, { wrapper: Wrapper })
     await screen.findByText(/Még nincs aktív célod/)
-    expect(container.querySelector('.pghead-np.lav')).toBeInTheDocument()
-    expect(screen.getByText('Me · Cél')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Hosszú cél' })).toBeInTheDocument()
+    expect(container.querySelector('.mz-page.mz-p-coral')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Én')
   })
 })
 
@@ -414,4 +413,18 @@ describe('Új cél hard gate (complete biometric profile)', () => {
     await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/new'))
     expect(screen.queryByText(/Előbb: a/)).not.toBeInTheDocument()
   })
+})
+
+// ── entrance choreography (mezo-d20.11) ──
+// The audit found exactly ONE `.rise` on /me/goals; the prototype (#page-cel)
+// staggers the whole body (--d 0 / 60 / 90 / 130 / 160 / 190 / 220 / 260 ms).
+test('the Cél body staggers — recept, idővonal and plan slots all rise inside .mz-play', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+  await waitFor(() => expect(container.querySelector('.gc-card')).not.toBeNull())
+  const rises = [...container.querySelectorAll('.rise')]
+  expect(rises.length).toBeGreaterThanOrEqual(4)
+  for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+  const delays = rises.map((r) => (r as HTMLElement).style.getPropertyValue('--d'))
+  expect(new Set(delays).size).toBe(delays.length) // a real stagger, not one shared delay
 })

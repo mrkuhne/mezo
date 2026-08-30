@@ -18,6 +18,8 @@ import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -38,6 +40,7 @@ class MealApiIT extends ApiIntegrationTest {
 
     @Autowired private io.mrkuhne.mezo.support.populator.TrainPopulator train;
     @Autowired private io.mrkuhne.mezo.feature.auth.OwnerProperties ownerProperties;
+    @Autowired private io.mrkuhne.mezo.support.populator.WeightLogPopulator weightLogs;
 
     /** Creates a per-100g food via POST /api/pantry (owned by the authed owner) and returns its id. */
     private UUID createFood(HttpHeaders auth, String name, String kcal, String p, String c, String f) {
@@ -150,9 +153,15 @@ class MealApiIT extends ApiIntegrationTest {
 
     /** A breakfast meal request at the fixed instant carrying the given items. */
     private MealRequest mealReq(MealItemRequest... items) {
+        return mealReqAt(LOGGED_AT, items);
+    }
+
+    /** Same breakfast request at a caller-chosen instant — the week rollup needs meals on
+     *  DIFFERENT days inside {@code start..start+6}. */
+    private MealRequest mealReqAt(OffsetDateTime loggedAt, MealItemRequest... items) {
         MealRequest r = new MealRequest();
         r.setSlot("breakfast");
-        r.setLoggedAt(LOGGED_AT);
+        r.setLoggedAt(loggedAt);
         r.setTitle("Reggeli");
         r.setItems(List.of(items));
         return r;
@@ -471,6 +480,64 @@ class MealApiIT extends ApiIntegrationTest {
         assertThat(week.getDays().getLast().getDate()).isEqualTo(LocalDate.of(2026, 6, 28));
         assertThat(week.getDays().getFirst().getTargets().getKcal()).isEqualByComparingTo("3100");
         assertThat(week.getDays().getFirst().getConsumed().getKcal()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void testGetFuelWeek_shouldAverageScoredMealsAndDailyLatestWeighIns_whenBothPresent() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+        UUID food = createFoodWithFacts(auth, "Mézes banán toast");
+
+        // two scored meals on two different days of the 2026-06-22..28 week
+        MealResponse first = postForBody("/api/meal",
+            mealReqAt(LOGGED_AT, pantryItem(food, "100")), auth, HttpStatus.CREATED, MealResponse.class);
+        MealResponse second = postForBody("/api/meal",
+            mealReqAt(OffsetDateTime.of(2026, 6, 26, 8, 5, 0, 0, ZoneOffset.UTC), pantryItem(food, "220")),
+            auth, HttpStatus.CREATED, MealResponse.class);
+
+        // weigh-ins: one before the week (ignored), one mid-week, one day weighed TWICE
+        weightLogs.createWeightLog(owner, LocalDate.of(2026, 6, 21), new BigDecimal("90.00"));
+        weightLogs.createWeightLog(owner, LocalDate.of(2026, 6, 23), new BigDecimal("82.40"));
+        weightLogs.createWeightLogAt(owner, LocalDate.of(2026, 6, 25), new BigDecimal("81.00"),
+            Instant.parse("2026-06-25T06:00:00Z"));
+        weightLogs.createWeightLogAt(owner, LocalDate.of(2026, 6, 25), new BigDecimal("81.60"),
+            Instant.parse("2026-06-25T19:00:00Z")); // later ⇒ this is the day's value
+
+        FuelWeekResponse week = getForBody(
+            "/api/fuel/week/2026-06-22", auth, HttpStatus.OK, FuelWeekResponse.class);
+
+        BigDecimal expectedScoreAvg = first.getScore().getValue().add(second.getScore().getValue())
+            .divide(new BigDecimal("2"), 3, RoundingMode.HALF_UP);
+        assertThat(week.getMealScoreAvg()).isEqualByComparingTo(expectedScoreAvg);
+        // (82.40 + 81.60) / 2 — the 06-21 weigh-in is outside the week, 81.00 lost the same-day tie
+        assertThat(week.getWeightAvgKg()).isEqualByComparingTo("82.00");
+    }
+
+    @Test
+    void testGetFuelWeek_shouldReturnNullAverages_whenWeekHasNoMealsAndNoWeighIns() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        FuelWeekResponse week = getForBody(
+            "/api/fuel/week/2026-06-22", auth, HttpStatus.OK, FuelWeekResponse.class);
+
+        // honest state: nothing to average ⇒ null, never a 0-as-a-fake
+        assertThat(week.getMealScoreAvg()).isNull();
+        assertThat(week.getWeightAvgKg()).isNull();
+    }
+
+    @Test
+    void testGetFuelWeek_shouldReturnNullWeightAvg_whenWeekHasMealsButNoWeighIn() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFoodWithFacts(auth, "Mézes banán toast");
+        MealResponse meal = postForBody("/api/meal",
+            mealReq(pantryItem(food, "100")), auth, HttpStatus.CREATED, MealResponse.class);
+
+        FuelWeekResponse week = getForBody(
+            "/api/fuel/week/2026-06-22", auth, HttpStatus.OK, FuelWeekResponse.class);
+
+        assertThat(week.getMealScoreAvg())
+            .isEqualByComparingTo(meal.getScore().getValue().setScale(3, RoundingMode.HALF_UP));
+        assertThat(week.getWeightAvgKg()).isNull();
     }
 
     @Test

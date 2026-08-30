@@ -1133,7 +1133,7 @@ export interface SportSession {
   id: string; sport: string; date: string
   isoDate: string // ISO day — the raw wire date; `date` is the HU display string
   time: string; duration: number
-  setsPlayed: number | null; intensity: number | null; rpe: number; shoulderStrain: number | null
+  setsPlayed: number | null; rounds: number | null; intensity: number | null; rpe: number; shoulderStrain: number | null
   jumpCount: number | null; notes: string | null
 }
 export interface SportWeek {

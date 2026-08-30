@@ -121,3 +121,17 @@ describe('MesoTemplatesPage (real mode)', () => {
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/new')
   })
 })
+
+// Motion (mezo-d20.11): the page had NO entrance choreography at all — no
+// EntranceGroup, no `.rise`. The face stays as-is (the prototype draws no
+// standalone Sablonok page), but the list now staggers like every other one.
+test('the template list staggers inside an armed entrance group', async () => {
+  setup()
+  await screen.findByText(/Sablonok · /)
+  const play = document.body.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  const risen = [...play!.querySelectorAll('.rise')] as HTMLElement[]
+  expect(risen.length).toBeGreaterThan(1)
+  expect(risen[0].style.getPropertyValue('--d')).toBe('30ms')
+  expect(risen[1].style.getPropertyValue('--d')).toBe('60ms')
+})

@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
-import { PageHero } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useKnowledge, useKnowledgeActions, useLifeEventCandidates, useLifeEventActions } from '@/data/hooks'
 import { FACT_CATEGORIES, PROMPT_TOP_N } from '@/data/insights/knowledge'
 import { LifecycleSection } from '@/features/insights/components/LifecycleSection'
@@ -16,6 +16,19 @@ import { KnowledgeFactRow } from '@/features/insights/components/KnowledgeFactRo
 import { bucketFacts, matchesQuery, type FactBucket } from '@/features/insights/logic/factCopy'
 import { CANDIDATE_COPY } from '@/data/insights/graph'
 import type { FactCategory, KnowledgeFact, LifeEventCandidate } from '@/data/types'
+
+/** The page frame every branch renders inside — the way back must exist on all of them
+ *  (ADR 0032 / fidelity audit mezo-d20.11: the Tudástár mounted no PageHead at all). */
+function TudasFrame({ big, sub, children }: { big?: ReactNode; sub?: string; children: ReactNode }) {
+  const navigate = useNavigate()
+  return (
+    <MozaikPage tone="sage">
+      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
+      <PageHero icon="i-tudas" big={big} name="Tudástár" sub={sub} />
+      <PageBody>{children}</PageBody>
+    </MozaikPage>
+  )
+}
 
 export function KnowledgeListPage() {
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
@@ -38,6 +51,8 @@ export function KnowledgeListPage() {
   // A vödrözés a TELJES listán fut (a „10 megy a chatbe" a valóságot mondja), a szűrés csak
   // a megjelenítést szűkíti — különben egy aktív szűrő átírná a prompt-státuszokat.
   const buckets = useMemo(() => bucketFacts(facts, PROMPT_TOP_N), [facts])
+  // Prototype hero big number (#tudasBig) spins up. The hook stays ABOVE every early return.
+  const heroCount = useCountUp(facts.length)
   const visible = (list: KnowledgeFact[]) =>
     list.filter((f) => (category === 'all' || f.category === category) && matchesQuery(f, query))
 
@@ -46,7 +61,7 @@ export function KnowledgeListPage() {
   // header would reach a live user during the unresolved window (the mezo-yew/mezo-0xl bug class,
   // PatternsPage.tsx örököse).
   if (isPending) {
-    return <GhostState message="A tudástár betöltése…" />
+    return <TudasFrame><GhostState message="A tudástár betöltése…" /></TudasFrame>
   }
 
   // Genuinely failed fetch (500, network) — külön a 404-degraded ÉS a betöltés-alatti ablaktól.
@@ -54,19 +69,21 @@ export function KnowledgeListPage() {
   // ÁLLANDÓAN, miközben a társ éppen fut és tényeket injektál.
   if (isError) {
     return (
-      <GhostState message="Nem sikerült betölteni a tudástárat." ctaLabel="Újra" onCta={refetch} />
+      <TudasFrame>
+        <GhostState message="Nem sikerült betölteni a tudástárat." ctaLabel="Újra" onCta={refetch} />
+      </TudasFrame>
     )
   }
 
   if (degraded) {
     return (
-      <div className="col gap-md">
+      <TudasFrame>
         <div className="card" style={{ padding: 14 }}>
           <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
             A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.
           </span>
         </div>
-      </div>
+      </TudasFrame>
     )
   }
 
@@ -87,18 +104,12 @@ export function KnowledgeListPage() {
     setCategory('all')
   }
 
+  /* Mozaik re-face (mezo-d20.5.5): prototype #page-tudas hero — clay i-tudas + the big
+     fact count + "tény rólad · N megy a chatbe". Same honest numbers as the old header
+     (full-list buckets, never the filtered view). */
   return (
+    <TudasFrame big={heroCount} sub={`tény rólad · ${buckets.inPrompt.length} megy a chatbe`}>
     <EntranceGroup className="col gap-md">
-      {/* Mozaik re-face (mezo-d20.5.5): prototype #page-tudas hero — clay i-tudas + the big
-          fact count + "tény rólad · N megy a chatbe". Same honest numbers as the old header
-          (full-list buckets, never the filtered view), only the face changed. */}
-      <PageHero
-        icon="i-tudas"
-        big={facts.length}
-        name="Tudástár"
-        sub={`tény rólad · ${buckets.inPrompt.length} megy a chatbe`}
-      />
-
       <KnowledgeExplainer />
 
       <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5, padding: '0 4px', margin: 0 }}>
@@ -246,9 +257,7 @@ export function KnowledgeListPage() {
         </>
       )}
 
-      <p className="text-tertiary mt-md" style={{ fontSize: 11, textAlign: 'center', lineHeight: 1.5, padding: '0 20px' }}>
-        A graph nézethez · Me → Knowledge.
-      </p>
     </EntranceGroup>
+    </TudasFrame>
   )
 }

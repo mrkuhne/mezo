@@ -25,11 +25,18 @@ export type MozaikWash =
 
 interface TileProps {
   wash: MozaikWash
-  icon: ClayIconName
+  /** Optional: the prototype's Kreed tile carries prose instead of a spot. */
+  icon?: ClayIconName
+  /** The mosaic spot is 40px in the 330px prototype frame → 47 at ×1.18. A handful of
+   *  tiles use 38 or 42 there; those pass their own size rather than the whole set drifting. */
+  iconSize?: number
   eyebrow: string
   line?: ReactNode
   /** unread/attention badge dot (coral) */
   dot?: boolean
+  /** A COUNT rides here (the prototype's `.badge.unread`), where `dot` is the bare
+   *  attention mark. Never render both — a number already says there is something. */
+  badge?: ReactNode
   /** entrance-stagger delay; the choreography trigger itself is the motion kit's job (F0.4) */
   delayMs?: number
   onClick?: () => void
@@ -38,16 +45,17 @@ interface TileProps {
   'aria-label'?: string
 }
 
-export function Tile({ wash, icon, eyebrow, line, dot, delayMs, onClick, className, children, ...rest }: TileProps) {
+export function Tile({ wash, icon, iconSize = 47, eyebrow, line, dot, badge, delayMs, onClick, className, children, ...rest }: TileProps) {
   const cls = cn('mz-tile', `mz-w-${wash}`, 'rise', className)
   const style = delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined
   const inner = (
     <>
       <div className="mz-tile-top">
         <span className="mz-eyebrow">{eyebrow}</span>
-        {dot && <span className="mz-dot" aria-hidden="true" />}
+        {badge !== undefined ? <span className="mz-badge">{badge}</span>
+          : dot ? <span className="mz-dot" aria-hidden="true" /> : null}
       </div>
-      <div className="mz-spotwrap"><ClayIcon name={icon} size={45} /></div>
+      {icon && <div className="mz-spotwrap"><ClayIcon name={icon} size={iconSize} /></div>}
       {line !== undefined && <div className="mz-tile-line">{line}</div>}
       {children}
     </>
@@ -116,15 +124,25 @@ export function PageHead({ onBack, label = '‹ vissza', children }: { onBack: (
   )
 }
 
-interface PageHeroProps { icon?: ClayIconName; big?: ReactNode; name: string; sub?: string; children?: ReactNode }
+interface PageHeroProps {
+  icon?: ClayIconName
+  /** The prototypes size a hero spot per page (54 and 72 are both common, 48–92 across the
+   *  set), so there is no single faithful default — a page that has been checked against its
+   *  prototype passes the scaled value. 45 is what every page shipped with. */
+  iconSize?: number
+  big?: ReactNode
+  name: string
+  sub?: string
+  children?: ReactNode
+}
 
 /** Subpage hero recipe (session rounds): title, then icon + big number in ONE row, no subtitle theater. */
-export function PageHero({ icon, big, name, sub, children }: PageHeroProps) {
+export function PageHero({ icon, iconSize = 45, big, name, sub, children }: PageHeroProps) {
   return (
     <div className="mz-page-hero">
       <div className="mz-hero-nm">{name}</div>
       <div className="mz-hero-row">
-        {icon && <ClayIcon name={icon} size={45} />}
+        {icon && <ClayIcon name={icon} size={iconSize} />}
         {big !== undefined && <span className="mz-bignum">{big}</span>}
       </div>
       {sub && <div className="mz-hero-sb">{sub}</div>}

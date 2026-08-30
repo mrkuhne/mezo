@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { deriveNudges, NUDGE_COPY, toNudgeMessage } from '@/features/today/logic/needsNudges'
 import { NEED_META, type NeedBand, type NeedKey, type NeedState } from '@/features/today/logic/needs'
-import type { NudgeSeenEntry } from '@/shared/lib/nudgeSeen'
+import type { NudgeSeenEntry } from '@/features/today/logic/nudgeSeen'
 
 const d = (s: string) => new Date(s)
 const wake = '06:00'

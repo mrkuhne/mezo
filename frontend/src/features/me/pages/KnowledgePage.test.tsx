@@ -18,11 +18,29 @@ const renderPage = () =>
     { wrapper: QueryWrapper },
   )
 
-test('renders the summary band with derived counts', () => {
-  renderPage()
-  expect(screen.getByRole('heading', { level: 1, name: 'Tudásgráf' })).toBeInTheDocument()
-  expect(screen.getByText('Me · Tudás')).toBeInTheDocument()
-  expect(screen.getByText('15 tudás · 13 kapcsolat')).toBeInTheDocument()
+// mezo-d20.11 (ADR 0032): the page wears its own Mozaik scaffold — the prototype's `‹ Én`
+// back chip + the page-hero — instead of the old .pghead-np band, which offered no way back
+// and repeated the hero's own counts inside the summary tile.
+test('renders the Mozaik hero with the derived counts and a way back', () => {
+  const { container } = renderPage()
+  expect(screen.getByText('Tudásgráf')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+  expect(screen.getByText('‹ Én')).toBeInTheDocument()
+  expect(container.querySelector('.mz-bignum')?.textContent).toBe('15')
+  expect(screen.getByText('tudás · 13 kapcsolat · élő mindmap')).toBeInTheDocument()
+  // The old .pghead-np band is gone — no page mixes the two header generations any more.
+  expect(container.querySelector('.pghead-np')).toBeNull()
+})
+
+// The armed-but-silent EntranceGroup (audit group B: play 1, rise 0) — every direct child
+// now carries `.rise`, and each `.rise` sits INSIDE the `.mz-play` wrapper.
+test('every .rise element sits inside the armed EntranceGroup', () => {
+  const { container } = renderPage()
+  const play = container.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  const rises = container.querySelectorAll('.rise')
+  expect(rises.length).toBeGreaterThan(0)
+  for (const el of rises) expect(play!.contains(el)).toBe(true)
 })
 
 test('a tényeket már nem listázza — azoknak a Tudástár a gazdája', () => {
@@ -34,7 +52,7 @@ test('a tényeket már nem listázza — azoknak a Tudástár a gazdája', () =>
 
 test('a Tudástárra mutató link ott van az összegző sáv alatt', () => {
   renderPage()
-  const link = screen.getByRole('link', { name: /Tények kezelése/ })
+  const link = screen.getByRole('link', { name: /A tények kezelése/ })
   expect(link).toHaveAttribute('href', '/mezo/knowledge')
 })
 
@@ -63,4 +81,17 @@ test('lifts the profile node out of the Kapcsolatok groups into its own section'
   expect(await screen.findByText('Rólad tanultam')).toBeInTheDocument()
   // exactly once: it must not ALSO appear under the "Belátások" group
   expect(screen.getAllByText('Rólad tanultam')).toHaveLength(1)
+})
+
+// Mozaik re-face (mezo-d20.6.7): the summary tile + node/profile tiles wear the
+// Tudástár .mz-facttile recipe, per-kind washed (mezo-d20.5.5's shared vocabulary).
+test('the summary band and node tiles wear the Mozaik wash tiles', () => {
+  const { container } = renderPage()
+  expect(container.querySelector('.tud-summary')).toBeInTheDocument()
+  // the seeded PATTERN node ("Késői evés rontja az alvást") washes sage
+  const patternTile = screen.getByText('Késői evés rontja az alvást').closest('[data-graph-node-card]')
+  expect(patternTile).toHaveClass('mz-w-sage')
+  // the profile node reuses the same tile primitive, uncolored
+  const profileTile = screen.getByText('Rólad tanultam').closest('[data-profile-node-card]')
+  expect(profileTile).toHaveClass('mz-facttile')
 })

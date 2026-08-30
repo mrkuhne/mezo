@@ -1,37 +1,47 @@
 // ============================================================
-// Mezo · SportPage (Sport) — volleyball schedule + session log +
-// cross-system load. Thin TrainSection shell ⇒ this view owns its own
-// .pghead-np (over `Edzés · Sport`, h1 `Röplabda`, `+ Log` pgact-np chip).
-// Ported from prototype sport.jsx (SportPage + SportWeekView +
-// SportLogView + SportCrossloadView). All sport rose accents use the
-// Napiv --tag-sport/--wash-sport tokens (rose vocabulary); the faint teal
-// Coral card tints follow the existing Insights/Fuel slice convention.
+// Mezo · SportPage (Sport) — Mozaik 2.0 re-face (mezo-d20.11).
+// Source of truth: docs/design_2.0/prototypes/src/edzes-body.html #page-sport
+// (p-rose tone, ×1.18): page-head (‹ Edzés + `＋ Log` pgact) → compact hero
+// (page name, i-sport clay spot + a `logolt/tervezett` big number, no
+// venue/team theater) → the live stat strip → the three segments
+// (Heti terv · Napló · Cross-load) → a quiet principle line.
+//
+// The old face (an `Edzés · Sport` eyebrow + a `Röplabda` h1 over a big hero
+// CARD carrying team/venue/season and the RPE explainer) is gone: the
+// prototype's hero is the page name plus one number, and the court is already
+// where it belongs — on each slot row's meta line.
+//
+// Dropped from the prototype's 4-cell strip: the `+XP e héten` cell. The
+// prototype fakes it as `logged × 30`; no weekly sport-XP aggregate is on the
+// wire, and XP is feedback, never invented. Three honest cells ship instead.
+//
+// All sport rose accents use the Mozaik rose wash/shadow/cell tokens.
 // ============================================================
 import { useState } from 'react'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
+import { useNavigate } from 'react-router-dom'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { useTrain } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { isMockMode } from '@/data/_client/mode'
 import type { SportSchedule, SportSession, CrossLoadRow as CrossLoadRowData } from '@/data/types'
 import { GhostState } from '@/shared/ui/GhostState'
-import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
+import { ClayIcon } from '@/shared/ui/clay'
+import { MozaikPage, PageHead, PageBody, StatCell } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ToolChipRow } from '@/shared/ui/ToolChipRow'
 import type { Tool } from '@/shared/ui/ToolChip'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { DAY_ORDER } from '@/data/train/train'
 import type { SportEventResponse } from '@/data/train/trainApi'
-import { SportStat } from '@/features/train/components/SportStat'
 import { SportSessionCard } from '@/features/train/components/SportSessionCard'
 import { CrossLoadRow } from '@/features/train/components/CrossLoadRow'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { SportScheduleSheet } from '@/features/train/sheets/SportScheduleSheet'
 import { SportEventSheet } from '@/features/train/sheets/SportEventSheet'
 import SportSkeleton from '@/features/train/pages/SportSkeleton'
-import { sportOf, SPORT_TAGS, type SportKind } from '@/features/train/logic/sportKinds'
+import { sportOf, SPORT_TAGS, SPORT_TONE, type SportKind } from '@/features/train/logic/sportKinds'
 
 type SportSubView = 'week' | 'log' | 'crossload'
 
@@ -41,20 +51,24 @@ const SUB_VIEWS: { id: SportSubView; label: string }[] = [
   { id: 'crossload', label: 'Cross-load' },
 ]
 
-const RPE_EXPLAINER =
-  '**RPE = Rate of Perceived Exertion** · 1-10 skála, amit te magad adsz meg a session után. ' +
-  '**6-7 = közepes-jó tempó**, 8+ = kemény meccs, 9+ = teljes gáz. A Mezo ezt használja a ' +
-  'regenerálódás + másnapi load számolásához.'
+/** One decimal, Hungarian comma — the prototype's `d1()`. */
+const d1 = (n: number) => (Math.round(n * 10) / 10).toString().replace('.', ',')
 
 export function SportPage() {
+  const navigate = useNavigate()
   const { sport, sportEvents, logSportSession, saveSportSchedule, addSportEvent, deleteSportEvent, sportPending } =
     useTrain()
   const { showLevelUp } = useLevelUp()
   // Sticky so returning here restores the segment the user left from — see useStickyTab.
   const [view, setView] = useStickyTab<SportSubView>('train.sport.view', 'week')
   const [logOpen, setLogOpen] = useState(false)
+  const [logInitialSport, setLogInitialSport] = useState<SportKind | undefined>(undefined)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [eventOpen, setEventOpen] = useState(false)
+  const openLog = (initial?: SportKind) => {
+    setLogInitialSport(initial)
+    setLogOpen(true)
+  }
 
   // Loading skeleton (real mode): while the sport-sessions query (sportPending) is
   // unresolved, render the layout-matched skeleton before the first render. Placed
@@ -66,151 +80,105 @@ export function SportPage() {
   const volleyball = sport.schedule?.volleyball ?? null
   const week = sport.week
 
-  // Venue = the most frequent slot location (schedule-derived; the mock fixture
-  // yields the same 'BVSC csarnok' string the prototype hardcoded).
-  const venue = (() => {
-    const counts = new Map<string, number>()
-    for (const s of volleyball?.sessions ?? []) if (s.court) counts.set(s.court, (counts.get(s.court) ?? 0) + 1)
-    let best = 'Volleyball'
-    let bestN = 0
-    for (const [c, n] of counts) if (n > bestN) { best = c; bestN = n }
-    return best
-  })()
+  // Hero big number = logged this week / scheduled slots (prototype `2/4`).
+  // With no schedule there is nothing to be "out of" — the number renders `—`
+  // rather than inventing a denominator.
+  const slotCount = volleyball?.sessions.length ?? 0
+  const bigNum = volleyball ? `${week?.sessions ?? 0}/${slotCount}` : '—'
+  const loggedThisWeek = week != null && week.sessions > 0
+
+  // The prototype's per-segment principle lines (`habnote`), verbatim.
+  const principle =
+    view === 'week'
+      ? 'A heti ritmus független a mezociklustól — új blokk indításakor a sport cross-load automatikusan beépül a volumen-tervbe.'
+      : view === 'crossload'
+        ? 'A cross-load sosem büntet — plafont igazít és időzítést ajánl, döntést nem vesz el.'
+        : undefined
 
   return (
-    <>
-      {/* Header */}
-      <div className="page-header">
-        <div>
-          <Eyebrow brand>Edzés · Sport</Eyebrow>
-          <PageTitle style={{ marginTop: 4 }}>Röplabda</PageTitle>
-        </div>
-        <button type="button" onClick={() => setLogOpen(true)} className="pgact">
-          + Log
+    <MozaikPage tone="rose">
+      <PageHead onBack={() => navigate('/train')} label="‹ Edzés">
+        <button type="button" onClick={() => openLog()} className="mz-pgact">
+          ＋ Log
         </button>
-      </div>
-
-      {/* Hero card — stats need a schedule + computed week (T3); ghost until then */}
-      <div style={{ padding: '0 24px 16px' }}>
-        {!week || !volleyball ? (
-          <GhostState lines={3} message="A statisztikáid az első logolt session után jelennek meg." />
-        ) : (
-        <div
-          className="card"
-          style={{
-            padding: 'var(--sp-4)',
-            background:
-              'linear-gradient(165deg, var(--wash-sport), var(--surface-card) 72%)',
-            borderColor: 'color-mix(in srgb, var(--tag-sport) 16%, transparent)',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--tag-sport)' }} />
-          <span
-            style={{
-              position: 'absolute',
-              right: -50,
-              top: -50,
-              width: 160,
-              height: 160,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, var(--wash-sport), transparent 70%)',
-            }}
-          />
-          <div style={{ position: 'relative' }}>
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div className="col">
-                <span className="eyebrow" style={{ color: 'var(--tag-sport)' }}>
-                  {volleyball.team || 'Volleyball'}
-                </span>
-                <div style={{ marginTop: 6 }}>
-                  <Display size="lg">{venue}</Display>
-                </div>
-                {volleyball.season && (
-                  <span className="text-secondary mt-sm" style={{ fontSize: 14 }}>
-                    {volleyball.season}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Week stats */}
-            <div className="statstrip mt-lg">
-              <SportStat label="Sessions" val={week.sessions} sub={`/${volleyball.sessions.length} heti`} />
-              <SportStat label="Idő" val={`${week.hoursPlayed}h`} sub="court" highlight />
-              <SportStat label="RPE" val={week.avgRPE.toFixed(1)} sub="átlag · 1-10" />
-              <SportStat label="Váll" val={week.avgShoulderStrain.toFixed(1)} sub="terhelés" />
-            </div>
-
-            {/* RPE explainer */}
-            <div
-              className="row gap-sm mt-md"
-              style={{ padding: '10px 12px', borderRadius: 'var(--r-lg)', background: 'var(--surface-recess)', alignItems: 'flex-start' }}
-            >
-              <Icon name="sparkle" size={14} color="var(--primary-base)" />
-              <span style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
-                <SafeMarkdown text={RPE_EXPLAINER} />
-              </span>
-            </div>
+      </PageHead>
+      {/* One-shot entrance choreography; the segment switch re-arms it so the
+          swapped view stages in rather than snapping (replayKey = the view). */}
+      <EntranceGroup replayKey={view}>
+        <div className="mz-page-hero">
+          <div className="mz-hero-nm">Sport</div>
+          <div className="mz-hero-row">
+            <ClayIcon name="i-sport" size={85} />
+            <span className="mz-bignum">{bigNum}</span>
           </div>
         </div>
-        )}
-      </div>
-
-      {/* View switcher */}
-      {/* The selected segment speaks PRIMARY, not the sport rose: ADR 0018 D5
-          keeps the domain accents in the data-viz band, off buttons. */}
-      <div className="segtabs" style={{ padding: '0 24px 12px' }}>
-        {SUB_VIEWS.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            aria-pressed={view === v.id}
-            onClick={() => setView(v.id)}
-            className="segtab"
-          >
-            {v.label}
-          </button>
-        ))}
-      </div>
-
-      {view === 'week' && (
-        <>
-          {volleyball ? (
-            <SportWeekView
-              schedule={volleyball}
-              onEdit={isMockMode() ? undefined : () => setScheduleOpen(true)}
-            />
-          ) : (
-            <div style={{ padding: '8px 24px 16px' }}>
-              <GhostState
-                lines={2}
-                message="A heti rended itt jelenik majd meg."
-                ctaLabel="+ Állítsd be a heti rended"
-                onCta={() => setScheduleOpen(true)}
-              />
-            </div>
-          )}
-          <SportEventsSection
-            events={sportEvents}
-            onAdd={() => setEventOpen(true)}
-            onDelete={deleteSportEvent}
-          />
-        </>
-      )}
-      {view === 'log' && <SportLogView sessions={sport.sessions} />}
-      {view === 'crossload' &&
-        (sport.crossLoad ? (
-          <SportCrossloadView crossLoad={sport.crossLoad} />
-        ) : (
-          <div style={{ padding: '8px 24px 16px' }}>
-            <GhostState lines={2} message="A cross-load elemzés itt jelenik majd meg." />
+        <PageBody principle={principle}>
+          {/* Stat strip — three honest cells (the prototype's 4th, `+XP e héten`,
+              has no wire source; see the module note). A null statistic renders
+              `—`, never a fabricated 0. */}
+          <div className="mz-statstrip rise" style={{ '--d': '30ms' } as React.CSSProperties}>
+            <StatCell value={week ? `${d1(week.hoursPlayed)} ó` : '—'} label="pályán e héten" />
+            <StatCell value={loggedThisWeek ? d1(week.avgRPE) : '—'} label="RPE átlag · 1–10" />
+            <StatCell value={loggedThisWeek ? d1(week.avgShoulderStrain) : '—'} label="váll-terhelés" />
           </div>
-        ))}
+
+          {/* View switcher */}
+          {/* The selected segment speaks PRIMARY, not the sport rose: ADR 0018 D5
+              keeps the domain accents in the data-viz band, off buttons. */}
+          <div className="segtabs rise" style={{ '--d': '60ms', marginTop: 12 } as React.CSSProperties}>
+            {SUB_VIEWS.map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                aria-pressed={view === v.id}
+                onClick={() => setView(v.id)}
+                className="segtab"
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          {view === 'week' && (
+            <>
+              {volleyball ? (
+                <SportWeekView
+                  schedule={volleyball}
+                  onEdit={isMockMode() ? undefined : () => setScheduleOpen(true)}
+                  onLogSlot={openLog}
+                />
+              ) : (
+                <div style={{ paddingTop: 8 }}>
+                  <GhostState
+                    lines={2}
+                    message="A heti rended itt jelenik majd meg."
+                    ctaLabel="+ Állítsd be a heti rended"
+                    onCta={() => setScheduleOpen(true)}
+                  />
+                </div>
+              )}
+              <SportEventsSection
+                events={sportEvents}
+                onAdd={() => setEventOpen(true)}
+                onDelete={deleteSportEvent}
+              />
+            </>
+          )}
+          {view === 'log' && <SportLogView sessions={sport.sessions} />}
+          {view === 'crossload' &&
+            (sport.crossLoad ? (
+              <SportCrossloadView crossLoad={sport.crossLoad} />
+            ) : (
+              <div style={{ paddingTop: 8 }}>
+                <GhostState lines={2} message="A cross-load elemzés itt jelenik majd meg." />
+              </div>
+            ))}
+        </PageBody>
+      </EntranceGroup>
 
       {logOpen && (
         <SportLogSheet
+          initialSport={logInitialSport}
           onClose={() => setLogOpen(false)}
           onSave={(body, done) => logSportSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
@@ -228,117 +196,92 @@ export function SportPage() {
           onSave={(req, done) => addSportEvent(req, { onSettled: done })}
         />
       )}
-    </>
+    </MozaikPage>
   )
 }
 
 // === Week view: 7-day schedule with volleyball slots ===
-function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyball']; onEdit?: () => void }) {
+function SportWeekView({ schedule, onEdit, onLogSlot }: {
+  schedule: SportSchedule['volleyball']
+  onEdit?: () => void
+  /** Inline "Logold ›" on today's slot — preselects that slot's sport in the log sheet. */
+  onLogSlot?: (initial: SportKind) => void
+}) {
   return (
-    <div style={{ padding: '8px 24px 16px' }}>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span className="eyebrow">Heti ritmus · {schedule.weeklyHours}h</span>
+    <div style={{ paddingTop: 8 }}>
+      <div
+        className="row rise"
+        style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, '--d': '30ms' } as React.CSSProperties}
+      >
+        <span className="mz-eyebrow">Heti ritmus · {schedule.weeklyHours} ó</span>
         {onEdit && (
           <button type="button" className="chip tapchip" onClick={onEdit}>
             Szerkesztés
           </button>
         )}
       </div>
-      <div className="col gap-sm">
-        {DAY_ORDER.map((d) => {
+      {/* Every day of the week renders — a day with no slot is the prototype's
+          dashed „nincs session" row, not an omission (edzes-body `.sday.empty`). */}
+      <div>
+        {DAY_ORDER.map((d, di) => {
           const daySlots = schedule.sessions.filter((s) => s.day === d)
           const isToday = daySlots.some((s) => s.today)
           return (
             <div
               key={d}
-              className="card"
-              style={{
-                padding: 0,
-                borderColor: isToday ? 'color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'var(--divider)',
-                background: isToday
-                  ? 'var(--wash-sport)'
-                  : daySlots.length
-                    ? 'var(--surface-1)'
-                    : 'transparent',
-                borderStyle: daySlots.length ? 'solid' : 'dashed',
-                position: 'relative',
-                overflow: 'hidden',
-                clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
-              }}
+              className={[
+                'spw-day rise',
+                daySlots.length ? 'has' : 'empty',
+                isToday ? 'today' : '',
+              ].filter(Boolean).join(' ')}
+              style={{ '--d': `${50 + di * 40}ms` } as React.CSSProperties}
             >
-              {isToday && (
-                <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--tag-sport)' }} />
-              )}
-              <div
-                className="row"
-                style={{ padding: '12px 14px', alignItems: 'center', gap: 12, paddingLeft: isToday ? 16 : 14 }}
-              >
-                <span
-                  className="label-mono"
-                  style={{
-                    width: 40,
-                    fontSize: 12,
-                    color: isToday ? 'var(--tag-sport)' : daySlots.length ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                  }}
-                >
-                  {d}
-                </span>
-                {daySlots.length ? (
-                  <>
-                    <div className="col flex-1 gap-sm">
-                      {daySlots.map((session, i) => {
-                        const kind = sportOf(session)
-                        return (
-                          <div key={`${session.time}-${i}`} className="col">
-                            <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                              {kind !== 'volleyball' && (
-                                <span className="stag stag-sport">{SPORT_TAGS[kind]}</span>
-                              )}
-                              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{session.time}</span>
-                              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 14, color: 'var(--text-tertiary)' }}>
-                                · {session.duration}p
-                              </span>
-                              {session.today && (
-                                <span
-                                  className="excat-tag"
-                                  style={{ background: 'var(--wash-sport)', color: 'var(--tag-sport)' }}
-                                >
-                                  MA
-                                </span>
-                              )}
-                              {session.oneOff && (
-                                <span
-                                  className="excat-tag"
-                                  style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}
-                                >
-                                  EGYSZERI
-                                </span>
-                              )}
-                            </div>
-                            <span
-                              className="text-tertiary"
-                              style={{ fontSize: 14, marginTop: 2 }}
+              <span className="spw-dlbl">{d}</span>
+              {daySlots.length ? (
+                <div className="flex-1">
+                  {daySlots.map((session, i) => {
+                    const kind = sportOf(session)
+                    return (
+                      <div key={`${session.time}-${i}`} className="spw-slot">
+                        <div className="spw-l1">
+                          {/* The type tag rides EVERY slot, RÖPI included — the
+                              prototype's `.stag` is how a row says which sport it is. */}
+                          <span className={`stag stag-${SPORT_TONE[kind]}`}>{SPORT_TAGS[kind]}</span>
+                          <b>{session.time}</b>
+                          <span className="dur">· {session.duration}p</span>
+                          {session.today && <span className="spw-ma">MA</span>}
+                          {session.oneOff && <span className="spw-one">EGYSZERI</span>}
+                          {session.today && onLogSlot && (
+                            <button
+                              type="button"
+                              className="chip tapchip spw-logbtn"
+                              onClick={() => onLogSlot(kind)}
                             >
-                              {[session.court, session.role, session.intensity].filter(Boolean).join(' · ')}
-                            </span>
+                              Logold ›
+                            </button>
+                          )}
+                        </div>
+                        {[session.court, session.role, session.intensity].filter(Boolean).length > 0 && (
+                          <div className="spw-l2">
+                            {[session.court, session.role, session.intensity].filter(Boolean).join(' · ')}
                           </div>
-                        )
-                      })}
-                    </div>
-                    <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
-                  </>
-                ) : (
-                  <span className="text-meta-sm text-tertiary">
-                    nincs session
-                  </span>
-                )}
-              </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <span className="spw-none">nincs session</span>
+              )}
             </div>
           )
         })}
       </div>
 
-      <div className="card mt-lg" style={{ padding: 'var(--sp-4)', background: 'var(--wash-sport)' }}>
+      <div
+        className="card mt-lg rise"
+        style={{ padding: 'var(--sp-4)', background: 'var(--wash-sport)', '--d': '340ms' } as React.CSSProperties}
+      >
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
           <Icon name="sparkle" size={16} color="var(--primary-base)" />
           <div className="col flex-1">
@@ -366,10 +309,13 @@ function SportEventsSection({ events, onAdd, onDelete }: {
   const today = localDateString()
   const upcoming = events.filter((e) => e.date >= today)
   return (
-    <div style={{ padding: '0 24px 16px' }}>
+    <div style={{ paddingTop: 4 }}>
       {upcoming.length > 0 && (
         <>
-          <span className="eyebrow" style={{ display: 'block', marginBottom: 8 }}>
+          <span
+            className="mz-eyebrow rise"
+            style={{ display: 'block', margin: '8px 0', '--d': '340ms' } as React.CSSProperties}
+          >
             Egyszeri események
           </span>
           <div className="col gap-sm" style={{ marginBottom: 8 }}>
@@ -378,8 +324,12 @@ function SportEventsSection({ events, onAdd, onDelete }: {
               // through the same guard every other surface uses.
               const kind = sportOf({ sport: e.sport as SportKind })
               return (
-                <div key={e.id} className="card row" style={{ padding: '10px 12px', alignItems: 'center', gap: 10 }}>
-                  <span className="stag stag-sport">{SPORT_TAGS[kind]}</span>
+                <div
+                  key={e.id}
+                  className="card row rise"
+                  style={{ padding: '10px 12px', alignItems: 'center', gap: 10, '--d': '370ms' } as React.CSSProperties}
+                >
+                  <span className={`stag stag-${SPORT_TONE[kind]}`}>{SPORT_TAGS[kind]}</span>
                   <div className="col flex-1">
                     <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
                       {huMonthDayDow(e.date)} · {e.time}
@@ -406,8 +356,13 @@ function SportEventsSection({ events, onAdd, onDelete }: {
         </>
       )}
       {/* Same dashed "add one more" CTA the Mai/Heti lists close with. */}
-      <button type="button" className="card dashedcta" onClick={onAdd} style={{ color: 'var(--text-secondary)' }}>
-        + Egyszeri esemény
+      <button
+        type="button"
+        className="card dashedcta rise"
+        onClick={onAdd}
+        style={{ color: 'var(--text-secondary)', '--d': '400ms' } as React.CSSProperties}
+      >
+        ＋ Egyszeri esemény
       </button>
     </div>
   )
@@ -417,7 +372,7 @@ function SportEventsSection({ events, onAdd, onDelete }: {
 function SportLogView({ sessions }: { sessions: SportSession[] }) {
   if (sessions.length === 0) {
     return (
-      <div style={{ padding: '8px 24px 16px' }}>
+      <div style={{ paddingTop: 8 }}>
         <span className="text-meta-sm text-tertiary">
           Még nincs logolt session.
         </span>
@@ -431,14 +386,19 @@ function SportLogView({ sessions }: { sessions: SportSession[] }) {
     ? Math.round(withJumps.reduce((acc, s) => acc + (s.jumpCount ?? 0), 0) / withJumps.length)
     : null
   return (
-    <div style={{ padding: '8px 24px 16px' }}>
-      <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-        <span className="eyebrow">Utolsó {sessions.length} session</span>
-        {avgJumps != null && <span className="eyebrow text-tertiary">avg {avgJumps} ugrás</span>}
+    <div style={{ paddingTop: 8 }}>
+      <div
+        className="row rise"
+        style={{ justifyContent: 'space-between', marginBottom: 12, '--d': '60ms' } as React.CSSProperties}
+      >
+        <span className="mz-eyebrow">Utolsó {sessions.length} session</span>
+        {avgJumps != null && <span className="mz-eyebrow">avg {avgJumps} ugrás</span>}
       </div>
       <div className="col gap-sm">
-        {sessions.map((s) => (
-          <SportSessionCard key={s.id} session={s} />
+        {sessions.map((s, i) => (
+          <div key={s.id} className="rise" style={{ '--d': `${90 + i * 45}ms` } as React.CSSProperties}>
+            <SportSessionCard session={s} />
+          </div>
         ))}
       </div>
     </div>
@@ -459,10 +419,10 @@ const CROSSLOAD_TOOLS: Tool[] = [
 
 function SportCrossloadView({ crossLoad }: { crossLoad: CrossLoadRowData[] }) {
   return (
-    <div style={{ padding: '8px 24px 16px' }}>
+    <div style={{ paddingTop: 8 }}>
       <div
-        className="card"
-        style={{ padding: 'var(--sp-4)', background: 'var(--wash-sport)', marginBottom: 14 }}
+        className="card rise"
+        style={{ padding: 'var(--sp-4)', background: 'var(--wash-sport)', marginBottom: 14, '--d': '30ms' } as React.CSSProperties}
       >
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
           <Icon name="sparkle" size={16} color="var(--primary-base)" />
@@ -475,14 +435,19 @@ function SportCrossloadView({ crossLoad }: { crossLoad: CrossLoadRowData[] }) {
         </div>
       </div>
 
-      <div className="col gap-sm" style={{ marginBottom: 12 }}>
-        {crossLoad.map((c, i) => (
-          <CrossLoadRow key={`${c.system}-${i}`} item={c} />
-        ))}
+      {/* Tool transparency — the prototype puts the tool chips ABOVE the rows
+          (`toolchips` at --d:60ms, the impact rows from 90ms). */}
+      <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+        <ToolChipRow tools={CROSSLOAD_TOOLS} />
       </div>
 
-      {/* Tool transparency */}
-      <ToolChipRow tools={CROSSLOAD_TOOLS} />
+      <div className="col gap-sm" style={{ marginBottom: 12 }}>
+        {crossLoad.map((c, i) => (
+          <div key={`${c.system}-${i}`} className="rise" style={{ '--d': `${90 + i * 45}ms` } as React.CSSProperties}>
+            <CrossLoadRow item={c} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

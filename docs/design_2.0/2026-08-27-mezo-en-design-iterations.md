@@ -147,7 +147,7 @@ subpage. Hub scroll height dropped from 1651 px to 525 px (roughly one screen).
 |---|---|---|
 | **1 · Heti elemzés** (wide, lav ring) | orb, the review's first sentence, the week's mini score bars, the generation stamp / `hétfőn jön` / `nincs még` | Napi pontszám card + the full review card with the anchor chips + a hand-off band to the lessons |
 | **2 · A hét tanulságai** | open-candidate count, `dönts róluk — bekerülnek a Tudástárba` | the candidates with evidence lines and Tanuld meg / Nem rólam szól |
-| **3 · A hét napjai** | `5 / 7 nap` + seven mini score rings | a 2-column day mosaic (see round 3), each tile growing full-width to expand its detail |
+| **3 · A hét napjai** | `5 / 7 nap` + seven mini score rings | a 2-column day mosaic (round 3) whose tiles open a dedicated day page (round 4) |
 | **4 · Heti felfedezések** | `5 új nyom a memóriában` + category dots | the discovery mosaic with the status chips |
 
 Two things Daniel's list did not name explicitly, kept on the hub bottom: the **`Mezo · a következő
@@ -163,14 +163,32 @@ mosaic**: each day is a tile washed by its score band (80+ sage · 70+ gold · b
 the big score, the four subscores as **animated sparks** (alvás sky · fuel sage · check-in rose ·
 aktivitás coral) and clay-icon data chips (kcal · alvás · edzés · check-in n/4 · a `jegyzet` chip when
 Mezo wrote about that day). A summary row of mini-cells sits above: *legjobb nap · leggyengébb ·
-tanulom*. Tapping a tile makes it **grow to full width** and the detail opens inside it (subscore rings,
-kcal/protein vs target, cells, the Mezo bubble, the chat chip) — so the drill-down never leaves the
-mosaic. The repeated `nyisd ki ›` label was replaced by a single chevron in each tile's header.
+tanulom*. The repeated `nyisd ki ›` label was replaced by a single chevron in each tile's header.
 
 The round also split a state the shipped UI conflates: **`tanulom`** (fewer than two domains have data,
 so no score) versus **`nincs adat`** (nothing was logged that day) — the latter on a dashed tile with
 `ezen a napon nem logoltál — a hét pontszámába nem számít bele`. Future days are dashed, dimmed and
 carry `még előtted — ide majd a nap adatai jönnek`.
+
+### Round 4 — one day, one page
+
+The mosaic's first drill-down grew the tapped tile to full width. Daniel: *"most viszont fura hogy ha
+jobb oldali csempét nyitom meg akkor szétesik… lehet itt az kéne, hogy saját oldalra visszük át a
+usert, teljes oldalra arra az adott napra."* Correct — a right-column tile going full-width leaves a
+hole in the grid and shifts everything below it.
+
+So a tapped day now opens a **dedicated day page**: hero with the day's score ring (band-coloured) and
+the data chips, `Miből jött össze` with the four subscore rings, `Fuel · a cél ellenében` with the three
+target bars, alvás · edzés · súly · XP cells, the Mezo note on an **orb card** with feedback and
+`Beszélgess a napról`, and at the bottom **‹ előző nap / következő nap ›** tiles carrying the
+neighbours' day-of-week and score — so the week is walkable day by day without going back to the
+mosaic. Tapping a column on the analysis page now lands straight on that day's page (the mosaic stays
+underneath, so Back walks out mosaic → Heti). The mosaic itself never reflows.
+
+Honest states got their own page treatment: a `tanulom` day says *"Kettőnél kevesebb területről van
+adat, ezért a Mezo nem ad pontszámot: kitalálni nem fog"*, a `nincs adat` day says the day does not
+count toward the weekly score, a future day gets its own empty page, and a day the review skipped says
+so (*"a Mezo csak azokhoz a napokhoz ír, ahol volt mit mondani"*) rather than showing nothing.
 
 ### The knowledge loop — backend-flagged additions
 

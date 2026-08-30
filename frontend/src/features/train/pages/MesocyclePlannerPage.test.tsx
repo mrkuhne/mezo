@@ -39,6 +39,22 @@ test('selecting Hypertrophy then Tovább advances to step 1', async () => {
   expect(screen.getByText('Mennyi időnk van?')).toBeInTheDocument()
 })
 
+// Prototype fidelity (meso-body.html PSTYLE): the tappable phase curve reads at a glance
+// because MEV/MAV/MRV/Deload each carry a visually distinct hue — three near-identical
+// coral tones would defeat the point of a scannable curve.
+test('phase curve bars carry visually distinct colors per phase', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  const mev = screen.getByRole('button', { name: 'W1 · MEV · fázis váltás' })
+  const mav = screen.getByRole('button', { name: 'W3 · MAV · fázis váltás' })
+  const mrv = screen.getByRole('button', { name: 'W5 · MRV · fázis váltás' })
+  const deload = screen.getByRole('button', { name: 'W6 · Deload · fázis váltás' })
+  const colors = [mev, mav, mrv, deload].map((el) => el.style.background)
+  expect(new Set(colors).size).toBe(4)
+})
+
 // Walks the wizard to its terminal step in real mode and returns the router (so the
 // landing route can be asserted) — shared by the three save-path tests below.
 async function runWizardToTerminalStep(user: ReturnType<typeof userEvent.setup>) {
@@ -193,6 +209,9 @@ test('„Mentés + indítás" creates the template, starts it active on the wiza
   expect(startedId).toBe('e1f3a0e2-0000-4000-8000-00000000d00d') // started from the just-created template
   expect(postedStart!.status).toBe('active')
   expect(postedStart!.startDate).toBe('2026-06-16')
+  // GymPage folded into Heti (mezo-d20.3.2): the wizard still targets /train/gym,
+  // which now renders TrainWeekPage's content directly (same page, no client
+  // redirect) — the pathname itself is untouched (hub-agent territory).
   await waitFor(() => expect(router.state.location.pathname).toBe('/train/gym'))
 })
 

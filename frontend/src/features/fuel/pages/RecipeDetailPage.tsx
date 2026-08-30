@@ -8,7 +8,7 @@
 // deterministic dims + lazy AI prose, ScoreBreakdownBody shared with MealScoreSheet — then Logok
 // ← useRecipeLogs) and „Hozzávalók · N" (per-line contribution in MacroCells). Actions below the
 // tab content on both tabs: Star / Szerkesztés / Törlés / + Mai étkezéshez, all LIVE
-// (useRecipeActions / LogMealSheet). Route guard relies on useRecipes().recipes: mock is
+// (useRecipeActions / LogFlowPage). Route guard relies on useRecipes().recipes: mock is
 // synchronous via initialData; real mode briefly shows the not-found fallback on
 // a cold deep-link until the list resolves.
 // ============================================================
@@ -28,7 +28,7 @@ import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
 import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
 import { roleLabel, roleRubricLabel } from '@/features/fuel/logic/recipeRole'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 
 const NOVA_COLOR: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warning)', 3: 'var(--warning)', 4: 'var(--error)' }
 
@@ -335,7 +335,7 @@ export function RecipeDetailPage() {
         </button>
       </div>
     </div>
-    {logOpen && <LogMealSheet prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={() => setLogOpen(false)} />}
+    {logOpen && <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={() => setLogOpen(false)} />}
     </>
   )
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, afterEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -9,6 +9,7 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { DAY_ORDER } from '@/data/train/train'
 import { localDateString } from '@/shared/lib/dates'
+import type { MesoDay } from '@/data/types'
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -16,19 +17,88 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
+// Set-budget mirror test (folded in from GymPage.test.tsx, mezo-d20.3.2) needs an
+// over-budget muscle group the stock mock meso doesn't produce — wrap the real
+// useTrain and swap in a custom `days` array on top of the otherwise-real activeMeso.
+let daysOverride: MesoDay[] | null = null
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    useTrain: (...args: Parameters<typeof actual.useTrain>) => {
+      const real = actual.useTrain(...args)
+      if (!daysOverride || !real.activeMeso) return real
+      return { ...real, activeMeso: { ...real.activeMeso, days: daysOverride } }
+    },
+  }
+})
+
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   mockNavigate.mockReset()
 })
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => {
+  vi.unstubAllEnvs()
+  daysOverride = null
+})
 
 const renderPage = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainWeekPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
 
-test('renders the week head, the load tiles and one card per weekday', () => {
+test('renders the Heti hero, the load tiles and one card per weekday', () => {
   const { container } = renderPage()
-  expect(screen.getByRole('heading', { name: 'Heti terv' })).toBeInTheDocument()
+  expect(screen.getByText('Heti edzések')).toBeInTheDocument()
   expect(container.querySelectorAll('.loadtile')).toHaveLength(3)
   expect(container.querySelectorAll('.dayrow')).toHaveLength(7)
+})
+
+// ---- folded in from GymPage.test.tsx (mezo-d20.3.2): the muscle-zone meta
+// card, the Mezociklus áttekintő chip and the Időpontok schedule sheet ----
+
+test('the Mezociklus áttekintő chip navigates to the overview (mezo-hi9m)', () => {
+  renderPage()
+  fireEvent.click(screen.getByRole('button', { name: /Mezociklus áttekintő/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/mesocycles/meso-hyp-04/overview')
+})
+
+test('the izom-zóna panel shows the live zone mini grid (mezo-oyhy.7)', () => {
+  renderPage()
+  const panel = screen.getByRole('button', { name: 'Heti izomterhelés — részletek' })
+  // Group-level rows (budget groups, not per-head pills); mock week has no
+  // completed instances → done is 0 for every group.
+  expect(within(panel).getByText('Hát')).toBeInTheDocument()
+  expect(within(panel).getAllByText(/^0\/\d+( [⚠↓])?$/).length).toBeGreaterThan(0)
+})
+
+test('tapping the izom-zóna panel opens the MuscleWeekSheet', () => {
+  renderPage()
+  fireEvent.click(screen.getByRole('button', { name: 'Heti izomterhelés — részletek' }))
+  expect(screen.getByRole('heading', { name: 'Heti izomterhelés' })).toBeInTheDocument()
+})
+
+test('an over-budget group cell shows ⚠ in error color (mezo-oyhy.7)', () => {
+  daysOverride = [{
+    day: 'Hét', type: 'Push', muscle: 'chest', exerciseCount: 2,
+    exercises: [
+      { id: 'ob1', name: 'Bench Press', muscle: 'chest', warmupSets: 1, workingSets: 8, repMin: 4, repMax: 6, targetRIR: 1, type: 'compound', anchorWeightKg: 100 },
+      { id: 'ob2', name: 'Cable Fly', muscle: 'chest', warmupSets: 1, workingSets: 8, repMin: 12, repMax: 15, targetRIR: 3, type: 'isolation', anchorWeightKg: 15 },
+    ],
+  }]
+  renderPage()
+  const panel = screen.getByRole('button', { name: 'Heti izomterhelés — részletek' })
+  const numeric = within(panel).getByText(/^0\/16 ⚠$/)
+  expect(numeric).toHaveStyle({ color: 'var(--error)' })
+})
+
+test('the Időpontok chip opens the schedule sheet and reflects a save via local override', async () => {
+  renderPage()
+  const chip = screen.getByRole('button', { name: /Időpontok/ })
+  fireEvent.click(chip)
+  expect(screen.getByRole('heading', { name: 'Heti gym-időpontok' })).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('Hét időpont'), { target: { value: '06:30' } })
+  fireEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  await waitFor(() => expect(screen.queryByRole('heading', { name: 'Heti gym-időpontok' })).toBeNull())
+  fireEvent.click(screen.getByRole('button', { name: /Időpontok/ }))
+  expect((screen.getByLabelText('Hét időpont') as HTMLInputElement).value).toBe('06:30')
 })
 
 test('tapping a non-gym session drills into Mai with that day selected', () => {
@@ -107,4 +177,21 @@ test('real mode: a weekly gym row completed this week on ANOTHER date routes to 
   renderPage()
   fireEvent.click(await screen.findByRole('button', { name: /Pull Day/ }))
   expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-pulled')
+})
+
+// Motion (mezo-d20.11): the page shipped an ARMED EntranceGroup with nothing
+// marked `.rise` — the wrapper was animating an empty stage. Both halves must
+// exist, and the day list must carry the prototype's 40ms-step stagger.
+test('the week body staggers inside the armed entrance group', async () => {
+  const { container } = renderPage()
+  await screen.findByText('szett terv')
+  const play = container.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  const strip = play!.querySelector('.mz-statstrip.rise') as HTMLElement | null
+  expect(strip).not.toBeNull()
+  expect(strip!.style.getPropertyValue('--d')).toBe('40ms')
+  const dayRows = [...play!.querySelectorAll('.rise')].filter(
+    (el) => (el as HTMLElement).style.getPropertyValue('--d') === '140ms',
+  )
+  expect(dayRows.length).toBe(1)
 })

@@ -4,9 +4,10 @@ import { useRunning } from '@/data/hooks'
 import { newDraft } from '@/data/train/runningDraft'
 import { AttachPlanSheet, type AttachPlanType } from '@/features/me/sheets/AttachPlanSheet'
 
-// Goal command-center hub-and-spoke slots (G4b, mockup goal-funnel.html Funnel B).
-// Rendered UNDER the <GoalTimeline> in GoalsPage. Two always-present slots —
-// Mesociklus (gym) + Futóblokk (run) — each offering:
+// Goal command-center hub-and-spoke slots (G4b, mockup goal-funnel.html Funnel B;
+// Mozaik re-face mezo-d20.6.2 → prototype en-body #page-cel's dashed `.gc-slots`
+// pair). Rendered UNDER the <GoalTimeline> in GoalsPage. Two always-present
+// slots — Mesociklus (gym) + Futóblokk (run) — each offering:
 //   ＋ Tervezd        → launch the EXISTING planner (meso: navigate('/train/mesocycles/new');
 //                       run: the create-then-navigate idiom — saveRunningBlock(null, newDraft(),
 //                       { onSuccess: b => navigate('/train/futas/'+b.id) }) — RunningPage.tsx:62-66).
@@ -29,7 +30,7 @@ export function GoalPlanSlots({ goalId }: { goalId: string }) {
 
   return (
     <>
-      <div className="col gap-sm">
+      <div className="gc-slots">
         <Slot
           title="Mesociklus"
           caption="gym · az ablakra kalibrálva"
@@ -65,52 +66,15 @@ function Slot({
   onAttach: () => void
 }) {
   return (
-    <div
-      className="rad-16"
-      style={{
-        border: '1px dashed var(--border-strong)',
-        background: 'transparent',
-        padding: 13,
-      }}
-    >
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="col">
-          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{title}</span>
-          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>{caption}</span>
-        </div>
-        <button
-          type="button"
-          onClick={onPlan}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: 11,
-            fontWeight: 700,
-            color: accent,
-          }}
-        >
-          ＋ Tervezd ▸
-        </button>
-      </div>
-      <div className="mt-sm">
-        <button
-          type="button"
-          onClick={onAttach}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: 9,
-            fontWeight: 700,
-            color: 'var(--text-secondary)',
-            textDecoration: 'underline',
-            padding: 0,
-          }}
-        >
-          ＋ Csatolj meglévőt
-        </button>
-      </div>
+    <div className="gc-slot">
+      <span className="mz-eyebrow" style={{ color: accent }}>{title}</span>
+      <span className="gc-slot-cap">{caption}</span>
+      <button type="button" className="gc-slot-plan" onClick={onPlan} style={{ color: accent }}>
+        ＋ Tervezd ▸
+      </button>
+      <button type="button" className="gc-slot-attach" onClick={onAttach}>
+        ＋ Csatolj meglévőt
+      </button>
     </div>
   )
 }

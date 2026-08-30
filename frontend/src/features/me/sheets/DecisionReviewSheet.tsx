@@ -16,11 +16,15 @@ interface DecisionReviewSheetProps {
 }
 
 // The review half of the decision journal (mezo-b3pp.4): re-reads the decision as it was written,
-// then records how it turned out (1-5 + optional prose). Today `JournalPage` only ever opens this
-// on an OPEN decision (its `openDecisions` filter excludes `reviewedAt !== null`), so the prefill
-// below is currently unreachable dead code, not a live re-review flow — it is kept (and correct)
-// because the backend PUT is re-runnable, so a future "review history" surface can reopen this
-// same sheet on an already-reviewed decision and reuse it as-is.
+// then records how it turned out (1-5 + optional prose).
+//
+// Host (restored mezo-d20.11): `JournalPage`'s gold decision card gives the RATING inline (the
+// prototype's own #page-naplo .decrow, one tap, no sheet). This sheet is the second step: the
+// sage "✓ Visszanézve" acknowledgement's „Mi lett belőle?" button opens it prefilled with that
+// rating so the OUTCOME PROSE can still be recorded. Between mezo-d20.6.6 and mezo-d20.11 nothing
+// mounted it, which silently removed `DecisionReviewRequest.outcome` from the product even though
+// the column and the embedding path that reads it stayed live. The PUT it wraps is re-runnable,
+// so re-saving an already-rated decision with text attached is the intended use.
 export function DecisionReviewSheet({ decision, today, onClose }: DecisionReviewSheetProps) {
   const { reviewDecision, pending } = useDecisionActions()
   const [rating, setRating] = useState<number | null>(decision.outcomeRating)

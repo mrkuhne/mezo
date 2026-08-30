@@ -24,6 +24,14 @@ public interface SportSessionRepository extends JpaRepository<SportSessionEntity
     List<SportSessionEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(
         UUID createdBy, LocalDate from);
 
+    /** Sessions in the inclusive {@code from..to} window — the Sport Napló trend range read. */
+    List<SportSessionEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(
+        UUID createdBy, LocalDate from, LocalDate to);
+
+    /** Sessions on/before {@code to} — the range read with only an upper bound given. */
+    List<SportSessionEntity> findByCreatedByAndDeletedFalseAndDateLessThanEqualOrderByDateDesc(
+        UUID createdBy, LocalDate to);
+
     /** That day's logged sport sessions, earliest first — the meal scorer's sport windows. */
     List<SportSessionEntity> findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(
         UUID createdBy, LocalDate date);

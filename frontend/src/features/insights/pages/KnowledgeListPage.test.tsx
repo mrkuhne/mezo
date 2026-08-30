@@ -20,12 +20,12 @@ describe('KnowledgeListPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('a hero a tényszámot és a ténylegesen promptba kerülő darabszámot mutatja', () => {
+  test('a hero a tényszámot és a ténylegesen promptba kerülő darabszámot mutatja', async () => {
     renderPage()
     // 15 seed, ebből 14 bekapcsolt → a top 10 megy a chatbe. Mozaik re-face (mezo-d20.5.5):
     // a fejléc a prototípus #page-tudas hero-ja lett — nagy szám + "tény rólad · N megy a chatbe".
     expect(screen.getByText('Tudástár')).toBeInTheDocument()
-    expect(document.querySelector('.mz-bignum')?.textContent).toBe('15')
+    await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('15'))
     expect(screen.getByText('tény rólad · 10 megy a chatbe')).toBeInTheDocument()
   })
 
@@ -161,14 +161,14 @@ describe('KnowledgeListPage (mock mode)', () => {
     await userEvent.type(input, 'Pontosított tudás')
     await userEvent.click(screen.getByRole('button', { name: 'Mentés' }))
     expect(await screen.findByText('Pontosított tudás')).toBeInTheDocument()
-    expect(document.querySelector('.mz-bignum')?.textContent).toBe('16')
+    await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('16'))
   })
 
   test('rejecting a candidate removes it without promoting', async () => {
     renderPage()
     await userEvent.click(screen.getAllByRole('button', { name: 'Elvet' })[0])
     expect(await screen.findByText('Jóváhagyásra vár · 1')).toBeInTheDocument()
-    expect(document.querySelector('.mz-bignum')?.textContent).toBe('15')
+    await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('15'))
   })
 
   it('kirajzolja az életesemény-jelöltek csoportot és a döntés gombjait', async () => {
@@ -282,7 +282,7 @@ describe('KnowledgeListPage (real mode)', () => {
   test('renders the fetched facts + pending candidates from the API', async () => {
     renderPage()
     expect(await screen.findByText('tény rólad · 10 megy a chatbe')).toBeInTheDocument()
-    expect(document.querySelector('.mz-bignum')?.textContent).toBe('15')
+    await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('15'))
     expect(screen.getByText(`Jóváhagyásra vár · ${candidateSeed.length}`)).toBeInTheDocument()
     expect(screen.getByText(candidateSeed[1].text)).toBeInTheDocument()
   })

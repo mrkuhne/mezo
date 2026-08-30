@@ -7,16 +7,15 @@ import type { FuelPlanToday } from '@/data/types'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // The planner never emits recipe-suggestion / budget-only slots off the frozen mock seed
-// (they only arise from the real composition), so to drive the FuelMaiPage → LogMealSheet
+// (they only arise from the real composition), so to drive the FuelMaiPage → LogFlowPage
 // tap-to-log wiring we override useFuelTimeline with a crafted plan. Every OTHER hook the page
 // pulls from @/data/hooks stays real (mock mode) via the importOriginal spread; when
 // `hoisted.plan` is unset the real useFuelTimeline runs, so this override is inert elsewhere.
-// The page also reads blocks/nowHHmm (workoutTime + hero/river composition) — fixed, sensible
-// values here since neither test cares about window placement/ordering, only the tap-to-log
-// wiring on the window island itself. Neither crafted slot carries a 'now' state, so it's the
-// ONLY remaining window (mezo-c9t5: done windows merge away, there is no more belt to fall back
-// onto) — `windowIslands.ts`'s `defaultKey` picks it directly, so both tests act on it right away
-// (already big), no capsule-select step needed first.
+// The page also reads nowHHmm (hero composition) — fixed, sensible values here since neither
+// test cares about window placement/ordering, only the tap-to-log wiring on the window TILE
+// itself. Each crafted plan holds a single window, so its lane tile carries the only
+// `Logold …` CTA on the page (mezo-d20.4.1: the window swimlane replaced the island river —
+// there is no selection step any more, every window's CTA is live at once).
 const hoisted = vi.hoisted(() => ({ plan: null as FuelPlanToday | null }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -63,7 +62,7 @@ const baseCtx = {
   energy: { base: 2400, activity: 0, balance: 0, target: 2400 },
 }
 
-test('tapping a recipe-suggestion window opens LogMealSheet pre-filled from that recipe', async () => {
+test('tapping a recipe-suggestion window opens LogFlowPage pre-filled from that recipe', async () => {
   const recipe = renderHook(() => useRecipes(), { wrapper }).result.current.recipes[0]
   hoisted.plan = {
     ...baseCtx,
@@ -72,16 +71,15 @@ test('tapping a recipe-suggestion window opens LogMealSheet pre-filled from that
     ],
   }
   renderView()
-  // No 'now' window in this crafted single-slot plan, so this window IS the default big island
-  // already (no belt to fall back onto anymore) — act directly.
-  await userEvent.click(screen.getByRole('button', { name: 'Logold' }))
+  // The plan's single window is the lane's only window tile — its CTA is live at once.
+  await userEvent.click(screen.getByRole('button', { name: /^Logold/ }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
   // The recipe surfaces as a pre-filled item line inside the sheet (source: recipe).
   expect(screen.getAllByText(recipe.name).length).toBeGreaterThanOrEqual(1)
   expect(screen.getByText('recept')).toBeInTheDocument()
 })
 
-test('tapping a budget-only window opens LogMealSheet with the mapped slot pre-selected', async () => {
+test('tapping a budget-only window opens LogFlowPage with the mapped slot pre-selected', async () => {
   hoisted.plan = {
     ...baseCtx,
     slots: [
@@ -89,8 +87,8 @@ test('tapping a budget-only window opens LogMealSheet with the mapped slot pre-s
     ],
   }
   renderView()
-  // Same "already big" default as above.
-  await userEvent.click(screen.getByRole('button', { name: 'Logold' }))
+  // Same single-window lane as above.
+  await userEvent.click(screen.getByRole('button', { name: /^Logold/ }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
   // Vacsora → dinner: the sheet's slot segmented control opens with 'Vacsora' active.
   expect(screen.getByRole('button', { name: 'Vacsora', pressed: true })).toBeInTheDocument()

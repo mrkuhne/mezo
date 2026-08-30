@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.api.dto.CreateFactRequest;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
+import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
@@ -13,15 +14,18 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -52,6 +56,8 @@ public class KnowledgeFactService {
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
     private final ApplicationEventPublisher eventPublisher;
+    /** mezo-d20.7.7 — absent when the proactive switch is off; then the signal is null, not 0. */
+    private final ObjectProvider<HighlightCitationSource> citationSource;
 
     public List<KnowledgeFactResponse> list(UUID userId) {
         // V3.3 evidence link: pattern-sourced facts carry their promoting pattern's title
@@ -59,10 +65,31 @@ public class KnowledgeFactService {
                 .findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(userId).stream()
                 .collect(Collectors.toMap(PatternEntity::getPromotedFactId, PatternEntity::getTitle,
                         (first, second) -> first));
+        Map<UUID, Integer> cited = citedWeeks(userId);
         return repository.findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)
                 .stream()
-                .map(fact -> mapper.toKnowledgeFactResponse(fact, patternTitleByFactId.get(fact.getId())))
+                .map(fact -> mapper.toKnowledgeFactResponse(
+                        fact, patternTitleByFactId.get(fact.getId()), citedWeeksOf(cited, fact.getId())))
                 .toList();
+    }
+
+    /**
+     * mezo-d20.7.7 — the weekly review's highlight feedback for facts, read as a SEPARATE signal.
+     *
+     * <p>{@code reinforcementCount} is deliberately NOT widened to cover it. That field means "the
+     * user re-stated/re-confirmed this fact"; the companion citing its own knowledge in its own
+     * weekly write-up is not a re-confirmation, it is the same claim coming back around. Folding
+     * one into the other would let the model inflate its own evidence — the same call
+     * {@code WeeklyLessonService} made when it refused to reinforce on a weekly duplicate
+     * (mezo-d20.7.6). {@code null} when the port is absent — not measurable is not zero.
+     */
+    private Map<UUID, Integer> citedWeeks(UUID userId) {
+        HighlightCitationSource source = citationSource.getIfAvailable();
+        return source == null ? null : source.citedWeeks(userId, HighlightCitationSource.KIND_FACT);
+    }
+
+    private static Integer citedWeeksOf(Map<UUID, Integer> cited, UUID factId) {
+        return cited == null ? null : cited.getOrDefault(factId, 0);
     }
 
     @Transactional
@@ -73,7 +100,10 @@ public class KnowledgeFactService {
         fact.setCategory(request.getCategory());
         fact.setSource(KnowledgeFactEntity.SOURCE_MANUAL);
         // saveAndFlush so @CreationTimestamp is populated before mapping
-        return mapper.toKnowledgeFactResponse(repository.saveAndFlush(fact));
+        KnowledgeFactEntity saved = repository.saveAndFlush(fact);
+        // a just-created fact has no citations yet — but 0 and "not measurable" are still
+        // different answers, so the port decides which one this is
+        return mapper.toKnowledgeFactResponse(saved, null, citedWeeksOf(citedWeeks(userId), saved.getId()));
     }
 
     /** Partial update — only the provided fields are applied (contract: UpdateFactRequest). */
@@ -96,17 +126,27 @@ public class KnowledgeFactService {
         // this service must not learn about the graph switch (with the graph off, no bean
         // consumes this).
         eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, factId));
-        return mapper.toKnowledgeFactResponse(repository.save(fact));
+        return mapper.toKnowledgeFactResponse(
+                repository.save(fact), null, citedWeeksOf(citedWeeks(userId), factId));
     }
 
     /**
      * The V1.1 injection block: top-N prompt-included facts by reinforcement (then newest),
      * one Hungarian-labelled line each; "" when the user has no qualifying facts (no empty header).
+     *
+     * <p>mezo-d20.7.7 — the ONE place the weekly citation signal actually acts, and it acts as a
+     * TIE-BREAKER ONLY: {@code reinforcementCount} still decides, citations only order facts the
+     * user has confirmed EQUALLY often, and newest-first still breaks the remaining ties. A fact
+     * the companion leaned on for four weeks can therefore edge out an equally-confirmed fact
+     * nobody has used since it was created — and can never overtake a fact the user actually
+     * re-stated more often. That ceiling is the point: a highlight is the model's own selection,
+     * so it may only sort what the real signal has already made indistinguishable.
+     *
+     * <p>When the citation port is absent the ORIGINAL paged query runs untouched — no behaviour
+     * change and no extra cost with the weekly feature off.
      */
     public String renderPromptBlock(UUID userId) {
-        List<KnowledgeFactEntity> facts = repository
-                .findByCreatedByAndIncludeInPromptTrueAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
-                        userId, PageRequest.of(0, properties.facts().topN()));
+        List<KnowledgeFactEntity> facts = topFactsForPrompt(userId);
         if (facts.isEmpty()) {
             return "";
         }
@@ -119,6 +159,36 @@ public class KnowledgeFactService {
                     .append('\n');
         }
         return block.toString();
+    }
+
+    /**
+     * The prompt's top-N, with the citation tie-breaker applied when it is measurable.
+     *
+     * <p>The tie-break cannot be pushed into the paged query, and re-sorting a page would be
+     * wrong: an equal-reinforcement group routinely STRADDLES the top-N cut, so a cited fact just
+     * below the line has to be able to rise across it. Hence the unpaged read + in-memory sort —
+     * L3 facts are a curated, small set (the list endpoint already reads all of them unpaged), and
+     * {@code includeInPrompt} narrows it further.
+     */
+    private List<KnowledgeFactEntity> topFactsForPrompt(UUID userId) {
+        Map<UUID, Integer> cited = citedWeeks(userId);
+        if (cited == null) {
+            return repository
+                    .findByCreatedByAndIncludeInPromptTrueAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
+                            userId, PageRequest.of(0, properties.facts().topN()));
+        }
+        return repository
+                .findByCreatedByAndIncludeInPromptTrueAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
+                        userId, Pageable.unpaged())
+                .stream()
+                .sorted(Comparator
+                        .comparingInt(KnowledgeFactEntity::getReinforcementCount).reversed()
+                        .thenComparing(Comparator.comparingInt(
+                                (KnowledgeFactEntity fact) -> cited.getOrDefault(fact.getId(), 0)).reversed())
+                        .thenComparing(Comparator.comparing(
+                                KnowledgeFactEntity::getCreatedAt, Comparator.reverseOrder())))
+                .limit(properties.facts().topN())
+                .toList();
     }
 
     /**

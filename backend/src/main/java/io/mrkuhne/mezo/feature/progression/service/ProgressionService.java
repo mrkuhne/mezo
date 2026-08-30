@@ -115,11 +115,17 @@ public class ProgressionService {
         Map<String, Long> deltas = new LinkedHashMap<>();
         Map<String, String> kinds = new LinkedHashMap<>();
 
-        boolean sprint = "sprint".equals(signal.kind()) || "pyramid".equals(signal.kind());
+        boolean pyramid = "pyramid".equals(signal.kind());
+        boolean sprint = "sprint".equals(signal.kind()) || pyramid;
         if (sprint) {
-            int rounds = signal.completedRounds() != null ? signal.completedRounds() : 0;
-            addAthletic(deltas, kinds, "sprint_speed", (long) rounds * r.sprintXpPerRound());
-            addAthletic(deltas, kinds, "anaerobic_capacity", (long) rounds * r.anaerobicXpPerRound());
+            // Round credit, in whole-round equivalents. Sprint pays flat per logged round
+            // (unchanged); pyramid weights the completed rounds against its own prescription —
+            // its rungs are unequal by design, so flat per-round credit would misprice a
+            // partial run (mezo-d20.7.3).
+            double rounds = pyramid ? pyramidRoundCredit(signal)
+                : (signal.completedRounds() != null ? signal.completedRounds() : 0);
+            addAthletic(deltas, kinds, "sprint_speed", Math.round(rounds * r.sprintXpPerRound()));
+            addAthletic(deltas, kinds, "anaerobic_capacity", Math.round(rounds * r.anaerobicXpPerRound()));
             if (signal.rpeActual() != null) {
                 addAthletic(deltas, kinds, "explosiveness",
                     (long) signal.rpeActual() * r.rpeXpPerPoint());
@@ -135,6 +141,31 @@ public class ProgressionService {
         String label = sprint ? "Sprint futás" : "Futás";
         return award(createdBy, SOURCE_RUN, signal.logId(), deltas, kinds,
             label, signal.durationMin(), signal.rpeActual(), LocalDate.now());
+    }
+
+    /**
+     * Pyramid round credit in whole-round equivalents (mezo-d20.7.3). A pyramid's rungs are
+     * unequal (15/30/45/60/45/30/15s), so the first N rounds are not N/total of the work: the
+     * credit is the prescribed round count scaled by the share of prescribed work seconds the
+     * logged rounds actually cover. Completing the whole prescription pays exactly the
+     * prescribed round count, i.e. the flat sprint rate — the fix only reprices partials.
+     * Honest degradations: a legacy log with no {@code completedRounds} earns no round XP (the
+     * logged RPE still pays), and a log whose prescription is unavailable falls back to flat
+     * per-round credit rather than inventing a ratio.
+     */
+    private static double pyramidRoundCredit(RunSignal signal) {
+        Integer completed = signal.completedRounds();
+        if (completed == null || completed <= 0) {
+            return 0d; // legacy pyramid log: no value captured → no fabricated credit
+        }
+        List<Integer> work = signal.prescribedWorkSecs();
+        if (work == null || work.isEmpty()) {
+            return completed; // prescription unknown → flat per-round, as before
+        }
+        int done = Math.min(completed, work.size()); // never pay beyond the prescription
+        long doneSec = work.stream().limit(done).mapToLong(s -> s == null ? 0L : s).sum();
+        long totalSec = work.stream().mapToLong(s -> s == null ? 0L : s).sum();
+        return totalSec <= 0 ? done : work.size() * (doneSec / (double) totalSec);
     }
 
     /** Quest completion → single-skill XP through the shared idempotent tail (source QUEST). */

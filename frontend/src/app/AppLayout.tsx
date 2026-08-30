@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom'
+import { AppHeader } from '@/app/AppHeader'
 import { CircadianTheme } from '@/app/CircadianTheme'
 import { FloatingReturnLayer } from '@/app/FloatingReturnLayer'
 import { PhoneFrame } from '@/app/PhoneFrame'
@@ -6,6 +7,7 @@ import { QuickLogFab } from '@/app/QuickLogFab'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
+import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { ClaySprites } from '@/shared/ui/clay'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
@@ -22,10 +24,10 @@ export function AppLayout() {
   useScheduleSnapshotWriter()
   const location = useLocation()
   const anchor = scenario.anchorMode && location.pathname.startsWith('/nap')
-  // Full-screen surfaces where the tab bar is dead chrome: the active workout session,
+  // Full-screen surfaces where the app chrome is dead weight: the active workout session,
   // the extra-dark night page (its light would defeat the <30 lux point), and the
-  // Napzárás ritual flow (mezo-ilsj).
-  const hideTabBar = ['/train/session', '/me/sleep/night', '/ritual'].includes(location.pathname)
+  // Napzárás ritual flow (mezo-ilsj). No header, no tab bar, no FAB.
+  const hideChrome = ['/train/session', '/me/sleep/night', '/ritual'].includes(location.pathname)
   return (
     <>
       <CircadianTheme />
@@ -34,17 +36,25 @@ export function AppLayout() {
       <PhoneFrame anchor={anchor}>
         <ToastProvider>
           <LevelUpProvider>
-            <ScreenContent>
-              {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
-                  (TabBar) stays usable and navigating away (resetKey) recovers. */}
-              <ErrorBoundary resetKey={location.pathname}>
-                <Outlet />
-              </ErrorBoundary>
-            </ScreenContent>
-            {!hideTabBar && <TabBar />}
+            {/* A mezo-szál EGY példánya a fejlécnek és az /nap/uzenetek oldalnak (mezo-atry):
+                a fejléc az Outlet ELŐTTI testvér, tehát a két fogyasztó csak közös
+                ősként osztozhat a szálon — így az olvasatlan-vízjel is közös. */}
+            <MezoThreadProvider>
+              <ScreenContent>
+                {/* A fejléc a shellé, nem az oldalaké (mezo-atry): egy példány, minden
+                    oldalon ugyanaz. A scrollerben ÜL, tehát a tartalommal együtt görög. */}
+                {!hideChrome && <AppHeader />}
+                {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
+                    (TabBar) stays usable and navigating away (resetKey) recovers. */}
+                <ErrorBoundary resetKey={location.pathname}>
+                  <Outlet />
+                </ErrorBoundary>
+              </ScreenContent>
+            </MezoThreadProvider>
+            {!hideChrome && <TabBar />}
             {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
                 every tab, absent on the chrome-free full-screen flows. */}
-            {!hideTabBar && <QuickLogFab />}
+            {!hideChrome && <QuickLogFab />}
             <FloatingReturnLayer />
           </LevelUpProvider>
         </ToastProvider>

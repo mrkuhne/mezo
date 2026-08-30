@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
-import { Icon } from '@/shared/ui/Icon'
 import { GhostState } from '@/shared/ui/GhostState'
+import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useGoal, useGoalActions, useWeight, useBiometricProfile } from '@/data/hooks'
 import { huMonthDay } from '@/shared/lib/dates'
 import { hu1 } from '@/shared/lib/huNum'
-import { GoalStat } from '@/features/me/components/GoalStat'
 import { GoalTimeline } from '@/features/me/components/GoalTimeline'
 import { GoalRecept } from '@/features/me/components/GoalRecept'
 import { GoalPlanSlots } from '@/features/me/components/GoalPlanSlots'
@@ -15,6 +15,13 @@ import { EditGoalSheet } from '@/features/me/sheets/EditGoalSheet'
 import { GoalGate } from '@/features/me/components/GoalGate'
 import GoalsSkeleton from '@/features/me/pages/GoalsSkeleton'
 import { TRAJECTORY_LABEL, GUARD_LABEL } from '@/features/me/logic/goalLabels'
+
+// The Cél subpage (mezo-d20.6.2, prototype en-body #page-cel ×1.18): a tile →
+// own-page Mozaik scaffold (coral tone) with the guard-chip goal card up top,
+// the engine's recept as amber/sage segment tiles, the gym/futás/röplabda
+// timeline lanes and the dashed Mesociklus/Futóblokk plan slots below. Data
+// hooks, mutations and behavioral contracts carry over from the pre-reface
+// page verbatim — only the face changes.
 
 export function GoalsPage() {
   const navigate = useNavigate()
@@ -25,6 +32,16 @@ export function GoalsPage() {
   const [sheet, setSheet] = useState<'goal' | null>(null)
   const [gateOpen, setGateOpen] = useState(false)
 
+  // Signed math so bulk still lands in 0..100; maintain (totalRange 0) hides the
+  // track entirely — mirrors GoalMiniCard's exact contract (review fix, Task 5).
+  // Computed with null-safe defaults so the hook below always runs (rules of
+  // hooks) even while `goal` is not yet loaded (pending/empty-state branches).
+  const totalRange = goal ? goal.startWeight - goal.targetWeight : 0
+  const progressPct = goal && totalRange !== 0
+    ? Math.min(100, Math.max(0, ((goal.startWeight - goal.currentWeight) / totalRange) * 100))
+    : 0
+  const progressCount = useCountUp(Math.round(progressPct))
+
   // "Új cél" hard gate (G6, mezo-06n — Task 7): goal creation requires a
   // complete biometric profile (the engine derives the calorie target from it).
   // Complete → straight to the wizard; incomplete → the gate interstitial that
@@ -34,6 +51,12 @@ export function GoalsPage() {
     if (biometricComplete) navigate('/me/goals/new')
     else setGateOpen(true)
   }
+
+  const NewGoalAction = (
+    <button type="button" className="pgact" style={{ marginLeft: 'auto' }} onClick={startNewGoal}>
+      ＋ Új cél
+    </button>
+  )
 
   // Loading skeleton (real mode): while the active-goal query is unresolved
   // (useGoal pending), show the layout-aware GoalsSkeleton so the swap to real
@@ -48,137 +71,60 @@ export function GoalsPage() {
   // the same active GoalResponse), so this one guard narrows both.
   if (!goal || !goalResponse) {
     return (
-      <>
-        <div className="pghead-np lav">
-          <div>
-            <div className="over">Me · Cél</div>
-            <h1>Hosszú cél</h1>
-          </div>
-        </div>
-        <div style={{ padding: '8px 24px 16px' }}>
+      <MozaikPage tone="coral">
+        <PageHead onBack={() => navigate('/me')} label="‹ Én" />
+        <PageHero name="Hosszú cél" />
+        <PageBody>
           <GhostState
             lines={3}
             message="Még nincs aktív célod — hozz létre egyet, és a Mezo köré szervezi a terveket."
             ctaLabel="＋ Új cél"
             onCta={startNewGoal}
           />
-        </div>
+        </PageBody>
         {gateOpen && (
           <GoalGate onClose={() => setGateOpen(false)} onComplete={() => navigate('/me/goals/new')} />
         )}
-      </>
+      </MozaikPage>
     )
   }
 
-  // Signed math so bulk still lands in 0..100; maintain (totalRange 0) hides the
-  // track entirely — mirrors GoalMiniCard's exact contract (review fix, Task 5).
-  const progressed = goal.startWeight - goal.currentWeight
   const remaining = goal.currentWeight - goal.targetWeight
-  const totalRange = goal.startWeight - goal.targetWeight
-  const progressPct = totalRange !== 0 ? Math.min(100, Math.max(0, (progressed / totalRange) * 100)) : 0
 
   // Hero reads the raw contract directly (Decision C): trajectory/guards/window.
-  const targetWeightKg = goalResponse.targetWeightKg ?? goalResponse.startWeightKg
   const guards = goalResponse.guards ?? []
 
   return (
-    <>
-      {/* Header */}
-      <div className="pghead-np lav">
-        <div>
-          <div className="over">Me · Cél</div>
-          <h1>Hosszú cél</h1>
-        </div>
-        <button
-          type="button"
-          className="pgact-np np-press"
-          onClick={startNewGoal}
-          style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
-        >
-          <Icon name="plus" size={12} /> Új cél
-        </button>
-      </div>
-
-      {/* Goal hero (tap to open EditGoalSheet) */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div
-          className="card"
-          onClick={() => setSheet('goal')}
-          style={{
-            padding: 20,
-            width: '100%',
-            textAlign: 'left',
-            cursor: 'pointer',
-          }}
-        >
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+    <MozaikPage tone="coral">
+      <PageHead onBack={() => navigate('/me')} label="‹ Én">{NewGoalAction}</PageHead>
+      <EntranceGroup>
+        <PageHero
+          icon="i-cel"
+          big={totalRange !== 0 ? `${progressCount}%` : undefined}
+          name="Hosszú cél"
+        />
+        <PageBody>
+          {/* Guard-chip goal card (tap → EditGoalSheet) */}
+          <button type="button" className="gc-card rise" style={{ '--d': '0ms' } as React.CSSProperties} onClick={() => setSheet('goal')}>
+            <div className="gc-card-top">
+              <span className="eyebrow" style={{ color: 'var(--primary-deep)' }}>
                 {TRAJECTORY_LABEL[goalResponse.trajectory]} · aktív
               </span>
-              <Display size="lg" className="mt-sm">{goalResponse.title}</Display>
-              <span className="text-secondary mt-sm" style={{ fontSize: 12 }}>
-                {huMonthDay(goalResponse.startDate)} → {huMonthDay(goalResponse.targetDate)}
-              </span>
               {guards.length > 0 && (
-                <div className="row gap-sm mt-sm" style={{ flexWrap: 'wrap' }}>
+                <div className="gc-guards">
                   {guards.map((g) => (
-                    <span
-                      key={g}
-                      className="chip"
-                      style={{ fontSize: 9, padding: '2px 7px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }}
-                    >
-                      {GUARD_LABEL[g] ?? g}
-                    </span>
+                    <span key={g} className="mzp-stch ok">{GUARD_LABEL[g] ?? g}</span>
                   ))}
                 </div>
               )}
             </div>
-            <Icon name="settings" size={16} color="var(--text-tertiary)" />
-          </div>
+            <Display size="lg" className="mt-sm">{goalResponse.title}</Display>
+            <span className="text-secondary mt-sm" style={{ fontSize: 11, display: 'block' }}>
+              {huMonthDay(goalResponse.startDate)} → {huMonthDay(goalResponse.targetDate)}
+            </span>
 
-          {/* Weight track — shared .track/.fill/.dot/.track-l vocabulary (Task 3),
-              same idiom as the Profil GoalMiniCard's mini-track. */}
-          <div className="mt-lg">
-            <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8, alignItems: 'baseline' }}>
-              <div className="col">
-                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Most</span>
-                <span
-                  style={{
-                    fontFamily: 'var(--ff-display)',
-                    fontSize: 32,
-                    fontWeight: 600,
-                    color: 'var(--ink)',
-                    lineHeight: 1,
-                    marginTop: 2,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {goal.currentWeight}
-                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 3 }}>
-                    kg
-                  </span>
-                </span>
-              </div>
-              <div className="col" style={{ alignItems: 'flex-end' }}>
-                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Cél</span>
-                <span
-                  style={{
-                    fontFamily: 'var(--ff-display)',
-                    fontSize: 20,
-                    color: 'var(--text-secondary)',
-                    lineHeight: 1,
-                    marginTop: 2,
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                >
-                  {targetWeightKg}
-                  <span style={{ fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>
-                    kg
-                  </span>
-                </span>
-              </div>
-            </div>
+            {/* Weight track — shared .track/.fill/.dot/.track-l vocabulary (Task 3),
+                same idiom as the Profil GoalMiniCard's mini-track. */}
             {totalRange !== 0 && (
               <>
                 <div className="track">
@@ -192,68 +138,66 @@ export function GoalsPage() {
                 </div>
               </>
             )}
+
+            {/* Stats — only backend-derived figures: remaining kg (weight-log
+                derived) and the real EWMA 4-week rate. */}
+            <div className="mz-mcells" style={{ marginTop: 9 }}>
+              <span style={{ '--mw': 'var(--mz-cell-coral-bg)', '--md': 'var(--mz-cell-coral-ink)' } as React.CSSProperties}>
+                <b>{hu1(remaining)} kg</b><small>hátra</small>
+              </span>
+              <span style={{ '--mw': 'var(--mz-cell-sage-bg)', '--md': 'var(--mz-cell-sage-ink)' } as React.CSSProperties}>
+                <b>{weightTrends.last4w.weeklyRate}</b><small>kg / hét</small>
+              </span>
+            </div>
+
+            {/* Identity */}
+            <p className="gc-quote">"{goal.identityFrame}"</p>
+          </button>
+
+          {/* Recept — the G5 engine finale: the segmented prescription (kcal/
+              protein/sleep/rest per block + projected rate + rationale), the
+              feasibility verdict and the guard-status pills. Null prescription
+              (real, not yet evaluated) → the "Értékeld a célt" CTA that runs the
+              engine via useGoalActions().evaluate. (mezo-g1u) */}
+          <div className="rise" style={{ '--d': '90ms' } as React.CSSProperties}>
+            <GoalRecept
+              prescription={goalResponse.prescription}
+              onEvaluate={goalId ? () => evaluate(goalId) : undefined}
+              evaluating={evaluating}
+            />
           </div>
 
-          {/* Stats — only backend-derived figures: remaining kg (weight-log derived)
-              and the real EWMA 4-week rate. */}
-          <div className="row gap-md mt-lg" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
-            <GoalStat label="Hátra" val={hu1(remaining)} unit="kg" />
-            <GoalStat label="Tempó" val={String(weightTrends.last4w.weeklyRate)} unit="kg/hét" highlight />
+          {/* Timeline — the goal as a horizontal time axis: gym/run lanes + gap
+              chips + the ambient volleyball band (G4b command-center finale). The
+              lane component consumes the raw timeline; each plan bar's ✕
+              detaches the link via useGoalActions().detachPlan. */}
+          <div className="gc-lsec rise" style={{ '--d': '190ms' } as React.CSSProperties}>
+            <Eyebrow>Cél alatt fut · idővonal</Eyebrow>
+            <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--mz-ink-mut)' }}>{timeline?.weeks ?? 0} hét</span>
+          </div>
+          <div className="rise" style={{ '--d': '220ms' } as React.CSSProperties}>
+            {timeline ? (
+              <GoalTimeline
+                timeline={timeline}
+                onDetach={goalId ? (linkId) => detachPlan(goalId, linkId) : undefined}
+              />
+            ) : (
+              <GhostState lines={3} message="Még nincs terv a cél alá csatolva — tervezz egy mesót, és itt jelenik meg az idővonalon." />
+            )}
           </div>
 
-          {/* Identity */}
-          <p
-            className="text-secondary mt-md"
-            style={{ fontSize: 12, fontStyle: 'italic', lineHeight: 1.5, paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}
-          >
-            "{goal.identityFrame}"
-          </p>
-        </div>
-      </div>
-
-      {/* Timeline — the goal as a horizontal time axis: gym/run lanes + gap chips +
-          the ambient volleyball band (G4b command-center finale, replaces the old
-          "Cél alatt fut" cards). The lane component consumes the raw timeline; each
-          plan bar's ✕ detaches the link via useGoalActions().detachPlan. */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div style={{ marginBottom: 12 }}>
-          <Eyebrow>Cél alatt fut · idővonal</Eyebrow>
-        </div>
-        {timeline ? (
-          <GoalTimeline
-            timeline={timeline}
-            onDetach={goalId ? (linkId) => detachPlan(goalId, linkId) : undefined}
-          />
-        ) : (
-          <GhostState lines={3} message="Még nincs terv a cél alá csatolva — tervezz egy mesót, és itt jelenik meg az idővonalon." />
-        )}
-      </div>
-
-      {/* Recept — the G5 engine finale: the segmented prescription (kcal/protein/
-          sleep/rest per block + projected rate + rationale), the feasibility verdict
-          and the guard-status pills. Replaces G4b's "G5 · hamarosan" placeholder.
-          Null prescription (real, not yet evaluated) → the "Értékeld a célt" CTA that
-          runs the engine via useGoalActions().evaluate. (mezo-g1u) */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <GoalRecept
-          prescription={goalResponse.prescription}
-          onEvaluate={goalId ? () => evaluate(goalId) : undefined}
-          evaluating={evaluating}
-        />
-      </div>
-
-      {/* Plan slots — the hub-and-spoke assembly UX (G4b, goal-funnel.html Funnel B):
-          Mesociklus + Futóblokk slots, each launching the existing planner
-          (＋ Tervezd) or attaching an owned plan (＋ Csatolj meglévőt → AttachPlanSheet).
-          Volleyball stays ambient/read-only in the timeline band — not a slot. */}
-      {goalId && (
-        <div style={{ padding: '0 24px 24px' }}>
-          <div style={{ marginBottom: 12 }}>
-            <Eyebrow>Építsd fel a tervet alá</Eyebrow>
-          </div>
-          <GoalPlanSlots goalId={goalId} />
-        </div>
-      )}
+          {/* Plan slots — the hub-and-spoke assembly UX (G4b, goal-funnel.html
+              Funnel B): Mesociklus + Futóblokk slots, each launching the existing
+              planner (＋ Tervezd) or attaching an owned plan (＋ Csatolj
+              meglévőt → AttachPlanSheet). Volleyball stays ambient/read-only in
+              the timeline band — not a slot. */}
+          {goalId && (
+            <div className="rise" style={{ '--d': '260ms' } as React.CSSProperties}>
+              <GoalPlanSlots goalId={goalId} />
+            </div>
+          )}
+        </PageBody>
+      </EntranceGroup>
 
       {sheet === 'goal' && goalId && (
         <EditGoalSheet onClose={() => setSheet(null)} goal={goal} goalResponse={goalResponse} goalId={goalId} />
@@ -262,6 +206,6 @@ export function GoalsPage() {
       {gateOpen && (
         <GoalGate onClose={() => setGateOpen(false)} onComplete={() => navigate('/me/goals/new')} />
       )}
-    </>
+    </MozaikPage>
   )
 }

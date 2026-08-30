@@ -231,9 +231,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 **V1.1 (`mezo-fnnq.6`) shipped the L3 memory spine — knowledge facts + prompt injection:**
 
 - **Two new owned tables** — `knowledge_fact` (fact_text, category `train|fuel|health|life`,
-  source `chat|pattern|manual`, reinforcement_count, `include_in_prompt`, last_reinforced_at)
+  source `chat|pattern|manual` — a fourth, `weekly_review`, joined in `mezo-d20.7.6`,
+  reinforcement_count, `include_in_prompt`, last_reinforced_at)
   + `learned_fact` (candidate → decision `accept|reject|refine` null-until-decided →
-  promoted_fact_id; **table-only in V1.1** — the extraction/confirm flow is V1.2).
+  promoted_fact_id; **table-only in V1.1** — the extraction/confirm flow is V1.2; `mezo-d20.7.6`
+  added `source`/`week_start`/`evidence` so the weekly review can propose onto the same flow —
+  see [`proactive.md`](proactive.md) WR).
 - **Fact CRUD on the contract** — `GET/POST /api/companion/fact` + `PATCH .../fact/{id}`
   (partial update: text/category edit + the `include_in_prompt` toggle); POST creates
   `source=manual` facts (the manual-add path shipped now, so facts exist before V1.2 extraction).
@@ -253,8 +256,10 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `learned_fact` rows. A broken answer means zero candidates, never a broken turn.
 - **Decision endpoint + inbox** — `GET /api/companion/fact/candidate` (pending, newest first) +
   `POST .../candidate/{id}/decision` (`accept|reject|refine` + `refinedText`); accept/refine
-  promote into `knowledge_fact` (`source=chat`) which the V1.1 top-N injection then carries
-  into every prompt. One decision per candidate (400 `COMPANION_CANDIDATE_ALREADY_DECIDED`).
+  promote into `knowledge_fact` — with the source **INHERITED from the candidate**
+  (`chat`, or `weekly_review` for a weekly lesson, `mezo-d20.7.6`) — which the V1.1 top-N
+  injection then carries into every prompt. One decision per candidate
+  (400 `COMPANION_CANDIDATE_ALREADY_DECIDED`).
 - **KnowledgeListPage goes real** — dual-mode `useKnowledge`/`useKnowledgeActions`
   (`data/insights/knowledge{Api,Hooks}.ts`): pending L2 candidate cards (Elfogad / Pontosít
   inline / Elvet), persisting `include_in_prompt` toggles, degraded banner on switch-off 404.
@@ -3151,7 +3156,21 @@ fails outright). **`PatternImpactSource`** (`feature.companion.service`, plain i
 the dependency exactly like `TodayQuestSource` does, just mirrored: `PatternPairDetailService`
 depends only on its own package; the real assembly (`feature.proactive.service.PatternImpactService`)
 imports `feature.companion` (the already-existing direction) and implements the interface — Spring
-wires it in, no compile-time edge crosses the boundary in the new direction. `PatternImpactService`
+wires it in, no compile-time edge crosses the boundary in the new direction.
+
+**`HighlightCitationSource`** (`feature.companion`, `mezo-d20.7.7`) is the third instance of the
+same inversion, and the one that closes the weekly review's highlight loop: it answers "in how many
+of the last 12 live weekly reviews was this pattern/fact cited?", implemented by
+`feature.proactive.service.HighlightCitationSourceAdapter`. Consumed through an `ObjectProvider`
+(the adapter needs BOTH switches, so it can genuinely be absent), and that absence surfaces as a
+`null` `citedWeeks` — not measurable is not zero. Two hard boundaries, both deliberate:
+`PatternEntity.confidence` (a statistic) is never touched by a citation and a citation never moves
+a pattern's status; and `KnowledgeFactEntity.reinforcementCount` keeps meaning "the USER re-stated
+this" rather than being widened to cover the model quoting its own knowledge — the citation acts
+only as a tie-breaker UNDER reinforcement inside `KnowledgeFactService.renderPromptBlock`. Full
+rationale in [`proactive.md`](proactive.md) §5.12.
+
+`PatternImpactService`
 is `@ConditionalOnProperty(COMPANION_SWITCH)` — the SAME switch as `PatternPairDetailService`, not
 `PROACTIVE_SWITCH` — so the detail endpoint always resolves a bean when companion is on; with the
 proactive generators off it just lists nothing (the finder repositories are plain, unconditioned
@@ -3574,7 +3593,8 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   confirmed + pending (case/whitespace variants), per-turn cap, invalid-item drops
   (unknown category / blank fact), not-JSON → zero rows without throwing, sentinel-less → zero.
 - **`FactCandidateServiceIT`** (7 tests) — pending list (undecided/newest/owner-scoped),
-  accept promotes (`source=chat`, category carried, `include_in_prompt` true), refine uses the
+  accept promotes (source inherited from the candidate — `chat` here, category carried,
+  `include_in_prompt` true), refine uses the
   corrected text + requires it (FIELD error), reject promotes nothing, re-decide → 400
   conflict, foreign → 404.
 - **`CompanionFactCandidateApiIT`** (5 tests, HTTP) — 401, accept round-trip (inbox empties +
@@ -4183,7 +4203,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **V1.1 decisions (locked in-session):**
 
-21. **Category enum v1 = `train|fuel|health|life`, source = `chat|pattern|manual`** — String +
+21. **Category enum v1 = `train|fuel|health|life`, source = `chat|pattern|manual`** (+
+    `weekly_review` since `mezo-d20.7.6`) — String +
     `@Pattern` + CHECK constraint (the `role` precedent, no Java enum); request-side validation
     is contract `pattern` (400 FIELD error, not a Jackson 500).
 22. **Manual fact-add ships in V1.1** (`POST /api/companion/fact`, source=`manual`) — facts can

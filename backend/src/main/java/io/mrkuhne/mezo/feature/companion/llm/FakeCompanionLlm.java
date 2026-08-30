@@ -92,6 +92,19 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern FACTS_SENTINEL =
             Pattern.compile("\\[fake-facts:(\\[.*?]|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Mirror of CharacterObservationService.OBSERVATION_MARKER (feature/character) — a LITERAL,
+     *  not an import: character already depends on companion via the CompanionLlm port, so a
+     *  companion -> character import here would be a NEW package cycle
+     *  (feature_slices_are_cycle_free). Drift is caught by CharacterObservationServiceIT's
+     *  equality assertion against the real constant. */
+    public static final String OBSERVATION_MARKER_MIRROR = "KARAKTER-MEGFIGYELÉS-FELADAT";
+
+    /** Scripted observation pass (mezo-1gim.3): {@code [fake-char-obs:<json-array>]} planted in
+     *  the gathered signal text (e.g. a journal entry) is returned verbatim; otherwise a canned
+     *  single-observation array keeps the pipeline deterministic. */
+    public static final Pattern CHAR_OBS_SENTINEL =
+            Pattern.compile("\\[fake-char-obs:(\\[.*?])]", Pattern.DOTALL);
+
     /** Scripted scrape (mezo-8vum): {@code [fake-scrape:{json}]} payload is returned verbatim. */
     public static final Pattern SCRAPE_SENTINEL =
             Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
@@ -370,6 +383,13 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(FactExtractionService.EXTRACTION_MARKER)) {
             return factsAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(OBSERVATION_MARKER_MIRROR)) {
+            Matcher obs = CHAR_OBS_SENTINEL.matcher(userMessage);
+            if (obs.find()) {
+                return obs.group(1);
+            }
+            return "[{\"text\":\"Fake megfigyelés.\",\"salience\":3,\"dimensionKeys\":[\"discipline\"]}]";
         }
         if (systemPrompt.startsWith(TurnVerdictCheck.VERDICT_MARKER)) {
             return verdictAnswer(userMessage);

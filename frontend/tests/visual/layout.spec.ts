@@ -21,7 +21,13 @@ const PHONE_VIEWPORTS = [
 ]
 
 for (const vp of PHONE_VIEWPORTS) {
-  test(`fuel mai · no clipped island content @ ${vp.name}`, async ({ page }) => {
+  test(`fuel hub · the window swimlane is reachable and never clips @ ${vp.name}`, async ({ page }) => {
+    // Design 2.0 (mezo-d20.4.1): the Island/`.isl-big` language is retired — the hub's
+    // eating windows live in a horizontally scrolling swimlane. The invariant this file
+    // exists for is unchanged: content must be REACHABLE, never eaten by an ancestor that
+    // clips without a scrollbar. For the lane that means it scrolls HORIZONTALLY (its own
+    // overflow-x) while the page scrolls vertically to it — and no tile may be taller than
+    // the lane's own box.
     await page.setViewportSize({ width: vp.width, height: vp.height })
     await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
     await page.goto('/fuel')
@@ -29,28 +35,28 @@ for (const vp of PHONE_VIEWPORTS) {
     await page.evaluate(() => document.fonts.ready)
 
     const m = await page.evaluate(() => {
-      const big = document.querySelector('.isl.isl-big') as HTMLElement | null
-      const view = big?.querySelector('.isl-bigview') as HTMLElement | null
-      const cta = big?.querySelector('.cta-sage') as HTMLElement | null
+      const lane = document.querySelector('.fh-lane') as HTMLElement | null
+      const tiles = lane ? Array.from(lane.querySelectorAll('.fh-wtile')) as HTMLElement[] : []
       const sc = document.querySelector('.screen-content') as HTMLElement
+      const laneCs = lane ? getComputedStyle(lane) : null
       return {
-        hasBig: !!big,
-        clipped: big && view ? Math.round(view.scrollHeight - big.getBoundingClientRect().height) : 0,
-        // How far the primary CTA's bottom sits BELOW the island's own bottom edge.
-        // Positive ⇒ the button is outside the clipping box ⇒ unreachable.
-        ctaOverhang: big && cta
-          ? Math.round(cta.getBoundingClientRect().bottom - big.getBoundingClientRect().bottom)
+        hasLane: !!lane,
+        tileCount: tiles.length,
+        // A tile taller than the lane's own box is content clipped with no way to reach it.
+        tallestOverflow: lane
+          ? Math.max(0, ...tiles.map(t => Math.round(t.getBoundingClientRect().height - lane.getBoundingClientRect().height)))
           : 0,
+        // The lane must be the thing that scrolls sideways, not a silently-cropping box.
+        laneScrollsX: laneCs ? ['auto', 'scroll'].includes(laneCs.overflowX) : false,
         pageScrollable: sc.scrollHeight > sc.clientHeight,
         contentOverflow: Math.round(sc.scrollHeight - sc.clientHeight),
       }
     })
 
-    expect(m.hasBig, 'the mock demo day has a NOW window, so one island is big').toBe(true)
-    expect(m.clipped, `island content clipped by ${m.clipped}px`).toBeLessThanOrEqual(0)
-    expect(m.ctaOverhang, 'the Logold CTA must sit inside its island').toBeLessThanOrEqual(0)
-    // If the sky genuinely needs more room than the viewport gives it, the page must scroll
-    // to reach it — the one thing the flex-fill sky could not do.
+    expect(m.hasLane, 'the Fuel hub renders its window swimlane').toBe(true)
+    expect(m.tileCount, 'the mock demo day schedules eating windows').toBeGreaterThan(0)
+    expect(m.tallestOverflow, `a window tile overflows the lane by ${m.tallestOverflow}px`).toBe(0)
+    expect(m.laneScrollsX, 'the lane scrolls horizontally rather than cropping tiles').toBe(true)
     if (m.contentOverflow > 0) expect(m.pageScrollable).toBe(true)
   })
 }

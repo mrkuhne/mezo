@@ -22,7 +22,7 @@ import { useNeeds } from '@/features/today/logic/useNeeds'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 
 /** Prototype #page-vital tile skins, verbatim (eyebrow ink · mini-ring color ·
@@ -113,7 +113,7 @@ export function EletjelPage() {
         </PageBody>
       </EntranceGroup>
 
-      {mealOpen && <LogMealSheet onClose={() => setMealOpen(false)} />}
+      {mealOpen && <LogFlowPage onClose={() => setMealOpen(false)} />}
       {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
       {checkInIdx !== null && (
         <CheckInSheet slot={checkins[checkInIdx]} slotIdx={checkInIdx}
