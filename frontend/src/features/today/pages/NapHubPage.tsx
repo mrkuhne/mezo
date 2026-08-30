@@ -16,7 +16,7 @@
 // `?day=rough` renders the horgony melt again (provisional, F7).
 // ============================================================
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { Mosaic, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
@@ -30,7 +30,8 @@ import {
   useStackDay, useGamificationDay,
 } from '@/data/hooks'
 import { buildHabitRewardToast } from '@/features/progression/logic/rewardToast'
-import { DAY_FACES, dayFace, type DayFace } from '@/features/today/logic/dayFace'
+import { type DayFace } from '@/features/today/logic/dayFace'
+import { useDayFace } from '@/features/today/logic/useDayFace'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { useNeeds } from '@/features/today/logic/useNeeds'
 import { needRingGradient } from '@/features/today/logic/needs'
@@ -39,8 +40,6 @@ import { habitAction } from '@/features/today/logic/habitAction'
 import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import type { HabitItem } from '@/data/types'
-
-const isFace = (v: string | null): v is DayFace => v !== null && (DAY_FACES as readonly string[]).includes(v)
 
 function fmtHm(mins: number): string {
   const h = Math.floor(mins / 60)
@@ -58,15 +57,14 @@ const ANCHORS: { title: string; sub: string; icon: 'i-viz' | 'i-reggeli' | 'i-fu
 export function NapHubPage() {
   const date = localDateString()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
 
   const { today, workoutDone, workoutDoneSets } = useToday()
   const scenario = useTodayScenario()
   const { goal: sleepGoal } = useSleepGoal()
   const tick = useMinuteTick()
-  const nowFace = dayFace(tick, sleepGoal)
-  const dpParam = params.get('dp')
-  const face: DayFace = isFace(dpParam) ? dpParam : nowFace
+  // A `?dp=`-vagy-óra feloldás a shell fejlécével KÖZÖS (mezo-atry): egy hook, egy óra —
+  // két másolat egy napszak-határon két különböző napszakot vezetett volna le.
+  const { face } = useDayFace()
 
   // ── data for heroes + tiles ─────────────────────────────────────────
   const { fuel } = useFuelDay(date)
@@ -418,7 +416,7 @@ export function NapHubPage() {
             </Mosaic>
             {/* prototype: the este panel closes on the day's stat strip (kcal · edzés · XP).
                 A statistic with no source renders `—`, never a fabricated zero. */}
-            <div className="rise" style={{ '--d': '240ms' } as React.CSSProperties}>
+            <div className="rise" style={{ '--d': '200ms' } as React.CSSProperties}>
               <StatStrip>
                 <StatCell value={kcalEatenCount}
                   label={kcalEaten <= Math.round(fuel.targets.kcal) ? 'kcal · kereten belül ✓' : 'kcal · kereten túl'} />

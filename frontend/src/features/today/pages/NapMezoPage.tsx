@@ -2,12 +2,13 @@
 // Mezo · NapMezoPage — "Mezo üzenetei" as its own full page (mezo-d20.2.2)
 // Source of truth: docs/design_2.0/prototypes/src/nap-body.html #page-mezo
 // (p-coral tone, breathing-orb hero, the day's companion messages as a
-// thread, chat CTA). Absorbs the hub's MezoMessagesSheet surface: the
-// thread logic is the sheet's verbatim — buildMezoMessages over
-// useCompanionFeed with the labelled demo-briefing fallback, feedback
+// thread, chat CTA). Absorbs the hub's MezoMessagesSheet surface: feedback
 // chips only on persisted feed rows (mezo-kr9v). The sheet component
 // stays in-tree for its remaining callers; only the hub tile now
 // navigates here instead of opening it.
+// A szál felépítése (feed + cimkézett demo-briefing + Életjel-nudge-ok) és az
+// olvasottság-vízjel a shell `MezoThreadProvider`-ébe költözött (mezo-atry) — ez az
+// oldal és a fejléc badge-e ugyanazt az EGY szálat olvassa, így nem tudnak szétcsúszni.
 // ============================================================
 import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -16,15 +17,10 @@ import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { RefTag } from '@/shared/ui/RefTag'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { localDateString } from '@/shared/lib/dates'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
-import { useCompanionFeed, useFeedback, useTodayScenario, resolveBriefing, useSleepGoal } from '@/data/hooks'
-import { buildMezoMessages, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
-import { deriveNudges, toNudgeMessage } from '@/features/today/logic/needsNudges'
-import { markNudgeShown, shownNudges } from '@/features/today/logic/nudgeSeen'
-import { markMessagesSeen } from '@/shared/lib/seenMessages'
-import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
-import { useNeeds } from '@/features/today/logic/useNeeds'
+import { useCompanionFeed, useFeedback } from '@/data/hooks'
+import { type MezoMessageItem } from '@/features/today/logic/mezoMessages'
+import { useMezoThread } from '@/features/today/MezoThreadProvider'
 
 /** Prototype: each message head carries a daypart clay spot (s-reggel / s-este /
  *  s-energia). Our messages carry a KIND, not a spot — this is the visual mapping. */
@@ -36,43 +32,18 @@ function messageSpot(m: MezoMessageItem): ClaySpotName {
 
 export function NapMezoPage() {
   const navigate = useNavigate()
-  const scenario = useTodayScenario()
 
-  // The sheet's wiring, verbatim from the hub (mezo-e26w / mezo-b3pp.15).
+  // A szál a shell providerétől jön (mezo-atry): a fejléc olvasatlan-badge-e és ez az oldal
+  // UGYANAZT a listát látja, tehát az itt lerakott olvasottság-vízjel ott biztosan találatot
+  // ad. A visszajelzés-chipek viszont a nyers feed-sorok id-jeire kötnek, ezért a feedet ez
+  // az oldal továbbra is közvetlenül olvassa (mezo-e26w / mezo-b3pp.15).
+  const { messages, markSeen } = useMezoThread()
   const feed = useCompanionFeed()
   const feedIds = useMemo(() => feed.map((m) => m.id), [feed])
   const feedback = useFeedback('feed_message', feedIds)
-  // Életjel küszöb-nudge-ok (mezo-dhzk Task 5) — a `needsNudges.ts` termelője a Design 2.0
-  // takarításban gazdátlanul maradt (`mezoMessages`'s `nudges` paraméterének nem volt hívója,
-  // mezo-d20.11 audit): a szál gazdája ez az oldal, tehát a kézbesítés is ide tartozik. A
-  // FRISS nudge-okat egyszer elmentjük, hogy egy ring naponta legfeljebb egyszer szóljon.
-  const date = localDateString()
-  const tick = useMinuteTick()
-  const needs = useNeeds(tick)
-  const { goal: sleepGoal } = useSleepGoal()
-  const nudgeEntries = useMemo(
-    () => (needs.isPending
-      ? []
-      : deriveNudges(needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, shownNudges(date))),
-    [needs.isPending, needs.states, tick, sleepGoal.wakeTime, sleepGoal.bedTime, date],
-  )
-  useEffect(() => {
-    for (const n of nudgeEntries) if (n.fresh) markNudgeShown(date, n.key, n.at)
-  }, [nudgeEntries, date])
-
-  const messages = useMemo(
-    () => buildMezoMessages({
-      feed,
-      demoBriefing: resolveBriefing(scenario.dayState),
-      nudges: nudgeEntries.map(toNudgeMessage),
-    }),
-    [feed, scenario.dayState, nudgeEntries],
-  )
-
-  // Prototype: „a Mezo-csempe olvasatlan-jelzése megnyitáskor törlődik" — the thread's last
-  // id is the read watermark the hub tile's unread counter reads back (shared/lib/seenMessages).
-  const lastId = messages.length > 0 ? messages[messages.length - 1].id : null
-  useEffect(() => { if (lastId) markMessagesSeen(date, lastId) }, [date, lastId])
+  // Prototype: „a Mezo-csempe olvasatlan-jelzése megnyitáskor törlődik" — a szál UTOLSÓ
+  // elemének id-je a vízjel, amit a fejléc badge-e visszaolvas (MezoThreadProvider).
+  useEffect(() => { markSeen() }, [markSeen])
 
   return (
     <MozaikPage tone="coral">

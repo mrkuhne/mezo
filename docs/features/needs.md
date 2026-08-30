@@ -2,7 +2,7 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-08-21
+updated: 2026-08-30
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
@@ -128,10 +128,12 @@ TodayPage (composition root)
   Today already fetched elsewhere on the page. `isPending` reflects **only** the sleep-goal
   read — the one value the sim cannot run without (it anchors the whole wake/bed window); every
   other source degrades to "no events" while pending rather than blocking the render.
-- **`useMinuteTick.ts`** (`frontend/src/features/today/logic/useMinuteTick.ts`) — mirrors the
-  `useWindDownPhase` ticking idiom: `useState(() => new Date())` seeds synchronously so the first
-  render already has a real `now`, a single `setInterval` (60s, empty deps) advances it. Lives
-  self-contained in `NeedsRow`'s caller (`TodayPage`), not pushed down into `NeedsRow` itself.
+- **`useMinuteTick.ts`** (`frontend/src/features/today/logic/useMinuteTick.ts`) — since `mezo-atry`
+  a **single module-level clock** behind `useSyncExternalStore`, not a per-mount `setInterval`: one
+  60s interval runs while at least one subscriber is mounted, and every consumer gets the SAME
+  `Date` instance (so memos over it are stable, and two live consumers can no longer sit up to 60s
+  out of phase). Consumers today: `EletjelPage`, `NapHubPage`, `useDayFace` (the shell header) and
+  `MezoThreadProvider`.
 - **`needsNudges.ts`** (`frontend/src/features/today/logic/needsNudges.ts`) — pure derivation,
   `deriveNudges(states, now, wakeTime, bedTime, shown)` (`needsNudges.ts:65`): the day's shown
   nudges (from `nudgeSeen.ts`) pass through unchanged (`fresh: false`), newly red/critical rings

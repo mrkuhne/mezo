@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
+import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import type { FeedMessage } from '@/data/types'
 import { lastSeenMessage } from '@/shared/lib/seenMessages'
@@ -63,11 +64,14 @@ function renderPage() {
   return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/nap', '/nap/uzenetek']} initialIndex={1}>
+        {/* A szál a shell providereé (mezo-atry) — az oldal fogyasztó, nem építő. */}
+        <MezoThreadProvider>
         <Routes>
           <Route path="/nap" element={<div>nap-hub</div>} />
           <Route path="/nap/uzenetek" element={<NapMezoPage />} />
           <Route path="/mezo/chat" element={<div>chat-page</div>} />
         </Routes>
+        </MezoThreadProvider>
       </MemoryRouter>
     </QueryWrapper>,
   )
@@ -164,6 +168,8 @@ test('opening the thread stamps the read watermark — the hub tile’s unread c
   feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
   renderPage()
   await screen.findByText('07:12 · Alvás-reakció')
-  // the watermark is the LAST thread item's id (the sheet's own seenMessages idiom)
-  expect(lastSeenMessage(localDateString())).toBe('sleep')
+  // the watermark is the LAST thread item's id (the sheet's own seenMessages idiom).
+  // The date key comes from the shared minute tick (MezoThreadProvider, mezo-atry) — here
+  // that is the pinned clock above, not the wall clock.
+  expect(lastSeenMessage(localDateString(new Date('2026-05-22T13:42:00')))).toBe('sleep')
 })

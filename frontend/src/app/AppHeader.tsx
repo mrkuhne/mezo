@@ -5,24 +5,25 @@
 //   dátum-eyebrow · napszakváltó · Mezo-üzenetek · értesítések · profil orb
 // A napszak-választás állapota az URL-ben marad (`/nap?dp=`) — nincs globális state, és a
 // meglévő deep-linkek változatlanul működnek. A választó BÁRHONNAN a Nap oldalra navigál.
+//
+// A napszak-feloldás a `useDayFace()`-é, az üzenet-szál a `MezoThreadProvider`-é: mindkettő
+// megosztott a Nap oldallal, hogy a fejléc és az oldal ne tudjon szétcsúszni (mezo-atry
+// fix-hullám). Fókuszkezelés (focus trap / roving tabindex) tudatosan NINCS — a
+// `docs/features/today.md` külön halasztott tételként tartja számon.
 // ============================================================
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { ClayIcon } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
-import { localDateString } from '@/shared/lib/dates'
-import { lastSeenMessage } from '@/shared/lib/seenMessages'
-import { resolveBriefing, useCompanionFeed, useSleepGoal, useToday, useTodayScenario } from '@/data/hooks'
+import { useToday } from '@/data/hooks'
 import { useNotificationFeed } from '@/data/notification/feedHooks'
-import { DAY_FACES, FACE_LABEL, dayFace, type DayFace } from '@/features/today/logic/dayFace'
-import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
-import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
+import { DAY_FACES, FACE_LABEL, type DayFace } from '@/features/today/logic/dayFace'
+import { useDayFace } from '@/features/today/logic/useDayFace'
+import { useMezoThread } from '@/features/today/MezoThreadProvider'
 
 const FACE_ICON: Record<DayFace, 'i-hajnal' | 'i-nap' | 'i-alvas'> = {
   reggel: 'i-hajnal', nap: 'i-nap', este: 'i-alvas',
 }
-const isFace = (v: string | null): v is DayFace =>
-  v !== null && (DAY_FACES as readonly string[]).includes(v)
 
 export function AppHeader() {
   const navigate = useNavigate()
@@ -30,60 +31,69 @@ export function AppHeader() {
   const [params] = useSearchParams()
 
   const { today } = useToday()
-  const { goal: sleepGoal } = useSleepGoal()
-  const nowFace = dayFace(useMinuteTick(), sleepGoal)
+  const { face, nowFace } = useDayFace()
   // A `?dp=` CSAK a Nap oldalon jelent napszak-választást; máshol a valós napszak látszik.
   const onNap = pathname === '/nap'
-  const dpParam = params.get('dp')
-  const face: DayFace = onNap && isFace(dpParam) ? dpParam : nowFace
 
   const { items: notifications } = useNotificationFeed()
   const unreadNtf = notifications.filter((n) => n.readAt === null).length
-
-  const scenario = useTodayScenario()
-  const feed = useCompanionFeed()
-  const messages = useMemo(
-    () => buildMezoMessages({ feed, demoBriefing: resolveBriefing(scenario.dayState) }),
-    [feed, scenario.dayState],
-  )
-  // Az olvasatlan-vízjel localStorage-ban él, és a fejléc — a shellben lévén — NEM remountol
-  // az üzenetek oldalról visszatérve. Ezért minden útvonalváltás után újraolvassuk, különben
-  // a badge beragadna.
-  const date = localDateString()
-  const [seenId, setSeenId] = useState<string | null>(() => lastSeenMessage(date))
-  useEffect(() => { setSeenId(lastSeenMessage(date)) }, [date, pathname])
-  const unreadMsgs = useMemo(() => {
-    if (seenId === null) return messages.length
-    const idx = messages.findIndex((m) => m.id === seenId)
-    return idx < 0 ? messages.length : messages.length - (idx + 1)
-  }, [seenId, messages])
+  const { unread: unreadMsgs } = useMezoThread()
 
   const [dpOpen, setDpOpen] = useState(false)
   const [ntfOpen, setNtfOpen] = useState(false)
+  const rootRef = useRef<HTMLElement>(null)
   // Útvonalváltáskor minden popover bezárul — a shellben élő fejléc nem remountol.
   useEffect(() => { setDpOpen(false); setNtfOpen(false) }, [pathname])
+  // Escape és kívülre kattintás: a popover-alapszerződés, amit mind az öt korábbi másolat
+  // elmulasztott. Csak nyitott menü mellett iratkozunk fel.
+  const anyOpen = dpOpen || ntfOpen
+  useEffect(() => {
+    if (!anyOpen) return
+    const close = () => { setDpOpen(false); setNtfOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
+    const onDown = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) close()
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onDown)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onDown)
+    }
+  }, [anyOpen])
 
   const pickFace = (f: DayFace) => {
     setDpOpen(false)
-    navigate(f === nowFace ? '/nap' : `/nap?dp=${f}`)
+    // A többi query-paraméter (`?day=`, `?medCycleDay=`, `?niggle=`, `?vulnerable=`,
+    // `?ritual=`) app-szintű szcenárió-kapcsoló (`useTodayScenario`) — egy napszakváltás
+    // nem söpörheti el őket. `replace`, hogy a napszak-kattintgatás ne töltse a historyt.
+    const next = new URLSearchParams(params)
+    if (f === nowFace) next.delete('dp')
+    else next.set('dp', f)
+    const qs = next.toString()
+    navigate(qs ? `/nap?${qs}` : '/nap', { replace: true })
   }
 
   return (
-    <div className="nap-head app-head">
+    <header className="nap-head app-head" ref={rootRef}>
       <div className="nap-head-grow">
         <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
       </div>
 
       <div className="nap-dpwrap">
-        <button type="button" className="nap-roundbtn" aria-label="Napszak váltása" aria-expanded={dpOpen}
+        <button type="button" className="nap-roundbtn" aria-label="Napszak váltása"
+          aria-haspopup="menu" aria-expanded={dpOpen}
           onClick={() => { setNtfOpen(false); setDpOpen((o) => !o) }}>
           <ClayIcon name={FACE_ICON[face]} size={22} />
           {onNap && face !== nowFace && <span className="nap-offnow" aria-hidden="true" />}
         </button>
         {dpOpen && (
-          <div className="nap-dpmenu" role="menu">
+          <div className="nap-dpmenu" role="menu" aria-label="Napszak">
+            {/* menuitemRADIO: a választás nem csak vizuális (`.on`), a kisegítő technológia
+                is látja, melyik napszakon állunk. */}
             {DAY_FACES.map((f) => (
-              <button key={f} type="button" role="menuitem" aria-label={FACE_LABEL[f]}
+              <button key={f} type="button" role="menuitemradio" aria-checked={f === face}
+                aria-label={FACE_LABEL[f]}
                 className={cn(f === face && 'on')} onClick={() => pickFace(f)}>
                 <ClayIcon name={FACE_ICON[f]} size={22} />
               </button>
@@ -100,15 +110,17 @@ export function AppHeader() {
       </button>
 
       <div className="nap-dpwrap">
-        <button type="button" className="nap-roundbtn" aria-expanded={ntfOpen}
+        <button type="button" className="nap-roundbtn" aria-haspopup="menu" aria-expanded={ntfOpen}
           aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
           onClick={() => { setDpOpen(false); setNtfOpen((o) => !o) }}>
           <ClayIcon name="i-ertesites" size={21} />
           {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
         </button>
         {ntfOpen && (
-          <div className="nap-ntfmenu" role="menu">
-            <span className="mz-eyebrow">Értesítések · ma</span>
+          // A menü fejléc-sora nem menüelem: `presentation`-ként kikerül a kisegítő fából,
+          // a felirat pedig a menü `aria-label`-jeként marad meg.
+          <div className="nap-ntfmenu" role="menu" aria-label="Értesítések · ma">
+            <span className="mz-eyebrow" role="presentation">Értesítések · ma</span>
             {notifications.slice(0, 3).map((n) => (
               <button key={n.id} type="button" role="menuitem" className="nap-ntfrow"
                 onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
@@ -127,6 +139,6 @@ export function AppHeader() {
       <button type="button" className="nap-avatar" aria-label="Profil" onClick={() => navigate('/me')}>
         <ClayIcon name="i-mezo" size={19} />
       </button>
-    </div>
+    </header>
   )
 }
