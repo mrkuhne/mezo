@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.character.repository.CharacterObservationReposito
 import io.mrkuhne.mezo.feature.character.service.CharacterExpertCatalog;
 import io.mrkuhne.mezo.feature.character.service.KonziliumProposalRound;
 import io.mrkuhne.mezo.feature.character.service.ClaimProposal;
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -62,6 +63,11 @@ class KonziliumProposalRoundIT extends ApiIntegrationTest {
         entity.setSalience(salience);
         entity.setSignals(new ObservationSignalsEnvelope(List.of()));
         observationRepository.save(entity);
+    }
+
+    @Test
+    void marker_mirroredInFakeLlm_staysInSync() {
+        assertThat(FakeCompanionLlm.PROPOSAL_MARKER_MIRROR).isEqualTo(KonziliumProposalRound.PROPOSAL_MARKER);
     }
 
     @Test
