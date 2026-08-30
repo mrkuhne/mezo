@@ -7536,6 +7536,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/diagnosis/{id}/suspect/{rank}/experiment':
+    post:
+      tags:
+        - Diagnosis
+      operationId: startDiagnosisExperiment
+      summary: >-
+        Turn a suspect's probe into a tracked experiment (the tap IS the
+        acceptance)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: rank
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 4
+      responses:
+        '201':
+          description: >-
+            The created experiment, or the open one that already covers this
+            metric
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'Diagnosis not found, not owned, or no suspect at that rank'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:

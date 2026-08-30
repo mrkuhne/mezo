@@ -3,13 +3,17 @@ package io.mrkuhne.mezo.feature.proactive.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEvidenceEnvelope.EvidenceItem;
+import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
+import io.mrkuhne.mezo.feature.proactive.repository.ExperimentRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
@@ -28,6 +32,7 @@ class FatigueEvidenceCollectorIT extends AbstractIntegrationTest {
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private WaterLogPopulator waterLogPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private ExperimentRepository experimentRepository;
 
     /** Sleep (SLEEP domain) + check-in (MIND domain) on every day of the window AND the baseline. */
     private void seedTwoDomains(UUID user, double windowSleepH, double baselineSleepH) {
@@ -103,6 +108,35 @@ class FatigueEvidenceCollectorIT extends AbstractIntegrationTest {
         // Each label appears exactly once — the sentinel-safety property DiagnosisGeneratorIT needs.
         String label = gather.candidates().get(0).label();
         assertThat(gather.payload().split(Pattern.quote(label), -1)).hasSize(2);
+    }
+
+    @Test
+    void feedsPriorDiagnosisExperimentsBackIntoThePayload() {
+        UUID user = userPopulator.createUser("gather-prior@test.local").getId();
+        seedTwoDomains(user, 6.0, 7.5);
+
+        ExperimentEntity prior = new ExperimentEntity();
+        prior.setCreatedBy(user);
+        prior.setTitle("Korábbi alvás-kísérlet");
+        prior.setHypothesis("Feküdj le 23:00 előtt.");
+        prior.setStatus(ExperimentEntity.STATUS_COMPLETED);
+        prior.setMetricKey("SLEEP_DURATION_H");
+        prior.setExpectedDirection("up");
+        prior.setStartDate(TODAY.minusDays(20));
+        prior.setTotalDays(7);
+        prior.setOutcome("Bevált.");
+        prior.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        prior.setSource(ExperimentEntity.SOURCE_DIAGNOSIS);
+        experimentRepository.saveAndFlush(prior);
+
+        FatigueEvidenceCollector.FatigueGather gather = collector.gather(user, TODAY);
+
+        assertThat(gather).isNotNull();
+        assertThat(gather.payload()).contains("KORÁBBI KÍSÉRLETEK");
+        assertThat(gather.payload()).contains("Korábbi alvás-kísérlet");
+        assertThat(gather.payload()).contains("Bevált.");
+        // Context only — a prior experiment is never citable evidence.
+        assertThat(gather.candidates()).noneMatch(item -> "Korábbi alvás-kísérlet".equals(item.label()));
     }
 
     @Test

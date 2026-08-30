@@ -24,4 +24,12 @@ public interface ExperimentRepository extends JpaRepository<ExperimentEntity, UU
 
     /** S2 (mezo-tk88.2): the pattern-detail page's impact list — experiments grounded on one pattern. */
     List<ExperimentEntity> findByCreatedByAndSourcePatternIdAndDeletedFalse(UUID createdBy, UUID sourcePatternId);
+
+    /** Duplicate guard for the diagnosis hand-off (mezo-hqfi.3): one open experiment per metric. */
+    Optional<ExperimentEntity> findFirstByCreatedByAndMetricKeyAndStatusInAndDeletedFalse(
+            UUID createdBy, String metricKey, List<String> statuses);
+
+    /** Prior-experiment context for the diagnosis gather — what was already tried, and how it went. */
+    List<ExperimentEntity> findByCreatedByAndSourceAndDeletedFalseOrderByGeneratedAtDesc(
+            UUID createdBy, String source);
 }

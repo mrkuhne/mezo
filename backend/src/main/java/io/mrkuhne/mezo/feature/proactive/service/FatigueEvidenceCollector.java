@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.proactive.config.DiagnosisProperties;
 import io.mrkuhne.mezo.feature.proactive.entity.DiagnosisEvidenceEnvelope.EvidenceItem;
+import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
+import io.mrkuhne.mezo.feature.proactive.repository.ExperimentRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -67,11 +69,13 @@ public class FatigueEvidenceCollector {
 
     private static final int MAX_PATTERNS = 5;
     private static final int MAX_FACTS = 5;
+    private static final int MAX_PRIOR_EXPERIMENTS = 5;
     private static final int FACT_LABEL_LEN = 80;
 
     private final MetricSeriesService metricSeriesService;
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
+    private final ExperimentRepository experimentRepository;
     private final DiagnosisProperties properties;
 
     public record FatigueGather(String payload, List<EvidenceItem> candidates, int domainCount) {
@@ -130,12 +134,13 @@ public class FatigueEvidenceCollector {
                         "fact", truncate(fact.getFactText()), null, "Tudástár",
                         null, null, null, null, null)));
 
-        return new FatigueGather(render(candidates, windowFrom, today, baselineFrom, baselineTo),
+        return new FatigueGather(
+                render(userId, candidates, windowFrom, today, baselineFrom, baselineTo),
                 candidates, domains.size());
     }
 
-    private String render(List<EvidenceItem> candidates, LocalDate windowFrom, LocalDate today,
-            LocalDate baselineFrom, LocalDate baselineTo) {
+    private String render(UUID userId, List<EvidenceItem> candidates, LocalDate windowFrom,
+            LocalDate today, LocalDate baselineFrom, LocalDate baselineTo) {
         StringBuilder payload = new StringBuilder();
         payload.append("JELENSÉG: fáradtság\n")
                 .append("ABLAK: ").append(windowFrom).append(" – ").append(today)
@@ -154,7 +159,31 @@ public class FatigueEvidenceCollector {
             }
             payload.append('\n');
         }
+        appendPriorExperiments(userId, payload);
         return payload.toString();
+    }
+
+    /**
+     * What the user already tried on an earlier diagnosis, and how it went — CONTEXT ONLY. It
+     * produces no candidates on purpose: a prior experiment is something to avoid repeating, not
+     * evidence a suspect may cite. This is what makes the second run non-blind (spec §4).
+     */
+    private void appendPriorExperiments(UUID userId, StringBuilder payload) {
+        List<ExperimentEntity> prior = experimentRepository
+                .findByCreatedByAndSourceAndDeletedFalseOrderByGeneratedAtDesc(
+                        userId, ExperimentEntity.SOURCE_DIAGNOSIS);
+        if (prior.isEmpty()) {
+            return;
+        }
+        payload.append("\nKORÁBBI KÍSÉRLETEK (amit már kipróbált — ne javasold újra ugyanazt):\n");
+        for (ExperimentEntity experiment : prior.stream().limit(MAX_PRIOR_EXPERIMENTS).toList()) {
+            payload.append("- ").append(experiment.getTitle())
+                    .append(" [").append(experiment.getStatus()).append("]");
+            if (experiment.getOutcome() != null) {
+                payload.append(" — ").append(experiment.getOutcome());
+            }
+            payload.append('\n');
+        }
     }
 
     private static String detailLine(double value, Double baselineValue, Double delta, int coverage) {

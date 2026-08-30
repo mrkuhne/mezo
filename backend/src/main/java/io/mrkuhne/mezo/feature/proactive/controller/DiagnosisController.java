@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.proactive.controller;
 import io.mrkuhne.mezo.api.controller.DiagnosisApi;
 import io.mrkuhne.mezo.api.dto.DiagnosisGenerateRequest;
 import io.mrkuhne.mezo.api.dto.DiagnosisResponse;
+import io.mrkuhne.mezo.api.dto.ExperimentResponse;
 import io.mrkuhne.mezo.feature.proactive.service.DiagnosisService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -35,5 +36,10 @@ public class DiagnosisController implements DiagnosisApi {
     @Override
     public DiagnosisResponse generateDiagnosis(DiagnosisGenerateRequest request) {
         return diagnosisService.generate(currentUserId.get(), request.getPhenomenon());
+    }
+
+    @Override
+    public ExperimentResponse startDiagnosisExperiment(UUID id, Integer rank) {
+        return diagnosisService.startExperiment(currentUserId.get(), id, rank);
     }
 }

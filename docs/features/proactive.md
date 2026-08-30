@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-08-27
+updated: 2026-08-31
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -589,6 +589,16 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 (§2 hybrid generation, §5 weekly suggestion, §6 honest-numbers guardrails, §7 emptiness gate); slice
 map [`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
 §B1.1–§B1.2 + §W1 + §W2. Builds on the [companion](companion.md) stack (snapshot/facts/summaries/patterns).
+
+**Diagnózis — the first ON-DEMAND report (`mezo-hqfi`, backend ✅ / FE ⏳).** Everything else in
+this domain generates on cron. The diagnosis is user-triggered: it answers a *phenomenon* question
+(V1: fatigue — „Miért vagyok fáradt?") with 2–4 ranked suspects, each bound to code-collected
+measured evidence the model selects **by index**, and each carrying one probe that becomes a
+tracked `ExperimentEntity` on a single call. It reuses the weekly-review artifact machinery
+(persisted row + `stale` probe + `FeedbackChips`) and adds the axis that machinery lacked:
+on-demand generation under a per-day quota. Details in §4 below.
+Design of record: [`docs/superpowers/specs/2026-08-31-diagnosis-report-design.md`](../superpowers/specs/2026-08-31-diagnosis-report-design.md);
+plan: [`docs/superpowers/plans/2026-08-31-diagnosis-report-backend.md`](../superpowers/plans/2026-08-31-diagnosis-report-backend.md).
 
 ## 2. User-facing behavior
 
@@ -1246,6 +1256,71 @@ glory, refs[], outcome?, outcomeGood?, generatedAt}` + `ChallengeRef{kind, label
 DERIVED in code** from the structured target fields (via `ChallengeDisplay` static helpers on the
 mapper, §3 / §9 gotcha), not stored; `confidence`/`outcome`/`outcomeGood` nullable on the wire
 (`confidence` null ⇒ the FE renders „tanulom").
+
+### Diagnosis (on-demand report, `mezo-hqfi`)
+
+Migration `202608311200_mezo-hqfi_create_diagnosis.sql` creates `diagnosis` — `id`, `created_by`,
+`is_deleted`, `created_at`, `phenomenon` (ck: `fatigue`), `window_days`, `verdict`, `confidence`
+(ck: `strong|moderate|weak`), `evidence` jsonb, `suspects` jsonb, `generated_at`, plus
+`idx_diagnosis_created_by_generated_at`. **Deliberately NO unique index** — unlike `weekly_review`
+(one row per week), many diagnoses accumulate per user; that longitudinal list is the feature.
+Migration `202608311210_mezo-hqfi_experiment_source_diagnosis.sql` widens `experiment` with
+`source` (ck: `proposal|diagnosis`, default `proposal` so pre-existing rows stay honest) and
+`source_diagnosis_id` (FK `on delete set null`, partial index) — the `source_pattern_id`
+(`mezo-tk88.2`) pattern applied a second time.
+
+`DiagnosisEntity` (`entity/DiagnosisEntity.java`) `extends OwnedEntity`; `evidence` and `suspects`
+map as typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto `DiagnosisEvidenceEnvelope`
+(`record EvidenceItem(kind, label, detail, sourceHu, metricKey, value, baselineValue, delta,
+coverageDays)` — `kind ∈ metric|pattern|fact`, the metric-only fields null for the other two) and
+`DiagnosisSuspectsEnvelope` (`record Suspect(rank, title, claim, evidenceIndexes, strength,
+probeText, metricKey, expectedDirection, totalDays)` — the probe fields map **1:1 onto
+`ExperimentEntity`**, so the hand-off needs no translation layer). **Evidence is persisted, not
+recomputed on read:** the report must show the numbers it actually reasoned from, or weeks later a
+recomputed window would put different values next to the same conclusion.
+
+The pipeline is the `WeeklyReviewGenerator` recipe on a rolling window:
+
+1. **`FatigueEvidenceCollector`** (`service/`, PURE CODE, no LLM) — 19 fatigue-relevant
+   `MetricKey`s (including the derived `ACWR`, `TRAINING_MONOTONY`, `BEDTIME_VARIABILITY`) read
+   through `MetricSeriesService`: the 14-day window mean vs the preceding 28-day baseline, each
+   metric **dropped below 7 measured days** (a two-day average is not a finding). Confirmed
+   patterns and prompt-included knowledge facts join the same list. Fewer than 2 `MetricDomain`s
+   with coverage ⇒ `null`, an honest absence. Ordering is the fixed enum order — **the index IS
+   the contract**, so reordering is a breaking change to persisted rows. Every candidate renders
+   **exactly once** in one numbered list (unlike the weekly gather, which renders labels twice).
+   Prior diagnosis-sourced experiments and their outcomes are appended as CONTEXT ONLY — they
+   produce no candidates, because a prior experiment is something not to repeat, not evidence to
+   cite. This is what makes a second run non-blind.
+2. **`DiagnosisGenerator`** (`service/`, marker `FARADTSAG-DIAGNOZIS-FELADAT`) — ONE SMART-tier
+   call, strict JSON `{verdict, confidence, suspects[{title, claim, evidenceIndexes, strength,
+   probe{text, metricKey, expectedDirection, totalDays}}]}`. **Drop-on-violation:** empty or
+   out-of-range `evidenceIndexes`, an unknown `metricKey`, a direction outside
+   `up|down|stable`, or a probe length outside 3..28 kills the WHOLE suspect — an out-of-range
+   index is read as a fabrication signal, so the surviving indexes are not silently kept. Zero
+   survivors ⇒ **no row**.
+3. **`DiagnosisService`** (`service/`) — list/detail/generate + the probe→experiment hand-off.
+   `stale` comes from the shared `LogFreshnessProbe` over the row's own window. Reads are FREE;
+   only generation consumes `mezo.proactive.diagnosis.max-per-day` (counted from rows generated
+   today **including soft-deleted ones**, so the quota cannot be reset by throwing rows away).
+
+**REST** (fragment `api/feature/diagnosis/diagnosis.yml`, tag `Diagnosis` → `DiagnosisApi`;
+`DiagnosisController implements DiagnosisApi`):
+
+| Method + path | Returns | Status | Notes |
+|---|---|---|---|
+| `GET /api/proactive/diagnosis?phenomenon=` | `DiagnosisResponse[]` | 200 · 401 | Newest first. **`200 []` = honest empty, never 404.** |
+| `GET /api/proactive/diagnosis/{id}` | `DiagnosisResponse` | 200 · 401 · 404 | Includes the live `stale` flag. 404 = not-found/foreign. |
+| `POST /api/proactive/diagnosis` | `DiagnosisResponse` | 201 · 401 · **409** · **429** | 409 `DIAGNOSIS_INSUFFICIENT_DATA` (too few domains, or no suspect survived); 429 `DIAGNOSIS_QUOTA_EXCEEDED`. |
+| `POST /api/proactive/diagnosis/{id}/suspect/{rank}/experiment` | `ExperimentResponse` | 201 · 401 · 404 | **The tap IS the acceptance** — creates `status=active`, `startDate=today`, probe fields copied verbatim; NOT routed through `proposed`. Idempotent per metric: an open experiment on the same `metricKey` is returned as-is. |
+
+**`LogFreshnessProbe`** (`service/`, `mezo-hqfi.1`) — extracted from `WeeklyReviewService#isStale`
+and generalised from an ISO week to an arbitrary `[from, to]`; both the weekly review and the
+diagnosis now share it. Behaviour-preserving: same four log sources (weight/sleep/check-in/meal),
+same best-effort false-on-any-failure contract. Workout logs stay unprobed — `WorkoutSessionEntity.date`
+is nullable on template rows, so there is no clean date-window read. Only `createdAt` is
+observable: **`OwnedEntity` has no `updatedAt` column at all**, so an EDITED log cannot mark
+anything stale anywhere in the codebase (bd `mezo-hszs`).
 
 ### Configuration
 
@@ -2272,3 +2347,21 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - Roadmap (8 slices): [`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
 - Companion stack it builds on: [`companion.md`](companion.md)
 - Roadmap/milestone log: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
+
+**Backend — diagnosis (`mezo-hqfi`)**
+- `api/feature/diagnosis/diagnosis.yml` — 4 endpoints (list / detail / generate / start-experiment)
+  + schemas (`DiagnosisResponse`, `DiagnosisSuspect`, `DiagnosisEvidenceItem`,
+  `DiagnosisGenerateRequest`), tag `Diagnosis` → `DiagnosisApi`; registered in `api/generate/merge.yml`.
+- `feature/proactive/config/DiagnosisProperties.java` — window / baseline / coverage / min-domains / quota.
+- `feature/proactive/service/FatigueEvidenceCollector.java` — the pure-code gather.
+- `feature/proactive/service/DiagnosisGenerator.java` — the one SMART call + bounds-checking.
+- `feature/proactive/service/DiagnosisService.java` — reads, quota, `stale`, probe→experiment.
+- `feature/proactive/service/LogFreshnessProbe.java` — the shared stale probe (also used by the weekly review).
+- `feature/proactive/entity/DiagnosisEntity.java` + `DiagnosisEvidenceEnvelope.java` + `DiagnosisSuspectsEnvelope.java`.
+- `feature/proactive/repository/DiagnosisRepository.java` — reads + the native quota count (counts soft-deleted).
+- `feature/proactive/controller/DiagnosisController.java` — `implements DiagnosisApi`.
+- Migrations `202608311200_mezo-hqfi_create_diagnosis.sql`, `202608311210_mezo-hqfi_experiment_source_diagnosis.sql`.
+- Tests: `LogFreshnessProbeIT`, `FatigueEvidenceCollectorIT`, `DiagnosisGeneratorIT`,
+  `DiagnosisControllerIT`, `DiagnosisExperimentIT`; factory `support/populator/DiagnosisPopulator.java`.
+- Design: [`docs/superpowers/specs/2026-08-31-diagnosis-report-design.md`](../superpowers/specs/2026-08-31-diagnosis-report-design.md) ·
+  plan: [`docs/superpowers/plans/2026-08-31-diagnosis-report-backend.md`](../superpowers/plans/2026-08-31-diagnosis-report-backend.md)
