@@ -23,8 +23,10 @@ import tools.jackson.databind.ObjectMapper;
  * The weekly konzílium's judgement round (Karakter spec §6 step 2, mezo-1gim.5): the Szkeptikus
  * attacks every expert proposal from step 1, then the Integrátor (Mezo) weighs the proposals
  * against the Szkeptikus's verdicts and rules on each one — plus, rarely, proposes a new chapter.
- * Both are ONE smart-tier {@link CompanionLlm} call each; a round that fails to parse contributes
- * an honest (not fabricated) turn instead of aborting the conference (mirrors
+ * Both are ONE smart-tier {@link CompanionLlm} call each. A round that FAILS TO PARSE contributes
+ * an empty/default set of rulings but writes NO transcript turn for that persona — fabricating a
+ * narrative turn from a defaulted answer would misrepresent what actually happened; a genuinely
+ * parsed answer (however uneventful) still gets its honest turn (mirrors
  * {@link KonziliumProposalRound}'s per-expert isolation).
  */
 @Slf4j
@@ -42,6 +44,7 @@ public class KonziliumVerdictRound {
     private static final BigDecimal MIN_RULED_CONFIDENCE = new BigDecimal("0.30");
     private static final BigDecimal MAX_RULED_CONFIDENCE = new BigDecimal("0.90");
     private static final int MAX_CHAPTERS_PER_CONFERENCE = 1;
+    private static final String NEW_KIND = "NEW";
     private static final String KEEP = "KEEP";
     private static final String KILL = "KILL";
     private static final String DEFAULT_ARGUMENT = "nincs ellenérv";
@@ -63,12 +66,21 @@ public class KonziliumVerdictRound {
     /** The Integrátor's full parsed answer. */
     record IntegratorAnswer(List<IntegratorRulingDraft> rulings, List<IntegratorChapterDraft> chapters) {}
 
+    /** {@code verdicts} is always usable for downstream defaulting (empty when unparsed);
+     *  {@code parsed} is the ONLY signal that decides whether a transcript turn is honest to
+     *  write — never conflate "nothing came back" with "the model genuinely said nothing". */
+    private record SkepticResult(Map<Integer, SkepticVerdictDraft> verdicts, boolean parsed) {}
+
+    /** Same split as {@link SkepticResult}, for the Integrátor's answer. */
+    private record IntegratorResult(IntegratorAnswer answer, boolean parsed) {}
+
     /** A rare, AI-proposed new dossier chapter — {@link ClaimLifecycle#openChapters} turns an
      *  accepted one into a {@code CharacterDimensionEntity} row. */
     public record ChapterProposal(String title, String rationale) {}
 
     /** The round's output: every proposal's final ruling, at most one chapter proposal, and one
-     *  transcript turn per persona that answered (szkeptikus, mezo). */
+     *  transcript turn per persona that answered (szkeptikus, mezo) — a persona whose round failed
+     *  to parse contributes no turn at all. */
     public record Result(List<ClaimRuling> rulings, List<ChapterProposal> chapters,
                          List<ConferenceTranscriptEnvelope.Turn> turns) {}
 
@@ -77,11 +89,14 @@ public class KonziliumVerdictRound {
             return new Result(List.of(), List.of(), List.of());
         }
 
-        Map<Integer, SkepticVerdictDraft> verdicts = runSkeptic(owner, weekStart, proposals);
+        SkepticResult skepticResult = runSkeptic(owner, weekStart, proposals);
         List<ConferenceTranscriptEnvelope.Turn> turns = new ArrayList<>();
-        turns.add(skepticTurn(proposals, verdicts));
+        if (skepticResult.parsed()) {
+            turns.add(skepticTurn(proposals, skepticResult.verdicts()));
+        }
 
-        IntegratorAnswer answer = runIntegrator(owner, weekStart, proposals, verdicts);
+        IntegratorResult integratorResult = runIntegrator(owner, weekStart, proposals, skepticResult.verdicts());
+        IntegratorAnswer answer = integratorResult.answer();
         Map<Integer, IntegratorRulingDraft> rulingsByIndex = new LinkedHashMap<>();
         for (IntegratorRulingDraft draft : answer.rulings()) {
             if (draft.index() != null) {
@@ -107,7 +122,9 @@ public class KonziliumVerdictRound {
             chapters.add(new ChapterProposal(draft.title(), draft.rationale()));
         }
 
-        turns.add(integratorTurn(rulings, chapters));
+        if (integratorResult.parsed()) {
+            turns.add(integratorTurn(rulings, chapters));
+        }
         return new Result(rulings, chapters, turns);
     }
 
@@ -116,8 +133,15 @@ public class KonziliumVerdictRound {
             return new ClaimRuling(proposal, false, null, DEFAULT_REASON);
         }
         boolean accepted = draft.accept() != null && draft.accept();
-        BigDecimal confidence = draft.confidence() != null ? draft.confidence() : proposal.confidence();
-        if (accepted) {
+        BigDecimal confidence = draft.confidence();
+        // The proposal-confidence fallback is a NEW-only concern (there is no "current value" to
+        // move for a brand-new claim). For UP/DOWN an omitted confidence must stay null so
+        // ClaimLifecycle applies its own ±0.10 step off the CLAIM's current confidence — silently
+        // substituting the proposal's confidence here would make that fallback unreachable.
+        if (confidence == null && NEW_KIND.equals(proposal.kind())) {
+            confidence = proposal.confidence();
+        }
+        if (accepted && confidence != null) {
             confidence = clamp(confidence);
         }
         String reason = draft.reason() != null && !draft.reason().isBlank() ? draft.reason() : DEFAULT_REASON;
@@ -125,33 +149,31 @@ public class KonziliumVerdictRound {
     }
 
     private static BigDecimal clamp(BigDecimal value) {
-        BigDecimal v = value == null ? MIN_RULED_CONFIDENCE : value;
-        if (v.compareTo(MIN_RULED_CONFIDENCE) < 0) {
+        if (value.compareTo(MIN_RULED_CONFIDENCE) < 0) {
             return MIN_RULED_CONFIDENCE;
         }
-        if (v.compareTo(MAX_RULED_CONFIDENCE) > 0) {
+        if (value.compareTo(MAX_RULED_CONFIDENCE) > 0) {
             return MAX_RULED_CONFIDENCE;
         }
-        return v;
+        return value;
     }
 
     // ── Szkeptikus ────────────────────────────────────────────────────────────
 
-    private Map<Integer, SkepticVerdictDraft> runSkeptic(UUID owner, LocalDate weekStart,
-                                                          List<ClaimProposal> proposals) {
+    private SkepticResult runSkeptic(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals) {
         String systemPrompt = SKEPTIC_MARKER + "\n" + skepticPersona() + "\n" + skepticContract();
         String userMessage = numberedProposals(weekStart, proposals);
         String raw = callSmart(owner, "skeptic", systemPrompt, userMessage);
         if (raw == null || raw.isBlank()) {
             log.warn("Szkeptikus answer was blank for owner {} week {}", owner, weekStart);
-            return Map.of();
+            return new SkepticResult(Map.of(), false);
         }
         List<SkepticVerdictDraft> drafts;
         try {
             drafts = objectMapper.readValue(stripArrayFences(raw), new TypeReference<List<SkepticVerdictDraft>>() {});
         } catch (Exception e) {
             log.warn("Szkeptikus answer was not parseable JSON for owner {} week {} — {}", owner, weekStart, raw, e);
-            return Map.of();
+            return new SkepticResult(Map.of(), false);
         }
         Map<Integer, SkepticVerdictDraft> byIndex = new LinkedHashMap<>();
         for (SkepticVerdictDraft draft : drafts) {
@@ -159,7 +181,7 @@ public class KonziliumVerdictRound {
                 byIndex.put(draft.index(), draft);
             }
         }
-        return byIndex;
+        return new SkepticResult(byIndex, true);
     }
 
     private static ConferenceTranscriptEnvelope.Turn skepticTurn(List<ClaimProposal> proposals,
@@ -193,20 +215,21 @@ public class KonziliumVerdictRound {
 
     // ── Integrátor ────────────────────────────────────────────────────────────
 
-    private IntegratorAnswer runIntegrator(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals,
+    private IntegratorResult runIntegrator(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals,
                                             Map<Integer, SkepticVerdictDraft> verdicts) {
         String systemPrompt = INTEGRATOR_MARKER + "\n" + integratorPersona() + "\n" + integratorContract();
         String userMessage = numberedProposals(weekStart, proposals) + "\n" + skepticVerdictsBlock(proposals, verdicts);
         String raw = callSmart(owner, "integrate", systemPrompt, userMessage);
         if (raw == null || raw.isBlank()) {
             log.warn("Integrátor answer was blank for owner {} week {}", owner, weekStart);
-            return new IntegratorAnswer(List.of(), List.of());
+            return new IntegratorResult(new IntegratorAnswer(List.of(), List.of()), false);
         }
         try {
-            return objectMapper.readValue(stripObjectFences(raw), IntegratorAnswer.class);
+            IntegratorAnswer answer = objectMapper.readValue(stripObjectFences(raw), IntegratorAnswer.class);
+            return new IntegratorResult(answer, true);
         } catch (Exception e) {
             log.warn("Integrátor answer was not parseable JSON for owner {} week {} — {}", owner, weekStart, raw, e);
-            return new IntegratorAnswer(List.of(), List.of());
+            return new IntegratorResult(new IntegratorAnswer(List.of(), List.of()), false);
         }
     }
 
@@ -261,7 +284,7 @@ public class KonziliumVerdictRound {
         StringBuilder sb = new StringBuilder("Hét: ").append(weekStart).append(" – ").append(weekStart.plusDays(6));
         for (int i = 0; i < proposals.size(); i++) {
             ClaimProposal p = proposals.get(i);
-            String target = "NEW".equals(p.kind()) ? p.dimensionKey() : String.valueOf(p.claimId());
+            String target = NEW_KIND.equals(p.kind()) ? p.dimensionKey() : String.valueOf(p.claimId());
             sb.append("\nP").append(i).append(". ").append(p.kind()).append(' ').append(target)
                     .append(" — ").append(p.text()).append(" (biztonság ").append(p.confidence())
                     .append(p.sensitive() ? ", ÉRZÉKENY" : "").append(") indoklás: ").append(p.rationale());

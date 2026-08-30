@@ -32,7 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
+@ConditionalOnProperty(name = {FeaturesConfiguration.CHARACTER_SWITCH, FeaturesConfiguration.COMPANION_SWITCH},
+        havingValue = "true")
 public class ClaimLifecycle {
 
     private static final String ACTIVE = "ACTIVE";
@@ -43,6 +44,10 @@ public class ClaimLifecycle {
     private static final BigDecimal MIN_CLAIM_CONFIDENCE = new BigDecimal("0.05");
     private static final BigDecimal MAX_CLAIM_CONFIDENCE = new BigDecimal("0.95");
     private static final BigDecimal CONFIDENCE_STEP = new BigDecimal("0.10");
+    /** Defensive re-clamp on NEW inserts (mirrors KonziliumVerdictRound's own [0.30, 0.90]
+     *  accepted-ruling clamp) so the invariant holds regardless of caller. */
+    private static final BigDecimal MIN_NEW_CONFIDENCE = new BigDecimal("0.30");
+    private static final BigDecimal MAX_NEW_CONFIDENCE = new BigDecimal("0.90");
     private static final int MAX_KEY_LENGTH = 40;
 
     private final CharacterDimensionRepository dimensionRepository;
@@ -102,7 +107,7 @@ public class ClaimLifecycle {
             log.warn("NEW claim skipped for owner {} — unknown dimension {}", owner, proposal.dimensionKey());
             return null;
         }
-        BigDecimal confidence = ruling.ruledConfidence();
+        BigDecimal confidence = clampNewConfidence(ruling.ruledConfidence());
         Instant now = Instant.now();
         CharacterClaimEntity entity = new CharacterClaimEntity();
         entity.setCreatedBy(owner);
@@ -181,6 +186,17 @@ public class ClaimLifecycle {
         List<ClaimConfidenceHistoryEnvelope.Point> points = new ArrayList<>(history.points());
         points.add(new ClaimConfidenceHistoryEnvelope.Point(value, cause, at));
         return new ClaimConfidenceHistoryEnvelope(points);
+    }
+
+    private static BigDecimal clampNewConfidence(BigDecimal value) {
+        BigDecimal v = value == null ? MIN_NEW_CONFIDENCE : value;
+        if (v.compareTo(MIN_NEW_CONFIDENCE) < 0) {
+            return MIN_NEW_CONFIDENCE;
+        }
+        if (v.compareTo(MAX_NEW_CONFIDENCE) > 0) {
+            return MAX_NEW_CONFIDENCE;
+        }
+        return v;
     }
 
     private static BigDecimal clampClaimConfidence(BigDecimal value) {
