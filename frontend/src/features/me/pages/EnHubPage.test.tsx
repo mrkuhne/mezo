@@ -179,7 +179,7 @@ test('the mosaic carries the nine tiles and each opens its own page', async () =
     ['Napló', '/me/naplo'],
     ['Emberek', '/me/people'],
     ['Tudás', '/me/knowledge'],
-    ['Értesítések beállításai', '/me/ertesitesek'],
+    ['Értesítések beállításai', '/me/ertesitesek/beallitasok'],
     ['AI-napló', '/me/ai-usage'],
   ]
   for (const [label] of TILES) expect(await screen.findByRole('button', { name: label })).toBeInTheDocument()
