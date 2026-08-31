@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.api.dto.CharacterConferenceResponseChangesInner;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceSummary;
 import io.mrkuhne.mezo.api.dto.CharacterDimensionResponse;
 import io.mrkuhne.mezo.api.dto.CharacterDimensionSummary;
+import io.mrkuhne.mezo.api.dto.CharacterExpertDto;
+import io.mrkuhne.mezo.api.dto.CharacterExpertsResponse;
 import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.api.dto.ConferenceTurn;
@@ -81,6 +83,55 @@ public class CharacterService {
             dim.setExpertKey(core.expertKey());
             dimensionRepository.save(dim);
         }
+    }
+
+    /**
+     * The Csapat-page persona catalog: the 7 {@link CharacterExpertCatalog} experts followed by
+     * the Szkeptikus and Mezo — S3 round roles, deliberately kept out of
+     * {@link CharacterExpertCatalog} itself (which stays expert-only, one-CORE-dimension-per-entry).
+     * Composing the two extra static entries here (rather than growing the catalog with
+     * non-expert rows) keeps that catalog's shape — and the {@code CharacterExpertCatalogTest}
+     * pin on it — untouched. A pure static read: no DB, no LLM, character switch only.
+     *
+     * <p>The Szkeptikus/Mezo persocards in the prototype don't carry a distinct "role" text the
+     * way expert cards do (a {@code pchip}); each card only has a {@code prole} (voice/manner)
+     * line and a {@code pwatch} line. {@code role} is therefore set to the persona's identity
+     * where the prototype offers one and otherwise mirrors {@code voiceLine} — no text is
+     * invented, only reused verbatim.
+     */
+    public CharacterExpertsResponse experts() {
+        List<CharacterExpertDto> experts = new ArrayList<>();
+        for (CharacterExpertCatalog.Expert e : CharacterExpertCatalog.EXPERTS) {
+            experts.add(CharacterExpertDto.builder()
+                    .key(e.key())
+                    .displayName(e.displayName())
+                    .role(e.role())
+                    .voiceLine(e.voiceLine())
+                    .watch(e.watch())
+                    .dimensionKey(e.primaryDimensionKey())
+                    .kind(CharacterExpertDto.KindEnum.EXPERT)
+                    .build());
+        }
+        experts.add(CharacterExpertDto.builder()
+                .key("szkeptikus")
+                .displayName("Szkeptikus")
+                .role("Szkeptikus")
+                .voiceLine("Száraz kontrás hang.")
+                .watch(List.of("minden javaslatot megtámad, mielőtt a dossziéba kerül — gyenge "
+                        + "bizonyíték, túlzott általánosítás, egy adatpontból levont következtetés."))
+                .dimensionKey(null)
+                .kind(CharacterExpertDto.KindEnum.SKEPTIC)
+                .build());
+        experts.add(CharacterExpertDto.builder()
+                .key("mezo")
+                .displayName("Mezo")
+                .role("Elnök · Integrátor")
+                .voiceLine("Elnök · Integrátor")
+                .watch(List.of("ő összegez feléd — a csapat az ő fejében dolgozik."))
+                .dimensionKey(null)
+                .kind(CharacterExpertDto.KindEnum.CHAIR)
+                .build());
+        return CharacterExpertsResponse.builder().experts(experts).build();
     }
 
     @Transactional
