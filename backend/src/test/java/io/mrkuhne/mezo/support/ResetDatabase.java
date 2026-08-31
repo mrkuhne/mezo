@@ -44,7 +44,7 @@ public class ResetDatabase {
                 + "gym_schedule_slot, sport_schedule_slot, sport_event, sport_session, run_session_log, running_block, "
                 + "skill_progress, level_up_event, perk_unlock, "
                 + "goal_plan_link, goal, biometric_profile, "
-                + "character_portrait_revision, character_conference, character_observation, character_claim, character_dimension, "
+                + "character_run, character_portrait_revision, character_conference, character_observation, character_claim, character_dimension, "
                 + "mention, person CASCADE").executeUpdate();
         // Master data (demodata owner + their profile) survives; everything else goes.
         entityManager.createNativeQuery(

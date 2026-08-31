@@ -6,10 +6,12 @@ import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepositor
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
  * never observations — {@code CharacterObservationJob}'s consumption bookkeeping is entirely
  * untouched by this class.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = {FeaturesConfiguration.CHARACTER_SWITCH, FeaturesConfiguration.COMPANION_SWITCH},
@@ -53,6 +56,7 @@ public class CharacterBootstrapService {
     private final KonziliumVerdictRound verdictRound;
     private final CharacterConferenceService conferenceService;
     private final CharacterService characterService;
+    private final CharacterRunLog runLog;
 
     /**
      * Runs the bootstrap konzílium for {@code owner}. A live BOOTSTRAP row already existing is a
@@ -88,7 +92,24 @@ public class CharacterBootstrapService {
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());
 
-        return conferenceService.persistConferenceAndApplyOutcome(owner, BOOTSTRAP, null,
-                transcriptTurns, verdictResult.chapters(), verdictResult.rulings());
+        CharacterConferenceEntity conference = conferenceService.persistConferenceAndApplyOutcome(owner, BOOTSTRAP,
+                null, transcriptTurns, verdictResult.chapters(), verdictResult.rulings());
+
+        // BOOTSTRAP run-row (Karakter S9 Gépterem, mezo-1gim.14) — day is the run date (bootstrap
+        // is one-time-EVER per owner, not period-keyed like WEEKLY/MONTHLY, so there is no anchor
+        // period to use instead). The empty-history null return above skips this — that path
+        // never ran a konzílium. call_count is deliberately left 0, same reasoning as
+        // CharacterConferenceService's WEEKLY row (see that class's javadoc) — the AI-napló
+        // (llm_log_history) is the call-count truth.
+        try {
+            List<String> expertKeys = evidence.stream().map(ExpertEvidence::expertKey).distinct().toList();
+            int observationCount = evidence.stream().mapToInt(e -> e.lines().size()).sum();
+            runLog.record(owner, BOOTSTRAP, LocalDate.now(), observationCount, 0, List.of(), expertKeys,
+                    conference.getId());
+        } catch (Exception e) {
+            log.warn("BOOTSTRAP run-log record call failed for owner {}", owner, e);
+        }
+
+        return conference;
     }
 }

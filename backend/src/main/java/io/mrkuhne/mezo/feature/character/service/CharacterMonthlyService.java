@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
  * older than {@code staleChapterDays} is soft-deleted and recorded as a {@code CHAPTER_RETIRED}
  * change appended onto the SAME conference row's outcome.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = {FeaturesConfiguration.CHARACTER_SWITCH, FeaturesConfiguration.COMPANION_SWITCH},
@@ -81,6 +83,7 @@ public class CharacterMonthlyService {
     private final CharacterConferenceService conferenceService;
     private final CharacterService characterService;
     private final CharacterProperties properties;
+    private final CharacterRunLog runLog;
 
     /**
      * Runs (or returns the already-run) monthly deep read for {@code owner}'s {@code monthStart}
@@ -141,6 +144,20 @@ public class CharacterMonthlyService {
             changes.addAll(retirementChanges);
             conference.setOutcome(new ConferenceOutcomeEnvelope(changes));
             conference = conferenceRepository.save(conference);
+        }
+
+        // MONTHLY run-row, ONLY on a newly created conference (Karakter S9 Gépterem,
+        // mezo-1gim.14) — the idempotent short-circuit above (a live row already exists) and the
+        // no-ACTIVE-claims null return both skip this. detector_keys is deliberately empty: the
+        // monthly deep read re-reads EXISTING active claims, not fresh detector signals, so there
+        // are none to name. call_count is deliberately left 0, same as CharacterConferenceService's
+        // WEEKLY row — see that class's javadoc for why an approximate LLM-call count isn't worth
+        // fabricating; the AI-napló (llm_log_history) is the call-count truth.
+        try {
+            List<String> expertKeys = evidence.stream().map(ExpertEvidence::expertKey).distinct().toList();
+            runLog.record(owner, MONTHLY, monthStart, activeClaims.size(), 0, List.of(), expertKeys, conference.getId());
+        } catch (Exception e) {
+            log.warn("MONTHLY run-log record call failed for owner {} monthStart {}", owner, monthStart, e);
         }
 
         return conference;

@@ -902,3 +902,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202608311300_mezo-jyfy_person_mention_enrichment.sql
+  - changeSet:
+      id: "1.0.0:202608311600_mezo-1gim.14_create_character_run"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608311600_mezo-1gim.14_create_character_run.sql
