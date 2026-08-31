@@ -154,6 +154,20 @@ class CharacterPromptAssemblerIT extends ApiIntegrationTest {
     }
 
     @Test
+    void render_digestOnlyDimension_rendersHeaderWithoutBulletLines() {
+        UUID owner = ownerId();
+        // A mature portrait but zero qualifying claims is a legal shape: the dimension still
+        // qualifies (digest present) and its header line carries no "- (" bullet under it.
+        seedDimension(owner, "physical", "Fizikai", "CORE", "doki",
+                "Stabil reggeli rutin alakult ki. Ez a második mondat kimarad.", 60);
+
+        String block = promptSource.render(owner);
+
+        assertThat(block).contains("Fizikai (Doki): Stabil reggeli rutin alakult ki.");
+        assertThat(block).doesNotContain("- (");
+    }
+
+    @Test
     void render_ordersByConfidenceTimesRecency() {
         UUID owner = ownerId();
         CharacterDimensionEntity dimension = seedDimension(owner, "physical", "Fizikai", "CORE", "doki", "", 0);

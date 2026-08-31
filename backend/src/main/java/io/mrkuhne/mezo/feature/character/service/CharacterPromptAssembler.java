@@ -7,7 +7,6 @@ import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
 import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -43,8 +42,6 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
     private static final String HEADER = "[Karakter — amit eddig megtudtam Danielről]\n";
     private static final String CORE_KIND = "CORE";
     private static final String ACTIVE_STATUS = "ACTIVE";
-    private static final BigDecimal SURE_THRESHOLD = new BigDecimal("0.75");
-    private static final BigDecimal LIKELY_THRESHOLD = new BigDecimal("0.50");
     private static final int PORTRAIT_DIGEST_MAX_CHARS = 160;
 
     /** Recency half-life for the confidence x recency ranking (mirrors
@@ -106,7 +103,7 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
         }
         StringBuilder block = new StringBuilder(dimensionHeaderLine(dimension, digest)).append('\n');
         for (CharacterClaimEntity claim : claims) {
-            block.append("- (").append(confidenceWord(claim.getConfidence()));
+            block.append("- (").append(CharacterConfidenceWords.word(claim.getConfidence()));
             if (Boolean.TRUE.equals(claim.getSensitive())) {
                 block.append(", ÉRZÉKENY");
             }
@@ -156,15 +153,5 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
         String firstSentence = splitAt >= 0 ? portrait.substring(0, splitAt + 1) : portrait.strip();
         return firstSentence.length() > PORTRAIT_DIGEST_MAX_CHARS
                 ? firstSentence.substring(0, PORTRAIT_DIGEST_MAX_CHARS) : firstSentence;
-    }
-
-    private static String confidenceWord(BigDecimal confidence) {
-        if (confidence.compareTo(SURE_THRESHOLD) >= 0) {
-            return "biztos";
-        }
-        if (confidence.compareTo(LIKELY_THRESHOLD) >= 0) {
-            return "valószínű";
-        }
-        return "figyeljük";
     }
 }
