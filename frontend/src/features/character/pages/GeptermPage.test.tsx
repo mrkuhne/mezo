@@ -45,21 +45,23 @@ describe('GeptermPage', () => {
     renderHub()
     expect(screen.getByText('Gépterem')).toBeInTheDocument()
     expect(screen.getByText(/csendes nap · 0 hívás/)).toBeInTheDocument() // runs[0] = the latest
-    expect(screen.getByRole('button', { name: 'Futások' })).toBeInTheDocument()
+    // Fix round 1 (a11y): tile `aria-label`s are gone — a tile's accessible name is now its
+    // own text content (eyebrow + the live line), so name queries match on both.
+    expect(screen.getByRole('button', { name: /Futások.*futás.*megfigyelés/ })).toBeInTheDocument()
     expect(screen.getByText('Adatforrások')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'AI-napló' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /AI-napló.*minden hívás tárolva/ })).toBeInTheDocument()
     expect(screen.getByText('Detektorok')).toBeInTheDocument()
   })
 
   test('Futások tile navigates to the Futások list', async () => {
     renderHub()
-    await userEvent.click(screen.getByRole('button', { name: 'Futások' }))
+    await userEvent.click(screen.getByRole('button', { name: /Futások/ }))
     expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futasok')
   })
 
   test('AI-napló tile navigates to /me/ai-usage unfiltered (AiCallFilters is not URL-driven)', async () => {
     renderHub()
-    await userEvent.click(screen.getByRole('button', { name: 'AI-napló' }))
+    await userEvent.click(screen.getByRole('button', { name: /AI-napló/ }))
     expect(mockNavigate).toHaveBeenCalledWith('/me/ai-usage')
   })
 

@@ -96,15 +96,20 @@ function Tile({ icon, eyebrow, line, delayMs, onClick }: {
     </>
   )
   const style = { '--d': `${delayMs}ms` } as CSSProperties
+  // Fix round 1 (a11y): an explicit `aria-label={eyebrow}` used to swallow `line` — the tile's
+  // only live datum ("e héten N futás · M megfigyelés") — from the accessible name entirely,
+  // so screen-reader users heard only "Futások" while sighted users also saw the count.
+  // Dropping the label lets the button's own text content (eyebrow + line) become the
+  // accessible name, same as every sighted reader gets.
   if (onClick) {
     return (
-      <button type="button" className="kr-geptile rise" style={style} onClick={onClick} aria-label={eyebrow}>
+      <button type="button" className="kr-geptile rise" style={style} onClick={onClick}>
         {content}
       </button>
     )
   }
   return (
-    <div className="kr-geptile rise" style={style} aria-label={eyebrow}>
+    <div className="kr-geptile rise" style={style}>
       {content}
     </div>
   )

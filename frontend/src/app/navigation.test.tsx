@@ -112,7 +112,9 @@ test('/me/karakter/konzilium is the conference list — a stable full-page sibli
 test('/me/karakter/gepterem is the geek-transparency hub — a stable full-page sibling (mezo-1gim.14, Task 4)', async () => {
   renderApp('/me/karakter/gepterem')
   expect(await screen.findByText('mi táplálja a dossziét — nyíltan')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Futások' })).toBeInTheDocument()
+  // Fix round 1 (a11y): the Futások tile carries no `aria-label` any more — its accessible
+  // name is its own text content (eyebrow + the live line), so the query matches on that.
+  expect(screen.getByRole('button', { name: /Futások/ })).toBeInTheDocument()
 })
 
 test('/me/karakter/gepterem/futasok is the week-stepped run timeline (mezo-1gim.14, Task 4)', async () => {

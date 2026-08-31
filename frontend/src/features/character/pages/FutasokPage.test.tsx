@@ -100,12 +100,36 @@ describe('FutasokPage', () => {
     expect(setSearchParams).toHaveBeenCalledWith({ start: '2026-08-17' }, { replace: true })
   })
 
+  // Fix round 1 (a11y): the week-label button's `aria-label="Hét választása"` is gone — its
+  // accessible name is now its own visible content (the browsed week range + status text),
+  // so the open-menu trigger is queried by that text instead of the retired label. Scoped to
+  // `.kr-weeklbl-btn` specifically — once the jump menu is open, one of its chips can carry
+  // the SAME "aug. 24. – aug. 30." text (whenever the real wall-clock "current week" puts
+  // 2026-08-24 among the last-8-Mondays list), so a bare text match is ambiguous.
+  const weekLabelBtn = () => document.querySelector('.kr-weeklbl-btn')!
+
   test('the week label opens a jump menu of recent weeks', async () => {
     renderPage()
-    await userEvent.click(screen.getByRole('button', { name: 'Hét választása' }))
+    await userEvent.click(weekLabelBtn())
     expect(screen.getByRole('button', { name: /Előző hét/ })).toBeInTheDocument() // stepper still there
     // At least one other week chip is now visible.
     expect(screen.getAllByRole('button').length).toBeGreaterThan(3)
+  })
+
+  test('clicking outside the jump menu dismisses it', async () => {
+    renderPage()
+    await userEvent.click(weekLabelBtn())
+    expect(weekLabelBtn()).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(document.body)
+    expect(weekLabelBtn()).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('Escape dismisses the jump menu', async () => {
+    renderPage()
+    await userEvent.click(weekLabelBtn())
+    expect(weekLabelBtn()).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.keyboard('{Escape}')
+    expect(weekLabelBtn()).toHaveAttribute('aria-expanded', 'false')
   })
 
   test('rare runs (MONTHLY/BOOTSTRAP) render under "Ritkább futások", separate from the week list', () => {

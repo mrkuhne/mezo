@@ -15,7 +15,7 @@
 // (Task 2 contract, CHARACTER_RUN_RANGE_INVALID) — the rare-runs window is the 62 days ending
 // at the browsed week, the widest single query the endpoint allows, not an unbounded lookback.
 // ============================================================
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import '@/features/character/character.css'
 import { PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
@@ -51,7 +51,26 @@ export function FutasokPage() {
   const rareRuns = rareWindowRuns.filter((r) => RARE_KINDS.includes(r.kind))
 
   const [menuOpen, setMenuOpen] = useState(false)
+  const weeklblRef = useRef<HTMLDivElement>(null)
   const goWeek = (iso: string) => { setParams({ start: iso }, { replace: true }); setMenuOpen(false) }
+
+  // Fix round 1 (minor): the jump menu had no outside-click/Escape dismissal — the
+  // AppHeader.tsx popover contract (Escape + a "click outside the popover's own root"
+  // listener, subscribed only while open), applied here instead of duplicated ad hoc.
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = () => setMenuOpen(false)
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
+    const onDown = (e: MouseEvent) => {
+      if (!weeklblRef.current?.contains(e.target as Node)) close()
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onDown)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onDown)
+    }
+  }, [menuOpen])
 
   const currentMonday = mondayIso()
   const recentMondays = Array.from({ length: WEEKS_BACK + 1 }, (_, i) => addDays(currentMonday, -7 * (WEEKS_BACK - i)))
@@ -72,11 +91,15 @@ export function FutasokPage() {
       <PageBody>
         <div className="kr-weeknav">
           <button type="button" className="kr-wstep" aria-label="Előző hét" onClick={() => goWeek(prevMonday(start))}>‹</button>
-          <div className="kr-weeklbl">
+          {/* Fix round 1 (a11y): dropped the `aria-label="Hét választása"` that used to override
+             this button's accessible name down to a bare "week picker" label, hiding the
+             actual browsed week range + status ("legutóbbi futások" / "korábbi hét") — the
+             row's only live datum — from screen-reader users while sighted users still saw
+             it. The button's own text content is now the accessible name. */}
+          <div className="kr-weeklbl" ref={weeklblRef}>
             <button
               type="button"
               className="kr-weeklbl-btn"
-              aria-label="Hét választása"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((o) => !o)}
             >

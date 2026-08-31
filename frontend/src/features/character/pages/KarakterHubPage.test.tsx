@@ -157,16 +157,23 @@ describe('KarakterHubPage', () => {
       detectorKeys: ['journal-note'], expertKeys: ['pszichologus', 'taplalkozo'], conferenceId: null,
     }]
     renderHub()
-    expect(screen.getByRole('button', { name: 'Gépterem' })).toBeInTheDocument()
+    // Fix round 1 (a11y): no `aria-label` overrides this button's name any more — the
+    // accessible name is its own text content, which includes the live last-run line, so a
+    // name query has to match on that too (not just the bare eyebrow word "Gépterem").
+    const row = screen.getByRole('button', { name: /Gépterem.*3 megfigyelés · 2 szakértő hívva/ })
+    expect(row).toBeInTheDocument()
     expect(screen.getByText(/3 megfigyelés · 2 szakértő hívva/)).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Gépterem' }))
+    await userEvent.click(row)
     expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem')
   })
 
-  test('an empty week (no runs yet) renders the Gépterem row without a fabricated line', () => {
+  test('an empty week (no runs yet) renders the Gépterem row with its static tagline, never a fabricated line', () => {
     hoisted.weekRuns = []
     renderHub()
-    expect(screen.getByRole('button', { name: 'Gépterem' })).toBeInTheDocument()
+    // The deliberate empty-state fallback (coordinator decision, fix round 1) — a plain
+    // tagline, not a blank row, and never a fabricated count.
+    const row = screen.getByRole('button', { name: /Gépterem.*mi táplálja a dossziét — nyíltan/ })
+    expect(row).toBeInTheDocument()
     expect(screen.getByText('mi táplálja a dossziét — nyíltan')).toBeInTheDocument()
   })
 

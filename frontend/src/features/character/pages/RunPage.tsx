@@ -9,7 +9,10 @@
 //  · run === null (unknown/foreign id — the useCharacterRun 404 idiom) -> a quiet "not
 //    found" face, never a crash. This is DIFFERENT from FutasokPage's "nincs adat erről az
 //    éjszakáról": here an id WAS given by a caller and simply doesn't resolve, vs. a day in
-//    the timeline that never got a row at all.
+//    the timeline that never got a row at all. Uses `.kr-degraded` — the feature's ONE
+//    established 404/switch-off idiom (DimensionPage, DimensionsPage, KarakterHubPage,
+//    CharacterFeedPage all render the same bordered card; fix round 1 caught this page using
+//    a different, one-off class, `.kr-konz-empty`, borrowed from KonziliumPage).
 //  · NIGHTLY + observationCount === 0 -> the proud quiet-night face (QUIET_MSG) — never a
 //    fabricated signal chain for a night nothing fired on.
 //  · conference-kind runs (WEEKLY/MONTHLY/BOOTSTRAP) never show a "0 hívás" flow-strip cell
@@ -31,8 +34,17 @@ import type { CharacterRunSummary } from '@/data/character/characterApi'
  *  WEEKLY/MONTHLY/BOOTSTRAP would render their deliberate `callCount: 0` (see
  *  characterMock.ts / CharacterConferenceService's javadoc) as "0 hívás", misreading as
  *  "nobody was called" instead of "not tracked at this level" (the AI-napló row IS that
- *  truth for those kinds). Conference-kind runs get a single honest `megfigyelés` step. */
-function flowSteps(run: CharacterRunSummary): RunFlowStep[] {
+ *  truth for those kinds).
+ *
+ *  Fix round 1: a generic "megfigyelés"-labeled fallback cell for every non-NIGHTLY kind
+ *  used to sit here — but MONTHLY's `observationCount` counts re-evaluated ÁLLÍTÁSOK
+ *  (claims) and BOOTSTRAP's counts kezdő állítások, not megfigyelések. Labeling either as
+ *  "megfigyelés" directly contradicted `runHeroLede`'s own sentence two lines above it.
+ *  WEEKLY's count genuinely IS a megfigyelés count (consumed observations), so it keeps an
+ *  honest single-step strip; MONTHLY/BOOTSTRAP get NO flow strip at all — the prototype's own
+ *  `renderRun` never gives havi/bootstrap a `statsHtml` stat row either (karakter-body.html);
+ *  the narrative hero already carries the number with the right noun for those two kinds. */
+function flowSteps(run: CharacterRunSummary): RunFlowStep[] | null {
   if (run.kind === 'NIGHTLY') {
     return [
       { label: 'jel', value: run.observationCount },
@@ -40,7 +52,8 @@ function flowSteps(run: CharacterRunSummary): RunFlowStep[] {
       { label: 'megfigyelés', value: run.observationCount },
     ]
   }
-  return [{ label: 'megfigyelés', value: run.observationCount }]
+  if (run.kind === 'WEEKLY') return [{ label: 'megfigyelés', value: run.observationCount }]
+  return null
 }
 
 const OP_LABEL: Record<CharacterRunSummary['kind'], string> = {
@@ -64,7 +77,7 @@ export function RunPage() {
     return (
       <div className="kr-hub">
         <PageHead onBack={goFutasok} label="‹ Futások" />
-        <div className="kr-konz-empty">Ez a futás nem található.</div>
+        <div className="kr-degraded">Ez a futás nem található.</div>
       </div>
     )
   }
@@ -72,6 +85,7 @@ export function RunPage() {
   const { summary } = run
   const expertName = (key: string) => experts.find((e) => e.key === key)?.displayName ?? key
   const quietNight = summary.kind === 'NIGHTLY' && summary.observationCount === 0
+  const steps = flowSteps(summary)
 
   return (
     <div className="kr-hub">
@@ -89,7 +103,7 @@ export function RunPage() {
       </div>
 
       <div className="mz-page-body">
-        <RunFlowStrip steps={flowSteps(summary)} />
+        {steps != null && <RunFlowStrip steps={steps} />}
 
         {quietNight && (
           <>

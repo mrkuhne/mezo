@@ -238,14 +238,23 @@ export function KarakterHubPage() {
         {/* Gépterem row (v4.2, Task 4) — a thin, full-width row BELOW the 2×2 mosaic (not a
            5th tile in the grid): the hub's four "meleg" content tiles stay visually together,
            the Gépterem's technical tone sits under them as its own band. `runs[0]` is the
-           most recent this week (day-desc); the row renders nothing when the week has no
-           runs yet, rather than inventing a line. */}
+           most recent this week (day-desc).
+           Fix round 1 (coordinator decision, mezo-1gim.14): an empty week (no runs yet) shows
+           the page's own tagline — "mi táplálja a dossziét — nyíltan" — instead of a blank
+           line; a row with no text at all would read as broken, not as "nothing to report".
+           This is a deliberate STATIC fallback, never a fabricated count: the tagline carries
+           no number, and `lastRunLine` (real-count derived) is only used when `weekRuns[0]`
+           actually exists.
+           Fix round 1 (a11y): no `aria-label` here — one used to override the button's
+           accessible name down to the bare word "Gépterem", swallowing the live last-run
+           sentence (the row's only actual datum) from screen-reader users while sighted users
+           still saw it. The button's own text content (eyebrow + line) is now the accessible
+           name, so both audiences get the same information. */}
         <button
           type="button"
           className="kr-geprow rise"
           style={{ '--d': '260ms' } as React.CSSProperties}
           onClick={() => navigate('/me/karakter/gepterem')}
-          aria-label="Gépterem"
         >
           <span className="kr-geprow-eyebrow">Gépterem</span>
           <span className="kr-geprow-line">

@@ -76,8 +76,29 @@ describe('RunPage', () => {
 
   test('an unknown/foreign run id (404 -> null) renders the honest not-found face, not a crash', () => {
     hoisted.run = null
-    renderRun()
+    const { container } = renderRun()
+    // Fix round 1: the feature's ONE established 404/switch-off idiom (DimensionPage,
+    // DimensionsPage, KarakterHubPage, CharacterFeedPage) is `.kr-degraded`, not the
+    // KonziliumPage-borrowed `.kr-konz-empty` this page used to render.
     expect(screen.getByText('Ez a futás nem található.')).toBeInTheDocument()
+    expect(container.querySelector('.kr-degraded')).toBeInTheDocument()
+    expect(container.querySelector('.kr-konz-empty')).not.toBeInTheDocument()
+  })
+
+  test('a MONTHLY run renders NO flow strip — the hero already carries the re-evaluated-claim count', () => {
+    hoisted.id = 'run-m1'
+    hoisted.run = MOCK_RUN_DETAIL['run-m1']
+    renderRun()
+    expect(screen.queryByRole('group', { name: 'Futás-lánc' })).not.toBeInTheDocument()
+    expect(screen.getByText(/állítást mérlegeltünk újra/)).toBeInTheDocument()
+  })
+
+  test('a BOOTSTRAP run renders NO flow strip — the hero already carries the seeded-claim count', () => {
+    hoisted.id = 'run-b0'
+    hoisted.run = MOCK_RUN_DETAIL['run-b0']
+    renderRun()
+    expect(screen.queryByRole('group', { name: 'Futás-lánc' })).not.toBeInTheDocument()
+    expect(screen.getByText(/kezdő állítás/)).toBeInTheDocument()
   })
 
   test('the AI-napló row navigates to /me/ai-usage unfiltered (AiCallFilters is not URL-driven)', async () => {
