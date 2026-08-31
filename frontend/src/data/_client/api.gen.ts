@@ -5576,6 +5576,8 @@ export interface components {
         MessageRef: {
             kind: string;
             id: string;
+            /** @description Human name for the referenced entity when the producer knows one (mezo-b3pp.33) — today only GraphNode refs carry it (the graph node's title). Absent/null for every other kind, and for rows persisted before this field existed; the FE falls back to its own id-derived label then. */
+            label?: string | null;
         };
         SendMessageRequest: {
             content: string;

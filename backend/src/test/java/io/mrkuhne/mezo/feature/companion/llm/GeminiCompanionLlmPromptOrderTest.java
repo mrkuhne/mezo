@@ -111,7 +111,7 @@ class GeminiCompanionLlmPromptOrderTest {
                         new AmbientRecall.Group(2, 0.60, 90),
                         new AmbientRecall.Group(1, 0.55, 90),
                         new AmbientRecall.Group(1, 0.55, 90)),
-                new Graph(2, 8, 0.99, 0.05, 800, 0.4, "0 20 3 * * *", 30, 0.05),
+                new Graph(2, 8, 0.99, 0.05, 800, 6, 0.4, "0 20 3 * * *", 30, 0.05),
                 List.of());
     }
 

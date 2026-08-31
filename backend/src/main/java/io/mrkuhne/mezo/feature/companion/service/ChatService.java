@@ -280,7 +280,7 @@ public class ChatService {
         }
         // W3.1/W2.4: ambient refs (Memory, then GraphNode) join the audit AFTER the LLM round — tool
         // refs are the answer's own provenance and win the per-turn ref cap.
-        ambientRefs(recalled, graph).forEach(ref -> audit.addRef(ref.kind(), ref.id()));
+        ambientRefs(recalled, graph).forEach(ref -> audit.addRef(ref.kind(), ref.id(), ref.label()));
         // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded,
