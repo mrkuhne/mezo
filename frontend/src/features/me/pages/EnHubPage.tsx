@@ -76,10 +76,13 @@ export function EnHubPage() {
   const tdeeBreakdown = biometric != null ? buildTdeeBreakdown(biometric) : null
   const { weightLog, weightTrends } = useWeight()
   const latestKg = weightLog.length > 0 ? weightLog[weightLog.length - 1].value : null
-  // MeBioRow's rule, verbatim: `·`-joined non-null bits, nothing at zero bits.
+  // MeBioRow's rule, verbatim: `·`-joined non-null bits, nothing at zero bits. Each bit is
+  // guarded on its OWN field rather than on `biometric` alone (mezo-5cmq): the contract now
+  // types every profile field nullable, so a present profile is no longer a promise that
+  // birthDate/heightCm are filled — an unguarded read would print „null cm".
   const bioBits = [
-    biometric ? `${ageFromBirthDate(biometric.birthDate)} év` : null,
-    biometric ? `${biometric.heightCm} cm` : null,
+    biometric?.birthDate ? `${ageFromBirthDate(biometric.birthDate)} év` : null,
+    biometric?.heightCm != null ? `${biometric.heightCm} cm` : null,
     latestKg != null ? `${hu1(latestKg)} kg` : null,
     biometric?.bodyFatPct != null ? `${biometric.bodyFatPct}% testzsír` : null,
   ].filter((b): b is string => b !== null)

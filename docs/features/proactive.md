@@ -1498,9 +1498,10 @@ On the contract-first pipeline ([`_platform-api-backend.md`](_platform-api-backe
 `api.gen.ts` types (FE). Drift = compile error.
 
 ### 5.4 Proactive → Today FE (✅ `mezo-gst9` wired — dual-mode read, replaces the B1.2+H1 seams)
-The Today `MezoChip` message thread ([today.md](today.md)) is the consumer. `useCompanionFeed()`
-(`data/today/feedHooks.ts`, `['companionFeed', date]`) reads `GET /api/proactive/feed?date=<local>`
-via `feedApi.get` (`data/today/feedApi.ts`, `toFeedMessages` wire→`FeedMessage[]`; mock mode returns
+The Today `MezoChip` message thread ([today.md](today.md)) is the consumer. `useCompanionFeed(date =
+localDateString())` (`data/today/feedHooks.ts`, `['companionFeed', date]`) reads `GET
+/api/proactive/feed?date=<local>` via `feedApi.get` (`data/today/feedApi.ts`, `toFeedMessages`
+wire→`FeedMessage[]`; mock mode returns
 `[]` synchronously — no fetch), polled every 60s in real mode (`refetchInterval`) so event-triggered
 kinds (sleep/weight) and any missed cron-kind land without a manual reload — the sleep/weight-log
 mutations ALSO invalidate `['companionFeed', …]` directly on success, so a fresh log usually shows
@@ -1508,7 +1509,13 @@ up in the thread well before the next poll tick. `logic/mezoMessages.ts`'s `buil
 demoBriefing})` maps each `FeedMessage` 1:1 to a `MezoMessageItem` (kind→id, `body[].text`→
 paragraphs, refs pass through) and prepends the labelled demo card (`resolveBriefing(scenario.
 dayState)`) only while the feed carries no `morning` kind. `TodayPage.tsx` calls `useCompanionFeed()`
-directly (not through `useToday`) and passes the result to `buildMezoMessages`. **This replaces BOTH**
+directly (not through `useToday`) and passes the result to `buildMezoMessages`. **`date` is an
+explicit opt-in the hub/Today callers never pass** (`mezo-b3pp.36`): `NapMezoPage` is the one caller
+that does, feeding it an earlier day when an `intervention` push's `d=` deeplink param names one — a
+second, independent `['companionFeed', date]` cache entry, not a duplicate of today's own poll
+([today.md](today.md) for the page-side wiring;
+[`_platform-notifications.md` §3d](_platform-notifications.md) for why the push can name a day other
+than today). **This replaces BOTH**
 the old `useBriefing()`/`briefingHooks.ts`/`BriefingCard.tsx` seam (B1.2) **and** the old
 `useCompanionNote()`/`heartbeatHooks.ts`/`CompanionNoteCard.tsx` seam (H1) — all now deleted. The
 seam type omits `confidence`/`tone` same as before (§9 gotcha c, unchanged). **Since `mezo-b3pp.15`

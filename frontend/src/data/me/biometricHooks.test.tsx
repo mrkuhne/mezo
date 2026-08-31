@@ -47,6 +47,24 @@ test('useBiometricProfile (real mode) treats a 404 as no profile (null, not comp
   expect(result.current.isComplete).toBe(false)
 })
 
+test('useBiometricProfile (real mode) treats the new 200 + all-null body as no profile', async () => {
+  // mezo-5cmq: the backend now answers "no profile configured" with 200 and a body whose every
+  // field is null (Jackson writes the nulls — it is NOT `{}`), instead of a 404. Both shapes must
+  // land on the same `profile: null`, because the two images do not switch at the same moment.
+  server.use(
+    http.get(`${API_BASE}/api/biometrics/profile`, () =>
+      HttpResponse.json({
+        sex: null, heightCm: null, birthDate: null, bodyFatPct: null,
+        activityLevel: null, tdeeBootstrap: null,
+      }),
+    ),
+  )
+  const { result } = renderHook(() => useBiometricProfile(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.isLoading).toBe(false))
+  expect(result.current.profile).toBeNull()
+  expect(result.current.isComplete).toBe(false)
+})
+
 test('useBiometricActions (real mode) upsert PUTs the body + invalidates biometricProfile + goals', async () => {
   let putBody: unknown = null
   server.use(

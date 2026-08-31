@@ -102,7 +102,8 @@ public class MedicationTools {
      * — the cycle position and recent doses. No brand-specific naming: renders whichever medication
      * the owner has active, generically. "nincs adat" only when the owner has no active medication
      * at all (checked via {@link #medicationRepository} first, mirroring {@link #renderCycle}'s own
-     * null-med check, so {@code getDay}'s 404 is never hit); the "no dose yet" case (cycle day 0) is
+     * null-med check — {@code getDay} answers an EMPTY payload in that case (mezo-5cmq), which this
+     * renderer has nothing to say about); the "no dose yet" case (cycle day 0) is
      * an honest partial render — name/regimen without a cycle line — never an absence.
      */
     private String renderAll(UUID userId, ToolContext toolContext) {
