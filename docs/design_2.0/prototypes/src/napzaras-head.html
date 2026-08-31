@@ -1,0 +1,293 @@
+<meta charset="utf-8">
+<title>Napzárás</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  :root {
+    --ground: #EFE8DD; --ground-2: #E7DFD2; --card: #FFFFFF;
+    --ink: #2B2118; --ink-2: #6E6257; --accent: #A84A26;
+    --line: rgba(43, 33, 24, 0.12);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #191614; --ground-2: #211D19; --card: #262119;
+      --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+      --line: rgba(240, 233, 225, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614; --ground-2: #211D19; --card: #262119;
+    --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+    --line: rgba(240, 233, 225, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; padding: 48px 24px 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; }
+  .lede { max-width: 62ch; color: var(--ink-2); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 40px; display: flex; gap: 56px; flex-wrap: wrap; align-items: flex-start; }
+  aside { max-width: 400px; display: grid; gap: 24px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  aside ul, aside ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+
+  /* ============ PHONE ============ */
+  .phone {
+    width: 330px; height: 694px; flex: none;
+    background: #1D1712; border-radius: 52px; padding: 11px;
+    box-shadow: 0 30px 60px -22px rgba(29, 23, 18, 0.5);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.4;
+    color: #EDEAF6; background: #2E2A44;
+  }
+  .isl { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 82px; height: 22px; border-radius: 999px; background: #0B0A16; z-index: 14; }
+  .p-status { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px 2px; font-size: 11px; font-weight: 600; position: relative; z-index: 14; }
+  .grow { flex: 1; min-width: 0; }
+  .mrow { display: flex; align-items: center; gap: 8px; }
+  .big { font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .homebar { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 118px; height: 4px; border-radius: 999px; background: rgba(237, 234, 246, 0.75); margin-bottom: 9px; z-index: 14; }
+
+  .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
+  .play .rise { animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  /* ============ FELVONÁS-RÉTEGEK — a sötétedő ív ============ */
+  .act {
+    position: absolute; inset: 0; z-index: 2;
+    display: flex; flex-direction: column;
+    padding: 44px 16px 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.9s ease;
+  }
+  .act.on { opacity: 1; pointer-events: auto; }
+  .act[data-a="pre"]  { background: linear-gradient(180deg, #F0ECF8 0%, #E6E0F2 100%); color: #2B2118; }
+  .act[data-a="1"] { background: linear-gradient(180deg, #453C5E 0%, #322C4C 62%, #2B2745 100%); }
+  .act[data-a="2"] { background: linear-gradient(180deg, #3A3757 0%, #2A2A48 100%); }
+  .act[data-a="3"] { background: linear-gradient(180deg, #322F51 0%, #232343 100%); }
+  .act[data-a="4"] { background: linear-gradient(180deg, #282849 0%, #1B1C38 100%); }
+  .act[data-a="5"] { background: linear-gradient(180deg, #2A2547 0%, #201D3C 100%); }
+  .act[data-a="6"] { background: linear-gradient(180deg, #191932 0%, #0F0F22 100%); }
+
+  /* csillagok — rétegenként erősödnek */
+  .starfield { position: absolute; inset: 0; pointer-events: none; opacity: var(--st, 0.4); }
+  .starfield i { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: rgba(237, 234, 246, 0.8); }
+  .starfield i:nth-child(2n) { width: 1.5px; height: 1.5px; opacity: 0.6; }
+  .starfield i:nth-child(3n) { opacity: 0.35; }
+  .on .starfield i:nth-child(4n) { animation: twinkle 3.4s ease-in-out infinite; animation-delay: calc(var(--tw, 0) * 1s); }
+  @keyframes twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.9; } }
+
+  /* a Termés fénytörése */
+  .harvglow {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 120% 75% at 50% 88%, rgba(240, 180, 41, 0.38) 0%, rgba(240, 180, 41, 0.12) 42%, transparent 68%);
+    opacity: 0; transform: scale(0.9); transform-origin: 50% 100%;
+  }
+  .on .harvglow { animation: glowin 1.4s ease-out 0.25s forwards; }
+  @keyframes glowin { to { opacity: 1; transform: none; } }
+
+  /* ============ KÖZÖS RITUÁLÉ-ELEMEK ============ */
+  .rz-x {
+    position: absolute; top: 42px; right: 14px; z-index: 12;
+    width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255, 255, 255, 0.1); color: rgba(237, 234, 246, 0.75);
+    font-family: inherit; font-size: 13px; display: grid; place-items: center;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+  .rz-x:focus-visible { outline: 2px solid #B7A9E8; outline-offset: 2px; }
+
+  .beads { position: absolute; top: 49px; left: 50%; transform: translateX(-50%); z-index: 12; display: flex; gap: 6px; }
+  .beads button {
+    width: 8px; height: 8px; border-radius: 50%; border: none; padding: 0; cursor: pointer;
+    background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform 0.25s ease, background 0.4s ease;
+  }
+  .beads button.done { background: radial-gradient(circle at 35% 30%, #E6DFF9, #9C8FD0 55%, #5D4FA0); }
+  .beads button.cur { transform: scale(1.35); background: radial-gradient(circle at 35% 30%, #FFE9A8, #E0AC2F 55%, #A9770F); box-shadow: 0 0 8px rgba(224, 172, 47, 0.55); }
+  .beads button:focus-visible { outline: 2px solid #B7A9E8; outline-offset: 2px; }
+
+  .act-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(237, 234, 246, 0.5); }
+  .act-title { font-size: 19px; font-weight: 200; letter-spacing: -0.01em; margin-top: 3px; }
+  .act-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; display: flex; flex-direction: column; gap: 9px; padding-top: 12px; }
+  .act-body::-webkit-scrollbar { display: none; }
+  .act-foot { flex: none; padding-top: 10px; display: flex; flex-direction: column; gap: 7px; }
+
+  .rz-cta {
+    border: none; border-radius: 999px; padding: 11px 0; width: 100%;
+    font-family: inherit; font-size: 11.5px; font-weight: 600; color: #fff; cursor: pointer;
+    background: linear-gradient(135deg, #8A76CC, #6C5FA3);
+    box-shadow: 0 10px 20px -8px rgba(108, 95, 163, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  .rz-cta:focus-visible { outline: 2px solid #B7A9E8; outline-offset: 2px; }
+  .rz-ghost {
+    border: none; border-radius: 999px; padding: 9px 0; width: 100%;
+    font-family: inherit; font-size: 10.5px; font-weight: 600; cursor: pointer;
+    background: rgba(255, 255, 255, 0.08); color: rgba(237, 234, 246, 0.7);
+  }
+
+  /* night-washed csempe */
+  .nw {
+    border-radius: 17px;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+    border: 0.5px solid rgba(255, 255, 255, 0.13);
+    box-shadow: 0 14px 26px -14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+  .nwrow { display: flex; align-items: center; gap: 10px; padding: 9px 11px; }
+  .nwrow .nm { font-size: 10.5px; font-weight: 500; }
+  .nwrow .sb { font-size: 8.5px; color: rgba(237, 234, 246, 0.55); margin-top: 1px; }
+  .nwrow .tm { font-size: 9px; color: rgba(237, 234, 246, 0.5); flex: none; font-variant-numeric: tabular-nums; }
+  .nwspot { width: 30px; height: 30px; border-radius: 10px; flex: none; display: grid; place-items: center; background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+
+  /* nyitott hurok glow — lavender, sosem piros */
+  .nw.loop-open {
+    border-color: rgba(183, 169, 232, 0.5);
+    box-shadow: 0 0 16px -2px rgba(138, 118, 204, 0.5), 0 14px 26px -14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    animation: loopbreath 3s ease-in-out infinite;
+  }
+  @keyframes loopbreath {
+    0%, 100% { box-shadow: 0 0 12px -3px rgba(138, 118, 204, 0.35), 0 14px 26px -14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+    50% { box-shadow: 0 0 20px 0 rgba(138, 118, 204, 0.6), 0 14px 26px -14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14); }
+  }
+  .loopchip {
+    border: 1px solid rgba(183, 169, 232, 0.55); background: rgba(183, 169, 232, 0.12);
+    color: #CFC4F2; font-family: inherit; border-radius: 999px; padding: 4px 11px;
+    font-size: 9px; font-weight: 700; cursor: pointer; flex: none;
+  }
+  .loopchip.quiet { border-color: rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.06); color: rgba(237, 234, 246, 0.7); }
+  .refbtns { display: flex; gap: 5px; flex: none; }
+  .refbtns button {
+    border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.05);
+    color: rgba(237, 234, 246, 0.75); font-family: inherit; border-radius: 999px;
+    padding: 4px 9px; font-size: 8.5px; font-weight: 600; cursor: pointer;
+  }
+  .refbtns button.sel { border-color: #B7A9E8; background: rgba(183, 169, 232, 0.18); color: #E4DCFA; }
+
+  /* hold */
+  .moonwrap { display: grid; place-items: center; }
+  .breathe { animation: orbbreathe 4.5s ease-in-out infinite; }
+  @keyframes orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+
+  /* ── 1 · Megérkezés ── */
+  .arr-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; }
+  .arr-line { font-size: 21px; font-weight: 200; letter-spacing: -0.01em; }
+  .arr-line.two { color: rgba(237, 234, 246, 0.75); }
+  .arr-moon { margin-bottom: 26px; }
+
+  /* ── 2 · Ív ── */
+  .arcbox { padding: 6px 4px 2px; }
+  .arcpath { stroke-dasharray: 320; stroke-dashoffset: 320; }
+  .play .arcpath { animation: arcdraw 1.2s cubic-bezier(0.3, 0.7, 0.35, 1) 0.15s forwards; }
+  @keyframes arcdraw { to { stroke-dashoffset: 0; } }
+  .arcdot { transform-box: fill-box; transform-origin: center; transform: scale(0); }
+  .play .arcdot { animation: dotpop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) forwards; animation-delay: var(--d); }
+  @keyframes dotpop { to { transform: scale(1); } }
+  .thinline { font-size: 10px; color: rgba(237, 234, 246, 0.6); text-align: center; padding: 4px 0; font-weight: 300; }
+
+  /* ── 3 · Reflexió ── */
+  .rz-textarea {
+    width: 100%; min-height: 96px; resize: none; border-radius: 15px; padding: 10px 11px;
+    background: rgba(255, 255, 255, 0.07); border: 0.5px solid rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    color: #EDEAF6; font-family: inherit; font-size: 10.5px; font-weight: 300; line-height: 1.5;
+  }
+  .rz-textarea::placeholder { color: rgba(237, 234, 246, 0.4); }
+  .rz-textarea:focus { outline: none; border-color: rgba(183, 169, 232, 0.6); box-shadow: 0 0 0 2px rgba(138, 118, 204, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+  .micchip {
+    display: flex; align-items: center; gap: 6px; align-self: flex-start;
+    border: 0.5px solid rgba(255, 255, 255, 0.16); background: rgba(255, 255, 255, 0.07);
+    border-radius: 999px; padding: 4px 11px 4px 6px; font-size: 9px; font-weight: 600;
+    color: rgba(237, 234, 246, 0.75); cursor: pointer; font-family: inherit;
+  }
+  .gratrow { display: flex; align-items: center; gap: 8px; padding: 6px 2px; font-size: 10px; font-weight: 300; }
+  .gratrow.saved { color: rgba(237, 234, 246, 0.85); }
+  .gratrow input {
+    flex: 1; border: none; border-bottom: 0.5px solid rgba(255, 255, 255, 0.18); background: none;
+    color: #EDEAF6; font-family: inherit; font-size: 10px; font-weight: 300; padding: 3px 1px;
+  }
+  .gratrow input::placeholder { color: rgba(237, 234, 246, 0.35); }
+  .gratrow input:focus { outline: none; border-bottom-color: rgba(183, 169, 232, 0.7); }
+
+  /* ── 5 · Termés ── */
+  .harv-body { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; overflow-y: auto; scrollbar-width: none; }
+  .harv-body::-webkit-scrollbar { display: none; }
+  .harv-hero { display: grid; justify-items: center; gap: 2px; text-align: center; }
+  .harv-xp { font-size: 40px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: #FFE9A8; text-shadow: 0 0 24px rgba(224, 172, 47, 0.45); }
+  .harv-xp small { font-size: 15px; font-weight: 300; color: rgba(255, 233, 168, 0.8); }
+  .harv-sub { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; color: rgba(237, 234, 246, 0.55); }
+  .harv-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .harvchip { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 14px; }
+  .harvchip .nm { font-size: 9px; font-weight: 500; }
+  .harvchip .xp { font-size: 10px; font-weight: 700; color: #FFE9A8; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .harvchip .nwspot { width: 24px; height: 24px; border-radius: 8px; }
+  .skillrow { display: flex; align-items: center; gap: 8px; padding: 8px 11px; }
+  .skillrow .nm2 { font-size: 9.5px; font-weight: 600; flex: none; }
+  .skbar { flex: 1; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+  .skbar div { height: 100%; width: 0; border-radius: 4px; background: linear-gradient(90deg, #E5C46B, #C9962E); transition: width 1s cubic-bezier(0.25, 0.8, 0.35, 1) 0.9s; }
+  .play .skbar div { width: 72%; }
+  .lvchip { font-size: 8px; font-weight: 700; color: #FFE9A8; background: rgba(224, 172, 47, 0.16); border-radius: 999px; padding: 2px 7px; flex: none; }
+  .streakline { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 10px; font-weight: 500; }
+  .streakline .sb2 { color: rgba(237, 234, 246, 0.55); font-size: 9px; }
+  .conf { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 5; }
+  .conf i {
+    position: absolute; width: 6px; height: 9px; border-radius: 2px; top: -12px;
+    left: var(--x); background: var(--c); opacity: 0;
+    animation: conffall 1.6s ease-in var(--cd) forwards;
+  }
+  @keyframes conffall {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(340px) rotate(var(--rot)); }
+  }
+
+  /* ── 6 · Elengedés ── */
+  .rel-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+  .fullcircle { stroke-dasharray: 289; stroke-dashoffset: 289; }
+  .play .fullcircle { animation: circleclose 1.4s cubic-bezier(0.3, 0.7, 0.35, 1) 0.3s forwards; }
+  @keyframes circleclose { to { stroke-dashoffset: 0; } }
+  .rel-line { font-size: 15px; font-weight: 200; }
+  .rel-note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 10.5px; color: rgba(237, 234, 246, 0.65); max-width: 230px; }
+  .handoff { width: 100%; padding: 10px 12px; text-align: left; }
+  .handoff .t { font-size: 8px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(237, 234, 246, 0.5); margin-bottom: 6px; }
+  .handoff .hrow { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 10px; }
+  .handoff .hrow .tm { margin-left: auto; font-variant-numeric: tabular-nums; color: rgba(237, 234, 246, 0.6); font-size: 9.5px; }
+
+  /* ── előszoba: Nap tab · este panel (a belépő átmenethez) ── */
+  .pre-hero {
+    border-radius: 18px; padding: 12px 13px;
+    background: linear-gradient(140deg, #E4DDF4, #F7F4FD 75%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 18px 32px -16px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .pre-hero .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #8B80A8; }
+  .pre-hero .hnm { font-size: 15px; font-weight: 700; color: #2B2118; margin-top: 2px; }
+  .pre-hero .hsb { font-size: 9.5px; color: #6E6257; margin-top: 1px; }
+  .pre-cta {
+    border: none; border-radius: 999px; padding: 9px 0; width: 100%; margin-top: 10px;
+    font-family: inherit; font-size: 10.5px; font-weight: 600; color: #fff; cursor: pointer;
+    background: linear-gradient(135deg, #8A76CC, #6C5FA3);
+    box-shadow: 0 8px 16px -6px rgba(108, 95, 163, 0.55);
+  }
+  .pre-dim { font-size: 9px; color: #A2958A; text-align: center; margin-top: 8px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .play .rise { opacity: 1; transform: none; animation: none; }
+    .act { transition: none; }
+    .breathe, .on .starfield i:nth-child(4n) { animation: none; }
+    .harvglow, .on .harvglow { opacity: 1; transform: none; animation: none; }
+    .arcpath, .play .arcpath { stroke-dashoffset: 0; animation: none; }
+    .arcdot, .play .arcdot { transform: scale(1); animation: none; }
+    .fullcircle, .play .fullcircle { stroke-dashoffset: 0; animation: none; }
+    .skbar div, .play .skbar div { width: 72%; transition: none; }
+    .nw.loop-open { animation: none; }
+    .conf i { animation: none; opacity: 0; }
+    .beads button { transition: none; }
+  }
+  @media (max-width: 720px) { body { padding: 32px 14px 48px; } .stage { gap: 36px; } }
+</style>

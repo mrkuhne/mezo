@@ -1,4 +1,5 @@
 import { isMockMode } from '@/data/_client/mode'
+import type { ClayIconName } from '@/shared/ui/clay'
 import { useActivities } from '@/data/activity/activityHooks'
 import { useFuelDay } from '@/data/fuel/fuelHooks'
 import { useIntentionDay } from '@/data/intention/intentionHooks'
@@ -8,7 +9,10 @@ import { useCheckins } from '@/data/today/checkinHooks'
 import { useCompanionFeed } from '@/data/today/feedHooks'
 import { useTrain } from '@/data/train/trainHooks'
 
-export interface RecapEvent { icon: string; label: string; meta: string; done: boolean }
+// `icon` is a clay symbol name, not an emoji (mezo-d20.8.1.1). The choice of glyph was always
+// a presentation decision this hook happened to carry; naming a ClayIconName makes that explicit
+// and lets the compiler catch a symbol that doesn't exist in the sprite.
+export interface RecapEvent { icon: ClayIconName; label: string; meta: string; done: boolean }
 
 export interface DayRecap {
   events: RecapEvent[]
@@ -50,7 +54,7 @@ export function useDayRecap(date: string): DayRecap {
   // reports done:false rather than fabricate a finished state.
   if (train.workout) {
     events.push({
-      icon: '🏋️',
+      icon: 'i-edzes',
       label: train.workout.title,
       meta: '✓',
       done: mock ? false : Boolean(train.completedTodayWorkout),
@@ -61,7 +65,7 @@ export function useDayRecap(date: string): DayRecap {
     // SCHEDULE flag, not an attendance record, so it is honestly reported as not-done.
     const todaySport = train.sport.schedule?.volleyball.sessions.find((s) => s.today)
     if (todaySport) {
-      events.push({ icon: '🏐', label: 'Röplabda', meta: todaySport.time, done: false })
+      events.push({ icon: 'i-sport', label: 'Röplabda', meta: todaySport.time, done: false })
     }
   }
 
@@ -72,7 +76,7 @@ export function useDayRecap(date: string): DayRecap {
   // aspirational "supplements n/m" beat.
   const mealsLogged = fuel.meals.length
   events.push({
-    icon: '🍽',
+    icon: 'i-fuel',
     label: `${mealsLogged} étkezés`,
     meta: `${fuel.consumed.p} g fehérje`,
     done: mealsLogged > 0,
@@ -83,10 +87,10 @@ export function useDayRecap(date: string): DayRecap {
   // date-less, always-latest read.
   const todayWeight = weightLog.filter((w) => w.date === date).at(-1)
   if (todayWeight) {
-    events.push({ icon: '⚖️', label: 'Súlymérés', meta: `${todayWeight.value} kg`, done: true })
+    events.push({ icon: 'i-suly', label: 'Súlymérés', meta: `${todayWeight.value} kg`, done: true })
   }
   if (lastNight) {
-    events.push({ icon: '😴', label: 'Alvás', meta: `${lastNight.duration} óra`, done: true })
+    events.push({ icon: 'i-alvas', label: 'Alvás', meta: `${lastNight.duration} óra`, done: true })
   }
 
   // Journal — each logged activity entry is its own event; it already happened, so always done.
@@ -95,7 +99,7 @@ export function useDayRecap(date: string): DayRecap {
       ? `${entry.text.slice(0, JOURNAL_TRUNCATE)}…`
       : entry.text
     events.push({
-      icon: '✍️',
+      icon: 'i-naplo',
       label,
       meta: entry.xpAwarded > 0 ? `+${entry.xpAwarded} XP` : '',
       done: true,
@@ -106,7 +110,7 @@ export function useDayRecap(date: string): DayRecap {
   // state (there is no per-focus completion signal).
   const reflectionSet = intentionDay.reflection != null
   for (const focus of intentionDay.foci) {
-    events.push({ icon: '✦', label: focus.text, meta: reflectionSet ? '✓' : '', done: reflectionSet })
+    events.push({ icon: 'i-cel', label: focus.text, meta: reflectionSet ? '✓' : '', done: reflectionSet })
   }
 
   const checkinsDone = checkins.filter((c) => c.state === 'done').length

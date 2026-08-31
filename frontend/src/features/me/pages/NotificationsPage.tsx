@@ -179,13 +179,14 @@ export function NotificationsPage() {
   // be offering controls for something the platform has already ruled out.
   if (!push.supported || !push.standalone) {
     return (
-      // The gate keeps the page's own Mozaik scaffold — ADR 0032: without the `‹ Én` chip the
-      // gate was a dead end with no way back (the page had no header at all before mezo-d20.11).
+      // The gate keeps the page's own Mozaik scaffold — ADR 0032: without the `‹ Értesítések`
+      // chip the gate was a dead end with no way back (the page had no header at all before
+      // mezo-d20.11; mezo-nol0 renamed the chip once the feed took the shared noun).
       // No hero bignum here: on a platform where nothing can fire, a "5 tervezett ma" would be
       // a number about notifications that cannot happen.
       <MozaikPage tone="sky">
-        <PageHead onBack={() => navigate(-1)} label="‹ Én" />
-        <PageHero icon="i-ertesites" name="Értesítések" />
+        <PageHead onBack={() => navigate('/me/ertesitesek')} label="‹ Értesítések" />
+        <PageHero icon="i-ertesites" name="Értesítés-beállítások" />
         <PageBody>
           <EntranceGroup className="col gap-md">
             <div className="rise" style={{ '--d': '0ms' } as React.CSSProperties}>
@@ -226,13 +227,13 @@ export function NotificationsPage() {
 
   return (
     <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate(-1)} label="‹ Én" />
+      <PageHead onBack={() => navigate('/me/ertesitesek')} label="‹ Értesítések" />
       {/* Prototype #page-ertesites: the hero states today's planned volume, and the sub-line
           qualifies the rhythm. „nyugodt ritmus" is DERIVED (no dense window in the same
           forecast the card below draws), never asserted — a crowded day says so instead. */}
       <PageHero
         icon="i-ertesites"
-        name="Értesítések"
+        name="Értesítés-beállítások"
         big={forecast.total}
         sub={forecast.denseWindows.length === 0 ? 'tervezett ma · nyugodt ritmus' : 'tervezett ma · sűrű ablak'}
       />
