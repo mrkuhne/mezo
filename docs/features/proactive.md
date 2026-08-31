@@ -643,7 +643,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 map [`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
 §B1.1–§B1.2 + §W1 + §W2. Builds on the [companion](companion.md) stack (snapshot/facts/summaries/patterns).
 
-**Diagnózis — the first ON-DEMAND report (`mezo-hqfi`, backend ✅ / FE ⏳).** Everything else in
+**Diagnózis — the first ON-DEMAND report (`mezo-hqfi`, backend ✅ / FE ✅).** Everything else in
 this domain generates on cron. The diagnosis is user-triggered: it answers a *phenomenon* question
 (V1: fatigue — „Miért vagyok fáradt?") with 2–4 ranked suspects, each bound to code-collected
 measured evidence the model selects **by index**, and each carrying one probe that becomes a
@@ -1366,6 +1366,15 @@ The pipeline is the `WeeklyReviewGenerator` recipe on a rolling window:
 | `GET /api/proactive/diagnosis/{id}` | `DiagnosisResponse` | 200 · 401 · 404 | Includes the live `stale` flag. 404 = not-found/foreign. |
 | `POST /api/proactive/diagnosis` | `DiagnosisResponse` | 201 · 401 · **409** · **429** | 409 `DIAGNOSIS_INSUFFICIENT_DATA` (too few domains, or no suspect survived); 429 `DIAGNOSIS_QUOTA_EXCEEDED`. |
 | `POST /api/proactive/diagnosis/{id}/suspect/{rank}/experiment` | `ExperimentResponse` | 201 · 401 · 404 | **The tap IS the acceptance** — creates `status=active`, `startDate=today`, probe fields copied verbatim; NOT routed through `proposed`. Idempotent per metric: an open experiment on the same `metricKey` is returned as-is. |
+
+**Frontend (`mezo-hqfi.4`, ✅)** — `features/insights/pages/DiagnosisListPage.tsx` (the
+gold-ringed ask card + the config-driven upcoming-question catalog + past reports) and
+`DiagnosisDetailPage.tsx` (verdict + ranked suspects, evidence resolved through
+`evidenceIndexes` with `sourceHu` provenance, the probe CTA flipping to the sage
+acknowledgement), on `/mezo/diagnozis[/:id]` (Hungarian slug per the spec). Data:
+`data/insights/diagnosisApi.ts` + `diagnosisHooks.ts` (dual-mode; 409/429 map to
+`insufficient`/`quota` error kinds rendered as product copy) + `diagnosisMock.ts`. The Mezo hub
+carries a full-width question tile. Visual goldens `mezo-diagnozis` + `mezo-diagnozis-riport`.
 
 **`LogFreshnessProbe`** (`service/`, `mezo-hqfi.1`) — extracted from `WeeklyReviewService#isStale`
 and generalised from an ISO week to an arbitrary `[from, to]`; both the weekly review and the

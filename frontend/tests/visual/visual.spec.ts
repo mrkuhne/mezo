@@ -54,6 +54,9 @@ const SCREENS: Array<[string, string, string?]> = [
   ['insights-chat', '/insights/chat'],
   ['insights-elorejelzesek', '/insights/predictions'],
   ['insights-kiserletek', '/insights/experiments'],
+  // Diagnózis report catalog + one report (mezo-hqfi.4); the detail route uses the mock seed id.
+  ['mezo-diagnozis', '/mezo/diagnozis'],
+  ['mezo-diagnozis-riport', '/mezo/diagnozis/diag-demo-1'],
   // Napzárás act 1 (Megérkezés): goto /ritual lands on the Arrival act directly. Harvest
   // (act 5) is a separate click-through test below (it can't be reached by a bare goto).
   ['ritual-arrival', '/ritual'],
