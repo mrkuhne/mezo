@@ -55,6 +55,12 @@
 .kr-empty svg { opacity: 0.7; }
 .kr-empty h3 { font-size: 19px; font-weight: 700; }
 .kr-empty p { font-size: 12.5px; color: #6E6257; font-weight: 300; max-width: 270px; line-height: 1.6; margin: 0; }
+/* karakter-body.html's `.ghost` back chip (`#emptyBack`), ×1.18 — the empty face's exit. */
+.kr-emptyback {
+  border: none; background: rgba(43, 33, 24, 0.06); font-family: inherit; cursor: pointer;
+  border-radius: 999px; padding: 8px 17px 8px 13px; font-size: 12px; font-weight: 600;
+  color: #2B2118; margin-top: 4px;
+}
 
 /* ── bootstrap ceremony faces (.bootintro / .bootprog / .bootreveal, ×1.18) ── */
 .kr-boot-intro { flex: 1; display: grid; align-content: center; justify-items: center; text-align: center; gap: 12px; padding: 20px 20px 28px; }

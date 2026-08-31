@@ -12,8 +12,12 @@
 //  · start() -> the progress face (staggered bootlines + a spinning arc) while pending.
 //  · result 'created' -> the reveal face, then back to the (now populated) hub — the
 //    overview cache already flipped, so the return replays the mosaic's entrance.
-//  · result 'empty' (204 — nothing to read yet) -> the honest „Még nincs elég történet" face.
+//  · result 'empty' (204 — nothing to read yet) -> the honest „Még nincs elég történet" face,
+//    with a „‹ vissza" way out (fix round 1 — this face used to be a dead end).
 //  · result 'conflict' (already bootstrapped elsewhere) -> falls through to the plain hub.
+// The pre-bootstrap check (`isDossierEmpty`, ./`../dossierState.ts`) is the ONE shared
+// predicate with EnHubPage's Karakter tile (fix round 1) — both surfaces read the same
+// overview through the same function, so they can never present it differently again.
 // ============================================================
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -24,6 +28,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useCharacterBootstrap, useCharacterConferences, useCharacterExperts, useCharacterFeed, useCharacterOverview } from '@/data/hooks'
 import { MaturityRing } from '@/features/character/components/MaturityRing'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
+import { isDossierEmpty } from '@/features/character/dossierState'
 
 // The prototype's `#bootLines` copy, verbatim (karakter-body.html).
 const BOOT_LINES = [
@@ -67,7 +72,9 @@ export function KarakterHubPage() {
   }
 
   const coreDims = overview.dimensions.filter((d) => d.kind === 'CORE')
-  const preBootstrap = coreDims.length > 0 && coreDims.every((d) => d.maturity === 0 && d.portrait === '')
+  // The ONE shared predicate (fix round 1) — EnHubPage's Karakter tile reads the same overview
+  // through the same function, so the two surfaces can never disagree on "has this started".
+  const preBootstrap = isDossierEmpty(overview)
 
   if (bootstrap.pending) {
     return (
@@ -110,6 +117,10 @@ export function KarakterHubPage() {
           <h3>A dossziéd elkészült</h3>
           <p>7 dimenzió, kezdő állításokkal — mindegyik forrással. Ez csak a kezdet: minden héten
             tovább finomodik.</p>
+          {/* Deliberate deviation from the prototype's "Nézd meg az első konzíliumot" (which
+             opens the transcript): the Konzílium page doesn't exist yet (Task 5), so this CTA
+             just dismisses the reveal back to the now-populated hub. Task 5 rewires this onClick
+             to navigate('/me/karakter/konzilium') once that route resolves to something real. */}
           <button type="button" className="cta" onClick={() => setCeremony('idle')}>Rendben</button>
         </div>
       </div>
@@ -124,6 +135,12 @@ export function KarakterHubPage() {
           <h3>Még nincs elég történet</h3>
           <p>A csapat pár nap logolás után kezd — addig nincs mit összegezni. Ez nem hiba, csak
             még korai.</p>
+          {/* karakter-body.html's `#emptyBack` (fix round 1: this face was a dead end — no way
+             out of it). Resetting ceremony to 'idle' re-evaluates the SAME shared predicate
+             the rest of the page uses, so re-entry always lands somewhere sane: the intro face
+             again (the dossier is still untouched — a 204 changed nothing) or the plain hub if
+             it somehow isn't any more. Never re-traps on the empty face itself. */}
+          <button type="button" className="kr-emptyback" onClick={() => setCeremony('idle')}>‹ vissza</button>
         </div>
       </div>
     )
@@ -182,6 +199,11 @@ export function KarakterHubPage() {
               ))}
             </div>
           </Tile>
+          {/* Deliberate deviation from the plan's "aug 30. · 4 változás": CharacterConferenceSummary
+             (GET /api/character/conference) carries id/kind/weekStart/generatedAt only — no
+             outcome/change count. Only the full CharacterConferenceResponse.changes[] (one
+             conference, by id) has that, which the hub doesn't fetch. Date-only tile until a
+             contract addition puts a count on the summary DTO. */}
           <Tile wash="gold" eyebrow="Konzílium" delayMs={230}
             dot={konzRecent}
             line={latestConference != null

@@ -44,6 +44,7 @@ import { formatRollupCost } from '@/features/me/logic/llmCallFormat'
 import { useTheme } from '@/app/ThemeProvider'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { hu1, huInt } from '@/shared/lib/huNum'
+import { isDossierEmpty } from '@/features/character/dossierState'
 
 const THEME_LABEL = { light: 'világos', dark: 'sötét', auto: 'cirkadián' } as const
 
@@ -205,10 +206,14 @@ export function EnHubPage() {
     : `${llm.week.callCount} hívás · ${formatRollupCost(llm.week.costUsd)} / hét`
 
   // Karakter dossier tile (mezo-1gim.13) — the hub's own hook, honest states: the switch-off
-  // 404 (overview null) drops the line entirely, never a fabricated 0%.
+  // 404 (overview null) drops the line, and so does the pre-bootstrap "untouched dossier"
+  // state (fix round 1: this used to compute its OWN pre-bootstrap check and disagreed with
+  // KarakterHubPage's — showing a fabricated "0% átlag érettség" for the exact data shape the
+  // hub itself treats as "not started" and renders the bootstrap face for). `isDossierEmpty`
+  // is the ONE shared predicate both surfaces read now.
   const { overview: character } = useCharacterOverview()
   const coreDims = character?.dimensions.filter((d) => d.kind === 'CORE') ?? []
-  const karakterLine = character == null || coreDims.length === 0
+  const karakterLine = character == null || coreDims.length === 0 || isDossierEmpty(character)
     ? undefined
     : `${Math.round(coreDims.reduce((sum, d) => sum + d.maturity, 0) / coreDims.length)}% átlag érettség`
 

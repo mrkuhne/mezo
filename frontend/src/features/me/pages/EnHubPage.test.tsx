@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { MOCK_OVERVIEW } from '@/data/character/characterMock'
+import { MOCK_OVERVIEW, MOCK_OVERVIEW_EMPTY } from '@/data/character/characterMock'
 import type { CharacterOverviewResponse } from '@/data/character/characterApi'
 
 // Én hub (mezo-d20.6.1) — the /me index's Mozaik face: identity hero + coral-ringed goal
@@ -234,7 +234,7 @@ test('a tile whose source has nothing to say carries no fabricated line', async 
   expect(suly.querySelector('.mz-tile-line')).toBeNull()
 })
 
-test('the Karakter tile shows the live avg CORE maturity from the hub\'s own hook (mezo-1gim.13)', async () => {
+test('the Karakter tile shows the live avg CORE maturity once the dossier has started (post-bootstrap, mezo-1gim.13)', async () => {
   renderHub()
   const karakter = await screen.findByRole('button', { name: 'Karakter' })
   // MOCK_OVERVIEW's 7 CORE dims: (58+71+45+66+39+74+33)/7 = 55.14 -> 55
@@ -243,6 +243,16 @@ test('the Karakter tile shows the live avg CORE maturity from the hub\'s own hoo
 
 test('the Karakter tile carries no fabricated line when the switch is off (overview null)', async () => {
   characterStore.overview = null as unknown as CharacterOverviewResponse
+  renderHub()
+  const karakter = await screen.findByRole('button', { name: 'Karakter' })
+  expect(karakter.querySelector('.mz-tile-line')).toBeNull()
+})
+
+// Fix round 1: this used to compute its own pre-bootstrap check and disagreed with
+// KarakterHubPage's — a fabricated "0% átlag érettség" for the exact untouched-dossier shape
+// the hub itself renders the bootstrap face for. Both surfaces now share `isDossierEmpty`.
+test('the Karakter tile carries no line for a pre-bootstrap (untouched) dossier — same predicate as the hub\'s bootstrap face', async () => {
+  characterStore.overview = MOCK_OVERVIEW_EMPTY
   renderHub()
   const karakter = await screen.findByRole('button', { name: 'Karakter' })
   expect(karakter.querySelector('.mz-tile-line')).toBeNull()

@@ -126,6 +126,21 @@ describe('KarakterHubPage', () => {
     expect(screen.getByText('Még nincs elég történet')).toBeInTheDocument()
   })
 
+  // Fix round 1: the 204 face used to be a dead end (no in-page way back, matching the
+  // prototype's own `#emptyBack` chip). `‹ vissza` resets the local ceremony state; since the
+  // dossier itself is unchanged by a 204 (nothing was read), the honest landing is the SAME
+  // intro face the page shows on any other untouched dossier — never re-trapped on the empty
+  // face, never a crash.
+  test("the 204 empty face's ‹ vissza returns to a sane state (the intro face, untouched dossier)", async () => {
+    hoisted.overview = MOCK_OVERVIEW_EMPTY
+    hoisted.bootstrapResult = 'empty'
+    renderHub()
+    expect(screen.getByText('Még nincs elég történet')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '‹ vissza' }))
+    expect(screen.queryByText('Még nincs elég történet')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
+  })
+
   test("result 'conflict' falls through to the plain hub, even on a still-zero dossier", () => {
     hoisted.overview = MOCK_OVERVIEW_EMPTY
     hoisted.bootstrapResult = 'conflict'
