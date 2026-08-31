@@ -1,11 +1,14 @@
 package io.mrkuhne.mezo.feature.character.detector;
 
+import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /** No check-in today while the prior 7 days show an active habit (spec §5 meta-behavior). */
 @Component
+@ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
 public class CheckinGapDetector implements CharacterDetector {
 
     @Override

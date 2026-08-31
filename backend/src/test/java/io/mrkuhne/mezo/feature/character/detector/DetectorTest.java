@@ -36,6 +36,18 @@ class DetectorTest {
     }
 
     @Test
+    void loggingGap_capsHonestly_whenStreakExceedsWindow() {
+        LoggingGapDetector d = new LoggingGapDetector();
+        // no meals anywhere in the 14-day window -> streak hits the cap, no "utolsó:" clause possible
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of()));
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.salience()).isEqualTo(5);
+            assertThat(s.summary()).isEqualTo("legalább 14 napja nincs étkezés logolva.");
+            assertThat(s.summary()).doesNotContain("14. napja");
+        });
+    }
+
+    @Test
     void underLogging_firesOnGapsPlusRisingWeight_quietWithoutTrend() {
         UnderLoggingDetector d = new UnderLoggingDetector();
         // 4 of last 7 days without meals + weight +0.6 kg
@@ -47,6 +59,9 @@ class DetectorTest {
                 .satisfies(s -> {
                     assertThat(s.expertKey()).isEqualTo("taplalkozo");
                     assertThat(s.salience()).isEqualTo(4);
+                    // HU decimal-comma formatting (mezo-1gim.4 item 1) — never BigDecimal.toString()'s dot
+                    assertThat(s.summary()).contains("+0,6 kg (81,2 → 81,8)");
+                    assertThat(s.summary()).doesNotContain("0.6").doesNotContain("81.2").doesNotContain("81.8");
                 });
         // same gaps, flat weight -> quiet
         List<DetectorInput.WeightPoint> flat = List.of(
