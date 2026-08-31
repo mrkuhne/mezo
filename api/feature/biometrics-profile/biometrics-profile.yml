@@ -11,10 +11,12 @@ paths:
       tags: [BiometricProfile]
       operationId: getBiometricProfile
       summary: The owner's biometric profile
+      description: >-
+        Never 404s: having no profile yet is a normal state, answered with 200 and an empty payload
+        (`{}`) (mezo-5cmq).
       responses:
-        '200': { description: Profile, content: { application/json: { schema: { $ref: '#/components/schemas/BiometricProfileResponse' } } } }
+        '200': { description: 'Profile, or an empty object when the owner has none yet', content: { application/json: { schema: { $ref: '#/components/schemas/BiometricProfileResponse' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No profile yet, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     put:
       tags: [BiometricProfile]
       operationId: upsertBiometricProfile
@@ -30,7 +32,9 @@ components:
   schemas:
     BiometricProfileResponse:
       type: object
-      required: [sex, heightCm, birthDate]
+      description: >-
+        Every field is optional: an owner with no profile row yet gets an EMPTY object (`{}`) with a
+        200, not a 404 (mezo-5cmq). The UPSERT request keeps its required trio.
       properties:
         sex: { type: string, enum: [M, F] }
         heightCm: { type: number }

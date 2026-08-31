@@ -9,8 +9,11 @@ paths:
       tags: [Medication]
       operationId: getMedicationDay
       summary: The owner's active medication — definition + cycle config, the derived cycle, and the recent doses
+      description: >-
+        Never 404s: having no active medication is a normal state, answered with 200 and an empty
+        payload (`medication` and `cycle` null, `recentDoses` empty) (mezo-5cmq).
       responses:
-        '200': { description: Medication day, content: { application/json: { schema: { $ref: '#/components/schemas/MedicationDayResponse' } } } }
+        '200': { description: 'Medication day, or an empty payload when the owner has no active medication', content: { application/json: { schema: { $ref: '#/components/schemas/MedicationDayResponse' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/medication/{id}:
     put:
@@ -112,10 +115,19 @@ components:
         active: { type: boolean }
     MedicationDayResponse:
       type: object
-      required: [medication, cycle, recentDoses]
+      # `medication`/`cycle` are NOT required: no active medication is a normal state answered with
+      # 200 + an empty payload, never a 404 (mezo-5cmq). The nullable-next-to-allOf form is what the
+      # generators honour (a bare `nullable` beside a `$ref` is dropped) — cf. `tdeeBootstrap`.
+      required: [recentDoses]
       properties:
-        medication: { $ref: '#/components/schemas/MedicationResponse' }
-        cycle: { $ref: '#/components/schemas/MedicationCycleResponse' }
+        medication:
+          description: Null when the owner has no active medication — a normal state, not an error (mezo-5cmq).
+          nullable: true
+          allOf: [ { $ref: '#/components/schemas/MedicationResponse' } ]
+        cycle:
+          description: Null whenever `medication` is null — there is no cycle to derive.
+          nullable: true
+          allOf: [ { $ref: '#/components/schemas/MedicationCycleResponse' } ]
         recentDoses:
           type: array
           items: { $ref: '#/components/schemas/MedicationDoseResponse' }
