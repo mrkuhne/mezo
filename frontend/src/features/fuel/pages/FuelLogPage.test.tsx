@@ -139,6 +139,15 @@ test('the back chip returns to the Fuel hub', async () => {
   expect(await screen.findByText('FUEL HUB PROBE')).toBeInTheDocument()
 })
 
+test('a scored done meal WITH a breakdown opens MealScoreSheet from its block score chip', async () => {
+  // Real mock timeline (no crafted plan): the demo day carries two scored done meals.
+  renderView()
+  const chips = await screen.findAllByRole('button', { name: /AI score részletek$/ })
+  expect(chips.length).toBeGreaterThan(0)
+  await userEvent.click(chips[0])
+  expect(await screen.findByText('AI score · részletek')).toBeInTheDocument()
+})
+
 test('a done window shows KÉSZ ✓ with no Logold CTA', () => {
   // The done join needs a real meal id; the crafted slot points at a nonexistent meal, so the
   // name falls back to the slot's own mealName and the score chip reads "✨ folyamatban".

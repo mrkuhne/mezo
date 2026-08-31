@@ -5858,46 +5858,45 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .fh-hero { border-radius: 21px; overflow: hidden;
   border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-sage); }
 
-/* ═══ window swimlane ═══ */
-.fh-lanewrap { margin: 0; }
-.fh-lane { display: flex; gap: 9px; overflow-x: auto; scrollbar-width: none;
-  padding: 4px 2px 12px; scroll-snap-type: x proximity; }
-.fh-lane::-webkit-scrollbar { display: none; }
+/* ═══ Logolás hero tile (mezo-byo1 — the swimlane's successor; prototype
+   fuel-logolas.html .logtile ×1.18). The stamp/ring/score-chip classes below it
+   survive the lane: WindowBlock on /fuel/log wears them. ═══ */
+.fh-logtile { position: relative; display: block; width: 100%; text-align: left; cursor: pointer;
+  border-radius: 22px; padding: 14px 15px; font-family: inherit; color: var(--text-primary);
+  background: var(--mz-wash-band); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow-coral);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.fh-logtile:active { transform: scale(0.975); }
+.fh-logtile.is-alldone { background: var(--mz-qdone-bg); box-shadow: var(--mz-shadow-sage); }
+.fh-lt-eyebrow { display: flex; align-items: center; gap: 7px; font-size: 9.5px; font-weight: 800;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-cell-coral-ink); }
+.fh-logtile.is-alldone .fh-lt-eyebrow { color: var(--mz-cell-sage-ink); }
+.fh-lt-nowdot { width: 8px; height: 8px; border-radius: 50%; background: var(--mz-fh-now-ring); flex: none; }
+.fh-lt-main { display: flex; align-items: center; gap: 13px; margin-top: 8px; }
+.fh-lt-txt { flex: 1; min-width: 0; display: block; }
+.fh-lt-big { display: block; font-size: 17px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
+.fh-lt-sub { display: block; font-size: 11px; font-weight: 300; color: var(--mz-ink-soft); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fh-lt-chev { margin-left: auto; color: var(--mz-ink-mut); font-size: 17px; flex: none; }
+.fh-lt-dots { display: flex; gap: 5px; margin-top: 11px; }
+.fh-lt-dots i { flex: 1; height: 6px; border-radius: 3px; background: rgba(43, 33, 24, 0.09); }
+.fh-lt-dots i.is-f { background: var(--mz-goalfill, #8FAF7E); }
+.fh-lt-dots i.is-nw { background: var(--mz-fh-now-ring); }
+.fh-lt-dots i.is-ms { background: color-mix(in srgb, var(--mz-cell-amber-ink) 55%, transparent); }
+.fh-lt-dline { display: block; font-size: 9.5px; font-weight: 700; color: var(--mz-ink-soft);
+  margin-top: 6px; font-variant-numeric: tabular-nums; }
+@keyframes fh-lt-nowpulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 74, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 107, 74, 0.3); }
+}
+.fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: fh-lt-nowpulse 2.6s ease-in-out 1.2s infinite; }
 
-.fh-wtile { flex: none; width: 151px; border-radius: 20px; padding: 11px 12px 12px;
-  scroll-snap-align: center; display: flex; flex-direction: column; gap: 5px; text-align: left;
-  background: var(--mz-wash-white); border: 0.5px solid rgba(43, 33, 24, 0.06);
-  box-shadow: var(--mz-shadow); }
-.fh-wtile.is-done { background: var(--mz-qdone-bg); }
-.fh-wtile.is-now { border: 1px solid var(--mz-fh-now-ring); box-shadow: var(--mz-fh-now-shadow); }
-.fh-wtile.is-missed { background: none; box-shadow: none; border: 1.4px dashed var(--mz-fh-miss-bd); }
-.fh-wtile.is-add { background: none; box-shadow: none; border: 1.4px dashed var(--mz-fh-add-bd);
-  align-items: center; justify-content: center; gap: 8px; }
-
-.fh-wtop { display: flex; align-items: center; gap: 5px; min-height: 16px; }
-.fh-wtop time { font-size: 10.5px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--mz-ink-soft); }
 .fh-wstamp { margin-left: auto; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
   border-radius: 6px; padding: 2px 6px; flex: none; }
 .fh-st-now { background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }
 .fh-st-done { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
 .fh-st-miss { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
 
-.fh-wicon { display: grid; place-items: center; padding: 2px 0 1px; }
-.fh-wlbl { font-size: 7.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--mz-ink-mut); text-align: center; }
-.fh-wname { font-size: 11px; font-weight: 700; line-height: 1.3; text-align: center; min-height: 30px;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.fh-wname.is-ghost { color: var(--mz-ink-mut); font-weight: 600; }
-.fh-wmeta { font-size: 9px; color: var(--mz-ink-soft); text-align: center; font-variant-numeric: tabular-nums; }
-
-.fh-wkcal { border-radius: 13px; padding: 5px 2px 4px; text-align: center; margin-top: 2px;
-  background: var(--mz-fh-kcal-bg);
-  box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06), 0 2px 6px rgba(43, 33, 24, 0.06); }
-.fh-wkcal b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.fh-wkcal small { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--mz-ink-mut); margin-left: 3px; }
-
-.fh-wrings { display: flex; justify-content: space-between; padding: 0 8px; margin-top: 4px; }
 .fh-wring { display: grid; gap: 2px; justify-items: center; flex: none; }
 .fh-wring i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
   background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-gbar-bg) 0); }
@@ -5905,16 +5904,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   background: var(--mz-fh-ringhole); display: grid; place-items: center;
   font-size: 7px; font-weight: 800; color: var(--mz-ink-soft); }
 .fh-wring small { font-size: 7.5px; font-weight: 700; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
-.fh-wtile.is-missed .fh-wkcal, .fh-wtile.is-missed .fh-wrings { opacity: 0.65; }
-
-.fh-wscore { display: flex; justify-content: center; margin-top: 3px; min-height: 44px; align-items: center; }
-.fh-wcta { margin-top: 3px; width: 100%; min-height: 44px; border-radius: 14px; font-family: inherit;
-  font-size: 10.5px; font-weight: 700; cursor: pointer; text-align: center;
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.fh-wcta:active { transform: scale(0.96); }
-.fh-wcta.is-primary { border: none; color: #fff; background: var(--gradient-cta);
-  box-shadow: 0 5px 12px -3px rgba(255, 91, 54, 0.5); }
-.fh-wcta.is-ghost { border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg); color: var(--mz-ink-soft); }
 
 .fh-scorech { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none;
   font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
@@ -5958,8 +5947,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fh-naplo-empty { font-size: 12px; font-weight: 300; color: var(--mz-ink-soft); padding: 8px 2px; margin: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .fh-wcta, .fh-mezotile, .fh-band { transition: none; }
-  .fh-wcta:active, .fh-mezotile:active, .fh-band:active { transform: none; }
+  .fh-mezotile, .fh-band, .fh-logtile { transition: none; }
+  .fh-mezotile:active, .fh-band:active, .fh-logtile:active { transform: none; }
+  .fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: none; }
 }
 /* ── Fuel · Stack v2 (mezo-d20.4.3) — day-arc timeline + featured KÖVETKEZŐ card + zone
    mini-mosaic. Values follow the Mozaik 2.0 recipe (mz-cell-, mz-wash- and mz-shadow- tokens

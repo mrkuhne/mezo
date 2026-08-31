@@ -1,15 +1,13 @@
 // ============================================================
 // Mezo · Fuel hub tests (Design 2.0 F3.1, mezo-d20.4.1) — the /fuel index's Mozaik
-// face: keret-hero (ONE number) → window swimlane → Mezo counter banner → 6-tile
+// face: keret-hero (ONE number) → Logolás hero tile (mezo-byo1) → Mezo counter banner → 6-tile
 // mosaic → Fuel-beállítások band.
 //
-// The behavioral contracts the page INHERITS are the spec and survive the re-face:
-// logging from a window carries THAT window's slotKey (mezo-bnsf), a missed window
-// says Pótold and is never punitive, an unscored done meal reads „✨ folyamatban",
-// a scored one with a breakdown opens MealScoreSheet, the víz ring opens the water
-// sheet, the energy chips reopen their own EnergyBreakdownSheet section and VANISH
-// on static energy, an all-done day still offers a log path, and the Fuel-beállítások
-// entry (retired SubNavDropdown extra action) still opens FuelSettingsSheet.
+// Since mezo-byo1 the per-window logging surface lives on /fuel/log (FuelLogPage) —
+// the hub's contracts here are: the keret-hero stays ONE number, the Logolás hero
+// tile honestly mirrors the day's window states and opens /fuel/log, the víz ring
+// opens the water sheet, the energy chips reopen their own EnergyBreakdownSheet
+// section, and the Fuel-beállítások band still opens FuelSettingsSheet.
 // ============================================================
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -83,12 +81,12 @@ const renderView = (path = '/fuel') =>
 
 // ── shell dissolution + page anatomy ─────────────────────────────────────────
 
-test('the hub is the Mozaik face: hero → swimlane → Mezo banner → mosaic → band, no sub-nav shell', () => {
+test('the hub is the Mozaik face: hero → Logolás hero tile → Mezo banner → mosaic → band, no sub-nav shell', () => {
   const { container } = renderView()
   expect(container.querySelector('.fh-hub')).toBeInTheDocument()
   expect(screen.queryByLabelText('Fuel alnavigáció')).toBeNull()
   const hero = container.querySelector('.fh-hero')
-  const lane = container.querySelector('.fh-lane')
+  const lane = container.querySelector('.fh-logtile')
   const banner = container.querySelector('.fh-mezotile')
   const mosaic = container.querySelector('.mz-mosaic')
   expect(hero).toBeInTheDocument()
@@ -159,184 +157,72 @@ test('the macro rings read via aria-labels; the víz ring opens WaterLogSheet an
   expect(screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')).not.toBe(before)
 })
 
-// ── window swimlane ──────────────────────────────────────────────────────────
+// ── the Logolás hero tile (mezo-byo1 — the swimlane's successor) ─────────────
+// The per-window logging behaviors (slot seeding, Pótold, AI arm, out-of-window,
+// score chips) moved to /fuel/log and are covered by FuelLogPage.test.tsx; the hub
+// carries ONE live door whose face follows the same WindowLaneVM.
 
-test('every eating window gets its own lane tile, carrying a kcal mini-tile and three macro rings', () => {
+test('a MOST window leads the hero tile: label · time, the plan meal, and the pulsing eyebrow', () => {
   hoisted.overrideSlots = [
     { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20 },
-    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
-  ]
-  const { container } = renderView()
-  // 3 windows + the trailing out-of-window tile.
-  expect(container.querySelectorAll('.fh-wtile')).toHaveLength(4)
-  const now = container.querySelector('.fh-wtile.is-now') as HTMLElement
-  expect(within(now).getByText('MOST')).toBeInTheDocument()
-  expect(within(now).getByText('700')).toBeInTheDocument()
-  expect(now.querySelectorAll('.fh-wring')).toHaveLength(3)
-  expect(within(now).getByLabelText(/^Fehérje 40 g, a napi cél \d+ százaléka$/)).toBeInTheDocument()
-  // The lane carries NO header (iterations §2).
-  expect(screen.queryByText('Étkezési ablakok')).toBeNull()
-})
-
-// Fidelity audit (mezo-d20.11): the mini macro rings rendered already-full. They now FILL —
-// the WeekScoreRing recipe, `useCountUp` driving the conic `--v` (which is also the
-// reduced-motion guard, since the hook jumps to the target itself).
-test('the lane mini rings fill up rather than appearing already swept', async () => {
-  hoisted.overrideSlots = [
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20 },
-  ]
-  const { container } = renderView()
-  const ring = container.querySelector('.fh-wtile.is-now .fh-wring i') as HTMLElement
-  expect(ring.style.getPropertyValue('--v')).toBe('0')
-  await waitFor(() => expect(Number(ring.style.getPropertyValue('--v'))).toBeGreaterThan(0))
-})
-
-test('a done window wears the KÉSZ stamp, the meal name and its AI-score chip', () => {
-  const { container } = renderView()
-  const done = container.querySelectorAll('.fh-wtile.is-done')
-  expect(done.length).toBe(2)
-  expect(within(done[0] as HTMLElement).getByText('KÉSZ ✓')).toBeInTheDocument()
-  expect(screen.getByText('Túrós zabkása · áfonyával')).toBeInTheDocument()
-  // Both mock done meals are scored — each tile carries its own ✨ chip.
-  expect(screen.getAllByText(/^✨ \d+ p$/).length).toBe(2)
-})
-
-test('an unscored (fresh) log reads „✨ folyamatban" — never a fabricated score', () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15, mealId: 'nincs-ilyen-meal' },
-  ]
-  renderView()
-  expect(screen.getByText('✨ folyamatban')).toBeInTheDocument()
-})
-
-test('a scored done meal WITH a breakdown opens MealScoreSheet from its score chip', async () => {
-  renderView()
-  const chips = screen.getAllByRole('button', { name: /AI score részletek$/ })
-  expect(chips.length).toBeGreaterThan(0)
-  await userEvent.click(chips[0])
-  expect(await screen.findByText('AI score · részletek')).toBeInTheDocument()
-})
-
-test('a missed window says „még pótolható" and offers Pótold — never a punitive word', () => {
-  hoisted.injectMissedSlot = true
-  const { container } = renderView()
-  const missed = container.querySelector('.fh-wtile.is-missed') as HTMLElement
-  expect(missed).toBeInTheDocument()
-  expect(within(missed).getByText('KIMARADT')).toBeInTheDocument()
-  expect(within(missed).getByText('még pótolható')).toBeInTheDocument()
-  expect(within(missed).getByRole('button', { name: 'Pótold · Tízórai' })).toBeInTheDocument()
-  expect(container.textContent).not.toMatch(/bukt|elrontot|kudarc/i)
-})
-
-test('„a tervből" only shows with a real plan suggestion behind the window', () => {
-  hoisted.overrideSlots = [
     { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20, mealName: 'Csirkés bowl', suggestedRecipeId: 'r-1' },
     { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
   ]
-  renderView()
-  expect(screen.getAllByText('a tervből')).toHaveLength(1)
-})
-
-test('the lane auto-scrolls to the MOST tile on mount', () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20 },
-  ]
   const { container } = renderView()
-  const lane = container.querySelector('.fh-lane') as HTMLElement
-  const now = container.querySelector('[data-now="true"]') as HTMLElement
-  expect(now).toBeInTheDocument()
-  // jsdom reports 0 offsets, so the observable is that the lane was positioned at all
-  // (never NaN / negative) — the real centering is a browser-layout concern.
-  expect(lane.scrollLeft).toBe(0)
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(within(tile).getByText('Logolás · MOST')).toBeInTheDocument()
+  expect(within(tile).getByText('Ebéd · 13:00')).toBeInTheDocument()
+  expect(within(tile).getByText('a tervből: Csirkés bowl')).toBeInTheDocument()
+  // One dot per window, state-classed.
+  expect(tile.querySelectorAll('.fh-lt-dots i')).toHaveLength(3)
+  expect(tile.querySelectorAll('.fh-lt-dots i.is-f')).toHaveLength(1)
+  expect(tile.querySelectorAll('.fh-lt-dots i.is-nw')).toHaveLength(1)
+  expect(within(tile).getByText('1/3 ablak kész')).toBeInTheDocument()
 })
 
-// ── logging from a window lands in THAT window's slot (mezo-bnsf) ────────────
-// `buildDayPlan` files logged meals by `slotKey` ONLY, never by timestamp — so a meal
-// logged from the Ebéd tile under the wall-clock's slot fills the *dinner* window
-// instead, and Ebéd stays missed, still offering the same Pótold.
-
-test('Pótold on a suggestion-carrying window logs into THAT window\'s slot, not the wall-clock one', async () => {
-  hoisted.overrideSlots = [
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
-      kcal: 660, p: 48, c: 62, f: 14, suggestedRecipeId: 'rec-1' },
-  ]
-  // 16:35 wall clock → LogFlowPage's `defaultMealSlot()` returns 'dinner'. The tapped window is lunch.
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-07-02T16:35:00'))
-  try {
-    renderView()
-    await userEvent.click(screen.getByRole('button', { name: 'Pótold · Ebéd' }))
-    const ebed = await screen.findByRole('button', { name: 'Ebéd' })
-    expect(ebed).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Vacsora' })).toHaveAttribute('aria-pressed', 'false')
-  } finally {
-    vi.useRealTimers()
-  }
-})
-
-test('a window with no suggestion also seeds its own slot (the branch that already did)', async () => {
-  hoisted.overrideSlots = [
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
-      kcal: 660, p: 48, c: 62, f: 14 },
-  ]
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-07-02T16:35:00'))
-  try {
-    renderView()
-    await userEvent.click(screen.getByRole('button', { name: 'Pótold · Ebéd' }))
-    expect(await screen.findByRole('button', { name: 'Ebéd' })).toHaveAttribute('aria-pressed', 'true')
-  } finally {
-    vi.useRealTimers()
-  }
-})
-
-// mezo-d20.4.2: the AI path is no longer a separate sheet — it opens the SAME unified log
-// flow with its ✨ AI panel armed, still carrying that window's slot (the mezo-53su contract).
-test('a window\'s ✨ AI CTA opens the unified log flow on that window\'s slot, AI panel armed', async () => {
-  hoisted.injectOpenSlot = true
+test('the hero tile opens /fuel/log', async () => {
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'AI naplózás · Esti snack' }))
-  const flow = await screen.findByRole('dialog', { name: 'Mit ettél?' })
-  expect(within(flow).getByRole('button', { name: 'Snack', pressed: true })).toBeInTheDocument()
-  expect(within(flow).getByPlaceholderText(/csirkés wrap/)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Logolás' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/fuel/log')
 })
 
-// ── the standing out-of-window tile (mezo-66te) ──────────────────────────────
-// Every window CTA vanishes once the day is done, and the + FAB's Étkezés tile only
-// navigates here — so the lane must always end with a log door.
+test('a missed window surfaces as an honest pótolható count — never a punitive word', () => {
+  hoisted.injectMissedSlot = true
+  const { container } = renderView()
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(tile.textContent).toContain('1 pótolható')
+  expect(tile.querySelectorAll('.fh-lt-dots i.is-ms')).toHaveLength(1)
+  expect(container.textContent).not.toMatch(/bukt|elrontot|kudarc/i)
+})
 
-test('an all-done day still offers meal logging: the out-of-window tile opens LogFlowPage', async () => {
+test('an all-done day flips the tile to the quiet sage celebration', () => {
   hoisted.overrideSlots = [
     { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
     { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
   ]
-  renderView()
-  expect(screen.getByText('Ablakon kívül')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: '＋ Logolás' }))
-  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
+  const { container } = renderView()
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(tile.classList.contains('is-alldone')).toBe(true)
+  expect(within(tile).getByText('Minden ablak kész ✓')).toBeInTheDocument()
+  expect(within(tile).getByText('2/2 ablak kész')).toBeInTheDocument()
 })
 
-test('an all-done day still offers AI logging: the out-of-window ✨ AI napló arms the flow\'s AI panel', async () => {
+test('with no MOST window the tile points at the next upcoming one', () => {
   hoisted.overrideSlots = [
     { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
   ]
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: '✨ AI napló' }))
-  const flow = await screen.findByRole('dialog', { name: 'Mit ettél?' })
-  expect(within(flow).getByPlaceholderText(/csirkés wrap/)).toBeInTheDocument()
+  const { container } = renderView()
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(within(tile).getByText('köv. Vacsora · 19:00')).toBeInTheDocument()
 })
 
-test('an empty day (no meal slots) leads the lane with the üres-nap tile → /fuel/plan', async () => {
+test('an empty day names the gap on the tile instead of fabricating windows', () => {
   hoisted.overrideSlots = []
   const { container } = renderView()
-  expect(screen.getByText('Üres nap')).toBeInTheDocument()
-  expect(screen.getByText('Nincs mai terv')).toBeInTheDocument()
-  // Only the üres-nap tile + the out-of-window tile — no fabricated windows.
-  expect(container.querySelectorAll('.fh-wtile')).toHaveLength(2)
-  await userEvent.click(screen.getByRole('button', { name: '＋ tervezz' }))
-  expect(screen.getByTestId('loc').textContent).toBe('/fuel/plan')
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(within(tile).getByText('nincs mai terv — tervezz és logolj')).toBeInTheDocument()
+  expect(tile.querySelector('.fh-lt-dots')).toBeNull()
 })
 
 // ── Mezo counter banner ──────────────────────────────────────────────────────
