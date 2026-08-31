@@ -198,14 +198,12 @@
           domain-színben, egy halvány szaggatott belső gyűrűvel mint megkülönböztető motívum
           (perzsonánként eltérő elforgatással — „ugyanaz a faj, más egyed” érzés). Mezo megtartja
           az eredeti korall orb-ot (<code>s-orb</code>).</li>
-          <li>Az orbok most <strong>inline SVG-ként, futásidőben generált</strong>
-          <code>&lt;radialGradient&gt;</code> + <code>&lt;symbol&gt;</code> elemekként élnek a
-          prototípusban (lásd a szkript <code>buildOrbDefs()</code> függvényét) — a diszkek helyén
-          mindenhol ez jelenik meg: hub-csempék, feed, transzkript-avatárok, csapat-kártyák,
-          bootstrap-klaszter.</li>
-          <li><strong>Ha Daniel jóváhagyja</strong>, ezek átkerülnek a
-          <code>docs/design_2.0/assets/</code> clay-sprite csomagba mint önálló, kézzel finomított
-          SVG-k (a jelenlegiek programozott közelítések, nem kézzel rajzolt agyag-ikonok).</li>
+          <li>Az orbok a <strong><code>docs/design_2.0/assets/clay-spots.svg</code> sprite-ban</strong>
+          élnek (<code>s-orb-doki</code> … <code>s-orb-szkeptikus</code>) — az eredeti
+          <code>s-orb</code> pontos agyag-receptjével (talaj-árnyék, radiális test, spekuláris
+          fény, visszavert derengés) + a szaggatott belső gyűrű-motívummal, personánként más
+          elforgatással. A diszkek helyén mindenhol ez jelenik meg: hub-csempék, feed,
+          transzkript-avatárok, csapat-kártyák, bootstrap-klaszter.</li>
         </ul>
       </div>
       <div>
@@ -296,39 +294,8 @@
   };
 
   // ===== orb-variáns személyikonok: futásidőben generált inline SVG sprite =====
-  function shade(hex, pct) {
-    var f = parseInt(hex.slice(1), 16), t = pct < 0 ? 0 : 255, p = pct < 0 ? -pct : pct;
-    var R = f >> 16, G = (f >> 8) & 0x00FF, B = f & 0x0000FF;
-    return '#' + (0x1000000 + (Math.round((t - R) * p) + R) * 0x10000 +
-      (Math.round((t - G) * p) + G) * 0x100 + (Math.round((t - B) * p) + B)).toString(16).slice(1);
-  }
-  function buildOrbDefs() {
-    var defs = '', syms = '', i = 0;
-    Object.keys(PERSONAS).forEach(function (key) {
-      var c = PERSONAS[key].color;
-      var light = shade(c, 0.5), dark = shade(c, -0.38);
-      var rot = (i * 27 + 12) % 360;
-      defs += '<radialGradient id="og-' + key + '" cx="35%" cy="28%" r="78%">' +
-        '<stop offset="0%" stop-color="' + light + '"/>' +
-        '<stop offset="55%" stop-color="' + c + '"/>' +
-        '<stop offset="100%" stop-color="' + dark + '"/></radialGradient>';
-      syms += '<symbol id="orb-' + key + '" viewBox="0 0 100 100">' +
-        '<circle cx="50" cy="50" r="47" fill="url(#og-' + key + ')"/>' +
-        '<circle cx="50" cy="50" r="47" fill="none" stroke="rgba(255,255,255,0.26)" stroke-width="3" ' +
-        'stroke-dasharray="13 12" transform="rotate(' + rot + ' 50 50)"/>' +
-        '<ellipse cx="37" cy="32" rx="15" ry="9" fill="rgba(255,255,255,0.5)"/>' +
-        '<ellipse cx="35" cy="30" rx="7" ry="4" fill="rgba(255,255,255,0.78)"/>' +
-        '</symbol>';
-      i++;
-    });
-    var host = document.createElement('div');
-    host.style.display = 'none';
-    host.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg"><defs>' + defs + '</defs>' + syms + '</svg>';
-    document.body.appendChild(host);
-  }
-  buildOrbDefs();
   function orbHTML(key, size) {
-    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100"><use href="#orb-' + key + '"/></svg>';
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100"><use href="#s-orb-' + key + '"/></svg>';
   }
   function mezoOrbHTML(size) {
     return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100"><use href="#s-orb"/></svg>';
