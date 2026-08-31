@@ -16,7 +16,6 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
-import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -61,12 +60,18 @@ class BiometricProfileServiceIT extends AbstractIntegrationTest {
         assertThat(response.getBodyFatPct()).isEqualByComparingTo(new BigDecimal("15.0"));
     }
 
+    /** mezo-5cmq: no profile row is a normal state — an EMPTY response, not a 404. */
     @Test
-    void testGetProfile_shouldThrowNotFound_whenNoProfile() {
+    void testGetProfile_shouldReturnEmptyResponse_whenNoProfile() {
         UUID user = databasePopulator.populateUser("bp-none@test.local");
 
-        assertThatThrownBy(() -> service.getProfile(user))
-            .isInstanceOf(SystemRuntimeErrorException.class);
+        BiometricProfileResponse response = service.getProfile(user);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getSex()).isNull();
+        assertThat(response.getHeightCm()).isNull();
+        assertThat(response.getBirthDate()).isNull();
+        assertThat(response.getTdeeBootstrap()).isNull();
     }
 
     @Test

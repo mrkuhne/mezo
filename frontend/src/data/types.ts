@@ -904,6 +904,50 @@ export interface Experiment {
   outcomeGood?: boolean
 }
 
+export type DiagnosisConfidence = 'strong' | 'moderate' | 'weak'
+
+/** One code-collected evidence candidate, FROZEN at generation time (mezo-hqfi).
+ *  `kind` decides which fields carry: metric rows have the numbers, pattern/fact rows do not. */
+export interface DiagnosisEvidence {
+  kind: 'metric' | 'pattern' | 'fact'
+  label: string
+  detail?: string
+  /** Hungarian provenance — „Alvás-napló", „Minták", „Tudástár". Shown to the user. */
+  sourceHu?: string
+  metricKey?: string
+  value?: number
+  baselineValue?: number
+  delta?: number
+  coverageDays?: number
+}
+
+/** One ranked suspect. `evidenceIndexes` point INTO the parent's `evidence` — the model
+ *  selected them, it could not invent them. The probe fields map 1:1 onto an Experiment. */
+export interface DiagnosisSuspect {
+  rank: number
+  title: string
+  claim: string
+  evidenceIndexes: number[]
+  strength: DiagnosisConfidence
+  probeText: string
+  metricKey: string
+  expectedDirection: 'up' | 'down' | 'stable'
+  totalDays: number
+}
+
+export interface Diagnosis {
+  id: string
+  phenomenon: string
+  windowDays: number
+  verdict: string
+  confidence: DiagnosisConfidence
+  evidence: DiagnosisEvidence[]
+  suspects: DiagnosisSuspect[]
+  generatedAt: string
+  /** A log landed inside the window after generatedAt — the „↻ Frissítsd" hint. */
+  stale: boolean
+}
+
 export type ChatRole = 'user' | 'assistant'
 /** `label` (mezo-b3pp.33): the wire's optional carried label — null on rows that omit it,
  *  undefined for producers that never set it. `chatRefDisplay` prefers it and falls back to

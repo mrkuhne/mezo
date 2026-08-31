@@ -28,6 +28,9 @@ export function AppLayout() {
   // the extra-dark night page (its light would defeat the <30 lux point), and the
   // Napzárás ritual flow (mezo-ilsj). No header, no tab bar, no FAB.
   const hideChrome = ['/train/session', '/me/sleep/night', '/ritual'].includes(location.pathname)
+  // mezo-vdf4: the chat's composer owns the thumb zone — the coral FAB overlapped the
+  // send disc there. Chat keeps the rest of the chrome (header, tab bar).
+  const hideFab = hideChrome || location.pathname === '/mezo/chat'
   return (
     <>
       <CircadianTheme />
@@ -54,7 +57,7 @@ export function AppLayout() {
             {!hideChrome && <TabBar />}
             {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
                 every tab, absent on the chrome-free full-screen flows. */}
-            {!hideChrome && <QuickLogFab />}
+            {!hideFab && <QuickLogFab />}
             <FloatingReturnLayer />
           </LevelUpProvider>
         </ToastProvider>

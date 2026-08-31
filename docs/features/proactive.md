@@ -643,7 +643,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 map [`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
 §B1.1–§B1.2 + §W1 + §W2. Builds on the [companion](companion.md) stack (snapshot/facts/summaries/patterns).
 
-**Diagnózis — the first ON-DEMAND report (`mezo-hqfi`, backend ✅ / FE ⏳).** Everything else in
+**Diagnózis — the first ON-DEMAND report (`mezo-hqfi`, backend ✅ / FE ✅).** Everything else in
 this domain generates on cron. The diagnosis is user-triggered: it answers a *phenomenon* question
 (V1: fatigue — „Miért vagyok fáradt?") with 2–4 ranked suspects, each bound to code-collected
 measured evidence the model selects **by index**, and each carrying one probe that becomes a
@@ -1310,7 +1310,7 @@ DERIVED in code** from the structured target fields (via `ChallengeDisplay` stat
 mapper, §3 / §9 gotcha), not stored; `confidence`/`outcome`/`outcomeGood` nullable on the wire
 (`confidence` null ⇒ the FE renders „tanulom").
 
-### Diagnosis (on-demand report, `mezo-hqfi`)
+### Diagnosis (on-demand report, `mezo-hqfi`; second phenomenon `mezo-po3y`)
 
 Migration `202608311200_mezo-hqfi_create_diagnosis.sql` creates `diagnosis` — `id`, `created_by`,
 `is_deleted`, `created_at`, `phenomenon` (ck: `fatigue`), `window_days`, `verdict`, `confidence`
@@ -1331,6 +1331,15 @@ probeText, metricKey, expectedDirection, totalDays)` — the probe fields map **
 `ExperimentEntity`**, so the hand-off needs no translation layer). **Evidence is persisted, not
 recomputed on read:** the report must show the numbers it actually reasoned from, or weeks later a
 recomputed window would put different values next to the same conclusion.
+
+**Two phenomena since `mezo-po3y`** — `fatigue` and `sleep`. Everything phenomenon-specific
+lives in ONE record, `service/DiagnosisRecipe.java` (wire value, HU label, the prompt's question
+sentence, the `MetricKey` subset); the collector and generator take a recipe, the old 2-arg entry
+points alias FATIGUE. A third question = one `DiagnosisRecipe` entry + one ck-widening migration
+(`202608311500_mezo-po3y_diagnosis_sleep_phenomenon.sql` is the template). The FE mirror is
+`features/insights/logic/diagnosisCatalog.ts` (`LIVE_QUESTIONS`/`UPCOMING_QUESTIONS`) — a
+question goes live by moving between the two lists. The daily quota stays GLOBAL across
+phenomena.
 
 The pipeline is the `WeeklyReviewGenerator` recipe on a rolling window:
 
@@ -1366,6 +1375,15 @@ The pipeline is the `WeeklyReviewGenerator` recipe on a rolling window:
 | `GET /api/proactive/diagnosis/{id}` | `DiagnosisResponse` | 200 · 401 · 404 | Includes the live `stale` flag. 404 = not-found/foreign. |
 | `POST /api/proactive/diagnosis` | `DiagnosisResponse` | 201 · 401 · **409** · **429** | 409 `DIAGNOSIS_INSUFFICIENT_DATA` (too few domains, or no suspect survived); 429 `DIAGNOSIS_QUOTA_EXCEEDED`. |
 | `POST /api/proactive/diagnosis/{id}/suspect/{rank}/experiment` | `ExperimentResponse` | 201 · 401 · 404 | **The tap IS the acceptance** — creates `status=active`, `startDate=today`, probe fields copied verbatim; NOT routed through `proposed`. Idempotent per metric: an open experiment on the same `metricKey` is returned as-is. |
+
+**Frontend (`mezo-hqfi.4`, ✅)** — `features/insights/pages/DiagnosisListPage.tsx` (the
+gold-ringed ask card + the config-driven upcoming-question catalog + past reports) and
+`DiagnosisDetailPage.tsx` (verdict + ranked suspects, evidence resolved through
+`evidenceIndexes` with `sourceHu` provenance, the probe CTA flipping to the sage
+acknowledgement), on `/mezo/diagnozis[/:id]` (Hungarian slug per the spec). Data:
+`data/insights/diagnosisApi.ts` + `diagnosisHooks.ts` (dual-mode; 409/429 map to
+`insufficient`/`quota` error kinds rendered as product copy) + `diagnosisMock.ts`. The Mezo hub
+carries a full-width question tile. Visual goldens `mezo-diagnozis` + `mezo-diagnozis-riport`.
 
 **`LogFreshnessProbe`** (`service/`, `mezo-hqfi.1`) — extracted from `WeeklyReviewService#isStale`
 and generalised from an ISO week to an arbitrary `[from, to]`; both the weekly review and the
@@ -1489,9 +1507,10 @@ On the contract-first pipeline ([`_platform-api-backend.md`](_platform-api-backe
 `api.gen.ts` types (FE). Drift = compile error.
 
 ### 5.4 Proactive → Today FE (✅ `mezo-gst9` wired — dual-mode read, replaces the B1.2+H1 seams)
-The Today `MezoChip` message thread ([today.md](today.md)) is the consumer. `useCompanionFeed()`
-(`data/today/feedHooks.ts`, `['companionFeed', date]`) reads `GET /api/proactive/feed?date=<local>`
-via `feedApi.get` (`data/today/feedApi.ts`, `toFeedMessages` wire→`FeedMessage[]`; mock mode returns
+The Today `MezoChip` message thread ([today.md](today.md)) is the consumer. `useCompanionFeed(date =
+localDateString())` (`data/today/feedHooks.ts`, `['companionFeed', date]`) reads `GET
+/api/proactive/feed?date=<local>` via `feedApi.get` (`data/today/feedApi.ts`, `toFeedMessages`
+wire→`FeedMessage[]`; mock mode returns
 `[]` synchronously — no fetch), polled every 60s in real mode (`refetchInterval`) so event-triggered
 kinds (sleep/weight) and any missed cron-kind land without a manual reload — the sleep/weight-log
 mutations ALSO invalidate `['companionFeed', …]` directly on success, so a fresh log usually shows
@@ -1499,7 +1518,13 @@ up in the thread well before the next poll tick. `logic/mezoMessages.ts`'s `buil
 demoBriefing})` maps each `FeedMessage` 1:1 to a `MezoMessageItem` (kind→id, `body[].text`→
 paragraphs, refs pass through) and prepends the labelled demo card (`resolveBriefing(scenario.
 dayState)`) only while the feed carries no `morning` kind. `TodayPage.tsx` calls `useCompanionFeed()`
-directly (not through `useToday`) and passes the result to `buildMezoMessages`. **This replaces BOTH**
+directly (not through `useToday`) and passes the result to `buildMezoMessages`. **`date` is an
+explicit opt-in the hub/Today callers never pass** (`mezo-b3pp.36`): `NapMezoPage` is the one caller
+that does, feeding it an earlier day when an `intervention` push's `d=` deeplink param names one — a
+second, independent `['companionFeed', date]` cache entry, not a duplicate of today's own poll
+([today.md](today.md) for the page-side wiring;
+[`_platform-notifications.md` §3d](_platform-notifications.md) for why the push can name a day other
+than today). **This replaces BOTH**
 the old `useBriefing()`/`briefingHooks.ts`/`BriefingCard.tsx` seam (B1.2) **and** the old
 `useCompanionNote()`/`heartbeatHooks.ts`/`CompanionNoteCard.tsx` seam (H1) — all now deleted. The
 seam type omits `confidence`/`tone` same as before (§9 gotcha c, unchanged). **Since `mezo-b3pp.15`

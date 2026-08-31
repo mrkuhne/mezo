@@ -595,7 +595,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7`, retraction `mezo-b3pp.31`, fact opt-out `mezo-b3pp.30` | Phase 5 W2.2 — confirmed patterns, active AND prompt-included non-pattern-sourced knowledge facts, and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent`/`KnowledgeFactChangedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. **Promotion is two-way (`mezo-b3pp.31`)**: `retractPattern`/`retractGoal`/`retractFact` archive the mirror node when a pattern is un-confirmed, a goal is soft-deleted, or a fact is soft-deleted or opted out of the prompt (`include_in_prompt=false`) — see the W2.2 section below for the event wiring, `syncFact`, and the honest gap that remains around `knowledge_fact` hard/soft deletes. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
-| Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, punctuation stripped, ≥3 chars, no LLM) against active node titles/summaries; `GraphTraversalQuery` (both reads raw JDBC under one savepoint: the seed-candidate read + the recursive CTE — undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted + owner-scoped nodes only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines (`PRECEDED_BY` swapped so the line stays cause-first) under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode` ref per rendered node — carrying the traversal's own `fromTitle`/`toTitle` as its `label` (`mezo-b3pp.33`), capped at `graph.max-refs` (default 6) — after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
+| Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, punctuation stripped, ≥3 chars, not a Hungarian stopword, no LLM) against active node titles/summaries at a WORD START (`startsAWordInFolded`, mezo-b3pp.34), ranks matches (title hit, then distinct token hits, ties left to the query's own TOTAL `created_at desc, id` row order) and caps them at `graph.max-seeds` (default 8); `GraphTraversalQuery` (both reads raw JDBC under one savepoint: the seed-candidate read + the recursive CTE — undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted + owner-scoped nodes only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines (`PRECEDED_BY` swapped so the line stays cause-first) under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode` ref per rendered node — carrying the traversal's own `fromTitle`/`toTitle` as its `label` (`mezo-b3pp.33`), capped at `graph.max-refs` (default 6) — after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
 | Graph maintenance job (decay + reinforcement) | ✅ `mezo-b3pp.10`, retraction sweep `mezo-b3pp.31` | Phase 5 W2.5 — nightly `GraphMaintenanceJob` (`mezo.companion.graph.cron`, dawn slot, `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own job switch): per-user, three phase-isolated steps — `GraphMaintenanceService.runMaintenance` (edge weight ×= `decayFactor` daily, edges under `pruneFloor` soft-deleted in the same pass, candidate nodes older than `candidateMaxAgeDays` soft-deleted, fresh same-night `pattern_event` snapshot evidence bumps a promoted pattern's touching edges by `reinforcementBump` capped at 1.0), then W2.2's `GraphPromotionService.reconcile` (now per-row isolated, mezo-b3pp.32 fixed alongside) — **its phase-2 promotion loops now run BOTH directions (`mezo-b3pp.31`)**: the original three promoter loops UPSERT forward from a still-qualifying source row, and a fourth complement-set sweep runs after them, walking every active node back to its source row and archiving any whose source stopped qualifying — the backstop for a retraction missed while the switch was off, and (for the still-untriggered delete half of `retractFact`) the ONLY trigger it gets, since nothing in main source soft-deletes a `knowledge_fact`; the opt-out half reaches `retractFact` on the same turn via `syncFact` (`mezo-b3pp.30`) — then W2.3's `LifeEventExtractionService.extractFor(yesterday)`. A failure in any phase for any user never skips the rest. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs the kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (four here, five since W3.2 added the rungs) (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter ambient floor, today-and-later dates skipped (the snapshot already carries the day), the group's cap of items kept (a cap of 0 skips the query entirely) — **since W3.3 (`mezo-b3pp.14`) the floor, τ and cap are all per kind-group, `ambient-recall.<group>.{min-similarity,decay-days,cap}`**. Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → **[Összefüggések]** (W2.4) → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
@@ -1859,9 +1859,12 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   under the same savepoint helper (`underSavepoint`) — the `MemoryEmbeddingAnnQuery` idiom (§9): a
   failed statement can't abort the chat turn's transaction. Gated `KNOWLEDGE_GRAPH_SWITCH`.
   - `activeNodes(userId)` → `ActiveNode(id, title, summary)`, the owner's active non-deleted nodes,
-    `created_at desc` — the seed candidates. It is **raw JDBC and not a JPA finder on purpose**: a
-    Hibernate query failure marks the turn's transaction rollback-only, after which
-    `GraphPromptAssembler`'s catch → EMPTY could no longer save the turn (IDENT-3).
+    `created_at desc, id` — the seed candidates. The `id` secondary key makes the order TOTAL
+    (Postgres does not guarantee any particular row order among exact `created_at` ties), which
+    `GraphTraversalService.seedsFor`'s stable ranking sort relies on for its own determinism
+    (`mezo-b3pp.34`). It is **raw JDBC and not a JPA finder on purpose**: a Hibernate query failure
+    marks the turn's transaction rollback-only, after which `GraphPromptAssembler`'s catch → EMPTY
+    could no longer save the turn (IDENT-3).
   - `neighborhood(...)` → ONE recursive CTE over `knowledge_edge`, walked **undirected** from the
     seed ids (`from_node_id in seeds or to_node_id in seeds`), frontier = the far end of the last
     edge, `path uuid[]` as the cycle guard (a node is never re-entered), `hops < :maxHops`. The
@@ -1879,9 +1882,33 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   search tokens (`ToolText.searchTokens`) with the **leading/trailing non-letter/digit run stripped**
   (that splitter only breaks on whitespace/comma/semicolon, so `"alvás?"` would fold to the
   never-matching `alvas?`; the shared `ToolText` is deliberately left alone), then tokens under 3
-  chars dropped so "ma"/"az" can't seed half the graph — matched by folded containment against every
+  chars dropped so "ma"/"az" can't seed half the graph, **then a small closed Hungarian STOPWORDS
+  set filtered out** (`mezo-b3pp.34`) — matched by folded **word-start** containment against every
   active node's title **or summary**; `neighborhood(userId, seeds, maxHops, topK)` — empty seeds ⇒
   empty, no SQL. Injects **no JPA repository at all** (see `activeNodes` above).
+  - **Stopwords** (`STOPWORDS`, 29 entries, all pre-folded) — Hungarian filler ("nem", "hogy",
+    "volt", …) that is ≥3 chars and so survives the length filter, yet carries no topic of its
+    own: node summaries are ordinary Hungarian prose, so a single "nem" in a chatty turn used to
+    match most of the graph, and once the seed set is effectively the whole graph the neighborhood
+    walk stops answering the question that was asked and degenerates into "the globally strongest
+    edges" instead. The list is deliberately kept **closed and small** rather than eager: a
+    stopword list that over-reaches silently deletes real turns, which is the harder failure to
+    notice — a false seed is visible in the rendered block, a wrongly-dropped one just looks like
+    the graph had nothing to say.
+  - **Word-start matching** (`startsAWordInFolded`, local to this class) replaces `ToolText.containsFolded`
+    **only here** — that shared primitive is deliberately left untouched, because `FuelTools` also
+    uses it for a user-typed filter that genuinely wants to match anywhere in the text. Plain
+    containment produced false seeds here (`ital` matched `vitalitás`), but exact-word matching
+    would be wrong for an agglutinative language, where the stem `alvás` must still reach the
+    compound `alvásminőség`. Matching a token only where it STARTS a word is the rule that keeps
+    the legitimate prefix case while dropping the false infix one.
+  - **Ranked cap** — matching nodes are ordered (title hit outranks summary-only, then more
+    distinct matching tokens wins) **before** `graph.max-seeds` (default 8) truncates the list.
+    Two nodes tied on both keys are left in `activeNodes`' own `created_at desc, id` row order —
+    the ranking sort is stable and deliberately carries no further tie-break stage of its own, so
+    recency (a real relevance signal) decides rather than a bare node id; the query's `id`
+    secondary key makes that row order TOTAL, so the same turn still always produces the same seed
+    set as a genuine guarantee rather than an accident of query-plan or replica luck.
 - **`GraphPromptAssembler`** (`graph/service/`) — `assemble(userId, message)` →
   `GraphContext(block, refs)`. Lines: `- <from.title> → <verb> → <to.title> · <erős|közepes|gyenge>`
   (verbs: TRIGGERS *kiváltja*, PRECEDED_BY *megelőzte*, SUPPORTS *támogatja*, CONFLICTS *ütközik
@@ -1946,7 +1973,16 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   back), and `AiMessageJsonbRoundTripIT.testRefs_shouldDeserialiseWithNullLabel_whenTheJsonbPredatesTheLabelField`
   (review fix — writes raw jsonb with no `label` key at all, proving a genuinely pre-migration row
   deserialises with `label = null` rather than only proving the 2-arg constructor's own shape,
-  which Jackson serialises with an explicit `"label":null`).
+  which Jackson serialises with an explicit `"label":null`), and — pinning `seedsFor`'s stopword
+  filter, word-start matching and rank-before-cap (`mezo-b3pp.34`) — three sibling classes split
+  the way `GraphPromptAssemblerRefsCapIT` splits off from the assembler tests, because the cap
+  cases need `graph.max-seeds` overridden per-class via `@TestPropertySource`:
+  `GraphSeedSelectionIT` (default `max-seeds`: stopwords ignored, one real word inside an
+  otherwise-all-stopword sentence still seeds, a token matches at a word start, the same token
+  does NOT match mid-word, seeding is deterministic across repeated runs, an all-unusable-token
+  message returns empty), `GraphSeedSelectionRankingIT` (`max-seeds=1`: a title hit outranks a
+  summary-only hit and more distinct token hits outranks fewer, once the cap actually bites),
+  `GraphSeedSelectionCapIT` (`max-seeds=2`: a large matching set is truncated to the cap).
 
 ### W2.5 graph maintenance job (✅ `mezo-b3pp.10`)
 
@@ -2074,9 +2110,11 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   not null and is_deleted = false`) — a null `source_id` would silently drop the DB-level singleton
   guarantee, letting a second profile row slip in. No migration; no API contract change
   (`GraphNodeResponse.sourceKind` already existed since W2.1).
-- **`ProfileAssembler.rebuild(userId, anchorQuarter)`** (`profile/service/`) gathers, in pure code: all 11 W4.2
-  feedback-rollup scopes (`FeedbackRollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc`),
-  the 👎-reason (style) histogram off the `style` scope's `bySurface` map, up to `maxDecisions`
+- **`ProfileAssembler.rebuild(userId, anchorQuarter)`** (`profile/service/`) gathers, in pure code: the
+  rollup scopes for **only the currently configured feedback-learning window**
+  (`FeedbackRollupRepository.findByCreatedByAndWindowDaysAndDeletedFalseOrderByScopeAsc(userId,
+  feedbackLearningProperties.windowDays())` — fixed `mezo-b3pp.35`, item 3), the 👎-reason (style)
+  histogram off the `style` scope's `bySurface` map, up to `maxDecisions`
   reviewed `decision_entry` rows newest-review-first (`DecisionEntryRepository
   .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc`), and up to
   `maxGraphNodes` active PATTERN/PREFERENCE node titles (`GraphService.listActive`, the profile
@@ -2105,12 +2143,57 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   LLM call, no node write, any existing profile left untouched (`ProfileAssembler.rebuild` returns
   `Optional.empty()` before the payload is even rendered). A blank model answer is the same
   no-op — never a node overwritten with an invention.
-- **The cap applies twice** — `ProfileProperties.renderMaxTokens` (**400**, spec §8.3) caps the
+- **The payload reads only the CONFIGURED window's rollup rows** (`mezo-b3pp.35`, item 3,
+  `ProfileAssemblerWindowHeaderIT` / `ProfileAssemblerIT
+  .renderPayload_readsOnlyTheConfiguredWindow_whenRetiredWindowRowsExist`) — `feedback_rollup`'s
+  unique key is `(created_by, scope, window_days)` and nothing deletes a row when
+  `feedback-learning.window-days` changes, so a retired window's rows outlive the config that wrote
+  them. Reading unfiltered would emit two contradictory `surface:<kind>` lines per scope under one
+  `VISSZAJELZÉSEK` header (the number itself now derived from `FeedbackLearningProperties
+  .windowDays()`, never hardcoded 30). **`ProfileAssembler` reads the SAME property
+  `FeedbackLearningService` writes rows with on purpose** — filtering on a different knob would
+  compile fine and silently match nothing, emptying the whole profile, which is a worse failure
+  than the bug it fixes. **`QuarterlyReviewService.appendFeedback` deliberately does NOT filter
+  the same way** — it reads every window unfiltered and labels each row with its own window
+  instead, so seeing `surface:chat_message` twice with two window labels in a quarterly payload
+  after a window-days change is that builder working as designed, not this fix leaking.
+  **Operational edge (future window changes only, not this deploy):** `window-days` has always
+  been 30 and the nightly rollup cron (03:10) normally finishes well before the weekly profile
+  cron (Monday 03:45), so a fresh window's rows normally exist by read time; but a FUTURE window
+  change landing in that ~35-minute gap, or `feedback-learning-job.enabled=false` while the
+  profile job still runs, leaves the new window with zero rollup rows — and since `decisions`/
+  `nodes` are typically non-empty, `rebuild`'s honest-absence gate does NOT fire, so it overwrites
+  the existing profile with a strictly poorer payload. When decisions and nodes are also empty the
+  gate does fire and the old profile is left untouched, so there is no silent data loss.
+- **`feedbackSignals` sums `surface:*`-prefixed rows only** (`mezo-b3pp.35`, item 4,
+  `ProfileAssemblerIT.feedbackSignals_countsEachVerdictOnce_whenAFeedMessageIsRolledUpTwice`) —
+  the scope taxonomy is `style`, `surface:<artifact_kind>`, `feed:<feed_kind>`,
+  `intervention:<key>`; `surface:*` is the complete, non-overlapping partition of every verdict
+  (exactly one row per artifact kind), while `feed:*`/`intervention:*` are REFINEMENTS of a subset
+  of it — a `feed_message` verdict lands in both `surface:feed_message` and its `feed:<kind>` row.
+  Summing every scope double-counted it. This affects only the `meta.profile.feedbackSignals`
+  number, not the `signals == 0` skip gate: every `feed:*`/`intervention:*` row is built by
+  filtering the SAME window's verdicts down to `artifactKind == feed_message`
+  (`FeedbackLearningService.computeRollups`), so a nonzero feed or intervention row always implies
+  a nonzero `surface:feed_message` row from the same run — double counting could only inflate an
+  already-nonzero total, never manufacture a nonzero total out of an all-zero one. It never changes
+  which rollup LINES render in the payload either, since the rendered VISSZAJELZÉSEK lines already
+  iterate every scope regardless. **The invariant to
+  watch:** `MessageFeedbackEntity.KIND_WEEKLY_REVIEW` is declared but is not in
+  `FeedbackLearningService.SURFACE_KINDS` (`mezo-b3pp.40`) — wiring that kind up for real without
+  adding it there would make its verdicts land in no `surface:` row at all, silently UNCOUNTED, the
+  mirror image of the double-count this item fixed and just as invisible.
+- **The cap applies twice** — `ProfileProperties.renderMaxTokens` (**400**, spec §8.3, floor raised
+  `@Min(50)` → `@Min(200)` by `mezo-b3pp.35` item 5) caps the
   prose at STORE time (`ProfileAssembler.cap`, `CHARS_PER_TOKEN = 3`, same estimate as
   `[Emlékek]`/`[Összefüggések]`) and again, redundantly, at RENDER time
   (`ProfilePromptAssembler.render`) — so Tudástár's "Rólad tanultam" card can never show more prose
   than the model was actually given, even if the config value changes between a write and a read.
-  The cut lands on a word boundary with a trailing `…`.
+  The cut lands on a word boundary with a trailing `…`. **The floor moved because the header alone
+  costs tokens**: `ProfilePromptAssembler.PROFILE_HEADER` is 142 chars ÷ `CHARS_PER_TOKEN` (3) ≈ 48
+  tokens ceiling-rounded, so the old floor of 50 left just 2 tokens for actual prose — not a
+  violation of anything today, but zero headroom for the header to grow by even one clause. 200
+  leaves over 150 tokens of prose room at the floor, still well under the shipped 400 default.
 - **`upsertNode` does not touch status** (W2.2 owns its own status rules), so the assembler
   explicitly re-activates the node after the upsert: an archived profile is revived by the very
   next weekly run — the "reset what you think of me" recovery path spec §8.3 promises, without a
@@ -2135,11 +2218,25 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   lever), is capped, and **never throws** (IDENT-3): a `RuntimeException` logs a warn and yields
   `""`, so a profile-block failure never breaks a turn. `""` also when the bean is absent
   (`COMPANION_SWITCH`/`KNOWLEDGE_GRAPH_SWITCH` off — `ChatService` holds it via `ObjectProvider`,
-  the `GraphPromptAssembler` idiom).
+  the `GraphPromptAssembler` idiom). **The never-throws contract now has a failure-path IT**
+  (`mezo-b3pp.35`, item 2, `ProfilePromptAssemblerFailureIT
+  .testRender_shouldReturnEmptyBlock_whenTheProfileReadFails` — its own IT class, same
+  `@MockitoSpyBean`-forks-the-context reasoning as `ChatServiceGraphBlockFailureIT`): the catch is
+  correct today, so nothing else in the suite would fail if a future refactor deleted it. The test
+  exists so that refactor fails loudly instead — the profile block is optional, the surrounding
+  turn is not.
 - **`ProfileMetaEnvelope`** (`profile/entity/`) — the node's typed `meta.profile` payload
   (`generatedAt`, `feedbackSignals`, `reviewedDecisions`, `graphNodes`): what the synthesis was
   built from, so a surprising profile can be explained without re-running the job. Hand-rolled
-  `toMeta()`/read-back under its own `META_KEY`, the `GraphProposedEdge` idiom.
+  `toMeta()`/read-back under its own `META_KEY`, the `GraphProposedEdge` idiom. **This is a
+  deliberate write-only forensic record** — nothing reads `meta.profile` back in production by
+  design; a surprising profile is meant to be explained by reading the JSON straight out of the DB,
+  not by re-running the job to reproduce it. Do not read this as dead code, and do not read the
+  card's missing "when was this generated" affordance as a gap here either: the two are split on
+  purpose — `mezo-b3pp.39` tracks surfacing the profile's age on the Tudástár card via
+  `GraphNodeEntity.updatedAt` (a contract-first vertical of its own, unrelated to this envelope's
+  diagnostic counts), so neither half of the original finding gets re-filed later against the
+  wrong one.
 - **W5.3 (`mezo-b3pp.20`) calls `ProfileAssembler.rebuild` too**, after the quarterly pass — the
   public method is deliberately reusable, not job-private — passing the just-finished quarter as
   the anchor, and only when `PROFILE_ASSEMBLER_JOB_SWITCH` is on (§4, "The anchor quarter" and
@@ -2839,12 +2936,20 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `mezo.companion.graph.reinforcement-bump` = **0.05** (0..1) — W2.5: fresh pattern evidence
   (a same-night `pattern_event` snapshot for a promoted pattern) bumps that node's touching edges
   by this much, capped at 1.0.
+- `mezo.companion.graph.max-seeds` = **8** (`@Min(1) @Max(50)`) — `mezo-b3pp.34`: cap on
+  `GraphTraversalService#seedsFor`'s ranked seed list, applied AFTER ranking (title hit, then
+  distinct token hits, ties left to the query's own TOTAL `created_at desc, id` row order) so a chatty turn
+  that word-start-matches many nodes still produces a deterministic, most-relevant-first seed set
+  instead of degenerating into "the globally strongest edges" once the seed set is most of the
+  graph; consumed by W2.4's `GraphTraversalService`.
 - `mezo.companion.profile.cron` = **`0 45 3 * * MON`** (`@NotBlank`) — W4.3 (`mezo-b3pp.17`):
   weekly, AFTER the 03:10 feedback rollups and the 03:30 weekly consolidation rung (both read by
   the assembler, so it must run last in the dawn window). Job switch
   `mezo.techcore.cron.profile-assembler-job.enabled` (`PROFILE_ASSEMBLER_JOB_SWITCH`) — off ⇒ the
   `ProfileAssemblerJob` bean does not exist.
-- `mezo.companion.profile.render-max-tokens` = **400** (`@Min(50) @Max(2000)`, spec §8.3) — the
+- `mezo.companion.profile.render-max-tokens` = **400** (`@Min(200) @Max(2000)`, spec §8.3 — floor
+  raised from 50 by `mezo-b3pp.35` item 5: the `[Rólad tanultam]` header alone costs ~48 tokens, so
+  50 left almost no room for prose) — the
   hard cap on the WHOLE `[Rólad tanultam]` block (header included) at render time; the same budget
   is applied at STORE time to the prose alone (no header there), so the stored summary can be
   marginally longer than what a turn actually renders — Tudástár may show a little more than the
@@ -3863,6 +3968,29 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`profile/ProfileSourceFindersIT`** — the two read-side finders in isolation: reviewed decisions
   come back newest-first with unreviewed rows excluded; all rollup scopes for a user come back in
   one read.
+
+**W4.3 follow-up test additions (`mezo-b3pp.35`, spec §8.3 — window filter, signal counting, failure
+IT):**
+
+- **`profile/service/ProfileAssemblerWindowHeaderIT`**
+  (`renderPayload_statesTheConfiguredWindowInTheHeader_whenItIsNotThirty`) — own IT class, a
+  `@TestPropertySource` window-days override to 14 (forks a separate context, the
+  `NoteVectorLifecycleBudgetIT` precedent): the `VISSZAJELZÉSEK` header states `14`, never the
+  shipped-default `30`.
+- **`profile/service/ProfileAssemblerIT`**, two new cases:
+  `renderPayload_readsOnlyTheConfiguredWindow_whenRetiredWindowRowsExist` — a real rollup run plus a
+  hand-inserted retired-window row for the same scope; the payload names the SAME scope exactly
+  once, with the live window's numbers, never the retired window's; and
+  `feedbackSignals_countsEachVerdictOnce_whenAFeedMessageIsRolledUpTwice` — a `surface:feed_message`
+  row and a `feed:morning` row seeded with the same stats; `meta.profile.feedbackSignals` equals the
+  `surface:*` total alone (5), not the summed-across-scopes double count (10).
+- **`profile/ProfilePromptAssemblerFailureIT`**
+  (`testRender_shouldReturnEmptyBlock_whenTheProfileReadFails`) — own IT class (`@MockitoSpyBean`
+  forks the context, kept out of the clean `ProfilePromptAssemblerIT` context on purpose): a spied
+  `GraphNodeRepository` throws `DataAccessResourceFailureException` from inside the guarded read;
+  `render` still returns `""` and the exception never escapes — pins IDENT-3 against a future
+  refactor that removes the catch, the same reasoning `ChatServiceGraphBlockFailureIT` pins for
+  `GraphPromptAssembler`.
 
 **W5.1 composite-flag test additions (`mezo-b3pp.18`, spec §9.1) — no LLM anywhere in this path:**
 

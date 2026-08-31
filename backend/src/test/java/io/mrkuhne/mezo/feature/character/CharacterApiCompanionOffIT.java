@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.CharacterClaimDto;
 import io.mrkuhne.mezo.api.dto.CharacterClaimFeedbackRequest;
+import io.mrkuhne.mezo.api.dto.CharacterExpertsResponse;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
@@ -52,6 +53,14 @@ class CharacterApiCompanionOffIT extends ApiIntegrationTest {
                 "/api/character", ownerAuthHeaders(), HttpStatus.OK, CharacterOverviewResponse.class);
 
         assertThat(overview.getDimensions()).hasSize(7);
+    }
+
+    @Test
+    void testCharacterExperts_shouldSucceed_whenCompanionSwitchedOff() {
+        CharacterExpertsResponse res = getForBody(
+                "/api/character/experts", ownerAuthHeaders(), HttpStatus.OK, CharacterExpertsResponse.class);
+
+        assertThat(res.getExperts()).hasSize(9);
     }
 
     @Test

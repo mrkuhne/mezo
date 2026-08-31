@@ -209,8 +209,8 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
           id: crypto.randomUUID(),
           role: 'assistant', ts: 'now', text: cannedReply(text),
           tools: [
-            { type: 'read', name: 'get_recent_checkins(d=3)' },
-            { type: 'compute', name: `recallSharedMemory(theme='${text.slice(0, 20)}')` },
+            { type: 'read', name: 'get_recovery(days=3, scope=checkin)' },
+            { type: 'compute', name: `find_similar_past_days(theme='${text.slice(0, 20)}')` },
           ],
           refs: [{ kind: 'CheckIn', id: 'ci-2026-05-21' }],
           recalled: [

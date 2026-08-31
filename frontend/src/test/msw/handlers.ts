@@ -5,6 +5,7 @@ import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge
 import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import { addDays } from '@/shared/lib/dates'
+import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY } from '@/data/character/characterMock'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -373,6 +374,20 @@ export const handlers = [
 
   // Proactive experiment (P2) — default: honest empty ARRAY (list endpoint, never 404); the
   // ExperimentsPage renders its "still learning" null-state. Tests override with server.use(...).
+  // Diagnosis (mezo-hqfi.4): honest-empty list; generate answers 409 by default (a fresh test
+  // user has thin data) — per-test overrides script the happy/quota paths.
+  http.get(`${API_BASE}/api/proactive/diagnosis`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/proactive/diagnosis`, () =>
+    HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_DATA', message: 'nincs elég adat' }], { status: 409 })),
+  http.get(`${API_BASE}/api/proactive/diagnosis/:id`, () =>
+    HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND', message: 'nincs ilyen' }], { status: 404 })),
+  http.post(`${API_BASE}/api/proactive/diagnosis/:id/suspect/:rank/experiment`, ({ params }) =>
+    HttpResponse.json({
+      id: 'exp-from-diag', title: 'Próba', hypothesis: 'Próba-hipotézis.', status: 'active',
+      metricKey: 'SLEEP_DURATION_H', expectedDirection: 'up', startDate: '2026-08-31',
+      totalDays: 7, outcome: null, outcomeGood: null, generatedAt: '2026-08-31T07:00:00Z',
+      rank: Number(params.rank),
+    }, { status: 201 })),
   http.get(`${API_BASE}/api/proactive/experiment`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/proactive/experiment/propose`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/proactive/experiment/:id/decision`, async ({ params, request }) => {
@@ -1257,15 +1272,15 @@ export const handlers = [
     const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
+        controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_recovery(days=3)' })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(0, mid) })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(mid) })))
         // V0.5: the done event carries the persisted assistant row's REAL chips — name bakes
-        // the args in ("get_sleep(days=3)"), refs are the tool-contributed data references
+        // the args in ("get_recovery(days=3)"), refs are the tool-contributed data references
         controller.enqueue(encoder.encode(frame('done', {
           id: 'msg-done', role: 'assistant', content: reply,
           createdAt: '2026-07-03T07:00:05Z',
-          tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+          tools: [{ type: 'read', name: 'get_recovery(days=3)' }],
           refs: [{ kind: 'Sleep', id: '2026-07-02' }],
           // W3.1b: the persisted row also carries what ambient recall fed the prompt
           recalled: [{
@@ -1430,4 +1445,19 @@ export const handlers = [
       predictions: [{ id: '12345678-90ab-4cde-8f01-234567890abc', title: 'Real-mode prediction', status: 'pending' }],
     })
   }),
+  // Karakter dossier (mezo-1gim.13, fix round 1) — real-mode default handlers so navigation.test.tsx
+  // (and any other test that renders these pages WITHOUT stubbing @/data/hooks) gets an honest
+  // PRE-BOOTSTRAP dossier instead of an unhandled request resolving to a false 404/degraded row.
+  // Seeded to the same "untouched dossier" shape as the mock's own MOCK_OVERVIEW_EMPTY (CORE dims
+  // at maturity 0, portrait '', topClaims []) so `isDossierEmpty()` holds and the bootstrap-intro
+  // face renders — the one shared predicate the hub/Én-tile both key off. Per-test server.use()
+  // overrides still take priority (msw resolves the LAST matching handler first).
+  http.get(`${API_BASE}/api/character`, () => HttpResponse.json(MOCK_OVERVIEW_EMPTY)),
+  http.get(`${API_BASE}/api/character/dimension/:key`, ({ params }) => {
+    const dim = MOCK_DIMENSIONS[params.key as string]
+    return dim != null ? HttpResponse.json(dim) : new HttpResponse(null, { status: 404 })
+  }),
+  http.get(`${API_BASE}/api/character/experts`, () => HttpResponse.json({ experts: MOCK_EXPERTS })),
+  http.get(`${API_BASE}/api/character/feed`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/character/conference`, () => HttpResponse.json([])),
 ]

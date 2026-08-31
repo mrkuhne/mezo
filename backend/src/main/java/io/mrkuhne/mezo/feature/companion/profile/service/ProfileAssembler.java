@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.profile.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.feedback.config.FeedbackLearningProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupStatsEnvelope;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
@@ -92,6 +93,13 @@ public class ProfileAssembler {
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ProfileProperties properties;
+    /** The SAME source {@code FeedbackLearningService} writes {@code feedback_rollup.window_days}
+     *  with (mezo-b3pp.35, item 3) — {@code ProfileProperties} owns no window knob of its own. A
+     *  retired window (after a config change) leaves its rows behind forever (nothing prunes
+     *  them; see {@code FeedbackRollupRepository}), so reading unfiltered would surface BOTH the
+     *  live window's numbers and the stale ones as separate, contradictory lines per scope. Filter
+     *  on this same property, or the filter and the data disagree. */
+    private final FeedbackLearningProperties feedbackLearningProperties;
 
     /**
      * Rebuilds the profile for one user. Returns the node id, or empty when there was no signal
@@ -117,7 +125,8 @@ public class ProfileAssembler {
      */
     @Transactional
     public Optional<UUID> rebuild(UUID userId, LocalDate anchorQuarter) {
-        List<FeedbackRollupEntity> rollups = rollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc(userId);
+        List<FeedbackRollupEntity> rollups = rollupRepository.findByCreatedByAndWindowDaysAndDeletedFalseOrderByScopeAsc(
+                userId, feedbackLearningProperties.windowDays());
         List<DecisionEntryEntity> decisions = decisionRepository
                 .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(
                         userId, Limit.of(properties.maxDecisions()));
@@ -158,8 +167,20 @@ public class ProfileAssembler {
                 .toList();
     }
 
+    /**
+     * Sums ONLY {@code surface:}-prefixed rows (mezo-b3pp.35, item 4). The scope taxonomy is
+     * {@code style}, {@code surface:<artifact_kind>}, {@code feed:<feed_kind>},
+     * {@code intervention:<key>} — {@code surface:*} is the complete, non-overlapping partition
+     * (exactly one row per artifact kind ever verdicted), while {@code feed:*} and
+     * {@code intervention:*} are REFINEMENTS of a subset of it (a {@code feed_message} verdict
+     * also lands in {@code surface:feed_message}). Summing every scope therefore double- (or
+     * triple-) counts every feed/intervention verdict. Do not "fix" this back to all-scopes —
+     * {@code surface:*} alone is the canonical count; only the meta number and the
+     * {@code signals == 0} skip gate's magnitude depend on it, never which rows render.
+     */
     private static int feedbackSignals(List<FeedbackRollupEntity> rollups) {
         return rollups.stream()
+                .filter(r -> r.getScope() != null && r.getScope().startsWith(FeedbackRollupEntity.SCOPE_SURFACE_PREFIX))
                 .map(FeedbackRollupEntity::getStats)
                 .filter(Objects::nonNull)
                 .map(FeedbackRollupStatsEnvelope::total)
@@ -191,7 +212,8 @@ public class ProfileAssembler {
                         + r.getStats().down() + " nem tetszik")
                 .toList();
         if (!feedbackLines.isEmpty()) {
-            out.append("VISSZAJELZÉSEK (utolsó 30 nap):\n").append(String.join("\n", feedbackLines)).append('\n');
+            out.append("VISSZAJELZÉSEK (utolsó ").append(feedbackLearningProperties.windowDays())
+                    .append(" nap):\n").append(String.join("\n", feedbackLines)).append('\n');
         }
         List<String> reasonLines = rollups.stream()
                 .filter(r -> FeedbackRollupEntity.SCOPE_STYLE.equals(r.getScope()))

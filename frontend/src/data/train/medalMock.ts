@@ -29,9 +29,14 @@ export const medalsMock: Medal[] = [
     previousValue: 120, previousDate: '2026-06-22',
   },
   {
+    // Re-pointed from 'w5' to the review fixture (mezo-d20.8.2.1): the "Mihez képest" tile's
+    // célszett delta needs a TARGET medal on at least one side of the comparison, and the
+    // previous instance (wd-mock-0) deliberately has none — so the cell reads +1 and
+    // demonstrates the only toned direction the palette has. Re-pointing rather than ADDING a
+    // row keeps the medal cabinet's content identical, exactly as the WEIGHT row above does.
     type: 'TARGET_HIT', tier: 'TARGET', exerciseName: 'Chest Supported Row',
     catalogId: 'exl-1', muscle: 'back-mid', date: '2026-07-20',
-    workoutSessionId: 'w5', setIndex: 4,
+    workoutSessionId: 'wd-mock-1', setIndex: 4,
     value: 10, unit: 'REPS', weightKg: 105, reps: 10,
     previousValue: null, previousDate: null,
   },

@@ -46,6 +46,8 @@ import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
+import { DiagnosisListPage } from '@/features/insights/pages/DiagnosisListPage'
+import { DiagnosisDetailPage } from '@/features/insights/pages/DiagnosisDetailPage'
 import { MemoryPage } from '@/features/insights/pages/MemoryPage'
 import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
@@ -69,6 +71,12 @@ import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
 import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
+import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
+import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
+import { DimensionPage } from '@/features/character/pages/DimensionPage'
+import { CharacterFeedPage } from '@/features/character/pages/CharacterFeedPage'
+import { CsapatPage } from '@/features/character/pages/CsapatPage'
+import { KonziliumPage } from '@/features/character/pages/KonziliumPage'
 
 // Design 2.0 shell (mezo-d20.1.1): /today → /nap and /insights → /mezo renames. The legacy
 // paths survive as redirects (PWA bookmarks, in-app navigate() calls not yet migrated).
@@ -186,6 +194,10 @@ export const routes: RouteObject[] = [
       { path: 'mezo/chat', element: <ChatPage /> },
       { path: 'mezo/predictions', element: <PredictionsPage /> },
       { path: 'mezo/experiments', element: <ExperimentsPage /> },
+      // Diagnózis — the on-demand report catalog (mezo-hqfi.4): full-page siblings on the
+      // patterns/:pairKey idiom; Hungarian slug per the spec's resolved micro-decision.
+      { path: 'mezo/diagnozis', element: <DiagnosisListPage /> },
+      { path: 'mezo/diagnozis/:id', element: <DiagnosisDetailPage /> },
       // Motor retired (mezo-tk88.4) — the diagnostics moved into the Minták dashboard +
       // the pattern-pair detail page above (mezo-tk88.5); the route survives as an honest
       // redirect so any old bookmark/link (`?pair=` cross-links included) still lands
@@ -198,6 +210,16 @@ export const routes: RouteObject[] = [
       // full-page siblings on their stable routes (they keep their current faces until
       // their own F5 slices land) — the same idiom the Mezo tab took in mezo-d20.5.1.
       { path: 'me', element: <EnHubPage /> },
+      // Karakter dossier hub (mezo-1gim.13) — the Én hub's Karakter tile.
+      { path: 'me/karakter', element: <KarakterHubPage /> },
+      // Dimenziók/dimenzió/feed full-page siblings (Task 4); Csapat/Konzílium (Task 5) —
+      // Konzílium's transcript view rides `?id=` on the SAME route (the WeekHub sibling
+      // idiom, e.g. WeekLessonsPage's `?start=`), not a child route.
+      { path: 'me/karakter/dimenziok', element: <DimensionsPage /> },
+      { path: 'me/karakter/dimenzio/:key', element: <DimensionPage /> },
+      { path: 'me/karakter/feed', element: <CharacterFeedPage /> },
+      { path: 'me/karakter/csapat', element: <CsapatPage /> },
+      { path: 'me/karakter/konzilium', element: <KonziliumPage /> },
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll

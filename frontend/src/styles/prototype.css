@@ -221,6 +221,12 @@
   --mz-chat-refch-bd: rgba(43, 33, 24, 0.08);
   --mz-chat-memline: rgba(138, 118, 204, 0.4);
   --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(43, 33, 24, 0.25), 0 17px 31px -17px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mzc-strip-bd: rgba(93, 79, 160, 0.16);
+  --mzc-strip-shadow: 0 10px 20px -12px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --mzc-panel-bg: rgba(255, 255, 255, 0.85);
+  --mzc-panel-line: rgba(93, 79, 160, 0.1);
+  --mzc-tx-sky: #3E7396;
+  --mzc-tx-rose: #8E3F6F;
   /* Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak hexes verbatim */
   --mz-mnt-motor-bg: linear-gradient(140deg, #F7F4FD, #FFFFFF 70%);
   --mz-mnt-hot-ring: #C9962E;
@@ -489,6 +495,12 @@
   --mz-chat-refch-bd: rgba(245, 239, 230, 0.1);
   --mz-chat-memline: color-mix(in srgb, var(--dv-lav) 45%, transparent);
   --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(0, 0, 0, 0.5), 0 17px 31px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mzc-strip-bd: color-mix(in srgb, var(--dv-lav) 30%, transparent);
+  --mzc-strip-shadow: 0 10px 20px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --mzc-panel-bg: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+  --mzc-panel-line: color-mix(in srgb, var(--dv-lav) 22%, transparent);
+  --mzc-tx-sky: #9CC3DC;
+  --mzc-tx-rose: #E3A8C8;
   /* Minták page (mezo-d20.5.3) — motor card / hot ring / evidence bar on the dark ramp */
   --mz-mnt-motor-bg: linear-gradient(140deg, color-mix(in srgb, var(--dv-lav) 10%, var(--surface-card)), var(--surface-card) 70%);
   --mz-mnt-hot-ring: var(--dv-amber);
@@ -4028,14 +4040,15 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .wsum-reg { display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-full); padding: 5px 11px; font-size: 10.5px; font-weight: 800; background: var(--fam-wash, var(--surface-recess)); color: var(--fam-deep, var(--text-secondary)); }
 .wsum-reg .n { font-family: var(--ff-mono); font-weight: 600; font-size: 9.5px; opacity: .85; }
 .wsum-reg.off { background: var(--surface-recess); color: var(--text-disabled); text-decoration: line-through; }
+/* The stat strip is the Mozaik one (.mz-statstrip / .mz-statcell) as of mezo-d20.8.2.1 — the
+   prototype's separate floating cells, not the old single grid with divider seams. Only the
+   value tones stay local, because the strip primitive knows nothing about medals or targets. */
 .wsum-stripwrap { padding: 16px 20px 0; }
-.wsum-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--divider); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
-.wsum-strip .cell { background: var(--surface-card); padding: 11px 4px 10px; text-align: center; }
-.wsum-strip .v { font-size: 17px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
-.wsum-strip .v .u { font-size: 9.5px; font-weight: 500; color: var(--text-muted); margin-left: 1px; }
-.wsum-strip .v.gold { color: var(--amber-deep); }
-.wsum-strip .v.green { color: var(--sage-deep); }
-.wsum-strip .l { font-size: 7.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
+.wsum-stripwrap .v { font-size: 17px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); display: block; }
+.wsum-stripwrap .v .u { font-size: 9.5px; font-weight: 500; color: var(--text-muted); margin-left: 1px; }
+.wsum-stripwrap .v.gold { color: var(--amber-deep); }
+.wsum-stripwrap .v.green { color: var(--sage-deep); }
+.wsum-stripwrap .l { font-size: 7.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
 .wsum-sec { padding: 20px 20px 0; }
 .wsum-slabel { font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
 .wsum-slabel .cnt { font-family: var(--ff-mono); font-size: 9px; color: var(--text-disabled); font-weight: 600; letter-spacing: 0; }
@@ -4066,28 +4079,105 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .wsum-chal.hit .out { background: var(--wash-sage); color: var(--sage-deep); }
 .wsum-chal.miss .out { background: var(--warning-bg); color: var(--warning-hover); }
 .wsum-chal.skip .out { background: var(--surface-recess); color: var(--text-disabled); }
-.wsum-exc { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--fam-rail) 10%, transparent) 0%, var(--surface-card) 55%); border: 1px solid var(--divider); border-left: 5px solid var(--fam-rail); border-radius: var(--r-xl); padding: 12px 13px 13px; box-shadow: var(--shadow-sm); }
-.wsum-exc + .wsum-exc { margin-top: 9px; }
-.wsum-exc .hd { display: flex; align-items: center; gap: 8px; }
-.wsum-exc .nm { font-size: 13px; font-weight: 700; flex: 1; min-width: 0; color: var(--ink); }
-.wsum-exc .mus { font-size: 8.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; border-radius: var(--r-sm); padding: 3px 6px; background: var(--fam-wash); color: var(--fam-deep); flex: none; }
-.wsum-exc .setn { font-family: var(--ff-mono); font-size: 9.5px; font-weight: 700; color: var(--fam-deep); flex: none; }
-.wsum-exc .setn.part { color: var(--warning-hover); }
-.wsum-exc .setn.dead { color: var(--text-disabled); }
-.wsum-exc .setn .skipmark { font-weight: 600; color: var(--text-disabled); }
-.wsum-exc .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
-.wsum-chip { display: inline-flex; align-items: baseline; gap: 4px; font-family: var(--ff-mono); font-size: 10px; font-weight: 600; color: var(--ink); background: var(--surface-recess); border: 1px solid transparent; border-radius: var(--r-full); padding: 4px 9px; font-variant-numeric: tabular-nums; }
-.wsum-chip .rir { font-size: 8px; color: var(--text-muted); }
-.wsum-chip.top { border-color: color-mix(in srgb, var(--fam-rail) 55%, transparent); background: var(--fam-wash); color: var(--fam-deep); }
-.wsum-chip.top .rir { color: var(--fam-deep); opacity: .7; }
-.wsum-chip.rec { background: var(--wash-amber); border-color: var(--accent-soft); color: var(--amber-deep); }
-.wsum-chip.rec .rir { color: var(--amber-deep); opacity: .75; }
-.wsum-chip.ghost { background: transparent; border: 1px dashed var(--divider); color: var(--text-disabled); }
-.wsum-exc.dead { background: var(--surface-card); border-left-color: var(--text-disabled); opacity: .72; }
-.wsum-exc.dead .nm { color: var(--text-muted); text-decoration: line-through; }
-.wsum-note { background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-xl); padding: 12px 13px; box-shadow: var(--shadow-sm); }
-.wsum-note .l { font-family: var(--ff-mono); font-size: 8.5px; font-weight: 600; color: var(--text-muted); letter-spacing: .08em; text-transform: uppercase; }
-.wsum-note textarea { width: 100%; margin-top: 8px; min-height: 52px; resize: none; font-size: 13px; line-height: 1.45; }
+/* ===== Edzés-review · kontextus-riport (mezo-d20.8.2.1, spec 2026-08-31) ==============
+   The five near-identical white exercise cards are gone: the inventory now runs sideways as a
+   swimlane, and the depth lives on the exercise's own view rather than in the scroll. The
+   swimlane and the exercise view serve BOTH modes — the inventory belongs to the closing
+   report too; only the comparison tile and the stepping are the revisit's own. */
+
+/* --- „Mihez képest" · closed only ------------------------------------------------- */
+.wr-cmp { margin: 16px 20px 0; padding: 12px 14px 13px; border-radius: var(--r-xl);
+  background: var(--mz-wash-sky); border: 0.5px solid var(--divider); box-shadow: var(--mz-shadow-sky); }
+.wr-cmp .eyebrow { font-size: 8.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); }
+.wr-cmp-ref { display: flex; align-items: baseline; gap: 7px; margin-top: 3px; flex-wrap: wrap; }
+.wr-cmp-ref b { font-size: 13px; font-weight: 700; color: var(--ink); }
+.wr-cmp-ref .ago { font-size: 10.5px; font-weight: 600; color: var(--text-muted); }
+.wr-cmp-cells { display: flex; gap: 8px; margin-top: 11px; }
+.wr-cmp-cell { flex: 1; text-align: center; border-radius: var(--r-lg); padding: 8px 4px 7px;
+  background: var(--mz-cellbg); border: 0.5px solid var(--divider); }
+/* ADR 0010, and the reason there is deliberately NO `.down` class: the number is signed and
+   honest, but the palette has no punishing tone to reach for. A lighter week reads neutral. */
+.wr-cmp-cell .v { display: block; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.wr-cmp-cell .v.up { color: var(--sage-deep); }
+.wr-cmp-cell .l { display: block; font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+.wr-cmp-cell .was { display: block; font-size: 8.5px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+
+/* --- gyakorlat-swimlane ------------------------------------------------------------ */
+.wr-lane-head { display: flex; align-items: baseline; gap: 8px; padding: 0 2px 8px; }
+.wr-lane-head .hint { margin-left: auto; font-size: 9.5px; color: var(--text-muted); }
+.wr-lane { display: flex; gap: 9px; overflow-x: auto; scrollbar-width: none;
+  scroll-snap-type: x mandatory; margin: 0 -20px; padding: 3px 20px 6px; }
+.wr-lane::-webkit-scrollbar { display: none; }
+.wr-extile { flex: none; width: 151px; scroll-snap-align: start; cursor: pointer; text-align: left;
+  font: inherit; color: var(--ink); display: flex; flex-direction: column; gap: 6px;
+  border: 0.5px solid var(--divider); border-radius: var(--r-xl); padding: 11px 12px 12px;
+  background: var(--fam-wash); box-shadow: var(--shadow-sm); }
+.wr-extile:focus-visible { outline: 2px solid var(--coral-deep); outline-offset: 2px; }
+.wr-extile.dead { opacity: .6; }
+.wr-extile.dead .nm { text-decoration: line-through; color: var(--text-muted); }
+.wr-extile .hd { display: flex; align-items: center; }
+.wr-extile .mono { width: 28px; height: 28px; border-radius: var(--r-md); display: grid; place-items: center;
+  flex: none; background: var(--surface-card); color: var(--fam-deep); font-size: 13px; font-weight: 700; }
+.wr-extile .stamp { margin-left: auto; font-size: 8px; font-weight: 800; letter-spacing: .1em;
+  color: var(--amber-deep); background: var(--wash-amber); border-radius: var(--r-full); padding: 2px 7px; }
+.wr-extile .nm { font-size: 11px; font-weight: 700; line-height: 1.25; min-height: 28px; }
+.wr-extile .lbl { font-size: 8px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+/* The anchor: ONE number per exercise, big enough to read at a glance. */
+.wr-extile .top { font-size: 20px; font-weight: 300; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--fam-deep); }
+.wr-extile .top .x { font-size: 13px; color: var(--text-muted); }
+.wr-extile .foot { display: flex; align-items: baseline; gap: 5px; font-size: 9px; font-weight: 600; color: var(--text-muted); }
+.wr-extile .ncnt { font-weight: 500; color: var(--text-tertiary); }
+/* Set bars: solid = logged · gold = medal · faint = warmup · dashed = missed. */
+.wr-setbars { display: flex; gap: 4px; }
+.wr-setbars i { flex: 1; height: 5px; border-radius: 3px; background: var(--fam-deep); opacity: .42; }
+.wr-setbars i.med { background: var(--amber-deep); opacity: 1; }
+.wr-setbars i.warm { opacity: .16; }
+.wr-setbars i.miss { background: none; border: 1px dashed var(--divider); }
+
+/* --- gyakorlat-oldal --------------------------------------------------------------- */
+.wr-exhero { display: flex; align-items: center; gap: 12px; padding: 8px 20px 14px; }
+.wr-exhero .mono { width: 50px; height: 50px; border-radius: var(--r-xl); display: grid; place-items: center;
+  flex: none; background: var(--fam-wash); color: var(--fam-deep); font-size: 21px; font-weight: 700; box-shadow: var(--shadow-sm); }
+.wr-exhero .nm { font-size: 17px; font-weight: 700; line-height: 1.2; color: var(--ink); }
+.wr-exhero .sb { display: flex; align-items: center; gap: 7px; margin-top: 3px; flex-wrap: wrap; font-size: 11px; color: var(--text-muted); }
+.wr-exhero .mus { font-size: 8.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  border-radius: var(--r-sm); padding: 3px 6px; background: var(--fam-wash); color: var(--fam-deep); }
+
+/* One tile per set — this is where the number finally gets room, and the whole reason the
+   scrolling chip rows went away. */
+.wr-set { display: flex; align-items: center; gap: 11px; border-radius: var(--r-lg); padding: 11px 13px;
+  background: var(--surface-card); border: 1px solid var(--divider); box-shadow: var(--shadow-sm); }
+.wr-set + .wr-set { margin-top: 7px; }
+.wr-set .ix { width: 26px; height: 26px; border-radius: var(--r-md); flex: none; display: grid; place-items: center;
+  font-size: 11px; font-weight: 700; background: var(--fam-wash); color: var(--fam-deep); font-variant-numeric: tabular-nums; }
+.wr-set.warm .ix { background: var(--surface-recess); color: var(--text-disabled); }
+.wr-set .tx { flex: 1; min-width: 0; }
+.wr-set .load { font-size: 17px; font-weight: 300; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.wr-set .load b { font-weight: 600; }
+.wr-set .rir { font-size: 10.5px; font-weight: 600; color: var(--text-muted); margin-left: 5px; }
+.wr-set .band { font-size: 8.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-left: 5px; }
+.wr-set .band.in { color: var(--sage-deep); }
+.wr-set .note { font-size: 10.5px; color: var(--text-secondary); margin-top: 3px; }
+.wr-set .vol { flex: none; font-size: 11px; font-weight: 600; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.wr-set.rec { background: var(--wash-amber); border-color: var(--accent-soft); }
+.wr-set.rec .vol { color: var(--amber-deep); }
+/* The missed set stays a ghost: no red, no "hiányzik" — the report does not punish. */
+.wr-set.ghost { background: transparent; border: 1px dashed var(--divider); box-shadow: none; }
+.wr-set.ghost .ix { background: transparent; border: 1px dashed var(--divider); color: var(--text-disabled); }
+.wr-set.ghost .load { font-size: 12px; color: var(--text-disabled); }
+
+/* --- léptetés a template-nap láncán · closed only ---------------------------------- */
+.wr-stepnav { display: flex; gap: 8px; padding: 16px 20px 0; }
+.wr-stepnav button { flex: 1; font: inherit; cursor: pointer; border-radius: var(--r-lg); padding: 10px 12px;
+  background: var(--surface-card); border: 1px solid var(--divider); box-shadow: var(--shadow-sm);
+  text-align: left; color: var(--ink); }
+.wr-stepnav button.nx { text-align: right; }
+/* Disabled rather than absent: the chain's existence stays visible at either end. */
+.wr-stepnav button:disabled { opacity: .42; cursor: default; box-shadow: none; }
+.wr-stepnav button:focus-visible { outline: 2px solid var(--coral-deep); outline-offset: 2px; }
+.wr-stepnav small { display: block; font-size: 8px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+.wr-stepnav b { font-size: 12px; font-weight: 600; }
+
 .wsum-ctas { padding: 20px 20px 26px; display: flex; flex-direction: column; gap: 9px; }
 
 /* ===== Markdown prose (mezo-at8x.1) — the companion's model-written answers ==========
@@ -4638,10 +4728,8 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
       A behavioral re-face: the sticky/`:has` plumbing keys off `.chat-composer`
       (declared earlier in this file), these rules carry only the Mozaik look. ── */
 
-/* header: chsub anatomy + pgact chips */
-.mzc-chsub { display: flex; flex-direction: column; gap: 2px; }
+/* header: pgact chips (mzc-chsub retired — the orb-led header below replaces it, mezo-vdf4) */
 .mzc-eb { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lav-deep); }
-.mzc-st { font-size: 11px; color: var(--text-tertiary); }
 .mzc-pgact {
   border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg);
   border-radius: 999px; padding: 8px 14px; min-height: 36px;
@@ -4676,17 +4764,12 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-refrow { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
 .mzc-refch {
   font-size: 10px; font-weight: 600; border-radius: 9px; padding: 4px 9px;
-  background: var(--mz-chat-refch-bg); border: 0.5px solid var(--mz-chat-refch-bd); color: var(--mz-ink-soft);
 }
-.mzc-refch .mzc-refk { font-weight: 800; color: var(--text-primary); margin-right: 4px; }
+.mzc-refch .mzc-refk { font-weight: 800; color: var(--dmtx, var(--text-primary)); margin-right: 4px; }
 
 /* Emlékek · N disclosure */
 .mzc-membtn { border: none; background: none; font-family: inherit; cursor: pointer; padding: 5px 0; align-items: center; }
 .mzc-memeb { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
-.mzc-memlist { list-style: none; margin: 0; padding: 0 0 0 2px; }
-.mzc-memlist li { border-left: 2px solid var(--mz-chat-memline); padding-left: 9px; }
-.mzc-memlist .m1 { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
-.mzc-memlist .m2 { font-size: 11px; color: var(--text-secondary); }
 
 /* typing bubble */
 .mzc-typing {
@@ -4698,7 +4781,8 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 /* composer pill — mic disc · borderless field · lav send disc (44pt touch targets) */
 .mzc-composer {
   display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 10px;
-  border-radius: 26px; background: var(--mz-stripbg);
+  border-radius: 26px;
+  background: linear-gradient(150deg, var(--surface-card), var(--mz-wash-white) 60%, color-mix(in srgb, var(--dv-lav) 7%, var(--surface-card)));
   border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: var(--mz-chat-composer-shadow);
 }
 .mzc-composer textarea { background: none; border: none; outline: none; font-family: inherit; color: var(--text-primary); }
@@ -4709,13 +4793,172 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
 }
 .mzc-cmic { background: var(--mz-chat-mic-bg); color: var(--lav-deep); }
-.mzc-cmic.rec { background: var(--mz-chat-mic-rec-bg); color: var(--coral-deep); }
+.mzc-cmic.rec { background: rgba(255, 107, 74, 0.16); color: var(--coral-deep); }
 .mzc-csend { background: var(--mz-chat-send-bg); color: #fff; box-shadow: var(--mz-chat-send-shadow); }
 .mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
 .mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
 
+/* ===== mezo-vdf4: munkacsík — a tool-hívások egyetlen emberi sora ===== */
+/* Domain wash + deep text pairs — shared by the work panel and the grouped refs. */
+.dm-sky   { --dmw: var(--mz-wash-sky);   --dmtx: var(--mzc-tx-sky); }
+.dm-lav   { --dmw: var(--mz-wash-lav);   --dmtx: var(--lav-deep); }
+.dm-sage  { --dmw: var(--mz-wash-sage);  --dmtx: var(--sage-deep); }
+.dm-coral { --dmw: var(--mz-wash-coral); --dmtx: var(--coral-deep); }
+.dm-gold  { --dmw: var(--mz-wash-gold);  --dmtx: var(--amber-deep); }
+.dm-rose  { --dmw: var(--mz-wash-rose);  --dmtx: var(--mzc-tx-rose); }
+.dm-neutral { --dmw: var(--mz-wash-white); --dmtx: var(--text-secondary); }
+.mzc-wwrap { align-items: flex-start; gap: 0; margin-bottom: 10px; }
+.mzc-wstrip {
+  display: flex; align-items: center; gap: 6px; max-width: 100%; cursor: pointer;
+  border: 0.5px solid var(--mzc-strip-bd); font-family: inherit;
+  border-radius: 999px; padding: 5px 12px 5px 6px;
+  background: var(--mz-wash-lav); box-shadow: var(--mzc-strip-shadow);
+}
+.mzc-wstk { display: flex; flex: none; }
+.mzc-wic {
+  width: 22px; height: 22px; border-radius: 50%; flex: none; position: relative;
+  background: var(--surface-card); display: grid; place-items: center;
+  box-shadow: 0 2px 5px rgba(43, 33, 24, 0.12), 0 0 0 1.5px var(--mz-wash-white);
+}
+.mzc-wic + .mzc-wic { margin-left: -7px; }
+.mzc-wic.run { animation: mzc-livepulse 1.1s ease-in-out infinite; }
+.mzc-wmore { font-size: 8px; font-weight: 800; color: var(--lav-deep); }
+.mzc-wlbl { font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lav-deep); margin-left: 3px; white-space: nowrap; }
+.mzc-wsub { font-size: 9.5px; color: var(--text-tertiary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mzc-wchev { font-size: 10px; color: var(--mz-chat-memline); }
+.mzc-wpanel {
+  align-self: stretch; margin-top: 6px; border-radius: 14px; padding: 3px 12px;
+  background: var(--mzc-panel-bg); border: 0.5px solid var(--mzc-panel-line);
+  box-shadow: 0 12px 22px -14px rgba(93, 79, 160, 0.4);
+}
+.mzc-wrow { display: flex; align-items: center; gap: 9px; padding: 7px 0; }
+.mzc-wrow + .mzc-wrow { border-top: 0.5px solid var(--mzc-panel-line); }
+.mzc-wric {
+  width: 24px; height: 24px; border-radius: 8px; flex: none; background: var(--dmw);
+  display: grid; place-items: center; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.mzc-wnm { font-size: 11px; font-weight: 700; line-height: 1.2; color: var(--text-primary); }
+.mzc-wprm { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-wst { margin-left: auto; font-size: 9px; font-weight: 800; color: var(--sage-deep); flex: none; display: flex; align-items: center; }
+.mzc-wrow.run .mzc-wst { color: var(--lav-deep); }
+.mzc-wrow.run .mzc-wst i {
+  display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--lav-deep);
+  margin-right: 4px; animation: mzc-livepulse 1.1s ease-in-out infinite;
+}
+@keyframes mzc-livepulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(138, 118, 204, 0.45); }
+  50% { box-shadow: 0 0 0 4px rgba(138, 118, 204, 0.15); }
+}
+
+/* ===== mezo-vdf4: hivatkozások — domain-csoportok ===== */
+.mzc-refch {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--dmw, var(--mz-chat-refch-bg));
+  border: 0.5px solid var(--mz-chat-refch-bd); color: var(--dmtx, var(--text-secondary));
+}
+.mzc-refic {
+  width: 16px; height: 16px; border-radius: 50%; flex: none;
+  background: var(--surface-card); display: grid; place-items: center;
+}
+.mzc-refg {
+  display: inline-flex; align-items: center; gap: 4px; border: none; cursor: pointer;
+  font-family: inherit; border-radius: 999px; padding: 3px 10px 3px 4px;
+  font-size: 10px; font-weight: 700; background: var(--dmw); color: var(--dmtx);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 4px 10px -6px rgba(43, 33, 24, 0.3);
+}
+.mzc-refg .mzc-refn { font-variant-numeric: tabular-nums; font-weight: 800; opacity: 0.75; }
+.mzc-refg.on { box-shadow: inset 0 0 0 1.2px var(--dmtx), 0 4px 10px -6px rgba(43, 33, 24, 0.3); }
+.mzc-refdates { margin-top: 6px; }
+
+/* ===== mezo-vdf4: emlékek — vízszintes kártyasor ===== */
+.mzc-memeb { color: var(--lav-deep); }
+.mzc-memcards { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 7px 2px 12px; margin: 0 -2px; }
+.mzc-memcards::-webkit-scrollbar { display: none; }
+.mzc-memcard {
+  flex: none; width: 168px; border-radius: 14px; padding: 9px 10px; cursor: pointer;
+  text-align: left; font-family: inherit; border: 0.5px solid var(--mzc-strip-bd);
+  background: var(--mz-wash-lav); box-shadow: var(--mzc-strip-shadow);
+  display: flex; flex-direction: column; gap: 6px;
+  transition: width 0.25s cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+.mzc-memtop { display: flex; align-items: center; gap: 6px; }
+.mzc-memic {
+  width: 22px; height: 22px; border-radius: 7px; flex: none;
+  background: var(--surface-card); display: grid; place-items: center;
+  box-shadow: 0 2px 5px rgba(43, 33, 24, 0.08);
+}
+.mzc-memkt { display: flex; flex-direction: column; min-width: 0; }
+.mzc-memkind { font-size: 7.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lav-deep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mzc-memd { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-simr {
+  width: 22px; height: 22px; border-radius: 50%; flex: none; margin-left: auto;
+  display: grid; place-items: center;
+  background: conic-gradient(var(--lav, #8A76CC) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+}
+.mzc-simr-n {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--surface-card); display: grid; place-items: center;
+  font-size: 6.5px; font-weight: 800; color: var(--lav-deep); font-variant-numeric: tabular-nums;
+}
+.mzc-memgist {
+  font-size: 10.5px; font-weight: 300; line-height: 1.45; color: var(--text-primary);
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.mzc-memcard.open { width: 252px; }
+.mzc-memcard.open .mzc-memgist { -webkit-line-clamp: unset; }
+
+/* ===== mezo-vdf4: orb-vezette chat fejléc ===== */
+/* Az appban egyetlen görgető van (.screen-content), ezért a fejléc kitapad — különben egy
+   hosszú szál aljáról a kiút ismét csak a tabbar lenne (lásd a #page-chat page-head
+   korábbi sticky-jét, prototype.css régi 6865). */
+.mzc-chathead { display: flex; align-items: center; gap: 9px; padding: 2px 19px 6px;
+  position: sticky; top: 0; z-index: 30; background: var(--canvas); }
+.mzc-hdisc {
+  width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; flex: none;
+  font-family: inherit; font-size: 15px; color: var(--text-primary); padding: 0;
+  background: var(--surface-card); display: grid; place-items: center;
+  box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.mzc-hdisc:disabled { opacity: 0.5; cursor: default; }
+.mzc-hdisc:active:not(:disabled) { transform: scale(0.92); }
+.mzc-horb { position: relative; width: 38px; height: 38px; flex: none; display: grid; place-items: center; }
+.mzc-horb svg { animation: mzc-orbbreathe 4.5s ease-in-out infinite; }
+.mzc-horb.busy svg { animation: mzc-orbthink 1.1s ease-in-out infinite; }
+.mzc-horb.busy::before {
+  content: ''; position: absolute; inset: -2px; border-radius: 50%;
+  border: 1.5px solid rgba(138, 118, 204, 0.55); animation: mzc-halo 1.3s ease-out infinite;
+}
+@keyframes mzc-orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes mzc-orbthink { 0%, 100% { transform: scale(0.97); } 50% { transform: scale(1.1); } }
+@keyframes mzc-halo { from { transform: scale(0.82); opacity: 0.9; } to { transform: scale(1.28); opacity: 0; } }
+.mzc-hnm { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; color: var(--text-primary); }
+.mzc-hstat { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-secondary); }
+.mzc-hdot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--sage-deep); }
+.mzc-hstat[data-st="live"] .mzc-hdot { animation: mzc-livepulse 2.4s ease-in-out infinite; }
+.mzc-hstat[data-st="demo"] .mzc-hdot { background: var(--text-tertiary); }
+.mzc-hstat[data-st="off"] .mzc-hdot { background: var(--amber-deep); }
+.mzc-hstat[data-st="new"] .mzc-hdot { background: var(--lav-deep); }
+.mzc-hstat[data-st="busy"] .mzc-hdot { background: var(--lav-deep); animation: mzc-livepulse 1.2s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .mzc-cmic, .mzc-csend { transition: none; }
+  .mzc-wic.run, .mzc-wrow.run .mzc-wst i { animation: none; }
+  .mzc-memcard { transition: none; }
+  .mzc-horb svg, .mzc-horb.busy svg, .mzc-horb.busy::before,
+  .mzc-hstat .mzc-hdot, .mzc-hstat[data-st] .mzc-hdot { animation: none; }
+}
+
+/* mezo-vdf4 (spec §5): FeedbackChips renders the shared DS `.chip` — softened here, scoped to
+   the chat page only, so the DS default elsewhere is untouched. The vote itself is the point,
+   not the button; the selected (lav) `.brand`/`[aria-pressed]` treatment is left alone. */
+.mzc .chip:not(.brand):not([aria-pressed="true"]) {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--text-tertiary);
+}
+.mzc .chip:not(.brand):not([aria-pressed="true"]):hover { color: var(--text-secondary); }
+:root[data-theme="dark"] .mzc .chip:not(.brand):not([aria-pressed="true"]) {
+  background: color-mix(in srgb, var(--surface-elevated) 55%, transparent);
 }
 
 /* ── Mezo · Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak ×1.18:
@@ -4885,6 +5128,38 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzp-daydots i { width: 11px; height: 11px; border-radius: 50%; background: var(--mz-daydot); }
 .mzp-daydots i.f { background: var(--mz-daydot-f); }
 .mzp-decrow { display: flex; gap: 7px; margin-top: 11px; }
+
+/* ===== Diagnózis (mezo-hqfi.4) — evidence rows, rank badges, probe block.
+   Token-only: values come from the DS block above, no new literals. */
+.mzp-evrow { display: flex; align-items: baseline; gap: 8px; font-size: 11px; padding: 5px 0;
+  border-bottom: 0.5px dashed var(--mz-chat-refch-bd); }
+.mzp-evrow:last-of-type { border-bottom: none; }
+.mzp-evrow .lb { font-weight: 700; flex: none; }
+.mzp-evrow .vl { font-weight: 300; font-variant-numeric: tabular-nums; }
+.mzp-evrow .dl { font-weight: 800; font-variant-numeric: tabular-nums; }
+.mzp-evrow .dl.bad { color: var(--mz-cell-coral-ink); }
+.mzp-evrow .src { margin-left: auto; font-size: 8px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--mz-ink-mut); flex: none; }
+.mzp-rankb { width: 24px; height: 24px; border-radius: 9px; display: grid; place-items: center; flex: none;
+  font-size: 12px; font-weight: 800; color: var(--mz-wash-white); background: var(--mz-strength); }
+.mzp-rankb.two { background: var(--mz-chat-send-bg); }
+.mzp-probe { border-radius: 14px; background: var(--mz-cellbg); padding: 9px 12px; margin-top: 10px;
+  border: 0.5px solid var(--mz-chat-refch-bd); }
+.mzp-probe .pt { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--mz-qxp-ink); }
+.mzp-probe .px { font-size: 12px; font-weight: 600; margin-top: 4px; line-height: 1.45; }
+.mzp-dgq { border-radius: 16px; padding: 10px 12px; background: var(--mz-fact-off-bg);
+  border: 1.2px dashed var(--mz-chat-refch-bd); }
+.mzp-dgq .qq { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--mz-ink-soft); }
+.mzp-dgq .qs { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); margin-top: 4px; }
+.mzh-t-diag { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
+
+/* Chat quick-question chips (mezo-dz3y) — empty-state only, one tap sends. */
+.mzc-qq { border: 0.5px solid var(--mz-chat-refch-bd); border-radius: 999px; padding: 8px 13px;
+  background: var(--mz-chipbg); font-size: 12px; font-weight: 600; color: var(--mz-ink-soft);
+  cursor: pointer; text-align: left; }
+.mzc-qq:active { transform: scale(0.97); }
+.mzc-qq:disabled { opacity: 0.5; cursor: default; }
 .mzp-cta, .mzp-ghost { flex: 1; min-height: 44px; border-radius: 999px; border: none; font-family: inherit;
   font-size: 12px; font-weight: 600; cursor: pointer; }
 .mzp-cta { background: var(--gradient-cta); color: #fff; box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
@@ -6697,15 +6972,6 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .mzh-ghost.is-no[aria-pressed="true"] { background: var(--mz-stch-mut-bg); color: var(--mz-no-ink); }
 .mem-herounit { font-size: 18px; font-weight: 400; color: var(--mz-ink-soft); }
 
-/* #page-chat: a page-head két pgact chipje jobbra ül (prototípus .pgact margin-left:auto) */
-.mz-page-head .mzc-pgact:first-of-type { margin-left: auto; }
-/* A prototípusban a page-head FIX, alatta a .chthread görget. Az appban egyetlen görgető van
-   (.screen-content), ezért a fejléc kitapad — különben egy hosszú szál aljáról a kiút ismét
-   csak a tabbar lenne, azaz visszaesnénk a javított hibába. */
-.mzc > .mz-page-head { position: sticky; top: 0; z-index: 30;
-  padding-top: 9px; padding-bottom: 6px; background: var(--canvas); }
-/* prototípus .chsub { padding: 2px 16px 6px } */
-.mzc-chsub { padding: 2px 19px 0; }
 /* prototípus .chthread { padding: 4px 14px 10px } / .composer { margin: 6px 12px 10px } */
 .mzc .chat-thread { padding: 5px 17px 12px; }
 .mzc .mzc-composer { margin-left: 14px; margin-right: 14px; }

@@ -4,6 +4,7 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useMedication, useMedicationActions } from '@/data/fuel/medicationHooks'
+import { DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { localDateString } from '@/shared/lib/dates'
@@ -25,6 +26,16 @@ function sharedWrapperWithFixture() {
   const shared = sharedWrapper()
   shared.qc.setQueryData(['medication'], medicationFixture)
   return shared
+}
+
+// A client mirroring the app's real query defaults (QueryProvider: staleTime 30_000), for the
+// tests that assert on CACHING rather than on mapping.
+function appDefaultsWrapper() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: DEFAULT_QUERY_STALE_TIME_MS } } })
+  const Wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  return { qc, Wrapper }
 }
 
 const doseToday: MedicationDoseInput = { administeredAt: `${localDateString()}T07:00:00`, dose: 6, note: null }
@@ -95,6 +106,34 @@ describe('useMedication (real mode)', () => {
     expect(result.current.medication.name).toBe('')
   })
 
+  // The two contract shapes for "this owner has no medication configured" must land on the SAME
+  // ghost (mezo-5cmq). The deploy pushes the two images separately, so the new frontend has to
+  // read both the new 200-with-nulls body and the pre-5cmq 404 — a frontend that understood only
+  // one of them would either crash on `med.id` or break under the old backend.
+  it('reads the new 200 + `medication: null` body as the no-medication ghost, WITHOUT erroring', async () => {
+    server.use(http.get(`${API_BASE}/api/medication`, () =>
+      HttpResponse.json({ medication: null, cycle: null, recentDoses: [] })))
+    const { qc, Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useMedication(), { wrapper: Wrapper })
+    // The query must SUCCEED — landing on the ghost via a thrown mapper (caught by realEmpty)
+    // would look identical in the returned values, so pin the query status too.
+    await waitFor(() => expect(qc.getQueryState(['medication'])?.status).toBe('success'))
+    expect(result.current.medication.id).toBe('')
+    expect(result.current.cycle.cycleDay).toBe(0)
+    expect(result.current.doses).toEqual([])
+  })
+
+  it('reads the OLD 404 shape as the same no-medication ghost (old backend under new frontend)', async () => {
+    server.use(http.get(`${API_BASE}/api/medication`, () => new HttpResponse(null, { status: 404 })))
+    const { qc, Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useMedication(), { wrapper: Wrapper })
+    await waitFor(() => expect(qc.getQueryState(['medication'])?.status).toBe('error'))
+    // The rejection is absorbed by useDualQuery's `realEmpty` — same empty state, no crash.
+    expect(result.current.medication.id).toBe('')
+    expect(result.current.cycle.cycleDay).toBe(0)
+    expect(result.current.doses).toEqual([])
+  })
+
   it('reads medication + cycle + doses from the overridden API handler', async () => {
     server.use(http.get(`${API_BASE}/api/medication`, () => HttpResponse.json(medicationFixture)))
     const { Wrapper } = sharedWrapper()
@@ -103,6 +142,31 @@ describe('useMedication (real mode)', () => {
     expect(result.current.cycle.cycleDay).toBe(3)
     expect(result.current.cycle.phaseKey).toBe('stable')
     expect(result.current.doses.length).toBe(3)
+  })
+
+  it('does NOT refetch for a second observer on the same client — one fetch, not one per mount', async () => {
+    // Regression pin for the deleted `realStaleTime: 0` (mezo-5cmq). useTodayScenario calls
+    // useMedication from the app shell AND from several pages, so an always-stale query opened a
+    // new observer — and bought a round-trip — on every navigation. Under the app default
+    // staleTime the second mount is served from cache. Writes are unaffected: every mutation in
+    // useMedicationActions invalidates ['medication'].
+    let fetchCount = 0
+    server.use(http.get(`${API_BASE}/api/medication`, () => {
+      fetchCount++
+      return HttpResponse.json(medicationFixture)
+    }))
+    // NOT sharedWrapper(): its client leaves staleTime at TanStack's 0 default, under which the
+    // second observer refetches no matter what the hook does. The app's real QueryProvider default
+    // (30 s) is what makes this assertion meaningful — and `realStaleTime: 0` would override it
+    // back to always-stale, which is exactly the regression being pinned.
+    const { Wrapper } = appDefaultsWrapper()
+    const first = renderHook(() => useMedication(), { wrapper: Wrapper })
+    await waitFor(() => expect(first.result.current.medication.id).toBe('med-test'))
+    expect(fetchCount).toBe(1)
+    // a second page mounting the same read, against the SAME QueryClient
+    const second = renderHook(() => useMedication(), { wrapper: Wrapper })
+    await waitFor(() => expect(second.result.current.medication.id).toBe('med-test'))
+    expect(fetchCount).toBe(1)
   })
 
   it('logDose POSTs to the active medication and invalidates ["medication"], ["today"] AND ["fuelDay"]', async () => {

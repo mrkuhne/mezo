@@ -65,6 +65,50 @@ test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () =>
   expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
 })
 
+test('/me/karakter is the Karakter dossier hub — reachable as a stable route (mezo-1gim.13)', async () => {
+  renderApp('/me/karakter')
+  // The ring's aria-label is the face-independent landmark: mock mode starts pre-bootstrap
+  // (all CORE dims at maturity 0), so the intro ceremony's CTA is what actually renders.
+  expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
+})
+
+test('the Én hub links to the Karakter dossier hub', async () => {
+  renderApp('/me')
+  await userEvent.click(await screen.findByRole('button', { name: 'Karakter' }))
+  expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
+})
+
+test('/me/karakter/dimenziok is the Dimenziók list — a stable full-page sibling (mezo-1gim.13, Task 4)', async () => {
+  renderApp('/me/karakter/dimenziok')
+  // Mock mode starts pre-bootstrap (MOCK_OVERVIEW_EMPTY — 7 CORE dims only, no CHAPTER yet),
+  // so the derived count here is 7, not the fully-seeded dossier's 8.
+  expect(await screen.findByText('7 dimenzió, egy helyen')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Fizikai' })).toBeInTheDocument()
+})
+
+test('/me/karakter/dimenzio/:key opens one dimension\'s claims (mezo-1gim.13, Task 4)', async () => {
+  renderApp('/me/karakter/dimenzio/physical')
+  expect(await screen.findByText('Fizikai')).toBeInTheDocument()
+  expect(screen.getByText('Beszélgess erről Mezóval')).toBeInTheDocument()
+})
+
+test('/me/karakter/feed is the day-grouped observation feed (mezo-1gim.13, Task 4)', async () => {
+  renderApp('/me/karakter/feed')
+  expect(await screen.findByText('Amit mostanában megtudtam rólad')).toBeInTheDocument()
+})
+
+test('/me/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', async () => {
+  renderApp('/me/karakter/csapat')
+  expect(await screen.findByText('Mezo belső tanácsa — ők dolgoznak a karakteren')).toBeInTheDocument()
+  expect(screen.getByText('Doki')).toBeInTheDocument()
+  expect(screen.getByText('Elnök · Integrátor')).toBeInTheDocument()
+})
+
+test('/me/karakter/konzilium is the conference list — a stable full-page sibling (mezo-1gim.13, Task 5)', async () => {
+  renderApp('/me/karakter/konzilium')
+  expect(await screen.findByText('a csapat heti tanácskozásai')).toBeInTheDocument()
+})
+
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's
@@ -139,4 +183,10 @@ test('the floating quick-log FAB is present on tabs and hidden on full-screen fl
 test('the floating chat bubble is retired — Mezo is a first-class tab now (decision B)', () => {
   renderApp('/nap')
   expect(screen.queryByRole('button', { name: 'Beszélgetés a társsal' })).not.toBeInTheDocument()
+})
+
+test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
+  const { container } = renderApp('/mezo/chat')
+  expect(container.querySelector('.quicklog-fab')).toBeNull()
+  expect(container.querySelector('.tab-bar')).not.toBeNull()
 })

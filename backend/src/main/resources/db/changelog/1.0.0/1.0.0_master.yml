@@ -889,6 +889,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202608311210_mezo-hqfi_experiment_source_diagnosis.sql
   - changeSet:
+      id: "1.0.0:202608311500_mezo-po3y_diagnosis_sleep_phenomenon"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608311500_mezo-po3y_diagnosis_sleep_phenomenon.sql
+  - changeSet:
       id: "1.0.0:202608311300_mezo-06o0.s1_person_mention_enrichment"
       author: daniel.kuhne
       changes:

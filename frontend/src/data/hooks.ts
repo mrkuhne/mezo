@@ -13,6 +13,7 @@ export { usePeople } from '@/data/me/peopleHooks'
 export { useMemoir } from '@/data/insights/memoirHooks'
 export { usePredictions } from '@/data/insights/predictionsHooks'
 export { useExperiments, useExperimentActions } from '@/data/insights/experimentsHooks'
+export { useDiagnoses, useDiagnosis, useDiagnosisActions } from '@/data/insights/diagnosisHooks'
 export { useKnowledge, useKnowledgeActions } from '@/data/insights/knowledgeHooks'
 export { useLifeEventCandidates, useLifeEventActions, useKnowledgeGraphNodes, useKnowledgeGraphActions } from '@/data/insights/graphHooks'
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
@@ -28,7 +29,7 @@ export { useStackDay } from '@/data/fuel/stackDayHooks'
 export { useTrain, useOpenWorkout } from '@/data/train/trainHooks'
 export { useChallenges, useChallengeActions } from '@/data/train/challengeHooks'
 export { useRunning } from '@/data/train/runningHooks'
-export { useWorkoutDetail, useWeekWorkouts } from '@/data/train/workoutDetailHooks'
+export { useWorkoutDetail, useWeekWorkouts, useTemplateDayChain } from '@/data/train/workoutDetailHooks'
 export { useWeekMuscleLog } from '@/data/train/weekMuscleLogHooks'
 export { useMesocycleVolumeArc } from '@/data/train/mesoArcHooks'
 export { useMesoReport } from '@/data/train/mesoReportHooks'
@@ -64,3 +65,13 @@ export { useJournalNotes, useJournalActions } from '@/data/journal/journalHooks'
 export { useDecisions, useDecisionActions, isDecisionDue } from '@/data/journal/decisionHooks'
 export { useFeedback } from '@/data/feedback/feedbackHooks'
 export { useGratitudeEntries, useGratitudeActions } from '@/data/journal/gratitudeHooks'
+export {
+  useCharacterOverview,
+  useCharacterDimension,
+  useCharacterFeed,
+  useCharacterExperts,
+  useCharacterConferences,
+  useCharacterConference,
+  useClaimFeedback,
+  useCharacterBootstrap,
+} from '@/data/character/characterHooks'
