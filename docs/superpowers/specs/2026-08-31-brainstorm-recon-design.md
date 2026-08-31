@@ -102,6 +102,18 @@ Every design doc written by brainstorming in this repo must include:
 If an agent comes back empty (e.g., no meaningful external prior art for an internal
 refactor), the section records that in one line — it never silently disappears.
 
+## Prior art
+
+Recon phase was not yet in place when this spec was written; the pattern follows the
+colleague-reported researcher/investigator sub-agent practice described in the Problem
+section (no external sources consulted).
+
+## Codebase terrain
+
+Recon phase was not yet in place when this spec was written; terrain was established
+manually: `.claude/skills/` (existing project skills), `docs/CODEMAP.md` (investigator
+entry point), superpowers plugin cache (read-only constraint).
+
 ## Error handling
 
 - An agent that fails or is skipped is noted in the corresponding spec section; the
