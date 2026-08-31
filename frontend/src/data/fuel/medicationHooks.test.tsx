@@ -27,6 +27,16 @@ function sharedWrapperWithFixture() {
   return shared
 }
 
+// A client mirroring the app's real query defaults (QueryProvider: staleTime 30_000), for the
+// tests that assert on CACHING rather than on mapping.
+function appDefaultsWrapper() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } })
+  const Wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  return { qc, Wrapper }
+}
+
 const doseToday: MedicationDoseInput = { administeredAt: `${localDateString()}T07:00:00`, dose: 6, note: null }
 
 afterEach(() => vi.unstubAllEnvs())
@@ -131,6 +141,31 @@ describe('useMedication (real mode)', () => {
     expect(result.current.cycle.cycleDay).toBe(3)
     expect(result.current.cycle.phaseKey).toBe('stable')
     expect(result.current.doses.length).toBe(3)
+  })
+
+  it('does NOT refetch for a second observer on the same client — one fetch, not one per mount', async () => {
+    // Regression pin for the deleted `realStaleTime: 0` (mezo-5cmq). useTodayScenario calls
+    // useMedication from the app shell AND from several pages, so an always-stale query opened a
+    // new observer — and bought a round-trip — on every navigation. Under the app default
+    // staleTime the second mount is served from cache. Writes are unaffected: every mutation in
+    // useMedicationActions invalidates ['medication'].
+    let fetchCount = 0
+    server.use(http.get(`${API_BASE}/api/medication`, () => {
+      fetchCount++
+      return HttpResponse.json(medicationFixture)
+    }))
+    // NOT sharedWrapper(): its client leaves staleTime at TanStack's 0 default, under which the
+    // second observer refetches no matter what the hook does. The app's real QueryProvider default
+    // (30 s) is what makes this assertion meaningful — and `realStaleTime: 0` would override it
+    // back to always-stale, which is exactly the regression being pinned.
+    const { Wrapper } = appDefaultsWrapper()
+    const first = renderHook(() => useMedication(), { wrapper: Wrapper })
+    await waitFor(() => expect(first.result.current.medication.id).toBe('med-test'))
+    expect(fetchCount).toBe(1)
+    // a second page mounting the same read, against the SAME QueryClient
+    const second = renderHook(() => useMedication(), { wrapper: Wrapper })
+    await waitFor(() => expect(second.result.current.medication.id).toBe('med-test'))
+    expect(fetchCount).toBe(1)
   })
 
   it('logDose POSTs to the active medication and invalidates ["medication"], ["today"] AND ["fuelDay"]', async () => {

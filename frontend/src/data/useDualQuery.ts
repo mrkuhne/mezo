@@ -19,6 +19,18 @@ import { isMockMode } from '@/data/_client/mode'
  * `data` is undefined, which includes the entire real-mode loading window). The dualMode guard
  * test (`src/data/dualMode.guard.test.ts`) fails the build if the leaky pattern reappears.
  */
+/**
+ * The app-wide real-mode query staleTime (`QueryProvider`'s default), exported so a hook that
+ * wants exactly that value can ASK for it.
+ *
+ * Why a hook would ever need to: `useDualQuery` always passes the `staleTime` key, so when
+ * `realStaleTime` is omitted it passes `staleTime: undefined` — and TanStack's
+ * `defaultQueryOptions` merges by plain spread, so that `undefined` OVERWRITES the client
+ * default and the query ends up always-stale (staleTime 0). Omitting therefore does NOT mean
+ * "app default" the way the `realStaleTime` doc below claims (mezo-5cmq).
+ */
+export const DEFAULT_QUERY_STALE_TIME_MS = 30_000
+
 export function useDualQuery<T>(opts: {
   queryKey: QueryKey
   mockData: T
