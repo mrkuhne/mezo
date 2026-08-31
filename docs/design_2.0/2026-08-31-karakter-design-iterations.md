@@ -372,3 +372,49 @@ fixes:
   behavior, just now landing on a page that actually explains itself.
 - The Konzílium page's own transcript UI is unchanged; the run-detail page's "Teljes transzkript
   megnyitása" link still hands off to it for the one session with full turn-level detail.
+
+## Round 5 (mezo-1gim.14) — csempézett Gépterem-hub, no more long scroll
+
+Daniel: *"nagyon sok a scrolling, csempézzünk, rendezzünk"* — the Gépterem page stacked the
+week-stepper timeline, the full 4-round leltár, and the AI-napló row into one long scroll.
+Restructured into the same compact tile-hub idiom as the Karakter hub itself.
+
+### Structure
+
+- **Gépterem page** is now a compact hero + a 4-tile mosaic, verified to fit exactly one screen
+  in the demo (the page-body's `scrollHeight` equals its `clientHeight` — zero leftover scroll).
+  The hero gained **one live line** reusing the run-detail page's narrative style: the plain-
+  Hungarian summary of the most recent nightly run (`ejszakaLede()`, factored out of `renderRun`
+  so both the hub hero and the run-detail page call the exact same function on the exact same
+  data — no divergent copies).
+- **Futások tile** (live datum: computed, not hardcoded — "e héten N futás · N megfigyelés" from
+  the current week's actual day data) opens the new **Futások** page, which holds the
+  week-stepper + day-grouped run rows + "Ritkább futások" exactly as built in round 3 — moved,
+  not rebuilt.
+- **Adatforrások tile** (live datum: "9 bekötve · 26 tervezett", both computed from
+  `INVENTORY.reads.length + DETECTOR_CATALOG.length` and the sum of all four round's item
+  counts) opens the new **Leltár** page, holding the bekötve section + the four MINDENT-be
+  rounds + a később tail — moved unchanged from round 2b/3.
+- **AI-napló tile** replaces the old full-width row — same toast demo, no page behind it (the
+  content was too thin to earn a whole page).
+- **Detektorok tile** (new, included because it earned a genuine live datum — "5 aktív
+  detektor") opens a small new page listing the 5 real, shipped detectors with a one-line
+  meaning and owning expert each (`DETECTOR_CATALOG`) — this used to live only in the 4.1
+  round's aside notes; now it's an actual product surface.
+- **Back-chain corrected**: Karakter → Gépterem → Futások → run-detail (the run page's back
+  button now reads "‹ Futások", not "‹ Gépterem", since the run list moved one level deeper);
+  the Feed's "⚙" entry point still returns "‹ Feed" — unaffected, since it's a separate route
+  into the same run-detail template.
+- All three new pages (Futások, Leltár, Detektorok) and all four new hub tiles share the
+  Gépterem's graphite/technical wash family (`t-gepterem`, `p-gep`), keeping the whole surface
+  read as one visual family distinct from the Karakter hub's warm tiles.
+
+### Net effect / what's unchanged
+
+- Run-detail pages are exactly v4.1 — narrative-first hero, N-jel→N-hívás→N-megfigyelés flow,
+  two-step chain cards, quiet refcount line, compressed "who wasn't called" note, kind-specific
+  hero visuals. Nothing there changed.
+- Two new decision questions (Detektorok as its own tile vs. folded into Leltár; whether
+  AI-napló deserves a page once the real surface is richer) added; the four carried-over
+  questions from round 3/4 (tile-vs-wide-row on the Karakter hub, Feed "⚙" navigation, leltár
+  grouping, round order) remain open — none were resolved by this restructuring round.
