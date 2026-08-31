@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ObservationSignalsEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
@@ -14,6 +15,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -89,6 +91,8 @@ public class CharacterConferenceService {
         KonziliumProposalRound.Result proposalResult = proposalRound.run(owner, weekStart, weekObservations);
         KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, weekStart, proposalResult.proposals());
 
+        warnUnaddressedUserFeedback(owner, weekObservations, proposalResult.proposals());
+
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());
 
@@ -101,6 +105,61 @@ public class CharacterConferenceService {
         observationRepository.saveAll(weekObservations);
 
         return conference;
+    }
+
+    /**
+     * The honest minimum for the "correction is a mandatory next-konzílium input" claim (F3,
+     * fix round 2, mezo-1gim.10): nothing upstream actually verifies a proposal addressed a
+     * consumed user-feedback correction, and every gathered observation — including an ignored
+     * one — is marked consumed unconditionally right after this method returns, so an ignored
+     * correction is gone forever with no trace. This does not enforce anything; it only makes the
+     * gap visible: for every consumed CORRECTION (NEM_IGAZ or PONTOSITOM — see
+     * {@link CharacterFeedbackService#isCorrection}) whose claim id does not appear as the
+     * {@code claimId} of any proposal this round produced, logs a WARN naming the claim id so the
+     * gap shows up in logs instead of silently vanishing. A plain TALAL confirmation carries no
+     * such obligation — it is deliberately EXCLUDED here (fix round 2, F1) so this WARN stays a
+     * signal worth reading rather than routine noise that trains people to ignore it.
+     */
+    private void warnUnaddressedUserFeedback(UUID owner, List<CharacterObservationEntity> weekObservations,
+                                              List<ClaimProposal> proposals) {
+        Set<UUID> addressedClaimIds = new HashSet<>();
+        for (ClaimProposal proposal : proposals) {
+            if (proposal.claimId() != null) {
+                addressedClaimIds.add(proposal.claimId());
+            }
+        }
+        for (CharacterObservationEntity observation : weekObservations) {
+            if (!CharacterFeedbackService.USER_EXPERT_KEY.equals(observation.getExpertKey())
+                    || !CharacterFeedbackService.isCorrection(observation)) {
+                continue;
+            }
+            UUID claimId = userFeedbackClaimId(observation);
+            if (claimId != null && !addressedClaimIds.contains(claimId)) {
+                log.warn("User feedback correction on claim {} (owner {}) was consumed by the weekly konzílium "
+                        + "without any proposal referencing it — the correction went unaddressed", claimId, owner);
+            }
+        }
+    }
+
+    /** The claim id a user-feedback observation names, read back off its own
+     *  {@link CharacterFeedbackService#SIGNAL_KEY} signal's {@code refIds} — {@code null} when the
+     *  observation carries no such signal or an unparseable ref (never happens for observations
+     *  {@link CharacterFeedbackService} itself writes, but this stays defensive rather than
+     *  throwing on a malformed row). */
+    private static UUID userFeedbackClaimId(CharacterObservationEntity observation) {
+        if (observation.getSignals() == null) {
+            return null;
+        }
+        for (ObservationSignalsEnvelope.Signal signal : observation.getSignals().signals()) {
+            if (CharacterFeedbackService.SIGNAL_KEY.equals(signal.detectorKey()) && !signal.refIds().isEmpty()) {
+                try {
+                    return UUID.fromString(signal.refIds().get(0));
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
+            }
+        }
+        return null;
     }
 
     /**

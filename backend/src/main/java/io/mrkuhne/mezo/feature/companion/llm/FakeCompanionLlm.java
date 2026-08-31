@@ -142,6 +142,14 @@ public class FakeCompanionLlm implements CompanionLlm {
     private static final Pattern PROPOSAL_DEFAULT_DIMENSION =
             Pattern.compile("Alapértelmezett dimenzió: ([a-z]+)");
 
+    /** Scripted proposal ECHO (mezo-1gim.10): {@code [fake-char-proposals-echo]} planted in an
+     *  observation's TEXT returns the FULL assembled user message (JSON-escaped) as a single NEW
+     *  proposal's {@code rationale} — the "prompt assembly is assertable" idiom (see
+     *  {@link #MESO_REVIEW_ECHO}), applied here so an IT can prove a server-side prompt-assembly
+     *  detail (e.g. the routed user-feedback observation's "DANIEL VÁLASZA —" prefix) actually
+     *  reached the expert's prompt, without the fake needing to keep a prompt recorder. */
+    public static final String CHAR_PROPOSALS_ECHO = "[fake-char-proposals-echo]";
+
     /** Mirror of KonziliumVerdictRound.SKEPTIC_MARKER (feature/character) — LITERAL, cycle rule. */
     public static final String SKEPTIC_MARKER_MIRROR = "KARAKTER-SZKEPTIKUS-FELADAT";
     /** Mirror of KonziliumVerdictRound.INTEGRATOR_MARKER (feature/character) — LITERAL, cycle rule. */
@@ -455,12 +463,16 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR) || systemPrompt.startsWith(BOOTSTRAP_MARKER_MIRROR)
                 || systemPrompt.startsWith(MONTHLY_MARKER_MIRROR)) {
+            Matcher dim = PROPOSAL_DEFAULT_DIMENSION.matcher(userMessage);
+            String dimensionKey = dim.find() ? dim.group(1) : "discipline";
+            if (userMessage.contains(CHAR_PROPOSALS_ECHO)) {
+                return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
+                        + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"" + jsonEscape(userMessage) + "\"}]";
+            }
             Matcher proposals = CHAR_PROPOSALS_SENTINEL.matcher(userMessage);
             if (proposals.find()) {
                 return proposals.group(1);
             }
-            Matcher dim = PROPOSAL_DEFAULT_DIMENSION.matcher(userMessage);
-            String dimensionKey = dim.find() ? dim.group(1) : "discipline";
             return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
                     + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"Fake indoklás.\"}]";
         }
@@ -844,6 +856,13 @@ public class FakeCompanionLlm implements CompanionLlm {
             " user=[" + userMessage + "]"));
         chunks.addAll(toolEchoes(userMessage, tools, toolContext));
         return Flux.fromIterable(chunks);
+    }
+
+    /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO}
+     *  — the echo embeds the WHOLE assembled user message as one JSON string value. */
+    private static String jsonEscape(String raw) {
+        return raw.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 
     /** Every sentinel executes the matching REAL callback; unknown names echo UNKNOWN. */
