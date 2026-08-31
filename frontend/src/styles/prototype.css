@@ -6288,7 +6288,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle);
   box-shadow: var(--mz-shadow);
 }
-.flog-blk.is-done { background: var(--mz-wash-sage, linear-gradient(150deg, #EFF3EA, #FBFDF9)); }
+.flog-blk.is-done { background: var(--mz-wash-sage); }
 .flog-blk.is-now { border: 1px solid var(--coral); box-shadow: var(--mz-shadow-coral); }
 .flog-blk.is-missed {
   border: 1.2px dashed color-mix(in srgb, var(--mz-cell-amber-ink, #A8801F) 55%, transparent);
