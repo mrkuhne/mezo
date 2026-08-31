@@ -4976,6 +4976,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/people/{personId}/mentions/{mentionId}':
+    delete:
+      tags:
+        - People
+      operationId: deleteMention
+      summary: Revoke a mention (soft delete)
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mentionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: >-
+            Mention missing, foreign, or belongs to a different person
+            (indistinguishable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/proactive/feed:
     get:
       tags:
@@ -14957,7 +14993,6 @@ components:
         - personName
         - source
         - excerpt
-        - tone
         - flagged
       properties:
         id:
@@ -14978,6 +15013,7 @@ components:
             - camera
             - chip
             - text
+            - chat
         durationS:
           type: integer
         excerpt:

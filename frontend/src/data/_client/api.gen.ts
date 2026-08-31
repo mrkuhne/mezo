@@ -1908,6 +1908,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/people/{personId}/mentions/{mentionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a mention (soft delete) */
+        delete: operations["deleteMention"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/proactive/feed": {
         parameters: {
             query?: never;
@@ -6108,11 +6125,11 @@ export interface components {
             personId: string;
             personName: string;
             /** @enum {string} */
-            source: "voice" | "camera" | "chip" | "text";
+            source: "voice" | "camera" | "chip" | "text" | "chat";
             durationS?: number;
             excerpt: string;
             /** @enum {string} */
-            tone: "positive" | "neutral" | "mixed" | "negative";
+            tone?: "positive" | "neutral" | "mixed" | "negative";
             tiedToKind?: string;
             tiedToLabel?: string;
             flagged: boolean;
@@ -13416,6 +13433,45 @@ export interface operations {
                 };
             };
             /** @description Person missing or foreign (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteMention: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                mentionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mention missing, foreign, or belongs to a different person (indistinguishable) */
             404: {
                 headers: {
                     [name: string]: unknown;

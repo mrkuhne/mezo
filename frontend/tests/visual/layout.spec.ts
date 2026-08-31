@@ -21,43 +21,66 @@ const PHONE_VIEWPORTS = [
 ]
 
 for (const vp of PHONE_VIEWPORTS) {
-  test(`fuel hub · the window swimlane is reachable and never clips @ ${vp.name}`, async ({ page }) => {
-    // Design 2.0 (mezo-d20.4.1): the Island/`.isl-big` language is retired — the hub's
-    // eating windows live in a horizontally scrolling swimlane. The invariant this file
-    // exists for is unchanged: content must be REACHABLE, never eaten by an ancestor that
-    // clips without a scrollbar. For the lane that means it scrolls HORIZONTALLY (its own
-    // overflow-x) while the page scrolls vertically to it — and no tile may be taller than
-    // the lane's own box.
+  test(`fuel · the Logolás hero tile and the /fuel/log blocks are reachable, never clipped @ ${vp.name}`, async ({ page }) => {
+    // mezo-byo1: the horizontal window swimlane dissolved — the hub carries ONE Logolás
+    // hero tile and the whole day's logging lives on /fuel/log as VERTICALLY stacked
+    // blocks. The invariant this file exists for is unchanged: content must be REACHABLE —
+    // either it fits, or the page scrolls to it, never eaten by a clipping ancestor.
     await page.setViewportSize({ width: vp.width, height: vp.height })
     await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
     await page.goto('/fuel')
     await page.waitForLoadState('networkidle')
     await page.evaluate(() => document.fonts.ready)
 
-    const m = await page.evaluate(() => {
-      const lane = document.querySelector('.fh-lane') as HTMLElement | null
-      const tiles = lane ? Array.from(lane.querySelectorAll('.fh-wtile')) as HTMLElement[] : []
+    const hub = await page.evaluate(() => {
+      const tile = document.querySelector('.fh-logtile') as HTMLElement | null
       const sc = document.querySelector('.screen-content') as HTMLElement
-      const laneCs = lane ? getComputedStyle(lane) : null
+      const scRect = sc.getBoundingClientRect()
+      const tileBottom = tile
+        ? Math.round(tile.getBoundingClientRect().bottom - scRect.top + sc.scrollTop)
+        : 0
       return {
-        hasLane: !!lane,
-        tileCount: tiles.length,
-        // A tile taller than the lane's own box is content clipped with no way to reach it.
-        tallestOverflow: lane
-          ? Math.max(0, ...tiles.map(t => Math.round(t.getBoundingClientRect().height - lane.getBoundingClientRect().height)))
-          : 0,
-        // The lane must be the thing that scrolls sideways, not a silently-cropping box.
-        laneScrollsX: laneCs ? ['auto', 'scroll'].includes(laneCs.overflowX) : false,
+        hasTile: !!tile,
+        tileBottom,
+        scrollHeight: sc.scrollHeight,
         pageScrollable: sc.scrollHeight > sc.clientHeight,
         contentOverflow: Math.round(sc.scrollHeight - sc.clientHeight),
       }
     })
+    expect(hub.hasTile, 'the Fuel hub renders its Logolás hero tile').toBe(true)
+    expect(
+      hub.tileBottom,
+      `the hero tile's bottom (${hub.tileBottom}px) sits past the scroller's reachable extent (${hub.scrollHeight}px)`
+    ).toBeLessThanOrEqual(hub.scrollHeight)
+    if (hub.contentOverflow > 0) expect(hub.pageScrollable).toBe(true)
 
-    expect(m.hasLane, 'the Fuel hub renders its window swimlane').toBe(true)
-    expect(m.tileCount, 'the mock demo day schedules eating windows').toBeGreaterThan(0)
-    expect(m.tallestOverflow, `a window tile overflows the lane by ${m.tallestOverflow}px`).toBe(0)
-    expect(m.laneScrollsX, 'the lane scrolls horizontally rather than cropping tiles').toBe(true)
-    if (m.contentOverflow > 0) expect(m.pageScrollable).toBe(true)
+    await page.goto('/fuel/log')
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+
+    const log = await page.evaluate(() => {
+      const blocks = Array.from(document.querySelectorAll('.flog-blk')) as HTMLElement[]
+      const body = document.querySelector('.mz-page-body') as HTMLElement | null
+      const bodyCs = body ? getComputedStyle(body) : null
+      const lastBottom = blocks.length && body
+        ? Math.round(blocks[blocks.length - 1].getBoundingClientRect().bottom
+            - body.getBoundingClientRect().top + body.scrollTop)
+        : 0
+      return {
+        blockCount: blocks.length,
+        // The page body is the vertical scroller the blocks live in.
+        bodyScrollsY: bodyCs ? ['auto', 'scroll'].includes(bodyCs.overflowY) : false,
+        lastBottom,
+        bodyScrollHeight: body ? body.scrollHeight : 0,
+      }
+    })
+    // The mock demo day schedules windows + the trailing Ablakon kívül block.
+    expect(log.blockCount, 'the /fuel/log page stacks its window blocks').toBeGreaterThan(1)
+    expect(log.bodyScrollsY, 'the log page body scrolls vertically rather than cropping blocks').toBe(true)
+    expect(
+      log.lastBottom,
+      `the last block's bottom (${log.lastBottom}px) sits past the body's reachable extent (${log.bodyScrollHeight}px)`
+    ).toBeLessThanOrEqual(log.bodyScrollHeight)
   })
 }
 

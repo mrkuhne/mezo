@@ -13,7 +13,7 @@
 //   the shell fejléc (app/AppHeader.tsx, mezo-atry)
 //   keret-hero — ONE number, the kcal consumed today; day-bar + gold now-marker;
 //     Alap/Mozgás/Cél chips that VANISH on static energy; 5 rings, víz = a button
-//   window swimlane — one scroll-snap tile per eating window, no header (iterations §1)
+//   Logolás hero tile — ONE live door to /fuel/log (mezo-byo1; the swimlane dissolved)
 //   Mezo banner — only the counter; the voice lives on /fuel/uzenetek (iterations §2)
 //   6-tile mosaic: Terv · Stack · Receptek · Kamra · Gyógyszer · Napló
 //   Fuel-beállítások band (→ FuelSettingsSheet → /fuel/slots)
@@ -30,14 +30,13 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
-import type { FuelMeal, MealSlot } from '@/data/types'
 import {
   useFuelDay, useFuelTimeline, useFuelWeek, useMedication, usePantry, useRecipes,
   useStackDay, useTodayScenario, useWaterActions, useCompanionFeed, resolveBriefing,
 } from '@/data/hooks'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { buildKeretHero, aiAverage } from '@/features/fuel/logic/keretHero'
-import { buildWindowLane, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
+import { buildWindowLane } from '@/features/fuel/logic/fuelSwimlane'
 import { fuelMezoMessages } from '@/features/fuel/logic/fuelMezoMessages'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
 import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
@@ -45,11 +44,8 @@ import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { KeretHero } from '@/features/fuel/components/KeretHero'
-import { WindowLane } from '@/features/fuel/components/WindowLane'
-import type { LogFlowPrefill } from '@/features/fuel/pages/LogFlowPage'
-import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
+import { FuelLogHeroTile } from '@/features/fuel/components/FuelLogHeroTile'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
-import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
 
@@ -59,16 +55,8 @@ export function FuelMaiPage() {
   const { plan, budget, nowHHmm, energyBreakdown } = useFuelTimeline()
   const { logWater } = useWaterActions()
 
-  const [logOpen, setLogOpen] = useState(false)
-  // The AI path is no longer a separate sheet (mezo-d20.4.2): it opens the SAME unified
-  // log flow with its ✨ AI panel armed, so photo/text estimates and manual pantry/recipe
-  // lines can ride in one meal.
-  const [logAiOnMount, setLogAiOnMount] = useState(false)
-  const [logPrefill, setLogPrefill] = useState<LogFlowPrefill>(null)
-  const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
   const [waterOpen, setWaterOpen] = useState(false)
   const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
-  const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   // ── keret-hero (unchanged VM, v3 face) ────────────────────────────────
@@ -82,7 +70,7 @@ export function FuelMaiPage() {
     slots: plan.slots, nowHHmm,
   })
 
-  // ── window swimlane ───────────────────────────────────────────────────
+  // ── the Logolás hero tile's VM (the /fuel/log page reads the same lane) ─
   const lane = buildWindowLane({ slots: plan.slots, budget, meals: fuel.meals })
 
   // ── Mezo banner: the counter only, never the voice (iterations §2) ─────
@@ -129,29 +117,6 @@ export function FuelMaiPage() {
   const todayAvg = aiAverage(fuel.meals.map(m => (m.score != null ? Math.round(m.score * 100) : null)))
   const naploLine = todayAvg == null ? undefined : `AI-átlag ${todayAvg}`
 
-  // ── actions ───────────────────────────────────────────────────────────
-  const openLog = (prefill: LogFlowPrefill = null, slot?: MealSlot) => {
-    setLogPrefill(prefill)
-    setLogInitialSlot(slot)
-    setLogOpen(true)
-  }
-  // A log opened FROM a window always carries that window's slotKey (mezo-bnsf):
-  // `buildDayPlan` files logged meals by slotKey alone, so seeding from the wall clock
-  // would fill a DIFFERENT window and leave this one missed.
-  const logFromTile = (tile: WindowTileVM) => {
-    const slot = plan.slots.find(s => `${s.time}-${s.label}` === tile.key)
-    if (slot?.suggestedRecipeId) openLog({ source: 'recipe', recipeId: slot.suggestedRecipeId }, tile.slotKey)
-    else openLog(null, tile.slotKey)
-  }
-  const aiFromTile = (tile: WindowTileVM) => {
-    setLogAiOnMount(true)
-    openLog(null, tile.slotKey)
-  }
-  const openScoreForMeal = (mealId: string) => {
-    const meal = fuel.meals.find(m => m.id === mealId)
-    if (meal) setScoreMeal(meal)
-  }
-
   return (
     <div className="fh-hub">
       <EntranceGroup className="mz-panel-stack">
@@ -163,17 +128,10 @@ export function FuelMaiPage() {
           />
         </div>
 
+        {/* The window swimlane dissolved (mezo-byo1): the whole day's logging lives on
+            /fuel/log, and the hub carries ONE live door to it — the Logolás hero tile. */}
         <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties}>
-          <WindowLane
-            vm={lane}
-            emptyDay={lane.tiles.length === 0}
-            onPlanDay={() => navigate('/fuel/plan')}
-            onLog={logFromTile}
-            onAiLog={aiFromTile}
-            onFreeLog={() => openLog()}
-            onFreeAiLog={() => { setLogAiOnMount(true); openLog() }}
-            onScore={openScoreForMeal}
-          />
+          <FuelLogHeroTile vm={lane} onOpen={() => navigate('/fuel/log')} />
         </div>
 
         {/* The companion voice left the hero: the banner carries only the counter, the
@@ -215,7 +173,6 @@ export function FuelMaiPage() {
         </button>
       </EntranceGroup>
 
-      {logOpen && <LogFlowPage prefill={logPrefill} initialSlot={logInitialSlot} aiPanelOpenOnMount={logAiOnMount} onClose={() => { setLogOpen(false); setLogAiOnMount(false) }} />}
       {waterOpen && (
         <WaterLogSheet
           currentMl={fuel.consumed.water}
@@ -224,7 +181,6 @@ export function FuelMaiPage() {
           onClose={() => setWaterOpen(false)}
         />
       )}
-      {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {energyOpen && energyBreakdown && (
         <EnergyBreakdownSheet breakdown={energyBreakdown} initial={energyOpen} onClose={() => setEnergyOpen(null)} />
       )}

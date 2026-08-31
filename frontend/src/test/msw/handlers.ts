@@ -589,6 +589,7 @@ export const handlers = [
     })
   }),
   http.delete(`${API_BASE}/api/people/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.delete(`${API_BASE}/api/people/:personId/mentions/:mentionId`, () => new HttpResponse(null, { status: 204 })),
 
   http.post(`${API_BASE}/api/biometrics/checkin`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>

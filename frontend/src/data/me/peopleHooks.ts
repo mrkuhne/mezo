@@ -60,14 +60,30 @@ export function usePeople() {
     onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
   })
 
+  const undoM = useMutation({
+    mutationFn: async (m: Mention) => {
+      if (mock) { mockUndoMention(qc, m.id); return }
+      await peopleApi.deleteMention(m.person_id, m.id)
+    },
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+  })
+
   return {
     people: data.people,
     mentions: data.mentions,
     logMention: (input: MentionLogInput) => logM.mutate(input),
     savePerson: (input: PersonSaveInput) => saveM.mutate(input),
     deletePerson: (personId: string) => delM.mutate(personId),
+    undoMention: (m: Mention) => undoM.mutate(m),
     isPending,
   }
+}
+
+function mockUndoMention(qc: QueryClient, mentionId: string) {
+  qc.setQueryData<PeopleBootstrap>(PEOPLE_KEY, (old) => {
+    const base = old ?? MOCK_PEOPLE
+    return { ...base, mentions: base.mentions.filter(m => m.id !== mentionId) }
+  })
 }
 
 function mockLogMention(qc: QueryClient, input: MentionLogInput) {
