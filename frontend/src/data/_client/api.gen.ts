@@ -933,7 +933,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The owner's biometric profile */
+        /**
+         * The owner's biometric profile
+         * @description Never 404s: having no profile yet is a normal state, answered with 200 and an empty payload (`{}`) (mezo-5cmq).
+         */
         get: operations["getBiometricProfile"];
         /** Create or replace the owner's biometric profile */
         put: operations["upsertBiometricProfile"];
@@ -1278,7 +1281,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The owner's active medication — definition + cycle config, the derived cycle, and the recent doses */
+        /**
+         * The owner's active medication — definition + cycle config, the derived cycle, and the recent doses
+         * @description Never 404s: having no active medication is a normal state, answered with 200 and an empty payload (`medication` and `cycle` null, `recentDoses` empty) (mezo-5cmq).
+         */
         get: operations["getMedicationDay"];
         put?: never;
         post?: never;
@@ -4617,12 +4623,13 @@ export interface components {
             links: components["schemas"]["GoalPlanLinkResponse"][];
             gaps: components["schemas"]["GoalGap"][];
         };
+        /** @description Every field is optional: an owner with no profile row yet gets an EMPTY object (`{}`) with a 200, not a 404 (mezo-5cmq). The UPSERT request keeps its required trio. */
         BiometricProfileResponse: {
             /** @enum {string} */
-            sex: "M" | "F";
-            heightCm: number;
+            sex?: "M" | "F";
+            heightCm?: number;
             /** Format: date */
-            birthDate: string;
+            birthDate?: string;
             bodyFatPct?: number | null;
             /** @enum {string|null} */
             activityLevel?: "DESK" | "MIXED" | "PHYSICAL" | null;
@@ -5245,8 +5252,10 @@ export interface components {
             active: boolean;
         };
         MedicationDayResponse: {
-            medication: components["schemas"]["MedicationResponse"];
-            cycle: components["schemas"]["MedicationCycleResponse"];
+            /** @description Null when the owner has no active medication — a normal state, not an error (mezo-5cmq). */
+            medication?: components["schemas"]["MedicationResponse"] | null;
+            /** @description Null whenever `medication` is null — there is no cycle to derive. */
+            cycle?: components["schemas"]["MedicationCycleResponse"] | null;
             recentDoses: components["schemas"]["MedicationDoseResponse"][];
         };
         MedicationRequest: {
@@ -10329,7 +10338,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Profile */
+            /** @description Profile, or an empty object when the owner has none yet */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -10340,15 +10349,6 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description No profile yet */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -11477,7 +11477,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Medication day */
+            /** @description Medication day, or an empty payload when the owner has no active medication */
             200: {
                 headers: {
                     [name: string]: unknown;

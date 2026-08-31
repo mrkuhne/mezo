@@ -16,10 +16,20 @@ import org.springframework.http.HttpStatus;
 /** HTTP round-trips through the GENERATED {@code BiometricProfileApi} contract (api/openapi.yml). */
 class BiometricProfileContractIT extends ApiIntegrationTest {
 
+    /**
+     * mezo-5cmq: "no profile yet" is a normal state, not an error — the read answers 200 with an
+     * empty payload ({@code {}}) instead of the old 404, so the client never lands on its error
+     * branch merely because the owner has not configured a profile.
+     */
     @Test
-    void testGetProfile_shouldReturn404_whenNoneYet() {
-        // Service 404s when the owner has no profile row yet.
-        getForBody("/api/biometrics/profile", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+    void testGetProfile_shouldReturn200AndEmptyBody_whenNoneYet() {
+        BiometricProfileResponse got = getForBody(
+            "/api/biometrics/profile", ownerAuthHeaders(), HttpStatus.OK, BiometricProfileResponse.class);
+
+        assertThat(got.getSex()).isNull();
+        assertThat(got.getHeightCm()).isNull();
+        assertThat(got.getBirthDate()).isNull();
+        assertThat(got.getTdeeBootstrap()).isNull();
     }
 
     @Test
