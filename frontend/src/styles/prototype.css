@@ -221,6 +221,12 @@
   --mz-chat-refch-bd: rgba(43, 33, 24, 0.08);
   --mz-chat-memline: rgba(138, 118, 204, 0.4);
   --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(43, 33, 24, 0.25), 0 17px 31px -17px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --mzc-strip-bd: rgba(93, 79, 160, 0.16);
+  --mzc-strip-shadow: 0 10px 20px -12px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --mzc-panel-bg: rgba(255, 255, 255, 0.85);
+  --mzc-panel-line: rgba(93, 79, 160, 0.1);
+  --mzc-tx-sky: #3E7396;
+  --mzc-tx-rose: #8E3F6F;
   /* Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak hexes verbatim */
   --mz-mnt-motor-bg: linear-gradient(140deg, #F7F4FD, #FFFFFF 70%);
   --mz-mnt-hot-ring: #C9962E;
@@ -489,6 +495,12 @@
   --mz-chat-refch-bd: rgba(245, 239, 230, 0.1);
   --mz-chat-memline: color-mix(in srgb, var(--dv-lav) 45%, transparent);
   --mz-chat-composer-shadow: 0 -7px 28px -14px rgba(0, 0, 0, 0.5), 0 17px 31px -17px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --mzc-strip-bd: color-mix(in srgb, var(--dv-lav) 30%, transparent);
+  --mzc-strip-shadow: 0 10px 20px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --mzc-panel-bg: color-mix(in srgb, var(--surface-elevated) 88%, transparent);
+  --mzc-panel-line: color-mix(in srgb, var(--dv-lav) 22%, transparent);
+  --mzc-tx-sky: #9CC3DC;
+  --mzc-tx-rose: #E3A8C8;
   /* Minták page (mezo-d20.5.3) — motor card / hot ring / evidence bar on the dark ramp */
   --mz-mnt-motor-bg: linear-gradient(140deg, color-mix(in srgb, var(--dv-lav) 10%, var(--surface-card)), var(--surface-card) 70%);
   --mz-mnt-hot-ring: var(--dv-amber);
@@ -4714,8 +4726,61 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
 .mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
 
+/* ===== mezo-vdf4: munkacsík — a tool-hívások egyetlen emberi sora ===== */
+/* Domain wash + deep text pairs — shared by the work panel and the grouped refs. */
+.dm-sky   { --dmw: var(--mz-wash-sky);   --dmtx: var(--mzc-tx-sky); }
+.dm-lav   { --dmw: var(--mz-wash-lav);   --dmtx: var(--lav-deep); }
+.dm-sage  { --dmw: var(--mz-wash-sage);  --dmtx: var(--sage-deep); }
+.dm-coral { --dmw: var(--mz-wash-coral); --dmtx: var(--coral-deep); }
+.dm-gold  { --dmw: var(--mz-wash-gold);  --dmtx: var(--amber-deep); }
+.dm-rose  { --dmw: var(--mz-wash-rose);  --dmtx: var(--mzc-tx-rose); }
+.dm-neutral { --dmw: var(--mz-wash-white); --dmtx: var(--text-secondary); }
+.mzc-wwrap { align-items: flex-start; gap: 0; margin-bottom: 10px; }
+.mzc-wstrip {
+  display: flex; align-items: center; gap: 6px; max-width: 100%; cursor: pointer;
+  border: 0.5px solid var(--mzc-strip-bd); font-family: inherit;
+  border-radius: 999px; padding: 5px 12px 5px 6px;
+  background: var(--mz-wash-lav); box-shadow: var(--mzc-strip-shadow);
+}
+.mzc-wstk { display: flex; flex: none; }
+.mzc-wic {
+  width: 22px; height: 22px; border-radius: 50%; flex: none; position: relative;
+  background: var(--surface-card); display: grid; place-items: center;
+  box-shadow: 0 2px 5px rgba(43, 33, 24, 0.12), 0 0 0 1.5px var(--mz-wash-white);
+}
+.mzc-wic + .mzc-wic { margin-left: -7px; }
+.mzc-wic.run { animation: mzc-livepulse 1.1s ease-in-out infinite; }
+.mzc-wmore { font-size: 8px; font-weight: 800; color: var(--lav-deep); }
+.mzc-wlbl { font-size: 9px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lav-deep); margin-left: 3px; white-space: nowrap; }
+.mzc-wsub { font-size: 9.5px; color: var(--text-tertiary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mzc-wchev { font-size: 10px; color: var(--mz-chat-memline); }
+.mzc-wpanel {
+  align-self: stretch; margin-top: 6px; border-radius: 14px; padding: 3px 12px;
+  background: var(--mzc-panel-bg); border: 0.5px solid var(--mzc-panel-line);
+  box-shadow: 0 12px 22px -14px rgba(93, 79, 160, 0.4);
+}
+.mzc-wrow { display: flex; align-items: center; gap: 9px; padding: 7px 0; }
+.mzc-wrow + .mzc-wrow { border-top: 0.5px solid var(--mzc-panel-line); }
+.mzc-wric {
+  width: 24px; height: 24px; border-radius: 8px; flex: none; background: var(--dmw);
+  display: grid; place-items: center; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.mzc-wnm { font-size: 11px; font-weight: 700; line-height: 1.2; color: var(--text-primary); }
+.mzc-wprm { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-wst { margin-left: auto; font-size: 9px; font-weight: 800; color: var(--sage-deep); flex: none; display: flex; align-items: center; }
+.mzc-wrow.run .mzc-wst { color: var(--lav-deep); }
+.mzc-wrow.run .mzc-wst i {
+  display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--lav-deep);
+  margin-right: 4px; animation: mzc-livepulse 1.1s ease-in-out infinite;
+}
+@keyframes mzc-livepulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(138, 118, 204, 0.45); }
+  50% { box-shadow: 0 0 0 4px rgba(138, 118, 204, 0.15); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mzc-cmic, .mzc-csend { transition: none; }
+  .mzc-wic.run, .mzc-wrow.run .mzc-wst i { animation: none; }
 }
 
 /* ── Mezo · Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak ×1.18:
