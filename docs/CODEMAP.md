@@ -871,7 +871,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `useAchievements`, `useProgressionProfile`
   - **modules:** achievementsMock.ts, progressionApi.ts, progressionHooks.ts, progressionMock.ts
 - **FE ui** `frontend/src/features/progression`
-  - **sheets:** StreakSheet.tsx, TitleShopSheet.tsx
+  - **components:** ProgressionHome.tsx
   - **logic:** levelUpMeta.ts, rewardToast.ts
   - **root:** LevelUpProvider.tsx, LevelUpScreen.tsx
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/progression` — 17 IT + 2 unit
