@@ -448,14 +448,23 @@ function ActiveWorkoutSession({
   }
 
   // Summary rows (used by both the closing 'summary' and read-only 'complete' phases).
-  const summaryExercises: SummaryExercise[] = W.exercises.map((e) => ({
-    id: e.id,
-    name: e.name,
-    muscle: e.muscle,
-    plannedSets: effectiveSetCount(session, e.id),
-    sets: session.logged[e.id] ?? [],
-    skipped: session.skipped.includes(e.id),
-  }))
+  // `warmup` and the rep band feed the F7.2 exercise view (mezo-d20.8.2.1): the closing report
+  // opens the SAME view as the review, so it has to hand over the same facts. Warmup-ness is
+  // positional here — the session's prescription lists warmups first — where the review reads
+  // it off `ExerciseSetResponse.kind`.
+  const summaryExercises: SummaryExercise[] = W.exercises.map((e) => {
+    const warmups = (session.prescribed[e.id] ?? []).filter((p) => p.kind === 'warmup').length
+    return {
+      id: e.id,
+      name: e.name,
+      muscle: e.muscle,
+      plannedSets: effectiveSetCount(session, e.id),
+      sets: (session.logged[e.id] ?? []).map((set, i) => ({ ...set, warmup: i < warmups })),
+      skipped: session.skipped.includes(e.id),
+      repMin: e.repMin,
+      repMax: e.repMax,
+    }
+  })
   // Challenge rows: dismissed/undecided -> skippelted; accepted -> live server outcome when
   // resolved, else the FE preview over the session's logged sets (pre-finish).
   const summaryChallenges: SummaryChallenge[] = challenges.map((c) => {

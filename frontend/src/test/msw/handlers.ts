@@ -373,6 +373,20 @@ export const handlers = [
 
   // Proactive experiment (P2) — default: honest empty ARRAY (list endpoint, never 404); the
   // ExperimentsPage renders its "still learning" null-state. Tests override with server.use(...).
+  // Diagnosis (mezo-hqfi.4): honest-empty list; generate answers 409 by default (a fresh test
+  // user has thin data) — per-test overrides script the happy/quota paths.
+  http.get(`${API_BASE}/api/proactive/diagnosis`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/proactive/diagnosis`, () =>
+    HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_DATA', message: 'nincs elég adat' }], { status: 409 })),
+  http.get(`${API_BASE}/api/proactive/diagnosis/:id`, () =>
+    HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND', message: 'nincs ilyen' }], { status: 404 })),
+  http.post(`${API_BASE}/api/proactive/diagnosis/:id/suspect/:rank/experiment`, ({ params }) =>
+    HttpResponse.json({
+      id: 'exp-from-diag', title: 'Próba', hypothesis: 'Próba-hipotézis.', status: 'active',
+      metricKey: 'SLEEP_DURATION_H', expectedDirection: 'up', startDate: '2026-08-31',
+      totalDays: 7, outcome: null, outcomeGood: null, generatedAt: '2026-08-31T07:00:00Z',
+      rank: Number(params.rank),
+    }, { status: 201 })),
   http.get(`${API_BASE}/api/proactive/experiment`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/proactive/experiment/propose`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/proactive/experiment/:id/decision`, async ({ params, request }) => {

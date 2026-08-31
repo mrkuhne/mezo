@@ -46,6 +46,8 @@ import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
+import { DiagnosisListPage } from '@/features/insights/pages/DiagnosisListPage'
+import { DiagnosisDetailPage } from '@/features/insights/pages/DiagnosisDetailPage'
 import { MemoryPage } from '@/features/insights/pages/MemoryPage'
 import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
@@ -186,6 +188,10 @@ export const routes: RouteObject[] = [
       { path: 'mezo/chat', element: <ChatPage /> },
       { path: 'mezo/predictions', element: <PredictionsPage /> },
       { path: 'mezo/experiments', element: <ExperimentsPage /> },
+      // Diagnózis — the on-demand report catalog (mezo-hqfi.4): full-page siblings on the
+      // patterns/:pairKey idiom; Hungarian slug per the spec's resolved micro-decision.
+      { path: 'mezo/diagnozis', element: <DiagnosisListPage /> },
+      { path: 'mezo/diagnozis/:id', element: <DiagnosisDetailPage /> },
       // Motor retired (mezo-tk88.4) — the diagnostics moved into the Minták dashboard +
       // the pattern-pair detail page above (mezo-tk88.5); the route survives as an honest
       // redirect so any old bookmark/link (`?pair=` cross-links included) still lands
