@@ -232,8 +232,8 @@ with them.
 
 ## 8. Testing
 
-Backend only, `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (23 files). No FE tests
-exist (no FE surface).
+Backend only, `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (24 files, listed
+below by shape). No FE tests exist (no FE surface).
 
 - **API/IT surface**: `CharacterApiIT` (overview lazy-seed, dimension 404, feed/conference
   merge), `CharacterApiCompanionOffIT` (reads OK with companion off, bootstrap 404s),
@@ -284,12 +284,18 @@ Full suite is CI-gated (self-PR).
 - **`[Karakter]` prompt wiring is incomplete.** `ChatService`, `MemoirGenerator`, and
   `PredictionGenerator` all inject the block; `WeeklyReviewGenerator` does not, despite being
   named as a consumer in spec §1/§8. Tracked as **`mezo-1gim.9`** — a task of this S7 slice.
-- **Confidence ceilings differ by path, deliberately.** The konzílium's own UP/accept path
-  clamps to `[0.30, 0.90]`; user "talál" feedback only ever adds `+0.05` capped at **0.85** —
-  a self-confirmation from the user alone can never saturate a claim to near-certainty without
-  independent evidence (`CharacterFeedbackService`). "nem igaz" is immediate `RETIRED`, no
-  konzílium round-trip needed. "pontosítom" never moves confidence directly — the free text is
-  logged as a top-salience `user` observation and left for the owning expert(s) to weigh at the
+- **Confidence ceilings differ by path, deliberately, and there are TWO different konzílium
+  clamps, not one.** `KonziliumVerdictRound`'s own accepted-ruling clamp (Mezo's ruling
+  confidence, and — mirrored defensively — a NEW claim's confidence in `ClaimLifecycle`) is
+  `[0.30, 0.90]`. Separately, `ClaimLifecycle`'s UP/DOWN "MOVE" path — used when a ruling
+  doesn't carry an explicit numeric confidence, applying the default `±0.10` step instead — is
+  a wider `[0.05, 0.95]`; `CharacterFeedbackService`'s own javadoc calls this out explicitly as
+  "the konzílium's own, higher 0.95 ceiling". User "talál" feedback only ever adds `+0.05`
+  capped at a still-lower **0.85** — a self-confirmation from the user alone can never saturate
+  a claim to near-certainty without independent evidence (`CharacterFeedbackService`). "nem
+  igaz" is immediate `RETIRED`, no konzílium round-trip needed. "pontosítom" never moves
+  confidence directly — the free text is logged as a top-salience `user` observation and left
+  for the owning expert(s) to weigh at the
   next konzílium; an unaddressed correction is logged (WARN), not silently dropped
   (`CharacterConferenceService.warnUnaddressedUserFeedback`).
 - **`MONTHLY` conferences reuse the `week_start` column** to store the month's first day
@@ -321,7 +327,10 @@ Full suite is CI-gated (self-PR).
 - `config/CharacterProperties.java` — every `mezo.character.*` tunable (§ below)
 - `controller/CharacterController.java` — the 7 endpoints, `CHARACTER_SWITCH`-gated
 - `entity/` — `CharacterDimensionEntity`, `CharacterClaimEntity`, `CharacterObservationEntity`,
-  `CharacterConferenceEntity`, `CharacterPortraitRevisionEntity` + 6 typed-jsonb envelope records
+  `CharacterConferenceEntity`, `CharacterPortraitRevisionEntity` + the typed-jsonb envelope
+  records used by their jsonb columns (`ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`,
+  `ClaimConfidenceHistoryEnvelope`, `ObservationDimensionKeysEnvelope`,
+  `ObservationSignalsEnvelope`, `ConferenceTranscriptEnvelope`, `ConferenceOutcomeEnvelope`)
 - `detector/` — `CharacterDetector`, `DetectorRegistry`, `DetectorInput`/`DetectorSignal`, and
   the 5 concrete detectors (`CheckinGapDetector`, `JournalNoteDetector`,
   `JournalSilenceDetector`, `LoggingGapDetector`, `UnderLoggingDetector`)
@@ -364,7 +373,7 @@ Full suite is CI-gated (self-PR).
   `prompt.max-total-chars: 1800`, `prompt.portrait-min-maturity: 30`
 - `mezo.character.detector: {}` (per-key kill switches, all enabled by default/absence)
 
-**Tests**: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (23 files, §8)
+**Tests**: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (24 files, see §8)
 
 **Docs**: this file; driving spec
 [`docs/superpowers/specs/2026-08-27-user-character-dossier-design.md`](../superpowers/specs/2026-08-27-user-character-dossier-design.md);
