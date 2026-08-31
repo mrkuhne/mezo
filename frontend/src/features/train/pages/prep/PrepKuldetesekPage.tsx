@@ -8,8 +8,8 @@
 // ============================================================
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
-import { SkeletonText } from '@/shared/ui/Skeleton'
 import { ChallengeCard } from '@/features/train/components/ChallengeCard'
+import { ChallengeGenerationLoader } from '@/features/train/components/ChallengeGenerationLoader'
 import type { Challenge } from '@/data/types'
 
 export function PrepKuldetesekPage({ challenges, accepted, onToggle, pending, onBack }: {
@@ -23,15 +23,15 @@ export function PrepKuldetesekPage({ challenges, accepted, onToggle, pending, on
   return (
     <MozaikPage tone="coral">
       <PageHead label="‹ Indítás" onBack={onBack} />
-      <PageHero icon="i-kihivas" big={`${acceptedCount}/${challenges.length}`} name="A mai küldetések" />
+      <PageHero icon="i-kihivas" big={pending ? '–/–' : `${acceptedCount}/${challenges.length}`} name="A mai küldetések" />
       <PageBody principle="Passzolni ér — a kihívás ajánlat, nem elvárás. Az eredmény a záráskor derül ki, és sosem piros.">
         <StatStrip className="mt-sm">
-          <StatCell value={challenges.length} label="ajánlat ma" />
-          <StatCell value={acceptedCount} label="elfogadva" />
+          <StatCell value={pending ? '…' : challenges.length} label="ajánlat ma" />
+          <StatCell value={pending ? '…' : acceptedCount} label="elfogadva" />
         </StatStrip>
         <div className="col gap-md mt-md">
           {pending ? (
-            <SkeletonText lines={3} />
+            <ChallengeGenerationLoader />
           ) : challenges.length === 0 ? (
             <span className="text-tertiary" style={{ fontSize: 13 }}>Ma nincs kihívás</span>
           ) : (
