@@ -132,13 +132,53 @@ describe('FuelMedicationPage (nincs aktív gyógyszer)', () => {
       })))
     const { container } = renderView(new QueryClient({ defaultOptions: { queries: { retry: false } } }))
     expect(await screen.findByTestId('medication-empty')).toBeInTheDocument()
-    expect(screen.getByText('Nincs aktív gyógyszer')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Beadás/ })).not.toBeInTheDocument()
+    expect(screen.getByText('Nincs követett gyógyszer')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Beadás$/ })).not.toBeInTheDocument()
     expect(screen.queryByTestId('medication-phase-note')).not.toBeInTheDocument()
     expect(container.querySelector('.mz-page-hero')).not.toBeInTheDocument()
     // Fidelity audit (mezo-d20.11): /fuel/gyogyszer measured as "no entrance choreography"
     // because the empty branch — the only one the seeded day ever reaches — rendered outside
     // any EntranceGroup. The honest empty card rises too now.
     expect(container.querySelector('.mz-play [data-testid="medication-empty"].rise')).not.toBeNull()
+  })
+
+  it('F7.3: az üres állapot már nem zsákutca — a "＋ Gyógyszer felvétele" CTA a create sheetet nyitja', async () => {
+    server.use(http.get(`${API_BASE}/api/medication`, () =>
+      HttpResponse.json({ medication: null, cycle: null, recentDoses: [] })))
+    renderView(new QueryClient({ defaultOptions: { queries: { retry: false } } }))
+    const cta = await screen.findByRole('button', { name: /Gyógyszer felvétele/ })
+    fireEvent.click(cta)
+    expect(await screen.findByText('Gyógyszer felvétele', { selector: '#medication-form-title *' })).toBeInTheDocument()
+  })
+})
+
+describe('FuelMedicationPage (F7.3 · szerkesztés + leállítás)', () => {
+  const clientWithFixture = () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    client.setQueryData(['medication'], medicationFixture)
+    return client
+  }
+
+  it('a Szerkesztés az edit sheetet nyitja, a mezők a gyógyszerrel előtöltve', () => {
+    renderView(clientWithFixture())
+    fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
+    expect(screen.getByText('Gyógyszer szerkesztése')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Teszt gyógyszer')).toBeInTheDocument()
+  })
+
+  it('a Leállítás kétlépcsős: megerősítő kártya, Mégse visszalép, Leállítom az üres állapotra vált', async () => {
+    renderView(clientWithFixture())
+    fireEvent.click(screen.getByRole('button', { name: 'Leállítás' }))
+    const confirm = screen.getByTestId('medication-stop-confirm')
+    expect(confirm.textContent).toMatch(/beadás-történet megmarad/)
+
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Mégse' }))
+    expect(screen.queryByTestId('medication-stop-confirm')).not.toBeInTheDocument()
+    expect(screen.getByText('Teszt gyógyszer')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Leállítás' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Leállítom' }))
+    // mock stop = the ghost day in the cache -> the honest empty state (mutation is async)
+    expect(await screen.findByTestId('medication-empty')).toBeInTheDocument()
   })
 })
