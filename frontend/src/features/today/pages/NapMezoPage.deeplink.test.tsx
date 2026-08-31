@@ -1,0 +1,127 @@
+import { render, screen, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
+import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
+import { QueryWrapper } from '@/test/queryWrapper'
+import { addDays, localDateString } from '@/shared/lib/dates'
+
+// The intervention-push deeplink (mezo-b3pp.36): the push carries `?n=<card uuid>&d=<the
+// card's OWN generation day>`. For a card deferred across midnight `d` is the day BEFORE the
+// push arrives — only THAT day's feed contains the card. This suite runs in REAL mode with
+// MSW serving two days' feeds: `useCompanionFeed` returns `[]` synchronously in mock mode, so
+// a mock-mode assertion here would pass vacuously (it would never actually fetch anything).
+//
+// `useNeeds`/`useMinuteTick` are stubbed the same way NapMezoPage.test.tsx stubs them — this
+// suite is about the deeplink merge, not the Életjel-nudge derivation, and leaving the real
+// `useNeeds` in would drag in a dozen more real-mode endpoints for no assertion here cares
+// about.
+vi.mock('@/features/today/logic/useNeeds', () => ({
+  useNeeds: () => ({ states: [], isPending: false }),
+}))
+
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  localStorage.clear()
+})
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
+
+const TODAY = localDateString()
+const YDAY = addDays(TODAY, -1)
+
+const deepLinkedCard = {
+  id: 'aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',
+  date: YDAY,
+  kind: 'intervention',
+  eyebrow: 'Mezo közbelépett',
+  body: ['Éjfél után írtál — ez a kártya innen maradt.'],
+  refs: [],
+  generatedAt: `${YDAY}T23:58:00Z`,
+}
+const yesterdayOther = {
+  id: 'bbbbbbbb-2222-4111-8111-bbbbbbbbbbbb',
+  date: YDAY,
+  kind: 'evening',
+  eyebrow: 'Esti összegzés',
+  body: ['Tegnapi napzáró.'],
+  refs: [],
+  generatedAt: `${YDAY}T21:00:00Z`,
+}
+const todayMorning = {
+  id: 'cccccccc-3333-4111-8111-cccccccccccc',
+  date: TODAY,
+  kind: 'morning',
+  eyebrow: 'Reggeli briefing',
+  body: ['Mai napod fonala.'],
+  refs: [],
+  generatedAt: `${TODAY}T06:30:00Z`,
+}
+
+/** Serves a per-day fixed feed keyed by the `date` query param — the two days' feeds never
+ *  cross-contaminate, mirroring the real endpoint's contract. */
+function serveFeeds(byDate: Record<string, unknown[]>) {
+  server.use(http.get(`${API_BASE}/api/proactive/feed`, ({ request }) => {
+    const date = new URL(request.url).searchParams.get('date') ?? ''
+    return HttpResponse.json(byDate[date] ?? [])
+  }))
+}
+
+function renderAt(path: string) {
+  return render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={[path]}>
+        <MezoThreadProvider>
+          <Routes>
+            <Route path="/nap/uzenetek" element={<NapMezoPage />} />
+          </Routes>
+        </MezoThreadProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+}
+
+test('surfaces the deep-linked card when d names an earlier day, alongside today\'s own thread', async () => {
+  serveFeeds({ [YDAY]: [deepLinkedCard, yesterdayOther], [TODAY]: [todayMorning] })
+  renderAt(`/nap/uzenetek?n=${deepLinkedCard.id}&d=${YDAY}`)
+
+  // the deep-linked card's body is in the document
+  expect(await screen.findByText(/Éjfél után írtál/)).toBeInTheDocument()
+  // today's own card is STILL rendered — the deeplink ADDS, it does not swap the thread
+  expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
+  // yesterday's OTHER card (not the linked id) must not leak into the thread
+  expect(screen.queryByText(/Tegnapi napzáró/)).not.toBeInTheDocument()
+
+  // the deep-linked card gets the same feedback-chip wiring as any persisted feed row
+  const card = (await screen.findByText(/Éjfél után írtál/)).closest('.nap-mzmsg') as HTMLElement
+  expect(within(card).getByText('Segített?')).toBeInTheDocument()
+  expect(within(card).getByRole('button', { name: /Segített/ })).toBeInTheDocument()
+})
+
+test('renders normally when the deeplink names today — no duplicate card', async () => {
+  serveFeeds({ [TODAY]: [todayMorning] })
+  renderAt(`/nap/uzenetek?n=${todayMorning.id}&d=${TODAY}`)
+
+  expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+})
+
+test('renders normally when there is no deeplink', async () => {
+  serveFeeds({ [TODAY]: [todayMorning] })
+  renderAt('/nap/uzenetek')
+
+  expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+})
+
+test('ignores a deeplink whose card is not in that day\'s feed — no crash, no placeholder, today intact', async () => {
+  serveFeeds({ [YDAY]: [yesterdayOther], [TODAY]: [todayMorning] })
+  renderAt(`/nap/uzenetek?n=00000000-0000-4000-8000-000000000000&d=${YDAY}`)
+
+  expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
+  expect(screen.queryByText(/Tegnapi napzáró/)).not.toBeInTheDocument()
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+})

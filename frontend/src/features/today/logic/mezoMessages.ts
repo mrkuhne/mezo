@@ -40,12 +40,12 @@ const hhmm = (iso: string): string => {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export function buildMezoMessages({ feed, demoBriefing, nudges }: {
-  feed: FeedMessage[]
-  demoBriefing: Briefing | null
-  nudges?: MezoMessageItem[]
-}): MezoMessageItem[] {
-  const out: MezoMessageItem[] = feed.map((m) => ({
+/** One feed row → one thread card. Exported so a deep-linked card from another day
+ *  (mezo-b3pp.36 — `NapMezoPage`) gets the SAME rendering (time/paragraphs/refs/artifactId)
+ *  as any row `buildMezoMessages` pulls from today's own feed; the caller overrides `id` since
+ *  `m.kind` alone is not unique once a card from a second day joins the thread. */
+export function feedToMessageItem(m: FeedMessage): MezoMessageItem {
+  return {
     id: m.kind,
     artifactId: m.id,
     kind: m.kind,
@@ -54,7 +54,15 @@ export function buildMezoMessages({ feed, demoBriefing, nudges }: {
     paragraphs: m.body.map((p) => p.text),
     refs: m.refs,
     meta: null,
-  }))
+  }
+}
+
+export function buildMezoMessages({ feed, demoBriefing, nudges }: {
+  feed: FeedMessage[]
+  demoBriefing: Briefing | null
+  nudges?: MezoMessageItem[]
+}): MezoMessageItem[] {
+  const out: MezoMessageItem[] = feed.map(feedToMessageItem)
   // Honest fallback: no generated morning briefing has landed in the feed yet — show the
   // labelled demo card instead of leaving the thread empty (mock mode: always this branch).
   if (!feed.some((m) => m.kind === 'morning') && demoBriefing != null) {
