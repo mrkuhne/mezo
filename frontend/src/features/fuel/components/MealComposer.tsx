@@ -29,7 +29,7 @@ import { nowOffsetIso, localDateString } from '@/shared/lib/dates'
 import { resizeImage } from '@/shared/lib/resizeImage'
 import { Icon } from '@/shared/ui/Icon'
 import { ClayIcon } from '@/shared/ui/clay'
-import { MacroCells } from '@/features/fuel/components/MacroCells'
+import { MCells } from '@/shared/ui/mozaik'
 import { NutrientCells } from '@/features/fuel/components/NutrientCells'
 import { KamraPickSheet } from '@/features/fuel/sheets/KamraPickSheet'
 import { ReceptPickSheet } from '@/features/fuel/sheets/ReceptPickSheet'
@@ -151,7 +151,6 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
   // A slot-targeted launch keeps its slot even once an AI draft proposes a different one
   // (mezo-53su); manual taps lock it too.
   const slotLocked = useRef(fixedSlot != null || initialSlot != null)
-  const [nameOverride, setNameOverride] = useState<string | null>(null)
   const [kamraOpen, setKamraOpen] = useState(false)
   const [receptOpen, setReceptOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(!!aiPanelOpenOnMount)
@@ -191,8 +190,9 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
   }), { ...zero })
   const totalNutrients = sumNutrients(resolved.map(({ meta }) => meta.nutrients))
 
+  // No name field any more (mezo-byo1): the meal is always named from its lines —
+  // deriveMealName is the same rule buildDayPlan falls back to, so one rule holds everywhere.
   const derivedName = deriveMealName(resolved.map(({ meta }) => meta.name))
-  const shownName = nameOverride ?? derivedName
 
   const nowPct = pct(fuel.consumed.kcal, fuel.targets.kcal)
   const addPct = Math.min(100 - nowPct, pct(total.kcal, fuel.targets.kcal))
@@ -295,7 +295,7 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
     const input: MealInput = {
       slot: fixedSlot ?? slot,
       loggedAt: nowOffsetIso(),
-      title: shownName.trim() || null,
+      title: derivedName.trim() || null,
       items,
       ...(aiContribution
         ? { provenance: { origin: aiContribution.photo ? 'ai-photo' : 'ai-text', rawText: aiContribution.rawText } }
@@ -323,13 +323,6 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
           </div>
         </>
       )}
-
-      <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>NÉV</span>
-      <input
-        type="text" value={shownName} onChange={(e) => setNameOverride(e.target.value)}
-        placeholder="Étkezés neve" aria-label="Étkezés neve"
-        style={{ width: '100%', margin: '7px 0 12px', padding: '9px 12px', fontSize: 13, color: 'var(--text-primary)', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)' }}
-      />
 
       <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>HONNAN ADOD HOZZÁ?</span>
       <div className="logflow-srctiles">
@@ -421,9 +414,12 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
               />
               <button onClick={() => bump(l.key, 1, meta.step, meta.min)} aria-label={`${meta.name} növelés`} className="logflow-stepbtn">+</button>
               <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>{l.unit}</span>
+              <span className="logflow-lnkcal"><b>{meta.contribution.kcal}</b><small>kcal</small></span>
             </div>
-            <div style={{ marginTop: 9 }}>
-              <MacroCells macros={meta.contribution} perLabel={`${l.amount} ${l.unit}`} />
+            <div className="logflow-lnmac">
+              <span className="mz-c-coral"><b>{meta.contribution.p} g</b><small>feh.</small></span>
+              <span className="mz-c-gold"><b>{meta.contribution.c} g</b><small>szénh.</small></span>
+              <span className="mz-c-lav"><b>{meta.contribution.f} g</b><small>zsír</small></span>
             </div>
             {l.source !== 'estimate' && (
               <div style={{ marginTop: 6 }}>
@@ -500,11 +496,19 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
       </div>
 
       <div className="rad-12" style={{ padding: '11px 12px', marginTop: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--line)' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 9 }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
           <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--coral)' }}>EZ AZ ÉTKEZÉS</span>
           <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)' }}>{lines.length} tétel</span>
         </div>
-        <MacroCells macros={total} size="md" />
+        {/* The derived name IS the meal title (no name field, mezo-byo1) — shown where it
+            will land, honest to what save() sends. */}
+        {derivedName && <div className="logflow-totname">{derivedName}</div>}
+        <MCells cells={[
+          { label: 'kcal', value: total.kcal, tone: 'sage' },
+          { label: 'fehérje', value: `${total.p} g`, tone: 'coral' },
+          { label: 'szénh.', value: `${total.c} g`, tone: 'gold' },
+          { label: 'zsír', value: `${total.f} g`, tone: 'lav' },
+        ]} />
         <div style={{ marginTop: 6 }}><NutrientCells nutrients={totalNutrients} size="md" /></div>
         <div style={{ marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
           <div className="row" style={{ justifyContent: 'space-between', fontVariantNumeric: 'tabular-nums', fontSize: 8.5, color: 'var(--text-tertiary)', marginBottom: 5 }}>

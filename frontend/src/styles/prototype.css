@@ -6212,12 +6212,37 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   width: 10px; height: 10px; border-radius: 50%; background: var(--lav-deep); flex: none;
 }
 
+/* Kind-wash line cards (mezo-byo1, prototype fuel-logolas.html .lncard):
+   source-tinted gradient + 4px spine, kcal cell in the source ink, and a
+   3-cell macro mini row in the shared mz-cell tints. */
 .logflow-lncard {
-  border-radius: 15px; padding: 10px 12px; background: var(--surface-1);
-  border-left: 2.5px solid var(--coral);
+  position: relative; overflow: hidden;
+  border-radius: 15px; padding: 10px 12px 10px 15px; background: var(--surface-1);
+  --ln-spine: var(--coral); --ln-wash: var(--mz-tone-coral);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ln-wash) 55%, var(--surface-1)) 0%, var(--surface-1) 62%);
+  box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05);
 }
-.logflow-lncard[data-tag="kamra"] { border-left-color: var(--mz-cell-gold-ink, #8A5E07); }
-.logflow-lncard[data-tag="becslés"] { border-left-color: var(--lav-deep); }
+.logflow-lncard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--ln-spine); }
+.logflow-lncard[data-tag="kamra"] { --ln-spine: var(--mz-cell-gold-ink, #8A5E07); --ln-wash: var(--mz-tone-gold); }
+.logflow-lncard[data-tag="becslés"] { --ln-spine: var(--lav-deep); --ln-wash: var(--mz-tone-lav); }
+.logflow-lnkcal {
+  margin-left: auto; flex: none; border-radius: 10px; padding: 3px 10px 2px; text-align: center;
+  background: var(--surface-0, #fff); box-shadow: inset 0 0 0 1px var(--border-subtle);
+  color: var(--ln-spine);
+}
+.logflow-lnkcal b { display: block; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.logflow-lnkcal small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+.logflow-lnmac { display: flex; gap: 5px; margin-top: 8px; }
+.logflow-lnmac span {
+  flex: 1; border-radius: 10px; padding: 4px 2px 3px; text-align: center;
+  background: var(--mw); color: var(--md);
+}
+.logflow-lnmac b { display: block; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.logflow-lnmac small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.78; }
+.logflow-totname {
+  font-size: 12.5px; font-weight: 700; margin-bottom: 8px;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+}
 .logflow-lntag {
   font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   padding: 2px 6px; border-radius: 5px; flex: none;

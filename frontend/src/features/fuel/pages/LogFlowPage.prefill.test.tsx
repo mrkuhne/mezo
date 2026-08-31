@@ -33,8 +33,8 @@ describe('LogFlowPage', () => {
       </QueryClientProvider>,
     )
 
-    // the recipe name shows as a pre-filled item line
-    expect(screen.getByText(recipe.name)).toBeInTheDocument()
+    // the recipe name shows as a pre-filled item line (and as the derived totals title)
+    expect(screen.getAllByText(recipe.name).length).toBeGreaterThanOrEqual(1)
     fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
 
     await waitFor(() => {
@@ -55,15 +55,14 @@ describe('LogFlowPage', () => {
         <LogFlowPage prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
       </QueryClientProvider>,
     )
-    expect(screen.getByText(ing.name)).toBeInTheDocument()
+    expect(screen.getAllByText(ing.name).length).toBeGreaterThanOrEqual(1)
     fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
     await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
   })
 
-  // mezo-m6uv review finding 4: the per-line MacroCells rail (perLabel="<amount> <unit>") shifted
-  // its four columns right; the NutrientCells row directly beneath it had no rail and so did not
-  // line up. Both strips must now share the same left edge — i.e. the same perLabel text twice.
-  it('aligns the per-line NutrientCells rail with the MacroCells rail above it', () => {
+  // Since mezo-byo1 the per-line macro strip is the kind-wash mini-cell row (no MacroCells rail);
+  // the NutrientCells row keeps its own perLabel rail as the single basis marker on the card.
+  it('renders the per-line NutrientCells rail with the line basis', () => {
     const { qc, wrapper } = setup()
     const pantry = renderHook(() => usePantry(), { wrapper })
     // ing-csirkemell (fixture index 0) carries non-null nutrient facts, so NutrientCells renders
@@ -76,8 +75,8 @@ describe('LogFlowPage', () => {
       </QueryClientProvider>,
     )
     const perLabel = `${ing.per} ${ing.unit}`
-    // One rail from MacroCells, one from NutrientCells — same text, same left edge.
-    expect(screen.getAllByText(perLabel)).toHaveLength(2)
+    // The single rail comes from NutrientCells now.
+    expect(screen.getAllByText(perLabel)).toHaveLength(1)
   })
 
   it('changing the slot segmented control updates the logged meal slot', async () => {
@@ -123,11 +122,11 @@ describe('LogFlowPage', () => {
     expect(screen.getByRole('button', { name: /logolás · \+10 XP/i })).toBeDisabled()
   })
 
-  // Editable meal name — smart default derived from the lines, sent as MealInput.title (mezo-u68c).
-  // The file has no `useMealActions` mock; instead we assert through the real mock-mode data layer,
-  // where buildMeal persists `title: input.title ?? …`, so the appended meal's title proves what the
-  // sheet sent (the old hard `title: null` would have surfaced the recipe name, never a typed override).
-  it('defaults the name from the prefilled lines and sends it as the meal title', async () => {
+  // Derived-only meal name (mezo-byo1 — the NÉV field is gone): the title is always
+  // deriveMealName(lines). The file has no `useMealActions` mock; instead we assert through the
+  // real mock-mode data layer, where buildMeal persists `title: input.title ?? …`, so the
+  // appended meal's title proves what the composer sent.
+  it('derives the meal title from the prefilled lines and sends it on save', async () => {
     const { qc, wrapper } = setup()
     const recipes = renderHook(() => useRecipes(), { wrapper })
     const recipe = recipes.result.current.recipes[0]
@@ -140,35 +139,12 @@ describe('LogFlowPage', () => {
       </QueryClientProvider>,
     )
 
-    const input = screen.getByLabelText('Étkezés neve') as HTMLInputElement
-    expect(input.value.length).toBeGreaterThan(0)
-    const shown = input.value
+    // No editable name field any more — the derived name lives on the totals card.
+    expect(screen.queryByLabelText('Étkezés neve')).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
 
     await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
-    expect(day.result.current.fuel.meals.at(-1)?.title).toBe(shown)
-  })
-
-  it('lets the user override the name, and sends the override as the title', async () => {
-    const { qc, wrapper } = setup()
-    const recipes = renderHook(() => useRecipes(), { wrapper })
-    const recipe = recipes.result.current.recipes[0]
-    const day = renderHook(() => useFuelDay(), { wrapper })
-    const before = day.result.current.fuel.meals.length
-
-    render(
-      <QueryClientProvider client={qc}>
-        <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={vi.fn()} />
-      </QueryClientProvider>,
-    )
-
-    const input = screen.getByLabelText('Étkezés neve')
-    await userEvent.clear(input)
-    await userEvent.type(input, 'Edzés előtti reggeli')
-    await userEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
-
-    await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
-    expect(day.result.current.fuel.meals.at(-1)?.title).toBe('Edzés előtti reggeli')
+    expect(day.result.current.fuel.meals.at(-1)?.title).toBe(recipe.name)
   })
 })
