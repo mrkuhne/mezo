@@ -353,6 +353,22 @@
   --mz-water-fill:  linear-gradient(90deg, #7FB6D9, #4E8FB8);
   --mz-tickfill:    linear-gradient(135deg, #8FAF7E, #6E8B5E);
   --mz-wash-anchor: linear-gradient(140deg, #F7EEE2, #FFFBF6 75%);
+
+  /* Emberek S3 hub (mezo-06o0.2) — tone + context tints, en-body.html emberek-body.html's
+     `TONES`/`CTX` IIFE objects verbatim. `baratok`/`egyeb` have no prototype color (the
+     prototype's CTX only lists 6 of the 8 MentionContext values) — picked in-family. */
+  --ppl-tone-jo:     #7FA06C;
+  --ppl-tone-ok:     #B5AA9C;
+  --ppl-tone-vegyes: #C9962E;
+  --ppl-tone-nehez:  #C4694F;
+  --ppl-ctx-munka:         #4E8FB8;
+  --ppl-ctx-csalad:        #8FAF7E;
+  --ppl-ctx-baratok:       #B5AA9C;
+  --ppl-ctx-edzes:         #FF7A55;
+  --ppl-ctx-konfliktus:    #C9962E;
+  --ppl-ctx-kozos-program: #C46FA0;
+  --ppl-ctx-segitseg:      #6C5FA3;
+  --ppl-ctx-egyeb:         #8A7A6A;
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -619,6 +635,21 @@
   --mz-water-fill:  linear-gradient(90deg, color-mix(in srgb, var(--dv-sky) 55%, var(--surface-card)), var(--dv-sky));
   --mz-tickfill:    linear-gradient(135deg, color-mix(in srgb, var(--dv-sage) 65%, var(--surface-card)), var(--dv-sage));
   --mz-wash-anchor: linear-gradient(140deg, color-mix(in srgb, var(--dv-amber) 10%, var(--surface-card)), var(--surface-card) 75%);
+
+  /* Emberek S3 hub (mezo-06o0.2) — dark ("Pulse") tone/context tints: lifted +
+     desaturated from the light hexes, same family the other tone/cell tokens use. */
+  --ppl-tone-jo:     #9CBF87;
+  --ppl-tone-ok:     #CFC3B3;
+  --ppl-tone-vegyes: #E3B565;
+  --ppl-tone-nehez:  #E0876F;
+  --ppl-ctx-munka:         #7FB2DE;
+  --ppl-ctx-csalad:        #A9C69A;
+  --ppl-ctx-baratok:       #CFC3B3;
+  --ppl-ctx-edzes:         #FF9B7D;
+  --ppl-ctx-konfliktus:    #E3B565;
+  --ppl-ctx-kozos-program: #D98FB8;
+  --ppl-ctx-segitseg:      #9186C9;
+  --ppl-ctx-egyeb:         #A79683;
 }
 
 /* ===== Legacy alias bridge — Deep-Current / early-token names → DS tokens =====
