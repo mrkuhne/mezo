@@ -12,7 +12,9 @@ const FEED_KEY = ['notification-feed'] as const
 function toView(item: components['schemas']['NotificationFeedItem']): AppNotificationView {
   return {
     id: item.id,
-    // The wire kind is a plain string; the backend enum guarantees the 12 known keys.
+    // A wire-kind sima string. A backend enum bővülhet anélkül, hogy ez a build tudna róla —
+    // ezért a leképezést `notificationKindMeta()`-n át kell olvasni, nem nyers indexeléssel
+    // (mezo-ntf8: egy `weekly_review_ready` sor elvitte az egész feed-oldalt).
     kind: item.kind as AppNotificationKindKey,
     title: item.title,
     body: item.body ?? null,
