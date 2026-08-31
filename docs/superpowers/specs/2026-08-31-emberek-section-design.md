@@ -36,7 +36,10 @@ személyre eső determinisztikus találat azonnal éles, utólag törölhető.
 | `source_ref_kind` | `text` NULL | `journal_entry\|reflection\|gratitude\|decision\|activity_note\|checkin_note\|chat_turn` — a `memory_embedding.kind` készletével egyező nevezéktan |
 | `source_ref_id` | `uuid` NULL | a szülő szöveg sora (visszaugráshoz, deduphoz) |
 
-A meglévő `source` CHECK bővül: `voice|camera|chip|text` + `chat`. A `tied_to_*`
+A `person.relationship` CHECK bővül: `partner|friend|family|colleague|teammate|mentee`
+(a kontraktus-enum és az FE `Relationship` type azonosan) — a prototípus kapcsolat-készlete
+igényli. A meglévő mention `source` CHECK bővül: `voice|camera|chip|text` + `chat`; a
+`mention.tone` DB-szinten nullable lesz (az automata út tónus nélkül ír, az éjszakai kör tölti). A `tied_to_*`
 mezők maradnak (deprecated, nem törlünk); az esemény-kötést a gráf-élek veszik át.
 Dedup-kulcs az automata útvonalra: `(created_by, person_id, source_ref_kind, source_ref_id)`
 partial unique index `WHERE source IN ('text','chat')`.
