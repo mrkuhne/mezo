@@ -8,7 +8,7 @@
 // ============================================================
 import { useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { APP_NOTIFICATION_KIND_META } from '@/data/types'
+import { notificationKindMeta } from '@/data/types'
 import { useNotificationFeed, useNotificationFeedActions } from '@/data/notification/feedHooks'
 import { groupByDay } from '@/features/notification/logic/groupByDay'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
@@ -105,7 +105,7 @@ export function NotificationFeedPage() {
                 style={{ '--d': `${gi * 60}ms` } as React.CSSProperties}>
                 <h2 id={`nf-day-${g.day}`} className="nf-daylabel">{g.label}</h2>
                 {g.items.map((n) => {
-                  const meta = APP_NOTIFICATION_KIND_META[n.kind]
+                  const meta = notificationKindMeta(n.kind)
                   return (
                     <button key={n.id} type="button"
                       className={cn('nf-row', wasUnread.has(n.id) && 'unread')}

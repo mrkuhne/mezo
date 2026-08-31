@@ -595,7 +595,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Feedback capture on the AI surfaces | ✅ `mezo-b3pp.15` | Phase 5 W4.1 — `message_feedback` + the `/api/companion/feedback` surface (GET batch-read / PUT upsert / DELETE retract), ONE updatable 👍/👎 verdict (optional 👎 reason) per `(user, artifactKind, artifactId)` across FIVE artifact kinds spanning five tables. Rides `COMPANION_SWITCH`, no own switch. FE: one page-level `useFeedback(kind, ids)` + the shared `FeedbackChips`, mounted on chat answers, the Today feed thread, the weekly suggestion, the memoir and predictions. **Feeds the nightly W4.2 rollup layer** (`feedback_rollup`, §5.7a) — the reinforcement layer (graph-node edge weighting) is still deferred to the graph-gate wave (§9). |
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7`, retraction `mezo-b3pp.31`, fact opt-out `mezo-b3pp.30` | Phase 5 W2.2 — confirmed patterns, active AND prompt-included non-pattern-sourced knowledge facts, and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent`/`KnowledgeFactChangedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. **Promotion is two-way (`mezo-b3pp.31`)**: `retractPattern`/`retractGoal`/`retractFact` archive the mirror node when a pattern is un-confirmed, a goal is soft-deleted, or a fact is soft-deleted or opted out of the prompt (`include_in_prompt=false`) — see the W2.2 section below for the event wiring, `syncFact`, and the honest gap that remains around `knowledge_fact` hard/soft deletes. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
-| Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, punctuation stripped, ≥3 chars, no LLM) against active node titles/summaries; `GraphTraversalQuery` (both reads raw JDBC under one savepoint: the seed-candidate read + the recursive CTE — undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted + owner-scoped nodes only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines (`PRECEDED_BY` swapped so the line stays cause-first) under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode` ref per rendered node — carrying the traversal's own `fromTitle`/`toTitle` as its `label` (`mezo-b3pp.33`), capped at `graph.max-refs` (default 6) — after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
+| Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, punctuation stripped, ≥3 chars, not a Hungarian stopword, no LLM) against active node titles/summaries at a WORD START (`startsAWordInFolded`, mezo-b3pp.34), ranks matches (title hit, then distinct token hits, ties left to the query's own TOTAL `created_at desc, id` row order) and caps them at `graph.max-seeds` (default 8); `GraphTraversalQuery` (both reads raw JDBC under one savepoint: the seed-candidate read + the recursive CTE — undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted + owner-scoped nodes only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines (`PRECEDED_BY` swapped so the line stays cause-first) under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode` ref per rendered node — carrying the traversal's own `fromTitle`/`toTitle` as its `label` (`mezo-b3pp.33`), capped at `graph.max-refs` (default 6) — after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
 | Graph maintenance job (decay + reinforcement) | ✅ `mezo-b3pp.10`, retraction sweep `mezo-b3pp.31` | Phase 5 W2.5 — nightly `GraphMaintenanceJob` (`mezo.companion.graph.cron`, dawn slot, `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own job switch): per-user, three phase-isolated steps — `GraphMaintenanceService.runMaintenance` (edge weight ×= `decayFactor` daily, edges under `pruneFloor` soft-deleted in the same pass, candidate nodes older than `candidateMaxAgeDays` soft-deleted, fresh same-night `pattern_event` snapshot evidence bumps a promoted pattern's touching edges by `reinforcementBump` capped at 1.0), then W2.2's `GraphPromotionService.reconcile` (now per-row isolated, mezo-b3pp.32 fixed alongside) — **its phase-2 promotion loops now run BOTH directions (`mezo-b3pp.31`)**: the original three promoter loops UPSERT forward from a still-qualifying source row, and a fourth complement-set sweep runs after them, walking every active node back to its source row and archiving any whose source stopped qualifying — the backstop for a retraction missed while the switch was off, and (for the still-untriggered delete half of `retractFact`) the ONLY trigger it gets, since nothing in main source soft-deletes a `knowledge_fact`; the opt-out half reaches `retractFact` on the same turn via `syncFact` (`mezo-b3pp.30`) — then W2.3's `LifeEventExtractionService.extractFor(yesterday)`. A failure in any phase for any user never skips the rest. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs the kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (four here, five since W3.2 added the rungs) (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter ambient floor, today-and-later dates skipped (the snapshot already carries the day), the group's cap of items kept (a cap of 0 skips the query entirely) — **since W3.3 (`mezo-b3pp.14`) the floor, τ and cap are all per kind-group, `ambient-recall.<group>.{min-similarity,decay-days,cap}`**. Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → **[Összefüggések]** (W2.4) → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
@@ -1859,9 +1859,12 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   under the same savepoint helper (`underSavepoint`) — the `MemoryEmbeddingAnnQuery` idiom (§9): a
   failed statement can't abort the chat turn's transaction. Gated `KNOWLEDGE_GRAPH_SWITCH`.
   - `activeNodes(userId)` → `ActiveNode(id, title, summary)`, the owner's active non-deleted nodes,
-    `created_at desc` — the seed candidates. It is **raw JDBC and not a JPA finder on purpose**: a
-    Hibernate query failure marks the turn's transaction rollback-only, after which
-    `GraphPromptAssembler`'s catch → EMPTY could no longer save the turn (IDENT-3).
+    `created_at desc, id` — the seed candidates. The `id` secondary key makes the order TOTAL
+    (Postgres does not guarantee any particular row order among exact `created_at` ties), which
+    `GraphTraversalService.seedsFor`'s stable ranking sort relies on for its own determinism
+    (`mezo-b3pp.34`). It is **raw JDBC and not a JPA finder on purpose**: a Hibernate query failure
+    marks the turn's transaction rollback-only, after which `GraphPromptAssembler`'s catch → EMPTY
+    could no longer save the turn (IDENT-3).
   - `neighborhood(...)` → ONE recursive CTE over `knowledge_edge`, walked **undirected** from the
     seed ids (`from_node_id in seeds or to_node_id in seeds`), frontier = the far end of the last
     edge, `path uuid[]` as the cycle guard (a node is never re-entered), `hops < :maxHops`. The
@@ -1879,9 +1882,33 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   search tokens (`ToolText.searchTokens`) with the **leading/trailing non-letter/digit run stripped**
   (that splitter only breaks on whitespace/comma/semicolon, so `"alvás?"` would fold to the
   never-matching `alvas?`; the shared `ToolText` is deliberately left alone), then tokens under 3
-  chars dropped so "ma"/"az" can't seed half the graph — matched by folded containment against every
+  chars dropped so "ma"/"az" can't seed half the graph, **then a small closed Hungarian STOPWORDS
+  set filtered out** (`mezo-b3pp.34`) — matched by folded **word-start** containment against every
   active node's title **or summary**; `neighborhood(userId, seeds, maxHops, topK)` — empty seeds ⇒
   empty, no SQL. Injects **no JPA repository at all** (see `activeNodes` above).
+  - **Stopwords** (`STOPWORDS`, 29 entries, all pre-folded) — Hungarian filler ("nem", "hogy",
+    "volt", …) that is ≥3 chars and so survives the length filter, yet carries no topic of its
+    own: node summaries are ordinary Hungarian prose, so a single "nem" in a chatty turn used to
+    match most of the graph, and once the seed set is effectively the whole graph the neighborhood
+    walk stops answering the question that was asked and degenerates into "the globally strongest
+    edges" instead. The list is deliberately kept **closed and small** rather than eager: a
+    stopword list that over-reaches silently deletes real turns, which is the harder failure to
+    notice — a false seed is visible in the rendered block, a wrongly-dropped one just looks like
+    the graph had nothing to say.
+  - **Word-start matching** (`startsAWordInFolded`, local to this class) replaces `ToolText.containsFolded`
+    **only here** — that shared primitive is deliberately left untouched, because `FuelTools` also
+    uses it for a user-typed filter that genuinely wants to match anywhere in the text. Plain
+    containment produced false seeds here (`ital` matched `vitalitás`), but exact-word matching
+    would be wrong for an agglutinative language, where the stem `alvás` must still reach the
+    compound `alvásminőség`. Matching a token only where it STARTS a word is the rule that keeps
+    the legitimate prefix case while dropping the false infix one.
+  - **Ranked cap** — matching nodes are ordered (title hit outranks summary-only, then more
+    distinct matching tokens wins) **before** `graph.max-seeds` (default 8) truncates the list.
+    Two nodes tied on both keys are left in `activeNodes`' own `created_at desc, id` row order —
+    the ranking sort is stable and deliberately carries no further tie-break stage of its own, so
+    recency (a real relevance signal) decides rather than a bare node id; the query's `id`
+    secondary key makes that row order TOTAL, so the same turn still always produces the same seed
+    set as a genuine guarantee rather than an accident of query-plan or replica luck.
 - **`GraphPromptAssembler`** (`graph/service/`) — `assemble(userId, message)` →
   `GraphContext(block, refs)`. Lines: `- <from.title> → <verb> → <to.title> · <erős|közepes|gyenge>`
   (verbs: TRIGGERS *kiváltja*, PRECEDED_BY *megelőzte*, SUPPORTS *támogatja*, CONFLICTS *ütközik
@@ -1946,7 +1973,16 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   back), and `AiMessageJsonbRoundTripIT.testRefs_shouldDeserialiseWithNullLabel_whenTheJsonbPredatesTheLabelField`
   (review fix — writes raw jsonb with no `label` key at all, proving a genuinely pre-migration row
   deserialises with `label = null` rather than only proving the 2-arg constructor's own shape,
-  which Jackson serialises with an explicit `"label":null`).
+  which Jackson serialises with an explicit `"label":null`), and — pinning `seedsFor`'s stopword
+  filter, word-start matching and rank-before-cap (`mezo-b3pp.34`) — three sibling classes split
+  the way `GraphPromptAssemblerRefsCapIT` splits off from the assembler tests, because the cap
+  cases need `graph.max-seeds` overridden per-class via `@TestPropertySource`:
+  `GraphSeedSelectionIT` (default `max-seeds`: stopwords ignored, one real word inside an
+  otherwise-all-stopword sentence still seeds, a token matches at a word start, the same token
+  does NOT match mid-word, seeding is deterministic across repeated runs, an all-unusable-token
+  message returns empty), `GraphSeedSelectionRankingIT` (`max-seeds=1`: a title hit outranks a
+  summary-only hit and more distinct token hits outranks fewer, once the cap actually bites),
+  `GraphSeedSelectionCapIT` (`max-seeds=2`: a large matching set is truncated to the cap).
 
 ### W2.5 graph maintenance job (✅ `mezo-b3pp.10`)
 
@@ -2839,6 +2875,12 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `mezo.companion.graph.reinforcement-bump` = **0.05** (0..1) — W2.5: fresh pattern evidence
   (a same-night `pattern_event` snapshot for a promoted pattern) bumps that node's touching edges
   by this much, capped at 1.0.
+- `mezo.companion.graph.max-seeds` = **8** (`@Min(1) @Max(50)`) — `mezo-b3pp.34`: cap on
+  `GraphTraversalService#seedsFor`'s ranked seed list, applied AFTER ranking (title hit, then
+  distinct token hits, ties left to the query's own TOTAL `created_at desc, id` row order) so a chatty turn
+  that word-start-matches many nodes still produces a deterministic, most-relevant-first seed set
+  instead of degenerating into "the globally strongest edges" once the seed set is most of the
+  graph; consumed by W2.4's `GraphTraversalService`.
 - `mezo.companion.profile.cron` = **`0 45 3 * * MON`** (`@NotBlank`) — W4.3 (`mezo-b3pp.17`):
   weekly, AFTER the 03:10 feedback rollups and the 03:30 weekly consolidation rung (both read by
   the assembler, so it must run last in the dawn window). Job switch

@@ -1541,13 +1541,17 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
 }
 
 // --- In-app notification feed (bd mezo-gzhp.1, spec 2026-08-18) ---
-/** Mirrors backend AppNotificationKind — keep in sync (AppNotificationKindTest pins that side). */
+/** Mirrors backend AppNotificationKind — keep in sync (AppNotificationKindTest pins that side).
+ *  A szinkron NEM garantált: a két oldal külön nyelven él, és `weekly_review_ready` egyszer már
+ *  kimaradt innen (mezo-ntf8). A leképezést ezért `notificationKindMeta()`-n keresztül olvasd,
+ *  ami ismeretlen kulcsra semleges bejegyzést ad — egy új backend-fajta sosem döntheti el az
+ *  értesítés-feedet. */
 export type AppNotificationKindKey =
   | 'pattern_inbox' | 'pattern_signal' | 'hypothesis_new'
   | 'fact_candidate' | 'fact_reinforced' | 'memoir_ready'
   | 'prediction_new' | 'prediction_outcome'
   | 'experiment_proposed' | 'experiment_closed'
-  | 'challenge_event' | 'memory_note'
+  | 'challenge_event' | 'memory_note' | 'weekly_review_ready'
 
 export interface AppNotificationView {
   id: string
@@ -1582,4 +1586,18 @@ export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
   experiment_closed: { emoji: '🧪', tint: 'experiment', clay: 'i-lombik' },
   challenge_event: { emoji: '🏆', tint: 'experiment', clay: 'i-kihivas' },
   memory_note: { emoji: '🗂', tint: 'memory', clay: 'i-rend' },
+  weekly_review_ready: { emoji: '🗓', tint: 'memoir', clay: 'i-heti' },
+}
+
+/** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */
+const FALLBACK_KIND_META = { emoji: '🔔', tint: 'memory', clay: 'i-ertesites' } as const
+
+/** A leképezés TOTÁLIS olvasója. A wire-kind sima string: a backend enum bővülhet anélkül, hogy
+ *  ez a build tudna róla, és egy hiányzó kulcson a nyers indexelés `undefined`-et ad, amitől a
+ *  feed-oldal sor-map-je elszáll és az egész oldal az ErrorBoundary-ra esik (mezo-ntf8, élesben).
+ *  Egy ismeretlen értesítés inkább nézzen ki semlegesen, mint hogy elvigye a többit is. */
+export function notificationKindMeta(
+  kind: string,
+): typeof FALLBACK_KIND_META | (typeof APP_NOTIFICATION_KIND_META)[AppNotificationKindKey] {
+  return APP_NOTIFICATION_KIND_META[kind as AppNotificationKindKey] ?? FALLBACK_KIND_META
 }
