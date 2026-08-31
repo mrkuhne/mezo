@@ -4792,6 +4792,111 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - People
+      operationId: createPerson
+      summary: >-
+        Create an owned person (initial derived server-side; status=active,
+        sourceKind=manual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePersonRequest'
+      responses:
+        '201':
+          description: Person created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/people/{personId}':
+    put:
+      tags:
+        - People
+      operationId: updatePerson
+      summary: >-
+        Full update of the editable person fields (knownFacts/ties/affectTrend
+        are AI-curated, untouched)
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePersonRequest'
+      responses:
+        '200':
+          description: Person updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Person missing or foreign (indistinguishable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - People
+      operationId: deletePerson
+      summary: 'Soft-delete an owned person (mentions stay stored, leave the feed)'
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Person missing or foreign (indistinguishable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/people/{personId}/mentions':
     post:
       tags:
@@ -14619,6 +14724,17 @@ components:
         text:
           type: string
           maxLength: 500
+        contextLabel:
+          type: string
+          enum:
+            - munka
+            - csalad
+            - baratok
+            - edzes
+            - konfliktus
+            - kozos_program
+            - segitseg
+            - egyeb
     PeopleResponse:
       type: object
       required:
@@ -14647,6 +14763,9 @@ components:
         - knownFacts
         - ties
         - affectTrend
+        - aliases
+        - status
+        - sourceKind
       properties:
         id:
           type: string
@@ -14659,10 +14778,30 @@ components:
           type: string
           enum:
             - partner
+            - friend
+            - family
+            - colleague
             - teammate
             - mentee
         relationshipHu:
           type: string
+        aliases:
+          type: array
+          items:
+            type: string
+            maxLength: 60
+        status:
+          type: string
+          enum:
+            - candidate
+            - active
+            - archived
+        sourceKind:
+          type: string
+          enum:
+            - manual
+            - extractor
+            - seed
         affectBaseline:
           type: string
           enum:
@@ -14742,6 +14881,111 @@ components:
           type: string
         flagged:
           type: boolean
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 3
+        contextLabel:
+          type: string
+          enum:
+            - munka
+            - csalad
+            - baratok
+            - edzes
+            - konfliktus
+            - kozos_program
+            - segitseg
+            - egyeb
+        sourceRefKind:
+          type: string
+    CreatePersonRequest:
+      type: object
+      required:
+        - name
+        - relationship
+        - relationshipHu
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        aliases:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+        relationship:
+          type: string
+          enum:
+            - partner
+            - friend
+            - family
+            - colleague
+            - teammate
+            - mentee
+        relationshipHu:
+          type: string
+          minLength: 1
+          maxLength: 120
+        affectBaseline:
+          type: string
+          enum:
+            - positive
+            - neutral
+            - mixed
+            - negative
+        contactCadenceLabel:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+          maxLength: 500
+    UpdatePersonRequest:
+      type: object
+      required:
+        - name
+        - relationship
+        - relationshipHu
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        aliases:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+        relationship:
+          type: string
+          enum:
+            - partner
+            - friend
+            - family
+            - colleague
+            - teammate
+            - mentee
+        relationshipHu:
+          type: string
+          minLength: 1
+          maxLength: 120
+        affectBaseline:
+          type: string
+          enum:
+            - positive
+            - neutral
+            - mixed
+            - negative
+        contactCadenceLabel:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+          maxLength: 500
     FeedRef:
       type: object
       required:

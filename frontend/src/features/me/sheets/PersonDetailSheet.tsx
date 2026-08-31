@@ -9,11 +9,13 @@ export function PersonDetailSheet({
   mentions,
   onClose,
   onLog,
+  onEdit,
 }: {
   person: PersonEntry
   mentions: Mention[]
   onClose: () => void
   onLog: () => void
+  onEdit: () => void
 }) {
   const color = affectColor(person.affect_baseline)
   return (
@@ -80,6 +82,9 @@ export function PersonDetailSheet({
           </div>
           <div className="row gap-sm mt-lg">
             <button className="cta-ghost flex-1" onClick={close}>Vissza</button>
+            <button className="cta-ghost flex-1" onClick={onEdit}>
+              <Icon name="pencil" size={14} /> Szerkesztés
+            </button>
             <button className="cta-primary flex-1" onClick={onLog}>
               <Icon name="mic" size={14} /> Log most
             </button>

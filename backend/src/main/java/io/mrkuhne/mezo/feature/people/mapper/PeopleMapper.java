@@ -43,11 +43,23 @@ public interface PeopleMapper {
         return value == null ? null : PersonResponse.AffectBaselineEnum.fromValue(value);
     }
 
+    default PersonResponse.StatusEnum mapStatus(String value) {
+        return value == null ? null : PersonResponse.StatusEnum.fromValue(value);
+    }
+
+    default PersonResponse.SourceKindEnum mapSourceKind(String value) {
+        return value == null ? null : PersonResponse.SourceKindEnum.fromValue(value);
+    }
+
     default MentionResponse.SourceEnum mapSource(String value) {
         return value == null ? null : MentionResponse.SourceEnum.fromValue(value);
     }
 
     default MentionResponse.ToneEnum mapTone(String value) {
         return value == null ? null : MentionResponse.ToneEnum.fromValue(value);
+    }
+
+    default MentionResponse.ContextLabelEnum mapContextLabel(String value) {
+        return value == null ? null : MentionResponse.ContextLabelEnum.fromValue(value);
     }
 }

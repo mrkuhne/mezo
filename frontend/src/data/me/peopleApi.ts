@@ -1,11 +1,16 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { Affect, Mention, MentionSource, PersonEntry, Relationship } from '@/data/types'
+import type {
+  Affect, Mention, MentionContext, MentionSource, PersonEntry, PersonSaveInput,
+  PersonSourceKind, PersonStatus, Relationship,
+} from '@/data/types'
 
 export type PeopleResponse = components['schemas']['PeopleResponse']
 export type PersonResponse = components['schemas']['PersonResponse']
 export type MentionResponse = components['schemas']['MentionResponse']
 export type LogMentionRequest = components['schemas']['LogMentionRequest']
+export type CreatePersonRequest = components['schemas']['CreatePersonRequest']
+export type UpdatePersonRequest = components['schemas']['UpdatePersonRequest']
 
 const PEOPLE = '/api/people'
 
@@ -38,6 +43,9 @@ export function toMention(m: MentionResponse): Mention {
     tone: m.tone as Affect,
     tiedTo: m.tiedToKind && m.tiedToLabel ? { kind: m.tiedToKind, label: m.tiedToLabel } : undefined,
     flagged: m.flagged || undefined,
+    intensity: m.intensity ?? undefined,
+    contextLabel: m.contextLabel as MentionContext | undefined,
+    sourceRefKind: m.sourceRefKind ?? undefined,
   }
 }
 
@@ -48,6 +56,9 @@ export function toPersonEntry(p: PersonResponse): PersonEntry {
     initial: p.initial,
     relationship: p.relationship as Relationship,
     relationshipHu: p.relationshipHu,
+    aliases: p.aliases,
+    status: p.status as PersonStatus,
+    sourceKind: p.sourceKind as PersonSourceKind,
     affect_baseline: p.affectBaseline as Affect,
     mentionCount: p.mentionCount,
     mentionsThisWeek: p.mentionsThisWeek,
@@ -65,9 +76,28 @@ export function toPersonEntry(p: PersonResponse): PersonEntry {
 
 export const peopleApi = {
   bootstrap: () => apiFetch<PeopleResponse>(PEOPLE),
-  logMention: (personId: string, tone: Affect, text?: string) =>
+  logMention: (personId: string, tone: Affect, text?: string, contextLabel?: MentionContext) =>
     apiFetch<MentionResponse>(`${PEOPLE}/${personId}/mentions`, {
       method: 'POST',
-      body: JSON.stringify({ tone, text } satisfies LogMentionRequest),
+      body: JSON.stringify({ tone, text, contextLabel } satisfies LogMentionRequest),
     }),
+  createPerson: (input: PersonSaveInput) =>
+    apiFetch<PersonResponse>(PEOPLE, {
+      method: 'POST',
+      body: JSON.stringify({
+        name: input.name, aliases: input.aliases, relationship: input.relationship,
+        relationshipHu: input.relationshipHu, affectBaseline: input.affectBaseline,
+        contactCadenceLabel: input.contactCadenceLabel, notes: input.notes,
+      } satisfies CreatePersonRequest),
+    }),
+  updatePerson: (id: string, input: PersonSaveInput) =>
+    apiFetch<PersonResponse>(`${PEOPLE}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: input.name, aliases: input.aliases, relationship: input.relationship,
+        relationshipHu: input.relationshipHu, affectBaseline: input.affectBaseline,
+        contactCadenceLabel: input.contactCadenceLabel, notes: input.notes,
+      } satisfies UpdatePersonRequest),
+    }),
+  deletePerson: (id: string) => apiFetch<void>(`${PEOPLE}/${id}`, { method: 'DELETE' }),
 }

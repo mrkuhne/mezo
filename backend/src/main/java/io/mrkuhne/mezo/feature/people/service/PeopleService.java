@@ -1,9 +1,11 @@
 package io.mrkuhne.mezo.feature.people.service;
 
+import io.mrkuhne.mezo.api.dto.CreatePersonRequest;
 import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
 import io.mrkuhne.mezo.api.dto.PersonResponse;
+import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.mapper.PeopleMapper;
@@ -13,6 +15,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -63,8 +66,9 @@ public class PeopleService {
             .toList();
 
         List<MentionResponse> mentionResponses = mentions.stream()
+            .filter(m -> nameById.containsKey(m.getPersonId())) // törölt személy sora nem szivárog
             .limit(MENTION_FEED_LIMIT)
-            .map(m -> mapper.toMentionResponse(m, nameById.getOrDefault(m.getPersonId(), "")))
+            .map(m -> mapper.toMentionResponse(m, nameById.get(m.getPersonId())))
             .toList();
 
         return new PeopleResponse(personResponses, mentionResponses);
@@ -81,6 +85,7 @@ public class PeopleService {
         m.setSource("chip");
         m.setExcerpt(req.getText() == null ? "" : req.getText());
         m.setTone(req.getTone());
+        m.setContextLabel(req.getContextLabel() == null ? null : req.getContextLabel().getValue());
         m.setFlagged(false);
         return mapper.toMentionResponse(mentionRepository.save(m), person.getName());
     }
@@ -90,5 +95,58 @@ public class PeopleService {
         return personRepository.findByIdAndCreatedByAndDeletedFalse(personId, userId)
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+    }
+
+    @Transactional
+    public PersonResponse createPerson(UUID userId, CreatePersonRequest req) {
+        PersonEntity p = new PersonEntity();
+        p.setCreatedBy(userId);
+        applyEditableFields(p, req.getName(), req.getAliases(), req.getRelationship().getValue(),
+            req.getRelationshipHu(),
+            req.getAffectBaseline() == null ? "neutral" : req.getAffectBaseline().getValue(),
+            req.getContactCadenceLabel(), req.getNotes());
+        PersonEntity saved = personRepository.save(p);
+        return mapper.toPersonResponse(saved, 0, 0, null);
+    }
+
+    @Transactional
+    public PersonResponse updatePerson(UUID userId, UUID personId, UpdatePersonRequest req) {
+        PersonEntity p = requireOwnedPerson(userId, personId);
+        applyEditableFields(p, req.getName(), req.getAliases(), req.getRelationship().getValue(),
+            req.getRelationshipHu(),
+            req.getAffectBaseline() == null ? p.getAffectBaseline() : req.getAffectBaseline().getValue(),
+            req.getContactCadenceLabel(), req.getNotes());
+        PersonEntity saved = personRepository.save(p);
+        List<MentionEntity> own = mentionRepository
+            .findAllByCreatedByAndDeletedFalseOrderByTsDesc(userId).stream()
+            .filter(m -> m.getPersonId().equals(personId)).toList();
+        Instant weekAgo = Instant.now().minus(WEEK);
+        int thisWeek = (int) own.stream().filter(m -> !m.getTs().isBefore(weekAgo)).count();
+        return mapper.toPersonResponse(saved, own.size(), thisWeek,
+            own.isEmpty() ? null : own.getFirst().getTs());
+    }
+
+    @Transactional
+    public void deletePerson(UUID userId, UUID personId) {
+        personRepository.delete(requireOwnedPerson(userId, personId)); // @SQLDelete → soft
+    }
+
+    /** Az AI-kurálta mezők (knownFacts/ties/affectTrend) szándékosan érintetlenek. */
+    private void applyEditableFields(PersonEntity p, String name, List<String> aliases,
+        String relationship, String relationshipHu, String affectBaseline,
+        String contactCadenceLabel, String notes) {
+        String strippedName = name.strip();
+        if (strippedName.isEmpty()) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.field("VALIDATION_INVALID_VALUE", "name").build(), HttpStatus.BAD_REQUEST);
+        }
+        p.setName(strippedName);
+        p.setInitial(p.getName().substring(0, 1).toUpperCase());
+        p.setAliases(aliases == null ? new ArrayList<>() : new ArrayList<>(aliases));
+        p.setRelationship(relationship);
+        p.setRelationshipHu(relationshipHu);
+        p.setAffectBaseline(affectBaseline);
+        p.setContactCadenceLabel(contactCadenceLabel);
+        p.setNotes(notes);
     }
 }
