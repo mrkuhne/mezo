@@ -5,16 +5,19 @@
 // `t` label + optional `det` detector-key list + `sensitive` flag), and the `later` tail.
 //
 // THIS FILE IS ITSELF THE mezo-1gim.15 ("MINDENT be") WORKING CHECKLIST. It is static FE
-// content by design — not a live read off any backend catalog — because the four rounds
+// content by design — not a live read off any backend catalog — because the remaining rounds
 // describe DATA SOURCES AND DETECTORS THAT DO NOT EXIST YET (most `det` keys below have no
 // matching `CharacterDetector` implementation — see docs/features/character.md §9's "detector
 // catalog is narrower than spec" ledger). As mezo-1gim.15 lands each round's items for real —
 // a new domain read wired into `CharacterSignalReads`, a new `CharacterDetector` — the
 // corresponding row here is expected to be DELETED from `rounds` and (if it names a fully-
-// wired data source) ADDED to `reads` below, not silently left stale. Do not treat this module
-// as authoritative for "what is actually wired today" — `DetektorokPage.tsx` (the 5 real,
-// `DetectorRegistry`-discovered detectors) and the backend detector catalog are that runtime
-// truth; this file is the plan, not the state of the world.
+// wired data source) ADDED to `reads` below, not silently left stale. Round 1 ("Edzés & test")
+// landed this way: its six items are gone from `rounds`, its five data sources are now the
+// last five `reads` rows above, and its eight detectors are wired into
+// `DetektorokPage.tsx`'s catalog. Do not treat this module as authoritative for "what is
+// actually wired today" — `DetektorokPage.tsx` (the 13 real, `DetectorRegistry`-discovered
+// detectors) and the backend detector catalog are that runtime truth; this file is the plan,
+// not the state of the world.
 // ============================================================
 
 export interface InventoryRead {
@@ -49,22 +52,17 @@ export const INVENTORY_READS: InventoryRead[] = [
     w: 'Bootstrap (egyszeri)',
     chips: ['60 összegző', '60 minta', '40 tény', '60 review', '60 napló', '40 esemény'],
   },
+  { w: 'Gym szettek + feedback (RIR, target, ízület)', chips: ['14 nap'] },
+  { w: 'Sport-sessionök (váll-skála, RPE)', chips: ['14 nap'] },
+  { w: 'Futás-logok (HR-megnyugvás)', chips: ['14 nap', '8 hét'] },
+  { w: 'Alvás (minőség, hossz)', chips: ['14 nap'] },
+  { w: 'Mezociklus-kontextus (terv-napok, deload)', chips: ['aktív meso'] },
 ]
 
-/** Tervezett (prototype's `INVENTORY.rounds`) — the four MINDENT-be rounds, verbatim. */
+/** Tervezett (prototype's `INVENTORY.rounds`) — the remaining three MINDENT-be rounds, verbatim
+ *  (round 1, "Edzés & test", landed for real via mezo-1gim.15 — see `INVENTORY_READS` above and
+ *  `DetektorokPage.tsx`'s 13-detector catalog). */
 export const INVENTORY_ROUNDS: InventoryRound[] = [
-  {
-    n: 1,
-    title: 'Edzés & test',
-    items: [
-      { t: 'Gym szettek', det: ['rir-calibration'] },
-      { t: 'Mezociklus-ív' },
-      { t: 'Niggle-jelentések', det: ['niggle-map'] },
-      { t: 'Röplabda váll-skála', det: ['sport-interference'] },
-      { t: 'Futás HR-recovery', det: ['hr-recovery-trend'] },
-      { t: 'Alvás × edzés-RPE', det: ['sleep-performance-chain'] },
-    ],
-  },
   {
     n: 2,
     title: 'Fuel & ciklus',

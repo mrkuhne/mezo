@@ -489,6 +489,15 @@ interface ChainSeed {
 // M4 (final review): `refs` is `[]` on every chain — production `DetectorSignal`s never carry
 // refIds today (no detector populates that list yet; see SignalChainCard.tsx's header comment),
 // so the mock's refCount must be 0 everywhere too, never a fabricated 1–3.
+//
+// Round 1 (mezo-1gim.15, Task 5): the eight new round-1 detectors (rir-calibration, niggle-map,
+// sport-interference, meso-adherence, progression-adherence, hr-recovery-trend,
+// sleep-performance-chain, avoidance-pattern) get one chain each, spread across days 13/24/30
+// alongside the pre-existing chains — `code` paraphrases each detector's real `summary` string
+// (see `backend/.../feature/character/detector/*Detector.java`), `who` matches its real
+// `DetectorSignal(key(), who, ...)` owner exactly (same verification DetektorokPage.tsx's
+// header comment documents). Day 15's two-signal/one-expert dedup fixture is deliberately left
+// untouched — it's a pinned fixture for `characterHooks.test.tsx`'s callCount-dedup test.
 const CHAIN_POOL: Record<number, ChainSeed[]> = {
   13: [
     {
@@ -504,6 +513,31 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'pszichologus',
       obs: 'A keddi bejegyzés hangneme fáradtabb volt a megszokottnál.',
+    },
+    // Round 1 (mezo-1gim.15, Task 5): rir-calibration/hr-recovery-trend/niggle-map spread
+    // across day 13 alongside the existing checkin-gap/journal-note chains — code lines
+    // paraphrase the real detector summaries (RirCalibrationDetector, HrRecoveryTrendDetector,
+    // NiggleMapDetector).
+    {
+      detector: 'rir-calibration',
+      code: '3 szettpárnál 2+ RIR után reps-összeomlás (14 nap)',
+      refs: [],
+      who: 'edzo',
+      obs: 'A RIR-becslésed felfelé csúszik — a mondott 2+ RIR után néhányszor összeomlott a következő szett.',
+    },
+    {
+      detector: 'hr-recovery-trend',
+      code: 'a pulzus-megnyugvás trendje javul (8 hetes heti átlagok alapján)',
+      refs: [],
+      who: 'doki',
+      obs: 'A futás utáni pulzus-megnyugvásod trendje javulni kezdett az elmúlt nyolc hétben.',
+    },
+    {
+      detector: 'niggle-map',
+      code: 'Niggle-térkép (14 nap): fekvenyomás: ízület-jelzés 2×',
+      refs: [],
+      who: 'edzo',
+      obs: 'A fekvenyomásnál kétszer jelezted az ízület-fájdalmat két hét alatt — érdemes figyelni.',
     },
   ],
   20: [
@@ -522,6 +556,30 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'taplalkozo',
       obs: 'Két hete rendszeresen kevesebbet mutat a napló, mint amit a súlyad enged sejtetni — érdemes átnézni, mi marad ki.',
+    },
+    // Round 1 (mezo-1gim.15, Task 5): sleep-performance-chain/progression-adherence/
+    // avoidance-pattern spread across day 24 — paraphrases SleepPerformanceChainDetector,
+    // ProgressionAdherenceDetector, AvoidancePatternDetector's real summaries.
+    {
+      detector: 'sleep-performance-chain',
+      code: 'rossz alvás után visszaesik a teljesítmény: 2 ilyen nap 14 napon belül',
+      refs: [],
+      who: 'szomnologus',
+      obs: 'Két olyan nap volt az elmúlt két hétben, amikor a rossz alvás után visszaesett az edzésteljesítményed.',
+    },
+    {
+      detector: 'progression-adherence',
+      code: 'terhelés-követés: a beírt súly 4 szettnél maradt el 2,5+ kg-mal a targettől (14 nap)',
+      refs: [],
+      who: 'edzo',
+      obs: 'Az utóbbi két hétben többször elmaradt a beírt súly a tervezett targettől.',
+    },
+    {
+      detector: 'avoidance-pattern',
+      code: 'kihagyás-minta: a(z) guggolás edzésein 2 alkalommal maradt ki (14 nap)',
+      refs: [],
+      who: 'drill',
+      obs: 'A guggolás kétszer maradt ki teljesen az elmúlt két hétben — érdemes ránézni, mi áll mögötte.',
     },
   ],
   27: [
@@ -561,6 +619,23 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'pszichologus',
       obs: 'A vasárnap esti bejegyzés hangneme nyugodtabb volt, mint a hét közepén.',
+    },
+    // Round 1 (mezo-1gim.15, Task 5): sport-interference/meso-adherence close out the eight new
+    // detector chains on day 30 — paraphrases SportInterferenceDetector/MesoAdherenceDetector's
+    // real summaries.
+    {
+      detector: 'sport-interference',
+      code: 'sport-interferencia: 2 alkalommal esett vissza a gym a nagy terhelésű sportnap után (14 nap)',
+      refs: [],
+      who: 'edzo',
+      obs: 'Kétszer esett vissza a teremedzésed egy nagy terhelésű röplabda-nap után.',
+    },
+    {
+      detector: 'meso-adherence',
+      code: 'a heti tervből 2 edzésnap kimaradt (hét: 3/6)',
+      refs: [],
+      who: 'edzo',
+      obs: 'Ezen a héten két tervezett edzésnap maradt ki — nem deload-hét, érdemes visszaállni a ritmusba.',
     },
   ],
   // Fix round 1 (mezo-1gim.14): NOT a prototype-verbatim night — added so the callCount

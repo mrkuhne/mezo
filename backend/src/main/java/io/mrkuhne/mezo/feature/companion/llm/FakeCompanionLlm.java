@@ -269,9 +269,11 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Mirror of MemoirGenerator.MEMOIR_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String MEMOIR_MARKER_MIRROR = "HETI-MEMOIR-FELADAT";
 
-    /** Scripted memoir (W2): {@code [fake-memoir:{…}]} planted via a daily-summary narrative. */
+    /** Scripted memoir (W2): {@code [fake-memoir:{…}]} planted via a daily-summary narrative.
+     *  GREEDY since the v2 {@code anchors:[{index,note}]} shape nests objects (mezo-uajy) —
+     *  the WEEKLY_REVIEW_SENTINEL precedent. */
     public static final Pattern MEMOIR_SENTINEL =
-            Pattern.compile("\\[fake-memoir:(\\{.*?\\})]", Pattern.DOTALL);
+            Pattern.compile("\\[fake-memoir:(\\{.*})]", Pattern.DOTALL);
 
     /** Mirror of WeeklyReviewGenerator.WEEKLY_REVIEW_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String WEEKLY_REVIEW_MARKER_MIRROR = "HETI-ELEMZES-FELADAT";
@@ -537,7 +539,7 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(MEMOIR_MARKER_MIRROR)) {
             Matcher m = MEMOIR_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1)
-                    : "{\"title\":\"Fake memoir\",\"body\":\"FAKE-MEMOIR-NARRATÍVA\",\"anchorIndexes\":[]}";
+                    : "{\"title\":\"Fake memoir\",\"body\":\"FAKE-MEMOIR-NARRATÍVA\",\"anchors\":[]}";
         }
         if (systemPrompt.startsWith(WEEKLY_REVIEW_MARKER_MIRROR)) {
             Matcher m = WEEKLY_REVIEW_SENTINEL.matcher(userMessage);
