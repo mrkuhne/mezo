@@ -7661,7 +7661,7 @@ paths:
           required: false
           schema:
             type: string
-            pattern: ^fatigue$
+            pattern: ^(fatigue|sleep)$
             default: fatigue
       responses:
         '200':
@@ -17620,7 +17620,7 @@ components:
       properties:
         phenomenon:
           type: string
-          pattern: ^fatigue$
+          pattern: ^(fatigue|sleep)$
     DiagnosisEvidenceItem:
       type: object
       required:

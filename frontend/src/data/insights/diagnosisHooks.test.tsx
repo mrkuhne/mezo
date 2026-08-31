@@ -60,7 +60,7 @@ describe('useDiagnoses (real mode)', () => {
         HttpResponse.json([{ code: 'DIAGNOSIS_QUOTA_EXCEEDED', message: 'quota' }], { status: 429 })),
     )
     const { result } = renderHook(() => useDiagnosisActions(), { wrapper: makeHookWrapper() })
-    result.current.generate()
+    result.current.generate('fatigue')
     await waitFor(() => expect(result.current.error).toBe('quota'))
   })
 
@@ -70,7 +70,7 @@ describe('useDiagnoses (real mode)', () => {
         HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_DATA', message: 'thin' }], { status: 409 })),
     )
     const { result } = renderHook(() => useDiagnosisActions(), { wrapper: makeHookWrapper() })
-    result.current.generate()
+    result.current.generate('fatigue')
     await waitFor(() => expect(result.current.error).toBe('insufficient'))
   })
 })

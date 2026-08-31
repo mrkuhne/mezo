@@ -15,14 +15,8 @@ import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useDiagnoses, useDiagnosisActions } from '@/data/hooks'
 import { confidenceLine, generatedLabel, strengthLabel } from '@/features/insights/logic/diagnosisCopy'
+import { LIVE_QUESTIONS, UPCOMING_QUESTIONS, questionOf } from '@/features/insights/logic/diagnosisCatalog'
 
-/** The catalog's upcoming questions — config, not code: a new live question replaces its row. */
-const UPCOMING = [
-  'Miért nem mozdul a súlyom?',
-  'Miért alszom rosszul?',
-  'Kell most deload?',
-  'Havi Mezo Riport',
-]
 
 const ERROR_COPY: Record<string, string> = {
   insufficient: 'Kettőnél kevesebb területről van adat az elmúlt két hétben — a Mezo nem tippel.',
@@ -37,9 +31,9 @@ export function DiagnosisListPage() {
   const live = mode === 'live'
   const heroCount = useCountUp(diagnoses.length)
 
-  const onAsk = async () => {
+  const onAsk = async (phenomenon: string) => {
     if (!live || generating) return
-    const fresh = await generateAsync().catch(() => null)
+    const fresh = await generateAsync(phenomenon).catch(() => null)
     if (fresh) navigate(`/mezo/diagnozis/${fresh.id}`)
   }
 
@@ -50,31 +44,32 @@ export function DiagnosisListPage() {
         sub="kérdések a Mezónak → gyanúsítottak evidenciával → próba" />
       <PageBody>
         <EntranceGroup className="col gap-md">
-          <div className="mzp-pred propcard rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-            <span className="mz-eyebrow" style={{ color: 'var(--mz-qxp-ink)' }}>✦ Kérdezd meg</span>
-            <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6 }}>Miért vagyok fáradt?</div>
-            <p style={{ fontSize: 11, fontWeight: 300, lineHeight: 1.5, marginTop: 5, color: 'var(--mz-ink-soft)' }}>
-              A Mezo az utolsó 14 nap adatait veti össze az előző négy héttel — alvás, energia,
-              terhelés, fuel —, és rangsorolt gyanúsítottakat ad, mindet mért evidenciával.
-            </p>
-            <div className="mzp-decrow">
-              <button type="button" className="cta" disabled={!live || generating} onClick={onAsk}>
-                {generating ? '… a két hét adatait olvasom' : '✦ Kérdezd meg most'}
-              </button>
+          {LIVE_QUESTIONS.map((q, qi) => (
+            <div key={q.phenomenon} className="mzp-pred propcard rise" style={{ '--d': `${qi * 60}ms` } as React.CSSProperties}>
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-qxp-ink)' }}>✦ Kérdezd meg</span>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6 }}>{q.question}</div>
+              <p style={{ fontSize: 11, fontWeight: 300, lineHeight: 1.5, marginTop: 5, color: 'var(--mz-ink-soft)' }}>
+                {q.blurb}
+              </p>
+              <div className="mzp-decrow">
+                <button type="button" className="cta" disabled={!live || generating} onClick={() => onAsk(q.phenomenon)}>
+                  {generating ? '… a két hét adatait olvasom' : '✦ Kérdezd meg most'}
+                </button>
+              </div>
             </div>
-            {error != null && (
-              <p style={{ fontSize: 10.5, marginTop: 7, color: 'var(--mz-ink-soft)' }}>{ERROR_COPY[error]}</p>
-            )}
-            <p style={{ fontSize: 9, marginTop: 7, textAlign: 'center', color: 'var(--mz-ink-mut)' }}>
-              {live ? 'napi 3 kérdés · a megnyitás mindig ingyen' : 'demo — a kérdezés az élő appban fut'}
-            </p>
-          </div>
+          ))}
+          {error != null && (
+            <p style={{ fontSize: 10.5, color: 'var(--mz-ink-soft)' }}>{ERROR_COPY[error]}</p>
+          )}
+          <p style={{ fontSize: 9, textAlign: 'center', color: 'var(--mz-ink-mut)' }}>
+            {live ? 'napi 3 kérdés · a megnyitás mindig ingyen' : 'demo — a kérdezés az élő appban fut'}
+          </p>
 
           <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-soft)' }}>
             További kérdések · a recept kész, sorban jönnek
           </span>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {UPCOMING.map((q) => (
+            {UPCOMING_QUESTIONS.map((q) => (
               <div key={q} className="mzp-dgq">
                 <div className="qq">{q}</div>
                 <div className="qs">HAMAROSAN</div>
@@ -100,7 +95,8 @@ export function DiagnosisListPage() {
                   {generatedLabel(d.generatedAt)}
                 </span>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, marginTop: 7, lineHeight: 1.4 }}>{d.verdict.split(' — ')[0]}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, marginTop: 7, lineHeight: 1.4 }}>{questionOf(d.phenomenon)}</div>
+              <div style={{ fontSize: 11, fontWeight: 300, marginTop: 3, lineHeight: 1.45, color: 'var(--mz-ink-soft)' }}>{d.verdict.split(' — ')[0]}</div>
               <div style={{ fontSize: 10, fontWeight: 300, marginTop: 4, color: 'var(--mz-ink-soft)' }}>
                 {d.suspects.length} gyanúsított · a legerősebb: {d.suspects[0]?.title} ({strengthLabel(d.suspects[0]?.strength ?? 'weak')})
               </div>

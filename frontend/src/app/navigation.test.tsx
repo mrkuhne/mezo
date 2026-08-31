@@ -184,3 +184,9 @@ test('the floating chat bubble is retired — Mezo is a first-class tab now (dec
   renderApp('/nap')
   expect(screen.queryByRole('button', { name: 'Beszélgetés a társsal' })).not.toBeInTheDocument()
 })
+
+test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
+  const { container } = renderApp('/mezo/chat')
+  expect(container.querySelector('.quicklog-fab')).toBeNull()
+  expect(container.querySelector('.tab-bar')).not.toBeNull()
+})

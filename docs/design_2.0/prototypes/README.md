@@ -19,8 +19,12 @@ they inline come from `../assets/`.
 | `en-ia-valasztas.html` | https://claude.ai/code/artifact/418b2a2d-25ba-4441-8cb5-6b15c6ab88b2 |
 | `en-tab.html` | https://claude.ai/code/artifact/dee0dd7e-f321-4f88-94ff-c7face496d70 |
 | `napzaras.html` | https://claude.ai/code/artifact/0e4e02ba-d5c8-49ce-a738-b924f1583cf6 |
+<<<<<<< HEAD
+| `mezo-chat.html` | https://claude.ai/code/artifact/ae02e856-1e3d-4c60-aad5-842e75190538 |
+=======
 | `edzes-review.html` | https://claude.ai/code/artifact/66f5a4de-8afe-48ff-b04f-e861b3ba22ee |
 | `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
+>>>>>>> origin/main
 
 ## Workflow
 
@@ -351,6 +355,18 @@ are usable without a build step).
   fills in a real summary, day notes and lessons and refreshes every hub tile; week stepping shows a
   **skeleton** (today's page has neither a loading nor an error state). Week navigation walks three live
   weeks: finished-with-review → finished-without → running.
+<<<<<<< HEAD
+- **mezo-chat** — the Mezo chat's provenance layers restructured per the §1 tile recipe
+  (2026-08-31 round): orb-led single-row live header (back disc · breathing orb · name +
+  status dot élő/demo/off · icon discs for conversations/new; the orb pulses faster and the
+  status reads `dolgozom rajta…` while streaming), the raw tool-call pills collapsed into one
+  human **work strip** (overlapping domain clay icons + `Utánanézett · n forrás`, tap → source
+  list with human labels, params and ✓; builds live source-by-source during streaming), refs
+  grouped into **domain chips** (`Súly ×7 · Alvás ×5 · …`, tap → the group's date chips; ≤3
+  refs render expanded), recalled memories as a **horizontal lavender card strip** (type icon +
+  date + similarity ring + 4-line clamped gist, tap → card widens and unclamps), subtler
+  feedback chips, lav-sheen composer, and no floating FAB on the chat page.
+=======
 - **karakter-tab** — the Karakter dossier page (Én tab family), audited against the shipped
   backend (`docs/features/character.md` — 7 CORE dimensions, `CharacterExpertCatalog`'s 7 named
   experts, Szkeptikus + Mezo, weekly konzílium, bootstrap, claim feedback). Shown standalone (not
@@ -401,3 +417,4 @@ are usable without a build step).
   `CharacterCoreCatalog`/`CharacterExpertCatalog` in the backend, not invented; the persona orb
   icons are a runtime-generated placeholder (`buildOrbDefs()` in `karakter-body.html`), pending
   graduation into hand-tuned `docs/design_2.0/assets/` sprites on approval.
+>>>>>>> origin/main

@@ -80,9 +80,9 @@ export function useDiagnosisActions() {
   }
 
   const generateMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (phenomenon: string) => {
       if (mock) return null
-      return diagnosisApi.generate()
+      return diagnosisApi.generate(phenomenon)
     },
     onMutate: () => setError(null),
     onSuccess: mock ? undefined : invalidate,
@@ -106,9 +106,9 @@ export function useDiagnosisActions() {
   })
 
   return {
-    generate: () => generateMutation.mutate(),
+    generate: (phenomenon: string) => generateMutation.mutate(phenomenon),
     /** Resolves with the fresh diagnosis (or null in mock) — the list page navigates to it. */
-    generateAsync: () => generateMutation.mutateAsync(),
+    generateAsync: (phenomenon: string) => generateMutation.mutateAsync(phenomenon),
     startExperiment: (id: string, rank: number) => experimentMutation.mutate({ id, rank }),
     pending: generateMutation.isPending || experimentMutation.isPending,
     generating: generateMutation.isPending,

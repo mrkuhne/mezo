@@ -25,11 +25,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Fatigue evidence gather (mezo-hqfi.2, spec §3.2) — PURE CODE, no LLM. For each fatigue-relevant
- * {@link MetricKey}: the window mean vs the preceding baseline mean, dropped entirely when the
- * window has fewer than {@code minCoverageDays} measured days (a two-day average is not a
- * finding). Confirmed patterns and prompt-included knowledge facts join the same list as
- * non-metric evidence.
+ * Diagnosis evidence gather (mezo-hqfi.2, recipe-parameterised since mezo-po3y) — PURE CODE, no
+ * LLM. For each of the RECIPE's {@link MetricKey}s: the window mean vs the preceding baseline
+ * mean, dropped entirely when the window has fewer than {@code minCoverageDays} measured days (a
+ * two-day average is not a finding). Confirmed patterns and prompt-included knowledge facts join
+ * the same list as non-metric evidence.
  *
  * <p>Ordering is the FIXED enum order, then patterns, then facts. The index IS the contract the
  * model answers with, so a reordering is a breaking change to already-persisted rows.
@@ -45,28 +45,6 @@ import org.springframework.transaction.annotation.Transactional;
         havingValue = "true")
 public class FatigueEvidenceCollector {
 
-    /** The fatigue-relevant slice of the metric catalog — the suspect space, fixed by design. */
-    static final List<MetricKey> FATIGUE_METRICS = List.of(
-            MetricKey.SLEEP_DURATION_H,
-            MetricKey.SLEEP_QUALITY,
-            MetricKey.SLEEP_AWAKENINGS,
-            MetricKey.BEDTIME_HOUR,
-            MetricKey.BEDTIME_VARIABILITY,
-            MetricKey.CHECKIN_ENERGY,
-            MetricKey.CHECKIN_STRESS,
-            MetricKey.CHECKIN_MENTAL,
-            MetricKey.CHECKIN_BODY,
-            MetricKey.DAILY_KCAL,
-            MetricKey.DAILY_PROTEIN_G,
-            MetricKey.DAILY_WATER_ML,
-            MetricKey.LATE_MEAL_HOUR,
-            MetricKey.TRAINING_RPE,
-            MetricKey.GYM_VOLUME_KG,
-            MetricKey.SPORT_LOAD_MIN,
-            MetricKey.ACWR,
-            MetricKey.TRAINING_MONOTONY,
-            MetricKey.MEDICATION_CYCLE_DAY);
-
     private static final int MAX_PATTERNS = 5;
     private static final int MAX_FACTS = 5;
     private static final int MAX_PRIOR_EXPERIMENTS = 5;
@@ -81,9 +59,15 @@ public class FatigueEvidenceCollector {
     public record FatigueGather(String payload, List<EvidenceItem> candidates, int domainCount) {
     }
 
-    /** Null when fewer than {@code minDomains} domains clear the coverage threshold. */
+    /** The pre-recipe entry point — the fatigue recipe, kept so existing callers read unchanged. */
     @Transactional(readOnly = true)
     public FatigueGather gather(UUID userId, LocalDate today) {
+        return gather(userId, today, DiagnosisRecipe.FATIGUE);
+    }
+
+    /** Null when fewer than {@code minDomains} domains clear the coverage threshold. */
+    @Transactional(readOnly = true)
+    public FatigueGather gather(UUID userId, LocalDate today, DiagnosisRecipe recipe) {
         LocalDate windowFrom = today.minusDays(properties.windowDays() - 1L);
         LocalDate baselineTo = windowFrom.minusDays(1);
         LocalDate baselineFrom = baselineTo.minusDays(properties.baselineDays() - 1L);
@@ -91,7 +75,7 @@ public class FatigueEvidenceCollector {
         List<EvidenceItem> candidates = new ArrayList<>();
         Set<String> domains = new LinkedHashSet<>();
 
-        for (MetricKey metric : FATIGUE_METRICS) {
+        for (MetricKey metric : recipe.metrics()) {
             Map<LocalDate, Double> window = metricSeriesService.series(userId, metric, windowFrom, today);
             if (window.size() < properties.minCoverageDays()) {
                 continue;
@@ -135,14 +119,14 @@ public class FatigueEvidenceCollector {
                         null, null, null, null, null)));
 
         return new FatigueGather(
-                render(userId, candidates, windowFrom, today, baselineFrom, baselineTo),
+                render(userId, recipe, candidates, windowFrom, today, baselineFrom, baselineTo),
                 candidates, domains.size());
     }
 
-    private String render(UUID userId, List<EvidenceItem> candidates, LocalDate windowFrom,
-            LocalDate today, LocalDate baselineFrom, LocalDate baselineTo) {
+    private String render(UUID userId, DiagnosisRecipe recipe, List<EvidenceItem> candidates,
+            LocalDate windowFrom, LocalDate today, LocalDate baselineFrom, LocalDate baselineTo) {
         StringBuilder payload = new StringBuilder();
-        payload.append("JELENSÉG: fáradtság\n")
+        payload.append("JELENSÉG: ").append(recipe.labelHu()).append('\n')
                 .append("ABLAK: ").append(windowFrom).append(" – ").append(today)
                 .append(" (").append(properties.windowDays()).append(" nap)\n")
                 .append("BÁZIS: ").append(baselineFrom).append(" – ").append(baselineTo)
