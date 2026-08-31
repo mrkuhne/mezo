@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { medicationApi } from '@/data/fuel/medicationApi'
 import { isMockMode } from '@/data/_client/mode'
 import { localDateString } from '@/shared/lib/dates'
-import { useDualQuery } from '@/data/useDualQuery'
+import { useDualQuery, DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { medicationSeed } from '@/data/fuel/medication'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type {
@@ -42,9 +42,19 @@ export function useMedication(): { medication: Medication; cycle: MedicationCycl
   const { data } = useDualQuery<MedicationDay>({
     queryKey: MEDICATION_KEY,
     mockData: medicationSeed,
-    realFetch: () => medicationApi.getDay(),
+    // Both "no medication configured" contract shapes land on the SAME ghost (mezo-5cmq): the
+    // new backend answers 200 with `medication: null` (mapped to `null` here), the pre-5cmq one
+    // answered 404, which rejects and is absorbed by `realEmpty` below. The two images do not
+    // switch at the same moment, so the frontend has to read both.
+    realFetch: async () => (await medicationApi.getDay()) ?? MEDICATION_EMPTY,
     realEmpty: MEDICATION_EMPTY,
-    realStaleTime: 0,
+    // The app default instead of the old always-stale `0` (mezo-5cmq): useTodayScenario mounts
+    // this from the shell AND from several pages, so staleTime 0 bought a round-trip on every
+    // navigation. Writes stay instant regardless — useMedicationActions invalidates
+    // ['medication'] on every dose/definition change. Passed EXPLICITLY rather than omitted:
+    // omitting sends `staleTime: undefined`, which clobbers the client default (see the
+    // `realStaleTime` doc) and would leave the query always-stale after all.
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { medication: data.medication, cycle: data.cycle, doses: data.recentDoses }
 }

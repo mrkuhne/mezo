@@ -463,7 +463,8 @@ interventionAnchors(owner, date):
                                          entry.quietHoursExempt, quietStart, quietEnd)
         if minute present:
             emit AnchoredEvent(INTERVENTION, minute, "HH:mm:" + card.id[0:8],
-                                "Mezo · észrevétel", excerptProse(card.body), "/today?n=" + card.id[0:8])
+                                "Mezo · észrevétel", excerptProse(card.body),
+                                "/nap/uzenetek?n=" + card.id + "&d=" + card.messageDate)
 ```
 
 **`interventionFireMinute` (`AnchorResolver`, pure, no Spring — `InterventionFireMinuteTest`) — defer,
@@ -501,18 +502,54 @@ LATE nudge that arrives at 07:00 is still worth more than one that never arrives
 this with `decision_review`'s "arrived at its day or didn't, no urgency window" (§3c) and `gym`'s
 lead-minute EARLY nudge; `intervention` is the one category that reschedules LATE.
 
-**Known limitation — a cross-midnight-deferred card's deeplink can outlive the feed date it points
-into.** A card generated between `quietStart` and midnight (e.g. 22:30, inside the default
-22:00→07:00 window) defers its push to next-day `quietEnd` (07:00), but the card's own
-`message_date` stays the GENERATION day, not the day the push actually lands on. `GET
-/api/proactive/feed?date=` ([`proactive.md`](proactive.md) §5) only returns the caller's LOCAL
-`date` — so when the 07:00 push arrives and the user taps `/today?n=<id8>`, `/today` is showing
-TODAY's feed, and the card sits on YESTERDAY's, unreachable from it. The push's own title/body still
-read fine (they carry the text directly), but the „Segített?" feedback chips for that specific card
-are not reachable from `/today` that morning — no card in the visible feed carries a matching `?n=`
-id to scroll to. This is a known, undocumented-until-now gap, not a silent data loss (the card and
-its `interventionKey` are intact in `companion_message`, just not surfaced): mezo-b3pp.36 tracks a
-date-aware deeplink/feed-lookup fix.
+**Fixed (mezo-b3pp.36) — the deeplink never worked, and not only for the reason the bd named.**
+The bd that opened this work described a single defect: a cross-midnight-deferred card's
+`message_date` stays the GENERATION day while the push announcing it arrives the next morning, so
+the feed the deeplink implicitly targeted (the caller's local-today) never held the card. That is
+real, but chasing it in isolation would have "fixed" a link that still went nowhere — the deeplink
+had **three other, independent defects**, none named by the bd:
+
+1. **Wrong route.** The url pointed at `/today?n=…`. `/today` is a LEGACY path — `router.tsx`'s
+   `LegacyPathRedirect` sends it to `/nap`, the Nap **hub** (`NapHubPage`), which renders the
+   mosaic of daypart tiles, not the companion thread. The thread — and the „Segített?"
+   `FeedbackChips` the push exists to surface — lives on `NapMezoPage` at `/nap/uzenetek`
+   ([today.md §3](today.md)). Even a same-day, full-id, unbroken `?n=` would have landed a page
+   away from its target.
+2. **No consumer.** Before this slice, nothing in the frontend read `?n=` at all — zero
+   occurrences of the param anywhere under `frontend/src/`. The url carried a discriminator that
+   no component looked for.
+3. **Truncated id.** The url's `?n=` carried `card.id[0:8]`, the SAME 8-character prefix used for
+   the push dedup key (below) — not because the page needed a short id, but because no page-side
+   consumer had ever been written to require the full one. A consumer could only prefix-match,
+   never exact-match, a `FeedMessage.id`.
+4. **The date boundary the bd named.** Covered above: a quiet-hours-deferred card's `message_date`
+   names the generation day, not the push-arrival day, and the feed reads local-today.
+
+**The fix, and what it deliberately left alone:**
+- The url now targets `URL_THREAD = "/nap/uzenetek"` with the card's **full** `id` and its own
+  `messageDate`: `` `/nap/uzenetek?n=${msg.getId()}&d=${msg.getMessageDate()}` ``
+  (`AnchorResolver.interventionAnchors`, backend). `NapMezoPage` reads `n`/`d`
+  (`useSearchParams`); when `d` names a day other than local-today it calls `useCompanionFeed(d)` —
+  a second, per-date cache entry, not a duplicate of today's own poll — finds the one row matching
+  `n`, and renders it alongside (never in place of) today's own thread, `scrollIntoView`'d into
+  view, with the same `useFeedback` chip wiring as any other persisted row ([today.md §3](today.md)
+  for the page-side detail). A stale or unknown id degrades silently — no card renders, nothing
+  throws.
+- **No API contract change was needed.** `GET /api/proactive/feed` already accepted a `date` query
+  parameter ([`proactive.md`](proactive.md) §5) — the fix is a caller finally passing it, not a new
+  endpoint or field.
+- **The push_log dedup key is deliberately UNCHANGED — still the 8-char fragment, not the full
+  id.** `AnchoredEvent.dedupSuffix` stays `hhmm(minute) + ":" + card.id[0:8]`; only the url's `n=`
+  grew to the full uuid. `push_log`'s day-scoped dedup keys off `dedupSuffix`
+  (`"{category}:{HH:mm}:{id8}"`, §4 below) — widening its shape to the full id would change what
+  counts as "already sent" and risks re-delivering a push already on the device. The full id and
+  the dedup fragment are now two independently-sourced substrings of the same `card.id`, pinned
+  apart by its own IT case (`AnchorResolverInterventionIT
+  #testInterventionEvent_shouldKeepTheDedupKeyUnchanged_whenTheUrlGainsTheFullId`).
+- **Still open, its own issue:** the OTHER `?n=` producer — §3b's `feedAnchors(...)`, which appends
+  `n=` to each `app_notification` row's own arbitrary deeplink — remains just as unconsumed on the
+  frontend as `intervention`'s was before this slice. This slice only wired a consumer for the
+  `intervention` case; it did not audit or fix the feed-anchored one.
 
 **Gotcha — `interventionAnchors` is gated on `NOTIFICATION_SWITCH` alone, not `INTERVENTION_SWITCH`
 (the `decision_review`/`JOURNAL_SWITCH` gap of §3c, re-derived here).** `AnchorResolver` is a single
