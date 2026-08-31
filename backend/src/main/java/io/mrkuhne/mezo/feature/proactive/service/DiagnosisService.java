@@ -69,7 +69,7 @@ public class DiagnosisService {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("DIAGNOSIS_QUOTA_EXCEEDED").build(), HttpStatus.TOO_MANY_REQUESTS);
         }
-        DiagnosisEntity generated = generator.generate(userId, today);
+        DiagnosisEntity generated = generator.generate(userId, today, phenomenon);
         if (generated == null) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("DIAGNOSIS_INSUFFICIENT_DATA").build(), HttpStatus.CONFLICT);

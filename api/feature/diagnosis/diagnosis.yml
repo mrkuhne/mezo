@@ -16,7 +16,7 @@ paths:
         - name: phenomenon
           in: query
           required: false
-          schema: { type: string, pattern: '^fatigue$', default: fatigue }
+          schema: { type: string, pattern: '^(fatigue|sleep)$', default: fatigue }
       responses:
         '200':
           description: The user's diagnoses
@@ -120,7 +120,7 @@ components:
       type: object
       required: [phenomenon]
       properties:
-        phenomenon: { type: string, pattern: '^fatigue$' }
+        phenomenon: { type: string, pattern: '^(fatigue|sleep)$' }
     DiagnosisEvidenceItem:
       type: object
       required: [kind, label]
