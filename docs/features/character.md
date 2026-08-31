@@ -38,8 +38,8 @@ opinion about the user, dimension by dimension, claim by claim.
 
 - **Dual consumer, equal rank** (spec §1): (a) the user — a future Én-tab surface where he
   watches the profile being built and gives feedback (not built yet, §9); (b) the AI — a
-  deterministically rendered `[Karakter]` block injected into the companion chat prompt and
-  (partially — see §9 gap) the proactive narrative generators.
+  deterministically rendered `[Karakter]` block injected into the companion chat prompt and all
+  three proactive narrative generators (memoir, prediction, weekly review).
 - **Structure**: 7 fixed CORE dimensions (seeded, never deleted) + AI-opened CHAPTER dimensions
   (proposed by the weekly konzílium, survives the Szkeptikus, can later be retired by the
   monthly pass).
@@ -55,10 +55,11 @@ opinion about the user, dimension by dimension, claim by claim.
 All seven backend slices (`mezo-1gim.1` schema+reads, `.3` detectors+nightly, `.5` weekly
 konzílium, `.6` bootstrap+monthly, `.8` prompt block, `.10`/S6 claim feedback, `.11`/S7
 consolidation — exact ids per the slice plans) are shipped. The detector catalog is still
-**narrower than the spec's v1 wishlist** (§9) — only 5 of ~20 listed detectors are implemented —
-but the `[Karakter]` block now reaches all four narrative surfaces (chat, memoir, prediction,
-weekly review) and the bootstrap evidence corpus now matches the spec's full source list (daily
-summaries, patterns, facts, weekly reviews, journal entries, life events).
+**narrower than the spec's v1 wishlist** (§9) — only 5 of 25 spec-listed detectors are
+implemented (`mezo-1gim.12` tracks the remaining 20) — but the `[Karakter]` block now reaches
+all four narrative surfaces (chat, memoir, prediction, weekly review) and the bootstrap evidence
+corpus now matches the spec's full source list (daily summaries, patterns, facts, weekly
+reviews, journal entries, life events).
 
 ## 2. User-facing behavior
 
@@ -207,8 +208,8 @@ Backend-only today — there is no `useX()` FE hook.
 
 - **Inside another backend generator that wants the `[Karakter]` block**: inject
   `ObjectProvider<CharacterPromptSource>` (the house pattern for an optional cross-feature
-  dependency whose owning switch may be off), call `.getIfAvailable(() -> null)` /
-  `.render(userId)`, and treat an empty/null result as "nothing to add" (never fail the caller).
+  dependency whose owning switch may be off), call `.getIfAvailable()` / `.render(userId)`, and
+  treat an empty/null result as "nothing to add" (never fail the caller).
   See `MemoirGenerator`/`PredictionGenerator`/`WeeklyReviewGenerator` for the reference call
   sites.
 - **Reading the dossier from a test or a script**: `GET /api/character` (owner-scoped via the
@@ -270,8 +271,8 @@ below by shape). No FE tests exist (no FE surface).
   `PORTRAIT_MARKER`, `BOOTSTRAP_MARKER`, `OBSERVATION_MARKER`) — the `[fake-memoir:…]` precedent
   from [proactive.md](proactive.md).
 - **Prompt block**: `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`
-  (whole-block-drop-on-overflow), `CharacterPromptWiringIT` (`@Nested` switch-on/off; covers all
-  four wired surfaces — chat, memoir, prediction, weekly review).
+  (whole-block-drop-on-overflow), `CharacterPromptWiringIT` (`@Nested`: `SwitchOn` covers all
+  four wired surfaces — chat, memoir, prediction, weekly review; `SwitchOff` covers chat only).
 - **Unit tests (pure code, no Spring context)**: `detector/DetectorTest` (fixture-day-in/
   signal-out for all 5 detectors, incl. the HU decimal-comma formatting and the 14-day honest
   streak-cap case), `CharacterConferenceWeekDerivationTest`,
@@ -288,7 +289,7 @@ before investigating.
 
 - **Detector catalog is still narrower than spec §5's v1 wishlist** (S7 closed the polish items —
   HU decimal-comma formatting, switch-gated beans, honest streak-capping — but did NOT add new
-  detectors). Only 5 of ~20 listed detectors are implemented: `checkin-gap`, `journal-note`,
+  detectors). Only 5 of 25 spec-listed detectors are implemented: `checkin-gap`, `journal-note`,
   `journal-silence`, `logging-gap`, `under-logging` (all meta-behavior/single-domain; owned by
   `drill`/`pszichologus`/`taplalkozo`). The entire cross-domain group (`comfort-eating`,
   `sleep-performance-chain`, `sport-interference`, `med-cycle-covariance`, `people-mood-link`,
@@ -296,11 +297,11 @@ before investigating.
   `restart-pattern`, `promise-vs-delivery`, `self-calibration`, `decision-profile`), the
   physiological group (`rir-calibration`, `niggle-map`, `hr-recovery-trend`), and the remaining
   meta-behavior detectors (`retro-logging-ratio`, `checkin-latency`, `night-activity`,
-  `chat-topic-shift`, `knowledge-rejection-pattern`) are **not implemented**. Practically:
-  `edzo`, `szomnologus`, `doki`, and `antropologus` never receive a nightly-detector-sourced
-  observation today — they only accumulate evidence via the weekly/monthly claim rounds' own
-  reads (now widened, see below) and user-feedback routing. No bd issue currently tracks writing
-  the remaining ~15 detectors — file one before picking this up again.
+  `chat-topic-shift`, `knowledge-rejection-pattern`) — 20 detectors in all — are **not
+  implemented**. Practically: `edzo`, `szomnologus`, `doki`, and `antropologus` never receive a
+  nightly-detector-sourced observation today — they only accumulate evidence via the
+  weekly/monthly claim rounds' own reads (now widened, see below) and user-feedback routing.
+  `mezo-1gim.12` tracks writing the remaining detectors.
 - **Detector beans are switch-gated, not just no-op** (S7). Each of the 5 detectors carries
   `@ConditionalOnProperty(CHARACTER_SWITCH)` directly, so with the switch off the beans don't
   exist at all — `CharacterApiSwitchOffIT.the_detector_beans_are_absent` asserts every detector
