@@ -4650,10 +4650,8 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
       A behavioral re-face: the sticky/`:has` plumbing keys off `.chat-composer`
       (declared earlier in this file), these rules carry only the Mozaik look. ── */
 
-/* header: chsub anatomy + pgact chips */
-.mzc-chsub { display: flex; flex-direction: column; gap: 2px; }
+/* header: pgact chips (mzc-chsub retired — the orb-led header below replaces it, mezo-vdf4) */
 .mzc-eb { font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lav-deep); }
-.mzc-st { font-size: 11px; color: var(--text-tertiary); }
 .mzc-pgact {
   border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-chipbg);
   border-radius: 999px; padding: 8px 14px; min-height: 36px;
@@ -4705,7 +4703,8 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 /* composer pill — mic disc · borderless field · lav send disc (44pt touch targets) */
 .mzc-composer {
   display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 10px;
-  border-radius: 26px; background: var(--mz-stripbg);
+  border-radius: 26px;
+  background: linear-gradient(150deg, var(--surface-card), var(--mz-wash-white) 60%, color-mix(in srgb, var(--dv-lav) 7%, var(--surface-card)));
   border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: var(--mz-chat-composer-shadow);
 }
 .mzc-composer textarea { background: none; border: none; outline: none; font-family: inherit; color: var(--text-primary); }
@@ -4716,7 +4715,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
 }
 .mzc-cmic { background: var(--mz-chat-mic-bg); color: var(--lav-deep); }
-.mzc-cmic.rec { background: var(--mz-chat-mic-rec-bg); color: var(--coral-deep); }
+.mzc-cmic.rec { background: rgba(255, 107, 74, 0.16); color: var(--coral-deep); }
 .mzc-csend { background: var(--mz-chat-send-bg); color: #fff; box-shadow: var(--mz-chat-send-shadow); }
 .mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
 .mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
@@ -4834,6 +4833,49 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   .mzc-cmic, .mzc-csend { transition: none; }
   .mzc-wic.run, .mzc-wrow.run .mzc-wst i { animation: none; }
   .mzc-memcard { transition: none; }
+  .mzc-horb svg, .mzc-horb.busy svg, .mzc-horb.busy::before, .mzc-hstat .mzc-hdot { animation: none; }
+}
+
+/* ===== mezo-vdf4: orb-vezette chat fejléc ===== */
+.mzc-chathead { display: flex; align-items: center; gap: 9px; padding: 2px 19px 0; }
+.mzc-hdisc {
+  width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; flex: none;
+  font-family: inherit; font-size: 15px; color: var(--text-primary); padding: 0;
+  background: var(--surface-card); display: grid; place-items: center;
+  box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.mzc-hdisc:disabled { opacity: 0.5; cursor: default; }
+.mzc-hdisc:active:not(:disabled) { transform: scale(0.92); }
+.mzc-horb { position: relative; width: 38px; height: 38px; flex: none; display: grid; place-items: center; }
+.mzc-horb svg { animation: mzc-orbbreathe 4.5s ease-in-out infinite; }
+.mzc-horb.busy svg { animation: mzc-orbthink 1.1s ease-in-out infinite; }
+.mzc-horb.busy::before {
+  content: ''; position: absolute; inset: -2px; border-radius: 50%;
+  border: 1.5px solid rgba(138, 118, 204, 0.55); animation: mzc-halo 1.3s ease-out infinite;
+}
+@keyframes mzc-orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes mzc-orbthink { 0%, 100% { transform: scale(0.97); } 50% { transform: scale(1.1); } }
+@keyframes mzc-halo { from { transform: scale(0.82); opacity: 0.9; } to { transform: scale(1.28); opacity: 0; } }
+.mzc-hnm { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; color: var(--text-primary); }
+.mzc-hstat { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-secondary); }
+.mzc-hdot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--sage-deep); }
+.mzc-hstat[data-st="live"] .mzc-hdot { animation: mzc-livepulse 2.4s ease-in-out infinite; }
+.mzc-hstat[data-st="demo"] .mzc-hdot { background: var(--text-tertiary); }
+.mzc-hstat[data-st="off"] .mzc-hdot { background: var(--amber-deep); }
+.mzc-hstat[data-st="new"] .mzc-hdot { background: var(--lav-deep); }
+.mzc-hstat[data-st="busy"] .mzc-hdot { background: var(--lav-deep); animation: mzc-livepulse 1.2s ease-in-out infinite; }
+
+/* mezo-vdf4 (spec §5): FeedbackChips renders the shared DS `.chip` — softened here, scoped to
+   the chat page only, so the DS default elsewhere is untouched. The vote itself is the point,
+   not the button; the selected (lav) `.brand`/`[aria-pressed]` treatment is left alone. */
+.mzc .chip:not(.brand):not([aria-pressed="true"]) {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--text-tertiary);
+}
+.mzc .chip:not(.brand):not([aria-pressed="true"]):hover { color: var(--text-secondary); }
+:root[data-theme="dark"] .mzc .chip:not(.brand):not([aria-pressed="true"]) {
+  background: color-mix(in srgb, var(--surface-elevated) 55%, transparent);
 }
 
 /* ── Mezo · Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak ×1.18:
@@ -6822,8 +6864,6 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    csak a tabbar lenne, azaz visszaesnénk a javított hibába. */
 .mzc > .mz-page-head { position: sticky; top: 0; z-index: 30;
   padding-top: 9px; padding-bottom: 6px; background: var(--canvas); }
-/* prototípus .chsub { padding: 2px 16px 6px } */
-.mzc-chsub { padding: 2px 19px 0; }
 /* prototípus .chthread { padding: 4px 14px 10px } / .composer { margin: 6px 12px 10px } */
 .mzc .chat-thread { padding: 5px 17px 12px; }
 .mzc .mzc-composer { margin-left: 14px; margin-right: 14px; }

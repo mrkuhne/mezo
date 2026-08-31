@@ -69,7 +69,6 @@ describe('mezo nav (real mode default)', () => {
     ['/mezo/patterns', '‹ Mezo'],
     ['/mezo/memoir', '‹ Mezo'],
     ['/mezo/knowledge', '‹ Mezo'],
-    ['/mezo/chat', '‹ Mezo'],
     ['/mezo/predictions', '‹ Mezo'],
     ['/mezo/experiments', '‹ Mezo'],
     ['/mezo/memoria', '‹ Mezo'],
@@ -77,6 +76,17 @@ describe('mezo nav (real mode default)', () => {
     const router = renderApp(path)
     const back = await screen.findByRole('button', { name: 'Vissza' })
     expect(back).toHaveTextContent(label)
+    await userEvent.click(back)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/mezo'))
+  })
+
+  // /mezo/chat dropped the shared PageHead for its own orb-led header (mezo-vdf4) — the back
+  // disc is bare `‹`, and the `Mezo` name now sits next to the orb, not inside the back button.
+  test('/mezo/chat owns a back disc that returns to the hub', async () => {
+    const router = renderApp('/mezo/chat')
+    const back = await screen.findByRole('button', { name: 'Vissza' })
+    expect(back).toHaveTextContent('‹')
+    expect(screen.getByText('Mezo', { selector: '.mzc-hnm' })).toBeInTheDocument()
     await userEvent.click(back)
     await waitFor(() => expect(router.state.location.pathname).toBe('/mezo'))
   })

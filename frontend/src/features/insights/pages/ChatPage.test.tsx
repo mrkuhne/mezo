@@ -249,6 +249,15 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.getByText('napló')).toBeInTheDocument()
     expect(screen.getByText('92')).toBeInTheDocument()
   })
+
+  test('renders the orb-led header with the live status', async () => {
+    renderPage()
+    expect(await screen.findByLabelText('Vissza')).toBeInTheDocument()
+    expect(screen.getByText('Mezo', { selector: '.mzc-hnm' })).toBeInTheDocument()
+    // mock mode → demo status text (subtitle precedence unchanged)
+    expect(screen.getByText('demo beszélgetés')).toBeInTheDocument()
+    expect(document.querySelector('.mzc-hstat')).toHaveAttribute('data-st', 'demo')
+  })
 })
 
 describe('ChatPage (real mode)', () => {
@@ -259,7 +268,7 @@ describe('ChatPage (real mode)', () => {
     renderPage()
     expect(await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /Utánanézett/ })).toHaveLength(2)
-    expect(screen.getByText('Gemini · élő')).toBeInTheDocument()
+    expect(screen.getByText('élő · Gemini')).toBeInTheDocument()
   })
 
   test('sending a message streams the reply into the thread', async () => {
@@ -336,12 +345,49 @@ describe('ChatPage (real mode)', () => {
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
-    // the strip renders from the in-flight draft bubble, before 'done' replaces it — three
-    // strips: the two seed answers plus this in-flight one.
+    // the strip renders from the live work-strip block (mezo-vdf4), before 'done' replaces it —
+    // three strips: the two seed answers plus this in-flight one.
     await waitFor(() => expect(screen.getAllByRole('button', { name: /Utánanéz/ })).toHaveLength(3))
-    // 'most' is the placeholder ts only the in-flight turn's two bubbles use (user + draft) —
-    // seeing both confirms the chip came from the draft, not the appended, authoritative row.
-    expect(screen.getAllByText('most')).toHaveLength(2)
+    // the live strip carries the "…" label (only ever true while `live`) — seeing it confirms
+    // the chip came from the in-flight turn, not one of the persisted, authoritative rows.
+    expect(screen.getByRole('button', { name: /Utánanéz…/ })).toBeInTheDocument()
+
+    releaseRest()
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+  })
+
+  test('busy turn flips the status to dolgozom rajta…', async () => {
+    // same gated-stream idiom as the live-tool-chip test above: hold 'delta'/'done' back so
+    // the in-flight turn (still truthy, no draft yet) is actually observable on screen.
+    let releaseRest: () => void = () => {}
+    const rest = new Promise<void>((resolve) => { releaseRest = resolve })
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
+      const { content } = (await request.json()) as { content: string }
+      const reply = cannedReply(content)
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          await rest
+          controller.enqueue(encoder.encode(frame('delta', { text: reply })))
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-done', role: 'assistant', content: reply,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], recalled: [], degraded: false,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await waitFor(() => expect(screen.getByText('dolgozom rajta…')).toBeInTheDocument())
+    expect(document.querySelector('.mzc-hstat')).toHaveAttribute('data-st', 'busy')
 
     releaseRest()
     await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())

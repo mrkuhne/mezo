@@ -2,15 +2,15 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { ClaySpot } from '@/shared/ui/clay'
-import { PageHead } from '@/shared/ui/mozaik'
 import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
+import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { cn } from '@/shared/lib/cn'
 
-const SUBTITLE = { mock: 'demo beszélgetés', live: 'Gemini · élő' } as const
+const SUBTITLE = { mock: 'demo beszélgetés', live: 'élő · Gemini' } as const
 
 // A composer legfeljebb ennyire nő meg (~5 sor 13px/1.45-nél), utána a mező befelé görget —
 // egy hosszú üzenet sem eszi meg az egész beszélgetést (mezo-a837).
@@ -114,36 +114,51 @@ export function ChatPage() {
 
   return (
     <div className="col gap-md chat-page mzc">
-      {/* Prototype chat chrome (mezo-d20.5.2, head restored mezo-d20.11): the #page-chat
-          anatomy is `page-head` = ‹ Mezo backbtn + the two pgact chips, and BELOW it the
-          chsub row — lav eyebrow + quiet status. Before this the back chip was missing
-          entirely (ADR 0032: every sibling page owns its own header). The subtitle
-          precedence (degraded → new → mode) is the audited contract, unchanged. */}
-      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo">
+      {/* mezo-vdf4: orb-led single-row header (ADR 0032 still holds — this IS the page's own
+          header; the shell AppHeader stays above). Status precedence is the audited contract
+          unchanged (degraded → new → mode), with one addition: a streaming turn reads
+          `dolgozom rajta…`. */}
+      <div className="mzc-chathead">
+        <button type="button" className="mzc-hdisc" onClick={() => navigate('/mezo')} aria-label="Vissza">
+          ‹
+        </button>
+        <span className={cn('mzc-horb', turn && 'busy')}>
+          <ClaySpot name="s-orb" size={34} />
+        </span>
+        <span className="col grow" style={{ gap: 1, minWidth: 0 }}>
+          <span className="mzc-hnm">Mezo</span>
+          <span
+            className="mzc-hstat"
+            data-st={degraded ? 'off' : turn ? 'busy' : isNew ? 'new' : mode === 'live' ? 'live' : 'demo'}
+          >
+            <span className="mzc-hdot" />
+            {turn
+              ? 'dolgozom rajta…'
+              : degraded ? 'a társ most nem elérhető' : isNew ? 'új beszélgetés' : SUBTITLE[mode]}
+          </span>
+        </span>
         <button
           type="button"
-          className="mzc-pgact"
+          className="mzc-hdisc"
           onClick={() => setPickerOpen(true)}
           disabled={degraded}
           aria-label="Beszélgetések"
         >
-          Beszélgetések
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h10" />
+          </svg>
         </button>
         <button
           type="button"
-          className="mzc-pgact"
+          className="mzc-hdisc"
           onClick={() => selectConversation(NEW_CHAT)}
           disabled={degraded || isNew}
           aria-label="Új beszélgetés"
         >
-          ＋ Új
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
         </button>
-      </PageHead>
-      <div className="mzc-chsub">
-        <span className="mzc-eb">Mezo · társ</span>
-        <span className="mzc-st">
-          {degraded ? 'a társ most nem elérhető' : isNew ? 'új beszélgetés' : SUBTITLE[mode]}
-        </span>
       </div>
 
       {pickerOpen && (
@@ -195,9 +210,17 @@ export function ChatPage() {
         {turn && <ChatMessage m={{ role: 'user', ts: 'most', text: turn.userText }} />}
         {/* mezo-280 (Finding 3): thinking flips false the moment a 'tool' event lands, well before
             the first 'delta' — gating on turn.draft instead keeps the dots visible next to the
-            live chips through that gap, instead of an empty grey answer card. */}
-        {turn && !turn.draft && <ThinkingDots />}
-        {turn && !turn.thinking && (turn.draft || turn.tools.length > 0) && (
+            live chips through that gap, instead of an empty grey answer card. The live work
+            strip (mezo-vdf4) renders here too, next to the dots — once the draft starts
+            streaming the second block below takes over and renders it non-live, inside the
+            answer card. */}
+        {turn && !turn.draft && (
+          <div className="mzc-msg-a col gap-sm">
+            {turn.tools.length > 0 && <ToolWorkStrip tools={turn.tools} live />}
+            <ThinkingDots />
+          </div>
+        )}
+        {turn && !turn.thinking && turn.draft && (
           <ChatMessage
             m={{
               role: 'assistant',
