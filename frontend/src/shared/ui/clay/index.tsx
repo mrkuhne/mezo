@@ -24,6 +24,9 @@ export type ClaySpotName =
   | 's-reggel' | 's-este' | 's-viz' | 's-energia' | 's-edzes' | 's-medal'
   | 's-orb' | 's-orb-ejszaka' | 's-orb-figyel' | 's-orb-unnepel'
   | 's-piheno' | 's-napzaras' | 's-hajtas' | 's-hegycel'
+  // Karakter persona orb variants (mezo-1gim.13) — one per Csapat expert + szkeptikus.
+  | 's-orb-doki' | 's-orb-edzo' | 's-orb-taplalkozo' | 's-orb-szomnologus'
+  | 's-orb-pszichologus' | 's-orb-drill' | 's-orb-antropologus' | 's-orb-szkeptikus'
 
 /** Mounts the clay <symbol>/<gradient> defs once. Rendered by AppLayout. */
 export const ClaySprites = memo(function ClaySprites() {

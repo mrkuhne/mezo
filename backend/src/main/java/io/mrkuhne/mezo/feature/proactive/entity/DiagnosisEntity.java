@@ -31,6 +31,7 @@ import org.hibernate.type.SqlTypes;
 public class DiagnosisEntity extends OwnedEntity {
 
     public static final String PHENOMENON_FATIGUE = "fatigue";
+    public static final String PHENOMENON_SLEEP = "sleep";
 
     @Id
     @GeneratedValue
@@ -38,7 +39,7 @@ public class DiagnosisEntity extends OwnedEntity {
     private UUID id;
 
     @NotNull
-    @Pattern(regexp = "fatigue")
+    @Pattern(regexp = "fatigue|sleep")
     @Column(nullable = false, length = 30)
     private String phenomenon = PHENOMENON_FATIGUE;
 

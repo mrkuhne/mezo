@@ -297,6 +297,11 @@
   .rankb { width: 20px; height: 20px; border-radius: 8px; display: grid; place-items: center; flex: none;
     font-size: 10px; font-weight: 800; color: #fff; background: linear-gradient(135deg, #C9962E, #A8801F); }
   .rankb.two { background: linear-gradient(135deg, #B4A8D8, #8A76CC); }
+  .qqrow { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 2px; }
+  .qqchip { border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 999px; padding: 8px 13px;
+    background: rgba(255, 255, 255, 0.7); font-size: 10px; font-weight: 600; color: #6E6257;
+    cursor: pointer; text-align: left; }
+  .qqchip:active { transform: scale(0.97); }
   .dgqgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
   .dgqtile { border-radius: 14px; padding: 9px 11px; background: rgba(255, 255, 255, 0.6);
     border: 1.2px dashed rgba(43, 33, 24, 0.16); }
@@ -959,7 +964,10 @@
           <li><strong>Chat</strong> — az audit szerinti teljes anatómia: Mezo-eyebrow + időbélyeg,
           tool-chipek a válasz felett, <strong>Hivatkozott · L3</strong> lábléc (emberi címkékkel, nem nyers
           id-kkal — a valós app 7-es gapjének javítása), lenyitható <strong>Emlékek · N</strong> sor,
-          👍/👎 + ok-chipek. A küldés élő: gépelő pöttyök → tool-chip → válasz, a mikrofon leiratoz.</li>
+          👍/👎 + ok-chipek. A küldés élő: gépelő pöttyök → tool-chip → válasz, a mikrofon leiratoz.
+          <strong>Gyorsgomb-chipek (mezo-dz3y):</strong> a „＋ Új" üres állapotában négy előre
+          összeállított kérdés — egy koppintás küld, a chipek a válasszal eltűnnek; futó
+          beszélgetés nem fizet érte képernyőt. Mindegyikhez a saját tool-hívásai látszanak.</li>
           <li><strong>Minták</strong> — motor-próza three-bold-numbers, <strong>színes 3×2 életciklus-rács</strong>
           (a döntésre váró cella arany kerettel lüktet), döntés-kártya (a hubbal szinkronban), majd
           <strong>minta-csempék 2 oszlopban</strong>: megerősítve = zsálya wash + clay ikon + bizonyosság-chip,
@@ -1131,9 +1139,27 @@
   function scrollDown() { thread.scrollTop = thread.scrollHeight; }
 
   var busy = false;
-  function sendChat() {
+
+  /* mezo-dz3y: a gyorsgomb-kérdések testreszabott demo-válaszai — a chip értékét a
+     valós appban a 15 hub-tool adja, itt a demó témában marad. */
+  var QUICK_ANSWERS = {
+    'Foglald össze a mai napom röviden': {
+      text: 'Eddig: 6ó50p alvás (rövidebb a szokottnál), 2/4 check-in, 1420 kcal / 96 g fehérje bent. Ma <b>Pull Day</b> vár este — a kulcs most a délutáni snack és egy nyugodt óra alvás-pótlásnak.',
+      tools: ['get_daily_practice(ma)', 'get_fuel_log(ma)', 'get_training_plan(today)'] },
+    'Alvás és súly alapján mire figyeljek ma?': {
+      text: 'Az alvásod harmadik napja 7 óra alatt van, a reggeli súlyod közben stabil — a fáradtságod tehát nem energiahiány, hanem alvás-adósság. Ma <b>koffein-stop 14:00-kor</b>, és este 23:00 előtt ágyban.',
+      tools: ['get_recovery(scope=sleep, days=7)', 'get_weight_trend(days=14)'] },
+    'Hogy készüljek az esti edzésre?': {
+      text: 'Este <b>Pull Day</b>: Lat Pulldown a fő tétel — a múltkori 105 kg után ma reális a 107,5. A mai bevitel alapján még ~40 g szénhidrát elkél 17:00 körül; a válladra figyelj, a múlt heti niggle miatt hosszabb bemelegítést kérj.',
+      tools: ['get_training_plan(today)', 'get_exercise_records(Lat Pulldown)', 'get_fuel_log(ma)'] },
+    'Mit egyek ma este a maradék makróimba?': {
+      text: 'Maradt ~680 kcal és 52 g fehérje. A kamrádból kijön a <b>Collagen Smoothie</b> (32 g fehérje) + egy túrós tál — együtt pont a keretben, és edzés utánra időzítve a legjobb.',
+      tools: ['get_fuel_log(ma)', 'get_pantry(food)', 'get_recipes(fehérje)'] }
+  };
+
+  function sendChat(forced) {
     if (busy) return;
-    var txt = cinput.value.trim() || 'Ma reggel fáradtan keltem, mit gondolsz, menjek edzeni?';
+    var txt = forced || cinput.value.trim() || 'Ma reggel fáradtan keltem, mit gondolsz, menjek edzeni?';
     cinput.value = '';
     busy = true;
     thread.appendChild(renderMsg({ r: 'u', t: 'most', text: txt }));
@@ -1151,7 +1177,8 @@
     }, 650);
     setTimeout(function () {
       ty.remove();
-      thread.appendChild(renderMsg({ r: 'a', t: 'most',
+      var qa = QUICK_ANSWERS[txt];
+      thread.appendChild(renderMsg(qa ? { r: 'a', t: 'most', text: qa.text, tools: qa.tools } : { r: 'a', t: 'most',
         text: 'Értem — és köszönöm, hogy megosztottad. A fáradtság a D3-hullámmal együtt jár, de a check-injeid szerint a <b>könnyített edzés</b> ilyenkor kifejezetten jót tesz: menj, de vedd le a volument ~20%-kal, és hagyd el az utolsó szetteket.',
         tools: ['get_recent_checkins(days=3)', 'recallSharedMemory(fáradt reggelek)'],
         refs: [['Check-in', 'máj 21 · reggel']],
@@ -1202,7 +1229,18 @@
     shconv.classList.add('open');
   });
   document.getElementById('newChatBtn').addEventListener('click', function () {
-    thread.innerHTML = '<div class="msg-a"><div class="bub-a" style="color:#6E6257;">Új beszélgetés — kérdezz bármit, vagy mondd fel a mikrofonnal.</div></div>';
+    thread.innerHTML = '<div class="msg-a"><div class="bub-a" style="color:#6E6257;">Új beszélgetés — kérdezz bármit, vagy koppints egy kérdésre.</div></div>';
+    /* mezo-dz3y: a gyorsgomb-chipek — CSAK az üres állapotban élnek, egy koppintás küld. */
+    var row = document.createElement('div');
+    row.className = 'qqrow';
+    Object.keys(QUICK_ANSWERS).forEach(function (q) {
+      var b = document.createElement('button');
+      b.className = 'qqchip';
+      b.textContent = q;
+      b.addEventListener('click', function () { row.remove(); sendChat(q); });
+      row.appendChild(b);
+    });
+    thread.appendChild(row);
     document.getElementById('chatSub').textContent = 'új beszélgetés';
   });
 

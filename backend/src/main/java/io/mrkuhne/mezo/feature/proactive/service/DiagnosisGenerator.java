@@ -55,8 +55,9 @@ public class DiagnosisGenerator {
     private static final Set<String> DIRECTIONS = Set.of("up", "down", "stable");
     private static final Set<String> STRENGTHS = Set.of("strong", "moderate", "weak");
 
-    private static final String PROMPT = DIAGNOSIS_MARKER + "\n"
-            + "Daniel azt kérdezi: miért fáradt? Válaszolj KIZÁRÓLAG a megadott evidencia-jelöltekből. "
+    /** The shared instruction block — the recipe supplies the question sentence up front. */
+    private static final String PROMPT_RULES =
+            "Válaszolj KIZÁRÓLAG a megadott evidencia-jelöltekből. "
             + "Számot kitalálni tilos; olyan összefüggésre hivatkozni, ami nincs a jelöltek között, tilos; "
             + "gyógyszer-adagolást érintő javaslat tilos. Minden gyanúsítotthoz NEVEZD MEG a mechanizmust "
             + "(miért okozna fáradtságot), ne csak az együttjárást állapítsd meg. Minden gyanúsítotthoz "
@@ -85,16 +86,27 @@ public class DiagnosisGenerator {
     record ParsedDiagnosis(String verdict, String confidence, List<ParsedSuspect> suspects) {
     }
 
+    /** The pre-recipe entry point — fatigue, kept so existing callers read unchanged. */
     @Transactional
     public DiagnosisEntity generate(UUID userId, LocalDate today) {
-        FatigueEvidenceCollector.FatigueGather gather = collector.gather(userId, today);
+        return generate(userId, today, DiagnosisEntity.PHENOMENON_FATIGUE);
+    }
+
+    @Transactional
+    public DiagnosisEntity generate(UUID userId, LocalDate today, String phenomenon) {
+        DiagnosisRecipe recipe = DiagnosisRecipe.byPhenomenon(phenomenon);
+        if (recipe == null) {
+            log.warn("Unknown diagnosis phenomenon '{}' for {} — no row", phenomenon, userId);
+            return null;
+        }
+        FatigueEvidenceCollector.FatigueGather gather = collector.gather(userId, today, recipe);
         if (gather == null) {
             log.debug("Not enough data for a fatigue diagnosis for {}", userId);
             return null;
         }
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_diagnosis", "generate", null, null),
-                () -> companionLlm.completeSmart(PROMPT, gather.payload()));
+                () -> companionLlm.completeSmart(prompt(recipe), gather.payload()));
         ParsedDiagnosis parsed = parse(answer);
         if (parsed == null || parsed.verdict() == null || parsed.verdict().isBlank()
                 || !STRENGTHS.contains(parsed.confidence())) {
@@ -108,7 +120,7 @@ public class DiagnosisGenerator {
         }
         DiagnosisEntity diagnosis = new DiagnosisEntity();
         diagnosis.setCreatedBy(userId);
-        diagnosis.setPhenomenon(DiagnosisEntity.PHENOMENON_FATIGUE);
+        diagnosis.setPhenomenon(recipe.phenomenon());
         diagnosis.setWindowDays(properties.windowDays());
         diagnosis.setVerdict(truncate(parsed.verdict().strip()));
         diagnosis.setConfidence(parsed.confidence());
@@ -116,6 +128,10 @@ public class DiagnosisGenerator {
         diagnosis.setSuspects(new DiagnosisSuspectsEnvelope(suspects));
         diagnosis.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return diagnosisRepository.saveAndFlush(diagnosis);
+    }
+
+    private static String prompt(DiagnosisRecipe recipe) {
+        return DIAGNOSIS_MARKER + "\n" + recipe.questionHu() + " " + PROMPT_RULES;
     }
 
     private ParsedDiagnosis parse(String answer) {

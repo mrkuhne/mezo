@@ -501,6 +501,23 @@ describe('ChatPage (real mode)', () => {
     expect(screen.queryByText(/Jó reggelt\. Tegnap a Push Day/)).not.toBeInTheDocument()
   })
 
+  test('the empty draft thread offers the quick-question chips, and a tap SENDS (mezo-dz3y)', async () => {
+    renderPage('/mezo/chat?c=new')
+    await screen.findByText(/Új beszélgetés — kérdezz bármit/)
+    // the three seeded quick questions render as tappable chips
+    const chip = screen.getByRole('button', { name: 'Foglald össze a mai napom röviden' })
+    expect(screen.getByRole('button', { name: 'Alvás és súly alapján mire figyeljek ma?' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Hogy készüljek az esti edzésre?' })).toBeInTheDocument()
+
+    fireEvent.click(chip)
+    // one tap = the question is SENT, not prefilled
+    await waitFor(() =>
+      expect(screen.getByText(cannedReply('Foglald össze a mai napom röviden'))).toBeInTheDocument(),
+    )
+    // and the chips leave with the empty state
+    expect(screen.queryByRole('button', { name: 'Hogy készüljek az esti edzésre?' })).not.toBeInTheDocument()
+  })
+
   test('a draft thread creates its conversation on the first send (mezo-at8x.3)', async () => {
     const created: string[] = []
     server.use(http.post(`${API_BASE}/api/companion/conversation`, () => {

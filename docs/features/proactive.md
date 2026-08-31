@@ -1310,7 +1310,7 @@ DERIVED in code** from the structured target fields (via `ChallengeDisplay` stat
 mapper, §3 / §9 gotcha), not stored; `confidence`/`outcome`/`outcomeGood` nullable on the wire
 (`confidence` null ⇒ the FE renders „tanulom").
 
-### Diagnosis (on-demand report, `mezo-hqfi`)
+### Diagnosis (on-demand report, `mezo-hqfi`; second phenomenon `mezo-po3y`)
 
 Migration `202608311200_mezo-hqfi_create_diagnosis.sql` creates `diagnosis` — `id`, `created_by`,
 `is_deleted`, `created_at`, `phenomenon` (ck: `fatigue`), `window_days`, `verdict`, `confidence`
@@ -1331,6 +1331,15 @@ probeText, metricKey, expectedDirection, totalDays)` — the probe fields map **
 `ExperimentEntity`**, so the hand-off needs no translation layer). **Evidence is persisted, not
 recomputed on read:** the report must show the numbers it actually reasoned from, or weeks later a
 recomputed window would put different values next to the same conclusion.
+
+**Two phenomena since `mezo-po3y`** — `fatigue` and `sleep`. Everything phenomenon-specific
+lives in ONE record, `service/DiagnosisRecipe.java` (wire value, HU label, the prompt's question
+sentence, the `MetricKey` subset); the collector and generator take a recipe, the old 2-arg entry
+points alias FATIGUE. A third question = one `DiagnosisRecipe` entry + one ck-widening migration
+(`202608311500_mezo-po3y_diagnosis_sleep_phenomenon.sql` is the template). The FE mirror is
+`features/insights/logic/diagnosisCatalog.ts` (`LIVE_QUESTIONS`/`UPCOMING_QUESTIONS`) — a
+question goes live by moving between the two lists. The daily quota stays GLOBAL across
+phenomena.
 
 The pipeline is the `WeeklyReviewGenerator` recipe on a rolling window:
 

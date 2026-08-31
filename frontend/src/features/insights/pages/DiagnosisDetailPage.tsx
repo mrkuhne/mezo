@@ -13,6 +13,7 @@ import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useDiagnosis, useDiagnosisActions } from '@/data/hooks'
 import { confidenceLine, deltaLabel, generatedLabel, strengthLabel, windowLine } from '@/features/insights/logic/diagnosisCopy'
+import { questionOf } from '@/features/insights/logic/diagnosisCatalog'
 import type { Diagnosis, DiagnosisSuspect } from '@/data/types'
 
 function SuspectCard({ d, s, live, started, onProbe, delayMs }: {
@@ -98,7 +99,7 @@ export function DiagnosisDetailPage() {
   return (
     <MozaikPage tone="lav">
       <PageHead onBack={() => navigate('/mezo/diagnozis')} label="‹ Diagnózis" />
-      <PageHero name="Miért vagyok fáradt?" sub={windowLine(diagnosis.generatedAt, diagnosis.windowDays)} />
+      <PageHero name={questionOf(diagnosis.phenomenon)} sub={windowLine(diagnosis.generatedAt, diagnosis.windowDays)} />
       <PageBody>
         <EntranceGroup className="col gap-md">
           <div className="mzp-pred lav rise" style={{ '--d': '0ms' } as React.CSSProperties}>

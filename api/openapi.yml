@@ -7460,6 +7460,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/character/experts:
+    get:
+      tags:
+        - Character
+      operationId: getCharacterExperts
+      summary: >-
+        The profiling team catalog — 7 domain experts + Szkeptikus + Mezo, in
+        fixed display order (Csapat page; never 404 while the switch is on)
+      responses:
+        '200':
+          description: 'The 9 personas, catalog order'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterExpertsResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/character/feed:
     get:
       tags:
@@ -7640,7 +7661,7 @@ paths:
           required: false
           schema:
             type: string
-            pattern: ^fatigue$
+            pattern: ^(fatigue|sleep)$
             default: fatigue
       responses:
         '200':
@@ -17395,6 +17416,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CharacterDimensionSummary'
+    CharacterExpertDto:
+      type: object
+      required:
+        - key
+        - displayName
+        - role
+        - voiceLine
+        - watch
+        - kind
+      properties:
+        key:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+        voiceLine:
+          type: string
+          description: the persona's short voice/manner line (Csapat card)
+        watch:
+          type: array
+          items:
+            type: string
+        dimensionKey:
+          type: string
+          nullable: true
+          description: null for szkeptikus/mezo — they are not CORE dimension owners
+        kind:
+          type: string
+          enum:
+            - EXPERT
+            - SKEPTIC
+            - CHAIR
+    CharacterExpertsResponse:
+      type: object
+      required:
+        - experts
+      properties:
+        experts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterExpertDto'
     CharacterPortraitRevisionDto:
       type: object
       required:
@@ -17557,7 +17620,7 @@ components:
       properties:
         phenomenon:
           type: string
-          pattern: ^fatigue$
+          pattern: ^(fatigue|sleep)$
     DiagnosisEvidenceItem:
       type: object
       required:
