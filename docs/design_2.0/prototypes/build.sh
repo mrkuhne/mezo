@@ -17,8 +17,9 @@ cat src/en-ia-head.html   "$A/clay-icons.svg" "$A/clay-spots.svg" src/en-ia-body
 cat src/napzaras-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/napzaras-body.html > napzaras.html
 cat src/review-head.html   "$A/clay-icons.svg" "$A/clay-spots.svg" src/review-body.html   > edzes-review.html
 cat src/fuel-mely-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/fuel-mely-body.html > fuel-mely.html
+cat src/en-mely-head.html   "$A/clay-icons.svg" "$A/clay-spots.svg" src/en-mely-body.html   > en-mely.html
 cat src/karakter-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/karakter-body.html > karakter-tab.html
 cat src/mezo-chat-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/mezo-chat-body.html > mezo-chat.html
 cat src/emberek-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/emberek-body.html > emberek.html
 cat src/fuel-log-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/fuel-log-body.html > fuel-logolas.html
-echo "OK — 16 prototype files assembled."
+echo "OK — 17 prototype files assembled."

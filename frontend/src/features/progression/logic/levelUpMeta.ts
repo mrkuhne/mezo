@@ -1,6 +1,7 @@
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { LevelUpResult } from '@/data/train/trainApi'
 import type { LifeSkillKey } from '@/data/types'
+import type { ClayIconName } from '@/shared/ui/clay'
 
 type Source = LevelUpResult['source'] // 'GYM' | 'SPORT' | 'RUN' | 'QUEST' | 'ACTIVITY'
 
@@ -21,18 +22,20 @@ export const ATHLETIC_META: Record<string, { name: string; icon: string }> = {
 }
 
 // LIFE band (gamified growth E2, mezo-jzca) — octagon order, mirrors ProgressionTaxonomy.LIFE.
-export const LIFE_SKILLS: { key: LifeSkillKey; name: string; icon: string }[] = [
-  { key: 'mindfulness', name: 'Tudatosság', icon: '🧘' },
-  { key: 'mindset', name: 'Szemlélet', icon: '🌱' },
-  { key: 'cooking', name: 'Konyha', icon: '🍳' },
-  { key: 'financial', name: 'Pénzügyek', icon: '💰' },
-  { key: 'productivity', name: 'Produktivitás', icon: '🎯' },
-  { key: 'learning', name: 'Tanulás', icon: '📚' },
-  { key: 'connection', name: 'Kapcsolatok', icon: '🤝' },
-  { key: 'recovery', name: 'Regeneráció', icon: '🛌' },
+// F7.4 (mezo-d20.8.4.1): every LIFE skill carries its clay symbol — React surfaces render
+// the ClayIcon, the emoji stays as the plain-text fallback only.
+export const LIFE_SKILLS: { key: LifeSkillKey; name: string; icon: string; clayIcon: ClayIconName }[] = [
+  { key: 'mindfulness', name: 'Tudatosság', icon: '🧘', clayIcon: 'i-life-tudatossag' },
+  { key: 'mindset', name: 'Szemlélet', icon: '🌱', clayIcon: 'i-life-szemlelet' },
+  { key: 'cooking', name: 'Konyha', icon: '🍳', clayIcon: 'i-life-konyha' },
+  { key: 'financial', name: 'Pénzügyek', icon: '💰', clayIcon: 'i-life-penzugyek' },
+  { key: 'productivity', name: 'Produktivitás', icon: '🎯', clayIcon: 'i-life-produktivitas' },
+  { key: 'learning', name: 'Tanulás', icon: '📚', clayIcon: 'i-life-tanulas' },
+  { key: 'connection', name: 'Kapcsolatok', icon: '🤝', clayIcon: 'i-life-kapcsolatok' },
+  { key: 'recovery', name: 'Regeneráció', icon: '🛌', clayIcon: 'i-life-regeneracio' },
 ]
-const LIFE_META: Record<string, { name: string; icon: string }> =
-  Object.fromEntries(LIFE_SKILLS.map((s) => [s.key, { name: s.name, icon: s.icon }]))
+const LIFE_META: Record<string, { name: string; icon: string; clayIcon: ClayIconName }> =
+  Object.fromEntries(LIFE_SKILLS.map((s) => [s.key, { name: s.name, icon: s.icon, clayIcon: s.clayIcon }]))
 
 const MUSCLE_ICON = '💪'
 const FALLBACK_ICON = '✨'
@@ -46,7 +49,7 @@ export function skillDisplay(
   skillKey: string,
   kind: 'ATHLETIC' | 'MUSCLE' | 'LIFE',
   fallbackName?: string,
-): { name: string; icon: string } {
+): { name: string; icon: string; clayIcon?: ClayIconName } {
   if (kind === 'MUSCLE') {
     return { name: MUSCLE_LABELS[skillKey] ?? fallbackName ?? skillKey, icon: MUSCLE_ICON }
   }

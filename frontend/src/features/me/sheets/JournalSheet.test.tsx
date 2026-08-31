@@ -140,7 +140,7 @@ describe('JournalSheet', () => {
     await user.type(screen.getByLabelText('1. hálás gondolat'), 'Reggeli kávé a teraszon')
     await user.click(screen.getByRole('button', { name: '+ Még egy' }))
     await user.type(screen.getByLabelText('2. hálás gondolat'), 'Hívott anya')
-    await user.click(screen.getByRole('button', { name: '🤝 Kapcsolatok' }))
+    await user.click(screen.getByRole('button', { name: 'Kapcsolatok' }))
     await user.click(screen.getByRole('button', { name: 'Mentem' }))
 
     await waitFor(() => expect(onClose).toHaveBeenCalled())

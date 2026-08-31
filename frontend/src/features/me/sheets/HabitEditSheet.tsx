@@ -6,6 +6,7 @@ import { useHabitCatalogActions, useProgressionProfile } from '@/data/hooks'
 import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
 import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
+import { ClayIcon } from '@/shared/ui/clay'
 import type { HabitDefInfo, HabitMode } from '@/data/types'
 
 const XP_MIN = 5
@@ -34,8 +35,11 @@ export function HabitEditSheet({
   const { data: profile } = useProgressionProfile()
 
   const skillOptions = (profile.life ?? []).length > 0
-    ? profile.life.map((s) => ({ key: s.skillKey, name: LIFE_SKILLS.find((l) => l.key === s.skillKey)?.name ?? s.skillKey }))
-    : LIFE_SKILLS.map((s) => ({ key: s.key, name: s.name }))
+    ? profile.life.map((s) => {
+        const meta = LIFE_SKILLS.find((l) => l.key === s.skillKey)
+        return { key: s.skillKey, name: meta?.name ?? s.skillKey, clayIcon: meta?.clayIcon }
+      })
+    : LIFE_SKILLS.map((s) => ({ key: s.key, name: s.name, clayIcon: s.clayIcon }))
 
   const [title, setTitle] = useState(def?.title ?? '')
   const [why, setWhy] = useState(def?.why ?? '')
@@ -120,7 +124,7 @@ export function HabitEditSheet({
                       ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
                       : undefined}
                   >
-                    {s.name}
+                    {s.clayIcon && <ClayIcon name={s.clayIcon} size={12} />} {s.name}
                   </button>
                 ))}
               </div>
