@@ -4,10 +4,9 @@
 // `gepTiles`) — the geek-transparency hub: hero (the last run's plain-language line) + a
 // 4-tile mosaic (Futások / Adatforrások / AI-napló / Detektorok).
 //
-// Binding ruling (task-4 brief): Adatforrások and Detektorok navigate to routes Task 5
-// registers (mezo-1gim.14) — they render here now (their content already exists in the
-// prototype) but stay inert until that route lands. This is the brief's own explicit call,
-// not an oversight — a link into a still-unregistered route would 404 for no reason.
+// Task 5 (mezo-1gim.14): Adatforrások and Detektorok now navigate to their real routes —
+// AdatforrasokPage/DetektorokPage — landed below the Task-4 stub that intentionally kept them
+// inert until those routes existed.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -54,6 +53,7 @@ export function GeptermPage() {
             eyebrow="Adatforrások"
             delayMs={100}
             line="a teljes tervezett korpusz"
+            onClick={() => navigate('/me/karakter/gepterem/adatforrasok')}
           />
           <Tile
             icon="i-tudas"
@@ -67,6 +67,7 @@ export function GeptermPage() {
             eyebrow="Detektorok"
             delayMs={180}
             line="az aktív katalógus"
+            onClick={() => navigate('/me/karakter/gepterem/detektorok')}
           />
         </Mosaic>
       </PageBody>
@@ -76,9 +77,8 @@ export function GeptermPage() {
 
 // A small local tile (not the shared Mozaik `Tile`, whose `wash` union has no graphite/
 // technical tone) — mirrors the prototype's `.dimtile.t-gepterem` recipe: kr-prefixed like
-// this feature's other CSS, buttonized only when it actually navigates (Adatforrások/
-// Detektorok stay plain `div`s until Task 5 wires their routes — an inert tile shouldn't
-// pretend to be a button).
+// this feature's other CSS, buttonized only when it actually navigates. All 4 tiles carry an
+// `onClick` as of Task 5.
 function Tile({ icon, eyebrow, line, delayMs, onClick }: {
   icon: ClayIconName
   eyebrow: string

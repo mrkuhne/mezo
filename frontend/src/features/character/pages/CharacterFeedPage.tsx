@@ -9,15 +9,41 @@
 // to Mezo's coral orb, misattributing Daniel's own words to the AI. DECISION: a distinct
 // gold "Te" disc (kr-feeddisc.user) instead — never routed through PersonaOrb. Reported in
 // task-4-report.md per the brief's "decide, comment, report."
+//
+// Task 5 (mezo-1gim.14) — the ⚙ retarget: each observation row gains a `.kr-gepq` button that
+// navigates to the RunPage for the NIGHTLY run that produced it. There is no `runId` on
+// `CharacterFeedItem` (the feed contract never carried one — it is a merged observation+
+// conference-diff view, not a run-scoped one), so the run is resolved client-side by DATE:
+// the item's local calendar day is looked up against `useCharacterRuns` for the window
+// spanning every item currently in the feed (clamped to the 62-day `CHARACTER_RUN_RANGE_INVALID`
+// cap — see FutasokPage's identical clamp), matching only `kind === 'NIGHTLY'` rows (the
+// binding ruling: only nightly runs are calendar-day-addressable; WEEKLY/MONTHLY/BOOTSTRAP rows
+// don't correspond 1:1 to an observation's own day). When no NIGHTLY row exists for a day (the
+// run genuinely never executed, or a fixture/seam gap), the ⚙ is simply ABSENT — never a dead
+// button, per the Global Constraints' honest-states rule.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
 import { PageHead } from '@/shared/ui/mozaik'
-import { useCharacterExperts, useCharacterFeed } from '@/data/hooks'
+import { useCharacterExperts, useCharacterFeed, useCharacterRuns } from '@/data/hooks'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
 import { feedDayLabel } from '@/features/character/feedDayLabel'
+import { addDays } from '@/shared/lib/dates'
+import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import type { CharacterFeedItem } from '@/data/character/characterApi'
+
+/** The feed only carries an ISO timestamp per item (same gap `feedDayLabel` already works
+ *  around) — this derives the LOCAL calendar day (`YYYY-MM-DD`) an item's `at` falls on, the
+ *  same local-date construction `feedDayLabel` uses, so a run's `day` (a `LocalDate`) and a
+ *  feed item's day always compare on the same calendar. */
+function localDayIso(atIso: string): string {
+  const at = new Date(atIso)
+  const y = at.getFullYear()
+  const m = String(at.getMonth() + 1).padStart(2, '0')
+  const d = String(at.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 
 interface Group { day: string; items: CharacterFeedItem[] }
 
@@ -38,6 +64,18 @@ export function CharacterFeedPage() {
   const navigate = useNavigate()
   const { items, isLoading } = useCharacterFeed()
   const { experts } = useCharacterExperts()
+
+  // The run-lookup window spans every item currently in the feed, clamped to the 62-day
+  // CHARACTER_RUN_RANGE_INVALID cap (FutasokPage's identical clamp) — items are already
+  // newest-first (feed contract), so items[0] is the newest day and the last item the oldest.
+  // Hooks can't be called conditionally, so this runs even for an empty feed (falls back to
+  // today, a harmless 1-day query).
+  const today = mondayIso()
+  const toIso = items.length > 0 ? localDayIso(items[0].at) : today
+  const oldestIso = items.length > 0 ? localDayIso(items[items.length - 1].at) : today
+  const fromIso = oldestIso < addDays(toIso, -61) ? addDays(toIso, -61) : oldestIso
+  const { runs } = useCharacterRuns(fromIso, toIso)
+  const nightlyRunByDay = new Map(runs.filter((r) => r.kind === 'NIGHTLY').map((r) => [r.day, r.id]))
 
   if (isLoading) return null
 
@@ -64,6 +102,7 @@ export function CharacterFeedPage() {
                     const isUser = it.expertKey === 'user'
                     const color = expertColor(it.expertKey)
                     const name = isUser ? 'Te' : (experts.find((e) => e.key === it.expertKey)?.displayName ?? it.expertKey)
+                    const runId = nightlyRunByDay.get(localDayIso(it.at))
                     return (
                       <div key={ii} className="kr-feedrow">
                         {isUser
@@ -75,6 +114,17 @@ export function CharacterFeedPage() {
                           <div className="kr-fnm" style={{ '--dc': color } as React.CSSProperties}>{name}</div>
                           <div className="kr-ftxt">{it.text}</div>
                         </div>
+                        {runId != null && (
+                          <button
+                            type="button"
+                            className="kr-gepq"
+                            aria-label="A futáshoz"
+                            title="A futáshoz →"
+                            onClick={() => navigate(`/me/karakter/gepterem/futas/${runId}`)}
+                          >
+                            ⚙
+                          </button>
+                        )}
                       </div>
                     )
                   })}

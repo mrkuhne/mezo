@@ -129,6 +129,21 @@ test('/me/karakter/gepterem/futas/:id opens one run\'s detail (mezo-1gim.14, Tas
   expect(await screen.findByRole('group', { name: 'Futás-lánc' })).toBeInTheDocument()
 })
 
+test('/me/karakter/gepterem/adatforrasok is the Bekötve|Tervezett data-source inventory (mezo-1gim.14, Task 5)', async () => {
+  renderApp('/me/karakter/gepterem/adatforrasok')
+  expect(await screen.findByText('mit olvas a rendszer ma, és mit tervez')).toBeInTheDocument()
+})
+
+test('/me/karakter/gepterem/adatforrasok/kor/:n opens one MINDENT-be round\'s mini-page (mezo-1gim.14, Task 5)', async () => {
+  renderApp('/me/karakter/gepterem/adatforrasok/kor/1')
+  expect(await screen.findByText('1. KÖR')).toBeInTheDocument()
+})
+
+test('/me/karakter/gepterem/detektorok lists the 5 real detectors (mezo-1gim.14, Task 5)', async () => {
+  renderApp('/me/karakter/gepterem/detektorok')
+  expect(await screen.findByText('a ma aktív katalógus, egy mondatban')).toBeInTheDocument()
+})
+
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's

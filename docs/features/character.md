@@ -9,6 +9,7 @@ key_files:
   - api/feature/character/character.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java
   - backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql
+  - backend/src/main/resources/db/changelog/1.0.0/script/202608311600_mezo-1gim.14_create_character_run.sql
   - frontend/src/data/character
   - frontend/src/features/character
 related: [companion, proactive, insights, me, _platform-api-backend]
@@ -24,13 +25,18 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 > FE ✅ shipped (`mezo-1gim.13`, the Design 2.0 Karakter FE slice, Tasks 1–5): a Karakter hub on
 > the Én tab (maturity-ring hero + a 4-tile mosaic — Dimenziók, Feed, Csapat, Konzílium) with full
 > `/me/karakter/*` page siblings for each tile, claim feedback wired to the real endpoint, the
-> bootstrap ceremony, and the konzílium transcript view.** Driving spec:
+> bootstrap ceremony, and the konzílium transcript view. **Gépterem ✅ shipped**
+> (`mezo-1gim.14`, S9): a `character_run` honesty-spine table + writers on all four pipelines, two
+> read endpoints, and a 5-page FE sub-hub (Gépterem, Futások, run detail, Adatforrások,
+> Detektorok) exposing per-run signal chains, called experts, and the data-source inventory —
+> see §3/§4/§10's Gépterem subsections below.** Driving spec:
 > [`docs/superpowers/specs/2026-08-27-user-character-dossier-design.md`](../superpowers/specs/2026-08-27-user-character-dossier-design.md)
 > (bd epic `mezo-1gim`); the backend slice plans (`docs/superpowers/plans/2026-08-2*-character-slice*.md`,
-> `2026-08-3*-character-slice*.md`) and the FE slice plan
-> (`docs/superpowers/plans/2026-09-01-character-slice8-fe.md`) are the point-in-time build record.
-> **This doc reflects the code as it stands after the FE slice's Task 5** (route/page/doc
-> ship-prep — the backend side is unchanged since the S7 consolidation slice, `mezo-1gim.11`).
+> `2026-08-3*-character-slice*.md`), the FE slice plan
+> (`docs/superpowers/plans/2026-09-01-character-slice8-fe.md`), and the Gépterem slice plan
+> (`docs/superpowers/plans/2026-09-01-character-slice9-gepterem.md`) are the point-in-time build
+> record. **This doc reflects the code as it stands after the Gépterem slice's Task 5**
+> (route/page/doc ship-prep).
 
 ## 1. Summary
 
@@ -115,6 +121,46 @@ tile rather than in-page accordions.
   with the gold rail. The closing honesty note ("A fenti a valódi beszélgetés...") makes explicit
   that the transcript is the real exchange, never re-dramatized.
 
+- **Gépterem** (`/me/karakter/gepterem`, `GeptermPage`) — the geek-transparency sub-hub, reached
+  from a thin full-width row below the hub's 4-tile mosaic (v4.2, NOT a 5th grid tile — its own
+  graphite/slate-green technical tone marks it as a different info layer). A hero line renders
+  the current week's last run in plain language (`runLabels.lastRunLine`), above a 4-tile mosaic:
+  - **Futások** (`/me/karakter/gepterem/futasok`, `FutasokPage`) — a `?start=` ISO-Monday
+    week-stepped, day-grouped run timeline (the `WeekHubPage` idiom) plus a "Ritkább futások"
+    section (MONTHLY/BOOTSTRAP rows) fetched over the widest 62-day window the range endpoint
+    allows. A day inside the browsed week with NO run row renders "nincs adat erről az
+    éjszakáról" (honest-missing); a REAL zero-count NIGHTLY row renders its own proud quiet-night
+    row — the two states are never conflated.
+  - **Run detail** (`/me/karakter/gepterem/futas/:id`, `RunPage`) — a narrative hero sentence
+    derived only from the run's real counts, a `RunFlowStrip` (jel → hívás → megfigyelés, NIGHTLY
+    only — see the callCount honesty ruling below), `SignalChainCard`s (the KÓD detector chip +
+    summary → LLM persona + observation text two-tone chain, "N forrás-hivatkozás" from
+    `refCount`) for NIGHTLY signal nights, a called-experts opchip row (all kinds), a "Teljes
+    transzkript megnyitása" link for conference-kind runs, and an AI-napló deep-link row
+    (`/me/ai-usage`, unfiltered — `AiCallFilters`' `filters` state is a plain `useState`, not
+    URL-driven, so no `?feature=` param exists to pass). An unknown/foreign `:id` (`useCharacterRun`
+    404 → `null`) renders the feature's one shared `.kr-degraded` face, never a crash.
+  - **Adatforrások** (`/me/karakter/gepterem/adatforrasok`, `AdatforrasokPage`) — a Bekötve |
+    Tervezett segmented control. Bekötve is a single sage card (the 4 read cadences already
+    wired: éjszakai kör, vasárnapi konzílium, havi mélyolvasás, bootstrap — with volume/cadence
+    chips). Tervezett is a compact 4-row index into the four MINDENT-be round mini-pages
+    (`/me/karakter/gepterem/adatforrasok/kor/:n`, `KorPage` — a path param, matching
+    `DimensionsPage`'s `/dimenzio/:key` sibling idiom for discrete indexed items, deliberately
+    NOT FutasokPage's `?start=` continuous-range idiom), plus a "+ még N terület később" tail.
+    All of this content is STATIC (`frontend/src/features/character/inventory.ts`) — see that
+    file's own header for why: it IS the `mezo-1gim.15` ("MINDENT be") working checklist, not a
+    live read off any backend catalog, and most of its `det` (detector) keys name detectors that
+    don't exist yet (§9's "detector catalog is narrower than spec" ledger already tracks this).
+  - **Detektorok** (`/me/karakter/gepterem/detektorok`, `DetektorokPage`) — the 5 REAL,
+    `DetectorRegistry`-discovered detectors, one line each (key, one-line semantic, owning expert
+    in their domain color), closing with "A kód csak észlel — az értelmezés mindig az adott
+    szakértő LLM-hívása." This is the runtime truth `inventory.ts` explicitly is NOT.
+  - The Feed's (`CharacterFeedPage`) observation rows each carry a ⚙ that resolves the matching
+    NIGHTLY run by the observation's own calendar day (via `useCharacterRuns` over the feed's
+    date span) and navigates to `RunPage` for it; when no NIGHTLY row exists for that day the ⚙
+    is simply absent (no dead button). `CONFERENCE_CHANGE` rows are unaffected — they keep
+    linking to `/me/karakter/konzilium`.
+
 The claim-level `TALAL`/`NEM_IGAZ`/`PONTOSITOM` feedback UI POSTs to
 `POST /api/character/claim/{id}/feedback` (`CharacterFeedbackService`) for real; nothing else in
 the pipeline changed — a submitted correction still only shows up at the next konzílium, exactly
@@ -156,6 +202,18 @@ consume:  CharacterPromptAssembler.render(userId) → deterministic "[Karakter]"
           → injected into ChatService / MemoirGenerator / PredictionGenerator /
              WeeklyReviewGenerator system prompts
 ```
+
+**Gépterem run-log write path** (S9, `mezo-1gim.14`): each of the four pipelines above, on
+completion (including a quiet nightly pass that produced nothing), calls
+`CharacterRunLog.record(owner, kind, day, observationCount, callCount, detectorKeys, expertKeys,
+conferenceId)` — its own `REQUIRES_NEW` transaction, idempotent per `(created_by, kind, day)`
+(an existing live row is a no-op), and it never throws into the caller (catch + `log.warn`,
+mirroring the `DailySummaryJob` per-unit isolation idiom). This is the honesty spine the FE's
+Gépterem sub-hub reads from: a day the pipeline genuinely never ran has NO row at all (renders
+"nincs adat erről az éjszakáról"), while a day it ran and found nothing gets a real
+`(0, 0, [], [])` row (renders the proud "csendes éjszaka" face) — the two are structurally
+different facts, not styling choices. The nightly pass's early-return-on-quiet-day path was
+moved to run AFTER the record call specifically so a quiet night still gets logged.
 
 Every LLM call in this pipeline flows through the same `CompanionLlm` port
 ([companion.md](companion.md)) and is audited under the `character` feature tag
@@ -199,10 +257,44 @@ Migration: `db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_
 - **`character_portrait_revision`** — `dimension_id` FK, `version int`, `portrait text`,
   `conference_id` FK, `created_at`. Every successful portrait rewrite appends one; a blank/failed
   rewrite leaves the dimension entirely untouched (no revision, no version bump).
+- **`character_run`** (S9, `mezo-1gim.14`; migration
+  `202608311600_mezo-1gim.14_create_character_run.sql`) — the Gépterem honesty-spine table, one
+  row per pipeline EXECUTION (never per intent — a row only exists if the pipeline actually ran).
+  `kind varchar(10)` CHECK `NIGHTLY|WEEKLY|MONTHLY|BOOTSTRAP`, `day date` (the anchor: the
+  observed day for NIGHTLY, `week_start` for WEEKLY, the month's first day for MONTHLY, the run
+  date for BOOTSTRAP), `observation_count int`, `call_count int`, `detector_keys jsonb`
+  (`RunDetectorKeysEnvelope{List<String> keys}`), `expert_keys jsonb`
+  (`RunExpertKeysEnvelope{List<String> keys}`), `conference_id uuid` (soft ref, null for
+  NIGHTLY), `generated_at timestamptz`. Partial unique index
+  `uq_character_run_created_by_kind_day` on `(created_by, kind, day) where is_deleted = false` —
+  the idempotency backstop `CharacterRunLog.record` relies on (see §3).
+
+### Gépterem API (S9, `mezo-1gim.14`)
+
+Both endpoints below are `CHARACTER_SWITCH`-gated only, same as every other read in §4's table —
+run reads work with the companion switch off too (`CharacterApiCompanionOffIT` covers this).
+
+| Method + path | Returns | Notes |
+|---|---|---|
+| `GET /api/character/runs?from=&to=` | `CharacterRunSummary[]` | Both dates required, day-desc order; `400 CHARACTER_RUN_RANGE_INVALID` if `to < from` or the span exceeds 62 days; `[]` honest empty |
+| `GET /api/character/run/{runId}` | `CharacterRunResponse` (`{summary, observations[]}`) | Observations resolved by `(created_by, day)` for NIGHTLY rows, by `consumed_by_conference_id` for conference-kind rows; each `CharacterRunObservation.signals[]` carries `refCount` (a COUNT, not raw ref ids — the v4.1 "N forrás-hivatkozás" decision, raw ids stay backend-side); `404 CHARACTER_RUN_NOT_FOUND` for unknown/foreign ids |
+
+**`callCount` is honest-per-kind, not uniformly precise** — a deliberate ruling, not an
+oversight: NIGHTLY's `callCount` is exact (one LLM call per fired expert that night).
+WEEKLY/MONTHLY/BOOTSTRAP rows record `callCount: 0` by design (`CharacterConferenceService`'s
+javadoc states this explicitly) — a precise per-call count isn't cheaply available at that
+level (proposal-round experts + the Szkeptikus + Mezo + N portrait rewrites), so rather than
+guess, those rows point at the AI-napló (`feature/llmlog`, `feature=character`) as the
+call-level truth instead. The FE mirrors this: `RunPage.flowSteps` only ever renders a "hívás"
+flow-strip cell for NIGHTLY; WEEKLY gets a single honest "megfigyelés" cell (its
+`observationCount` genuinely is one); MONTHLY/BOOTSTRAP get no flow strip at all (their counts
+are re-evaluated-claims / kezdő-állítás counts, not observation counts — labeling either
+"megfigyelés" would contradict the narrative hero sentence two lines above it).
 
 ### API (`api/feature/character/character.yml`)
 
-All seven endpoints gated on `CHARACTER_SWITCH` (`mezo.feature.character.enabled`); reads still
+All nine endpoints (the original seven + the two Gépterem run endpoints below) gated on
+`CHARACTER_SWITCH` (`mezo.feature.character.enabled`); reads still
 work with the companion switch off (S1 deliberately kept dossier reads companion-free —
 `CharacterController` class javadoc), only `POST /api/character/bootstrap` needs
 `COMPANION_SWITCH` too (degrades to 404 via an absent `ObjectProvider<CharacterBootstrapService>`
@@ -324,7 +416,7 @@ dual-mode hook idiom) and the Mozaik component set (`frontend/src/shared/ui/moza
 
 ## 8. Testing
 
-Backend: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (24 files, listed below by
+Backend: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (25 files, listed below by
 shape). FE: `frontend/src/data/character/characterHooks.test.tsx` (dual-mode hook coverage) +
 one `.test.tsx` per page/component under `frontend/src/features/character/` — every page test
 uses the `DimensionsPage.test.tsx` hook-override idiom (stub `@/data/hooks` directly), which
@@ -335,12 +427,20 @@ covers every `/me/karakter/*` route's reachability and runs under both `pnpm tes
 `VITE_USE_MOCK=false pnpm test` (bd memory `vite-use-mock-unset-means-mock` — never trust a bare
 `pnpm test` alone as dual-mode coverage). No Playwright visual goldens exist for any
 `/me/karakter/*` page — `frontend/tests/visual/visual.spec.ts`'s `SCREENS` list is a hand-curated
-subset of routes, not "every page," and none of the Karakter FE slice's five pages (hub included)
-were added to it.
+subset of routes, not "every page," and none of the Karakter FE slice's ten pages (hub +
+Dimenziók/dimenzió/Feed/Csapat/Konzílium + the Gépterem sub-hub's Gépterem/Futások/run-detail/
+Adatforrások+kör/Detektorok) were added to it.
 
 - **API/IT surface**: `CharacterApiIT` (overview lazy-seed, dimension 404, feed/conference
-  merge), `CharacterApiCompanionOffIT` (reads OK with companion off, bootstrap 404s),
-  `CharacterApiSwitchOffIT` (`CHARACTER_SWITCH` off degrade).
+  merge, extended in S9 with the run-timeline range endpoint incl. its `400`s and the run-detail
+  endpoint for both a NIGHTLY and a WEEKLY row), `CharacterApiCompanionOffIT` (reads OK with
+  companion off incl. the run endpoints, bootstrap 404s), `CharacterApiSwitchOffIT`
+  (`CHARACTER_SWITCH` off degrade).
+- **Gépterem run-log**: `CharacterRunLogIT` (S9) — a quiet nightly day writes a zero row, a
+  signal day writes counts+keys, re-running the same day stays one row (idempotency), a weekly
+  conference writes its row with `conferenceId`, bootstrap writes its row, the partial unique
+  index backstops a duplicate `saveAndFlush`, and a pre-inserted conflicting row still lets
+  `generateForDay` complete (the writer never breaks its host pipeline).
 - **Pipeline ITs**: `CharacterBootstrapIT`, `CharacterConferenceJobIT`,
   `CharacterConferenceServiceIT`, `CharacterHistoryReadsIT`, `CharacterMonthlyServiceIT`,
   `CharacterObservationJobIT`, `CharacterObservationServiceIT`, `CharacterFeedbackIT`,
@@ -456,6 +556,24 @@ before investigating.
 - **Out of scope, spec-stated (never / not v1)**: the "Történet" (portrait-revision-timeline)
   view, the identity-hero live self-portrait bio line, any expert direct-messaging to the user
   (IDENT-1, never), any outward action from Karakter (IDENT-2).
+- **Gépterem shipped, S9-specific deferrals/rulings** (`mezo-1gim.14`): `inventory.ts`
+  (Adatforrások' Tervezett content) is deliberately STATIC — it IS the `mezo-1gim.15` ("MINDENT
+  be") working checklist, not a live catalog read, and most of its `det` keys name detectors
+  that don't exist yet (see the detector-catalog ledger above); its own header comment says
+  rows are expected to move OUT of `inventory.ts` and (if fully wired) INTO `DetektorokPage`'s
+  real 5-detector list as `mezo-1gim.15` lands each round for real — don't treat this module as
+  runtime truth. The Feed's ⚙ has no `runId` to key off (`CharacterFeedItem` never carried one —
+  it's a merged observation+diff view, not run-scoped) — it resolves the matching run
+  CLIENT-SIDE by the observation's own local calendar day against a `useCharacterRuns` window
+  spanning the feed's visible items (clamped to the 62-day range cap), matching NIGHTLY rows
+  only; when no such row exists the ⚙ is simply absent rather than a dead button. The kör
+  mini-pages use a path param (`/kor/:n`, `DimensionsPage`'s discrete-item sibling idiom), not
+  `?kor=` — the brief's own explicit fork, decided because the four rounds are discrete indexed
+  items, not a continuous steppable range like FutasokPage's week window. `DetektorokPage`'s
+  "who" (owning expert) per detector is taken from the REAL `DetectorSignal` argument in each
+  detector's source, not the design prototype's `DETECTOR_CATALOG.who` guess — two of the five
+  differ (`logging-gap` and `journal-silence` are both really `drill`-owned, not the prototype's
+  `taplalkozo`/`pszichologus` guesses respectively).
 - **Companion tone guardrail** for `sensitive` claims (self-calibration,
   knowledge-rejection-pattern classes per spec §3) is a persona-prompt instruction inside the
   Szkeptikus/proposal prompts, not a separately enforced code gate — there is no automated test
@@ -466,29 +584,38 @@ before investigating.
 
 **Backend — feature package** (`backend/src/main/java/io/mrkuhne/mezo/feature/character/`):
 - `config/CharacterProperties.java` — every `mezo.character.*` tunable (§ below)
-- `controller/CharacterController.java` — the 7 endpoints, `CHARACTER_SWITCH`-gated
+- `controller/CharacterController.java` — the 9 endpoints (the original 7 + the 2 Gépterem run
+  endpoints), `CHARACTER_SWITCH`-gated
 - `entity/` — `CharacterDimensionEntity`, `CharacterClaimEntity`, `CharacterObservationEntity`,
-  `CharacterConferenceEntity`, `CharacterPortraitRevisionEntity` + the typed-jsonb envelope
-  records used by their jsonb columns (`ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`,
-  `ClaimConfidenceHistoryEnvelope`, `ObservationDimensionKeysEnvelope`,
-  `ObservationSignalsEnvelope`, `ConferenceTranscriptEnvelope`, `ConferenceOutcomeEnvelope`)
+  `CharacterConferenceEntity`, `CharacterPortraitRevisionEntity`, `CharacterRunEntity` (S9) +
+  the typed-jsonb envelope records used by their jsonb columns (`ClaimEvidenceEnvelope`,
+  `ClaimFeedbackEnvelope`, `ClaimConfidenceHistoryEnvelope`, `ObservationDimensionKeysEnvelope`,
+  `ObservationSignalsEnvelope`, `ConferenceTranscriptEnvelope`, `ConferenceOutcomeEnvelope`,
+  `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`)
+- `repository/CharacterRunRepository.java` (S9) — `findByCreatedByAndKindAndDay` (the
+  idempotency check), the day-range and single-run-by-owner reads the controller/service use
 - `detector/` — `CharacterDetector`, `DetectorRegistry`, `DetectorInput`/`DetectorSignal`, and
   the 5 concrete detectors (`CheckinGapDetector`, `JournalNoteDetector`,
   `JournalSilenceDetector`, `LoggingGapDetector`, `UnderLoggingDetector`)
 - `service/CharacterCoreCatalog.java` / `CharacterExpertCatalog.java` — the 7 CORE
   dimensions / 7 expert personas (static catalogs)
+- `service/CharacterRunLog.java` (S9) — the run-log writer all four pipelines call; see §3
 - `service/CharacterObservationJob.java` / `CharacterObservationService.java` — nightly pass
+  (writes the NIGHTLY run row, S9)
 - `service/CharacterConferenceJob.java` / `CharacterConferenceService.java` — weekly konzílium
+  (writes the WEEKLY run row, S9)
 - `service/KonziliumProposalRound.java` / `KonziliumVerdictRound.java` / `ClaimLifecycle.java` /
   `ClaimProposal.java` / `ClaimRuling.java` / `ExpertEvidence.java` — the choreography
 - `service/PortraitWriter.java` — per-dimension portrait rewrite + maturity roll-up
 - `service/CharacterMonthlyJob.java` / `CharacterMonthlyService.java` — monthly deep read +
-  stale-chapter retirement
+  stale-chapter retirement (writes the MONTHLY run row, S9)
 - `service/CharacterBootstrapService.java` / `CharacterHistoryReads.java` — one-time bootstrap
+  (writes the BOOTSTRAP run row, S9)
 - `service/CharacterFeedbackService.java` — TALAL/NEM_IGAZ/PONTOSITOM
 - `service/CharacterPromptAssembler.java` — the `[Karakter]` block renderer
 - `service/CharacterService.java` / `CharacterSignalReads.java` /
   `CharacterConfidenceWords.java` — reads, detector-input gathering, human-words confidence
+  (`CharacterService` also owns `runs()`/`run()`, S9)
 
 **Cross-feature port**: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java`
 (interface) — consumed by `feature/companion/service/ChatService.java`,
@@ -499,7 +626,9 @@ before investigating.
 
 **Migrations**: `backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql`,
 `202608311000_mezo-1gim.6_character_conference_monthly_unique.sql`,
-`202608311100_mezo-1gim.6_character_conference_bootstrap_unique.sql`
+`202608311100_mezo-1gim.6_character_conference_bootstrap_unique.sql`,
+`202608311600_mezo-1gim.14_create_character_run.sql` (S9 — `character_run` +
+`uq_character_run_created_by_kind_day`)
 
 **Switches/crons** (`backend/src/main/resources/application.yml`):
 - `mezo.feature.character.enabled: true` — the feature switch (`CHARACTER_SWITCH`); LLM-calling
@@ -515,26 +644,48 @@ before investigating.
   `prompt.max-total-chars: 1800`, `prompt.portrait-min-maturity: 30`
 - `mezo.character.detector: {}` (per-key kill switches, all enabled by default/absence)
 
-**Tests**: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (24 files, see §8)
+**Tests**: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (25 files, see §8)
 
 **Frontend — data layer** (`frontend/src/data/character/`):
 - `characterApi.ts` — the fetch client + `confidenceWord()` (the 0.75/0.5 word thresholds)
 - `characterHooks.ts` — every `useCharacterX()` dual-mode hook (§6), re-exported through
-  `frontend/src/data/hooks.ts`
+  `frontend/src/data/hooks.ts`, incl. `useCharacterRuns(fromIso, toIso)` /
+  `useCharacterRun(id | null)` (S9)
 - `characterMock.ts` — the mock seeds (mirrors the approved prototype's `DIMS`/`CSAPAT`/`FEED`/
-  `KONZ`/`TRANSCRIPT` content verbatim, mapped onto the real DTO shapes)
+  `KONZ`/`TRANSCRIPT` content verbatim, mapped onto the real DTO shapes; S9 adds `MOCK_RUNS`/
+  `MOCK_RUN_DETAIL` — 3 seeded weeks of NIGHTLY rows incl. quiet nights + one WEEKLY/MONTHLY/
+  BOOTSTRAP row each)
 
 **Frontend — feature package** (`frontend/src/features/character/`):
-- `pages/KarakterHubPage.tsx` — the hub (ring hero + 4-tile mosaic + bootstrap ceremony faces)
+- `pages/KarakterHubPage.tsx` — the hub (ring hero + 4-tile mosaic + bootstrap ceremony faces +
+  the thin full-width Gépterem row, S9)
 - `pages/DimensionsPage.tsx` / `DimensionPage.tsx` — the 8-tile list + one dimension's claims
-- `pages/CharacterFeedPage.tsx` — the day-grouped observation feed
+- `pages/CharacterFeedPage.tsx` — the day-grouped observation feed (each observation row's ⚙
+  retarget to its matching run page, S9)
 - `pages/CsapatPage.tsx` — the 9 persona cards
 - `pages/KonziliumPage.tsx` — the conference list + `?id=` transcript view
+- `pages/GeptermPage.tsx` (S9) — the Gépterem sub-hub (hero last-run line + the 4-tile mosaic
+  into Futások/Adatforrások/AI-napló/Detektorok)
+- `pages/FutasokPage.tsx` (S9) — the `?start=` week-stepped, day-grouped run timeline + Ritkább
+  futások
+- `pages/RunPage.tsx` (S9) — the generic run-detail page (narrative hero, flow strip, signal
+  chains, called experts, transcript/AI-napló links)
+- `pages/AdatforrasokPage.tsx` (S9) — Bekötve | Tervezett segmented control over
+  `inventory.ts`'s static content
+- `pages/KorPage.tsx` (S9) — one MINDENT-be round's item list (`/kor/:n`)
+- `pages/DetektorokPage.tsx` (S9) — the 5 real detectors, one line + owning expert each
+- `inventory.ts` (S9) — the Adatforrások/Tervezett static corpus module; ALSO the
+  `mezo-1gim.15` working checklist (see its own header comment and §9)
 - `components/PersonaOrb.tsx` — the domain-color orb-variant sprite wrapper (`s-orb-*`)
 - `components/MaturityRing.tsx` — the 7-arc SVG ring
 - `components/ClaimTile.tsx` — one claim's confidence chip + feedback pills
 - `components/TranscriptTurn.tsx` — one konzílium transcript turn (persona rail, szkeptikus/
   ruling faces, the "DANIEL VÁLASZA — " gold-rail line detection)
+- `components/RunFlowStrip.tsx` (S9) — the jel → hívás → megfigyelés connected-step strip
+- `components/SignalChainCard.tsx` (S9) — the KÓD chip+summary → LLM persona+text two-tone chain
+- `runLabels.ts` (S9) — pure copy helpers deriving every run sentence from real
+  `CharacterRunSummary` counts only (`runHeroLede`, `runRowSubline`, `lastRunLine`, kind
+  badges/labels)
 - `expertColors.ts` — the one shared `EXPERT_COLORS` map (ring arcs, orbs, tiles all key off it)
 - `dossierState.ts` — `isDossierEmpty()`, the one shared pre-bootstrap predicate (hub +
   `EnHubPage`'s Karakter tile both call it, never re-derive it)
@@ -543,11 +694,16 @@ before investigating.
 
 **Router**: `frontend/src/app/router.tsx` — `me/karakter`, `me/karakter/dimenziok`,
 `me/karakter/dimenzio/:key`, `me/karakter/feed`, `me/karakter/csapat`, `me/karakter/konzilium`
-(the last carries its own `?id=` transcript state, not a child route)
+(the last carries its own `?id=` transcript state, not a child route); S9 adds
+`me/karakter/gepterem`, `me/karakter/gepterem/futasok`, `me/karakter/gepterem/futas/:id`,
+`me/karakter/gepterem/adatforrasok`, `me/karakter/gepterem/adatforrasok/kor/:n`,
+`me/karakter/gepterem/detektorok`.
 
 **Docs**: this file; driving spec
 [`docs/superpowers/specs/2026-08-27-user-character-dossier-design.md`](../superpowers/specs/2026-08-27-user-character-dossier-design.md);
 backend slice plans `docs/superpowers/plans/2026-08-2*-character-slice*.md`,
 `docs/superpowers/plans/2026-08-3*-character-slice*.md`, the S7 consolidation slice
 (`docs/superpowers/plans/2026-08-31-character-slice7-consolidation.md`); the FE slice plan
-`docs/superpowers/plans/2026-09-01-character-slice8-fe.md` (`mezo-1gim.13`, Tasks 1–5).
+`docs/superpowers/plans/2026-09-01-character-slice8-fe.md` (`mezo-1gim.13`, Tasks 1–5); the
+Gépterem slice plan `docs/superpowers/plans/2026-09-01-character-slice9-gepterem.md`
+(`mezo-1gim.14`, Tasks 1–5).

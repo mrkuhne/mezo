@@ -65,10 +65,16 @@ describe('GeptermPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/me/ai-usage')
   })
 
-  test('Adatforrások and Detektorok render inert — Task 5 registers their routes', () => {
+  test('Adatforrások tile navigates to the Adatforrások page (Task 5)', async () => {
     renderHub()
-    expect(screen.queryByRole('button', { name: 'Adatforrások' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Detektorok' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Adatforrások/ }))
+    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/adatforrasok')
+  })
+
+  test('Detektorok tile navigates to the Detektorok page (Task 5)', async () => {
+    renderHub()
+    await userEvent.click(screen.getByRole('button', { name: /Detektorok/ }))
+    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/detektorok')
   })
 
   test('an empty week (no runs) renders the tiles with no hero line — no fabricated line', () => {

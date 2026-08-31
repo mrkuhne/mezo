@@ -80,6 +80,9 @@ import { KonziliumPage } from '@/features/character/pages/KonziliumPage'
 import { GeptermPage } from '@/features/character/pages/GeptermPage'
 import { FutasokPage } from '@/features/character/pages/FutasokPage'
 import { RunPage } from '@/features/character/pages/RunPage'
+import { AdatforrasokPage } from '@/features/character/pages/AdatforrasokPage'
+import { KorPage } from '@/features/character/pages/KorPage'
+import { DetektorokPage } from '@/features/character/pages/DetektorokPage'
 
 // Design 2.0 shell (mezo-d20.1.1): /today → /nap and /insights → /mezo renames. The legacy
 // paths survive as redirects (PWA bookmarks, in-app navigate() calls not yet migrated).
@@ -228,6 +231,12 @@ export const routes: RouteObject[] = [
       { path: 'me/karakter/gepterem', element: <GeptermPage /> },
       { path: 'me/karakter/gepterem/futasok', element: <FutasokPage /> },
       { path: 'me/karakter/gepterem/futas/:id', element: <RunPage /> },
+      // Adatforrások/kör/Detektorok (Task 5) — the kör mini-pages are discrete indexed items
+      // (DimensionsPage's `/dimenzio/:key` sibling idiom), not a continuous stepped range, so
+      // they get a path param (`/kor/:n`), not FutasokPage's `?start=` query-param idiom.
+      { path: 'me/karakter/gepterem/adatforrasok', element: <AdatforrasokPage /> },
+      { path: 'me/karakter/gepterem/adatforrasok/kor/:n', element: <KorPage /> },
+      { path: 'me/karakter/gepterem/detektorok', element: <DetektorokPage /> },
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
