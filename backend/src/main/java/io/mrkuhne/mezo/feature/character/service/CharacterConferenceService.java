@@ -110,12 +110,15 @@ public class CharacterConferenceService {
     /**
      * The honest minimum for the "correction is a mandatory next-konzílium input" claim (F3,
      * fix round 2, mezo-1gim.10): nothing upstream actually verifies a proposal addressed a
-     * consumed user-feedback observation, and every gathered observation — including an ignored
+     * consumed user-feedback correction, and every gathered observation — including an ignored
      * one — is marked consumed unconditionally right after this method returns, so an ignored
      * correction is gone forever with no trace. This does not enforce anything; it only makes the
-     * gap visible: for every consumed observation authored by {@link CharacterFeedbackService#USER_EXPERT_KEY}
-     * whose claim id does not appear as the {@code claimId} of any proposal this round produced,
-     * logs a WARN naming the claim id so the gap shows up in logs instead of silently vanishing.
+     * gap visible: for every consumed CORRECTION (NEM_IGAZ or PONTOSITOM — see
+     * {@link CharacterFeedbackService#isCorrection}) whose claim id does not appear as the
+     * {@code claimId} of any proposal this round produced, logs a WARN naming the claim id so the
+     * gap shows up in logs instead of silently vanishing. A plain TALAL confirmation carries no
+     * such obligation — it is deliberately EXCLUDED here (fix round 2, F1) so this WARN stays a
+     * signal worth reading rather than routine noise that trains people to ignore it.
      */
     private void warnUnaddressedUserFeedback(UUID owner, List<CharacterObservationEntity> weekObservations,
                                               List<ClaimProposal> proposals) {
@@ -126,13 +129,14 @@ public class CharacterConferenceService {
             }
         }
         for (CharacterObservationEntity observation : weekObservations) {
-            if (!CharacterFeedbackService.USER_EXPERT_KEY.equals(observation.getExpertKey())) {
+            if (!CharacterFeedbackService.USER_EXPERT_KEY.equals(observation.getExpertKey())
+                    || !CharacterFeedbackService.isCorrection(observation)) {
                 continue;
             }
             UUID claimId = userFeedbackClaimId(observation);
             if (claimId != null && !addressedClaimIds.contains(claimId)) {
-                log.warn("User feedback on claim {} (owner {}) was consumed by the weekly konzílium "
-                        + "without any proposal referencing it — the answer is gone unaddressed", claimId, owner);
+                log.warn("User feedback correction on claim {} (owner {}) was consumed by the weekly konzílium "
+                        + "without any proposal referencing it — the correction went unaddressed", claimId, owner);
             }
         }
     }

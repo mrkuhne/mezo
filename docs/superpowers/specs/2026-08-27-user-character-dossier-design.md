@@ -233,8 +233,10 @@ User feedback buttons on every claim (Én/Karakter dimension page):
   can't saturate a claim without data).
 - **„nem igaz"** — immediate `RETIRED` + a high-salience `user` observation for the next
   konzílium (the team must reckon with being wrong).
-- **„pontosítom"** — free text; stored on the claim + becomes a mandatory next-konzílium
-  input. The correction itself is strong evidence.
+- **„pontosítom"** — free text; stored on the claim + surfaced to the owning expert(s) at
+  top salience, evidence line carrying the claim id so it can be targeted directly. The
+  correction itself is strong evidence; if a konzílium consumes it without a proposal
+  addressing that claim id, the gap is logged, not silently dropped.
 
 Every feedback event is also a `character_observation` (expert_key `user`), so it flows
 through the same pipeline as any other signal.

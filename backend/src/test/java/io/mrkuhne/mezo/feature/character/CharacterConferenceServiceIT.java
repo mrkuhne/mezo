@@ -2,6 +2,9 @@ package io.mrkuhne.mezo.feature.character;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
@@ -18,6 +21,7 @@ import io.mrkuhne.mezo.feature.character.repository.CharacterObservationReposito
 import io.mrkuhne.mezo.feature.character.repository.CharacterPortraitRevisionRepository;
 import io.mrkuhne.mezo.feature.character.service.CharacterConferenceService;
 import io.mrkuhne.mezo.feature.character.service.CharacterExpertCatalog;
+import io.mrkuhne.mezo.feature.character.service.CharacterFeedbackService;
 import io.mrkuhne.mezo.feature.character.service.PortraitWriter;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -25,6 +29,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -244,6 +249,42 @@ class CharacterConferenceServiceIT extends ApiIntegrationTest {
         CharacterObservationEntity refreshedInWeek = observationRepository.findById(inWeek.getId()).orElseThrow();
         assertThat(refreshedStraggler.getConsumedByConferenceId()).isEqualTo(conference.getId());
         assertThat(refreshedInWeek.getConsumedByConferenceId()).isEqualTo(conference.getId());
+    }
+
+    @Test
+    void runWeekly_talalOnlyRound_logsNoUnaddressedCorrectionWarning() {
+        // fix round 2 (F1/F3, mezo-1gim.10): a TALAL confirmation carries no obligation to be
+        // addressed by a proposal, so CharacterConferenceService's unaddressed-correction WARN
+        // must stay silent for a round whose only user-feedback observation is a TALAL — firing
+        // routinely on plain confirmations would teach people to ignore the log.
+        UUID owner = ownerId();
+        seedDimension(owner, "discipline", "drill");
+        UUID claimId = UUID.randomUUID();
+        CharacterObservationEntity talal = new CharacterObservationEntity();
+        talal.setCreatedBy(owner);
+        talal.setExpertKey(CharacterFeedbackService.USER_EXPERT_KEY);
+        talal.setDimensionKeys(new ObservationDimensionKeysEnvelope(List.of("discipline")));
+        talal.setDay(WEEK_START.plusDays(1));
+        talal.setText("[" + claimId + "] A felhasználó megerősítette: \"Rendszeresen naplózik.\""
+                + " (a bizalom már beszámítva)");
+        talal.setSalience((short) 3);
+        talal.setSignals(new ObservationSignalsEnvelope(List.of(new ObservationSignalsEnvelope.Signal(
+                CharacterFeedbackService.SIGNAL_KEY, "talál", List.of(claimId.toString())))));
+        observationRepository.save(talal);
+
+        Logger logger = (Logger) LoggerFactory.getLogger(CharacterConferenceService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            CharacterConferenceEntity conference = conferenceService.runWeekly(owner, WEEK_START);
+
+            assertThat(conference).isNotNull();
+            assertThat(appender.list).noneMatch(event -> event.getFormattedMessage().contains("unaddressed"));
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 
     /** Escapes a JSON string value's double quotes/backslashes so it can be nested as another

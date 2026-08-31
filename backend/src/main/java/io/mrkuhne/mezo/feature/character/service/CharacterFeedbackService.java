@@ -82,6 +82,19 @@ public class CharacterFeedbackService {
     private static final short SALIENCE_RETIRE = 5;
     private static final short SALIENCE_CORRECTION = 5;
 
+    /**
+     * True for a NEM_IGAZ or PONTOSITOM observation (salience {@value #SALIENCE_CORRECTION}) —
+     * false for a plain TALAL confirmation (salience {@value #SALIENCE_TALAL}), the only other
+     * salience a {@value #USER_EXPERT_KEY}-authored observation ever carries. Package-visible for
+     * {@link CharacterConferenceService}'s unaddressed-correction WARN (fix round 2, F1/F3,
+     * mezo-1gim.10): only an unaddressed CORRECTION deserves that warning — a TALAL confirmation
+     * carries no obligation to be addressed, so it must never fire it (a routinely-firing WARN
+     * teaches people to ignore the log).
+     */
+    static boolean isCorrection(CharacterObservationEntity observation) {
+        return observation.getSalience() == SALIENCE_CORRECTION;
+    }
+
     private final CharacterClaimRepository claimRepository;
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterObservationRepository observationRepository;
