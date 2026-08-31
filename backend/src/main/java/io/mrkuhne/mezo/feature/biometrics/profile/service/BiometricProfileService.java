@@ -60,8 +60,10 @@ public class BiometricProfileService {
      * <p>Having NO profile row is a NORMAL state, not an error (mezo-5cmq): this used to 404, which
      * put the client on its error branch on every page mount merely because the owner had not
      * configured a profile. The absence is expressed by the payload instead — an EMPTY
-     * {@code BiometricProfileResponse} ({@code {}} on the wire). With no profile row there is also
-     * no BMR basis, so {@link #deriveTdeeBootstrap} runs ONLY for an existing row.
+     * {@code BiometricProfileResponse}, which on the wire is NOT {@code {}} but every field
+     * serialized as {@code null} (Jackson's default {@code Include.ALWAYS} applies here). With no
+     * profile row there is also no BMR basis, so {@link #deriveTdeeBootstrap} runs ONLY for an
+     * existing row.
      */
     public BiometricProfileResponse getProfile(UUID userId) {
         return repository.findByCreatedByAndDeletedFalse(userId)
