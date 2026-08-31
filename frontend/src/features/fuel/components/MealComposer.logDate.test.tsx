@@ -43,6 +43,29 @@ test('logDate + logTime: a mentett meal loggedAt-ja a választott nap + idő, a 
   })
 })
 
+test('logDate logTime NÉLKÜL (szabad blokk, slot választva): a loggedAt a slot SLOT_DEFAULT_TIME-jára esik', async () => {
+  const { wrapper } = setup()
+  const user = userEvent.setup()
+  render(
+    <MealComposer logDate="2026-05-19"
+      prefill={null} onSaved={() => {}} onCancel={() => {}} />,
+    { wrapper },
+  )
+  // MIKOR segment is visible (no fixedSlot) — pin the slot explicitly to lunch (13:00 default).
+  await user.click(screen.getByRole('button', { name: 'Ebéd' }))
+  await user.click(screen.getByRole('button', { name: 'Kamra · hozzáadás' }))
+  const addBtn = (await screen.findAllByRole('button', { name: /hozzáadása$/i }))[0]
+  await user.click(addBtn)
+  await user.click(screen.getByRole('button', { name: 'Bezárás' }))
+  await user.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
+
+  const probe = renderHook(() => useFuelDay('2026-05-19'), { wrapper })
+  await waitFor(() => {
+    const meals = probe.result.current.fuel.meals
+    expect(meals.some(m => m.loggedAt?.startsWith('2026-05-19T13:00'))).toBe(true)
+  })
+})
+
 test('saveLabel felülírja a mentés-CTA feliratát', () => {
   const { wrapper } = setup()
   render(

@@ -25,7 +25,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
-import { nowOffsetIso, offsetIso, localDateString } from '@/shared/lib/dates'
+import { nowOffsetIso, offsetIso, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { resizeImage } from '@/shared/lib/resizeImage'
 import { Icon } from '@/shared/ui/Icon'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -205,6 +205,12 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
   // deriveMealName is the same rule buildDayPlan falls back to, so one rule holds everywhere.
   const derivedName = deriveMealName(resolved.map(({ meta }) => meta.name))
 
+  // Honest totals-line label (mezo-1j3z, finding 5): "Mai nap eddig" lies when logDate targets a
+  // past day — show the day it actually books to instead.
+  const totalsDayLabel = logDate != null && logDate !== localDateString()
+    ? `${huMonthDay(logDate).toLowerCase()}. eddig`
+    : 'Mai nap eddig'
+
   const nowPct = pct(fuel.consumed.kcal, fuel.targets.kcal)
   const addPct = Math.min(100 - nowPct, pct(total.kcal, fuel.targets.kcal))
   const after = fuel.consumed.kcal + total.kcal
@@ -252,7 +258,7 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
     setAiError(null)
     try {
       const blob = aiPhoto ? await resizeImage(aiPhoto) : undefined
-      const draft = await draftMealFromAi({ date: localDateString(), text: aiText.trim() || undefined, photo: blob })
+      const draft = await draftMealFromAi({ date: logDate ?? localDateString(), text: aiText.trim() || undefined, photo: blob })
       const newLines: DraftLine[] = draft.items.map((it): DraftLine => {
         const key = crypto.randomUUID()
         if (it.source === 'estimate') {
@@ -525,7 +531,7 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
         <div style={{ marginTop: 6 }}><NutrientCells nutrients={totalNutrients} size="md" /></div>
         <div style={{ marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
           <div className="row" style={{ justifyContent: 'space-between', fontVariantNumeric: 'tabular-nums', fontSize: 8.5, color: 'var(--text-tertiary)', marginBottom: 5 }}>
-            <span>Mai nap eddig <b style={{ color: 'var(--text-secondary)' }}>{fuel.consumed.kcal}</b> <span style={{ color: 'var(--coral)' }}>+{total.kcal}</span> = <b style={{ color: 'var(--text-secondary)' }}>{after}</b></span>
+            <span>{totalsDayLabel} <b style={{ color: 'var(--text-secondary)' }}>{fuel.consumed.kcal}</b> <span style={{ color: 'var(--coral)' }}>+{total.kcal}</span> = <b style={{ color: 'var(--text-secondary)' }}>{after}</b></span>
             <span>cél <b style={{ color: 'var(--text-secondary)' }}>{fuel.targets.kcal}</b> kcal</span>
           </div>
           <div style={{ height: 5, background: 'var(--surface-2)', position: 'relative', overflow: 'hidden' }}>

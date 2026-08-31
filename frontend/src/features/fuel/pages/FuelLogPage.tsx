@@ -38,7 +38,10 @@ const MAX_BACK = 7
 export function FuelLogPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const today = localDateString()
+  // Anchored once (mezo-1j3z, finding 4): re-computing this per render would let a re-render
+  // after midnight shift `date` (and an open composer's logDate) mid-edit. The page remounts
+  // per navigation, so the staleness window is bounded to a single visit.
+  const [today] = useState(() => localDateString())
 
   const initialOffset = (() => {
     const d = searchParams.get('d')
@@ -77,6 +80,10 @@ export function FuelLogPage() {
     setOpenKey(null)
     setAiOnMount(false)
     setOffset(o => Math.min(MAX_BACK, Math.max(0, o + d)))
+    // The day switch re-renders the whole block list in place — without this the scroller
+    // stays wherever it was on the PREVIOUS day, stranding the new day's top blocks off-screen.
+    const body = document.querySelector('.mz-page-body')
+    if (body) body.scrollTop = 0
   }
 
   // A log opened FROM a window always carries that window's slotKey (mezo-bnsf) — and a
@@ -118,7 +125,9 @@ export function FuelLogPage() {
           <span className="flog-goal">/ {huInt(fuel.targets.kcal)} kcal</span>
         </div>
         <div className="mz-hero-sb">
-          {lane.tiles.length > 0 ? `${doneCount}/${lane.tiles.length} ablak kész` : 'nincs mai étkezési ablak'}
+          {lane.tiles.length > 0
+            ? `${doneCount}/${lane.tiles.length} ablak kész`
+            : past ? 'ezen a napon nem volt étkezési ablak' : 'nincs mai étkezési ablak'}
         </div>
         {past && (
           <div className="flog-pastnote">

@@ -212,6 +212,20 @@ test('?d= deep link: érvénytelen (távoli múlt) dátum a mai napra clampel', 
   expect(screen.getByText('Logolás')).toBeInTheDocument()
 })
 
+test('?d= deep link: jövőbeli dátum a mai napra clampel', () => {
+  hoisted.plan = { ...baseCtx, slots: [] }
+  renderView([`/fuel/log?d=${addDays(localDateString(), 3)}`])
+  expect(screen.queryByText('Pótlás')).not.toBeInTheDocument()
+  expect(screen.getByText('Logolás')).toBeInTheDocument()
+})
+
+test('?d= deep link: nem-parse-olható string a mai napra clampel', () => {
+  hoisted.plan = { ...baseCtx, slots: [] }
+  renderView(['/fuel/log?d=nem-datum'])
+  expect(screen.queryByText('Pótlás')).not.toBeInTheDocument()
+  expect(screen.getByText('Logolás')).toBeInTheDocument()
+})
+
 test('múltbeli mentés a választott nap loggedAt-jával, az ablak idejével íródik', async () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const qcWrapper = ({ children }: { children: ReactNode }) => (
@@ -279,5 +293,7 @@ test('üres múltbeli nap: nincs ＋ tervezz CTA, a meta „nem volt ablak"-ot m
   renderView()
   await user.click(screen.getByRole('button', { name: 'Előző nap' }))
   expect(screen.queryByRole('button', { name: '＋ tervezz' })).not.toBeInTheDocument()
-  expect(screen.getByText('ezen a napon nem volt étkezési ablak')).toBeInTheDocument()
+  // The honest "nem volt ablak" note now shows twice on an empty past day (finding 5, mezo-1j3z
+  // fix wave): the hero subline AND the üres-nap block's meta line.
+  expect(screen.getAllByText('ezen a napon nem volt étkezési ablak').length).toBeGreaterThanOrEqual(2)
 })

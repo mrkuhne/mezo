@@ -77,7 +77,7 @@ export function FuelMaiPage() {
   // ── hub-csali chip: tegnap pótolható ablakok (mezo-1j3z) — past-normalized lane,
   // ONE live door into `/fuel/log?d=<tegnap>`; hides itself when nothing is missed.
   const yesterday = addDays(localDateString(), -1)
-  const { fuel: fuelY } = useFuelDay(yesterday)
+  const { fuel: fuelY, isPending: yPending } = useFuelDay(yesterday)
   const { plan: planY, budget: budgetY } = useFuelTimeline(yesterday)
   const laneY = asPastDayLane(buildWindowLane({ slots: planY.slots, budget: budgetY, meals: fuelY.meals }))
   const yMissed = laneY.tiles.filter(t => t.state === 'missed').length
@@ -141,7 +141,7 @@ export function FuelMaiPage() {
             /fuel/log, and the hub carries ONE live door to it — the Logolás hero tile. */}
         <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties}>
           <FuelLogHeroTile vm={lane} onOpen={() => navigate('/fuel/log')}
-            pastHint={yMissed > 0 ? {
+            pastHint={!yPending && yMissed > 0 ? {
               dateLabel: `${huMonthDay(yesterday).toLowerCase()}.`,
               count: yMissed,
               onOpen: () => navigate(`/fuel/log?d=${yesterday}`),
