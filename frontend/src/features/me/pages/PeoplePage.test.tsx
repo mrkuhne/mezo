@@ -1,12 +1,53 @@
-import { render, screen, within, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+// Emberek S3 hub (mezo-06o0.2) — PeoplePage becomes the Kapcsolatok hub: a hero + 3-cell
+// stat strip + 4 navigation tiles (Jelöltek / A köröm / Említések / Heti kép, each a sibling
+// page — WeekHub precedent, never a local show/hide) + the Mezo-band chat handoff.
+// `now` is pinned to the mock seed's own "today" (2026-05-24) so hubLines' 7-day window lands
+// on a known, hand-checked set of mentions (see data/me/people.ts) instead of drifting with
+// the real clock.
+import { fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
+import { PeopleJeloltekPage } from '@/features/me/pages/PeopleJeloltekPage'
 
-// usePeople is dual-mode since Slice E — pin the mock seed for the Phase-1 parity assertions.
-beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-afterEach(() => vi.unstubAllEnvs())
+const NOW = new Date('2026-05-24T12:00:00')
+
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
+// Flattens every person's affectTrend so nobody trends down/up — exercises the honest
+// '—' fallback (statstrip down-cell) and the empty-circle Mezo-band sentence, both of
+// which the always-has-a-down-person mock seed can never reach on its own.
+const hoisted = vi.hoisted(() => ({ flattenTrends: false, empty: false }))
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    usePeople: () => {
+      const real = actual.usePeople()
+      if (hoisted.empty) return { ...real, people: [], mentions: [] }
+      if (!hoisted.flattenTrends) return real
+      return { ...real, people: real.people.map((p) => ({ ...p, affectTrend: [3, 3, 3, 3] })) }
+    },
+  }
+})
+
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(NOW)
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllEnvs()
+  mockNavigate.mockReset()
+  hoisted.flattenTrends = false
+  hoisted.empty = false
+})
 
 const renderPage = () =>
   render(
@@ -16,82 +57,109 @@ const renderPage = () =>
     { wrapper: QueryWrapper },
   )
 
-// mezo-d20.11 (ADR 0032): the prototype's own header — the `‹ Én` back chip + the `🎤 Log`
-// page action — plus the page-hero, replacing the .pghead-np band that offered no way back.
-test('renders the Mozaik header, the way back and the active-circle hero', () => {
+test('hero: Kapcsolatok + active-people bignum + the derived week-mention subline', () => {
   const { container } = renderPage()
   expect(screen.getByText('Kapcsolatok')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
-  expect(screen.getByText('‹ Én')).toBeInTheDocument()
   expect(container.querySelector('.mz-bignum')?.textContent).toBe('5')
-  expect(screen.getByText('aktív kör · tap → részletek')).toBeInTheDocument()
-  expect(container.querySelector('.pghead-np')).toBeNull()
+  expect(screen.getByText('aktív kör · 9 említés e héten')).toBeInTheDocument()
 })
 
-test('renders all five people in the active circle', () => {
-  renderPage()
-  for (const name of ['Petra', 'Bence', 'Ádám', 'Réka', 'Márk']) {
-    expect(screen.getAllByText(name).length).toBeGreaterThan(0)
-  }
-})
-
-test('mentions feed "Jelölt" filter narrows to flagged mentions', async () => {
-  renderPage()
-  await userEvent.click(screen.getByText('Jelölt'))
-  expect(screen.getAllByText('Réka').length).toBeGreaterThan(0)
-})
-
-// Mozaik re-face (mezo-d20.6.7): person tiles are the washed 2-col .ppl-tile —
-// not the old Napiv row-card — and each carries an affect-ring avatar.
-test('renders person tiles as the washed 2-col mosaic grid', () => {
+test('statstrip: 3 cells — mentions·week, top name, down name (or em dash)', () => {
   const { container } = renderPage()
-  expect(container.querySelector('.ppl-grid')).toBeInTheDocument()
-  const tiles = container.querySelectorAll('.ppl-tile')
-  expect(tiles.length).toBe(5)
+  const cells = container.querySelectorAll('.mz-statcell')
+  expect(cells).toHaveLength(3)
+  expect(cells[0].querySelector('b')?.textContent).toBe('9')
+  expect(cells[0].querySelector('small')?.textContent).toBe('említés · hét')
+  expect(cells[1].querySelector('b')?.textContent).toBe('Petra')
+  expect(cells[1].querySelector('small')?.textContent).toBe('legtöbbet említett')
+  expect(cells[2].querySelector('b')?.textContent).toBe('Réka ↘')
+  expect(cells[2].querySelector('small')?.textContent).toBe('hangulat-lejtő')
 })
 
-// FIGYELEM + the `kapcsolódik` pattern-tie chip: a flagged mention with a tie must show
-// both, verbatim (Réka's seeded mention carries both — see data/me/people.ts).
-test('a flagged mention with a pattern tie shows FIGYELEM and the kapcsolódik chip', () => {
+test('CONTRACT: the down-cell reads em dash — never a fabricated name — when nobody trends down', () => {
+  hoisted.flattenTrends = true
   const { container } = renderPage()
-  expect(screen.getAllByText('FIGYELEM').length).toBeGreaterThan(0)
-  const tile = screen.getByText('Hangjegy · 22:18').closest('.ppl-mrowt')
-  expect(tile).not.toBeNull()
-  const { getByText } = within(tile as HTMLElement)
-  expect(getByText('kapcsolódik')).toBeInTheDocument()
-  expect(getByText('FIGYELEM')).toBeInTheDocument()
-  expect(container.querySelectorAll('.ppl-mrowt').length).toBeGreaterThan(0)
+  const cells = container.querySelectorAll('.mz-statcell')
+  expect(cells[2].querySelector('b')?.textContent).toBe('—')
+  // With nobody trending down, the Mezo-band falls back to the top-name sentence.
+  expect(screen.getByText(/Petra volt e héten a legtöbbet veled/)).toBeInTheDocument()
 })
 
-// mezo-06o0.1: automata (text/chat-sourced) mentions carry an undo control; chip-sourced
-// (manual log) mentions never do — undoing only makes sense for the ones the extractor wrote.
-test('the automata mention shows an undo button that removes it; chip-sourced mentions have none', async () => {
+test('the empty-circle Mezo-band sentence renders when there is no data at all', () => {
+  hoisted.empty = true
   renderPage()
-  const autoTile = screen.getByText(/Ádámmal átbeszéltük a hétvégi túrát\./).closest('.ppl-mrowt') as HTMLElement
-  const undoBtn = within(autoTile).getByRole('button', { name: 'Említés visszavonása' })
-  expect(undoBtn).toBeInTheDocument()
+  expect(screen.getByText(/Ahogy írsz, magától épül itt a kapcsolati kép\./)).toBeInTheDocument()
+})
 
-  const chipTile = screen.getByText(/Bence-vel röpi után/).closest('.ppl-mrowt') as HTMLElement
-  expect(within(chipTile).queryByRole('button', { name: 'Említés visszavonása' })).toBeNull()
+test('four hub tiles render and each navigates to its own sibling route on click', () => {
+  renderPage()
 
-  await userEvent.click(undoBtn)
-  await waitFor(() => {
-    expect(screen.queryByText(/Ádámmal átbeszéltük a hétvégi túrát\./)).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Jelöltek' }))
+  expect(mockNavigate).toHaveBeenCalledWith('/me/people/jeloltek')
+
+  fireEvent.click(screen.getByRole('button', { name: 'A köröm' }))
+  expect(mockNavigate).toHaveBeenCalledWith('/me/people/kor')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Említések' }))
+  expect(mockNavigate).toHaveBeenCalledWith('/me/people/emlitesek')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Heti kép' }))
+  expect(mockNavigate).toHaveBeenCalledWith('/me/people/heti')
+})
+
+test('Jelöltek carries no badge in S3 (no candidate source wired yet)', () => {
+  renderPage()
+  const tile = screen.getByRole('button', { name: 'Jelöltek' })
+  expect(tile.querySelector('.ppl-hub-badge')).toBeNull()
+})
+
+test('A köröm shows a facepile of the first four people\'s initials', () => {
+  renderPage()
+  const tile = screen.getByRole('button', { name: 'A köröm' })
+  const initials = [...tile.querySelectorAll('.ppl-fp-avat')].map((n) => n.textContent)
+  expect(initials).toEqual(['P', 'B', 'Á', 'R'])
+})
+
+test('Említések carries the flagCount badge when > 0', () => {
+  renderPage()
+  const tile = screen.getByRole('button', { name: 'Említések' })
+  expect(tile.querySelector('.ppl-hub-badge')?.textContent).toBe('2')
+})
+
+test('Mezo-sáv renders the derived sentence and hands off to a person-anchored conversation', () => {
+  renderPage()
+  // Réka is trending down this week ⇒ the down-branch sentence wins.
+  expect(screen.getByText(/Réka hangulata lejt az utóbbi hetekben/)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Mezo · észrevétel/ }))
+  expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/mezo\/chat\?c=/))
+})
+
+test('the filter row and mention feed are gone from the hub (owned by the sibling pages now)', () => {
+  const { container } = renderPage()
+  expect(container.querySelector('.ppl-chiprow')).toBeNull()
+  expect(container.querySelector('.ppl-mrowt')).toBeNull()
+  expect(container.querySelector('.ppl-grid')).toBeNull()
+})
+
+test('header actions still open Log and Új személy (the existing PeoplePage sheets)', () => {
+  renderPage()
+  expect(screen.getByText('＋ Új személy')).toBeInTheDocument()
+  fireEvent.click(screen.getByText(/Log/))
+  expect(screen.getByText('Mit jegyzünk meg?')).toBeInTheDocument()
+})
+
+describe('Jelöltek route', () => {
+  test('the empty state renders the honest copy', () => {
+    render(
+      <MemoryRouter initialEntries={['/me/people/jeloltek']}>
+        <Routes>
+          <Route path="/me/people" element={<PeoplePage />} />
+          <Route path="/me/people/jeloltek" element={<PeopleJeloltekPage />} />
+        </Routes>
+      </MemoryRouter>,
+      { wrapper: QueryWrapper },
+    )
+    expect(screen.getByText('Nincs több jelölt — az éjszakai kör hajnalban néz újra.')).toBeInTheDocument()
+    expect(screen.getByText('‹ Kapcsolatok')).toBeInTheDocument()
   })
-})
-
-// mezo-d20.11: the filter row wears the prototype's own .fchip shape (#page-emberek .chiprow),
-// not the generic .chip with inline overrides — and every `.rise` sits inside the armed
-// `.mz-play` group (a `.rise` outside it renders correctly but never animates).
-test('the filter row is the prototype .fchip row and no .rise sits outside the EntranceGroup', () => {
-  const { container } = renderPage()
-  const chips = container.querySelectorAll('.ppl-chiprow .ppl-fchip')
-  expect(chips).toHaveLength(3)
-  expect(container.querySelector('.ppl-fchip.on')?.textContent).toBe('Mind')
-
-  const play = container.querySelector('.mz-play')
-  expect(play).not.toBeNull()
-  const rises = container.querySelectorAll('.rise')
-  expect(rises.length).toBeGreaterThan(0)
-  for (const el of rises) expect(play!.contains(el)).toBe(true)
 })

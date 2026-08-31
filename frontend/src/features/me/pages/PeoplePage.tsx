@@ -1,65 +1,59 @@
 // ============================================================
-// Mezo · PeoplePage — Emberek re-face (mezo-d20.6.7, Mozaik scaffold mezo-d20.11)
-// Source of truth: docs/design_2.0/prototypes/src/en-body.html #page-emberek
-// (values ×1.18). ADR 0032: the dissolved Me shell means this page owns its
-// OWN header — the prototype's `‹ Én` back chip + the `🎤 Log` page action —
-// and the prototype's page-hero (icon + the active-circle count + the
-// „aktív kör · tap → részletek" sub-line) replaces the old .pghead-np band,
-// which left the page with no way back.
-// Body: 2-col washed rose person tiles with an affect-ring avatar (ring fill =
-// the person's own latest affectTrend reading, never a fabricated percentage),
-// the .fchip filter row, and washed mention tiles carrying the FIGYELEM badge
-// + the `kapcsolódik` pattern-tie chip verbatim. Data hooks, mutations and the
-// Mind/Hét/Jelölt filter contract: unchanged.
+// Mezo · PeoplePage — Emberek S3 hub (mezo-06o0.2)
+// Source of truth: docs/design_2.0/prototypes/src/emberek-body.html renderHub() +
+// emberek-head.html `.tile/.t-*/.spotwrap/.badge/.facepile/.hwide/.snip` (×1.18).
+//
+// This is the WeekHub-pattern rewrite: the old single-page grid + filter chips + mention
+// feed is GONE from here — those live in the sibling "A köröm" / "Említések" pages Task
+// 3–5 own. This page is only a hero + 3-cell stat strip + 4 navigation tiles (each its
+// own route, `navigate()`, never a local show/hide) + the Mezo-band chat handoff. ADR 0032
+// still applies: this page owns its own header (‹ Én back chip + Log/Új személy actions),
+// unchanged from the pre-hub PeoplePage (same PersonLogSheet/PersonEditSheet wiring).
+//
+// Honest states (per handoff and Task 1's `hubLines`): a null down/up person renders
+// '—', never a fabricated name; the Jelöltek tile carries NO badge in S3 (no candidate
+// source is wired until S4) rather than inventing a fake count.
 // ============================================================
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Icon } from '@/shared/ui/Icon'
-import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { ClayIcon } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
-import { PersonCard } from '@/features/me/components/PersonCard'
-import { MentionRow } from '@/features/me/components/MentionRow'
+import { localDateString } from '@/shared/lib/dates'
+import { hubLines } from '@/features/me/logic/peopleDerive'
+import { useChatHandoff } from '@/features/me/logic/useChatHandoff'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
-import { PersonDetailSheet } from '@/features/me/sheets/PersonDetailSheet'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
-import type { PersonEntry } from '@/data/types'
 
-type Filter = 'all' | 'week' | 'flagged'
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'Mind' },
-  { id: 'week', label: 'Hét' },
-  { id: 'flagged', label: 'Jelölt' },
-]
+const d = (ms: number) => ({ '--d': `${ms}ms` } as CSSProperties)
+
+/** The Mezo-band sentence — down-trending person first (the thing worth checking on),
+ *  then the week's top name (a quieter, positive observation), then the honest empty-circle
+ *  line when there is simply nothing derived yet. */
+function mezoSentence(topName: string | null, downName: string | null): string {
+  if (downName) return `„${downName} hangulata lejt az utóbbi hetekben — ránézel?”`
+  if (topName) return `„${topName} volt e héten a legtöbbet veled — jó ránézni, mit adott.”`
+  return '„Ahogy írsz, magától épül itt a kapcsolati kép.”'
+}
 
 export function PeoplePage() {
   const navigate = useNavigate()
-  const { people, mentions, logMention, undoMention } = usePeople()
-  const [filter, setFilter] = useState<Filter>('all')
+  const { people, mentions, logMention } = usePeople()
+  const chat = useChatHandoff()
   const [logOpen, setLogOpen] = useState(false)
-  const [prechosen, setPrechosen] = useState<string | undefined>(undefined)
-  const [detailPerson, setDetailPerson] = useState<PersonEntry | null>(null)
-  const [editPerson, setEditPerson] = useState<PersonEntry | null>(null)
   const [editOpen, setEditOpen] = useState(false)
 
-  // "Hét" = rolling 7 days anchored to the newest mention (works for live data AND the mock seed;
-  // the old hardcoded '2026-05-18' threshold only made sense for the seed's May dates).
-  const newestMs = mentions.reduce((a, m) => Math.max(a, new Date(m.ts).getTime()), 0)
-  const weekFloorMs = newestMs - 7 * 86_400_000
-  const visible =
-    filter === 'all'
-      ? mentions
-      : filter === 'week'
-        ? mentions.filter(m => new Date(m.ts).getTime() >= weekFloorMs)
-        : mentions.filter(m => m.flagged)
+  const lines = hubLines(people, mentions, new Date())
+  const faces = people.slice(0, 4)
 
   return (
     <MozaikPage tone="rose">
-      <PageHead onBack={() => navigate(-1)} label="‹ Én">
+      <PageHead onBack={() => navigate('/me')} label="‹ Én">
         <button
           type="button"
           className="pgact"
-          onClick={() => { setEditPerson(null); setEditOpen(true) }}
+          onClick={() => setEditOpen(true)}
           style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
         >
           ＋ Új személy
@@ -67,51 +61,122 @@ export function PeoplePage() {
         <button
           type="button"
           className="pgact"
-          onClick={() => { setPrechosen(undefined); setLogOpen(true) }}
+          onClick={() => setLogOpen(true)}
           style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
         >
-          <Icon name="mic" size={12} /> Log
+          <ClayIcon name="i-mikrofon" size={12} /> Log
         </button>
       </PageHead>
 
-      <PageHero icon="i-emberek" name="Kapcsolatok" big={people.length} sub="aktív kör · tap → részletek" />
+      <PageHero
+        icon="i-emberek"
+        name="Kapcsolatok"
+        big={people.length}
+        sub={`aktív kör · ${lines.mentionsThisWeek} említés e héten`}
+      />
 
       <PageBody>
         <EntranceGroup>
-          <div className="ppl-grid">
-            {people.map((p, i) => (
-              <PersonCard key={p.id} person={p} delayMs={i * 50} onTap={() => setDetailPerson(p)} />
-            ))}
-          </div>
+          <StatStrip className="rise">
+            <StatCell value={lines.mentionsThisWeek} label="említés · hét" />
+            <StatCell value={lines.topName ?? '—'} label="legtöbbet említett" />
+            <StatCell
+              value={lines.downName ? `${lines.downName} ↘` : '—'}
+              label="hangulat-lejtő"
+            />
+          </StatStrip>
 
-          <div className="tud-lsec rise" style={{ '--d': '60ms' } as React.CSSProperties}>
-            <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-rose-ink)' }}>Mit naplóztam · friss</span>
-          </div>
-
-          <div className="ppl-chiprow rise" style={{ '--d': '80ms' } as React.CSSProperties}>
-            {FILTERS.map(f => (
-              <button
-                key={f.id}
-                type="button"
-                className={filter === f.id ? 'ppl-fchip on' : 'ppl-fchip'}
-                aria-pressed={filter === f.id}
-                onClick={() => setFilter(f.id)}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          <div>
-            {visible.slice(0, 8).map((m, i) => (
-              <MentionRow key={m.id} mention={m} delayMs={110 + i * 30} onUndo={undoMention} />
-            ))}
-            {visible.length === 0 && (
-              <div className="ppl-mrowt rise" style={{ '--d': '110ms', textAlign: 'center' } as React.CSSProperties}>
-                <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ebben a szűrésben.</span>
+          <div className="mz-mosaic">
+            <button
+              type="button"
+              className="ppl-hub-tile ppl-hub-gold rise"
+              style={d(60)}
+              onClick={() => navigate('/me/people/jeloltek')}
+              aria-label="Jelöltek"
+            >
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-gold-ink)' }}>Jelöltek</span>
+              <div className="ppl-hub-spot">
+                <ClayIcon name="i-kristaly" size={40} />
               </div>
-            )}
+              <div className="ppl-hub-line">nincs új arc — az éjszakai kör figyel</div>
+            </button>
+
+            <button
+              type="button"
+              className="ppl-hub-tile ppl-hub-rose rise"
+              style={d(90)}
+              onClick={() => navigate('/me/people/kor')}
+              aria-label="A köröm"
+            >
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-rose-ink)' }}>A köröm</span>
+              <div className="ppl-hub-spot">
+                <div className="ppl-facepile">
+                  {faces.map((p) => (
+                    <span key={p.id} className="ppl-fp-avat">{p.initial}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="ppl-hub-line">
+                {people.length} személy · {lines.topName ?? '—'} a legaktívabb
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="ppl-hub-tile ppl-hub-sky rise"
+              style={d(120)}
+              onClick={() => navigate('/me/people/emlitesek')}
+              aria-label="Említések"
+            >
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sky-ink)' }}>Említések</span>
+              <div className="ppl-hub-spot">
+                <ClayIcon name="i-naplo" size={40} />
+                {lines.flagCount > 0 && (
+                  <span className="ppl-hub-badge ppl-hub-badge-alert">{lines.flagCount}</span>
+                )}
+              </div>
+              <div className="ppl-hub-line">
+                {lines.mentionsThisWeek} e héten · {lines.flagCount > 0 ? `${lines.flagCount} figyelem-jelzés` : 'minden nyugodt'}
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="ppl-hub-tile ppl-hub-lav rise"
+              style={d(150)}
+              onClick={() => navigate('/me/people/heti')}
+              aria-label="Heti kép"
+            >
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>Heti kép</span>
+              <div className="ppl-hub-spot">
+                <ClayIcon name="i-heti" size={40} />
+              </div>
+              <div className="ppl-hub-line">
+                {lines.downName || lines.upName
+                  ? [lines.downName && `${lines.downName} ↘`, lines.upName && `${lines.upName} ↗`]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : 'nincs kiugró irány e héten'}
+              </div>
+            </button>
           </div>
+
+          <button
+            type="button"
+            className="ppl-hub-wide rise"
+            style={d(190)}
+            onClick={() => chat.open({ kind: 'day', date: localDateString() })}
+            disabled={chat.pending}
+          >
+            <div className="mz-tile-top">
+              <ClayIcon name="i-mezo" size={24} />
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-coral-ink)', marginLeft: 8 }}>
+                Mezo · észrevétel
+              </span>
+              <span style={{ marginLeft: 'auto', color: 'var(--mz-ink-mut)' }} aria-hidden="true">›</span>
+            </div>
+            <div className="ppl-hub-snip">{mezoSentence(lines.topName, lines.downName)}</div>
+          </button>
         </EntranceGroup>
       </PageBody>
 
@@ -120,32 +185,13 @@ export function PeoplePage() {
           onClose={() => setLogOpen(false)}
           onSave={logMention}
           people={people}
-          initialPersonId={prechosen}
-        />
-      )}
-
-      {detailPerson && (
-        <PersonDetailSheet
-          person={detailPerson}
-          mentions={mentions.filter(m => m.person_id === detailPerson.id)}
-          onClose={() => setDetailPerson(null)}
-          onLog={() => {
-            setPrechosen(detailPerson.id)
-            setDetailPerson(null)
-            setLogOpen(true)
-          }}
-          onEdit={() => {
-            setEditPerson(detailPerson)
-            setDetailPerson(null)
-            setEditOpen(true)
-          }}
         />
       )}
 
       {editOpen && (
         <PersonEditSheet
-          person={editPerson}
-          onClose={() => { setEditOpen(false); setEditPerson(null) }}
+          person={null}
+          onClose={() => setEditOpen(false)}
         />
       )}
     </MozaikPage>
