@@ -53,7 +53,13 @@ export function toolDomain(name: string): ToolDomain {
   return TOOLS[base] ?? NEUTRAL(base)
 }
 
-/** Ref kinds (the wire's `ChatRef.kind` vocabulary — see chatRefs.ts KIND_LABELS). */
+/** Ref kinds (the wire's `ChatRef.kind` vocabulary — see chatRefs.ts KIND_LABELS).
+ *  Mirrors the backend's full ref vocabulary (grepped from backend/src/main/java,
+ *  2026-08-31): Goal, Growth, FuelDay, Workout, TrainingPlan, Sleep, Recipe, Protocol,
+ *  Medication, WeightTrend, Memory, ExerciseRecord, Weight, Sport, SleepGoal, Run,
+ *  Practice, Pantry, PR, Insight, CheckIn — plus Pattern, SleepLog, Checkin, Journal,
+ *  Meal, GraphNode. Nothing here is aspirational: every kind the REAL backend can emit
+ *  gets an entry so live chips never fall back to the neutral orb (mezo-vdf4). */
 const REF_KINDS: Record<string, ToolDomain> = {
   Workout: { label: 'Edzés', icon: 'i-edzes', wash: 'coral' },
   Run: { label: 'Futás', icon: 'i-futas', wash: 'coral' },
@@ -67,6 +73,21 @@ const REF_KINDS: Record<string, ToolDomain> = {
   Meal: { label: 'Étkezés', icon: 'i-fuel', wash: 'sage' },
   GraphNode: { label: 'Összefüggés', icon: 'i-minta', wash: 'lav' },
   Memory: { label: 'Emlék', icon: 'i-retegek', wash: 'lav' },
+  Weight: { label: 'Súly', icon: 'i-suly', wash: 'sky' },
+  WeightTrend: { label: 'Súlytrend', icon: 'i-suly', wash: 'sky' },
+  FuelDay: { label: 'Fuel nap', icon: 'i-fuel', wash: 'sage' },
+  Recipe: { label: 'Recept', icon: 'i-recept', wash: 'sage' },
+  Pantry: { label: 'Kamra', icon: 'i-kamra', wash: 'sage' },
+  Protocol: { label: 'Stack', icon: 'i-stack', wash: 'sage' },
+  Goal: { label: 'Cél', icon: 'i-cel', wash: 'gold' },
+  Growth: { label: 'Growth', icon: 'i-growth', wash: 'gold' },
+  Practice: { label: 'Gyakorlat', icon: 'i-nap', wash: 'gold' },
+  TrainingPlan: { label: 'Edzésterv', icon: 'i-meso', wash: 'coral' },
+  ExerciseRecord: { label: 'Rekord', icon: 'i-sport', wash: 'coral' },
+  Sport: { label: 'Sport', icon: 'i-sport', wash: 'coral' },
+  Medication: { label: 'Gyógyszer', icon: 'i-injekcio', wash: 'rose' },
+  SleepGoal: { label: 'Alváscél', icon: 'i-alvas', wash: 'lav' },
+  Insight: { label: 'Összefüggés', icon: 'i-minta', wash: 'lav' },
 }
 
 export function refDomain(kind: string): ToolDomain {

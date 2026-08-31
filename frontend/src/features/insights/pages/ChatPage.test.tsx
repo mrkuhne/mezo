@@ -131,10 +131,9 @@ describe('ChatPage (mock mode)', () => {
     )
     // the non-Memory chip survives the filter
     expect(screen.getByText('Edzés')).toBeInTheDocument()
-    // no chip shows the raw 'Memory' kind label — it has no KIND_LABELS entry, so if it rendered
-    // it would render verbatim as 'Memory'
+    // no chip shows the Memory kind label ('Emlék') — it was filtered out by the dedupe
     expect(
-      screen.queryAllByText('Memory').find((el) => el.classList.contains('mzc-refk')),
+      screen.queryAllByText('Emlék').find((el) => el.classList.contains('mzc-refk')),
     ).toBeUndefined()
     // dedupe, not deletion: the recalled content is still reachable via the Emlékek row
     expect(screen.getByText(/Emlékek · 1/)).toBeInTheDocument()
@@ -156,7 +155,7 @@ describe('ChatPage (mock mode)', () => {
         }}
       />,
     )
-    const memoryRef = screen.getAllByText('Memory').find((el) => el.classList.contains('mzc-refk'))
+    const memoryRef = screen.getAllByText('Emlék').find((el) => el.classList.contains('mzc-refk'))
     expect(memoryRef).toBeTruthy()
     expect(screen.getByText('Edzés')).toBeInTheDocument()
   })
@@ -180,7 +179,7 @@ describe('ChatPage (mock mode)', () => {
         }}
       />,
     )
-    const memoryRef = screen.getAllByText('Memory').find((el) => el.classList.contains('mzc-refk'))
+    const memoryRef = screen.getAllByText('Emlék').find((el) => el.classList.contains('mzc-refk'))
     expect(memoryRef).toBeTruthy()
     expect(memoryRef!.parentElement).toHaveTextContent('febr. 11.')
   })
