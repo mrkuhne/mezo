@@ -1894,22 +1894,53 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   `[Összefüggések] (…)`,
   cap `mezo.companion.graph.render-max-tokens` (≈3 chars/token, stop at the first overflowing line
   — weight order is the relevance statement). One `GraphNode`/node-id ref per rendered node,
-  first-appearance order. Never throws (IDENT-3: warn + `GraphContext.EMPTY`). Conditional on
-  **both** `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`.
+  first-appearance order, **each carrying the traversal's own `fromTitle`/`toTitle` as its
+  `label` (`mezo-b3pp.33`)** — no separate lookup, because the label is read off the SAME row the
+  line was rendered from. That is deliberate, not just convenient: W2.6's node list is *active*
+  nodes only, and archiving is real (retraction `mezo-b3pp.31`, the W2.6 "Archivál" action
+  `mezo-b3pp.30`), so an FE label lookup by id would show a raw uuid — or nothing — for a node
+  archived after the turn that referenced it, while the carried title still reads correctly.
+  **Capped separately at `mezo.companion.graph.max-refs`** (default 6, `@Min(1) @Max(20)`) BEFORE
+  reaching the shared `tools.max-refs-per-turn` budget (default 10): `topK` edges (default 8) yield
+  up to `2×topK` = 16 node refs (each edge has two endpoints), and graph refs are appended LAST,
+  after tool and Memory refs — an uncapped graph turn would fill the whole footer with graph chips
+  and truncate refs earlier in the list mid-way. Never throws (IDENT-3: warn + `GraphContext.EMPTY`).
+  Conditional on **both** `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`.
 - **`ChatService`** holds the assembler through an `ObjectProvider` — switch off ⇒ no bean ⇒ the
   prompt simply has no block. Order: … → `[Emlékek]` → **`[Összefüggések]`** → `TONE_REMINDER`,
   assembled once for both paths; the GraphNode refs ride `PreparedTurn.recalledRefs` after the
-  Memory refs and join the audit AFTER the LLM round (tool refs keep priority under the per-turn
-  ref cap). FE: the generic `RefTag` shows `[GraphNode] <uuid>` — a readable label is a W2.6
-  follow-up.
+  Memory refs and join the audit AFTER the LLM round. **`ToolCallAudit` dedups on `(kind, id)`
+  ONLY, first-wins (`mezo-b3pp.33`)** — a private `RefKey(kind, id)` record keys the
+  `LinkedHashMap`, deliberately narrower than `RefsEnvelope.Ref`'s own (now label-inclusive)
+  equality: `Ref` became a record whose equality covers `label` too, so a naive
+  `LinkedHashSet<Ref>` would stop deduping the instant the same `(kind, id)` arrives once without
+  a label and once with one (e.g. a Memory day surfaced by both a tool call and ambient recall, or
+  a graph node reached via two edges) and the entity would occupy the cap twice. First-wins keeps
+  tool refs — added first, and each one specific provenance for a specific answer — ahead of the
+  ambient/graph refs added afterwards, matching `ChatService`'s ordering. FE: `RefTag`/
+  `chatRefDisplay` (`frontend/src/features/insights/logic/chatRefs.ts`) prefers `ref.label?.trim()`
+  and falls back to the existing id-derived label with `||` — deliberately, not `??`, so an empty
+  or whitespace-only label degrades exactly like a missing one rather than rendering a blank chip.
+  Rows persisted before this slice have no `label` key at all (not even `null`) and take the same
+  fallback path; `MessageRef.label` is optional/nullable and `required` stays `[kind, id]` so old
+  and new rows are wire-compatible without a version bump.
 - **Tests:** `GraphTraversalQueryIT` (3-hop chain ⇒ ≤2 hops in weight order, undirected walk +
   top-K, cycle termination, archived/soft-deleted excluded, **and both foreign shapes**: a foreign
   edge, plus an OWNED edge pointing at a foreign node), `GraphPromptAssemblerIT` (seed matching
   incl. punctuation-hugged tokens, block + refs, empty cases), `GraphPromptAssemblerTest` (render +
-  cap + the `PRECEDED_BY` endpoint swap), `ChatServiceGraphBlockIT` (position, refs on wire + row,
-  stream-path refs), `ChatServiceGraphBlockFailureIT` (IDENT-3: `@MockitoSpyBean` makes the seed
-  read throw ⇒ block absent, `degraded` false, **both message rows still committed** — own IT class
-  so the spy's forked context can't leak into the others), `ChatServiceGraphBlockSwitchOffIT`.
+  cap + the `PRECEDED_BY` endpoint swap), `GraphPromptAssemblerRefsCapIT` (`mezo-b3pp.33`: a
+  5-node star topology over `graph.max-refs=3` proves the cap AND first-appearance order — hub,
+  n1, n2, dropping n3/n4), `ChatServiceGraphBlockIT` (position, refs on wire + row, stream-path
+  refs), `ChatServiceGraphBlockFailureIT` (IDENT-3: `@MockitoSpyBean` makes the seed read throw ⇒
+  block absent, `degraded` false, **both message rows still committed** — own IT class so the
+  spy's forked context can't leak into the others), `ChatServiceGraphBlockSwitchOffIT`,
+  `ToolCallAuditTest.testAddRef_shouldStillDedupe_whenTheSameKindAndIdArriveWithDifferentLabels`
+  (`mezo-b3pp.33` — the label-breaks-equality trap above, pinned directly), `chatRefs.test.ts`
+  (`mezo-b3pp.33` — carried label wins, empty/whitespace label falls back, absent label falls
+  back), and `AiMessageJsonbRoundTripIT.testRefs_shouldDeserialiseWithNullLabel_whenTheJsonbPredatesTheLabelField`
+  (review fix — writes raw jsonb with no `label` key at all, proving a genuinely pre-migration row
+  deserialises with `label = null` rather than only proving the 2-arg constructor's own shape,
+  which Jackson serialises with an explicit `"label":null`).
 
 ### W2.5 graph maintenance job (✅ `mezo-b3pp.10`)
 
@@ -2440,7 +2471,8 @@ branches on undefined), `RecalledMemory {occurredOn (date), kind, label, gist, s
 decayed score the re-rank ordered by** (that one is `SimilarDayItem.finalScore`), so an old but
 near-identical memory reads honestly as a high match even though it sorted low; the FE renders
 `Math.round(similarity*100)%`. The envelope's `refId` is NOT exposed), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
-carries the args baked in — `get_recovery(scope=sleep, days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
+carries the args baked in — `get_recovery(scope=sleep, days=3)`), `MessageRef {kind, id, label?}`
+(kinds: `Workout`,
 `Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`, since
 V2.3 `Memory` — a recalled day's date, and since mezo-xixu `TrainingPlan` — the resolved date, or
 the mesocycle title for `scope=meso`, `ExerciseRecord` — the exercise name, `Recipe` — the
@@ -2449,7 +2481,12 @@ matched recipe's name, `Pantry` — the pantry item's name, `SleepGoal` — the 
 and `Growth` — a stable scope label (`skills`/`week-{weekStart}`/`achievements`/`titles`,
 `get_growth(scope)`), `Practice` — the resolved date (`get_daily_practice(date)`), and since
 mezo-xixu `Insight` — a confirmed pattern's title (`get_insights(scope=patterns)`; no ref for the
-deferred `predictions`/`experiments` scopes)),
+deferred `predictions`/`experiments` scopes); **`label` since `mezo-b3pp.33`** — optional/nullable,
+`required` stays `[kind, id]`. Today only `GraphNode` refs populate it (the graph traversal's own
+`fromTitle`/`toTitle` — §W2.4 above — so no separate lookup, and an archived node still shows the
+name it had when the turn ran). Every other kind, and every row persisted before this field
+existed, carries `label: null`/absent; the FE (`chatRefDisplay`) falls back to its existing
+id-derived label for those, using `||` so an empty/whitespace label degrades the same way),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` + `StreamToolCall {type, name}` (V0.4 + mezo-280 — the
 SSE per-event `data:` payloads; every data line is JSON; `StreamToolCall.name` carries the SAME
@@ -2781,6 +2818,11 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   (W2.5's maintenance job).
 - `mezo.companion.graph.edge-confidence-floor` = **0.4** (0..1) — W2.2: the edge structurer drops
   suggestions below this confidence; survivors are created at `weight = confidence × 0.5`.
+- `mezo.companion.graph.max-refs` = **6** (`@Min(1) @Max(20)`) — `mezo-b3pp.33`: cap on `GraphNode`
+  refs emitted per turn, applied before the shared `tools.max-refs-per-turn` budget. `topK` edges
+  (default 8) yield up to `2×topK` node refs, and graph refs are added LAST, so this exists so a
+  graph-heavy turn can't fill the whole footer and truncate tool/Memory refs mid-list; consumed by
+  W2.4's `GraphPromptAssembler`.
 - `mezo.companion.graph.cron` = **"0 20 3 * * *"** (`@NotBlank`) — W2.5 (mezo-b3pp.10): the nightly
   `GraphMaintenanceJob` cron (03:20, a free dawn slot). Job switch
   `mezo.techcore.cron.graph-maintenance-job.enabled`
