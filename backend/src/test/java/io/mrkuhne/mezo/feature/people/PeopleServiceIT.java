@@ -80,7 +80,7 @@ class PeopleServiceIT extends AbstractIntegrationTest {
         PersonEntity petra = personPopulator.createPerson(owner, "Petra");
 
         MentionResponse res = peopleService.logMention(owner, petra.getId(),
-            new LogMentionRequest("mixed", "Hosszú beszélgetés."));
+            new LogMentionRequest("mixed", "Hosszú beszélgetés.", null));
 
         assertThat(res.getPersonId()).isEqualTo(petra.getId());
         assertThat(res.getPersonName()).isEqualTo("Petra");
@@ -98,10 +98,10 @@ class PeopleServiceIT extends AbstractIntegrationTest {
         PersonEntity theirs = personPopulator.createPerson(ownerB, "Másé");
 
         assertThatThrownBy(() -> peopleService.logMention(ownerA, theirs.getId(),
-            new LogMentionRequest("positive", null)))
+            new LogMentionRequest("positive", null, null)))
             .isInstanceOf(SystemRuntimeErrorException.class);
         assertThatThrownBy(() -> peopleService.logMention(ownerA, UUID.randomUUID(),
-            new LogMentionRequest("positive", null)))
+            new LogMentionRequest("positive", null, null)))
             .isInstanceOf(SystemRuntimeErrorException.class);
     }
 

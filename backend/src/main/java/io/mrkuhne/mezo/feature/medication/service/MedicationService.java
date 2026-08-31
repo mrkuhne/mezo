@@ -105,6 +105,25 @@ public class MedicationService {
         doseRepository.delete(dose); // @SQLDelete -> is_deleted = true
     }
 
+    /**
+     * Create the owner's medication (mezo-d20.8.3 — the single-active slice's create path).
+     * One active medication at a time: creating while an active row exists is a 400
+     * ({@code MEDICATION_ACTIVE_EXISTS}); re-creating after a stop ({@code active:false}) is the
+     * normal path and the old row's dose history stays. {@code createdBy} is server-stamped.
+     */
+    @Transactional
+    public MedicationResponse createMedication(UUID userId, MedicationRequest req) {
+        if (Boolean.TRUE.equals(req.getActive())
+            && repository.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).isPresent()) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("MEDICATION_ACTIVE_EXISTS").build(), HttpStatus.BAD_REQUEST);
+        }
+        MedicationEntity med = new MedicationEntity();
+        med.setCreatedBy(userId); // server-side ownership — never from the client
+        mapper.applyRequest(med, req);
+        return mapper.toResponse(repository.save(med));
+    }
+
     /** Apply a PUT body's definition + cycle config onto the owner's medication (mapper write seam). */
     @Transactional
     public MedicationResponse updateMedication(UUID userId, UUID id, MedicationRequest req) {

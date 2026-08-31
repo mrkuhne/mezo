@@ -22,6 +22,7 @@ import { PersonCard } from '@/features/me/components/PersonCard'
 import { MentionRow } from '@/features/me/components/MentionRow'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import { PersonDetailSheet } from '@/features/me/sheets/PersonDetailSheet'
+import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
 import type { PersonEntry } from '@/data/types'
 
 type Filter = 'all' | 'week' | 'flagged'
@@ -38,6 +39,8 @@ export function PeoplePage() {
   const [logOpen, setLogOpen] = useState(false)
   const [prechosen, setPrechosen] = useState<string | undefined>(undefined)
   const [detailPerson, setDetailPerson] = useState<PersonEntry | null>(null)
+  const [editPerson, setEditPerson] = useState<PersonEntry | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
 
   // "Hét" = rolling 7 days anchored to the newest mention (works for live data AND the mock seed;
   // the old hardcoded '2026-05-18' threshold only made sense for the seed's May dates).
@@ -53,6 +56,14 @@ export function PeoplePage() {
   return (
     <MozaikPage tone="rose">
       <PageHead onBack={() => navigate(-1)} label="‹ Én">
+        <button
+          type="button"
+          className="pgact"
+          onClick={() => { setEditPerson(null); setEditOpen(true) }}
+          style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
+        >
+          ＋ Új személy
+        </button>
         <button
           type="button"
           className="pgact"
@@ -123,6 +134,18 @@ export function PeoplePage() {
             setDetailPerson(null)
             setLogOpen(true)
           }}
+          onEdit={() => {
+            setEditPerson(detailPerson)
+            setDetailPerson(null)
+            setEditOpen(true)
+          }}
+        />
+      )}
+
+      {editOpen && (
+        <PersonEditSheet
+          person={editPerson}
+          onClose={() => { setEditOpen(false); setEditPerson(null) }}
         />
       )}
     </MozaikPage>

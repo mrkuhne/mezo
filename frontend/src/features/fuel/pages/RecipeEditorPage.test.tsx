@@ -53,12 +53,13 @@ async function closePicker() {
   await waitForElementToBeRemoved(() => screen.queryByText('Válassz hozzávalót'), { timeout: 2000 })
 }
 
-// Header-only re-skin (mezo-8141): pghead-np sage over ("Fuel · Receptek") + h1
-// keeps the current title content (the typed name, or the "—" placeholder).
-test('header-only pass: pghead-np sage over + h1 keeps the current title content', async () => {
+// F7.3 Mozaik re-face (mezo-d20.8.3.1): MozaikPage(sage) shell, mz-eyebrow over
+// ("Fuel · Receptek") + the heading keeps the current title content (the typed
+// name, or the "Új recept" placeholder).
+test('Mozaik shell: sage page + eyebrow, the heading keeps the current title content', async () => {
   const qc = newQc()
   const { container } = renderNew(qc)
-  expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
+  expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
   expect(screen.getByText('Fuel · Receptek')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Új recept' })).toBeInTheDocument()
   await userEvent.type(screen.getByPlaceholderText(/Tonhalsaláta/), 'Teszt recept')

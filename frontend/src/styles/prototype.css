@@ -178,6 +178,7 @@
   --mz-cellbg: rgba(255, 255, 255, 0.72);
   --mz-chipbg: rgba(255, 255, 255, 0.7);
   --mz-stripbg: #FFFFFF;
+  --mz-sheet-bg: linear-gradient(180deg, #FFFDF9 0%, #FDFAF4 100%); /* F7.3 sheet-minta */
   --mz-strength: linear-gradient(90deg, #E5C46B, #C9962E); /* habit-strength bar (nap #page-hab .hstr) */
   --mz-ink-mut: #A2958A;
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
@@ -451,6 +452,7 @@
   --mz-cellbg: color-mix(in srgb, var(--surface-card) 72%, transparent);
   --mz-chipbg: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
   --mz-stripbg: var(--surface-card);
+  --mz-sheet-bg: var(--surface-1); /* F7.3 sheet-minta — dark keeps the theme surface */
   --mz-ink-mut: #8A7A6A;
   --mz-ink-soft: var(--text-secondary);
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
@@ -1199,6 +1201,29 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   animation: sheet-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform;
 }
+/* ============================================================
+   F7.3 · A sheet-minta (mezo-d20.8.3.1, fuel-mely.html §D)
+   One family, one face: every Fuel/Me sheet rides the shared <Sheet> shell, so
+   the generation shift happens HERE once — warm Mozaik ground, and the sheets'
+   `.card` field containers take the washed mz-qcard face (the border-radius
+   drops below the DS 22 to the sheet's tighter 15 rhythm). Component code only
+   changes where the prototype drew something specific (score/stack-item hero). */
+.sheet { background: var(--mz-sheet-bg); border-top: none; }
+.sheet .card {
+  background: var(--mz-stripbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+  border-radius: 15px;
+  filter: none;
+  box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+/* tinted hero band — only where there is something to headline (score, stack-item) */
+.mz-sheet-hero {
+  display: flex; align-items: center; gap: 12px;
+  border-radius: 17px; padding: 11px 13px; margin-bottom: 11px;
+  background: var(--mz-wash-sage);
+  box-shadow: var(--mz-shadow-sage);
+}
+
 @keyframes sheet-rise {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }

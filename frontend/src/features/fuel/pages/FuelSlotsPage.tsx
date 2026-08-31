@@ -27,6 +27,7 @@ import { useFuelSettings, useFuelTimeline, useSlotTemplateActions, useSlotTempla
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { compileTemplate, resolveAnchorTimes } from '@/features/fuel/logic/compileTemplate'
 import { validateSlotPlan } from '@/features/fuel/logic/validateSlotPlan'
@@ -317,26 +318,15 @@ export function FuelSlotsPage() {
   }
 
   return (
-    <>
-      <div style={{ padding: '0 16px 110px' }}>
-        {/* Top bar — back button, own row (header-only re-skin idiom, mezo-8141) */}
-        <div className="row" style={{ padding: '6px 0 0' }}>
-          <button
-            onClick={() => navigate(-1)}
-            className="rad-16"
-            style={{ width: 34, height: 34, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1 }}
-            aria-label="Vissza"
-          >‹</button>
-        </div>
-        {/* Entrance choreography (fidelity audit, mezo-d20.11): the page had none. The FACE
-            stays the pre-Mozaik `.pghead-np` one deliberately — the prototype does not cover
-            the meal-window EDITOR, so re-facing it is the F7.3 design round, not this audit. */}
+    <MozaikPage tone="sage">
+        <PageHead onBack={() => navigate(-1)} label="‹ Fuel" />
+        {/* F7.3 (mezo-d20.8.3.1): the editor joins the Mozaik generation — sage shell +
+            eyebrow/title block; the validation display below follows fuel-mely.html. */}
         <EntranceGroup>
-        <div className="pghead-np sage rise" style={{ '--d': '0ms', padding: '8px 0 14px' } as React.CSSProperties}>
-          <div>
-            <div className="over">Fuel · Beállítások</div>
-            <h1>Étkezési ablakok</h1>
-          </div>
+        <PageBody>
+        <div className="rise" style={{ '--d': '0ms', padding: '2px 2px 12px' } as React.CSSProperties}>
+          <span className="mz-eyebrow">Fuel · Beállítások</span>
+          <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 600, lineHeight: 1.15, margin: '4px 0 0', color: 'var(--text-primary)' }}>Étkezési ablakok</h1>
         </div>
 
         {/* Day-type switcher */}
@@ -491,11 +481,13 @@ export function FuelSlotsPage() {
 
             {/* mezo-4ghd fix 6a: `${code}-${i}` keys — `code` alone collides when e.g. `label_length`,
                 `gap`, or `pre_workout_big` fire more than once for the same plan. */}
+            {/* Tier-1 errors in a coral wash card — a FORBIDDEN state, the one place the
+                colour is legitimate; warnings in amber and they never block (fuel-mely.html). */}
             {errors.map((e, i) => (
-              <p key={`${e.code}-${i}`} role="alert" style={{ fontSize: 11, color: 'var(--coral-deep)', marginTop: 6 }}>{e.text}</p>
+              <p key={`${e.code}-${i}`} role="alert" style={{ fontSize: 11, fontWeight: 500, color: 'var(--coral-deep)', background: 'color-mix(in srgb, var(--coral) 9%, transparent)', borderRadius: 12, padding: '8px 11px', marginTop: 6 }}>{e.text}</p>
             ))}
             {warnings.map((w, i) => (
-              <p key={`${w.code}-${i}`} style={{ fontSize: 11, color: 'var(--warning)', marginTop: 6 }}>{w.text}</p>
+              <p key={`${w.code}-${i}`} style={{ fontSize: 11, fontWeight: 500, color: 'var(--warning)', background: 'color-mix(in srgb, var(--warning) 10%, transparent)', borderRadius: 12, padding: '8px 11px', marginTop: 6 }}>{w.text}</p>
             ))}
 
             {/* "Mezo értékelése" (mezo-7102 Task 12) — an AI olvasat on the current draft,
@@ -520,7 +512,7 @@ export function FuelSlotsPage() {
             )}
 
             {!evalPending && verdict && (
-              <div className="card" style={{ margin: '10px 0 0', padding: 12, background: 'color-mix(in srgb, var(--sage) 6%, transparent)' }}>
+              <div className="mz-qcard" style={{ margin: '10px 0 0', padding: 12, background: 'var(--mz-wash-lav)' }}>
                 <div className="row gap-sm" style={{ alignItems: 'center', marginBottom: 8 }}>
                   <Icon name="sparkle" size={12} color="var(--coral)" />
                   <Eyebrow brand>Mezo · olvasat</Eyebrow>
@@ -566,8 +558,9 @@ export function FuelSlotsPage() {
             )}
           </>
         )}
+        <div style={{ height: 96 }} />
+        </PageBody>
         </EntranceGroup>
-      </div>
 
       {/* Save bar — portaled into the phone screen (RecipeEditorPage.tsx:354-365 idiom) so it pins
           to the device viewport just above the tab bar. Only shown once there is something
@@ -582,6 +575,6 @@ export function FuelSlotsPage() {
         </div>,
         document.querySelector('.phone-screen') ?? document.body,
       )}
-    </>
+    </MozaikPage>
   )
 }

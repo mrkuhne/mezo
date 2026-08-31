@@ -52,7 +52,7 @@ export function DiagnosisListPage() {
                 {q.blurb}
               </p>
               <div className="mzp-decrow">
-                <button type="button" className="cta" disabled={!live || generating} onClick={() => onAsk(q.phenomenon)}>
+                <button type="button" className="mzp-cta" disabled={!live || generating} onClick={() => onAsk(q.phenomenon)}>
                   {generating ? '… a két hét adatait olvasom' : '✦ Kérdezd meg most'}
                 </button>
               </div>

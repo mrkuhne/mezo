@@ -1,0 +1,7 @@
+# docs/CODEMAP.md is GENERATED (scripts/gen-codemap.mjs). On a merge, textual conflict
+# resolution is meaningless — keep OUR side and regenerate; CI's freshness gate
+# (gen-codemap.mjs --check) catches a stale result. The 'codemap-ours' driver must be
+# defined once per clone: scripts/setup-git.sh (mezo-hnkd). GitHub's PR mergeability
+# check ignores custom drivers, so a conflicted PR still needs one local merge+push —
+# but that merge now resolves itself.
+docs/CODEMAP.md merge=codemap-ours
