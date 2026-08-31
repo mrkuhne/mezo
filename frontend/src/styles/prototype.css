@@ -4885,6 +4885,31 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzp-daydots i { width: 11px; height: 11px; border-radius: 50%; background: var(--mz-daydot); }
 .mzp-daydots i.f { background: var(--mz-daydot-f); }
 .mzp-decrow { display: flex; gap: 7px; margin-top: 11px; }
+
+/* ===== Diagnózis (mezo-hqfi.4) — evidence rows, rank badges, probe block.
+   Token-only: values come from the DS block above, no new literals. */
+.mzp-evrow { display: flex; align-items: baseline; gap: 8px; font-size: 11px; padding: 5px 0;
+  border-bottom: 0.5px dashed var(--mz-chat-refch-bd); }
+.mzp-evrow:last-of-type { border-bottom: none; }
+.mzp-evrow .lb { font-weight: 700; flex: none; }
+.mzp-evrow .vl { font-weight: 300; font-variant-numeric: tabular-nums; }
+.mzp-evrow .dl { font-weight: 800; font-variant-numeric: tabular-nums; }
+.mzp-evrow .dl.bad { color: var(--mz-cell-coral-ink); }
+.mzp-evrow .src { margin-left: auto; font-size: 8px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--mz-ink-mut); flex: none; }
+.mzp-rankb { width: 24px; height: 24px; border-radius: 9px; display: grid; place-items: center; flex: none;
+  font-size: 12px; font-weight: 800; color: var(--mz-wash-white); background: var(--mz-strength); }
+.mzp-rankb.two { background: var(--mz-chat-send-bg); }
+.mzp-probe { border-radius: 14px; background: var(--mz-cellbg); padding: 9px 12px; margin-top: 10px;
+  border: 0.5px solid var(--mz-chat-refch-bd); }
+.mzp-probe .pt { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--mz-qxp-ink); }
+.mzp-probe .px { font-size: 12px; font-weight: 600; margin-top: 4px; line-height: 1.45; }
+.mzp-dgq { border-radius: 16px; padding: 10px 12px; background: var(--mz-fact-off-bg);
+  border: 1.2px dashed var(--mz-chat-refch-bd); }
+.mzp-dgq .qq { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--mz-ink-soft); }
+.mzp-dgq .qs { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); margin-top: 4px; }
+.mzh-t-diag { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
 .mzp-cta, .mzp-ghost { flex: 1; min-height: 44px; border-radius: 999px; border: none; font-family: inherit;
   font-size: 12px; font-weight: 600; cursor: pointer; }
 .mzp-cta { background: var(--gradient-cta); color: #fff; box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }

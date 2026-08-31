@@ -21,7 +21,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import {
   useTodayScenario, resolveBriefing, useCompanionFeed, useConversations,
   usePatterns, usePatternMonitor, usePatternActions, useMemoryOverview,
-  useMeWeek, useMemoir, useKnowledge, usePredictions, useExperiments,
+  useMeWeek, useMemoir, useKnowledge, usePredictions, useExperiments, useDiagnoses,
 } from '@/data/hooks'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
@@ -86,6 +86,11 @@ export function MezoHubPage() {
   const mintaLine = patternsPendingAny || patternsDegraded || (patterns.length === 0 && (monitor?.pairs.length ?? 0) === 0)
     ? undefined
     : `${confirmedCount} él a tudásban${decideBucket.length > 0 ? ` · ${decideBucket.length} döntés` : ''}`
+
+  const { diagnoses, isPending: diagPending } = useDiagnoses()
+  const diagLine = diagPending ? undefined
+    : diagnoses.length === 0 ? 'kérdés → gyanúsítottak evidenciával → próba'
+    : `${diagnoses.length} korábbi riport · a legutóbbi: ${diagnoses[0].suspects[0]?.title ?? '—'}`
 
   const { week } = useMeWeek(mondayIso())
   const score = week?.weekly.score ?? null
@@ -196,6 +201,12 @@ export function MezoHubPage() {
             line={predLine} onClick={() => navigate('/mezo/predictions')} aria-label="Előrejelzések" />
           <Tile wash="gold" icon="i-lombik" eyebrow="Kísérletek" delayMs={360} className="mzh-eb-gold"
             line={kisLine} onClick={() => navigate('/mezo/experiments')} aria-label="Kísérletek" />
+          {/* Diagnózis (mezo-hqfi.4, design round 2): the wide question tile — a full-width
+              catalog entry, not a 7th cell that would break the 2-col pairing. */}
+          <Tile wash="gold" eyebrow="Diagnózis" delayMs={400} aria-label="Diagnózis"
+            className="mzh-eb-gold mzh-t-diag" line={diagLine} onClick={() => navigate('/mezo/diagnozis')}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>Miért vagyok fáradt? <span style={{ color: 'var(--mz-decring)' }}>✦</span></div>
+          </Tile>
         </Mosaic>
 
         {/* ===== L0→L3 memory band ===== */}
