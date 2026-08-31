@@ -3478,6 +3478,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
   /api/medication:
+    post:
+      tags:
+        - Medication
+      operationId: createMedication
+      summary: Create the owner's medication (the single-active slice's create path)
+      description: >-
+        The owner can have ONE active medication at a time — creating while an
+        active one exists answers 400 with MEDICATION_ACTIVE_EXISTS. Re-creating
+        after a stop (PUT active:false) is the normal path; the old row's dose
+        history stays.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationResponse'
+        '400':
+          description: 'Validation error, or an active medication already exists'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
     get:
       tags:
         - Medication
