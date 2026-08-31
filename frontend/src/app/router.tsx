@@ -67,6 +67,7 @@ import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
 import { PeopleJeloltekPage } from '@/features/me/pages/PeopleJeloltekPage'
+import { PeopleKorPage } from '@/features/me/pages/PeopleKorPage'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
@@ -266,6 +267,7 @@ export const routes: RouteObject[] = [
       // those page components — this slice only wires `jeloltek` (S3) and the hub itself.
       { path: 'me/people', element: <PeoplePage /> },
       { path: 'me/people/jeloltek', element: <PeopleJeloltekPage /> },
+      { path: 'me/people/kor', element: <PeopleKorPage /> },
       { path: 'me/knowledge', element: <KnowledgePage /> },
       // mezo-nol0: a főnevet a FEED viszi (ide vezet a fejléc dropdown „Összes értesítés ›"
       // lábléce), a kapcsolók alá költöztek.

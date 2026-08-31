@@ -5611,6 +5611,19 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-rl { font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
 .ppl-mt { font-size: 9.5px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
 
+/* -- A köröm (mezo-06o0.2) -- prototype emberek-head.html .pspark/.pspark i/.ctxdots/
+      .ctxdots i x1.18 (16 to 19px spark height, 4.5 to 5.3px bar width, 6 to 7px dot).
+      Bar color is the person's own --ac affect color (element-local, set by PersonCard's
+      inline style, same as .ppl-avat's ring — not a token); dot color is CTX_META's
+      --ppl-ctx-* token, never an invented hex. EntranceGroup arms the one-shot grow via
+      .mz-play (the WeekHub/hub-mozaik precedent), guarded under reduced-motion below. */
+.ppl-spark { display: flex; gap: 3px; align-items: flex-end; height: 19px; }
+.ppl-spark i { width: 5.3px; border-radius: 2px; min-height: 3px; transform: scaleY(0); transform-origin: bottom; }
+.mz-play .ppl-spark i { animation: ppl-sparkup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+@keyframes ppl-sparkup { to { transform: scaleY(1); } }
+.ppl-ctxdots { display: flex; gap: 3.5px; }
+.ppl-ctxdots i { width: 7px; height: 7px; border-radius: 50%; }
+
 .ppl-mrowt { border-radius: 18px; padding: 11px 13px; margin-bottom: 8px;
   background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
 .ppl-mtop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
@@ -5639,6 +5652,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 
 @media (prefers-reduced-motion: reduce) {
   .ppl-tile:active { transform: none; }
+  .ppl-spark i, .mz-play .ppl-spark i { transform: scaleY(1); animation: none; }
 }
 
 /* -- Emberek S3 hub-mozaik (mezo-06o0.2) -- prototype emberek-body.html renderHub()
