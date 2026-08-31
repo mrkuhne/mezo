@@ -131,6 +131,16 @@ public class PeopleService {
         personRepository.delete(requireOwnedPerson(userId, personId)); // @SQLDelete → soft
     }
 
+    /** ✕ visszavonás: bármely saját mention soft-deletálható; a személy-scope a 404-hez kell. */
+    @Transactional
+    public void deleteMention(UUID userId, UUID personId, UUID mentionId) {
+        MentionEntity m = mentionRepository.findByIdAndCreatedByAndDeletedFalse(mentionId, userId)
+            .filter(x -> x.getPersonId().equals(personId))
+            .orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+        mentionRepository.delete(m); // @SQLDelete → soft
+    }
+
     /** Az AI-kurálta mezők (knownFacts/ties/affectTrend) szándékosan érintetlenek. */
     private void applyEditableFields(PersonEntity p, String name, List<String> aliases,
         String relationship, String relationshipHu, String affectBaseline,

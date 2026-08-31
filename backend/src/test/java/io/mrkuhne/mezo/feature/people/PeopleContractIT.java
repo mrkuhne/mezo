@@ -10,7 +10,9 @@ import io.mrkuhne.mezo.api.dto.PersonResponse;
 import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
+import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
@@ -29,6 +31,7 @@ class PeopleContractIT extends ApiIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private MentionRepository mentionRepository;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -205,5 +208,55 @@ class PeopleContractIT extends ApiIntegrationTest {
         PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
         assertThat(res.getPersons()).extracting(PersonResponse::getName).doesNotContain("Törlendő");
         assertThat(res.getMentions()).extracting(MentionResponse::getPersonId).doesNotContain(p.getId());
+    }
+
+    @Test
+    void testDeleteMention_shouldSoftDeleteAndVanishFromBootstrap() {
+        UUID owner = ownerId();
+        PersonEntity p = personPopulator.createPerson(owner, "Emese", "friend", "positive");
+        MentionEntity mention = mentionPopulator.createMention(owner, p.getId(), Instant.now(), "positive");
+
+        deleteAndExpect("/api/people/" + p.getId() + "/mentions/" + mention.getId(),
+            ownerAuthHeaders(), HttpStatus.NO_CONTENT);
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+        assertThat(res.getMentions()).extracting(MentionResponse::getId).doesNotContain(mention.getId());
+        assertThat(res.getPersons().getFirst().getMentionCount()).isZero();
+    }
+
+    @Test
+    void testDeleteMention_shouldReturn404_whenMentionBelongsToOtherPerson() {
+        UUID owner = ownerId();
+        PersonEntity p1 = personPopulator.createPerson(owner, "Gergő", "friend", "positive");
+        PersonEntity p2 = personPopulator.createPerson(owner, "Hanna", "friend", "positive");
+        MentionEntity mention = mentionPopulator.createMention(owner, p1.getId(), Instant.now(), "positive");
+
+        deleteAndExpect("/api/people/" + p2.getId() + "/mentions/" + mention.getId(),
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void testBootstrap_shouldServeToneLessMention() {
+        UUID owner = ownerId();
+        PersonEntity p = personPopulator.createPerson(owner, "Ilona", "friend", "positive");
+        MentionEntity m = new MentionEntity();
+        m.setCreatedBy(owner);
+        m.setPersonId(p.getId());
+        m.setSource("text");
+        m.setTone(null);
+        m.setSourceRefKind("journal_entry");
+        m.setSourceRefId(UUID.randomUUID());
+        m.setExcerpt("Ádámmal futottam");
+        m.setTs(Instant.now());
+        m.setFlagged(false);
+        mentionRepository.saveAndFlush(m);
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+
+        MentionResponse found = res.getMentions().stream()
+            .filter(mr -> mr.getPersonId().equals(p.getId()))
+            .findFirst().orElseThrow();
+        assertThat(found.getTone()).isNull();
+        assertThat(found.getSource()).isEqualTo(MentionResponse.SourceEnum.TEXT);
     }
 }

@@ -45,4 +45,9 @@ public class PeopleController implements PeopleApi {
     public void deletePerson(UUID personId) {
         service.deletePerson(currentUserId.get(), personId);
     }
+
+    @Override
+    public void deleteMention(UUID personId, UUID mentionId) {
+        service.deleteMention(currentUserId.get(), personId, mentionId);
+    }
 }
