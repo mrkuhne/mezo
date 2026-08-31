@@ -4,12 +4,14 @@
 // so we override useFuelTimeline with a crafted plan; every OTHER hook stays real
 // (mock mode) via the importOriginal spread.
 import type { ReactNode } from 'react'
-import { render, screen, renderHook } from '@testing-library/react'
+import { render, screen, renderHook, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, vi } from 'vitest'
 import type { FuelPlanToday } from '@/data/types'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { addDays, localDateString } from '@/shared/lib/dates'
 
 const hoisted = vi.hoisted(() => ({ plan: null as FuelPlanToday | null }))
 vi.mock('@/data/hooks', async (importOriginal) => {
@@ -34,7 +36,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 })
 
 import { FuelLogPage } from '@/features/fuel/pages/FuelLogPage'
-import { useRecipes } from '@/data/hooks'
+import { useRecipes, useFuelDay } from '@/data/hooks'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => {
@@ -43,10 +45,10 @@ afterEach(() => {
 })
 
 const wrapper = ({ children }: { children: ReactNode }) => <QueryWrapper>{children}</QueryWrapper>
-const renderView = () =>
+const renderView = (initialEntries: string[] = ['/fuel/log']) =>
   render(
     <QueryWrapper>
-      <MemoryRouter initialEntries={['/fuel/log']}>
+      <MemoryRouter initialEntries={initialEntries}>
         <Routes>
           <Route path="/fuel/log" element={<FuelLogPage />} />
           <Route path="/fuel/plan" element={<div>PLAN PAGE PROBE</div>} />
@@ -162,4 +164,136 @@ test('a done window shows KÉSZ ✓ with no Logold CTA', () => {
   expect(screen.getByText('Skyr-bowl zabbal')).toBeInTheDocument()
   expect(screen.getByText('✨ folyamatban')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Logold · Reggeli' })).not.toBeInTheDocument()
+})
+
+// ── Day stepper + Pótlás mood + ?d= deep link (mezo-1j3z) ──────────────────
+
+test('nap-léptető: ‹ visszalép, az oldal Pótlás-hangulatra vált, minden nem-done blokk Pótold', async () => {
+  hoisted.plan = {
+    ...baseCtx,
+    slots: [
+      { time: '07:30', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealName: 'Skyr-bowl zabbal', kcal: 420, p: 32, c: 48, f: 9 },
+      { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 640, p: 42, c: 68, f: 14 },
+      { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 580, p: 38, c: 60, f: 16 },
+    ],
+  }
+  const user = userEvent.setup()
+  renderView()
+  await user.click(screen.getByRole('button', { name: 'Előző nap' }))
+  expect(screen.getByText('Pótlás')).toBeInTheDocument()
+  expect(screen.getByText(/erre a napra könyvelődik/)).toBeInTheDocument()
+  // The now + pending window both flip to missed → Pótold; no MOST stamp in the past.
+  expect(screen.getAllByRole('button', { name: /^Pótold/ })).toHaveLength(2)
+  expect(screen.queryByText('MOST')).not.toBeInTheDocument()
+})
+
+test('a ‹ 7 napnál, a › a mai napnál disabled', async () => {
+  hoisted.plan = { ...baseCtx, slots: [] }
+  const user = userEvent.setup()
+  renderView()
+  const prevBtn = () => screen.getByRole('button', { name: 'Előző nap' })
+  const nextBtn = () => screen.getByRole('button', { name: 'Következő nap' })
+  for (let i = 0; i < 7; i++) await user.click(prevBtn())
+  expect(prevBtn()).toBeDisabled()
+  for (let i = 0; i < 7; i++) await user.click(nextBtn())
+  expect(nextBtn()).toBeDisabled()
+})
+
+test('?d= deep link: érvényes tegnapi dátum azon a napon nyit (Pótlás)', () => {
+  hoisted.plan = { ...baseCtx, slots: [] }
+  renderView([`/fuel/log?d=${addDays(localDateString(), -1)}`])
+  expect(screen.getByText('Pótlás')).toBeInTheDocument()
+})
+
+test('?d= deep link: érvénytelen (távoli múlt) dátum a mai napra clampel', () => {
+  hoisted.plan = { ...baseCtx, slots: [] }
+  renderView(['/fuel/log?d=2020-01-01'])
+  expect(screen.queryByText('Pótlás')).not.toBeInTheDocument()
+  expect(screen.getByText('Logolás')).toBeInTheDocument()
+})
+
+test('?d= deep link: jövőbeli dátum a mai napra clampel', () => {
+  hoisted.plan = { ...baseCtx, slots: [] }
+  renderView([`/fuel/log?d=${addDays(localDateString(), 3)}`])
+  expect(screen.queryByText('Pótlás')).not.toBeInTheDocument()
+  expect(screen.getByText('Logolás')).toBeInTheDocument()
+})
+
+test('?d= deep link: nem-parse-olható string a mai napra clampel', () => {
+  hoisted.plan = { ...baseCtx, slots: [] }
+  renderView(['/fuel/log?d=nem-datum'])
+  expect(screen.queryByText('Pótlás')).not.toBeInTheDocument()
+  expect(screen.getByText('Logolás')).toBeInTheDocument()
+})
+
+test('múltbeli mentés a választott nap loggedAt-jával, az ablak idejével íródik', async () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const qcWrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  hoisted.plan = {
+    ...baseCtx,
+    slots: [
+      { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 640, p: 42, c: 68, f: 14 },
+    ],
+  }
+  const user = userEvent.setup()
+  render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={['/fuel/log']}>
+        <Routes>
+          <Route path="/fuel/log" element={<FuelLogPage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  await user.click(screen.getByRole('button', { name: 'Előző nap' }))
+  await user.click(screen.getByRole('button', { name: 'Pótold · Ebéd' }))
+  await user.click(screen.getByRole('button', { name: 'Kamra · hozzáadás' }))
+  const addBtn = (await screen.findAllByRole('button', { name: /hozzáadása$/i }))[0]
+  await user.click(addBtn)
+  await user.click(screen.getByRole('button', { name: 'Bezárás' }))
+  await user.click(screen.getByRole('button', { name: /pótlás/i }))
+
+  const yesterday = addDays(localDateString(), -1)
+  const probe = renderHook(() => useFuelDay(yesterday), { wrapper: qcWrapper })
+  await waitFor(() => {
+    const meals = probe.result.current.fuel.meals
+    expect(meals.some(m => m.loggedAt?.startsWith(`${yesterday}T13:00`))).toBe(true)
+  })
+})
+
+test('nap-váltás bezárja a nyitott composert', async () => {
+  hoisted.plan = { ...baseCtx, slots: [] }
+  const user = userEvent.setup()
+  renderView()
+  await user.click(screen.getByRole('button', { name: 'Logolás · ablakon kívül' }))
+  expect(screen.getByText('MIKOR')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Előző nap' }))
+  expect(screen.queryByText('MIKOR')).not.toBeInTheDocument()
+})
+
+test('lezárt múltbeli nap: minden done → zsálya kártya, a szabad blokk marad', async () => {
+  hoisted.plan = {
+    ...baseCtx,
+    slots: [
+      { time: '07:30', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealName: 'Skyr-bowl zabbal', kcal: 420, p: 32, c: 48, f: 9 },
+    ],
+  }
+  const user = userEvent.setup()
+  renderView()
+  await user.click(screen.getByRole('button', { name: 'Előző nap' }))
+  expect(screen.getByText('Minden ablak kész ✓')).toBeInTheDocument()
+  expect(screen.getByText('Ablakon kívül')).toBeInTheDocument()
+})
+
+test('üres múltbeli nap: nincs ＋ tervezz CTA, a meta „nem volt ablak"-ot mond', async () => {
+  hoisted.plan = { ...baseCtx, slots: [] }
+  const user = userEvent.setup()
+  renderView()
+  await user.click(screen.getByRole('button', { name: 'Előző nap' }))
+  expect(screen.queryByRole('button', { name: '＋ tervezz' })).not.toBeInTheDocument()
+  // The honest "nem volt ablak" note now shows twice on an empty past day (finding 5, mezo-1j3z
+  // fix wave): the hero subline AND the üres-nap block's meta line.
+  expect(screen.getAllByText('ezen a napon nem volt étkezési ablak').length).toBeGreaterThanOrEqual(2)
 })
