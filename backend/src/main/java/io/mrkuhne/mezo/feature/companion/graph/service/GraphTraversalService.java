@@ -23,8 +23,8 @@ import org.springframework.stereotype.Service;
  * ({@link #startsAWordInFolded}, mezo-b3pp.34). Tokens shorter than {@link #MIN_TOKEN_CHARS} or in {@link #STOPWORDS} are
  * ignored: a 2-char needle ("ma", "az") or a bare "nem"/"volt" would seed half the graph on every
  * turn. Matching nodes are ranked (title hit, then distinct token hits, ties broken by the query's
- * own {@code created_at desc} row order — {@code Stream.sorted} is stable, so this is deliberate,
- * not incidental) and capped at {@code graph.max-seeds} — {@link #neighborhood} is the recursive CTE walk
+ * own TOTAL {@code created_at desc, id} row order — {@code Stream.sorted} is stable, so this is
+ * deliberate, not incidental) and capped at {@code graph.max-seeds} — {@link #neighborhood} is the recursive CTE walk
  * ({@link GraphTraversalQuery}) from those seeds.
  *
  * <p>No {@code @Transactional}, and — deliberately — no JPA repository at all: BOTH reads go
@@ -85,10 +85,11 @@ public class GraphTraversalService {
         }
         // Rank before capping: an unordered truncation would make the block depend on row order.
         // A TITLE hit outranks a summary-only hit (the stronger topical signal), then more distinct
-        // matching tokens wins. NO further tie-break: Stream.sorted is stable, so nodes left tied
-        // on both keys keep activeNodes()' own created_at-desc order — recency is a real relevance
-        // signal, unlike a node id, and preserving it is what GraphTraversalQuery's ACTIVE_NODES_SQL
-        // comment ("so a truncated graph still seeds from the most recent knowledge") promises.
+        // matching tokens wins. NO further tie-break HERE: Stream.sorted is stable, so nodes left
+        // tied on both keys keep activeNodes()' own row order — recency is a real relevance signal,
+        // unlike a node id. That order is GraphTraversalQuery.ACTIVE_NODES_SQL's own
+        // `created_at desc, id` — the `id` secondary key makes it a TOTAL order, which is what lets
+        // this stable sort be a determinism guarantee rather than an accident of query-plan luck.
         // Each node's title/summary is folded ONCE here (not per-token inside startsAWordInFolded) —
         // seedsFor runs on the synchronous chat path, and folding is a Normalizer.normalize + regex
         // pass over the whole field.

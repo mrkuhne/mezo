@@ -189,8 +189,9 @@ public record CompanionProperties(
          *  chatty turn can folded-word-start-match many nodes, and once the seed set is most of
          *  the graph the neighborhood walk degenerates into "the globally strongest edges"
          *  regardless of what was asked. Ranked (title hit, then distinct token hits — ties left to
-         *  the stable sort's own {@code created_at desc} row order, a real recency signal) before
-         *  this cap truncates, so the same turn always produces the same seed set. */
+         *  the stable sort's own {@code created_at desc, id} row order, a TOTAL order so recency
+         *  decides but the same turn still always produces the same seed set) before this cap
+         *  truncates. */
         @Min(1) @Max(50) int maxSeeds
     ) {}
 
