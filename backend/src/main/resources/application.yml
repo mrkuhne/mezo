@@ -544,6 +544,11 @@ mezo:
       # Fresh pattern evidence (a same-night pattern_event snapshot for an already-promoted
       # pattern) bumps that node's edges by this much, capped at 1.0.
       reinforcement-bump: 0.05
+      # mezo-b3pp.34: cap on GraphTraversalService#seedsFor's ranked seed list — same order as
+      # top-k=8, so a turn that matches many nodes still walks a real neighbourhood (ranked
+      # title/summary-hit results) rather than degenerating into "the globally strongest edges"
+      # across the whole graph regardless of what was asked.
+      max-seeds: 8
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron
