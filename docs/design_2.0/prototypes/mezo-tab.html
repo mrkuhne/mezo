@@ -1271,6 +1271,11 @@
   .rankb { width: 20px; height: 20px; border-radius: 8px; display: grid; place-items: center; flex: none;
     font-size: 10px; font-weight: 800; color: #fff; background: linear-gradient(135deg, #C9962E, #A8801F); }
   .rankb.two { background: linear-gradient(135deg, #B4A8D8, #8A76CC); }
+  .dgqgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .dgqtile { border-radius: 14px; padding: 9px 11px; background: rgba(255, 255, 255, 0.6);
+    border: 1.2px dashed rgba(43, 33, 24, 0.16); }
+  .dgqtile .qq { font-size: 10px; font-weight: 700; line-height: 1.35; color: #6E6257; }
+  .dgqtile .qs { font-size: 7px; font-weight: 800; letter-spacing: 0.08em; color: #A2958A; margin-top: 4px; }
   .probe { border-radius: 12px; background: rgba(255, 255, 255, 0.72); padding: 8px 10px; margin-top: 9px;
     border: 0.5px solid rgba(43, 33, 24, 0.07); }
   .probe .pt { font-size: 7px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #A8801F; }
@@ -1395,7 +1400,7 @@
             <div class="tile wide rise" style="--d:400ms;" data-page="page-diagnozis" role="button" tabindex="0" aria-label="Diagnózis">
               <div class="p-eyebrow" style="color:#A8801F;">Diagnózis</div>
               <div class="dgq">Miért vagyok fáradt? <span style="float:right;color:#C9962E;">✦</span></div>
-              <div class="dgs" id="dgTileLine">kérdés → gyanúsítottak evidenciával → próba · 1 korábbi riport</div>
+              <div class="dgs" id="dgTileLine">„Miért vagyok fáradt?" él · 4 kérdés készül · 1 korábbi riport</div>
             </div>
           </div>
 
@@ -1768,7 +1773,7 @@
             <svg width="54" height="54" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg>
             <div class="bignum" id="dgBig">1</div>
           </div>
-          <div class="sb">kérdés → gyanúsítottak evidenciával → próba</div>
+          <div class="sb">kérdések a Mezónak → gyanúsítottak evidenciával → próba</div>
         </div>
         <div class="page-body">
           <div class="candc rise" style="--d:0ms;">
@@ -1780,6 +1785,14 @@
             <button class="cta" id="dgAsk" style="width:100%;margin-top:9px;padding:9px 0;font-size:10px;">✦ Kérdezd meg most</button>
             <div style="font-size:7.5px;color:#A2958A;margin-top:6px;text-align:center;" id="dgQuota">ma még 3 kérdésed van · a megnyitás mindig ingyen</div>
           </div>
+          <div class="p-eyebrow rise" style="--d:40ms;color:#6E6257;margin:2px 2px 7px;">További kérdések · a recept kész, sorban jönnek</div>
+          <div class="dgqgrid rise" style="--d:50ms;">
+            <div class="dgqtile"><div class="qq">Miért nem mozdul a súlyom?</div><div class="qs">HAMAROSAN</div></div>
+            <div class="dgqtile"><div class="qq">Miért alszom rosszul?</div><div class="qs">HAMAROSAN</div></div>
+            <div class="dgqtile"><div class="qq">Kell most deload?</div><div class="qs">HAMAROSAN</div></div>
+            <div class="dgqtile"><div class="qq">Havi Mezo Riport</div><div class="qs">HAMAROSAN · HAVI 1</div></div>
+          </div>
+          <div class="p-eyebrow rise" style="--d:60ms;color:#6E6257;margin:2px 2px 7px;">Korábbi riportok</div>
           <div id="dgList">
             <div class="predtile sage rise" style="--d:70ms;" data-page="page-diagnozis-reszlet" role="button" tabindex="0" aria-label="Korábbi diagnózis">
               <div class="mrow" style="gap:8px;">
@@ -1938,7 +1951,10 @@
           ◇ Javaslat — a valós app angol chipjeinek honosítása) és <strong>státusz-wash-es csempék</strong>:
           folyamatban = levendula + animált konfidencia-sáv, bevált/megerősítve = zsálya, aktív kísérlet =
           borostyán + napi pöttysor; a javaslat-kártya elfogadva ◐ Aktív 0/7-re vált.</li>
-          <li><strong>Diagnózis</strong> — mezo első on-demand riportja: a „Miért vagyok fáradt?"
+          <li><strong>Diagnózis</strong> — mezo on-demand riport-katalógusa. V1-ben egy kérdés él
+          („Miért vagyok fáradt?"), de a séma jelenség-független: minden új kérdés egy recept
+          (metrika-lista + prompt), nem új feature — a „További kérdések" rács a bővülés helye,
+          és ide csatlakozik majd a Havi Mezo Riport is. Az élő kérdés: a „Miért vagyok fáradt?"
           kérdésre rangsorolt gyanúsítottak, mindegyik <strong>mért evidenciával</strong> (érték + eltérés
           a bázistól + forrás-címke — a modell indexszel választ, kitalálni nem tud), és mindegyiknél
           egy <strong>próba</strong>, ami egy koppintással aktív N=1 kísérlet lesz. Napi 3 kérdés;
