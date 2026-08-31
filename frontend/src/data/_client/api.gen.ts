@@ -935,7 +935,7 @@ export interface paths {
         };
         /**
          * The owner's biometric profile
-         * @description Never 404s: having no profile yet is a normal state, answered with 200 and an empty payload (`{}`) (mezo-5cmq).
+         * @description Never 404s: having no profile yet is a normal state, answered with 200 and an empty profile — an object whose every field is null (mezo-5cmq).
          */
         get: operations["getBiometricProfile"];
         /** Create or replace the owner's biometric profile */
@@ -4623,13 +4623,13 @@ export interface components {
             links: components["schemas"]["GoalPlanLinkResponse"][];
             gaps: components["schemas"]["GoalGap"][];
         };
-        /** @description Every field is optional: an owner with no profile row yet gets an EMPTY object (`{}`) with a 200, not a 404 (mezo-5cmq). The UPSERT request keeps its required trio. */
+        /** @description Every field is optional AND nullable: an owner with no profile row yet gets a 200 with an empty profile — an object whose every field is null — not a 404 (mezo-5cmq). The UPSERT request keeps its required trio. */
         BiometricProfileResponse: {
-            /** @enum {string} */
-            sex?: "M" | "F";
-            heightCm?: number;
+            /** @enum {string|null} */
+            sex?: "M" | "F" | null;
+            heightCm?: number | null;
             /** Format: date */
-            birthDate?: string;
+            birthDate?: string | null;
             bodyFatPct?: number | null;
             /** @enum {string|null} */
             activityLevel?: "DESK" | "MIXED" | "PHYSICAL" | null;
@@ -10338,7 +10338,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Profile, or an empty object when the owner has none yet */
+            /** @description Profile, or an all-null empty profile when the owner has none yet */
             200: {
                 headers: {
                     [name: string]: unknown;
