@@ -2113,7 +2113,7 @@ worth talking to Daniel), injected into every turn as its own prompt block.
 - **`ProfileAssembler.rebuild(userId, anchorQuarter)`** (`profile/service/`) gathers, in pure code: the
   rollup scopes for **only the currently configured feedback-learning window**
   (`FeedbackRollupRepository.findByCreatedByAndWindowDaysAndDeletedFalseOrderByScopeAsc(userId,
-  feedbackLearningProperties.windowDays())` — fixed `mezo-b3pp.35`, item 1), the 👎-reason (style)
+  feedbackLearningProperties.windowDays())` — fixed `mezo-b3pp.35`, item 3), the 👎-reason (style)
   histogram off the `style` scope's `bySurface` map, up to `maxDecisions`
   reviewed `decision_entry` rows newest-review-first (`DecisionEntryRepository
   .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc`), and up to
@@ -2143,7 +2143,7 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   LLM call, no node write, any existing profile left untouched (`ProfileAssembler.rebuild` returns
   `Optional.empty()` before the payload is even rendered). A blank model answer is the same
   no-op — never a node overwritten with an invention.
-- **The payload reads only the CONFIGURED window's rollup rows** (`mezo-b3pp.35`, item 1,
+- **The payload reads only the CONFIGURED window's rollup rows** (`mezo-b3pp.35`, item 3,
   `ProfileAssemblerWindowHeaderIT` / `ProfileAssemblerIT
   .renderPayload_readsOnlyTheConfiguredWindow_whenRetiredWindowRowsExist`) — `feedback_rollup`'s
   unique key is `(created_by, scope, window_days)` and nothing deletes a row when
@@ -2153,17 +2153,32 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   .windowDays()`, never hardcoded 30). **`ProfileAssembler` reads the SAME property
   `FeedbackLearningService` writes rows with on purpose** — filtering on a different knob would
   compile fine and silently match nothing, emptying the whole profile, which is a worse failure
-  than the bug it fixes.
-- **`feedbackSignals` sums `surface:*`-prefixed rows only** (`mezo-b3pp.35`, item 2,
+  than the bug it fixes. **`QuarterlyReviewService.appendFeedback` deliberately does NOT filter
+  the same way** — it reads every window unfiltered and labels each row with its own window
+  instead, so seeing `surface:chat_message` twice with two window labels in a quarterly payload
+  after a window-days change is that builder working as designed, not this fix leaking.
+  **Operational edge (future window changes only, not this deploy):** `window-days` has always
+  been 30 and the nightly rollup cron (03:10) normally finishes well before the weekly profile
+  cron (Monday 03:45), so a fresh window's rows normally exist by read time; but a FUTURE window
+  change landing in that ~35-minute gap, or `feedback-learning-job.enabled=false` while the
+  profile job still runs, leaves the new window with zero rollup rows — and since `decisions`/
+  `nodes` are typically non-empty, `rebuild`'s honest-absence gate does NOT fire, so it overwrites
+  the existing profile with a strictly poorer payload. When decisions and nodes are also empty the
+  gate does fire and the old profile is left untouched, so there is no silent data loss.
+- **`feedbackSignals` sums `surface:*`-prefixed rows only** (`mezo-b3pp.35`, item 4,
   `ProfileAssemblerIT.feedbackSignals_countsEachVerdictOnce_whenAFeedMessageIsRolledUpTwice`) —
   the scope taxonomy is `style`, `surface:<artifact_kind>`, `feed:<feed_kind>`,
   `intervention:<key>`; `surface:*` is the complete, non-overlapping partition of every verdict
   (exactly one row per artifact kind), while `feed:*`/`intervention:*` are REFINEMENTS of a subset
   of it — a `feed_message` verdict lands in both `surface:feed_message` and its `feed:<kind>` row.
-  Summing every scope double-counted it. This only moves the `meta.profile.feedbackSignals` number
-  and the honest-absence gate's magnitude (a feed-heavy user could clear `signals == 0` on
-  double-counted phantom signal) — it never changes which rollup LINES render in the payload, since
-  the rendered VISSZAJELZÉSEK lines already iterate every scope regardless. **The invariant to
+  Summing every scope double-counted it. This affects only the `meta.profile.feedbackSignals`
+  number, not the `signals == 0` skip gate: every `feed:*`/`intervention:*` row is built by
+  filtering the SAME window's verdicts down to `artifactKind == feed_message`
+  (`FeedbackLearningService.computeRollups`), so a nonzero feed or intervention row always implies
+  a nonzero `surface:feed_message` row from the same run — double counting could only inflate an
+  already-nonzero total, never manufacture a nonzero total out of an all-zero one. It never changes
+  which rollup LINES render in the payload either, since the rendered VISSZAJELZÉSEK lines already
+  iterate every scope regardless. **The invariant to
   watch:** `MessageFeedbackEntity.KIND_WEEKLY_REVIEW` is declared but is not in
   `FeedbackLearningService.SURFACE_KINDS` (`mezo-b3pp.40`) — wiring that kind up for real without
   adding it there would make its verdicts land in no `surface:` row at all, silently UNCOUNTED, the
@@ -2204,7 +2219,7 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   `""`, so a profile-block failure never breaks a turn. `""` also when the bean is absent
   (`COMPANION_SWITCH`/`KNOWLEDGE_GRAPH_SWITCH` off — `ChatService` holds it via `ObjectProvider`,
   the `GraphPromptAssembler` idiom). **The never-throws contract now has a failure-path IT**
-  (`mezo-b3pp.35`, item 3, `ProfilePromptAssemblerFailureIT
+  (`mezo-b3pp.35`, item 2, `ProfilePromptAssemblerFailureIT
   .testRender_shouldReturnEmptyBlock_whenTheProfileReadFails` — its own IT class, same
   `@MockitoSpyBean`-forks-the-context reasoning as `ChatServiceGraphBlockFailureIT`): the catch is
   correct today, so nothing else in the suite would fail if a future refactor deleted it. The test

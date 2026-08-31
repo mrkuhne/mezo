@@ -11,8 +11,11 @@ public interface FeedbackRollupRepository extends JpaRepository<FeedbackRollupEn
     Optional<FeedbackRollupEntity> findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(
         UUID createdBy, String scope, int windowDays);
 
-    /** W4.3 (mezo-b3pp.17): every scope for one user in a single read — the ProfileAssembler needs
-     *  all 11 rollups at once, and 11 point lookups would be 11 round trips for the same page. */
+    /** W4.3 (mezo-b3pp.17): every scope for one user in a single read, unfiltered by window — 11
+     *  point lookups would be 11 round trips for the same page. {@code ProfileAssembler} no longer
+     *  calls this (mezo-b3pp.35, item 3, moved it to the window-scoped finder below); its only
+     *  remaining production caller is {@code QuarterlyReviewService.appendFeedback}, which reads
+     *  every window on purpose and labels each row with its own {@code windowDays}. */
     List<FeedbackRollupEntity> findByCreatedByAndDeletedFalseOrderByScopeAsc(UUID createdBy);
 
     /** Same as above, scoped to ONE window (mezo-b3pp.35, item 3) — nothing deletes a rollup row
