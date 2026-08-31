@@ -23,6 +23,7 @@ they inline come from `../assets/`.
 | `mezo-chat.html` | https://claude.ai/code/artifact/ae02e856-1e3d-4c60-aad5-842e75190538 |
 =======
 | `edzes-review.html` | https://claude.ai/code/artifact/66f5a4de-8afe-48ff-b04f-e861b3ba22ee |
+| `fuel-mely.html` | https://claude.ai/code/artifact/d5c6d770-a067-4642-baa3-9dee63613718 |
 | `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
 >>>>>>> origin/main
 
@@ -367,6 +368,26 @@ are usable without a build step).
   date + similarity ring + 4-line clamped gist, tap → card widens and unclamps), subtler
   feedback chips, lav-sheen composer, and no floating FAB on the chat page.
 =======
+- **fuel-mely** — the F7.3 Fuel deep round: the four blocks that close the tab's last
+  mixed-generation surfaces. (1) **Gyógyszer full lifecycle** — the page finally carries its own
+  write paths: a ＋ Beadás dose sheet, an edit sheet, and a two-step inline **Leállítás** that is
+  deliberately *not* error-red (a decision, not a mistake; history survives as `active:false`).
+  The empty state stops being a dead end: **＋ Gyógyszer felvétele** opens the create sheet
+  (name, active ingredient, route chips, dose, cadence, and a P/S/T phase-template preview) —
+  the round's single new contract element is `POST /api/medication`. (2) **Recipe detail +
+  editor** — the detail page trades its two tabs for a **mosaic**: image-band Mozaik hero with
+  slot chip and fit badge, stat-strip macros with the /adag↔egész toggle, then four tiles
+  (Pontszám ring · Mezo-olvasat · Hozzávalók · Logok). Depth is one tap away: the full score
+  breakdown opens in the same sheet the meal score uses (one component, two callers), the
+  ingredients open their own sliding page, and Szerkesztés slides in the editor as a sub-page. (3) The **étkezési ablakok**
+  editor renders its existing two-tier validation honestly: Tier-1 errors in coral (a forbidden
+  state — the one place the colour is legitimate), warnings in amber that never block, and the
+  ✨ Mezo értékelése verdict card that never gates saving. A demo button flips the error state to
+  clean so the gating is visible. (4) A **sheet-launcher** page shows the family pattern —
+  grabber → eyebrow header + ✕ → tinted hero band → content → button row — on the six key sheets
+  (MealScore with the score ring, StackPicker with koffein/a-stackben marks, StackItem zones,
+  Import with all three modes, Energia's equation bar, Beadás); the remaining seven follow the
+  pattern without their own drawing.
 - **karakter-tab** — the Karakter dossier page (Én tab family), audited against the shipped
   backend (`docs/features/character.md` — 7 CORE dimensions, `CharacterExpertCatalog`'s 7 named
   experts, Szkeptikus + Mezo, weekly konzílium, bootstrap, claim feedback). Shown standalone (not
