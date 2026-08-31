@@ -2742,6 +2742,15 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   `sourceHu` and a `MetricDomain` (`SLEEP/TRAIN/FUEL/MIND/BODY/OTHER`); the monitor DTOs pass
   everything through (`questionHu`/`expectedDirection`/`whenPositiveHu`/`whenNegativeHu` since
   `mezo-fj1g`), and `PatternResponse` gained `pairKey` (the Motor↔Patterns cross-link anchor).
+
+  **Second consumer since `mezo-hqfi`:** the proactive **Diagnózis** report treats `MetricKey` as
+  its suspect catalog — the enum is simultaneously the metric whitelist a model answer is
+  validated against, the Hungarian evidence label (`labelHu`), and the provenance line shown in
+  the UI (`sourceHu`), while `domain()` supplies the "at least two domains have data" gate.
+  `MetricSeriesService#series` is its gather primitive. Consequence: **adding a `MetricKey` widens
+  what the diagnosis can blame**, and renaming one breaks already-persisted `diagnosis.suspects`
+  rows, which store the enum name. See [`proactive.md`](proactive.md) §4 → Diagnosis.
+  Note the accessors are record-style (`labelHu()`, `sourceHu()`, `domain()`), not Lombok getters.
 - `mezo.companion.patterns.load-gym-kg-per-min` = **100** (`@Min(1) @Max(10000)`) — V3.4: the
   ACWR/monotony daily-load common scale (this many kg of gym volume ≙ one sport minute).
 - `mezo.companion.summary.note-max-chars` = **200** (`@Min(0) @Max(1000)`) — V3.4: per-field cap
