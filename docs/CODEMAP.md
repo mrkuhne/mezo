@@ -110,7 +110,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-08-30, mixed) ·
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-08-31, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-08-31, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
@@ -204,7 +204,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-08-31, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-08-31, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-08-30, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-08-31, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `profile`, `quarterly`, `tools`
@@ -424,7 +424,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### goal
 
 *BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-08-15, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-08-30, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-08-31, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -595,7 +595,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-08-29, done) ·
   [docs/features/habit.md](features/habit.md) (updated 2026-08-29, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-08-30, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-08-31, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-08-31, mixed)
 
@@ -614,14 +614,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     NotificationsPage.tsx, PeoplePage.tsx, RoutineEditorPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx,
     WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
-    DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonDetailSheet.tsx,
-    PersonEditSheet.tsx, PersonLogSheet.tsx, SettingsSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx,
-    SleepStatsSheet.tsx, WeightLogSheet.tsx
+    DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, NodeDetailSheet.tsx,
+    PersonDetailSheet.tsx, PersonEditSheet.tsx, PersonLogSheet.tsx, SettingsSheet.tsx, SleepGoalSheet.tsx,
+    SleepLogSheet.tsx, SleepStatsSheet.tsx, WeightLogSheet.tsx
   - **components:** AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
     AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx, AiUsageHero.tsx, BadgesCard.tsx, CategoryHeader.tsx,
     DayNavTiles.tsx, DetailStat.tsx, FieldRow.tsx, GoalGate.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx,
-    GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthJournalCard.tsx, KnowledgeGraphNodeCard.tsx,
-    MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx,
+    GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthJournalCard.tsx, KindNodeList.tsx,
+    KindTileGrid.tsx, MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx,
     NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx, PersonCard.tsx, PhaseAverageCard.tsx,
     PhaseRail.tsx, PhaseReferenceRow.tsx, ProfileNodeCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx,
     RoutinesTab.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx,
@@ -774,7 +774,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-08-30, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-08-31, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
@@ -830,7 +830,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 50 IT + 0 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 50 IT + 1 unit
   - **ITs:** `ChallengeGeneratorIT`, `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`,
     `ChallengePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
     `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`,
@@ -845,10 +845,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`,
     `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionPersistenceIT`
   - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
-    `DailySummaryPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `GoalPopulator`, `JournalPopulator`,
-    `KnowledgeFactPopulator`, `LearnedFactPopulator`, `MedicationDosePopulator`, `MedicationPopulator`,
-    `MemoirPopulator`, `MentionPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`,
-    `PredictionPopulator`, `QuestPopulator`, `SleepLogPopulator`, `TrainPopulator`, `UserPopulator`,
+    `DailySummaryPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `GoalPopulator`, `GraphPopulator`,
+    `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `MedicationDosePopulator`,
+    `MedicationPopulator`, `MemoirPopulator`, `MentionPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`,
+    `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`, `SleepLogPopulator`, `TrainPopulator`, `UserPopulator`,
     `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
 
 ### progression

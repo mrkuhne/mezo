@@ -73,8 +73,15 @@ describe('ActivityLogSheet', () => {
     for (const s of LIFE_SKILLS) expect(screen.getByRole('button', { name: s.name })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Konyha' }))
     await waitFor(() => expect(categorize).toHaveBeenCalledWith('act-new', 'cooking'))
-    expect(await screen.findByText('Konyha')).toBeInTheDocument()
-  })
+    // Deflake (PR #338: 3× CI-only, mode-flipping): the pick → done re-render can outrun
+    // findByText's 1s default on a saturated runner — wait the picker out, then find the
+    // done card, both on generous budgets.
+    await waitFor(
+      () => expect(screen.queryByText('Nem egyértelmű — melyik skillhez tartozik?')).not.toBeInTheDocument(),
+      { timeout: 15000 },
+    )
+    expect(await screen.findByText('Konyha', undefined, { timeout: 15000 })).toBeInTheDocument()
+  }, 40000)
 
   test('(c) quest prop renders the quest banner', () => {
     renderSheet({ quest })
