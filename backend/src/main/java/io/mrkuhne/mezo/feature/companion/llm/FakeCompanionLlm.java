@@ -110,6 +110,13 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  equality assertion against the real constant. */
     public static final String PROPOSAL_MARKER_MIRROR = "KARAKTER-JAVASLAT-FELADAT";
 
+    /** Mirror of CharacterBootstrapService.BOOTSTRAP_MARKER (feature/character) — LITERAL, cycle
+     *  rule (see {@link #OBSERVATION_MARKER_MIRROR}). The bootstrap konzílium's proposal round
+     *  asks for the SAME proposal JSON shape as the weekly round, so it shares the proposal
+     *  branch's answer logic below — same canned fallback, same sentinel. Drift is caught by an
+     *  IT's equality assertion against the real constant. */
+    public static final String BOOTSTRAP_MARKER_MIRROR = "KARAKTER-BOOTSTRAP-FELADAT";
+
     /** Scripted konzílium proposals (mezo-1gim.5): {@code [fake-char-proposals:[…]]} planted in an
      *  observation's TEXT (the user message renders it) is returned verbatim; otherwise a canned
      *  single-proposal array keeps the pipeline deterministic, keyed on the expert's own
@@ -433,7 +440,7 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
             return "[{\"text\":\"Fake megfigyelés.\",\"salience\":3,\"dimensionKeys\":[\"discipline\"]}]";
         }
-        if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR)) {
+        if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR) || systemPrompt.startsWith(BOOTSTRAP_MARKER_MIRROR)) {
             Matcher proposals = CHAR_PROPOSALS_SENTINEL.matcher(userMessage);
             if (proposals.find()) {
                 return proposals.group(1);

@@ -22,6 +22,11 @@ public interface CharacterConferenceRepository extends JpaRepository<CharacterCo
     Optional<CharacterConferenceEntity> findByCreatedByAndKindAndWeekStart(UUID createdBy, String kind,
                                                                             LocalDate weekStart);
 
+    /** The idempotency lookup for the monthly bootstrap konzílium (Karakter S4, mezo-1gim.6): a
+     *  live BOOTSTRAP row already exists for this owner -> the service throws CONFLICT rather than
+     *  running the round again (bootstrap is one-time-ever, unlike WEEKLY's per-week key). */
+    Optional<CharacterConferenceEntity> findFirstByCreatedByAndKindOrderByGeneratedAtDesc(UUID createdBy, String kind);
+
     /** Projection so the list endpoint never loads full transcripts. */
     interface Summary {
         UUID getId();

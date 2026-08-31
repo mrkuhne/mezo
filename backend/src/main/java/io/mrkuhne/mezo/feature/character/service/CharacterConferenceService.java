@@ -92,9 +92,33 @@ public class CharacterConferenceService {
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());
 
+        CharacterConferenceEntity conference = persistConferenceAndApplyOutcome(owner, WEEKLY, weekStart,
+                transcriptTurns, verdictResult.chapters(), verdictResult.rulings());
+
+        for (CharacterObservationEntity observation : weekObservations) {
+            observation.setConsumedByConferenceId(conference.getId());
+        }
+        observationRepository.saveAll(weekObservations);
+
+        return conference;
+    }
+
+    /**
+     * The shared konzílium tail (Karakter S4, mezo-1gim.6): persists the conference row FIRST
+     * (so claims can reference its id), applies chapter openings then claim rulings, rewrites the
+     * portrait of every dimension either touched, and sets the final outcome — the EXACT sequence
+     * {@link #runWeekly} always used, now shared verbatim with {@code CharacterBootstrapService}
+     * so the two entry points can never drift apart. Observation consumption is the CALLER's
+     * concern (only {@link #runWeekly} has observations to consume); this method never touches
+     * {@link CharacterObservationRepository}. Package-visible for {@code CharacterBootstrapService}.
+     */
+    @Transactional
+    CharacterConferenceEntity persistConferenceAndApplyOutcome(UUID owner, String kind, LocalDate weekStart,
+            List<ConferenceTranscriptEnvelope.Turn> transcriptTurns,
+            List<KonziliumVerdictRound.ChapterProposal> chapters, List<ClaimRuling> rulings) {
         CharacterConferenceEntity conference = new CharacterConferenceEntity();
         conference.setCreatedBy(owner);
-        conference.setKind(WEEKLY);
+        conference.setKind(kind);
         conference.setWeekStart(weekStart);
         conference.setGeneratedAt(Instant.now());
         conference.setTranscript(new ConferenceTranscriptEnvelope(transcriptTurns));
@@ -103,10 +127,10 @@ public class CharacterConferenceService {
 
         List<ConferenceOutcomeEnvelope.Change> changes = new ArrayList<>();
         List<ConferenceOutcomeEnvelope.Change> chapterChanges =
-                claimLifecycle.openChapters(owner, conference.getId(), verdictResult.chapters());
+                claimLifecycle.openChapters(owner, conference.getId(), chapters);
         changes.addAll(chapterChanges);
         List<ConferenceOutcomeEnvelope.Change> claimChanges =
-                claimLifecycle.apply(owner, conference.getId(), verdictResult.rulings());
+                claimLifecycle.apply(owner, conference.getId(), rulings);
         changes.addAll(claimChanges);
 
         Set<String> touchedDimensionKeys = new LinkedHashSet<>();
@@ -136,13 +160,6 @@ public class CharacterConferenceService {
         }
 
         conference.setOutcome(new ConferenceOutcomeEnvelope(changes));
-        conference = conferenceRepository.save(conference);
-
-        for (CharacterObservationEntity observation : weekObservations) {
-            observation.setConsumedByConferenceId(conference.getId());
-        }
-        observationRepository.saveAll(weekObservations);
-
-        return conference;
+        return conferenceRepository.save(conference);
     }
 }
