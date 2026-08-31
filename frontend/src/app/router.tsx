@@ -66,6 +66,11 @@ import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
+import { PeopleJeloltekPage } from '@/features/me/pages/PeopleJeloltekPage'
+import { PeopleKorPage } from '@/features/me/pages/PeopleKorPage'
+import { PeopleEmlitesekPage } from '@/features/me/pages/PeopleEmlitesekPage'
+import { PeopleHetiPage } from '@/features/me/pages/PeopleHetiPage'
+import { PersonDetailPage } from '@/features/me/pages/PersonDetailPage'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
@@ -258,7 +263,20 @@ export const routes: RouteObject[] = [
       { path: 'me/goals', element: <GoalsPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },
+      // Emberek S3 hub (mezo-06o0.2): static children BEFORE `me/people/:id` (Task 3's "A
+      // köröm" detail route) — React Router ranks static over dynamic regardless of source
+      // order, but the WeekHub precedent (me/week/napok/:date) keeps the ordering explicit
+      // here too. `kor`/`emlitesek`/`heti` are the hub tiles' destinations; Task 3–5 own
+      // those page components — this slice only wires `jeloltek` (S3) and the hub itself.
       { path: 'me/people', element: <PeoplePage /> },
+      { path: 'me/people/jeloltek', element: <PeopleJeloltekPage /> },
+      { path: 'me/people/kor', element: <PeopleKorPage /> },
+      { path: 'me/people/emlitesek', element: <PeopleEmlitesekPage /> },
+      { path: 'me/people/heti', element: <PeopleHetiPage /> },
+      // Person detail (Task 4) — registered AFTER every static `me/people/*` sibling
+      // above (React Router ranks static over dynamic regardless of source order, but
+      // the ordering stays explicit here per the WeekHub/`me/week/napok/:date` precedent).
+      { path: 'me/people/:id', element: <PersonDetailPage /> },
       { path: 'me/knowledge', element: <KnowledgePage /> },
       // mezo-nol0: a főnevet a FEED viszi (ide vezet a fejléc dropdown „Összes értesítés ›"
       // lábléce), a kapcsolók alá költöztek.

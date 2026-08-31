@@ -358,6 +358,22 @@
   --mz-water-fill:  linear-gradient(90deg, #7FB6D9, #4E8FB8);
   --mz-tickfill:    linear-gradient(135deg, #8FAF7E, #6E8B5E);
   --mz-wash-anchor: linear-gradient(140deg, #F7EEE2, #FFFBF6 75%);
+
+  /* Emberek S3 hub (mezo-06o0.2) — tone + context tints, en-body.html emberek-body.html's
+     `TONES`/`CTX` IIFE objects verbatim. `baratok`/`egyeb` have no prototype color (the
+     prototype's CTX only lists 6 of the 8 MentionContext values) — picked in-family. */
+  --ppl-tone-jo:     #7FA06C;
+  --ppl-tone-ok:     #B5AA9C;
+  --ppl-tone-vegyes: #C9962E;
+  --ppl-tone-nehez:  #C4694F;
+  --ppl-ctx-munka:         #4E8FB8;
+  --ppl-ctx-csalad:        #8FAF7E;
+  --ppl-ctx-baratok:       #B5AA9C;
+  --ppl-ctx-edzes:         #FF7A55;
+  --ppl-ctx-konfliktus:    #C9962E;
+  --ppl-ctx-kozos-program: #C46FA0;
+  --ppl-ctx-segitseg:      #6C5FA3;
+  --ppl-ctx-egyeb:         #8A7A6A;
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -624,6 +640,21 @@
   --mz-water-fill:  linear-gradient(90deg, color-mix(in srgb, var(--dv-sky) 55%, var(--surface-card)), var(--dv-sky));
   --mz-tickfill:    linear-gradient(135deg, color-mix(in srgb, var(--dv-sage) 65%, var(--surface-card)), var(--dv-sage));
   --mz-wash-anchor: linear-gradient(140deg, color-mix(in srgb, var(--dv-amber) 10%, var(--surface-card)), var(--surface-card) 75%);
+
+  /* Emberek S3 hub (mezo-06o0.2) — dark ("Pulse") tone/context tints: lifted +
+     desaturated from the light hexes, same family the other tone/cell tokens use. */
+  --ppl-tone-jo:     #9CBF87;
+  --ppl-tone-ok:     #CFC3B3;
+  --ppl-tone-vegyes: #E3B565;
+  --ppl-tone-nehez:  #E0876F;
+  --ppl-ctx-munka:         #7FB2DE;
+  --ppl-ctx-csalad:        #A9C69A;
+  --ppl-ctx-baratok:       #CFC3B3;
+  --ppl-ctx-edzes:         #FF9B7D;
+  --ppl-ctx-konfliktus:    #E3B565;
+  --ppl-ctx-kozos-program: #D98FB8;
+  --ppl-ctx-segitseg:      #9186C9;
+  --ppl-ctx-egyeb:         #A79683;
 }
 
 /* ===== Legacy alias bridge — Deep-Current / early-token names → DS tokens =====
@@ -5617,6 +5648,19 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-rl { font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
 .ppl-mt { font-size: 9.5px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
 
+/* -- A köröm (mezo-06o0.2) -- prototype emberek-head.html .pspark/.pspark i/.ctxdots/
+      .ctxdots i x1.18 (16 to 19px spark height, 4.5 to 5.3px bar width, 6 to 7px dot).
+      Bar color is the person's own --ac affect color (element-local, set by PersonCard's
+      inline style, same as .ppl-avat's ring — not a token); dot color is CTX_META's
+      --ppl-ctx-* token, never an invented hex. EntranceGroup arms the one-shot grow via
+      .mz-play (the WeekHub/hub-mozaik precedent), guarded under reduced-motion below. */
+.ppl-spark { display: flex; gap: 3px; align-items: flex-end; height: 19px; }
+.ppl-spark i { width: 5.3px; border-radius: 2px; min-height: 3px; transform: scaleY(0); transform-origin: bottom; }
+.mz-play .ppl-spark i { animation: ppl-sparkup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
+@keyframes ppl-sparkup { to { transform: scaleY(1); } }
+.ppl-ctxdots { display: flex; gap: 3.5px; }
+.ppl-ctxdots i { width: 7px; height: 7px; border-radius: 50%; }
+
 .ppl-mrowt { border-radius: 18px; padding: 11px 13px; margin-bottom: 8px;
   background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
 .ppl-mtop { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
@@ -5636,6 +5680,41 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-mtiechip { font-size: 10px; font-weight: 700; color: var(--mz-ink-soft);
   background: color-mix(in srgb, var(--text-primary) 5%, transparent); border-radius: 999px; padding: 2px 8px; }
 
+/* -- Emberek S3 person detail (mezo-06o0.2) -- prototype emberek-head.html
+      `.pavat.lg`/`.trendcard`/`.affbars`/`.affbars i`/`.affax`/`.ctxcard`/`.ctxbar`/
+      `.factcard`/`.fact` x1.18 (58->68 avatar, 16->19 card radius, 44->52 bar height).
+      Bar color is the person's own --ac affect color (element-local, PersonDetailPage's
+      inline style, same idiom PersonCard/.ppl-avat already use); the ctxbar fill width
+      rides a `--w` custom prop (element-local, not a token) with CTX_META's
+      --ppl-ctx-* token for its color -- both real per-person derivations (Task 1's
+      trendHeights/contextBreakdown), never an invented hex or bar. */
+.ppl-avat-lg { width: 68px; height: 68px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--ac) var(--av), rgba(43, 33, 24, 0.1) 0); }
+.ppl-avat-lg .ppl-avin { width: 54px; height: 54px; font-size: 22px; }
+
+.ppl-trendcard, .ppl-ctxcard, .ppl-factcard { border-radius: 19px; padding: 13px 14px; margin-bottom: 11px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.ppl-affbars { display: flex; gap: 5px; align-items: flex-end; height: 52px; margin-top: 9px; }
+.ppl-affbars i { flex: 1; border-radius: 5px 5px 2px 2px; min-height: 5px; transform: scaleY(0); transform-origin: bottom; }
+.mz-play .ppl-affbars i { animation: ppl-sparkup 0.55s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 200ms); }
+.ppl-affax { display: flex; justify-content: space-between; font-size: 8px; font-weight: 700;
+  letter-spacing: 0.06em; color: var(--mz-ink-mut); margin-top: 5px; }
+.ppl-ctxbar { display: flex; align-items: center; gap: 9px; padding: 6px 0; }
+.ppl-ctxbar .ppl-ctxlb { font-size: 10px; font-weight: 600; width: 97px; flex: none; }
+.ppl-ctxbar .ppl-ctxtr { flex: 1; height: 8px; border-radius: 5px; background: rgba(43, 33, 24, 0.07); overflow: hidden; }
+.ppl-ctxbar .ppl-ctxtr div { height: 100%; border-radius: 5px; width: 0;
+  transition: width 0.8s cubic-bezier(0.25, 0.8, 0.35, 1) 0.35s; }
+.mz-play .ppl-ctxbar .ppl-ctxtr div { width: var(--w); }
+.ppl-ctxbar .ppl-ctxpc { font-size: 9px; font-weight: 700; color: var(--mz-ink-soft); width: 31px;
+  text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.ppl-fact { display: inline-flex; border-radius: 999px; padding: 4px 12px; font-size: 10px; font-weight: 600;
+  color: var(--mz-cell-rose-ink); background: var(--mz-cell-rose-bg); margin: 2px 4px 2px 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ppl-affbars i, .mz-play .ppl-affbars i { transform: scaleY(1); animation: none; }
+  .ppl-ctxbar .ppl-ctxtr div, .mz-play .ppl-ctxbar .ppl-ctxtr div { width: var(--w); transition: none; }
+}
+
 .tud-summary { border-radius: 20px; padding: 14px 15px;
   background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
 .tud-summary-link { display: block; margin-top: 10px; font-size: 11px; font-weight: 700;
@@ -5645,6 +5724,121 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 
 @media (prefers-reduced-motion: reduce) {
   .ppl-tile:active { transform: none; }
+  .ppl-spark i, .mz-play .ppl-spark i { transform: scaleY(1); animation: none; }
+}
+
+/* -- Emberek S3 hub-mozaik (mezo-06o0.2) -- prototype emberek-body.html renderHub()
+      + emberek-head.html .tile / .t-gold / .t-rose / .t-sky / .t-lav / .spotwrap /
+      .badge / .facepile / .hwide / .snip, x1.18 (330 to 390px frame). WeekHub
+      precedent (wkh-): the generic Tile/Mosaic primitives dont know a facepile or a
+      two-line clamp, so the hub owns its own ppl-hub- tile family, reusing the
+      shared mz-mosaic grid, mz-eyebrow and mz-wash-/mz-cell- tokens rather than
+      inventing a parallel palette (the closest existing token wins, no new hexes). -- */
+.ppl-hub-tile { border-radius: 20px; padding: 12px 13px; min-height: 113px;
+  display: flex; flex-direction: column; text-align: left; font-family: inherit;
+  color: var(--text-primary); border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: var(--mz-shadow); cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.ppl-hub-tile:active { transform: scale(0.96); }
+.ppl-hub-gold { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.ppl-hub-rose { background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose); }
+.ppl-hub-sky  { background: var(--mz-wash-sky);  box-shadow: var(--mz-shadow-sky); }
+.ppl-hub-lav  { background: var(--mz-wash-lav);  box-shadow: var(--mz-shadow-lav); }
+.ppl-hub-line { font-size: 10.5px; font-weight: 300; margin-top: 2px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ppl-hub-spot { flex: 1; display: grid; place-items: center; padding: 5px 0; position: relative; }
+.ppl-hub-badge {
+  position: absolute; top: -7px; right: -11px; min-width: 20px; height: 20px;
+  border-radius: 999px; background: var(--mz-strength);
+  color: #fff; font-size: 11px; font-weight: 700;
+  display: grid; place-items: center; padding: 0 5px;
+  box-shadow: 0 4px 9px -2px rgba(201, 150, 46, 0.7);
+  animation: ppl-hub-badgepulse 2.8s ease-in-out 1.2s infinite; }
+.ppl-hub-badge-alert { background: var(--gradient-cta);
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.6); animation: none; }
+@keyframes ppl-hub-badgepulse {
+  0%, 100% { box-shadow: 0 4px 9px -2px rgba(201, 150, 46, 0.7); }
+  50% { box-shadow: 0 4px 9px -2px rgba(201, 150, 46, 0.7), 0 0 0 5px rgba(201, 150, 46, 0.18); }
+}
+.ppl-facepile { display: flex; }
+.ppl-facepile .ppl-fp-avat { width: 31px; height: 31px; margin-left: -8px; border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface-card); background: var(--mz-cell-rose-bg);
+  color: var(--mz-cell-rose-ink); display: grid; place-items: center;
+  font-size: 10px; font-weight: 700; }
+.ppl-facepile .ppl-fp-avat:first-child { margin-left: 0; }
+.ppl-hub-wide { display: block; width: 100%; text-align: left; font-family: inherit; color: inherit;
+  border-radius: 22px; padding: 13px 15px; margin-top: 11px; cursor: pointer; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.ppl-hub-wide:active { transform: scale(0.975); }
+.ppl-hub-snip { font-size: 11px; font-weight: 300; line-height: 1.5; margin-top: 5px; color: var(--text-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ppl-hub-tile, .ppl-hub-wide { transition: none; }
+  .ppl-hub-tile:active, .ppl-hub-wide:active { transform: none; }
+  .ppl-hub-badge { animation: none; }
+}
+
+/* ── Emberek S3 jelölt üres-oldal (mezo-06o0.2) — prototype `.empty9`/`.foot9` ×1.18. ── */
+.ppl-empty { border: 1px dashed rgba(43, 33, 24, 0.18); border-radius: 18px; padding: 17px 14px;
+  text-align: center; font-size: 11px; color: var(--mz-ink-soft); font-weight: 300; }
+.ppl-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 5px 2px 9px; line-height: 1.5; }
+
+/* ── Emberek S3 "Heti kép" (mezo-06o0.2 Task 6) — prototype emberek-body.html renderHeti()
+   + emberek-head.html `.tonemixc`/`.tonemix`/`.mixleg`/`.dirgrid`/`.dirt`/`.arr2`/`.why2`/
+   `.wk`/`.momentt`/`.bigq`/`.quiett`/`.nm3`/`.q3` ×1.18 (16→19 radius, 11px 12px→13px 14px
+   padding, 9→11 margin — the same scale the sibling .ppl-trendcard family already uses).
+   Tone-mix slice widths/colors are Task 1's real toneMix(weekMentions) over the rolling
+   7-day window (Task 5's isThisWeek rule) — never a decorative bar; TONE_META lends both
+   the fill color token and the lowercased legend label. `.ppl-dirt`/`.ppl-arr2`/`.ppl-why2`/
+   `.ppl-wk` reuse the existing `.ppl-spark` idiom for their own trend spark (Task 1's
+   trendHeights, same SPARK_MAX_PX as PersonCard/PeopleKorPage) and `.ppl-mavat` for their
+   small avatar (MentionRow's flat rose-disc idiom, not the conic affect-ring — the ring
+   reads best at the bigger tile/detail sizes, this card is compact like a feed row). The
+   quote in `.ppl-bigq` speaks the app's Fraunces display token (`--ff-serif`), same as the
+   prototype's own `"Fraunces", Georgia, serif`. ── */
+.ppl-lsec { display: flex; align-items: center; gap: 8px; padding: 12px 2px 7px; }
+.ppl-cnt { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+
+.ppl-tonemixc { border-radius: 19px; padding: 13px 14px; margin-bottom: 11px;
+  background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
+.ppl-mixcnt { margin-left: auto; font-size: 9px; font-weight: 800; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.ppl-tonemix { display: flex; height: 14px; border-radius: 8px; overflow: hidden; margin-top: 9px;
+  background: rgba(43, 33, 24, 0.06); }
+.ppl-tonemix i { transform: scaleX(0); transform-origin: left; }
+.mz-play .ppl-tonemix i { animation: ppl-mixgrow 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 200ms); }
+@keyframes ppl-mixgrow { to { transform: scaleX(1); } }
+.ppl-mixleg { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+.ppl-mixleg span { font-size: 9px; font-weight: 700; color: var(--mz-ink-mut); display: inline-flex; align-items: center; gap: 4px;
+  font-variant-numeric: tabular-nums; }
+.ppl-mixleg i { width: 9px; height: 9px; border-radius: 4px; }
+
+.ppl-dirgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 5px; }
+.ppl-dirt { border-radius: 20px; padding: 12px 13px; display: grid; gap: 5px; justify-items: center; text-align: center;
+  cursor: pointer; font-family: inherit; border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--surface-card);
+  box-shadow: var(--mz-shadow); transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.ppl-dirt:active { transform: scale(0.96); }
+.ppl-dirt.up { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.ppl-dirt.down { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.ppl-dirt .ppl-arr2 { font-size: 20px; font-weight: 700; line-height: 1; }
+.ppl-dirt .ppl-why2 { font-size: 9px; color: var(--mz-ink-mut); line-height: 1.35; }
+.ppl-dirt .ppl-wk { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums; }
+
+.ppl-momentt { border-radius: 21px; padding: 14px 15px; margin-bottom: 11px;
+  background: var(--mz-wash-rose); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-rose); }
+.ppl-bigq { font-family: var(--ff-serif); font-style: italic; font-size: 14px; font-weight: 300; line-height: 1.55;
+  margin-top: 8px; color: var(--text-primary); }
+
+.ppl-quiett { border-radius: 18px; padding: 12px 14px; margin-bottom: 9px; display: flex; align-items: center; gap: 12px;
+  border: 1px dashed rgba(43, 33, 24, 0.2); background: color-mix(in srgb, var(--surface-card) 45%, transparent); }
+.ppl-qnm { font-size: 12px; font-weight: 700; }
+.ppl-qtx { font-size: 9px; color: var(--mz-ink-mut); margin-top: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ppl-tonemix i, .mz-play .ppl-tonemix i { transform: scaleX(1); animation: none; }
+  .ppl-dirt { transition: none; }
+  .ppl-dirt:active { transform: none; }
 }
 
 /* ── Értesítés + AI-napló re-face (mezo-d20.6.8) — prototype en-body
@@ -7200,6 +7394,53 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   padding: 5px 13px; min-height: 44px; font-size: 11px; font-weight: 600; color: var(--mz-ink-soft);
   cursor: pointer; font-family: inherit; }
 .ppl-fchip.on { background: var(--mz-cell-coral-bg); border-color: var(--coral); color: var(--mz-cell-coral-ink); }
+.ppl-fchip-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+
+/* ── Emberek S3 Említések oldal (mezo-06o0.2 Task 5) — prototype emberek-head.html
+      `.rhythm`/`.rcols`/`.rcol`/`.bar`/`.rax` + emberek-body.html rhythmHtml()/chipRow()/
+      feedHtml(), ×1.18 (330→390px frame; 42→50px rcols height, 8+n*13→9+n*15 bar height,
+      3→4 empty bar). Bar/ring colors are TONE_META's own --ppl-tone-* tokens (never an
+      invented hex) — the page derives worst-tone per day via Task 1's `weeklyRhythm`,
+      never a local re-derivation. The `.mrowt.tw-*` washes below tokenize the prototype's
+      literal per-tone gradients through the same `--ppl-tone-*` custom props, following
+      the `--mz-wash-*`/color-mix idiom the hub-mozaik section already established. ── */
+.ppl-rhythm { border-radius: 19px; padding: 13px 14px; margin-bottom: 11px;
+  background: var(--mz-wash-sky); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-sky); }
+.ppl-rhythm-count { margin-left: auto; font-size: 9px; font-weight: 800; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums; }
+.ppl-rcols { display: flex; gap: 7px; align-items: flex-end; height: 50px; margin-top: 9px; }
+.ppl-rcol { flex: 1; display: grid; gap: 3px; align-content: end; justify-items: center; }
+.ppl-rbar { width: 100%; border-radius: 6px 6px 2px 2px; min-height: 4px; transform: scaleY(0); transform-origin: bottom; }
+.mz-play .ppl-rbar { animation: ppl-sparkup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 150ms); }
+.ppl-rcol-today .ppl-rbar { box-shadow: 0 0 0 1.8px var(--mz-cell-amber-ink); }
+.ppl-rax { display: flex; gap: 7px; margin-top: 5px; }
+.ppl-rax span { flex: 1; text-align: center; font-size: 7.5px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); }
+.ppl-rax-today { color: var(--mz-cell-amber-ink); }
+
+.ppl-mrowt.ppl-tw-jo { background: linear-gradient(150deg, color-mix(in srgb, var(--ppl-tone-jo) 18%, var(--surface-card)), color-mix(in srgb, var(--ppl-tone-jo) 5%, var(--surface-page)));
+  box-shadow: 0 12px 24px -14px color-mix(in srgb, var(--ppl-tone-jo) 50%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.ppl-mrowt.ppl-tw-vegyes { background: linear-gradient(150deg, color-mix(in srgb, var(--ppl-tone-vegyes) 18%, var(--surface-card)), color-mix(in srgb, var(--ppl-tone-vegyes) 5%, var(--surface-page)));
+  box-shadow: 0 12px 24px -14px color-mix(in srgb, var(--ppl-tone-vegyes) 50%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.ppl-mrowt.ppl-tw-nehez { background: linear-gradient(150deg, color-mix(in srgb, var(--ppl-tone-nehez) 18%, var(--surface-card)), color-mix(in srgb, var(--ppl-tone-nehez) 5%, var(--surface-page)));
+  box-shadow: 0 12px 24px -14px color-mix(in srgb, var(--ppl-tone-nehez) 50%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+
+.ppl-srcdisc { width: 28px; height: 28px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: var(--surface-card); box-shadow: 0 3px 8px -3px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+.ppl-mavat { width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: var(--mz-cell-rose-bg); color: var(--mz-cell-rose-ink); font-family: var(--ff-display);
+  font-size: 10.5px; font-weight: 700; }
+.ppl-ctxch { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  border-radius: 6px; padding: 2px 7px; flex: none; margin-left: auto; }
+.ppl-figy { animation: ppl-figypulse 2.4s ease-in-out 1s infinite; }
+@keyframes ppl-figypulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mz-cell-amber-ink) 0%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--mz-cell-amber-ink) 25%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ppl-rbar, .mz-play .ppl-rbar { transform: scaleY(1); animation: none; }
+  .ppl-figy { animation: none; }
+}
 
 .mzj-decfoot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; margin: 0; }
 .mzj-decprose { margin-left: auto; flex: none; min-height: 44px; border: 1px solid rgba(43, 33, 24, 0.14);
