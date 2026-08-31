@@ -5747,6 +5747,63 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   text-align: center; font-size: 11px; color: var(--mz-ink-soft); font-weight: 300; }
 .ppl-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 5px 2px 9px; line-height: 1.5; }
 
+/* ── Emberek S3 "Heti kép" (mezo-06o0.2 Task 6) — prototype emberek-body.html renderHeti()
+   + emberek-head.html `.tonemixc`/`.tonemix`/`.mixleg`/`.dirgrid`/`.dirt`/`.arr2`/`.why2`/
+   `.wk`/`.momentt`/`.bigq`/`.quiett`/`.nm3`/`.q3` ×1.18 (16→19 radius, 11px 12px→13px 14px
+   padding, 9→11 margin — the same scale the sibling .ppl-trendcard family already uses).
+   Tone-mix slice widths/colors are Task 1's real toneMix(weekMentions) over the rolling
+   7-day window (Task 5's isThisWeek rule) — never a decorative bar; TONE_META lends both
+   the fill color token and the lowercased legend label. `.ppl-dirt`/`.ppl-arr2`/`.ppl-why2`/
+   `.ppl-wk` reuse the existing `.ppl-spark` idiom for their own trend spark (Task 1's
+   trendHeights, same SPARK_MAX_PX as PersonCard/PeopleKorPage) and `.ppl-mavat` for their
+   small avatar (MentionRow's flat rose-disc idiom, not the conic affect-ring — the ring
+   reads best at the bigger tile/detail sizes, this card is compact like a feed row). The
+   quote in `.ppl-bigq` speaks the app's Fraunces display token (`--ff-serif`), same as the
+   prototype's own `"Fraunces", Georgia, serif`. ── */
+.ppl-lsec { display: flex; align-items: center; gap: 8px; padding: 12px 2px 7px; }
+.ppl-cnt { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+
+.ppl-tonemixc { border-radius: 19px; padding: 13px 14px; margin-bottom: 11px;
+  background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
+.ppl-mixcnt { margin-left: auto; font-size: 9px; font-weight: 800; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.ppl-tonemix { display: flex; height: 14px; border-radius: 8px; overflow: hidden; margin-top: 9px;
+  background: rgba(43, 33, 24, 0.06); }
+.ppl-tonemix i { transform: scaleX(0); transform-origin: left; }
+.mz-play .ppl-tonemix i { animation: ppl-mixgrow 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 200ms); }
+@keyframes ppl-mixgrow { to { transform: scaleX(1); } }
+.ppl-mixleg { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+.ppl-mixleg span { font-size: 9px; font-weight: 700; color: var(--mz-ink-mut); display: inline-flex; align-items: center; gap: 4px;
+  font-variant-numeric: tabular-nums; }
+.ppl-mixleg i { width: 9px; height: 9px; border-radius: 4px; }
+
+.ppl-dirgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 5px; }
+.ppl-dirt { border-radius: 20px; padding: 12px 13px; display: grid; gap: 5px; justify-items: center; text-align: center;
+  cursor: pointer; font-family: inherit; border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--surface-card);
+  box-shadow: var(--mz-shadow); transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.ppl-dirt:active { transform: scale(0.96); }
+.ppl-dirt.up { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.ppl-dirt.down { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.ppl-dirt .ppl-arr2 { font-size: 20px; font-weight: 700; line-height: 1; }
+.ppl-dirt .ppl-why2 { font-size: 9px; color: var(--mz-ink-mut); line-height: 1.35; }
+.ppl-dirt .ppl-wk { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums; }
+
+.ppl-momentt { border-radius: 21px; padding: 14px 15px; margin-bottom: 11px;
+  background: var(--mz-wash-rose); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-rose); }
+.ppl-bigq { font-family: var(--ff-serif); font-style: italic; font-size: 14px; font-weight: 300; line-height: 1.55;
+  margin-top: 8px; color: var(--text-primary); }
+
+.ppl-quiett { border-radius: 18px; padding: 12px 14px; margin-bottom: 9px; display: flex; align-items: center; gap: 12px;
+  border: 1px dashed rgba(43, 33, 24, 0.2); background: color-mix(in srgb, var(--surface-card) 45%, transparent); }
+.ppl-qnm { font-size: 12px; font-weight: 700; }
+.ppl-qtx { font-size: 9px; color: var(--mz-ink-mut); margin-top: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ppl-tonemix i, .mz-play .ppl-tonemix i { transform: scaleX(1); animation: none; }
+  .ppl-dirt { transition: none; }
+  .ppl-dirt:active { transform: none; }
+}
+
 /* ── Értesítés + AI-napló re-face (mezo-d20.6.8) — prototype en-body
    #page-ertesites / #page-ai ×1.18. The dark daily-load card stays a fixed
    dark surface in BOTH themes (prototype .ntfprev — a deliberately-nocturnal
