@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.api.dto.CharacterDimensionResponse;
 import io.mrkuhne.mezo.api.dto.CharacterExpertsResponse;
 import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
+import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
+import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.service.CharacterBootstrapService;
@@ -18,6 +20,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -102,6 +105,16 @@ public class CharacterController implements CharacterApi {
     @Override
     public CharacterConferenceResponse getCharacterConference(UUID conferenceId) {
         return characterService.conference(currentUserId.get(), conferenceId);
+    }
+
+    @Override
+    public List<CharacterRunSummary> getCharacterRuns(LocalDate from, LocalDate to) {
+        return characterService.runs(currentUserId.get(), from, to);
+    }
+
+    @Override
+    public CharacterRunResponse getCharacterRun(UUID runId) {
+        return characterService.run(currentUserId.get(), runId);
     }
 
     /**
