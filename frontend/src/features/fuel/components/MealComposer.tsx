@@ -25,7 +25,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
-import { nowOffsetIso, localDateString } from '@/shared/lib/dates'
+import { nowOffsetIso, offsetIso, localDateString } from '@/shared/lib/dates'
 import { resizeImage } from '@/shared/lib/resizeImage'
 import { Icon } from '@/shared/ui/Icon'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -56,6 +56,11 @@ const SLOTS: { id: MealSlot; label: string }[] = [
 
 const round = (n: number) => Math.round(n)
 const zero = { kcal: 0, p: 0, c: 0, f: 0 }
+
+/** Múltbeli napi mentés idő-komponense, ha az indító nem hoz sajátot (szabad blokk). */
+const SLOT_DEFAULT_TIME: Record<MealSlot, string> = {
+  breakfast: '08:00', lunch: '13:00', dinner: '19:00', snack: '16:00',
+}
 
 interface EstimateSnapshot {
   per: number; basisUnit: string
@@ -137,15 +142,21 @@ export interface MealComposerProps {
   prefill?: MealComposerPrefill
   /** Opens the ✨ AI panel expanded on mount (the per-window "AI" action, mezo-53su). */
   aiPanelOpenOnMount?: boolean
+  /** Melyik napra könyvelődik a mentés (ISO local date). Absent = ma (nowOffsetIso, byte-azonos). */
+  logDate?: string
+  /** A loggedAt idő-komponense HH:mm (ablak-indítás: az ablak ideje). Absent = slot-alap idő. */
+  logTime?: string
+  /** A mentés-CTA felirata (múltbeli nap). Absent = a meglévő felirat. */
+  saveLabel?: string
   onSaved: () => void
   onCancel: () => void
 }
 
-export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMount, onSaved, onCancel }: MealComposerProps) {
+export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMount, logDate, logTime, saveLabel, onSaved, onCancel }: MealComposerProps) {
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
-  const { fuel } = useFuelDay()
-  const { logMeal, draftMealFromAi } = useMealActions()
+  const { fuel } = useFuelDay(logDate)
+  const { logMeal, draftMealFromAi } = useMealActions(logDate)
 
   const [slot, setSlot] = useState<MealSlot>(() => fixedSlot ?? initialSlot ?? defaultMealSlot())
   // A slot-targeted launch keeps its slot even once an AI draft proposes a different one
@@ -294,7 +305,9 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
     })
     const input: MealInput = {
       slot: fixedSlot ?? slot,
-      loggedAt: nowOffsetIso(),
+      loggedAt: logDate != null
+        ? offsetIso(logDate, logTime ?? SLOT_DEFAULT_TIME[fixedSlot ?? slot])
+        : nowOffsetIso(),
       title: derivedName.trim() || null,
       items,
       ...(aiContribution
@@ -525,7 +538,7 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
       <div className="row gap-sm" style={{ margin: '14px 0 12px' }}>
         <button className="cta-ghost" onClick={onCancel} style={{ flex: 1 }}>Mégse</button>
         <button className="cta-primary" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
-          <Icon name="check" size={15} /> Logolás · +10 XP
+          {saveLabel ?? <><Icon name="check" size={15} /> Logolás · +10 XP</>}
         </button>
       </div>
 
