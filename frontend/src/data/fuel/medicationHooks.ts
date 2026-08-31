@@ -53,7 +53,7 @@ export function useMedication(): { medication: Medication; cycle: MedicationCycl
     // navigation. Writes stay instant regardless — useMedicationActions invalidates
     // ['medication'] on every dose/definition change. Passed EXPLICITLY rather than omitted:
     // omitting sends `staleTime: undefined`, which clobbers the client default (see the
-    // DEFAULT_QUERY_STALE_TIME_MS doc) and would leave the query always-stale after all.
+    // `realStaleTime` doc) and would leave the query always-stale after all.
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { medication: data.medication, cycle: data.cycle, doses: data.recentDoses }

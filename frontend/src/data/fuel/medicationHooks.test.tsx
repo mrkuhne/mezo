@@ -4,6 +4,7 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useMedication, useMedicationActions } from '@/data/fuel/medicationHooks'
+import { DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { localDateString } from '@/shared/lib/dates'
@@ -30,7 +31,7 @@ function sharedWrapperWithFixture() {
 // A client mirroring the app's real query defaults (QueryProvider: staleTime 30_000), for the
 // tests that assert on CACHING rather than on mapping.
 function appDefaultsWrapper() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } })
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: DEFAULT_QUERY_STALE_TIME_MS } } })
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   )
