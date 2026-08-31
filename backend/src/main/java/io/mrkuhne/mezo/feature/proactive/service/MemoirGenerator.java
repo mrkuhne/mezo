@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,6 +63,8 @@ public class MemoirGenerator {
     private final ObjectMapper objectMapper;
     private final GrowthDigestBlock growthDigestBlock;
     private final AppNotificationEmitter appNotificationEmitter;
+    /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
+    private final ObjectProvider<CharacterPromptSource> characterPromptSource;
 
     public record MemoirGather(String payload, List<MemoirAnchorsEnvelope.Anchor> candidates) {
     }
@@ -125,6 +129,7 @@ public class MemoirGenerator {
             candidates.add(new MemoirAnchorsEnvelope.Anchor("Memory", s.getSummaryDate().toString()));
         }
         payload.append(knowledgeFactService.renderPromptBlock(userId));
+        payload.append(characterBlock(userId));
         payload.append(growthDigestBlock.render(userId, weekStart));
         var patterns = patternRepository
                 .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId);
@@ -142,6 +147,13 @@ public class MemoirGenerator {
                     .append(candidates.get(i).label()).append('\n');
         }
         return new MemoirGather(payload.toString(), candidates);
+    }
+
+    /** mezo-1gim.8: the [Karakter] dossier's contribution — "" when the bean is absent (either
+     *  switch off) or the dossier has nothing worth injecting. */
+    private String characterBlock(UUID userId) {
+        CharacterPromptSource source = characterPromptSource.getIfAvailable();
+        return source == null ? "" : source.render(userId);
     }
 
     private ParsedMemoir parse(String answer) {

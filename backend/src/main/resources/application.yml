@@ -1111,6 +1111,16 @@ mezo:
       cron: "0 0 20 * * SUN"
       # A CHAPTER dimension with no ACTIVE claim left is retired once its updatedAt is this stale.
       stale-chapter-days: 90
+    # [Karakter] prompt block tuning (spec §8, mezo-1gim.8) — CharacterPromptAssembler.
+    prompt:
+      # Below this, a claim never makes the block (Karakter S5 plan, Global Constraints).
+      min-confidence: 0.45
+      # Per-dimension line cap; confidence x recency decay picks the winners.
+      max-claims-per-dimension: 3
+      # Whole-block char budget; a dimension that would blow it is dropped WHOLE, never mid-line.
+      max-total-chars: 1800
+      # A dimension's portrait digest only renders once its maturity roll-up clears this.
+      portrait-min-maturity: 30
     # Per-detector kill switches (spec §5) — empty = every detector enabled; keyed by detector key.
     detector: {}
   proactive:
