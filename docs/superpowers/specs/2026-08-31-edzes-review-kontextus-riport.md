@@ -95,9 +95,13 @@ A top szett a **legnehezebb munkaszett**, azonos súlynál a több ismétléses.
 
 ### 3.3 Gyakorlat-oldal
 
-A mélység nem a görgetésben van, hanem a gyakorlat saját oldalán (`csempe → saját oldal`, a
-Huawei-minta, ami minden Design 2.0 prototípuson végigfut). Útvonal:
-`/train/review/:workoutId/:exerciseId`.
+A mélység nem a görgetésben van, hanem a gyakorlat saját nézetében (`csempe → saját oldal`, a
+Huawei-minta, ami minden Design 2.0 prototípuson végigfut).
+
+**Lokális nézet, nem útvonal.** Ez a spec először `/train/review/:workoutId/:exerciseId`-t írt,
+de a lezáráskori riport az `ActiveWorkoutPage` fázis-gépében él, és nincs saját útvonala — egy
+útvonalas változat két mechanizmust jelentene ugyanarra a képernyőre, és a nehezebben elérhető
+csúszna el. A `prep` csempe-oldalak precedensét követi (`prepTile` state, egy URL).
 
 - **Hero**: monogram, név, izompirula, `4/4 szett`, `cél 6–10 ism.`
 - **Statisztika-sáv**: `top szett · kg volumen · Ø RIR` + (csak visszanézésben, csak ha van
@@ -163,8 +167,11 @@ issue viszi (`mezo-d20.8.2.2`), és a helye a review oldalon már ki van jelölv
   ötödik felület csendben mást kap. A guard szubjektuma itt a *tiltott érték*, nem a használatszám.
 - **Reduced-motion**: a meglévő `reducedMotionGuard.test.ts` automatikus parser — magától
   számonkéri az új `.wr-*` animációkat.
-- **Vizuális goldenek**: a meglévő `/train/review` készlet újragenerálódik, és **új felvétel kerül
-  a gyakorlat-oldalról** — ott dől el, hogy a szett tényleg olvasható lett-e.
+- **Vizuális goldenek**: a `/train/review` eddig **egyáltalán nem szerepelt** a vizuális
+  készletben. Három felvétel kerül be: a riport (a kontextus-csempével), a **swimlane**
+  (görgetve — a hajtás alatt van, és épp ez a kör átalakítása), és a **gyakorlat-nézet**, ahol
+  eldől, hogy a szett tényleg olvasható lett-e. A készlet 21 → 24 képernyőre nő
+  (48 golden/platform).
 
 ## 7. Nyitott, a következő körre
 
