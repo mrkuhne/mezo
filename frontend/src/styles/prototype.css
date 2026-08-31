@@ -5887,7 +5887,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .fh-lt-chev { margin-left: auto; color: var(--mz-ink-mut); font-size: 17px; flex: none; }
 .fh-lt-dots { display: flex; gap: 5px; margin-top: 11px; }
 .fh-lt-dots i { flex: 1; height: 6px; border-radius: 3px; background: rgba(43, 33, 24, 0.09); }
-.fh-lt-dots i.is-f { background: var(--mz-goalfill, #8FAF7E); }
+.fh-lt-dots i.is-f { background: var(--dv-sage, var(--sage)); }
 .fh-lt-dots i.is-nw { background: var(--mz-fh-now-ring); }
 .fh-lt-dots i.is-ms { background: color-mix(in srgb, var(--mz-cell-amber-ink) 55%, transparent); }
 .fh-lt-dline { display: block; font-size: 9.5px; font-weight: 700; color: var(--mz-ink-soft);
