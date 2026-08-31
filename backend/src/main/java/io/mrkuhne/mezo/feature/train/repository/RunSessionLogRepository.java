@@ -23,4 +23,8 @@ public interface RunSessionLogRepository extends JpaRepository<RunSessionLogEnti
     /** Logs on/after {@code from} — the companion snapshot's last-N-days digest. */
     List<RunSessionLogEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(
         UUID createdBy, LocalDate from);
+
+    /** Logs in the inclusive {@code [from, to]} window — {@code CharacterSignalReads}' 8-week trend read. */
+    List<RunSessionLogEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(
+        UUID createdBy, LocalDate from, LocalDate to);
 }

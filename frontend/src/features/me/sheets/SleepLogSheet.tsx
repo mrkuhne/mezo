@@ -190,7 +190,8 @@ export function SleepLogSheet({
 
           {showInputs && (
             <>
-              <div className="card" style={{ padding: 18, marginBottom: 14, background: 'var(--wash-lav)' }}>
+              {/* F7.4: the duration + window headline rides the tinted hero band. */}
+              <div className="mz-sheet-hero" style={{ padding: 18, background: 'var(--mz-wash-lav)', boxShadow: 'var(--mz-shadow-lav)', display: 'block' }}>
                 <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
                   <span style={{ fontFamily: 'var(--ff-display)', fontSize: 48, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{durationH}</span>
                   <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>h</span>

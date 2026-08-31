@@ -58,7 +58,7 @@ describe('ActivityLogSheet', () => {
     fireEvent.change(screen.getByPlaceholderText(/Olvastam 30 percet/), { target: { value: 'Olvastam 30 percet' } })
     fireEvent.click(screen.getByRole('button', { name: 'Naplózom' }))
     await waitFor(() => expect(logActivity).toHaveBeenCalledWith('Olvastam 30 percet'))
-    expect(await screen.findByText('📚 Tanulás')).toBeInTheDocument()
+    expect(await screen.findByText('Tanulás')).toBeInTheDocument()
     expect(screen.getByText('+15 XP')).toBeInTheDocument()
   })
 
@@ -69,17 +69,11 @@ describe('ActivityLogSheet', () => {
     fireEvent.change(screen.getByPlaceholderText(/Olvastam 30 percet/), { target: { value: 'Rendet raktam' } })
     fireEvent.click(screen.getByRole('button', { name: 'Naplózom' }))
     expect(await screen.findByText('Nem egyértelmű — melyik skillhez tartozik?')).toBeInTheDocument()
-    // all 8 LIFE skill chips are offered
-    for (const s of LIFE_SKILLS) expect(screen.getByText(`${s.icon} ${s.name}`)).toBeInTheDocument()
-    fireEvent.click(screen.getByText('🍳 Konyha'))
+    // all 8 LIFE skill chips are offered (F7.4: clay symbol + name, no emoji)
+    for (const s of LIFE_SKILLS) expect(screen.getByRole('button', { name: s.name })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Konyha' }))
     await waitFor(() => expect(categorize).toHaveBeenCalledWith('act-new', 'cooking'))
-    // Deflake (PR #338 CI): the pick → done re-render can exceed findByText's 1s default on a
-    // saturated runner — wait for the picker prompt to leave, then find the done-card chip.
-    await waitFor(
-      () => expect(screen.queryByText('Nem egyértelmű — melyik skillhez tartozik?')).not.toBeInTheDocument(),
-      { timeout: 5000 },
-    )
-    expect(await screen.findByText('🍳 Konyha', undefined, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText('Konyha')).toBeInTheDocument()
   })
 
   test('(c) quest prop renders the quest banner', () => {

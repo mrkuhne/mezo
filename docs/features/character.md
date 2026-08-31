@@ -28,14 +28,21 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 > bootstrap ceremony, and the konzílium transcript view. **Gépterem ✅ shipped**
 > (`mezo-1gim.14`, S9): a `character_run` honesty-spine table + writers on all four pipelines, two
 > read endpoints, and a 5-page FE sub-hub (Gépterem, Futások, run detail, Adatforrások,
-> Detektorok) exposing per-run signal chains, called experts, and the data-source inventory —
-> see §3/§4/§10's Gépterem subsections below.** Driving spec:
+> Detektorok) exposing per-run signal chains, called experts, and the data-source inventory.
+> **`mezo-1gim.15` round 1 ("Edzés & test") ✅ shipped**: eight new detectors
+> (`rir-calibration`, `niggle-map`, `sport-interference`, `meso-adherence`,
+> `progression-adherence`, `hr-recovery-trend`, `sleep-performance-chain`, `avoidance-pattern`)
+> wired onto real gym/sport/run/sleep/meso domain reads, taking the catalog from 5 to 13
+> detectors; `inventory.ts`'s round-1 checklist row is now gone, its data sources moved into
+> `AdatforrasokPage`'s Bekötve segment. Rounds 2–4 remain open. See §3/§4/§10's Gépterem
+> subsections below.** Driving spec:
 > [`docs/superpowers/specs/2026-08-27-user-character-dossier-design.md`](../superpowers/specs/2026-08-27-user-character-dossier-design.md)
 > (bd epic `mezo-1gim`); the backend slice plans (`docs/superpowers/plans/2026-08-2*-character-slice*.md`,
 > `2026-08-3*-character-slice*.md`), the FE slice plan
-> (`docs/superpowers/plans/2026-09-01-character-slice8-fe.md`), and the Gépterem slice plan
-> (`docs/superpowers/plans/2026-09-01-character-slice9-gepterem.md`) are the point-in-time build
-> record. **This doc reflects the code as it stands after the Gépterem slice's Task 5**
+> (`docs/superpowers/plans/2026-09-01-character-slice8-fe.md`), the Gépterem slice plan
+> (`docs/superpowers/plans/2026-09-01-character-slice9-gepterem.md`), and the round-1 design spec
+> (`docs/superpowers/specs/2026-08-31-character-round1-edzes-test-design.md`) are the point-in-time
+> build record. **This doc reflects the code as it stands after `mezo-1gim.15` round 1's Task 5**
 > (route/page/doc ship-prep).
 
 ## 1. Summary
@@ -66,11 +73,19 @@ All seven backend slices (`mezo-1gim.1` schema+reads, `.3` detectors+nightly, `.
 konzílium, `.6` bootstrap+monthly, `.8` prompt block, `.10`/S6 claim feedback, `.11`/S7
 consolidation — exact ids per the slice plans) are shipped. The detector catalog is still
 **narrower than the spec's v1 wishlist** (§9) — spec §5 names ~22 detector keys (some as
-variants of one bullet), and only 5 of them are implemented (`mezo-1gim.12` tracks most of the
+variants of one bullet), and, after round 1 of `mezo-1gim.15` ("Edzés & test") landed eight more
+(`rir-calibration`, `niggle-map`, `sport-interference`, `meso-adherence`,
+`progression-adherence`, `hr-recovery-trend`, `sleep-performance-chain`, `avoidance-pattern`),
+13 of them are implemented (`mezo-1gim.15`'s remaining three rounds and `mezo-1gim.12` track the
 rest) — but the `[Karakter]` block now reaches
 all four narrative surfaces (chat, memoir, prediction, weekly review) and the bootstrap evidence
 corpus now matches the spec's full source list (daily summaries, patterns, facts, weekly
-reviews, journal entries, life events).
+reviews, journal entries, life events). The round-1 detectors read gym/sport/run/sleep/meso
+domain data over the standard 14-day window, except `hr-recovery-trend`, which reads an
+additional 8-week run-log window for its HR-recovery trend band; all eight are **stateless
+per-call gates** — no detector persists its own prior-fired state, so a detector that only
+fires "on change" (`hr-recovery-trend`'s band-change rule) recomputes yesterday's band from the
+same domain reads every time rather than reading back its own last signal.
 
 ## 2. User-facing behavior
 
@@ -141,17 +156,22 @@ tile rather than in-page accordions.
     URL-driven, so no `?feature=` param exists to pass). An unknown/foreign `:id` (`useCharacterRun`
     404 → `null`) renders the feature's one shared `.kr-degraded` face, never a crash.
   - **Adatforrások** (`/me/karakter/gepterem/adatforrasok`, `AdatforrasokPage`) — a Bekötve |
-    Tervezett segmented control. Bekötve is a single sage card (the 4 read cadences already
-    wired: éjszakai kör, vasárnapi konzílium, havi mélyolvasás, bootstrap — with volume/cadence
-    chips). Tervezett is a compact 4-row index into the four MINDENT-be round mini-pages
+    Tervezett segmented control. Bekötve is a single sage card — the 4 original read cadences
+    (éjszakai kör, vasárnapi konzílium, havi mélyolvasás, bootstrap) plus, since round 1 of
+    `mezo-1gim.15` landed, its five domain-read rows (gym szettek+feedback, sport-sessionök,
+    futás-logok, alvás, mezociklus-kontextus — with volume/cadence chips), all real, wired
+    reads. Tervezett is a compact index into the **remaining three** MINDENT-be round
+    mini-pages (round 1, "Edzés & test", is gone from here — its items are the Bekötve rows
+    above and its detectors are in the Detektorok catalog below)
     (`/me/karakter/gepterem/adatforrasok/kor/:n`, `KorPage` — a path param, matching
     `DimensionsPage`'s `/dimenzio/:key` sibling idiom for discrete indexed items, deliberately
     NOT FutasokPage's `?start=` continuous-range idiom), plus a "+ még N terület később" tail.
     All of this content is STATIC (`frontend/src/features/character/inventory.ts`) — see that
     file's own header for why: it IS the `mezo-1gim.15` ("MINDENT be") working checklist, not a
-    live read off any backend catalog, and most of its `det` (detector) keys name detectors that
-    don't exist yet (§9's "detector catalog is narrower than spec" ledger already tracks this).
-  - **Detektorok** (`/me/karakter/gepterem/detektorok`, `DetektorokPage`) — the 5 REAL,
+    live read off any backend catalog, and most of its remaining `det` (detector) keys name
+    detectors that don't exist yet (§9's "detector catalog is narrower than spec" ledger already
+    tracks this).
+  - **Detektorok** (`/me/karakter/gepterem/detektorok`, `DetektorokPage`) — the 13 REAL,
     `DetectorRegistry`-discovered detectors, one line each (key, one-line semantic, owning expert
     in their domain color), closing with "A kód csak észlel — az értelmezés mindig az adott
     szakértő LLM-hívása." This is the runtime truth `inventory.ts` explicitly is NOT.
@@ -455,7 +475,7 @@ Adatforrások+kör/Detektorok) were added to it.
   (whole-block-drop-on-overflow), `CharacterPromptWiringIT` (`@Nested`: `SwitchOn` covers all
   four wired surfaces — chat, memoir, prediction, weekly review; `SwitchOff` covers chat only).
 - **Unit tests (pure code, no Spring context)**: `detector/DetectorTest` (fixture-day-in/
-  signal-out for all 5 detectors, incl. the HU decimal-comma formatting and the 14-day honest
+  signal-out for all 13 detectors, incl. the HU decimal-comma formatting and the 14-day honest
   streak-cap case), `CharacterConferenceWeekDerivationTest`,
   `CharacterMonthlyScheduleTest` (`isDeepReadDay` date pinning), `CharacterExpertCatalogTest`,
   `service/PortraitWriterTest`.
@@ -468,28 +488,32 @@ before investigating.
 
 ## 9. Decisions, gotchas & deferred
 
-- **Detector catalog is still narrower than spec §5's v1 wishlist** (S7 closed the polish items —
-  HU decimal-comma formatting, switch-gated beans, honest streak-capping — but did NOT add new
-  detectors). Spec §5 names ~22 detector keys, several as variants noted under one bullet (the
-  `logging-gap` bullet covers "N consecutive days without meal logs (also variants: weight,
-  check-in, journal silence)"). 5 are implemented: `checkin-gap`, `journal-silence`,
-  `logging-gap`, `under-logging` (the meta-behavior/single-domain group, owned by
-  `drill`/`pszichologus`/`taplalkozo`) and `journal-note` — the last of which is a shipped
-  detector that is NOT one of the spec's named keys (it surfaces raw journal text; treat it as
-  an addition beyond §5, not a §5 key ticked off). The entire cross-domain group
-  (`comfort-eating`, `sleep-performance-chain`, `sport-interference`, `med-cycle-covariance`,
-  `people-mood-link`, `weekend-gap`), the character-traits group (`resilience`,
-  `all-or-nothing`, `restart-pattern`, `promise-vs-delivery`, `self-calibration`,
-  `decision-profile`), the physiological group (`rir-calibration`, `niggle-map`,
-  `hr-recovery-trend`), the remaining meta-behavior detectors (`retro-logging-ratio`,
-  `checkin-latency`, `night-activity`, `chat-topic-shift`, `knowledge-rejection-pattern`), and
-  the `logging-gap` bullet's `weight` variant (no `WeightGapDetector` exists) are **not
-  implemented**. Practically: `edzo`, `szomnologus`, `doki`, and `antropologus` never receive a
-  nightly-detector-sourced observation today — they only accumulate evidence via the
-  weekly/monthly claim rounds' own reads (now widened, see below) and user-feedback routing.
-  `mezo-1gim.12` tracks writing most of the remaining detectors, but its description does not
-  currently name the `weight`-gap variant.
-- **Detector beans are switch-gated, not just no-op** (S7). Each of the 5 detectors carries
+- **Detector catalog is narrower than spec §5's v1 wishlist, but round 1 closed the physiological
+  and Edzés-side cross-domain gap** (S7 closed the polish items — HU decimal-comma formatting,
+  switch-gated beans, honest streak-capping; `mezo-1gim.15` round 1 then added eight new
+  detectors, all Edzés & test domain). Spec §5 names ~22 detector keys, several as variants noted
+  under one bullet (the `logging-gap` bullet covers "N consecutive days without meal logs (also
+  variants: weight, check-in, journal silence)"). 13 are implemented: `checkin-gap`,
+  `journal-silence`, `logging-gap`, `under-logging` (the meta-behavior/single-domain group, owned
+  by `drill`/`pszichologus`/`taplalkozo`), `journal-note` (a shipped detector that is NOT one of
+  the spec's named keys — it surfaces raw journal text; treat it as an addition beyond §5, not a
+  §5 key ticked off), the physiological group (`rir-calibration`, `niggle-map`,
+  `hr-recovery-trend`), two of the cross-domain group (`sport-interference`,
+  `sleep-performance-chain`), and three more additions beyond §5 from the round-1 design spec
+  (`docs/superpowers/specs/2026-08-31-character-round1-edzes-test-design.md`): `meso-adherence`,
+  `progression-adherence`, `avoidance-pattern` (all `edzo`-owned except the last, `drill`-owned).
+  The remaining cross-domain group (`comfort-eating`, `med-cycle-covariance`, `people-mood-link`,
+  `weekend-gap`), the character-traits group (`resilience`, `all-or-nothing`, `restart-pattern`,
+  `promise-vs-delivery`, `self-calibration`, `decision-profile`), the remaining meta-behavior
+  detectors (`retro-logging-ratio`, `checkin-latency`, `night-activity`, `chat-topic-shift`,
+  `knowledge-rejection-pattern`), and the `logging-gap` bullet's `weight` variant (no
+  `WeightGapDetector` exists) are **not implemented**. Practically: `antropologus` still never
+  receives a nightly-detector-sourced observation today (`edzo`, `doki`, and `szomnologus` now do,
+  via round 1) — the un-covered experts only accumulate evidence via the weekly/monthly claim
+  rounds' own reads (now widened, see below) and user-feedback routing. `mezo-1gim.15`'s
+  remaining three rounds and `mezo-1gim.12` track writing most of the remaining detectors, but
+  neither's description currently names the `weight`-gap variant.
+- **Detector beans are switch-gated, not just no-op** (S7). Each of the 13 detectors carries
   `@ConditionalOnProperty(CHARACTER_SWITCH)` directly, so with the switch off the beans don't
   exist at all — `CharacterApiSwitchOffIT.the_detector_beans_are_absent` asserts every detector
   bean and `DetectorRegistry` itself are absent from the context, not merely quiet.
@@ -558,22 +582,26 @@ before investigating.
   (IDENT-1, never), any outward action from Karakter (IDENT-2).
 - **Gépterem shipped, S9-specific deferrals/rulings** (`mezo-1gim.14`): `inventory.ts`
   (Adatforrások' Tervezett content) is deliberately STATIC — it IS the `mezo-1gim.15` ("MINDENT
-  be") working checklist, not a live catalog read, and most of its `det` keys name detectors
-  that don't exist yet (see the detector-catalog ledger above); its own header comment says
-  rows are expected to move OUT of `inventory.ts` and (if fully wired) INTO `DetektorokPage`'s
-  real 5-detector list as `mezo-1gim.15` lands each round for real — don't treat this module as
-  runtime truth. The Feed's ⚙ has no `runId` to key off (`CharacterFeedItem` never carried one —
-  it's a merged observation+diff view, not run-scoped) — it resolves the matching run
-  CLIENT-SIDE by the observation's own local calendar day against a `useCharacterRuns` window
+  be") working checklist, not a live catalog read, and most of its remaining `det` keys name
+  detectors that don't exist yet (see the detector-catalog ledger above); its own header comment
+  says rows are expected to move OUT of `inventory.ts` and (if fully wired) INTO
+  `DetektorokPage`'s real detector list as `mezo-1gim.15` lands each round for real — round 1
+  ("Edzés & test") already did this move (its five reads are now `INVENTORY_READS` rows, its
+  eight detectors are now `DetektorokPage`'s catalog rows); don't treat this module as runtime
+  truth for what's left. The Feed's ⚙ has no `runId` to key off (`CharacterFeedItem` never
+  carried one — it's a merged observation+diff view, not run-scoped) — it resolves the matching
+  run CLIENT-SIDE by the observation's own local calendar day against a `useCharacterRuns` window
   spanning the feed's visible items (clamped to the 62-day range cap), matching NIGHTLY rows
   only; when no such row exists the ⚙ is simply absent rather than a dead button. The kör
   mini-pages use a path param (`/kor/:n`, `DimensionsPage`'s discrete-item sibling idiom), not
-  `?kor=` — the brief's own explicit fork, decided because the four rounds are discrete indexed
-  items, not a continuous steppable range like FutasokPage's week window. `DetektorokPage`'s
-  "who" (owning expert) per detector is taken from the REAL `DetectorSignal` argument in each
-  detector's source, not the design prototype's `DETECTOR_CATALOG.who` guess — two of the five
-  differ (`logging-gap` and `journal-silence` are both really `drill`-owned, not the prototype's
-  `taplalkozo`/`pszichologus` guesses respectively).
+  `?kor=` — the brief's own explicit fork, decided because the (originally four, now three)
+  rounds are discrete indexed items, not a continuous steppable range like FutasokPage's week
+  window. `DetektorokPage`'s "who" (owning expert) per detector is taken from the REAL
+  `DetectorSignal` argument in each detector's source, not the design prototype's
+  `DETECTOR_CATALOG.who` guess — two of the original five differ (`logging-gap` and
+  `journal-silence` are both really `drill`-owned, not the prototype's
+  `taplalkozo`/`pszichologus` guesses respectively); the eight round-1 additions were verified
+  the same way and all matched their design spec's owner column with no drift.
 - **Companion tone guardrail** for `sensitive` claims (self-calibration,
   knowledge-rejection-pattern classes per spec §3) is a persona-prompt instruction inside the
   Szkeptikus/proposal prompts, not a separately enforced code gate — there is no automated test
@@ -594,9 +622,13 @@ before investigating.
   `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`)
 - `repository/CharacterRunRepository.java` (S9) — `findByCreatedByAndKindAndDay` (the
   idempotency check), the day-range and single-run-by-owner reads the controller/service use
-- `detector/` — `CharacterDetector`, `DetectorRegistry`, `DetectorInput`/`DetectorSignal`, and
-  the 5 concrete detectors (`CheckinGapDetector`, `JournalNoteDetector`,
-  `JournalSilenceDetector`, `LoggingGapDetector`, `UnderLoggingDetector`)
+- `detector/` — `CharacterDetector`, `DetectorRegistry`, `DetectorInput`/`DetectorSignal`, the
+  original 5 concrete detectors (`CheckinGapDetector`, `JournalNoteDetector`,
+  `JournalSilenceDetector`, `LoggingGapDetector`, `UnderLoggingDetector`), and round 1's
+  (`mezo-1gim.15`) 8 more (`RirCalibrationDetector`, `NiggleMapDetector`,
+  `SportInterferenceDetector`, `MesoAdherenceDetector`, `ProgressionAdherenceDetector`,
+  `HrRecoveryTrendDetector`, `SleepPerformanceChainDetector`, `AvoidancePatternDetector`) +
+  `RoundOneGates` (the shared "new domain data since last run" gate helpers)
 - `service/CharacterCoreCatalog.java` / `CharacterExpertCatalog.java` — the 7 CORE
   dimensions / 7 expert personas (static catalogs)
 - `service/CharacterRunLog.java` (S9) — the run-log writer all four pipelines call; see §3
@@ -654,7 +686,8 @@ before investigating.
 - `characterMock.ts` — the mock seeds (mirrors the approved prototype's `DIMS`/`CSAPAT`/`FEED`/
   `KONZ`/`TRANSCRIPT` content verbatim, mapped onto the real DTO shapes; S9 adds `MOCK_RUNS`/
   `MOCK_RUN_DETAIL` — 3 seeded weeks of NIGHTLY rows incl. quiet nights + one WEEKLY/MONTHLY/
-  BOOTSTRAP row each)
+  BOOTSTRAP row each; round 1, `mezo-1gim.15`, adds one `CHAIN_POOL` chain per new detector,
+  spread across days 13/24/30 — all derived counts, never a re-pinned literal)
 
 **Frontend — feature package** (`frontend/src/features/character/`):
 - `pages/KarakterHubPage.tsx` — the hub (ring hero + 4-tile mosaic + bootstrap ceremony faces +
@@ -673,9 +706,9 @@ before investigating.
 - `pages/AdatforrasokPage.tsx` (S9) — Bekötve | Tervezett segmented control over
   `inventory.ts`'s static content
 - `pages/KorPage.tsx` (S9) — one MINDENT-be round's item list (`/kor/:n`)
-- `pages/DetektorokPage.tsx` (S9) — the 5 real detectors, one line + owning expert each
-- `inventory.ts` (S9) — the Adatforrások/Tervezett static corpus module; ALSO the
-  `mezo-1gim.15` working checklist (see its own header comment and §9)
+- `pages/DetektorokPage.tsx` (S9) — the 13 real detectors, one line + owning expert each
+- `inventory.ts` (S9) — the Adatforrások/Tervezett static corpus module (3 rounds left after
+  round 1 landed); ALSO the `mezo-1gim.15` working checklist (see its own header comment and §9)
 - `components/PersonaOrb.tsx` — the domain-color orb-variant sprite wrapper (`s-orb-*`)
 - `components/MaturityRing.tsx` — the 7-arc SVG ring
 - `components/ClaimTile.tsx` — one claim's confidence chip + feedback pills

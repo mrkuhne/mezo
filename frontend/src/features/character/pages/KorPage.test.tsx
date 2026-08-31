@@ -18,15 +18,18 @@ beforeEach(() => {
 })
 
 describe('KorPage', () => {
-  test('round 1 renders its hero + items, single-detector items get a ghost chip', () => {
-    hoisted.n = '1'
+  // Round 1 ("Edzés & test") landed for real via mezo-1gim.15 and no longer exists in
+  // INVENTORY_ROUNDS (see inventory.ts's header) — round 2 ("Fuel & ciklus") is now the
+  // lowest-numbered round left, so it covers this single-detector-chip case instead.
+  test('round 2 renders its hero + items, single-detector items get a ghost chip', () => {
+    hoisted.n = '2'
     render(<KorPage />)
-    expect(screen.getByText('1. KÖR')).toBeInTheDocument()
-    expect(screen.getByText('Edzés & test · 6 tétel')).toBeInTheDocument()
-    expect(screen.getByText('Gym szettek')).toBeInTheDocument()
-    expect(screen.getByText('rir-calibration')).toBeInTheDocument()
-    // 'Mezociklus-ív' has no det[] — no chip, no crash.
-    expect(screen.getByText('Mezociklus-ív')).toBeInTheDocument()
+    expect(screen.getByText('2. KÖR')).toBeInTheDocument()
+    expect(screen.getByText('Fuel & ciklus · 4 tétel')).toBeInTheDocument()
+    expect(screen.getByText('Makró-teljesítés, NOVA')).toBeInTheDocument()
+    expect(screen.getByText('comfort-eating')).toBeInTheDocument()
+    // 'Víz' has no det[] — no chip, no crash.
+    expect(screen.getByText('Víz')).toBeInTheDocument()
   })
 
   test('a multi-detector item shows a count, not each key', () => {

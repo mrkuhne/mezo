@@ -4,6 +4,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { useActivityActions } from '@/data/hooks'
 import { buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
+import { ClayIcon } from '@/shared/ui/clay'
 import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
 import type { ActivityEntry, DailyQuest, LifeSkillKey } from '@/data/types'
@@ -117,7 +118,7 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
                 {LIFE_SKILLS.map(s => (
                   <button key={s.key} className="chip" disabled={pending} onClick={() => pick(s.key)}
                     style={{ justifyContent: 'flex-start', cursor: 'pointer' }}>
-                    {`${s.icon} ${s.name}`}
+                    <ClayIcon name={s.clayIcon} size={13} /> {s.name}
                   </button>
                 ))}
               </div>
@@ -129,7 +130,7 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
               <div className="col gap-sm">
                 <div className="card" style={{ padding: 14, background: 'var(--primary-bg)', borderColor: 'var(--primary-soft)' }}>
                   <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>{doneMeta ? `${doneMeta.icon} ${doneMeta.name}` : result.entry.text}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 5 }}>{doneMeta ? <><ClayIcon name={doneMeta.clayIcon} size={14} /> {doneMeta.name}</> : result.entry.text}</span>
                     <span className="chip" style={{ whiteSpace: 'nowrap' }}>+{result.entry.xpAwarded} XP</span>
                   </div>
                 </div>
