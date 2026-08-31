@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test'
 
 /**
  * Self-baselined visual goldens: 22 goto screens + the /ritual Harvest + Release and the
- * /train/review lane + exercise-view click-throughs = 26 screens × 2 themes = 52 snapshots per platform (mezo-mzbz added the two /ritual
+ * /train/review lane + exercise-view click-throughs, and the F7.3 Fuel deep surfaces (gyógyszer
+ * empty state, recipe mosaic + score sheet, slots editor) = 65 snapshots per platform (mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
  * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
  * `today` shot with one per daypart face — reggel/nap/este; mezo-p2tr swapped the retired
@@ -47,6 +48,12 @@ const SCREENS: Array<[string, string, string?]> = [
   ['train-session', '/train/session'],
   ['fuel', '/fuel'],
   ['fuel-terv', '/fuel/plan'],
+  // F7.3 Fuel deep (mezo-d20.8.3.1): the gyógyszer page's honest empty state now carries the
+  // ＋ Gyógyszer felvétele CTA (mock seeds no medication); the recipe detail is the 2×2 mosaic;
+  // /fuel/slots opens on the read-only recommended view (the editor is a click-through below).
+  ['fuel-gyogyszer', '/fuel/gyogyszer'],
+  ['fuel-recept', '/fuel/recipes/rec-1'],
+  ['fuel-slots', '/fuel/slots'],
   ['me', '/me'],
   ['me-cel', '/me/goals'],
   ['me-heti', '/me/week'],
@@ -171,6 +178,32 @@ for (const theme of ['light', 'dark'] as const) {
       await page.locator('.wr-set').first().waitFor()
       await page.evaluate(() => document.fonts.ready)
       await expect(page).toHaveScreenshot(`train-review-exercise-${theme}.png`)
+    })
+
+    // F7.3 (mezo-d20.8.3.1): the recipe Pontszám tile opens the score sheet — the shot that
+    // proves the full breakdown moved OFF the page into the shared ScoreBreakdownBody sheet.
+    test('fuel-recept-score', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await page.goto('/fuel/recipes/rec-1')
+      await page.waitForLoadState('networkidle')
+      await page.getByTestId('recipe-score-tile').click()
+      await page.locator('.sheet').waitFor()
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`fuel-recept-score-${theme}.png`)
+    })
+
+    // F7.3: the slots EDITOR (zcard rows + Σ BUDGET + the portaled save bar) — only reachable
+    // through the read-only view's Testreszabás fork, so it is a click-through.
+    test('fuel-slots-editor', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await page.goto('/fuel/slots')
+      await page.waitForLoadState('networkidle')
+      await page.getByRole('button', { name: /Testreszabás/ }).click()
+      await page.getByRole('button', { name: /Mezo értékelése/ }).waitFor()
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`fuel-slots-editor-${theme}.png`)
     })
   })
 }

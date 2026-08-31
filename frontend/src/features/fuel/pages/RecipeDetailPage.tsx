@@ -174,6 +174,11 @@ export function RecipeDetailPage() {
   const topDims = breakdown
     ? [...breakdown.dimensions].sort((a, b) => b.score - a.score).slice(0, 2)
     : []
+  // The tile's ring value (0..1): the AI fit score when it exists, else the deterministic
+  // weighted total — the SAME Σ(score×weight) the sheet already shows per-dimension as pts.
+  // Never a lying 0-ring next to "8 szempont" (caught by reading the first golden).
+  const tileScore = recipe.mezoFit.score
+    ?? (breakdown ? breakdown.dimensions.reduce((a, d) => a + d.score * d.weight, 0) : null)
 
   return (
     <MozaikPage tone="coral">
@@ -242,7 +247,7 @@ export function RecipeDetailPage() {
               ) : breakdown ? (
                 <>
                   <div className="row" style={{ alignItems: 'center', gap: 9, marginTop: 6 }}>
-                    <ScoreRing pct={recipe.mezoFit.score ?? 0} size={44} stroke={4} label={String(recipe.mezoFit.score ?? 0)} labelColor="var(--mz-yes-ink)" />
+                    <ScoreRing pct={tileScore ?? 0} size={44} stroke={4} label={String(Math.round((tileScore ?? 0) * 100))} labelColor="var(--mz-yes-ink)" />
                     <span style={{ fontSize: 9.5, color: 'var(--mz-ink-soft)' }}>
                       <b>{breakdown.dimensions.length} szempont</b><br />megbízh. {Math.round(breakdown.confidence * 100)}%
                     </span>
