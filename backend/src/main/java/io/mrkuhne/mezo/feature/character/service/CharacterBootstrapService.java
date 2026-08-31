@@ -41,6 +41,11 @@ public class CharacterBootstrapService {
     private static final String BOOTSTRAP = "BOOTSTRAP";
     private static final String PERIOD_LABEL = "Teljes eddigi történet";
     private static final String AUDIT_OP = "bootstrap";
+    /** The bootstrap transcript turn's honest evidence phrase (final-review Finding M4,
+     *  mezo-1gim.6) — this konzílium reads the user's WHOLE history via
+     *  {@link CharacterHistoryReads#gatherHistory} (daily-summary narratives, confirmed patterns,
+     *  prompt-eligible facts), never "the week's observations", so the transcript must say so. */
+    private static final String BOOTSTRAP_EVIDENCE_PHRASE = "a teljes előzmény %d bejegyzéséből";
 
     private final CharacterConferenceRepository conferenceRepository;
     private final CharacterHistoryReads historyReads;
@@ -61,20 +66,23 @@ public class CharacterBootstrapService {
                     SystemMessage.error("CHARACTER_BOOTSTRAP_ALREADY_RUN").build(), HttpStatus.CONFLICT);
         }
 
-        // A user can POST here before ever GETting /api/character — without this, the proposal
-        // round's NEW proposals validate fine (KonziliumProposalRound checks the STATIC CORE key
-        // catalog, not the DB) and get accepted rulings, but ClaimLifecycle.applyNew then finds no
-        // dimension row, logs a warning, and silently drops every claim — a 200 with a full
-        // transcript but an empty dossier (fix-round-1 finding, mezo-1gim.6).
-        characterService.ensureCoreDimensions(owner);
-
         List<ExpertEvidence> evidence = historyReads.gatherHistory(owner);
         if (evidence.isEmpty()) {
             return null;
         }
 
-        KonziliumProposalRound.Result proposalResult =
-                proposalRound.runOnEvidence(owner, PERIOD_LABEL, BOOTSTRAP_MARKER, AUDIT_OP, evidence);
+        // A user can POST here before ever GETting /api/character — without this, the proposal
+        // round's NEW proposals validate fine (KonziliumProposalRound checks the STATIC CORE key
+        // catalog, not the DB) and get accepted rulings, but ClaimLifecycle.applyNew then finds no
+        // dimension row, logs a warning, and silently drops every claim — a 200 with a full
+        // transcript but an empty dossier (fix-round-1 finding, mezo-1gim.6). Seeded HERE — after
+        // the no-history return (final-review Finding M5: no CORE rows written for a user this
+        // bootstrap is about to no-op for) but still before the proposal round, so an accepted
+        // claim always has somewhere to land.
+        characterService.ensureCoreDimensions(owner);
+
+        KonziliumProposalRound.Result proposalResult = proposalRound.runOnEvidence(
+                owner, PERIOD_LABEL, BOOTSTRAP_MARKER, AUDIT_OP, evidence, BOOTSTRAP_EVIDENCE_PHRASE);
         KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals());
 
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());

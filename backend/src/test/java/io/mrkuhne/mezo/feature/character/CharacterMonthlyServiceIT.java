@@ -107,6 +107,16 @@ class CharacterMonthlyServiceIT extends ApiIntegrationTest {
                 .extracting(ConferenceTranscriptEnvelope.Turn::persona)
                 .contains("drill", "szkeptikus", "mezo");
 
+        // final-review Finding M4: the monthly transcript re-reads ACTIVE claims, not a week's
+        // observations — the drill turn must say so honestly, never the weekly "hét" phrasing.
+        assertThat(conference.getTranscript().turns())
+                .filteredOn(t -> "drill".equals(t.persona()))
+                .singleElement()
+                .satisfies(t -> {
+                    assertThat(t.text()).contains("aktív állításból");
+                    assertThat(t.text()).doesNotContain("hét").doesNotContain("megfigyeléséből");
+                });
+
         assertThat(claimRepository.findByCreatedByAndStatusOrderByConfidenceDesc(owner, "ACTIVE")).isNotEmpty();
 
         CharacterDimensionEntity refreshed =

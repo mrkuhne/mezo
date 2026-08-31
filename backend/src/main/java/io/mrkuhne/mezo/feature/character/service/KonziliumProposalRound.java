@@ -45,6 +45,16 @@ public class KonziliumProposalRound {
     /** The proposal prompt's first line — the fake LLM keys its deterministic answer on it. */
     public static final String PROPOSAL_MARKER = "KARAKTER-JAVASLAT-FELADAT";
 
+    /**
+     * The weekly transcript turn's evidence phrase (final-review Finding M4, mezo-1gim.6):
+     * {@code String.format}-ed with the evidence-line count into "{@code javaslat a hét N
+     * megfigyeléséből}" — byte-identical to the pre-fix hardcoded text. Bootstrap/monthly supply
+     * their OWN phrase (see {@code CharacterBootstrapService}/{@code CharacterMonthlyService}) so
+     * a transcript actually says what that konzílium read: bootstrap reads whole-history entries,
+     * not a week's observations; monthly re-reads existing active claims, not fresh ones.
+     */
+    private static final String WEEKLY_EVIDENCE_PHRASE = "a hét %d megfigyeléséből";
+
     private static final int MAX_PROPOSALS_PER_EXPERT = 3;
     private static final BigDecimal MIN_CONFIDENCE = BigDecimal.ZERO;
     private static final BigDecimal MAX_CONFIDENCE = BigDecimal.ONE;
@@ -91,7 +101,8 @@ public class KonziliumProposalRound {
         }
 
         String periodLabel = "Hét: " + weekStart + " – " + weekStart.plusDays(6);
-        Result evidenceResult = runOnEvidence(owner, periodLabel, PROPOSAL_MARKER, "propose", evidence);
+        Result evidenceResult =
+                runOnEvidence(owner, periodLabel, PROPOSAL_MARKER, "propose", evidence, true, WEEKLY_EVIDENCE_PHRASE);
 
         List<UUID> observationIds = weekObservations.stream().map(CharacterObservationEntity::getId).toList();
         return new Result(evidenceResult.proposals(), evidenceResult.turns(), observationIds);
@@ -103,13 +114,15 @@ public class KonziliumProposalRound {
      * blocks instead of a week's observations — the monthly bootstrap konzílium's entry point via
      * {@link CharacterHistoryReads#gatherHistory}. {@code observationIds} is always empty here:
      * this method has no notion of weekly observations to mark consumed — only {@link #run} sets it.
-     * Includes the "Meglévő aktív állítások" trailer (see the 4-arg overload's javadoc for why
-     * that is the byte-identical behavior weekly/bootstrap callers need).
+     * Includes the "Meglévő aktív állítások" trailer (see the 7-arg overload's javadoc for why
+     * that is the byte-identical behavior weekly/bootstrap callers need). Bootstrap's own honest
+     * evidence phrase (final-review Finding M4) is required here, not defaulted — a caller must
+     * always say what it actually read.
      */
     @Transactional
     public Result runOnEvidence(UUID owner, String periodLabel, String marker, String auditOp,
-                                 List<ExpertEvidence> evidence) {
-        return runOnEvidence(owner, periodLabel, marker, auditOp, evidence, true);
+                                 List<ExpertEvidence> evidence, String evidencePhraseTemplate) {
+        return runOnEvidence(owner, periodLabel, marker, auditOp, evidence, true, evidencePhraseTemplate);
     }
 
     /**
@@ -130,7 +143,8 @@ public class KonziliumProposalRound {
      */
     @Transactional
     public Result runOnEvidence(UUID owner, String periodLabel, String marker, String auditOp,
-                                 List<ExpertEvidence> evidence, boolean includeActiveClaimsTrailer) {
+                                 List<ExpertEvidence> evidence, boolean includeActiveClaimsTrailer,
+                                 String evidencePhraseTemplate) {
         List<CharacterDimensionEntity> ownerDimensions = dimensionRepository.findByCreatedBy(owner);
         Set<String> knownDimensionKeys = knownDimensionKeys(ownerDimensions);
         Map<UUID, CharacterDimensionEntity> dimensionsById = new java.util.HashMap<>();
@@ -148,7 +162,7 @@ public class KonziliumProposalRound {
 
         for (ExpertEvidence block : evidence) {
             ExpertOutcome outcome = runExpert(owner, periodLabel, marker, auditOp, block, knownDimensionKeys,
-                    activeClaims, dimensionsById, activeClaimIds, includeActiveClaimsTrailer);
+                    activeClaims, dimensionsById, activeClaimIds, includeActiveClaimsTrailer, evidencePhraseTemplate);
             if (outcome == null) {
                 continue;
             }
@@ -170,7 +184,7 @@ public class KonziliumProposalRound {
                                      ExpertEvidence evidence, Set<String> knownDimensionKeys,
                                      List<CharacterClaimEntity> activeClaims,
                                      Map<UUID, CharacterDimensionEntity> dimensionsById, Set<UUID> activeClaimIds,
-                                     boolean includeActiveClaimsTrailer) {
+                                     boolean includeActiveClaimsTrailer, String evidencePhraseTemplate) {
         String expertKey = evidence.expertKey();
         CharacterExpertCatalog.Expert expert;
         String raw;
@@ -213,8 +227,8 @@ public class KonziliumProposalRound {
             }
         }
 
-        ConferenceTranscriptEnvelope.Turn turn =
-                buildTurn(expert, evidence.lines().size(), evidence.refIds(), expertProposals);
+        ConferenceTranscriptEnvelope.Turn turn = buildTurn(
+                expert, evidence.lines().size(), evidence.refIds(), expertProposals, evidencePhraseTemplate);
         return new ExpertOutcome(expertProposals, turn);
     }
 
@@ -277,9 +291,10 @@ public class KonziliumProposalRound {
 
     private static ConferenceTranscriptEnvelope.Turn buildTurn(CharacterExpertCatalog.Expert expert,
                                                                  int evidenceCount, List<String> refIds,
-                                                                 List<ClaimProposal> proposals) {
+                                                                 List<ClaimProposal> proposals,
+                                                                 String evidencePhraseTemplate) {
         StringBuilder sb = new StringBuilder(expert.displayName()).append(": ").append(proposals.size())
-                .append(" javaslat a hét ").append(evidenceCount).append(" megfigyeléséből.");
+                .append(" javaslat ").append(String.format(evidencePhraseTemplate, evidenceCount)).append('.');
         for (ClaimProposal proposal : proposals) {
             sb.append('\n').append(proposal.text());
         }

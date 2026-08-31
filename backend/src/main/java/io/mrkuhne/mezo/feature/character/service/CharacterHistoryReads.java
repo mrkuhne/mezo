@@ -35,7 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>a CONFIRMED pattern goes to the expert(s) whose dimension its {@code pairKey} mentions,
  *       via {@link #PATTERN_KEYWORDS} (first matching keyword wins, case-insensitive substring
  *       match against the pair key); unmatched → {@code drill} (the cross-cutting behaviour
- *       expert).</li>
+ *       expert). Capped at the newest {@value #HISTORY_PATTERN_CAP} patterns (same treatment as
+ *       the narrative read above — a CONFIRMED pattern is equally unbounded over time).</li>
  *   <li>a prompt-eligible knowledge fact goes to the expert whose dimension its {@code category}
  *       matches, via {@link #FACT_CATEGORY_EXPERT} (mirrors {@code ck_knowledge_fact_category}:
  *       train|fuel|health|life); unmatched → {@code antropologus} (life context). Capped at the
@@ -57,6 +58,12 @@ public class CharacterHistoryReads {
     static final int HISTORY_SUMMARY_CAP = 60;
 
     private static final int NARRATIVE_CAP_CHARS = 300;
+
+    /** Newest N CONFIRMED patterns carried into the history evidence (final-review Finding M6) —
+     *  mirrors {@link #HISTORY_SUMMARY_CAP}'s treatment of narratives: a CONFIRMED pattern has no
+     *  natural upper bound either, so an unbounded read here would let a heavy user's pattern set
+     *  blow up the bootstrap prompt the same way an uncapped fact read would. */
+    static final int HISTORY_PATTERN_CAP = 60;
 
     /** Top-N prompt-eligible knowledge facts carried into the history evidence, ordered by
      *  reinforcement count then newest (same ordering the repository method's other caller,
@@ -149,7 +156,9 @@ public class CharacterHistoryReads {
                               Map<String, List<String>> refIdsByExpert) {
         List<PatternEntity> confirmed = patternRepository
                 .findByCreatedByAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(owner, PatternEntity.STATUS_CONFIRMED);
-        for (PatternEntity pattern : confirmed) {
+        List<PatternEntity> capped =
+                confirmed.size() > HISTORY_PATTERN_CAP ? confirmed.subList(0, HISTORY_PATTERN_CAP) : confirmed;
+        for (PatternEntity pattern : capped) {
             String expertKey = routeByKeyword(pattern.getPairKey(), PATTERN_KEYWORDS, FALLBACK_PATTERN_EXPERT);
             String line = pattern.getTitle() + " (" + pattern.getPairKey() + ")";
             String refId = "pattern:" + pattern.getId();

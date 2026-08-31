@@ -60,6 +60,10 @@ public class CharacterMonthlyService {
             + "mindenre, amit a jelenlegi adatok már nem támasztanak alá.";
 
     private static final String MONTHLY = "MONTHLY";
+    /** The monthly transcript turn's honest evidence phrase (final-review Finding M4,
+     *  mezo-1gim.6) — this konzílium re-reads the owner's own EXISTING ACTIVE claims, never fresh
+     *  observations, so the transcript must say so. */
+    private static final String MONTHLY_EVIDENCE_PHRASE = "a %d aktív állításból";
     private static final String CHAPTER = "CHAPTER";
     private static final String ACTIVE = "ACTIVE";
     private static final String CHAPTER_RETIRED = "CHAPTER_RETIRED";
@@ -92,15 +96,18 @@ public class CharacterMonthlyService {
             return existing.get();
         }
 
-        // Mirrors CharacterBootstrapService's fix-round-1 guard: a user whose dossier is otherwise
-        // still empty (no dimension rows at all) must not silently drop an accepted NEW claim.
-        characterService.ensureCoreDimensions(owner);
-
         List<CharacterClaimEntity> activeClaims =
                 claimRepository.findByCreatedByAndStatusOrderByConfidenceDesc(owner, ACTIVE);
         if (activeClaims.isEmpty()) {
             return null;
         }
+
+        // Mirrors CharacterBootstrapService's fix-round-1 guard: a user whose dossier is otherwise
+        // still empty (no dimension rows at all) must not silently drop an accepted NEW claim.
+        // Seeded HERE — after the no-ACTIVE-claims return (final-review Finding M5: no CORE rows
+        // written for a user this monthly run is about to no-op for) but still before the
+        // proposal round, so an accepted claim always has somewhere to land.
+        characterService.ensureCoreDimensions(owner);
 
         Map<UUID, CharacterDimensionEntity> dimensionsById = new HashMap<>();
         for (CharacterDimensionEntity dimension : dimensionRepository.findByCreatedBy(owner)) {
@@ -113,8 +120,8 @@ public class CharacterMonthlyService {
         // DIRECTLY from ACTIVE claims (buildEvidence, with age/last-movement metadata), so the
         // proposal round's own "Meglévő aktív állítások" trailer would otherwise re-render the
         // SAME claims a second time in one user message for any CORE-owning expert.
-        KonziliumProposalRound.Result proposalResult =
-                proposalRound.runOnEvidence(owner, periodLabel, MONTHLY_MARKER, AUDIT_OP, evidence, false);
+        KonziliumProposalRound.Result proposalResult = proposalRound.runOnEvidence(
+                owner, periodLabel, MONTHLY_MARKER, AUDIT_OP, evidence, false, MONTHLY_EVIDENCE_PHRASE);
         // weekStart=null here (not monthStart): KonziliumVerdictRound only uses it to render a
         // "Hét: …" period label for the szkeptikus/integrátor prompts — a real week range would be
         // misleading for a whole-dossier monthly pass, so this rides the SAME null-weekStart path

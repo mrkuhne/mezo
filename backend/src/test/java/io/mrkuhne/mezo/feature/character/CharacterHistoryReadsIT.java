@@ -85,6 +85,35 @@ class CharacterHistoryReadsIT extends ApiIntegrationTest {
     }
 
     @Test
+    void gatherHistory_morePatternsThanCap_rendersOnlyTheNewestCappedPatterns() {
+        UUID owner = ownerId();
+        // 65 CONFIRMED "sleep" patterns, all routing to szomnologus — one more than the history
+        // reader's cap (60, final-review Finding M4/M6: patterns were read entirely uncapped).
+        // lastDetectedAt is set explicitly (not left to wall-clock ordering) so the "newest N
+        // survive the cap" assertion below is deterministic.
+        java.time.Instant base = java.time.Instant.parse("2026-01-01T00:00:00Z");
+        for (int i = 0; i < 65; i++) {
+            io.mrkuhne.mezo.feature.companion.entity.PatternEntity pattern =
+                    patternPopulator.statistical(owner, "sleep-" + i, PatternEntity.STATUS_CONFIRMED);
+            pattern.setLastDetectedAt(base.plusSeconds(i));
+            patternPopulator.save(pattern);
+        }
+
+        List<ExpertEvidence> evidence = historyReads.gatherHistory(owner);
+
+        assertThat(evidence).filteredOn(e -> e.expertKey().equals("szomnologus"))
+                .singleElement()
+                .satisfies(e -> {
+                    // capped at 60, not 65
+                    assertThat(e.lines()).hasSize(60);
+                    // ordering is lastDetectedAt desc — the newest-inserted pattern survives, the
+                    // oldest (first inserted) is one of the 5 dropped by the cap
+                    String rendered = String.join("\n", e.lines());
+                    assertThat(rendered).contains("sleep-64").doesNotContain("sleep-0)");
+                });
+    }
+
+    @Test
     void gatherHistory_moreFactsThanCap_rendersOnlyTheTopCappedFacts() {
         UUID owner = ownerId();
         // 45 prompt-eligible "life" facts, all routing to antropologus — one more than the

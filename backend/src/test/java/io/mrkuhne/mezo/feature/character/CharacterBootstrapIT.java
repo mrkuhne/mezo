@@ -103,6 +103,16 @@ class CharacterBootstrapIT extends ApiIntegrationTest {
                 .contains("szkeptikus", "mezo")
                 .anyMatch(p -> !"szkeptikus".equals(p) && !"mezo".equals(p)); // at least one expert turn
 
+        // final-review Finding M4: bootstrap reads the whole-history narratives, never "the
+        // week's observations" — the expert turn text must say so honestly.
+        assertThat(response.getTranscript())
+                .filteredOn(t -> !"szkeptikus".equals(t.getPersona()) && !"mezo".equals(t.getPersona()))
+                .isNotEmpty()
+                .allSatisfy(t -> {
+                    assertThat(t.getText()).contains("teljes előzmény").contains("bejegyzéséből");
+                    assertThat(t.getText()).doesNotContain("hét").doesNotContain("megfigyeléséből");
+                });
+
         assertThat(claimRepository.findByCreatedByAndStatusOrderByConfidenceDesc(owner, "ACTIVE")).isNotEmpty();
 
         CharacterDimensionEntity touched = claimRepository
