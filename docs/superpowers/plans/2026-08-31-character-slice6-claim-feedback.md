@@ -12,7 +12,7 @@
 
 - Feedback kinds are exactly `TALAL | NEM_IGAZ | PONTOSITOM` (contract enum, uppercase, no Hungarian accents in the wire values). `PONTOSITOM` REQUIRES a non-blank `text` (max 500 chars); the others must NOT carry one (`400` if they do — the honest contract, not silent ignoring).
 - Effects (spec §7), all inside ONE `@Transactional` method:
-  - `TALAL` — confidence `+0.05`, but **capped at `0.85` when no konzílium has moved the claim since the last user bump**, so self-confirmation can never saturate a claim without new data. Append a `ClaimConfidenceHistoryEnvelope.Point(newValue, "felhasználói visszajelzés: talál", now)`.
+  - `TALAL` — confidence `+0.05` with a **flat ceiling at `0.85`**, so self-confirmation can never saturate a claim without new evidence; a claim a konzílium raised above the ceiling is left alone, never dragged down. A capped (no-op) bump still records the event and the observation — the answer is a signal even when the number cannot move. Append a `ClaimConfidenceHistoryEnvelope.Point(newValue, "felhasználói visszajelzés: talál", now)` whenever the value actually changes.
   - `NEM_IGAZ` — `status = "RETIRED"` immediately, history point `"felhasználói visszajelzés: nem igaz"`, confidence untouched (the row keeps its last value for the audit trail).
   - `PONTOSITOM` — claim otherwise unchanged; the correction text is stored and MUST reach the next konzílium.
   - Every kind appends a `ClaimFeedbackEnvelope.Event(kind, text, now)` to `user_feedback` and sets `updatedAt`.
@@ -135,12 +135,10 @@ Run: `cd backend && ./mvnw test -Dtest=CharacterFeedbackIT -Dmezo.test.use-testc
 
 - [ ] **Step 3: Implement** the contract + regeneration + service + controller + message keys.
 
-The TALAL cap rule, precisely: let `lastKonziliumPoint` be the newest `confidenceHistory` point
-whose cause does NOT start with `"felhasználói visszajelzés"`. If the claim's current confidence is
-already `≥ 0.85` OR every point after `lastKonziliumPoint` is a user bump and the current value is
-`≥ 0.85`, the bump is a no-op (still records the event + observation — the answer is a signal even
-when the number cannot move). Otherwise `min(current + 0.05, 0.85)`. Document this in the method's
-javadoc, and pin it with test 2.
+The TALAL cap rule, precisely: if the claim's current confidence is already `≥ 0.85`, the bump is a
+no-op (still records the event + observation — the answer is a signal even when the number cannot
+move). Otherwise `min(current + 0.05, 0.85)`. Document this in the method's javadoc, and pin it
+with test 2 — including that the no-op call still appends the event and writes the observation.
 
 - [ ] **Step 4: Run — expect PASS** + `./mvnw test -Dtest='Character*,ArchitectureTest' -Dmezo.test.use-testcontainers=true` + `./mvnw compile -q`.
 
