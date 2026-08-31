@@ -1134,6 +1134,17 @@ mezo:
       # mezo-d20.7.7: the trailing window the highlight-citation signal ("cited in N of the last
       # weeks") is derived over — a quarter of weeks, so the signal decays instead of accumulating
       citation-window-weeks: 12
+    diagnosis:
+      # On-demand fatigue diagnosis (mezo-hqfi) — no cron; the user triggers it.
+      # window/baseline: the diagnosed 14 days vs the 28 that precede them.
+      window-days: 14
+      baseline-days: 28
+      # A metric needs this many measured days in the window to become evidence at all.
+      min-coverage-days: 7
+      # Distinct MetricDomains that must clear coverage before a diagnosis is attempted.
+      min-domains: 2
+      # Generations per user per calendar day; reads are always free.
+      max-per-day: 3
     memoir:
       # W2 Sunday-evening memoir schedule (old journey 5.8) — the week ending that Sunday
       cron: "0 0 19 * * SUN"
