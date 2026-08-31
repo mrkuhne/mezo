@@ -31,6 +31,14 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
       </div>
     )
   }
+  // mezo-b3pp.29: drop a Memory chip ONLY when the Emlékek row below actually carries that same
+  // day. Two backend paths emit kind="Memory" and only one feeds `recalled`: ambient recall
+  // (PromptMemoryAssembler) builds its refs and the disclosure envelope from the SAME items, so
+  // they always agree — but the find_similar_past_days tool (MemoryTools) adds refs that are never
+  // in `recalled`. Filtering by kind alone would hide the very day a tool-driven answer was built
+  // from, which is information loss rather than dedupe.
+  const recalledDays = new Set((m.recalled ?? []).map((x) => x.occurredOn))
+  const visibleRefs = (m.refs ?? []).filter((r) => r.kind !== 'Memory' || !recalledDays.has(r.id))
   return (
     <div className="mzc-msg-a col gap-sm">
       <div className="mzc-meta">
@@ -58,11 +66,13 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
         ) : (
           <p className="mzc-noanswer">Erre a körre nem érkezett válasz.</p>
         )}
-        {m.refs && (
+        {/* length, not truthiness: an empty array is truthy, and the filter above can now turn a
+            non-empty refs list into an empty one — without this the eyebrow would render alone. */}
+        {visibleRefs.length > 0 && (
           <div className="mzc-reffoot">
             <span className="mzc-refeb">Hivatkozott · L3</span>
             <div className="mzc-refrow">
-              {m.refs.map((r, i) => {
+              {visibleRefs.map((r, i) => {
                 // Gap-7 fix: human labels where the data provides them, raw id otherwise.
                 const d = chatRefDisplay(r)
                 return (

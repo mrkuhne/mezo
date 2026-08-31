@@ -263,7 +263,7 @@ export function EnHubPage() {
           <Tile wash="gold" icon="i-tudas" eyebrow="Tudás" delayMs={350} className="enh-eb-gold"
             line={tudasLine} onClick={() => navigate('/me/knowledge')} aria-label="Tudás" />
           <Tile wash="sage" icon="i-ertesites" eyebrow="Értesítés" delayMs={390} className="enh-eb-sage"
-            line={ertesitesLine} onClick={() => navigate('/me/ertesitesek')} aria-label="Értesítések beállításai" />
+            line={ertesitesLine} onClick={() => navigate('/me/ertesitesek/beallitasok')} aria-label="Értesítések beállításai" />
           <Tile wash="white" icon="i-erme" eyebrow="AI-napló" delayMs={430}
             line={aiLine} onClick={() => navigate('/me/ai-usage')} aria-label="AI-napló" />
         </Mosaic>

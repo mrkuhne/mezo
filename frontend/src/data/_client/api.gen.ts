@@ -3211,6 +3211,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/bootstrap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** One-time deep read over the whole existing history that stands up the dossier */
+        post: operations["bootstrapCharacter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character/conference": {
         parameters: {
             query?: never;
@@ -3228,6 +3245,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/claim/{claimId}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Daniel's answer to one claim — talál / nem igaz / pontosítom (spec §7) */
+        post: operations["submitCharacterClaimFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character/conference/{conferenceId}": {
         parameters: {
             query?: never;
@@ -3239,6 +3273,58 @@ export interface paths {
         get: operations["getCharacterConference"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/diagnosis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Past diagnoses, newest first ([] = honest empty, never 404) */
+        get: operations["listDiagnoses"];
+        put?: never;
+        /** Generate a fresh diagnosis (consumes the daily quota) */
+        post: operations["generateDiagnosis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/diagnosis/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One diagnosis, including its stale flag */
+        get: operations["getDiagnosis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/diagnosis/{id}/suspect/{rank}/experiment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turn a suspect's probe into a tracked experiment (the tap IS the acceptance) */
+        post: operations["startDiagnosisExperiment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5490,6 +5576,8 @@ export interface components {
         MessageRef: {
             kind: string;
             id: string;
+            /** @description Human name for the referenced entity when the producer knows one (mezo-b3pp.33) — today only GraphNode refs carry it (the graph node's title). Absent/null for every other kind, and for rows persisted before this field existed; the FE falls back to its own id-derived label then. */
+            label?: string | null;
         };
         SendMessageRequest: {
             content: string;
@@ -7062,6 +7150,12 @@ export interface components {
                 label: string;
             }[];
         };
+        CharacterClaimFeedbackRequest: {
+            /** @enum {string} */
+            kind: "TALAL" | "NEM_IGAZ" | "PONTOSITOM";
+            /** @description Required for PONTOSITOM (the correction), forbidden otherwise */
+            text?: string;
+        };
         CharacterDimensionSummary: {
             key: string;
             title: string;
@@ -7134,6 +7228,46 @@ export interface components {
                 dimensionKey?: string | null;
                 summary: string;
             }[];
+        };
+        DiagnosisGenerateRequest: {
+            phenomenon: string;
+        };
+        DiagnosisEvidenceItem: {
+            kind: string;
+            label: string;
+            detail?: string | null;
+            /** @description Hungarian provenance, e.g. Alvás-napló */
+            sourceHu?: string | null;
+            metricKey?: string | null;
+            value?: number | null;
+            baselineValue?: number | null;
+            delta?: number | null;
+            coverageDays?: number | null;
+        };
+        DiagnosisSuspect: {
+            rank: number;
+            title: string;
+            claim: string;
+            evidenceIndexes: number[];
+            strength: string;
+            probeText: string;
+            metricKey: string;
+            expectedDirection: string;
+            totalDays: number;
+        };
+        DiagnosisResponse: {
+            /** Format: uuid */
+            id: string;
+            phenomenon: string;
+            windowDays: number;
+            verdict: string;
+            confidence: string;
+            evidence: components["schemas"]["DiagnosisEvidenceItem"][];
+            suspects: components["schemas"]["DiagnosisSuspect"][];
+            /** Format: date-time */
+            generatedAt: string;
+            /** @description a log landed in the window after generatedAt */
+            stale: boolean;
         };
     };
     responses: never;
@@ -16018,6 +16152,51 @@ export interface operations {
             };
         };
     };
+    bootstrapCharacter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bootstrap konzílium that just ran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterConferenceResponse"];
+                };
+            };
+            /** @description No history to read — nothing was generated (the honest empty state) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description A bootstrap konzílium already exists for this user */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     listCharacterConferences: {
         parameters: {
             query?: never;
@@ -16038,6 +16217,68 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    submitCharacterClaimFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterClaimFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description The claim after the feedback was applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterClaimDto"];
+                };
+            };
+            /** @description PONTOSITOM without text, or text sent with a kind that takes none */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such claim for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The claim is already retired — nothing to answer */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16077,6 +16318,169 @@ export interface operations {
                 };
             };
             /** @description No such conference for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listDiagnoses: {
+        parameters: {
+            query?: {
+                phenomenon?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user's diagnoses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    generateDiagnosis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description The generated diagnosis */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not enough data in the window, or no suspect survived validation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Daily generation quota exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getDiagnosis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The diagnosis */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    startDiagnosisExperiment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                rank: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The created experiment, or the open one that already covers this metric */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Diagnosis not found, not owned, or no suspect at that rank */
             404: {
                 headers: {
                     [name: string]: unknown;

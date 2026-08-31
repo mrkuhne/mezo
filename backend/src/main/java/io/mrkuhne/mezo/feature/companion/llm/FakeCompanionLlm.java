@@ -110,6 +110,26 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  equality assertion against the real constant. */
     public static final String PROPOSAL_MARKER_MIRROR = "KARAKTER-JAVASLAT-FELADAT";
 
+    /** Mirror of CharacterBootstrapService.BOOTSTRAP_MARKER (feature/character) — LITERAL, cycle
+     *  rule (see {@link #OBSERVATION_MARKER_MIRROR}). The bootstrap konzílium's proposal round
+     *  asks for the SAME proposal JSON shape as the weekly round, so it shares the proposal
+     *  branch's answer logic below — same canned fallback, same sentinel. Drift is caught by an
+     *  IT's equality assertion against the real constant. */
+    public static final String BOOTSTRAP_MARKER_MIRROR = "KARAKTER-BOOTSTRAP-FELADAT";
+
+    /** Mirror of CharacterMonthlyService.MONTHLY_MARKER (feature/character) — LITERAL, cycle rule
+     *  (see {@link #OBSERVATION_MARKER_MIRROR}). The monthly deep-read konzílium's proposal round
+     *  asks for the SAME proposal JSON shape as the weekly/bootstrap rounds, so it shares that
+     *  branch's answer logic below — same canned fallback, same sentinel. The marker is a
+     *  MULTI-LINE block (the monthly drift/staleness contract rides along after the routing
+     *  line) — {@code startsWith} still matches it as a literal prefix. Drift is caught by an
+     *  IT's equality assertion against the real constant. */
+    public static final String MONTHLY_MARKER_MIRROR = "KARAKTER-HAVI-FELADAT\n"
+            + "Ez egy HAVI mélyolvasás: ne friss mintát keress, hanem a hónapok óta lassan alakuló "
+            + "ELMOZDULÁST és az adatok által már nem alátámasztott, elavult állításokat figyeld. "
+            + "UP/DOWN/RETIRE javaslatot részesíts előnyben NEW helyett, és javasolj RETIRE-t "
+            + "mindenre, amit a jelenlegi adatok már nem támasztanak alá.";
+
     /** Scripted konzílium proposals (mezo-1gim.5): {@code [fake-char-proposals:[…]]} planted in an
      *  observation's TEXT (the user message renders it) is returned verbatim; otherwise a canned
      *  single-proposal array keeps the pipeline deterministic, keyed on the expert's own
@@ -121,6 +141,14 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  canned proposal always names a dimension the round's own validation will accept. */
     private static final Pattern PROPOSAL_DEFAULT_DIMENSION =
             Pattern.compile("Alapértelmezett dimenzió: ([a-z]+)");
+
+    /** Scripted proposal ECHO (mezo-1gim.10): {@code [fake-char-proposals-echo]} planted in an
+     *  observation's TEXT returns the FULL assembled user message (JSON-escaped) as a single NEW
+     *  proposal's {@code rationale} — the "prompt assembly is assertable" idiom (see
+     *  {@link #MESO_REVIEW_ECHO}), applied here so an IT can prove a server-side prompt-assembly
+     *  detail (e.g. the routed user-feedback observation's "DANIEL VÁLASZA —" prefix) actually
+     *  reached the expert's prompt, without the fake needing to keep a prompt recorder. */
+    public static final String CHAR_PROPOSALS_ECHO = "[fake-char-proposals-echo]";
 
     /** Mirror of KonziliumVerdictRound.SKEPTIC_MARKER (feature/character) — LITERAL, cycle rule. */
     public static final String SKEPTIC_MARKER_MIRROR = "KARAKTER-SZKEPTIKUS-FELADAT";
@@ -255,6 +283,16 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  LAST brace. */
     public static final Pattern WEEKLY_REVIEW_SENTINEL =
             Pattern.compile("\\[fake-review:(\\{.*})]", Pattern.DOTALL);
+
+    /** Mirror of DiagnosisGenerator.DIAGNOSIS_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    public static final String DIAGNOSIS_MARKER_MIRROR = "FARADTSAG-DIAGNOZIS-FELADAT";
+
+    /** Scripted diagnosis (mezo-hqfi): {@code [fake-diagnosis:{…}]} planted in ANY candidate
+     *  label — unlike the weekly gather, the diagnosis payload renders every candidate EXACTLY
+     *  ONCE, so there is no duplicate-occurrence hazard wherever it is planted. GREEDY for the
+     *  same nested-object reason as WEEKLY_REVIEW_SENTINEL. */
+    public static final Pattern DIAGNOSIS_SENTINEL =
+            Pattern.compile("\\[fake-diagnosis:(\\{.*})]", Pattern.DOTALL);
 
     /** Mirror of CompanionMessageGenerator.WINDOW_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT";
@@ -433,13 +471,18 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
             return "[{\"text\":\"Fake megfigyelés.\",\"salience\":3,\"dimensionKeys\":[\"discipline\"]}]";
         }
-        if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR)) {
+        if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR) || systemPrompt.startsWith(BOOTSTRAP_MARKER_MIRROR)
+                || systemPrompt.startsWith(MONTHLY_MARKER_MIRROR)) {
+            Matcher dim = PROPOSAL_DEFAULT_DIMENSION.matcher(userMessage);
+            String dimensionKey = dim.find() ? dim.group(1) : "discipline";
+            if (userMessage.contains(CHAR_PROPOSALS_ECHO)) {
+                return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
+                        + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"" + jsonEscape(userMessage) + "\"}]";
+            }
             Matcher proposals = CHAR_PROPOSALS_SENTINEL.matcher(userMessage);
             if (proposals.find()) {
                 return proposals.group(1);
             }
-            Matcher dim = PROPOSAL_DEFAULT_DIMENSION.matcher(userMessage);
-            String dimensionKey = dim.find() ? dim.group(1) : "discipline";
             return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
                     + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"Fake indoklás.\"}]";
         }
@@ -500,6 +543,11 @@ public class FakeCompanionLlm implements CompanionLlm {
             Matcher m = WEEKLY_REVIEW_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1)
                     : "{\"summary\":\"FAKE-HETI-ELEMZES\",\"dayNotes\":[],\"anchorIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(DIAGNOSIS_MARKER_MIRROR)) {
+            Matcher m = DIAGNOSIS_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1)
+                    : "{\"verdict\":\"FAKE-DIAGNOZIS\",\"confidence\":\"weak\",\"suspects\":[]}";
         }
         if (systemPrompt.startsWith(HEARTBEAT_MARKER_MIRROR)) {
             // mezo-106s: run the scripted [fake-tool:…] sentinels for their audit side
@@ -823,6 +871,13 @@ public class FakeCompanionLlm implements CompanionLlm {
             " user=[" + userMessage + "]"));
         chunks.addAll(toolEchoes(userMessage, tools, toolContext));
         return Flux.fromIterable(chunks);
+    }
+
+    /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO}
+     *  — the echo embeds the WHOLE assembled user message as one JSON string value. */
+    private static String jsonEscape(String raw) {
+        return raw.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 
     /** Every sentinel executes the matching REAL callback; unknown names echo UNKNOWN. */

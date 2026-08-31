@@ -65,6 +65,7 @@ import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
+import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
 import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
@@ -217,7 +218,10 @@ export const routes: RouteObject[] = [
       { path: 'me/sleep', element: <SleepPage /> },
       { path: 'me/people', element: <PeoplePage /> },
       { path: 'me/knowledge', element: <KnowledgePage /> },
-      { path: 'me/ertesitesek', element: <NotificationsPage /> },
+      // mezo-nol0: a főnevet a FEED viszi (ide vezet a fejléc dropdown „Összes értesítés ›"
+      // lábléce), a kapcsolók alá költöztek.
+      { path: 'me/ertesitesek', element: <NotificationFeedPage /> },
+      { path: 'me/ertesitesek/beallitasok', element: <NotificationsPage /> },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },
       // Full-screen routine editor (mezo-n5e9.2) — same sibling idiom (no Me sub-nav chrome).
       { path: 'me/routines/edit', element: <RoutineEditorPage /> },

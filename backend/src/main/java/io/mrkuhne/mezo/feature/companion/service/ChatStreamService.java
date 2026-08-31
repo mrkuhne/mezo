@@ -114,7 +114,7 @@ public class ChatStreamService {
                         throw new SystemRuntimeErrorException(SystemMessage.error(EMPTY_ANSWER_CODE).build());
                     }
                     // W3.1: ambient Memory refs after the tool loop + review — tool refs keep cap priority
-                    turn.recalledRefs().forEach(ref -> audit.addRef(ref.kind(), ref.id()));
+                    turn.recalledRefs().forEach(ref -> audit.addRef(ref.kind(), ref.id(), ref.label()));
                     return ServerSentEvent.<Object>builder(
                                     chatService.completeTurn(userId, conversationId, turn.userMessageId(),
                                             turn.userContent(), finalAnswer, audit, degraded, turn.recalled()))

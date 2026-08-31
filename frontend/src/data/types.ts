@@ -1,5 +1,6 @@
 import type { IconName } from '@/shared/ui/Icon'
 import type { Tool } from '@/shared/ui/ToolChip'
+import type { ClayIconName } from '@/shared/ui/clay'
 import type { NovaGroup } from '@/data/nova'
 import type { PantrySourceKey } from '@/data/pantrySources'
 
@@ -880,7 +881,10 @@ export interface Experiment {
 }
 
 export type ChatRole = 'user' | 'assistant'
-export interface ChatRef { kind: string; id: string }
+/** `label` (mezo-b3pp.33): the wire's optional carried label — null on rows that omit it,
+ *  undefined for producers that never set it. `chatRefDisplay` prefers it and falls back to
+ *  the id-derived label (see chatRefs.ts). */
+export interface ChatRef { kind: string; id: string; label?: string | null }
 /** W3.1b (mezo-b3pp.28): one memory ambient recall injected into the answer's prompt —
  *  `similarity` is the raw cosine 0..1 (the row renders `Math.round(s * 100)%`). */
 export interface ChatRecalledMemory {
@@ -1493,13 +1497,17 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
 }
 
 // --- In-app notification feed (bd mezo-gzhp.1, spec 2026-08-18) ---
-/** Mirrors backend AppNotificationKind — keep in sync (AppNotificationKindTest pins that side). */
+/** Mirrors backend AppNotificationKind — keep in sync (AppNotificationKindTest pins that side).
+ *  A szinkron NEM garantált: a két oldal külön nyelven él, és `weekly_review_ready` egyszer már
+ *  kimaradt innen (mezo-ntf8). A leképezést ezért `notificationKindMeta()`-n keresztül olvasd,
+ *  ami ismeretlen kulcsra semleges bejegyzést ad — egy új backend-fajta sosem döntheti el az
+ *  értesítés-feedet. */
 export type AppNotificationKindKey =
   | 'pattern_inbox' | 'pattern_signal' | 'hypothesis_new'
   | 'fact_candidate' | 'fact_reinforced' | 'memoir_ready'
   | 'prediction_new' | 'prediction_outcome'
   | 'experiment_proposed' | 'experiment_closed'
-  | 'challenge_event' | 'memory_note'
+  | 'challenge_event' | 'memory_note' | 'weekly_review_ready'
 
 export interface AppNotificationView {
   id: string
@@ -1512,18 +1520,40 @@ export interface AppNotificationView {
   readAt: string | null
 }
 
-/** Per-kind panel icon + tint class suffix (the mockup's family colors). */
-export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, { emoji: string; tint: string }> = {
-  pattern_inbox: { emoji: '🧩', tint: 'pattern' },
-  pattern_signal: { emoji: '🧩', tint: 'pattern' },
-  hypothesis_new: { emoji: '🧩', tint: 'pattern' },
-  fact_candidate: { emoji: '📚', tint: 'knowledge' },
-  fact_reinforced: { emoji: '📚', tint: 'knowledge' },
-  memoir_ready: { emoji: '✍️', tint: 'memoir' },
-  prediction_new: { emoji: '🔮', tint: 'prediction' },
-  prediction_outcome: { emoji: '🔮', tint: 'prediction' },
-  experiment_proposed: { emoji: '🧪', tint: 'experiment' },
-  experiment_closed: { emoji: '🧪', tint: 'experiment' },
-  challenge_event: { emoji: '🏆', tint: 'experiment' },
-  memory_note: { emoji: '🗂', tint: 'memory' },
+/** Per-kind ikon + tint osztály-utótag (a mockup családi színei). A `tint` a sor ikon-tokjának
+ *  washát adja, a `clay` a Mozaik-nyelv ikonját — a feed-oldal (`NotificationFeedPage`) ezt a
+ *  kettőt rendereli. Az `emoji` a törölt dropdown-panel öröksége, olvasója már nincs. */
+export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
+  /** @deprecated Nincs olvasója a repóban a NotificationPanel törlése óta (mezo-nol0) — a feed
+   *  a `clay` ikont rajzolja. Nem törlöm: a 12 soros literál nyesése ezt az ágat túllépő változás. */
+  emoji: string
+  tint: string
+  clay: ClayIconName
+}> = {
+  pattern_inbox: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
+  pattern_signal: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
+  hypothesis_new: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
+  fact_candidate: { emoji: '📚', tint: 'knowledge', clay: 'i-tudas' },
+  fact_reinforced: { emoji: '📚', tint: 'knowledge', clay: 'i-tudas' },
+  memoir_ready: { emoji: '✍️', tint: 'memoir', clay: 'i-memoar' },
+  prediction_new: { emoji: '🔮', tint: 'prediction', clay: 'i-kristaly' },
+  prediction_outcome: { emoji: '🔮', tint: 'prediction', clay: 'i-kristaly' },
+  experiment_proposed: { emoji: '🧪', tint: 'experiment', clay: 'i-lombik' },
+  experiment_closed: { emoji: '🧪', tint: 'experiment', clay: 'i-lombik' },
+  challenge_event: { emoji: '🏆', tint: 'experiment', clay: 'i-kihivas' },
+  memory_note: { emoji: '🗂', tint: 'memory', clay: 'i-rend' },
+  weekly_review_ready: { emoji: '🗓', tint: 'memoir', clay: 'i-heti' },
+}
+
+/** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */
+const FALLBACK_KIND_META = { emoji: '🔔', tint: 'memory', clay: 'i-ertesites' } as const
+
+/** A leképezés TOTÁLIS olvasója. A wire-kind sima string: a backend enum bővülhet anélkül, hogy
+ *  ez a build tudna róla, és egy hiányzó kulcson a nyers indexelés `undefined`-et ad, amitől a
+ *  feed-oldal sor-map-je elszáll és az egész oldal az ErrorBoundary-ra esik (mezo-ntf8, élesben).
+ *  Egy ismeretlen értesítés inkább nézzen ki semlegesen, mint hogy elvigye a többit is. */
+export function notificationKindMeta(
+  kind: string,
+): typeof FALLBACK_KIND_META | (typeof APP_NOTIFICATION_KIND_META)[AppNotificationKindKey] {
+  return APP_NOTIFICATION_KIND_META[kind as AppNotificationKindKey] ?? FALLBACK_KIND_META
 }

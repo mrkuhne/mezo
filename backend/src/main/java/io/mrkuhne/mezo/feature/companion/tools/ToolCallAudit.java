@@ -4,8 +4,9 @@ import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import lombok.extern.slf4j.Slf4j;
@@ -21,10 +22,18 @@ public class ToolCallAudit {
 
     public static final String TYPE_READ = "read";
 
+    /** Dedup identity for a ref — (kind, id) ONLY (mezo-b3pp.33). {@link RefsEnvelope.Ref} is a
+     *  record whose equals now also covers {@code label}, so the same (kind,id) arriving with and
+     *  without a label (e.g. the same Memory day from a tool call vs. ambient recall, or a graph
+     *  node reached by two edges) would stop deduping and both would eat the cap if the set kept
+     *  keying on the whole record. */
+    private record RefKey(String kind, String id) {
+    }
+
     private final int maxCalls;
     private final int maxRefs;
     private final List<ToolCallsEnvelope.ToolCall> calls = new ArrayList<>();
-    private final LinkedHashSet<RefsEnvelope.Ref> refs = new LinkedHashSet<>();
+    private final Map<RefKey, RefsEnvelope.Ref> refs = new LinkedHashMap<>();
 
     public ToolCallAudit(int maxCalls, int maxRefs) {
         this.maxCalls = maxCalls;
@@ -62,10 +71,24 @@ public class ToolCallAudit {
         }
     }
 
-    /** Deduped (LinkedHashSet) and capped — the first {@code maxRefs} distinct refs win. */
+    /** Deduped on (kind, id) and capped — the first {@code maxRefs} distinct refs win. Label-less
+     *  form every non-graph producer uses. */
     public void addRef(String kind, String id) {
+        addRef(kind, id, null);
+    }
+
+    /** Same dedup/cap as {@link #addRef(String, String)}, plus a display label (mezo-b3pp.33 —
+     *  today only graph refs pass one). The FIRST ref for a given (kind, id) wins: a later call
+     *  for the same key — labelled or not — is dropped rather than replacing it, so tool refs
+     *  (added first) keep provenance priority over ambient refs added afterwards
+     *  ({@code ChatService:281-283}). */
+    public void addRef(String kind, String id, String label) {
+        RefKey key = new RefKey(kind, id);
+        if (refs.containsKey(key)) {
+            return;
+        }
         if (refs.size() < maxRefs) {
-            refs.add(new RefsEnvelope.Ref(kind, id));
+            refs.put(key, new RefsEnvelope.Ref(kind, id, label));
         }
     }
 
@@ -84,6 +107,6 @@ public class ToolCallAudit {
     }
 
     public RefsEnvelope toRefsEnvelope() {
-        return refs.isEmpty() ? null : new RefsEnvelope(List.copyOf(refs));
+        return refs.isEmpty() ? null : new RefsEnvelope(List.copyOf(refs.values()));
     }
 }

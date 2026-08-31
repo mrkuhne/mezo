@@ -290,6 +290,10 @@ mezo:
       # off = the CharacterConferenceJob bean does not exist
       character-conference-job:
         enabled: true
+      # Karakter monthly deep-read konzílium pass (Karakter S4, mezo-1gim.6, schedule:
+      # mezo.character.monthly.cron); off = the CharacterMonthlyJob bean does not exist
+      character-monthly-job:
+        enabled: true
       # V3.1 nightly statistical pattern detection (schedule: mezo.companion.patterns.cron);
       # off = the PatternDetectionJob bean does not exist
       pattern-detection-job:
@@ -521,6 +525,13 @@ mezo:
       decay-factor: 0.99
       prune-floor: 0.05
       render-max-tokens: 800
+      # W2.4 review fix (mezo-b3pp.33): cap on GraphNode refs per turn. top-k=8 edges yield up to
+      # 2×top-k=16 node refs against the shared tools.max-refs-per-turn=10 budget, and graph refs
+      # are added LAST (after tool + Memory refs), so an uncapped graph turn fills the whole
+      # footer with graph chips and truncates mid-list. 6 leaves room for at least a few tool/
+      # Memory refs to survive alongside a graph-heavy turn while still showing a useful slice of
+      # the neighborhood (most turns render well under top-k distinct nodes anyway).
+      max-refs: 6
       # W2.2 (mezo-b3pp.7): the edge structurer drops suggestions below this confidence; the ones
       # that pass are created at weight = confidence × 0.5 and grow only through W2.5 reinforcement.
       edge-confidence-floor: 0.4
@@ -533,6 +544,11 @@ mezo:
       # Fresh pattern evidence (a same-night pattern_event snapshot for an already-promoted
       # pattern) bumps that node's edges by this much, capped at 1.0.
       reinforcement-bump: 0.05
+      # mezo-b3pp.34: cap on GraphTraversalService#seedsFor's ranked seed list — same order as
+      # top-k=8, so a turn that matches many nodes still walks a real neighbourhood (ranked
+      # title/summary-hit results) rather than degenerating into "the globally strongest edges"
+      # across the whole graph regardless of what was asked.
+      max-seeds: 8
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron
@@ -1099,6 +1115,24 @@ mezo:
       cron: "0 30 19 * * SUN"
       # Finished weeks back the job checks and self-heals (the observation catch-up idiom)
       catch-up-weeks: 2
+    monthly:
+      # Sunday 20:00 — a plain Sunday cron; CharacterMonthlyJob#isDeepReadDay narrows it in code to
+      # the month's FIRST Sunday only (Spring cron cannot AND day-of-month with day-of-week).
+      # 20:00 slot free (checked against every other cron in this file, mezo-1gim.6): 19:30 SUN
+      # conference, 19:00 SUN memoir, 20:30 daily feed evening-cron all miss it.
+      cron: "0 0 20 * * SUN"
+      # A CHAPTER dimension with no ACTIVE claim left is retired once its updatedAt is this stale.
+      stale-chapter-days: 90
+    # [Karakter] prompt block tuning (spec §8, mezo-1gim.8) — CharacterPromptAssembler.
+    prompt:
+      # Below this, a claim never makes the block (Karakter S5 plan, Global Constraints).
+      min-confidence: 0.45
+      # Per-dimension line cap; confidence x recency decay picks the winners.
+      max-claims-per-dimension: 3
+      # Whole-block char budget; a dimension that would blow it is dropped WHOLE, never mid-line.
+      max-total-chars: 1800
+      # A dimension's portrait digest only renders once its maturity roll-up clears this.
+      portrait-min-maturity: 30
     # Per-detector kill switches (spec §5) — empty = every detector enabled; keyed by detector key.
     detector: {}
   proactive:
@@ -1112,6 +1146,17 @@ mezo:
       # mezo-d20.7.7: the trailing window the highlight-citation signal ("cited in N of the last
       # weeks") is derived over — a quarter of weeks, so the signal decays instead of accumulating
       citation-window-weeks: 12
+    diagnosis:
+      # On-demand fatigue diagnosis (mezo-hqfi) — no cron; the user triggers it.
+      # window/baseline: the diagnosed 14 days vs the 28 that precede them.
+      window-days: 14
+      baseline-days: 28
+      # A metric needs this many measured days in the window to become evidence at all.
+      min-coverage-days: 7
+      # Distinct MetricDomains that must clear coverage before a diagnosis is attempted.
+      min-domains: 2
+      # Generations per user per calendar day; reads are always free.
+      max-per-day: 3
     memoir:
       # W2 Sunday-evening memoir schedule (old journey 5.8) — the week ending that Sunday
       cron: "0 0 19 * * SUN"

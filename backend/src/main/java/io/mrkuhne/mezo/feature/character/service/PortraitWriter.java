@@ -39,8 +39,6 @@ public class PortraitWriter {
     /** The portrait prompt's first line — the fake LLM keys its deterministic answer on it. */
     public static final String PORTRAIT_MARKER = "KARAKTER-PORTRE-FELADAT";
 
-    private static final BigDecimal SURE_THRESHOLD = new BigDecimal("0.75");
-    private static final BigDecimal LIKELY_THRESHOLD = new BigDecimal("0.50");
     private static final String NONE = "nincs";
     private static final BigDecimal MATURITY_COVERAGE_WEIGHT = new BigDecimal("20");
     private static final BigDecimal MATURITY_CONFIDENCE_WEIGHT = new BigDecimal("40");
@@ -146,20 +144,10 @@ public class PortraitWriter {
             sb.append('\n').append(NONE);
         } else {
             for (CharacterClaimEntity claim : activeClaims) {
-                sb.append('\n').append(confidenceWord(claim.getConfidence())).append(": ").append(claim.getText())
+                sb.append('\n').append(CharacterConfidenceWords.word(claim.getConfidence())).append(": ").append(claim.getText())
                         .append(Boolean.TRUE.equals(claim.getSensitive()) ? ", ÉRZÉKENY" : "");
             }
         }
         return sb.toString();
-    }
-
-    private static String confidenceWord(BigDecimal confidence) {
-        if (confidence.compareTo(SURE_THRESHOLD) >= 0) {
-            return "biztos";
-        }
-        if (confidence.compareTo(LIKELY_THRESHOLD) >= 0) {
-            return "valószínű";
-        }
-        return "figyeljük";
     }
 }
