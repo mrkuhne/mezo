@@ -9,6 +9,7 @@ import { ConversationPickerSheet } from '@/features/insights/sheets/Conversation
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { cn } from '@/shared/lib/cn'
+import { QUICK_QUESTIONS } from '@/features/insights/logic/quickQuestions'
 
 const SUBTITLE = { mock: 'demo beszélgetés', live: 'élő · Gemini' } as const
 
@@ -186,10 +187,27 @@ export function ChatPage() {
       <div className="col gap-md chat-thread">
         {isPending && !degraded && !isNew && messages.length === 0 && !turn && <ThinkingDots />}
         {!degraded && !isPending && messages.length === 0 && !turn && (
-          <div className="mzc-bub-a" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
-            <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Új beszélgetés — kérdezz bármit, vagy mondd fel a mikrofonnal.
-            </p>
+          <div className="col gap-sm" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
+            <div className="mzc-bub-a">
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Új beszélgetés — kérdezz bármit, vagy koppints egy kérdésre.
+              </p>
+            </div>
+            {/* mezo-dz3y: the quick-question chips — one tap sends. They live ONLY in the
+                empty state (they leave with it), so a running thread pays no screen tax. */}
+            <div className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
+              {QUICK_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  className="mzc-qq"
+                  onClick={() => send(q)}
+                  disabled={degraded || !!turn}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {/* Keyed by the persisted row id where there is one, so React never reuses one bubble's

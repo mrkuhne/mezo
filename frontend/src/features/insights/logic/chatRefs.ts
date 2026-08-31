@@ -30,6 +30,24 @@ const KIND_LABELS: Record<string, string> = {
   // headed [Összefüggések] — reuse that word rather than leaving GraphNode's
   // English kind name in an otherwise fully Hungarian footer.
   GraphNode: 'Összefüggés',
+  // mezo-vdf4: the rest of the backend's full ref-kind vocabulary (see toolDomains.ts
+  // REF_KINDS for the same list with icons/washes).
+  Weight: 'Súly',
+  WeightTrend: 'Súlytrend',
+  FuelDay: 'Fuel nap',
+  Recipe: 'Recept',
+  Pantry: 'Kamra',
+  Protocol: 'Stack',
+  Goal: 'Cél',
+  Growth: 'Growth',
+  Practice: 'Gyakorlat',
+  TrainingPlan: 'Edzésterv',
+  ExerciseRecord: 'Rekord',
+  Sport: 'Sport',
+  Medication: 'Gyógyszer',
+  SleepGoal: 'Alváscél',
+  Insight: 'Összefüggés',
+  Memory: 'Emlék',
 }
 
 const ISO_DATE = /(\d{4})-(\d{2})-(\d{2})/

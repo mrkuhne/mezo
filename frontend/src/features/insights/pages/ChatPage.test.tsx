@@ -131,10 +131,9 @@ describe('ChatPage (mock mode)', () => {
     )
     // the non-Memory chip survives the filter
     expect(screen.getByText('Edzés')).toBeInTheDocument()
-    // no chip shows the raw 'Memory' kind label — it has no KIND_LABELS entry, so if it rendered
-    // it would render verbatim as 'Memory'
+    // no chip shows the Memory kind label ('Emlék') — it was filtered out by the dedupe
     expect(
-      screen.queryAllByText('Memory').find((el) => el.classList.contains('mzc-refk')),
+      screen.queryAllByText('Emlék').find((el) => el.classList.contains('mzc-refk')),
     ).toBeUndefined()
     // dedupe, not deletion: the recalled content is still reachable via the Emlékek row
     expect(screen.getByText(/Emlékek · 1/)).toBeInTheDocument()
@@ -156,7 +155,7 @@ describe('ChatPage (mock mode)', () => {
         }}
       />,
     )
-    const memoryRef = screen.getAllByText('Memory').find((el) => el.classList.contains('mzc-refk'))
+    const memoryRef = screen.getAllByText('Emlék').find((el) => el.classList.contains('mzc-refk'))
     expect(memoryRef).toBeTruthy()
     expect(screen.getByText('Edzés')).toBeInTheDocument()
   })
@@ -180,7 +179,7 @@ describe('ChatPage (mock mode)', () => {
         }}
       />,
     )
-    const memoryRef = screen.getAllByText('Memory').find((el) => el.classList.contains('mzc-refk'))
+    const memoryRef = screen.getAllByText('Emlék').find((el) => el.classList.contains('mzc-refk'))
     expect(memoryRef).toBeTruthy()
     expect(memoryRef!.parentElement).toHaveTextContent('febr. 11.')
   })
@@ -500,6 +499,23 @@ describe('ChatPage (real mode)', () => {
     fireEvent.click(screen.getByLabelText('Új beszélgetés'))
     expect(await screen.findByText(/Új beszélgetés — kérdezz bármit/)).toBeInTheDocument()
     expect(screen.queryByText(/Jó reggelt\. Tegnap a Push Day/)).not.toBeInTheDocument()
+  })
+
+  test('the empty draft thread offers the quick-question chips, and a tap SENDS (mezo-dz3y)', async () => {
+    renderPage('/mezo/chat?c=new')
+    await screen.findByText(/Új beszélgetés — kérdezz bármit/)
+    // the three seeded quick questions render as tappable chips
+    const chip = screen.getByRole('button', { name: 'Foglald össze a mai napom röviden' })
+    expect(screen.getByRole('button', { name: 'Alvás és súly alapján mire figyeljek ma?' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Hogy készüljek az esti edzésre?' })).toBeInTheDocument()
+
+    fireEvent.click(chip)
+    // one tap = the question is SENT, not prefilled
+    await waitFor(() =>
+      expect(screen.getByText(cannedReply('Foglald össze a mai napom röviden'))).toBeInTheDocument(),
+    )
+    // and the chips leave with the empty state
+    expect(screen.queryByRole('button', { name: 'Hogy készüljek az esti edzésre?' })).not.toBeInTheDocument()
   })
 
   test('a draft thread creates its conversation on the first send (mezo-at8x.3)', async () => {

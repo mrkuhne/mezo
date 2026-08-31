@@ -13,6 +13,16 @@ import {
   useJournalActions as useJournalActionsFromJournalHooks,
 } from '@/data/journal/journalHooks'
 import { useFeedback as useFeedbackFromFeedbackHooks } from '@/data/feedback/feedbackHooks'
+import {
+  useCharacterOverview as useCharacterOverviewFromCharacterHooks,
+  useCharacterDimension as useCharacterDimensionFromCharacterHooks,
+  useCharacterFeed as useCharacterFeedFromCharacterHooks,
+  useCharacterExperts as useCharacterExpertsFromCharacterHooks,
+  useCharacterConferences as useCharacterConferencesFromCharacterHooks,
+  useCharacterConference as useCharacterConferenceFromCharacterHooks,
+  useClaimFeedback as useClaimFeedbackFromCharacterHooks,
+  useCharacterBootstrap as useCharacterBootstrapFromCharacterHooks,
+} from '@/data/character/characterHooks'
 
 describe('hooks.ts re-exports the dual-mode fuel-day hooks', () => {
   it('useFuelDay is the fuelHooks implementation (not the retired one-liner)', () => {
@@ -63,5 +73,18 @@ describe('hooks.ts re-exports the journal hooks (mezo-b3pp.1)', () => {
 describe('hooks.ts re-exports the feedback hook (mezo-b3pp.15)', () => {
   it('useFeedback is the feedbackHooks implementation', () => {
     expect(hooks.useFeedback).toBe(useFeedbackFromFeedbackHooks)
+  })
+})
+
+describe('hooks.ts re-exports the character hooks (mezo-1gim.13)', () => {
+  it('every character hook is the characterHooks implementation', () => {
+    expect(hooks.useCharacterOverview).toBe(useCharacterOverviewFromCharacterHooks)
+    expect(hooks.useCharacterDimension).toBe(useCharacterDimensionFromCharacterHooks)
+    expect(hooks.useCharacterFeed).toBe(useCharacterFeedFromCharacterHooks)
+    expect(hooks.useCharacterExperts).toBe(useCharacterExpertsFromCharacterHooks)
+    expect(hooks.useCharacterConferences).toBe(useCharacterConferencesFromCharacterHooks)
+    expect(hooks.useCharacterConference).toBe(useCharacterConferenceFromCharacterHooks)
+    expect(hooks.useClaimFeedback).toBe(useClaimFeedbackFromCharacterHooks)
+    expect(hooks.useCharacterBootstrap).toBe(useCharacterBootstrapFromCharacterHooks)
   })
 })
