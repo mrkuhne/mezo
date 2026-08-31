@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.CharacterClaimFeedbackRequest;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceResponse;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceSummary;
 import io.mrkuhne.mezo.api.dto.CharacterDimensionResponse;
+import io.mrkuhne.mezo.api.dto.CharacterExpertsResponse;
 import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
@@ -76,6 +77,11 @@ public class CharacterController implements CharacterApi {
     @Override
     public CharacterOverviewResponse getCharacterOverview() {
         return characterService.overview(currentUserId.get());
+    }
+
+    @Override
+    public CharacterExpertsResponse getCharacterExperts() {
+        return characterService.experts();
     }
 
     @Override

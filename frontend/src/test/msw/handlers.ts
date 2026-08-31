@@ -5,6 +5,7 @@ import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge
 import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import { addDays } from '@/shared/lib/dates'
+import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY } from '@/data/character/characterMock'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -1401,4 +1402,19 @@ export const handlers = [
       predictions: [{ id: '12345678-90ab-4cde-8f01-234567890abc', title: 'Real-mode prediction', status: 'pending' }],
     })
   }),
+  // Karakter dossier (mezo-1gim.13, fix round 1) — real-mode default handlers so navigation.test.tsx
+  // (and any other test that renders these pages WITHOUT stubbing @/data/hooks) gets an honest
+  // PRE-BOOTSTRAP dossier instead of an unhandled request resolving to a false 404/degraded row.
+  // Seeded to the same "untouched dossier" shape as the mock's own MOCK_OVERVIEW_EMPTY (CORE dims
+  // at maturity 0, portrait '', topClaims []) so `isDossierEmpty()` holds and the bootstrap-intro
+  // face renders — the one shared predicate the hub/Én-tile both key off. Per-test server.use()
+  // overrides still take priority (msw resolves the LAST matching handler first).
+  http.get(`${API_BASE}/api/character`, () => HttpResponse.json(MOCK_OVERVIEW_EMPTY)),
+  http.get(`${API_BASE}/api/character/dimension/:key`, ({ params }) => {
+    const dim = MOCK_DIMENSIONS[params.key as string]
+    return dim != null ? HttpResponse.json(dim) : new HttpResponse(null, { status: 404 })
+  }),
+  http.get(`${API_BASE}/api/character/experts`, () => HttpResponse.json({ experts: MOCK_EXPERTS })),
+  http.get(`${API_BASE}/api/character/feed`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/character/conference`, () => HttpResponse.json([])),
 ]
