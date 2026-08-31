@@ -3200,6 +3200,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/experts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The profiling team catalog — 7 domain experts + Szkeptikus + Mezo, in fixed display order (Csapat page; never 404 while the switch is on) */
+        get: operations["getCharacterExperts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character/feed": {
         parameters: {
             query?: never;
@@ -7179,6 +7196,21 @@ export interface components {
         };
         CharacterOverviewResponse: {
             dimensions: components["schemas"]["CharacterDimensionSummary"][];
+        };
+        CharacterExpertDto: {
+            key: string;
+            displayName: string;
+            role: string;
+            /** @description the persona's short voice/manner line (Csapat card) */
+            voiceLine: string;
+            watch: string[];
+            /** @description null for szkeptikus/mezo — they are not CORE dimension owners */
+            dimensionKey?: string | null;
+            /** @enum {string} */
+            kind: "EXPERT" | "SKEPTIC" | "CHAIR";
+        };
+        CharacterExpertsResponse: {
+            experts: components["schemas"]["CharacterExpertDto"][];
         };
         CharacterPortraitRevisionDto: {
             version: number;
@@ -16112,6 +16144,35 @@ export interface operations {
             };
             /** @description No such dimension key for this user */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterExperts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The 9 personas, catalog order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterExpertsResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

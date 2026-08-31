@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceSummary;
 import io.mrkuhne.mezo.api.dto.CharacterDimensionResponse;
 import io.mrkuhne.mezo.api.dto.CharacterDimensionSummary;
+import io.mrkuhne.mezo.api.dto.CharacterExpertDto;
+import io.mrkuhne.mezo.api.dto.CharacterExpertsResponse;
 import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
@@ -127,5 +129,34 @@ class CharacterApiIT extends ApiIntegrationTest {
         assertThat(second.getKind()).isEqualTo(CharacterFeedItem.KindEnum.OBSERVATION);
         assertThat(second.getExpertKey()).isEqualTo("drill");
         assertThat(second.getText()).isEqualTo("Tegnap sem került be edzésnapló.");
+    }
+
+    @Test
+    void experts_returnsNineInCatalogOrder_withCsapatCopy() {
+        CharacterExpertsResponse res = getForBody("/api/character/experts", ownerAuthHeaders(),
+                HttpStatus.OK, CharacterExpertsResponse.class);
+        List<CharacterExpertDto> experts = res.getExperts();
+        assertThat(experts).hasSize(9);
+        assertThat(experts).extracting(CharacterExpertDto::getKey)
+                .containsExactly("doki", "edzo", "taplalkozo", "szomnologus",
+                        "pszichologus", "drill", "antropologus", "szkeptikus", "mezo");
+        assertThat(experts.subList(0, 7)).allSatisfy(e -> {
+            assertThat(e.getKind()).isEqualTo(CharacterExpertDto.KindEnum.EXPERT);
+            assertThat(e.getDimensionKey()).isNotBlank();
+        });
+        CharacterExpertDto szkeptikus = experts.get(7);
+        assertThat(szkeptikus.getKind()).isEqualTo(CharacterExpertDto.KindEnum.SKEPTIC);
+        assertThat(szkeptikus.getDimensionKey()).isNull();
+        assertThat(szkeptikus.getDisplayName()).isEqualTo("Szkeptikus");
+        assertThat(szkeptikus.getVoiceLine()).isEqualTo("Száraz kontrás hang.");
+        CharacterExpertDto mezo = experts.get(8);
+        assertThat(mezo.getKind()).isEqualTo(CharacterExpertDto.KindEnum.CHAIR);
+        assertThat(mezo.getDimensionKey()).isNull();
+        assertThat(mezo.getDisplayName()).isEqualTo("Mezo");
+        // spot-checked voiceLine, verbatim from the prototype's CSAPAT array
+        CharacterExpertDto doki = experts.get(0);
+        assertThat(doki.getVoiceLine()).isEqualTo("Tárgyilagos, orvosi hangon, röviden fogalmaz.");
+        assertThat(doki.getWatch()).containsExactly(
+                "testkompozíció, egészségjelek", "súlytrend", "gyógyszerciklus jelei");
     }
 }
