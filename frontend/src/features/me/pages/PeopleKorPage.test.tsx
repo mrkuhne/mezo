@@ -79,6 +79,22 @@ test('Petra\'s spark has exactly one bar per affectTrend point (real seed data)'
   void container
 })
 
+// CONTRACT: pins the page's own SPARK_MAX_PX=19 (16px prototype spark height x 1.18 frame
+// scale) end-to-end — a plain bar-count check can't catch a maxPx typo (e.g. 19 -> 12) since
+// trendHeights still returns one entry per trend point either way. Petra's seed affectTrend
+// is [4,4,3,4,4,3,4,5,4,4,4,5] — hand-computed against trendHeights(v,19) = round(v/5*19),
+// asserted on the ACTUAL rendered style.height, not a re-derivation that could drift in step
+// with a page-side bug.
+test('CONTRACT: each spark bar\'s rendered height is trendHeights(affectTrend, 19), the page\'s real maxPx', () => {
+  const petra = people.find((p) => p.id === 'pp-petra')!
+  const expectedHeights = trendHeights(petra.affectTrend, 19)
+  expect(expectedHeights).toEqual([15, 15, 11, 15, 15, 11, 15, 19, 15, 15, 15, 19]) // sanity-pin the hand-check itself
+  renderPage()
+  const tile = screen.getByRole('button', { name: `${petra.name} részletei` })
+  const bars = [...tile.querySelectorAll('.ppl-spark i')] as HTMLElement[]
+  expect(bars.map((b) => b.style.height)).toEqual(expectedHeights.map((h) => `${h}px`))
+})
+
 test('an empty affectTrend renders no spark container at all (honest empty state)', () => {
   hoisted.emptyTrendFor = 'pp-petra'
   renderPage()
@@ -110,6 +126,11 @@ test('clicking a card navigates to /me/people/:id', () => {
   const petra = people.find((p) => p.id === 'pp-petra')!
   fireEvent.click(screen.getByRole('button', { name: `${petra.name} részletei` }))
   expect(router.state.location.pathname).toBe(`/me/people/${petra.id}`)
+})
+
+test('the footer legend explains the ring + dots (prototype .foot9, ported as .ppl-foot)', () => {
+  renderPage()
+  expect(screen.getByText('A gyűrű a kapcsolat hangulat-szintje, a pöttyök a jellemző kontextusok.')).toBeInTheDocument()
 })
 
 test('header back chip returns to the hub, and Új személy opens PersonEditSheet', () => {

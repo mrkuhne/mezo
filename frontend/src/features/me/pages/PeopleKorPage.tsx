@@ -62,6 +62,9 @@ export function PeopleKorPage() {
               )
             })}
           </div>
+          <p className="ppl-foot rise" style={{ '--d': `${people.length * 40 + 40}ms` } as React.CSSProperties}>
+            A gyűrű a kapcsolat hangulat-szintje, a pöttyök a jellemző kontextusok.
+          </p>
         </EntranceGroup>
       </PageBody>
 
