@@ -322,7 +322,7 @@ before investigating.
   (`WeeklyReviewRepository`) and `character → journal` (`JournalEntryRepository`) are new
   one-directional dependency edges — safe because neither `proactive` nor `journal` depends on
   `character`, unlike `companion → proactive`, which DOES close a cycle and is why the
-  `CharacterPromptSource` port exists instead of a direct repository import (see
+  `WeekReviewSource` port exists instead of a direct repository import (see
   `CharacterHistoryReads`'s class javadoc for the full reasoning `ArchitectureTest` enforces).
 - **`[Karakter]` prompt wiring now reaches all four narrative surfaces** (S7). `ChatService`,
   `MemoirGenerator`, `PredictionGenerator`, and `WeeklyReviewGenerator` all inject the block via
