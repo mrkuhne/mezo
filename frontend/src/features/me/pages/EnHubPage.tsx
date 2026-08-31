@@ -6,7 +6,7 @@
 // routes (they keep their current faces until their own F5 slices land).
 // Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → identity hero (in-level XP ring around
 // the initial, name, equipped title chip, Lv · XP · 🔥 · 🪙, bio line) → the
-// coral-ringed GOAL CARD (animated track + Hátra/Tempó/ETA cells) → the 9-tile
+// coral-ringed GOAL CARD (animated track + Hátra/Tempó/ETA cells) → the 10-tile
 // mosaic with live bottom lines from the subpages' OWN hooks → the Beállítások
 // band opening the existing SettingsSheet (theme only).
 // Honest states (en-audit §6) are the contract, not the face:
@@ -25,9 +25,9 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
-  useBiometricProfile, useDecisions, useGamification, useGoal, useGratitudeEntries,
-  useKnowledge, useLlmUsageSummary, useMeWeek, useNotificationPrefs, usePeople,
-  useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
+  useBiometricProfile, useCharacterOverview, useDecisions, useGamification, useGoal,
+  useGratitudeEntries, useKnowledge, useLlmUsageSummary, useMeWeek, useNotificationPrefs,
+  usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
 } from '@/data/hooks'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
@@ -204,6 +204,14 @@ export function EnHubPage() {
     ? undefined
     : `${llm.week.callCount} hívás · ${formatRollupCost(llm.week.costUsd)} / hét`
 
+  // Karakter dossier tile (mezo-1gim.13) — the hub's own hook, honest states: the switch-off
+  // 404 (overview null) drops the line entirely, never a fabricated 0%.
+  const { overview: character } = useCharacterOverview()
+  const coreDims = character?.dimensions.filter((d) => d.kind === 'CORE') ?? []
+  const karakterLine = character == null || coreDims.length === 0
+    ? undefined
+    : `${Math.round(coreDims.reduce((sum, d) => sum + d.maturity, 0) / coreDims.length)}% átlag érettség`
+
   return (
     <div className="enh-hub">
       <EntranceGroup className="mz-panel-stack">
@@ -256,6 +264,8 @@ export function EnHubPage() {
             line={alvasLine} onClick={() => navigate('/me/sleep')} aria-label="Alvás" />
           <Tile wash="lav" icon="i-growth" eyebrow="Growth" delayMs={230} className="enh-t-minta enh-eb-lav"
             line={growthLine} onClick={() => navigate('/me/growth')} aria-label="Growth" />
+          <Tile wash="lav" icon="i-kristaly" eyebrow="Karakter" delayMs={250} className="enh-eb-lav"
+            line={karakterLine} onClick={() => navigate('/me/karakter')} aria-label="Karakter" />
           <Tile wash="white" icon="i-naplo" eyebrow="Napló" delayMs={270} className="enh-t-kreed enh-eb-coral"
             line={naploLine} onClick={() => navigate('/me/naplo')} aria-label="Napló" />
           <Tile wash="rose" icon="i-emberek" eyebrow="Emberek" delayMs={310} className="enh-eb-rose"

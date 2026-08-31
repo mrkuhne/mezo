@@ -65,6 +65,19 @@ test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () =>
   expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
 })
 
+test('/me/karakter is the Karakter dossier hub — reachable as a stable route (mezo-1gim.13)', async () => {
+  renderApp('/me/karakter')
+  // The ring's aria-label is the face-independent landmark: mock mode starts pre-bootstrap
+  // (all CORE dims at maturity 0), so the intro ceremony's CTA is what actually renders.
+  expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
+})
+
+test('the Én hub links to the Karakter dossier hub', async () => {
+  renderApp('/me')
+  await userEvent.click(await screen.findByRole('button', { name: 'Karakter' }))
+  expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
+})
+
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's
