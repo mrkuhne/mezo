@@ -95,7 +95,7 @@ function mockSavePerson(qc: QueryClient, input: PersonSaveInput) {
     const base = old ?? MOCK_PEOPLE
     if (input.id) {
       return { ...base, people: base.people.map(p => p.id === input.id
-        ? { ...p, ...editable(input), initial: input.name.slice(0, 1).toUpperCase() } : p) }
+        ? { ...p, ...editable(input, p.contactCadenceLabel), initial: input.name.slice(0, 1).toUpperCase() } : p) }
     }
     const fresh: PersonEntry = {
       id: crypto.randomUUID(), initial: input.name.slice(0, 1).toUpperCase(),
@@ -107,9 +107,12 @@ function mockSavePerson(qc: QueryClient, input: PersonSaveInput) {
     return { ...base, people: [...base.people, fresh] }
   })
 }
-function editable(i: PersonSaveInput) {
+// existingCadence: pass-through fallback so PUTs that omit contactCadenceLabel (no
+// cadence field in the edit UI) don't blank an already-set value — mirrors the
+// keep-when-absent semantics PersonEditSheet.submit applies before calling savePerson.
+function editable(i: PersonSaveInput, existingCadence = '') {
   return { name: i.name, aliases: i.aliases, relationship: i.relationship,
-    relationshipHu: i.relationshipHu, contactCadenceLabel: i.contactCadenceLabel ?? '',
+    relationshipHu: i.relationshipHu, contactCadenceLabel: i.contactCadenceLabel ?? existingCadence,
     notes: i.notes ?? '' }
 }
 function mockDeletePerson(qc: QueryClient, personId: string) {

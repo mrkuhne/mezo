@@ -49,6 +49,14 @@ it('mentés-gomb tiltott, amíg nincs név', () => {
   expect(screen.getByRole('button', { name: /Felveszem/ })).toBeDisabled()
 })
 
+it('szerkesztéskor a mentés megőrzi a meglévő contactCadenceLabel-t', () => {
+  render(<PersonEditSheet person={PERSON} onClose={() => {}} />)
+  fireEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(savePerson).toHaveBeenCalledWith(expect.objectContaining({
+    id: 'marci-1', contactCadenceLabel: 'heti',
+  }))
+})
+
 it('kétlépéses törlés: első tap felfegyverzi, második tap töröl', () => {
   const onClose = vi.fn()
   render(<PersonEditSheet person={PERSON} onClose={onClose} />)

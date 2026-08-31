@@ -151,6 +151,14 @@ class PeopleContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testCreatePerson_shouldReturn400_whenNameWhitespaceOnly() {
+        String body = postForBody("/api/people",
+            java.util.Map.of("name", "   ", "relationship", "friend", "relationshipHu", "Barát"),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "name", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
     void testUpdatePerson_shouldReplaceEditableFields_andKeepCuratedOnes() {
         UUID owner = ownerId();
         PersonEntity p = personPopulator.createPerson(owner, "Réka", "colleague", "neutral");

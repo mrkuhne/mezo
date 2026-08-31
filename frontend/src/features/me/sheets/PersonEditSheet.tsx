@@ -43,6 +43,7 @@ export function PersonEditSheet({ person, onClose }: { person: PersonEntry | nul
         ? person.relationshipHu // kézzel pontosított HU címkét nem írunk felül
         : RELS.find(r => r.value === rel)!.hu,
       notes: notes.trim() || undefined,
+      contactCadenceLabel: person?.contactCadenceLabel || undefined,
     }
     savePerson(input)
     onClose()

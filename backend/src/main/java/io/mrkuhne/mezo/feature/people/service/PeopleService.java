@@ -135,7 +135,12 @@ public class PeopleService {
     private void applyEditableFields(PersonEntity p, String name, List<String> aliases,
         String relationship, String relationshipHu, String affectBaseline,
         String contactCadenceLabel, String notes) {
-        p.setName(name.strip());
+        String strippedName = name.strip();
+        if (strippedName.isEmpty()) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.field("VALIDATION_INVALID_VALUE", "name").build(), HttpStatus.BAD_REQUEST);
+        }
+        p.setName(strippedName);
         p.setInitial(p.getName().substring(0, 1).toUpperCase());
         p.setAliases(aliases == null ? new ArrayList<>() : new ArrayList<>(aliases));
         p.setRelationship(relationship);
