@@ -203,7 +203,7 @@ dossier doesn't chase daily noise, but the UI shows a fresh-observations feed �
      portrait rewrites for affected dimensions — smart tier;
   4. portraits are rewritten (one call per affected dimension, from ACTIVE claims + prior
      portrait), revisions appended, `outcome` diff assembled, observations marked consumed.
-  User feedback observations (§7) are mandatory inputs at step 1.
+  User feedback observations (§7) are surfaced to the owning expert(s) at step 1 with top salience (an unaddressed correction is logged, never silently dropped).
 - **Monthly deep read** (first Sunday of month, extends that week's konzílium): full
   re-evaluation over the memory layers + the whole claim base — slow-drift detection
   ("logging discipline has been eroding for six months"), stale-claim retirement,
