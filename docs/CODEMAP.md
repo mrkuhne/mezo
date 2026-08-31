@@ -608,12 +608,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE ui** `frontend/src/features/me`
   - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, EnHubPage.tsx, GoalPlannerPage.tsx, GoalsPage.tsx,
     GoalsSkeleton.tsx, GrowthPage.tsx, JournalPage.tsx, KnowledgePage.tsx, NightPage.tsx, NotificationFeedPage.tsx,
-    NotificationsPage.tsx, PeoplePage.tsx, RoutineEditorPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx,
+    NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx,
+    PeoplePage.tsx, PersonDetailPage.tsx, RoutineEditorPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx,
     WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
-    DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonDetailSheet.tsx,
-    PersonEditSheet.tsx, PersonLogSheet.tsx, SettingsSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx,
-    SleepStatsSheet.tsx, WeightLogSheet.tsx
+    DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx,
+    PersonLogSheet.tsx, SettingsSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx,
+    WeightLogSheet.tsx
   - **components:** AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
     AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx, AiUsageHero.tsx, BadgesCard.tsx, CategoryHeader.tsx,
     DayNavTiles.tsx, DetailStat.tsx, FieldRow.tsx, GoalGate.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx,
@@ -627,9 +628,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, gratitudeStreak.ts,
     growthJournal.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, llmCallFormat.ts,
-    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, scoreBand.ts, sleepEducation.ts,
-    sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts,
-    weekNav.ts, weightStats.ts
+    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
+    scoreBand.ts, sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts,
+    weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
 
 ### meal
 

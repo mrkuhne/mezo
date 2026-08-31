@@ -31,7 +31,12 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   }
 })
 
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+})
+
 afterEach(() => {
+  vi.unstubAllEnvs()
   hoisted.emptyTrendFor = null
 })
 

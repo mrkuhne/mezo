@@ -50,7 +50,12 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   }
 })
 
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+})
+
 afterEach(() => {
+  vi.unstubAllEnvs()
   hoisted.quietPersonId = null
   hoisted.emptyMentions = false
   hoisted.noToneMentions = false
