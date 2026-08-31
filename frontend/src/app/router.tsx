@@ -68,6 +68,7 @@ import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
 import { PeopleJeloltekPage } from '@/features/me/pages/PeopleJeloltekPage'
 import { PeopleKorPage } from '@/features/me/pages/PeopleKorPage'
+import { PeopleEmlitesekPage } from '@/features/me/pages/PeopleEmlitesekPage'
 import { PersonDetailPage } from '@/features/me/pages/PersonDetailPage'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
@@ -269,6 +270,7 @@ export const routes: RouteObject[] = [
       { path: 'me/people', element: <PeoplePage /> },
       { path: 'me/people/jeloltek', element: <PeopleJeloltekPage /> },
       { path: 'me/people/kor', element: <PeopleKorPage /> },
+      { path: 'me/people/emlitesek', element: <PeopleEmlitesekPage /> },
       // Person detail (Task 4) — registered AFTER every static `me/people/*` sibling
       // above (React Router ranks static over dynamic regardless of source order, but
       // the ordering stays explicit here per the WeekHub/`me/week/napok/:date` precedent).
