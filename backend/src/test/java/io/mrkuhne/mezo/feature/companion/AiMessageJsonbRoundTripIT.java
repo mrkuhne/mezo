@@ -114,4 +114,37 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
                 "select jsonb_typeof(recalled_memories) from ai_message where id = ?", String.class, id))
                 .isEqualTo("object");
     }
+
+    /**
+     * mezo-b3pp.33 review finding: {@link RefsEnvelope.Ref}'s 2-arg constructor proves nothing
+     * about a genuinely pre-migration row, because Jackson still serialises it with an explicit
+     * {@code "label":null} key present. A pre-{@code mezo-b3pp.33} row has no {@code label} key
+     * at all. This writes that raw shape directly and confirms Jackson defaults the missing
+     * record component to null rather than failing deserialisation.
+     */
+    @Test
+    void testRefs_shouldDeserialiseWithNullLabel_whenTheJsonbPredatesTheLabelField() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-legacy-ref@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz régi hivatkozással");
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        jdbcTemplate.update(
+                "update ai_message set refs = ?::jsonb where id = ?",
+                "{\"refs\":[{\"kind\":\"Workout\",\"id\":\"w-1\"}]}", id);
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getRefs().refs()).singleElement().satisfies(ref -> {
+            assertThat(ref.kind()).isEqualTo("Workout");
+            assertThat(ref.id()).isEqualTo("w-1");
+            assertThat(ref.label()).isNull();
+        });
+    }
 }
