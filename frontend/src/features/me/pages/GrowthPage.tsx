@@ -50,7 +50,7 @@ const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
 const byLevelXpDesc = (a: SkillLevel, b: SkillLevel) =>
   b.level - a.level || b.cumulativeXp - a.cumulativeXp
 
-function toRows(skills: SkillLevel[], iconOf: (key: string) => string, nameOf: (key: string) => string): SkillRowVM[] {
+function toRows(skills: SkillLevel[], iconOf: (key: string) => React.ReactNode, nameOf: (key: string) => string): SkillRowVM[] {
   return [...skills].sort(byLevelXpDesc).map((s) => ({
     key: s.skillKey, icon: iconOf(s.skillKey), name: nameOf(s.skillKey),
     level: s.level, progressPct: s.progressPct, xp: s.cumulativeXp,
@@ -117,7 +117,11 @@ export function GrowthPage() {
                   wash="lav"
                   eyebrow="LIFE"
                   chip={`8 skill · ${fmt(lifeXp)} XP`}
-                  rows={toRows(life, (k) => lifeMeta(k)?.icon ?? '✨', (k) => lifeMeta(k)?.name ?? k)}
+                  rows={toRows(life, (k) => {
+                    const m = lifeMeta(k)
+                    // F7.4: the LIFE band renders the clay life-area symbol, not the emoji.
+                    return m ? <ClayIcon name={m.clayIcon} size={15} /> : '✨'
+                  }, (k) => lifeMeta(k)?.name ?? k)}
                   footer={typeof savings === 'number' && savings > 0 ? (
                     <>
                       <span style={{ color: 'var(--mz-ink-soft)' }}>Megtakarítás (30 nap)</span>

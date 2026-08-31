@@ -1,3 +1,4 @@
+import { ClayIcon } from '@/shared/ui/clay'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { LevelUpGain, LevelUpResult } from '@/data/train/trainApi'
@@ -174,7 +175,7 @@ export function LevelUpScreen({ result, onContinue }: { result: LevelUpResult; o
                   {ringFor(g)}
                   <div className="lu-lvinfo">
                     <div className="lu-lvname">
-                      <span aria-hidden="true">{meta.icon}</span>
+                      <span aria-hidden="true" style={{ display: 'inline-flex', verticalAlign: '-2px' }}>{meta.clayIcon ? <ClayIcon name={meta.clayIcon} size={15} /> : meta.icon}</span>
                       <span>{meta.name}</span>
                     </div>
                     <span className="lu-lvbadge">
