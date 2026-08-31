@@ -194,10 +194,12 @@
     background: #FDFAF4;
   }
   .page.open { transform: none; }
-  .page.p-dim { background: linear-gradient(180deg, var(--pwash, #FFE3D4) 0%, #FDFAF4 36%); }
-  .page.p-csapat { background: linear-gradient(180deg, #E9E3F7 0%, #FDFAF4 36%); }
-  .page.p-konz { background: linear-gradient(180deg, #FBEBCB 0%, #FDFAF4 36%); }
-  .page.p-boot { background: linear-gradient(180deg, #FFE3D4 0%, #FDFAF4 40%); }
+  /* Minden oldal-gradiens opak #FDFAF4 alapra rétegződik — a dimenzió-wash (--pwash)
+     alfás szín, és e nélkül az előző oldal átütne a lap tetején. */
+  .page.p-dim { background: linear-gradient(180deg, var(--pwash, #FFE3D4) 0%, #FDFAF4 36%), #FDFAF4; }
+  .page.p-csapat { background: linear-gradient(180deg, #E9E3F7 0%, #FDFAF4 36%), #FDFAF4; }
+  .page.p-konz { background: linear-gradient(180deg, #FBEBCB 0%, #FDFAF4 36%), #FDFAF4; }
+  .page.p-boot { background: linear-gradient(180deg, #FFE3D4 0%, #FDFAF4 40%), #FDFAF4; }
   .page-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
   .backbtn {
     border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
