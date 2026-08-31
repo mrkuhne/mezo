@@ -1,12 +1,14 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Self-baselined visual goldens: 19 goto screens + the /ritual Harvest + Release click-throughs
- * = 20 screens × 2 themes = 40 snapshots per platform (mezo-mzbz added the two /ritual
+ * Self-baselined visual goldens: 22 goto screens + the /ritual Harvest + Release and the
+ * /train/review lane + exercise-view click-throughs = 26 screens × 2 themes = 52 snapshots per platform (mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
  * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
  * `today` shot with one per daypart face — reggel/nap/este; mezo-p2tr swapped the retired
- * insights-heti shot for me-heti, the new /me/week weekly-review page).
+ * insights-heti shot for me-heti, the new /me/week weekly-review page; mezo-d20.8.2.1 added
+ * train-review + its lane and exercise-view click-throughs; mezo-hqfi.4 added the two
+ * Diagnózis shots).
  *
  * Determinism levers (all must hold or the shots flake):
  *  - clock frozen BEFORE goto → the daypart-derived sky tint (PhoneFrame) + greeting
@@ -54,6 +56,14 @@ const SCREENS: Array<[string, string, string?]> = [
   ['insights-chat', '/insights/chat'],
   ['insights-elorejelzesek', '/insights/predictions'],
   ['insights-kiserletek', '/insights/experiments'],
+  // Diagnózis report catalog + one report (mezo-hqfi.4); the detail route uses the mock seed id.
+  ['mezo-diagnozis', '/mezo/diagnozis'],
+  ['mezo-diagnozis-riport', '/mezo/diagnozis/diag-demo-1'],
+  // Edzés-review (mezo-d20.8.2.1): the revisit's own surface — the comparison tile, the
+  // exercise swimlane and the template-day stepping. The mock chain's dates derive from the
+  // frozen clock, so the reference label and the gap stay stable. The exercise VIEW needs a
+  // click and gets its own test below; it is the shot that proves the set became readable.
+  ['train-review', '/train/review/wd-mock-1'],
   // Napzárás act 1 (Megérkezés): goto /ritual lands on the Arrival act directly. Harvest
   // (act 5) is a separate click-through test below (it can't be reached by a bare goto).
   ['ritual-arrival', '/ritual'],
@@ -131,6 +141,36 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(toasts).toHaveCount(0)
       await page.evaluate(() => document.fonts.ready)
       await expect(page).toHaveScreenshot(`ritual-release-${theme}.png`)
+    })
+
+    // The exercise swimlane (mezo-d20.8.2.1). It sits below the fold on the `train-review`
+    // shot, and it is precisely the element this round replaced — five stacked white cards
+    // became one sideways lane — so it gets its own scrolled capture rather than going
+    // unphotographed.
+    test('train-review-lane', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await page.goto('/train/review/wd-mock-1')
+      await page.waitForLoadState('networkidle')
+      const lane = page.locator('.wr-lane')
+      await lane.waitFor()
+      await lane.scrollIntoViewIfNeeded()
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`train-review-lane-${theme}.png`)
+    })
+
+    // The exercise view behind a swimlane tile (mezo-d20.8.2.1). This is the shot the round
+    // exists for: the per-exercise chip rows were replaced because the individual SET was
+    // unreadable, and only a rendered set tile can show whether that actually got fixed.
+    test('train-review-exercise', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await page.goto('/train/review/wd-mock-1')
+      await page.waitForLoadState('networkidle')
+      await page.getByRole('button', { name: /Chest Supported Row/ }).click()
+      await page.locator('.wr-set').first().waitFor()
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`train-review-exercise-${theme}.png`)
     })
   })
 }

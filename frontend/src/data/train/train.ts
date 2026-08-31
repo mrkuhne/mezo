@@ -1171,3 +1171,68 @@ export const workoutDetailMock = {
     },
   ],
 } satisfies import('@/data/train/trainApi').WorkoutDetailResponse
+
+// The template-day chain behind the review page's comparison and stepping (mezo-d20.8.2.1).
+// Mock mode has no persisted instances, so the chain is seeded: three completed instances of
+// the SAME template day (ts-mock-1), two weeks apart, date-ascending.
+const chainDate = (weeksBack: number): string => {
+  const d = new Date()
+  d.setDate(d.getDate() - weeksBack * 14)
+  return d.toISOString().slice(0, 10)
+}
+
+export const workoutChainMock = [
+  { id: 'wd-mock-first', templateSessionId: 'ts-mock-1', date: chainDate(2), status: 'completed', origin: 'meso', title: 'Pull Day' },
+  { id: 'wd-mock-prev', templateSessionId: 'ts-mock-1', date: chainDate(1), status: 'completed', origin: 'meso', title: 'Pull Day' },
+  { id: workoutDetailMock.id, templateSessionId: 'ts-mock-1', date: workoutDetailMock.date, status: 'completed', origin: 'meso', title: 'Pull Day' },
+] satisfies import('@/data/train/trainApi').WorkoutSummaryResponse[]
+
+// The reference instance's detail. Deliberately NOT a copy of workoutDetailMock: a comparison
+// against itself would show ±0 everywhere and prove nothing about the tone rule. This one is
+// heavier in volume, lighter in RIR terms and carries no TARGET medal, so the tile reads
+// "volumen down (neutral) · célszett up (sage) · Ø RIR down (neutral)" — the whole ADR 0010
+// point on one screen.
+export const workoutDetailPrevMock = {
+  id: 'wd-mock-prev',
+  templateSessionId: 'ts-mock-1',
+  date: chainDate(1),
+  status: 'completed',
+  title: 'Pull Day',
+  dayLabel: 'Hét',
+  durationEst: 58,
+  exercises: [
+    {
+      exerciseId: 'ex0', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
+      warmupSets: 2, workingSets: 3, repMin: 6, repMax: 9, targetRIR: 1, skipped: false,
+      sets: [
+        { id: 'p1', exerciseId: 'ex0', setIndex: 0, weightKg: 60, reps: 10, kind: 'warmup', skipped: false },
+        { id: 'p2', exerciseId: 'ex0', setIndex: 1, weightKg: 80, reps: 9, rir: 3, kind: 'working', skipped: false },
+        { id: 'p3', exerciseId: 'ex0', setIndex: 2, weightKg: 80, reps: 9, rir: 2, kind: 'working', skipped: false },
+      ],
+    },
+    {
+      exerciseId: 'ex1', name: 'Lat Pulldown', muscle: 'back-wide', type: 'compound',
+      warmupSets: 1, workingSets: 3, repMin: 8, repMax: 12, targetRIR: 1, skipped: false,
+      sets: [
+        { id: 'p4', exerciseId: 'ex1', setIndex: 0, weightKg: 55, reps: 11, rir: 3, kind: 'working', skipped: false },
+      ],
+    },
+  ],
+} satisfies import('@/data/train/trainApi').WorkoutDetailResponse
+
+// The chain-opening instance: nothing precedes it, so the review page renders NEITHER the
+// comparison tile NOR an "Előzőleg" cell for it. It exists in the seed precisely so that
+// honest-absence state is reachable offline (and in the tests) rather than only in theory.
+export const workoutDetailFirstMock = {
+  ...workoutDetailPrevMock,
+  id: 'wd-mock-first',
+  date: chainDate(2),
+  durationEst: 54,
+} satisfies import('@/data/train/trainApi').WorkoutDetailResponse
+
+/** Mock-mode detail lookup; anything not listed falls back to the one review fixture. */
+export const workoutDetailsMock: Record<string, import('@/data/train/trainApi').WorkoutDetailResponse> = {
+  [workoutDetailMock.id]: workoutDetailMock,
+  [workoutDetailPrevMock.id]: workoutDetailPrevMock,
+  [workoutDetailFirstMock.id]: workoutDetailFirstMock,
+}

@@ -15,15 +15,16 @@ they inline come from `../assets/`.
 | `mezociklus.html` | https://claude.ai/code/artifact/a4f4ecdd-decc-4524-9fab-931af7a9c8b3 |
 | `edzes-session.html` | https://claude.ai/code/artifact/0a747fcc-0359-462a-8b8b-1de02a611f77 |
 | `fuel-tab.html` | https://claude.ai/code/artifact/e0da58f6-f4ef-4874-b60e-b83a1998ba0e |
-| `mezo-tab.html` | https://claude.ai/code/artifact/797270dd-f1dc-4196-b492-aa4ffb22d2de |
+| `mezo-tab.html` | https://claude.ai/code/artifact/dc2800aa-7c1f-41f0-b33d-b3d127b544fa |
 | `en-ia-valasztas.html` | https://claude.ai/code/artifact/418b2a2d-25ba-4441-8cb5-6b15c6ab88b2 |
 | `en-tab.html` | https://claude.ai/code/artifact/dee0dd7e-f321-4f88-94ff-c7face496d70 |
 | `napzaras.html` | https://claude.ai/code/artifact/0e4e02ba-d5c8-49ce-a738-b924f1583cf6 |
+| `edzes-review.html` | https://claude.ai/code/artifact/66f5a4de-8afe-48ff-b04f-e861b3ba22ee |
 
 ## Workflow
 
 1. Edit the parts in `src/` (`*-head.html` = title + CSS; `*-body.html` = markup + JS).
-2. Run `./build.sh` — it inlines the sprites from `../assets/` into the 6 assembled files.
+2. Run `./build.sh` — it inlines the sprites from `../assets/` into the assembled files.
 3. Republish the assembled file as an artifact, passing the matching `url` above so the link
    stays stable.
 
@@ -181,6 +182,30 @@ are usable without a build step).
   rows edit/delete with one-slot floor. RP debrief per exercise, closing summary (halo hero,
   muscle pills, medals + target sets, challenge outcomes, per-exercise chip map, note),
   finish → level-up screen → closed mode.
+- **edzes-review** — the *visszanézés* of a finished workout (`/train/review/:id`), the F7.2
+  design round. The shell is the session prototype's summary; what the `closed` mode gains is
+  **context**. (1) A **„Mihez képest" tile** under the hero names the reference session
+  (`Előző Pull A · aug. 12. · 2 héttel korábban` — the gap between the two sessions, not the age
+  from today) and gives three deltas mirroring the stat strip: volumen · célszett · Ø RIR. Under
+  ADR 0010 the number is signed and honest while the **colour never punishes** — sage only
+  upward, neutral graphite downward, coral and red absent; **Ø RIR is always neutral**, because
+  there less is harder. (2) The per-exercise inventory stops being a stack of near-identical white
+  cards and becomes a **horizontal swimlane** (the Fuel hub's window-lane precedent): one tile per
+  exercise in its muscle family's wash, carrying a monogram disc, a REKORD stamp, **one anchor
+  number** — the top working set — and a set-bar row (solid = logged · gold = medal · faint =
+  warmup · dashed = missed). Depth is not in the scroll: each tile opens the exercise's **own
+  page**, where every set is its own tile — `90 kg × 8 · RIR 2 · célsávban · 720 kg` — with the
+  medal set in gold, the missed set as a ghost tile, **the set note under its own set**
+  (`ExerciseSetResponse.note`, on the wire today and shown nowhere), and a stat strip whose fourth
+  cell is the previous session's top set, gated exactly like the context tile. (3) **Stepping runs on the template-day
+  chain** (`← Előző Pull A` / `Következő Pull A →`), the same axis the comparison uses, so there
+  is one mental model rather than two. Three live Pull A sessions demonstrate all of it,
+  including the honesty gate: the oldest is the mesocycle's first Pull A, so **the tile does not
+  render at all** — no "nincs adat" placeholder. The `Lezárás` toggle shows the other mode: no
+  tile, no stepping (there is nowhere to step while closing), and the closing CTA — where today's
+  **dead `<textarea>` used to be**. That note field is removed rather than kept: nothing is
+  promised that is not persisted; making the workout-level note real is its own slice
+  (contract + column + read-back).
 - **mezo-tab** — the Mezo tab (the companion's home), audited against the real `/insights`
   section (in the live app the companion is the Chat sub-tab of Insights; the redesign
   promotes it to a first-class tab). **Hub**: a breathing clay **orb hero** — no number hero,

@@ -4028,14 +4028,15 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .wsum-reg { display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-full); padding: 5px 11px; font-size: 10.5px; font-weight: 800; background: var(--fam-wash, var(--surface-recess)); color: var(--fam-deep, var(--text-secondary)); }
 .wsum-reg .n { font-family: var(--ff-mono); font-weight: 600; font-size: 9.5px; opacity: .85; }
 .wsum-reg.off { background: var(--surface-recess); color: var(--text-disabled); text-decoration: line-through; }
+/* The stat strip is the Mozaik one (.mz-statstrip / .mz-statcell) as of mezo-d20.8.2.1 — the
+   prototype's separate floating cells, not the old single grid with divider seams. Only the
+   value tones stay local, because the strip primitive knows nothing about medals or targets. */
 .wsum-stripwrap { padding: 16px 20px 0; }
-.wsum-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--divider); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
-.wsum-strip .cell { background: var(--surface-card); padding: 11px 4px 10px; text-align: center; }
-.wsum-strip .v { font-size: 17px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); }
-.wsum-strip .v .u { font-size: 9.5px; font-weight: 500; color: var(--text-muted); margin-left: 1px; }
-.wsum-strip .v.gold { color: var(--amber-deep); }
-.wsum-strip .v.green { color: var(--sage-deep); }
-.wsum-strip .l { font-size: 7.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
+.wsum-stripwrap .v { font-size: 17px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); display: block; }
+.wsum-stripwrap .v .u { font-size: 9.5px; font-weight: 500; color: var(--text-muted); margin-left: 1px; }
+.wsum-stripwrap .v.gold { color: var(--amber-deep); }
+.wsum-stripwrap .v.green { color: var(--sage-deep); }
+.wsum-stripwrap .l { font-size: 7.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); margin-top: 3px; }
 .wsum-sec { padding: 20px 20px 0; }
 .wsum-slabel { font-size: 9.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
 .wsum-slabel .cnt { font-family: var(--ff-mono); font-size: 9px; color: var(--text-disabled); font-weight: 600; letter-spacing: 0; }
@@ -4066,28 +4067,105 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .wsum-chal.hit .out { background: var(--wash-sage); color: var(--sage-deep); }
 .wsum-chal.miss .out { background: var(--warning-bg); color: var(--warning-hover); }
 .wsum-chal.skip .out { background: var(--surface-recess); color: var(--text-disabled); }
-.wsum-exc { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--fam-rail) 10%, transparent) 0%, var(--surface-card) 55%); border: 1px solid var(--divider); border-left: 5px solid var(--fam-rail); border-radius: var(--r-xl); padding: 12px 13px 13px; box-shadow: var(--shadow-sm); }
-.wsum-exc + .wsum-exc { margin-top: 9px; }
-.wsum-exc .hd { display: flex; align-items: center; gap: 8px; }
-.wsum-exc .nm { font-size: 13px; font-weight: 700; flex: 1; min-width: 0; color: var(--ink); }
-.wsum-exc .mus { font-size: 8.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; border-radius: var(--r-sm); padding: 3px 6px; background: var(--fam-wash); color: var(--fam-deep); flex: none; }
-.wsum-exc .setn { font-family: var(--ff-mono); font-size: 9.5px; font-weight: 700; color: var(--fam-deep); flex: none; }
-.wsum-exc .setn.part { color: var(--warning-hover); }
-.wsum-exc .setn.dead { color: var(--text-disabled); }
-.wsum-exc .setn .skipmark { font-weight: 600; color: var(--text-disabled); }
-.wsum-exc .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
-.wsum-chip { display: inline-flex; align-items: baseline; gap: 4px; font-family: var(--ff-mono); font-size: 10px; font-weight: 600; color: var(--ink); background: var(--surface-recess); border: 1px solid transparent; border-radius: var(--r-full); padding: 4px 9px; font-variant-numeric: tabular-nums; }
-.wsum-chip .rir { font-size: 8px; color: var(--text-muted); }
-.wsum-chip.top { border-color: color-mix(in srgb, var(--fam-rail) 55%, transparent); background: var(--fam-wash); color: var(--fam-deep); }
-.wsum-chip.top .rir { color: var(--fam-deep); opacity: .7; }
-.wsum-chip.rec { background: var(--wash-amber); border-color: var(--accent-soft); color: var(--amber-deep); }
-.wsum-chip.rec .rir { color: var(--amber-deep); opacity: .75; }
-.wsum-chip.ghost { background: transparent; border: 1px dashed var(--divider); color: var(--text-disabled); }
-.wsum-exc.dead { background: var(--surface-card); border-left-color: var(--text-disabled); opacity: .72; }
-.wsum-exc.dead .nm { color: var(--text-muted); text-decoration: line-through; }
-.wsum-note { background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-xl); padding: 12px 13px; box-shadow: var(--shadow-sm); }
-.wsum-note .l { font-family: var(--ff-mono); font-size: 8.5px; font-weight: 600; color: var(--text-muted); letter-spacing: .08em; text-transform: uppercase; }
-.wsum-note textarea { width: 100%; margin-top: 8px; min-height: 52px; resize: none; font-size: 13px; line-height: 1.45; }
+/* ===== Edzés-review · kontextus-riport (mezo-d20.8.2.1, spec 2026-08-31) ==============
+   The five near-identical white exercise cards are gone: the inventory now runs sideways as a
+   swimlane, and the depth lives on the exercise's own view rather than in the scroll. The
+   swimlane and the exercise view serve BOTH modes — the inventory belongs to the closing
+   report too; only the comparison tile and the stepping are the revisit's own. */
+
+/* --- „Mihez képest" · closed only ------------------------------------------------- */
+.wr-cmp { margin: 16px 20px 0; padding: 12px 14px 13px; border-radius: var(--r-xl);
+  background: var(--mz-wash-sky); border: 0.5px solid var(--divider); box-shadow: var(--mz-shadow-sky); }
+.wr-cmp .eyebrow { font-size: 8.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--text-muted); }
+.wr-cmp-ref { display: flex; align-items: baseline; gap: 7px; margin-top: 3px; flex-wrap: wrap; }
+.wr-cmp-ref b { font-size: 13px; font-weight: 700; color: var(--ink); }
+.wr-cmp-ref .ago { font-size: 10.5px; font-weight: 600; color: var(--text-muted); }
+.wr-cmp-cells { display: flex; gap: 8px; margin-top: 11px; }
+.wr-cmp-cell { flex: 1; text-align: center; border-radius: var(--r-lg); padding: 8px 4px 7px;
+  background: var(--mz-cellbg); border: 0.5px solid var(--divider); }
+/* ADR 0010, and the reason there is deliberately NO `.down` class: the number is signed and
+   honest, but the palette has no punishing tone to reach for. A lighter week reads neutral. */
+.wr-cmp-cell .v { display: block; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.wr-cmp-cell .v.up { color: var(--sage-deep); }
+.wr-cmp-cell .l { display: block; font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+.wr-cmp-cell .was { display: block; font-size: 8.5px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+
+/* --- gyakorlat-swimlane ------------------------------------------------------------ */
+.wr-lane-head { display: flex; align-items: baseline; gap: 8px; padding: 0 2px 8px; }
+.wr-lane-head .hint { margin-left: auto; font-size: 9.5px; color: var(--text-muted); }
+.wr-lane { display: flex; gap: 9px; overflow-x: auto; scrollbar-width: none;
+  scroll-snap-type: x mandatory; margin: 0 -20px; padding: 3px 20px 6px; }
+.wr-lane::-webkit-scrollbar { display: none; }
+.wr-extile { flex: none; width: 151px; scroll-snap-align: start; cursor: pointer; text-align: left;
+  font: inherit; color: var(--ink); display: flex; flex-direction: column; gap: 6px;
+  border: 0.5px solid var(--divider); border-radius: var(--r-xl); padding: 11px 12px 12px;
+  background: var(--fam-wash); box-shadow: var(--shadow-sm); }
+.wr-extile:focus-visible { outline: 2px solid var(--coral-deep); outline-offset: 2px; }
+.wr-extile.dead { opacity: .6; }
+.wr-extile.dead .nm { text-decoration: line-through; color: var(--text-muted); }
+.wr-extile .hd { display: flex; align-items: center; }
+.wr-extile .mono { width: 28px; height: 28px; border-radius: var(--r-md); display: grid; place-items: center;
+  flex: none; background: var(--surface-card); color: var(--fam-deep); font-size: 13px; font-weight: 700; }
+.wr-extile .stamp { margin-left: auto; font-size: 8px; font-weight: 800; letter-spacing: .1em;
+  color: var(--amber-deep); background: var(--wash-amber); border-radius: var(--r-full); padding: 2px 7px; }
+.wr-extile .nm { font-size: 11px; font-weight: 700; line-height: 1.25; min-height: 28px; }
+.wr-extile .lbl { font-size: 8px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+/* The anchor: ONE number per exercise, big enough to read at a glance. */
+.wr-extile .top { font-size: 20px; font-weight: 300; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--fam-deep); }
+.wr-extile .top .x { font-size: 13px; color: var(--text-muted); }
+.wr-extile .foot { display: flex; align-items: baseline; gap: 5px; font-size: 9px; font-weight: 600; color: var(--text-muted); }
+.wr-extile .ncnt { font-weight: 500; color: var(--text-tertiary); }
+/* Set bars: solid = logged · gold = medal · faint = warmup · dashed = missed. */
+.wr-setbars { display: flex; gap: 4px; }
+.wr-setbars i { flex: 1; height: 5px; border-radius: 3px; background: var(--fam-deep); opacity: .42; }
+.wr-setbars i.med { background: var(--amber-deep); opacity: 1; }
+.wr-setbars i.warm { opacity: .16; }
+.wr-setbars i.miss { background: none; border: 1px dashed var(--divider); }
+
+/* --- gyakorlat-oldal --------------------------------------------------------------- */
+.wr-exhero { display: flex; align-items: center; gap: 12px; padding: 8px 20px 14px; }
+.wr-exhero .mono { width: 50px; height: 50px; border-radius: var(--r-xl); display: grid; place-items: center;
+  flex: none; background: var(--fam-wash); color: var(--fam-deep); font-size: 21px; font-weight: 700; box-shadow: var(--shadow-sm); }
+.wr-exhero .nm { font-size: 17px; font-weight: 700; line-height: 1.2; color: var(--ink); }
+.wr-exhero .sb { display: flex; align-items: center; gap: 7px; margin-top: 3px; flex-wrap: wrap; font-size: 11px; color: var(--text-muted); }
+.wr-exhero .mus { font-size: 8.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  border-radius: var(--r-sm); padding: 3px 6px; background: var(--fam-wash); color: var(--fam-deep); }
+
+/* One tile per set — this is where the number finally gets room, and the whole reason the
+   scrolling chip rows went away. */
+.wr-set { display: flex; align-items: center; gap: 11px; border-radius: var(--r-lg); padding: 11px 13px;
+  background: var(--surface-card); border: 1px solid var(--divider); box-shadow: var(--shadow-sm); }
+.wr-set + .wr-set { margin-top: 7px; }
+.wr-set .ix { width: 26px; height: 26px; border-radius: var(--r-md); flex: none; display: grid; place-items: center;
+  font-size: 11px; font-weight: 700; background: var(--fam-wash); color: var(--fam-deep); font-variant-numeric: tabular-nums; }
+.wr-set.warm .ix { background: var(--surface-recess); color: var(--text-disabled); }
+.wr-set .tx { flex: 1; min-width: 0; }
+.wr-set .load { font-size: 17px; font-weight: 300; letter-spacing: -.01em; font-variant-numeric: tabular-nums; color: var(--ink); }
+.wr-set .load b { font-weight: 600; }
+.wr-set .rir { font-size: 10.5px; font-weight: 600; color: var(--text-muted); margin-left: 5px; }
+.wr-set .band { font-size: 8.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-left: 5px; }
+.wr-set .band.in { color: var(--sage-deep); }
+.wr-set .note { font-size: 10.5px; color: var(--text-secondary); margin-top: 3px; }
+.wr-set .vol { flex: none; font-size: 11px; font-weight: 600; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.wr-set.rec { background: var(--wash-amber); border-color: var(--accent-soft); }
+.wr-set.rec .vol { color: var(--amber-deep); }
+/* The missed set stays a ghost: no red, no "hiányzik" — the report does not punish. */
+.wr-set.ghost { background: transparent; border: 1px dashed var(--divider); box-shadow: none; }
+.wr-set.ghost .ix { background: transparent; border: 1px dashed var(--divider); color: var(--text-disabled); }
+.wr-set.ghost .load { font-size: 12px; color: var(--text-disabled); }
+
+/* --- léptetés a template-nap láncán · closed only ---------------------------------- */
+.wr-stepnav { display: flex; gap: 8px; padding: 16px 20px 0; }
+.wr-stepnav button { flex: 1; font: inherit; cursor: pointer; border-radius: var(--r-lg); padding: 10px 12px;
+  background: var(--surface-card); border: 1px solid var(--divider); box-shadow: var(--shadow-sm);
+  text-align: left; color: var(--ink); }
+.wr-stepnav button.nx { text-align: right; }
+/* Disabled rather than absent: the chain's existence stays visible at either end. */
+.wr-stepnav button:disabled { opacity: .42; cursor: default; box-shadow: none; }
+.wr-stepnav button:focus-visible { outline: 2px solid var(--coral-deep); outline-offset: 2px; }
+.wr-stepnav small { display: block; font-size: 8px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+.wr-stepnav b { font-size: 12px; font-weight: 600; }
+
 .wsum-ctas { padding: 20px 20px 26px; display: flex; flex-direction: column; gap: 9px; }
 
 /* ===== Markdown prose (mezo-at8x.1) — the companion's model-written answers ==========
@@ -4885,6 +4963,31 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzp-daydots i { width: 11px; height: 11px; border-radius: 50%; background: var(--mz-daydot); }
 .mzp-daydots i.f { background: var(--mz-daydot-f); }
 .mzp-decrow { display: flex; gap: 7px; margin-top: 11px; }
+
+/* ===== Diagnózis (mezo-hqfi.4) — evidence rows, rank badges, probe block.
+   Token-only: values come from the DS block above, no new literals. */
+.mzp-evrow { display: flex; align-items: baseline; gap: 8px; font-size: 11px; padding: 5px 0;
+  border-bottom: 0.5px dashed var(--mz-chat-refch-bd); }
+.mzp-evrow:last-of-type { border-bottom: none; }
+.mzp-evrow .lb { font-weight: 700; flex: none; }
+.mzp-evrow .vl { font-weight: 300; font-variant-numeric: tabular-nums; }
+.mzp-evrow .dl { font-weight: 800; font-variant-numeric: tabular-nums; }
+.mzp-evrow .dl.bad { color: var(--mz-cell-coral-ink); }
+.mzp-evrow .src { margin-left: auto; font-size: 8px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--mz-ink-mut); flex: none; }
+.mzp-rankb { width: 24px; height: 24px; border-radius: 9px; display: grid; place-items: center; flex: none;
+  font-size: 12px; font-weight: 800; color: var(--mz-wash-white); background: var(--mz-strength); }
+.mzp-rankb.two { background: var(--mz-chat-send-bg); }
+.mzp-probe { border-radius: 14px; background: var(--mz-cellbg); padding: 9px 12px; margin-top: 10px;
+  border: 0.5px solid var(--mz-chat-refch-bd); }
+.mzp-probe .pt { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--mz-qxp-ink); }
+.mzp-probe .px { font-size: 12px; font-weight: 600; margin-top: 4px; line-height: 1.45; }
+.mzp-dgq { border-radius: 16px; padding: 10px 12px; background: var(--mz-fact-off-bg);
+  border: 1.2px dashed var(--mz-chat-refch-bd); }
+.mzp-dgq .qq { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--mz-ink-soft); }
+.mzp-dgq .qs { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); margin-top: 4px; }
+.mzh-t-diag { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
 .mzp-cta, .mzp-ghost { flex: 1; min-height: 44px; border-radius: 999px; border: none; font-family: inherit;
   font-size: 12px; font-weight: 600; cursor: pointer; }
 .mzp-cta { background: var(--gradient-cta); color: #fff; box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
