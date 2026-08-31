@@ -166,11 +166,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `KonziliumProposalRound`, `KonziliumVerdictRound`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterProperties`
-  - **other:** `CharacterDetector`, `CheckinGapDetector`, `ClaimConfidenceHistoryEnvelope`, `ClaimEvidenceEnvelope`,
-    `ClaimFeedbackEnvelope`, `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`, `DetectorInput`,
-    `DetectorRegistry`, `DetectorSignal`, `JournalNoteDetector`, `JournalSilenceDetector`, `LoggingGapDetector`,
-    `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `RunDetectorKeysEnvelope`,
-    `RunExpertKeysEnvelope`, `UnderLoggingDetector`
+  - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CheckinGapDetector`, `ClaimConfidenceHistoryEnvelope`,
+    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`,
+    `DetectorInput`, `DetectorRegistry`, `DetectorSignal`, `HrRecoveryTrendDetector`, `JournalNoteDetector`,
+    `JournalSilenceDetector`, `LoggingGapDetector`, `MesoAdherenceDetector`, `NiggleMapDetector`,
+    `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `ProgressionAdherenceDetector`,
+    `RirCalibrationDetector`, `RoundOneGates`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`,
+    `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `UnderLoggingDetector`
 - **Contract** `api/feature/character/character.yml` — 10 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -185,16 +187,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** ClaimTile.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx,
     TranscriptTurn.tsx
   - **root:** character.css, dossierState.ts, expertColors.ts, feedDayLabel.ts, inventory.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 20 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 21 IT + 5 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterConferenceJobIT`, `CharacterConferenceServiceIT`, `CharacterFeedbackIT`, `CharacterHistoryReadsIT`,
     `CharacterMonthlyServiceIT`, `CharacterObservationJobIT`, `CharacterObservationServiceIT`,
     `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`,
-    `CharacterPromptWiringIT`, `CharacterRunLogIT`, `ClaimLifecycleIT`, `KonziliumProposalRoundIT`,
-    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`
+    `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
+    `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`
   - **populators:** `AiConversationPopulator`, `CheckInPopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
     `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `MealPopulator`, `PantryItemPopulator`,
-    `PatternPopulator`, `SleepLogPopulator`, `UserPopulator`, `WeeklyReviewPopulator`
+    `PatternPopulator`, `RunningPopulator`, `SleepLogPopulator`, `TrainPopulator`, `UserPopulator`,
+    `WeeklyReviewPopulator`
 
 ### companion
 
@@ -871,7 +874,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `useAchievements`, `useProgressionProfile`
   - **modules:** achievementsMock.ts, progressionApi.ts, progressionHooks.ts, progressionMock.ts
 - **FE ui** `frontend/src/features/progression`
-  - **sheets:** StreakSheet.tsx, TitleShopSheet.tsx
+  - **components:** ProgressionHome.tsx
   - **logic:** levelUpMeta.ts, rewardToast.ts
   - **root:** LevelUpProvider.tsx, LevelUpScreen.tsx
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/progression` — 17 IT + 2 unit
