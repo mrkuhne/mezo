@@ -19,6 +19,7 @@ they inline come from `../assets/`.
 | `en-ia-valasztas.html` | https://claude.ai/code/artifact/418b2a2d-25ba-4441-8cb5-6b15c6ab88b2 |
 | `en-tab.html` | https://claude.ai/code/artifact/dee0dd7e-f321-4f88-94ff-c7face496d70 |
 | `napzaras.html` | https://claude.ai/code/artifact/0e4e02ba-d5c8-49ce-a738-b924f1583cf6 |
+| `karakter-tab.html` | (új — publikálás után) |
 
 ## Workflow
 
@@ -325,3 +326,34 @@ are usable without a build step).
   fills in a real summary, day notes and lessons and refreshes every hub tile; week stepping shows a
   **skeleton** (today's page has neither a loading nor an error state). Week navigation walks three live
   weeks: finished-with-review → finished-without → running.
+- **karakter-tab** — the Karakter dossier page (Én tab family), audited against the shipped
+  backend (`docs/features/character.md` — 7 CORE dimensions, `CharacterExpertCatalog`'s 7 named
+  experts, Szkeptikus + Mezo, weekly konzílium, bootstrap, claim feedback). Shown standalone (not
+  nested under the Én hub, per the round's brief — the aside notes the eventual tile placement).
+  **Hub**: a 7-segment maturity ring (one arc per CORE dimension, color = the owning expert's
+  domain tint, arc length/opacity = maturity, animated sweep-in; center = overall % + "érettség")
+  + a Fraunces-italic AI self-portrait line (a deliberate visual placeholder — the spec marks the
+  identity-hero bio line out of scope for v1); an 8-tile mosaic (7 CORE + 1 CHAPTER example
+  "Munka-stressz ciklus" in a dashed/distinct wash, AI-opened per the real konzílium mechanic);
+  a feed tile ("Amit mostanában megtudtam rólad": 2 persona-voiced observations + 1 konzílium-diff
+  row); Csapat and Konzílium tiles (9-avatar cluster; latest-session date + a pulsing gold dot).
+  **Dimension page** (generic template driven by a `DIMS` data array, one page for all 8):
+  colored hero (expert avatar + title + big maturity number), a portrait prose card, claim tiles
+  with confidence-word chips only (biztos sage / valószínű amber / figyeljük lavender — never a raw
+  number, per the API's honest-words contract), an ÉRZÉKENY (sensitive) variant with a lavender
+  frame + mirror-toned line, and three live feedback pills — Talál (sage flash + "köszönöm"),
+  Nem igaz (the tile fades to a dashed "nyugdíjazva" state), Pontosítom (inline textarea + Küldés)
+  — plus a "Beszélgess erről Mezóval" chat-handoff chip. **Csapat page**: 9 persona cards — the 7
+  experts (dimension-colored avatar, one-line voice, "mit figyel" list, owned-dimension chip) +
+  the Szkeptikus (graphite, dry contrarian) + Mezo (coral-gradient orb, elnök). **Konzílium page**:
+  a session list (date + WEEKLY/HAVI/BOOTSTRAP badge + outcome summary) tapping the newest opens
+  a transcript view in place: outcome header, persona-color-railed expert proposal bubbles, a
+  graphite Szkeptikus attack bubble, a full-width coral Mezo ruling bubble, and one gold-railed
+  "DANIEL VÁLASZA" quote embedded inside an expert's bubble showing how claim feedback re-enters
+  the konzílium — with an explicit honesty note that the transcript is the real exchange, never
+  re-dramatized. **Bootstrap flow** (aside demo button): intro (orb + 9-avatar cluster + "Kezdjétek
+  el") staged progress lines ("Doki a súlytrendet olvassa…" etc.) over a spinning arc reveal
+  (the hero ring animates in) CTA into the first konzílium. **Honest 204 empty state** (aside
+  demo button): "Még nincs elég történet" — no fabricated numbers, no empty-state theater.
+  New-content note: dimension/expert keys and voices are pulled directly from
+  `CharacterCoreCatalog`/`CharacterExpertCatalog` in the backend, not invented.
