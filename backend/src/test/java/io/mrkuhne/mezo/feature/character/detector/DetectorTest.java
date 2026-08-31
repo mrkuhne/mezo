@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -232,6 +233,138 @@ class DetectorTest {
                 DAY.minusDays(1), "futás", new BigDecimal("7"), 7, null, null);
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gym), List.of(sport), List.of(), List.of(), null,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).isEmpty();
+    }
+
+    @Test
+    void sportInterference_firesOnRepeatedNextDayDecline() {
+        SportInterferenceDetector d = new SportInterferenceDetector();
+        // 2 heavy sport sessions (strain 7) at DAY-3 and DAY-1, each followed by a gym day
+        // (DAY-2, DAY) whose sets show a reps-vs-target decline of -2 -> 2 pairs.
+        DetectorInput.SportPoint sport1 = new DetectorInput.SportPoint(
+                DAY.minusDays(3), "kosárlabda", null, 7, null, null);
+        DetectorInput.SportPoint sport2 = new DetectorInput.SportPoint(
+                DAY.minusDays(1), "kosárlabda", null, 7, null, null);
+        List<DetectorInput.SetPoint> decliningSets = List.of(
+                new DetectorInput.SetPoint(0, null, 6, null, null, 8, false),
+                new DetectorInput.SetPoint(1, null, 6, null, null, 8, false));
+        DetectorInput.ExerciseWork work = new DetectorInput.ExerciseWork(
+                "Lat pulldown", 2, 0, decliningSets, null, null, null);
+        DetectorInput.GymDay gymBefore = new DetectorInput.GymDay(DAY.minusDays(2), List.of(work));
+        DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gymBefore, gymOn), List.of(sport1, sport2), List.of(), List.of(), null,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("sport-interference");
+            assertThat(s.expertKey()).isEqualTo("edzo");
+            assertThat(s.summary()).contains("Sport-interferencia");
+            assertThat(s.summary()).contains("2");
+        });
+        // the DAY gym day is what satisfies the gate (newGymData)
+        assertThat(RoundOneGates.newGymData(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gymBefore, gymOn), List.of(sport1, sport2), List.of(), List.of(), null,
+                new DetectorInput.TrendWindow(List.of(), List.of())))).isTrue();
+    }
+
+    @Test
+    void sportInterference_quietWhenGymHolds() {
+        SportInterferenceDetector d = new SportInterferenceDetector();
+        DetectorInput.SportPoint sport1 = new DetectorInput.SportPoint(
+                DAY.minusDays(3), "kosárlabda", null, 7, null, null);
+        DetectorInput.SportPoint sport2 = new DetectorInput.SportPoint(
+                DAY.minusDays(1), "kosárlabda", null, 7, null, null);
+        List<DetectorInput.SetPoint> holdingSets = List.of(
+                new DetectorInput.SetPoint(0, null, 8, null, null, 8, false),
+                new DetectorInput.SetPoint(1, null, 8, null, null, 8, false));
+        DetectorInput.ExerciseWork work = new DetectorInput.ExerciseWork(
+                "Lat pulldown", 2, 0, holdingSets, null, null, null);
+        DetectorInput.GymDay gymBefore = new DetectorInput.GymDay(DAY.minusDays(2), List.of(work));
+        DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gymBefore, gymOn), List.of(sport1, sport2), List.of(), List.of(), null,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).isEmpty();
+    }
+
+    @Test
+    void mesoAdherence_firesOnMissedPlannedDays() {
+        MesoAdherenceDetector d = new MesoAdherenceDetector();
+        // week window DAY-6..DAY (Aug21..Aug27): planned Mon/Wed/Fri hits Aug21,24,26 -> all
+        // missed (doneDays empty) -> missed=3. A gym day on DAY satisfies the gate.
+        DetectorInput.MesoContext meso = new DetectorInput.MesoContext("Hyper", 3, 6, false,
+                Set.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY), Set.of());
+        DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of());
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gymOn), List.of(), List.of(), List.of(), meso,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("meso-adherence");
+            assertThat(s.expertKey()).isEqualTo("edzo");
+            assertThat(s.summary()).contains("3");
+            assertThat(s.summary()).contains("3/6");
+        });
+    }
+
+    @Test
+    void mesoAdherence_deloadSuppresses() {
+        MesoAdherenceDetector d = new MesoAdherenceDetector();
+        DetectorInput.MesoContext meso = new DetectorInput.MesoContext("Hyper", 3, 6, true,
+                Set.of(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY), Set.of());
+        DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of());
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gymOn), List.of(), List.of(), List.of(), meso,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).isEmpty();
+    }
+
+    @Test
+    void progressionAdherence_firesOnSystematicUndershoot() {
+        ProgressionAdherenceDetector d = new ProgressionAdherenceDetector();
+        List<DetectorInput.SetPoint> sets = List.of(
+                new DetectorInput.SetPoint(0, new BigDecimal("80"), 8, null,
+                        new BigDecimal("85"), null, false),
+                new DetectorInput.SetPoint(1, new BigDecimal("80"), 8, null,
+                        new BigDecimal("85"), null, false),
+                new DetectorInput.SetPoint(2, new BigDecimal("80"), 8, null,
+                        new BigDecimal("85"), null, false),
+                new DetectorInput.SetPoint(3, new BigDecimal("80"), 8, null,
+                        new BigDecimal("85"), null, false));
+        DetectorInput.ExerciseWork work = new DetectorInput.ExerciseWork(
+                "Squat", 4, 0, sets, null, null, null);
+        DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gymOn), List.of(), List.of(), List.of(), null,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("progression-adherence");
+            assertThat(s.expertKey()).isEqualTo("edzo");
+            assertThat(s.summary()).contains("maradt el");
+            assertThat(s.summary()).contains("2,5");
+            assertThat(s.summary()).contains("4");
+        });
+    }
+
+    @Test
+    void progressionAdherence_deloadWeekQuiet() {
+        ProgressionAdherenceDetector d = new ProgressionAdherenceDetector();
+        List<DetectorInput.SetPoint> sets = List.of(
+                new DetectorInput.SetPoint(0, new BigDecimal("80"), 8, null,
+                        new BigDecimal("85"), null, false),
+                new DetectorInput.SetPoint(1, new BigDecimal("80"), 8, null,
+                        new BigDecimal("85"), null, false),
+                new DetectorInput.SetPoint(2, new BigDecimal("80"), 8, null,
+                        new BigDecimal("85"), null, false),
+                new DetectorInput.SetPoint(3, new BigDecimal("80"), 8, null,
+                        new BigDecimal("85"), null, false));
+        DetectorInput.ExerciseWork work = new DetectorInput.ExerciseWork(
+                "Squat", 4, 0, sets, null, null, null);
+        DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
+        DetectorInput.MesoContext meso = new DetectorInput.MesoContext("Hyper", 3, 6, true,
+                Set.of(), Set.of());
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gymOn), List.of(), List.of(), List.of(), meso,
                 new DetectorInput.TrendWindow(List.of(), List.of())));
         assertThat(fired).isEmpty();
     }
