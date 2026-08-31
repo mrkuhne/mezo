@@ -77,6 +77,9 @@ import { DimensionPage } from '@/features/character/pages/DimensionPage'
 import { CharacterFeedPage } from '@/features/character/pages/CharacterFeedPage'
 import { CsapatPage } from '@/features/character/pages/CsapatPage'
 import { KonziliumPage } from '@/features/character/pages/KonziliumPage'
+import { GeptermPage } from '@/features/character/pages/GeptermPage'
+import { FutasokPage } from '@/features/character/pages/FutasokPage'
+import { RunPage } from '@/features/character/pages/RunPage'
 
 // Design 2.0 shell (mezo-d20.1.1): /today → /nap and /insights → /mezo renames. The legacy
 // paths survive as redirects (PWA bookmarks, in-app navigate() calls not yet migrated).
@@ -220,6 +223,11 @@ export const routes: RouteObject[] = [
       { path: 'me/karakter/feed', element: <CharacterFeedPage /> },
       { path: 'me/karakter/csapat', element: <CsapatPage /> },
       { path: 'me/karakter/konzilium', element: <KonziliumPage /> },
+      // Gépterem (mezo-1gim.14, Task 4) — the geek-transparency hub + its Futások timeline +
+      // the generic run-detail page every row (and, from Task 5, every Feed ⚙) opens into.
+      { path: 'me/karakter/gepterem', element: <GeptermPage /> },
+      { path: 'me/karakter/gepterem/futasok', element: <FutasokPage /> },
+      { path: 'me/karakter/gepterem/futas/:id', element: <RunPage /> },
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll

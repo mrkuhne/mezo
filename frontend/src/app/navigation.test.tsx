@@ -109,6 +109,24 @@ test('/me/karakter/konzilium is the conference list — a stable full-page sibli
   expect(await screen.findByText('a csapat heti tanácskozásai')).toBeInTheDocument()
 })
 
+test('/me/karakter/gepterem is the geek-transparency hub — a stable full-page sibling (mezo-1gim.14, Task 4)', async () => {
+  renderApp('/me/karakter/gepterem')
+  expect(await screen.findByText('mi táplálja a dossziét — nyíltan')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Futások' })).toBeInTheDocument()
+})
+
+test('/me/karakter/gepterem/futasok is the week-stepped run timeline (mezo-1gim.14, Task 4)', async () => {
+  renderApp('/me/karakter/gepterem/futasok')
+  expect(await screen.findByText('a pipeline futásai, hetekre bontva')).toBeInTheDocument()
+})
+
+test('/me/karakter/gepterem/futas/:id opens one run\'s detail (mezo-1gim.14, Task 4)', async () => {
+  renderApp('/me/karakter/gepterem/futas/ejsz-27')
+  // ejsz-27 is a seeded signal night (2 fired chains) — the flow strip is the
+  // face-independent landmark.
+  expect(await screen.findByRole('group', { name: 'Futás-lánc' })).toBeInTheDocument()
+})
+
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's

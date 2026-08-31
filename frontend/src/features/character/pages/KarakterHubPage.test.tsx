@@ -14,7 +14,7 @@ import {
   MOCK_OVERVIEW,
   MOCK_OVERVIEW_EMPTY,
 } from '@/data/character/characterMock'
-import type { CharacterOverviewResponse } from '@/data/character/characterApi'
+import type { CharacterOverviewResponse, CharacterRunSummary } from '@/data/character/characterApi'
 import type { CharacterBootstrapResult } from '@/data/character/characterHooks'
 
 const mockNavigate = vi.fn()
@@ -28,6 +28,7 @@ const hoisted = vi.hoisted(() => ({
   bootstrapPending: false,
   bootstrapResult: null as CharacterBootstrapResult | null,
   startSpy: vi.fn(),
+  weekRuns: [] as CharacterRunSummary[],
 }))
 
 vi.mock('@/data/hooks', async (importOriginal) => {
@@ -39,6 +40,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useCharacterExperts: () => ({ experts: MOCK_EXPERTS, isLoading: false }),
     useCharacterFeed: () => ({ items: MOCK_FEED, isLoading: false }),
     useCharacterConferences: () => ({ conferences: MOCK_CONFERENCES, isLoading: false }),
+    useCharacterRuns: () => ({ runs: hoisted.weekRuns, isLoading: false }),
   }
 })
 
@@ -47,6 +49,7 @@ beforeEach(() => {
   hoisted.bootstrapPending = false
   hoisted.bootstrapResult = null
   hoisted.startSpy.mockReset()
+  hoisted.weekRuns = []
   mockNavigate.mockReset()
 })
 
@@ -146,6 +149,25 @@ describe('KarakterHubPage', () => {
     hoisted.bootstrapResult = 'conflict'
     renderHub()
     expect(screen.getByRole('button', { name: 'Dimenziók' })).toBeInTheDocument()
+  })
+
+  test('the Gépterem row shows the last run\'s plain-language line and navigates on tap', async () => {
+    hoisted.weekRuns = [{
+      id: 'ejsz-30', kind: 'NIGHTLY', day: '2026-08-30', observationCount: 3, callCount: 2,
+      detectorKeys: ['journal-note'], expertKeys: ['pszichologus', 'taplalkozo'], conferenceId: null,
+    }]
+    renderHub()
+    expect(screen.getByRole('button', { name: 'Gépterem' })).toBeInTheDocument()
+    expect(screen.getByText(/3 megfigyelés · 2 szakértő hívva/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Gépterem' }))
+    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem')
+  })
+
+  test('an empty week (no runs yet) renders the Gépterem row without a fabricated line', () => {
+    hoisted.weekRuns = []
+    renderHub()
+    expect(screen.getByRole('button', { name: 'Gépterem' })).toBeInTheDocument()
+    expect(screen.getByText('mi táplálja a dossziét — nyíltan')).toBeInTheDocument()
   })
 
   test('overview null (character switch off) renders the degraded row, never a crash', () => {
