@@ -874,7 +874,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `useAchievements`, `useProgressionProfile`
   - **modules:** achievementsMock.ts, progressionApi.ts, progressionHooks.ts, progressionMock.ts
 - **FE ui** `frontend/src/features/progression`
-  - **sheets:** StreakSheet.tsx, TitleShopSheet.tsx
+  - **components:** ProgressionHome.tsx
   - **logic:** levelUpMeta.ts, rewardToast.ts
   - **root:** LevelUpProvider.tsx, LevelUpScreen.tsx
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/progression` — 17 IT + 2 unit
@@ -1057,16 +1057,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     ExerciseOverviewSheet.tsx, ExercisePickerSheet.tsx, ExerciseRecordSheet.tsx, FeedbackModal.tsx,
     GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx, MuscleWeekSheet.tsx, RunLogSheet.tsx,
     SetEditSheet.tsx, SportEventSheet.tsx, SportLogSheet.tsx, SportScheduleSheet.tsx, VideoUrlSheet.tsx
-  - **components:** ActiveMesoCard.tsx, ArchivedMesoCard.tsx, ChallengeCard.tsx, CompactStepper.tsx, CrossLoadRow.tsx,
-    DayBreakdownCard.tsx, DayStrip.tsx, DoneBar.tsx, ExerciseAccordionRow.tsx, ExerciseImage.tsx,
-    ExerciseRecipeRow.tsx, ExerciseReview.tsx, FinalStat.tsx, LoadTiles.tsx, MedalChip.tsx, MedalToast.tsx,
-    MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoOverview.tsx, MesoTemplateCard.tsx, MesoVolume.tsx,
-    MetaStat.tsx, MiniBar.tsx, MiniStat.tsx, MorningTrainingCard.tsx, MuscleArcSwitch.tsx, MusclePriorityPicker.tsx,
-    PeakFitCard.tsx, PhaseCurveBars.tsx, PlannedMesoCard.tsx, PlannerExerciseRow.tsx, PrepExerciseTile.tsx,
-    ProgressionBanner.tsx, RestTimerBar.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx,
-    RunWeekStrip.tsx, SetBudgetCard.tsx, SetStepper.tsx, SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx,
-    TodaySessionCard.tsx, VideoDemo.tsx, VolumeArcChart.tsx, VolumeBar.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx,
-    WeeklyDayRow.tsx, WorkoutSummary.tsx, ZoneMiniGrid.tsx, ZoneTrack.tsx
+  - **components:** ActiveMesoCard.tsx, ArchivedMesoCard.tsx, ChallengeCard.tsx, ChallengeGenerationLoader.tsx,
+    CompactStepper.tsx, CrossLoadRow.tsx, DayBreakdownCard.tsx, DayStrip.tsx, DoneBar.tsx, ExerciseAccordionRow.tsx,
+    ExerciseImage.tsx, ExerciseRecipeRow.tsx, ExerciseReview.tsx, FinalStat.tsx, LoadTiles.tsx, MedalChip.tsx,
+    MedalToast.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoOverview.tsx, MesoTemplateCard.tsx,
+    MesoVolume.tsx, MetaStat.tsx, MiniBar.tsx, MiniStat.tsx, MorningTrainingCard.tsx, MuscleArcSwitch.tsx,
+    MusclePriorityPicker.tsx, PeakFitCard.tsx, PhaseCurveBars.tsx, PlannedMesoCard.tsx, PlannerExerciseRow.tsx,
+    PrepExerciseTile.tsx, ProgressionBanner.tsx, RestTimerBar.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx,
+    RunWeekEditor.tsx, RunWeekStrip.tsx, SetBudgetCard.tsx, SetStepper.tsx, SportSessionCard.tsx, SportStat.tsx,
+    StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx, VolumeArcChart.tsx, VolumeBar.tsx, WeekZoneCard.tsx,
+    WeekdayGrid.tsx, WeeklyDayRow.tsx, WorkoutSummary.tsx, ZoneMiniGrid.tsx, ZoneTrack.tsx
   - **logic:** agenda.ts, challengeOutcome.ts, dayStripItems.ts, exerciseDefaults.ts, growthForecast.ts,
     gymDayTarget.ts, medalLabels.ts, mesoCompare.ts, mesoDays.ts, morningWindow.ts, muscleColors.ts, muscleFilters.ts,
     musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts, planner.ts, prepBriefing.ts, programFit.ts,
