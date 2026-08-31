@@ -16,6 +16,7 @@ import java.util.Map;
 public record CharacterProperties(
         @NotNull @Valid Observation observation,
         @NotNull @Valid Conference conference,
+        @NotNull @Valid Monthly monthly,
         /** Per-detector kill switches (spec §5): key = detector key. Absent key = enabled. */
         @NotNull Map<String, Detector> detector) {
 
@@ -38,6 +39,14 @@ public record CharacterProperties(
             @NotBlank String cron,
             /** How many finished weeks back the job heals (the observation catch-up idiom). */
             @Min(1) @Max(8) int catchUpWeeks) {}
+
+    public record Monthly(
+            /** Monthly deep-read konzílium cron (server zone) — fires on a plain Sunday schedule;
+             *  {@code CharacterMonthlyJob#isDeepReadDay} narrows it to the month's FIRST Sunday, since
+             *  Spring cron cannot reliably express day-of-month AND day-of-week together. */
+            @NotBlank String cron,
+            /** How many days a CHAPTER dimension may sit with no ACTIVE claim before it is retired. */
+            @Min(1) @Max(365) int staleChapterDays) {}
 
     public record Detector(boolean enabled) {}
 

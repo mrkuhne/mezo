@@ -290,6 +290,10 @@ mezo:
       # off = the CharacterConferenceJob bean does not exist
       character-conference-job:
         enabled: true
+      # Karakter monthly deep-read konzílium pass (Karakter S4, mezo-1gim.6, schedule:
+      # mezo.character.monthly.cron); off = the CharacterMonthlyJob bean does not exist
+      character-monthly-job:
+        enabled: true
       # V3.1 nightly statistical pattern detection (schedule: mezo.companion.patterns.cron);
       # off = the PatternDetectionJob bean does not exist
       pattern-detection-job:
@@ -1099,6 +1103,14 @@ mezo:
       cron: "0 30 19 * * SUN"
       # Finished weeks back the job checks and self-heals (the observation catch-up idiom)
       catch-up-weeks: 2
+    monthly:
+      # Sunday 20:00 — a plain Sunday cron; CharacterMonthlyJob#isDeepReadDay narrows it in code to
+      # the month's FIRST Sunday only (Spring cron cannot AND day-of-month with day-of-week).
+      # 20:00 slot free (checked against every other cron in this file, mezo-1gim.6): 19:30 SUN
+      # conference, 19:00 SUN memoir, 20:30 daily feed evening-cron all miss it.
+      cron: "0 0 20 * * SUN"
+      # A CHAPTER dimension with no ACTIVE claim left is retired once its updatedAt is this stale.
+      stale-chapter-days: 90
     # Per-detector kill switches (spec §5) — empty = every detector enabled; keyed by detector key.
     detector: {}
   proactive:

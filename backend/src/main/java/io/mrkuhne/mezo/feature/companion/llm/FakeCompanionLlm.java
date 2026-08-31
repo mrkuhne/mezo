@@ -117,6 +117,19 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  IT's equality assertion against the real constant. */
     public static final String BOOTSTRAP_MARKER_MIRROR = "KARAKTER-BOOTSTRAP-FELADAT";
 
+    /** Mirror of CharacterMonthlyService.MONTHLY_MARKER (feature/character) — LITERAL, cycle rule
+     *  (see {@link #OBSERVATION_MARKER_MIRROR}). The monthly deep-read konzílium's proposal round
+     *  asks for the SAME proposal JSON shape as the weekly/bootstrap rounds, so it shares that
+     *  branch's answer logic below — same canned fallback, same sentinel. The marker is a
+     *  MULTI-LINE block (the monthly drift/staleness contract rides along after the routing
+     *  line) — {@code startsWith} still matches it as a literal prefix. Drift is caught by an
+     *  IT's equality assertion against the real constant. */
+    public static final String MONTHLY_MARKER_MIRROR = "KARAKTER-HAVI-FELADAT\n"
+            + "Ez egy HAVI mélyolvasás: ne friss mintát keress, hanem a hónapok óta lassan alakuló "
+            + "ELMOZDULÁST és az adatok által már nem alátámasztott, elavult állításokat figyeld. "
+            + "UP/DOWN/RETIRE javaslatot részesíts előnyben NEW helyett, és javasolj RETIRE-t "
+            + "mindenre, amit a jelenlegi adatok már nem támasztanak alá.";
+
     /** Scripted konzílium proposals (mezo-1gim.5): {@code [fake-char-proposals:[…]]} planted in an
      *  observation's TEXT (the user message renders it) is returned verbatim; otherwise a canned
      *  single-proposal array keeps the pipeline deterministic, keyed on the expert's own
@@ -440,7 +453,8 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
             return "[{\"text\":\"Fake megfigyelés.\",\"salience\":3,\"dimensionKeys\":[\"discipline\"]}]";
         }
-        if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR) || systemPrompt.startsWith(BOOTSTRAP_MARKER_MIRROR)) {
+        if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR) || systemPrompt.startsWith(BOOTSTRAP_MARKER_MIRROR)
+                || systemPrompt.startsWith(MONTHLY_MARKER_MIRROR)) {
             Matcher proposals = CHAR_PROPOSALS_SENTINEL.matcher(userMessage);
             if (proposals.find()) {
                 return proposals.group(1);
