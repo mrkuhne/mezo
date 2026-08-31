@@ -14,9 +14,11 @@ import org.springframework.stereotype.Component;
  *
  * <p>Gate nuance: a plain {@code newGymData} gate would make a missed planned day itself
  * unreportable, because a missed day produces no new gym row to trigger the gate on. A miss IS
- * the new information, so this detector fires either when new gym data arrived alongside
- * >= 2 missed days in the trailing week, OR when the observed day itself is a missed planned
- * day (the miss is discovered simply by the nightly run reaching that date).
+ * the new information, so the "new data arrived" gate is widened to also fire when the observed
+ * day itself is a missed planned day (the miss is discovered simply by the nightly run reaching
+ * that date). This only widens which runs are eligible to fire — the {@code missed >= 2}
+ * threshold from spec §4 still gates every case, including the day-itself-missed one; a single
+ * missed day must stay quiet.
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
@@ -42,14 +44,13 @@ public class MesoAdherenceDetector implements CharacterDetector {
         int missed = 0;
         for (int i = 0; i < WINDOW_DAYS; i++) {
             LocalDate d = day.minusDays(i);
-            if (d.isAfter(day)) continue;
             if (in.meso().plannedDays().contains(d.getDayOfWeek()) && !in.meso().doneDays().contains(d)) {
                 missed++;
             }
         }
         boolean dayItselfMissed = in.meso().plannedDays().contains(day.getDayOfWeek())
                 && !in.meso().doneDays().contains(day);
-        boolean fires = (missed >= MIN_MISSED && RoundOneGates.newGymData(in)) || dayItselfMissed;
+        boolean fires = missed >= MIN_MISSED && (RoundOneGates.newGymData(in) || dayItselfMissed);
         if (!fires) {
             return List.of();
         }

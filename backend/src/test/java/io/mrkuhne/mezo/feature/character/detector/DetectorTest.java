@@ -308,6 +308,36 @@ class DetectorTest {
     }
 
     @Test
+    void mesoAdherence_dayItselfMissedAloneBelowThresholdIsQuiet() {
+        MesoAdherenceDetector d = new MesoAdherenceDetector();
+        // Only DAY (Thursday) itself is planned in the trailing week -> missed=1, no new gym
+        // data. The day-itself-missed clause must NOT bypass the missed>=2 threshold.
+        DetectorInput.MesoContext meso = new DetectorInput.MesoContext("Hyper", 3, 6, false,
+                Set.of(DayOfWeek.THURSDAY), Set.of());
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), List.of(), List.of(), meso,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).isEmpty();
+    }
+
+    @Test
+    void mesoAdherence_firesWithoutNewGymDataWhenDayItselfIsSecondMiss() {
+        MesoAdherenceDetector d = new MesoAdherenceDetector();
+        // Planned Mon + Thu -> Aug24(Mon) and DAY=Aug27(Thu) both missed -> missed=2, one of
+        // which is DAY itself, and no new gym data at all. The widened gate (day-itself-missed
+        // OR new gym data) must still let this fire once the threshold is met.
+        DetectorInput.MesoContext meso = new DetectorInput.MesoContext("Hyper", 3, 6, false,
+                Set.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), Set.of());
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), List.of(), List.of(), meso,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.summary()).contains("2");
+            assertThat(s.summary()).contains("3/6");
+        });
+    }
+
+    @Test
     void mesoAdherence_deloadSuppresses() {
         MesoAdherenceDetector d = new MesoAdherenceDetector();
         DetectorInput.MesoContext meso = new DetectorInput.MesoContext("Hyper", 3, 6, true,
@@ -341,6 +371,32 @@ class DetectorTest {
             assertThat(s.detectorKey()).isEqualTo("progression-adherence");
             assertThat(s.expertKey()).isEqualTo("edzo");
             assertThat(s.summary()).contains("maradt el");
+            assertThat(s.summary()).contains("2,5");
+            assertThat(s.summary()).contains("4");
+        });
+    }
+
+    @Test
+    void progressionAdherence_firesOnSystematicOvershoot() {
+        ProgressionAdherenceDetector d = new ProgressionAdherenceDetector();
+        List<DetectorInput.SetPoint> sets = List.of(
+                new DetectorInput.SetPoint(0, new BigDecimal("90"), 8, null,
+                        new BigDecimal("85"), null, false),
+                new DetectorInput.SetPoint(1, new BigDecimal("90"), 8, null,
+                        new BigDecimal("85"), null, false),
+                new DetectorInput.SetPoint(2, new BigDecimal("90"), 8, null,
+                        new BigDecimal("85"), null, false),
+                new DetectorInput.SetPoint(3, new BigDecimal("90"), 8, null,
+                        new BigDecimal("85"), null, false));
+        DetectorInput.ExerciseWork work = new DetectorInput.ExerciseWork(
+                "Squat", 4, 0, sets, null, null, null);
+        DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gymOn), List.of(), List.of(), List.of(), null,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("progression-adherence");
+            assertThat(s.summary()).contains("lőtt túl");
             assertThat(s.summary()).contains("2,5");
             assertThat(s.summary()).contains("4");
         });
