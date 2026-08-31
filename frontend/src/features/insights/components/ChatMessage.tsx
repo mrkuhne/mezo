@@ -21,12 +21,6 @@ export interface ChatMessageFeedback {
 // contracts (blank-answer naming, degraded badge, votable-only-persisted,
 // hidden-when-empty sections) are unchanged — this is a re-face, not a rewrite.
 export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatMessageFeedback }) {
-  // mezo-b3pp.29: the Emlékek row below carries the same recalled memories with their source and
-  // gist, so a bare [Memory] date chip beside it is pure duplication. Filtered ONLY when that row
-  // is actually there — with no recalled list the chip is the user's only provenance for the
-  // recall, and dropping it would destroy information rather than dedupe it.
-  const hasRecalled = !!m.recalled?.length
-  const visibleRefs = hasRecalled ? (m.refs ?? []).filter((r) => r.kind !== 'Memory') : (m.refs ?? [])
   if (m.role === 'user') {
     return (
       <div className="mzc-msg-u">
@@ -37,6 +31,14 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
       </div>
     )
   }
+  // mezo-b3pp.29: drop a Memory chip ONLY when the Emlékek row below actually carries that same
+  // day. Two backend paths emit kind="Memory" and only one feeds `recalled`: ambient recall
+  // (PromptMemoryAssembler) builds its refs and the disclosure envelope from the SAME items, so
+  // they always agree — but the find_similar_past_days tool (MemoryTools) adds refs that are never
+  // in `recalled`. Filtering by kind alone would hide the very day a tool-driven answer was built
+  // from, which is information loss rather than dedupe.
+  const recalledDays = new Set((m.recalled ?? []).map((x) => x.occurredOn))
+  const visibleRefs = (m.refs ?? []).filter((r) => r.kind !== 'Memory' || !recalledDays.has(r.id))
   return (
     <div className="mzc-msg-a col gap-sm">
       <div className="mzc-meta">

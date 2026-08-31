@@ -160,6 +160,30 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.getByText('Edzés')).toBeInTheDocument()
   })
 
+  // mezo-b3pp.29 fix wave: find_similar_past_days (MemoryTools) emits a Memory ref for a day that
+  // ambient recall never touched, so it is never in `recalled` — even though `recalled` is
+  // non-empty (ambient recall is always-on, so most turns have some recalled item). A kind-only
+  // filter would hide this chip and the day it points to would appear nowhere in the UI.
+  test('keeps a Memory chip whose day the Emlékek row does not carry', () => {
+    render(
+      <ChatMessage
+        m={{
+          id: 'm-dedupe-4',
+          role: 'assistant',
+          ts: '10:00',
+          text: 'Válasz.',
+          refs: [{ kind: 'Memory', id: '2026-02-11' }],
+          recalled: [
+            { occurredOn: '2026-05-21', kind: 'Journal', label: 'Napló', gist: 'jól aludtam', similarity: 0.9 },
+          ],
+        }}
+      />,
+    )
+    const memoryRef = screen.getAllByText('Memory').find((el) => el.classList.contains('mzc-refk'))
+    expect(memoryRef).toBeTruthy()
+    expect(memoryRef!.parentElement).toHaveTextContent('febr. 11.')
+  })
+
   test('hides the whole refs footer when filtering leaves nothing (latent empty-array-is-truthy bug)', () => {
     render(
       <ChatMessage
