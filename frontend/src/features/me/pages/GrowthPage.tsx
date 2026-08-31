@@ -10,7 +10,7 @@
 // hero never gates or rewards anything by itself.
 // ============================================================
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -18,6 +18,7 @@ import { useAchievements, useActivityHistory, useProgressionProfile, useQuestHis
 import { SkillBandCard, type SkillRowVM } from '@/features/me/components/SkillBandCard'
 import { GrowthJournalCard } from '@/features/me/components/GrowthJournalCard'
 import { BadgesCard } from '@/features/me/components/BadgesCard'
+import { StreakCard, TitlesSection } from '@/features/progression/components/ProgressionHome'
 import { PerksCard } from '@/features/me/components/PerksCard'
 import { RoutinesTab } from '@/features/me/components/RoutinesTab'
 import { buildGrowthJournal } from '@/features/me/logic/growthJournal'
@@ -50,7 +51,7 @@ const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
 const byLevelXpDesc = (a: SkillLevel, b: SkillLevel) =>
   b.level - a.level || b.cumulativeXp - a.cumulativeXp
 
-function toRows(skills: SkillLevel[], iconOf: (key: string) => string, nameOf: (key: string) => string): SkillRowVM[] {
+function toRows(skills: SkillLevel[], iconOf: (key: string) => React.ReactNode, nameOf: (key: string) => string): SkillRowVM[] {
   return [...skills].sort(byLevelXpDesc).map((s) => ({
     key: s.skillKey, icon: iconOf(s.skillKey), name: nameOf(s.skillKey),
     level: s.level, progressPct: s.progressPct, xp: s.cumulativeXp,
@@ -60,7 +61,11 @@ function toRows(skills: SkillLevel[], iconOf: (key: string) => string, nameOf: (
 export function GrowthPage() {
   const navigate = useNavigate()
   const { data: profile } = useProgressionProfile()
-  const [tab, setTab] = useState<Tab>('skills')
+  // F7.4: the hub's streak/coin chips deep-link here with ?tab=awards.
+  const [searchParams] = useSearchParams()
+  const initialTab = (['skills', 'routines', 'journal', 'awards'] as const).includes(searchParams.get('tab') as Tab)
+    ? (searchParams.get('tab') as Tab) : 'skills'
+  const [tab, setTab] = useState<Tab>(initialTab)
 
   const life = profile.life ?? []
   const athletic = profile.athletic ?? []
@@ -117,7 +122,11 @@ export function GrowthPage() {
                   wash="lav"
                   eyebrow="LIFE"
                   chip={`8 skill · ${fmt(lifeXp)} XP`}
-                  rows={toRows(life, (k) => lifeMeta(k)?.icon ?? '✨', (k) => lifeMeta(k)?.name ?? k)}
+                  rows={toRows(life, (k) => {
+                    const m = lifeMeta(k)
+                    // F7.4: the LIFE band renders the clay life-area symbol, not the emoji.
+                    return m ? <ClayIcon name={m.clayIcon} size={15} /> : '✨'
+                  }, (k) => lifeMeta(k)?.name ?? k)}
                   footer={typeof savings === 'number' && savings > 0 ? (
                     <>
                       <span style={{ color: 'var(--mz-ink-soft)' }}>Megtakarítás (30 nap)</span>
@@ -166,6 +175,10 @@ function AwardsTab() {
   const { data } = useAchievements()
   return (
     <div className="col gap-md">
+      {/* F7.4 (mezo-d20.8.4.1): the progression's home — the retired StreakSheet/
+          TitleShopSheet content lives HERE now; the hub's 🔥/🪙 chips deep-link to this tab. */}
+      <StreakCard delayMs={0} />
+      <TitlesSection delayMs={60} />
       <BadgesCard badges={data.badges} />
       <PerksCard perks={data.perks} />
     </div>

@@ -28,7 +28,8 @@ describe('AiCallDetailPage (mock mode)', () => {
     renderDetail()
     expect(screen.getByText(/companion_chat/)).toBeInTheDocument()
     expect(screen.getAllByText('gemini-2.5-flash').length).toBeGreaterThan(0)
-    expect(screen.getByText('7.8 s')).toBeInTheDocument()
+    // F7.4: the latency shows twice now — the hero stat strip AND the meta grid cell
+    expect(screen.getAllByText('7.8 s').length).toBeGreaterThan(0)
     expect(screen.getByText('SIKER')).toBeInTheDocument()
   })
 
@@ -78,7 +79,7 @@ describe('AiCallDetailPage (mock mode)', () => {
     const rises = container.querySelectorAll('.rise')
     expect(rises.length).toBeGreaterThan(0)
     for (const el of rises) expect(play!.contains(el)).toBe(true)
-    expect(play!.contains(screen.getByRole('link', { name: 'Vissza' }))).toBe(false)
+    expect(play!.contains(screen.getByRole('button', { name: 'Vissza' }))).toBe(false)
   })
 })
 

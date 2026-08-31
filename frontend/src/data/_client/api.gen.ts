@@ -6212,7 +6212,7 @@ export interface components {
             weekStart: string;
             /** @description Display title of the week's narrative */
             title: string;
-            /** @description The memoir prose (single narrative paragraph block) */
+            /** @description The memoir prose — narrative paragraphs separated by "\n\n" (prompt v2, mezo-uajy) */
             body: string;
             anchors: components["schemas"]["MemoirAnchor"][];
             /** Format: date-time */

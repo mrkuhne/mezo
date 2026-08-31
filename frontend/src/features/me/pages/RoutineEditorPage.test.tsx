@@ -76,9 +76,9 @@ describe('RoutineEditorPage', () => {
     expect(container.querySelectorAll('[data-sortable-row]')).toHaveLength(15)
   })
 
-  it('has a back link to /me/growth', () => {
+  it('has a back chip to /me/growth (F7.4: PageHead button)', () => {
     renderPage()
-    fireEvent.click(screen.getByRole('link', { name: /vissza/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
     expect(screen.getByTestId('growth-probe')).toBeInTheDocument()
   })
 
@@ -144,7 +144,7 @@ describe('RoutineEditorPage', () => {
       catalog: { chains: [{ ...MORNING, isActive: false }, EVENING] }, isPending: false,
     })
     const { container } = renderPage()
-    const card = screen.getByText('Reggeli rutin').closest('.card')
+    const card = screen.getByText('Reggeli rutin').closest('.mz-qcard')
     expect(card).toHaveClass('is-inert')
     expect(container.querySelectorAll('[data-sortable-row]')).toHaveLength(15)
   })
@@ -160,6 +160,6 @@ describe('RoutineEditorPage', () => {
     const rises = container.querySelectorAll('.rise')
     expect(rises.length).toBeGreaterThanOrEqual(3) // two chain cards + the CTA row
     for (const el of rises) expect(play!.contains(el)).toBe(true)
-    expect(screen.getByText('Reggeli rutin').closest('.card')).toHaveClass('rise')
+    expect(screen.getByText('Reggeli rutin').closest('.mz-qcard')).toHaveClass('rise')
   })
 })

@@ -118,6 +118,11 @@
      pins itself above the tab bar (a sticky composer) offsets by this same token. */
   --screen-bottom-pad: 118px;
 
+  /* Hairline horizontal gutter on the app scroller — no page or the shell header may
+     touch the physical screen edge (user QA, mezo-itsq). One token, applied once on
+     .screen-content; every page and the header sit inside it and inherit the gutter. */
+  --screen-gutter: 2px;
+
   /* ─── Shadows ─── */
   --shadow-xs: 0 1px 2px rgba(43, 33, 24, 0.04);
   --shadow-sm: 0 2px 6px rgba(43, 33, 24, 0.06);
@@ -844,6 +849,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   -webkit-overflow-scrolling: touch;
   padding-top: 54px;
   padding-bottom: var(--screen-bottom-pad);
+  padding-inline: var(--screen-gutter);
   scroll-behavior: smooth;
   position: relative;
 }
@@ -1496,6 +1502,37 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 @keyframes mezo-shimmer { 100% { transform: translateX(100%); } }
 .sk--circle { border-radius: 50%; }
 @media (prefers-reduced-motion: reduce) { .sk::after { display: none; } }
+
+/* ChallengeGenerationLoader — game-style loading while the day's challenges
+   LLM-generate (mezo-tvw8). Rotating status line (fade replays via key remount)
+   + fake-progress bar: fast start, decelerating creep toward ~92%, never
+   self-completing — the data arriving unmounts the whole loader. */
+.mz-chload { display: flex; flex-direction: column; gap: 10px; padding: 18px 4px; align-items: center; }
+.mz-chload-line {
+  font-size: 13px;
+  color: var(--text-secondary);
+  animation: mz-chload-fade .45s ease-out;
+}
+.mz-chload-bar {
+  width: min(260px, 80%);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-subtle);
+  overflow: hidden;
+}
+.mz-chload-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--coral);
+  width: 4%;
+  animation: mz-chload-fill 28s cubic-bezier(0.15, 0.6, 0.3, 1) forwards;
+}
+@keyframes mz-chload-fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes mz-chload-fill { 0% { width: 4%; } 8% { width: 42%; } 30% { width: 70%; } 100% { width: 92%; } }
+@media (prefers-reduced-motion: reduce) {
+  .mz-chload-line { animation: none; }
+  .mz-chload-fill { animation: none; width: 60%; }
+}
 
 /* Stepper */
 .stepper {
@@ -5683,7 +5720,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .tud-summary-link { display: block; margin-top: 10px; font-size: 11px; font-weight: 700;
   color: var(--mz-cell-lav-ink); text-decoration: none; }
 .tud-lsec { display: flex; align-items: center; gap: 6px; padding: 10px 2px 6px; }
-.tud-cnt { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.tud-kind-empty { opacity: 0.45; }
 
 @media (prefers-reduced-motion: reduce) {
   .ppl-tile:active { transform: none; }

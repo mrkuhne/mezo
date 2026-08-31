@@ -245,6 +245,24 @@ this redesign and remain as shipped.
   gamified-growth E3 (`mezo-6ng8`)** the gather also appends the **`NÖVEKEDÉS` block**
   (`GrowthDigestBlock.render`) for the **CURRENT** week (`weekStart`, the week being memoir'd), so the
   narrative can name the week's quests/LIFE XP/savings. See [`growth.md` §5](growth.md).
+  **Prompt v2 (`mezo-uajy`,
+  [spec](../superpowers/specs/2026-08-31-memoir-prompt-v2-design.md))** — the four-line
+  adjective prompt became a blocked, behaviour-stating voice contract in the chat-persona idiom
+  (chronicler-companion: narrates, never grades/moralizes/advises; title rule; **2–4 paragraphs
+  separated by `\n\n`**, ~120–220 words; a good/bad tone example; the medication prohibition
+  stays). The gather widened to the weekly-review shape: patterns are **narrowed to CONFIRMED +
+  the week's event-bearing ones** (rejected rows no longer leak in as anchors), plus
+  **life events** (`LifeEvent` anchor candidates), **week PRs** (all-time bests whose
+  `bestSet.date` fell in-week via `ExerciseRecordService` — a new cycle-safe `proactive → train`
+  read; `PR` anchor candidates), the week's **predictions with status**, and the
+  **`WeeklyReviewContextSources` wider context verbatim** (journal, decisions, experiments,
+  mention counts, medication-cycle position, week narrative — no anchor candidates). The JSON
+  contract is now `{title, body, anchors:[{index, note}]}` (legacy `anchorIndexes` still parsed
+  as fallback); **Memory anchor labels are composed server-side** into human HU day labels
+  (`MemoirGenerator.memoryLabel`: `aug. 29., szombat — <note≤60>`) so the FE chips stop showing
+  raw ISO dates. The fake's `MEMOIR_SENTINEL` went GREEDY (nested `anchors` objects) and its
+  default answer speaks the v2 shape; load-bearing prompt lines are pinned by
+  `MemoirPromptTest`, the widened gather by `MemoirGeneratorIT`.
 - **A Sunday-evening cron** — `MemoirJob` `@Scheduled` on `mezo.proactive.memoir.cron`
   (**`0 0 19 * * SUN`** — Sunday 19:00 server zone, the old PRD journey 5.8) pre-generates the memoir
   for the week **ENDING that Sunday** (its Monday = `previousOrSame(MONDAY)` of "now"). At 19:00 the
