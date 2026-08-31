@@ -1,4 +1,4 @@
-import { memoryIcon, refDomain, toolDomain } from '@/features/insights/logic/toolDomains'
+import { memoryIcon, parseToolName, refDomain, toolDomain } from '@/features/insights/logic/toolDomains'
 
 describe('toolDomain', () => {
   it('maps the real companion tools to human labels + clay icons + washes', () => {
@@ -10,6 +10,31 @@ describe('toolDomain', () => {
   })
   it('falls back honestly on an unknown tool: raw name, neutral wash', () => {
     expect(toolDomain('recallSharedMemory')).toEqual({ label: 'recallSharedMemory', icon: 'i-mezo', wash: 'neutral' })
+  })
+  it('maps baked wire names name(args) to the same domain as the bare name', () => {
+    expect(toolDomain('get_recovery(days=3)')).toEqual({ label: 'Alvás & pihenés', icon: 'i-alvas', wash: 'lav' })
+    expect(toolDomain('get_weight_log(days=7)')).toEqual({ label: 'Súlynapló', icon: 'i-suly', wash: 'sky' })
+  })
+  it('falls back honestly on an unknown baked wire name: parsed base, neutral wash', () => {
+    expect(toolDomain('recallSharedMemory(foo=1)')).toEqual({ label: 'recallSharedMemory', icon: 'i-mezo', wash: 'neutral' })
+  })
+})
+
+describe('parseToolName', () => {
+  it('splits a bare name with no params', () => {
+    expect(parseToolName('get_recovery')).toEqual({ base: 'get_recovery' })
+  })
+  it('splits base and params at the first paren', () => {
+    expect(parseToolName('get_recovery(days=3)')).toEqual({ base: 'get_recovery', params: 'days=3' })
+  })
+  it('extracts multiple comma-separated params verbatim', () => {
+    expect(parseToolName('get_recovery(days=3, scope=sleep)')).toEqual({
+      base: 'get_recovery',
+      params: 'days=3, scope=sleep',
+    })
+  })
+  it('takes everything after the first ( when the closing paren is missing', () => {
+    expect(parseToolName('get_recovery(days=3')).toEqual({ base: 'get_recovery', params: 'days=3' })
   })
 })
 

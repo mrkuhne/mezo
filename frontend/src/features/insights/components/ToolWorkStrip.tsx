@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ClayIcon } from '@/shared/ui/clay'
-import { toolDomain } from '@/features/insights/logic/toolDomains'
+import { parseToolName, toolDomain } from '@/features/insights/logic/toolDomains'
 import type { Tool } from '@/shared/ui/ToolChip'
 
 /** mezo-vdf4: the chat's tool calls as ONE human work strip instead of n raw
@@ -46,6 +46,7 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
           {tools.map((t, i) => {
             const d = toolDomain(t.name)
             const running = live && i === tools.length - 1
+            const params = t.args ?? parseToolName(t.name).params
             return (
               <div key={i} className={running ? 'mzc-wrow run' : 'mzc-wrow'}>
                 <span className={`mzc-wric dm-${d.wash}`}>
@@ -53,7 +54,7 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
                 </span>
                 <span className="col" style={{ minWidth: 0 }}>
                   <span className="mzc-wnm">{d.label}</span>
-                  {t.args && <span className="mzc-wprm">{t.args}</span>}
+                  {params && <span className="mzc-wprm">{params}</span>}
                 </span>
                 <span className="mzc-wst">{running ? <><i /> fut</> : '✓'}</span>
               </div>

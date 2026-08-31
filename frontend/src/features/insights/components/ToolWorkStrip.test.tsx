@@ -39,6 +39,13 @@ describe('ToolWorkStrip', () => {
     expect(screen.getByText('fut')).toBeInTheDocument()
   })
 
+  it('a baked wire name shows the parsed label and params subline when args is absent', () => {
+    render(<ToolWorkStrip tools={[{ type: 'read', name: 'get_recovery(days=7, scope=sleep)' }]} />)
+    fireEvent.click(screen.getByRole('button', { name: /Utánanézett/ }))
+    expect(screen.getByText('Alvás & pihenés')).toBeInTheDocument()
+    expect(screen.getByText('days=7, scope=sleep')).toBeInTheDocument()
+  })
+
   it('renders nothing for an empty tool list', () => {
     const { container } = render(<ToolWorkStrip tools={[]} />)
     expect(container).toBeEmptyDOMElement()

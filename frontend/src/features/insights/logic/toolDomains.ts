@@ -35,8 +35,22 @@ const TOOLS: Record<string, ToolDomain> = {
   compare_periods: { label: 'Időszak-összevetés', icon: 'i-idozito', wash: 'lav' },
 }
 
+/** mezo-vdf4: the wire bakes tool args into the name — `get_recovery(days=3)` —
+ *  because `Tool.args` is unused on the backend. Split at the FIRST `(` so both
+ *  the bare name and the baked form resolve to the same domain; malformed input
+ *  (no closing paren) still yields a best-effort params string. */
+export function parseToolName(name: string): { base: string; params?: string } {
+  const i = name.indexOf('(')
+  if (i === -1) return { base: name }
+  const base = name.slice(0, i)
+  const rest = name.slice(i + 1)
+  const params = rest.endsWith(')') ? rest.slice(0, -1) : rest
+  return { base, params }
+}
+
 export function toolDomain(name: string): ToolDomain {
-  return TOOLS[name] ?? NEUTRAL(name)
+  const { base } = parseToolName(name)
+  return TOOLS[base] ?? NEUTRAL(base)
 }
 
 /** Ref kinds (the wire's `ChatRef.kind` vocabulary — see chatRefs.ts KIND_LABELS). */
