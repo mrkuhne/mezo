@@ -316,3 +316,59 @@ using the same tap-through run-detail page.
   inventory grouping, and round order; reframed: whether the Feed "⚙" should keep navigating away
   or also carry a shorter inline summary) are listed in the prototype's own "Döntési kérdések
   Danielnek" section for the next round.
+
+## Round 4 (mezo-1gim.14) — the run page tells a story
+
+Daniel reviewed a screenshot of the "Éjszakai kör" run-detail page from round 3: *"én itt most
+nem értem mit látok"* — the page showed data but told no story. Seven concrete comprehension
+fixes:
+
+1. **Narrative first.** The hero gained one plain-Hungarian sentence under the date/badge that
+   states what happened, built from the same data the page renders below it — e.g. "Átnéztük a
+   vasárnapi napodat — 3 jel tüzelt, ebből 3 megfigyelés készült (Táplálkozó, Drill,
+   Pszichológus)." for a noisy night, or the exact wording Daniel gave verbatim for a quiet one:
+   "Csendes éjszaka — egyetlen jel sem tüzelt, ezért senkit sem hívtunk." Konzílium/havi/
+   bootstrap runs got their own one-line summaries too — every run page is now understandable
+   from the hero alone, before scrolling.
+2. **The 3×"1" stat strip became a connected flow.** `[N jel] → [N hívás] → [N megfigyelés]`
+   renders as three linked steps with visible arrows, not three floating identical numbers. The
+   equality is now legible as *proof of the pipeline's determinism* (one fired detector → one
+   LLM call → one observation, per `character.md` §3) rather than reading as broken/duplicated
+   data — the aside explains this framing explicitly since it's a subtle point.
+3. **The chain card reads as two numbered steps.** "1 · A KÓD ÉSZLELTE" (the detector-key chip
+   stays monospace; the summary sentence is now normal body type — monospace prose was
+   unreadable) → a connector that carries the "↓ LLM értelmezi" label as part of itself, not
+   floating text → "2 · &lt;SZAKÉRTŐ&gt; ÉRTELMEZTE" (orb avatar + the observation, normal type).
+4. **Cryptic refIds replaced.** `focus:204`-style chips are gone. Picked the honest-and-readable
+   option: a single quiet line ("3 forrás-hivatkozás (étkezés-napló)") — count + category, no
+   raw identifiers, and deliberately **not** an expandable list (that would just be another
+   dropdown). Noted in the aside as the decision, with human labels (e.g. "heti fókusz · aug
+   22.") flagged as a possible next-round upgrade if more detail is wanted.
+5. **Mock semantic bug fixed across all run data.** The screenshot caught `under-logging` paired
+   with a positive sentence about a nonexistent "heti fókuszok" (weekly-quest) domain — wrong on
+   two axes: `under-logging` is the missing-meal-logs-plus-rising-weight detector, and it's a
+   *negative* signal. Audited and corrected every mock chain in `CHAIN_POOL` and `FEED` against
+   the real catalog: `logging-gap` (missing meal logs, Táplálkozó), `under-logging` (logged
+   intake trailing the weight trend, negative/mirror-toned, Táplálkozó), `checkin-gap` (missed
+   check-ins, Drill — replacing the fabricated focus-tracking domain), `journal-silence`/
+   `journal-note` (Pszichológus, unchanged, already correct). One more latent bug caught in the
+   same pass: a `logging-gap` (missing logs) entry paired with a positive "protein goal met"
+   sentence — fixed to follow from the actual signal.
+6. **"Who wasn't called" compressed.** The run page now shows one quiet line ("A többi szakértő
+   ma nem kapott hívást — az ő jeleik a heti konzíliumon érkeznek."); the full geek detail
+   (exactly which 3 of 5 detectors cover which 3 of 7 experts today) moved into the aside's
+   design notes, where it belongs as commentary rather than product copy.
+7. **Run-kind visuals now carry meaning, consistently.** Éjszaka = `s-orb-ejszaka` (Mezo's own
+   night-state orb, already breathing); konzílium = an amber disc + `i-minta` icon (matching the
+   HETI badge's gold tone); havi = a lavender disc + `i-retegek` icon (matching the HAVI badge's
+   lavender tone, "layered re-read"); bootstrap = the original coral `s-orb` (the founding
+   moment gets the "main" orb identity). The mapping is noted in the aside and ties directly to
+   the existing run-badge color tokens rather than being arbitrary.
+
+### Net effect / what's unchanged
+
+- The week-stepper, month-jump popover, and "Ritkább futások" list from round 3 are untouched.
+- The Feed page's "⚙" still navigates (not expands) to the same run-detail page — unchanged
+  behavior, just now landing on a page that actually explains itself.
+- The Konzílium page's own transcript UI is unchanged; the run-detail page's "Teljes transzkript
+  megnyitása" link still hands off to it for the one session with full turn-level detail.

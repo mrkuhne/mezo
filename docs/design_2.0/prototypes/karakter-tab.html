@@ -366,20 +366,23 @@
 
   .quietnote { font-size: 9.5px; font-weight: 300; color: #4E6B42; background: rgba(143,175,126,0.12); border-radius: 10px; padding: 8px 10px; line-height: 1.55; }
   .quietnote b { color: #3E5A34; }
-  .quietexperts { font-size: 8.5px; color: #A2958A; margin-top: 9px; line-height: 1.6; }
-
-  .chain { border-radius: 12px; padding: 9px 10px; margin-top: 8px; background: #F7F5F0; border: 0.5px solid rgba(43,33,24,0.06); }
+  .chain { border-radius: 12px; padding: 11px 12px; margin-top: 8px; background: #F7F5F0; border: 0.5px solid rgba(43,33,24,0.06); }
   .chain:first-child { margin-top: 0; }
-  .coderow { display: flex; gap: 8px; align-items: flex-start; }
-  .detchip { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8px; font-weight: 700; background: #3D525C; color: #E7ECEE; border-radius: 6px; padding: 3px 7px; flex: none; letter-spacing: 0.01em; }
-  .codetxt { font-size: 9.5px; color: #4A4038; line-height: 1.5; font-family: "SF Mono", Menlo, Consolas, monospace; }
-  .refrow2 { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; margin-left: 39px; }
-  .refchip { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 7px; font-weight: 600; color: #6E6257; background: rgba(43,33,24,0.06); border-radius: 5px; padding: 2px 6px; }
-  .chainarrow { text-align: center; color: #A2958A; font-size: 10px; margin: 6px 0 6px 39px; }
+  .chainstep { display: flex; gap: 10px; align-items: flex-start; }
+  .chainstepnum { width: 20px; height: 20px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    font-size: 9px; font-weight: 800; background: #3D525C; color: #E7ECEE; margin-top: 1px; }
+  .chainstepnum.llm { background: var(--dc, #A84A26); }
+  .chainsteplbl { font-size: 7.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E6257; margin-bottom: 5px; }
+  .chain.big .chainsteplbl { font-size: 8px; }
+  .detchip { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8px; font-weight: 700; background: #3D525C;
+    color: #E7ECEE; border-radius: 6px; padding: 3px 7px; display: inline-block; letter-spacing: 0.01em; margin-bottom: 6px; }
+  .codetxt { font-size: 10px; color: #2B2118; line-height: 1.55; font-weight: 400; }
   .llmrow { display: flex; gap: 8px; align-items: flex-start; }
   .llmrow .lldisc { width: 22px; height: 22px; border-radius: 50%; flex: none; overflow: hidden; box-shadow: 0 3px 8px -3px var(--dc); }
-  .llmrow .lleyebrow { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dc); }
-  .llmrow .lltxt { font-size: 9.5px; font-weight: 300; margin-top: 2px; line-height: 1.5; }
+  .lltxt { font-size: 10px; color: #2B2118; line-height: 1.55; font-weight: 400; }
+  .chainconn { display: flex; align-items: center; gap: 7px; margin: 8px 0 8px 1px; font-size: 8.5px; font-weight: 700; color: #A2958A; }
+  .chainconn .arrow { width: 20px; text-align: center; flex: none; color: #3D525C; font-size: 12px; }
+  .refcount { font-size: 8px; color: #A2958A; margin-top: 10px; padding-top: 8px; border-top: 0.5px dashed rgba(43,33,24,0.12); }
 
   .invrow { display: flex; gap: 9px; align-items: flex-start; padding: 9px 2px; border-bottom: 0.5px solid rgba(43,33,24,0.07); }
   .invrow .iw { font-size: 9.5px; font-weight: 700; }
@@ -421,7 +424,17 @@
   /* ===== futás-részlet oldal ===== */
   .page.p-run { background: linear-gradient(180deg, #DCE4E7 0%, #FDFAF4 36%), #FDFAF4; }
   .runhero-ic { width: 54px; height: 54px; display: grid; place-items: center; margin-bottom: 2px; }
-  .runhero-ic svg { animation: orbbreathe 4.5s ease-in-out infinite; }
+  .runhero-ic svg.breathe { animation: orbbreathe 4.5s ease-in-out infinite; }
+  .runhero-ic.disc { border-radius: 50%; }
+  .runhero-ic.disc.amber { background: linear-gradient(150deg, #FBEBCB, #FFFAF0); box-shadow: 0 10px 22px -10px rgba(201,150,46,0.55); }
+  .runhero-ic.disc.lav { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 10px 22px -10px rgba(93,79,160,0.5); }
+  .runlede { font-size: 10.5px; color: #4A4038; font-weight: 400; line-height: 1.55; max-width: 250px; margin: 5px auto 0; }
+  .runflow { display: flex; align-items: center; gap: 3px; margin: 2px 0 16px; }
+  .runflow .step { flex: 1; text-align: center; border-radius: 13px; padding: 9px 3px 8px;
+    background: rgba(61,82,92,0.08); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); }
+  .runflow .step b { display: block; font-size: 18px; font-weight: 700; color: #3D525C; font-variant-numeric: tabular-nums; }
+  .runflow .step small { display: block; font-size: 6.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #6E6257; margin-top: 1px; }
+  .runflow .arrow { flex: none; width: 14px; text-align: center; color: #A2958A; font-size: 13px; }
   .runstats { display: flex; gap: 8px; margin: 2px 0 16px; }
   .runstats .rc { flex: 1; text-align: center; border-radius: 13px; padding: 9px 4px 8px;
     background: rgba(61,82,92,0.08); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); }
@@ -1118,7 +1131,7 @@
     </symbol>
 </svg>
 <div class="wrap">
-  <p class="eyebrow">Mezo · oldalépítés · Karakter (Én tab, dosszié) · v4</p>
+  <p class="eyebrow">Mezo · oldalépítés · Karakter (Én tab, dosszié) · v4.1</p>
   <h1>Karakter oldal</h1>
   <p class="lede">A Karakter-dosszié felhasználói felülete — a backend már megvan (7 CORE dimenzió,
   7 szakértő + Szkeptikus + Mezo elnök, heti konzílium, bootstrap, claim-visszajelzés — lásd
@@ -1281,6 +1294,7 @@
             <div class="runhero-ic" id="runIc"></div>
             <div class="nm" id="runName">—</div>
             <div class="sb" id="runSub">—</div>
+            <p class="runlede" id="runLede"></p>
           </div>
           <div class="page-body">
             <div class="runstats" id="runStats"></div>
@@ -1481,6 +1495,58 @@
           elért ugyanazon oldalon is kimondva látszik, nem elhallgatva.</li>
         </ul>
       </div>
+      <div>
+        <h2>4.1 — a futás-oldal most mesél (mezo-1gim.14)</h2>
+        <ul>
+          <li><strong>Daniel a screenshot alapján:</strong> „én itt most nem értem mit látok” — a
+          korábbi verzió adatot mutatott, de nem történetet. Négy konkrét javítás:</li>
+          <li><strong>Narratíva elöl</strong> — a hero most egy sima magyar mondattal kezd a dátum
+          alatt („Átnéztük a hétfői napodat — 1 jel tüzelt, ebből 1 megfigyelés készült…” / csendes
+          éjjel: „Csendes éjszaka — egyetlen jel sem tüzelt, ezért senkit sem hívtunk.”) — a hero
+          önmagában is érthető, a lejjebb görgetés csak a részletekért kell.</li>
+          <li><strong>Folyam-sáv a 3×„1” helyett</strong> — a három azonos szám most összekötött
+          lépésekként jelenik meg: <code>N jel → N hívás → N megfigyelés</code>, nyilakkal. Az
+          egyenlőség (1:1:1) a valós pipeline determinisztikus jellegét mutatja — minden tüzelt
+          jelhez pontosan egy LLM-hívás, minden híváshoz pontosan egy megfigyelés tartozik —, nem
+          hibás duplikáció.</li>
+          <li><strong>Jel-lánc mint két számozott lépés</strong> — „1 · A KÓD ÉSZLELTE” (a
+          detektor-kulcs marad monospace chip, de az összefoglaló mondat már sima szövegtípus —
+          a monospace próza olvashatatlan volt) → egy vizuális kötő-elem („↓ LLM értelmezi”, most
+          a kártya része, nem lebegő szöveg) → „2 · &lt;SZAKÉRTŐ&gt; ÉRTELMEZTE” (orb + a
+          megfigyelés sima szövegben).</li>
+          <li><strong>Forrás-hivatkozások</strong> — a kriptikus <code>focus:204</code>-szerű
+          chipek eltűntek. A becsületes-és-olvasható választás: egyetlen csendes sor
+          („3 forrás-hivatkozás (étkezés-napló)”) — <strong>szám + kategória, azonosítók nélkül</strong>,
+          nem egy kibontható lista (az maga is dropdown lenne). Ha ez a részletesség kevés,
+          a következő kör adhat emberi címkéket (pl. „heti fókusz · aug 22.”) az azonosítók helyett.</li>
+          <li><strong>„Kit nem hívtunk” tömörítve</strong> — a futás-oldalon most egy csendes sor áll
+          („A többi szakértő ma nem kapott hívást — az ő jeleik a heti konzíliumon érkeznek.”); a
+          teljes geek részlet (melyik 3 detektor melyik 3 szakértőt fedi ma: <code>logging-gap</code>
+          és <code>under-logging</code> → Táplálkozó, <code>checkin-gap</code> → Drill,
+          <code>journal-silence</code>/<code>journal-note</code> → Pszichológus; Doki, Edző,
+          Szomnológus, Antropológus a heti/havi kör saját olvasásából és Daniel
+          visszajelzéseiből gyűjt) ide, a design-jegyzetekbe költözött — a termékben ez már csak
+          a fenti egy sor.</li>
+          <li><strong>Mock-szemantika audit</strong> — a screenshot egy valódi hibát fogott: az
+          <code>under-logging</code> chip pozitív szöveggel párosult, holott ez egy <em>negatív</em>
+          jel (a logolt bevitel elmarad a súlytrend mögött — lásd
+          <code>docs/features/character.md</code> §9). Minden futás-mock át lett nézve és
+          javítva a valós detektor-jelentések szerint: <code>logging-gap</code> = hiányzó
+          étkezés-napló (Táplálkozó), <code>under-logging</code> = alul-logolt bevitel a
+          súlytrendhez képest, negatív jel (Táplálkozó), <code>checkin-gap</code> = kihagyott
+          check-in (Drill), <code>journal-silence</code>/<code>journal-note</code> = napló-csend
+          / friss bejegyzés (Pszichológus). A korábbi „heti fókuszok naplózása” szöveg egy nem
+          létező detektor-tartomány volt — törölve.</li>
+          <li><strong>Kör-típus vizuál most jelent valamit</strong> — éjszakai kör = a
+          <code>s-orb-ejszaka</code> (a Mezo orb éjszakai, sötétebb állapota — lélegzik, mint a
+          hero mindenhol máshol); konzílium = arany korong + <code>i-minta</code> ikon (a
+          konzílium HETI jelvényének arany tónusa); havi mélyolvasás = levendula korong +
+          <code>i-retegek</code> ikon (rétegzett újraolvasás — a HAVI jelvény levendula tónusa);
+          bootstrap = az eredeti korall <code>s-orb</code> (az alapítás pillanata kapja a
+          „fő” orb-identitást). A színek a futás-idővonal jelvényeivel (ÉJSZAKAI szürkészöld,
+          HETI arany, HAVI levendula) egyeznek, nem önkényesek.</li>
+        </ul>
+      </div>
       <div class="democtl">
         <span>Demó-vezérlők:</span>
         <button id="demoBoot">Bootstrap-folyamat</button>
@@ -1647,8 +1713,8 @@
       { who: 'doki', text: 'A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.',
         source: 'Doki ma éjjel nem kapott detektor-jelet — a mai katalógus nem fed feléje tartományt; ez a megfigyelés a heti konzílium saját olvasásából született.',
         runId: 'konz-30' },
-      { who: 'drill', text: 'A tegnapi kihagyott logolást ma reggelre már pótoltad — ez a minta ismerős nálad.',
-        chain: { detector: 'under-logging', code: 'a heti fókuszok naplózása 2 napja elmaradt (2/3 kitöltve)', refs: ['focus:220', 'focus:221'] },
+      { who: 'drill', text: 'A hétvégén kétszer maradt el a reggeli check-in — hétköznap ritkán fordul elő nálad.',
+        chain: { detector: 'checkin-gap', code: '2 napja elmaradt a reggeli check-in', refs: ['checkin:918', 'checkin:919'] },
         runId: 'ejsz-30' },
       { diff: true, text: 'Vasárnapi konzílium: 2 új állítás · 1 portré átírva', page: 'page-konz' }
     ] },
@@ -1664,7 +1730,7 @@
       { who: 'pszichologus', text: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.',
         chain: { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 27., 210 karakter)', refs: ['journal:5521'] },
         runId: 'ejsz-27' },
-      { who: 'taplalkozo', text: 'Három egymást követő napon a fehérjecél 5 g-on belül teljesült.',
+      { who: 'taplalkozo', text: 'Három napja nem logoltál étkezést — ritkán fordul elő nálad ekkora szünet.',
         chain: { detector: 'logging-gap', code: '3. napja nincs étkezés logolva (utolsó: aug 24.)', refs: ['meal:1421', 'meal:1422', 'meal:1423'] },
         runId: 'ejsz-27' },
       { diff: true, text: 'Portré frissült: Alvás & regeneráció — a hétvégi eltolódás mostantól „biztos” szintű állítás.', dim: 'recovery' }
@@ -1673,8 +1739,8 @@
       { who: 'antropologus', text: 'Petra harmadik alkalommal jelenik meg a hét naplóiban.',
         source: 'Antropológus ma sem kapott nightly-jelet — az élet- és kapcsolat-tartományt egyelőre csak a heti/havi kör olvassa.',
         runId: 'konz-23' },
-      { who: 'drill', text: 'A heti fókuszok mindhárma teljesült — negyedik egymást követő hete.',
-        chain: { detector: 'under-logging', code: 'a heti fókuszok naplózása 4 hete folyamatos, kihagyás nélkül', refs: ['focus:204', 'focus:211', 'focus:218'] },
+      { who: 'taplalkozo', text: 'Két hete rendszeresen kevesebbet mutat a napló, mint amit a súlyad enged sejtetni — érdemes átnézni, mi marad ki.',
+        chain: { detector: 'under-logging', code: 'a logolt bevitel két hete elmarad a súlytrendtől', refs: ['meal:1355', 'weight:889'] },
         runId: 'ejsz-24' }
     ] }
   ];
@@ -1748,16 +1814,29 @@
       '<div class="dline">' + top + '</div></div>';
   }).join('');
 
-  // ===== "miből?" jel-lánc panel — csak a futás-részlet oldal hívja (nincs dropdown) =====
+  // ===== "miből?" jel-lánc kártya — két számozott lépés, sima olvasható szöveggel (nincs dropdown) =====
+  var REF_CATEGORY = {
+    'logging-gap': 'étkezés-napló', 'under-logging': 'étkezés- és súly-napló',
+    'checkin-gap': 'check-in napló', 'journal-silence': 'napló-bejegyzések', 'journal-note': 'napló-bejegyzések'
+  };
   function chainPanelHTML(who, text, chain, big) {
     var ex = EXPERTS[who];
+    var refCat = REF_CATEGORY[chain.detector] || 'napló';
     return '<div class="chain' + (big ? ' big' : '') + '">' +
-      '<div class="coderow"><span class="detchip">' + chain.detector + '</span>' +
-      '<div class="codetxt">' + chain.code + '</div></div>' +
-      '<div class="refrow2">' + chain.refs.map(function (r) { return '<span class="refchip">' + r + '</span>'; }).join('') + '</div>' +
-      '<div class="chainarrow">↓ LLM értelmezi</div>' +
-      '<div class="llmrow" style="--dc:' + ex.color + ';"><div class="lldisc">' + orbHTML(who, 22) + '</div>' +
-      '<div><div class="lleyebrow">' + ex.name + ' · megfigyelés</div><div class="lltxt">' + text + '</div></div></div>' +
+      '<div class="chainstep">' +
+        '<div class="chainstepnum">1</div>' +
+        '<div class="grow"><div class="chainsteplbl">A kód észlelte</div>' +
+        '<span class="detchip">' + chain.detector + '</span>' +
+        '<div class="codetxt">' + chain.code + '</div></div>' +
+      '</div>' +
+      '<div class="chainconn"><span class="arrow">↓</span>LLM értelmezi</div>' +
+      '<div class="chainstep" style="--dc:' + ex.color + ';">' +
+        '<div class="chainstepnum llm" style="background:' + ex.color + ';">2</div>' +
+        '<div class="grow"><div class="chainsteplbl">' + ex.name + ' értelmezte</div>' +
+        '<div class="llmrow"><div class="lldisc">' + orbHTML(who, 22) + '</div>' +
+        '<div class="lltxt">' + text + '</div></div></div>' +
+      '</div>' +
+      '<div class="refcount">' + chain.refs.length + ' forrás-hivatkozás (' + refCat + ')</div>' +
       '</div>';
   }
 
@@ -1787,20 +1866,17 @@
   });
 
   // ===== Gépterem — futás-idővonal (hét-navigáció) + ritkább futások + adatforrás-leltár =====
-  var QUIET_MSG = 'Egyik detektor sem tüzelt — nem volt logolási rés, nem volt friss naplóbejegyzés, ' +
-    'nem maradt el check-in. Nulla LLM-hívás, nulla token, nulla költség. Ez nem hiányos futás — ' +
-    'ez a rendszer <b>pontosan azt csinálta, amit kell</b>: nem talált ki jelet, ahol nem volt.';
-  var QUIET_EXPERTS_NOTE = 'Doki · Edző · Szomnológus · Antropológus — ma éjjel nem kaptak hívást; a mai ' +
-    'detektor-katalógus (<code>logging-gap</code>, <code>checkin-gap</code>, <code>journal-silence</code>, ' +
-    '<code>under-logging</code>, <code>journal-note</code>) csak Drill/Pszichológus/Táplálkozó ' +
-    'tartományát fedi. Ők a heti/havi konzílium-kör saját olvasásából és Daniel visszajelzéseiből ' +
-    'gyűjtenek bizonyítékot.';
+  var QUIET_MSG = 'Nulla LLM-hívás, nulla token, nulla költség. Ez nem hiányos futás — ez a rendszer ' +
+    '<b>pontosan azt csinálta, amit kell</b>: nem talált ki jelet, ahol nem volt.';
+  var QUIET_LEDE = 'Csendes éjszaka — egyetlen jel sem tüzelt, ezért senkit sem hívtunk.';
+  var NOT_CALLED_LINE = 'A többi szakértő ma nem kapott hívást — az ő jeleik a heti konzíliumon érkeznek.';
+  var DOW_FULL = { H: 'hétfői', K: 'keddi', Sze: 'szerdai', Cs: 'csütörtöki', P: 'pénteki', Szo: 'szombati', V: 'vasárnapi' };
 
   var CHAIN_POOL = {
     13: [
-      { detector: 'under-logging', code: 'a heti fókuszok naplózása 3 hete elmaradt (1/3 kitöltve)',
-        refs: ['focus:180', 'focus:181'], who: 'drill',
-        obs: 'A kitűzött heti fókuszok teljesítése lassan csúszni kezdett három hete — érdemes figyelni.' },
+      { detector: 'checkin-gap', code: '2 egymást követő napon elmaradt a délutáni check-in',
+        refs: ['checkin:881', 'checkin:882'], who: 'drill',
+        obs: 'A kihagyások ritkák nálad — ezen a héten kétszer maradt el a délutáni check-in, érdemes visszaállni a ritmusba.' },
       { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 13., 140 karakter)',
         refs: ['journal:5310'], who: 'pszichologus',
         obs: 'A keddi bejegyzés hangneme fáradtabb volt a megszokottnál.' }
@@ -1811,9 +1887,9 @@
         obs: 'Hétfőn és kedden elmaradt az étkezés-logolás — ritka nálad ez a rés.' }
     ],
     24: [
-      { detector: 'under-logging', code: 'a heti fókuszok naplózása 4 hete folyamatos, kihagyás nélkül',
-        refs: ['focus:204', 'focus:211', 'focus:218'], who: 'drill',
-        obs: 'A heti fókuszok mindhárma teljesült — negyedik egymást követő hete.' }
+      { detector: 'under-logging', code: 'a logolt bevitel két hete elmarad a súlytrendtől',
+        refs: ['meal:1355', 'weight:889'], who: 'taplalkozo',
+        obs: 'Két hete rendszeresen kevesebbet mutat a napló, mint amit a súlyad enged sejtetni — érdemes átnézni, mi marad ki.' }
     ],
     27: [
       { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 27., 210 karakter)',
@@ -1821,15 +1897,15 @@
         obs: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.' },
       { detector: 'logging-gap', code: '3. napja nincs étkezés logolva (utolsó: aug 24.)',
         refs: ['meal:1421', 'meal:1422', 'meal:1423'], who: 'taplalkozo',
-        obs: 'Három egymást követő napon a fehérjecél 5 g-on belül teljesült.' }
+        obs: 'Három napja nem logoltál étkezést — ritkán fordul elő nálad ekkora szünet.' }
     ],
     30: [
       { detector: 'logging-gap', code: '3. napja nincs étkezés logolva (utolsó: aug 24.)',
         refs: ['meal:1424', 'meal:1425', 'meal:1426'], who: 'taplalkozo',
         obs: 'Hétvégén a logolási fegyelmed lazább — inkább kényelem, mint tudatos döntés.' },
-      { detector: 'under-logging', code: 'a heti fókuszok naplózása 2 napja elmaradt (2/3 kitöltve)',
-        refs: ['focus:220', 'focus:221'], who: 'drill',
-        obs: 'A kitűzött heti fókuszaid teljesítési aránya magas, de a naplózásuk néha csúszik.' },
+      { detector: 'checkin-gap', code: '2 napja elmaradt a reggeli check-in',
+        refs: ['checkin:918', 'checkin:919'], who: 'drill',
+        obs: 'A hétvégén kétszer maradt el a reggeli check-in — hétköznap ritkán fordul elő nálad.' },
       { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 30., 180 karakter)',
         refs: ['journal:5544'], who: 'pszichologus',
         obs: 'A vasárnap esti bejegyzés hangneme nyugodtabb volt, mint a hét közepén.' }
@@ -1905,33 +1981,44 @@
     return '<div class="opchip"><div class="od">' + avatarHtml + '</div><div class="ot"><b>' + ex.name + '</b><small>' + opLabel + '</small></div></div>';
   }
 
+  function flowStripHTML(n) {
+    return '<div class="runflow">' +
+      '<div class="step"><b>' + n + '</b><small>jel</small></div><div class="arrow">→</div>' +
+      '<div class="step"><b>' + n + '</b><small>hívás</small></div><div class="arrow">→</div>' +
+      '<div class="step"><b>' + n + '</b><small>megfigyelés</small></div>' +
+      '</div>';
+  }
   function renderRun(run, origin) {
-    var name, sub, icHtml, statsHtml, sectionsHtml;
+    var name, sub, lede, icHtml, statsHtml, sectionsHtml;
     if (run.kind === 'ejszaka') {
       name = 'Éjszakai kör';
       sub = run.date + ' · 02:50' + (run.quiet ? ' · <span style="color:#4E6B42;font-weight:700;">csendes nap</span>' : '');
-      icHtml = '<svg width="54" height="54" viewBox="0 0 100 100"><use href="#s-orb-ejszaka"/></svg>';
+      icHtml = '<svg width="54" height="54" viewBox="0 0 100 100" class="breathe"><use href="#s-orb-ejszaka"/></svg>';
       if (run.quiet) {
-        statsHtml = statCell(0, 'hívás') + statCell('0 Ft', 'költség') + statCell(0, 'detektor tüzelt');
+        lede = QUIET_LEDE;
+        statsHtml = flowStripHTML(0);
         sectionsHtml = '<div class="chain big"><div class="quietnote">' + QUIET_MSG + '</div></div>' +
           '<div class="runsubttl">Hívott szakértők</div>' +
-          '<p class="sectnote" style="padding:0 2px 8px;">Senki — egyik detektor sem tüzelt, egyik szakértő ' +
-          'sem kapott hívást ma éjjel.</p>';
+          '<p class="sectnote" style="padding:0 2px 8px;">' + NOT_CALLED_LINE + '</p>';
       } else {
         var uniq = uniqueWho(run.chains);
-        statsHtml = statCell(run.chains.length, 'megfigyelés') + statCell(uniq.length, 'szakértő hívva') +
-          statCell(run.chains.length, 'detektor tüzelt');
+        var names = uniq.map(function (w) { return EXPERTS[w].name; }).join(', ');
+        lede = 'Átnéztük a ' + DOW_FULL[run.dow] + ' napodat — ' + run.chains.length + ' jel tüzelt, ' +
+          'ebből ' + run.chains.length + ' megfigyelés készült (' + names + ').';
+        statsHtml = flowStripHTML(run.chains.length);
         sectionsHtml = run.chains.map(function (c) {
           return chainPanelHTML(c.who, c.obs, { detector: c.detector, code: c.code, refs: c.refs }, true);
         }).join('') +
           '<div class="runsubttl">Hívott szakértők</div><div class="opchips">' +
           uniq.map(function (w) { return opchipHTML(w, 'megfigyelés'); }).join('') + '</div>' +
-          '<p class="sectnote" style="padding:2px 2px 8px;">' + QUIET_EXPERTS_NOTE + '</p>';
+          '<p class="sectnote" style="padding:2px 2px 8px;">' + NOT_CALLED_LINE + '</p>';
       }
     } else if (run.kind === 'konzilium') {
       name = 'Konzílium';
       sub = run.date + ' · 19:30';
-      icHtml = mezoOrbHTML(54);
+      icHtml = '<svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-minta"/></svg>';
+      lede = 'A hét ' + run.consumed + ' megfigyelését dolgoztuk fel a konzíliumon — ' + run.counts.accepted +
+        ' elfogadva, ' + run.counts.retired + ' nyugdíjazva, ' + run.counts.rewritten + ' portré átírva.';
       statsHtml = statCell(run.consumed, 'feldolgozva') + statCell(run.counts.accepted, 'elfogadva', 'sage') +
         statCell(run.counts.retired, 'nyugdíjazva', 'amber') + statCell(run.counts.rewritten, 'portré átírva', 'lav');
       var opsHtml;
@@ -1955,17 +2042,28 @@
           ? '<button class="cta runlink" id="runToTranscript">Teljes transzkript megnyitása ›</button>'
           : '<p class="sectnote" style="padding:6px 2px 4px;">A teljes transzkript ehhez a régebbi ' +
             'konzíliumhoz nincs betöltve ebben a demóban.</p>');
-    } else {
-      name = run.kind === 'havi' ? 'Havi mélyolvasás' : 'Bootstrap';
+    } else if (run.kind === 'havi') {
+      name = 'Havi mélyolvasás';
       sub = run.date;
-      icHtml = '<svg width="54" height="54" viewBox="0 0 100 100"><use href="#' + (run.kind === 'havi' ? 'i-retegek' : 'i-kristaly') + '"/></svg>';
+      icHtml = '<svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-retegek"/></svg>';
+      lede = 'Havonta egyszer az egész eddigi képet újranézzük — ezúttal ' + run.sub + '.';
+      statsHtml = '';
+      sectionsHtml = '<div class="runsubttl">Mit olvasott</div><p class="sectnote" style="padding:0 2px 8px;">' + run.note + '</p>';
+    } else {
+      name = 'Bootstrap';
+      sub = run.date;
+      icHtml = mezoOrbHTML(54);
+      lede = 'Ez volt az első nap — a csapat elolvasta a teljes addigi történetedet, és felépítette az első portrékat.';
       statsHtml = '';
       sectionsHtml = '<p class="sectnote" style="padding:0 2px 8px;font-size:9.5px;">' + run.sub + '</p>' +
         '<div class="runsubttl">Mit olvasott</div><p class="sectnote" style="padding:0 2px 8px;">' + run.note + '</p>';
     }
+    var icWrap = (run.kind === 'konzilium') ? 'disc amber' : (run.kind === 'havi') ? 'disc lav' : '';
+    document.getElementById('runIc').className = 'runhero-ic' + (icWrap ? ' ' + icWrap : '');
     document.getElementById('runIc').innerHTML = icHtml;
     document.getElementById('runName').textContent = name;
     document.getElementById('runSub').innerHTML = sub;
+    document.getElementById('runLede').textContent = lede;
     document.getElementById('runStats').innerHTML = statsHtml;
     document.getElementById('runSections').innerHTML = sectionsHtml;
     document.getElementById('runBack').textContent = '‹ ' + (origin || 'Gépterem');
