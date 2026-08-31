@@ -49,15 +49,15 @@ export function toDiagnosis(wire: DiagnosisWire): Diagnosis {
 
 export const diagnosisApi = {
   list: () =>
-    apiFetch<DiagnosisWire[]>('/api/proactive/diagnosis?phenomenon=fatigue')
+    apiFetch<DiagnosisWire[]>('/api/proactive/diagnosis')
       .then((rows) => rows.map(toDiagnosis)),
   get: (id: string) =>
     apiFetch<DiagnosisWire>(`/api/proactive/diagnosis/${id}`).then(toDiagnosis),
   /** Costs a real SMART-tier call and one of the day's generations — live only. */
-  generate: () =>
+  generate: (phenomenon: string) =>
     apiFetch<DiagnosisWire>('/api/proactive/diagnosis', {
       method: 'POST',
-      body: JSON.stringify({ phenomenon: 'fatigue' }),
+      body: JSON.stringify({ phenomenon }),
     }).then(toDiagnosis),
   /** The tap IS the acceptance — this creates a real, active experiment. */
   startExperiment: (id: string, rank: number) =>
