@@ -335,9 +335,17 @@
 .kr-daygrouphd { display: flex; align-items: baseline; gap: 6px; padding: 10px 2px 4px; }
 .kr-dg-dow { font-size: 8.5px; font-weight: 800; letter-spacing: 0.1em; color: var(--text-muted); }
 .kr-dg-date { font-size: 9.5px; font-weight: 600; color: var(--text-secondary); }
+/* Today's row header ("MA") — prototype's `.daygrouphd.today .dg-dow` recipe. */
+.kr-daygrouphd.today .kr-dg-dow { color: #3D525C; }
 .kr-runrow-missing {
   font-size: 10px; font-weight: 400; font-style: italic; color: var(--text-muted); padding: 8px 10px;
   border-radius: 12px; border: 1px dashed var(--divider); margin-bottom: 6px;
+}
+/* A FUTURE day inside the browsed week — no run row yet because the night hasn't happened;
+   fainter than kr-runrow-missing's dashed-border "this genuinely produced nothing" state. */
+.kr-runrow-future {
+  font-size: 10px; font-weight: 400; font-style: italic; color: var(--text-muted); opacity: 0.55;
+  padding: 8px 10px; margin-bottom: 6px;
 }
 .kr-runrow {
   display: flex; align-items: center; gap: 8px; width: 100%; border: none; text-align: left; font-family: inherit;

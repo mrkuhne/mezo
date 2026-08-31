@@ -21,6 +21,23 @@
 // don't correspond 1:1 to an observation's own day). When no NIGHTLY row exists for a day (the
 // run genuinely never executed, or a fixture/seam gap), the ⚙ is simply ABSENT — never a dead
 // button, per the Global Constraints' honest-states rule.
+//
+// Final review (mezo-1gim.14, I1) — the join key is NOT an exact date match. `CharacterFeedItem.at`
+// is the observation's CREATED timestamp (CharacterService#feed uses `obs.getCreatedAt()`), but
+// the nightly job runs after midnight and writes `CharacterRunEntity.day` as the day it OBSERVED
+// (yesterday), not the day it ran. A run that observed Aug 30 is written with `day = 2026-08-30`
+// but `createdAt` (and therefore every observation's `at`) around Aug 31 02:50 — so an exact
+// `nightlyRunByDay.get(localDayIso(it.at))` lookup misses it entirely (or worse, silently matches
+// a LATER day's run that happens to share the exact date, which never existed in the old mock
+// because its `at` was faked to equal the observed day — see the MOCK_FEED comment in
+// characterMock.ts). The robust fix: resolve to the NIGHTLY run whose `day` is the LATEST day
+// ≤ the item's local date (never a run that observed AFTER the item was created), and additionally
+// require the item's date to be within 1 day of that run's `day` — this covers both the ordinary
+// same-day case (an item created same-day, before the 02:50 job) and the 02:50-next-day write,
+// while still refusing to silently match a run several days stale (a genuine gap, not a write-lag).
+// A better LONG-TERM fix — serving the observation's own `day` directly on the feed item, so the
+// FE never has to infer it from `at` — is out of scope here; filed as a bd note (see final fix
+// report, mezo-1gim.14).
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
@@ -76,7 +93,23 @@ export function CharacterFeedPage() {
   const oldestIso = items.length > 0 ? localDayIso(items[items.length - 1].at) : fallbackIso
   const fromIso = oldestIso < addDays(toIso, -61) ? addDays(toIso, -61) : oldestIso
   const { runs } = useCharacterRuns(fromIso, toIso)
-  const nightlyRunByDay = new Map(runs.filter((r) => r.kind === 'NIGHTLY').map((r) => [r.day, r.id]))
+  // I1: sorted ascending by day so `resolveNightlyRunId` can walk it for "latest day <= itemDay".
+  const nightlyRuns = runs.filter((r) => r.kind === 'NIGHTLY').sort((a, b) => (a.day < b.day ? -1 : 1))
+
+  /** The latest NIGHTLY run whose `day` is <= `itemDayIso`, but only if that run's `day` is
+   *  within 1 calendar day of `itemDayIso` (see the header comment's I1 write-up) — a run more
+   *  than a day stale is an honest gap, not a write-lag, and must not be silently matched. */
+  function resolveNightlyRunId(itemDayIso: string): string | undefined {
+    let best: (typeof nightlyRuns)[number] | undefined
+    for (const r of nightlyRuns) {
+      if (r.day <= itemDayIso && (best == null || r.day > best.day)) best = r
+    }
+    if (best == null) return undefined
+    const diffDays = Math.round(
+      (new Date(itemDayIso).getTime() - new Date(best.day).getTime()) / (24 * 60 * 60 * 1000),
+    )
+    return diffDays <= 1 ? best.id : undefined
+  }
 
   if (isLoading) return null
 
@@ -103,7 +136,7 @@ export function CharacterFeedPage() {
                     const isUser = it.expertKey === 'user'
                     const color = expertColor(it.expertKey)
                     const name = isUser ? 'Te' : (experts.find((e) => e.key === it.expertKey)?.displayName ?? it.expertKey)
-                    const runId = nightlyRunByDay.get(localDayIso(it.at))
+                    const runId = resolveNightlyRunId(localDayIso(it.at))
                     return (
                       <div key={ii} className="kr-feedrow">
                         {isUser

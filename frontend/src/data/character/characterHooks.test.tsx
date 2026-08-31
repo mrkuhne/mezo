@@ -266,14 +266,17 @@ describe('mock mode', () => {
     expect(result.current.run!.observations.every((o) => o.expertKey === 'drill')).toBe(true)
   })
 
-  test('useCharacterRun returns the matching detail; a signal chain carries a numeric refCount', async () => {
+  // M4 (final review): production DetectorSignals never carry refIds, so refCount is always 0
+  // in reality — the mock now mirrors that (previously fabricated 1–3, which SignalChainCard
+  // would have rendered as a confident-looking "N forrás-hivatkozás" nowhere real).
+  test('useCharacterRun returns the matching detail; a signal chain carries a numeric refCount, honestly 0', async () => {
     const { result } = renderHook(() => useCharacterRun('ejsz-30'), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     expect(result.current.run).toEqual(MOCK_RUN_DETAIL['ejsz-30'])
     expect(result.current.run!.observations.length).toBeGreaterThan(0)
     const signal = result.current.run!.observations[0].signals[0]
     expect(typeof signal.refCount).toBe('number')
-    expect(signal.refCount).toBeGreaterThan(0)
+    expect(signal.refCount).toBe(0)
   })
 
   test('useCharacterRun(null) never resolves a run', async () => {

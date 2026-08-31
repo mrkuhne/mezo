@@ -32,6 +32,10 @@ const NIGHTLY_SIGNAL: CharacterRunSummary = {
   id: 'ejsz-27', kind: 'NIGHTLY', day: '2026-08-27', observationCount: 2, callCount: 2,
   detectorKeys: ['journal-note', 'logging-gap'], expertKeys: ['pszichologus', 'taplalkozo'], conferenceId: null,
 }
+const MONTHLY_RUN: CharacterRunSummary = {
+  id: 'run-m1', kind: 'MONTHLY', day: '2026-08-01', observationCount: 23, callCount: 0,
+  detectorKeys: [], expertKeys: ['mezo'], conferenceId: 'm1',
+}
 
 beforeEach(() => {
   hoisted.runs = [NIGHTLY_QUIET, NIGHTLY_SIGNAL]
@@ -82,5 +86,16 @@ describe('GeptermPage', () => {
     renderHub()
     expect(screen.getByText('Gépterem')).toBeInTheDocument()
     expect(screen.getByText(/e héten 0 futás · 0 megfigyelés/)).toBeInTheDocument()
+  })
+
+  // M7 (final review): the Futások tile's "megfigyelés" sum used to fold in EVERY run kind's
+  // observationCount, including MONTHLY's (which counts re-evaluated ÁLLÍTÁSOK, not
+  // megfigyelések) — a MONTHLY row in the browsed week would silently inflate the "megfigyelés"
+  // number with a claim count. The sum must stay restricted to NIGHTLY + WEEKLY.
+  test('M7: the week tile\'s megfigyelés sum excludes MONTHLY/BOOTSTRAP counts (they aren\'t observations)', () => {
+    hoisted.runs = [NIGHTLY_QUIET, NIGHTLY_SIGNAL, MONTHLY_RUN]
+    renderHub()
+    // NIGHTLY_QUIET(0) + NIGHTLY_SIGNAL(2) = 2 — MONTHLY_RUN's 23 must NOT be folded in.
+    expect(screen.getByText(/e héten 3 futás · 2 megfigyelés/)).toBeInTheDocument()
   })
 })

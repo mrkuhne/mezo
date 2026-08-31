@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { KIND_BADGE, KIND_LABEL, lastRunLine, QUIET_LEDE, runHeroLede, runRowSubline } from './runLabels'
+import { CATCHUP_MSG, KIND_BADGE, KIND_LABEL, lastRunLine, QUIET_LEDE, runHeroLede, runRowSubline } from './runLabels'
 import type { CharacterRunSummary } from '@/data/character/characterApi'
 
 function run(overrides: Partial<CharacterRunSummary>): CharacterRunSummary {
@@ -24,13 +24,23 @@ describe('runHeroLede', () => {
   test('a signal nightly run derives the sentence from the real counts + expert names', () => {
     const r = run({
       kind: 'NIGHTLY', observationCount: 2, callCount: 2,
+      detectorKeys: ['logging-gap', 'checkin-gap'],
       expertKeys: ['taplalkozo', 'drill'],
     })
     const text = runHeroLede(r, (k) => (k === 'taplalkozo' ? 'Táplálkozó' : 'Drill'))
-    expect(text).toContain('2 jel tüzelt')
+    // I3 (final review): "jel" is the count of DISTINCT DETECTORS that fired, not
+    // observationCount doing double duty as a fabricated signal count.
+    expect(text).toContain('2 detektor tüzelt')
     expect(text).toContain('2 megfigyelés készült')
     expect(text).toContain('Táplálkozó, Drill')
     expect(text).toContain('csütörtöki') // 2026-08-27 is a Thursday
+  })
+
+  test('I3: a catch-up run (detectors fired, but no observation resulted) is NOT the quiet lede', () => {
+    const r = run({ kind: 'NIGHTLY', observationCount: 0, detectorKeys: ['logging-gap'] })
+    const text = runHeroLede(r)
+    expect(text).not.toBe(QUIET_LEDE)
+    expect(text).toContain(CATCHUP_MSG)
   })
 
   test('a WEEKLY lede reports the consumed-observation count only, never a call count', () => {
@@ -57,6 +67,12 @@ describe('runRowSubline — the honest-callCount ruling', () => {
   test('NIGHTLY signal -> observation + expert count, never a fabricated call count', () => {
     const r = run({ kind: 'NIGHTLY', observationCount: 3, expertKeys: ['doki', 'drill'] })
     expect(runRowSubline(r)).toBe('3 megfigyelés · 2 szakértő hívva')
+  })
+
+  test('I3: a catch-up NIGHTLY run (detectors fired, 0 observations) is distinct from "csendes nap"', () => {
+    const r = run({ kind: 'NIGHTLY', observationCount: 0, detectorKeys: ['logging-gap'] })
+    expect(runRowSubline(r)).not.toBe('csendes nap · 0 hívás')
+    expect(runRowSubline(r)).toBe('jelek korábban feldolgozva')
   })
 
   test('WEEKLY never renders a "0 hívás" cell — callCount is omitted entirely', () => {

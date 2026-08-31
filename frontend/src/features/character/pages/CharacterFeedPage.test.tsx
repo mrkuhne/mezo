@@ -28,7 +28,11 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 
 beforeEach(() => {
   vi.useFakeTimers()
-  vi.setSystemTime(new Date('2026-08-30T20:00:00Z'))
+  // I1 (final review): MOCK_FEED's OBSERVATION `at` now mirrors production's write-lag — an
+  // observation about Aug 30 is created ~Aug 31 02:5x, not on Aug 30 itself (see
+  // characterMock.ts's MOCK_FEED header comment). "now" moves to Aug 31 evening so the newest
+  // item (Doki, created Aug 31 02:52) still reads as "MA" / today.
+  vi.setSystemTime(new Date('2026-08-31T20:00:00Z'))
   hoisted.items = MOCK_FEED
   // The real seeded run log covers every MOCK_FEED day (Aug 24–30) with a NIGHTLY row —
   // exercises the ⚙'s real resolve-by-date path against the actual mock corpus.
@@ -76,12 +80,44 @@ describe('CharacterFeedPage', () => {
 
   test('an observation row\'s ⚙ navigates to the matching NIGHTLY run for that date', async () => {
     render(<CharacterFeedPage />)
-    // MOCK_FEED's 2026-08-30T08:10:00Z Doki row -> the seeded ejsz-30 nightly run.
+    // I1 (final review): MOCK_FEED's Doki row is created 2026-08-31T02:52:00Z (observed day
+    // Aug 30, per the nightly job's write-lag) -> the join must resolve to the ejsz-30 nightly
+    // run (day 2026-08-30), the "latest NIGHTLY day <= item's local date, within 1 day" rule —
+    // an exact-date lookup would look for a (non-existent) Aug 31 run and find nothing.
     const row = screen.getByText(/A reggeli mérések három hete makulátlanul/).closest('.kr-feedrow')
     const gear = row!.querySelector('.kr-gepq') as HTMLButtonElement
     expect(gear).not.toBeNull()
     fireEvent.click(gear)
     expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futas/ejsz-30')
+  })
+
+  test('I1: a run more than 1 day stale is an honest gap, never silently matched', () => {
+    // Only a run for Aug 20 exists — the Doki item's local date is Aug 31 (created-at, per the
+    // mock's write-lag), 11 days away. The old exact-date bug and a naive "nearest run" fix would
+    // both be wrong here in different ways; the 1-day window must refuse this match entirely.
+    hoisted.runs = [{
+      id: 'ejsz-20', kind: 'NIGHTLY', day: '2026-08-20', observationCount: 1, callCount: 1,
+      detectorKeys: ['logging-gap'], expertKeys: ['drill'], conferenceId: null,
+    }]
+    render(<CharacterFeedPage />)
+    const row = screen.getByText(/A reggeli mérések három hete makulátlanul/).closest('.kr-feedrow')
+    expect(row!.querySelector('.kr-gepq')).toBeNull()
+  })
+
+  test('I1: an item created same-day as the run (diff 0) still resolves', () => {
+    hoisted.items = [
+      { kind: 'OBSERVATION', at: '2026-08-20T18:00:00Z', expertKey: 'drill', text: 'Aznapi megfigyelés.' },
+    ]
+    hoisted.runs = [{
+      id: 'ejsz-20', kind: 'NIGHTLY', day: '2026-08-20', observationCount: 1, callCount: 1,
+      detectorKeys: ['logging-gap'], expertKeys: ['drill'], conferenceId: null,
+    }]
+    render(<CharacterFeedPage />)
+    const row = screen.getByText(/Aznapi megfigyelés/).closest('.kr-feedrow')
+    const gear = row!.querySelector('.kr-gepq') as HTMLButtonElement
+    expect(gear).not.toBeNull()
+    fireEvent.click(gear)
+    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futas/ejsz-20')
   })
 
   test('no ⚙ when no run row exists for the observation\'s date — honest absence, not a dead button', () => {

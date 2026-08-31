@@ -263,6 +263,43 @@ class CharacterApiIT extends ApiIntegrationTest {
         assertThat(res.getObservations().get(0).getSignals().get(0).getRefCount()).isEqualTo(2);
     }
 
+    // Final review (mezo-1gim.14, M5): a user-feedback observation (expertKey "user", written by
+    // CharacterFeedbackService whenever Daniel answers a claim) shares the NIGHTLY run's `day`
+    // but was never produced by that night's pipeline — it belongs to the konzílium flow. The
+    // resolution must EXCLUDE it, never count or list it as part of the nightly run's output.
+    @Test
+    void run_nightlyRow_excludesUserFeedbackObservations() {
+        UUID owner = ownerId();
+        LocalDate day = LocalDate.of(2026, 8, 10);
+        CharacterRunEntity run = saveRun(owner, "NIGHTLY", day, null);
+
+        CharacterObservationEntity nightly = new CharacterObservationEntity();
+        nightly.setCreatedBy(owner);
+        nightly.setExpertKey("drill");
+        nightly.setDimensionKeys(new ObservationDimensionKeysEnvelope(List.of("discipline")));
+        nightly.setDay(day);
+        nightly.setText("Nincs edzésnapló.");
+        nightly.setSalience((short) 3);
+        nightly.setSignals(new ObservationSignalsEnvelope(List.of()));
+        observationRepository.save(nightly);
+
+        CharacterObservationEntity userFeedback = new CharacterObservationEntity();
+        userFeedback.setCreatedBy(owner);
+        userFeedback.setExpertKey("user");
+        userFeedback.setDimensionKeys(new ObservationDimensionKeysEnvelope(List.of("discipline")));
+        userFeedback.setDay(day); // same day as the nightly row — the leak this test guards against
+        userFeedback.setText("Daniel visszajelzése egy állításra.");
+        userFeedback.setSalience((short) 3);
+        userFeedback.setSignals(new ObservationSignalsEnvelope(List.of()));
+        observationRepository.save(userFeedback);
+
+        CharacterRunResponse res = getForBody("/api/character/run/" + run.getId(),
+                ownerAuthHeaders(), HttpStatus.OK, CharacterRunResponse.class);
+        assertThat(res.getObservations()).hasSize(1);
+        assertThat(res.getObservations().get(0).getText()).isEqualTo("Nincs edzésnapló.");
+        assertThat(res.getObservations()).noneMatch(o -> "Daniel visszajelzése egy állításra.".equals(o.getText()));
+    }
+
     @Test
     void run_weeklyRow_resolvesObservationsByConsumedConference() {
         UUID owner = ownerId();

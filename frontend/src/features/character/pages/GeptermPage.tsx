@@ -31,7 +31,14 @@ export function GeptermPage() {
 
   // Runs arrive day-desc (Task 2 contract) — [0] is the most recent.
   const lastRun = runs[0]
-  const weekObsCount = runs.reduce((sum, r) => sum + r.observationCount, 0)
+  // M7 (final review): observationCount is only honestly a "megfigyelés" count for NIGHTLY and
+  // WEEKLY rows — MONTHLY's counts re-evaluated ÁLLÍTÁSOK (active claims) and BOOTSTRAP's counts
+  // kezdő állítások (see runLabels.ts's runHeroLede/runRowSubline, same ruling). Summing across
+  // ALL kinds under the "megfigyelés" label would silently fold claim counts into an observation
+  // total; restrict the sum to the two kinds whose count actually IS an observation count.
+  const weekObsCount = runs
+    .filter((r) => r.kind === 'NIGHTLY' || r.kind === 'WEEKLY')
+    .reduce((sum, r) => sum + r.observationCount, 0)
 
   return (
     <div className="kr-hub">

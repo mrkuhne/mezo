@@ -6,6 +6,15 @@
 // refCount, raw refIds stay backend-side) → an arrow → an LLM row (the expert's own orb +
 // the observation written in their voice). "kód detektál, LLM értelmez" made visually
 // legible, not just documented.
+//
+// Final review (mezo-1gim.14, M4): production `DetectorSignal`s never carry `refIds` today —
+// every real signal serves `refCount: 0` (CharacterService#toRunObservationSignal sums
+// `signal.refIds().size()`, and no detector populates that list yet). Rendering "0
+// forrás-hivatkozás" on every card would be exactly the kind of confident-looking-but-empty
+// number this feature's honesty rule exists to forbid, so the ref line is hidden whenever
+// refCount is 0 rather than printed as a hollow zero. `refCount > 0` stays wired up for when a
+// future contract change actually starts populating refIds — this line isn't dead code, its
+// input just happens to always be zero today.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
@@ -26,7 +35,7 @@ export function SignalChainCard({ observation, index, expertName }: {
           <div className="kr-chain-code" key={`${signal.detectorKey}-${i}`}>
             <span className="kr-detchip">{signal.detectorKey}</span>
             <span className="kr-chain-codetxt">{signal.summary}</span>
-            <span className="kr-refcount">{signal.refCount} forrás-hivatkozás</span>
+            {signal.refCount > 0 && <span className="kr-refcount">{signal.refCount} forrás-hivatkozás</span>}
           </div>
         ))}
         <div className="kr-chain-arrow" aria-hidden="true">↓</div>

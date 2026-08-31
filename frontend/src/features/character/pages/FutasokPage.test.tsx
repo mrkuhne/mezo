@@ -138,4 +138,30 @@ describe('FutasokPage', () => {
     expect(screen.getByText('Havi mélyolvasás')).toBeInTheDocument()
     expect(screen.getByText(/16 állítás újramérlegelve/)).toBeInTheDocument()
   })
+
+  describe('M8 (final review): future days inside the current week', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      // "today" = Aug 26 (a Wednesday), inside the browsed 24–30 week — so 27–30 are future.
+      vi.setSystemTime(new Date('2026-08-26T12:00:00Z'))
+    })
+    afterEach(() => vi.useRealTimers())
+
+    test('a future day (no run row) renders "még nem jött el", never "nincs adat"', () => {
+      renderPage()
+      // "today" = Aug 26. Missing days this week: 26, 28, 29, 30 (27 has a real NIGHTLY_SIGNAL
+      // row, so it isn't "missing" at all). TODAY counts as "future" too (M8): the nightly job
+      // processes YESTERDAY (I1's write-lag), so today's own row is only written tomorrow — a
+      // missing row for today is expected, not a pipeline failure, same honest fact as a later
+      // day. All 4 missing days (26, 28, 29, 30) get the future line; none get "nincs adat".
+      expect(screen.getAllByText('még nem jött el')).toHaveLength(4)
+      expect(screen.queryByText('nincs adat erről az éjszakáról')).not.toBeInTheDocument()
+    })
+
+    test('today\'s row header shows the "MA" marker instead of the weekday abbreviation', () => {
+      renderPage()
+      expect(screen.getByText('MA')).toBeInTheDocument()
+      expect(screen.queryByText('SZE')).not.toBeInTheDocument() // "szerda" (Wednesday) abbreviation, suppressed for today
+    })
+  })
 })

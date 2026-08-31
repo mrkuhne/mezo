@@ -13,8 +13,10 @@
 //    established 404/switch-off idiom (DimensionPage, DimensionsPage, KarakterHubPage,
 //    CharacterFeedPage all render the same bordered card; fix round 1 caught this page using
 //    a different, one-off class, `.kr-konz-empty`, borrowed from KonziliumPage).
-//  · NIGHTLY + observationCount === 0 -> the proud quiet-night face (QUIET_MSG) — never a
-//    fabricated signal chain for a night nothing fired on.
+//  · NIGHTLY + observationCount === 0 AND detectorKeys.length === 0 (isQuietNightly) -> the
+//    proud quiet-night face (QUIET_MSG) — never a fabricated signal chain for a night nothing
+//    fired on. A catch-up run (detectors fired but no observation resulted — isCatchUpNightly)
+//    is a DIFFERENT honest state (CATCHUP_MSG), never the quiet-night face (final review, I3).
 //  · conference-kind runs (WEEKLY/MONTHLY/BOOTSTRAP) never show a "0 hívás" flow-strip cell
 //    (binding ruling — see `flowSteps` below).
 // ============================================================
@@ -26,7 +28,15 @@ import { useCharacterExperts, useCharacterRun } from '@/data/hooks'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { RunFlowStrip, type RunFlowStep } from '@/features/character/components/RunFlowStrip'
 import { SignalChainCard } from '@/features/character/components/SignalChainCard'
-import { KIND_LABEL, NOT_CALLED_LINE, QUIET_MSG, runHeroLede } from '@/features/character/runLabels'
+import {
+  CATCHUP_MSG,
+  isCatchUpNightly,
+  isQuietNightly,
+  KIND_LABEL,
+  NOT_CALLED_LINE,
+  QUIET_MSG,
+  runHeroLede,
+} from '@/features/character/runLabels'
 import { huMonthDay } from '@/shared/lib/dates'
 import type { CharacterRunSummary } from '@/data/character/characterApi'
 
@@ -46,8 +56,12 @@ import type { CharacterRunSummary } from '@/data/character/characterApi'
  *  the narrative hero already carries the number with the right noun for those two kinds. */
 function flowSteps(run: CharacterRunSummary): RunFlowStep[] | null {
   if (run.kind === 'NIGHTLY') {
+    // I3 (final review): "jel" used to reuse observationCount — signals ≠ observations, and the
+    // summary carries no real signal count. `detectorKeys.length` is the nearest REAL number
+    // (the distinct detectors that fired), so the strip's first cell is relabeled to match what
+    // it actually counts.
     return [
-      { label: 'jel', value: run.observationCount },
+      { label: 'detektor tüzelt', value: run.detectorKeys.length },
       { label: 'hívás', value: run.callCount },
       { label: 'megfigyelés', value: run.observationCount },
     ]
@@ -84,7 +98,8 @@ export function RunPage() {
 
   const { summary } = run
   const expertName = (key: string) => experts.find((e) => e.key === key)?.displayName ?? key
-  const quietNight = summary.kind === 'NIGHTLY' && summary.observationCount === 0
+  const quietNight = isQuietNightly(summary)
+  const catchUpNight = isCatchUpNightly(summary)
   const steps = flowSteps(summary)
 
   return (
@@ -113,7 +128,14 @@ export function RunPage() {
           </>
         )}
 
-        {summary.kind === 'NIGHTLY' && !quietNight && (
+        {/* I3 (final review): a catch-up run (detectors fired, but no observation came out of
+           it — e.g. the day's signals were already processed by an earlier run) is NOT a quiet
+           night and must not render the proud QUIET_MSG face; it gets its own honest note and
+           skips the signal-chain / "Hívott szakértők" sections entirely, since there is neither
+           a chain to show nor an expert that was actually called. */}
+        {catchUpNight && <div className="kr-quietnote">{CATCHUP_MSG}</div>}
+
+        {summary.kind === 'NIGHTLY' && !quietNight && !catchUpNight && (
           <>
             {run.observations.map((obs, i) => (
               <SignalChainCard key={obs.id} observation={obs} index={i} expertName={expertName(obs.expertKey)} />

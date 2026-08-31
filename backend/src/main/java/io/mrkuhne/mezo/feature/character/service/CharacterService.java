@@ -307,6 +307,16 @@ public class CharacterService {
      * resolves by {@code (owner, day)}; a WEEKLY/MONTHLY/BOOTSTRAP row resolves by the conference
      * it fed ({@code consumedByConferenceId}) — the same split the writers themselves observe
      * (Karakter S9 spec §3).
+     *
+     * <p>The NIGHTLY {@code (owner, day)} resolution deliberately EXCLUDES
+     * {@link CharacterFeedbackService#USER_EXPERT_KEY} observations (final review, mezo-1gim.14,
+     * M5): Daniel's own claim-feedback observations share the same {@code day} as that night's
+     * pipeline output (they're written whenever he answers, not scoped to a run), but they were
+     * never produced by the nightly job — they belong to the konzílium flow, which consumes them
+     * later. Counting or listing them here would misattribute Daniel's own words to the nightly
+     * pipeline's output. The alternative (including them but adding a separate counted field) was
+     * rejected: the honest fix is to keep the NIGHTLY run detail scoped to what the nightly job
+     * itself actually wrote.
      */
     @Transactional(readOnly = true)
     public CharacterRunResponse run(UUID owner, UUID runId) {
@@ -315,7 +325,8 @@ public class CharacterService {
                         SystemMessage.error("CHARACTER_RUN_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
 
         List<CharacterObservationEntity> observations = NIGHTLY.equals(run.getKind())
-                ? observationRepository.findByCreatedByAndDayOrderByCreatedAtAsc(owner, run.getDay())
+                ? observationRepository.findByCreatedByAndDayAndExpertKeyNotOrderByCreatedAtAsc(
+                        owner, run.getDay(), CharacterFeedbackService.USER_EXPERT_KEY)
                 : run.getConferenceId() == null
                         ? List.of()
                         : observationRepository.findByCreatedByAndConsumedByConferenceIdOrderByDayAscCreatedAtAsc(

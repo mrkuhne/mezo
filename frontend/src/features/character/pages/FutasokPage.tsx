@@ -11,6 +11,13 @@
 // ALL renders "nincs adat erről az éjszakáról" — never a fabricated quiet night. A REAL
 // zero-count NIGHTLY row is a different thing entirely and renders as its own proud row.
 //
+// M8 (final review): the missing-day line above is only honest for a day whose night has
+// already happened. TODAY and every later day in the browsed (current) week cannot have a
+// NIGHTLY row yet — the nightly job processes YESTERDAY (see CharacterFeedPage.tsx's I1 write-up
+// for the same lag), so a run for today's own `day` is only written tomorrow ~02:50. Those days
+// render "még nem jött el" instead — a missing row there is expected, not a pipeline failure.
+// Today's day-group header also gets the "MA" marker in place of the weekday abbreviation.
+//
 // "Ritkább futások" (MONTHLY/BOOTSTRAP): GET /api/character/runs caps a query span at 62 days
 // (Task 2 contract, CHARACTER_RUN_RANGE_INVALID) — the rare-runs window is the 62 days ending
 // at the browsed week, the widest single query the endpoint allows, not an unbounded lookback.
@@ -22,8 +29,15 @@ import { PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { useCharacterRuns } from '@/data/hooks'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { isCurrentWeek, nextMonday, prevMonday, resolveWeekStart } from '@/features/me/logic/weekNav'
-import { addDays, huDow } from '@/shared/lib/dates'
-import { KIND_BADGE, KIND_LABEL, MISSING_DAY_LINE, runRowSubline } from '@/features/character/runLabels'
+import { addDays, huDow, localDateString } from '@/shared/lib/dates'
+import {
+  FUTURE_DAY_LINE,
+  isQuietNightly,
+  KIND_BADGE,
+  KIND_LABEL,
+  MISSING_DAY_LINE,
+  runRowSubline,
+} from '@/features/character/runLabels'
 import type { CharacterRunSummary } from '@/data/character/characterApi'
 
 const WEEKS_BACK = 7
@@ -75,6 +89,7 @@ export function FutasokPage() {
   const currentMonday = mondayIso()
   const recentMondays = Array.from({ length: WEEKS_BACK + 1 }, (_, i) => addDays(currentMonday, -7 * (WEEKS_BACK - i)))
 
+  const todayIso = localDateString()
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i))
   const runsByDay = new Map<string, CharacterRunSummary[]>()
   runs.forEach((r) => {
@@ -135,20 +150,33 @@ export function FutasokPage() {
         <div className="kr-runlist">
           {days.map((dayIso) => {
             const dayRuns = runsByDay.get(dayIso) ?? []
+            const isToday = dayIso === todayIso
+            // M8 (final review): TODAY's own day, and every day after it, cannot have a NIGHTLY
+            // run row yet — the nightly job processes YESTERDAY (I1's write-lag), so a run whose
+            // `day` equals today is only written tomorrow ~02:50. Treating today as "future" too
+            // (not just strictly-after) keeps this honest: a missing row for today is the
+            // expected fact that tonight's processing hasn't happened, not a pipeline failure.
+            // Rendering MISSING_DAY_LINE there would read as "the pipeline failed to run last
+            // night" for a night that hasn't come. The stepper already disables navigating past
+            // the current week, so a future day can only appear inside the current week.
+            const isFuture = dayIso >= todayIso
             return (
               <div key={dayIso}>
-                <div className="kr-daygrouphd">
-                  <span className="kr-dg-dow">{huDow(dayIso).toUpperCase()}</span>
+                <div className={isToday ? 'kr-daygrouphd today' : 'kr-daygrouphd'}>
+                  <span className="kr-dg-dow">{isToday ? 'MA' : huDow(dayIso).toUpperCase()}</span>
                   <span className="kr-dg-date">{shortDate(dayIso)}</span>
                 </div>
-                {dayRuns.length === 0 && (
+                {dayRuns.length === 0 && !isFuture && (
                   <div className="kr-runrow-missing">{MISSING_DAY_LINE}</div>
+                )}
+                {dayRuns.length === 0 && isFuture && (
+                  <div className="kr-runrow-future">{FUTURE_DAY_LINE}</div>
                 )}
                 {dayRuns.map((run) => (
                   <button
                     key={run.id}
                     type="button"
-                    className={run.observationCount === 0 && run.kind === 'NIGHTLY' ? 'kr-runrow quiet' : 'kr-runrow'}
+                    className={isQuietNightly(run) ? 'kr-runrow quiet' : 'kr-runrow'}
                     onClick={() => navigate(`/me/karakter/gepterem/futas/${run.id}`)}
                   >
                     <div className="kr-runrow-tx">

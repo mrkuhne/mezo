@@ -27,9 +27,34 @@ export const QUIET_MSG = 'Nulla LLM-hívás, nulla token, nulla költség. Ez ne
   + 'rendszer pontosan azt csinálta, amit kell: nem talált ki jelet, ahol nem volt.'
 export const NOT_CALLED_LINE = 'A többi szakértő ma nem kapott hívást — az ő jeleik a heti '
   + 'konzíliumon érkeznek.'
+/** Final review (mezo-1gim.14, I3): a NIGHTLY run can have `observationCount === 0` while
+ *  `detectorKeys` is non-empty — a catch-up re-run whose detectors fired but whose experts were
+ *  skipped (e.g. the day's observations were already produced by an earlier run). That is NOT a
+ *  quiet night (nothing fired) and must never render the proud QUIET_MSG page — it gets this
+ *  distinct, honest line instead. */
+export const CATCHUP_MSG = 'A jelek korábban már feldolgozásra kerültek — erre a futásra nincs új megfigyelés.'
 /** FutasokPage's honest state for a day with NO run row at all (never a fabricated quiet
  *  night — a quiet night IS a real zero-count row and renders as its own proud row instead). */
 export const MISSING_DAY_LINE = 'nincs adat erről az éjszakáról'
+/** FutasokPage's honest state for a FUTURE day inside the browsed (current) week — there is no
+ *  run row yet because the night hasn't happened, which is a different fact than
+ *  {@link MISSING_DAY_LINE}'s "a past night that genuinely produced no row" (final review,
+ *  mezo-1gim.14, M8). */
+export const FUTURE_DAY_LINE = 'még nem jött el'
+
+/** Final review (mezo-1gim.14, I3): the ONE quiet-night predicate — a NIGHTLY run is quiet only
+ *  when NEITHER a detector fired NOR an observation was written. `observationCount === 0` alone
+ *  is not enough (see CATCHUP_MSG above); shared here so the narrative hero, the run-detail page,
+ *  and the Futások list row can never drift from each other. */
+export function isQuietNightly(run: CharacterRunSummary): boolean {
+  return run.kind === 'NIGHTLY' && run.observationCount === 0 && run.detectorKeys.length === 0
+}
+
+/** The catch-up counterpart of {@link isQuietNightly}: detectors fired but no observation came
+ *  out of this run (see CATCHUP_MSG). */
+export function isCatchUpNightly(run: CharacterRunSummary): boolean {
+  return run.kind === 'NIGHTLY' && run.observationCount === 0 && run.detectorKeys.length > 0
+}
 
 // index = Date#getDay() (0=Sunday). Hungarian weekday ADJECTIVE forms ("hétfői napodat") —
 // kept as a literal table rather than stemmed from HU_DOW_FULL (shared/lib/dates.ts), since
@@ -46,9 +71,15 @@ function dowAdjective(iso: string): string {
  *  defaults to the raw key so this stays usable before the catalog has loaded. */
 export function runHeroLede(run: CharacterRunSummary, expertName: (key: string) => string = (k) => k): string {
   if (run.kind === 'NIGHTLY') {
-    if (run.observationCount === 0) return QUIET_LEDE
+    if (isQuietNightly(run)) return QUIET_LEDE
+    if (isCatchUpNightly(run)) {
+      return `Átnéztük a ${dowAdjective(run.day)} napodat — ${CATCHUP_MSG}`
+    }
     const names = run.expertKeys.map(expertName).join(', ')
-    return `Átnéztük a ${dowAdjective(run.day)} napodat — ${run.observationCount} jel tüzelt, ebből `
+    // I3 (final review): the ONLY real "jel" count on the DTO is `detectorKeys.length` —
+    // observationCount is a signal ≠ observation count (fabricated before this fix); the
+    // narrative now derives from a detector count, not the observation count doing double duty.
+    return `Átnéztük a ${dowAdjective(run.day)} napodat — ${run.detectorKeys.length} detektor tüzelt, ebből `
       + `${run.observationCount} megfigyelés készült (${names}).`
   }
   if (run.kind === 'WEEKLY') {
@@ -68,9 +99,9 @@ export function runHeroLede(run: CharacterRunSummary, expertName: (key: string) 
  *  call-level truth for those kinds). */
 export function runRowSubline(run: CharacterRunSummary): string {
   if (run.kind === 'NIGHTLY') {
-    return run.observationCount === 0
-      ? 'csendes nap · 0 hívás'
-      : `${run.observationCount} megfigyelés · ${run.expertKeys.length} szakértő hívva`
+    if (isQuietNightly(run)) return 'csendes nap · 0 hívás'
+    if (isCatchUpNightly(run)) return 'jelek korábban feldolgozva'
+    return `${run.observationCount} megfigyelés · ${run.expertKeys.length} szakértő hívva`
   }
   if (run.kind === 'WEEKLY') return `${run.observationCount} megfigyelés feldolgozva`
   if (run.kind === 'MONTHLY') return `${run.observationCount} állítás újramérlegelve`

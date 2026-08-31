@@ -6,7 +6,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { RunPage } from './RunPage'
 import { MOCK_EXPERTS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
-import type { CharacterRunResponse } from '@/data/character/characterApi'
+import type { CharacterRunResponse, CharacterRunSummary } from '@/data/character/characterApi'
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -37,15 +37,35 @@ beforeEach(() => {
 const renderRun = () => render(<RunPage />)
 
 describe('RunPage', () => {
-  test('a signal NIGHTLY run renders the flow strip with jel/hívás/megfigyelés and the signal chain', () => {
+  test('a signal NIGHTLY run renders the flow strip with detektor/hívás/megfigyelés and the signal chain', () => {
     renderRun()
     const flow = screen.getByRole('group', { name: 'Futás-lánc' })
     expect(flow).toBeInTheDocument()
-    expect(within(flow).getByText('jel')).toBeInTheDocument()
+    // I3 (final review): the first cell used to be labeled "jel" and reused observationCount —
+    // relabeled to what it actually counts, distinct fired detectors.
+    expect(within(flow).getByText('detektor tüzelt')).toBeInTheDocument()
     expect(within(flow).getByText('hívás')).toBeInTheDocument()
     expect(within(flow).getByText('megfigyelés')).toBeInTheDocument()
     expect(screen.getByText('logging-gap')).toBeInTheDocument()
-    expect(screen.getAllByText(/forrás-hivatkozás/).length).toBeGreaterThan(0)
+  })
+
+  test('M4 (final review): production refCount is always 0 — the ref line never renders a hollow zero', () => {
+    renderRun()
+    expect(screen.queryByText(/forrás-hivatkozás/)).not.toBeInTheDocument()
+  })
+
+  test('I3: a catch-up NIGHTLY run (detectors fired, 0 observations) gets CATCHUP_MSG, never QUIET_MSG', () => {
+    hoisted.id = 'catchup'
+    hoisted.run = {
+      summary: {
+        id: 'catchup', kind: 'NIGHTLY', day: '2026-08-27', observationCount: 0, callCount: 0,
+        detectorKeys: ['logging-gap'], expertKeys: [], conferenceId: null,
+      } satisfies CharacterRunSummary,
+      observations: [],
+    }
+    renderRun()
+    expect(screen.queryByText(/Nulla LLM-hívás, nulla token, nulla költség/)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/jelek korábban már feldolgozásra kerültek/).length).toBeGreaterThan(0)
   })
 
   test('a quiet NIGHTLY run shows the proud QUIET_MSG face, no chain cards, 0/0/0 flow', () => {
