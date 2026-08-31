@@ -900,7 +900,7 @@ function ActiveWorkoutSession({
                     {acceptedCount > 0 && <span className="tp-badge">{acceptedCount}</span>}
                   </span>
                 </div>
-                <div className="mz-tile-line">{acceptedCount}/{challenges.length} elfogadva</div>
+                <div className="mz-tile-line">{challengesPending ? 'készül…' : `${acceptedCount}/${challenges.length} elfogadva`}</div>
               </button>
               <Tile
                 wash="sky" icon="i-lang" eyebrow="Bemelegítés" delayMs={190}

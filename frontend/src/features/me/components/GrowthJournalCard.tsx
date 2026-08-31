@@ -1,5 +1,6 @@
 import type { JournalDay } from '@/features/me/logic/growthJournal'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
+import { ClayIcon } from '@/shared/ui/clay'
 
 const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
 
@@ -52,7 +53,10 @@ export function GrowthJournalCard({ days, summary }: { days: JournalDay[]; summa
                   {e.activity.text}
                   <span style={{ display: 'block', fontSize: 10, color: 'var(--mz-ink-soft)' }}>
                     tevékenység
-                    {e.activity.skillKey ? ` · ${LIFE_SKILLS.find((s) => s.key === e.activity.skillKey)?.icon ?? ''} ${LIFE_SKILLS.find((s) => s.key === e.activity.skillKey)?.name ?? e.activity.skillKey}` : ' · besorolatlan'}
+                    {e.activity.skillKey ? (() => {
+                      const m = LIFE_SKILLS.find((s) => s.key === e.activity.skillKey)
+                      return <> · {m && <ClayIcon name={m.clayIcon} size={11} className="inline-clay" />} {m?.name ?? e.activity.skillKey}</>
+                    })() : ' · besorolatlan'}
                     {typeof e.activity.amountHuf === 'number' && e.activity.amountHuf > 0 ? ` · ${fmt(e.activity.amountHuf)} Ft` : ''}
                   </span>
                 </span>

@@ -6,7 +6,7 @@
 // chrome) — entered from RoutinesTab's "Szerkesztés" button (today view only).
 // ============================================================
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useHabitCatalog, useHabitCatalogActions } from '@/data/hooks'
 import { AiSuggestSheet } from '@/features/me/sheets/AiSuggestSheet'
 import { ChainEditSheet } from '@/features/me/sheets/ChainEditSheet'
@@ -14,13 +14,15 @@ import { HabitEditSheet } from '@/features/me/sheets/HabitEditSheet'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
-import { PageTitle } from '@/shared/ui/PageTitle'
+import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
+import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { SortableList } from '@/shared/ui/SortableList'
 import { Toggle } from '@/shared/ui/Toggle'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import type { HabitChainInfo, HabitDaypart, HabitDefInfo } from '@/data/types'
 
-const DAYPART_EMOJI: Record<HabitDaypart, string> = { MORNING: '🌅', DAY: '☀️', EVENING: '🌙' }
+// F7.4: the daypart emojis hand over to EXISTING clay symbols — no new art needed.
+const DAYPART_CLAY: Record<HabitDaypart, ClayIconName> = { MORNING: 'i-hajnal', DAY: 'i-nap', EVENING: 'i-alvas' }
 
 export function RoutineEditorPage() {
   const { catalog, isPending, isError, refetch } = useHabitCatalog()
@@ -34,24 +36,19 @@ export function RoutineEditorPage() {
   // per-chain preselect can ride the same sheet/state shape later without changing this shape.
   const [suggestSheet, setSuggestSheet] = useState<{ chainKey?: string } | null>(null)
 
+  const navigate = useNavigate()
   const chains = [...catalog.chains].sort((a, b) => a.position - b.position)
 
   return (
-    <div style={{ padding: '0 16px 32px' }}>
-      <div className="row" style={{ padding: '6px 0 0' }}>
-        <Link
-          to="/me/growth"
-          aria-label="Vissza"
-          className="rad-16"
-          style={{
-            width: 34, height: 34, flexShrink: 0, display: 'grid', placeItems: 'center',
-            background: 'var(--surface-1)', border: '1px solid var(--border-subtle)',
-            color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1,
-          }}
-        >‹</Link>
-      </div>
-      <div className="page-header">
-        <PageTitle>Rutinok szerkesztése</PageTitle>
+    // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): gold shell + eyebrow/title block.
+    <MozaikPage tone="gold">
+      <PageHead onBack={() => navigate('/me/growth')} label="‹ Growth" />
+      <PageBody>
+      <div style={{ padding: '2px 2px 12px' }}>
+        <span className="mz-eyebrow">Growth · Rutin</span>
+        <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 600, lineHeight: 1.15, margin: '4px 0 0', color: 'var(--text-primary)' }}>
+          Rutinok szerkesztése
+        </h1>
       </div>
 
       {isPending && chains.length === 0 ? (
@@ -101,7 +98,8 @@ export function RoutineEditorPage() {
       {suggestSheet && (
         <AiSuggestSheet chainKey={suggestSheet.chainKey} onClose={() => setSuggestSheet(null)} />
       )}
-    </div>
+      </PageBody>
+    </MozaikPage>
   )
 }
 
@@ -122,10 +120,10 @@ function ChainCard({
   return (
     // Inactive chains stay fully editable (`.is-inert` only dims — no control below is disabled
     // by it), so a chain can be paused and still tuned before re-activating it.
-    <div className={cn('card', 'rise', !chain.isActive && 'is-inert')} style={{ padding: '14px 16px', '--d': `${delayMs}ms` } as React.CSSProperties}>
+    <div className={cn('mz-qcard', 'rise', !chain.isActive && 'is-inert')} style={{ padding: '14px 16px', marginBottom: 0, '--d': `${delayMs}ms` } as React.CSSProperties}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div className="row" style={{ alignItems: 'center', gap: 7 }}>
-          <span aria-hidden="true">{DAYPART_EMOJI[chain.daypart]}</span>
+          <span aria-hidden="true" style={{ display: 'inline-flex' }}><ClayIcon name={DAYPART_CLAY[chain.daypart]} size={18} /></span>
           <span className="eyebrow">{chain.title}</span>
         </div>
         <div className="row" style={{ alignItems: 'center', gap: 8 }}>

@@ -2,13 +2,14 @@ import { render } from '@testing-library/react'
 import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 
 // The clay sprites are the design_2.0 asset contract: docs/design_2.0/assets/clay-icons.svg
-// (45 symbols) + clay-spots.svg (22 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
+// (53 symbols) + clay-spots.svg (22 symbols) copied VERBATIM (1:1 fidelity — mezo-d20.1.2).
 // i-hold + i-termes joined the set for the Napzárás night language (mezo-d20.8.1.1).
 // 8 s-orb-* persona variants joined the spot set for Karakter (mezo-1gim.13).
+// 8 i-life-* life-area symbols joined for the F7.4 iconography round (mezo-d20.8.4.1).
 
-test('ClaySprites mounts all 45 icon symbols and 22 spot symbols', () => {
+test('ClaySprites mounts all 53 icon symbols and 22 spot symbols', () => {
   render(<ClaySprites />)
-  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(45)
+  expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(53)
   expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(22)
 })
 

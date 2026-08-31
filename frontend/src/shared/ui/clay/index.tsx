@@ -19,6 +19,9 @@ export type ClayIconName =
   | 'i-checkin' | 'i-injekcio' | 'i-reggeli' | 'i-ebed' | 'i-snack' | 'i-vacsora'
   | 'i-memoar' | 'i-lombik' | 'i-kristaly' | 'i-retegek' | 'i-heti'
   | 'i-hold' | 'i-termes'
+  // F7.4 (mezo-d20.8.4.1): the 8 LIFE-skill life-area symbols — the emoji set's clay successor.
+  | 'i-life-tudatossag' | 'i-life-szemlelet' | 'i-life-konyha' | 'i-life-penzugyek'
+  | 'i-life-produktivitas' | 'i-life-tanulas' | 'i-life-kapcsolatok' | 'i-life-regeneracio'
 
 export type ClaySpotName =
   | 's-reggel' | 's-este' | 's-viz' | 's-energia' | 's-edzes' | 's-medal'

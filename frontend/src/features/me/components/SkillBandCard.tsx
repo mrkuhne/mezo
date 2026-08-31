@@ -4,7 +4,7 @@ import { cn } from '@/shared/lib/cn'
 
 export interface SkillRowVM {
   key: string
-  icon: string
+  icon: ReactNode
   name: string
   level: number
   progressPct: number
@@ -50,7 +50,7 @@ export function SkillBandCard({ eyebrow, chip, rows, footer, wash = 'lav', delay
           return (
             <div key={r.key} className="skl" style={{ '--d': `${350 + i * 60}ms` } as React.CSSProperties}>
               <span className="k">
-                <span aria-hidden="true">{r.icon} </span>
+                <span aria-hidden="true" style={{ display: 'inline-flex', verticalAlign: '-2px', marginRight: 4 }}>{r.icon}</span>
                 <span>{r.name}</span>
               </span>
               <div className="bar">

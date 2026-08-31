@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 /**
  * Self-baselined visual goldens: 22 goto screens + the /ritual Harvest + Release and the
  * /train/review lane + exercise-view click-throughs, and the F7.3 Fuel deep surfaces (gyógyszer
- * empty state, recipe mosaic + score sheet, slots editor) = 65 snapshots per platform (mezo-mzbz added the two /ritual
+ * empty state, recipe mosaic + score sheet, slots editor; F7.4 added the Én deep four) = 73 snapshots per platform (mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
  * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
  * `today` shot with one per daypart face — reggel/nap/este; mezo-p2tr swapped the retired
@@ -57,6 +57,12 @@ const SCREENS: Array<[string, string, string?]> = [
   ['me', '/me'],
   ['me-cel', '/me/goals'],
   ['me-heti', '/me/week'],
+  // F7.4 Én deep (mezo-d20.8.4.1): the goal wizard, the routine editor, the Growth awards
+  // tab (the progression's new home — streak card + titles section) and the AI-call detail.
+  ['me-goal-wizard', '/me/goals/new'],
+  ['me-rutinok', '/me/routines/edit'],
+  ['me-growth-awards', '/me/growth?tab=awards'],
+  ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
   ['insights-mintak', '/insights'],
   ['insights-memoar', '/insights/memoir'],
   ['insights-tudastar', '/insights/knowledge'],
