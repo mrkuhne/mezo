@@ -7485,6 +7485,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/character/bootstrap:
+    post:
+      tags:
+        - Character
+      operationId: bootstrapCharacter
+      summary: >-
+        One-time deep read over the whole existing history that stands up the
+        dossier
+      responses:
+        '200':
+          description: The bootstrap konzílium that just ran
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterConferenceResponse'
+        '204':
+          description: No history to read — nothing was generated (the honest empty state)
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: A bootstrap konzílium already exists for this user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/character/conference:
     get:
       tags:

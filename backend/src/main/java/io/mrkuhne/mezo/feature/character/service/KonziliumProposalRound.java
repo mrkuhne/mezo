@@ -45,6 +45,16 @@ public class KonziliumProposalRound {
     /** The proposal prompt's first line — the fake LLM keys its deterministic answer on it. */
     public static final String PROPOSAL_MARKER = "KARAKTER-JAVASLAT-FELADAT";
 
+    /**
+     * The weekly transcript turn's evidence phrase (final-review Finding M4, mezo-1gim.6):
+     * {@code String.format}-ed with the evidence-line count into "{@code javaslat a hét N
+     * megfigyeléséből}" — byte-identical to the pre-fix hardcoded text. Bootstrap/monthly supply
+     * their OWN phrase (see {@code CharacterBootstrapService}/{@code CharacterMonthlyService}) so
+     * a transcript actually says what that konzílium read: bootstrap reads whole-history entries,
+     * not a week's observations; monthly re-reads existing active claims, not fresh ones.
+     */
+    private static final String WEEKLY_EVIDENCE_PHRASE = "a hét %d megfigyeléséből";
+
     private static final int MAX_PROPOSALS_PER_EXPERT = 3;
     private static final BigDecimal MIN_CONFIDENCE = BigDecimal.ZERO;
     private static final BigDecimal MAX_CONFIDENCE = BigDecimal.ONE;
@@ -79,6 +89,62 @@ public class KonziliumProposalRound {
             byExpert.computeIfAbsent(observation.getExpertKey(), k -> new ArrayList<>()).add(observation);
         }
 
+        List<ExpertEvidence> evidence = new ArrayList<>();
+        for (Map.Entry<String, List<CharacterObservationEntity>> entry : byExpert.entrySet()) {
+            List<String> lines = new ArrayList<>();
+            List<String> refIds = new ArrayList<>();
+            for (CharacterObservationEntity observation : entry.getValue()) {
+                lines.add(observation.getDay() + " (súly " + observation.getSalience() + "): " + observation.getText());
+                refIds.add(observation.getId().toString());
+            }
+            evidence.add(new ExpertEvidence(entry.getKey(), lines, refIds));
+        }
+
+        String periodLabel = "Hét: " + weekStart + " – " + weekStart.plusDays(6);
+        Result evidenceResult =
+                runOnEvidence(owner, periodLabel, PROPOSAL_MARKER, "propose", evidence, true, WEEKLY_EVIDENCE_PHRASE);
+
+        List<UUID> observationIds = weekObservations.stream().map(CharacterObservationEntity::getId).toList();
+        return new Result(evidenceResult.proposals(), evidenceResult.turns(), observationIds);
+    }
+
+    /**
+     * The evidence-block seam (Karakter S4, mezo-1gim.6): runs the SAME per-expert propose/parse/
+     * validate/turn pipeline {@link #run} uses, but over caller-supplied {@link ExpertEvidence}
+     * blocks instead of a week's observations — the monthly bootstrap konzílium's entry point via
+     * {@link CharacterHistoryReads#gatherHistory}. {@code observationIds} is always empty here:
+     * this method has no notion of weekly observations to mark consumed — only {@link #run} sets it.
+     * Includes the "Meglévő aktív állítások" trailer (see the 7-arg overload's javadoc for why
+     * that is the byte-identical behavior weekly/bootstrap callers need). Bootstrap's own honest
+     * evidence phrase (final-review Finding M4) is required here, not defaulted — a caller must
+     * always say what it actually read.
+     */
+    @Transactional
+    public Result runOnEvidence(UUID owner, String periodLabel, String marker, String auditOp,
+                                 List<ExpertEvidence> evidence, String evidencePhraseTemplate) {
+        return runOnEvidence(owner, periodLabel, marker, auditOp, evidence, true, evidencePhraseTemplate);
+    }
+
+    /**
+     * The evidence-block seam with control over the "Meglévő aktív állítások" (existing active
+     * claims) trailer {@link #userMessage} normally appends after the evidence lines. Weekly
+     * ({@link #run}) and bootstrap ({@code CharacterBootstrapService}) evidence is built from
+     * OBSERVATIONS, so that trailer is the only place a claim's current text/confidence appears —
+     * {@code includeActiveClaimsTrailer=true} keeps their prompt byte-identical.
+     *
+     * <p>The monthly deep read ({@code CharacterMonthlyService}) is different: its evidence IS
+     * built directly from ACTIVE claims (with age/last-movement metadata the trailer lacks), so
+     * for any expert owning a CORE dimension the SAME claim would otherwise be rendered TWICE in
+     * one user message — once as a numbered evidence line, once again in the trailer, independently
+     * re-queried. Beyond the prompt bloat, that risks the model treating the two renderings as
+     * distinct reference points (double-weighted staleness; ambiguity about which rendering a
+     * RETIRE targets). {@code includeActiveClaimsTrailer=false} omits the trailer entirely for
+     * that caller — fix round 1, mezo-1gim.6.
+     */
+    @Transactional
+    public Result runOnEvidence(UUID owner, String periodLabel, String marker, String auditOp,
+                                 List<ExpertEvidence> evidence, boolean includeActiveClaimsTrailer,
+                                 String evidencePhraseTemplate) {
         List<CharacterDimensionEntity> ownerDimensions = dimensionRepository.findByCreatedBy(owner);
         Set<String> knownDimensionKeys = knownDimensionKeys(ownerDimensions);
         Map<UUID, CharacterDimensionEntity> dimensionsById = new java.util.HashMap<>();
@@ -94,54 +160,76 @@ public class KonziliumProposalRound {
         List<ClaimProposal> proposals = new ArrayList<>();
         List<ConferenceTranscriptEnvelope.Turn> turns = new ArrayList<>();
 
-        for (Map.Entry<String, List<CharacterObservationEntity>> entry : byExpert.entrySet()) {
-            String expertKey = entry.getKey();
-            List<CharacterObservationEntity> observations = entry.getValue();
-            CharacterExpertCatalog.Expert expert;
-            String raw;
-            try {
-                // byKey lives inside the try too — an unknown expertKey must skip only THIS
-                // expert, never abort the whole round (same isolation contract as the LLM call).
-                expert = CharacterExpertCatalog.byKey(expertKey);
-                List<CharacterClaimEntity> expertActiveClaims = activeClaims.stream()
-                        .filter(claim -> {
-                            CharacterDimensionEntity dimension = dimensionsById.get(claim.getDimensionId());
-                            return dimension != null && expertKey.equals(dimension.getExpertKey());
-                        })
-                        .toList();
-                String systemPrompt = PROPOSAL_MARKER + "\n" + expert.systemPersona() + "\n" + outputContract();
-                String userMessage = userMessage(weekStart, observations, expertActiveClaims, expert);
-                raw = llmCallContextHolder.runWith(
-                        new LlmCallContext("character", "propose", "expert", null),
-                        () -> companionLlm.complete(systemPrompt, userMessage));
-            } catch (Exception e) {
-                log.warn("Proposal generation failed for owner {} expert {} week {}", owner, expertKey, weekStart, e);
+        for (ExpertEvidence block : evidence) {
+            ExpertOutcome outcome = runExpert(owner, periodLabel, marker, auditOp, block, knownDimensionKeys,
+                    activeClaims, dimensionsById, activeClaimIds, includeActiveClaimsTrailer, evidencePhraseTemplate);
+            if (outcome == null) {
                 continue;
             }
-
-            if (raw == null || raw.isBlank()) {
-                log.warn("Proposal answer was blank for owner {} expert {} week {}", owner, expertKey, weekStart);
-                continue;
-            }
-
-            List<Draft> drafts = parse(raw, owner, expertKey, weekStart);
-            List<ClaimProposal> expertProposals = new ArrayList<>();
-            for (Draft draft : drafts) {
-                if (expertProposals.size() >= MAX_PROPOSALS_PER_EXPERT) {
-                    break;
-                }
-                ClaimProposal proposal = validate(draft, expertKey, knownDimensionKeys, activeClaimIds);
-                if (proposal != null) {
-                    expertProposals.add(proposal);
-                }
-            }
-
-            proposals.addAll(expertProposals);
-            turns.add(buildTurn(expert, observations, expertProposals));
+            proposals.addAll(outcome.proposals());
+            turns.add(outcome.turn());
         }
 
-        List<UUID> observationIds = weekObservations.stream().map(CharacterObservationEntity::getId).toList();
-        return new Result(proposals, turns, observationIds);
+        return new Result(proposals, turns, List.of());
+    }
+
+    /** One expert's outcome from {@link #runExpert} — null-returned (not this record) on skip. */
+    private record ExpertOutcome(List<ClaimProposal> proposals, ConferenceTranscriptEnvelope.Turn turn) {}
+
+    /** The per-expert body {@link #run} and {@link #runOnEvidence} both drive: one LLM call in the
+     *  expert's persona, parsed/validated against the owner's known dimensions and active claims.
+     *  Per-expert isolation: any failure here (unknown expert key, LLM error, blank/unparseable
+     *  answer) returns null and skips only this expert — never the whole round. */
+    private ExpertOutcome runExpert(UUID owner, String periodLabel, String marker, String auditOp,
+                                     ExpertEvidence evidence, Set<String> knownDimensionKeys,
+                                     List<CharacterClaimEntity> activeClaims,
+                                     Map<UUID, CharacterDimensionEntity> dimensionsById, Set<UUID> activeClaimIds,
+                                     boolean includeActiveClaimsTrailer, String evidencePhraseTemplate) {
+        String expertKey = evidence.expertKey();
+        CharacterExpertCatalog.Expert expert;
+        String raw;
+        try {
+            // byKey lives inside the try too — an unknown expertKey must skip only THIS
+            // expert, never abort the whole round (same isolation contract as the LLM call).
+            expert = CharacterExpertCatalog.byKey(expertKey);
+            List<CharacterClaimEntity> expertActiveClaims = includeActiveClaimsTrailer
+                    ? activeClaims.stream()
+                            .filter(claim -> {
+                                CharacterDimensionEntity dimension = dimensionsById.get(claim.getDimensionId());
+                                return dimension != null && expertKey.equals(dimension.getExpertKey());
+                            })
+                            .toList()
+                    : null;
+            String systemPrompt = marker + "\n" + expert.systemPersona() + "\n" + outputContract();
+            String userMessage = userMessage(periodLabel, evidence.lines(), expertActiveClaims, expert);
+            raw = llmCallContextHolder.runWith(
+                    new LlmCallContext("character", auditOp, "expert", null),
+                    () -> companionLlm.complete(systemPrompt, userMessage));
+        } catch (Exception e) {
+            log.warn("Proposal generation failed for owner {} expert {} period {}", owner, expertKey, periodLabel, e);
+            return null;
+        }
+
+        if (raw == null || raw.isBlank()) {
+            log.warn("Proposal answer was blank for owner {} expert {} period {}", owner, expertKey, periodLabel);
+            return null;
+        }
+
+        List<Draft> drafts = parse(raw, owner, expertKey, periodLabel);
+        List<ClaimProposal> expertProposals = new ArrayList<>();
+        for (Draft draft : drafts) {
+            if (expertProposals.size() >= MAX_PROPOSALS_PER_EXPERT) {
+                break;
+            }
+            ClaimProposal proposal = validate(draft, expertKey, knownDimensionKeys, activeClaimIds);
+            if (proposal != null) {
+                expertProposals.add(proposal);
+            }
+        }
+
+        ConferenceTranscriptEnvelope.Turn turn = buildTurn(
+                expert, evidence.lines().size(), evidence.refIds(), expertProposals, evidencePhraseTemplate);
+        return new ExpertOutcome(expertProposals, turn);
     }
 
     private static Set<String> knownDimensionKeys(List<CharacterDimensionEntity> ownerDimensions) {
@@ -202,14 +290,14 @@ public class KonziliumProposalRound {
     }
 
     private static ConferenceTranscriptEnvelope.Turn buildTurn(CharacterExpertCatalog.Expert expert,
-                                                                 List<CharacterObservationEntity> observations,
-                                                                 List<ClaimProposal> proposals) {
+                                                                 int evidenceCount, List<String> refIds,
+                                                                 List<ClaimProposal> proposals,
+                                                                 String evidencePhraseTemplate) {
         StringBuilder sb = new StringBuilder(expert.displayName()).append(": ").append(proposals.size())
-                .append(" javaslat a hét ").append(observations.size()).append(" megfigyeléséből.");
+                .append(" javaslat ").append(String.format(evidencePhraseTemplate, evidenceCount)).append('.');
         for (ClaimProposal proposal : proposals) {
             sb.append('\n').append(proposal.text());
         }
-        List<String> refIds = observations.stream().map(o -> o.getId().toString()).toList();
         return new ConferenceTranscriptEnvelope.Turn(expert.key(), sb.toString(), refIds);
     }
 
@@ -225,37 +313,46 @@ public class KonziliumProposalRound {
                 jellegű állításokat.""";
     }
 
-    private static String userMessage(LocalDate weekStart, List<CharacterObservationEntity> observations,
+    /**
+     * {@code expertActiveClaims == null} omits the "Meglévő aktív állítások" trailer entirely
+     * (mezo-1gim.6 fix round 1) — the monthly deep read's evidence already carries every ACTIVE
+     * claim directly (with age/last-movement metadata this trailer lacks), so re-rendering the
+     * SAME claims here would double them up in one user message. An EMPTY (non-null) list still
+     * renders the trailer with its honest "nincs" — that is the weekly/bootstrap "no active claims
+     * yet" case, unchanged.
+     */
+    private static String userMessage(String periodLabel, List<String> lines,
                                        List<CharacterClaimEntity> expertActiveClaims,
                                        CharacterExpertCatalog.Expert expert) {
-        StringBuilder sb = new StringBuilder("Hét: ").append(weekStart).append(" – ").append(weekStart.plusDays(6))
+        StringBuilder sb = new StringBuilder(periodLabel)
                 .append(" (korábbi, még fel nem dolgozott megfigyelések is szerepelhetnek — lásd az egyes ")
                 .append("tételek dátumát)");
         int i = 1;
-        for (CharacterObservationEntity observation : observations) {
-            sb.append('\n').append(i++).append(". ").append(observation.getDay())
-                    .append(" (súly ").append(observation.getSalience()).append("): ").append(observation.getText());
+        for (String line : lines) {
+            sb.append('\n').append(i++).append(". ").append(line);
         }
-        sb.append('\n').append("Meglévő aktív állítások:");
-        if (expertActiveClaims.isEmpty()) {
-            sb.append('\n').append("nincs");
-        } else {
-            for (CharacterClaimEntity claim : expertActiveClaims) {
-                sb.append('\n').append(claim.getId()).append(" (biztonság ").append(claim.getConfidence())
-                        .append("): ").append(claim.getText());
+        if (expertActiveClaims != null) {
+            sb.append('\n').append("Meglévő aktív állítások:");
+            if (expertActiveClaims.isEmpty()) {
+                sb.append('\n').append("nincs");
+            } else {
+                for (CharacterClaimEntity claim : expertActiveClaims) {
+                    sb.append('\n').append(claim.getId()).append(" (biztonság ").append(claim.getConfidence())
+                            .append("): ").append(claim.getText());
+                }
             }
         }
         sb.append('\n').append("Alapértelmezett dimenzió: ").append(expert.primaryDimensionKey());
         return sb.toString();
     }
 
-    private List<Draft> parse(String raw, UUID owner, String expertKey, LocalDate weekStart) {
+    private List<Draft> parse(String raw, UUID owner, String expertKey, String periodLabel) {
         String cleaned = stripFences(raw);
         try {
             return objectMapper.readValue(cleaned, new TypeReference<List<Draft>>() {});
         } catch (Exception e) {
-            log.warn("Proposal answer was not parseable JSON for owner {} expert {} week {} — dropping: {}",
-                    owner, expertKey, weekStart, raw, e);
+            log.warn("Proposal answer was not parseable JSON for owner {} expert {} period {} — dropping: {}",
+                    owner, expertKey, periodLabel, raw, e);
             return List.of();
         }
     }

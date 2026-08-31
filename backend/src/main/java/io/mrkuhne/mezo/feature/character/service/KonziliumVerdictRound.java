@@ -281,7 +281,13 @@ public class KonziliumVerdictRound {
     }
 
     private static String numberedProposals(LocalDate weekStart, List<ClaimProposal> proposals) {
-        StringBuilder sb = new StringBuilder("Hét: ").append(weekStart).append(" – ").append(weekStart.plusDays(6))
+        // The monthly bootstrap konzílium (Karakter S4, mezo-1gim.6) has no week — CharacterBootstrapService
+        // passes weekStart=null here. weekStart.plusDays(6) would NPE, so render a null-safe label instead
+        // of a week range for that path.
+        String periodLabel = weekStart != null
+                ? "Hét: " + weekStart + " – " + weekStart.plusDays(6)
+                : "Teljes eddigi történet";
+        StringBuilder sb = new StringBuilder(periodLabel)
                 .append(" (a javaslatok korábbi, még fel nem dolgozott megfigyelésekből is származhatnak)");
         for (int i = 0; i < proposals.size(); i++) {
             ClaimProposal p = proposals.get(i);

@@ -90,6 +90,7 @@ class DetectorTest {
         CharacterProperties props = new CharacterProperties(
                 new CharacterProperties.Observation("0 40 2 * * *", 3),
                 new CharacterProperties.Conference("0 30 19 * * SUN", 2),
+                new CharacterProperties.Monthly("0 0 20 * * SUN", 90),
                 Map.of("journal-silence", new CharacterProperties.Detector(false)));
         DetectorRegistry registry = new DetectorRegistry(List.of(
                 new JournalSilenceDetector(), new LoggingGapDetector()), props);
