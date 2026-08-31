@@ -86,7 +86,7 @@ export function PersonDetailPage() {
 
   return (
     <MozaikPage tone="rose">
-      <PageHead onBack={() => navigate(-1)} label="‹ A köröm">
+      <PageHead onBack={() => navigate(-1)} label="‹ Vissza">
         <button
           type="button"
           className="pgact"

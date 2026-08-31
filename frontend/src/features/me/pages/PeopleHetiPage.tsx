@@ -7,14 +7,15 @@
 // `.ppl-momentt`/`.ppl-bigq`/`.ppl-quiett`/`.ppl-qnm`/`.ppl-qtx` in prototype.css's existing
 // ppl- section).
 //
-// The weekly scope for the tone-mix and "A hét pillanata" is the rolling 7-day window
-// measured from the newest mention's OWN timestamp (Task 5's isThisWeek rule — the same
-// "hét" scope PeopleEmlitesekPage's chip already uses) — never `Date.now()`, so a mock
-// seed frozen in the past still shows a real week's worth of data. "Irányok" and "Csendben
-// maradt" instead read `PersonEntry.mentionsThisWeek` directly (a persisted count that can
-// legitimately diverge from a live recount of the mentions array — the same field the hub
-// tiles and PersonCard already trust), per the brief's own wording ("people with
-// mentionsThisWeek > 0" / "mentionsThisWeek===0 személyek").
+// The weekly scope for the hero, tone-mix and "A hét pillanata" is peopleDerive's shared
+// `weekWindow` helper — the rolling 7×24h window measured from the newest mention's OWN
+// timestamp (never `Date.now()`), the same window PeopleEmlitesekPage's hero + "Hét"
+// scope chip and the hub's `hubLines` all use, so this page's own "N említés e héten"
+// always agrees with theirs for the same data. "Irányok" and "Csendben maradt" instead
+// read `PersonEntry.mentionsThisWeek` directly (a persisted per-person cadence field that
+// can legitimately diverge from a live recount of the mentions array — the same field
+// PersonCard already trusts), per the brief's own wording ("people with mentionsThisWeek
+// > 0" / "mentionsThisWeek===0 személyek").
 //
 // Honest empty states: no toned mention this week swaps the tone-mix bar for a dashed-card
 // line instead of a fabricated 0%-everywhere bar; a null weekMoment omits "A hét pillanata"
@@ -29,14 +30,13 @@ import { useNavigate } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { usePeople } from '@/data/hooks'
-import { toneMix, directionFor, quietPeople, weekMoment, trendHeights, type Direction } from '@/features/me/logic/peopleDerive'
+import { toneMix, directionFor, quietPeople, weekMoment, trendHeights, weekWindow, type Direction } from '@/features/me/logic/peopleDerive'
 import { TONE_META, SRC_META } from '@/features/me/logic/peopleVisuals'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import type { Mention, PersonEntry } from '@/data/types'
 
 // 16px prototype spark height × 1.18 frame scale ≈ 19px — same idiom as PersonCard/kor.
 const SPARK_MAX_PX = 19
-const DAY_MS = 24 * 60 * 60 * 1000
 
 const DIR_ARROW: Record<Direction, string> = { down: '↘', up: '↗', flat: '→' }
 const DIR_COLOR: Record<Direction, string> = {
@@ -45,14 +45,6 @@ const DIR_COLOR: Record<Direction, string> = {
   flat: 'var(--mz-ink-mut)',
 }
 const DIR_WEIGHT: Record<Direction, number> = { down: 0, up: 1, flat: 2 }
-
-/** Rolling 7-day window measured from the newest mention's own ts (Task 5's rule) —
- *  never Date.now(), so a frozen mock seed still reads as "this week". */
-function weeklyMentions(mentions: Mention[]): Mention[] {
-  const newestTs = mentions.reduce((max, m) => Math.max(max, new Date(m.ts).getTime()), 0)
-  const cutoff = newestTs - 7 * DAY_MS
-  return mentions.filter((m) => new Date(m.ts).getTime() >= cutoff)
-}
 
 /** S3's deterministic "why" line — majority tone among this PERSON's own week mentions.
  *  Neither positive nor negative holding a strict majority (a tie, a mixed/neutral lead,
@@ -102,7 +94,8 @@ export function PeopleHetiPage() {
   const { people, mentions, logMention } = usePeople()
   const [quietTarget, setQuietTarget] = useState<PersonEntry | null>(null)
 
-  const weekMentions = weeklyMentions(mentions)
+  const { inWindow } = weekWindow(mentions, new Date())
+  const weekMentions = mentions.filter(inWindow)
   const slices = toneMix(weekMentions)
   const moment = weekMoment(weekMentions)
   const momentPerson = moment ? people.find((p) => p.id === moment.person_id) : undefined

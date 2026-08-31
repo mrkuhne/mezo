@@ -5,7 +5,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   contextBreakdown, directionFor, hubLines, quietPeople, toneMix, trendHeights,
-  weekMoment, weeklyRhythm,
+  weekMoment, weeklyRhythm, weekWindow,
 } from '@/features/me/logic/peopleDerive'
 import type { Mention, PersonEntry } from '@/data/types'
 
@@ -173,16 +173,65 @@ describe('trendHeights', () => {
   })
 })
 
-describe('hubLines', () => {
-  test('topName by mentionsThisWeek (ABC tie-break), down/up name by affectTrend direction, flagCount this week only', () => {
-    const anna = person({ name: 'Anna', mentionsThisWeek: 3, affectTrend: [3, 3, 3, 3] })
-    const bella = person({ name: 'Bella', mentionsThisWeek: 3, affectTrend: [4, 4, 2, 2] })
-    const cili = person({ name: 'Cili', mentionsThisWeek: 1, affectTrend: [3, 3, 3, 4, 5] })
+describe('weekWindow', () => {
+  test('anchors on the NEWEST mention\'s own ts (7*24h back, inclusive) — never `Date.now()`', () => {
+    const newest = mention({ ts: daysAgo(0).toISOString() })
+    const edge = mention({ ts: daysAgo(7).toISOString() }) // exactly newest - 7d -> IN
+    const justOutside = mention({ ts: daysAgo(7, 11).toISOString() }) // 1h before cutoff -> OUT
+    const older = mention({ ts: daysAgo(10).toISOString() })
 
-    const flaggedThisWeek1 = mention({ ts: daysAgo(0).toISOString(), flagged: true })
-    const flaggedThisWeek2 = mention({ ts: daysAgo(1).toISOString(), flagged: true })
-    const flaggedTooOld = mention({ ts: daysAgo(8).toISOString(), flagged: true })
-    const unflagged = mention({ ts: daysAgo(0).toISOString(), flagged: false })
+    const { inWindow } = weekWindow([newest, edge, justOutside, older], NOW)
+    expect(inWindow(newest)).toBe(true)
+    expect(inWindow(edge)).toBe(true)
+    expect(inWindow(justOutside)).toBe(false)
+    expect(inWindow(older)).toBe(false)
+  })
+
+  test('no mentions at all -> nothing is in window (never "everything qualifies")', () => {
+    const { inWindow, cutoff } = weekWindow([], NOW)
+    expect(cutoff).toBe(Infinity)
+    expect(inWindow(mention())).toBe(false)
+  })
+
+  test('clamps to `now` — a future-timestamped mention never pushes the window ahead of the real clock', () => {
+    const future = mention({ ts: daysAgo(-30).toISOString() })
+    const recent = mention({ ts: daysAgo(3).toISOString() })
+    const tooOld = mention({ ts: daysAgo(9).toISOString() })
+
+    // Anchored (uncapped) on `future`'s own ts, `recent` (3 days ago) would fall well
+    // outside a cutoff of `future - 7d`; clamped to `now`, the cutoff is `now - 7d` and
+    // `recent` survives while `tooOld` still doesn't.
+    const { inWindow } = weekWindow([future, recent, tooOld], NOW)
+    expect(inWindow(recent)).toBe(true)
+    expect(inWindow(tooOld)).toBe(false)
+  })
+})
+
+describe('hubLines', () => {
+  test('topName is the person with the most mentions actually inside the shared week window (never PersonEntry.mentionsThisWeek)', () => {
+    const anna = person({ name: 'Anna', mentionsThisWeek: 99 }) // deliberately stale/wrong field
+    const bella = person({ name: 'Bella', mentionsThisWeek: 0 })
+    const cili = person({ name: 'Cili', mentionsThisWeek: 0 })
+
+    // Bella has 2 real mentions inside the window, Anna only 1 — despite Anna's stale
+    // mentionsThisWeek=99 — proving topName ignores the persisted field entirely.
+    const annaMention = mention({ person_id: anna.id, ts: daysAgo(0).toISOString() })
+    const bellaMention1 = mention({ person_id: bella.id, ts: daysAgo(1).toISOString() })
+    const bellaMention2 = mention({ person_id: bella.id, ts: daysAgo(2).toISOString() })
+
+    const lines = hubLines([anna, bella, cili], [annaMention, bellaMention1, bellaMention2], NOW)
+    expect(lines.topName).toBe('Bella')
+  })
+
+  test('down/up name by affectTrend direction, flagCount only for mentions inside the shared week window', () => {
+    const anna = person({ name: 'Anna', affectTrend: [3, 3, 3, 3] })
+    const bella = person({ name: 'Bella', affectTrend: [4, 4, 2, 2] })
+    const cili = person({ name: 'Cili', affectTrend: [3, 3, 3, 4, 5] })
+
+    const flaggedThisWeek1 = mention({ person_id: anna.id, ts: daysAgo(0).toISOString(), flagged: true })
+    const flaggedThisWeek2 = mention({ person_id: anna.id, ts: daysAgo(1).toISOString(), flagged: true })
+    const flaggedTooOld = mention({ person_id: anna.id, ts: daysAgo(8).toISOString(), flagged: true })
+    const unflagged = mention({ person_id: anna.id, ts: daysAgo(0).toISOString(), flagged: false })
 
     const lines = hubLines(
       [anna, bella, cili],
@@ -190,12 +239,48 @@ describe('hubLines', () => {
       NOW,
     )
 
-    expect(lines).toEqual({
-      mentionsThisWeek: 3, // flaggedThisWeek1 + flaggedThisWeek2 + unflagged — flaggedTooOld is outside the window
-      topName: 'Anna',
-      downName: 'Bella',
-      upName: 'Cili',
-      flagCount: 2,
-    })
+    expect(lines.mentionsThisWeek).toBe(3) // flaggedThisWeek1 + flaggedThisWeek2 + unflagged — flaggedTooOld is outside the window
+    expect(lines.downName).toBe('Bella')
+    expect(lines.upName).toBe('Cili')
+    expect(lines.flagCount).toBe(2)
+  })
+
+  test('CONTRACT: no mentions at all -> topName null, never a fabricated 0-mention "most active" person', () => {
+    const anna = person({ name: 'Anna', mentionsThisWeek: 0 })
+    const bella = person({ name: 'Bella', mentionsThisWeek: 0 })
+
+    const lines = hubLines([anna, bella], [], NOW)
+    expect(lines.topName).toBeNull()
+    expect(lines.mentionsThisWeek).toBe(0)
+  })
+
+  test('CONTRACT: mentions in window all belong to people outside the roster -> every listed person\'s real count is 0, topName stays null', () => {
+    const anna = person({ name: 'Anna', mentionsThisWeek: 0 })
+    const bella = person({ name: 'Bella', mentionsThisWeek: 0 })
+    // Belongs to nobody in [anna, bella] — e.g. a since-deleted person's stray mention.
+    const orphanMention = mention({ person_id: 'not-in-roster', ts: daysAgo(0).toISOString() })
+
+    const lines = hubLines([anna, bella], [orphanMention], NOW)
+    expect(lines.topName).toBeNull()
+    expect(lines.mentionsThisWeek).toBe(1) // the mention itself is still counted honestly
+  })
+})
+
+describe('cross-page week-count coherence', () => {
+  test('hubLines\' weekly count equals a direct weekWindow recount for the same data — the hub and the sibling pages can never again disagree', () => {
+    const mentions = [
+      mention({ ts: daysAgo(0).toISOString() }),
+      mention({ ts: daysAgo(3).toISOString() }),
+      mention({ ts: daysAgo(6).toISOString() }),
+      mention({ ts: daysAgo(9).toISOString() }), // outside the window
+    ]
+    const people = [person()]
+
+    const { mentionsThisWeek } = hubLines(people, mentions, NOW)
+    const { inWindow } = weekWindow(mentions, NOW)
+    const directCount = mentions.filter(inWindow).length
+
+    expect(mentionsThisWeek).toBe(directCount)
+    expect(mentionsThisWeek).toBe(3)
   })
 })

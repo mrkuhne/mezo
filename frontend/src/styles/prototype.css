@@ -7333,7 +7333,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
       never a local re-derivation. The `.mrowt.tw-*` washes below tokenize the prototype's
       literal per-tone gradients through the same `--ppl-tone-*` custom props, following
       the `--mz-wash-*`/color-mix idiom the hub-mozaik section already established. ── */
-.ppl-rhythm { border-radius: 16px; padding: 11px 12px; margin-bottom: 9px;
+.ppl-rhythm { border-radius: 19px; padding: 13px 14px; margin-bottom: 11px;
   background: var(--mz-wash-sky); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-sky); }
 .ppl-rhythm-count { margin-left: auto; font-size: 9px; font-weight: 800; color: var(--mz-ink-mut);
   font-variant-numeric: tabular-nums; }
@@ -7353,7 +7353,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .ppl-mrowt.ppl-tw-nehez { background: linear-gradient(150deg, color-mix(in srgb, var(--ppl-tone-nehez) 18%, var(--surface-card)), color-mix(in srgb, var(--ppl-tone-nehez) 5%, var(--surface-page)));
   box-shadow: 0 12px 24px -14px color-mix(in srgb, var(--ppl-tone-nehez) 50%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
 
-.ppl-srcdisc { width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center;
+.ppl-srcdisc { width: 28px; height: 28px; border-radius: 50%; flex: none; display: grid; place-items: center;
   background: var(--surface-card); box-shadow: 0 3px 8px -3px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
 .ppl-mavat { width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center;
   background: var(--mz-cell-rose-bg); color: var(--mz-cell-rose-ink); font-family: var(--ff-display);
@@ -7363,7 +7363,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .ppl-figy { animation: ppl-figypulse 2.4s ease-in-out 1s infinite; }
 @keyframes ppl-figypulse {
   0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mz-cell-amber-ink) 0%, transparent); }
-  50% { box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--mz-cell-amber-ink) 25%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--mz-cell-amber-ink) 25%, transparent); }
 }
 
 @media (prefers-reduced-motion: reduce) {

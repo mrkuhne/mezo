@@ -7,9 +7,10 @@
 // PersonDetailPage.test.tsx idiom) so the hub tile -> heti route wiring is exercised end
 // to end, not a test-local stand-in.
 //
-// The weekly scope (tone-mix + "A hét pillanata") is the rolling-7-day window measured
-// from the newest mention's OWN timestamp (Task 5's isThisWeek rule, PeopleEmlitesekPage's
-// "hét" scope chip) -- never Date.now(). "Irányok"/"Csendben maradt" instead read the
+// The weekly scope (hero + tone-mix + "A hét pillanata") is peopleDerive's shared
+// `weekWindow` helper — the rolling-7-day window measured from the newest mention's OWN
+// timestamp (the same window PeopleEmlitesekPage's hero/"hét" scope chip and the hub's
+// `hubLines` use) -- never Date.now(). "Irányok"/"Csendben maradt" instead read the
 // PersonEntry.mentionsThisWeek FIELD directly (per the brief) -- a persisted count that can
 // legitimately diverge from a live recount of the mock mentions array, so the two families
 // of section are deliberately tested against different sources of truth below.
@@ -82,7 +83,7 @@ const mark = people.find((p) => p.id === 'pp-mark')!
 
 // Hand-computed against the REAL mock seed (frontend/src/data/me/people.ts), the same
 // idiom as PeopleKorPage.test.tsx's spark-height CONTRACT test: this pins the actual
-// numbers so a drift in toneMix/isThisWeek's own math fails honestly instead of the test
+// numbers so a drift in toneMix/weekWindow's own math fails honestly instead of the test
 // re-deriving the same (possibly buggy) formula. Newest mention ts is mn-auto1's
 // 2026-05-24T09:00 -> the rolling-7d cutoff is 2026-05-17T09:00, which drops only mn10
 // (2026-05-15T21:02, Márk) from the week. Of the remaining 10 week mentions, 9 carry a

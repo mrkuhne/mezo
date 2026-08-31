@@ -1,9 +1,12 @@
 // Emberek S3 hub (mezo-06o0.2) — PeoplePage becomes the Kapcsolatok hub: a hero + 3-cell
 // stat strip + 4 navigation tiles (Jelöltek / A köröm / Említések / Heti kép, each a sibling
 // page — WeekHub precedent, never a local show/hide) + the Mezo-band chat handoff.
-// `now` is pinned to the mock seed's own "today" (2026-05-24) so hubLines' 7-day window lands
-// on a known, hand-checked set of mentions (see data/me/people.ts) instead of drifting with
-// the real clock.
+// `now` is pinned to the mock seed's own "today" (2026-05-24) so hubLines' shared
+// `weekWindow` (newest-mention-anchored, not `now`-anchored) lands on a known,
+// hand-checked set of mentions (see data/me/people.ts) instead of drifting with the real
+// clock. The newest mock mention is 2026-05-24T09:00 (mn-auto1), so the window's cutoff
+// is 2026-05-17T09:00 — the same cutoff PeopleEmlitesekPage.test.tsx/PeopleHetiPage.test.tsx
+// hand-check, dropping only the 2026-05-15 mention (Márk) from the week: 10 mentions.
 //
 // Navigation is asserted through a REAL react-router — no `vi.mock('react-router-dom', ...)`
 // here (fix round 1, task review, Important): a mocked `useNavigate` only proves the tile
@@ -82,14 +85,14 @@ test('hero: Kapcsolatok + active-people bignum + the derived week-mention sublin
   const { container } = renderPage()
   expect(screen.getByText('Kapcsolatok')).toBeInTheDocument()
   expect(container.querySelector('.mz-bignum')?.textContent).toBe('5')
-  expect(screen.getByText('aktív kör · 9 említés e héten')).toBeInTheDocument()
+  expect(screen.getByText('aktív kör · 10 említés e héten')).toBeInTheDocument()
 })
 
 test('statstrip: 3 cells — mentions·week, top name, down name (or em dash)', () => {
   const { container } = renderPage()
   const cells = container.querySelectorAll('.mz-statcell')
   expect(cells).toHaveLength(3)
-  expect(cells[0].querySelector('b')?.textContent).toBe('9')
+  expect(cells[0].querySelector('b')?.textContent).toBe('10')
   expect(cells[0].querySelector('small')?.textContent).toBe('említés · hét')
   expect(cells[1].querySelector('b')?.textContent).toBe('Petra')
   expect(cells[1].querySelector('small')?.textContent).toBe('legtöbbet említett')

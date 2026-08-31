@@ -1,10 +1,13 @@
 // Emberek S3 hub (mezo-06o0.2 Task 5) — Említések: "A hét ritmusa" strip + scope/tone/ctx
 // filter chips + tone-washed MentionRow feed. `now` is pinned to the mock seed's own
-// "today" (2026-05-24, same anchor PeoplePage.test.tsx/PeopleKorPage.test.tsx use) so the
-// rhythm strip's 7-day window and the "hét" scope's rolling window both land on a known,
-// hand-checked set of the real mock mentions (frontend/src/data/me/people.ts) — no
-// fixture invented here, so a drift between this page's derivation and Task 1's
-// `weeklyRhythm` fails honestly.
+// "today" (2026-05-24, same anchor PeoplePage.test.tsx/PeopleKorPage.test.tsx use).
+//
+// Two DIFFERENT "this week" windows are deliberately in play on this one page (see
+// peopleDerive.ts's `weekWindow` doc): the rhythm strip's 7 day-COLUMNS stay `now`-anchored
+// calendar days (Task 1's `weeklyRhythm`, never a local re-derivation), while the hero
+// bignum and the "Hét" scope chip are a HEADLINE COUNT and use the shared, newest-mention-
+// anchored `weekWindow` instead — the same window the hub's `hubLines` and Heti kép use,
+// so this page's hero always agrees with theirs for the same data.
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter, useLocation, type RouteObject } from 'react-router-dom'
 import { beforeEach, afterEach, expect, test, vi } from 'vitest'
@@ -12,7 +15,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { routes as appRoutes } from '@/app/router'
 import { mentions as seedMentions } from '@/data/me/people'
-import { weeklyRhythm } from '@/features/me/logic/peopleDerive'
+import { weeklyRhythm, weekWindow } from '@/features/me/logic/peopleDerive'
 import { PeopleEmlitesekPage } from '@/features/me/pages/PeopleEmlitesekPage'
 
 const NOW = new Date('2026-05-24T12:00:00')
@@ -60,12 +63,20 @@ function renderPage() {
   return { ...view, router }
 }
 
-test('hero: Említések + this-week bignum, matching weeklyRhythm\'s own total', () => {
+test('hero: Említések + the shared weekWindow bignum (NOT weeklyRhythm\'s calendar-day total)', () => {
   const { container } = renderPage()
   expect(screen.getByText('Említések')).toBeInTheDocument()
-  const expectedCount = weeklyRhythm(seedMentions, NOW).reduce((sum, d) => sum + d.count, 0)
-  expect(expectedCount).toBe(9) // sanity-pin the hand-check itself
-  expect(container.querySelector('.mz-bignum')?.textContent).toBe('9')
+  // The rhythm strip's own 7 calendar-day columns sum to 9 (excludes the 2026-05-17
+  // mention, which falls 7 calendar-days back from 2026-05-24 — day-offset 7, outside
+  // weeklyRhythm's 0-6 range) — a DIFFERENT number from the hero, which uses the shared,
+  // newest-mention-anchored weekWindow (10, dropping only the 2026-05-15 mention). This
+  // is the deliberate split the fix introduced: same page, two honestly different windows.
+  const rhythmTotal = weeklyRhythm(seedMentions, NOW).reduce((sum, d) => sum + d.count, 0)
+  expect(rhythmTotal).toBe(9) // sanity-pin the hand-check itself
+  const { inWindow } = weekWindow(seedMentions, NOW)
+  const expectedHeroCount = seedMentions.filter(inWindow).length
+  expect(expectedHeroCount).toBe(10) // sanity-pin the hand-check itself
+  expect(container.querySelector('.mz-bignum')?.textContent).toBe('10')
 })
 
 test('renders exactly 7 rhythm columns, the last one marked today', () => {

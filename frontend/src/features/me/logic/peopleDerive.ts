@@ -18,10 +18,45 @@ function dayOffset(ts: string, now: Date): number {
   return Math.round(diff / DAY_MS)
 }
 
-/** The shared "this week" window every hub line agrees on: today and the 6 days before it. */
-function isThisWeek(ts: string, now: Date): boolean {
-  const offset = dayOffset(ts, now)
-  return offset >= 0 && offset <= 6
+// ── the shared "this week" window ───────────────────────────────────────────
+//
+// Two DIFFERENT, deliberate "this week" rules exist in this file, and every surface
+// must use the one that matches what it renders — mixing them is exactly the bug this
+// helper fixes (the hub showed "0 említés e héten" while Heti kép showed "10" on the
+// very next screen, for the same seed data):
+//
+//  1. `weekWindow` (below) — rolling 7×24h back from the NEWEST mention's own
+//     timestamp, never `Date.now()`. This is what every HEADLINE "N említés e héten"
+//     COUNT uses: hubLines' mentionsThisWeek/topName/flagCount, Heti kép's tone-mix +
+//     "A hét pillanata", and Említések's hero bignum + "Hét" scope filter. Anchoring on
+//     the newest mention (instead of the real clock) keeps a frozen mock seed reading as
+//     "this week" indefinitely, and stays close to live data (the newest mention IS
+//     "now" for someone who just logged something).
+//  2. `weeklyRhythm`'s own day buckets (below) stay anchored on `now` — its 7 columns
+//     are calendar days ending TODAY by definition (a chart axis, "Mon Tue Wed…", not a
+//     count), so they must track the real clock even when `weekWindow`'s data-anchored
+//     count doesn't. Only weeklyRhythm's per-day BAR HEIGHTS use this; nothing that
+//     reports a single "this week" number should.
+//
+// `PersonEntry.mentionsThisWeek` is a THIRD, separate thing on purpose: a persisted
+// per-person cadence field (can legitimately diverge from a live recount of the
+// mentions array). `quietPeople` and PeopleHetiPage's "Irányok"/"Csendben maradt"
+// stay on it deliberately — they're about each person's own real cadence, not a
+// recount of the mock mentions array — while hubLines' `topName` (a COUNT, per the
+// rule above) is derived from `weekWindow` instead.
+export interface WeekWindow { cutoff: number; inWindow: (m: Mention) => boolean }
+
+export function weekWindow(mentions: Mention[], now: Date): WeekWindow {
+  if (mentions.length === 0) {
+    // No mentions at all -> nothing is "in window" (never "everything qualifies").
+    return { cutoff: Infinity, inWindow: () => false }
+  }
+  const rawNewest = mentions.reduce((max, m) => Math.max(max, new Date(m.ts).getTime()), -Infinity)
+  // Clamp to `now`: a mis-seeded/future-timestamped mention must never push the window
+  // ahead of the real clock.
+  const newest = Math.min(rawNewest, now.getTime())
+  const cutoff = newest - 7 * DAY_MS
+  return { cutoff, inWindow: (m) => new Date(m.ts).getTime() >= cutoff }
 }
 
 // ── weekly rhythm strip ─────────────────────────────────────────────────────
@@ -159,13 +194,23 @@ export interface HubLines {
 }
 
 export function hubLines(people: PersonEntry[], mentions: Mention[], now: Date): HubLines {
-  const weekMentions = mentions.filter((m) => isThisWeek(m.ts, now))
+  const { inWindow } = weekWindow(mentions, now)
+  const weekMentions = mentions.filter(inWindow)
 
+  // topName is a COUNT (see the weekWindow doc above) -> derived from a live recount of
+  // weekMentions per person, NOT PersonEntry.mentionsThisWeek. topCount starts at 0 (not
+  // -1) so an all-quiet week — nobody has a single mention inside the window — leaves
+  // topName `null` instead of fabricating a "most active" person out of a 0-mention tie.
+  const countsByPerson = new Map<string, number>()
+  for (const m of weekMentions) {
+    countsByPerson.set(m.person_id, (countsByPerson.get(m.person_id) ?? 0) + 1)
+  }
   let topName: string | null = null
-  let topCount = -1
+  let topCount = 0
   for (const p of [...people].sort((a, b) => a.name.localeCompare(b.name))) {
-    if (p.mentionsThisWeek > topCount) {
-      topCount = p.mentionsThisWeek
+    const count = countsByPerson.get(p.id) ?? 0
+    if (count > topCount) {
+      topCount = count
       topName = p.name
     }
   }

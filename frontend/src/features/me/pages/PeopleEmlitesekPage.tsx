@@ -8,10 +8,13 @@
 // The week-rhythm strip is deliberately UNFILTERED (the prototype's rhythmHtml() reads
 // its own MENTIONS array, not the `F` filter state) — it is the hub's own honest "what
 // actually happened this week" reading, while the chips/feed below narrow the LIST. Bar
-// heights come from Task 1's `weeklyRhythm` (never a local re-derivation); the "hét"
-// scope chip narrows the feed to a rolling 7-day window measured from the newest mention's
-// own timestamp (not `Date.now()`), so a mock seed frozen in the past still shows a real
-// week's worth of rows.
+// heights come from Task 1's `weeklyRhythm` (never a local re-derivation) and stay
+// calendar-day/`now`-anchored (its columns ARE "today and the 6 days before" by
+// definition). The hero bignum and the "hét" scope chip are a different thing — a
+// HEADLINE COUNT, not a chart axis — so both use the shared `weekWindow` helper's
+// newest-mention-anchored rolling window (never `Date.now()`, never a local
+// re-derivation), so a mock seed frozen in the past still reads as "this week" and this
+// page's own hero always agrees with the hub's and Heti kép's "N említés e héten".
 //
 // Honest empty/incomplete states: a filtered-to-nothing list renders the dashed `.ppl-empty`
 // card (never a fabricated row); a tone-less row (the night-run hasn't scored it yet) never
@@ -23,7 +26,7 @@ import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ClayIcon } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
-import { weeklyRhythm } from '@/features/me/logic/peopleDerive'
+import { weeklyRhythm, weekWindow } from '@/features/me/logic/peopleDerive'
 import { TONE_META, CTX_META } from '@/features/me/logic/peopleVisuals'
 import { MentionRow } from '@/features/me/components/MentionRow'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
@@ -33,7 +36,6 @@ import type { Affect, Mention, MentionContext } from '@/data/types'
 const RHYTHM_BASE_PX = 9
 const RHYTHM_PER_COUNT_PX = 15
 const RHYTHM_EMPTY_PX = 4
-const DAY_MS = 24 * 60 * 60 * 1000
 
 type Scope = 'mind' | 'het'
 interface Filters { scope: Scope; tone: Affect | null; ctx: MentionContext | null }
@@ -90,20 +92,27 @@ export function PeopleEmlitesekPage() {
   const [logOpen, setLogOpen] = useState(false)
   const [filters, setFilters] = useState<Filters>({ scope: 'mind', tone: null, ctx: null })
 
-  const rhythm = weeklyRhythm(mentions, new Date())
-  const weekCount = rhythm.reduce((sum, d) => sum + d.count, 0)
+  const now = new Date()
+  const rhythm = weeklyRhythm(mentions, now)
+  // The rhythm strip's own caption sums the 7 calendar-day bars drawn right beneath it
+  // (`now`-anchored, matching weeklyRhythm) — it must agree with what's actually drawn,
+  // never the hero's different window.
+  const rhythmCount = rhythm.reduce((sum, day) => sum + day.count, 0)
+  // The hero bignum is a HEADLINE COUNT, not a chart axis — it uses the shared,
+  // newest-mention-anchored window (never the calendar-day rhythm sum) so it always
+  // agrees with the hub's and Heti kép's own "N említés e héten".
+  const { inWindow } = weekWindow(mentions, now)
+  const weekCount = mentions.filter(inWindow).length
 
   const filtered = useMemo(() => {
     let list = mentions
     if (filters.scope === 'het') {
-      const newestTs = mentions.reduce((max, m) => Math.max(max, new Date(m.ts).getTime()), 0)
-      const cutoff = newestTs - 7 * DAY_MS
-      list = list.filter((m) => new Date(m.ts).getTime() >= cutoff)
+      list = list.filter(inWindow)
     }
     if (filters.tone) list = list.filter((m) => m.tone === filters.tone)
     if (filters.ctx) list = list.filter((m) => m.contextLabel === filters.ctx)
     return list
-  }, [mentions, filters])
+  }, [mentions, filters, inWindow])
 
   const hasTonelessRow = filtered.some((m) => !m.tone)
   const personFor = (m: Mention) => people.find((p) => p.id === m.person_id)
@@ -128,7 +137,7 @@ export function PeopleEmlitesekPage() {
           <div className="ppl-rhythm rise" style={{ '--d': '0ms' } as CSSProperties}>
             <div className="mz-tile-top">
               <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sky-ink)' }}>A hét ritmusa</span>
-              <span className="ppl-rhythm-count">{weekCount} említés</span>
+              <span className="ppl-rhythm-count">{rhythmCount} említés</span>
             </div>
             <div className="ppl-rcols">
               {rhythm.map((day, i) => {
