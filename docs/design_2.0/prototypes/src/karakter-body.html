@@ -1,13 +1,15 @@
 <div class="wrap">
-  <p class="eyebrow">Mezo · oldalépítés · Karakter (Én tab, dosszié) · v2</p>
+  <p class="eyebrow">Mezo · oldalépítés · Karakter (Én tab, dosszié) · v3</p>
   <h1>Karakter oldal</h1>
   <p class="lede">A Karakter-dosszié felhasználói felülete — a backend már megvan (7 CORE dimenzió,
   7 szakértő + Szkeptikus + Mezo elnök, heti konzílium, bootstrap, claim-visszajelzés — lásd
   <code>docs/features/character.md</code>). A csempe majd az Én hub mozaikjába kerül; itt önmagában
   mutatjuk a Karakter oldalt, hogy a vizuális nyelv tisztán látszódjon. <strong>Bizalmi elvek:</strong>
   a bizalom-szó sosem szám (biztos / valószínű / figyeljük), a szakértők sosem üzennek közvetlenül
-  — a felhasználó csak <em>olvassa</em> a csapat munkáját. <strong>Ez a 2. iteráció</strong> Daniel
-  visszajelzése alapján: kompaktabb hub, orb-variáns karakterikonok, élőbb mozgás.</p>
+  — a felhasználó csak <em>olvassa</em> a csapat munkáját. <strong>Ez a 3. iteráció</strong> egy új,
+  Daniel által jóváhagyott irány: a <strong>Gépterem</strong> — egy geek átláthatósági felület, ami
+  konkrétan megmutatja, milyen adat táplálja a dossziét, hogyan válik kód-szintű jelből szakértői
+  megfigyelés, és mi az, amit a rendszer <em>még nem</em> olvas be.</p>
 
   <div class="stage">
     <div class="phone"><div class="screen" id="scr">
@@ -113,6 +115,30 @@
               <p class="honestynote">A fenti a valódi beszélgetés, ami lezajlott — a felület sosem
               dramatizálja utólag; amit itt olvasol, azt a csapat pontosan így mondta.</p>
             </div>
+          </div>
+        </div>
+
+        <!-- ============ GÉPTEREM ============ -->
+        <div class="page p-gep" id="page-gepterem">
+          <div class="page-head"><button class="backbtn" data-back="page-gepterem">‹ Karakter</button></div>
+          <div class="page-hero"><svg width="34" height="34" viewBox="0 0 100 100" style="margin-bottom:4px;"><use href="#i-retegek"/></svg>
+            <div class="nm">Gépterem</div><div class="sb">mi táplálja a dossziét — nyíltan</div></div>
+          <div class="page-body">
+            <div class="secttl rise" style="--d:0ms;">Futás-idővonal</div>
+            <div id="runList"></div>
+
+            <div class="secttl rise" style="--d:60ms;">Adatforrás-leltár</div>
+            <p class="sectnote rise" style="--d:80ms;">Mit olvas a rendszer ma, és milyen ablakban —
+            ez a lista a <code>mezo-1gim.15</code> („MINDENT be”) munkalistája is egyben.</p>
+            <div class="invsec" id="invList"></div>
+
+            <div class="secttl rise" style="--d:100ms;">Nyoma marad</div>
+            <div class="ainaplolink rise" style="--d:120ms;" id="ainaploLink">
+              <svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#i-tudas"/></svg>
+              <div class="tx">A nyers promptok és válaszok az AI-naplóban</div><span class="chev">›</span>
+            </div>
+            <p class="principle">Minden Karakter-hívás mentve — <code>feature=character</code>,
+            lépésenként (observe / propose / skeptic / integrate / portrait). Semmi nem tűnik el.</p>
           </div>
         </div>
 
@@ -237,6 +263,49 @@
           és összehúzódik érintésre — mind reduced-motion-guardolt, mint eddig.</li>
         </ul>
       </div>
+      <div>
+        <h2>Gépterem — 3. iteráció (mezo-1gim.14)</h2>
+        <ul>
+          <li><strong>Miért:</strong> Daniel jóváhagyott egy geek átláthatósági irányt — konkrétan
+          megmutatni, milyen adat táplálja a dossziét, hogyan válik kód-szintű jelből szakértői
+          megfigyelés, és mit <em>nem</em> olvas be a rendszer még. Ez nem a laikus felhasználói
+          felület — a claim-szintű becsületesség (biztos/valószínű/figyeljük) már megvan a
+          dimenzió-oldalon; a Gépterem egy szinttel mélyebbre megy, a mérnöki/kíváncsi olvasónak.</li>
+          <li><strong>Hub-elhelyezés:</strong> a 2×2 mozaik alá egy ötödik, <strong>vékony,
+          teljes szélességű csempe</strong> került (nem egy ötödik négyzet a rácsban) — így a hub
+          négy „meleg”, tartalmi csempéje vizuálisan egyben marad, a Gépterem technikai tónusa
+          (grafit/szürkészöld verlauf, <code>i-retegek</code> ikon) pedig alattuk, egy sávban áll,
+          jelezve hogy ez más rétegű infó. Élő adat: az utolsó futás sora („ma 02:50 · 3
+          megfigyelés”).</li>
+          <li><strong>Futás-idővonal</strong> — 5 sor (2 éjszakai kör, egy konzílium, egy havi
+          mélyolvasás, egy bootstrap), mindegyik lenyitható. A <strong>csendes éjszaka</strong>
+          („tegnap · 02:50 · csendes nap · 0 hívás”) ugyanolyan súllyal szerepel, mint a zajos — ez
+          szándékos: a 0-költségű, 0-hívású futás nem hiba, hanem a becsületes-állapot elv
+          bizonyítéka, és büszkén, nem elrejtve jelenik meg.</li>
+          <li><strong>Jel-lánc</strong> — minden lenyitott megfigyelés két sávra bomlik: egy
+          <strong>KÓD</strong> sor (monospace, grafit chip a detektor-kulccsal, pl.
+          <code>logging-gap</code>, + a determinisztikus szöveg + a <code>refIds</code> pill-ek),
+          majd egy nyíl, majd egy <strong>LLM</strong> sor (a szakértő orb-ja + a saját hangján írt
+          megfigyelés). Ez a „kód detektál, LLM értelmez” elválasztás vizuálisan is olvasható, nem
+          csak dokumentálva.</li>
+          <li><strong>Adatforrás-leltár</strong> — a valós olvasási ablakok (éjszakai 14 nap,
+          konzílium a hét megfigyelései + aktív claimek + Daniel válaszai, havi a teljes
+          claim-bázis, bootstrap a hat forrás) + egy <strong>szaggatott, „még nincs bekötve”</strong>
+          lista a be nem kötött domainekről (edzés-szettek/RIR, futás, sport, fuel-részletek,
+          chat-témák, hála, döntés-napló, Életjel, streakek, emberek-említések). Ez a lista
+          szándékosan a <code>mezo-1gim.15</code> („MINDENT be”) munkalistája is egyben.</li>
+          <li><strong>Feed „⚙ miből?”</strong> — a Feed-oldal minden megfigyelés-sora kapott egy kis
+          fogaskerék gombot, ami ugyanazt a jel-lánc arcot nyitja meg inline, helyben — így Daniel
+          összehasonlíthatja a két felületet (teljes Futás-idővonal vs. kontextusban, egy
+          megfigyelésnél) és eldöntheti, melyik marad.</li>
+          <li><strong>Honesty megjegyzés</strong> — a mock adat tudatosan tükrözi, hogy ma csak
+          <strong>Drill, Pszichológus és Táplálkozó</strong> kap éjszakai detektor-jelet (a valós
+          katalógus 5 detektora ezt a hármat fedi); Doki, Edző, Szomnológus és Antropológus
+          megfigyelései a heti/havi konzílium-kör saját olvasásából és Daniel visszajelzéseiből
+          születnek — ez a Feed „⚙” panelekben és a futás-sor „csendes szakértők” jegyzetében is
+          kimondva látszik, nem elhallgatva.</li>
+        </ul>
+      </div>
       <div class="democtl">
         <span>Demó-vezérlők:</span>
         <button id="demoBoot">Bootstrap-folyamat</button>
@@ -245,20 +314,18 @@
       <div>
         <h2>Döntési kérdések Danielnek</h2>
         <ol>
-          <li><strong>Gyűrű vs radar</strong> — a 7-dimenziós hero maradjon szegmentált kör
-          (mint az Életjel), vagy inkább egy 7-tengelyű radar/pókháló legyen, ami jobban mutatja
-          az egyenetlen érettséget dimenziónként?</li>
-          <li><strong>Dimenziók-csempe adat</strong> — az átlag érettség % a jó élő adat a hub
-          csempéjén, vagy inkább a legutóbb változott dimenzió neve legyen ott („Alvás frissült”)?</li>
-          <li><strong>Buborék-irány a konzíliumban</strong> — minden szakértő-buborék balra igazodjon
-          (mint most), vagy a Szkeptikus és Mezo kapjon saját, vizuálisan jobbra tolt „ellenpólus”
-          pozíciót, hogy a vita iránya olvashatóbb legyen?</li>
-          <li><strong>Orb-motívum</strong> — a szaggatott belső gyűrű elég erős megkülönböztető jel
-          szakértőnként, vagy kelljen egy explicit kis glifa is (pl. Doki = kereszt, Edző =
-          súlyzó), mielőtt ezek átkerülnek a sprite-csomagba?</li>
-          <li><strong>Bootstrap belépési pont</strong> — legyen önálló „Kezdjük el” gomb a hub
-          üres állapotában (mint itt demózva), vagy induljon automatikusan az első app-nyitáskor,
-          minden felhasználói döntés nélkül?</li>
+          <li><strong>Csempe vs sáv</strong> — a Gépterem maradjon vékony, teljes szélességű sáv a
+          2×2 mozaik alatt (mint most), vagy legyen inkább egy ötödik, egyenrangú négyzet a
+          rácsban (2×2 + 1, aszimmetrikus utolsó sor)?</li>
+          <li><strong>Feed „⚙” marad-e</strong> — éri-e meg a duplikációt, hogy a jel-lánc mind a
+          Feed-en (kontextusban), mind a Gépteremben (teljes idővonalon) megjelenik, vagy húzzuk ki
+          az egyiket a következő körben?</li>
+          <li><strong>Mennyi futás-történet</strong> — az 5 sor (2 éjszakai + heti + havi +
+          bootstrap) elég mélység, vagy legyen egy „régebbi futások betöltése” — és ha igen,
+          meddig érdemes visszamenni (a nightly job csak 3 napot pótol vissza, a heti 2 hetet)?</li>
+          <li><strong>Leltár csoportosítása</strong> — az Adatforrás-leltár most job-kör szerint
+          csoportosít (éjszakai/konzílium/havi/bootstrap); jobb lenne domain szerint (edzés, fuel,
+          alvás, élet…), hogy a „még nincs bekötve” lista közvetlenül a domain mellett látszódjon?</li>
         </ol>
       </div>
       <div class="note">A dosszié nem ad hozzá nyers jelet — a meglévő emlékezetet (napi összegzők,
@@ -397,22 +464,30 @@
 
   var FEED = [
     { day: 'Ma · aug 30', items: [
-      { who: 'doki', text: 'A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.' },
-      { who: 'drill', text: 'A tegnapi kihagyott logolást ma reggelre már pótoltad — ez a minta ismerős nálad.' },
+      { who: 'doki', text: 'A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.',
+        source: 'Doki ma éjjel nem kapott detektor-jelet — a mai katalógus nem fed feléje tartományt; ez a megfigyelés a heti konzílium saját olvasásából született.' },
+      { who: 'drill', text: 'A tegnapi kihagyott logolást ma reggelre már pótoltad — ez a minta ismerős nálad.',
+        chain: { detector: 'under-logging', code: 'a heti fókuszok naplózása 2 napja elmaradt (2/3 kitöltve)', refs: ['focus:220', 'focus:221'] } },
       { diff: true, text: 'Vasárnapi konzílium: 2 új állítás · 1 portré átírva', page: 'page-konz' }
     ] },
     { day: 'Tegnap · aug 29', items: [
-      { who: 'edzo', text: 'A tegnapi teremedzésen minden RIR-cél 1-en belül teljesült.' },
-      { who: 'szomnologus', text: 'Az elalvási idő 23:10-re csúszott — 35 perccel a szokásos után.' }
+      { who: 'edzo', text: 'A tegnapi teremedzésen minden RIR-cél 1-en belül teljesült.',
+        source: 'Edző ma sem kapott nightly-jelet — az edzésprofilt egyelőre csak a heti/havi konzílium-kör dolgozza fel, saját olvasásból.' },
+      { who: 'szomnologus', text: 'Az elalvási idő 23:10-re csúszott — 35 perccel a szokásos után.',
+        source: 'Szomnológus is a konzílium-kör saját olvasásából dolgozik ma — nightly detektor még nem fedi az alvás-tartományt.' }
     ] },
     { day: 'aug 27', items: [
-      { who: 'pszichologus', text: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.' },
-      { who: 'taplalkozo', text: 'Három egymást követő napon a fehérjecél 5 g-on belül teljesült.' },
+      { who: 'pszichologus', text: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.',
+        chain: { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 27., 210 karakter)', refs: ['journal:5521'] } },
+      { who: 'taplalkozo', text: 'Három egymást követő napon a fehérjecél 5 g-on belül teljesült.',
+        chain: { detector: 'logging-gap', code: '3. napja nincs étkezés logolva (utolsó: aug 24.)', refs: ['meal:1421', 'meal:1422', 'meal:1423'] } },
       { diff: true, text: 'Portré frissült: Alvás & regeneráció — a hétvégi eltolódás mostantól „biztos” szintű állítás.', dim: 'recovery' }
     ] },
     { day: 'aug 24', items: [
-      { who: 'antropologus', text: 'Petra harmadik alkalommal jelenik meg a hét naplóiban.' },
-      { who: 'drill', text: 'A heti fókuszok mindhárma teljesült — negyedik egymást követő hete.' }
+      { who: 'antropologus', text: 'Petra harmadik alkalommal jelenik meg a hét naplóiban.',
+        source: 'Antropológus ma sem kapott nightly-jelet — az élet- és kapcsolat-tartományt egyelőre csak a heti/havi kör olvassa.' },
+      { who: 'drill', text: 'A heti fókuszok mindhárma teljesült — negyedik egymást követő hete.',
+        chain: { detector: 'under-logging', code: 'a heti fókuszok naplózása 4 hete folyamatos, kihagyás nélkül', refs: ['focus:204', 'focus:211', 'focus:218'] } }
     ] }
   ];
 
@@ -463,6 +538,11 @@
     '<div class="dimtile t-konz rise" style="--d:230ms;--sh:rgba(181,126,20,0.4);" data-page="page-konz" role="button" tabindex="0" aria-label="Konzílium">' +
       '<div class="dhd"><div class="p-eyebrow" style="color:#A8801F;">Konzílium</div><div class="pulsedot"></div></div>' +
       '<div class="dline">aug 30. · 4 változás</div>' +
+    '</div>' +
+    '<div class="dimtile wide t-gepterem rise" style="--d:280ms;--sh:rgba(61,82,92,0.35);" data-page="page-gepterem" role="button" tabindex="0" aria-label="Gépterem">' +
+      '<div class="dhd"><div class="gpic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-retegek"/></svg></div>' +
+      '<div class="p-eyebrow" style="color:#3D525C;">Gépterem</div></div>' +
+      '<div class="dline">ma 02:50 · 3 megfigyelés</div>' +
     '</div>';
 
   // ===== Dimenziók-lista oldal =====
@@ -480,24 +560,155 @@
       '<div class="dline">' + top + '</div></div>';
   }).join('');
 
-  // ===== Feed oldal — napokra bontva =====
+  // ===== "miből?" jel-lánc panel — a Feed és a Gépterem is ezt hívja =====
+  function chainPanelHTML(who, text, chain, source) {
+    var ex = EXPERTS[who];
+    if (chain) {
+      return '<div class="chain">' +
+        '<div class="coderow"><span class="detchip">' + chain.detector + '</span>' +
+        '<div class="codetxt">' + chain.code + '</div></div>' +
+        '<div class="refrow2">' + chain.refs.map(function (r) { return '<span class="refchip">' + r + '</span>'; }).join('') + '</div>' +
+        '<div class="chainarrow">↓ LLM értelmezi</div>' +
+        '<div class="llmrow" style="--dc:' + ex.color + ';"><div class="lldisc">' + orbHTML(who, 22) + '</div>' +
+        '<div><div class="lleyebrow">' + ex.name + ' · megfigyelés</div><div class="lltxt">' + text + '</div></div></div>' +
+        '</div>';
+    }
+    return '<div class="chain"><div class="quietnote"><b>Nem detektorból jött.</b> ' + source + '</div></div>';
+  }
+
+  // ===== Feed oldal — napokra bontva, „⚙ miből?” lánc-feltárással =====
   var feedBody = document.getElementById('feedBody');
   feedBody.innerHTML = FEED.map(function (grp, gi) {
     var rows = grp.items.map(function (it, ii) {
       if (it.diff) {
-        return '<div class="feeddiff rise-x" style="--d:' + (gi * 60 + ii * 50) + 'ms;" data-' +
+        return '<div class="feedunit"><div class="feeddiff rise-x" style="--d:' + (gi * 60 + ii * 50) + 'ms;" data-' +
           (it.dim ? 'dim="' + it.dim + '"' : 'page="' + it.page + '"') + '>' +
           '<div class="ic"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#i-minta"/></svg></div>' +
-          '<div class="tx">' + it.text + '</div><span class="chev">›</span></div>';
+          '<div class="tx">' + it.text + '</div><span class="chev">›</span></div></div>';
       }
       var ex = EXPERTS[it.who];
-      return '<div class="feedrow rise-x" style="--d:' + (gi * 60 + ii * 50) + 'ms;">' +
+      var uid = 'fd' + gi + '-' + ii;
+      return '<div class="feedunit"><div class="feedrow rise-x" style="--d:' + (gi * 60 + ii * 50) + 'ms;">' +
         '<div class="feeddisc" style="--dc:' + ex.color + ';">' + orbHTML(it.who, 22) + '</div>' +
-        '<div class="grow"><div class="fnm">' + ex.name + '</div><div class="ftxt">' + it.text + '</div></div></div>';
+        '<div class="grow"><div class="fnm">' + ex.name + '</div><div class="ftxt">' + it.text + '</div></div>' +
+        '<button class="gepq" data-gq="' + uid + '" aria-label="Miből?" title="Miből?">⚙</button></div>' +
+        '<div class="feedchain" id="' + uid + '">' + chainPanelHTML(it.who, it.text, it.chain, it.source) + '</div></div>';
     }).join('');
     return '<div class="feedday rise" style="--d:' + (gi * 60) + 'ms;">' + grp.day + '</div>' +
       '<div class="feedtile rise" style="--d:' + (gi * 60 + 20) + 'ms;">' + rows + '</div>';
   }).join('');
+  feedBody.addEventListener('click', function (e) {
+    var g = e.target.closest('[data-gq]');
+    if (!g) return;
+    document.getElementById(g.getAttribute('data-gq')).classList.toggle('open');
+  });
+
+  // ===== Gépterem — futás-idővonal + adatforrás-leltár =====
+  var RUNS = [
+    { id: 'r2', time: 'ma · 02:50', kind: 'ejszaka', label: 'Éjszakai kör', badge: 'ÉJSZAKAI',
+      rw: 'rgba(61,82,92,0.14)', rc: '#3D525C',
+      sub: '3 megfigyelés · 3 szakértő hívva',
+      chains: [
+        { detector: 'logging-gap', code: '3. napja nincs étkezés logolva (utolsó: aug 24.)',
+          refs: ['meal:1421', 'meal:1422', 'meal:1423'], who: 'taplalkozo',
+          obs: 'Hétvégén a logolási fegyelmed lazább — inkább kényelem, mint tudatos döntés.' },
+        { detector: 'under-logging', code: 'a heti fókuszok naplózása 2 napja elmaradt (2/3 kitöltve)',
+          refs: ['focus:220', 'focus:221'], who: 'drill',
+          obs: 'A kitűzött heti fókuszaid teljesítési aránya magas, de a naplózásuk néha csúszik.' },
+        { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 29., 210 karakter)',
+          refs: ['journal:5521'], who: 'pszichologus',
+          obs: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.' }
+      ],
+      quietExperts: 'Doki · Edző · Szomnológus · Antropológus — ma éjjel nem kaptak hívást; a mai ' +
+        'detektor-katalógus (<code>logging-gap</code>, <code>checkin-gap</code>, <code>journal-silence</code>, ' +
+        '<code>under-logging</code>, <code>journal-note</code>) csak Drill/Pszichológus/Táplálkozó ' +
+        'tartományát fedi. Ők a heti/havi konzílium-kör saját olvasásából és Daniel visszajelzéseiből ' +
+        'gyűjtenek bizonyítékot.' },
+    { id: 'r1', time: 'tegnap · 02:50', kind: 'ejszaka', label: 'Éjszakai kör', badge: 'ÉJSZAKAI',
+      rw: 'rgba(61,82,92,0.14)', rc: '#3D525C', quiet: true,
+      sub: 'csendes nap · 0 hívás',
+      quietMsg: 'Egyik detektor sem tüzelt — nem volt logolási rés, nem volt friss naplóbejegyzés, ' +
+        'nem maradt el check-in. Nulla LLM-hívás, nulla token, nulla költség. Ez nem hiányos futás — ' +
+        'ez a rendszer <b>pontosan azt csinálta, amit kell</b>: nem talált ki jelet, ahol nem volt.' },
+    { id: 'w2', time: 'aug 30. · 19:30', kind: 'konzilium', label: 'Vasárnapi konzílium', badge: 'HETI',
+      rw: 'rgba(201,150,46,0.16)', rc: '#A8801F',
+      sub: '7 megfigyelés feldolgozva · 2 elfogadva · 1 nyugdíjazva · 3 portré átírva',
+      note: 'A hét összes fel nem dolgozott <code>character_observation</code> sora (7 db, a fenti ' +
+        'éjszakai körökből + korábbiak) + az összes ACTIVE claim a Szkeptikus ellenőrzéséhez + Daniel ' +
+        'két claim-visszajelzése ebből a hétből. Egy tranzakció — vagy minden lépés lefut, vagy semmi ' +
+        '(javaslat → Szkeptikus → Mezo döntés → claim-frissítés → portré-újraírás → transzkript mentése).' },
+    { id: 'm1', time: 'aug 1. · 20:00', kind: 'havi', label: 'Havi mélyolvasás', badge: 'HAVI',
+      rw: 'rgba(93,79,160,0.14)', rc: '#5D4FA0',
+      sub: '4 állítás frissült · 1 fejezet nyugdíjazva',
+      note: 'Nem friss megfigyeléseket olvas, hanem a <b>teljes meglévő claim-bázist</b> — minden ACTIVE ' +
+        'állítást újra mérlegre tesz, kortól függetlenül, UP/DOWN/RETIRE irányban. Ezután egy külön ' +
+        'lépésben megnézi, van-e 90 napnál régebbi, aktív állítás nélküli CHAPTER dimenzió — ha van, ' +
+        'nyugdíjazza.' },
+    { id: 'b0', time: 'júl 15.', kind: 'bootstrap', label: 'Bootstrap', badge: 'EGYSZERI',
+      rw: 'rgba(78,143,184,0.16)', rc: '#3E7396',
+      sub: '9 kezdő állítás · a teljes eddigi történet beolvasva',
+      note: '60 napi összegző narratíva + 60 megerősített minta + a 40 legrelevánsabb tudás-tény + ' +
+        '60 heti review (minden szakértőhöz szétosztva) + 60 naplóbejegyzés (csak a Pszichológusnak) + ' +
+        '40 aktív életesemény (csak az Antropológusnak) — egyetlen egyszeri olvasás, ami a dosszié ' +
+        'első portréit építette fel.' }
+  ];
+
+  var INVENTORY = {
+    reads: [
+      { w: 'Éjszakai kör', x: '14 napos ablak — étkezés-logok, súlymérések, check-inek, napló ' +
+        '(<code>CharacterSignalReads</code>); csak Drill/Pszichológus/Táplálkozó tartományát fedi ma.' },
+      { w: 'Vasárnapi konzílium', x: 'a hét fel nem dolgozott megfigyelései + az összes ACTIVE claim + ' +
+        'Daniel felhasználói visszajelzései (a claim-feedback maga is egy megfigyelés, <code>expert_key=user</code>).' },
+      { w: 'Havi mélyolvasás', x: 'a teljes claim-bázis, korral súlyozva — nem friss jel, felülvizsgálat.' },
+      { w: 'Bootstrap (egyszeri)', x: '60 napi összegző · 60 megerősített minta · top 40 tudás-tény · ' +
+        '60 heti review · 60 napló (csak Pszichológus) · 40 életesemény (csak Antropológus).' }
+    ],
+    missing: [
+      'edzés-szettek és RIR-részletek', 'futás-adatok', 'sport (röplabda) naplók',
+      'fuel-részletek (makró-bontás, recept-szint)', 'chat-témák (a beszélgetések tartalma)',
+      'hála-bejegyzések', 'döntés-napló', 'Életjel (napi need-gyűrűk)', 'streakek',
+      'emberek-említések részletei (a naplószövegen túl)'
+    ]
+  };
+
+  var runList = document.getElementById('runList');
+  runList.innerHTML = RUNS.map(function (r, i) {
+    var body;
+    if (r.quiet) {
+      body = '<div class="quietnote">' + r.quietMsg + '</div>';
+    } else if (r.chains) {
+      body = r.chains.map(function (c) {
+        return chainPanelHTML(c.who, c.obs, { detector: c.detector, code: c.code, refs: c.refs });
+      }).join('') + '<div class="quietexperts">' + r.quietExperts + '</div>';
+    } else {
+      body = '<div class="chain"><div class="codetxt" style="font-family:inherit;color:#4A4038;">' + r.note + '</div></div>';
+    }
+    return '<div class="runrow rise' + (r.quiet ? ' quiet' : '') + '" style="--d:' + (i * 45) + 'ms;" data-run="' + r.id + '">' +
+      '<div class="run-head"><div class="rk" style="--rw:' + r.rw + ';--rc:' + r.rc + ';">' +
+      '<svg width="15" height="15" viewBox="0 0 100 100"><use href="#i-idozito"/></svg></div>' +
+      '<div class="grow"><div class="rt">' + r.label + ' <span class="run-badge ' + r.kind + '">' + r.badge + '</span></div>' +
+      '<div class="rs">' + r.time + ' · ' + r.sub + '</div></div>' +
+      '<span class="rchev">›</span></div>' +
+      '<div class="run-body">' + body + '</div></div>';
+  }).join('');
+  runList.addEventListener('click', function (e) {
+    var row = e.target.closest('[data-run]');
+    if (!row) return;
+    row.classList.toggle('open');
+  });
+
+  var invList = document.getElementById('invList');
+  invList.innerHTML = INVENTORY.reads.map(function (r) {
+    return '<div class="invrow"><div class="grow"><div class="iw">' + r.w + '</div><div class="ix">' + r.x + '</div></div></div>';
+  }).join('') + INVENTORY.missing.map(function (m) {
+    return '<div class="invrow missing"><div class="grow"><div class="iw">' + m + '</div>' +
+      '<div class="ix">nem olvassa a Karakter — nincs detektor, nincs bootstrap-forrás rá</div></div>' +
+      '<span class="missingtag">még nincs bekötve</span></div>';
+  }).join('');
+
+  document.getElementById('ainaploLink').addEventListener('click', function () {
+    toast('AI-napló → lásd az Én tab AI-napló prototípusát (feature=character szűrő)');
+  });
 
   // ===== csapat klaszter (hub + bootstrap) =====
   var clustOrder = ['doki', 'edzo', 'taplalkozo', 'szomnologus', 'pszichologus', 'drill', 'antropologus'];

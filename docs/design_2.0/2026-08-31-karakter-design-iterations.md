@@ -129,3 +129,91 @@ Direction 4, mirroring the Mezo-tab v2 tile pass (`2026-08-27-mezo-en-design-ite
   transcript bubble direction, bootstrap entry point, and a new one — whether the Dimenziók
   hub-tile's live datum should be the CORE average or "which dimension changed last") are listed
   in the prototype's own "Döntési kérdések Danielnek" section for the next round.
+
+## Round 2 (mezo-1gim.14) — the Gépterem transparency surface
+
+Daniel approved a new, geek-facing direction: a "Gépterem" page that concretely shows **what
+data feeds the dossier**, not just the claim-level output the rest of the tab already shows.
+This is one layer beneath the honest-words claim contract (biztos/valószínű/figyeljük) — it is
+for the curious/technical reader who wants to see the actual pipeline mechanics.
+
+### 1. Hub placement — a thin full-width tile, not a fifth grid square
+
+The 2×2 mosaic from round 1 gained a **fifth, thin, full-width tile** underneath rather than
+becoming a 2×2+1 grid (`.dimtile.wide`, `grid-column: 1 / -1`, flex-row layout). This keeps the
+four "warm" content tiles (Dimenziók/Feed/Csapat/Konzílium) visually together as one group, and
+lets the Gépterem tile read as a distinct, deliberately more technical stratum underneath —
+reinforced by a graphite/slate wash (`#E7ECEE→#F5F8F9`) that stands apart from every other
+tile's warm coral/sage/lavender/amber washes without breaking the clay-tile language (same
+border-radius, shadow, rise-in behavior). Live datum: the last pipeline run's line ("ma 02:50 ·
+3 megfigyelés"), read from the same `RUNS` data the Gépterem page itself renders.
+
+### 2. Gépterem page — four sections in the Huawei subpage pattern
+
+- **Futás-idővonal**: five expandable rows — two nightly runs, the Sunday konzílium, the monthly
+  deep read, and the one-time bootstrap. Each row shows a time, a kind badge, and a one-line
+  summary; tapping expands it in place (`.runrow.open`).
+- **The quiet night is deliberately given equal visual weight.** `tegnap · 02:50` reads "csendes
+  nap · 0 hívás" and expands to an explicit note: zero detectors fired, zero LLM calls, zero
+  tokens, zero cost — framed as the system doing exactly what it should, not as a degraded or
+  empty state. This is the same honest-state axiom (§2 of the handoff) applied one level deeper
+  than usual: not just "no fabricated numbers" but "a true zero is worth stating proudly."
+- **Jel-lánc (signal chain) drill-down**: inside the noisy nightly run, each of the three fired
+  detectors renders as a two-tone block — a **KÓD** row (monospace `detchip` carrying the real
+  detector key: `logging-gap`, `under-logging`, `journal-note`, a graphite background, the
+  code-computed summary text, and `refIds` as small monospace pills) then a `↓ LLM értelmezi`
+  connector, then an **LLM** row (the expert's orb avatar + their voiced observation). The
+  "kód detektál, LLM értelmez" split from spec §3/§7 (`CharacterDetector` is pure code; the
+  expert LLM interprets downstream) is now visually, not just documentarily, true.
+- **Honesty detail carried through from `character.md` §9**: only Drill, Pszichológus, and
+  Táplálkozó receive nightly detector-sourced observations today (the 5 shipped detectors —
+  `checkin-gap`, `journal-silence`, `logging-gap`, `under-logging`, `journal-note` — are owned by
+  exactly those three experts per the doc's decisions section). The noisy run's expanded view
+  says so explicitly ("Doki · Edző · Szomnológus · Antropológus — ma éjjel nem kaptak hívást…"),
+  rather than silently only showing the three that fired.
+- **Adatforrás-leltár**: a static reference section listing what each job kind actually reads
+  today (nightly's 14-day window, the konzílium's unconsumed-observations + ACTIVE-claims +
+  user-feedback set, the monthly pass's full claim-base re-read, bootstrap's six-source corpus —
+  all pulled from `character.md` §3/§9, not invented) followed by ten **dashed "még nincs
+  bekötve"** rows for domains the dossier does not read yet (training sets/RIR, running, sport,
+  fuel detail, chat topics, gratitude, decision journal, Életjel, streaks, people-mention detail).
+  This list is explicitly framed as double-duty: it's also the working checklist for the next
+  task, `mezo-1gim.15` ("MINDENT be").
+- **AI-napló link row**: a chat-handoff-styled row noting every Karakter LLM call is stored in
+  full (`feature=character`, one row per pipeline step — observe/propose/skeptic/integrate/
+  portrait), with a demo-toast deep link (the real AI-napló surface is designed in the `en-tab`
+  prototype, not rebuilt here).
+
+### 3. Feed page — inline "⚙ miből?" disclosure
+
+Every observation row on the existing Feed page (round 1) gained a small gear button that
+expands the **same** signal-chain face inline, in place, using the same `chainPanelHTML()`
+helper the Gépterem page calls — so the two surfaces are literally rendering the same data
+through the same function, not two divergent mocks. This lets Daniel compare "the full pipeline
+timeline" against "the chain in context, next to the claim it produced" and pick one in the next
+round (decision question #2). Non-detector-sourced feed rows (Doki/Edző/Szomnológus/
+Antropológus's items) expand to the same honest "not from a detector" note as their Gépterem
+counterparts, reusing the identical wording.
+
+### Implementation notes
+
+- `chainPanelHTML(who, text, chain, source)` is the single shared renderer for both surfaces —
+  given a `{detector, code, refs}` object it renders the two-tone code→LLM block; given a
+  `source` string instead it renders a plain honesty note. Both `RUNS` (Gépterem) and `FEED`
+  (Feed page) items carry either a `chain` or a `source` field, never both.
+- All new interactive elements (`.runrow` expand, `.gepq` gear toggle) follow the existing
+  `rise`/`rise-x` stagger + reduced-motion-guard conventions; the reduced-motion media query was
+  extended to drop the new elements' transitions.
+- Detector keys, expert-ownership mapping, and the konzílium's "one transaction, all-or-nothing"
+  framing are pulled directly from `docs/features/character.md` (§3, §4, §9) — no invented
+  pipeline mechanics.
+
+### Net effect / what's unchanged
+
+- Hub tile count is now 5 (4 content tiles + 1 wide technical tile); the hub still fits
+  comfortably within the phone frame's one-screen budget.
+- Nothing about the Dimenziók/Csapat/Konzílium/Bootstrap pages from round 1 changed structurally
+  — only the Feed page gained the gear affordance.
+- New decision questions (tile-vs-wide-row placement, whether the Feed "⚙" duplication earns its
+  keep, how much run history to keep, and inventory grouping by job-kind vs. domain) are listed
+  in the prototype's own "Döntési kérdések Danielnek" section for the next round.
