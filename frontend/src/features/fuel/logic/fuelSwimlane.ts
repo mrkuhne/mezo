@@ -154,3 +154,18 @@ export function buildWindowLane(input: {
 
   return { tiles, nowKey: tiles.find(t => t.state === 'now')?.key ?? null }
 }
+
+/**
+ * Past-day normalisation (mezo-1j3z): a múltban nincs MOST és nincs jövő —
+ * minden be nem logolt ablak „kimaradt · még pótolható". Pure, a state-forrás
+ * (buildDayPlan) érintetlen; a /fuel/log page futtatja át rajta a lane-t, ha
+ * a választott nap nem a mai.
+ */
+export function asPastDayLane(vm: WindowLaneVM): WindowLaneVM {
+  return {
+    tiles: vm.tiles.map(t =>
+      t.state === 'now' || t.state === 'future' ? { ...t, state: 'missed' } : t,
+    ),
+    nowKey: null,
+  }
+}

@@ -5,7 +5,8 @@
 // breakdown-less done meal offers no dead score tap, and a missing macro renders
 // as 0 g of the ring rather than a fabricated number.
 // ============================================================
-import { buildWindowLane } from '@/features/fuel/logic/fuelSwimlane'
+import { describe, expect, test } from 'vitest'
+import { buildWindowLane, asPastDayLane, type WindowLaneVM, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelMeal, FuelSlot } from '@/data/types'
 
@@ -179,4 +180,33 @@ test('a zero macro target never produces NaN — the ring reads 0%', () => {
   })
   expect(tiles[0].rings.every(r => Number.isFinite(r.pct))).toBe(true)
   expect(tiles[0].rings[0].pct).toBe(0)
+})
+
+const tile = (over: Partial<WindowTileVM>): WindowTileVM => ({
+  key: '07:30-Reggeli', slotKey: 'breakfast', state: 'future', icon: 'i-reggeli',
+  label: 'Reggeli', time: '07:30', name: 'Reggeli', ghost: true, fromPlan: false,
+  kcal: null, rings: [], mealId: null, scorePct: null, scorable: false, ...over,
+})
+
+describe('asPastDayLane', () => {
+  test('now és future tile missed-re normalizálódik, done marad, nowKey null', () => {
+    const vm: WindowLaneVM = {
+      tiles: [
+        tile({ key: 'a', state: 'done', mealId: 'm1' }),
+        tile({ key: 'b', state: 'now' }),
+        tile({ key: 'c', state: 'missed' }),
+        tile({ key: 'd', state: 'future' }),
+      ],
+      nowKey: 'b',
+    }
+    const past = asPastDayLane(vm)
+    expect(past.tiles.map(t => t.state)).toEqual(['done', 'missed', 'missed', 'missed'])
+    expect(past.nowKey).toBeNull()
+    // minden más mező változatlan (a done tile mealId-je is)
+    expect(past.tiles[0].mealId).toBe('m1')
+  })
+
+  test('üres lane identitás-szerű: üres tiles + null nowKey', () => {
+    expect(asPastDayLane({ tiles: [], nowKey: null })).toEqual({ tiles: [], nowKey: null })
+  })
 })
