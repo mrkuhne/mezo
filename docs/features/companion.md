@@ -2110,9 +2110,11 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   not null and is_deleted = false`) — a null `source_id` would silently drop the DB-level singleton
   guarantee, letting a second profile row slip in. No migration; no API contract change
   (`GraphNodeResponse.sourceKind` already existed since W2.1).
-- **`ProfileAssembler.rebuild(userId, anchorQuarter)`** (`profile/service/`) gathers, in pure code: all 11 W4.2
-  feedback-rollup scopes (`FeedbackRollupRepository.findByCreatedByAndDeletedFalseOrderByScopeAsc`),
-  the 👎-reason (style) histogram off the `style` scope's `bySurface` map, up to `maxDecisions`
+- **`ProfileAssembler.rebuild(userId, anchorQuarter)`** (`profile/service/`) gathers, in pure code: the
+  rollup scopes for **only the currently configured feedback-learning window**
+  (`FeedbackRollupRepository.findByCreatedByAndWindowDaysAndDeletedFalseOrderByScopeAsc(userId,
+  feedbackLearningProperties.windowDays())` — fixed `mezo-b3pp.35`, item 1), the 👎-reason (style)
+  histogram off the `style` scope's `bySurface` map, up to `maxDecisions`
   reviewed `decision_entry` rows newest-review-first (`DecisionEntryRepository
   .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc`), and up to
   `maxGraphNodes` active PATTERN/PREFERENCE node titles (`GraphService.listActive`, the profile
@@ -2141,12 +2143,42 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   LLM call, no node write, any existing profile left untouched (`ProfileAssembler.rebuild` returns
   `Optional.empty()` before the payload is even rendered). A blank model answer is the same
   no-op — never a node overwritten with an invention.
-- **The cap applies twice** — `ProfileProperties.renderMaxTokens` (**400**, spec §8.3) caps the
+- **The payload reads only the CONFIGURED window's rollup rows** (`mezo-b3pp.35`, item 1,
+  `ProfileAssemblerWindowHeaderIT` / `ProfileAssemblerIT
+  .renderPayload_readsOnlyTheConfiguredWindow_whenRetiredWindowRowsExist`) — `feedback_rollup`'s
+  unique key is `(created_by, scope, window_days)` and nothing deletes a row when
+  `feedback-learning.window-days` changes, so a retired window's rows outlive the config that wrote
+  them. Reading unfiltered would emit two contradictory `surface:<kind>` lines per scope under one
+  `VISSZAJELZÉSEK` header (the number itself now derived from `FeedbackLearningProperties
+  .windowDays()`, never hardcoded 30). **`ProfileAssembler` reads the SAME property
+  `FeedbackLearningService` writes rows with on purpose** — filtering on a different knob would
+  compile fine and silently match nothing, emptying the whole profile, which is a worse failure
+  than the bug it fixes.
+- **`feedbackSignals` sums `surface:*`-prefixed rows only** (`mezo-b3pp.35`, item 2,
+  `ProfileAssemblerIT.feedbackSignals_countsEachVerdictOnce_whenAFeedMessageIsRolledUpTwice`) —
+  the scope taxonomy is `style`, `surface:<artifact_kind>`, `feed:<feed_kind>`,
+  `intervention:<key>`; `surface:*` is the complete, non-overlapping partition of every verdict
+  (exactly one row per artifact kind), while `feed:*`/`intervention:*` are REFINEMENTS of a subset
+  of it — a `feed_message` verdict lands in both `surface:feed_message` and its `feed:<kind>` row.
+  Summing every scope double-counted it. This only moves the `meta.profile.feedbackSignals` number
+  and the honest-absence gate's magnitude (a feed-heavy user could clear `signals == 0` on
+  double-counted phantom signal) — it never changes which rollup LINES render in the payload, since
+  the rendered VISSZAJELZÉSEK lines already iterate every scope regardless. **The invariant to
+  watch:** `MessageFeedbackEntity.KIND_WEEKLY_REVIEW` is declared but is not in
+  `FeedbackLearningService.SURFACE_KINDS` (`mezo-b3pp.40`) — wiring that kind up for real without
+  adding it there would make its verdicts land in no `surface:` row at all, silently UNCOUNTED, the
+  mirror image of the double-count this item fixed and just as invisible.
+- **The cap applies twice** — `ProfileProperties.renderMaxTokens` (**400**, spec §8.3, floor raised
+  `@Min(50)` → `@Min(200)` by `mezo-b3pp.35` item 5) caps the
   prose at STORE time (`ProfileAssembler.cap`, `CHARS_PER_TOKEN = 3`, same estimate as
   `[Emlékek]`/`[Összefüggések]`) and again, redundantly, at RENDER time
   (`ProfilePromptAssembler.render`) — so Tudástár's "Rólad tanultam" card can never show more prose
   than the model was actually given, even if the config value changes between a write and a read.
-  The cut lands on a word boundary with a trailing `…`.
+  The cut lands on a word boundary with a trailing `…`. **The floor moved because the header alone
+  costs tokens**: `ProfilePromptAssembler.PROFILE_HEADER` is 142 chars ÷ `CHARS_PER_TOKEN` (3) ≈ 48
+  tokens ceiling-rounded, so the old floor of 50 left just 2 tokens for actual prose — not a
+  violation of anything today, but zero headroom for the header to grow by even one clause. 200
+  leaves over 150 tokens of prose room at the floor, still well under the shipped 400 default.
 - **`upsertNode` does not touch status** (W2.2 owns its own status rules), so the assembler
   explicitly re-activates the node after the upsert: an archived profile is revived by the very
   next weekly run — the "reset what you think of me" recovery path spec §8.3 promises, without a
@@ -2171,11 +2203,25 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   lever), is capped, and **never throws** (IDENT-3): a `RuntimeException` logs a warn and yields
   `""`, so a profile-block failure never breaks a turn. `""` also when the bean is absent
   (`COMPANION_SWITCH`/`KNOWLEDGE_GRAPH_SWITCH` off — `ChatService` holds it via `ObjectProvider`,
-  the `GraphPromptAssembler` idiom).
+  the `GraphPromptAssembler` idiom). **The never-throws contract now has a failure-path IT**
+  (`mezo-b3pp.35`, item 3, `ProfilePromptAssemblerFailureIT
+  .testRender_shouldReturnEmptyBlock_whenTheProfileReadFails` — its own IT class, same
+  `@MockitoSpyBean`-forks-the-context reasoning as `ChatServiceGraphBlockFailureIT`): the catch is
+  correct today, so nothing else in the suite would fail if a future refactor deleted it. The test
+  exists so that refactor fails loudly instead — the profile block is optional, the surrounding
+  turn is not.
 - **`ProfileMetaEnvelope`** (`profile/entity/`) — the node's typed `meta.profile` payload
   (`generatedAt`, `feedbackSignals`, `reviewedDecisions`, `graphNodes`): what the synthesis was
   built from, so a surprising profile can be explained without re-running the job. Hand-rolled
-  `toMeta()`/read-back under its own `META_KEY`, the `GraphProposedEdge` idiom.
+  `toMeta()`/read-back under its own `META_KEY`, the `GraphProposedEdge` idiom. **This is a
+  deliberate write-only forensic record** — nothing reads `meta.profile` back in production by
+  design; a surprising profile is meant to be explained by reading the JSON straight out of the DB,
+  not by re-running the job to reproduce it. Do not read this as dead code, and do not read the
+  card's missing "when was this generated" affordance as a gap here either: the two are split on
+  purpose — `mezo-b3pp.39` tracks surfacing the profile's age on the Tudástár card via
+  `GraphNodeEntity.updatedAt` (a contract-first vertical of its own, unrelated to this envelope's
+  diagnostic counts), so neither half of the original finding gets re-filed later against the
+  wrong one.
 - **W5.3 (`mezo-b3pp.20`) calls `ProfileAssembler.rebuild` too**, after the quarterly pass — the
   public method is deliberately reusable, not job-private — passing the just-finished quarter as
   the anchor, and only when `PROFILE_ASSEMBLER_JOB_SWITCH` is on (§4, "The anchor quarter" and
@@ -2886,7 +2932,9 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   the assembler, so it must run last in the dawn window). Job switch
   `mezo.techcore.cron.profile-assembler-job.enabled` (`PROFILE_ASSEMBLER_JOB_SWITCH`) — off ⇒ the
   `ProfileAssemblerJob` bean does not exist.
-- `mezo.companion.profile.render-max-tokens` = **400** (`@Min(50) @Max(2000)`, spec §8.3) — the
+- `mezo.companion.profile.render-max-tokens` = **400** (`@Min(200) @Max(2000)`, spec §8.3 — floor
+  raised from 50 by `mezo-b3pp.35` item 5: the `[Rólad tanultam]` header alone costs ~48 tokens, so
+  50 left almost no room for prose) — the
   hard cap on the WHOLE `[Rólad tanultam]` block (header included) at render time; the same budget
   is applied at STORE time to the prose alone (no header there), so the stored summary can be
   marginally longer than what a turn actually renders — Tudástár may show a little more than the
@@ -3905,6 +3953,29 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`profile/ProfileSourceFindersIT`** — the two read-side finders in isolation: reviewed decisions
   come back newest-first with unreviewed rows excluded; all rollup scopes for a user come back in
   one read.
+
+**W4.3 follow-up test additions (`mezo-b3pp.35`, spec §8.3 — window filter, signal counting, failure
+IT):**
+
+- **`profile/service/ProfileAssemblerWindowHeaderIT`**
+  (`renderPayload_statesTheConfiguredWindowInTheHeader_whenItIsNotThirty`) — own IT class, a
+  `@TestPropertySource` window-days override to 14 (forks a separate context, the
+  `NoteVectorLifecycleBudgetIT` precedent): the `VISSZAJELZÉSEK` header states `14`, never the
+  shipped-default `30`.
+- **`profile/service/ProfileAssemblerIT`**, two new cases:
+  `renderPayload_readsOnlyTheConfiguredWindow_whenRetiredWindowRowsExist` — a real rollup run plus a
+  hand-inserted retired-window row for the same scope; the payload names the SAME scope exactly
+  once, with the live window's numbers, never the retired window's; and
+  `feedbackSignals_countsEachVerdictOnce_whenAFeedMessageIsRolledUpTwice` — a `surface:feed_message`
+  row and a `feed:morning` row seeded with the same stats; `meta.profile.feedbackSignals` equals the
+  `surface:*` total alone (5), not the summed-across-scopes double count (10).
+- **`profile/ProfilePromptAssemblerFailureIT`**
+  (`testRender_shouldReturnEmptyBlock_whenTheProfileReadFails`) — own IT class (`@MockitoSpyBean`
+  forks the context, kept out of the clean `ProfilePromptAssemblerIT` context on purpose): a spied
+  `GraphNodeRepository` throws `DataAccessResourceFailureException` from inside the guarded read;
+  `render` still returns `""` and the exception never escapes — pins IDENT-3 against a future
+  refactor that removes the catch, the same reasoning `ChatServiceGraphBlockFailureIT` pins for
+  `GraphPromptAssembler`.
 
 **W5.1 composite-flag test additions (`mezo-b3pp.18`, spec §9.1) — no LLM anywhere in this path:**
 
