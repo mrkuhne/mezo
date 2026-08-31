@@ -53,6 +53,9 @@ bd close <id>         # Complete work
 - Superpowers process skills (brainstorming → writing-plans → executing-plans, TDD,
   verification-before-completion) drive the workflow; the `knowledge-base` skill is the
   operating manual for `docs/features/` + `docs/research/`.
+- In this repo, brainstorming's step 1 ("Explore project context") means invoking the
+  `brainstorm-recon` skill: it dispatches the `researcher` and `investigator` sub-agents
+  in parallel and feeds the mandatory *Prior art* / *Codebase terrain* spec sections.
 - The Hermes local-LLM flow mirrors this workflow via `agents/hermes/skills/`
   (see `AGENTS.md` §Hermes Agent Specifics and
   [`docs/infrastructure/local-llm-hermes-lmstudio.md`](docs/infrastructure/local-llm-hermes-lmstudio.md)).

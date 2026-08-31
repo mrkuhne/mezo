@@ -2,11 +2,15 @@ import { useState } from 'react'
 import { useActivities } from '@/data/hooks'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
+import { ClayIcon } from '@/shared/ui/clay'
 import { localDateString } from '@/shared/lib/dates'
 import type { ActivityEntry } from '@/data/types'
 
-const iconFor = (skillKey: ActivityEntry['skillKey']) =>
-  (skillKey && LIFE_SKILLS.find((s) => s.key === skillKey)?.icon) || '✎'
+// F7.4: the categorized row wears the clay life-area symbol; uncategorized keeps the pen.
+const iconFor = (skillKey: ActivityEntry['skillKey']): React.ReactNode => {
+  const clay = skillKey && LIFE_SKILLS.find((s) => s.key === skillKey)?.clayIcon
+  return clay ? <ClayIcon name={clay} size={14} /> : '✎'
+}
 
 /** Today's activity mini-journal: entries + quick-add; uncategorized rows prompt for a pick. */
 export function ActivityLogCard() {

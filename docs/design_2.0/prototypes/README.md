@@ -23,6 +23,7 @@ they inline come from `../assets/`.
 | `mezo-chat.html` | https://claude.ai/code/artifact/ae02e856-1e3d-4c60-aad5-842e75190538 |
 | `edzes-review.html` | https://claude.ai/code/artifact/66f5a4de-8afe-48ff-b04f-e861b3ba22ee |
 | `fuel-mely.html` | https://claude.ai/code/artifact/d5c6d770-a067-4642-baa3-9dee63613718 |
+| `en-mely.html` | https://claude.ai/code/artifact/d7744124-37bb-4e7d-ac57-45cf66f1fc24 |
 | `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
 | `emberek.html` | https://claude.ai/code/artifact/9c94ecde-f426-471a-a988-b0a60ca7fbcf |
 
@@ -385,6 +386,22 @@ are usable without a build step).
   (MealScore with the score ring, StackPicker with koffein/a-stackben marks, StackItem zones,
   Import with all three modes, Energia's equation bar, Beadás); the remaining seven follow the
   pattern without their own drawing.
+- **en-mely** — the F7.4 Én deep round. (1) The **life-area iconography tabló**: 8 new clay
+  symbols (`i-life-*` in `assets/clay-icons.svg`) replacing the LIFE-skill emojis — meditating
+  figure, clay eye, pan with yolk, coin stack, check tile, open book, interlocked rings, pillow —
+  each shown beside its old emoji, plus two in-use rows (Growth skill row, Napzárás gratitude
+  chips: the tab's last emoji-language family). (2) The **goal-planner wizard** in Mozaik dress:
+  trajectory cards + guard chips (step 1), field cards + the live feasibility panel (step 2) —
+  an aggressive pace warns in amber and offers the realistic date as a one-tap fix. (3) The
+  **routine editor**: chain cards with clay daypart icons, habit rows with XP/mode chips,
+  edit + AI-suggest sheets. (4) **Growth becomes the progression's home**: the Kitüntetések tab
+  opens with a streak card (milestone bar + 🧊 saver) and a Címek section (Létra/Bolt tabs,
+  coin balance, the Viselve/Felvesz/Megveszem/🔒 state machine) — the hub's 🔥/🪙 chips navigate
+  here and the two standalone sheets retire. (5) The **People/Sleep sheet family** on the shared
+  pattern with tinted heroes (Petra's full picture, mic-hero quick log, SleepLog with the
+  night-trace prefill note + phase rail). (6) The **AI-call detail** as a Mozaik page: hero +
+  three headline numbers in a stat strip, a four-segment token bar, meta chips, and payload
+  cards with a fading cut.
 - **karakter-tab** — the Karakter dossier page (Én tab family), audited against the shipped
   backend (`docs/features/character.md` — 7 CORE dimensions, `CharacterExpertCatalog`'s 7 named
   experts, Szkeptikus + Mezo, weekly konzílium, bootstrap, claim feedback). Shown standalone (not

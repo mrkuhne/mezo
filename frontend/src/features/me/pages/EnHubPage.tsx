@@ -32,8 +32,6 @@ import {
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
 import { SettingsSheet } from '@/features/me/sheets/SettingsSheet'
-import { TitleShopSheet } from '@/features/progression/sheets/TitleShopSheet'
-import { StreakSheet } from '@/features/progression/sheets/StreakSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import { buildTdeeBreakdown } from '@/features/me/logic/buildTdeeBreakdown'
 import { ageFromBirthDate } from '@/features/me/logic/biometricFields'
@@ -55,11 +53,10 @@ const huSigned = (n: number): string => `${n > 0 ? '+' : n < 0 ? '−' : ''}${hu
 export function EnHubPage() {
   const navigate = useNavigate()
   const { mode: themeMode } = useTheme()
-  // The identity hero is the coin SINK's only host since AppHero was deleted
-  // (mezo-d20.11, provisional pending F7.4): the title chip and the 🪙 stat open
-  // TitleShopSheet, the 🔥 stat opens StreakSheet. Both sheets were unreachable
-  // while `useGamificationActions` stayed `canMutate` in both modes.
-  const [sheet, setSheet] = useState<'settings' | 'biometric' | 'titles' | 'streak' | 'energy' | null>(null)
+  // F7.4 (mezo-d20.8.4.1): the progression moved HOME — the title chip and the
+  // streak/coin stats deep-link to /me/growth?tab=awards (StreakCard + TitlesSection);
+  // the two standalone sheets are retired.
+  const [sheet, setSheet] = useState<'settings' | 'biometric' | 'energy' | null>(null)
 
   // ── identity hero ───────────────────────────────────────────────────
   const { user } = useProfile()
@@ -232,17 +229,18 @@ export function EnHubPage() {
           <div className="enh-nm">{user.name}</div>
           <button type="button" className={equipped != null ? 'enh-titlech' : 'enh-titlech is-none'}
             aria-label={equipped != null ? `Viselt cím: ${equipped.name} — cím-bolt` : 'Cím-bolt'}
-            onClick={() => setSheet('titles')}>
+            onClick={() => navigate('/me/growth?tab=awards')}>
             {equipped != null ? equipped.name : 'Válassz címet'}
           </button>
           <div className="enh-idstats">
             <span>Lv {gam.level}</span>
             <span>{huInt(gam.totalXp)} XP</span>
             <button type="button" className="enh-idstat" aria-label="Sorozat részletei"
-              style={{ opacity: gam.streakAlive === false ? 0.45 : 1 }}
-              onClick={() => setSheet('streak')}>🔥 {gam.streakDays} nap</button>
-            <button type="button" className="enh-idstat" aria-label="Érme — cím-bolt"
-              onClick={() => setSheet('titles')}>🪙 {gam.coins}</button>
+              style={{ opacity: gam.streakAlive === false ? 0.45 : 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
+              onClick={() => navigate('/me/growth?tab=awards')}><ClayIcon name="i-lang" size={13} /> {gam.streakDays} nap</button>
+            <button type="button" className="enh-idstat" aria-label="Érme — címek"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}
+              onClick={() => navigate('/me/growth?tab=awards')}><ClayIcon name="i-erme" size={13} /> {gam.coins}</button>
           </div>
           {bioBits.length > 0 ? (
             <button type="button" className="enh-bio" aria-label="Biometria szerkesztése"
@@ -303,8 +301,6 @@ export function EnHubPage() {
       {sheet === 'energy' && tdeeBreakdown != null && (
         <EnergyBreakdownSheet breakdown={tdeeBreakdown} initial="base" onClose={() => setSheet(null)} />
       )}
-      {sheet === 'titles' && <TitleShopSheet onClose={() => setSheet(null)} />}
-      {sheet === 'streak' && <StreakSheet onClose={() => setSheet(null)} />}
     </div>
   )
 }

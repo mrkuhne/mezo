@@ -3,6 +3,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
+import { ClayIcon } from '@/shared/ui/clay'
 
 interface GratitudeRowsProps {
   rows: string[]
@@ -122,7 +123,7 @@ export function GratitudeRows({
             onClick={() => onLifeAreaChange(lifeArea === s.key ? null : s.key)}
             style={{ fontSize: 12 }}
           >
-            {s.icon} {s.name}
+            <ClayIcon name={s.clayIcon} size={13} className="chip-clay" /> {s.name}
           </button>
         ))}
       </div>

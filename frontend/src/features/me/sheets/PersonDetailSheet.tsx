@@ -33,7 +33,8 @@ export function PersonDetailSheet({
             </div>
             <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
           </div>
-          <div className="row gap-sm">
+          {/* F7.4: the headline stats ride the tinted hero band (mz-sheet-hero, rose wash). */}
+          <div className="mz-sheet-hero" style={{ background: 'var(--mz-wash-rose)', boxShadow: 'var(--mz-shadow-rose)' }}>
             <DetailStat label="Affect" val={affectLabel(person.affect_baseline)} color={color} />
             <DetailStat label="Cadence" val={person.contactCadenceLabel} />
             <DetailStat label="Mentions" val={person.mentionCount} />
