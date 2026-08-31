@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.MeWeekDay;
 import io.mrkuhne.mezo.api.dto.MeWeekResponse;
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -107,6 +109,8 @@ public class WeeklyReviewGenerator {
     private final AppNotificationEmitter appNotificationEmitter;
     private final WeeklyLessonService weeklyLessonService;
     private final WeeklyReviewContextSources contextSources;
+    /** mezo-1gim.11 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
+    private final ObjectProvider<CharacterPromptSource> characterPromptSource;
 
     public record WeeklyReviewGather(String payload, List<Highlight> candidates) {
     }
@@ -208,6 +212,7 @@ public class WeeklyReviewGenerator {
                 candidates.add(new Highlight(Highlight.KIND_FACT, label, fact.getId()));
             }
         }
+        payload.append(characterBlock(userId));
 
         List<GraphNodeEntity> lifeEvents =
                 WeeklyReviewWeekWindow.lifeEvents(graphNodeRepository, userId, weekStart, weekEnd);
@@ -244,6 +249,13 @@ public class WeeklyReviewGenerator {
                     .append(candidates.get(i).label()).append('\n');
         }
         return new WeeklyReviewGather(payload.toString(), candidates);
+    }
+
+    /** mezo-1gim.11: the [Karakter] dossier's contribution — "" when the bean is absent (either
+     *  switch off) or the dossier has nothing worth injecting. */
+    private String characterBlock(UUID userId) {
+        CharacterPromptSource source = characterPromptSource.getIfAvailable();
+        return source == null ? "" : source.render(userId);
     }
 
     private static boolean hasLoggedData(MeWeekDay day) {

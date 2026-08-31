@@ -16,16 +16,17 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 > One-line: a synthesis layer over everything mezo already remembers — a persisted,
 > dimension-structured picture of *who Daniel is*, built by a visible team of 7 domain-expert
-> personas + a Szkeptikus, chaired by Mezo. **Status: backend ✅ S1–S6 (schema/reads, detectors +
-> nightly pass, weekly konzílium, bootstrap + monthly deep read, `[Karakter]` prompt block,
-> claim feedback loop); FE 🔴 not started (design 2.0 prototype round is a precondition, spec
-> §10).** No route/tab exists yet — this doc covers the backend domain only. Driving spec:
+> personas + a Szkeptikus, chaired by Mezo. **Status: backend ✅ S1–S7 (schema/reads, detectors +
+> nightly pass, weekly konzílium, bootstrap + monthly deep read, `[Karakter]` prompt block on
+> all four narrative surfaces, claim feedback loop, widened bootstrap corpus, detector polish);
+> FE 🔴 not started (design 2.0 prototype round is a precondition, spec §10).** No route/tab
+> exists yet — this doc covers the backend domain only. Driving spec:
 > [`docs/superpowers/specs/2026-08-27-user-character-dossier-design.md`](../superpowers/specs/2026-08-27-user-character-dossier-design.md)
-> (bd epic `mezo-1gim`); six slice plans in `docs/superpowers/plans/2026-08-2*-character-slice*.md`
-> and `2026-08-3*-character-slice*.md` are the point-in-time build record. **This doc is written
-> against the CURRENT code (post-S6) and will get a refresh pass at the end of the S7
-> consolidation slice** (`mezo-1gim.11`, this doc, plus `.4`/`.7`/`.9` closing some of the gaps
-> named in §9 below).
+> (bd epic `mezo-1gim`); seven slice plans in `docs/superpowers/plans/2026-08-2*-character-slice*.md`
+> and `2026-08-3*-character-slice*.md` are the point-in-time build record. **This doc reflects the
+> code as it stands after the S7 consolidation slice** (`mezo-1gim.11`, which closed the `.4`
+> detector-polish, `.7` bootstrap-corpus and `.9` weekly-review-wiring gaps named in earlier
+> revisions of §9).
 
 ## 1. Summary
 
@@ -51,12 +52,13 @@ opinion about the user, dimension by dimension, claim by claim.
 - **User feedback is claim-level** (`TALAL`/`NEM_IGAZ`/`PONTOSITOM`) and is itself fed back into
   the pipeline as a `character_observation` — the team has to reckon with being told it's wrong.
 
-All six backend slices (`mezo-1gim.1` schema+reads, `.3` detectors+nightly, `.5` weekly
-konzílium, `.6` bootstrap+monthly, `.8` prompt block, `.10`/S6 claim feedback — exact ids per the
-slice plans) are shipped. The detector catalog and the bootstrap evidence sources are
-**narrower than the spec's v1 wishlist** (§9), and the `[Karakter]` block is wired into chat +
-memoir + prediction but **not yet** `WeeklyReviewGenerator` (§9) — S7's remaining tasks close
-some of this.
+All seven backend slices (`mezo-1gim.1` schema+reads, `.3` detectors+nightly, `.5` weekly
+konzílium, `.6` bootstrap+monthly, `.8` prompt block, `.10`/S6 claim feedback, `.11`/S7
+consolidation — exact ids per the slice plans) are shipped. The detector catalog is still
+**narrower than the spec's v1 wishlist** (§9) — only 5 of ~20 listed detectors are implemented —
+but the `[Karakter]` block now reaches all four narrative surfaces (chat, memoir, prediction,
+weekly review) and the bootstrap evidence corpus now matches the spec's full source list (daily
+summaries, patterns, facts, weekly reviews, journal entries, life events).
 
 ## 2. User-facing behavior
 
@@ -66,8 +68,8 @@ transcript view, no claim feedback buttons in the UI. The spec's §10 FE skeleto
 transcript bubbles, claim feedback buttons) is explicit slice 7 of the spec's decomposition
 (§12) and is deliberately sequenced AFTER the design 2.0 Karakter prototype round — it has not
 started. The only user-visible effect of Karakter today is indirect: claims that clear the
-prompt-injection threshold (§8 below) can shape what Mezo says in chat, in the weekly Memoir,
-and in Predictions.
+prompt-injection threshold (§8 below) can shape what Mezo says in chat, in the weekly Memoir, in
+Predictions, and in the weekly review.
 
 The `POST /api/character/claim/{id}/feedback` endpoint exists and is fully wired
 (`CharacterFeedbackService`), but nothing in the FE calls it yet.
@@ -93,10 +95,12 @@ monthly:  same proposal/verdict/portrait tail, but reads ACTIVE claims (not fres
           and steers toward UP/DOWN/RETIRE; then a separate stale-CHAPTER-retirement pass
 
 bootstrap: one-time; same proposal/verdict/portrait tail over CharacterHistoryReads.gatherHistory
-          (daily summaries + confirmed patterns + prompt-eligible facts)
+          (daily summaries + confirmed patterns + prompt-eligible facts + weekly reviews +
+          journal entries + active LIFE_EVENT graph nodes)
 
 consume:  CharacterPromptAssembler.render(userId) → deterministic "[Karakter]" text block
-          → injected into ChatService / MemoirGenerator / PredictionGenerator system prompts
+          → injected into ChatService / MemoirGenerator / PredictionGenerator /
+             WeeklyReviewGenerator system prompts
 ```
 
 Every LLM call in this pipeline flows through the same `CompanionLlm` port
@@ -174,15 +178,23 @@ raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
   `[Karakter]` block into the chat system prompt, right alongside the confirmed-facts block —
   facts are atomic data, claims are interpretation, both belong (spec §8).
 - **[Proactive](proactive.md)** — `CharacterPromptSource` is also consumed by
-  `MemoirGenerator` and `PredictionGenerator` (both inject `[Karakter]` into their gather).
-  🟡 **`WeeklyReviewGenerator` does NOT consume it** — a confirmed gap against the spec's stated
-  consumer list (§9).
-- **Daily summaries, confirmed patterns, prompt-eligible knowledge facts** — read (not
-  written) by `CharacterHistoryReads` as the bootstrap's evidence corpus; by the nightly
-  detectors' domain reads (meals, weight, check-ins, journal via `CharacterSignalReads`); and
-  by the monthly pass over the existing `character_claim` base. Karakter owns no meal/weight/
-  check-in/journal data itself — those live in their respective feature packages
-  (train/fuel/companion-journal).
+  `MemoirGenerator`, `PredictionGenerator`, and `WeeklyReviewGenerator` (all three inject
+  `[Karakter]` into their gather, right next to `WeeklyReviewGenerator`'s own "ÚJ TÉNYEK"
+  section — the same `ObjectProvider<CharacterPromptSource>` + `""`-when-absent idiom at every
+  site). All four narrative-facing surfaces (chat, memoir, prediction, weekly review) now speak
+  from the one formatter.
+- **Daily summaries, confirmed patterns, prompt-eligible knowledge facts, weekly reviews,
+  journal entries, active `LIFE_EVENT` graph nodes** — read (not written) by
+  `CharacterHistoryReads` as the bootstrap's evidence corpus (weekly reviews fan out to every
+  expert; journal entries route to `pszichologus` only; life events route to `antropologus`
+  only — each source individually capped, see §9); by the nightly detectors' domain reads
+  (meals, weight, check-ins, journal via `CharacterSignalReads`); and by the monthly pass over
+  the existing `character_claim` base. Karakter owns no meal/weight/check-in/journal/weekly-
+  review data itself — those live in their respective feature packages
+  (train/fuel/companion-journal/proactive), read cross-slice via direct repository injection
+  (`CharacterHistoryReads` → `feature.proactive`/`feature.journal` are new one-directional
+  edges, not the closing leg of a cycle — see the class javadoc for why that is safe here while
+  the companion → proactive direction needed a port).
 - **`feature/llmlog`** — every character LLM call is audited (feature tag `character`,
   call-kind per pipeline step), the same idiom every other AI-domain doc documents.
 
@@ -197,7 +209,8 @@ Backend-only today — there is no `useX()` FE hook.
   `ObjectProvider<CharacterPromptSource>` (the house pattern for an optional cross-feature
   dependency whose owning switch may be off), call `.getIfAvailable(() -> null)` /
   `.render(userId)`, and treat an empty/null result as "nothing to add" (never fail the caller).
-  See `MemoirGenerator`/`PredictionGenerator` for the reference call sites.
+  See `MemoirGenerator`/`PredictionGenerator`/`WeeklyReviewGenerator` for the reference call
+  sites.
 - **Reading the dossier from a test or a script**: `GET /api/character` (owner-scoped via the
   JWT) always returns a 200 with the 7 CORE dimensions present, even pre-bootstrap — the
   "honest pre-bootstrap state" (empty portraits, maturity 0, no claims). There is no
@@ -206,12 +219,20 @@ Backend-only today — there is no `useX()` FE hook.
 ## 7. How to extend it
 
 - **Add a detector**: implement `CharacterDetector` (`detector/CharacterDetector.java`,
-  `String key(); List<DetectorSignal> detect(DetectorInput)`) as a `@Component` — it is
-  auto-discovered by `DetectorRegistry.runAll` and gains a free per-key kill switch
-  (`mezo.character.detector.<key>.enabled`, defaults enabled when the key is absent from the
-  map). Feed it from `CharacterSignalReads` if it needs a new domain read; keep it pure code —
-  interpretation of a detector's output is strictly the expert LLM's job downstream, per the
-  honest-state axiom (no number is ever invented by a model).
+  `String key(); List<DetectorSignal> detect(DetectorInput)`) as a `@Component` gated
+  `@ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")`
+  (all 5 concrete detectors follow this, S7 polish — with the switch off the beans don't exist,
+  not merely no-op, so `DetectorRegistry`'s injected `List<CharacterDetector>` is legitimately
+  empty rather than short-circuited) — it is auto-discovered by `DetectorRegistry.runAll` and
+  gains a free per-key kill switch too (`mezo.character.detector.<key>.enabled`, defaults
+  enabled when the key is absent from the map). Feed it from `CharacterSignalReads` if it needs
+  a new domain read; keep it pure code — interpretation of a detector's output is strictly the
+  expert LLM's job downstream, per the honest-state axiom (no number is ever invented by a
+  model); render any Hungarian-locale number deterministically via a decimal-comma helper
+  (`UnderLoggingDetector.huNumber`) rather than `BigDecimal.toString()`/a locale-dependent
+  `NumberFormat`, and when a detector's window can't distinguish "streak = window size" from
+  "streak = much longer", say so honestly (`LoggingGapDetector`'s 14-day cap) instead of
+  asserting a precise count.
 - **Add/change a CORE dimension or expert persona**: `CharacterCoreCatalog` /
   `CharacterExpertCatalog` are static lists — adding a CORE dimension needs a migration to seed
   it for existing users (the S1 seed migration is the precedent) plus a catalog entry; CORE
@@ -249,41 +270,66 @@ below by shape). No FE tests exist (no FE surface).
   `PORTRAIT_MARKER`, `BOOTSTRAP_MARKER`, `OBSERVATION_MARKER`) — the `[fake-memoir:…]` precedent
   from [proactive.md](proactive.md).
 - **Prompt block**: `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`
-  (whole-block-drop-on-overflow), `CharacterPromptWiringIT` (`@Nested` switch-on/off; covers
-  chat + memoir + prediction wiring — **no weekly-review test exists**, consistent with the §9
-  wiring gap).
+  (whole-block-drop-on-overflow), `CharacterPromptWiringIT` (`@Nested` switch-on/off; covers all
+  four wired surfaces — chat, memoir, prediction, weekly review).
 - **Unit tests (pure code, no Spring context)**: `detector/DetectorTest` (fixture-day-in/
-  signal-out for all 5 detectors), `CharacterConferenceWeekDerivationTest`,
+  signal-out for all 5 detectors, incl. the HU decimal-comma formatting and the 14-day honest
+  streak-cap case), `CharacterConferenceWeekDerivationTest`,
   `CharacterMonthlyScheduleTest` (`isDeepReadDay` date pinning), `CharacterExpertCatalogTest`,
   `service/PortraitWriterTest`.
 
 Run focused locally: `./mvnw test -Dtest='*Character*,Konzilium*' -Dmezo.test.use-testcontainers=true`
 (Testcontainers mode — the default fixed-DB mode races/fakes failures per house convention).
-Full suite is CI-gated (self-PR).
+Full suite is CI-gated (self-PR). A `deadlock detected` `ResetDatabase` TRUNCATE failure between
+tests is known cross-domain flakiness, not a character regression — bd `mezo-oou9`; rerun once
+before investigating.
 
 ## 9. Decisions, gotchas & deferred
 
-- **Detector catalog is narrower than spec §5's v1 wishlist.** Only 5 of ~20 listed detectors
-  are implemented: `checkin-gap`, `journal-note`, `journal-silence`, `logging-gap`,
-  `under-logging` (all meta-behavior/single-domain; owned by `drill`/`pszichologus`/
-  `taplalkozo`). The entire cross-domain group (`comfort-eating`, `sleep-performance-chain`,
-  `sport-interference`, `med-cycle-covariance`, `people-mood-link`, `weekend-gap`), the
-  character-traits group (`resilience`, `all-or-nothing`, `restart-pattern`,
-  `promise-vs-delivery`, `self-calibration`, `decision-profile`), the physiological group
-  (`rir-calibration`, `niggle-map`, `hr-recovery-trend`), and the remaining meta-behavior
-  detectors (`retro-logging-ratio`, `checkin-latency`, `night-activity`, `chat-topic-shift`,
-  `knowledge-rejection-pattern`) are **not implemented**. Practically: `edzo`, `szomnologus`,
-  `doki`, and `antropologus` never receive a nightly-detector-sourced observation today — they
-  only accumulate evidence via the weekly/monthly claim rounds' own reads and user-feedback
-  routing. Tracked as **`mezo-1gim.4`** (detector polish) — a task of this S7 slice.
-- **Bootstrap's evidence corpus is narrower than spec §6's list.** `CharacterHistoryReads`
-  reads daily-summary narratives (newest 60), CONFIRMED patterns (newest 60), and
-  prompt-eligible knowledge facts (top 40 by reinforcement) — journal entries, weekly reviews,
-  and life-event graph nodes (all named in the spec's bootstrap description) are **not** read.
-  Tracked as **`mezo-1gim.7`** (bootstrap corpus) — a task of this S7 slice.
-- **`[Karakter]` prompt wiring is incomplete.** `ChatService`, `MemoirGenerator`, and
-  `PredictionGenerator` all inject the block; `WeeklyReviewGenerator` does not, despite being
-  named as a consumer in spec §1/§8. Tracked as **`mezo-1gim.9`** — a task of this S7 slice.
+- **Detector catalog is still narrower than spec §5's v1 wishlist** (S7 closed the polish items —
+  HU decimal-comma formatting, switch-gated beans, honest streak-capping — but did NOT add new
+  detectors). Only 5 of ~20 listed detectors are implemented: `checkin-gap`, `journal-note`,
+  `journal-silence`, `logging-gap`, `under-logging` (all meta-behavior/single-domain; owned by
+  `drill`/`pszichologus`/`taplalkozo`). The entire cross-domain group (`comfort-eating`,
+  `sleep-performance-chain`, `sport-interference`, `med-cycle-covariance`, `people-mood-link`,
+  `weekend-gap`), the character-traits group (`resilience`, `all-or-nothing`,
+  `restart-pattern`, `promise-vs-delivery`, `self-calibration`, `decision-profile`), the
+  physiological group (`rir-calibration`, `niggle-map`, `hr-recovery-trend`), and the remaining
+  meta-behavior detectors (`retro-logging-ratio`, `checkin-latency`, `night-activity`,
+  `chat-topic-shift`, `knowledge-rejection-pattern`) are **not implemented**. Practically:
+  `edzo`, `szomnologus`, `doki`, and `antropologus` never receive a nightly-detector-sourced
+  observation today — they only accumulate evidence via the weekly/monthly claim rounds' own
+  reads (now widened, see below) and user-feedback routing. No bd issue currently tracks writing
+  the remaining ~15 detectors — file one before picking this up again.
+- **Detector beans are switch-gated, not just no-op** (S7). Each of the 5 detectors carries
+  `@ConditionalOnProperty(CHARACTER_SWITCH)` directly, so with the switch off the beans don't
+  exist at all — `CharacterApiSwitchOffIT.the_detector_beans_are_absent` asserts every detector
+  bean and `DetectorRegistry` itself are absent from the context, not merely quiet.
+- **`LoggingGapDetector` caps its streak count honestly at the read window's boundary.** The
+  domain read only looks back 14 days, so a streak that reaches 14 could actually be much
+  longer; past that point the detector reports "legalább 14 napja nincs étkezés logolva"
+  instead of asserting a precise day count (and drops the now-meaningless "utolsó:" clause).
+- **Numbers embedded in detector prose render with a Hungarian decimal comma,
+  deterministically.** `UnderLoggingDetector.huNumber` renders `BigDecimal.toPlainString()`
+  with `.` replaced by `,` — never `BigDecimal.toString()` (whose exponent form can leak) or a
+  locale-dependent `NumberFormat` (whose output would vary with the JVM default locale).
+- **Bootstrap's evidence corpus now matches spec §6's full source list** (S7 widening,
+  `CharacterHistoryReads`): daily-summary narratives (newest 60), CONFIRMED patterns
+  (newest 60), prompt-eligible knowledge facts (top 40 by reinforcement, 300-char cap), weekly
+  reviews (newest 60, fanned out to EVERY expert, 300-char summary cap), journal entries
+  (newest 60, routed to `pszichologus` only, 300-char cap), and active `LIFE_EVENT` graph nodes
+  (newest 40, routed to `antropologus` only, 300-char title cap). `character → proactive`
+  (`WeeklyReviewRepository`) and `character → journal` (`JournalEntryRepository`) are new
+  one-directional dependency edges — safe because neither `proactive` nor `journal` depends on
+  `character`, unlike `companion → proactive`, which DOES close a cycle and is why the
+  `CharacterPromptSource` port exists instead of a direct repository import (see
+  `CharacterHistoryReads`'s class javadoc for the full reasoning `ArchitectureTest` enforces).
+- **`[Karakter]` prompt wiring now reaches all four narrative surfaces** (S7). `ChatService`,
+  `MemoirGenerator`, `PredictionGenerator`, and `WeeklyReviewGenerator` all inject the block via
+  the same `ObjectProvider<CharacterPromptSource>` + `""`-when-absent idiom —
+  `WeeklyReviewGenerator`'s injection point sits next to its own "ÚJ TÉNYEK" section in
+  `gather()`, the deliberate insertion point since that generator never called
+  `KnowledgeFactService.renderPromptBlock` directly (unlike the other three).
 - **Confidence ceilings differ by path, deliberately, and there are TWO different konzílium
   clamps, not one.** `KonziliumVerdictRound`'s own accepted-ruling clamp (Mezo's ruling
   confidence, and — mirrored defensively — a NEW claim's confidence in `ClaimLifecycle`) is
@@ -351,7 +397,8 @@ Full suite is CI-gated (self-PR).
 
 **Cross-feature port**: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java`
 (interface) — consumed by `feature/companion/service/ChatService.java`,
-`feature/proactive/service/MemoirGenerator.java`, `feature/proactive/service/PredictionGenerator.java`.
+`feature/proactive/service/MemoirGenerator.java`, `feature/proactive/service/PredictionGenerator.java`,
+`feature/proactive/service/WeeklyReviewGenerator.java`.
 
 **API contract**: `api/feature/character/character.yml`
 

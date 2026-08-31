@@ -15,10 +15,13 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.proactive.service.MemoirGenerator;
 import io.mrkuhne.mezo.feature.proactive.service.PredictionGenerator;
+import io.mrkuhne.mezo.feature.proactive.service.WeeklyReviewGenerator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
+import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -34,14 +37,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 /**
- * Task 2 wiring IT (mezo-1gim.8): proves the ONE {@link io.mrkuhne.mezo.feature.companion.CharacterPromptSource}
- * formatter reaches every wired surface — chat ({@link ChatService}), memoir ({@link MemoirGenerator}),
- * prediction ({@link PredictionGenerator}) — and stays honestly absent when the character switch is
- * off (the {@code CharacterApiSwitchOffIT}/{@code CharacterObservationJobIT} {@code @Nested}
- * enabled/disabled idiom). {@code WeeklyReviewGenerator} is deliberately NOT covered here: its
- * gather never includes the facts block ({@code knowledgeFactService.renderPromptBlock}) in the
- * first place, so per the wiring rule (facts-block-present is the insertion-point precondition) it
- * is skipped — see the task-2 report.
+ * Task 2/4 wiring IT (mezo-1gim.8, mezo-1gim.11): proves the ONE
+ * {@link io.mrkuhne.mezo.feature.companion.CharacterPromptSource} formatter reaches every wired
+ * surface — chat ({@link ChatService}), memoir ({@link MemoirGenerator}), prediction
+ * ({@link PredictionGenerator}), weekly review ({@link WeeklyReviewGenerator}) — and stays
+ * honestly absent when the character switch is off (the {@code CharacterApiSwitchOffIT}/
+ * {@code CharacterObservationJobIT} {@code @Nested} enabled/disabled idiom).
  */
 class CharacterPromptWiringIT {
 
@@ -86,10 +87,13 @@ class CharacterPromptWiringIT {
         @Autowired private ChatService chatService;
         @Autowired private MemoirGenerator memoirGenerator;
         @Autowired private PredictionGenerator predictionGenerator;
+        @Autowired private WeeklyReviewGenerator weeklyReviewGenerator;
         @Autowired private UserPopulator userPopulator;
         @Autowired private AiConversationPopulator conversationPopulator;
         @Autowired private DailySummaryPopulator dailySummaryPopulator;
         @Autowired private PatternPopulator patternPopulator;
+        @Autowired private SleepLogPopulator sleepLogPopulator;
+        @Autowired private CheckInPopulator checkInPopulator;
 
         private UUID seedOwnerWithClaim() {
             UUID owner = userPopulator.createUser().getId();
@@ -126,6 +130,19 @@ class CharacterPromptWiringIT {
             patternPopulator.statistical(owner, "sleep~rpe", PatternEntity.STATUS_CONFIRMED);
 
             PredictionGenerator.PredictionGather gather = predictionGenerator.gather(owner, WEEK_START);
+
+            assertThat(gather).isNotNull();
+            assertThat(gather.payload()).contains(CLAIM_TEXT);
+        }
+
+        @Test
+        void testWeeklyReviewGather_shouldCarryTheKarakterBlock() {
+            UUID owner = seedOwnerWithClaim();
+            LocalDate day = WEEK_START.plusDays(1);
+            sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.5"), 8);
+            checkInPopulator.createCheckIn(owner, day, "08:00", 8, 3, null);
+
+            WeeklyReviewGenerator.WeeklyReviewGather gather = weeklyReviewGenerator.gather(owner, WEEK_START);
 
             assertThat(gather).isNotNull();
             assertThat(gather.payload()).contains(CLAIM_TEXT);
