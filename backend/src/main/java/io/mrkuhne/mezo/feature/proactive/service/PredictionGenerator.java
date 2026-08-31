@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -23,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,6 +79,8 @@ public class PredictionGenerator {
     private final ObjectMapper objectMapper;
     private final ProactiveProperties properties;
     private final AppNotificationEmitter appNotificationEmitter;
+    /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
+    private final ObjectProvider<CharacterPromptSource> characterPromptSource;
 
     public record PredictionGather(String payload, List<PatternEntity> candidates) {
     }
@@ -151,6 +155,7 @@ public class PredictionGenerator {
         }
         StringBuilder payload = new StringBuilder(contextSnapshotAssembler.render(userId, weekStart));
         payload.append(knowledgeFactService.renderPromptBlock(userId));
+        payload.append(characterBlock(userId));
         payload.append("\n\nMINTA-JELÖLTEK (a patternIndex ezekre mutat):\n");
         for (int i = 0; i < confirmed.size(); i++) {
             PatternEntity p = confirmed.get(i);
@@ -184,6 +189,13 @@ public class PredictionGenerator {
             return null;
         }
         return candidates.get(index).getId();
+    }
+
+    /** mezo-1gim.8: the [Karakter] dossier's contribution — "" when the bean is absent (either
+     *  switch off) or the dossier has nothing worth injecting. */
+    private String characterBlock(UUID userId) {
+        CharacterPromptSource source = characterPromptSource.getIfAvailable();
+        return source == null ? "" : source.render(userId);
     }
 
     private ParsedPredictions parse(String answer) {

@@ -14,4 +14,5 @@ cat src/fuel-head.html    "$A/clay-icons.svg" "$A/clay-spots.svg" src/fuel-body.
 cat src/mezo-head.html    "$A/clay-icons.svg" "$A/clay-spots.svg" src/mezo-body.html    > mezo-tab.html
 cat src/en-head.html      "$A/clay-icons.svg" "$A/clay-spots.svg" src/en-body.html      > en-tab.html
 cat src/en-ia-head.html   "$A/clay-icons.svg" "$A/clay-spots.svg" src/en-ia-body.html   > en-ia-valasztas.html
-echo "OK — 9 prototype files assembled."
+cat src/napzaras-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/napzaras-body.html > napzaras.html
+echo "OK — 10 prototype files assembled."

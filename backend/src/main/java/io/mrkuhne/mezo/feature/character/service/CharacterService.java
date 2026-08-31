@@ -218,7 +218,10 @@ public class CharacterService {
                 .build();
     }
 
-    private CharacterClaimDto toClaimDto(CharacterClaimEntity claim) {
+    /** Entity→DTO mapping for one claim — also called by {@code CharacterController} to render
+     *  the row {@link io.mrkuhne.mezo.feature.character.service.CharacterFeedbackService#apply}
+     *  hands back (mezo-1gim.10), so it stays reused rather than duplicated. */
+    public CharacterClaimDto toClaimDto(CharacterClaimEntity claim) {
         List<CharacterClaimDtoEvidenceInner> evidence = claim.getEvidence().refs().stream()
                 .map(ref -> CharacterClaimDtoEvidenceInner.builder()
                         .kind(ref.kind())

@@ -72,6 +72,29 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/bootstrap:
+    post:
+      tags: [Character]
+      operationId: bootstrapCharacter
+      summary: One-time deep read over the whole existing history that stands up the dossier
+      responses:
+        '200':
+          description: The bootstrap konzílium that just ran
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterConferenceResponse' }
+        '204':
+          description: No history to read — nothing was generated (the honest empty state)
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: A bootstrap konzílium already exists for this user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/character/conference:
     get:
       tags: [Character]
@@ -87,6 +110,47 @@ paths:
                 items: { $ref: '#/components/schemas/CharacterConferenceSummary' }
         '401':
           description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  '/api/character/claim/{claimId}/feedback':
+    post:
+      tags: [Character]
+      operationId: submitCharacterClaimFeedback
+      summary: Daniel's answer to one claim — talál / nem igaz / pontosítom (spec §7)
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CharacterClaimFeedbackRequest' }
+      responses:
+        '200':
+          description: The claim after the feedback was applied
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterClaimDto' }
+        '400':
+          description: PONTOSITOM without text, or text sent with a kind that takes none
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such claim for this user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: The claim is already retired — nothing to answer
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
@@ -136,6 +200,15 @@ components:
               kind: { type: string }
               id: { type: string, nullable: true }
               label: { type: string }
+    CharacterClaimFeedbackRequest:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [TALAL, NEM_IGAZ, PONTOSITOM] }
+        text:
+          type: string
+          maxLength: 500
+          description: Required for PONTOSITOM (the correction), forbidden otherwise
     CharacterDimensionSummary:
       type: object
       required: [key, title, kind, maturity, portrait, topClaims]

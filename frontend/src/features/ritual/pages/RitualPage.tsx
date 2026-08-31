@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrivalStep } from '@/features/ritual/components/ArrivalStep'
 import { DayStoryStep } from '@/features/ritual/components/DayStoryStep'
@@ -15,6 +16,31 @@ import { useTheme } from '@/app/ThemeProvider'
 import { useCheckins, useDayRecap, useHabitActions, useHabitDay, useRitualActions, useRitualDay } from '@/data/hooks'
 
 const ACT_COUNT = 6
+
+// Index-derived star positions (mezo-d20.8.1.1). Deliberately NOT Math.random: /ritual carries
+// visual goldens, and a re-rolled sky would fail every one of them for no design reason. The
+// prime-ish multipliers just keep the grid from reading as a lattice.
+const STARS = Array.from({ length: 16 }, (_, i) => ({
+  left: `${((i * 37) % 96) + 2}%`,
+  top: `${((i * 53) % 88) + 3}%`,
+  delay: `${((i * 7) % 30) / 10}s`,
+}))
+
+function StarField() {
+  return (
+    <div className="rz-stars" aria-hidden="true">
+      {STARS.map((s) => (
+        <i key={s.left + s.top} style={{ left: s.left, top: s.top, '--tw': s.delay } as CSSProperties} />
+      ))}
+    </div>
+  )
+}
+
+/** Past acts are lavender clay beads, the current one gold — reporting progress, never navigable. */
+function beadClass(i: number, act: number) {
+  if (i + 1 === act) return 'rz-dot cur'
+  return i + 1 < act ? 'rz-dot on' : 'rz-dot'
+}
 
 /**
  * Full-screen Napzárás flow (/ritual, spec §4, mezo-ilsj) — a 6-act state machine over a
@@ -95,11 +121,12 @@ export function RitualPage() {
   }, [act, close, consumeLevelUps, needsPending, states])
 
   return (
-    <div className="rz-screen">
+    <div className="rz-screen" data-act={act}>
+      <StarField />
       <div className="rz-top">
         <div className="rz-dots" aria-hidden="true">
           {Array.from({ length: ACT_COUNT }, (_, i) => (
-            <span key={i} className={i < act ? 'rz-dot on' : 'rz-dot'} />
+            <span key={i} className={beadClass(i, act)} />
           ))}
         </div>
         <button className="rz-exit" aria-label="Kilépés" onClick={() => navigate('/nap')}>✕</button>

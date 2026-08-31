@@ -1,10 +1,13 @@
 package io.mrkuhne.mezo.feature.character.detector;
 
+import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /** Surfaces the raw journal text written ON the observed day (spec §5). */
 @Component
+@ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
 public class JournalNoteDetector implements CharacterDetector {
 
     private static final int MAX_CHARS = 500;

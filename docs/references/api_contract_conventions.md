@@ -85,6 +85,17 @@ Rules:
   `api.dto.SystemMessage` is the wire contract only; they must stay field-compatible
   (guarded by `assertHas*Error` ITs).
 - Do NOT edit generated sources; they live under `target/generated-sources/openapi`.
+- **The `ResponseStatusException` escape hatch** (`GlobalExceptionHandler`): a generated `*Api`
+  interface fixes its success response to ONE status via `@ResponseStatus` (spring-generator
+  `useResponseEntity=false`), so a controller method whose contract legitimately answers a
+  SECOND, bodyless status on one path (e.g. `POST /api/character/bootstrap`: `200` with a body OR
+  a bodyless `204` for "no history yet") throws `ResponseStatusException` instead, and
+  `GlobalExceptionHandler` passes the thrown status straight through with no body. This is
+  legitimate ONLY for that shape — an ALTERNATE SUCCESS status the contract already documents,
+  never a stand-in for a real error response. An actual error a client needs to diagnose always
+  gets its own `SystemMessage` handler (traceId + log line), never this one. Any non-2xx status
+  routed through this handler is logged (traceId + status + reason) precisely because that shape
+  should not occur — it is not the sanctioned use of the hatch.
 
 ## Frontend Consumption
 

@@ -105,6 +105,76 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern CHAR_OBS_SENTINEL =
             Pattern.compile("\\[fake-char-obs:(\\[.*?])]", Pattern.DOTALL);
 
+    /** Mirror of KonziliumProposalRound.PROPOSAL_MARKER (feature/character) — LITERAL, cycle rule
+     *  (see {@link #OBSERVATION_MARKER_MIRROR} for the full rationale). Drift is caught by an IT's
+     *  equality assertion against the real constant. */
+    public static final String PROPOSAL_MARKER_MIRROR = "KARAKTER-JAVASLAT-FELADAT";
+
+    /** Mirror of CharacterBootstrapService.BOOTSTRAP_MARKER (feature/character) — LITERAL, cycle
+     *  rule (see {@link #OBSERVATION_MARKER_MIRROR}). The bootstrap konzílium's proposal round
+     *  asks for the SAME proposal JSON shape as the weekly round, so it shares the proposal
+     *  branch's answer logic below — same canned fallback, same sentinel. Drift is caught by an
+     *  IT's equality assertion against the real constant. */
+    public static final String BOOTSTRAP_MARKER_MIRROR = "KARAKTER-BOOTSTRAP-FELADAT";
+
+    /** Mirror of CharacterMonthlyService.MONTHLY_MARKER (feature/character) — LITERAL, cycle rule
+     *  (see {@link #OBSERVATION_MARKER_MIRROR}). The monthly deep-read konzílium's proposal round
+     *  asks for the SAME proposal JSON shape as the weekly/bootstrap rounds, so it shares that
+     *  branch's answer logic below — same canned fallback, same sentinel. The marker is a
+     *  MULTI-LINE block (the monthly drift/staleness contract rides along after the routing
+     *  line) — {@code startsWith} still matches it as a literal prefix. Drift is caught by an
+     *  IT's equality assertion against the real constant. */
+    public static final String MONTHLY_MARKER_MIRROR = "KARAKTER-HAVI-FELADAT\n"
+            + "Ez egy HAVI mélyolvasás: ne friss mintát keress, hanem a hónapok óta lassan alakuló "
+            + "ELMOZDULÁST és az adatok által már nem alátámasztott, elavult állításokat figyeld. "
+            + "UP/DOWN/RETIRE javaslatot részesíts előnyben NEW helyett, és javasolj RETIRE-t "
+            + "mindenre, amit a jelenlegi adatok már nem támasztanak alá.";
+
+    /** Scripted konzílium proposals (mezo-1gim.5): {@code [fake-char-proposals:[…]]} planted in an
+     *  observation's TEXT (the user message renders it) is returned verbatim; otherwise a canned
+     *  single-proposal array keeps the pipeline deterministic, keyed on the expert's own
+     *  "Alapértelmezett dimenzió: <key>" line KonziliumProposalRound always appends. */
+    public static final Pattern CHAR_PROPOSALS_SENTINEL =
+            Pattern.compile("\\[fake-char-proposals:(\\[.*])]", Pattern.DOTALL);
+
+    /** Resolves KonziliumProposalRound's trailing "Alapértelmezett dimenzió: <key>" line so the
+     *  canned proposal always names a dimension the round's own validation will accept. */
+    private static final Pattern PROPOSAL_DEFAULT_DIMENSION =
+            Pattern.compile("Alapértelmezett dimenzió: ([a-z]+)");
+
+    /** Scripted proposal ECHO (mezo-1gim.10): {@code [fake-char-proposals-echo]} planted in an
+     *  observation's TEXT returns the FULL assembled user message (JSON-escaped) as a single NEW
+     *  proposal's {@code rationale} — the "prompt assembly is assertable" idiom (see
+     *  {@link #MESO_REVIEW_ECHO}), applied here so an IT can prove a server-side prompt-assembly
+     *  detail (e.g. the routed user-feedback observation's "DANIEL VÁLASZA —" prefix) actually
+     *  reached the expert's prompt, without the fake needing to keep a prompt recorder. */
+    public static final String CHAR_PROPOSALS_ECHO = "[fake-char-proposals-echo]";
+
+    /** Mirror of KonziliumVerdictRound.SKEPTIC_MARKER (feature/character) — LITERAL, cycle rule. */
+    public static final String SKEPTIC_MARKER_MIRROR = "KARAKTER-SZKEPTIKUS-FELADAT";
+    /** Mirror of KonziliumVerdictRound.INTEGRATOR_MARKER (feature/character) — LITERAL, cycle rule. */
+    public static final String INTEGRATOR_MARKER_MIRROR = "KARAKTER-INTEGRATOR-FELADAT";
+
+    public static final Pattern CHAR_SKEPTIC_SENTINEL =
+            Pattern.compile("\\[fake-char-skeptic:(\\[.*])]", Pattern.DOTALL);
+    public static final Pattern CHAR_INTEGRATOR_SENTINEL =
+            Pattern.compile("\\[fake-char-integrator:(\\{.*})]", Pattern.DOTALL);
+    /** The proposal numbering the konzílium user messages carry — the canned answers count these. */
+    private static final Pattern CHAR_PROPOSAL_INDEX = Pattern.compile("(?m)^P(\\d+)\\. ");
+
+    /** Mirror of PortraitWriter.PORTRAIT_MARKER (feature/character) — LITERAL, cycle rule. */
+    public static final String PORTRAIT_MARKER_MIRROR = "KARAKTER-PORTRE-FELADAT";
+
+    /** Scripted portrait rewrite (mezo-1gim.5): {@code [fake-char-portrait:<text>]} planted in a
+     *  claim's TEXT (the user message renders every active claim's text) is returned verbatim —
+     *  including an EMPTY payload ({@code [fake-char-portrait:]}), which surfaces as a blank
+     *  answer so tests can drill the portrait-failure-isolation path; otherwise a canned portrait
+     *  sentence keeps the pipeline deterministic. */
+    public static final Pattern CHAR_PORTRAIT_SENTINEL =
+            Pattern.compile("\\[fake-char-portrait:([^\\]]*)]", Pattern.DOTALL);
+    private static final String CHAR_PORTRAIT_CANNED_ANSWER =
+            "Ezen a héten a fegyelem képe formálódik. Figyeljük tovább.";
+
     /** Scripted scrape (mezo-8vum): {@code [fake-scrape:{json}]} payload is returned verbatim. */
     public static final Pattern SCRAPE_SENTINEL =
             Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
@@ -400,6 +470,33 @@ public class FakeCompanionLlm implements CompanionLlm {
                 return obs.group(1);
             }
             return "[{\"text\":\"Fake megfigyelés.\",\"salience\":3,\"dimensionKeys\":[\"discipline\"]}]";
+        }
+        if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR) || systemPrompt.startsWith(BOOTSTRAP_MARKER_MIRROR)
+                || systemPrompt.startsWith(MONTHLY_MARKER_MIRROR)) {
+            Matcher dim = PROPOSAL_DEFAULT_DIMENSION.matcher(userMessage);
+            String dimensionKey = dim.find() ? dim.group(1) : "discipline";
+            if (userMessage.contains(CHAR_PROPOSALS_ECHO)) {
+                return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
+                        + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"" + jsonEscape(userMessage) + "\"}]";
+            }
+            Matcher proposals = CHAR_PROPOSALS_SENTINEL.matcher(userMessage);
+            if (proposals.find()) {
+                return proposals.group(1);
+            }
+            return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
+                    + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"Fake indoklás.\"}]";
+        }
+        if (systemPrompt.startsWith(SKEPTIC_MARKER_MIRROR)) {
+            Matcher m = CHAR_SKEPTIC_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : skepticCannedAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(INTEGRATOR_MARKER_MIRROR)) {
+            Matcher m = CHAR_INTEGRATOR_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : integratorCannedAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(PORTRAIT_MARKER_MIRROR)) {
+            Matcher m = CHAR_PORTRAIT_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : CHAR_PORTRAIT_CANNED_ANSWER;
         }
         if (systemPrompt.startsWith(TurnVerdictCheck.VERDICT_MARKER)) {
             return verdictAnswer(userMessage);
@@ -708,6 +805,42 @@ public class FakeCompanionLlm implements CompanionLlm {
         return m.find() ? m.group(1) : "[]";
     }
 
+    /** Scripted konzílium verdict round (mezo-1gim.5): for every {@code P<n>} the user message
+     *  numbers, a deterministic KEEP verdict — index-complete, so the round's per-proposal default
+     *  logic is exercised only through {@link #CHAR_SKEPTIC_SENTINEL}. */
+    private static String skepticCannedAnswer(String userMessage) {
+        Matcher idx = CHAR_PROPOSAL_INDEX.matcher(userMessage);
+        StringBuilder sb = new StringBuilder("[");
+        boolean first = true;
+        while (idx.find()) {
+            if (!first) {
+                sb.append(',');
+            }
+            first = false;
+            sb.append("{\"index\":").append(idx.group(1))
+                    .append(",\"verdict\":\"KEEP\",\"argument\":\"Fake ellenérv: elfogadható.\"}");
+        }
+        return sb.append(']').toString();
+    }
+
+    /** Scripted konzílium verdict round (mezo-1gim.5): for every {@code P<n>} the user message
+     *  numbers, a deterministic accepted ruling at confidence 0.60 — index-complete, so the
+     *  default-reject path is exercised only through {@link #CHAR_INTEGRATOR_SENTINEL}. */
+    private static String integratorCannedAnswer(String userMessage) {
+        Matcher idx = CHAR_PROPOSAL_INDEX.matcher(userMessage);
+        StringBuilder rulings = new StringBuilder();
+        boolean first = true;
+        while (idx.find()) {
+            if (!first) {
+                rulings.append(',');
+            }
+            first = false;
+            rulings.append("{\"index\":").append(idx.group(1))
+                    .append(",\"accept\":true,\"confidence\":0.6,\"reason\":\"Fake döntés.\"}");
+        }
+        return "{\"rulings\":[" + rulings + "],\"chapters\":[]}";
+    }
+
     /**
      * Summary calls (V2.2) answer deterministically: a {@code [fake-summary:…]} sentinel in the
      * digest (plant it via a check-in note) becomes the narrative verbatim; otherwise the digest
@@ -738,6 +871,13 @@ public class FakeCompanionLlm implements CompanionLlm {
             " user=[" + userMessage + "]"));
         chunks.addAll(toolEchoes(userMessage, tools, toolContext));
         return Flux.fromIterable(chunks);
+    }
+
+    /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO}
+     *  — the echo embeds the WHOLE assembled user message as one JSON string value. */
+    private static String jsonEscape(String raw) {
+        return raw.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 
     /** Every sentinel executes the matching REAL callback; unknown names echo UNKNOWN. */

@@ -40,6 +40,7 @@ class CharacterObservationServiceIT extends ApiIntegrationTest {
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private JournalPopulator journalPopulator;
+    @Autowired private FakeCompanionLlm fakeCompanionLlm;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -64,11 +65,16 @@ class CharacterObservationServiceIT extends ApiIntegrationTest {
         // a recent journal entry (not ON DAY) keeps journal-silence quiet without firing journal-note
         journalPopulator.createEntry(owner, DAY.minusDays(3), "Csendes nap volt.", "quickinput");
 
+        int callsBefore = fakeCompanionLlm.completeCallCount();
+
         int written = observationService.generateForDay(owner, DAY);
 
         assertThat(written).isZero();
         assertThat(observationRepository.findByCreatedByOrderByDayDescCreatedAtDesc(
                 owner, org.springframework.data.domain.Pageable.unpaged())).isEmpty();
+        // mezo-1gim.4 item 5: the zero-cost claim must be pinned on the LLM call count, not just
+        // inferred from the zero rows written.
+        assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(callsBefore);
     }
 
     @Test

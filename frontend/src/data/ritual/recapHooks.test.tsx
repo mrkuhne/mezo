@@ -59,31 +59,31 @@ describe('useDayRecap (real mode)', () => {
 
     const { result } = renderHook(() => useDayRecap(DATE), { wrapper: makeHookWrapper() })
 
-    await waitFor(() => expect(result.current.events.some((e) => e.icon === '🏋️')).toBe(true))
+    await waitFor(() => expect(result.current.events.some((e) => e.icon === 'i-edzes')).toBe(true))
     const icons = result.current.events.map((e) => e.icon)
     // training -> fuel -> biometrics (weight, sleep) -> journal -> foci
-    expect(icons).toEqual(['🏋️', '🍽', '⚖️', '😴', '✍️', '✍️', '✦', '✦'])
+    expect(icons).toEqual(['i-edzes', 'i-fuel', 'i-suly', 'i-alvas', 'i-naplo', 'i-naplo', 'i-cel', 'i-cel'])
 
     const training = result.current.events[0]
-    expect(training).toEqual({ icon: '🏋️', label: 'Pull Day', meta: '✓', done: true })
+    expect(training).toEqual({ icon: 'i-edzes', label: 'Pull Day', meta: '✓', done: true })
 
     const fuelEvent = result.current.events[1]
-    expect(fuelEvent).toEqual({ icon: '🍽', label: '1 étkezés', meta: '42 g fehérje', done: true })
+    expect(fuelEvent).toEqual({ icon: 'i-fuel', label: '1 étkezés', meta: '42 g fehérje', done: true })
 
     const weightEvent = result.current.events[2]
-    expect(weightEvent).toEqual({ icon: '⚖️', label: 'Súlymérés', meta: '79.4 kg', done: true })
+    expect(weightEvent).toEqual({ icon: 'i-suly', label: 'Súlymérés', meta: '79.4 kg', done: true })
 
-    const journalEvents = result.current.events.filter((e) => e.icon === '✍️')
+    const journalEvents = result.current.events.filter((e) => e.icon === 'i-naplo')
     expect(journalEvents[0].label.length).toBeLessThanOrEqual(41) // 40 chars + ellipsis
     expect(journalEvents[0].meta).toBe('+18 XP')
     expect(journalEvents[1].label).toBe('Rövid jegyzet')
     expect(journalEvents[1].meta).toBe('')
     expect(journalEvents[1].done).toBe(true)
 
-    const fociEvents = result.current.events.filter((e) => e.icon === '✦')
+    const fociEvents = result.current.events.filter((e) => e.icon === 'i-cel')
     expect(fociEvents).toEqual([
-      { icon: '✦', label: 'Jelen lenni', meta: '✓', done: true },
-      { icon: '✦', label: 'Formára figyelni', meta: '✓', done: true },
+      { icon: 'i-cel', label: 'Jelen lenni', meta: '✓', done: true },
+      { icon: 'i-cel', label: 'Formára figyelni', meta: '✓', done: true },
     ])
 
     expect(result.current.checkinsDone).toBe(3)
@@ -96,9 +96,9 @@ describe('useDayRecap (real mode)', () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     // Default /api/train/workouts/today fixture has a plan (title 'Pull Day') but no completedWorkout.
     const { result } = renderHook(() => useDayRecap(DATE), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.events.some((e) => e.icon === '🏋️')).toBe(true))
-    const training = result.current.events.find((e) => e.icon === '🏋️')
-    expect(training).toEqual({ icon: '🏋️', label: 'Pull Day', meta: '✓', done: false })
+    await waitFor(() => expect(result.current.events.some((e) => e.icon === 'i-edzes')).toBe(true))
+    const training = result.current.events.find((e) => e.icon === 'i-edzes')
+    expect(training).toEqual({ icon: 'i-edzes', label: 'Pull Day', meta: '✓', done: false })
   })
 
   test('closingNote is non-null ONLY when the feed carries an "evening" kind message', async () => {
@@ -147,7 +147,7 @@ describe('useDayRecap (real mode)', () => {
       ),
     )
     const { result } = renderHook(() => useDayRecap(DATE), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.events.some((e) => e.icon === '🍽')).toBe(true))
+    await waitFor(() => expect(result.current.events.some((e) => e.icon === 'i-fuel')).toBe(true))
     expect(result.current.events.every((e) => !e.done)).toBe(true)
     expect(result.current.checkinsDone).toBe(0)
     expect(result.current.thinDay).toBe(true)
@@ -161,21 +161,21 @@ describe('useDayRecap (mock mode)', () => {
     // weightLog entry we deliberately match against (the seed's last logged date).
     const { result } = renderHook(() => useDayRecap('2026-05-22'), { wrapper: makeHookWrapper() })
 
-    const training = result.current.events.find((e) => e.icon === '🏋️')
-    expect(training).toEqual({ icon: '🏋️', label: 'Pull Day', meta: '✓', done: false })
+    const training = result.current.events.find((e) => e.icon === 'i-edzes')
+    expect(training).toEqual({ icon: 'i-edzes', label: 'Pull Day', meta: '✓', done: false })
 
     // Partial mock day (mezo-1oy5): breakfast + lunch logged → 2 meals, consumed protein 100 g.
-    const fuelEvent = result.current.events.find((e) => e.icon === '🍽')
-    expect(fuelEvent).toEqual({ icon: '🍽', label: '2 étkezés', meta: '100 g fehérje', done: true })
+    const fuelEvent = result.current.events.find((e) => e.icon === 'i-fuel')
+    expect(fuelEvent).toEqual({ icon: 'i-fuel', label: '2 étkezés', meta: '100 g fehérje', done: true })
 
-    const weightEvent = result.current.events.find((e) => e.icon === '⚖️')
-    expect(weightEvent).toEqual({ icon: '⚖️', label: 'Súlymérés', meta: '78.6 kg', done: true })
+    const weightEvent = result.current.events.find((e) => e.icon === 'i-suly')
+    expect(weightEvent).toEqual({ icon: 'i-suly', label: 'Súlymérés', meta: '78.6 kg', done: true })
 
-    const sleepEvent = result.current.events.find((e) => e.icon === '😴')
-    expect(sleepEvent).toEqual({ icon: '😴', label: 'Alvás', meta: '7.5 óra', done: true })
+    const sleepEvent = result.current.events.find((e) => e.icon === 'i-alvas')
+    expect(sleepEvent).toEqual({ icon: 'i-alvas', label: 'Alvás', meta: '7.5 óra', done: true })
 
-    expect(result.current.events.filter((e) => e.icon === '✍️')).toHaveLength(3) // mockActivities.length
-    const fociEvents = result.current.events.filter((e) => e.icon === '✦')
+    expect(result.current.events.filter((e) => e.icon === 'i-naplo')).toHaveLength(3) // mockActivities.length
+    const fociEvents = result.current.events.filter((e) => e.icon === 'i-cel')
     expect(fociEvents).toHaveLength(2) // mockIntentionDay
     expect(fociEvents.every((e) => e.done === false)).toBe(true) // reflection is null in the seed
 

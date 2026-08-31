@@ -180,6 +180,22 @@
   --mz-stripbg: #FFFFFF;
   --mz-strength: linear-gradient(90deg, #E5C46B, #C9962E); /* habit-strength bar (nap #page-hab .hstr) */
   --mz-ink-mut: #A2958A;
+  /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
+        The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
+        blocks carry IDENTICAL values: the duplication keeps the Mozaik rule (a --rz-*
+        token is declared in both blocks, never one) rather than adding a light variant
+        no surface can reach. Act 1 is the Nap tab evening panel's own lavender at dusk;
+        each act deepens; act 5 stays dark and gets its gold break from .rz-glow. */
+  --rz-sky-1: linear-gradient(180deg, #453C5E 0%, #322C4C 62%, #2B2745 100%);
+  --rz-sky-2: linear-gradient(180deg, #3A3757 0%, #2A2A48 100%);
+  --rz-sky-3: linear-gradient(180deg, #322F51 0%, #232343 100%);
+  --rz-sky-4: linear-gradient(180deg, #282849 0%, #1B1C38 100%);
+  --rz-sky-5: linear-gradient(180deg, #2A2547 0%, #201D3C 100%);
+  --rz-sky-6: linear-gradient(180deg, #191932 0%, #0F0F22 100%);
+  --rz-gold-hi: #FFE9A8;
+  --rz-nw-wash: linear-gradient(150deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+  --rz-nw-line: rgba(255, 255, 255, 0.13);
+  --rz-nw-shadow: 0 14px 26px -14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   --mz-ink-soft: #6E6257;
   /* quest cards (mezo-d20.2.4) — prototype .qcard.done / .qxp hexes verbatim */
   --mz-qdone-bg: linear-gradient(150deg, #EFF3EA, #FBFDF9);
@@ -431,6 +447,22 @@
   --mz-stripbg: var(--surface-card);
   --mz-ink-mut: #8A7A6A;
   --mz-ink-soft: var(--text-secondary);
+  /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
+        The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
+        blocks carry IDENTICAL values: the duplication keeps the Mozaik rule (a --rz-*
+        token is declared in both blocks, never one) rather than adding a light variant
+        no surface can reach. Act 1 is the Nap tab evening panel's own lavender at dusk;
+        each act deepens; act 5 stays dark and gets its gold break from .rz-glow. */
+  --rz-sky-1: linear-gradient(180deg, #453C5E 0%, #322C4C 62%, #2B2745 100%);
+  --rz-sky-2: linear-gradient(180deg, #3A3757 0%, #2A2A48 100%);
+  --rz-sky-3: linear-gradient(180deg, #322F51 0%, #232343 100%);
+  --rz-sky-4: linear-gradient(180deg, #282849 0%, #1B1C38 100%);
+  --rz-sky-5: linear-gradient(180deg, #2A2547 0%, #201D3C 100%);
+  --rz-sky-6: linear-gradient(180deg, #191932 0%, #0F0F22 100%);
+  --rz-gold-hi: #FFE9A8;
+  --rz-nw-wash: linear-gradient(150deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+  --rz-nw-line: rgba(255, 255, 255, 0.13);
+  --rz-nw-shadow: 0 14px 26px -14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   --mz-strength: linear-gradient(90deg, color-mix(in srgb, var(--dv-amber) 55%, var(--surface-card)), var(--dv-amber));
   /* quest cards (mezo-d20.2.4) — done wash / XP pill on the dark dv ramp */
   --mz-qdone-bg: linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 14%, var(--surface-card)), var(--surface-card));
@@ -2690,49 +2722,14 @@ button.itemrow { cursor: pointer; }
 .subnav-dd .dd-item.on { color: var(--subnav-accent, var(--primary-deep)); }
 .subnav-dd .dd-sep { border-top: 1px solid var(--divider); margin: 4px 0; }
 
-/* ===== NotificationBell + panel — the 4th AppHero counter chip (mezo-gzhp.1) =====
-   Same stacking recipe as SubNavDropdown: chip+panel inside .apphero (z 45), the
-   backdrop portaled into .phone-screen at z 44. */
-.nf-bell { position: relative; }
-.nf-bell .cnt.bell { font-size: 15px; padding: 6px 6px 6px 8px; position: relative; }
-.nf-bell .bell-badge {
-  position: absolute; top: 0; right: -2px; min-width: 15px; height: 15px;
-  border-radius: var(--r-full); background: var(--primary-base); color: #fff;
-  font: 800 9px/1 var(--ff-body); display: flex; align-items: center; justify-content: center;
-  padding: 0 3px; border: 2px solid var(--canvas);
-}
-.nf-panel {
-  position: absolute; top: calc(100% + 8px); right: -60px;
-  width: min(348px, calc(100vw - 20px));
-  background: var(--surface-card); border: 1px solid var(--divider);
-  border-radius: var(--r-lg); box-shadow: var(--shadow-lg); overflow: hidden;
-}
-.nf-panel .nf-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 8px; }
-.nf-panel .nf-title { font: 800 15px/1 var(--ff-display); letter-spacing: -.01em; color: var(--text-primary); }
-.nf-panel .nf-scroll { overflow-y: auto; max-height: min(480px, 62vh); }
-.nf-panel .nf-empty { padding: 18px 16px 22px; font-family: var(--ff-serif); font-style: italic; font-size: 14px; color: var(--text-secondary); }
-.nf-panel .nf-group { font: 800 10.5px/1 var(--ff-body); letter-spacing: .6px; text-transform: uppercase; color: var(--text-muted); padding: 10px 16px 4px; }
-.nf-panel .nf-item {
-  display: flex; gap: 10px; padding: 10px 16px 10px 18px; align-items: flex-start; position: relative;
-  width: 100%; background: none; border: none; cursor: pointer; text-align: left;
-}
-.nf-panel .nf-item + .nf-item { border-top: 1px solid var(--divider); }
-.nf-panel .nf-item.unread { background: color-mix(in srgb, var(--primary-base) 5%, transparent); }
-.nf-panel .nf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary-base); position: absolute; left: 6px; top: 50%; transform: translateY(-50%); }
-.nf-panel .nf-ico { width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; }
-.nf-panel .nf-ico.pattern { background: color-mix(in srgb, var(--dv-lav) 18%, transparent); }
-.nf-panel .nf-ico.knowledge { background: color-mix(in srgb, var(--dv-sage) 20%, transparent); }
-.nf-panel .nf-ico.prediction { background: color-mix(in srgb, var(--dv-sky) 18%, transparent); }
-.nf-panel .nf-ico.experiment { background: color-mix(in srgb, var(--dv-amber) 22%, transparent); }
-.nf-panel .nf-ico.memoir { background: color-mix(in srgb, var(--primary-base) 12%, transparent); }
-.nf-panel .nf-ico.memory { background: var(--surface-recess); }
-.nf-panel .nf-txt { min-width: 0; flex: 1; display: block; }
-.nf-panel .nf-t { display: block; font: 700 12.5px/1.25 var(--ff-body); color: var(--text-primary); }
-.nf-panel .nf-b {
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  font: 400 11.5px/1.4 var(--ff-body); color: var(--text-secondary); margin-top: 2px;
-}
-.nf-panel .nf-time { font: 600 10px/1 var(--ff-body); color: var(--text-muted); flex-shrink: 0; margin-top: 1px; white-space: nowrap; }
+.nf-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary-base); position: absolute; left: 6px; top: 50%; transform: translateY(-50%); }
+.nf-ico { width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.nf-ico.pattern { background: color-mix(in srgb, var(--dv-lav) 18%, transparent); }
+.nf-ico.knowledge { background: color-mix(in srgb, var(--dv-sage) 20%, transparent); }
+.nf-ico.prediction { background: color-mix(in srgb, var(--dv-sky) 18%, transparent); }
+.nf-ico.experiment { background: color-mix(in srgb, var(--dv-amber) 22%, transparent); }
+.nf-ico.memoir { background: color-mix(in srgb, var(--primary-base) 12%, transparent); }
+.nf-ico.memory { background: var(--surface-recess); }
 
 /* ===== Habit routine =====
    The `.hab-chain`/`.hab-row`/`.hab-node`/`.hab-main`/`.hab-anchor`/`.hab-title`/`.hab-link`/
@@ -3255,24 +3252,64 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    (dark: #F5EFE6). Lavender is the ritual's settled night direction (spec D10): the
    data-viz --dv-lav + the kept --lav-deep carrier, deliberately not the primary ramp. */
 .rz-screen { position: absolute; inset: 0; display: flex; flex-direction: column; overflow-y: auto;
-  background: radial-gradient(120% 90% at 50% -10%, var(--surface-elevated) 0%, var(--surface-card) 55%, var(--surface-page) 100%);
+  background: var(--rz-sky-1); transition: background .9s ease;
   color: var(--text-primary); z-index: var(--z-bottomnav); }
+/* The darkening arc (mezo-d20.8.1.1): RitualPage stamps data-act, and the sky deepens with it.
+   Act 1 is the Nap tab evening panel's lavender at dusk — entering the ritual dims the room the
+   user was already standing in rather than opening a different one. Act 5 stays dark; its gold
+   comes from .rz-glow breaking through, which is what makes the peak read as a peak. */
+.rz-screen[data-act="1"] { background: var(--rz-sky-1); }
+.rz-screen[data-act="2"] { background: var(--rz-sky-2); }
+.rz-screen[data-act="3"] { background: var(--rz-sky-3); }
+.rz-screen[data-act="4"] { background: var(--rz-sky-4); }
+.rz-screen[data-act="5"] { background: var(--rz-sky-5); }
+.rz-screen[data-act="6"] { background: var(--rz-sky-6); }
+/* Starfield — positions are index-derived in RitualPage (never Math.random: the visual goldens
+   have to be reproducible). Density is fixed; only opacity rides the arc, so the sky gains stars
+   by clearing rather than by spawning them. */
+.rz-stars { position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: .35; transition: opacity .9s ease; }
+.rz-screen[data-act="2"] .rz-stars { opacity: .45; }
+.rz-screen[data-act="3"] .rz-stars { opacity: .55; }
+.rz-screen[data-act="4"] .rz-stars { opacity: .65; }
+.rz-screen[data-act="5"] .rz-stars { opacity: .5; }
+.rz-screen[data-act="6"] .rz-stars { opacity: .9; }
+.rz-stars i { position: absolute; width: 2px; height: 2px; border-radius: 50%;
+  background: color-mix(in srgb, var(--text-primary) 80%, transparent); }
+.rz-stars i:nth-child(2n) { width: 1.5px; height: 1.5px; opacity: .6; }
+.rz-stars i:nth-child(3n) { opacity: .35; }
+.rz-stars i:nth-child(4n) { animation: rz-twinkle 3.4s ease-in-out infinite; animation-delay: var(--tw); }
+@keyframes rz-twinkle { 0%, 100% { opacity: .25; } 50% { opacity: .9; } }
+/* Everything above the starfield. .rz-act is the flow content; .rz-top the chrome. */
+.rz-top, .rz-act { position: relative; z-index: 1; }
 .rz-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 0; }
 .rz-dots { display: flex; gap: 6px; }
-.rz-dot { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--text-primary) 18%, transparent); }
-.rz-dot.on { background: var(--dv-lav); }
+/* Clay beads, not flat dots: past acts are lavender clay, the current one gold clay + scaled.
+   Non-interactive by design — the ritual is forward-only, so the beads report, never navigate. */
+.rz-dot { width: 8px; height: 8px; border-radius: 50%; transition: transform .25s ease, background .4s ease;
+  background: radial-gradient(circle at 35% 30%,
+    color-mix(in srgb, var(--text-primary) 28%, transparent),
+    color-mix(in srgb, var(--text-primary) 8%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 20%, transparent); }
+.rz-dot.on { background: radial-gradient(circle at 35% 30%, #E6DFF9, #9C8FD0 55%, #5D4FA0); }
+.rz-dot.cur { transform: scale(1.35);
+  background: radial-gradient(circle at 35% 30%, var(--rz-gold-hi), #E0AC2F 55%, #A9770F);
+  box-shadow: 0 0 8px color-mix(in srgb, #E0AC2F 55%, transparent); }
 .rz-exit { background: none; border: 0; width: 44px; height: 44px; margin: -8px -12px 0 0;
   display: grid; place-items: center; cursor: pointer;
   color: color-mix(in srgb, var(--text-primary) 50%, transparent); font-size: 16px; line-height: 1; }
 .rz-act { flex: 1; display: flex; flex-direction: column; padding: 0 20px 28px; }
-.rz-moon { width: 84px; height: 84px; border-radius: 50%; margin: 72px auto 0;
-  background: radial-gradient(circle at 34% 30%,
-    color-mix(in srgb, var(--dv-lav) 10%, var(--text-primary)) 0%,
-    color-mix(in srgb, var(--dv-lav) 45%, var(--text-primary)) 55%,
-    var(--dv-lav) 100%);
-  box-shadow: 0 0 40px 6px color-mix(in srgb, var(--dv-lav) 35%, transparent);
+/* The moon is now the clay `i-hold` symbol (mezo-d20.8.1.1) — this rule hosts and lights it,
+   the shape itself comes from the sprite. The halo stays: clay renders flat against a night sky
+   without it. */
+.rz-moon { display: grid; place-items: center; margin: 64px auto 0; width: 96px; height: 96px;
+  filter: drop-shadow(0 0 26px color-mix(in srgb, var(--dv-lav) 45%, transparent));
   animation: rz-breath 4.2s ease-in-out infinite; }
 @keyframes rz-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+/* Act 1 balance (mezo-d20.8.1.1): the moon block floats to the middle, the CTA sits at the
+   bottom — the two auto top margins split the act's free space between them. Without this the
+   whole act top-loads and leaves a third of the screen empty below the button. */
+.rz-arrival .rz-moon { margin-top: auto; }
+.rz-arrival .rz-cta { margin-top: auto; margin-bottom: 4px; }
 .rz-line1 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; text-align: center; margin-top: 40px; }
 .rz-line2 { font-size: 16px; color: color-mix(in srgb, var(--text-primary) 55%, transparent); text-align: center; margin-top: 8px; }
 .rz-cta { margin: 56px auto 0; padding: 13px 34px; min-height: 48px; border-radius: var(--r-full); border: 0;
@@ -3282,6 +3319,16 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 @keyframes rz-glowp { 0%, 100% { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--dv-lav) 35%, transparent); } 50% { box-shadow: 0 0 30px 8px color-mix(in srgb, var(--dv-lav) 55%, transparent); } }
 @keyframes rz-fall { 0% { opacity: 0; transform: translateY(0) rotate(0); } 8% { opacity: 1; }
   100% { opacity: 0; transform: translateY(520px) rotate(560deg); } }
+
+/* The night-washed tile (mezo-d20.8.1.1) — the Mozaik tile anatomy translated to a dark sky:
+   a translucent white wash instead of a colour wash, a hairline top-light instead of an inner
+   cream highlight, the same radius and shadow depth. One primitive; act 2's recap rows, act 4's
+   loops, act 5's source chips + skill row and act 6's handoff panel are all built from it. */
+.rz-nw { border-radius: var(--r-lg); background: var(--rz-nw-wash);
+  border: 0.5px solid var(--rz-nw-line); box-shadow: var(--rz-nw-shadow); }
+.rz-nw-spot { width: 30px; height: 30px; border-radius: 10px; flex: none; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text-primary) 10%, transparent); }
 
 /* Day-story act (act 2): arc redraw (np-draw reuse) + recap event rows (np-anim reuse). */
 .rz-story-eyebrow { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .18em;
@@ -3300,9 +3347,8 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .rz-thin { font: italic 500 14px/1.5 var(--ff-serif); text-align: center;
   color: color-mix(in srgb, var(--text-primary) 65%, transparent); margin: 18px 6px 0; }
 .rz-events { display: flex; flex-direction: column; gap: 9px; margin-top: 18px; }
-.rz-ev { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--text-primary) 5%, transparent); font-family: var(--ff-body); font-size: 14px; }
-.rz-ev-icon { font-size: 15px; }
+.rz-ev { display: flex; align-items: center; gap: 10px; padding: 9px 11px; font-family: var(--ff-body); font-size: 14px; }
+.rz-ev-icon { display: grid; place-items: center; }
 .rz-ev-label { flex: 1; }
 .rz-ev-meta { color: var(--text-disabled); font-size: 12px; }
 .rz-ev-meta.ok { color: var(--success-base); }
@@ -3325,9 +3371,13 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
   color: color-mix(in srgb, var(--text-primary) 55%, transparent); }
 .rz-reflect-gratitude { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
 .rz-gratitude-saved { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+/* The saved lines sit on the night wash, not on --surface-2: that token is an opaque warm
+   graphite from the DS ramp, and an opaque brown block on the violet night sky reads as a
+   foreign element (mezo-d20.8.1.1). */
 .rz-gratitude-saved li { font-family: var(--ff-body); font-size: 13px; line-height: 1.4;
   color: color-mix(in srgb, var(--text-primary) 65%, transparent);
-  padding: 8px 10px; background: var(--surface-2); border-radius: 10px; }
+  padding: 8px 10px; border-radius: 10px;
+  background: var(--rz-nw-wash); border: 0.5px solid var(--rz-nw-line); }
 /* the CTA sits right under the box here — the shared .rz-cta 56px top margin is tuned for the
    short arrival/story acts and would strand it off-screen below a 160px textarea. */
 .rz-reflect .rz-cta { margin-top: 26px; }
@@ -3341,11 +3391,15 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    idiom, not an animated pulsing dot. */
 .rz-loops-sub { font-family: var(--ff-body); font-size: 14px; font-weight: 400;
   color: color-mix(in srgb, var(--text-primary) 55%, transparent); margin: 6px 4px 14px; }
-.rz-loop { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; padding: 12px;
-  border-radius: var(--r-lg); background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+.rz-loop { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; padding: 11px 12px;
   font-family: var(--ff-body); font-size: 14px; }
-.rz-loop.glow { background: color-mix(in srgb, var(--dv-lav) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 35%, transparent); }
+/* An open loop breathes in LAVENDER — never coral, never terracotta (ADR 0010). A loop left
+   open is not a failure; it is simply still alive, and the glow says only that. */
+.rz-loop.glow { border-color: color-mix(in srgb, var(--dv-lav) 50%, transparent);
+  animation: rz-loopbreath 3s ease-in-out infinite; }
+@keyframes rz-loopbreath {
+  0%, 100% { box-shadow: 0 0 12px -3px color-mix(in srgb, var(--dv-lav) 35%, transparent), var(--rz-nw-shadow); }
+  50% { box-shadow: 0 0 20px 0 color-mix(in srgb, var(--dv-lav) 60%, transparent), var(--rz-nw-shadow); } }
 .rz-loop-done { color: color-mix(in srgb, var(--text-primary) 50%, transparent); }
 .rz-loop-mk { color: var(--success-base); }
 .rz-loop-text { flex: 1; }
@@ -3365,6 +3419,18 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    no fabricated "N XP to next level" hint), the streak flame (AppHero .cnt.fire dim
    precedent, opacity .45), and a one-shot confetti burst (rz-fall reuse) gated on xpTotal > 0. */
 .rz-harvest { position: relative; }
+/* The gold break (mezo-d20.8.1.1) — the peak-end beat told with LIGHT, not with more chips:
+   a warm radial rising from the bottom of the otherwise-dark act 5 sky. */
+.rz-glow { position: absolute; inset: -20px -20px 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse 120% 75% at 50% 88%,
+    color-mix(in srgb, #E8B93A 38%, transparent) 0%,
+    color-mix(in srgb, #E8B93A 12%, transparent) 42%, transparent 68%);
+  opacity: 0; transform: scale(.9); transform-origin: 50% 100%;
+  animation: rz-glowin 1.4s ease-out .25s forwards; }
+@keyframes rz-glowin { to { opacity: 1; transform: none; } }
+.rz-harvest-body, .rz-harvest .rz-cta, .rz-harvest .rz-conf { position: relative; z-index: 1; }
+.rz-harvest-spot { display: grid; place-items: center; margin-bottom: 6px;
+  filter: drop-shadow(0 0 20px color-mix(in srgb, #E8B93A 50%, transparent)); }
 /* mezo-tr5v: reward block vertically centered (auto block margins), CTA pinned to the bottom
    (overriding the shared .rz-cta top margin) — instead of top-loading with empty space below. */
 .rz-harvest-body { display: flex; flex-direction: column; margin-block: auto; }
@@ -3372,22 +3438,29 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .rz-xp-wrap { text-align: center; margin-top: 26px; }
 /* the DS hero numeral role: 56 / Geist 200 / -0.04em — the harvest total IS the hero number */
 .rz-xp-num { display: block; font-family: var(--ff-display); font-size: 56px; line-height: 1; font-weight: 200;
+  color: var(--rz-gold-hi); text-shadow: 0 0 24px color-mix(in srgb, #E0AC2F 45%, transparent);
   letter-spacing: -0.04em; color: var(--dv-amber); font-variant-numeric: tabular-nums; }
 .rz-xp-unit { font-family: var(--ff-body); font-size: 14px; font-weight: 600; color: var(--text-disabled); margin-top: 4px; }
-.rz-src-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 16px 4px 0; }
-.rz-chip { padding: 6px 10px; border-radius: var(--r-full); background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+/* Two columns of night-washed chips, not a wrapping pill row: the sources are the day's
+   ledger, and a grid reads as a tally where a ragged wrap reads as decoration. */
+.rz-src-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 16px 4px 0; }
+.rz-chip { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 14px;
   font-family: var(--ff-body); font-weight: 600; font-size: 12px; }
 .rz-coin-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
-.rz-coin-chip { padding: 7px 12px; border-radius: var(--r-full);
+.rz-chip .rz-nw-spot { width: 24px; height: 24px; border-radius: 8px; }
+.rz-chip-label { font-size: 13px; }
+.rz-chip-xp { margin-left: auto; font-weight: 700; color: var(--rz-gold-hi); font-variant-numeric: tabular-nums; }
+.rz-coin-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: var(--r-full);
   background: color-mix(in srgb, var(--dv-amber) 14%, transparent); color: var(--dv-amber);
   font-family: var(--ff-body); font-weight: 700; font-size: 13px; }
 .rz-pop { opacity: 0; animation: np-pop .5s var(--np-ease-spring) forwards; }
-.rz-skill-row { margin: 20px 4px 0; font-family: var(--ff-body); font-weight: 600; font-size: 14px; }
+.rz-skill-row { margin: 20px 4px 0; padding: 11px 13px; font-family: var(--ff-body); font-weight: 600; font-size: 14px; }
 .rz-skill-lv { color: var(--lav-deep); font-weight: 700; }
 .rz-skill-bar { height: 7px; border-radius: var(--r-full); background: color-mix(in srgb, var(--text-primary) 10%, transparent); margin-top: 6px; overflow: hidden; }
 .rz-skill-bar i { display: block; height: 100%; border-radius: var(--r-full); background: linear-gradient(90deg, var(--dv-lav), var(--lav-deep));
   transform-origin: left; transform: scaleX(0); animation: np-grow .9s var(--np-ease-ios) forwards; }
-.rz-streak { text-align: center; margin-top: 18px; font-family: var(--ff-body); font-weight: 700; font-size: 14px; color: var(--primary-base); }
+.rz-streak { display: flex; align-items: center; justify-content: center; gap: 7px;
+  margin-top: 18px; font-family: var(--ff-body); font-weight: 700; font-size: 14px; color: var(--primary-base); }
 .rz-streak.dim { opacity: .45; }
 .rz-conf { position: absolute; inset: 0; pointer-events: none; }
 .rz-conf i { position: absolute; top: -8px; width: 6px; height: 10px; border-radius: 2px; opacity: 0;
@@ -3395,6 +3468,10 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 
 /* Release act (act 6): closing circle (np-draw reuse), companion note, evening handoff panel. */
 .rz-circle { display: block; margin: 56px auto 0; }
+/* Same balance as act 1 (mezo-d20.8.1.1): the closing block floats to the middle of the act
+   rather than top-loading with the deepest sky left empty beneath it. */
+.rz-release .rz-circle { margin-top: auto; }
+.rz-release .rz-handoff { margin-bottom: auto; }
 .rz-ring { fill: none; stroke: var(--dv-lav); stroke-width: 2.5; stroke-linecap: round;
   stroke-dasharray: 264; stroke-dashoffset: 264; transform: rotate(-90deg); transform-origin: center;
   animation: np-draw 2s var(--np-ease-ios) .3s forwards; }
@@ -3403,18 +3480,18 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 .rz-end { font-family: var(--ff-body); font-size: 22px; font-weight: 200; letter-spacing: -0.02em;
   line-height: 1.32; text-align: center; margin: 28px 26px 0; }
 /* the closing note — narrative meta, Fraunces italic (DS text-meta-sm) */
-.rz-note { margin: 22px 4px 0; padding: 13px 14px; border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
-  font: italic 500 14px/1.55 var(--ff-serif); }
+.rz-note { margin: 22px 4px 0; padding: 13px 14px; font: italic 500 14px/1.55 var(--ff-serif); }
 .rz-note-eyebrow { display: block; font-family: var(--ff-body); font-style: normal; font-size: 10px; font-weight: 700;
   letter-spacing: .18em; text-transform: uppercase; color: var(--dv-lav); margin-bottom: 6px; }
-.rz-handoff { margin: 22px 4px 0; padding: 16px 14px; border-radius: var(--r-xl);
-  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.rz-handoff { margin: 22px 4px 0; padding: 16px 14px; }
 .rz-handoff-eyebrow { font-family: var(--ff-body); font-size: 11px; font-weight: 700; letter-spacing: .18em;
   text-transform: uppercase; color: var(--dv-lav); }
 .rz-handoff-steps { display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
   font-family: var(--ff-body); font-size: 14px; line-height: 1.5;
   color: color-mix(in srgb, var(--text-primary) 90%, transparent); }
+.rz-handoff-step { display: flex; align-items: center; gap: 8px; }
+.rz-handoff-step .rz-handoff-time { margin-left: auto; font-variant-numeric: tabular-nums;
+  color: var(--text-disabled); font-size: 12px; }
 .rz-handoff-steps em { font-style: normal; color: var(--text-disabled); font-size: 12px; }
 .rz-handoff-cta { margin-top: 14px; width: 100%; padding: 13px; min-height: 48px; border: 0; border-radius: var(--r-full);
   background: linear-gradient(120deg, var(--dv-lav), var(--lav-deep)); color: var(--text-inverse);
@@ -3423,6 +3500,11 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 
 @media (prefers-reduced-motion: reduce) {
   .rz-moon, .rz-cta, .rz-ring, .rz-circle-moon, .rz-handoff-cta { animation: none; }
+  .rz-screen, .rz-stars, .rz-dot { transition: none; }
+  .rz-stars i:nth-child(4n) { animation: none; }
+  .rz-loop.glow { animation: none; }
+  /* the gold break is the peak's whole point — settle it visible, never animate it in */
+  .rz-glow { animation: none; opacity: 1; transform: none; }
   .rz-ring { stroke-dashoffset: 0; } /* np-draw is a one-shot reveal — freeze at "fully drawn", not hidden */
   .rz-arc-path, .rz-arc-dot { animation: none; }
   .rz-arc-path { stroke-dashoffset: 0; }
@@ -6746,3 +6828,30 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .td-bub-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .td-bub-meta { font-family: var(--ff-body); font-size: 10.5px; font-weight: 700; letter-spacing: .06em;
                text-transform: uppercase; color: var(--text-disabled); margin-top: 9px; }
+
+/* ── Értesítés-feed oldal (mezo-nol0) ────────────────────────────────────────
+   A /me/ertesitesek teljes oldala. A családi tint-paletta (.nf-ico.*) és a .nf-dot
+   fentebb, a törölt dropdown-panelből kiskópolva él — itt csak a sor-recept van. */
+.nf-page .nf-daylabel {
+  font: 800 10.5px/1 var(--ff-body); letter-spacing: .6px; text-transform: uppercase;
+  color: var(--text-muted); padding: 14px 2px 6px;
+}
+.nf-page .nf-group { display: flex; flex-direction: column; }
+.nf-page .nf-row {
+  display: flex; gap: 10px; align-items: flex-start; position: relative;
+  width: 100%; padding: 11px 12px 11px 18px; text-align: left; cursor: pointer;
+  background: var(--surface-card); border: 1px solid var(--divider); border-radius: var(--r-lg);
+}
+.nf-page .nf-row + .nf-row { margin-top: 7px; }
+/* A kiemelés a KÁRTYÁRA komponál, nem a semmire. A szabály a törölt dropdown-panelből jött, ahol
+   egy átlátszatlan kártya-hátterű panel fölött ült; egy `MozaikPage`-en a `transparent` alap az
+   oldal-vásznat engedte át, így az olvasatlan sor a kártyák oszlopában LYUKNAK látszott — pont
+   fordítva, mint amit a nyitáskori pillanatkép egész gépezete meg akar őrizni. */
+.nf-page .nf-row.unread { background: color-mix(in srgb, var(--primary-base) 8%, var(--surface-card)); }
+.nf-page .nf-txt { min-width: 0; flex: 1; display: block; }
+.nf-page .nf-t { display: block; font: 700 12.5px/1.25 var(--ff-body); color: var(--text-primary); }
+.nf-page .nf-x {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  font: 400 11.5px/1.4 var(--ff-body); color: var(--text-secondary); margin-top: 2px;
+}
+.nf-page .nf-time { font: 600 10px/1 var(--ff-body); color: var(--text-muted); flex-shrink: 0; margin-top: 2px; white-space: nowrap; }

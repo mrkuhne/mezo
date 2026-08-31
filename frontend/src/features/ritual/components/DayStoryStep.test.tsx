@@ -39,8 +39,8 @@ const checkins: CheckinSlot[] = [
 
 const recap: DayRecap = {
   events: [
-    { icon: '🏋️', label: 'Pull A — kész', meta: '17:30 ✓', done: true },
-    { icon: '🍽', label: '4 étkezés', meta: '132 g fehérje', done: false },
+    { icon: 'i-edzes', label: 'Pull A — kész', meta: '17:30 ✓', done: true },
+    { icon: 'i-fuel', label: '4 étkezés', meta: '132 g fehérje', done: false },
   ],
   checkinsDone: 2,
   thinDay: false,

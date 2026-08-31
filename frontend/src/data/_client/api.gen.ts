@@ -3211,6 +3211,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/bootstrap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** One-time deep read over the whole existing history that stands up the dossier */
+        post: operations["bootstrapCharacter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character/conference": {
         parameters: {
             query?: never;
@@ -3222,6 +3239,23 @@ export interface paths {
         get: operations["listCharacterConferences"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/claim/{claimId}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Daniel's answer to one claim — talál / nem igaz / pontosítom (spec §7) */
+        post: operations["submitCharacterClaimFeedback"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7113,6 +7147,12 @@ export interface components {
                 id?: string | null;
                 label: string;
             }[];
+        };
+        CharacterClaimFeedbackRequest: {
+            /** @enum {string} */
+            kind: "TALAL" | "NEM_IGAZ" | "PONTOSITOM";
+            /** @description Required for PONTOSITOM (the correction), forbidden otherwise */
+            text?: string;
         };
         CharacterDimensionSummary: {
             key: string;
@@ -16110,6 +16150,51 @@ export interface operations {
             };
         };
     };
+    bootstrapCharacter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bootstrap konzílium that just ran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterConferenceResponse"];
+                };
+            };
+            /** @description No history to read — nothing was generated (the honest empty state) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description A bootstrap konzílium already exists for this user */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     listCharacterConferences: {
         parameters: {
             query?: never;
@@ -16130,6 +16215,68 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    submitCharacterClaimFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterClaimFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description The claim after the feedback was applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterClaimDto"];
+                };
+            };
+            /** @description PONTOSITOM without text, or text sent with a kind that takes none */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such claim for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The claim is already retired — nothing to answer */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
