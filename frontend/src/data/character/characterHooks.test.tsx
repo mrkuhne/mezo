@@ -11,6 +11,8 @@ import {
   useCharacterConference,
   useClaimFeedback,
   useCharacterBootstrap,
+  useCharacterRuns,
+  useCharacterRun,
   mockClaimFeedbackLog,
 } from '@/data/character/characterHooks'
 import { confidenceWord } from '@/data/character/characterApi'
@@ -22,6 +24,8 @@ import {
   MOCK_FEED,
   MOCK_OVERVIEW,
   MOCK_OVERVIEW_EMPTY,
+  MOCK_RUNS,
+  MOCK_RUN_DETAIL,
 } from '@/data/character/characterMock'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -184,6 +188,67 @@ describe('mock mode', () => {
     expect(boot.current.pending).toBe(false)
     await waitFor(() => expect(overview.current.overview).toEqual(MOCK_OVERVIEW))
   }, 10000)
+
+  test('useCharacterRuns filters the seeded run log by [from, to], newest day first', async () => {
+    const { result: full } = renderHook(() => useCharacterRuns('2026-07-01', '2026-08-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(full.current.isLoading).toBe(false))
+    expect(full.current.runs).toEqual(MOCK_RUNS)
+    expect(full.current.runs.length).toBeGreaterThan(0)
+    // newest day first
+    for (let i = 1; i < full.current.runs.length; i++) {
+      expect(full.current.runs[i - 1].day >= full.current.runs[i].day).toBe(true)
+    }
+
+    const { result: narrow } = renderHook(() => useCharacterRuns('2026-08-24', '2026-08-30'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(narrow.current.isLoading).toBe(false))
+    expect(narrow.current.runs.every((r) => r.day >= '2026-08-24' && r.day <= '2026-08-30')).toBe(true)
+    expect(narrow.current.runs.some((r) => r.kind === 'WEEKLY')).toBe(true)
+  })
+
+  test('useCharacterRuns includes at least two quiet nights (zero counts) and honest quiet-night rows', async () => {
+    const { result } = renderHook(() => useCharacterRuns('2026-08-10', '2026-08-30'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    const quiet = result.current.runs.filter((r) => r.kind === 'NIGHTLY' && r.observationCount === 0 && r.callCount === 0)
+    expect(quiet.length).toBeGreaterThanOrEqual(2)
+  })
+
+  test('useCharacterRuns includes one WEEKLY row linking the seeded w2 conference, one MONTHLY, one BOOTSTRAP', async () => {
+    const { result } = renderHook(() => useCharacterRuns('2026-01-01', '2026-12-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    const weekly = result.current.runs.filter((r) => r.kind === 'WEEKLY')
+    const monthly = result.current.runs.filter((r) => r.kind === 'MONTHLY')
+    const bootstrap = result.current.runs.filter((r) => r.kind === 'BOOTSTRAP')
+    expect(weekly).toHaveLength(1)
+    expect(weekly[0].conferenceId).toBe('w2')
+    expect(monthly).toHaveLength(1)
+    expect(bootstrap).toHaveLength(1)
+    // conference-kind rows carry callCount 0 by design (the AI-napló is the call-level truth).
+    expect(weekly[0].callCount).toBe(0)
+    expect(monthly[0].callCount).toBe(0)
+    expect(bootstrap[0].callCount).toBe(0)
+  })
+
+  test('useCharacterRun returns the matching detail; a signal chain carries a numeric refCount', async () => {
+    const { result } = renderHook(() => useCharacterRun('ejsz-30'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.run).toEqual(MOCK_RUN_DETAIL['ejsz-30'])
+    expect(result.current.run!.observations.length).toBeGreaterThan(0)
+    const signal = result.current.run!.observations[0].signals[0]
+    expect(typeof signal.refCount).toBe('number')
+    expect(signal.refCount).toBeGreaterThan(0)
+  })
+
+  test('useCharacterRun(null) never resolves a run', async () => {
+    const { result } = renderHook(() => useCharacterRun(null), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.run).toBeNull()
+  })
+
+  test('useCharacterRun for an unknown id is null (the honest degraded state)', async () => {
+    const { result } = renderHook(() => useCharacterRun('does-not-exist'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.run).toBeNull()
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -329,5 +394,57 @@ describe('real mode', () => {
       conflict.current.start()
     })
     await waitFor(() => expect(conflict.current.result).toBe('conflict'))
+  })
+
+  test('useCharacterRuns passes from/to as query params and maps the DTO through', async () => {
+    let capturedUrl = ''
+    server.use(
+      http.get(`${API_BASE}/api/character/runs`, ({ request }) => {
+        capturedUrl = request.url
+        return HttpResponse.json([
+          { id: 'r1', kind: 'NIGHTLY', day: '2026-08-30', observationCount: 1, callCount: 1, detectorKeys: ['logging-gap'], expertKeys: ['taplalkozo'], conferenceId: null },
+        ])
+      }),
+    )
+    const { result } = renderHook(() => useCharacterRuns('2026-08-24', '2026-08-30'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(capturedUrl).toContain('from=2026-08-24')
+    expect(capturedUrl).toContain('to=2026-08-30')
+    expect(result.current.runs).toHaveLength(1)
+    expect(result.current.runs[0].id).toBe('r1')
+  })
+
+  test('useCharacterRun maps the DTO through and 404s to null', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/character/run/:id`, () =>
+        HttpResponse.json({
+          summary: { id: 'r1', kind: 'NIGHTLY', day: '2026-08-30', observationCount: 1, callCount: 1, detectorKeys: ['logging-gap'], expertKeys: ['taplalkozo'], conferenceId: null },
+          observations: [{ id: 'o1', expertKey: 'taplalkozo', dimensionKeys: ['nutrition'], text: 't', salience: 0.5, signals: [{ detectorKey: 'logging-gap', summary: 's', refCount: 2 }] }],
+        }),
+      ),
+    )
+    const { result } = renderHook(() => useCharacterRun('r1'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.run).not.toBeNull())
+    expect(result.current.run?.summary.id).toBe('r1')
+    expect(result.current.run?.observations[0].signals[0].refCount).toBe(2)
+
+    server.use(http.get(`${API_BASE}/api/character/run/:id`, () => new HttpResponse(null, { status: 404 })))
+    const { result: missing } = renderHook(() => useCharacterRun('missing'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(missing.current.isLoading).toBe(false))
+    expect(missing.current.run).toBeNull()
+  })
+
+  test('useCharacterRun(null) never hits the network', async () => {
+    let called = false
+    server.use(
+      http.get(`${API_BASE}/api/character/run/:id`, () => {
+        called = true
+        return HttpResponse.json({ summary: { id: 'x', kind: 'NIGHTLY', day: '2026-08-30', observationCount: 0, callCount: 0, detectorKeys: [], expertKeys: [], conferenceId: null }, observations: [] })
+      }),
+    )
+    const { result } = renderHook(() => useCharacterRun(null), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.run).toBeNull()
+    expect(called).toBe(false)
   })
 })

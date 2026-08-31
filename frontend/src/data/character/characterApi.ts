@@ -13,6 +13,10 @@ export type CharacterFeedItem = components['schemas']['CharacterFeedItem']
 export type CharacterConferenceSummary = components['schemas']['CharacterConferenceSummary']
 export type CharacterConferenceResponse = components['schemas']['CharacterConferenceResponse']
 export type ConferenceTurn = components['schemas']['ConferenceTurn']
+export type CharacterRunSummary = components['schemas']['CharacterRunSummary']
+export type CharacterRunObservationSignal = components['schemas']['CharacterRunObservationSignal']
+export type CharacterRunObservation = components['schemas']['CharacterRunObservation']
+export type CharacterRunResponse = components['schemas']['CharacterRunResponse']
 
 /**
  * The one shared confidence -> human-word mapping, mirrored 1:1 from the backend's
@@ -49,4 +53,8 @@ export const characterApi = {
       method: 'POST',
       body: JSON.stringify(body satisfies CharacterClaimFeedbackRequest),
     }),
+  // Gépterem (mezo-1gim.14): the run-log timeline. `from`/`to` are both required ISO dates.
+  runs: (fromIso: string, toIso: string): Promise<CharacterRunSummary[]> =>
+    apiFetch<CharacterRunSummary[]>(`${BASE}/runs?from=${fromIso}&to=${toIso}`),
+  run: (id: string): Promise<CharacterRunResponse> => apiFetch<CharacterRunResponse>(`${BASE}/run/${id}`),
 }

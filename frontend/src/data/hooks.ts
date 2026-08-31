@@ -74,4 +74,6 @@ export {
   useCharacterConference,
   useClaimFeedback,
   useCharacterBootstrap,
+  useCharacterRuns,
+  useCharacterRun,
 } from '@/data/character/characterHooks'
