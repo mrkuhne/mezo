@@ -31,3 +31,27 @@ describe('chatRefDisplay (mezo-d20.5.2)', () => {
     expect(chatRefDisplay({ kind: 'Workout', id: 'w-2026-13-40' }).label).toBe('w-2026-13-40')
   })
 })
+
+// mezo-b3pp.33: GraphNode refs carry an optional backend-supplied label (the traversal's node
+// title) — a uuid id can never be humanised by labelFromId, so the carried label must win.
+describe('chatRefDisplay — carried label (mezo-b3pp.33)', () => {
+  test('uses the carried label when the ref has one', () => {
+    expect(
+      chatRefDisplay({ kind: 'GraphNode', id: '9f2c1a3e-1111-4b2b-8b1a-000000000001', label: 'Késői evés' }).label,
+    ).toBe('Késői evés')
+  })
+
+  test('falls back to the id-derived label when there is none — unchanged behaviour', () => {
+    expect(chatRefDisplay({ kind: 'Workout', id: 'w-2026-05-21' }).label).toBe('máj. 21.')
+  })
+
+  test('falls back to the raw id when the label is null and the id carries no date', () => {
+    const id = '9f2c1a3e-1111-4b2b-8b1a-000000000002'
+    expect(chatRefDisplay({ kind: 'GraphNode', id, label: null }).label).toBe(id)
+  })
+
+  test('falls back when the label is empty/whitespace-only — never a blank chip', () => {
+    const id = '9f2c1a3e-1111-4b2b-8b1a-000000000003'
+    expect(chatRefDisplay({ kind: 'GraphNode', id, label: '   ' }).label).toBe(id)
+  })
+})

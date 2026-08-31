@@ -44,6 +44,9 @@ function labelFromId(id: string): string {
   return date.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 }
 
+/** The carried label wins when the producer knew a human name (mezo-b3pp.33 — today GraphNode
+ *  refs, whose uuid `labelFromId` can never humanise); otherwise the id-derived label, which is
+ *  also what pre-mezo-b3pp.33 rows fall back to. Still nothing fabricated. */
 export function chatRefDisplay(ref: ChatRef): { kind: string; label: string } {
-  return { kind: KIND_LABELS[ref.kind] ?? ref.kind, label: labelFromId(ref.id) }
+  return { kind: KIND_LABELS[ref.kind] ?? ref.kind, label: ref.label?.trim() || labelFromId(ref.id) }
 }
