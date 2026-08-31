@@ -66,8 +66,9 @@ public class PeopleService {
             .toList();
 
         List<MentionResponse> mentionResponses = mentions.stream()
+            .filter(m -> nameById.containsKey(m.getPersonId())) // törölt személy sora nem szivárog
             .limit(MENTION_FEED_LIMIT)
-            .map(m -> mapper.toMentionResponse(m, nameById.getOrDefault(m.getPersonId(), "")))
+            .map(m -> mapper.toMentionResponse(m, nameById.get(m.getPersonId())))
             .toList();
 
         return new PeopleResponse(personResponses, mentionResponses);
