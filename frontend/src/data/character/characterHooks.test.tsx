@@ -228,6 +228,44 @@ describe('mock mode', () => {
     expect(bootstrap[0].callCount).toBe(0)
   })
 
+  // Fix round 1 (mezo-1gim.14, finding 1): CharacterMonthlyService sets observationCount to
+  // activeClaims.size() (re-evaluated ACTIVE claims), never 0 — pin it non-zero and equal to the
+  // seeded active-claim base (7 CORE + 1 CHAPTER dims, 3 claims each except chapter-work's 2).
+  test('MONTHLY run observationCount mirrors the backend: non-zero, the seeded active-claim count', async () => {
+    const { result } = renderHook(() => useCharacterRuns('2026-01-01', '2026-12-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    const monthly = result.current.runs.find((r) => r.kind === 'MONTHLY')!
+    expect(monthly.observationCount).toBeGreaterThan(0)
+    expect(monthly.observationCount).toBe(23) // 7 CORE dims * 3 claims + 1 CHAPTER dim * 2 claims
+  })
+
+  // Fix round 1 (mezo-1gim.14, finding 2): CharacterConferenceService computes a WEEKLY row's
+  // detectorKeys as the union of its consumed observations' detector keys — never empty when the
+  // week had signal nights (unlike MONTHLY/BOOTSTRAP, which stay [] backend-side).
+  test('WEEKLY run detectorKeys is the non-empty union of its observations\' detector keys', async () => {
+    const { result: runs } = renderHook(() => useCharacterRuns('2026-01-01', '2026-12-31'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(runs.current.isLoading).toBe(false))
+    const weekly = runs.current.runs.find((r) => r.kind === 'WEEKLY')!
+    expect(weekly.detectorKeys.length).toBeGreaterThan(0)
+
+    const { result: detail } = renderHook(() => useCharacterRun(weekly.id), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(detail.current.isLoading).toBe(false))
+    const observedDetectorKeys = new Set(detail.current.run!.observations.flatMap((o) => o.signals.map((s) => s.detectorKey)))
+    expect(new Set(weekly.detectorKeys)).toEqual(observedDetectorKeys)
+  })
+
+  // Fix round 1 (mezo-1gim.14, finding 3): a single expert firing two signals in one night is
+  // still one LLM call, not two — the fixture night (Aug 15) exists specifically to pin this.
+  test('a night with two signals from the same expert dedups callCount to 1', async () => {
+    const { result } = renderHook(() => useCharacterRun('ejsz-15'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    expect(result.current.run!.summary.observationCount).toBe(2)
+    expect(result.current.run!.summary.callCount).toBe(1)
+    expect(result.current.run!.summary.expertKeys).toEqual(['drill'])
+    expect(result.current.run!.observations).toHaveLength(2)
+    expect(result.current.run!.observations.every((o) => o.expertKey === 'drill')).toBe(true)
+  })
+
   test('useCharacterRun returns the matching detail; a signal chain carries a numeric refCount', async () => {
     const { result } = renderHook(() => useCharacterRun('ejsz-30'), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.isLoading).toBe(false))

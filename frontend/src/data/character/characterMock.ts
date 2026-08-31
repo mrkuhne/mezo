@@ -545,6 +545,26 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       obs: 'A vasárnap esti bejegyzés hangneme nyugodtabb volt, mint a hét közepén.',
     },
   ],
+  // Fix round 1 (mezo-1gim.14): NOT a prototype-verbatim night — added so the callCount
+  // unique-expert dedup rule ("one LLM call per fired expert, not per signal") has a fixture to
+  // pin: two signals, same expert (drill), two different detectors -> observationCount 2,
+  // callCount 1.
+  15: [
+    {
+      detector: 'checkin-gap',
+      code: 'elmaradt a délutáni check-in',
+      refs: ['checkin:900'],
+      who: 'drill',
+      obs: 'A pénteki délutáni check-in elmaradt.',
+    },
+    {
+      detector: 'checkin-gap',
+      code: 'elmaradt a reggeli check-in is',
+      refs: ['checkin:901', 'checkin:902'],
+      who: 'drill',
+      obs: 'Ugyanaznap a reggeli check-in is elmaradt — két kihagyás egy napon belül.',
+    },
+  ],
 }
 
 function uniqueWho(chains: ChainSeed[]): string[] {
@@ -617,31 +637,39 @@ export const MOCK_RUNS_NIGHTLY: CharacterRunSummary[] = NIGHTLY_DAYS.map(nightly
 
 // WEEKLY (prototype's KONZ_POOL[30] -> id 'w2') — links the existing MOCK_CONFERENCES / w2
 // entry so a run-page "teljes transzkript" link resolves to real seeded conference data.
+// Consumed observations = the union of the week's nightly signal chains (24 + 27 + 30).
+const WEEKLY_OBSERVATIONS: CharacterRunObservation[] = [24, 27, 30].flatMap((day) => nightlyDetail(day).observations)
+// Fix round 1 (mezo-1gim.14): CharacterConferenceService computes detectorKeys for a WEEKLY row
+// as the union of its consumed observations' detector keys (unlike MONTHLY/BOOTSTRAP, which are
+// deliberately [] backend-side — a monthly/bootstrap re-read isn't detector-driven) — derive it
+// here instead of hardcoding, so it can never drift from WEEKLY_OBSERVATIONS.
+const WEEKLY_DETECTOR_KEYS = [...new Set(WEEKLY_OBSERVATIONS.flatMap((o) => o.signals.map((s) => s.detectorKey)))]
+
 const WEEKLY_RUN: CharacterRunSummary = {
   id: 'run-w2',
   kind: 'WEEKLY',
   day: '2026-08-24', // week_start (Monday) of the aug 24–30 week
-  observationCount: 6, // the week's 3 signal nights (24, 27, 30): 1 + 2 + 3 chains
+  observationCount: WEEKLY_OBSERVATIONS.length, // the week's 3 signal nights (24, 27, 30): 1 + 2 + 3 chains
   callCount: 0,
-  detectorKeys: [],
+  detectorKeys: WEEKLY_DETECTOR_KEYS,
   expertKeys: ['doki', 'drill', 'taplalkozo', 'pszichologus', 'szkeptikus', 'mezo'],
   conferenceId: 'w2',
 }
 
-const WEEKLY_DETAIL: CharacterRunResponse = {
-  summary: WEEKLY_RUN,
-  // Consumed observations = the union of the week's nightly signal chains (24 + 27 + 30).
-  observations: [24, 27, 30].flatMap((day) => nightlyDetail(day).observations),
-}
+const WEEKLY_DETAIL: CharacterRunResponse = { summary: WEEKLY_RUN, observations: WEEKLY_OBSERVATIONS }
 
 // MONTHLY (prototype's RARE_RUNS 'm1') — links the existing MOCK_CONFERENCES / m1 entry.
-// A monthly re-read re-evaluates the existing claim base rather than consuming new nightly
-// observations, so `observationCount` is honestly 0 here — nothing NEW was observed.
+// Fix round 1 (mezo-1gim.14): CharacterMonthlyService sets observationCount to
+// activeClaims.size() — the count of re-evaluated ACTIVE claims, NOT new observations consumed
+// (a monthly re-read re-evaluates the existing claim base rather than reading fresh nightly
+// signals). Derived from DIM_SEEDS so it can never drift from the seeded claim base above.
+const MONTHLY_ACTIVE_CLAIM_COUNT = DIM_SEEDS.reduce((sum, d) => sum + d.claims.length, 0)
+
 const MONTHLY_RUN: CharacterRunSummary = {
   id: 'run-m1',
   kind: 'MONTHLY',
   day: '2026-08-01',
-  observationCount: 0,
+  observationCount: MONTHLY_ACTIVE_CLAIM_COUNT,
   callCount: 0,
   detectorKeys: [],
   expertKeys: ['mezo'],
