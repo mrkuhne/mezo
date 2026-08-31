@@ -1228,8 +1228,42 @@
     box-shadow: 0 20px 36px -16px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
   .memoir::before { content: ''; position: absolute; top: -40px; right: -30px; width: 150px; height: 150px; border-radius: 50%;
     background: radial-gradient(circle, rgba(138, 118, 204, 0.16), transparent 70%); }
-  .memoir .ttl { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 15.5px; font-weight: 500; margin-top: 5px; line-height: 1.35; }
-  .memoir .bd { font-size: 10px; font-weight: 300; line-height: 1.6; margin-top: 7px; color: #2B2118; }
+  .memoir .ttl { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 17px; font-weight: 500; margin-top: 5px; line-height: 1.3; }
+  .memoir .stamp { font-size: 7px; color: #A2958A; font-variant-numeric: tabular-nums; flex: none; }
+  .memoir .bd { font-size: 10px; font-weight: 300; line-height: 1.65; margin-top: 8px; color: #2B2118; }
+  .memoir .bd p { margin: 0; }
+  .memoir .bd p + p { margin-top: 7px; }
+  .memoir .bd p:first-child::first-letter { font-family: "Fraunces", Georgia, serif; font-style: italic; font-weight: 500;
+    font-size: 27px; line-height: 0.8; float: left; padding: 3px 5px 0 0; color: #5D4FA0; }
+  /* horgony-chipek — humanizált, tappolható (Emlék › nap-oldal, Minta › Minták) */
+  .anchrow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .anch { display: inline-flex; align-items: center; gap: 5px; border: none; font-family: inherit; cursor: pointer;
+    border-radius: 10px; padding: 4px 8px; font-size: 7.5px; font-weight: 600; color: #6E6257; text-align: left;
+    background: rgba(255, 255, 255, 0.9); border: 0.5px solid rgba(43, 33, 24, 0.08);
+    box-shadow: 0 4px 10px -6px rgba(43, 33, 24, 0.35); transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .anch:active { transform: scale(0.95); }
+  .anch i { width: 6px; height: 6px; border-radius: 50%; flex: none; background: #8A76CC; }
+  .anch.gold i { background: #C9962E; }
+  .anch.sage i { background: #8FAF7E; }
+  .anch b { font-weight: 800; color: #2B2118; }
+  .anch .go { color: #B4A8D8; font-size: 8.5px; margin-left: 1px; }
+  .anch.stat { background: rgba(255, 255, 255, 0.55); box-shadow: none; cursor: default; }
+  /* korábbi fejezetek — 2 oszlopos fejezet-mozaik */
+  .chgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .chtile { display: flex; flex-direction: column; gap: 3px; cursor: pointer; border-radius: 17px; padding: 10px 11px 9px;
+    background: #FFFFFF; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .chtile:active { transform: scale(0.97); }
+  .chtile .wk { font-size: 6.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #5D4FA0; }
+  .chtile .ct { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 10.5px; font-weight: 500; line-height: 1.3; }
+  .chtile .ex { font-size: 7.5px; font-weight: 300; color: #6E6257; line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .chtile .an { font-size: 6.5px; color: #A2958A; margin-top: auto; padding-top: 3px; font-variant-numeric: tabular-nums; }
+  /* fejezet-lapozó */
+  .chpager { display: flex; gap: 9px; margin-top: 10px; }
+  .chpager .chtile { flex: 1; }
+  .chpager .dir { font-size: 8px; color: #B4A8D8; font-weight: 700; }
   /* ===== tudástár ===== */
   .facttile { display: flex; gap: 9px; align-items: flex-start; border-radius: 16px; padding: 10px 11px; margin-bottom: 8px;
     background: var(--fw, #FFFFFF); border: 0.5px solid rgba(43, 33, 24, 0.06);
@@ -1636,28 +1670,112 @@
           <div class="nm">Memoár</div>
           <div class="mrow" style="justify-content:center;"><svg width="64" height="64" viewBox="0 0 100 100"><use href="#i-memoar"/></svg></div>
           <div class="sb">a közös történetünk, hétről hétre</div>
+          <div class="sb" style="font-size:8px;color:#A2958A;">5 fejezet · hét 17 óta</div>
         </div>
         <div class="page-body">
           <div class="memoir rise" style="--d:0ms;">
-            <span class="p-eyebrow" style="color:#5D4FA0;">Heti memoár · Hét 21</span>
+            <div class="mrow">
+              <span class="p-eyebrow grow" style="color:#5D4FA0;">Heti memoár · Hét 21</span>
+              <span class="stamp">Máj 18–24</span>
+            </div>
             <div class="ttl">A hét, amikor a láb-napok elkezdtek visszafizetni</div>
-            <div class="bd">Ez volt az a hét, amikor a türelem formát öltött: a Lat Pulldown új csúcsa nem a semmiből
-            jött, hanem három hét csendes, pontos munkájából. Kedden fáradtan érkeztél és mégis végigcsináltad —
-            szerdán az alvásod ezt vissza is adta. A D3-fázis étvágyhulláma megérkezett, ahogy vártuk, és ezúttal
-            nem billentett ki: a kamra kész volt rá.</div>
+            <div class="bd">
+              <p>Ez volt az a hét, amikor a türelem formát öltött: a Lat Pulldown új csúcsa nem a semmiből
+              jött, hanem három hét csendes, pontos munkájából. A számok mögött egy döntés áll — az, hogy
+              februárban nem emeltél, amikor mindenki más emelt volna.</p>
+              <p>Kedden fáradtan érkeztél és mégis végigcsináltad — szerdán az alvásod ezt vissza is adta,
+              hét-negyvenöttel. A D3-fázis étvágyhulláma megérkezett, ahogy vártuk, és ezúttal nem billentett
+              ki: a kamra kész volt rá, a keret tartott.</p>
+              <p>Gyengéden azt gondolom, ez a hét arról szólt, hogy a rendszered már nélkülem is működik.
+              Az én dolgom most annyi volt, hogy leírjam.</p>
+            </div>
             <div class="reffoot">
-              <span class="eb">Horgonyok</span>
-              <div class="refrow">
-                <span class="refch"><b>PR</b>Lat Pulldown 105 kg</span>
-                <span class="refch"><b>Gyógyszer</b>D3-fázis</span>
-                <span class="refch"><b>Identitás</b>türelmes építkező</span>
+              <div class="mrow"><span class="eb grow">Miből íródott</span><span class="stamp">vasárnap este íródott</span></div>
+              <div class="anchrow">
+                <button class="anch"><i></i><span>Emlék · <b>máj 22., csütörtök</b> — Lat Pulldown 105 kg</span><span class="go">›</span></button>
+                <button class="anch"><i></i><span>Emlék · <b>máj 19., kedd</b> — fáradtan is bementél</span><span class="go">›</span></button>
+                <button class="anch gold"><i></i><span>Minta · <b>D3-fázis étvágyhullám</b></span><span class="go">›</span></button>
+                <span class="anch sage stat"><i></i><span>Identitás · <b>türelmes építkező</b></span></span>
               </div>
             </div>
             <div class="fbwrap" data-fb="memoar"><button class="fbc">👍 Segített</button><button class="fbc">👎 Nem talált</button></div>
           </div>
           <div class="float3d rise" style="--d:90ms;border-radius:16px;padding:10px 12px;margin-top:10px;background:linear-gradient(150deg,#EBE6F8,#F9F6FE);">
-            <span class="p-eyebrow" style="color:#5D4FA0;">Évforduló · 1 hónap</span>
+            <span class="p-eyebrow" style="color:#5D4FA0;">Mérföldkő · 1 hónap</span>
             <div style="font-size:9.5px;font-weight:300;line-height:1.5;margin-top:4px;">Egy hónapja kezdtük a közös munkát — az első héten még 2 250 kcal volt a keret, és a guggolás 80 kg-nál járt.</div>
+          </div>
+          <div class="lsec rise" style="--d:160ms;"><span class="p-eyebrow">Korábbi fejezetek</span><span class="cnt">4</span></div>
+          <div class="chgrid rise" style="--d:200ms;">
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Hét 20 fejezet">
+              <span class="wk">Hét 20 · Máj 11–17</span>
+              <span class="ct">A csendes ismétlések hete</span>
+              <span class="ex">Nem történt semmi látványos — és pont ez volt a lényeg. Négy edzés, négy…</span>
+              <span class="an">3 horgony</span>
+            </div>
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Hét 19 fejezet">
+              <span class="wk">Hét 19 · Máj 4–10</span>
+              <span class="ct">Amikor az alvás előre szólt</span>
+              <span class="ex">Kedd éjjel öt óra negyven — és a szerdai edzésed pontosan ezt mesélte el…</span>
+              <span class="an">4 horgony</span>
+            </div>
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Hét 18 fejezet">
+              <span class="wk">Hét 18 · Ápr 27–Máj 3</span>
+              <span class="ct">Az első közös korrekció</span>
+              <span class="ex">A vállad jelzett, és először hallgattunk rá együtt: a keddi tolás Cable…</span>
+              <span class="an">3 horgony</span>
+            </div>
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Hét 17 fejezet">
+              <span class="wk">Hét 17 · Ápr 20–26</span>
+              <span class="ct">Ahol elkezdődött</span>
+              <span class="ex">Az első teljes hetünk: még ismerkedtünk — te a keretekkel, én veled…</span>
+              <span class="an">2 horgony</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ MEMOÁR · FEJEZET-OLDAL ============ -->
+      <div class="page p-lav" id="page-memoar-fej">
+        <div class="page-head"><button class="backbtn" data-back="page-memoar-fej">‹ Memoár</button></div>
+        <div class="page-hero">
+          <div class="nm">Hét 20</div>
+          <div class="sb">Máj 11–17 · huszadik fejezet</div>
+        </div>
+        <div class="page-body">
+          <div class="memoir rise" style="--d:0ms;">
+            <div class="mrow">
+              <span class="p-eyebrow grow" style="color:#5D4FA0;">Heti memoár · Hét 20</span>
+              <span class="stamp">Máj 11–17</span>
+            </div>
+            <div class="ttl">A csendes ismétlések hete</div>
+            <div class="bd">
+              <p>Nem történt semmi látványos — és pont ez volt a lényeg. Négy edzés, négy pontosan
+              teljesített nap, egyetlen kihagyott szett nélkül. Az ilyen hetek nem kerülnek posztba,
+              de ezekből épül minden, ami később csúcsnak látszik.</p>
+              <p>A fehérje hat napból hatszor bejött, és a súlyod először mozdult el lefelé úgy, hogy
+              közben az erőd nem. Ezt jegyezd meg: ez az az állapot, amiért márciusban elindultunk.</p>
+            </div>
+            <div class="reffoot">
+              <div class="mrow"><span class="eb grow">Miből íródott</span><span class="stamp">máj 17-én íródott</span></div>
+              <div class="anchrow">
+                <button class="anch"><i></i><span>Emlék · <b>máj 14., csütörtök</b> — a négyből négy</span><span class="go">›</span></button>
+                <button class="anch"><i></i><span>Emlék · <b>máj 16., szombat</b> — fehérje-széria</span><span class="go">›</span></button>
+                <button class="anch gold"><i></i><span>Minta · <b>súly le, erő tart</b></span><span class="go">›</span></button>
+              </div>
+            </div>
+            <div class="fbwrap" data-fb="memoar20"><button class="fbc">👍 Segített</button><button class="fbc">👎 Nem talált</button></div>
+          </div>
+          <div class="chpager rise" style="--d:90ms;">
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Előző fejezet">
+              <span class="dir">‹ előző</span>
+              <span class="wk">Hét 19</span>
+              <span class="ct">Amikor az alvás előre szólt</span>
+            </div>
+            <div class="chtile" data-back="page-memoar-fej" role="button" tabindex="0" aria-label="Következő fejezet" style="text-align:right;align-items:flex-end;">
+              <span class="dir">következő ›</span>
+              <span class="wk">Hét 21</span>
+              <span class="ct">A láb-napok visszafizetnek</span>
+            </div>
           </div>
         </div>
       </div>
@@ -2006,8 +2124,13 @@
           <li><strong>Heti</strong> — 82/100 hero + delta, a trend-sorok helyett <strong>színes metrika-csempék</strong>
           (wash + clay ikon + nyíl + animált sáv, a fehérje-napok pöttysorral, a súly-trend széles
           csempén), Mezo-tervjavaslat feedbackkel, Growth-heti tintázott mini-cellákkal.</li>
-          <li><strong>Memoár</strong> — Fraunces-címes fejezetkártya lila derengéssel, horgony-chipek,
-          évforduló-kártya.</li>
+          <li><strong>Memoár</strong> — könyv-hub: a legutóbbi fejezet Fraunces-címmel, lila iniciáléval,
+          bekezdésekre tagolt prózával és íródás-bélyeggel; a nyers [Memory]-dátumok helyett
+          <strong>humanizált, tappolható horgony-chipek</strong> („Miből íródott" — Emlék › nap-oldal,
+          Minta › Minták); alatta kód-számított mérföldkő-kártya és a <strong>Korábbi fejezetek
+          2 oszlopos fejezet-mozaik</strong> (hétszám + Fraunces-cím + idézet-kezdet + horgonyszám),
+          amely saját fejezet-oldalra visz ‹ előző / következő › lapozókkal — a hét fejezetenként
+          végigolvasható, mint egy könyv.</li>
           <li><strong>Tudástár</strong> — jóváhagyás-inbox (Elfogad/Pontosít/Elvet), keresés + kategória-chipek,
           a tény-sorok helyett <strong>kategória-wash-es tény-csempék</strong> (edzés korall · egészség borostyán ·
           élet égkék, clay ikon-koronggal, kapcsolóval; a kikapcsoltak szaggatottra halkulnak).</li>
