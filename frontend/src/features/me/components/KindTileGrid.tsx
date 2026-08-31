@@ -24,12 +24,10 @@ export function KindTileGrid({ nodes, onOpenKind, baseDelayMs = 90 }: {
         const delay = baseDelayMs + i * 30
         if (items.length === 0) {
           // Dimmed, inert placeholder — the grid never reflows when a kind
-          // gains its first node. Tile has no style prop, hence the wrapper.
+          // gains its first node.
           return (
-            <div key={kind} className="tud-kind-empty" style={{ opacity: 0.45 }}>
-              <Tile wash={KIND_WASH[kind]} icon={KIND_ICON[kind]} iconSize={38}
-                eyebrow={label} line="—" delayMs={delay} />
-            </div>
+            <Tile key={kind} className="tud-kind-empty" wash={KIND_WASH[kind]} icon={KIND_ICON[kind]} iconSize={38}
+              eyebrow={label} line="—" delayMs={delay} />
           )
         }
         return (

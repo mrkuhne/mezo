@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 
@@ -23,6 +23,22 @@ const renderAt = (url: string) =>
   render(
     <MemoryRouter initialEntries={[url]}>
       <KnowledgePage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
+
+// exposes the current router location.search as text, so a test can assert the
+// ?kind= param actually landed in the URL rather than just the rendered view
+const LocationProbe = () => {
+  const location = useLocation()
+  return <span data-testid="location-search">{location.search}</span>
+}
+
+const renderPageWithLocationProbe = () =>
+  render(
+    <MemoryRouter>
+      <KnowledgePage />
+      <LocationProbe />
     </MemoryRouter>,
     { wrapper: QueryWrapper },
   )
@@ -76,11 +92,12 @@ test('the base view is the kind grid — six tiles, counts, no node cards', () =
 })
 
 test('tapping a kind tile opens the category view and sets ?kind=', async () => {
-  renderPage()
+  renderPageWithLocationProbe()
   fireEvent.click(screen.getByRole('button', { name: 'Minták' }))
   expect(await screen.findByText('Minták · 1')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /^Késői evés rontja az alvást/ })).toBeInTheDocument()
   expect(screen.getByText('2 kapcsolat')).toBeInTheDocument()
+  expect(screen.getByTestId('location-search')).toHaveTextContent('?kind=PATTERN')
   // grid + profile are replaced in this view
   expect(screen.queryByRole('button', { name: 'Célok' })).not.toBeInTheDocument()
   expect(screen.queryByText('Rólad tanultam')).not.toBeInTheDocument()
@@ -108,6 +125,8 @@ test('node row opens the detail sheet; Archivál archives and the node disappear
   fireEvent.click(screen.getByRole('button', { name: 'Archivál' }))
   await waitFor(() =>
     expect(screen.queryByRole('button', { name: /^Késői evés rontja az alvást/ })).not.toBeInTheDocument())
+  // the sheet itself unmounted, not just the row — its edge line is gone too
+  expect(screen.queryByText('Késői evés → kiváltja → Rossz alvás · erős')).not.toBeInTheDocument()
 })
 
 test('lifts the profile node out of the Kapcsolatok groups into its own section', async () => {

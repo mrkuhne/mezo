@@ -5635,7 +5635,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .tud-summary-link { display: block; margin-top: 10px; font-size: 11px; font-weight: 700;
   color: var(--mz-cell-lav-ink); text-decoration: none; }
 .tud-lsec { display: flex; align-items: center; gap: 6px; padding: 10px 2px 6px; }
-.tud-cnt { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.tud-kind-empty { opacity: 0.45; }
 
 @media (prefers-reduced-motion: reduce) {
   .ppl-tile:active { transform: none; }

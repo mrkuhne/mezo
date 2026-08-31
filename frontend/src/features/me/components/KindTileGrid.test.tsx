@@ -31,7 +31,7 @@ test('tapping a populated tile reports its kind', () => {
 test('populated tiles wear the kind wash, empty ones are dimmed', () => {
   render(<KindTileGrid nodes={nodes} onOpenKind={() => {}} />)
   expect(screen.getByRole('button', { name: 'Minták' })).toHaveClass('mz-w-sage')
-  const seasonWrap = screen.getByText('Szezonok').closest('.tud-kind-empty')
-  expect(seasonWrap).not.toBeNull()
-  expect(seasonWrap).toHaveStyle({ opacity: '0.45' })
+  const seasonTile = screen.getByText('Szezonok').closest('.tud-kind-empty')
+  expect(seasonTile).not.toBeNull()
+  expect(seasonTile).toHaveClass('mz-tile')
 })

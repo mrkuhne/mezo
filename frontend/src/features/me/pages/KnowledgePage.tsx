@@ -68,7 +68,7 @@ export function KnowledgePage() {
       />
 
       <PageBody>
-        <EntranceGroup key={kind ?? 'grid'}>
+        <EntranceGroup replayKey={kind ?? 'grid'}>
           {/* The prototype's summary tile: the active/stabilised split as prose plus the
               Tudástár pointer. The fact and edge counts themselves belong to the hero above —
               stating them twice on one screen is what the old .pghead-np face did. */}
@@ -97,12 +97,10 @@ export function KnowledgePage() {
                 </>
               )}
 
-              <div className="rise" style={{ '--d': '90ms' } as React.CSSProperties}>
-                <KindTileGrid nodes={graphNodes} onOpenKind={k => setParams({ kind: k })} />
-              </div>
+              <KindTileGrid nodes={graphNodes} onOpenKind={k => setParams({ kind: k })} />
             </>
           ) : (
-            <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+            <div>
               <KindNodeList
                 kind={kind}
                 label={KIND_LABELS.get(kind)!}

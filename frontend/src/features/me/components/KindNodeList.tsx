@@ -19,18 +19,20 @@ export function KindNodeList({ kind, label, nodes, onBack, onOpenNode }: {
 }) {
   return (
     <div className="col gap-xs">
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="row rise" style={{ justifyContent: 'space-between', alignItems: 'center', '--d': '40ms' } as React.CSSProperties}>
         <button type="button" className="chip" onClick={onBack}>‹ Kategóriák</button>
       </div>
-      <CategoryHeader label={label} color={KIND_INK[kind]} count={nodes.length} />
+      <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+        <CategoryHeader label={label} color={KIND_INK[kind]} count={nodes.length} />
+      </div>
       <div className="col gap-xs">
-        {nodes.map(n => (
+        {nodes.map((n, i) => (
           <button
             key={n.id}
             type="button"
             data-kind-node-row
-            className={`mz-facttile mz-w-${KIND_WASH[kind]}`}
-            style={{ textAlign: 'left', cursor: 'pointer' }}
+            className={`mz-facttile mz-w-${KIND_WASH[kind]} rise`}
+            style={{ textAlign: 'left', cursor: 'pointer', '--d': `${80 + i * 30}ms` } as React.CSSProperties}
             onClick={() => onOpenNode(n)}
           >
             <div className="mz-fic"><ClayIcon name={KIND_ICON[kind]} size={20} /></div>
