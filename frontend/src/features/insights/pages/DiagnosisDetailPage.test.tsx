@@ -34,7 +34,10 @@ describe('DiagnosisDetailPage (mock mode)', () => {
     expect(screen.getAllByText(/Próba · 7 nap/).length).toBe(2)
     expect(screen.getByText('Feküdj le hét estén át 23:00 előtt, és nézzük meg újra.')).toBeInTheDocument()
     // the probe CTA is live-only
-    screen.getAllByRole('button', { name: '✓ Próbáljuk ki' }).forEach((b) => expect(b).toBeDisabled())
+    screen.getAllByRole('button', { name: '✓ Próbáljuk ki' }).forEach((b) => {
+      expect(b).toBeDisabled()
+      expect(b).toHaveClass('mzp-cta')
+    })
   })
 
   test('an unknown id renders the honest not-found card', () => {
