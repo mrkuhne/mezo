@@ -47,7 +47,7 @@ export function KarakterHubPage() {
   const navigate = useNavigate()
   const { overview, isLoading } = useCharacterOverview()
   const bootstrap = useCharacterBootstrap()
-  const { experts } = useCharacterExperts()
+  const { experts, isLoading: expertsLoading } = useCharacterExperts()
   const { items: feed } = useCharacterFeed()
   const { conferences } = useCharacterConferences()
   const [ceremony, setCeremony] = useState<Ceremony>('idle')
@@ -57,7 +57,11 @@ export function KarakterHubPage() {
     else if (bootstrap.result === 'empty') setCeremony('empty')
   }, [bootstrap.result])
 
-  if (isLoading) return null
+  // Fix round (final review, I5): folding the experts loading window into this page's own
+  // gate too — without it, the pending window between the overview settling and the experts
+  // catalog arriving renders the persona cluster/count off a still-empty `experts` array (Mezo
+  // loses the ruling face, "0 profilozó" flashes) instead of the honest loading no-render.
+  if (isLoading || expertsLoading) return null
 
   // Switch-off/degraded (overview null) — the ChatPage idiom: a quiet card, never a crash.
   if (overview == null) {
@@ -167,7 +171,19 @@ export function KarakterHubPage() {
   const avgMaturity = coreDims.length > 0
     ? Math.round(coreDims.reduce((sum, d) => sum + d.maturity, 0) / coreDims.length)
     : 0
+  // I3 (final review): chapters open/retire dynamically — the dimension count line is derived
+  // from the live overview instead of a hardcoded "7 + 1", so it never lies once a CHAPTER
+  // opens or the last one retires.
+  const chapterDims = overview.dimensions.filter((d) => d.kind === 'CHAPTER')
+  const dimLine = chapterDims.length > 0
+    ? `${coreDims.length} + ${chapterDims.length} fejezet`
+    : `${coreDims.length} dimenzió`
   const latestFeedItem = feed.find((f) => f.kind === 'OBSERVATION')
+  // M10 (final review): the Feed tile's dot now encodes NEWNESS (mirrors the Konzílium tile's
+  // 3-day heuristic below), not mere non-emptiness — an old, already-seen feed shouldn't keep
+  // showing an "unread" badge forever just because `feed.length > 0`.
+  const feedRecent = latestFeedItem != null
+    && Date.now() - new Date(latestFeedItem.at).getTime() < THREE_DAYS_MS
   const latestConference = conferences[0] ?? null
   const konzRecent = latestConference != null
     && Date.now() - new Date(latestConference.generatedAt).getTime() < THREE_DAYS_MS
@@ -182,14 +198,14 @@ export function KarakterHubPage() {
 
         <Mosaic>
           <Tile wash="sky" icon="i-kristaly" eyebrow="Dimenziók" delayMs={80}
-            line={`${avgMaturity}% átlag érettség · 7 + 1 dimenzió`}
+            line={`${avgMaturity}% átlag érettség · ${dimLine}`}
             onClick={() => navigate('/me/karakter/dimenziok')} aria-label="Dimenziók" />
           <Tile wash="coral" eyebrow="Feed" delayMs={130}
-            dot={feed.length > 0}
+            dot={feedRecent}
             line={latestFeedItem != null ? `„${latestFeedItem.text}”` : undefined}
             onClick={() => navigate('/me/karakter/feed')} aria-label="Feed" />
           <Tile wash="lav" eyebrow="Csapat" delayMs={180}
-            line="9 profilozó — a csapat, ami épp most figyel rád"
+            line={`${experts.length} profilozó — a csapat, ami épp most figyel rád`}
             onClick={() => navigate('/me/karakter/csapat')} aria-label="Csapat">
             <div className="kr-clustrow">
               {experts.map((e) => (

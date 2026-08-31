@@ -39,7 +39,7 @@ export function DimensionPage() {
   const { key = '' } = useParams()
   const navigate = useNavigate()
   const { dimension, isLoading } = useCharacterDimension(key)
-  const { experts } = useCharacterExperts()
+  const { experts, isLoading: expertsLoading } = useCharacterExperts()
   const [snapshot, setSnapshot] = useState<CharacterClaimDto[] | null>(null)
 
   // A new :key means a different dimension — the old snapshot no longer applies.
@@ -50,7 +50,10 @@ export function DimensionPage() {
 
   const swept = useCountUp(dimension?.maturity ?? 0, 900)
 
-  if (isLoading) return null
+  // Fix round (final review, I5): folding expertsLoading in — without it, the pending window
+  // renders `sub`'s expertName lookup off a still-empty `experts` array, showing the generic
+  // "a csapat" fallback instead of the real owner for one paint.
+  if (isLoading || expertsLoading) return null
 
   if (dimension == null) {
     return (
@@ -83,7 +86,7 @@ export function DimensionPage() {
       </div>
       <PageBody principle={PRINCIPLE}>
         {dimension.portrait !== '' && <div className="kr-portrait">{dimension.portrait}</div>}
-        <div className="mz-eyebrow kr-claims-eyebrow">Állítások</div>
+        {claims.length > 0 && <div className="mz-eyebrow kr-claims-eyebrow">Állítások</div>}
         {claims.map((c, i) => (
           <ClaimTile key={c.id} claim={c} delayMs={i * 70} />
         ))}

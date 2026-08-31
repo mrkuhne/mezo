@@ -32,7 +32,10 @@ export function DimensionsPage() {
       <PageHead onBack={() => navigate('/me/karakter')} label="‹ Karakter" />
       <div className="mz-page-hero">
         <div className="mz-hero-nm">Dimenziók</div>
-        <div className="mz-hero-sb">mind a nyolc, egy helyen</div>
+        {/* I3 (final review): CHAPTER dimensions open/retire dynamically — "mind a nyolc" was a
+           hardcoded lie the moment the chapter count moved off 1. Derived from the live
+           overview instead. */}
+        <div className="mz-hero-sb">{overview.dimensions.length} dimenzió, egy helyen</div>
       </div>
       <div className="kr-dimlist">
         {overview.dimensions.map((d, i) => {

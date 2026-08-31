@@ -80,7 +80,9 @@ test('the Én hub links to the Karakter dossier hub', async () => {
 
 test('/me/karakter/dimenziok is the Dimenziók list — a stable full-page sibling (mezo-1gim.13, Task 4)', async () => {
   renderApp('/me/karakter/dimenziok')
-  expect(await screen.findByText('mind a nyolc, egy helyen')).toBeInTheDocument()
+  // Mock mode starts pre-bootstrap (MOCK_OVERVIEW_EMPTY — 7 CORE dims only, no CHAPTER yet),
+  // so the derived count here is 7, not the fully-seeded dossier's 8.
+  expect(await screen.findByText('7 dimenzió, egy helyen')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Fizikai' })).toBeInTheDocument()
 })
 
@@ -99,7 +101,7 @@ test('/me/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', as
   renderApp('/me/karakter/csapat')
   expect(await screen.findByText('Mezo belső tanácsa — ők dolgoznak a karakteren')).toBeInTheDocument()
   expect(screen.getByText('Doki')).toBeInTheDocument()
-  expect(screen.getByText('elnök · integrátor')).toBeInTheDocument()
+  expect(screen.getByText('Elnök · Integrátor')).toBeInTheDocument()
 })
 
 test('/me/karakter/konzilium is the conference list — a stable full-page sibling (mezo-1gim.13, Task 5)', async () => {

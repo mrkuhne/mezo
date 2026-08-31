@@ -6,7 +6,7 @@ import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ApiError } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
-import { useDualQuery } from '@/data/useDualQuery'
+import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
 import { characterApi } from '@/data/character/characterApi'
 import type {
   CharacterClaimDto,
@@ -49,6 +49,7 @@ export function useCharacterOverview(): { overview: CharacterOverviewResponse | 
       }
     },
     realEmpty: null,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { overview: data, isLoading: isPending }
 }
@@ -67,6 +68,7 @@ export function useCharacterDimension(key: string): { dimension: CharacterDimens
       }
     },
     realEmpty: null,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { dimension: data, isLoading: isPending }
 }
@@ -78,6 +80,7 @@ export function useCharacterFeed(limit?: number): { items: CharacterFeedItem[]; 
     mockData: limit != null ? MOCK_FEED.slice(0, limit) : MOCK_FEED,
     realFetch: () => characterApi.feed(limit),
     realEmpty: [],
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { items: data, isLoading: isPending }
 }
@@ -89,6 +92,7 @@ export function useCharacterExperts(): { experts: CharacterExpertDto[]; isLoadin
     mockData: MOCK_EXPERTS,
     realFetch: async () => (await characterApi.experts()).experts,
     realEmpty: [],
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { experts: data, isLoading: isPending }
 }
@@ -100,6 +104,7 @@ export function useCharacterConferences(): { conferences: CharacterConferenceSum
     mockData: MOCK_CONFERENCES,
     realFetch: () => characterApi.conferences(),
     realEmpty: [],
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { conferences: data, isLoading: isPending }
 }
@@ -119,6 +124,7 @@ export function useCharacterConference(id: string | null): { conference: Charact
       }
     },
     realEmpty: null,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { conference: data, isLoading: isPending }
 }
@@ -153,8 +159,12 @@ export function useClaimFeedback() {
 
   const mutation = useMutation({
     mutationFn: async ({ claimId, kind, text }: { claimId: string; kind: FeedbackKind; text?: string }) => {
-      mockClaimFeedbackLog.push({ claimId, kind, text, at: new Date().toISOString() })
       if (mock) {
+        // M8 (final review): this in-memory log only exists for the mock demo/tests to observe
+        // — a real backend persists the feedback itself, so logging it here too (unconditionally,
+        // as it used to) fabricated a client-side record of every real-mode submission the app
+        // never actually keeps.
+        mockClaimFeedbackLog.push({ claimId, kind, text, at: new Date().toISOString() })
         qc.setQueriesData<CharacterDimensionResponse>({ queryKey: DIMENSION_KEY }, (current) => {
           if (!current) return current
           return { ...current, claims: applyFeedback(current.claims, claimId, kind) }
@@ -214,7 +224,13 @@ export function useCharacterBootstrap(): { start: () => void; pending: boolean; 
     },
     onSuccess: (result) => {
       if (!mock && result === 'created') {
+        // M-fix (final review): a successful bootstrap also stands up the first konzílium and
+        // seeds the feed — invalidating the overview alone left those two surfaces stuck on
+        // their pre-bootstrap (empty) cache entries until some unrelated refetch happened to
+        // land.
         qc.invalidateQueries({ queryKey: OVERVIEW_KEY })
+        qc.invalidateQueries({ queryKey: ['characterConferences'] })
+        qc.invalidateQueries({ queryKey: FEED_KEY })
       }
     },
   })

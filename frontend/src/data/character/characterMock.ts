@@ -93,18 +93,26 @@ export const CHARACTER_EXPERTS: Record<string, ExpertColors> = {
     name: 'Szkeptikus',
     role: 'kontra',
     voiceLine: 'Száraz kontrás hang.',
+    // Fix round (final review, I4): missing the backend's trailing period
+    // (CharacterService.experts()) — a bare mock/backend byte-diff on text the FE never
+    // touches, so it silently drifted.
     watch: [
       'minden javaslatot megtámad, mielőtt a dossziéba kerül — gyenge bizonyíték, túlzott ' +
-        'általánosítás, egy adatpontból levont következtetés',
+        'általánosítás, egy adatpontból levont következtetés.',
     ],
     color: '#4A4038',
     wash: '#E4DED4',
   },
+  // Fix round (final review, I4): `role` must match CharacterService.experts()'s literal
+  // "Elnök · Integrátor" (exact casing) — the mock had it lowercased. `watch` was empty here
+  // though the backend serves one entry for Mezo too; `voiceLine` is left as this mock's own
+  // distinct copy (CsapatPage's CHAIR subtitle already renders off `role`, never `voiceLine`,
+  // so this text isn't a duplicate-on-screen concern — see CsapatPage.tsx's header comment).
   mezo: {
     name: 'Mezo',
-    role: 'elnök · integrátor',
+    role: 'Elnök · Integrátor',
     voiceLine: 'ő összegez feléd — a csapat az ő fejében dolgozik.',
-    watch: [],
+    watch: ['ő összegez feléd — a csapat az ő fejében dolgozik.'],
     color: '#FF5B36',
     wash: '#FFE0D4',
   },

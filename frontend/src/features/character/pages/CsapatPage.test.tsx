@@ -56,6 +56,16 @@ describe('CsapatPage', () => {
     expect(screen.getAllByText(mezo.role)).toHaveLength(1)
   })
 
+  // Final-review fix (I4): characterMock's mezo.watch used to be `[]`, silently hiding the
+  // watch line the real CharacterService.experts() DTO actually serves for Mezo — an
+  // untested drift between mock and backend truth. Pinned here so it can't regress quietly.
+  test('the Mezo card renders its watch line (mock/backend fidelity, no "mit figyel:" prefix for CHAIR)', () => {
+    render(<CsapatPage />)
+    const mezo = MOCK_EXPERTS.find((e) => e.key === 'mezo')!
+    expect(mezo.watch.length).toBeGreaterThan(0)
+    expect(screen.getByText(mezo.watch.join(' · '))).toBeInTheDocument()
+  })
+
   test('a back chip returns to the Karakter hub', async () => {
     render(<CsapatPage />)
     await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))

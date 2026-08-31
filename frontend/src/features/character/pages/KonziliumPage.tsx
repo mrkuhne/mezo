@@ -97,9 +97,13 @@ export function KonziliumPage() {
   const id = params.get('id')
   const { conferences, isLoading: listLoading } = useCharacterConferences()
   const { conference, isLoading: detailLoading } = useCharacterConference(id)
-  const { experts } = useCharacterExperts()
+  const { experts, isLoading: expertsLoading } = useCharacterExperts()
 
-  if (listLoading || (id != null && detailLoading)) return null
+  // Fix round (final review, I5): without folding expertsLoading in, the pending window between
+  // the conference/list data settling and the experts catalog arriving derived turnKindOf() off
+  // a still-empty `experts` array — every turn (including Mezo's ruling) misclassified as plain
+  // EXPERT, collapsing the phase labels and losing the CHAIR/ruling face.
+  if (listLoading || (id != null && detailLoading) || expertsLoading) return null
 
   const showList = id == null
 

@@ -106,6 +106,7 @@ export function ClaimTile({ claim, delayMs }: { claim: CharacterClaimDto; delayM
       {pontOpen && (
         <div className="kr-fbtext open">
           <textarea
+            aria-label="Mit pontosítanál?"
             placeholder="Mit pontosítanál?"
             value={pontText}
             onChange={(e) => setPontText(e.target.value)}
