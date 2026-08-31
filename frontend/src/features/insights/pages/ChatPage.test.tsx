@@ -29,8 +29,9 @@ describe('ChatPage (mock mode)', () => {
     renderPage()
     expect(screen.getByText(/Jó reggelt\. Tegnap a Push Day/)).toBeInTheDocument()
     expect(screen.getByPlaceholderText('Mondj valamit…')).toBeInTheDocument()
-    // assistant tool-transparency chip
-    expect(screen.getByText('get_recent_workouts(days=3)')).toBeInTheDocument()
+    // assistant tool-transparency chip — collapsed into the work strip (mezo-vdf4);
+    // both seed answers carry tools, hence two strips.
+    expect(screen.getAllByRole('button', { name: /Utánanézett/ })).toHaveLength(2)
     // V1.3: the mock seed never carries a degraded answer — no badge
     expect(screen.queryByText('nem ellenőrzött')).not.toBeInTheDocument()
   })
@@ -96,7 +97,7 @@ describe('ChatPage (mock mode)', () => {
     renderPage()
     // seed ref [Workout w-2026-05-21] → kind label Edzés + derived date
     // both seed answers carry a refs footer
-    expect(screen.getAllByText('Hivatkozott · L3')).toHaveLength(2)
+    expect(screen.getAllByText('Amire épült · L3')).toHaveLength(2)
     const workoutRef = screen.getAllByText('Edzés').find((el) => el.classList.contains('mzc-refk'))
     expect(workoutRef).toBeTruthy()
     expect(workoutRef!.parentElement).toHaveTextContent('máj. 21.')
@@ -256,7 +257,7 @@ describe('ChatPage (real mode)', () => {
   test('loads the history from the backend', async () => {
     renderPage()
     expect(await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)).toBeInTheDocument()
-    expect(screen.getByText('get_recent_workouts(days=3)')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Utánanézett/ })).toHaveLength(2)
     expect(screen.getByText('Gemini · élő')).toBeInTheDocument()
   })
 
@@ -270,9 +271,11 @@ describe('ChatPage (real mode)', () => {
     // appended cache pair when the stream completes, so a captured node can go stale.
     await waitFor(() => expect(screen.getByText('Fáradt vagyok')).toBeInTheDocument())
     await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
-    // V0.5: the persisted reply renders its REAL tool chip + ref chip (from the done event) —
-    // the ref speaks the human label (Alvás + derived date), not the raw wire kind/id (d20.5.2).
-    expect(screen.getByText('get_sleep(days=3)')).toBeInTheDocument()
+    // V0.5: the persisted reply renders its REAL tool work strip + ref chip (from the done
+    // event) — the ref speaks the human label (Alvás + derived date), not the raw wire
+    // kind/id (d20.5.2); the tool call itself is collapsed into the strip (mezo-vdf4).
+    // three strips: the two seed answers plus this new one.
+    expect(screen.getAllByRole('button', { name: /Utánanézett/ })).toHaveLength(3)
     const sleepRef = screen
       .getAllByText('Alvás')
       .find((el) => el.classList.contains('mzc-refk') && el.parentElement?.textContent?.includes('júl. 2.'))
@@ -332,8 +335,9 @@ describe('ChatPage (real mode)', () => {
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
-    // the chip renders from the in-flight draft bubble, before 'done' replaces it
-    await screen.findByText('get_sleep(days=3)')
+    // the strip renders from the in-flight draft bubble, before 'done' replaces it — three
+    // strips: the two seed answers plus this in-flight one.
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /Utánanéz/ })).toHaveLength(3))
     // 'most' is the placeholder ts only the in-flight turn's two bubbles use (user + draft) —
     // seeing both confirms the chip came from the draft, not the appended, authoritative row.
     expect(screen.getAllByText('most')).toHaveLength(2)
@@ -377,9 +381,10 @@ describe('ChatPage (real mode)', () => {
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
-    // the tool chip is up, but no delta has landed yet — this is exactly the gap that used to
+    // the tool strip is up, but no delta has landed yet — this is exactly the gap that used to
     // render an empty grey answer card with no visible sign that anything is still happening.
-    await screen.findByText('get_sleep(days=3)')
+    // three strips: the two seed answers plus this in-flight one.
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /Utánanéz/ })).toHaveLength(3))
     expect(container.querySelectorAll('.np-pulse')).toHaveLength(3)
 
     releaseRest()
