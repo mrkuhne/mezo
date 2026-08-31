@@ -19,11 +19,13 @@ they inline come from `../assets/`.
 | `en-ia-valasztas.html` | https://claude.ai/code/artifact/418b2a2d-25ba-4441-8cb5-6b15c6ab88b2 |
 | `en-tab.html` | https://claude.ai/code/artifact/dee0dd7e-f321-4f88-94ff-c7face496d70 |
 | `napzaras.html` | https://claude.ai/code/artifact/0e4e02ba-d5c8-49ce-a738-b924f1583cf6 |
+| `edzes-review.html` | https://claude.ai/code/artifact/66f5a4de-8afe-48ff-b04f-e861b3ba22ee |
+| `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
 
 ## Workflow
 
 1. Edit the parts in `src/` (`*-head.html` = title + CSS; `*-body.html` = markup + JS).
-2. Run `./build.sh` — it inlines the sprites from `../assets/` into the 6 assembled files.
+2. Run `./build.sh` — it inlines the sprites from `../assets/` into the assembled files.
 3. Republish the assembled file as an artifact, passing the matching `url` above so the link
    stays stable.
 
@@ -181,6 +183,30 @@ are usable without a build step).
   rows edit/delete with one-slot floor. RP debrief per exercise, closing summary (halo hero,
   muscle pills, medals + target sets, challenge outcomes, per-exercise chip map, note),
   finish → level-up screen → closed mode.
+- **edzes-review** — the *visszanézés* of a finished workout (`/train/review/:id`), the F7.2
+  design round. The shell is the session prototype's summary; what the `closed` mode gains is
+  **context**. (1) A **„Mihez képest" tile** under the hero names the reference session
+  (`Előző Pull A · aug. 12. · 2 héttel korábban` — the gap between the two sessions, not the age
+  from today) and gives three deltas mirroring the stat strip: volumen · célszett · Ø RIR. Under
+  ADR 0010 the number is signed and honest while the **colour never punishes** — sage only
+  upward, neutral graphite downward, coral and red absent; **Ø RIR is always neutral**, because
+  there less is harder. (2) The per-exercise inventory stops being a stack of near-identical white
+  cards and becomes a **horizontal swimlane** (the Fuel hub's window-lane precedent): one tile per
+  exercise in its muscle family's wash, carrying a monogram disc, a REKORD stamp, **one anchor
+  number** — the top working set — and a set-bar row (solid = logged · gold = medal · faint =
+  warmup · dashed = missed). Depth is not in the scroll: each tile opens the exercise's **own
+  page**, where every set is its own tile — `90 kg × 8 · RIR 2 · célsávban · 720 kg` — with the
+  medal set in gold, the missed set as a ghost tile, **the set note under its own set**
+  (`ExerciseSetResponse.note`, on the wire today and shown nowhere), and a stat strip whose fourth
+  cell is the previous session's top set, gated exactly like the context tile. (3) **Stepping runs on the template-day
+  chain** (`← Előző Pull A` / `Következő Pull A →`), the same axis the comparison uses, so there
+  is one mental model rather than two. Three live Pull A sessions demonstrate all of it,
+  including the honesty gate: the oldest is the mesocycle's first Pull A, so **the tile does not
+  render at all** — no "nincs adat" placeholder. The `Lezárás` toggle shows the other mode: no
+  tile, no stepping (there is nowhere to step while closing), and the closing CTA — where today's
+  **dead `<textarea>` used to be**. That note field is removed rather than kept: nothing is
+  promised that is not persisted; making the workout-level note real is its own slice
+  (contract + column + read-back).
 - **mezo-tab** — the Mezo tab (the companion's home), audited against the real `/insights`
   section (in the live app the companion is the Chat sub-tab of Insights; the redesign
   promotes it to a first-class tab). **Hub**: a breathing clay **orb hero** — no number hero,
@@ -325,3 +351,53 @@ are usable without a build step).
   fills in a real summary, day notes and lessons and refreshes every hub tile; week stepping shows a
   **skeleton** (today's page has neither a loading nor an error state). Week navigation walks three live
   weeks: finished-with-review → finished-without → running.
+- **karakter-tab** — the Karakter dossier page (Én tab family), audited against the shipped
+  backend (`docs/features/character.md` — 7 CORE dimensions, `CharacterExpertCatalog`'s 7 named
+  experts, Szkeptikus + Mezo, weekly konzílium, bootstrap, claim feedback). Shown standalone (not
+  nested under the Én hub, per the round's brief — the aside notes the eventual tile placement).
+  **Round 1 iteration** (Daniel's feedback on the published artifact, logged in
+  [`2026-08-31-karakter-design-iterations.md`](../2026-08-31-karakter-design-iterations.md)):
+  compacted the hub, gave every persona an orb-variant avatar, enriched the Konzílium page, and
+  added an entrance/ambient motion pass across every page.
+  **Hub** (hero + a compact 4-tile mosaic, ~one screen): the 7-segment maturity ring (one arc
+  per CORE dimension, color = the owning expert's domain tint, arc length/opacity = maturity,
+  animated sweep-in; center = overall % + "érettség") + a Fraunces-italic AI self-portrait line
+  (a deliberate visual placeholder — the spec marks the identity-hero bio line out of scope for
+  v1); then four tiles — **Dimenziók** (live datum: CORE-average maturity % + dimension count),
+  **Feed** (live datum: newest observation preview + "N új" + pulsing dot), **Csapat** (9-avatar
+  orb cluster), **Konzílium** (latest-session date + pulsing dot). **Dimenziók page**: the 8
+  dimension tiles (7 CORE + 1 CHAPTER example "Munka-stressz ciklus" in a dashed/distinct wash,
+  AI-opened per the real konzílium mechanic) that used to live directly on the hub — tapping one
+  still opens the dimension detail page. **Feed page**: day-grouped observations (persona-voiced,
+  orb avatars) + konzílium-diff rows that can point at a specific dimension or the Konzílium page
+  — richer than the hub's single-line teaser now that it has its own screen. **Dimension page**
+  (generic template driven by a `DIMS` data array, one page for all 8): colored hero (orb avatar +
+  title + big maturity number), a portrait prose card, claim tiles with confidence-word chips only
+  (biztos sage / valószínű amber / figyeljük lavender — never a raw number, per the API's
+  honest-words contract), an ÉRZÉKENY (sensitive) variant with a lavender frame + mirror-toned
+  line, and three live feedback pills — Talál (sage flash + "köszönöm"), Nem igaz (the tile fades
+  to a dashed "nyugdíjazva" state), Pontosítom (inline textarea + Küldés) — plus a "Beszélgess
+  erről Mezóval" chat-handoff chip. **Csapat page**: 9 persona cards — the 7 experts (each now an
+  orb-variant avatar in its domain color: same clay-orb recipe as the Mezo logo, tinted + a
+  dashed inner-ring motif — see the iteration log for the sprite-graduation plan) + the Szkeptikus
+  (graphite orb, dry contrarian) + Mezo (the original coral `s-orb`, elnök). **Konzílium page**: a
+  session list (date + WEEKLY/HAVI/BOOTSTRAP badge + outcome summary, pulsing dot on the unread
+  newest row) — tapping the newest opens a transcript view in place: a tinted 3-cell outcome
+  header (elfogadva/nyugdíjazva/portré átírva counts), phase labels (`Javaslatok` → `A Szkeptikus`
+  → `Döntés`) with a dashed connector line behind the proposal turns, four persona-orb proposal
+  bubbles (Doki/Drill/Táplálkozó/Pszichológus), a graphite Szkeptikus attack bubble, a full-width
+  coral Mezo ruling bubble, and one gold-railed "DANIEL VÁLASZA" quote embedded inside an expert's
+  bubble showing how claim feedback re-enters the konzílium — with an explicit honesty note that
+  the transcript is the real exchange, never re-dramatized. **Bootstrap flow** (aside demo
+  button): intro (orb + 9-avatar orb cluster, popping in one by one + "Kezdjétek el") → staged
+  progress lines ("Doki a súlytrendet olvassa…" etc.) over a coral→gold gradient arc with a live
+  count-up percentage → reveal (the hero ring animates in) → CTA into the first konzílium.
+  **Honest 204 empty state** (aside demo button): "Még nincs elég történet" — no fabricated
+  numbers, no empty-state theater. **Motion**: every page now replays a staggered rise-in
+  choreography on open (including the konzílium transcript, which re-triggers its own `.play`
+  class since it opens in place rather than through the page-open flow), plus ambient pulsing
+  dots, popping mini-rings/avatars, and hover/press micro-interactions — all reduced-motion-guarded.
+  New-content note: dimension/expert keys and voices are pulled directly from
+  `CharacterCoreCatalog`/`CharacterExpertCatalog` in the backend, not invented; the persona orb
+  icons are a runtime-generated placeholder (`buildOrbDefs()` in `karakter-body.html`), pending
+  graduation into hand-tuned `docs/design_2.0/assets/` sprites on approval.
