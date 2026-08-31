@@ -21,15 +21,20 @@ describe('AdatforrasokPage', () => {
     render(<AdatforrasokPage />)
     expect(screen.getByText('Adatforrások')).toBeInTheDocument()
     expect(screen.getByText('Éjszakai kör')).toBeInTheDocument()
-    expect(screen.getByText('14 nap')).toBeInTheDocument()
+    // '14 nap' is no longer a unique chip text (round 1's five new reads reuse it) — assert at
+    // least one instance instead of a single unique match.
+    expect(screen.getAllByText('14 nap').length).toBeGreaterThan(0)
     expect(screen.getByRole('tab', { name: 'Bekötve' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  test('switching to Tervezett shows the 4-round index + the later tail line', async () => {
+  test('switching to Tervezett shows the 3-round index + the later tail line', async () => {
     render(<AdatforrasokPage />)
     await userEvent.click(screen.getByRole('tab', { name: 'Tervezett' }))
-    expect(screen.getByText('Edzés & test')).toBeInTheDocument()
-    expect(screen.getByText('6 tétel')).toBeInTheDocument()
+    // Round 1 ("Edzés & test") landed for real via mezo-1gim.15 and no longer appears here —
+    // it moved to INVENTORY_READS (see AdatforrasokPage.tsx's Bekötve segment). The remaining
+    // three rounds keep their original n (2/3/4), starting with "Fuel & ciklus".
+    expect(screen.getByText('Fuel & ciklus')).toBeInTheDocument()
+    expect(screen.getByText('4 tétel')).toBeInTheDocument()
     expect(screen.getByText('Kapcsolatok & AI-meta')).toBeInTheDocument()
     expect(screen.getByText('+ még 2 terület később')).toBeInTheDocument()
   })
@@ -37,8 +42,8 @@ describe('AdatforrasokPage', () => {
   test('clicking a round navigates to its kör mini-page (path param, not ?kor=)', async () => {
     render(<AdatforrasokPage />)
     await userEvent.click(screen.getByRole('tab', { name: 'Tervezett' }))
-    await userEvent.click(screen.getByText('Edzés & test'))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/adatforrasok/kor/1')
+    await userEvent.click(screen.getByText('Fuel & ciklus'))
+    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/adatforrasok/kor/2')
   })
 
   test('back arrow returns to Gépterem', async () => {
