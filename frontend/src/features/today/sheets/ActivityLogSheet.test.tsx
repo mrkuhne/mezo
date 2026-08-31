@@ -73,7 +73,13 @@ describe('ActivityLogSheet', () => {
     for (const s of LIFE_SKILLS) expect(screen.getByText(`${s.icon} ${s.name}`)).toBeInTheDocument()
     fireEvent.click(screen.getByText('🍳 Konyha'))
     await waitFor(() => expect(categorize).toHaveBeenCalledWith('act-new', 'cooking'))
-    expect(await screen.findByText('🍳 Konyha')).toBeInTheDocument()
+    // Deflake (PR #338 CI): the pick → done re-render can exceed findByText's 1s default on a
+    // saturated runner — wait for the picker prompt to leave, then find the done-card chip.
+    await waitFor(
+      () => expect(screen.queryByText('Nem egyértelmű — melyik skillhez tartozik?')).not.toBeInTheDocument(),
+      { timeout: 5000 },
+    )
+    expect(await screen.findByText('🍳 Konyha', undefined, { timeout: 5000 })).toBeInTheDocument()
   })
 
   test('(c) quest prop renders the quest banner', () => {
