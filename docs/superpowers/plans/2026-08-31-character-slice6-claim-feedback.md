@@ -175,8 +175,15 @@ Routing contract:
    its authorship unmistakable — e.g. `"DANIEL VÁLASZA — <text>"` — so the expert cannot mistake
    Daniel's words for a detector signal.
 3. The proposal contract text gains one sentence: Daniel's own answers OUTRANK detector signals; a
-   `nem igaz` or a correction must be addressed (by a `RETIRE`/`DOWN` proposal or by an explicit
-   `NEW` that supersedes it), not ignored.
+   `nem igaz` or a correction should be addressed (by a `RETIRE`/`DOWN` proposal or by an explicit
+   `NEW` that supersedes it), not ignored. This is a prompt instruction to the LLM, not an enforced
+   rule — nothing upstream verifies a proposal actually addressed it, and every gathered observation
+   (including an ignored one) is marked consumed unconditionally after the round. What IS guaranteed
+   (fix round 2, F3, mezo-1gim.10): the answer is surfaced to its owning expert's evidence with top
+   salience (`nem igaz`/`pontosítom` = 5, the highest weight a routed observation can carry), and
+   `CharacterConferenceService` logs a WARN naming the claim id whenever a consumed user-feedback
+   observation had no proposal referencing its claim id — so an ignored answer is visible in logs
+   instead of silently vanishing.
 4. An expert whose ONLY evidence is user feedback still runs (a correction alone is worth a round).
 5. Weekly/bootstrap/monthly all inherit this automatically through the shared round; verify the
    existing ITs stay green (they are the regression proof).

@@ -366,8 +366,16 @@ public class KonziliumProposalRound {
                 a felsorolt megfigyelésekre alapozz — ne találj ki számot vagy tényt. Jelöld \
                 sensitive=true-val az önértékelési, elutasítás-mintázati vagy gyógyszerciklus \
                 jellegű állításokat. A "DANIEL VÁLASZA —" jelöléssel kezdődő sorok Daniel saját \
-                válaszai — ezek FELÜLÍRJÁK az érzékelt jeleket; egy "nem igaz" cáfolatot vagy \
-                pontosítást kötelező kezelni (RETIRE/DOWN javaslattal, vagy azt felváltó NEW \
+                válaszai — ezek FELÜLÍRJÁK az érzékelt jeleket, és a sor elején álló [claimId] \
+                jelöli, melyik állításra vonatkoznak — ezt az azonosítót használd a claimId \
+                mezőben, ha UP/DOWN/RETIRE javaslatot teszel rá. Egy önmagában álló "talál" \
+                megerősítés NEM számít új bizonyítéknak UP javaslathoz — a bizalom emelése már \
+                megtörtént a visszajelzés pillanatában (lásd "a bizalom már beszámítva"), a \
+                konzíliumnak nem kell rátennie. Egy "nem igaz" cáfolattal érintett állítás MÁR \
+                nyugdíjazott (nem szerepel az aktív állítások közt) — itt a feladat eldönteni, \
+                szükséges-e egy azt felváltó, javított NEW állítás; RETIRE rá nem javasolható. Egy \
+                pontosítást ("pontosítom") viszont még AKTÍV állításra kell címezni: kötelező \
+                kezelni (DOWN vagy RETIRE javaslattal a megadott claimId-ra, vagy azt felváltó NEW \
                 javaslattal), sosem szabad figyelmen kívül hagyni.""";
     }
 

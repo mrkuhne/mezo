@@ -69,6 +69,15 @@ public class CharacterFeedbackService {
      *  ({@link ClaimLifecycle}): self-confirmation cannot saturate a claim on its own. */
     private static final BigDecimal TALAL_MAX_CONFIDENCE = new BigDecimal("0.85");
 
+    /** Appended to every TALAL evidence line (fix round 2, F1, mezo-1gim.10): the self-confirmation
+     *  cap ({@link #TALAL_MAX_CONFIDENCE}) applies to the DIRECT bump only — the SAME click also
+     *  writes an observation the konzílium can turn into an UP ruling (up to {@link ClaimLifecycle}'s
+     *  higher 0.95 ceiling), which would let repeated talál clicks saturate a claim through that
+     *  side door with no new evidence. Marking the line tells the experts the confirmation is
+     *  already priced in, so it is not by itself grounds for a fresh UP — see the matching sentence
+     *  in {@link KonziliumProposalRound#outputContract()}. */
+    private static final String TALAL_PRICED_IN_SUFFIX = " (a bizalom már beszámítva)";
+
     private static final short SALIENCE_TALAL = 3;
     private static final short SALIENCE_RETIRE = 5;
     private static final short SALIENCE_CORRECTION = 5;
@@ -98,9 +107,11 @@ public class CharacterFeedbackService {
         Instant now = Instant.now();
         String observationText;
         short salience;
+        String claimIdPrefix = "[" + claim.getId() + "] ";
         switch (kind) {
             case KIND_TALAL -> {
-                observationText = "A felhasználó megerősítette: \"" + claim.getText() + "\"";
+                observationText = claimIdPrefix + "A felhasználó megerősítette: \"" + claim.getText() + "\""
+                        + TALAL_PRICED_IN_SUFFIX;
                 salience = SALIENCE_TALAL;
                 BigDecimal newConfidence = bumpForTalal(claim.getConfidence());
                 if (newConfidence.compareTo(claim.getConfidence()) != 0) {
@@ -110,14 +121,15 @@ public class CharacterFeedbackService {
                 }
             }
             case KIND_NEM_IGAZ -> {
-                observationText = "A felhasználó cáfolta: \"" + claim.getText() + "\"";
+                observationText = claimIdPrefix + "A felhasználó cáfolta: \"" + claim.getText() + "\"";
                 salience = SALIENCE_RETIRE;
                 claim.setStatus(RETIRED);
                 claim.setConfidenceHistory(
                         appendHistory(claim.getConfidenceHistory(), claim.getConfidence(), CAUSE_NEM_IGAZ, now));
             }
             case KIND_PONTOSITOM -> {
-                observationText = "A felhasználó pontosította: \"" + claim.getText() + "\" — " + text;
+                observationText = claimIdPrefix + "A felhasználó pontosította: \"" + claim.getText() + "\" — "
+                        + flatten(text);
                 salience = SALIENCE_CORRECTION;
             }
             default -> throw new SystemRuntimeErrorException(
@@ -180,8 +192,17 @@ public class CharacterFeedbackService {
         return new ClaimFeedbackEnvelope(events);
     }
 
+    /** Flattens user-authored free text the same way {@code CharacterPromptAssembler.oneLine} does
+     *  before any model-authored/user-authored text enters a prompt — all whitespace runs
+     *  (including embedded newlines) collapsed to a single space — so a multi-line PONTOSITOM
+     *  correction can never forge extra numbered evidence lines in the konzílium prompt (F4,
+     *  the S5 lesson, mezo-1gim.10). */
+    private static String flatten(String text) {
+        return text == null ? "" : text.strip().replaceAll("\\s+", " ");
+    }
+
     private void writeObservation(UUID owner, CharacterClaimEntity claim, String text, short salience, Instant now) {
-        String dimensionKey = dimensionRepository.findById(claim.getDimensionId())
+        String dimensionKey = dimensionRepository.findByIdAndCreatedBy(claim.getDimensionId(), owner)
                 .map(CharacterDimensionEntity::getKey)
                 .orElse(null);
         CharacterObservationEntity observation = new CharacterObservationEntity();
