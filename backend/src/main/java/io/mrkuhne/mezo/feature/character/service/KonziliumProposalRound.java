@@ -103,10 +103,34 @@ public class KonziliumProposalRound {
      * blocks instead of a week's observations — the monthly bootstrap konzílium's entry point via
      * {@link CharacterHistoryReads#gatherHistory}. {@code observationIds} is always empty here:
      * this method has no notion of weekly observations to mark consumed — only {@link #run} sets it.
+     * Includes the "Meglévő aktív állítások" trailer (see the 4-arg overload's javadoc for why
+     * that is the byte-identical behavior weekly/bootstrap callers need).
      */
     @Transactional
     public Result runOnEvidence(UUID owner, String periodLabel, String marker, String auditOp,
                                  List<ExpertEvidence> evidence) {
+        return runOnEvidence(owner, periodLabel, marker, auditOp, evidence, true);
+    }
+
+    /**
+     * The evidence-block seam with control over the "Meglévő aktív állítások" (existing active
+     * claims) trailer {@link #userMessage} normally appends after the evidence lines. Weekly
+     * ({@link #run}) and bootstrap ({@code CharacterBootstrapService}) evidence is built from
+     * OBSERVATIONS, so that trailer is the only place a claim's current text/confidence appears —
+     * {@code includeActiveClaimsTrailer=true} keeps their prompt byte-identical.
+     *
+     * <p>The monthly deep read ({@code CharacterMonthlyService}) is different: its evidence IS
+     * built directly from ACTIVE claims (with age/last-movement metadata the trailer lacks), so
+     * for any expert owning a CORE dimension the SAME claim would otherwise be rendered TWICE in
+     * one user message — once as a numbered evidence line, once again in the trailer, independently
+     * re-queried. Beyond the prompt bloat, that risks the model treating the two renderings as
+     * distinct reference points (double-weighted staleness; ambiguity about which rendering a
+     * RETIRE targets). {@code includeActiveClaimsTrailer=false} omits the trailer entirely for
+     * that caller — fix round 1, mezo-1gim.6.
+     */
+    @Transactional
+    public Result runOnEvidence(UUID owner, String periodLabel, String marker, String auditOp,
+                                 List<ExpertEvidence> evidence, boolean includeActiveClaimsTrailer) {
         List<CharacterDimensionEntity> ownerDimensions = dimensionRepository.findByCreatedBy(owner);
         Set<String> knownDimensionKeys = knownDimensionKeys(ownerDimensions);
         Map<UUID, CharacterDimensionEntity> dimensionsById = new java.util.HashMap<>();
@@ -124,7 +148,7 @@ public class KonziliumProposalRound {
 
         for (ExpertEvidence block : evidence) {
             ExpertOutcome outcome = runExpert(owner, periodLabel, marker, auditOp, block, knownDimensionKeys,
-                    activeClaims, dimensionsById, activeClaimIds);
+                    activeClaims, dimensionsById, activeClaimIds, includeActiveClaimsTrailer);
             if (outcome == null) {
                 continue;
             }
@@ -145,7 +169,8 @@ public class KonziliumProposalRound {
     private ExpertOutcome runExpert(UUID owner, String periodLabel, String marker, String auditOp,
                                      ExpertEvidence evidence, Set<String> knownDimensionKeys,
                                      List<CharacterClaimEntity> activeClaims,
-                                     Map<UUID, CharacterDimensionEntity> dimensionsById, Set<UUID> activeClaimIds) {
+                                     Map<UUID, CharacterDimensionEntity> dimensionsById, Set<UUID> activeClaimIds,
+                                     boolean includeActiveClaimsTrailer) {
         String expertKey = evidence.expertKey();
         CharacterExpertCatalog.Expert expert;
         String raw;
@@ -153,12 +178,14 @@ public class KonziliumProposalRound {
             // byKey lives inside the try too — an unknown expertKey must skip only THIS
             // expert, never abort the whole round (same isolation contract as the LLM call).
             expert = CharacterExpertCatalog.byKey(expertKey);
-            List<CharacterClaimEntity> expertActiveClaims = activeClaims.stream()
-                    .filter(claim -> {
-                        CharacterDimensionEntity dimension = dimensionsById.get(claim.getDimensionId());
-                        return dimension != null && expertKey.equals(dimension.getExpertKey());
-                    })
-                    .toList();
+            List<CharacterClaimEntity> expertActiveClaims = includeActiveClaimsTrailer
+                    ? activeClaims.stream()
+                            .filter(claim -> {
+                                CharacterDimensionEntity dimension = dimensionsById.get(claim.getDimensionId());
+                                return dimension != null && expertKey.equals(dimension.getExpertKey());
+                            })
+                            .toList()
+                    : null;
             String systemPrompt = marker + "\n" + expert.systemPersona() + "\n" + outputContract();
             String userMessage = userMessage(periodLabel, evidence.lines(), expertActiveClaims, expert);
             raw = llmCallContextHolder.runWith(
@@ -271,6 +298,14 @@ public class KonziliumProposalRound {
                 jellegű állításokat.""";
     }
 
+    /**
+     * {@code expertActiveClaims == null} omits the "Meglévő aktív állítások" trailer entirely
+     * (mezo-1gim.6 fix round 1) — the monthly deep read's evidence already carries every ACTIVE
+     * claim directly (with age/last-movement metadata this trailer lacks), so re-rendering the
+     * SAME claims here would double them up in one user message. An EMPTY (non-null) list still
+     * renders the trailer with its honest "nincs" — that is the weekly/bootstrap "no active claims
+     * yet" case, unchanged.
+     */
     private static String userMessage(String periodLabel, List<String> lines,
                                        List<CharacterClaimEntity> expertActiveClaims,
                                        CharacterExpertCatalog.Expert expert) {
@@ -281,13 +316,15 @@ public class KonziliumProposalRound {
         for (String line : lines) {
             sb.append('\n').append(i++).append(". ").append(line);
         }
-        sb.append('\n').append("Meglévő aktív állítások:");
-        if (expertActiveClaims.isEmpty()) {
-            sb.append('\n').append("nincs");
-        } else {
-            for (CharacterClaimEntity claim : expertActiveClaims) {
-                sb.append('\n').append(claim.getId()).append(" (biztonság ").append(claim.getConfidence())
-                        .append("): ").append(claim.getText());
+        if (expertActiveClaims != null) {
+            sb.append('\n').append("Meglévő aktív állítások:");
+            if (expertActiveClaims.isEmpty()) {
+                sb.append('\n').append("nincs");
+            } else {
+                for (CharacterClaimEntity claim : expertActiveClaims) {
+                    sb.append('\n').append(claim.getId()).append(" (biztonság ").append(claim.getConfidence())
+                            .append("): ").append(claim.getText());
+                }
             }
         }
         sb.append('\n').append("Alapértelmezett dimenzió: ").append(expert.primaryDimensionKey());

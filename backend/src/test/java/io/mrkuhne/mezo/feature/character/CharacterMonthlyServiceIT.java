@@ -168,15 +168,16 @@ class CharacterMonthlyServiceIT extends ApiIntegrationTest {
     @Test
     void run_retireRulingAcceptedThroughIntegrator_flipsClaimToRetired() {
         UUID owner = ownerId();
-        // A CHAPTER dimension's claim, not a CORE one: KonziliumProposalRound also renders every
-        // ACTIVE claim of the SAME expert into the "Meglévő aktív állítások" block of that same
-        // expert's user message — for a CORE dimension that duplicates the sentinel-bearing claim
-        // text into two places in one message, and the sentinel regex's greedy match then spans
-        // both occurrences and breaks. A CHAPTER dimension has no expertKey (null never equals
-        // "drill"), so its claim is excluded from that second render and the sentinel stays single.
-        CharacterDimensionEntity chapter = seedDimension(owner, "regi-fejezet", "CHAPTER", null);
+        // A CORE dimension's own claim — the primary path (fix round 1, mezo-1gim.6): now that
+        // CharacterMonthlyService calls runOnEvidence with includeActiveClaimsTrailer=false, the
+        // proposal round's "Meglévő aktív állítások" trailer is omitted entirely for the monthly
+        // caller, so this claim's sentinel-bearing text is rendered exactly ONCE in the user
+        // message (previously a CORE dimension's claim was duplicated into that trailer too, which
+        // broke the fake LLM's greedy sentinel regex — see git history for the CHAPTER workaround
+        // this replaces).
+        CharacterDimensionEntity discipline = seedDimension(owner, "discipline", "CORE", "drill");
         CharacterClaimEntity claim =
-                seedClaim(owner, chapter.getId(), "placeholder", new BigDecimal("0.55"), "drill");
+                seedClaim(owner, discipline.getId(), "placeholder", new BigDecimal("0.55"), "drill");
         claim.setText("Elavult megfigyelés. [fake-char-proposals:[{\"kind\":\"RETIRE\",\"claimId\":\""
                 + claim.getId() + "\",\"text\":\"Már nem támasztja alá az adat.\",\"confidence\":0.1,"
                 + "\"sensitive\":false,\"rationale\":\"stale\"}]]");

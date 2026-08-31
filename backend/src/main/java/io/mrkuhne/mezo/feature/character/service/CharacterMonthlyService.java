@@ -109,8 +109,12 @@ public class CharacterMonthlyService {
         List<ExpertEvidence> evidence = buildEvidence(activeClaims, dimensionsById);
 
         String periodLabel = "Havi mélyolvasás: " + monthStart;
+        // includeActiveClaimsTrailer=false (fix round 1, mezo-1gim.6): this evidence is built
+        // DIRECTLY from ACTIVE claims (buildEvidence, with age/last-movement metadata), so the
+        // proposal round's own "Meglévő aktív állítások" trailer would otherwise re-render the
+        // SAME claims a second time in one user message for any CORE-owning expert.
         KonziliumProposalRound.Result proposalResult =
-                proposalRound.runOnEvidence(owner, periodLabel, MONTHLY_MARKER, AUDIT_OP, evidence);
+                proposalRound.runOnEvidence(owner, periodLabel, MONTHLY_MARKER, AUDIT_OP, evidence, false);
         // weekStart=null here (not monthStart): KonziliumVerdictRound only uses it to render a
         // "Hét: …" period label for the szkeptikus/integrátor prompts — a real week range would be
         // misleading for a whole-dossier monthly pass, so this rides the SAME null-weekStart path
