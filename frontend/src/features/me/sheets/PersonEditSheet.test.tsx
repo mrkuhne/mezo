@@ -1,13 +1,36 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { vi, it, expect } from 'vitest'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
+import type { PersonEntry } from '@/data/types'
 
 const savePerson = vi.fn()
+const deletePerson = vi.fn()
 vi.mock('@/data/hooks', async (orig) => ({
   ...(await orig()),
-  usePeople: () => ({ people: [], mentions: [], savePerson, deletePerson: vi.fn(),
+  usePeople: () => ({ people: [], mentions: [], savePerson, deletePerson,
     logMention: vi.fn(), isPending: false }),
 }))
+
+const PERSON: PersonEntry = {
+  id: 'marci-1',
+  name: 'Marci',
+  initial: 'M',
+  relationship: 'friend',
+  relationshipHu: 'Barát',
+  aliases: ['Marcika'],
+  status: 'active',
+  sourceKind: 'manual',
+  affect_baseline: 'positive',
+  mentionCount: 3,
+  mentionsThisWeek: 1,
+  last_mentioned_at: '2026-08-30T10:00:00.000Z',
+  lastMentionLabel: 'ma',
+  contactCadenceLabel: 'heti',
+  notes: 'régi barát',
+  affectTrend: [],
+  knownFacts: [],
+  ties: [],
+}
 
 it('gyűjti az aliasokat és menti az új személyt', () => {
   render(<PersonEditSheet person={null} onClose={() => {}} />)
@@ -24,4 +47,19 @@ it('gyűjti az aliasokat és menti az új személyt', () => {
 it('mentés-gomb tiltott, amíg nincs név', () => {
   render(<PersonEditSheet person={null} onClose={() => {}} />)
   expect(screen.getByRole('button', { name: /Felveszem/ })).toBeDisabled()
+})
+
+it('kétlépéses törlés: első tap felfegyverzi, második tap töröl', () => {
+  const onClose = vi.fn()
+  render(<PersonEditSheet person={PERSON} onClose={onClose} />)
+  const deleteBtn = screen.getByRole('button', { name: /Törlés/ })
+
+  fireEvent.click(deleteBtn)
+  expect(screen.getByText(/Biztos\? Az említések megmaradnak, a személy eltűnik\./)).toBeInTheDocument()
+  expect(deletePerson).not.toHaveBeenCalled()
+  expect(onClose).not.toHaveBeenCalled()
+
+  fireEvent.click(deleteBtn)
+  expect(deletePerson).toHaveBeenCalledWith('marci-1')
+  expect(onClose).toHaveBeenCalled()
 })
