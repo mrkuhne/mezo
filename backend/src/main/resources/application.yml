@@ -276,6 +276,10 @@ mezo:
     # (+ optional push). Off ⇒ no delivery beans; W5.1 flag logging is unaffected.
     intervention:
       enabled: true
+    # Emberek (mezo-06o0) — automata mention-detektálás a narratív forrásokból (név+alias match).
+    # Off ⇒ nincs detektáló listener; a kézi people CRUD + chip-log felület változatlanul él.
+    people:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);

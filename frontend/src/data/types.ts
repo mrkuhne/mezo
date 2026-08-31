@@ -548,7 +548,7 @@ export type Affect = 'positive' | 'neutral' | 'mixed' | 'negative'
 export type Relationship = 'partner' | 'friend' | 'family' | 'colleague' | 'teammate' | 'mentee'
 export type PersonStatus = 'candidate' | 'active' | 'archived'
 export type PersonSourceKind = 'manual' | 'extractor' | 'seed'
-export type MentionSource = 'voice' | 'camera' | 'chip' | 'text'
+export type MentionSource = 'voice' | 'camera' | 'chip' | 'text' | 'chat'
 export type MentionContext =
   | 'munka' | 'csalad' | 'baratok' | 'edzes'
   | 'konfliktus' | 'kozos_program' | 'segitseg' | 'egyeb'
@@ -582,7 +582,7 @@ export interface Mention {
   source: MentionSource
   duration_s?: number
   excerpt: string
-  tone: Affect
+  tone?: Affect
   tiedTo?: { kind: string; label: string }
   flagged?: boolean
   intensity?: number

@@ -12,6 +12,8 @@ function sourceIconFor(source: MentionSource): IconName {
       return 'check'
     case 'text':
       return 'send'
+    case 'chat':
+      return 'me'
     default:
       return 'anchor'
   }
@@ -23,9 +25,18 @@ function sourceIconFor(source: MentionSource): IconName {
  * `kapcsolódik` pattern-tie chip. Behavioral contract unchanged: FIGYELEM only
  * on `mention.flagged`, the tie chip only when `mention.tiedTo` is present.
  */
-export function MentionRow({ mention, delayMs }: { mention: Mention; delayMs?: number }) {
+export function MentionRow({
+  mention,
+  delayMs,
+  onUndo,
+}: {
+  mention: Mention
+  delayMs?: number
+  onUndo?: (mention: Mention) => void
+}) {
   const sourceIcon = sourceIconFor(mention.source)
   const style = delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined
+  const undoable = onUndo && (mention.source === 'text' || mention.source === 'chat')
 
   return (
     <div className="ppl-mrowt rise" style={style}>
@@ -37,6 +48,16 @@ export function MentionRow({ mention, delayMs }: { mention: Mention; delayMs?: n
           {mention.duration_s ? `${mention.duration_s}s` : mention.source}
         </span>
         {mention.flagged && <span className="ppl-figy">FIGYELEM</span>}
+        {undoable && (
+          <button
+            type="button"
+            className="ppl-mundo"
+            aria-label="Említés visszavonása"
+            onClick={() => onUndo(mention)}
+          >
+            <Icon name="x" size={10} />
+          </button>
+        )}
       </div>
       <p className="ppl-mx">„{mention.excerpt}”</p>
       {mention.tiedTo && (

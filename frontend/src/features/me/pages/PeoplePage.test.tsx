@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -61,6 +61,23 @@ test('a flagged mention with a pattern tie shows FIGYELEM and the kapcsolódik c
   expect(getByText('kapcsolódik')).toBeInTheDocument()
   expect(getByText('FIGYELEM')).toBeInTheDocument()
   expect(container.querySelectorAll('.ppl-mrowt').length).toBeGreaterThan(0)
+})
+
+// mezo-06o0.1: automata (text/chat-sourced) mentions carry an undo control; chip-sourced
+// (manual log) mentions never do — undoing only makes sense for the ones the extractor wrote.
+test('the automata mention shows an undo button that removes it; chip-sourced mentions have none', async () => {
+  renderPage()
+  const autoTile = screen.getByText(/Ádámmal átbeszéltük a hétvégi túrát\./).closest('.ppl-mrowt') as HTMLElement
+  const undoBtn = within(autoTile).getByRole('button', { name: 'Említés visszavonása' })
+  expect(undoBtn).toBeInTheDocument()
+
+  const chipTile = screen.getByText(/Bence-vel röpi után/).closest('.ppl-mrowt') as HTMLElement
+  expect(within(chipTile).queryByRole('button', { name: 'Említés visszavonása' })).toBeNull()
+
+  await userEvent.click(undoBtn)
+  await waitFor(() => {
+    expect(screen.queryByText(/Ádámmal átbeszéltük a hétvégi túrát\./)).toBeNull()
+  })
 })
 
 // mezo-d20.11: the filter row wears the prototype's own .fchip shape (#page-emberek .chiprow),

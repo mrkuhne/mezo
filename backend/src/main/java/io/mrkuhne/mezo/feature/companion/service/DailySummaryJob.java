@@ -5,10 +5,12 @@ import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.embedding.MemoryEmbeddingWriter;
 import io.mrkuhne.mezo.feature.companion.embedding.NoteEmbeddingCatchUp;
+import io.mrkuhne.mezo.feature.companion.embedding.NoteMentionCatchUp;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,9 +27,12 @@ import java.util.UUID;
  * listener-off periods, crashes, and pre-V2.2 history); and, since W1.5 (spec §5.5, bd
  * mezo-b3pp.5), (d) runs {@link NoteEmbeddingCatchUp} — the narrative written OUTSIDE the journal
  * ({@code activity_log.text}, {@code check_in.note}) has NO listener, so this one nightly sweep is
- * its only writer (its own toggle, length gate and per-run budget live in the pass). Per-date
- * failures are isolated: one bad day must never kill the run — the next night retries it via the
- * same catch-up.
+ * its only writer (its own toggle, length gate and per-run budget live in the pass); and, since S2
+ * (spec §3.2, bd mezo-06o0.1), (e) runs {@link NoteMentionCatchUp} right after it, same per-user
+ * try-guard — the same journal-outside notes also carry name mentions, which have no listener
+ * either. Injected via {@link ObjectProvider} because the bean only exists when BOTH
+ * {@code PEOPLE_SWITCH} and {@code COMPANION_SWITCH} are on. Per-date failures are isolated: one
+ * bad day must never kill the run — the next night retries it via the same catch-up.
  */
 @Slf4j
 @Component
@@ -42,6 +47,7 @@ public class DailySummaryJob {
     private final MemoryEmbeddingWriter memoryEmbeddingWriter;
     private final CompanionProperties properties;
     private final NoteEmbeddingCatchUp noteEmbeddingCatchUp;
+    private final ObjectProvider<NoteMentionCatchUp> noteMentionCatchUp;
 
     @Scheduled(cron = "${mezo.companion.summary.cron}")
     public void run() {
@@ -86,6 +92,19 @@ public class DailySummaryJob {
             } catch (Exception e) {
                 log.warn("Note-embedding catch-up failed for user {}", user.getId(), e);
             }
+            // S2 (spec §3.2): the same journal-outside notes have no mention listener either — one
+            // sweep, right after the embedding one, same per-user isolation. ObjectProvider because
+            // the bean is conditional on PEOPLE_SWITCH ∧ COMPANION_SWITCH (may not exist).
+            noteMentionCatchUp.ifAvailable(catchUp -> {
+                try {
+                    int mentions = catchUp.run(user.getId(), yesterday);
+                    if (mentions > 0) {
+                        log.info("Note mention catch-up wrote {} mentions for user {}", mentions, user.getId());
+                    }
+                } catch (Exception e) {
+                    log.warn("Note-mention catch-up failed for user {}", user.getId(), e);
+                }
+            });
             log.info("Daily-summary run for user {}: {} day(s) processed, {} note(s) embedded in window {}..{}",
                     user.getId(), generated, notes, from, yesterday);
         }
