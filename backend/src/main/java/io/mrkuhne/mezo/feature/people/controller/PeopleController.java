@@ -1,9 +1,12 @@
 package io.mrkuhne.mezo.feature.people.controller;
 
 import io.mrkuhne.mezo.api.controller.PeopleApi;
+import io.mrkuhne.mezo.api.dto.CreatePersonRequest;
 import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
+import io.mrkuhne.mezo.api.dto.PersonResponse;
+import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
 import io.mrkuhne.mezo.feature.people.service.PeopleService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.UUID;
@@ -26,5 +29,20 @@ public class PeopleController implements PeopleApi {
     @Override
     public MentionResponse logMention(UUID personId, LogMentionRequest logMentionRequest) {
         return service.logMention(currentUserId.get(), personId, logMentionRequest);
+    }
+
+    @Override
+    public PersonResponse createPerson(CreatePersonRequest createPersonRequest) {
+        return service.createPerson(currentUserId.get(), createPersonRequest);
+    }
+
+    @Override
+    public PersonResponse updatePerson(UUID personId, UpdatePersonRequest updatePersonRequest) {
+        return service.updatePerson(currentUserId.get(), personId, updatePersonRequest);
+    }
+
+    @Override
+    public void deletePerson(UUID personId) {
+        service.deletePerson(currentUserId.get(), personId);
     }
 }

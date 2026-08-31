@@ -33,6 +33,7 @@ public class PersonPopulator {
         p.setAffectBaseline(affectBaseline);
         p.setContactCadenceLabel("Havi 1:1");
         p.setNotes("Teszt személy.");
+        p.setAliases(List.of("Marcika"));
         p.setKnownFacts(List.of("Teszt fact"));
         p.setTies(List.of());
         p.setAffectTrend(List.of(3, 4, 5));

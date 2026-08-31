@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
+import io.mrkuhne.mezo.api.dto.PersonResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
@@ -53,7 +54,7 @@ class PeopleContractIT extends ApiIntegrationTest {
         PersonEntity bence = personPopulator.createPerson(owner, "Bence", "teammate", "positive");
 
         MentionResponse created = postForBody("/api/people/" + bence.getId() + "/mentions",
-            new LogMentionRequest("positive", "Röpi után sör."),
+            new LogMentionRequest("positive", "Röpi után sör.", null),
             ownerAuthHeaders(), HttpStatus.CREATED, MentionResponse.class);
 
         assertThat(created.getPersonId()).isEqualTo(bence.getId());
@@ -71,7 +72,7 @@ class PeopleContractIT extends ApiIntegrationTest {
         PersonEntity foreign = personPopulator.createPerson(other, "Idegen");
 
         postForBody("/api/people/" + foreign.getId() + "/mentions",
-            new LogMentionRequest("positive", null),
+            new LogMentionRequest("positive", null, null),
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
     }
 
@@ -89,5 +90,18 @@ class PeopleContractIT extends ApiIntegrationTest {
     @Test
     void testGetPeopleBootstrap_shouldReturn401_whenNoToken() {
         getForBody("/api/people", null, HttpStatus.UNAUTHORIZED, String.class);
+    }
+
+    @Test
+    void testGetPeopleBootstrap_shouldCarryAliasesStatusAndSourceKind() {
+        UUID owner = ownerId();
+        personPopulator.createPerson(owner, "Marci", "friend", "positive");
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+
+        assertThat(res.getPersons().getFirst().getAliases()).containsExactly("Marcika");
+        assertThat(res.getPersons().getFirst().getStatus()).isEqualTo(PersonResponse.StatusEnum.ACTIVE);
+        assertThat(res.getPersons().getFirst().getSourceKind()).isEqualTo(PersonResponse.SourceKindEnum.MANUAL);
+        assertThat(res.getPersons().getFirst().getRelationship()).isEqualTo(PersonResponse.RelationshipEnum.FRIEND);
     }
 }
