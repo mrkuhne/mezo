@@ -4829,15 +4829,12 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-memcard.open { width: 252px; }
 .mzc-memcard.open .mzc-memgist { -webkit-line-clamp: unset; }
 
-@media (prefers-reduced-motion: reduce) {
-  .mzc-cmic, .mzc-csend { transition: none; }
-  .mzc-wic.run, .mzc-wrow.run .mzc-wst i { animation: none; }
-  .mzc-memcard { transition: none; }
-  .mzc-horb svg, .mzc-horb.busy svg, .mzc-horb.busy::before, .mzc-hstat .mzc-hdot { animation: none; }
-}
-
 /* ===== mezo-vdf4: orb-vezette chat fejléc ===== */
-.mzc-chathead { display: flex; align-items: center; gap: 9px; padding: 2px 19px 0; }
+/* Az appban egyetlen görgető van (.screen-content), ezért a fejléc kitapad — különben egy
+   hosszú szál aljáról a kiút ismét csak a tabbar lenne (lásd a #page-chat page-head
+   korábbi sticky-jét, prototype.css régi 6865). */
+.mzc-chathead { display: flex; align-items: center; gap: 9px; padding: 2px 19px 6px;
+  position: sticky; top: 0; z-index: 30; background: var(--canvas); }
 .mzc-hdisc {
   width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; flex: none;
   font-family: inherit; font-size: 15px; color: var(--text-primary); padding: 0;
@@ -4864,6 +4861,14 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-hstat[data-st="off"] .mzc-hdot { background: var(--amber-deep); }
 .mzc-hstat[data-st="new"] .mzc-hdot { background: var(--lav-deep); }
 .mzc-hstat[data-st="busy"] .mzc-hdot { background: var(--lav-deep); animation: mzc-livepulse 1.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mzc-cmic, .mzc-csend { transition: none; }
+  .mzc-wic.run, .mzc-wrow.run .mzc-wst i { animation: none; }
+  .mzc-memcard { transition: none; }
+  .mzc-horb svg, .mzc-horb.busy svg, .mzc-horb.busy::before,
+  .mzc-hstat .mzc-hdot, .mzc-hstat[data-st] .mzc-hdot { animation: none; }
+}
 
 /* mezo-vdf4 (spec §5): FeedbackChips renders the shared DS `.chip` — softened here, scoped to
    the chat page only, so the DS default elsewhere is untouched. The vote itself is the point,
@@ -6857,13 +6862,6 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .mzh-ghost.is-no[aria-pressed="true"] { background: var(--mz-stch-mut-bg); color: var(--mz-no-ink); }
 .mem-herounit { font-size: 18px; font-weight: 400; color: var(--mz-ink-soft); }
 
-/* #page-chat: a page-head két pgact chipje jobbra ül (prototípus .pgact margin-left:auto) */
-.mz-page-head .mzc-pgact:first-of-type { margin-left: auto; }
-/* A prototípusban a page-head FIX, alatta a .chthread görget. Az appban egyetlen görgető van
-   (.screen-content), ezért a fejléc kitapad — különben egy hosszú szál aljáról a kiút ismét
-   csak a tabbar lenne, azaz visszaesnénk a javított hibába. */
-.mzc > .mz-page-head { position: sticky; top: 0; z-index: 30;
-  padding-top: 9px; padding-bottom: 6px; background: var(--canvas); }
 /* prototípus .chthread { padding: 4px 14px 10px } / .composer { margin: 6px 12px 10px } */
 .mzc .chat-thread { padding: 5px 17px 12px; }
 .mzc .mzc-composer { margin-left: 14px; margin-right: 14px; }

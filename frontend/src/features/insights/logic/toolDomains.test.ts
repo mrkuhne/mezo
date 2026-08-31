@@ -55,7 +55,7 @@ describe('memoryIcon', () => {
     expect(memoryIcon('daily_summary')).toBe('i-nap')
     expect(memoryIcon('journal_entry')).toBe('i-naplo')
     expect(memoryIcon('weekly_summary')).toBe('i-heti')
-    expect(memoryIcon('conversation')).toBe('i-mezo')
+    expect(memoryIcon('chat_turn')).toBe('i-mezo')
     expect(memoryIcon('checkin_note')).toBe('i-checkin')
   })
   it('falls back to the layers icon', () => {

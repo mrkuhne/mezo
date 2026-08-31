@@ -79,7 +79,7 @@ const MEMORY_ICONS: Record<string, ClayIconName> = {
   daily_summary: 'i-nap',
   weekly_summary: 'i-heti',
   journal_entry: 'i-naplo',
-  conversation: 'i-mezo',
+  chat_turn: 'i-mezo',
   checkin_note: 'i-checkin',
 }
 

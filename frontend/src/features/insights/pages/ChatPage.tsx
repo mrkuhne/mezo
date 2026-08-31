@@ -16,12 +16,15 @@ const SUBTITLE = { mock: 'demo beszélgetés', live: 'élő · Gemini' } as cons
 // egy hosszú üzenet sem eszi meg az egész beszélgetést (mezo-a837).
 const COMPOSER_MAX_HEIGHT = 104
 
-function ThinkingDots() {
+// `bare`: when ThinkingDots sits inside a caller-owned `.mzc-msg-a` wrapper (the tools-only
+// streaming block below), it must not lay down a second `.mzc-msg-a` of its own — that widths
+// compound (85% of 92%). Standalone callers leave it unset and get the bubble sizing as before.
+function ThinkingDots({ bare }: { bare?: boolean } = {}) {
   // Prototype typing bubble: orb-led meta row + three pulsing lavender dots in a
   // 4/16-radius bubble (mezo-d20.5.2). The .np-pulse animation stays the page's
   // reduced-motion-guarded pulse (prototype.css).
   return (
-    <div className="mzc-msg-a col gap-sm" style={{ maxWidth: '85%' }}>
+    <div className={bare ? 'col gap-sm' : 'mzc-msg-a col gap-sm'} style={bare ? undefined : { maxWidth: '85%' }}>
       <div className="mzc-meta">
         <ClaySpot name="s-orb" size={18} />
         <span className="mzc-eb">Mezo</span>
@@ -132,9 +135,9 @@ export function ChatPage() {
             data-st={degraded ? 'off' : turn ? 'busy' : isNew ? 'new' : mode === 'live' ? 'live' : 'demo'}
           >
             <span className="mzc-hdot" />
-            {turn
-              ? 'dolgozom rajta…'
-              : degraded ? 'a társ most nem elérhető' : isNew ? 'új beszélgetés' : SUBTITLE[mode]}
+            {degraded
+              ? 'a társ most nem elérhető'
+              : turn ? 'dolgozom rajta…' : isNew ? 'új beszélgetés' : SUBTITLE[mode]}
           </span>
         </span>
         <button
@@ -217,7 +220,7 @@ export function ChatPage() {
         {turn && !turn.draft && (
           <div className="mzc-msg-a col gap-sm">
             {turn.tools.length > 0 && <ToolWorkStrip tools={turn.tools} live />}
-            <ThinkingDots />
+            <ThinkingDots bare />
           </div>
         )}
         {turn && !turn.thinking && turn.draft && (
