@@ -5643,6 +5643,41 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-mtiechip { font-size: 10px; font-weight: 700; color: var(--mz-ink-soft);
   background: color-mix(in srgb, var(--text-primary) 5%, transparent); border-radius: 999px; padding: 2px 8px; }
 
+/* -- Emberek S3 person detail (mezo-06o0.2) -- prototype emberek-head.html
+      `.pavat.lg`/`.trendcard`/`.affbars`/`.affbars i`/`.affax`/`.ctxcard`/`.ctxbar`/
+      `.factcard`/`.fact` x1.18 (58->68 avatar, 16->19 card radius, 44->52 bar height).
+      Bar color is the person's own --ac affect color (element-local, PersonDetailPage's
+      inline style, same idiom PersonCard/.ppl-avat already use); the ctxbar fill width
+      rides a `--w` custom prop (element-local, not a token) with CTX_META's
+      --ppl-ctx-* token for its color -- both real per-person derivations (Task 1's
+      trendHeights/contextBreakdown), never an invented hex or bar. */
+.ppl-avat-lg { width: 68px; height: 68px; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--ac) var(--av), rgba(43, 33, 24, 0.1) 0); }
+.ppl-avat-lg .ppl-avin { width: 54px; height: 54px; font-size: 22px; }
+
+.ppl-trendcard, .ppl-ctxcard, .ppl-factcard { border-radius: 19px; padding: 13px 14px; margin-bottom: 11px;
+  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.ppl-affbars { display: flex; gap: 5px; align-items: flex-end; height: 52px; margin-top: 9px; }
+.ppl-affbars i { flex: 1; border-radius: 5px 5px 2px 2px; min-height: 5px; transform: scaleY(0); transform-origin: bottom; }
+.mz-play .ppl-affbars i { animation: ppl-sparkup 0.55s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 200ms); }
+.ppl-affax { display: flex; justify-content: space-between; font-size: 8px; font-weight: 700;
+  letter-spacing: 0.06em; color: var(--mz-ink-mut); margin-top: 5px; }
+.ppl-ctxbar { display: flex; align-items: center; gap: 9px; padding: 6px 0; }
+.ppl-ctxbar .ppl-ctxlb { font-size: 10px; font-weight: 600; width: 97px; flex: none; }
+.ppl-ctxbar .ppl-ctxtr { flex: 1; height: 8px; border-radius: 5px; background: rgba(43, 33, 24, 0.07); overflow: hidden; }
+.ppl-ctxbar .ppl-ctxtr div { height: 100%; border-radius: 5px; width: 0;
+  transition: width 0.8s cubic-bezier(0.25, 0.8, 0.35, 1) 0.35s; }
+.mz-play .ppl-ctxbar .ppl-ctxtr div { width: var(--w); }
+.ppl-ctxbar .ppl-ctxpc { font-size: 9px; font-weight: 700; color: var(--mz-ink-soft); width: 31px;
+  text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.ppl-fact { display: inline-flex; border-radius: 999px; padding: 4px 12px; font-size: 10px; font-weight: 600;
+  color: var(--mz-cell-rose-ink); background: var(--mz-cell-rose-bg); margin: 2px 4px 2px 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ppl-affbars i, .mz-play .ppl-affbars i { transform: scaleY(1); animation: none; }
+  .ppl-ctxbar .ppl-ctxtr div, .mz-play .ppl-ctxbar .ppl-ctxtr div { width: var(--w); transition: none; }
+}
+
 .tud-summary { border-radius: 20px; padding: 14px 15px;
   background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
 .tud-summary-link { display: block; margin-top: 10px; font-size: 11px; font-weight: 700;

@@ -68,6 +68,7 @@ import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
 import { PeopleJeloltekPage } from '@/features/me/pages/PeopleJeloltekPage'
 import { PeopleKorPage } from '@/features/me/pages/PeopleKorPage'
+import { PersonDetailPage } from '@/features/me/pages/PersonDetailPage'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
@@ -268,6 +269,10 @@ export const routes: RouteObject[] = [
       { path: 'me/people', element: <PeoplePage /> },
       { path: 'me/people/jeloltek', element: <PeopleJeloltekPage /> },
       { path: 'me/people/kor', element: <PeopleKorPage /> },
+      // Person detail (Task 4) — registered AFTER every static `me/people/*` sibling
+      // above (React Router ranks static over dynamic regardless of source order, but
+      // the ordering stays explicit here per the WeekHub/`me/week/napok/:date` precedent).
+      { path: 'me/people/:id', element: <PersonDetailPage /> },
       { path: 'me/knowledge', element: <KnowledgePage /> },
       // mezo-nol0: a főnevet a FEED viszi (ide vezet a fejléc dropdown „Összes értesítés ›"
       // lábléce), a kapcsolók alá költöztek.
