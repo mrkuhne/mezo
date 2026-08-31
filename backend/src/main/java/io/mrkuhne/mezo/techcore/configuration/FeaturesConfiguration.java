@@ -243,4 +243,8 @@ public class FeaturesConfiguration {
      *  (W5.1 is independent), but nothing is ever delivered. Needs COMPANION_SWITCH and
      *  PROACTIVE_SWITCH too (the card is a companion_message row). */
     public static final String INTERVENTION_SWITCH = "mezo.feature.intervention.enabled";
+
+    /** Emberek szekció (mezo-06o0) — az automata mention-detektálás rétege. Off ⇒ egyetlen
+     *  detektáló listener-bean sem létezik; a kézi /api/people felület ettől függetlenül él. */
+    public static final String PEOPLE_SWITCH = "mezo.feature.people.enabled";
 }
