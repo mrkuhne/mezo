@@ -20,7 +20,6 @@ they inline come from `../assets/`.
 | `en-tab.html` | https://claude.ai/code/artifact/dee0dd7e-f321-4f88-94ff-c7face496d70 |
 | `napzaras.html` | https://claude.ai/code/artifact/0e4e02ba-d5c8-49ce-a738-b924f1583cf6 |
 | `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
-| `karakter-tab.html` | (új — publikálás után) |
 
 ## Workflow
 
