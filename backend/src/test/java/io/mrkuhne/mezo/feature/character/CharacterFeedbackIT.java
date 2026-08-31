@@ -126,6 +126,17 @@ class CharacterFeedbackIT extends ApiIntegrationTest {
 
         CharacterClaimEntity row = claimRepository.findById(claim.getId()).orElseThrow();
         assertThat(row.getConfidence()).isEqualByComparingTo(new BigDecimal("0.85"));
+
+        // fix round 1, finding 3: the capped second TALAL is a no-op on the NUMBER only — the
+        // answer itself is still a signal. Both calls must have appended their own event and
+        // written their own observation row.
+        assertThat(row.getUserFeedback().events()).hasSize(2)
+                .allSatisfy(event -> assertThat(event.kind()).isEqualTo("TALAL"));
+        List<CharacterObservationEntity> observations = observationRepository.findAll().stream()
+                .filter(o -> o.getCreatedBy().equals(owner))
+                .toList();
+        assertThat(observations).hasSize(2)
+                .allSatisfy(obs -> assertThat(obs.getExpertKey()).isEqualTo(CharacterFeedbackService.USER_EXPERT_KEY));
     }
 
     @Test

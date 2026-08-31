@@ -56,8 +56,9 @@ public class CharacterFeedbackService {
     private static final String RETIRED = "RETIRED";
 
     /** Cause prefix stamped on every {@link ClaimConfidenceHistoryEnvelope.Point} this service
-     *  appends — the TALAL cap rule below scans for it to tell a self-confirmation apart from
-     *  real konzílium evidence. */
+     *  appends — marks a confidence movement as user-driven (self-confirmation), as opposed to
+     *  the plain {@code "konzílium"}/{@code "konzílium: nyugdíjazva"} causes {@link ClaimLifecycle}
+     *  stamps for expert-ruled movements. */
     private static final String CAUSE_PREFIX = "felhasználói visszajelzés";
     private static final String CAUSE_TALAL = CAUSE_PREFIX + ": talál";
     private static final String CAUSE_NEM_IGAZ = CAUSE_PREFIX + ": nem igaz";
@@ -101,7 +102,7 @@ public class CharacterFeedbackService {
             case KIND_TALAL -> {
                 observationText = "A felhasználó megerősítette: \"" + claim.getText() + "\"";
                 salience = SALIENCE_TALAL;
-                BigDecimal newConfidence = bumpForTalal(claim.getConfidenceHistory(), claim.getConfidence());
+                BigDecimal newConfidence = bumpForTalal(claim.getConfidence());
                 if (newConfidence.compareTo(claim.getConfidence()) != 0) {
                     claim.setConfidenceHistory(
                             appendHistory(claim.getConfidenceHistory(), newConfidence, CAUSE_TALAL, now));
@@ -146,48 +147,23 @@ public class CharacterFeedbackService {
     }
 
     /**
-     * The TALAL cap rule (Karakter S6 spec §7): let {@code lastKonziliumPoint} be the newest
-     * {@link ClaimConfidenceHistoryEnvelope} point whose cause does NOT start with
-     * {@link #CAUSE_PREFIX} — i.e. real expert/konzílium evidence, not a prior user bump. If the
-     * claim's current confidence is already &ge; {@link #TALAL_MAX_CONFIDENCE} OR every point
-     * after {@code lastKonziliumPoint} is itself a user bump and the current value is already at
-     * that ceiling, the answer is a no-op on the number — self-confirmation alone can never push
-     * a claim past 0.85, only fresh konzílium evidence can move it further. (The caller still
-     * records the event + observation either way — the answer is a signal even when the number
-     * cannot move.) Otherwise the new confidence is {@code min(current + 0.05, 0.85)}.
+     * The TALAL cap rule (Karakter S6 spec §7, fix round 1): a flat ceiling at
+     * {@link #TALAL_MAX_CONFIDENCE} (0.85) — a TALAL answer alone can never push a claim's
+     * confidence past it, no matter how many times Daniel confirms the same claim.
+     * Self-confirmation must not be able to saturate a claim without new evidence; only a
+     * konzílium (which can rule confidence up to its own, higher 0.95 ceiling — see
+     * {@link ClaimLifecycle}) supplies that evidence. A claim the konzílium already raised above
+     * 0.85 is left exactly where it is — TALAL never drags it back down to the ceiling — a later
+     * TALAL on it is simply a no-op on the number. Either way (moved or not) the caller still
+     * appends the event and writes the observation: the answer is a signal even when the number
+     * cannot move. Otherwise the new confidence is {@code min(current + 0.05, 0.85)}.
      */
-    private static BigDecimal bumpForTalal(ClaimConfidenceHistoryEnvelope history, BigDecimal current) {
-        if (isTalalCapped(history, current)) {
+    private static BigDecimal bumpForTalal(BigDecimal current) {
+        if (current.compareTo(TALAL_MAX_CONFIDENCE) >= 0) {
             return current;
         }
         BigDecimal bumped = current.add(TALAL_STEP);
         return bumped.compareTo(TALAL_MAX_CONFIDENCE) > 0 ? TALAL_MAX_CONFIDENCE : bumped;
-    }
-
-    private static boolean isTalalCapped(ClaimConfidenceHistoryEnvelope history, BigDecimal current) {
-        if (current.compareTo(TALAL_MAX_CONFIDENCE) >= 0) {
-            return true;
-        }
-        List<ClaimConfidenceHistoryEnvelope.Point> points = history.points();
-        int lastKonziliumIdx = -1;
-        for (int i = points.size() - 1; i >= 0; i--) {
-            if (!isUserCause(points.get(i).cause())) {
-                lastKonziliumIdx = i;
-                break;
-            }
-        }
-        boolean allAfterAreUserBumps = true;
-        for (int i = lastKonziliumIdx + 1; i < points.size(); i++) {
-            if (!isUserCause(points.get(i).cause())) {
-                allAfterAreUserBumps = false;
-                break;
-            }
-        }
-        return allAfterAreUserBumps && current.compareTo(TALAL_MAX_CONFIDENCE) >= 0;
-    }
-
-    private static boolean isUserCause(String cause) {
-        return cause != null && cause.startsWith(CAUSE_PREFIX);
     }
 
     private static ClaimConfidenceHistoryEnvelope appendHistory(ClaimConfidenceHistoryEnvelope history,
