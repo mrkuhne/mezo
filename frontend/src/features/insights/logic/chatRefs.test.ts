@@ -54,4 +54,10 @@ describe('chatRefDisplay — carried label (mezo-b3pp.33)', () => {
     const id = '9f2c1a3e-1111-4b2b-8b1a-000000000003'
     expect(chatRefDisplay({ kind: 'GraphNode', id, label: '   ' }).label).toBe(id)
   })
+
+  test('kind renders the Hungarian "Összefüggés" — no English word in the HU footer', () => {
+    expect(
+      chatRefDisplay({ kind: 'GraphNode', id: '9f2c1a3e-1111-4b2b-8b1a-000000000004', label: 'Késői evés' }).kind,
+    ).toBe('Összefüggés')
+  })
 })

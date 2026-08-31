@@ -3,11 +3,15 @@ import type { ChatRef } from '@/data/types'
 // ============================================================
 // Design 2.0 chat refs (mezo-d20.5.2) — the "Hivatkozott · L3"
 // footer speaks HUMAN labels instead of raw wire ids (the audit's
-// gap 7: "refs are inert — raw ids, no label lookup"). The wire
-// carries only {kind, id}, so the mapping is strictly honest:
-//   · kind → its Hungarian artifact name (unknown kinds verbatim)
-//   · id   → a human date ONLY when the id literally contains a
-//            valid ISO date; otherwise the raw id, unchanged.
+// gap 7: "refs are inert — raw ids, no label lookup"). The label is
+// picked in three honest steps, nothing fabricated at any of them:
+//   · kind  → its Hungarian artifact name (unknown kinds verbatim)
+//   · label → the carried label, WHEN the producer supplied one
+//             (mezo-b3pp.33: GraphNode refs carry the traversal's
+//             own fromTitle/toTitle — a uuid id can never be
+//             humanised any other way)
+//   · id    → otherwise, a human date ONLY when the id literally
+//             contains a valid ISO date; the raw id unchanged if not.
 // Nothing is fabricated — no invented titles, no guessed names.
 // ============================================================
 
@@ -22,6 +26,10 @@ const KIND_LABELS: Record<string, string> = {
   Journal: 'Napló',
   Meal: 'Étkezés',
   Run: 'Futás',
+  // mezo-b3pp.33 finding 4: the prompt block these refs come from is literally
+  // headed [Összefüggések] — reuse that word rather than leaving GraphNode's
+  // English kind name in an otherwise fully Hungarian footer.
+  GraphNode: 'Összefüggés',
 }
 
 const ISO_DATE = /(\d{4})-(\d{2})-(\d{2})/
