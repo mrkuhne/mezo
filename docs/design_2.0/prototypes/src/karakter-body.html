@@ -128,8 +128,10 @@
             <div id="runList"></div>
 
             <div class="secttl rise" style="--d:60ms;">Adatforrás-leltár</div>
-            <p class="sectnote rise" style="--d:80ms;">Mit olvas a rendszer ma, és milyen ablakban —
-            ez a lista a <code>mezo-1gim.15</code> („MINDENT be”) munkalistája is egyben.</p>
+            <p class="sectnote rise" style="--d:80ms;">Mit olvas a rendszer ma, és mit tervez —
+            négy szaggatott kör alá rendezve, ahogy a corpus bővül. Ez a lista <em>maga</em> a
+            <code>mezo-1gim.15</code> („MINDENT be”) munkalistája: ahogy egy kör landol, a sorai
+            átkerülnek a bekötve szekcióba.</p>
             <div class="invsec" id="invList"></div>
 
             <div class="secttl rise" style="--d:100ms;">Nyoma marad</div>
@@ -288,12 +290,19 @@
           majd egy nyíl, majd egy <strong>LLM</strong> sor (a szakértő orb-ja + a saját hangján írt
           megfigyelés). Ez a „kód detektál, LLM értelmez” elválasztás vizuálisan is olvasható, nem
           csak dokumentálva.</li>
-          <li><strong>Adatforrás-leltár</strong> — a valós olvasási ablakok (éjszakai 14 nap,
-          konzílium a hét megfigyelései + aktív claimek + Daniel válaszai, havi a teljes
-          claim-bázis, bootstrap a hat forrás) + egy <strong>szaggatott, „még nincs bekötve”</strong>
-          lista a be nem kötött domainekről (edzés-szettek/RIR, futás, sport, fuel-részletek,
-          chat-témák, hála, döntés-napló, Életjel, streakek, emberek-említések). Ez a lista
-          szándékosan a <code>mezo-1gim.15</code> („MINDENT be”) munkalistája is egyben.</li>
+          <li><strong>Adatforrás-leltár — a tervezett teljes korpusz, nem csak a mai állapot</strong>
+          (Daniel kérésére finomítva). Három vizuális állapot: <strong>bekötve</strong> (tömör sor —
+          a valós olvasási ablakok: éjszakai 14 nap, konzílium a hét megfigyelései + aktív claimek +
+          Daniel válaszai, havi a teljes claim-bázis, bootstrap a hat forrás); <strong>„N. KÖR”</strong>
+          (szaggatott, számozott kör-fejléc alá rendezve — négy tervezett kör: 1. Edzés & test,
+          2. Fuel & ciklus, 3. Psziché & viselkedés-meta, 4. Kapcsolatok & AI-meta; minden sor a célzott
+          detektor-kulcsot geek monospace chipként mutatja, ahol van ilyen — pl. <code>rir-calibration</code>,
+          <code>sleep-performance-chain</code>, <code>med-cycle-covariance</code> —, az ÉRZÉKENY témák
+          (gyógyszerciklus, check-in-dimenziók, tudástár-triázs) levendula jelöléssel); és egy
+          <strong>halványabb „később”</strong> záró sáv a még be sem sorolt maradékra (pl. a
+          súly-verziójú <code>logging-gap</code> variáns, amire ma nincs <code>WeightGapDetector</code>).
+          Ez a leltár <em>maga</em> a <code>mezo-1gim.15</code> („MINDENT be”) munkalistája — ahogy egy
+          kör landol, a benne lévő sorok átkerülnek a „bekötve” szekcióba.</li>
           <li><strong>Feed „⚙ miből?”</strong> — a Feed-oldal minden megfigyelés-sora kapott egy kis
           fogaskerék gombot, ami ugyanazt a jel-lánc arcot nyitja meg inline, helyben — így Daniel
           összehasonlíthatja a két felületet (teljes Futás-idővonal vs. kontextusban, egy
@@ -323,9 +332,16 @@
           <li><strong>Mennyi futás-történet</strong> — az 5 sor (2 éjszakai + heti + havi +
           bootstrap) elég mélység, vagy legyen egy „régebbi futások betöltése” — és ha igen,
           meddig érdemes visszamenni (a nightly job csak 3 napot pótol vissza, a heti 2 hetet)?</li>
-          <li><strong>Leltár csoportosítása</strong> — az Adatforrás-leltár most job-kör szerint
-          csoportosít (éjszakai/konzílium/havi/bootstrap); jobb lenne domain szerint (edzés, fuel,
-          alvás, élet…), hogy a „még nincs bekötve” lista közvetlenül a domain mellett látszódjon?</li>
+          <li><strong>Leltár csoportosítása</strong> — a „bekötve” szekció most job-kör szerint
+          csoportosít (éjszakai/konzílium/havi/bootstrap), a tervezett rész pedig témakör szerint
+          (edzés, fuel, psziché, kapcsolatok) — jó ez a kettősség, vagy legyen mindkettő ugyanazt
+          a logikát követő?</li>
+          <li><strong>Jó-e az 1→4 sorrend?</strong> — a körök jelenlegi sorrendje (edzés & test →
+          fuel & ciklus → psziché & viselkedés-meta → kapcsolatok & AI-meta) tükrözi Daniel eredeti
+          felsorolását, de nem feltétlenül a megvalósítás nehézségét vagy fontosságát. Ez a jó
+          sorrend, vagy van olyan tétel, ami inkább egy másik körbe tartozna (pl. a
+          „logolási latencia” inkább fegyelem-jel, mint pszichés jel — kerülhetne az 1. vagy egy
+          önálló körbe)?</li>
         </ol>
       </div>
       <div class="note">A dosszié nem ad hozzá nyers jelet — a meglévő emlékezetet (napi összegzők,
@@ -663,11 +679,45 @@
       { w: 'Bootstrap (egyszeri)', x: '60 napi összegző · 60 megerősített minta · top 40 tudás-tény · ' +
         '60 heti review · 60 napló (csak Pszichológus) · 40 életesemény (csak Antropológus).' }
     ],
-    missing: [
-      'edzés-szettek és RIR-részletek', 'futás-adatok', 'sport (röplabda) naplók',
-      'fuel-részletek (makró-bontás, recept-szint)', 'chat-témák (a beszélgetések tartalma)',
-      'hála-bejegyzések', 'döntés-napló', 'Életjel (napi need-gyűrűk)', 'streakek',
-      'emberek-említések részletei (a naplószövegen túl)'
+    rounds: [
+      { n: 1, title: 'Edzés & test', items: [
+        { t: 'Gym szettek — súly/ismétlés/RIR becslés vs teljesítés', det: ['rir-calibration'] },
+        { t: 'Mezociklus-ív + kihagyott edzésnapok' },
+        { t: 'Niggle-jelentések', det: ['niggle-map'] },
+        { t: 'Röplabda váll-skála + RPE', det: ['sport-interference'] },
+        { t: 'Futás HR-recovery', det: ['hr-recovery-trend'] },
+        { t: 'Alvásminőség × edzés-RPE', det: ['sleep-performance-chain'] }
+      ] },
+      { n: 2, title: 'Fuel & ciklus', items: [
+        { t: 'Makró-teljesítés, NOVA-szintek + snack-ablak', det: ['comfort-eating'] },
+        { t: 'Víz' },
+        { t: 'Stack-kihagyások' },
+        { t: 'Gyógyszerciklus-hét × check-inek', det: ['med-cycle-covariance'], sensitive: true }
+      ] },
+      { n: 3, title: 'Psziché & viselkedés-meta', items: [
+        { t: 'Check-in jegyzetek + a 4 dimenzió értékei', det: ['self-calibration'], sensitive: true },
+        { t: 'Kreed/fókusz × Napzárás', det: ['promise-vs-delivery'] },
+        { t: 'Döntésnapló kimenetek', det: ['decision-profile'] },
+        { t: 'Hála-témák' },
+        { t: 'Streak-törés/visszatérés', det: ['resilience', 'all-or-nothing', 'restart-pattern'] },
+        { t: 'Logolási latencia (Pótold-arány)', det: ['retro-logging-ratio'] },
+        { t: 'Éjszakai app-aktivitás', det: ['night-activity'] },
+        { t: 'Check-in reakcióidő', det: ['checkin-latency'] }
+      ] },
+      { n: 4, title: 'Kapcsolatok & AI-meta', items: [
+        { t: 'Emberek-említések × hangulat', det: ['people-mood-link'] },
+        { t: 'Hétvége-szakadék', det: ['weekend-gap'] },
+        { t: 'Szezonalitás' },
+        { t: 'Chat-témák eltolódása', det: ['chat-topic-shift'] },
+        { t: 'Tudástár/minta-triázs döntések', det: ['knowledge-rejection-pattern'], sensitive: true },
+        { t: 'Életjel-gyűrűk' },
+        { t: 'Quest/aktivitás-szövegek' },
+        { t: 'Memoár + predikció-találatok' }
+      ] }
+    ],
+    later: [
+      'Súly-naplózási rés — a logging-gap detektor még nem létező súly-változata (WeightGapDetector).',
+      'Minden további jel, amit a négy kör lezárása után a csapat még felfedez — ez a lista bővül, nem zárt.'
     ]
   };
 
@@ -700,11 +750,19 @@
   var invList = document.getElementById('invList');
   invList.innerHTML = INVENTORY.reads.map(function (r) {
     return '<div class="invrow"><div class="grow"><div class="iw">' + r.w + '</div><div class="ix">' + r.x + '</div></div></div>';
-  }).join('') + INVENTORY.missing.map(function (m) {
-    return '<div class="invrow missing"><div class="grow"><div class="iw">' + m + '</div>' +
-      '<div class="ix">nem olvassa a Karakter — nincs detektor, nincs bootstrap-forrás rá</div></div>' +
-      '<span class="missingtag">még nincs bekötve</span></div>';
-  }).join('');
+  }).join('') +
+  INVENTORY.rounds.map(function (rnd) {
+    return '<div class="roundhd"><span class="rnum">' + rnd.n + '. KÖR</span><span class="rttl">' + rnd.title + '</span></div>' +
+      rnd.items.map(function (it) {
+        var chips = it.det ? '<div class="detchiprow">' +
+          it.det.map(function (d) { return '<span class="detchip ghost">' + d + '</span>'; }).join('') +
+          (it.sensitive ? '<span class="senstag">érzékeny</span>' : '') + '</div>' :
+          (it.sensitive ? '<div class="detchiprow"><span class="senstag">érzékeny</span></div>' : '');
+        return '<div class="invrow round"><div class="grow"><div class="iw">' + it.t + '</div>' + chips + '</div></div>';
+      }).join('');
+  }).join('') +
+  '<div class="latertail"><div class="lttitle">később — még be sem sorolva</div>' +
+  INVENTORY.later.map(function (l) { return '<div class="laterrow">' + l + '</div>'; }).join('') + '</div>';
 
   document.getElementById('ainaploLink').addEventListener('click', function () {
     toast('AI-napló → lásd az Én tab AI-napló prototípusát (feature=character szűrő)');
