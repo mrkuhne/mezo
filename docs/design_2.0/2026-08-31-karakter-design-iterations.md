@@ -418,3 +418,47 @@ Restructured into the same compact tile-hub idiom as the Karakter hub itself.
   AI-napló deserves a page once the real surface is richer) added; the four carried-over
   questions from round 3/4 (tile-vs-wide-row on the Karakter hub, Feed "⚙" navigation, leltár
   grouping, round order) remain open — none were resolved by this restructuring round.
+
+## Round 6 (mezo-1gim.14) — readable Adatforrások
+
+Daniel: *"adatforrások így teljesen olvashatatlan"* — the leltár page (round 5's "Leltár" page,
+reached from the Gépterem hub's Adatforrások tile) had become a dense, undifferentiated wall of
+rows: 4 "bekötve" rows plus 26 "tervezett" rows in one continuous list, with monospace detector
+keys sitting mid-sentence inside prose descriptions. Five readability fixes, applied per Daniel's
+explicit principles:
+
+1. **Plain language first, geek second.** Every row now leads with a short human label in normal
+   body type; the monospace detector-key chip moved to a secondary, right-aligned position —
+   never inline in a sentence.
+2. **Cards, not a list wall.** One sage-toned **"Bekötve" card** (four rows, each with a quiet ✓
+   and small mcell-style value chips) replaced the old prose rows. The four **"N. KÖR" cards**
+   kept their dashed treatment, but the dash moved to the *card frame* — the content inside reads
+   as solid, normal text, per Daniel's explicit instruction to "dash the frame, not the text."
+3. **Segmented control chosen over one long scroll.** Weighed against the alternative (a single
+   scroll of five cards, all expandable), a two-segment **"Bekötve | Tervezett"** switch won
+   because a phone-width scroll of five full cards (four of them 4–8 items deep) still couldn't
+   fit anywhere near 1.5 screens. The "Tervezett" segment shows a compact 4-row index (round
+   number + title + item count) that taps through to a new generic **`page-kor`** mini-page per
+   round — the exact escape hatch the brief offered ("the rounds become tap-through mini-pages
+   from a compact 4-row index") when full inline content wouldn't fit.
+4. **Content trimmed to fragments.** Every item label shortened to 2–4 words ("Niggle-jelentések"
+   instead of a full sentence); items mapping to more than one detector (e.g. streak-törés → 3
+   keys) collapse to a quiet "3 detektor" count instead of a wall of chips; ÉRZÉKENY became a
+   small lavender dot instead of a shouting badge.
+5. **Read-window facts as value chips.** "14 nap", "60 összegző", "40 tény" etc. now render as
+   small tinted `.valchip` tiles inside the Bekötve card, not as prose sentences.
+
+**Result, verified in the demo**: the Adatforrások page's `page-body` scrollHeight now equals its
+clientHeight exactly — it fits with zero leftover scroll, well inside the 1.5-screen budget — and
+a round's own mini-page (even the 8-item Psziché & viselkedés-meta round) fits comfortably too.
+
+### Net effect / what's unchanged
+
+- `INVENTORY` data is unchanged in shape (same 4 read-sources, same 4 rounds, same 26 total
+  planned items, same detector/sensitive flags) — only presentation and label length changed.
+- The Futások, Detektorok, and run-detail pages from round 5/4.1 are untouched; Detektorok's own
+  list was restyled to the same card/row language for family consistency but its content and
+  navigation are unchanged.
+- The "Leltár csoportosítása" decision question was refreshed to ask about the new segmented-vs-
+  continuous-scroll choice specifically, rather than the now-resolved grouping-logic question;
+  all other carried-over decision questions remain open.

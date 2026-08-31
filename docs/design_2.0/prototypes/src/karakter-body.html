@@ -1,5 +1,5 @@
 <div class="wrap">
-  <p class="eyebrow">Mezo · oldalépítés · Karakter (Én tab, dosszié) · v4.2</p>
+  <p class="eyebrow">Mezo · oldalépítés · Karakter (Én tab, dosszié) · v4.3</p>
   <h1>Karakter oldal</h1>
   <p class="lede">A Karakter-dosszié felhasználói felülete — a backend már megvan (7 CORE dimenzió,
   7 szakértő + Szkeptikus + Mezo elnök, heti konzílium, bootstrap, claim-visszajelzés — lásd
@@ -156,10 +156,21 @@
           <div class="page-head"><button class="backbtn" data-back="page-leltar">‹ Gépterem</button></div>
           <div class="page-hero"><div class="nm">Adatforrások</div><div class="sb">mit olvas a rendszer ma, és mit tervez</div></div>
           <div class="page-body">
-            <p class="sectnote rise" style="--d:0ms;">Négy szaggatott kör alá rendezve, ahogy a corpus
-            bővül. Ez a lista <em>maga</em> a <code>mezo-1gim.15</code> („MINDENT be”) munkalistája:
-            ahogy egy kör landol, a sorai átkerülnek a bekötve szekcióba.</p>
-            <div class="invsec" id="invList"></div>
+            <div class="leltarsegs" id="leltarSegs">
+              <button class="on" data-lseg="bekotve">Bekötve</button>
+              <button data-lseg="tervezett">Tervezett</button>
+            </div>
+            <div class="leltarpanel on" id="lpBekotve"></div>
+            <div class="leltarpanel" id="lpTervezett"></div>
+          </div>
+        </div>
+
+        <!-- ============ KÖR-RÉSZLET (generikus) ============ -->
+        <div class="page p-gep" id="page-kor">
+          <div class="page-head"><button class="backbtn" data-back="page-kor">‹ Adatforrások</button></div>
+          <div class="page-hero"><div class="nm" id="korName">—</div><div class="sb" id="korSub">—</div></div>
+          <div class="page-body">
+            <div class="leltarcard dashed" id="korItems"></div>
           </div>
         </div>
 
@@ -168,7 +179,7 @@
           <div class="page-head"><button class="backbtn" data-back="page-detektorok">‹ Gépterem</button></div>
           <div class="page-hero"><div class="nm">Detektorok</div><div class="sb">a ma aktív katalógus, egy mondatban</div></div>
           <div class="page-body">
-            <div id="detList"></div>
+            <div class="leltarcard sage" id="detList"></div>
             <p class="principle">A kód csak észlel — az értelmezés mindig az adott szakértő
             LLM-hívása. Egy detektor sosem ítél, csak jelez.</p>
           </div>
@@ -470,6 +481,35 @@
           megkülönböztethető, egymás közt viszont egy család.</li>
         </ul>
       </div>
+      <div>
+        <h2>4.3 — olvasható Adatforrások (mezo-1gim.14)</h2>
+        <ul>
+          <li><strong>Daniel:</strong> „adatforrások így teljesen olvashatatlan” — a leltár egy
+          sűrű, egybefüggő sor-fal volt (4 bekötve sor + 26 tervezett sor egyetlen listában,
+          detektor-kulcsok mondat közepén). Öt olvashatósági javítás:</li>
+          <li><strong>Sima nyelv elöl, geek másodlagos</strong> — minden sor egy rövid, sima
+          szövegű címkével kezd („Gym szettek”, nem „a niggle-jelentések és a testrész, amire
+          vonatkoznak…”); a monospace detektor-chip jobbra került, sosem mondat közepén.</li>
+          <li><strong>Kártyák, nem lista-fal</strong> — egyetlen zsálya „Bekötve” kártya (négy sor,
+          mindegyik csendes ✓-szal + mcell-stílusú érték-chipekkel: <code>14 nap</code>,
+          <code>60 összegző</code> stb. — sosem prózában); a négy „N. KÖR” most saját, szaggatott
+          <em>keretű</em> kártya — a szaggatás a kereten van, a tartalom belül sima, olvasható.</li>
+          <li><strong>Szegmens: Bekötve | Tervezett</strong> — telefonszélességben egy folytonos
+          5-kártyás scroll (Bekötve + 4 kör) még mindig sok lett volna; a választás egy kétszegmenses
+          váltó lett a Karakter hub más szegmens-váltóival (pl. Éjszakai mód) rokon nyelven. A
+          „Tervezett” szegmens most egy <strong>kompakt 4-soros index</strong> (kör-szám + cím +
+          tételszám), és csak érintésre nyílik meg egy-egy kör saját mini-oldala (
+          <code>page-kor</code>, generikus sablon) — ez volt a task által is jelzett vészkijárat,
+          ha a tartalom nem fér el egy oldalon.</li>
+          <li><strong>Tartalom lefaragva</strong> — minden tétel-szöveg pár szavas töredék lett
+          (pl. „Niggle-jelentések”, nem teljes mondat); ahol egy tétel több detektorra mutat
+          (streak-törés → 3 detektor), egy csendes „3 detektor” szám áll chip-fal helyett; az
+          ÉRZÉKENY jelölés egy apró levendula pötty lett a korábbi kiabáló badge helyett.</li>
+          <li><strong>Eredmény</strong> — az Adatforrások oldal a demóban <em>pontosan kitölti</em>
+          a képernyőt maradék görgetés nélkül (a page-body scroll-magassága = látható magasság);
+          egy kör saját oldala is egy képernyőn belül marad 8 tételnél is.</li>
+        </ul>
+      </div>
       <div class="democtl">
         <span>Demó-vezérlők:</span>
         <button id="demoBoot">Bootstrap-folyamat</button>
@@ -485,10 +525,12 @@
           visz, nem nyit semmit inline. Ez a helyes irány, vagy a Feed-en maradjon egy rövidebb,
           önálló összegzés is (pl. csak a detektor-chip, link nélkül), hogy ne kelljen mindig
           átugrani a Gépterembe?</li>
-          <li><strong>Leltár csoportosítása</strong> — a „bekötve” szekció most job-kör szerint
-          csoportosít (éjszakai/konzílium/havi/bootstrap), a tervezett rész pedig témakör szerint
-          (edzés, fuel, psziché, kapcsolatok) — jó ez a kettősség, vagy legyen mindkettő ugyanazt
-          a logikát követő?</li>
+          <li><strong>Bekötve | Tervezett szegmens — jó forma?</strong> — a leltár most egy
+          kétszegmenses váltó mögé rejti a bekötve-kártyát és a tervezett-indexet; a „bekötve”
+          szekció job-kör szerint csoportosít (éjszakai/konzílium/havi/bootstrap), a „tervezett”
+          pedig témakör szerint (edzés, fuel, psziché, kapcsolatok) — jó ez a kettősség, vagy
+          legyen mindkettő ugyanazt a logikát követő? És jó-e a szegmens, vagy inkább egy
+          folytonos, de rövidebb scroll (5 kártya, mind összecsukva/lenyitható) olvasna jobban?</li>
           <li><strong>Jó-e az 1→4 sorrend?</strong> — a körök jelenlegi sorrendje (edzés & test →
           fuel & ciklus → psziché & viselkedés-meta → kapcsolatok & AI-meta) tükrözi Daniel eredeti
           felsorolását, de nem feltétlenül a megvalósítás nehézségét vagy fontosságát. Ez a jó
@@ -1111,80 +1153,113 @@
 
   var INVENTORY = {
     reads: [
-      { w: 'Éjszakai kör', x: '14 napos ablak — étkezés-logok, súlymérések, check-inek, napló ' +
-        '(<code>CharacterSignalReads</code>); csak Drill/Pszichológus/Táplálkozó tartományát fedi ma.' },
-      { w: 'Vasárnapi konzílium', x: 'a hét fel nem dolgozott megfigyelései + az összes ACTIVE claim + ' +
-        'Daniel felhasználói visszajelzései (a claim-feedback maga is egy megfigyelés, <code>expert_key=user</code>).' },
-      { w: 'Havi mélyolvasás', x: 'a teljes claim-bázis, korral súlyozva — nem friss jel, felülvizsgálat.' },
-      { w: 'Bootstrap (egyszeri)', x: '60 napi összegző · 60 megerősített minta · top 40 tudás-tény · ' +
-        '60 heti review · 60 napló (csak Pszichológus) · 40 életesemény (csak Antropológus).' }
+      { w: 'Éjszakai kör', chips: ['14 nap'] },
+      { w: 'Vasárnapi konzílium', chips: ['heti'] },
+      { w: 'Havi mélyolvasás', chips: ['havi'] },
+      { w: 'Bootstrap (egyszeri)', chips: ['60 összegző', '60 minta', '40 tény', '60 review', '60 napló', '40 esemény'] }
     ],
     rounds: [
       { n: 1, title: 'Edzés & test', items: [
-        { t: 'Gym szettek — súly/ismétlés/RIR becslés vs teljesítés', det: ['rir-calibration'] },
-        { t: 'Mezociklus-ív + kihagyott edzésnapok' },
+        { t: 'Gym szettek', det: ['rir-calibration'] },
+        { t: 'Mezociklus-ív' },
         { t: 'Niggle-jelentések', det: ['niggle-map'] },
-        { t: 'Röplabda váll-skála + RPE', det: ['sport-interference'] },
+        { t: 'Röplabda váll-skála', det: ['sport-interference'] },
         { t: 'Futás HR-recovery', det: ['hr-recovery-trend'] },
-        { t: 'Alvásminőség × edzés-RPE', det: ['sleep-performance-chain'] }
+        { t: 'Alvás × edzés-RPE', det: ['sleep-performance-chain'] }
       ] },
       { n: 2, title: 'Fuel & ciklus', items: [
-        { t: 'Makró-teljesítés, NOVA-szintek + snack-ablak', det: ['comfort-eating'] },
+        { t: 'Makró-teljesítés, NOVA', det: ['comfort-eating'] },
         { t: 'Víz' },
         { t: 'Stack-kihagyások' },
-        { t: 'Gyógyszerciklus-hét × check-inek', det: ['med-cycle-covariance'], sensitive: true }
+        { t: 'Gyógyszerciklus × check-in', det: ['med-cycle-covariance'], sensitive: true }
       ] },
       { n: 3, title: 'Psziché & viselkedés-meta', items: [
-        { t: 'Check-in jegyzetek + a 4 dimenzió értékei', det: ['self-calibration'], sensitive: true },
+        { t: 'Check-in jegyzetek', det: ['self-calibration'], sensitive: true },
         { t: 'Kreed/fókusz × Napzárás', det: ['promise-vs-delivery'] },
         { t: 'Döntésnapló kimenetek', det: ['decision-profile'] },
         { t: 'Hála-témák' },
         { t: 'Streak-törés/visszatérés', det: ['resilience', 'all-or-nothing', 'restart-pattern'] },
-        { t: 'Logolási latencia (Pótold-arány)', det: ['retro-logging-ratio'] },
+        { t: 'Logolási latencia', det: ['retro-logging-ratio'] },
         { t: 'Éjszakai app-aktivitás', det: ['night-activity'] },
         { t: 'Check-in reakcióidő', det: ['checkin-latency'] }
       ] },
       { n: 4, title: 'Kapcsolatok & AI-meta', items: [
-        { t: 'Emberek-említések × hangulat', det: ['people-mood-link'] },
+        { t: 'Emberek-említések', det: ['people-mood-link'] },
         { t: 'Hétvége-szakadék', det: ['weekend-gap'] },
         { t: 'Szezonalitás' },
         { t: 'Chat-témák eltolódása', det: ['chat-topic-shift'] },
-        { t: 'Tudástár/minta-triázs döntések', det: ['knowledge-rejection-pattern'], sensitive: true },
+        { t: 'Tudástár-triázs döntések', det: ['knowledge-rejection-pattern'], sensitive: true },
         { t: 'Életjel-gyűrűk' },
-        { t: 'Quest/aktivitás-szövegek' },
-        { t: 'Memoár + predikció-találatok' }
+        { t: 'Quest-szövegek' },
+        { t: 'Memoár + predikció' }
       ] }
     ],
     later: [
-      'Súly-naplózási rés — a logging-gap detektor még nem létező súly-változata (WeightGapDetector).',
-      'Minden további jel, amit a négy kör lezárása után a csapat még felfedez — ez a lista bővül, nem zárt.'
+      'Súly-naplózási rés (WeightGapDetector — még nem létezik).',
+      'Ami a négy kör lezárása után még felmerül.'
     ]
   };
 
-  var invList = document.getElementById('invList');
-  invList.innerHTML = INVENTORY.reads.map(function (r) {
-    return '<div class="invrow"><div class="grow"><div class="iw">' + r.w + '</div><div class="ix">' + r.x + '</div></div></div>';
-  }).join('') +
-  INVENTORY.rounds.map(function (rnd) {
-    return '<div class="roundhd"><span class="rnum">' + rnd.n + '. KÖR</span><span class="rttl">' + rnd.title + '</span></div>' +
-      rnd.items.map(function (it) {
-        var chips = it.det ? '<div class="detchiprow">' +
-          it.det.map(function (d) { return '<span class="detchip ghost">' + d + '</span>'; }).join('') +
-          (it.sensitive ? '<span class="senstag">érzékeny</span>' : '') + '</div>' :
-          (it.sensitive ? '<div class="detchiprow"><span class="senstag">érzékeny</span></div>' : '');
-        return '<div class="invrow round"><div class="grow"><div class="iw">' + it.t + '</div>' + chips + '</div></div>';
-      }).join('');
-  }).join('') +
-  '<div class="latertail"><div class="lttitle">később — még be sem sorolva</div>' +
-  INVENTORY.later.map(function (l) { return '<div class="laterrow">' + l + '</div>'; }).join('') + '</div>';
+  function leltarRow(item) {
+    var meta = '';
+    if (item.det && item.det.length === 1) meta = '<span class="detchip ghost">' + item.det[0] + '</span>';
+    else if (item.det && item.det.length > 1) meta = '<span class="detcount">' + item.det.length + ' detektor</span>';
+    var sens = item.sensitive ? '<span class="sensdot" title="érzékeny"></span>' : '';
+    return '<div class="lrow"><div class="lw">' + item.t + '</div>' +
+      (meta || sens ? '<div class="rmeta">' + sens + meta + '</div>' : '') + '</div>';
+  }
+
+  function renderBekotve() {
+    document.getElementById('lpBekotve').innerHTML = '<div class="leltarcard sage">' +
+      INVENTORY.reads.map(function (r) {
+        var chips = r.chips.length ? '<div class="valchips">' +
+          r.chips.map(function (c) { return '<span class="valchip">' + c + '</span>'; }).join('') + '</div>' : '';
+        return '<div class="lrow"><div class="check">✓</div><div class="grow"><div class="lw">' + r.w + '</div>' + chips + '</div></div>';
+      }).join('') + '</div>';
+  }
+  function renderTervezett() {
+    var idx = INVENTORY.rounds.map(function (rnd) {
+      return '<div class="korindex" data-kor="' + rnd.n + '"><span class="rnum">' + rnd.n + '. KÖR</span>' +
+        '<div class="grow"><div class="kt">' + rnd.title + '</div><div class="kc">' + rnd.items.length + ' tétel</div></div>' +
+        '<span class="chev">›</span></div>';
+    }).join('');
+    document.getElementById('lpTervezett').innerHTML = idx +
+      '<div class="laterline">+ még ' + INVENTORY.later.length + ' terület később</div>';
+  }
+  renderBekotve();
+  renderTervezett();
+
+  var leltarSegs = document.getElementById('leltarSegs');
+  leltarSegs.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-lseg]');
+    if (!b) return;
+    var seg = b.getAttribute('data-lseg');
+    leltarSegs.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    document.getElementById('lpBekotve').classList.toggle('on', seg === 'bekotve');
+    document.getElementById('lpTervezett').classList.toggle('on', seg === 'tervezett');
+  });
+
+  function openKor(n) {
+    var rnd = INVENTORY.rounds.filter(function (r) { return r.n === n; })[0];
+    if (!rnd) return;
+    document.getElementById('korName').textContent = rnd.n + '. KÖR';
+    document.getElementById('korSub').textContent = rnd.title + ' · ' + rnd.items.length + ' tétel';
+    document.getElementById('korItems').innerHTML = rnd.items.map(leltarRow).join('');
+    openPage('page-kor');
+  }
+  document.getElementById('lpTervezett').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-kor]');
+    if (!t) return;
+    openKor(parseInt(t.getAttribute('data-kor'), 10));
+  });
 
   // ===== detektor-katalógus oldal =====
-  document.getElementById('detList').innerHTML = DETECTOR_CATALOG.map(function (d, i) {
+  document.getElementById('detList').innerHTML = DETECTOR_CATALOG.map(function (d) {
     var ex = EXPERTS[d.who];
-    return '<div class="invrow rise" style="--d:' + (i * 40) + 'ms;"><div class="grow">' +
-      '<span class="detchip">' + d.key + '</span>' +
-      '<div class="ix" style="margin-top:6px;">' + d.line + '</div>' +
-      '<div class="ix" style="margin-top:3px;color:' + ex.color + ';font-weight:700;">' + ex.name + '</div></div></div>';
+    return '<div class="lrow"><div class="grow"><div class="lw">' + d.line + '</div></div>' +
+      '<div class="rmeta" style="flex-direction:column;align-items:flex-end;gap:3px;">' +
+      '<span class="detchip ghost">' + d.key + '</span>' +
+      '<small style="font-size:6.5px;font-weight:700;color:' + ex.color + ';">' + ex.name + '</small></div></div>';
   }).join('');
 
   // ===== Gépterem hub — kompakt csempe-mozaik =====
