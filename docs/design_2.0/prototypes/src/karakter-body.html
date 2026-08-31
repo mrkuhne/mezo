@@ -1,12 +1,13 @@
 <div class="wrap">
-  <p class="eyebrow">Mezo · oldalépítés · Karakter (Én tab, dosszié)</p>
+  <p class="eyebrow">Mezo · oldalépítés · Karakter (Én tab, dosszié) · v2</p>
   <h1>Karakter oldal</h1>
   <p class="lede">A Karakter-dosszié felhasználói felülete — a backend már megvan (7 CORE dimenzió,
   7 szakértő + Szkeptikus + Mezo elnök, heti konzílium, bootstrap, claim-visszajelzés — lásd
   <code>docs/features/character.md</code>). A csempe majd az Én hub mozaikjába kerül; itt önmagában
   mutatjuk a Karakter oldalt, hogy a vizuális nyelv tisztán látszódjon. <strong>Bizalmi elvek:</strong>
   a bizalom-szó sosem szám (biztos / valószínű / figyeljük), a szakértők sosem üzennek közvetlenül
-  — a felhasználó csak <em>olvassa</em> a csapat munkáját.</p>
+  — a felhasználó csak <em>olvassa</em> a csapat munkáját. <strong>Ez a 2. iteráció</strong> Daniel
+  visszajelzése alapján: kompaktabb hub, orb-variáns karakterikonok, élőbb mozgás.</p>
 
   <div class="stage">
     <div class="phone"><div class="screen" id="scr">
@@ -33,7 +34,7 @@
           <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
         </div>
 
-        <!-- ============ HUB ============ -->
+        <!-- ============ HUB (kompakt — kb. egy képernyő) ============ -->
         <div class="panel play" id="panel">
 
           <div class="maturhero rise" style="--d:0ms;">
@@ -43,34 +44,7 @@
             amikor a tervem tiszta, alig kell akaraterő; amikor nincs, ott bizony megbicsaklok.”</p>
           </div>
 
-          <div class="mosaic" id="dimtiles"></div>
-
-          <div class="feedtile rise" style="--d:480ms;">
-            <div class="p-eyebrow" style="color:#A84A26;margin-bottom:2px;">Amit mostanában megtudtam rólad</div>
-            <div class="feedrow">
-              <div class="feeddisc" style="--dc:#3E7396;">D</div>
-              <div class="grow"><div class="fnm">Doki</div><div class="ftxt">A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.</div></div>
-            </div>
-            <div class="feedrow">
-              <div class="feeddisc" style="--dc:#A8801F;">Dr</div>
-              <div class="grow"><div class="fnm">Drill</div><div class="ftxt">A tegnapi kihagyott logolást ma reggelre már pótoltad — ez a minta ismerős nálad.</div></div>
-            </div>
-            <div class="feeddiff" data-page="page-konz">
-              <div class="ic"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#i-minta"/></svg></div>
-              <div class="tx">Vasárnapi konzílium: 2 új állítás · 1 portré átírva</div>
-              <span class="chev">›</span>
-            </div>
-          </div>
-
-          <div class="dimtile t-csapat rise" style="--d:520ms;--sh:rgba(93,79,160,0.4);" data-page="page-csapat" role="button" tabindex="0" aria-label="Csapat">
-            <div class="dhd"><div class="p-eyebrow" style="color:#5D4FA0;">Csapat</div></div>
-            <div class="clustrow" id="clust"></div>
-            <div class="dline">9 profilozó — a csapat, ami épp most figyel rád</div>
-          </div>
-          <div class="dimtile t-konz rise" style="--d:560ms;--sh:rgba(181,126,20,0.4);" data-page="page-konz" role="button" tabindex="0" aria-label="Konzílium">
-            <div class="dhd"><div class="p-eyebrow" style="color:#A8801F;">Konzílium</div><div class="konzdot"></div></div>
-            <div class="dline">aug 30. · 4 változás</div>
-          </div>
+          <div class="mosaic" id="hubtiles"></div>
 
         </div>
 
@@ -83,11 +57,27 @@
           <button class="ghost" id="emptyBack">‹ vissza</button>
         </div>
 
+        <!-- ============ DIMENZIÓK (lista) ============ -->
+        <div class="page p-csapat" id="page-dims" style="--pwash:#E4EEDD;">
+          <div class="page-head"><button class="backbtn" data-back="page-dims">‹ Karakter</button></div>
+          <div class="page-hero"><div class="nm">Dimenziók</div><div class="sb">mind a nyolc, egy helyen</div></div>
+          <div class="page-body">
+            <div class="mosaic" id="dimsListTiles"></div>
+          </div>
+        </div>
+
+        <!-- ============ FEED (napokra bontva) ============ -->
+        <div class="page p-dim" id="page-feed" style="--pwash:#FFE3D4;">
+          <div class="page-head"><button class="backbtn" data-back="page-feed">‹ Karakter</button></div>
+          <div class="page-hero"><div class="nm">Amit mostanában megtudtam rólad</div><div class="sb">a csapat friss megfigyelései, naponta</div></div>
+          <div class="page-body" id="feedBody"></div>
+        </div>
+
         <!-- ============ DIMENZIÓ-OLDAL (generikus) ============ -->
         <div class="page p-dim" id="page-dim" style="--pwash:#FFE3D4;">
           <div class="page-head"><button class="backbtn" data-back="page-dim">‹ Karakter</button></div>
           <div class="page-hero" id="dimHero">
-            <div class="dimavatar" id="dimAvatar" style="--pc:#A84A26;">D</div>
+            <div class="dimavatar" id="dimAvatar" style="--pc:#A84A26;"></div>
             <div class="bignum" id="dimNum" style="color:#A84A26;">—</div>
             <div class="nm" id="dimName">—</div>
             <div class="sb" id="dimSub">érettség</div>
@@ -141,8 +131,11 @@
           </div>
           <div class="bootstep" id="boot2">
             <div class="bootprog">
-              <div class="progarc"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none" stroke="rgba(43,33,24,0.08)" stroke-width="7"/>
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#FF6B4A" stroke-width="7" stroke-linecap="round" stroke-dasharray="90 174"/></svg></div>
+              <div class="progarc"><svg viewBox="0 0 100 100"><defs><linearGradient id="bootgrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FF7A55"/><stop offset="100%" stop-color="#C9962E"/></linearGradient></defs>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(43,33,24,0.08)" stroke-width="7"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="url(#bootgrad)" stroke-width="7" stroke-linecap="round" stroke-dasharray="90 174"/></svg>
+                <div class="bootpct" id="bootPct">0%</div></div>
               <div class="bootlines" id="bootLines">
                 <div class="bootline"><span class="dot"></span>Doki a súlytrendet olvassa…</div>
                 <div class="bootline"><span class="dot"></span>Drill a logolási mintákat nézi…</div>
@@ -179,55 +172,71 @@
 
     <aside>
       <div>
-        <h2>A Karakter hub felépítése</h2>
+        <h2>A Karakter hub felépítése — 2. iteráció</h2>
         <ul>
-          <li><strong>Érettség-gyűrű hero</strong> — 7 szegmens, egy a 7 CORE dimenzióhoz, szín a
-          szakértő domain-színe, a szegmens hossza/opacitása az érettséget kódolja; középen az
-          összesített érettség % és „érettség” címke. Alatta a Fraunces dőlt <em>meta hang</em> —
-          az AI önarckép-mondata (a spec explicit „nem v1” listáján szerepel, itt vizuális
-          irányként mutatjuk, nem funkcióként állítjuk be).</li>
-          <li><strong>8 dimenzió-csempe</strong> (2 oszlop) — 7 CORE + 1 CHAPTER példa
-          („Munka-stressz ciklus”, szaggatott/eltérő mintázat — az AI nyitotta a konzíliumon).
-          Minden csempe: szakértő korong + dimenzió-eyebrow + mini-gyűrű + egy kulcsállítás sora.</li>
-          <li><strong>Feed-csempe</strong> — „Amit mostanában megtudtam rólad”: két szakértői
-          megfigyelés a saját hangján + egy konzílium-diff sor, ami a Konzílium oldalra nyit.</li>
-          <li><strong>Csapat és Konzílium csempe</strong> — 9 mini-avatár klaszter · „9 profilozó”,
-          illetve a legutóbbi konzílium dátuma + arany pulzáló pötty, ha van olvasatlan.</li>
+          <li><strong>Daniel:</strong> „túl sok a scroll a hubon.” A hub most a hero-ra + egy
+          <strong>kompakt, 4 csempés mozaikra</strong> szűkül — kb. egy képernyő. A 8 dimenzió-csempe
+          és a feed <strong>egy tile mögé</strong> költözött saját oldalra; a Csapat és a Konzílium
+          csempe helyben maradt.</li>
+          <li><strong>Érettség-gyűrű hero</strong> — változatlan: 7 szegmens, szakértő domain-szín,
+          szegmenshossz/opacitás = érettség, középen összesített % + „érettség” címke, alatta a
+          Fraunces dőlt meta-hang önarckép-mondat.</li>
+          <li><strong>Dimenziók csempe</strong> — a nyolc dimenzió mögé nyit; a hub-csempén egy élő
+          adat: az átlagos érettség % + a dimenziószám (7 + 1 fejezet).</li>
+          <li><strong>Feed csempe</strong> — „Amit mostanában megtudtam rólad” mögé nyit; a hub-csempén
+          a legfrissebb megfigyelés egysoros előnézete + „N új e héten” + pulzáló pötty.</li>
+          <li><strong>Csapat és Konzílium csempe</strong> — mint eddig: 9 mini-avatár klaszter ·
+          „9 profilozó”, illetve a legutóbbi konzílium dátuma + arany pulzáló pötty olvasatlanra.</li>
         </ul>
       </div>
       <div>
-        <h2>Dimenzió-oldal (Huawei-minta)</h2>
+        <h2>Orb-variáns karakterikonok</h2>
         <ul>
-          <li>Hero: szakértő korong + dimenzió cím + nagy érettség-szám, dimenzió-tintázott
-          háttér-verlauf.</li>
-          <li>Portré-kártya — 2–4 mondat, társ-hang, második személyben (nem lista, nem raw adat).</li>
-          <li>Állítás-csempék — bizalmi <strong>szó</strong>-chip (biztos = zsálya, valószínű =
-          borostyán, figyeljük = levendula — <strong>sosem</strong> nyers szám), az állítás szövege,
-          az ÉRZÉKENY variáns levendula kerettel + tükröző fogalmazással. Minden csempe alatt három
-          visszajelzés-pill: <strong>Talál</strong> (rövid zsálya-villanás + „köszönöm”),
-          <strong>Nem igaz</strong> (a csempe szaggatott „nyugdíjazva” állapotba fakul),
-          <strong>Pontosítom</strong> (inline textarea + Küldés).</li>
-          <li>Alul: „Beszélgess erről Mezóval” chat-átadó csempe + egy csendes elv-mondat.</li>
+          <li><strong>Daniel:</strong> „minden karakter kapjon saját ikont, ami a Mezo orb egy
+          variánsa.” Minden szakértő + a Szkeptikus most egy <strong>saját tónusú orb</strong> —
+          ugyanaz az agyag-recept (radiális gradiens, fény balról-fentről, spekuláris fény), csak
+          domain-színben, egy halvány szaggatott belső gyűrűvel mint megkülönböztető motívum
+          (perzsonánként eltérő elforgatással — „ugyanaz a faj, más egyed” érzés). Mezo megtartja
+          az eredeti korall orb-ot (<code>s-orb</code>).</li>
+          <li>Az orbok most <strong>inline SVG-ként, futásidőben generált</strong>
+          <code>&lt;radialGradient&gt;</code> + <code>&lt;symbol&gt;</code> elemekként élnek a
+          prototípusban (lásd a szkript <code>buildOrbDefs()</code> függvényét) — a diszkek helyén
+          mindenhol ez jelenik meg: hub-csempék, feed, transzkript-avatárok, csapat-kártyák,
+          bootstrap-klaszter.</li>
+          <li><strong>Ha Daniel jóváhagyja</strong>, ezek átkerülnek a
+          <code>docs/design_2.0/assets/</code> clay-sprite csomagba mint önálló, kézzel finomított
+          SVG-k (a jelenlegiek programozott közelítések, nem kézzel rajzolt agyag-ikonok).</li>
         </ul>
       </div>
       <div>
-        <h2>Csapat, Konzílium, Bootstrap</h2>
+        <h2>Konzílium — gazdagabb</h2>
         <ul>
-          <li><strong>Csapat oldal</strong> — 9 személykártya: 7 szakértő (korong a dimenzió-színben,
-          egysoros hang-leírás, „mit figyel” lista, dimenzió-chip), a <strong>Szkeptikus</strong>
-          (grafit, száraz kontrás — „minden javaslatot megtámad, mielőtt a dossziéba kerül”) és
-          <strong>Mezo</strong> (korall-verlauf, orb — „ő összegez feléd, a csapat az ő fejében
-          dolgozik”).</li>
-          <li><strong>Konzílium oldal</strong> — lista (dátum + WEEKLY/HAVI/BOOTSTRAP jelvény +
-          kimenet-összegzés), a legfrissebb megnyitva a <strong>transzkriptet</strong> mutatja:
-          kimenet-fejléc, majd szakértő-buborékok szín-sínnel, Szkeptikus-támadás grafit
-          tónusban, Mezo elnöki ítélet-buborék teljes szélességben, és <strong>egy</strong> kiemelt
-          „DANIEL VÁLASZA” sor arany sínnel egy szakértő buborékján belül — így lép be a
-          felhasználói visszajelzés a körbe.</li>
-          <li><strong>Bootstrap</strong> — 3 képernyő: intro (orb + 9 korong + „Kezdjétek el”),
-          folyamat (staggerelt státuszsorok + lassú ívprogressz), reveal (a hero gyűrű beúszik +
-          CTA az első konzíliumra). Az <strong>üres (204) állapot</strong> is bemutatva — becsületes
-          „még nincs elég történet” üzenet, sem hamis szám, sem üres-állapot színház.</li>
+          <li><strong>Kimenet-fejléc</strong> most három tintázott mini-cellával számol:
+          <em>Elfogadva</em> (zsálya), <em>Nyugdíjazva</em> (borostyán — sosem piros), <em>Portré
+          átírva</em> (levendula).</li>
+          <li><strong>Fázis-címkék</strong> tagolják a transzkriptet: „Javaslatok” → „A Szkeptikus”
+          → „Döntés” — így a vita szerkezete olvasható anélkül, hogy külön magyarázni kéne.</li>
+          <li>Egy halvány <strong>szaggatott összekötő vonal</strong> fut a javaslat-buborékok
+          avatárjai mögött, jelezve, hogy egy körben vannak.</li>
+          <li><strong>Egy plusz szakértői kör</strong> a ritmusért: a Táplálkozó is javasol most
+          (a hétvégi fehérje-elmaradásról) — négy javaslat, nem kettő.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Élőbb mozgás — minden oldalon</h2>
+        <ul>
+          <li>Minden oldal-nyitás <strong>staggerelt belépő animációval</strong> jár (a
+          Dimenziók-lista, a Feed napkártyái, a Csapat-kártyák, a Konzílium-lista és -transzkript
+          mind <code>rise</code>/<code>rise-x</code> késleltetéssel érkeznek — a transzkript
+          megnyitásakor is újrajátssza magát, nem csak első betöltéskor).</li>
+          <li><strong>Ambiens élet:</strong> a hub Feed és Konzílium csempéjén (és az új
+          Konzílium-lista legfrissebb során) pulzáló pötty jelzi a friss tartalmat; a Dimenziók
+          oldal mini-gyűrűi felugorva jelennek meg (nem csak fakulva); a bootstrap-klaszter korongjai
+          egyenként pattannak be.</li>
+          <li><strong>Bootstrap-ív gazdagabb:</strong> gradiens csík (korall→arany) + középen
+          élő <strong>%-számláló</strong>, ami a stádiumsorokkal szinkronban fut 0-tól 100-ig.</li>
+          <li><strong>Hover/press:</strong> minden csempe és sor enyhén megemelkedik hover alatt,
+          és összehúzódik érintésre — mind reduced-motion-guardolt, mint eddig.</li>
         </ul>
       </div>
       <div class="democtl">
@@ -241,15 +250,14 @@
           <li><strong>Gyűrű vs radar</strong> — a 7-dimenziós hero maradjon szegmentált kör
           (mint az Életjel), vagy inkább egy 7-tengelyű radar/pókháló legyen, ami jobban mutatja
           az egyenetlen érettséget dimenziónként?</li>
-          <li><strong>Feed sűrűsége</strong> — a hub feed-csempéje 2 megfigyelés + 1 diff sorral
-          jó ritmus, vagy inkább 3 megfigyelés + a diff külön csempeként (a Konzílium csempével
-          összeolvadva)?</li>
+          <li><strong>Dimenziók-csempe adat</strong> — az átlag érettség % a jó élő adat a hub
+          csempéjén, vagy inkább a legutóbb változott dimenzió neve legyen ott („Alvás frissült”)?</li>
           <li><strong>Buborék-irány a konzíliumban</strong> — minden szakértő-buborék balra igazodjon
           (mint most), vagy a Szkeptikus és Mezo kapjon saját, vizuálisan jobbra tolt „ellenpólus”
           pozíciót, hogy a vita iránya olvashatóbb legyen?</li>
-          <li><strong>CHAPTER-csempe jelölése</strong> — a szaggatott keret elég erős vizuális jel
-          arra, hogy ez egy AI-nyitotta, még fiatal fejezet (nem CORE), vagy kelljen egy explicit
-          „fejezet” felirat is?</li>
+          <li><strong>Orb-motívum</strong> — a szaggatott belső gyűrű elég erős megkülönböztető jel
+          szakértőnként, vagy kelljen egy explicit kis glifa is (pl. Doki = kereszt, Edző =
+          súlyzó), mielőtt ezek átkerülnek a sprite-csomagba?</li>
           <li><strong>Bootstrap belépési pont</strong> — legyen önálló „Kezdjük el” gomb a hub
           üres állapotában (mint itt demózva), vagy induljon automatikusan az első app-nyitáskor,
           minden felhasználói döntés nélkül?</li>
@@ -274,6 +282,10 @@
     drill:        { name: 'Drill',        color: '#A8801F', wash: '#FBEBCB' },
     antropologus: { name: 'Antropológus', color: '#2E7D6B', wash: '#DCEFE9' }
   };
+  var PERSONAS = {};
+  Object.keys(EXPERTS).forEach(function (k) { PERSONAS[k] = EXPERTS[k]; });
+  PERSONAS.szkeptikus = { name: 'Szkeptikus', color: '#4A4038', wash: '#E4DED4' };
+
   function initials(name) {
     return name.length > 2 ? name.slice(0, 2) : name;
   }
@@ -282,6 +294,45 @@
     valoszinu:  { cls: 'valoszinu',  lbl: 'valószínű' },
     figyeljuk:  { cls: 'figyeljuk',  lbl: 'figyeljük' }
   };
+
+  // ===== orb-variáns személyikonok: futásidőben generált inline SVG sprite =====
+  function shade(hex, pct) {
+    var f = parseInt(hex.slice(1), 16), t = pct < 0 ? 0 : 255, p = pct < 0 ? -pct : pct;
+    var R = f >> 16, G = (f >> 8) & 0x00FF, B = f & 0x0000FF;
+    return '#' + (0x1000000 + (Math.round((t - R) * p) + R) * 0x10000 +
+      (Math.round((t - G) * p) + G) * 0x100 + (Math.round((t - B) * p) + B)).toString(16).slice(1);
+  }
+  function buildOrbDefs() {
+    var defs = '', syms = '', i = 0;
+    Object.keys(PERSONAS).forEach(function (key) {
+      var c = PERSONAS[key].color;
+      var light = shade(c, 0.5), dark = shade(c, -0.38);
+      var rot = (i * 27 + 12) % 360;
+      defs += '<radialGradient id="og-' + key + '" cx="35%" cy="28%" r="78%">' +
+        '<stop offset="0%" stop-color="' + light + '"/>' +
+        '<stop offset="55%" stop-color="' + c + '"/>' +
+        '<stop offset="100%" stop-color="' + dark + '"/></radialGradient>';
+      syms += '<symbol id="orb-' + key + '" viewBox="0 0 100 100">' +
+        '<circle cx="50" cy="50" r="47" fill="url(#og-' + key + ')"/>' +
+        '<circle cx="50" cy="50" r="47" fill="none" stroke="rgba(255,255,255,0.26)" stroke-width="3" ' +
+        'stroke-dasharray="13 12" transform="rotate(' + rot + ' 50 50)"/>' +
+        '<ellipse cx="37" cy="32" rx="15" ry="9" fill="rgba(255,255,255,0.5)"/>' +
+        '<ellipse cx="35" cy="30" rx="7" ry="4" fill="rgba(255,255,255,0.78)"/>' +
+        '</symbol>';
+      i++;
+    });
+    var host = document.createElement('div');
+    host.style.display = 'none';
+    host.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg"><defs>' + defs + '</defs>' + syms + '</svg>';
+    document.body.appendChild(host);
+  }
+  buildOrbDefs();
+  function orbHTML(key, size) {
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100"><use href="#orb-' + key + '"/></svg>';
+  }
+  function mezoOrbHTML(size) {
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100"><use href="#s-orb"/></svg>';
+  }
 
   var DIMS = [
     { key: 'physical', title: 'Fizikai', expert: 'doki', maturity: 58,
@@ -358,6 +409,7 @@
         { text: 'A ciklus egyelőre 3 megfigyelt esetből áll — korai szakasz, még nem elég egy szilárd szabályhoz.', conf: 'figyeljuk' }
       ] }
   ];
+  var CORE_AVG = Math.round(DIMS.slice(0, 7).reduce(function (s, d) { return s + d.maturity; }, 0) / 7);
 
   var CSAPAT = [
     { key: 'doki', role: 'orvos', voice: 'Tárgyilagos, orvosi hangon, röviden fogalmaz.',
@@ -376,6 +428,27 @@
       watch: ['életesemények, emberek', 'hétköznap–hétvége minták', 'kontextus'] }
   ];
 
+  var FEED = [
+    { day: 'Ma · aug 30', items: [
+      { who: 'doki', text: 'A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.' },
+      { who: 'drill', text: 'A tegnapi kihagyott logolást ma reggelre már pótoltad — ez a minta ismerős nálad.' },
+      { diff: true, text: 'Vasárnapi konzílium: 2 új állítás · 1 portré átírva', page: 'page-konz' }
+    ] },
+    { day: 'Tegnap · aug 29', items: [
+      { who: 'edzo', text: 'A tegnapi teremedzésen minden RIR-cél 1-en belül teljesült.' },
+      { who: 'szomnologus', text: 'Az elalvási idő 23:10-re csúszott — 35 perccel a szokásos után.' }
+    ] },
+    { day: 'aug 27', items: [
+      { who: 'pszichologus', text: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.' },
+      { who: 'taplalkozo', text: 'Három egymást követő napon a fehérjecél 5 g-on belül teljesült.' },
+      { diff: true, text: 'Portré frissült: Alvás & regeneráció — a hétvégi eltolódás mostantól „biztos” szintű állítás.', dim: 'recovery' }
+    ] },
+    { day: 'aug 24', items: [
+      { who: 'antropologus', text: 'Petra harmadik alkalommal jelenik meg a hét naplóiban.' },
+      { who: 'drill', text: 'A heti fókuszok mindhárma teljesült — negyedik egymást követő hete.' }
+    ] }
+  ];
+
   var ring = document.getElementById('ring');
   var ringBoot = document.getElementById('ringBoot');
   function buildRing(target, size) {
@@ -384,7 +457,6 @@
     var n = 7, gap = C * 0.018, seg = C / n;
     var svg = '<svg viewBox="0 0 ' + (cx * 2) + ' ' + (cy * 2) + '"><g transform="rotate(-90 ' + cx + ' ' + cy + ')">';
     svg += '<circle class="segbg" cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke-width="10"/>';
-    var avg = 0;
     DIMS.slice(0, 7).forEach(function (d, i) {
       var ex = EXPERTS[d.expert];
       var slot = seg - gap;
@@ -394,38 +466,84 @@
       svg += '<circle class="seg" style="--sd:' + (i * 90) + 'ms;" cx="' + cx + '" cy="' + cy + '" r="' + r +
         '" stroke="' + ex.color + '" stroke-width="10" stroke-dasharray="' + dash +
         '" stroke-dashoffset="' + offset + '"/>';
-      avg += d.maturity;
     });
     svg += '</g></svg>';
-    target.innerHTML = svg + '<div class="mrhole"><div class="num">' + Math.round(avg / 7) +
+    target.innerHTML = svg + '<div class="mrhole"><div class="num">' + CORE_AVG +
       '%</div><div class="lbl">érettség</div></div>';
   }
   buildRing(ring);
   buildRing(ringBoot, 132);
 
-  var tilesEl = document.getElementById('dimtiles');
-  tilesEl.innerHTML = DIMS.map(function (d, i) {
+  // ===== hub: kompakt 4-csempés mozaik =====
+  var hubtiles = document.getElementById('hubtiles');
+  var feedPreview = FEED[0].items.filter(function (it) { return !it.diff; })[0];
+  hubtiles.innerHTML =
+    '<div class="dimtile t-dims rise" style="--d:80ms;--sh:rgba(78,143,184,0.4);" data-page="page-dims" role="button" tabindex="0" aria-label="Dimenziók">' +
+      '<div class="dhd"><div class="p-eyebrow" style="color:#3E7396;">Dimenziók</div></div>' +
+      '<div class="spotwrap" style="flex:1;display:grid;place-items:center;padding:4px 0;"><svg width="34" height="34" viewBox="0 0 100 100"><use href="#i-kristaly"/></svg></div>' +
+      '<div class="dline">' + CORE_AVG + '% átlag érettség · 7 + 1 dimenzió</div>' +
+    '</div>' +
+    '<div class="dimtile t-feedhub rise" style="--d:130ms;--sh:rgba(216,72,31,0.35);" data-page="page-feed" role="button" tabindex="0" aria-label="Feed">' +
+      '<div class="dhd"><div class="p-eyebrow" style="color:#A84A26;">Feed</div><div class="pulsedot"></div></div>' +
+      '<div class="dline">„' + feedPreview.text + '”</div>' +
+      '<div class="tile-badge">3 új e héten</div>' +
+    '</div>' +
+    '<div class="dimtile t-csapat rise" style="--d:180ms;--sh:rgba(93,79,160,0.4);" data-page="page-csapat" role="button" tabindex="0" aria-label="Csapat">' +
+      '<div class="dhd"><div class="p-eyebrow" style="color:#5D4FA0;">Csapat</div></div>' +
+      '<div class="clustrow" id="clust"></div>' +
+      '<div class="dline">9 profilozó — a csapat, ami épp most figyel rád</div>' +
+    '</div>' +
+    '<div class="dimtile t-konz rise" style="--d:230ms;--sh:rgba(181,126,20,0.4);" data-page="page-konz" role="button" tabindex="0" aria-label="Konzílium">' +
+      '<div class="dhd"><div class="p-eyebrow" style="color:#A8801F;">Konzílium</div><div class="pulsedot"></div></div>' +
+      '<div class="dline">aug 30. · 4 változás</div>' +
+    '</div>';
+
+  // ===== Dimenziók-lista oldal =====
+  var dimsListTiles = document.getElementById('dimsListTiles');
+  dimsListTiles.innerHTML = DIMS.map(function (d, i) {
     var ex = d.chapter ? { name: d.title, color: d.color, wash: d.wash } : EXPERTS[d.expert];
     var top = d.claims[0].text;
-    return '<div class="dimtile' + (d.chapter ? ' chapter' : '') + ' rise" style="--d:' + (60 + i * 40) +
+    return '<div class="dimtile' + (d.chapter ? ' chapter' : '') + ' rise" style="--d:' + (40 + i * 45) +
       'ms;--wash:' + ex.wash + ';--dc:' + ex.color + ';--sh:' + ex.color + '4d;--mv:' + d.maturity +
       ';" data-dim="' + d.key + '" role="button" tabindex="0" aria-label="' + d.title + '">' +
       '<div class="dhd">' + (d.chapter
         ? '<div class="miniring"></div>'
-        : '<div class="disc">' + initials(ex.name) + '</div>') +
+        : '<div class="disc">' + orbHTML(d.expert, 24) + '</div>') +
       '<div class="dnm">' + d.title + '</div></div>' +
       '<div class="dline">' + top + '</div></div>';
   }).join('');
 
-  var clust = document.getElementById('clust');
-  var clustOrder = ['doki', 'edzo', 'taplalkozo', 'szomnologus', 'pszichologus', 'drill', 'antropologus'];
-  clust.innerHTML = clustOrder.map(function (k) {
-    return '<div class="cd" style="background:' + EXPERTS[k].color + ';">' + initials(EXPERTS[k].name) + '</div>';
-  }).join('') + '<div class="cd" style="background:#4A4038;">Sz</div>' +
-    '<div class="cd" style="background:linear-gradient(135deg,#FF7A55,#FF5B36);">M</div>';
+  // ===== Feed oldal — napokra bontva =====
+  var feedBody = document.getElementById('feedBody');
+  feedBody.innerHTML = FEED.map(function (grp, gi) {
+    var rows = grp.items.map(function (it, ii) {
+      if (it.diff) {
+        return '<div class="feeddiff rise-x" style="--d:' + (gi * 60 + ii * 50) + 'ms;" data-' +
+          (it.dim ? 'dim="' + it.dim + '"' : 'page="' + it.page + '"') + '>' +
+          '<div class="ic"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#i-minta"/></svg></div>' +
+          '<div class="tx">' + it.text + '</div><span class="chev">›</span></div>';
+      }
+      var ex = EXPERTS[it.who];
+      return '<div class="feedrow rise-x" style="--d:' + (gi * 60 + ii * 50) + 'ms;">' +
+        '<div class="feeddisc" style="--dc:' + ex.color + ';">' + orbHTML(it.who, 22) + '</div>' +
+        '<div class="grow"><div class="fnm">' + ex.name + '</div><div class="ftxt">' + it.text + '</div></div></div>';
+    }).join('');
+    return '<div class="feedday rise" style="--d:' + (gi * 60) + 'ms;">' + grp.day + '</div>' +
+      '<div class="feedtile rise" style="--d:' + (gi * 60 + 20) + 'ms;">' + rows + '</div>';
+  }).join('');
 
+  // ===== csapat klaszter (hub + bootstrap) =====
+  var clustOrder = ['doki', 'edzo', 'taplalkozo', 'szomnologus', 'pszichologus', 'drill', 'antropologus'];
+  var clustHTML = clustOrder.map(function (k) {
+    return '<div class="cd">' + orbHTML(k, 20) + '</div>';
+  }).join('') + '<div class="cd">' + orbHTML('szkeptikus', 20) + '</div>' +
+    '<div class="cd">' + mezoOrbHTML(20) + '</div>';
+  document.getElementById('clust').innerHTML = clustHTML;
   var bootCluster = document.getElementById('bootCluster');
-  bootCluster.innerHTML = clust.innerHTML;
+  bootCluster.innerHTML = clustOrder.map(function (k) {
+    return '<div class="cd">' + orbHTML(k, 26) + '</div>';
+  }).join('') + '<div class="cd">' + orbHTML('szkeptikus', 26) + '</div>' +
+    '<div class="cd">' + mezoOrbHTML(26) + '</div>';
 
   function toast(msg) {
     var t = document.getElementById('toast');
@@ -460,8 +578,15 @@
     var ex = d.chapter ? { name: 'AI', color: d.color } : EXPERTS[d.expert];
     var page = document.getElementById('page-dim');
     page.style.setProperty('--pwash', ex.color + '2e');
-    document.getElementById('dimAvatar').style.setProperty('--pc', ex.color);
-    document.getElementById('dimAvatar').textContent = d.chapter ? '✦' : initials(ex.name);
+    var avatarEl = document.getElementById('dimAvatar');
+    avatarEl.style.setProperty('--pc', ex.color);
+    if (d.chapter) {
+      avatarEl.className = 'dimavatar chaptermark';
+      avatarEl.innerHTML = '✦';
+    } else {
+      avatarEl.className = 'dimavatar';
+      avatarEl.innerHTML = orbHTML(d.expert, 58);
+    }
     document.getElementById('dimNum').textContent = d.maturity + '%';
     document.getElementById('dimNum').style.color = ex.color;
     document.getElementById('dimName').textContent = d.title;
@@ -469,8 +594,9 @@
     document.getElementById('dimPortrait').textContent = d.portrait;
     document.getElementById('dimClaims').innerHTML = d.claims.map(function (c, i) {
       var conf = CONF[c.conf];
-      return '<div class="claimtile' + (c.sensitive ? ' sensitive' : '') + '" data-claim="' + key + '-' + i + '">' +
+      return '<div class="claimtile rise" style="--d:' + (i * 70) + 'ms;" data-claim="' + key + '-' + i + '">' +
         '<span class="confchip ' + conf.cls + '">' + conf.lbl + '</span>' +
+        (c.sensitive ? '' : '') +
         '<div class="ctxt">' + c.text + '</div>' +
         (c.mirror ? '<div class="cmirror">' + c.mirror + '</div>' : '') +
         '<div class="fbpills">' +
@@ -481,6 +607,10 @@
         '<div class="fbtext"><textarea placeholder="Mit pontosítanál?"></textarea><button class="cta send" style="padding:6px 14px;font-size:9.5px;">Küldés</button></div>' +
         '</div>';
     }).join('');
+    // sensitive class must be applied after innerHTML replace (rise class already set above)
+    d.claims.forEach(function (c, i) {
+      if (c.sensitive) document.querySelector('[data-claim="' + key + '-' + i + '"]').classList.add('sensitive');
+    });
     openPage('page-dim');
   }
   document.querySelectorAll('[data-dim]').forEach(function (el) {
@@ -495,7 +625,6 @@
     var tile = pill.closest('.claimtile');
     var kind = pill.getAttribute('data-fb');
     if (kind === 'talal') {
-      tile.classList.add('flashwrap');
       pill.classList.add('flash');
       var thanks = document.createElement('div');
       thanks.className = 'fbthanks';
@@ -528,63 +657,85 @@
   var csapatBody = document.getElementById('csapatBody');
   csapatBody.innerHTML = '<p class="p-eyebrow" style="color:#5D4FA0;padding:0 2px 8px;">' +
     'Mezo belső tanácsa — ők dolgoznak a karakteren</p>' +
-    CSAPAT.map(function (p) {
+    CSAPAT.map(function (p, i) {
       var ex = EXPERTS[p.key];
-      return '<div class="persocard"><div class="pdisc" style="--pc:' + ex.color + ';">' + initials(ex.name) + '</div>' +
+      return '<div class="persocard rise" style="--d:' + (i * 55) + 'ms;"><div class="pdisc" style="--pc:' + ex.color + ';">' + orbHTML(p.key, 36) + '</div>' +
         '<div class="pinfo"><div class="pnm">' + ex.name + '</div><div class="prole">' + p.voice + '</div>' +
         '<div class="pwatch">mit figyel: ' + p.watch.join(' · ') + '</div>' +
         '<span class="pchip" style="--pcw:' + ex.wash + ';--pc:' + ex.color + ';">' + p.role + '</span></div></div>';
     }).join('') +
-    '<div class="persocard szkeptikus"><div class="pdisc">Sz</div>' +
+    '<div class="persocard szkeptikus rise" style="--d:' + (CSAPAT.length * 55) + 'ms;"><div class="pdisc">' + orbHTML('szkeptikus', 36) + '</div>' +
     '<div class="pinfo"><div class="pnm">Szkeptikus</div><div class="prole">Száraz kontrás hang.</div>' +
     '<div class="pwatch">minden javaslatot megtámad, mielőtt a dossziéba kerül — gyenge bizonyíték, ' +
     'túlzott általánosítás, egy adatpontból levont következtetés.</div></div></div>' +
-    '<div class="persocard mezo"><div class="pdisc orb"><svg width="34" height="34" viewBox="0 0 100 100"><use href="#s-orb"/></svg></div>' +
+    '<div class="persocard mezo rise" style="--d:' + ((CSAPAT.length + 1) * 55) + 'ms;"><div class="pdisc orb">' + mezoOrbHTML(34) + '</div>' +
     '<div class="pinfo"><div class="pnm">Mezo</div><div class="prole">Elnök · Integrátor</div>' +
     '<div class="pwatch">ő összegez feléd — a csapat az ő fejében dolgozik.</div></div></div>';
 
   var KONZ = [
-    { id: 'w2', date: 'aug 30. · vasárnap', kind: 'weekly', out: '2 elfogadva · 1 nyugdíjazva · 3 portré átírva', tap: true },
+    { id: 'w2', date: 'aug 30. · vasárnap', kind: 'weekly', out: '2 elfogadva · 1 nyugdíjazva · 3 portré átírva', unread: true },
     { id: 'w1', date: 'aug 23. · vasárnap', kind: 'weekly', out: '1 elfogadva · 0 nyugdíjazva · 1 portré átírva' },
     { id: 'm1', date: 'aug 1. · havi mélyolvasás', kind: 'havi', out: '4 állítás frissült · 1 fejezet nyugdíjazva' },
     { id: 'b0', date: 'júl 15. · bootstrap', kind: 'boot', out: 'a teljes eddigi történet beolvasva · 9 kezdő állítás' }
   ];
   var KBADGE = { weekly: 'HETI', havi: 'HAVI', boot: 'BOOTSTRAP' };
-  document.getElementById('konzList').innerHTML = KONZ.map(function (k) {
-    return '<div class="konzrow" data-konz="' + k.id + '"><div class="grow"><div class="kd">' + k.date + '</div>' +
+  document.getElementById('konzList').innerHTML = KONZ.map(function (k, i) {
+    return '<div class="konzrow rise" style="--d:' + (i * 50) + 'ms;" data-konz="' + k.id + '"><div class="grow"><div class="kd">' + k.date +
+      (k.unread ? '<span class="pulsedot sm"></span>' : '') + '</div>' +
       '<div class="ks">' + k.out + '</div></div><span class="kbadge ' + k.kind + '">' + KBADGE[k.kind] + '</span></div>';
   }).join('');
 
   var TRANSCRIPT = {
-    outcome: '2 elfogadva · 1 nyugdíjazva · 3 portré átírva',
+    counts: { accepted: 2, retired: 1, rewritten: 3 },
     turns: [
-      { who: 'doki', text: 'Javaslat: a testzsír-trend és a stagnáló testsúly rekompozícióra utal — ' +
+      { who: 'doki', phase: 'Javaslatok', text: 'Javaslat: a testzsír-trend és a stagnáló testsúly rekompozícióra utal — ' +
         'a bizonyíték három egymást követő heti mérés.' },
-      { who: 'drill', text: 'Javaslat: a heti fókuszok teljesítési aránya az elmúlt négy hétben ' +
+      { who: 'drill', phase: 'Javaslatok', text: 'Javaslat: a heti fókuszok teljesítési aránya az elmúlt négy hétben ' +
         'végig 80% felett — ez stabil fegyelem-jel.' },
-      { who: 'pszichologus', text: 'Megfigyelés: néha halasztod a nehezebb érzelmi témák leírását a ' +
+      { who: 'taplalkozo', phase: 'Javaslatok', text: 'Javaslat: a hétvégi fehérje-elmaradás három hete következetes ' +
+        'mintázat — érdemes „figyeljük” szinten felvenni.' },
+      { who: 'pszichologus', phase: 'Javaslatok', text: 'Megfigyelés: néha halasztod a nehezebb érzelmi témák leírását a ' +
         'naplóban.', userQuote: 'Nem szándékosan halasztom — inkább nem mindig találok rá szavakat gyorsan.' },
-      { who: 'szkeptikus', text: 'Doki állítása három adatpontra épül — ez kevés egy "biztos" ' +
+      { who: 'szkeptikus', phase: 'A Szkeptikus', text: 'Doki állítása három adatpontra épül — ez kevés egy "biztos" ' +
         'minősítéshez, javaslom "valószínű"-re fokozni, amíg nem látunk egy negyedik hetet is. Drill ' +
-        'állítása erősebb, de a mintaidőszak rövid a heti fókuszok bevezetése óta.' },
-      { who: 'mezo', text: 'Elfogadom Doki állítását "valószínű" szinttel — a Szkeptikus érve helytálló. ' +
+        'állítása erősebb, de a mintaidőszak rövid a heti fókuszok bevezetése óta. A Táplálkozó javaslata ' +
+        'elfogadható, de csak "figyeljük" szinten — három hét kevés egy erősebb szóhoz.' },
+      { who: 'mezo', phase: 'Döntés', text: 'Elfogadom Doki állítását "valószínű" szinttel — a Szkeptikus érve helytálló. ' +
         'Drill állítását elfogadom "biztos" szinttel — négy egymást követő hét konzisztens jel. A ' +
-        'Pszichológus megfigyelését tükröző fogalmazással veszem fel, "figyeljük" szinten — nem ítélet, ' +
-        'csak jelzés, amit Daniel is pontosított.', ruling: true }
+        'Táplálkozó javaslatát "figyeljük" szinten veszem fel. A Pszichológus megfigyelését tükröző ' +
+        'fogalmazással veszem fel, "figyeljük" szinten — nem ítélet, csak jelzés, amit Daniel is pontosított.', ruling: true }
     ]
   };
   var konzList = document.getElementById('konzList');
   var konzTranscript = document.getElementById('konzTranscript');
-  document.getElementById('konzOutcome').textContent = 'Kimenet: ' + TRANSCRIPT.outcome;
-  document.getElementById('konzTurns').innerHTML = TRANSCRIPT.turns.map(function (t) {
-    var isSp = t.who === 'szkeptikus', isRul = t.who === 'mezo';
-    var ex = isSp ? { name: 'Szkeptikus', color: '#4A4038' } : isRul ? { name: 'Mezo', color: '#FF5B36' } : EXPERTS[t.who];
-    return '<div class="turn' + (isSp ? ' szkeptikus' : '') + (isRul ? ' ruling' : '') + '" style="--tc:' + ex.color + ';">' +
-      (isRul ? '' : '<div class="tavatar" style="--tc:' + ex.color + ';">' + (isRul ? 'M' : initials(ex.name)) + '</div>') +
-      '<div class="tbub"><div class="tname">' + ex.name + '</div><div class="ttxt">' + t.text + '</div>' +
-      (t.userQuote ? '<div class="userquote"><div class="ul">Daniel válasza</div><div class="ut">' + t.userQuote + '</div></div>' : '') +
-      '</div></div>';
-  }).join('');
+  document.getElementById('konzOutcome').innerHTML =
+    '<div class="oh-title">Kimenet</div><div class="outcells">' +
+    '<div class="outcell" style="--ow:rgba(143,175,126,0.2);--oc:#4E6B42;"><b>' + TRANSCRIPT.counts.accepted + '</b><small>elfogadva</small></div>' +
+    '<div class="outcell" style="--ow:rgba(201,150,46,0.18);--oc:#A8801F;"><b>' + TRANSCRIPT.counts.retired + '</b><small>nyugdíjazva</small></div>' +
+    '<div class="outcell" style="--ow:rgba(138,118,204,0.16);--oc:#5D4FA0;"><b>' + TRANSCRIPT.counts.rewritten + '</b><small>portré átírva</small></div>' +
+    '</div>';
+  (function () {
+    var html = '', openGroup = false, lastPhase = null, di = 0;
+    TRANSCRIPT.turns.forEach(function (t, i) {
+      var isSp = t.who === 'szkeptikus', isRul = t.who === 'mezo';
+      var ex = isSp ? PERSONAS.szkeptikus : isRul ? { name: 'Mezo', color: '#FF5B36' } : EXPERTS[t.who];
+      if (t.phase !== lastPhase) {
+        if (openGroup) { html += '</div>'; openGroup = false; }
+        html += '<div class="phaselbl">' + t.phase + '</div>';
+        lastPhase = t.phase;
+      }
+      if (!isRul && !openGroup) { html += '<div class="turnsgroup">'; openGroup = true; }
+      if (isRul && openGroup) { html += '</div>'; openGroup = false; }
+      html += '<div class="turn' + (isSp ? ' szkeptikus' : '') + (isRul ? ' ruling' : '') + ' rise" style="--d:' + (di * 90) + 'ms;--tc:' + ex.color + ';">' +
+        (isRul ? '' : '<div class="tavatar" style="--tc:' + ex.color + ';">' + (isSp ? orbHTML('szkeptikus', 24) : orbHTML(t.who, 24)) + '</div>') +
+        '<div class="tbub"><div class="tname">' + ex.name + '</div><div class="ttxt">' + t.text + '</div>' +
+        (t.userQuote ? '<div class="userquote"><div class="ul">Daniel válasza</div><div class="ut">' + t.userQuote + '</div></div>' : '') +
+        '</div></div>';
+      di++;
+    });
+    if (openGroup) html += '</div>';
+    document.getElementById('konzTurns').innerHTML = html;
+  })();
 
   konzList.addEventListener('click', function (e) {
     var row = e.target.closest('[data-konz]');
@@ -592,6 +743,10 @@
     if (row.getAttribute('data-konz') !== 'w2') { toast('Ez a korábbi konzílium csak a listában elérhető ebben a demóban'); return; }
     konzList.classList.add('hidden');
     konzTranscript.classList.add('on');
+    konzTranscript.classList.remove('play');
+    void konzTranscript.offsetWidth;
+    konzTranscript.classList.add('play');
+    document.getElementById('page-konz').querySelector('.page-body').scrollTop = 0;
   });
   document.getElementById('konzBack').addEventListener('click', function () {
     konzTranscript.classList.remove('on');
@@ -609,6 +764,7 @@
 
   // ===== bootstrap demo =====
   var bootLinesShown = false;
+  var bootPctTimer = null;
   function bootStep(n) {
     ['boot1', 'boot2', 'boot3'].forEach(function (id, i) {
       document.getElementById(id).classList.toggle('on', i === n - 1);
@@ -616,10 +772,19 @@
     if (n === 2 && !bootLinesShown) {
       bootLinesShown = true;
       var lines = document.querySelectorAll('#bootLines .bootline');
+      var totalMs = 500 + lines.length * 650 + 700;
       lines.forEach(function (l, i) {
         setTimeout(function () { l.classList.add('show'); }, 500 + i * 650);
       });
-      setTimeout(function () { bootStep(3); }, 500 + lines.length * 650 + 700);
+      var pctEl = document.getElementById('bootPct');
+      var start = Date.now();
+      clearInterval(bootPctTimer);
+      bootPctTimer = setInterval(function () {
+        var pct = Math.min(100, Math.round((Date.now() - start) / totalMs * 100));
+        pctEl.textContent = pct + '%';
+        if (pct >= 100) clearInterval(bootPctTimer);
+      }, 80);
+      setTimeout(function () { bootStep(3); }, totalMs);
     }
   }
   document.getElementById('bootStart').addEventListener('click', function () { bootStep(2); });
@@ -630,7 +795,12 @@
   });
   document.getElementById('demoBoot').addEventListener('click', function () {
     bootLinesShown = false;
+    document.getElementById('bootPct').textContent = '0%';
     document.querySelectorAll('#bootLines .bootline').forEach(function (l) { l.classList.remove('show'); });
+    var bc = document.getElementById('bootCluster');
+    bc.classList.remove('play');
+    void bc.offsetWidth;
+    bc.classList.add('play');
     bootStep(1);
     openPage('page-boot');
   });
