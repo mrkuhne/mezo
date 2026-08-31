@@ -2,7 +2,11 @@ package io.mrkuhne.mezo.feature.medication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.MedicationCycleConfig;
 import io.mrkuhne.mezo.api.dto.MedicationDayResponse;
+import io.mrkuhne.mezo.api.dto.MedicationPhase;
+import io.mrkuhne.mezo.api.dto.MedicationRequest;
+import io.mrkuhne.mezo.api.dto.MedicationResponse;
 import io.mrkuhne.mezo.api.dto.MedicationDoseRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
@@ -12,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,5 +116,75 @@ class MedicationApiIT extends ApiIntegrationTest {
             HttpMethod.GET, "/api/medication", null, ownerAuthHeaders());
         assertThat(day.getStatusCode().value()).isEqualTo(200);
         assertThat(day.getBody()).contains("\"cycleDay\":0");
+    }
+
+    /** A contract-complete create body — the same shape the MedicationFormSheet sends. */
+    private static MedicationRequest createBody(boolean active) {
+        MedicationRequest req = new MedicationRequest();
+        req.setName("Retatrutid");
+        req.setActiveIngredient("retatrutid");
+        req.setRoute("subQ");
+        req.setCadence("weekly-monday");
+        req.setDefaultDose(new BigDecimal("4"));
+        req.setDoseUnit("mg");
+        req.setActive(active);
+        MedicationCycleConfig cycle = new MedicationCycleConfig();
+        cycle.setCycleLengthDays(7);
+        MedicationPhase peak = new MedicationPhase();
+        peak.setKey(MedicationPhase.KeyEnum.PEAK); peak.setFromDay(1); peak.setToDay(2); peak.setLabel("Csúcs");
+        MedicationPhase stable = new MedicationPhase();
+        stable.setKey(MedicationPhase.KeyEnum.STABLE); stable.setFromDay(3); stable.setToDay(5); stable.setLabel("Stabil");
+        MedicationPhase trough = new MedicationPhase();
+        trough.setKey(MedicationPhase.KeyEnum.TROUGH); trough.setFromDay(6); trough.setToDay(7); trough.setLabel("Mélypont");
+        cycle.setPhases(List.of(peak, stable, trough));
+        req.setCycle(cycle);
+        return req;
+    }
+
+    /** mezo-d20.8.3: the create path — 201, and the day read then serves the new medication. */
+    @Test
+    void testCreateMedication_shouldReturn201AndAppearOnDayRead() {
+        ownerId(); // ensure the principal row exists
+        MedicationResponse created = exchangeForBody(
+            HttpMethod.POST, "/api/medication", createBody(true), ownerAuthHeaders(),
+            HttpStatus.CREATED, MedicationResponse.class);
+        assertThat(created.getId()).isNotNull();
+        assertThat(created.getName()).isEqualTo("Retatrutid");
+        assertThat(created.getActive()).isTrue();
+
+        MedicationDayResponse day = getForBody(
+            "/api/medication", ownerAuthHeaders(), HttpStatus.OK, MedicationDayResponse.class);
+        assertThat(day.getMedication()).isNotNull();
+        assertThat(day.getMedication().getId()).isEqualTo(created.getId());
+        // No dose yet: the cycle is the honest zero, not a fabricated day.
+        assertThat(day.getCycle().getCycleDay()).isZero();
+    }
+
+    /** One active medication at a time: creating over an existing active row is a 400. */
+    @Test
+    void testCreateMedication_shouldReturn400_whenActiveMedicationExists() {
+        medPop.createMedication(ownerId());
+        ResponseEntity<String> res = exchangeForResponse(
+            HttpMethod.POST, "/api/medication", createBody(true), ownerAuthHeaders());
+        assertThat(res.getStatusCode().value()).isEqualTo(400);
+        assertThat(res.getBody()).contains("MEDICATION_ACTIVE_EXISTS");
+    }
+
+    /** Stop (PUT active:false) then re-create — the normal medication-change path. */
+    @Test
+    void testCreateMedication_shouldSucceed_afterStoppingTheActiveOne() {
+        MedicationEntity old = medPop.createMedication(ownerId());
+        MedicationRequest stop = createBody(false);
+        exchangeForBody(HttpMethod.PUT, "/api/medication/" + old.getId(), stop, ownerAuthHeaders(),
+            HttpStatus.OK, MedicationResponse.class);
+
+        MedicationResponse created = exchangeForBody(
+            HttpMethod.POST, "/api/medication", createBody(true), ownerAuthHeaders(),
+            HttpStatus.CREATED, MedicationResponse.class);
+        assertThat(created.getActive()).isTrue();
+
+        MedicationDayResponse day = getForBody(
+            "/api/medication", ownerAuthHeaders(), HttpStatus.OK, MedicationDayResponse.class);
+        assertThat(day.getMedication().getId()).isEqualTo(created.getId());
     }
 }

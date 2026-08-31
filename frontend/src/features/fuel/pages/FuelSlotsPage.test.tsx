@@ -354,12 +354,14 @@ test('mock mode: editing a row after a successful evaluate clears the verdict ca
 // Fidelity audit (mezo-d20.11): the page had NO entrance choreography. Its FACE stays the
 // pre-Mozaik `.pghead-np` editor one on purpose — the prototype does not cover the meal-window
 // editor, so re-facing it belongs to the F7.3 design round, not to a 1:1 audit.
-test('the editor rises inside an EntranceGroup, keeping its (uncovered-by-prototype) pghead face', async () => {
-  const { container } = renderPage(newQc())
-  await screen.findByRole('button', { name: /Testreszabás/ })
+test('the editor rises inside an EntranceGroup with the Mozaik sage shell (F7.3)', async () => {
+  const qc = newQc()
+  const { container } = renderPage(qc)
+  await screen.findByText('Étkezési ablakok')
+  expect(container.querySelector('.mz-page.mz-p-sage')).not.toBeNull()
   const play = container.querySelector('.mz-play')
   expect(play).not.toBeNull()
-  expect(play?.querySelector('.pghead-np.sage.rise')).not.toBeNull()
+  expect(play?.querySelector('.rise .mz-eyebrow')).not.toBeNull()
   const all = [...container.querySelectorAll('.rise')]
   expect(all.length).toBeGreaterThan(2)
   expect(all.every(el => play?.contains(el))).toBe(true)

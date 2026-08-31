@@ -95,10 +95,27 @@ export function useMedicationActions() {
     onSuccess: mock ? undefined : invalidate,
   })
 
+  const createM = useMutation({
+    mutationFn: mock
+      ? async (input: MedicationInput) => mockCreateMedication(qc, input)
+      : (input: MedicationInput) => medicationApi.createMedication(input).then(() => undefined),
+    onSuccess: mock ? undefined : invalidate,
+  })
+  const stopM = useMutation({
+    // Stop = PUT active:false (soft-archive, the dose history stays server-side); the day read
+    // then answers "no active medication" and the page falls onto its honest empty state.
+    mutationFn: mock
+      ? async (_input: MedicationInput) => mockStopMedication(qc)
+      : (input: MedicationInput) => medicationApi.updateMedication(medId(qc), { ...input, active: false }).then(() => undefined),
+    onSuccess: mock ? undefined : invalidate,
+  })
+
   const logDose = useCallback((input: MedicationDoseInput) => logM.mutate(input), [logM])
   const removeDose = useCallback((doseId: string) => removeM.mutate(doseId), [removeM])
   const updateMedication = useCallback((input: MedicationInput) => updateM.mutate(input), [updateM])
-  return { logDose, removeDose, updateMedication }
+  const createMedication = useCallback((input: MedicationInput) => createM.mutate(input), [createM])
+  const stopMedication = useCallback((input: MedicationInput) => stopM.mutate(input), [stopM])
+  return { logDose, removeDose, updateMedication, createMedication, stopMedication }
 }
 
 /** The active medication's id from the cached day (real mode) — for the api path params. */
@@ -167,6 +184,20 @@ function mockLogDose(qc: ReturnType<typeof useQueryClient>, input: MedicationDos
 }
 function mockRemoveDose(qc: ReturnType<typeof useQueryClient>, doseId: string) {
   return patchDay(qc, d => d.recentDoses.filter(x => x.id !== doseId))
+}
+function mockCreateMedication(qc: ReturnType<typeof useQueryClient>, input: MedicationInput) {
+  const medication: Medication = { ...input, id: crypto.randomUUID() }
+  qc.setQueryData<MedicationDay>(MEDICATION_KEY, {
+    medication,
+    cycle: deriveCycle(medication, []), // no dose yet — the honest-zero ghost cycle
+    recentDoses: [],
+  })
+  return undefined
+}
+function mockStopMedication(qc: ReturnType<typeof useQueryClient>) {
+  // The mock mirror of the real day read after a stop: no active medication -> the ghost.
+  qc.setQueryData<MedicationDay>(MEDICATION_KEY, MEDICATION_EMPTY)
+  return undefined
 }
 function mockUpdateMedication(qc: ReturnType<typeof useQueryClient>, input: MedicationInput) {
   qc.setQueryData<MedicationDay>(MEDICATION_KEY, prev => {

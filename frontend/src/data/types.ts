@@ -545,14 +545,22 @@ export interface SleepGoal {
 export type SleepGoalInput = Omit<SleepGoal, 'wakeTime' | 'bedTime'>
 // --- Emberek (people) ---
 export type Affect = 'positive' | 'neutral' | 'mixed' | 'negative'
-export type Relationship = 'partner' | 'teammate' | 'mentee'
+export type Relationship = 'partner' | 'friend' | 'family' | 'colleague' | 'teammate' | 'mentee'
+export type PersonStatus = 'candidate' | 'active' | 'archived'
+export type PersonSourceKind = 'manual' | 'extractor' | 'seed'
 export type MentionSource = 'voice' | 'camera' | 'chip' | 'text'
+export type MentionContext =
+  | 'munka' | 'csalad' | 'baratok' | 'edzes'
+  | 'konfliktus' | 'kozos_program' | 'segitseg' | 'egyeb'
 export interface PersonEntry {
   id: string
   name: string
   initial: string
   relationship: Relationship
   relationshipHu: string
+  aliases: string[]
+  status: PersonStatus
+  sourceKind: PersonSourceKind
   affect_baseline: Affect
   mentionCount: number
   mentionsThisWeek: number
@@ -577,12 +585,28 @@ export interface Mention {
   tone: Affect
   tiedTo?: { kind: string; label: string }
   flagged?: boolean
+  intensity?: number
+  contextLabel?: MentionContext
+  sourceRefKind?: string
 }
 /** Phase 2 REST DTO — POST /mentions. Hook enriches id/ts/labels/personName/source server-side in Phase 2. */
 export interface MentionLogInput {
   personId: string
   tone: Affect
   text?: string
+  contextLabel?: MentionContext
+}
+/** Create/edit save payload — no `id` = create, `id` present = update. Maps to
+ *  CreatePersonRequest/UpdatePersonRequest (both share this shape on the wire). */
+export interface PersonSaveInput {
+  id?: string
+  name: string
+  aliases: string[]
+  relationship: Relationship
+  relationshipHu: string
+  affectBaseline?: Affect
+  contactCadenceLabel?: string
+  notes?: string
 }
 
 // --- Fuel · weekly (Terv) + replan + gym schedule ---

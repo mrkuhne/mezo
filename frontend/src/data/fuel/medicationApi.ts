@@ -103,6 +103,11 @@ export const medicationApi = {
     }).then(fromDoseResponse),
   deleteDose: (medId: string, doseId: string): Promise<void> =>
     apiFetch(`/api/medication/${medId}/dose/${doseId}`, { method: 'DELETE' }).then(() => undefined),
+  createMedication: (input: MedicationInput): Promise<Medication> =>
+    apiFetch<MedicationResponse>('/api/medication', {
+      method: 'POST',
+      body: JSON.stringify(toRequest(input)),
+    }).then(fromResponse),
   updateMedication: (medId: string, input: MedicationInput): Promise<Medication> =>
     apiFetch<MedicationResponse>(`/api/medication/${medId}`, {
       method: 'PUT',

@@ -1,0 +1,622 @@
+<div class="wrap">
+  <p class="eyebrow">Design 2.0 · F7.3 · mezo-d20.8.3</p>
+  <h1>Fuel mély kör — gyógyszer-flow, recept, ablakok, sheet-család</h1>
+  <p class="lede">
+    A Fuel tab felszíne már Mozaik — a mélye még két generációt kever. Ez a kör négy dolgot zár fel:
+    a <strong>gyógyszer teljes életútja</strong> (felvétel → beadás → szerkesztés → leállítás) végre a UI-ból elérhető,
+    a <strong>recept detail/editor</strong> Mozaik-arcot kap a bevált két-tabos szerkezeten,
+    az <strong>étkezési ablakok</strong> szerkesztője rendezi a Tier-1/Tier-2 validáció megjelenését,
+    és az összes Fuel-sheet <strong>egyetlen közös sheet-mintára</strong> áll.
+  </p>
+
+  <div class="stage">
+    <div>
+      <div class="phone"><div class="screen play" id="screen">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>▮▮▮ 82%</span></div>
+
+        <!-- ============ GYÓGYSZER · kitöltött ============ -->
+        <div class="page p-lav on" id="pg-med">
+          <div class="page-head">
+            <button class="backbtn">‹ Fuel</button>
+            <button class="pgact" data-sheet="sh-dose">＋ Beadás</button>
+          </div>
+          <div class="page-body">
+            <div class="page-hero rise" style="--d:20ms;">
+              <div class="mrow" style="justify-content:center;gap:14px;">
+                <svg width="64" height="64" viewBox="0 0 100 100"><use href="#i-injekcio"/></svg>
+                <div class="bignum">D3</div>
+              </div>
+              <div class="nm">Gyógyszer</div>
+              <div class="sb">stabil fázis · utolsó beadás 2 napja</div>
+            </div>
+            <div class="medcard rise" style="--d:70ms;">
+              <div style="display:flex;align-items:baseline;gap:7px;">
+                <div style="font-size:13px;font-weight:700;">Retatrutid</div>
+                <div class="mut" style="font-size:9px;">retatrutid</div>
+              </div>
+              <div class="mut" style="font-size:9.5px;">4 mg · subQ injekció · heti · hétfő</div>
+              <div class="cyc" style="margin-top:11px;">
+                <span class="peak">P</span><span class="peak">P</span><span class="stab cur">S</span><span class="stab">S</span><span class="stab">S</span><span class="trou">T</span><span class="trou">T</span>
+              </div>
+              <div class="mut" style="font-size:9px;margin-top:8px;">3. nap a 7 napos ciklusban · <b>stabil fázis</b></div>
+            </div>
+            <div class="p-eyebrow rise" style="--d:120ms;padding:2px 2px 6px;">Beadások</div>
+            <div class="qcard rise" style="--d:150ms;padding:4px 12px;">
+              <div class="doserow"><span>aug 25 · hétfő</span><span class="dd">4 mg</span></div>
+              <div class="doserow"><span>aug 18 · hétfő</span><span class="dd">4 mg</span></div>
+              <div class="doserow"><span>aug 11 · hétfő <span class="nt">„dózis-lépcső”</span></span><span class="dd">3,5 mg</span></div>
+            </div>
+            <div class="stoprow rise" style="--d:200ms;">
+              <button class="ghost" data-sheet="sh-medform" data-mode="edit">Szerkesztés</button>
+              <button class="ghost" id="stopbtn">Leállítás</button>
+            </div>
+            <div class="stopconfirm" id="stopconfirm">
+              A Retatrutid leáll — a beadás-történet megmarad, a Fuel-oldalak nem számolnak vele tovább.
+              <div class="shrow" style="margin-top:8px;">
+                <button class="ghost" id="stopno">Mégse</button>
+                <button class="cta lav" id="stopyes">Leállítom</button>
+              </div>
+            </div>
+            <p class="habnote">A leállítás nem error-piros: nem hiba, hanem döntés. Kétlépcsős inline
+            megerősítés, a történet megmarad (soft-archive, <code>active:false</code>).</p>
+          </div>
+        </div>
+
+        <!-- ============ GYÓGYSZER · üres ============ -->
+        <div class="page p-lav" id="pg-med0">
+          <div class="page-head"><button class="backbtn">‹ Fuel</button></div>
+          <div class="page-body">
+            <div class="medempty rise" style="--d:30ms;">
+              <svg width="84" height="84" viewBox="0 0 100 100" style="opacity:0.75;"><use href="#i-injekcio"/></svg>
+              <div style="font-size:13px;font-weight:700;">Nincs követett gyógyszer</div>
+              <p>Ha szedsz valamit ciklusban — ide kerül a fázis-térkép és a beadás-napló.</p>
+              <button class="cta lav" data-sheet="sh-medform" data-mode="create" style="margin-top:6px;padding:9px 22px;">＋ Gyógyszer felvétele</button>
+            </div>
+            <p class="habnote" style="text-align:center;">Ez az út ma nem létezik — az oldal üres állapota zsákutca.
+            A <code>POST /api/medication</code> az egyetlen új kontraktus-elem a körben.</p>
+          </div>
+        </div>
+
+        <!-- ============ RECEPT DETAIL ============ -->
+        <div class="page p-coral" id="pg-recept">
+          <div class="page-head">
+            <button class="backbtn">‹ Receptek</button>
+            <button class="pgact" id="editopen">Szerkesztés</button>
+          </div>
+          <div class="page-body">
+            <div class="rhero rise" style="--d:20ms;">
+              <div class="imgband">
+                <span class="slotch">Reggeli</span>
+                <span class="star">★</span>
+                <span class="fitb">● illik ma</span>
+              </div>
+              <div class="hbody">
+                <div class="rnm">Túrós zabkása · áfonyával</div>
+                <div class="rmeta">1 adag · 5 + 3 perc · NOVA 1 · pre-workout mérce · létrehozva ápr. 14.</div>
+              </div>
+            </div>
+            <div class="mrow rise" style="--d:60ms;margin-bottom:7px;">
+              <span class="p-eyebrow">Makró</span>
+              <span class="servtog" id="servtog"><button class="on">/ adag</button><button>egész</button></span>
+            </div>
+            <div class="statstrip rise" style="--d:90ms;">
+              <div class="statcell"><b>580</b><small>kcal</small></div>
+              <div class="statcell"><b>42<span class="u"> g</span></b><small>fehérje</small></div>
+              <div class="statcell"><b>78<span class="u"> g</span></b><small>szénhidrát</small></div>
+              <div class="statcell"><b>12<span class="u"> g</span></b><small>zsír</small></div>
+            </div>
+            <div class="rmoz rise" style="--d:120ms;">
+              <button class="rtile" style="--tw:#E9F1E2;--ts:rgba(127,160,108,0.42);" data-sheet="sh-score">
+                <div class="tl">Pontszám<span class="chev">›</span></div>
+                <div class="ringrow">
+                  <div class="scorering" style="--v:92;"><div class="hole"><b>92</b></div></div>
+                  <div><div class="sub"><b>8 szempont</b> · megbízh. 86%</div><div class="sub">pre-workout mérce</div></div>
+                </div>
+                <div class="sub" style="margin-top:auto;">legerősebb: időzítés 96 · makró 94</div>
+              </button>
+              <div class="rtile static" style="--tw:#EDE9F8;--ts:rgba(138,118,204,0.45);">
+                <div class="tl">Mezo · olvasat</div>
+                <div class="prose">Lassú szénhidrát + 42 g fehérje — pre-workout mércén erős sablon.</div>
+                <div class="fitchips" style="margin-top:auto;"><span>● Pre Pull Day</span></div>
+              </div>
+              <button class="rtile" style="--tw:#FDF0DA;--ts:rgba(201,150,46,0.45);" id="ingopen">
+                <div class="tl">Hozzávalók<span class="chev">›</span></div>
+                <div class="bignum2">5</div>
+                <div class="inglist">Zabpehely · Túró · Áfonya · Méz · Mandula</div>
+              </button>
+              <button class="rtile" style="--tw:#DFEDF5;--ts:rgba(78,143,184,0.42);" data-sheet="sh-logs">
+                <div class="tl">Logok<span class="chev">›</span></div>
+                <div class="bignum2">3</div>
+                <div class="sub">utolsó: aug 29 · Reggeli · <b style="color:#4E6B42;">92</b></div>
+              </button>
+            </div>
+            <div class="actrow rise" style="--d:180ms;">
+              <button class="cta">Mai étkezéshez</button>
+              <button class="ghost">★ Csillag le</button>
+              <button class="ghost">Törlés</button>
+            </div>
+            <p class="habnote">A teljes pontszám-bontás a csempéről nyíló sheetben él — a kódban ma is
+            ugyanaz a komponens, mint az étkezés-score sheetje. Egy felület, két hívó.</p>
+          </div>
+        </div>
+
+        <!-- ============ HOZZÁVALÓK (csúszó al-oldal) ============ -->
+        <div class="page p-gold slide" id="pg-ingr">
+          <div class="page-head">
+            <button class="backbtn" id="ingclose">‹ Recept</button>
+            <span class="p-eyebrow" style="margin-left:auto;">Hozzávalók · 5</span>
+          </div>
+          <div class="page-body">
+            <div class="ingrow" style="--ic:#C9962E;">
+              <div class="l1"><span class="nm">Zabpehely</span><span class="amt">70 g</span></div>
+              <div class="macs">262 kcal · P 9,4 · C 46,4 · F 4,9</div>
+            </div>
+            <div class="ingrow" style="--ic:#7FA06C;">
+              <div class="l1"><span class="nm">Félzsíros túró</span><span class="amt">200 g</span></div>
+              <div class="macs">196 kcal · P 24 · C 7,4 · F 8,2</div>
+            </div>
+            <div class="ingrow" style="--ic:#8A76CC;">
+              <div class="l1"><span class="nm">Áfonya</span><span class="amt">80 g</span></div>
+              <div class="macs">46 kcal · P 0,6 · C 11,6 · F 0,2</div>
+            </div>
+            <div class="ingrow" style="--ic:#C9962E;">
+              <div class="l1"><span class="nm">Méz</span><span class="amt">12 g</span></div>
+              <div class="macs">36 kcal · P 0 · C 9,9 · F 0</div>
+            </div>
+            <div class="ingrow" style="--ic:#D98A66;">
+              <div class="l1"><span class="nm">Mandula</span><span class="amt">15 g</span></div>
+              <div class="macs">87 kcal · P 3,2 · C 3,3 · F 7,5</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ RECEPT EDITOR (csúszó al-oldal) ============ -->
+        <div class="page p-sage slide" id="pg-editor">
+          <div class="page-head">
+            <button class="backbtn" id="editclose">‹ Vissza</button>
+            <span class="p-eyebrow" style="margin-left:auto;">Szerkesztés</span>
+          </div>
+          <div class="page-body">
+            <div class="fcard"><label class="flabel">Név</label>
+              <input class="fin" value="Túrós zabkása · áfonyával"></div>
+            <div class="fcard"><label class="flabel">Slot · csillag</label>
+              <div class="chips coral"><button class="on">Reggeli</button><button>Ebéd</button><button>Vacsi</button><button>Snack</button><button class="on" style="margin-left:auto;">★ Csillagos</button></div></div>
+            <div class="fcard"><label class="flabel">Szerep</label>
+              <div class="chips sage"><button>standard</button><button class="on">pre-workout</button><button>post-workout</button><button>esti</button></div>
+              <div class="mut" style="font-size:8.5px;margin-top:5px;">A szerep dönti el, milyen mérce szerint pontozzuk.</div></div>
+            <div class="fcard"><div class="frow2">
+              <div><label class="flabel">Adag</label><span class="stepin"><button>−</button><b>1</b><button>＋</button></span></div>
+              <div><label class="flabel">Elő + főzés</label><span class="stepin"><button>−</button><b>5 + 3 p</b><button>＋</button></span></div>
+            </div></div>
+            <div class="fcard">
+              <div class="mrow"><label class="flabel" style="margin:0;">Makró-összeg</label>
+                <span class="servtog"><button class="on">/ adag</button><button>egész</button></span></div>
+              <div class="statstrip" style="margin:7px 0 4px;">
+                <div class="statcell"><b>580</b><small>kcal</small></div>
+                <div class="statcell"><b>42<span class="u"> g</span></b><small>P</small></div>
+                <div class="statcell"><b>78<span class="u"> g</span></b><small>C</small></div>
+                <div class="statcell"><b>12<span class="u"> g</span></b><small>F</small></div>
+              </div>
+            </div>
+            <div class="p-eyebrow" style="padding:2px 2px 6px;">Hozzávalók · 5</div>
+            <div class="ingrow" style="--ic:#C9962E;">
+              <div class="l1"><span class="nm">Zabpehely</span>
+                <span class="stepin" style="margin-left:auto;"><button>−</button><b>70 g</b><button>＋</button></span>
+                <button class="trash" style="border:none;background:none;color:#A2958A;cursor:pointer;font-family:inherit;">✕</button></div>
+              <div class="macs">262 kcal · P 9,4 · C 46,4 · F 4,9</div>
+            </div>
+            <div class="ingrow" style="--ic:#7FA06C;">
+              <div class="l1"><span class="nm">Félzsíros túró</span>
+                <span class="stepin" style="margin-left:auto;"><button>−</button><b>200 g</b><button>＋</button></span>
+                <button style="border:none;background:none;color:#A2958A;cursor:pointer;font-family:inherit;">✕</button></div>
+              <div class="macs">196 kcal · P 24 · C 7,4 · F 8,2</div>
+            </div>
+            <button class="rmrow">＋ Kamrából hozzáad</button>
+            <div class="fcard" style="margin-top:8px;"><label class="flabel">Címkék</label>
+              <div class="tagchips"><span>pre-workout ✕</span><span>high-protein ✕</span><span>slow-release ✕</span><span class="addtag">＋ címke</span></div></div>
+          </div>
+          <div class="savebar"><button class="ghost">Mégse</button><button class="cta">Mentés</button></div>
+        </div>
+
+        <!-- ============ ÉTKEZÉSI ABLAKOK · editor ============ -->
+        <div class="page p-sage" id="pg-slots">
+          <div class="page-head"><button class="backbtn">‹ Fuel</button></div>
+          <div class="page-body">
+            <div class="page-hero rise" style="--d:20ms;">
+              <div class="mrow" style="justify-content:center;gap:14px;">
+                <svg width="56" height="56" viewBox="0 0 100 100"><use href="#i-rend"/></svg>
+              </div>
+              <div class="nm">Étkezési ablakok</div>
+              <div class="sb">Reggeli edzés · sablon</div>
+            </div>
+            <div class="segtabs rise" style="--d:50ms;">
+              <button>Pihenőnap</button><button class="on">Reggeli edzés</button><button>Esti edzés</button>
+            </div>
+            <div class="zcard rise" style="--d:80ms;">
+              <div class="l1"><input class="fin" value="Reggeli"><button class="trash">🗑</button></div>
+              <div class="crow"><span class="chips coral"><button class="on">Reggeli</button><button>Snack</button></span></div>
+              <div class="crow">
+                <select><option>Edzés vége után</option><option>Fix időpont</option><option>Ébredés után</option></select>
+                <span class="stepin"><button>−</button><b>+30 p</b><button>＋</button></span>
+                <span class="budg"><input id="bud1" value="35"> %</span>
+              </div>
+            </div>
+            <div class="zcard rise" style="--d:110ms;">
+              <div class="l1"><input class="fin" value="Ebéd"><button class="trash">🗑</button></div>
+              <div class="crow"><span class="chips coral"><button class="on">Ebéd</button><button>Snack</button></span></div>
+              <div class="crow">
+                <select><option>Fix időpont</option><option>Ébredés után</option></select>
+                <input class="fin" type="time" value="13:00" style="width:78px;">
+                <span class="budg"><input value="35"> %</span>
+              </div>
+            </div>
+            <div class="zcard rise" style="--d:140ms;">
+              <div class="l1"><input class="fin" value="Vacsora"><button class="trash">🗑</button></div>
+              <div class="crow"><span class="chips coral"><button class="on">Vacsora</button></span></div>
+              <div class="crow">
+                <select><option>Lefekvés előtt</option><option>Fix időpont</option></select>
+                <span class="stepin"><button>−</button><b>−150 p</b><button>＋</button></span>
+                <span class="budg"><input value="22"> %</span>
+              </div>
+            </div>
+            <button class="rmrow rise" style="--d:170ms;">＋ Új slot</button>
+            <div class="sumrow rise" style="--d:200ms;">Σ BUDGET<span class="sumpill bad" id="sumpill">92%</span></div>
+            <div id="slotprobs">
+              <div class="verr" role="alert">A budget-összeg 92% — 100%-ra kell zárnia (±1%).</div>
+              <div class="vwarn">A Reggeli és az Ebéd között 4½ óra telik el — hosszú rés egy edzés-napon.</div>
+              <button class="ghost" id="fixdemo" style="width:100%;padding:8px 0;">Demó: budget javítása → 100%</button>
+            </div>
+            <div class="qcard" style="padding:6px 12px;margin-top:8px;">
+              <div class="p-eyebrow" style="padding:2px 0 4px;">Előnézet</div>
+              <div class="prevrow"><span>07:30</span><b>Reggeli</b><span style="margin-left:auto;">1 085 kcal · P 56</span></div>
+              <div class="prevrow"><span>13:00</span><b>Ebéd</b><span style="margin-left:auto;">1 085 kcal · P 56</span></div>
+              <div class="prevrow"><span>20:30</span><b>Vacsora</b><span style="margin-left:auto;">682 kcal · P 35</span></div>
+            </div>
+            <button class="ghost" id="aieval" style="width:100%;padding:9px 0;" disabled>✨ Mezo értékelése</button>
+            <div class="aibusy" id="aibusy" style="display:none;"><span class="tw"></span>Mezo értékeli a felosztást…</div>
+            <div class="aicard" id="aiverdict" style="display:none;margin-top:6px;">
+              <div class="mrow"><span class="t">Mezo · olvasat</span><span class="verdch ok" style="margin-left:auto;">rendben</span></div>
+              <div class="x">A 35/35/22(+8 snack) felosztás illik a reggeli edzéshez. <b>Vacsora:</b> a lefekvés
+              előtti −150 perc jó — a konyhazárást így is tartod.</div>
+            </div>
+            <p class="habnote">A korall itt jogos: a Tier-1 hiba tiltott állapot, nem teljesítmény-ítélet.
+            A warning borostyán és sosem blokkol; az AI-gomb hibánál inaktív, a verdikt sosem kapuzza a mentést.</p>
+          </div>
+          <div class="savebar"><button class="ghost">Mégse</button><button class="cta" id="slotsave" disabled>Mentés</button></div>
+        </div>
+
+        <!-- ============ SHEET-CSALÁD · launcher ============ -->
+        <div class="page p-gold" id="pg-sheets">
+          <div class="page-head"><button class="backbtn">‹ Fuel</button></div>
+          <div class="page-body">
+            <div class="page-hero rise" style="--d:20ms;">
+              <div class="nm">A sheet-család</div>
+              <div class="sb">egy minta, tizenhárom sheet</div>
+            </div>
+            <div class="shl">
+              <button class="shlb rise" style="--d:60ms;--tw:#E9F1E2;--ts:rgba(127,160,108,0.4);" data-sheet="sh-score"><b>MealScore</b><small>pontszám-bontás + AI-olvasat</small></button>
+              <button class="shlb rise" style="--d:90ms;--tw:#F2F7EC;--ts:rgba(127,160,108,0.4);" data-sheet="sh-stackpick"><b>StackPicker</b><small>mit szedjünk — a polcról</small></button>
+              <button class="shlb rise" style="--d:120ms;--tw:#E9F1E2;--ts:rgba(127,160,108,0.4);" data-sheet="sh-stackitem"><b>StackItem</b><small>időzítés · dózis · zónák</small></button>
+              <button class="shlb rise" style="--d:150ms;--tw:#DFEDF5;--ts:rgba(78,143,184,0.4);" data-sheet="sh-import"><b>Import</b><small>OFF · link · fotó</small></button>
+              <button class="shlb rise" style="--d:180ms;--tw:#FDF0DA;--ts:rgba(201,150,46,0.45);" data-sheet="sh-energy"><b>Energia</b><small>honnan jön a napi cél</small></button>
+              <button class="shlb rise" style="--d:210ms;--tw:#EDE9F8;--ts:rgba(138,118,204,0.45);" data-sheet="sh-dose"><b>Beadás</b><small>gyógyszer-dózis logolás</small></button>
+            </div>
+            <p class="habnote">Közös minta: grabber → eyebrow + cím + ✕ → tónusos hero-sáv → tartalom →
+            gomb-sor. A maradék hét sheet (Replan, WaterLog, AddPantry, FuelSettings, szűrők, pickerek)
+            ugyanezt követi külön rajz nélkül.</p>
+          </div>
+        </div>
+
+        <!-- ============ SHEETEK ============ -->
+        <div class="bsheet-back" id="sback"></div>
+
+        <div class="bsheet" id="sh-dose">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">Beadás · Retatrutid</div><div class="sh-title">Új beadás</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="fcard"><div class="frow2">
+            <div><label class="flabel">Dátum</label><input class="fin" type="date" value="2026-08-31"></div>
+            <div><label class="flabel">Időpont</label><input class="fin" type="time" value="08:10"></div>
+          </div></div>
+          <div class="fcard"><label class="flabel">Dózis</label>
+            <div class="mrow"><input class="fin" value="4" style="max-width:90px;"><span class="mut" style="font-size:10px;font-weight:700;">mg</span></div></div>
+          <div class="fcard"><label class="flabel">Jegyzet</label>
+            <input class="fin" placeholder="pl. hétfő reggel · subQ has"></div>
+          <div class="shrow"><button class="ghost" data-close>Mégse</button><button class="cta lav" data-close>Beadás</button></div>
+        </div>
+
+        <div class="bsheet" id="sh-medform">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">Gyógyszer</div><div class="sh-title" id="medformtitle">Gyógyszer felvétele</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="fcard"><div class="frow2">
+            <div><label class="flabel">Név</label><input class="fin" placeholder="pl. Retatrutid" id="mf-name"></div>
+            <div><label class="flabel">Hatóanyag</label><input class="fin" placeholder="retatrutid" id="mf-ing"></div>
+          </div></div>
+          <div class="fcard"><label class="flabel">Beviteli út</label>
+            <div class="chips" id="mf-route"><button class="on">subQ injekció</button><button>IM injekció</button><button>orális</button></div></div>
+          <div class="fcard"><label class="flabel">Dózis</label>
+            <div class="mrow"><input class="fin" value="4" style="max-width:80px;" id="mf-dose"><input class="fin" value="mg" style="max-width:64px;"></div></div>
+          <div class="fcard"><label class="flabel">Kadencia</label>
+            <div class="chips" id="mf-cad"><button class="on">heti</button><button>napi</button></div>
+            <div class="chips" style="margin-top:6px;"><button class="on">H</button><button>K</button><button>Sze</button><button>Cs</button><button>P</button><button>Szo</button><button>V</button></div></div>
+          <div class="fcard"><label class="flabel">Ciklus · fázisok</label>
+            <div class="mrow"><span class="mut" style="font-size:9.5px;">7 napos</span>
+              <span class="cyc grow" style="max-width:170px;"><span class="peak">P</span><span class="peak">P</span><span class="stab">S</span><span class="stab">S</span><span class="stab">S</span><span class="trou">T</span><span class="trou">T</span></span></div>
+            <div class="mut" style="font-size:8.5px;margin-top:5px;">Alap-sablon: 2 nap csúcs · 3 nap stabil · 2 nap völgy — a beadás napjától számolva. Finomhangolható.</div></div>
+          <div class="shrow"><button class="ghost" data-close>Mégse</button><button class="cta lav" data-close id="medformsave">Felveszem</button></div>
+        </div>
+
+        <div class="bsheet" id="sh-score">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">AI score · részletek</div><div class="sh-title">Reggeli · 09:15</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="sh-hero" style="--shw:#E9F1E2;--shs:rgba(127,160,108,0.4);">
+            <div class="scorering" style="--v:92;"><div class="hole"><b>92</b><small>/100</small></div></div>
+            <div class="grow">
+              <div class="t">kcal 580 · P 42 · C 78 · F 12</div>
+              <div class="itemchips"><span>Zabpehely 70g</span><span>Túró 200g</span><span>Áfonya 80g</span><span>Méz 12g</span><span>Mandula 15g</span></div>
+              <div class="conf">MEGBÍZHATÓSÁG<span class="bar"><div style="width:86%;"></div></span>86%</div>
+            </div>
+          </div>
+          <div class="aicard"><div class="t">Mezo · olvasat</div>
+            <div class="x">Erős nyitás: a zab + túró kombó 42 g fehérjét ad lassú szénhidrát mellett.
+            A heti magnézium-státusz az egyetlen gyenge pont.</div></div>
+          <div class="mrow" style="padding:2px 2px 6px;"><span class="p-eyebrow">Súlyozott bontás</span><span class="mut" style="margin-left:auto;font-size:8.5px;">8 dimenzió</span></div>
+          <div class="dimcard" style="--dc:#7FA06C;">
+            <div class="l1"><span class="dn">Kcal &amp; makró arány</span><span class="dw">× 22% = 20,7</span><span class="dv">94</span></div>
+            <div class="dimbar"><div style="width:94%;"></div></div>
+          </div>
+          <div class="dimcard" style="--dc:#C9962E;">
+            <div class="l1"><span class="dn">Feldolgozottság · NOVA</span><span class="dw">× 18% = 16,6</span><span class="dv">92</span></div>
+            <div class="dimbar"><div style="width:92%;"></div></div>
+          </div>
+          <div class="dimcard" style="--dc:#4E8FB8;">
+            <div class="l1"><span class="dn">Ajánlások · WHO</span><span class="dw">× 14% = 12,3</span><span class="dv">88</span></div>
+            <div class="dimbar"><div style="width:88%;"></div></div>
+          </div>
+          <div class="qcard" style="padding:8px 12px;">
+            <div class="p-eyebrow" style="padding-bottom:2px;color:#A8801F;">Lehetne jobb</div>
+            <div class="improw"><i>1</i><span>+½ ek tökmag (~85 mg Mg) — heti Mg-státusz 32% → 48%.</span><span class="imp">+0,04</span></div>
+            <div class="toolchips"><span>lookupNutrients(items=5)</span><span>classifyNOVA(items=5)</span></div>
+          </div>
+        </div>
+
+        <div class="bsheet" id="sh-stackpick">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">Kamra · stack-pick</div><div class="sh-title">Mit szedjünk</div></div><button class="sh-x" data-close>✕</button></div>
+          <input class="fin" placeholder="Keress a polcon…" style="margin-bottom:6px;">
+          <button class="pkrow added"><div><div class="nm">Kreatin monohidrát <span class="inch">A STACKBEN</span></div><div class="sb">MyProtein · 5 g</div></div><span class="addic">✓</span></button>
+          <button class="pkrow"><div><div class="nm">Origin PWO <span class="cafch">KOFFEIN</span></div><div class="sb">Origin · 20 g · 300 mg koffein</div></div><span class="addic">＋</span></button>
+          <button class="pkrow"><div><div class="nm">Magnézium-glicinát</div><div class="sb">Pure Encapsulations · 300 mg</div></div><span class="addic">＋</span></button>
+          <button class="pkrow"><div><div class="nm">D3 + K2</div><div class="sb">MyProtein · 4000 IU + 100 µg</div></div><span class="addic">＋</span></button>
+          <button class="pkrow"><div><div class="nm">Cink</div><div class="sb">Now Foods · 15 mg</div></div><span class="addic">＋</span></button>
+        </div>
+
+        <div class="bsheet" id="sh-stackitem">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">Stack · időzítés</div><div class="sh-title">Magnézium-glicinát</div><div class="mut" style="font-size:9px;">300 mg</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="sh-hero" style="--shw:#E9F1E2;--shs:rgba(127,160,108,0.4);">
+            <div class="grow"><div class="t">Este · 21:00</div><div class="s">lefekvés előtt 2 órával · P2 minta megerősítve</div></div>
+          </div>
+          <div class="fcard"><label class="flabel">Mozgatás másik zónába</label>
+            <div class="chips"><button>Ébredés</button><button>Reggeli</button><button>Edzés előtt</button><button>Edzés után</button><button>Ebéd</button><button>Vacsora</button><button class="on" disabled>Este ✓</button><button>Lefekvés</button></div></div>
+          <div class="fcard"><label class="flabel">Dózis</label>
+            <div class="mrow"><input class="fin" value="300" style="max-width:90px;"><span class="mut" style="font-size:10px;font-weight:700;">mg</span></div></div>
+          <button class="rmrow">＋ Még egy bevétel</button>
+          <button class="rmrow" style="color:#A2958A;">Eltávolítás a stackből</button>
+        </div>
+
+        <div class="bsheet" id="sh-import">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">Import · OpenFoodFacts</div><div class="sh-title">Új tétel a Kamrába</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="srcchips" id="impmodes"><button class="on" data-m="off">Keresés (OFF)</button><button data-m="link">Link</button><button data-m="foto">Fotó</button></div>
+          <div id="imp-off">
+            <div class="fcard"><label class="flabel">Terméknév vagy vonalkód</label>
+              <input class="fin" value="skyr"></div>
+            <div class="qcard" style="padding:4px 12px;">
+              <button class="offrow sel"><span class="novadot" style="background:#7FA06C;"></span><div><div style="font-size:10.5px;font-weight:700;">Skyr natúr</div><div class="sb" style="font-size:8px;color:#A2958A;">Milbona · 4056489076612</div></div><span class="kc">63 kcal</span></button>
+              <button class="offrow"><span class="novadot" style="background:#7FA06C;"></span><div><div style="font-size:10.5px;font-weight:700;">Skyr vanília</div><div class="sb" style="font-size:8px;color:#A2958A;">Milbona · 4056489076629</div></div><span class="kc">74 kcal</span></button>
+            </div>
+            <div class="fcard"><div class="mrow"><label class="flabel" style="margin:0;">Polcra kerül · /100 g</label><span class="srcbadge" style="margin-left:auto;">openfoodfacts</span></div>
+              <input class="fin" value="Skyr natúr" style="margin:5px 0 7px;">
+              <div class="statstrip" style="margin:0;">
+                <div class="statcell"><b>63</b><small>kcal</small></div>
+                <div class="statcell"><b>11<span class="u"> g</span></b><small>P</small></div>
+                <div class="statcell"><b>4<span class="u"> g</span></b><small>C</small></div>
+                <div class="statcell"><b>0,2<span class="u"> g</span></b><small>F</small></div>
+              </div></div>
+            <div class="shrow"><button class="ghost" data-close>Vissza</button><button class="cta" data-close>Polcra</button></div>
+          </div>
+          <div id="imp-link" style="display:none;">
+            <div class="fcard"><label class="flabel">Termékoldal linkje</label>
+              <input class="fin" placeholder="https://…"></div>
+            <p class="mut" style="font-size:9px;padding:0 2px 6px;">Működik pl. a myprotein.hu és a gymbeam.hu oldalakkal — az AI kiolvassa a tápértéket.</p>
+            <div class="shrow"><button class="ghost" data-close>Mégse</button><button class="cta">Beolvasás</button></div>
+          </div>
+          <div id="imp-foto" style="display:none;">
+            <div class="fcard"><label class="flabel">Címke fotó</label>
+              <div class="mut" style="font-size:9.5px;">✓ cimke_2026-08-31.jpg</div></div>
+            <div class="fcard"><label class="flabel">Előlap fotó · opcionális</label>
+              <div class="mut" style="font-size:9.5px;">— ha a név nem látszik a címkén</div></div>
+            <p class="mut" style="font-size:9px;padding:0 2px 6px;">A fotó nem kerül tárolásra.</p>
+            <div class="shrow"><button class="ghost" data-close>Mégse</button><button class="cta">Beolvasás</button></div>
+          </div>
+        </div>
+
+        <div class="bsheet" id="sh-energy">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">Napi cél</div><div class="sh-title">Honnan jön a 3 100 kcal?</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="eq">
+            <span class="cell"><b>2 470</b><small>alap</small></span><span class="op">＋</span>
+            <span class="cell"><b>1 020</b><small>mozgás</small></span><span class="op">−</span>
+            <span class="cell"><b>390</b><small>deficit</small></span><span class="op">＝</span>
+            <span class="cell res"><b>3 100</b><small>mai cél</small></span>
+          </div>
+          <div class="p-eyebrow" style="padding:2px 2px 5px;">Alaphő · NEAT</div>
+          <div class="etile"><span>🔥</span><div class="grow"><div class="en">Alapanyagcsere</div><div class="es">Katch-McArdle</div></div><span class="ev">1 703</span></div>
+          <div class="etile"><span>🚶</span><div class="grow"><div class="en">NEAT-szorzó</div><div class="es">irodai + aktív hobbik</div></div><span class="ev">1,45 ×</span></div>
+          <div class="p-eyebrow" style="padding:6px 2px 5px;">Betáblázott mozgás</div>
+          <div class="etile"><span>🏋️</span><div class="grow"><div class="en">Gym · Pull A</div><div class="es">60 perc · MET-becslés</div></div><span class="ev">540</span></div>
+          <div class="etile"><span>🏐</span><div class="grow"><div class="en">Röplabda</div><div class="es">90 perc</div></div><span class="ev">480</span></div>
+          <div class="p-eyebrow" style="padding:6px 2px 5px;">Deficit · vágás</div>
+          <div class="etile"><span>🎯</span><div class="grow"><div class="en">Cél ütem</div><div class="es">−0,35 kg / hét · ≈7 700 kcal/kg</div></div><span class="ev">−390</span></div>
+        </div>
+
+        <div class="bsheet" id="sh-logs">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">Recept · logok</div><div class="sh-title">Túrós zabkása · áfonyával</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="qcard" style="padding:4px 12px;margin-bottom:0;">
+            <div class="logrow"><span class="dt">aug 29 · P</span><span>Reggeli · 09:15</span><span class="sc">92</span></div>
+            <div class="logrow"><span class="dt">aug 26 · K</span><span>Reggeli · 08:40</span><span class="sc">89</span></div>
+            <div class="logrow"><span class="dt">aug 22 · Szo</span><span>Reggeli · 10:05</span><span class="sc">91</span></div>
+          </div>
+        </div>
+
+        <div class="homebar"></div>
+      </div></div>
+
+      <div class="demobar">
+        <button data-pg="pg-med" aria-pressed="true">Gyógyszer</button>
+        <button data-pg="pg-med0" aria-pressed="false">Üres állapot</button>
+        <button data-pg="pg-recept" aria-pressed="false">Recept</button>
+        <button data-pg="pg-slots" aria-pressed="false">Ablakok</button>
+        <button data-pg="pg-sheets" aria-pressed="false">Sheetek</button>
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Mit nézz meg</h2>
+        <ul>
+          <li><strong>Gyógyszer</strong> — a teljes életút végre a UI-ból: az oldalon Szerkesztés és
+            kétlépcsős Leállítás (nem error-piros — döntés, nem hiba), a ＋ Beadás a megújult
+            dózis-sheetet nyitja.</li>
+          <li><strong>Üres állapot</strong> — a mai zsákutca helyett ＋ Gyógyszer felvétele út:
+            név, hatóanyag, beviteli út, dózis, kadencia + a P/S/T fázis-sablon előnézete.
+            Egyetlen új kontraktus-elem: <code>POST /api/medication</code>.</li>
+          <li><strong>Recept</strong> — a lap mozaikra tagolódik: kép-sávos hero + makró-strip után négy
+            csempe (Pontszám-gyűrű, Mezo-olvasat, Hozzávalók, Logok). A mélység egy koppintás:
+            a pontszám-bontás sheetben, a hozzávalók saját oldalon nyílnak. A Szerkesztés jobbról
+            csúszó editor-oldalt nyit.</li>
+          <li><strong>Ablakok</strong> — a Tier-1 hiba korall (tiltott állapot — itt jogos a szín),
+            a warning borostyán és sosem blokkol. Nyomd meg a demó-gombot: a hiba eltűnik, a Mentés és
+            a ✨ Mezo értékelése feléled — az AI-verdikt kártyája sosem kapuzza a mentést.</li>
+          <li><strong>Sheetek</strong> — a launcher-oldalon mind a hat kulcs-sheet: közös grabber +
+            eyebrow-fejléc + tónusos hero-sáv. A MealScore a score-gyűrűvel, a StackPicker a koffein/
+            „a stackben” jelekkel, az Import mindhárom móddal, az Energia az egyenlet-sávval.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Ami szándékosan nem változik</h2>
+        <ul>
+          <li>A recept-detail adattartalma és akciói — a tagolás vált (tabok → mozaik + sheet), az adat nem.</li>
+          <li>A slots-validáció logikája (<code>validateSlotPlan</code>, Tier-2 gating) — csak a megjelenés rendeződik.</li>
+          <li>A sheetek tartalma és mezői — arc-csere, nem újratervezés.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Döntendő ezen az oldalon</h2>
+        <ol>
+          <li>A gyógyszer-felvétel fázis-sablonja: elég az alap <strong>2P·3S·2T</strong> előnézet
+            finomhangolás nélkül, vagy kelljen fázis-szerkesztő is?</li>
+          <li>A recept-hero <strong>kép-sávja</strong>: gradiens-placeholder jó (valódi kép nincs a dróton),
+            vagy inkább clay-folt?</li>
+          <li>A recept-mozaik <strong>Mezo-olvasat csempéje</strong> statikus — jó így, vagy ő is a
+            pontszám-sheetre koppintson?</li>
+          <li>A Leállítás helye: a lap alján ghost-párban, vagy a Szerkesztés-sheet belsejében?</li>
+          <li>A sheet-hero tónus-sáv minden sheetben kelljen, vagy csak ahol van mit headline-olni
+            (score, stack-item)?</li>
+        </ol>
+      </div>
+      <p class="note">
+        A recept-editor „finomhangolás” hozzávaló-overridja a log-flow-ban él és ott is marad —
+        ide nem másoljuk át, egy mechanizmus egy helyen lakik.
+      </p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var screen = $('screen');
+
+  /* oldal-váltás + belépő-koreográfia újrajátszása */
+  var pages = ['pg-med', 'pg-med0', 'pg-recept', 'pg-slots', 'pg-sheets'];
+  document.querySelectorAll('.demobar button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.demobar button').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      pages.forEach(function (p) { $(p).classList.remove('on'); });
+      $('pg-editor').classList.remove('open');
+      $('pg-ingr').classList.remove('open');
+      $(b.dataset.pg).classList.add('on');
+      screen.classList.remove('play'); void screen.offsetHeight; screen.classList.add('play');
+    });
+  });
+
+  /* sheetek */
+  var back = $('sback');
+  function openSheet(id) { back.classList.add('open'); $(id).classList.add('open'); }
+  function closeSheets() {
+    back.classList.remove('open');
+    document.querySelectorAll('.bsheet').forEach(function (s) { s.classList.remove('open'); });
+  }
+  document.querySelectorAll('[data-sheet]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.dataset.mode) {
+        $('medformtitle').textContent = b.dataset.mode === 'edit' ? 'Gyógyszer szerkesztése' : 'Gyógyszer felvétele';
+        $('medformsave').textContent = b.dataset.mode === 'edit' ? 'Mentés' : 'Felveszem';
+        if (b.dataset.mode === 'edit') { $('mf-name').value = 'Retatrutid'; $('mf-ing').value = 'retatrutid'; }
+        else { $('mf-name').value = ''; $('mf-ing').value = ''; }
+      }
+      openSheet(b.dataset.sheet);
+    });
+  });
+  back.addEventListener('click', closeSheets);
+  document.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeSheets); });
+
+  /* leállítás — kétlépcsős */
+  $('stopbtn').addEventListener('click', function () { $('stopconfirm').classList.add('on'); });
+  $('stopno').addEventListener('click', function () { $('stopconfirm').classList.remove('on'); });
+  $('stopyes').addEventListener('click', function () {
+    $('stopconfirm').classList.remove('on');
+    document.querySelector('[data-pg="pg-med0"]').click();
+  });
+
+  /* recept: editor + hozzávalók al-oldalak */
+  $('editopen').addEventListener('click', function () { $('pg-editor').classList.add('open'); });
+  $('editclose').addEventListener('click', function () { $('pg-editor').classList.remove('open'); });
+  $('ingopen').addEventListener('click', function () { $('pg-ingr').classList.add('open'); });
+  $('ingclose').addEventListener('click', function () { $('pg-ingr').classList.remove('open'); });
+
+  /* slots demó: hiba-javítás + AI-értékelés */
+  $('fixdemo').addEventListener('click', function () {
+    $('bud1').value = '43';
+    $('sumpill').textContent = '100%';
+    $('sumpill').classList.remove('bad'); $('sumpill').classList.add('ok');
+    $('slotprobs').innerHTML = '<div class="vwarn">A Reggeli és az Ebéd között 4½ óra telik el — hosszú rés egy edzés-napon.</div>';
+    $('aieval').disabled = false;
+    $('slotsave').disabled = false;
+  });
+  $('aieval').addEventListener('click', function () {
+    $('aieval').style.display = 'none';
+    $('aibusy').style.display = 'flex';
+    setTimeout(function () {
+      $('aibusy').style.display = 'none';
+      $('aiverdict').style.display = '';
+    }, 1400);
+  });
+
+  /* import mód-váltás */
+  $('impmodes').querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $('impmodes').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      $('imp-off').style.display = b.dataset.m === 'off' ? '' : 'none';
+      $('imp-link').style.display = b.dataset.m === 'link' ? '' : 'none';
+      $('imp-foto').style.display = b.dataset.m === 'foto' ? '' : 'none';
+    });
+  });
+})();
+</script>

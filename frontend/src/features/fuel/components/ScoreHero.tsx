@@ -1,6 +1,8 @@
 // ============================================================
 // Mezo · ScoreHero (MealScoreSheet header block)
-// Big score ring + macro line + item chips + confidence bar
+// Big score ring + macro line + item chips + confidence bar — F7.3: rides the
+// tinted mz-sheet-hero band (fuel-mely.html §D: hero only where there is
+// something to headline).
 // ============================================================
 import type { FuelMeal } from '@/data/types'
 import { ScoreRing } from '@/shared/ui/ScoreRing'
@@ -8,7 +10,7 @@ import { ProgressBar } from '@/shared/ui/ProgressBar'
 
 export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scorePct: number; confidence: number }) {
   return (
-    <div className="card" style={{ padding: 16 }}>
+    <div className="mz-sheet-hero" style={{ padding: 16 }}>
       <div className="row" style={{ gap: 16, alignItems: 'center' }}>
         {/* Ring */}
         <div style={{ flexShrink: 0 }}>

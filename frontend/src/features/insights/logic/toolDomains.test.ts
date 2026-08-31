@@ -45,8 +45,13 @@ describe('refDomain', () => {
     expect(refDomain('Pattern')).toEqual({ label: 'Minta', icon: 'i-minta', wash: 'gold' })
     expect(refDomain('Memory')).toEqual({ label: 'Emlék', icon: 'i-retegek', wash: 'lav' })
   })
+  it('maps the full backend ref-kind vocabulary (mezo-vdf4)', () => {
+    expect(refDomain('Weight')).toEqual({ label: 'Súly', icon: 'i-suly', wash: 'sky' })
+    expect(refDomain('FuelDay')).toEqual({ label: 'Fuel nap', icon: 'i-fuel', wash: 'sage' })
+    expect(refDomain('Medication').wash).toBe('rose')
+  })
   it('falls back honestly on an unknown kind', () => {
-    expect(refDomain('FuelDay')).toEqual({ label: 'FuelDay', icon: 'i-mezo', wash: 'neutral' })
+    expect(refDomain('SomethingNew')).toEqual({ label: 'SomethingNew', icon: 'i-mezo', wash: 'neutral' })
   })
 })
 

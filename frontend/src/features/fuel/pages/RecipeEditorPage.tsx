@@ -11,9 +11,10 @@
 // Contribution = round(macro * amount/per) — the SAME amount/per rule as the
 // backend mapper and the mock hook (replaces NewRecipeSheet's unit==='g' hack).
 //
-// Header-only re-skin (Napiv, mezo-8141): back button on its own row, then a
-// pghead-np sage header (over "Fuel · Receptek", h1 = the current title content
-// — the typed name, or the "—" placeholder). Body/editor flows unchanged.
+// F7.3 Mozaik re-face (mezo-d20.8.3.1): MozaikPage(sage) shell + PageHead, the
+// title block is mz-eyebrow + display name (the typed name, or the "—"/"Új
+// recept" placeholder), field cards go .mz-qcard, and the live total renders in
+// the mz-statstrip. Body/editor flows unchanged.
 // ============================================================
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -21,6 +22,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { Ingredient, Recipe, RecipeCategory, RecipeInput, RecipeRole } from '@/data/types'
 import { useRecipes, useRecipeActions } from '@/data/hooks'
 import { Icon } from '@/shared/ui/Icon'
+import { MozaikPage, PageHead, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ROLE_OPTIONS } from '@/features/fuel/logic/recipeRole'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
@@ -126,11 +129,14 @@ export function RecipeEditorPage() {
   // initialData); in real mode a cold hard-reload may show this briefly until the list resolves.
   if (isEditMode && !editing) {
     return (
-      <div style={{ padding: '0 24px' }}>
-        <div className="card" style={{ padding: 20, textAlign: 'center' }}>
-          <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ilyen recept.</span>
-        </div>
-      </div>
+      <MozaikPage tone="sage">
+        <PageHead onBack={() => navigate(-1)} label="‹ Receptek" />
+        <PageBody>
+          <div className="mz-qcard" style={{ padding: 20, textAlign: 'center' }}>
+            <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ilyen recept.</span>
+          </div>
+        </PageBody>
+      </MozaikPage>
     )
   }
 
@@ -191,26 +197,19 @@ export function RecipeEditorPage() {
   const catColor = (cat: string | undefined): string => (cat && categoryMeta[cat]?.color) || 'var(--success)'
 
   return (
-    <>
-      <div style={{ padding: '0 16px 110px' }}>
-        {/* Top bar — back button, own row (header-only re-skin, mezo-8141) */}
-        <div className="row" style={{ padding: '6px 0 0' }}>
-          <button
-            onClick={() => navigate(-1)}
-            className="rad-16"
-            style={{ width: 34, height: 34, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1 }}
-            aria-label="Vissza"
-          >‹</button>
-        </div>
-        <div className="pghead-np sage" style={{ padding: '8px 0 14px' }}>
-          <div>
-            <div className="over">Fuel · Receptek</div>
-            <h1>{name || (isEditMode ? '—' : 'Új recept')}</h1>
-          </div>
+    <MozaikPage tone="sage">
+      <PageHead onBack={() => navigate(-1)} label="‹ Receptek" />
+      <EntranceGroup>
+      <PageBody>
+        <div className="rise" style={{ padding: '2px 2px 12px' }}>
+          <span className="mz-eyebrow">Fuel · Receptek</span>
+          <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 600, lineHeight: 1.15, margin: '4px 0 0', color: 'var(--text-primary)' }}>
+            {name || (isEditMode ? '—' : 'Új recept')}
+          </h1>
         </div>
 
         {/* Név */}
-        <div className="card" style={{ padding: '10px 12px', marginBottom: 9 }}>
+        <div className="mz-qcard rise" style={{ padding: '10px 12px', marginBottom: 9 }}>
           <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>NÉV</span>
           <input
             value={name}
@@ -222,7 +221,7 @@ export function RecipeEditorPage() {
         </div>
 
         {/* Slot + csillag */}
-        <div className="card" style={{ padding: '10px 12px', marginBottom: 9 }}>
+        <div className="mz-qcard rise" style={{ padding: '10px 12px', marginBottom: 9 }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>SLOT</span>
             <button onClick={() => setStarred(s => !s)} className="chip" style={{ padding: '4px 8px', color: starred ? 'var(--warning)' : 'var(--text-tertiary)' }} aria-label="Csillag">
@@ -239,7 +238,7 @@ export function RecipeEditorPage() {
         </div>
 
         {/* Szerep — the scoring rubric the template is judged under (mezo-uavr) */}
-        <div className="card" style={{ padding: '10px 12px', marginBottom: 9 }}>
+        <div className="mz-qcard rise" style={{ padding: '10px 12px', marginBottom: 9 }}>
           <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>SZEREP</span>
           <div className="row gap-xs flex-wrap" style={{ marginTop: 8 }}>
             {ROLE_OPTIONS.map(o => (
@@ -255,23 +254,28 @@ export function RecipeEditorPage() {
 
         {/* Adag & idő */}
         <div className="row gap-sm" style={{ marginBottom: 9 }}>
-          <div className="card flex-1" style={{ padding: '10px 12px' }}>
+          <div className="mz-qcard flex-1" style={{ padding: '10px 12px', marginBottom: 0 }}>
             <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>ADAG</span>
             <div style={{ marginTop: 6 }}><Stepper value={servings} unit="adag" min={1} onChange={setServings} /></div>
           </div>
-          <div className="card flex-1" style={{ padding: '10px 12px' }}>
+          <div className="mz-qcard flex-1" style={{ padding: '10px 12px', marginBottom: 0 }}>
             <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>ELŐ + FŐZÉS</span>
             <div style={{ marginTop: 6 }}><Stepper value={mins} unit="perc" min={0} onChange={setMins} /></div>
           </div>
         </div>
 
-        {/* Live total */}
-        <div className="rad-12" style={{ padding: '11px 12px', marginBottom: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--line)' }}>
+        {/* Live total — mz-statstrip (F7.3) */}
+        <div className="mz-qcard" style={{ padding: '11px 12px', marginBottom: 12 }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--coral)' }}>MAKRÓ-ÖSSZEG</span>
+            <span className="mz-eyebrow">Makró-összeg</span>
             <ServingToggle value={basis} servings={servings} onChange={setBasis} />
           </div>
-          <MacroCells macros={shownTotal} size="md" />
+          <StatStrip>
+            <StatCell value={shownTotal.kcal} label="kcal" />
+            <StatCell value={shownTotal.p} label="fehérje" />
+            <StatCell value={shownTotal.c} label="szénhidrát" />
+            <StatCell value={shownTotal.f} label="zsír" />
+          </StatStrip>
           <div className="label-mono" style={{ textAlign: 'center', marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)', fontSize: 8.5, color: 'var(--text-tertiary)' }}>
             {otherLabel} = <span style={{ color: 'var(--text-secondary)' }}>{otherTotal.kcal} kcal</span> · P {otherTotal.p} · C {otherTotal.c} · F {otherTotal.f}
           </div>
@@ -286,12 +290,12 @@ export function RecipeEditorPage() {
 
         <div className="col gap-sm" style={{ marginBottom: 3 }}>
           {lines.length === 0 && (
-            <div className="card" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
+            <div className="mz-qcard" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
               <span className="text-tertiary" style={{ fontSize: 11 }}>Még nincs hozzávaló. Nyomd a Kamrából hozzáad gombot.</span>
             </div>
           )}
           {resolved.map(({ line, ing }, i) => (
-            <div key={i} className="card" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor(ing?.category) }}>
+            <div key={i} className="mz-qcard" style={{ marginBottom: 0, padding: '11px 12px', borderLeft: '2px solid ' + catColor(ing?.category) }}>
               <div className="row" style={{ alignItems: 'center', gap: 10 }}>
                 <div className="col flex-1" style={{ minWidth: 0 }}>
                   <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
@@ -349,7 +353,9 @@ export function RecipeEditorPage() {
             style={{ fontSize: 10, color: 'var(--text-tertiary)', padding: '6px 10px', border: '1px dashed var(--border-strong)', minWidth: 80 }}
           />
         </div>
-      </div>
+        <div style={{ height: 96 }} />
+      </PageBody>
+      </EntranceGroup>
 
       {/* Save bar — portaled into the phone screen (like Sheet) so it pins to the
           device viewport just above the tab bar instead of scrolling with / floating
@@ -371,7 +377,7 @@ export function RecipeEditorPage() {
           addedRefIds={lines.map(l => l.refId)}
         />
       )}
-    </>
+    </MozaikPage>
   )
 }
 

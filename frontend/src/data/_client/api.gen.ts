@@ -1287,7 +1287,11 @@ export interface paths {
          */
         get: operations["getMedicationDay"];
         put?: never;
-        post?: never;
+        /**
+         * Create the owner's medication (the single-active slice's create path)
+         * @description The owner can have ONE active medication at a time — creating while an active one exists answers 400 with MEDICATION_ACTIVE_EXISTS. Re-creating after a stop (PUT active:false) is the normal path; the old row's dose history stays.
+         */
+        post: operations["createMedication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1861,8 +1865,27 @@ export interface paths {
         /** Persons (mention-count desc) + recent mentions (ts desc, max 50) of the current user */
         get: operations["getPeopleBootstrap"];
         put?: never;
-        post?: never;
+        /** Create an owned person (initial derived server-side; status=active, sourceKind=manual) */
+        post: operations["createPerson"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/{personId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Full update of the editable person fields (knownFacts/ties/affectTrend are AI-curated, untouched) */
+        put: operations["updatePerson"];
+        post?: never;
+        /** Soft-delete an owned person (mentions stay stored, leave the feed) */
+        delete: operations["deletePerson"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6008,6 +6031,8 @@ export interface components {
         LogMentionRequest: {
             tone: string;
             text?: string;
+            /** @enum {string} */
+            contextLabel?: "munka" | "csalad" | "baratok" | "edzes" | "konfliktus" | "kozos_program" | "segitseg" | "egyeb";
         };
         PeopleResponse: {
             persons: components["schemas"]["PersonResponse"][];
@@ -6019,8 +6044,13 @@ export interface components {
             name: string;
             initial: string;
             /** @enum {string} */
-            relationship: "partner" | "teammate" | "mentee";
+            relationship: "partner" | "friend" | "family" | "colleague" | "teammate" | "mentee";
             relationshipHu: string;
+            aliases: string[];
+            /** @enum {string} */
+            status: "candidate" | "active" | "archived";
+            /** @enum {string} */
+            sourceKind: "manual" | "extractor" | "seed";
             /** @enum {string} */
             affectBaseline: "positive" | "neutral" | "mixed" | "negative";
             contactCadenceLabel?: string;
@@ -6052,6 +6082,32 @@ export interface components {
             tiedToKind?: string;
             tiedToLabel?: string;
             flagged: boolean;
+            intensity?: number;
+            /** @enum {string} */
+            contextLabel?: "munka" | "csalad" | "baratok" | "edzes" | "konfliktus" | "kozos_program" | "segitseg" | "egyeb";
+            sourceRefKind?: string;
+        };
+        CreatePersonRequest: {
+            name: string;
+            aliases?: string[];
+            /** @enum {string} */
+            relationship: "partner" | "friend" | "family" | "colleague" | "teammate" | "mentee";
+            relationshipHu: string;
+            /** @enum {string} */
+            affectBaseline?: "positive" | "neutral" | "mixed" | "negative";
+            contactCadenceLabel?: string;
+            notes?: string;
+        };
+        UpdatePersonRequest: {
+            name: string;
+            aliases?: string[];
+            /** @enum {string} */
+            relationship: "partner" | "friend" | "family" | "colleague" | "teammate" | "mentee";
+            relationshipHu: string;
+            /** @enum {string} */
+            affectBaseline?: "positive" | "neutral" | "mixed" | "negative";
+            contactCadenceLabel?: string;
+            notes?: string;
         };
         FeedRef: {
             /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
@@ -11529,6 +11585,48 @@ export interface operations {
             };
         };
     };
+    createMedication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MedicationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicationResponse"];
+                };
+            };
+            /** @description Validation error, or an active medication already exists */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     updateMedication: {
         parameters: {
             query?: never;
@@ -13059,6 +13157,139 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createPerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePersonRequest"];
+            };
+        };
+        responses: {
+            /** @description Person created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updatePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePersonRequest"];
+            };
+        };
+        responses: {
+            /** @description Person updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Person missing or foreign (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deletePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Person missing or foreign (indistinguishable) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

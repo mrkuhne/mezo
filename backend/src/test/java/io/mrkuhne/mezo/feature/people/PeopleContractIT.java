@@ -2,9 +2,12 @@ package io.mrkuhne.mezo.feature.people;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.CreatePersonRequest;
 import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
+import io.mrkuhne.mezo.api.dto.PersonResponse;
+import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
@@ -53,7 +56,7 @@ class PeopleContractIT extends ApiIntegrationTest {
         PersonEntity bence = personPopulator.createPerson(owner, "Bence", "teammate", "positive");
 
         MentionResponse created = postForBody("/api/people/" + bence.getId() + "/mentions",
-            new LogMentionRequest("positive", "Röpi után sör."),
+            new LogMentionRequest("positive", "Röpi után sör.", null),
             ownerAuthHeaders(), HttpStatus.CREATED, MentionResponse.class);
 
         assertThat(created.getPersonId()).isEqualTo(bence.getId());
@@ -71,7 +74,7 @@ class PeopleContractIT extends ApiIntegrationTest {
         PersonEntity foreign = personPopulator.createPerson(other, "Idegen");
 
         postForBody("/api/people/" + foreign.getId() + "/mentions",
-            new LogMentionRequest("positive", null),
+            new LogMentionRequest("positive", null, null),
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
     }
 
@@ -87,7 +90,120 @@ class PeopleContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testLogMention_shouldPersistContextLabel_whenProvided() {
+        UUID owner = ownerId();
+        PersonEntity p = personPopulator.createPerson(owner, "Petra", "partner", "positive");
+
+        LogMentionRequest req = new LogMentionRequest("positive", "Közös vacsora.", LogMentionRequest.ContextLabelEnum.KOZOS_PROGRAM);
+
+        MentionResponse created = postForBody("/api/people/" + p.getId() + "/mentions", req,
+            ownerAuthHeaders(), HttpStatus.CREATED, MentionResponse.class);
+
+        assertThat(created.getContextLabel()).isEqualTo(MentionResponse.ContextLabelEnum.KOZOS_PROGRAM);
+    }
+
+    @Test
     void testGetPeopleBootstrap_shouldReturn401_whenNoToken() {
         getForBody("/api/people", null, HttpStatus.UNAUTHORIZED, String.class);
+    }
+
+    @Test
+    void testGetPeopleBootstrap_shouldCarryAliasesStatusAndSourceKind() {
+        UUID owner = ownerId();
+        personPopulator.createPerson(owner, "Marci", "friend", "positive");
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+
+        assertThat(res.getPersons().getFirst().getAliases()).containsExactly("Marcika");
+        assertThat(res.getPersons().getFirst().getStatus()).isEqualTo(PersonResponse.StatusEnum.ACTIVE);
+        assertThat(res.getPersons().getFirst().getSourceKind()).isEqualTo(PersonResponse.SourceKindEnum.MANUAL);
+        assertThat(res.getPersons().getFirst().getRelationship()).isEqualTo(PersonResponse.RelationshipEnum.FRIEND);
+    }
+
+    @Test
+    void testCreatePerson_shouldPersistWithDerivedInitialAndDefaults() {
+        CreatePersonRequest req = new CreatePersonRequest();
+        req.setName("Ádám");
+        req.setRelationship(CreatePersonRequest.RelationshipEnum.FRIEND);
+        req.setRelationshipHu("Barát");
+        req.setAliases(java.util.List.of("Adi", "Ádámka"));
+
+        PersonResponse created = postForBody("/api/people", req, ownerAuthHeaders(),
+            HttpStatus.CREATED, PersonResponse.class);
+
+        assertThat(created.getInitial()).isEqualTo("Á");
+        assertThat(created.getAliases()).containsExactly("Adi", "Ádámka");
+        assertThat(created.getAffectBaseline()).isEqualTo(PersonResponse.AffectBaselineEnum.NEUTRAL);
+        assertThat(created.getStatus()).isEqualTo(PersonResponse.StatusEnum.ACTIVE);
+        assertThat(created.getSourceKind()).isEqualTo(PersonResponse.SourceKindEnum.MANUAL);
+        assertThat(created.getMentionCount()).isZero();
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+        assertThat(res.getPersons()).extracting(PersonResponse::getName).contains("Ádám");
+    }
+
+    @Test
+    void testCreatePerson_shouldReturn400_whenNameBlank() {
+        String body = postForBody("/api/people",
+            java.util.Map.of("name", "", "relationship", "friend", "relationshipHu", "Barát"),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "name", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testCreatePerson_shouldReturn400_whenNameWhitespaceOnly() {
+        String body = postForBody("/api/people",
+            java.util.Map.of("name", "   ", "relationship", "friend", "relationshipHu", "Barát"),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "name", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testUpdatePerson_shouldReplaceEditableFields_andKeepCuratedOnes() {
+        UUID owner = ownerId();
+        PersonEntity p = personPopulator.createPerson(owner, "Réka", "colleague", "neutral");
+
+        UpdatePersonRequest req = UpdatePersonRequest.builder()
+            .name("Réka B.")
+            .relationship(UpdatePersonRequest.RelationshipEnum.COLLEAGUE)
+            .relationshipHu("Kolléga · Q3")
+            .build();
+        req.setAliases(java.util.List.of("Réki"));
+        req.setNotes("Projekt lezárva.");
+
+        PersonResponse updated = putForBody("/api/people/" + p.getId(), req, ownerAuthHeaders(),
+            HttpStatus.OK, PersonResponse.class);
+
+        assertThat(updated.getName()).isEqualTo("Réka B.");
+        assertThat(updated.getAliases()).containsExactly("Réki");
+        assertThat(updated.getKnownFacts()).isNotEmpty(); // AI-kurálta mező érintetlen
+    }
+
+    @Test
+    void testUpdatePerson_shouldReturn404_whenForeign() {
+        UUID other = userPopulator.createUser("stranger-people-upd@test.hu").getId();
+        PersonEntity foreign = personPopulator.createPerson(other, "Idegen");
+
+        UpdatePersonRequest req = UpdatePersonRequest.builder()
+            .name("X")
+            .relationship(UpdatePersonRequest.RelationshipEnum.FRIEND)
+            .relationshipHu("Barát")
+            .build();
+
+        putForBody("/api/people/" + foreign.getId(), req,
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+    }
+
+    @Test
+    void testDeletePerson_shouldSoftDelete_andDropFromBootstrapWithMentions() {
+        UUID owner = ownerId();
+        PersonEntity p = personPopulator.createPerson(owner, "Törlendő");
+        mentionPopulator.createMention(owner, p.getId(), Instant.now(), "positive");
+
+        deleteAndExpect("/api/people/" + p.getId(), ownerAuthHeaders(), HttpStatus.NO_CONTENT);
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+        assertThat(res.getPersons()).extracting(PersonResponse::getName).doesNotContain("Törlendő");
+        assertThat(res.getMentions()).extracting(MentionResponse::getPersonId).doesNotContain(p.getId());
     }
 }

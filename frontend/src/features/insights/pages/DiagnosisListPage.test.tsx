@@ -24,6 +24,8 @@ describe('DiagnosisListPage (mock mode)', () => {
     // generate is inert in mock — it costs a real SMART call — on EVERY live card
     const asks = screen.getAllByRole('button', { name: '✦ Kérdezd meg most' })
     expect(asks).toHaveLength(2)
+    // the ask CTA is the house pill button, not an unstyled bare 'cta' (the live-app regression)
+    asks.forEach((b) => expect(b).toHaveClass('mzp-cta'))
     asks.forEach((b) => expect(b).toBeDisabled())
     expect(screen.getByText('demo — a kérdezés az élő appban fut')).toBeInTheDocument()
     // the upcoming grid: sleep LEFT it by going live
