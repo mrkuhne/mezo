@@ -6233,6 +6233,28 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   font-size: 12.5px; font-weight: 700; margin-bottom: 8px;
   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
 }
+
+/* ── Kamra/Recept picker re-face (mezo-byo1) — category chips + kind-wash rows
+   (prototype fuel-logolas.html #sh-kpick / #sh-rpick). --kc = the row's category
+   (or coral, for recipes) color, set inline per item. ── */
+.fkp-chiprow { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  margin: 0 -4px 10px; padding: 2px 4px; }
+.fkp-chiprow::-webkit-scrollbar { display: none; }
+.fkp-chip { display: inline-flex; align-items: center; gap: 5px; flex: none;
+  border: 1px solid var(--border-strong, rgba(43, 33, 24, 0.14)); background: var(--surface-1);
+  border-radius: 999px; padding: 5px 12px; min-height: 28px;
+  font-family: inherit; font-size: 10.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+.fkp-chip.is-on { background: color-mix(in srgb, var(--cc) 14%, var(--surface-1));
+  border-color: var(--cc); color: var(--text-primary); }
+.fkp-cdot { width: 7px; height: 7px; border-radius: 50%; background: var(--cc); flex: none; }
+.fkp-item { position: relative; overflow: hidden; border-radius: 15px; padding: 10px 11px 10px 15px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--kc) 10%, var(--surface-1)) 0%, var(--surface-1) 62%);
+  box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05); }
+.fkp-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kc); }
+.fkp-kcell { flex: none; border-radius: 10px; padding: 3px 9px 2px; text-align: center;
+  background: var(--surface-0, #fff); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+.fkp-kcell b { display: block; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.fkp-kcell small { font-size: 6px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); }
 .logflow-lntag {
   font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   padding: 2px 6px; border-radius: 5px; flex: none;
