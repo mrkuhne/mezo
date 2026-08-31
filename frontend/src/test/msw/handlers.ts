@@ -1214,15 +1214,15 @@ export const handlers = [
     const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
+        controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_recovery(days=3)' })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(0, mid) })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(mid) })))
         // V0.5: the done event carries the persisted assistant row's REAL chips — name bakes
-        // the args in ("get_sleep(days=3)"), refs are the tool-contributed data references
+        // the args in ("get_recovery(days=3)"), refs are the tool-contributed data references
         controller.enqueue(encoder.encode(frame('done', {
           id: 'msg-done', role: 'assistant', content: reply,
           createdAt: '2026-07-03T07:00:05Z',
-          tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+          tools: [{ type: 'read', name: 'get_recovery(days=3)' }],
           refs: [{ kind: 'Sleep', id: '2026-07-02' }],
           // W3.1b: the persisted row also carries what ambient recall fed the prompt
           recalled: [{
