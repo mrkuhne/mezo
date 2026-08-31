@@ -95,7 +95,10 @@ class MentionDetectionServiceIT extends ApiIntegrationTest {
         UUID owner = ownerId();
         personPopulator.createPerson(owner, "Réka");
 
-        int written = mentionDetectionService.detect(owner, "A kréta elfogyott.",
+        // Folded needle "reka" IS a substring of folded "kerekarak" (from "kerékárak"), starting
+        // at index 4, preceded by the letter 'e' — a genuine mid-word occurrence that only the
+        // word-start guard (containsAtWordStart) rejects; a naive String.contains would match.
+        int written = mentionDetectionService.detect(owner, "A kerékárak megint emelkedtek.",
                 "text", "journal_entry", UUID.randomUUID(), Instant.now());
 
         assertThat(written).isZero();
