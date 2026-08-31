@@ -18,6 +18,14 @@
 // No mirror line: CharacterClaimDto carries no separate mirror/reflection field — the
 // prototype's `.cmirror` is design-only content this API doesn't serve; deliberately omitted
 // rather than inventing one (Global Constraints: honest states, no theater).
+//
+// Fix round 1 (honest failure, reviewer finding #2): every success face/toast used to fire
+// BEFORE the mutation resolved, so a failed POST still showed "✓ Köszönöm", the retired face,
+// or the success toast — never no crash, but a LIE about what happened. Every handler below now
+// awaits `submit(...)` first; the UI only commits its success state in the `then` branch. A
+// rejection leaves the pills/textarea exactly as they were and surfaces the app's existing
+// terracotta error-toast idiom (`kind: 'error'`, the useChatHandoff.ts precedent) — never red,
+// per the Global Constraints, but never silently swallowed either.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useClaimFeedback } from '@/data/hooks'
@@ -42,20 +50,34 @@ export function ClaimTile({ claim, delayMs }: { claim: CharacterClaimDto; delayM
   const word = confidenceWord(claim.confidence)
   const style = delayMs != null ? ({ '--d': `${delayMs}ms` } as CSSProperties) : undefined
 
+  const FEEDBACK_ERROR = 'Nem sikerült elküldeni a visszajelzést — próbáld újra'
+
   async function handleTalal() {
-    setStatus('talal')
-    await submit(claim.id, 'TALAL')
+    try {
+      await submit(claim.id, 'TALAL')
+      setStatus('talal')
+    } catch {
+      show({ kind: 'error', text: FEEDBACK_ERROR })
+    }
   }
   async function handleNemIgaz() {
-    setStatus('retired')
-    await submit(claim.id, 'NEM_IGAZ')
-    show({ kind: 'info', text: 'Rendben — a csapat nem viszi tovább' })
+    try {
+      await submit(claim.id, 'NEM_IGAZ')
+      setStatus('retired')
+      show({ kind: 'info', text: 'Rendben — a csapat nem viszi tovább' })
+    } catch {
+      show({ kind: 'error', text: FEEDBACK_ERROR })
+    }
   }
   async function handleSend() {
-    await submit(claim.id, 'PONTOSITOM', pontText)
-    setPontOpen(false)
-    setPontText('')
-    show({ kind: 'info', text: 'Elküldve — a következő konzíliumon foglalkozik vele a csapat' })
+    try {
+      await submit(claim.id, 'PONTOSITOM', pontText)
+      setPontOpen(false)
+      setPontText('')
+      show({ kind: 'info', text: 'Elküldve — a következő konzíliumon foglalkozik vele a csapat' })
+    } catch {
+      show({ kind: 'error', text: FEEDBACK_ERROR })
+    }
   }
 
   if (status === 'retired') {

@@ -74,4 +74,39 @@ describe('ClaimTile', () => {
     expect(screen.getByText(claim.text)).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('Mit pontosítanál?')).not.toBeInTheDocument()
   })
+
+  // Fix round 1 (reviewer finding #2): a rejected mutation must never show a success face —
+  // the pills/textarea revert and an honest error toast fires instead.
+  describe('failure paths (rejected mutation never fakes success)', () => {
+    test('talál: a failed submit shows no thanks microcopy, pills stay usable, error toast fires', async () => {
+      hoisted.submitSpy.mockRejectedValueOnce(new Error('network'))
+      render(<ClaimTile claim={claim} />)
+      await userEvent.click(screen.getByRole('button', { name: 'Talál' }))
+      expect(screen.queryByText('✓ Köszönöm — jegyzem.')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Talál' })).toBeInTheDocument()
+      expect(hoisted.showSpy).toHaveBeenCalledWith({ kind: 'error', text: 'Nem sikerült elküldeni a visszajelzést — próbáld újra' })
+    })
+
+    test('nem igaz: a failed submit shows no retired face, no success toast, error toast fires', async () => {
+      hoisted.submitSpy.mockRejectedValueOnce(new Error('network'))
+      render(<ClaimTile claim={claim} />)
+      await userEvent.click(screen.getByRole('button', { name: 'Nem igaz' }))
+      expect(screen.queryByText('nyugdíjazva — a csapat nem viszi tovább')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Nem igaz' })).toBeInTheDocument()
+      expect(hoisted.showSpy).not.toHaveBeenCalledWith({ kind: 'info', text: 'Rendben — a csapat nem viszi tovább' })
+      expect(hoisted.showSpy).toHaveBeenCalledWith({ kind: 'error', text: 'Nem sikerült elküldeni a visszajelzést — próbáld újra' })
+    })
+
+    test('pontosítom: a failed submit keeps the textarea open with the typed text, error toast fires', async () => {
+      hoisted.submitSpy.mockRejectedValueOnce(new Error('network'))
+      render(<ClaimTile claim={claim} />)
+      await userEvent.click(screen.getByRole('button', { name: 'Pontosítom' }))
+      const textarea = screen.getByPlaceholderText('Mit pontosítanál?')
+      await userEvent.type(textarea, 'nem pontos')
+      await userEvent.click(screen.getByRole('button', { name: 'Küldés' }))
+      expect(screen.getByPlaceholderText('Mit pontosítanál?')).toHaveValue('nem pontos')
+      expect(hoisted.showSpy).not.toHaveBeenCalledWith({ kind: 'info', text: 'Elküldve — a következő konzíliumon foglalkozik vele a csapat' })
+      expect(hoisted.showSpy).toHaveBeenCalledWith({ kind: 'error', text: 'Nem sikerült elküldeni a visszajelzést — próbáld újra' })
+    })
+  })
 })
