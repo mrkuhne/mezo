@@ -1466,6 +1466,37 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .sk--circle { border-radius: 50%; }
 @media (prefers-reduced-motion: reduce) { .sk::after { display: none; } }
 
+/* ChallengeGenerationLoader — game-style loading while the day's challenges
+   LLM-generate (mezo-tvw8). Rotating status line (fade replays via key remount)
+   + fake-progress bar: fast start, decelerating creep toward ~92%, never
+   self-completing — the data arriving unmounts the whole loader. */
+.mz-chload { display: flex; flex-direction: column; gap: 10px; padding: 18px 4px; align-items: center; }
+.mz-chload-line {
+  font-size: 13px;
+  color: var(--text-secondary);
+  animation: mz-chload-fade .45s ease-out;
+}
+.mz-chload-bar {
+  width: min(260px, 80%);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-subtle);
+  overflow: hidden;
+}
+.mz-chload-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--coral);
+  width: 4%;
+  animation: mz-chload-fill 28s cubic-bezier(0.15, 0.6, 0.3, 1) forwards;
+}
+@keyframes mz-chload-fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes mz-chload-fill { 0% { width: 4%; } 8% { width: 42%; } 30% { width: 70%; } 100% { width: 92%; } }
+@media (prefers-reduced-motion: reduce) {
+  .mz-chload-line { animation: none; }
+  .mz-chload-fill { animation: none; width: 60%; }
+}
+
 /* Stepper */
 .stepper {
   display: grid;
