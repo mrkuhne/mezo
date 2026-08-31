@@ -42,7 +42,11 @@ export function useMedication(): { medication: Medication; cycle: MedicationCycl
   const { data } = useDualQuery<MedicationDay>({
     queryKey: MEDICATION_KEY,
     mockData: medicationSeed,
-    realFetch: () => medicationApi.getDay(),
+    // Both "no medication configured" contract shapes land on the SAME ghost (mezo-5cmq): the
+    // new backend answers 200 with `medication: null` (mapped to `null` here), the pre-5cmq one
+    // answered 404, which rejects and is absorbed by `realEmpty` below. The two images do not
+    // switch at the same moment, so the frontend has to read both.
+    realFetch: async () => (await medicationApi.getDay()) ?? MEDICATION_EMPTY,
     realEmpty: MEDICATION_EMPTY,
     realStaleTime: 0,
   })
