@@ -1879,9 +1879,32 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   search tokens (`ToolText.searchTokens`) with the **leading/trailing non-letter/digit run stripped**
   (that splitter only breaks on whitespace/comma/semicolon, so `"alvás?"` would fold to the
   never-matching `alvas?`; the shared `ToolText` is deliberately left alone), then tokens under 3
-  chars dropped so "ma"/"az" can't seed half the graph — matched by folded containment against every
+  chars dropped so "ma"/"az" can't seed half the graph, **then a small closed Hungarian STOPWORDS
+  set filtered out** (`mezo-b3pp.34`) — matched by folded **word-start** containment against every
   active node's title **or summary**; `neighborhood(userId, seeds, maxHops, topK)` — empty seeds ⇒
   empty, no SQL. Injects **no JPA repository at all** (see `activeNodes` above).
+  - **Stopwords** (`STOPWORDS`, 29 entries, all pre-folded) — Hungarian filler ("nem", "hogy",
+    "volt", …) that is ≥3 chars and so survives the length filter, yet carries no topic of its
+    own: node summaries are ordinary Hungarian prose, so a single "nem" in a chatty turn used to
+    match most of the graph, and once the seed set is effectively the whole graph the neighborhood
+    walk stops answering the question that was asked and degenerates into "the globally strongest
+    edges" instead. The list is deliberately kept **closed and small** rather than eager: a
+    stopword list that over-reaches silently deletes real turns, which is the harder failure to
+    notice — a false seed is visible in the rendered block, a wrongly-dropped one just looks like
+    the graph had nothing to say.
+  - **Word-start matching** (`startsAWordIn`, local to this class) replaces `ToolText.containsFolded`
+    **only here** — that shared primitive is deliberately left untouched, because `FuelTools` also
+    uses it for a user-typed filter that genuinely wants to match anywhere in the text. Plain
+    containment produced false seeds here (`ital` matched `vitalitás`), but exact-word matching
+    would be wrong for an agglutinative language, where the stem `alvás` must still reach the
+    compound `alvásminőség`. Matching a token only where it STARTS a word is the rule that keeps
+    the legitimate prefix case while dropping the false infix one.
+  - **Ranked cap** — matching nodes are ordered (title hit outranks summary-only, then more
+    distinct matching tokens wins, then node id as the final tie-break) **before**
+    `graph.max-seeds` (default 8) truncates the list. The order exists because an unordered
+    truncation would make the surviving seeds depend on `activeNodes`' `created_at desc` row
+    order — two identical turns could then legitimately produce different `[Összefüggések]`
+    blocks; ranking first makes the cap deterministic instead of order-dependent.
 - **`GraphPromptAssembler`** (`graph/service/`) — `assemble(userId, message)` →
   `GraphContext(block, refs)`. Lines: `- <from.title> → <verb> → <to.title> · <erős|közepes|gyenge>`
   (verbs: TRIGGERS *kiváltja*, PRECEDED_BY *megelőzte*, SUPPORTS *támogatja*, CONFLICTS *ütközik
@@ -1946,7 +1969,16 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   back), and `AiMessageJsonbRoundTripIT.testRefs_shouldDeserialiseWithNullLabel_whenTheJsonbPredatesTheLabelField`
   (review fix — writes raw jsonb with no `label` key at all, proving a genuinely pre-migration row
   deserialises with `label = null` rather than only proving the 2-arg constructor's own shape,
-  which Jackson serialises with an explicit `"label":null`).
+  which Jackson serialises with an explicit `"label":null`), and — pinning `seedsFor`'s stopword
+  filter, word-start matching and rank-before-cap (`mezo-b3pp.34`) — three sibling classes split
+  the way `GraphPromptAssemblerRefsCapIT` splits off from the assembler tests, because the cap
+  cases need `graph.max-seeds` overridden per-class via `@TestPropertySource`:
+  `GraphSeedSelectionIT` (default `max-seeds`: stopwords ignored, one real word inside an
+  otherwise-all-stopword sentence still seeds, a token matches at a word start, the same token
+  does NOT match mid-word, seeding is deterministic across repeated runs, an all-unusable-token
+  message returns empty), `GraphSeedSelectionRankingIT` (`max-seeds=1`: a title hit outranks a
+  summary-only hit and more distinct token hits outranks fewer, once the cap actually bites),
+  `GraphSeedSelectionCapIT` (`max-seeds=2`: a large matching set is truncated to the cap).
 
 ### W2.5 graph maintenance job (✅ `mezo-b3pp.10`)
 
