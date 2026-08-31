@@ -19,11 +19,12 @@ import org.springframework.stereotype.Service;
  * W2.4 (mezo-b3pp.9, spec §6.4): the graph's read side for the prompt. {@link #seedsFor} picks
  * the seed nodes DETERMINISTICALLY — no LLM — by matching the user message's folded search
  * tokens ({@link ToolText#searchTokens}: lowercase, accent-stripped, 1-char tokens dropped)
- * against the folded title/summary of every ACTIVE node at a WORD START ({@link #startsAWordIn},
- * mezo-b3pp.34). Tokens shorter than {@link #MIN_TOKEN_CHARS} or in {@link #STOPWORDS} are
+ * against the folded title/summary of every ACTIVE node at a WORD START
+ * ({@link #startsAWordInFolded}, mezo-b3pp.34). Tokens shorter than {@link #MIN_TOKEN_CHARS} or in {@link #STOPWORDS} are
  * ignored: a 2-char needle ("ma", "az") or a bare "nem"/"volt" would seed half the graph on every
- * turn. Matching nodes are ranked (title hit, then distinct token hits, then id) and capped at
- * {@code graph.max-seeds} — {@link #neighborhood} is the recursive CTE walk
+ * turn. Matching nodes are ranked (title hit, then distinct token hits, ties broken by the query's
+ * own {@code created_at desc} row order — {@code Stream.sorted} is stable, so this is deliberate,
+ * not incidental) and capped at {@code graph.max-seeds} — {@link #neighborhood} is the recursive CTE walk
  * ({@link GraphTraversalQuery}) from those seeds.
  *
  * <p>No {@code @Transactional}, and — deliberately — no JPA repository at all: BOTH reads go
@@ -69,8 +70,8 @@ public class GraphTraversalService {
 
     /**
      * Active nodes whose folded title or summary contains a folded message token (≥3 chars, not a
-     * stopword) at a WORD START, ranked title-hit-first then by distinct-token-hit-count then by
-     * id, and capped at {@code graph.max-seeds} (mezo-b3pp.34).
+     * stopword) at a WORD START, ranked title-hit-first then by distinct-token-hit-count, and
+     * capped at {@code graph.max-seeds} (mezo-b3pp.34).
      */
     public List<UUID> seedsFor(UUID userId, String userMessage) {
         List<String> tokens = ToolText.searchTokens(userMessage).stream()
@@ -83,26 +84,34 @@ public class GraphTraversalService {
             return List.of();
         }
         // Rank before capping: an unordered truncation would make the block depend on row order.
-        // A TITLE hit outranks a summary-only hit (the stronger topical signal), then more
-        // distinct matching tokens wins; the id tie-break is what makes two runs of the same turn
-        // produce the same block instead of flickering.
+        // A TITLE hit outranks a summary-only hit (the stronger topical signal), then more distinct
+        // matching tokens wins. NO further tie-break: Stream.sorted is stable, so nodes left tied
+        // on both keys keep activeNodes()' own created_at-desc order — recency is a real relevance
+        // signal, unlike a node id, and preserving it is what GraphTraversalQuery's ACTIVE_NODES_SQL
+        // comment ("so a truncated graph still seeds from the most recent knowledge") promises.
+        // Each node's title/summary is folded ONCE here (not per-token inside startsAWordInFolded) —
+        // seedsFor runs on the synchronous chat path, and folding is a Normalizer.normalize + regex
+        // pass over the whole field.
         record Scored(ActiveNode node, boolean titleHit, long tokenHits) {}
         return traversalQuery.activeNodes(userId).stream()
-                .map(n -> new Scored(n,
-                        tokens.stream().anyMatch(t -> startsAWordIn(n.title(), t)),
-                        tokens.stream().filter(t ->
-                                startsAWordIn(n.title(), t) || startsAWordIn(n.summary(), t)).count()))
+                .map(n -> {
+                    String foldedTitle = ToolText.fold(n.title());
+                    String foldedSummary = ToolText.fold(n.summary());
+                    boolean titleHit = tokens.stream().anyMatch(t -> startsAWordInFolded(foldedTitle, t));
+                    long tokenHits = tokens.stream().filter(t ->
+                            startsAWordInFolded(foldedTitle, t) || startsAWordInFolded(foldedSummary, t)).count();
+                    return new Scored(n, titleHit, tokenHits);
+                })
                 .filter(s -> s.tokenHits() > 0)
                 .sorted(Comparator.comparing(Scored::titleHit).reversed()
-                        .thenComparing(Comparator.comparingLong(Scored::tokenHits).reversed())
-                        .thenComparing(s -> s.node().id()))
+                        .thenComparing(Comparator.comparingLong(Scored::tokenHits).reversed()))
                 .limit(properties.graph().maxSeeds())
                 .map(s -> s.node().id())
                 .toList();
     }
 
     /**
-     * Word-START containment on the folded text — the graph's own rule, deliberately NOT
+     * Word-START containment on an ALREADY-folded field — the graph's own rule, deliberately NOT
      * {@link ToolText#containsFolded} (mezo-b3pp.34). That primitive is plain substring
      * containment and is shared with {@code FuelTools}, where a user-typed filter genuinely wants
      * to match anywhere; changing it would silently alter unrelated tool behaviour. Here plain
@@ -110,12 +119,12 @@ public class GraphTraversalService {
      * would be wrong for an agglutinative language, where "alvás" must still reach
      * "alvásminőség". Matching a token only where it STARTS a word is the rule that keeps the
      * prefix case and drops the infix one.
+     *
+     * <p>Takes the field already folded rather than folding it itself: {@code seedsFor} folds each
+     * node's title/summary ONCE and calls this once per token, so a hot per-token
+     * {@link ToolText#fold} (a {@code Normalizer.normalize} + regex pass) is not repeated.
      */
-    private static boolean startsAWordIn(String value, String foldedToken) {
-        if (value == null) {
-            return false;
-        }
-        String folded = ToolText.fold(value);
+    private static boolean startsAWordInFolded(String folded, String foldedToken) {
         int from = 0;
         while (true) {
             int i = folded.indexOf(foldedToken, from);
