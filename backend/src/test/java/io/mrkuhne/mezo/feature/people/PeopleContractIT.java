@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.people;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.CreatePersonRequest;
 import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
@@ -103,5 +104,35 @@ class PeopleContractIT extends ApiIntegrationTest {
         assertThat(res.getPersons().getFirst().getStatus()).isEqualTo(PersonResponse.StatusEnum.ACTIVE);
         assertThat(res.getPersons().getFirst().getSourceKind()).isEqualTo(PersonResponse.SourceKindEnum.MANUAL);
         assertThat(res.getPersons().getFirst().getRelationship()).isEqualTo(PersonResponse.RelationshipEnum.FRIEND);
+    }
+
+    @Test
+    void testCreatePerson_shouldPersistWithDerivedInitialAndDefaults() {
+        CreatePersonRequest req = new CreatePersonRequest();
+        req.setName("Ádám");
+        req.setRelationship(CreatePersonRequest.RelationshipEnum.FRIEND);
+        req.setRelationshipHu("Barát");
+        req.setAliases(java.util.List.of("Adi", "Ádámka"));
+
+        PersonResponse created = postForBody("/api/people", req, ownerAuthHeaders(),
+            HttpStatus.CREATED, PersonResponse.class);
+
+        assertThat(created.getInitial()).isEqualTo("Á");
+        assertThat(created.getAliases()).containsExactly("Adi", "Ádámka");
+        assertThat(created.getAffectBaseline()).isEqualTo(PersonResponse.AffectBaselineEnum.NEUTRAL);
+        assertThat(created.getStatus()).isEqualTo(PersonResponse.StatusEnum.ACTIVE);
+        assertThat(created.getSourceKind()).isEqualTo(PersonResponse.SourceKindEnum.MANUAL);
+        assertThat(created.getMentionCount()).isZero();
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+        assertThat(res.getPersons()).extracting(PersonResponse::getName).contains("Ádám");
+    }
+
+    @Test
+    void testCreatePerson_shouldReturn400_whenNameBlank() {
+        String body = postForBody("/api/people",
+            java.util.Map.of("name", "", "relationship", "friend", "relationshipHu", "Barát"),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "name", "VALIDATION_INVALID_VALUE");
     }
 }
