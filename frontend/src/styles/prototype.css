@@ -4694,10 +4694,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 /* Emlékek · N disclosure */
 .mzc-membtn { border: none; background: none; font-family: inherit; cursor: pointer; padding: 5px 0; align-items: center; }
 .mzc-memeb { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
-.mzc-memlist { list-style: none; margin: 0; padding: 0 0 0 2px; }
-.mzc-memlist li { border-left: 2px solid var(--mz-chat-memline); padding-left: 9px; }
-.mzc-memlist .m1 { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
-.mzc-memlist .m2 { font-size: 11px; color: var(--text-secondary); }
 
 /* typing bubble */
 .mzc-typing {
@@ -4797,9 +4793,47 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-refg.on { box-shadow: inset 0 0 0 1.2px var(--dmtx), 0 4px 10px -6px rgba(43, 33, 24, 0.3); }
 .mzc-refdates { margin-top: 6px; }
 
+/* ===== mezo-vdf4: emlékek — vízszintes kártyasor ===== */
+.mzc-memeb { color: var(--lav-deep); }
+.mzc-memcards { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 7px 2px 12px; margin: 0 -2px; }
+.mzc-memcards::-webkit-scrollbar { display: none; }
+.mzc-memcard {
+  flex: none; width: 168px; border-radius: 14px; padding: 9px 10px; cursor: pointer;
+  text-align: left; font-family: inherit; border: 0.5px solid var(--mzc-strip-bd);
+  background: var(--mz-wash-lav); box-shadow: var(--mzc-strip-shadow);
+  display: flex; flex-direction: column; gap: 6px;
+  transition: width 0.25s cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+.mzc-memtop { display: flex; align-items: center; gap: 6px; }
+.mzc-memic {
+  width: 22px; height: 22px; border-radius: 7px; flex: none;
+  background: var(--surface-card); display: grid; place-items: center;
+  box-shadow: 0 2px 5px rgba(43, 33, 24, 0.08);
+}
+.mzc-memkt { display: flex; flex-direction: column; min-width: 0; }
+.mzc-memkind { font-size: 7.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--lav-deep); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mzc-memd { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mzc-simr {
+  width: 22px; height: 22px; border-radius: 50%; flex: none; margin-left: auto;
+  display: grid; place-items: center;
+  background: conic-gradient(var(--lav, #8A76CC) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+}
+.mzc-simr-n {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--surface-card); display: grid; place-items: center;
+  font-size: 6.5px; font-weight: 800; color: var(--lav-deep); font-variant-numeric: tabular-nums;
+}
+.mzc-memgist {
+  font-size: 10.5px; font-weight: 300; line-height: 1.45; color: var(--text-primary);
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
+}
+.mzc-memcard.open { width: 252px; }
+.mzc-memcard.open .mzc-memgist { -webkit-line-clamp: unset; }
+
 @media (prefers-reduced-motion: reduce) {
   .mzc-cmic, .mzc-csend { transition: none; }
   .mzc-wic.run, .mzc-wrow.run .mzc-wst i { animation: none; }
+  .mzc-memcard { transition: none; }
 }
 
 /* ── Mezo · Minták page (mezo-d20.5.3) — prototype mezo-body #page-mintak ×1.18:

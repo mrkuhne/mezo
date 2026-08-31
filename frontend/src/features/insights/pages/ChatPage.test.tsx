@@ -246,7 +246,8 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.queryByText('futás után jobban aludtam')).not.toBeInTheDocument()
     fireEvent.click(toggle)
     expect(screen.getByText('futás után jobban aludtam')).toBeInTheDocument()
-    expect(screen.getByText(/napló · 92%/)).toBeInTheDocument()
+    expect(screen.getByText('napló')).toBeInTheDocument()
+    expect(screen.getByText('92')).toBeInTheDocument()
   })
 })
 
