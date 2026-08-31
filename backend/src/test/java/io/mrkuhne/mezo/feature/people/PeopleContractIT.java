@@ -90,6 +90,19 @@ class PeopleContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testLogMention_shouldPersistContextLabel_whenProvided() {
+        UUID owner = ownerId();
+        PersonEntity p = personPopulator.createPerson(owner, "Petra", "partner", "positive");
+
+        LogMentionRequest req = new LogMentionRequest("positive", "Közös vacsora.", LogMentionRequest.ContextLabelEnum.KOZOS_PROGRAM);
+
+        MentionResponse created = postForBody("/api/people/" + p.getId() + "/mentions", req,
+            ownerAuthHeaders(), HttpStatus.CREATED, MentionResponse.class);
+
+        assertThat(created.getContextLabel()).isEqualTo(MentionResponse.ContextLabelEnum.KOZOS_PROGRAM);
+    }
+
+    @Test
     void testGetPeopleBootstrap_shouldReturn401_whenNoToken() {
         getForBody("/api/people", null, HttpStatus.UNAUTHORIZED, String.class);
     }

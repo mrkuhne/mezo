@@ -85,6 +85,7 @@ public class PeopleService {
         m.setSource("chip");
         m.setExcerpt(req.getText() == null ? "" : req.getText());
         m.setTone(req.getTone());
+        m.setContextLabel(req.getContextLabel() == null ? null : req.getContextLabel().getValue());
         m.setFlagged(false);
         return mapper.toMentionResponse(mentionRepository.save(m), person.getName());
     }
