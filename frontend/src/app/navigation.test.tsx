@@ -78,6 +78,23 @@ test('the Én hub links to the Karakter dossier hub', async () => {
   expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
 })
 
+test('/me/karakter/dimenziok is the Dimenziók list — a stable full-page sibling (mezo-1gim.13, Task 4)', async () => {
+  renderApp('/me/karakter/dimenziok')
+  expect(await screen.findByText('mind a nyolc, egy helyen')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Fizikai' })).toBeInTheDocument()
+})
+
+test('/me/karakter/dimenzio/:key opens one dimension\'s claims (mezo-1gim.13, Task 4)', async () => {
+  renderApp('/me/karakter/dimenzio/physical')
+  expect(await screen.findByText('Fizikai')).toBeInTheDocument()
+  expect(screen.getByText('Beszélgess erről Mezóval')).toBeInTheDocument()
+})
+
+test('/me/karakter/feed is the day-grouped observation feed (mezo-1gim.13, Task 4)', async () => {
+  renderApp('/me/karakter/feed')
+  expect(await screen.findByText('Amit mostanában megtudtam rólad')).toBeInTheDocument()
+})
+
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's

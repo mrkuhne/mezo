@@ -72,6 +72,9 @@ import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
 import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
+import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
+import { DimensionPage } from '@/features/character/pages/DimensionPage'
+import { CharacterFeedPage } from '@/features/character/pages/CharacterFeedPage'
 
 // Design 2.0 shell (mezo-d20.1.1): /today → /nap and /insights → /mezo renames. The legacy
 // paths survive as redirects (PWA bookmarks, in-app navigate() calls not yet migrated).
@@ -205,13 +208,14 @@ export const routes: RouteObject[] = [
       // full-page siblings on their stable routes (they keep their current faces until
       // their own F5 slices land) — the same idiom the Mezo tab took in mezo-d20.5.1.
       { path: 'me', element: <EnHubPage /> },
-      // Karakter dossier hub (mezo-1gim.13) — the Én hub's Karakter tile. Only the hub route
-      // lands here this task: the four tile→own-page siblings (dimenziok/feed/csapat/konzilium)
-      // are Task 4/5 territory. Registering their routes now would need throwaway placeholder
-      // components (the brief's explicit "better: register only the hub route" call) — the
-      // hub's tiles navigate() to those paths already (no dead links in prod once wired), they
-      // just don't resolve to a page yet in THIS task (acceptable per the brief).
+      // Karakter dossier hub (mezo-1gim.13) — the Én hub's Karakter tile.
       { path: 'me/karakter', element: <KarakterHubPage /> },
+      // Dimenziók/dimenzió/feed full-page siblings (Task 4). Csapat/Konzílium still resolve
+      // to nothing (Task 5 territory) — their hub tiles navigate() there already, same
+      // "not-yet-wired, no dead link once it lands" acceptance the hub task used.
+      { path: 'me/karakter/dimenziok', element: <DimensionsPage /> },
+      { path: 'me/karakter/dimenzio/:key', element: <DimensionPage /> },
+      { path: 'me/karakter/feed', element: <CharacterFeedPage /> },
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll

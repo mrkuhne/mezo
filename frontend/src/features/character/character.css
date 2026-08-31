@@ -88,3 +88,98 @@
 .kr-boot-reveal { flex: 1; display: grid; align-content: center; justify-items: center; text-align: center; gap: 12px; padding: 20px; }
 .kr-boot-reveal h3 { font-size: 21px; font-weight: 700; }
 .kr-boot-reveal p { font-size: 12.5px; color: #6E6257; font-weight: 300; max-width: 270px; line-height: 1.6; margin: 0; }
+
+/* ============================================================
+   Task 4 — Dimenziók lista / dimenzió-oldal / Feed (mezo-1gim.13)
+   Source: docs/design_2.0/prototypes/src/karakter-head.html (search
+   ".dimtile", ".claimtile", ".confchip", ".feedday/.feedtile/.feedrow/
+   .feeddiff", ".chathand", ".persocard"). Values ×1.18, kr- prefixed to
+   match this file's existing convention (the prototype's bare class
+   names are cited in each rule's comment).
+   ============================================================ */
+
+/* ── Dimenziók lista tiles (.dimtile, incl. .chapter dashed variant) ── */
+.kr-dimlist { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 4px 12px 16px; }
+.kr-dimtile {
+  border: none; text-align: left; font-family: inherit; cursor: pointer; border-radius: 20px;
+  padding: 12px 13px 11px; background: var(--wash); box-shadow: 0 6px 16px -10px var(--sh);
+  display: flex; flex-direction: column; min-height: 92px;
+}
+.kr-dimtile:active { transform: scale(0.96); }
+.kr-dimtile.chapter {
+  background: repeating-linear-gradient(135deg, var(--wash), var(--wash) 10px, rgba(255,255,255,0.5) 10px, rgba(255,255,255,0.5) 20px);
+  border: 1.2px dashed var(--dc);
+}
+.kr-dimtile .kr-dhd { display: flex; align-items: center; gap: 6px; }
+.kr-dimtile .kr-disc { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 8px -3px var(--dc); }
+.kr-dimtile .kr-miniring { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center; background: conic-gradient(var(--dc) calc(var(--mv) * 1%), rgba(43,33,24,0.08) 0); }
+.kr-dimtile .kr-miniring::after { content: ''; width: 16px; height: 16px; border-radius: 50%; background: #FFFFFF; }
+.kr-dimtile .kr-dnm { font-size: 9.5px; font-weight: 800; letter-spacing: 0.02em; color: var(--dc); }
+.kr-dimtile .kr-dline { font-size: 9.5px; font-weight: 300; color: #2B2118; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 5px; }
+
+/* ── dimenzió-oldal hero (.page-hero#dimHero, .dimavatar, .bignum) ── */
+.kr-dim-hero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 10px 16px 14px; }
+.kr-dim-avatar { width: 68px; height: 68px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; box-shadow: 0 8px 20px -10px var(--pc); margin-bottom: 4px; }
+.kr-dim-avatar.chaptermark { background: var(--pc); color: #fff; font-size: 26px; }
+.kr-dim-num { font-size: 34px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.kr-dim-name { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.kr-dim-sub { font-size: 11px; font-weight: 600; color: #A2958A; }
+
+/* ── portrait card (.portraitcard) ── */
+.kr-portrait {
+  background: #fff; border-radius: 16px; padding: 12px 13px; margin: 0 12px 12px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); font-size: 11.5px; line-height: 1.6; font-weight: 300;
+}
+.kr-claims-eyebrow { padding: 2px 14px 6px; color: #6E6257; }
+
+/* ── claim tiles (.claimtile / .confchip / .fbpills / .fbp / .fbtext / .retiredlbl) ── */
+.kr-claim {
+  background: #fff; border-radius: 16px; padding: 11px 12px; margin: 0 12px 10px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06);
+}
+.kr-claim.sensitive { background: #F5F2FC; border: 1px solid rgba(138, 118, 204, 0.35); }
+.kr-claim.retired { opacity: 0.5; background: repeating-linear-gradient(135deg, #fff, #fff 8px, #F2EEE6 8px, #F2EEE6 16px); border-style: dashed; }
+.kr-confchip { font-size: 7.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 2.5px 9px; display: inline-block; }
+.kr-conf-biztos { background: rgba(143, 175, 126, 0.2); color: #4E6B42; }
+.kr-conf-valoszinu { background: rgba(201, 150, 46, 0.18); color: #A8801F; }
+.kr-conf-figyeljuk { background: rgba(138, 118, 204, 0.16); color: #5D4FA0; }
+.kr-claim-text { font-size: 10.5px; font-weight: 400; line-height: 1.55; margin-top: 7px; }
+.kr-retiredlbl { font-size: 9px; font-weight: 700; color: #A2958A; margin-top: 7px; }
+.kr-fbpills { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+.kr-fbp { border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit; border-radius: 999px; padding: 5px 11px; font-size: 9px; font-weight: 700; color: #6E6257; cursor: pointer; }
+.kr-fbp:disabled { opacity: 0.5; cursor: default; }
+.kr-fbthanks { font-size: 9px; font-weight: 700; color: #4E6B42; margin-top: 9px; }
+.kr-fbtext { margin-top: 8px; }
+.kr-fbtext textarea { width: 100%; border: 1px solid rgba(43, 33, 24, 0.14); border-radius: 12px; padding: 8px 10px; font-family: inherit; font-size: 10px; resize: none; height: 52px; background: #FBF9F4; }
+.kr-fbtext .kr-send { margin-top: 6px; padding: 6px 14px; font-size: 9.5px; }
+
+/* ── chat handoff (.chathand) ── */
+.kr-chathand {
+  display: flex; align-items: center; gap: 9px; cursor: pointer; border-radius: 999px;
+  padding: 9px 9px 9px 14px; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.08);
+  margin: 4px 12px 8px; font-family: inherit; width: calc(100% - 24px); text-align: left;
+}
+.kr-chathand .kr-chathand-tx { flex: 1; font-size: 10.5px; font-weight: 600; }
+.kr-chathand .kr-chev { color: #A2958A; font-size: 13px; }
+
+/* ── feed (.feedday / .feedtile / .feedrow / .feeddiff) ── */
+.kr-feedday { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; padding: 8px 14px 2px; }
+.kr-feedtile { border-radius: 18px; padding: 11px 12px; margin: 0 12px 4px; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.06); }
+.kr-feedrow { display: flex; gap: 8px; padding: 7px 0; align-items: flex-start; }
+.kr-feedrow + .kr-feedrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.kr-feeddisc { width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 8px -3px var(--dc); }
+.kr-feeddisc.user { background: linear-gradient(135deg, #E8B84A, #C9962E); color: #fff; font-size: 8.5px; font-weight: 800; }
+.kr-feedrow .kr-fnm { font-size: 8.5px; font-weight: 800; color: var(--dc); }
+.kr-feedrow .kr-ftxt { font-size: 10px; font-weight: 300; margin-top: 1px; }
+.kr-feeddiff {
+  border-radius: 12px; margin: 0 12px 4px; padding: 8px 9px; background: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+  display: flex; align-items: center; gap: 8px; cursor: pointer; border: none; font-family: inherit; width: calc(100% - 24px); text-align: left;
+}
+.kr-feeddiff:active { transform: scale(0.97); }
+.kr-feeddiff .kr-ic { width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center; background: linear-gradient(135deg, #FF7A55, #FF5B36); }
+.kr-feeddiff .kr-tx { font-size: 9.5px; font-weight: 600; }
+.kr-feeddiff .kr-chev { margin-left: auto; color: #A2958A; font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kr-dimtile:hover, .kr-feeddiff:hover { transform: none; }
+}
