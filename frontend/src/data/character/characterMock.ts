@@ -379,11 +379,21 @@ export const MOCK_CONFERENCES: CharacterConferenceSummary[] = [
 // TRANSCRIPT (prototype's `var TRANSCRIPT`) — the latest weekly konzílium (w2), full turn-by-turn
 // exchange as it actually ran. `changes` synthesizes the Kimenet outcome (2 elfogadva · 1
 // nyugdíjazva · 3 portré átírva) into itemized entries the FE can list.
+//
+// The pszichologus turn's second line carries the real "DANIEL VÁLASZA — " prefix
+// (`KonziliumProposalRound.USER_FEEDBACK_PREFIX`, backend service/KonziliumProposalRound.java) —
+// this is how a user-feedback observation actually surfaces inside a persisted turn's free
+// text (no structured `userQuote` field exists on `ConferenceTurn`), mirroring what the
+// prototype's design-only `userQuote` shows without inventing an API shape that doesn't exist.
 const TRANSCRIPT_TURNS: ConferenceTurn[] = [
   { persona: 'doki', text: 'Javaslat: a testzsír-trend és a stagnáló testsúly rekompozícióra utal — a bizonyíték három egymást követő heti mérés.' },
   { persona: 'drill', text: 'Javaslat: a heti fókuszok teljesítési aránya az elmúlt négy hétben végig 80% felett — ez stabil fegyelem-jel.' },
   { persona: 'taplalkozo', text: 'Javaslat: a hétvégi fehérje-elmaradás három hete következetes mintázat — érdemes „figyeljük” szinten felvenni.' },
-  { persona: 'pszichologus', text: 'Megfigyelés: néha halasztod a nehezebb érzelmi témák leírását a naplóban.' },
+  {
+    persona: 'pszichologus',
+    text: 'Megfigyelés: néha halasztod a nehezebb érzelmi témák leírását a naplóban.\n'
+      + 'DANIEL VÁLASZA — Nem szándékosan halasztom — inkább nem mindig találok rá szavakat gyorsan.',
+  },
   {
     persona: 'szkeptikus',
     text:

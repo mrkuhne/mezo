@@ -117,11 +117,9 @@ export function KarakterHubPage() {
           <h3>A dossziéd elkészült</h3>
           <p>7 dimenzió, kezdő állításokkal — mindegyik forrással. Ez csak a kezdet: minden héten
             tovább finomodik.</p>
-          {/* Deliberate deviation from the prototype's "Nézd meg az első konzíliumot" (which
-             opens the transcript): the Konzílium page doesn't exist yet (Task 5), so this CTA
-             just dismisses the reveal back to the now-populated hub. Task 5 rewires this onClick
-             to navigate('/me/karakter/konzilium') once that route resolves to something real. */}
-          <button type="button" className="cta" onClick={() => setCeremony('idle')}>Rendben</button>
+          <button type="button" className="cta" onClick={() => navigate('/me/karakter/konzilium')}>
+            Nézd meg az első konzíliumot
+          </button>
         </div>
       </div>
     )

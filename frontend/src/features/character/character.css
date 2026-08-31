@@ -183,3 +183,87 @@
 @media (prefers-reduced-motion: reduce) {
   .kr-dimtile:hover, .kr-feeddiff:hover { transform: none; }
 }
+
+/* ============================================================
+   Task 5 — Csapat / Konzílium (mezo-1gim.13)
+   Source: docs/design_2.0/prototypes/src/karakter-head.html (search "csapat-oldal",
+   "konzílium lista + transzkript"). Values copied verbatim (unscaled) from the prototype —
+   the same convention Task 4's dimtile/claimtile/feed rules already follow (only the
+   hero-scale elements get the ×1.18 hub treatment).
+   ============================================================ */
+
+/* ── Csapat persona cards (.persocard / .pdisc / .pinfo) ── */
+.kr-persocard {
+  display: flex; gap: 10px; align-items: flex-start; background: #fff; border-radius: 16px;
+  padding: 11px 12px; margin: 0 12px 9px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 24px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.kr-persocard.szkeptikus { background: linear-gradient(150deg, #4A4038, #3A312B); color: #EDE7DF; }
+.kr-persocard.szkeptikus .kr-prole { color: #C9B8A0; }
+.kr-persocard.mezo { background: linear-gradient(150deg, #FF9A78, #FF5B36); color: #fff; }
+.kr-persocard.mezo .kr-pdisc { background: rgba(255, 255, 255, 0.25); }
+.kr-persocard.mezo .kr-prole { color: rgba(255, 255, 255, 0.85); }
+.kr-pdisc { width: 36px; height: 36px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; box-shadow: 0 6px 14px -6px var(--pc, rgba(43, 33, 24, 0.3)); }
+.kr-pdisc.orb { box-shadow: none; }
+.kr-pinfo .kr-pnm { font-size: 11.5px; font-weight: 700; }
+.kr-pinfo .kr-prole { font-size: 9px; color: #6E6257; margin-top: 1px; }
+.kr-pinfo .kr-pwatch { font-size: 8.5px; margin-top: 6px; line-height: 1.5; opacity: 0.85; }
+.kr-pchip { display: inline-block; font-size: 7px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; margin-top: 6px; background: var(--pcw); color: var(--pc); }
+
+/* ── Konzílium list (.konzrow / .kbadge) ── */
+.kr-konzlist { padding: 4px 12px 4px; }
+.kr-konzrow {
+  display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 15px;
+  padding: 10px 12px; margin-bottom: 9px; cursor: pointer; width: 100%; text-align: left;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 10px 20px -13px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  font-family: inherit;
+}
+.kr-konzrow:active { transform: scale(0.97); }
+.kr-konzrow .kr-kd { font-size: 10.5px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+.kr-konzrow .kr-ks { font-size: 8.5px; color: #6E6257; margin-top: 2px; }
+.kr-kbadge { font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 6px; flex: none; }
+.kr-kbadge.weekly { background: rgba(93, 79, 160, 0.14); color: #5D4FA0; }
+.kr-kbadge.monthly { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+.kr-kbadge.bootstrap { background: rgba(78, 143, 184, 0.16); color: #3E7396; }
+
+/* ── Konzílium transcript (.outcomehd / .phaselbl / .turn / .tbub / .userquote) ── */
+.kr-outcomehd {
+  background: #fff; border-radius: 15px; padding: 11px 12px 12px; margin: 0 12px 14px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 10px 20px -13px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+.kr-outcomehd .kr-oh-title { font-size: 9.5px; font-weight: 700; color: #6E6257; margin-bottom: 8px; }
+.kr-outcells { display: flex; gap: 7px; }
+.kr-outcell { flex: 1; text-align: center; border-radius: 12px; padding: 7px 3px 6px; background: var(--ow); }
+.kr-outcell b { display: block; font-size: 15px; font-weight: 700; color: var(--oc); font-variant-numeric: tabular-nums; }
+.kr-outcell small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--oc); opacity: 0.8; }
+.kr-outcome-extra { font-size: 8.5px; color: #6E6257; margin-top: 8px; line-height: 1.5; }
+.kr-phaselbl { display: flex; align-items: center; gap: 7px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; padding: 4px 14px 8px; }
+.kr-phaselbl::after { content: ''; flex: 1; height: 1px; background: rgba(43, 33, 24, 0.1); }
+.kr-turnsgroup { position: relative; padding: 0 12px; }
+.kr-turnsgroup::before { content: ''; position: absolute; left: 23px; top: 2px; bottom: 14px; width: 0; border-left: 1.5px dashed rgba(43, 33, 24, 0.14); }
+.kr-turn { display: flex; gap: 8px; margin-bottom: 11px; max-width: 92%; position: relative; padding: 0 12px; }
+.kr-turn.ruling { max-width: 100%; }
+.kr-tavatar { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; margin-top: 2px; box-shadow: 0 3px 8px -3px var(--tc); }
+.kr-tbub { border-radius: 4px 15px 15px 15px; padding: 9px 11px; border-left: 3px solid var(--tc); background: #fff; }
+.kr-turn.szkeptikus .kr-tbub { background: #EDE9E2; border-left-color: #4A4038; }
+.kr-turn.ruling .kr-tbub { background: linear-gradient(150deg, #FFEDE4, #FFF8F4); border-left-color: #FF5B36; border-radius: 15px; }
+.kr-tname { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tc); margin-bottom: 3px; }
+.kr-turn.szkeptikus .kr-tname { color: #4A4038; }
+.kr-turn.ruling .kr-tname { color: #A84A26; }
+.kr-ttxt { font-size: 10px; font-weight: 300; line-height: 1.55; white-space: pre-line; }
+.kr-danielline { display: block; margin-top: 6px; border-left: 3px solid #C9962E; background: #FBF3DF; border-radius: 4px 10px 10px 4px; padding: 6px 9px; color: #2B2118; }
+.kr-danielline .kr-ul { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #A8801F; display: block; }
+.kr-danielline .kr-ut { font-size: 9.5px; font-weight: 400; margin-top: 2px; }
+.kr-honestynote {
+  font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 9.5px; color: #A2958A;
+  text-align: center; padding: 6px 22px 10px; line-height: 1.5;
+}
+.kr-tminiback {
+  border: none; background: none; font-family: inherit; color: #A8801F; font-weight: 700;
+  font-size: 9.5px; cursor: pointer; padding: 0 12px 8px; margin: 0;
+}
+.kr-konz-empty { padding: 20px 24px; text-align: center; color: #6E6257; font-size: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kr-konzrow:hover { transform: none; }
+}

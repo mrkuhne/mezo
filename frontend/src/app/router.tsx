@@ -75,6 +75,8 @@ import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
 import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
 import { DimensionPage } from '@/features/character/pages/DimensionPage'
 import { CharacterFeedPage } from '@/features/character/pages/CharacterFeedPage'
+import { CsapatPage } from '@/features/character/pages/CsapatPage'
+import { KonziliumPage } from '@/features/character/pages/KonziliumPage'
 
 // Design 2.0 shell (mezo-d20.1.1): /today → /nap and /insights → /mezo renames. The legacy
 // paths survive as redirects (PWA bookmarks, in-app navigate() calls not yet migrated).
@@ -210,12 +212,14 @@ export const routes: RouteObject[] = [
       { path: 'me', element: <EnHubPage /> },
       // Karakter dossier hub (mezo-1gim.13) — the Én hub's Karakter tile.
       { path: 'me/karakter', element: <KarakterHubPage /> },
-      // Dimenziók/dimenzió/feed full-page siblings (Task 4). Csapat/Konzílium still resolve
-      // to nothing (Task 5 territory) — their hub tiles navigate() there already, same
-      // "not-yet-wired, no dead link once it lands" acceptance the hub task used.
+      // Dimenziók/dimenzió/feed full-page siblings (Task 4); Csapat/Konzílium (Task 5) —
+      // Konzílium's transcript view rides `?id=` on the SAME route (the WeekHub sibling
+      // idiom, e.g. WeekLessonsPage's `?start=`), not a child route.
       { path: 'me/karakter/dimenziok', element: <DimensionsPage /> },
       { path: 'me/karakter/dimenzio/:key', element: <DimensionPage /> },
       { path: 'me/karakter/feed', element: <CharacterFeedPage /> },
+      { path: 'me/karakter/csapat', element: <CsapatPage /> },
+      { path: 'me/karakter/konzilium', element: <KonziliumPage /> },
       { path: 'me/growth', element: <GrowthPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll

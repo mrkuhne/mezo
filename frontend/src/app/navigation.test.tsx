@@ -95,6 +95,18 @@ test('/me/karakter/feed is the day-grouped observation feed (mezo-1gim.13, Task 
   expect(await screen.findByText('Amit mostanában megtudtam rólad')).toBeInTheDocument()
 })
 
+test('/me/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', async () => {
+  renderApp('/me/karakter/csapat')
+  expect(await screen.findByText('Mezo belső tanácsa — ők dolgoznak a karakteren')).toBeInTheDocument()
+  expect(screen.getByText('Doki')).toBeInTheDocument()
+  expect(screen.getByText('elnök · integrátor')).toBeInTheDocument()
+})
+
+test('/me/karakter/konzilium is the conference list — a stable full-page sibling (mezo-1gim.13, Task 5)', async () => {
+  renderApp('/me/karakter/konzilium')
+  expect(await screen.findByText('a csapat heti tanácskozásai')).toBeInTheDocument()
+})
+
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's

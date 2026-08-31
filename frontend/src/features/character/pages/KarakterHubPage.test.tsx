@@ -108,15 +108,15 @@ describe('KarakterHubPage', () => {
     expect(screen.getByText('Mezo összegzi a portrékat…')).toBeInTheDocument()
   })
 
-  test("result 'created' shows the reveal face, then Rendben returns to the (now populated) hub", async () => {
+  test("result 'created' shows the reveal face, then its CTA navigates to the first konzílium (Task 5 rewiring the prototype's own copy)", async () => {
     // The mutation already flipped the overview cache to the seeded dossier by the time
     // result === 'created' — the hook's documented contract.
     hoisted.overview = MOCK_OVERVIEW
     hoisted.bootstrapResult = 'created'
     renderHub()
     expect(screen.getByText('A dossziéd elkészült')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Rendben' }))
-    expect(screen.getByRole('button', { name: 'Dimenziók' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Nézd meg az első konzíliumot' }))
+    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/konzilium')
   })
 
   test("result 'empty' (204) shows the honest no-history face", () => {
