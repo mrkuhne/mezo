@@ -52,6 +52,16 @@ describe('usePeople (mock mode)', () => {
     expect(result.current.people).toEqual(personSeed)
     expect(result.current.mentions).toEqual(mentionSeed)
   })
+
+  it('deletePerson removes person and their mentions (mock mode)', async () => {
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    const victim = result.current.people[0]
+    act(() => result.current.deletePerson(victim.id))
+    await waitFor(() => {
+      expect(result.current.people.map(p => p.id)).not.toContain(victim.id)
+      expect(result.current.mentions.every(m => m.person_id !== victim.id)).toBe(true)
+    })
+  })
 })
 
 describe('usePeople (real mode)', () => {
@@ -106,6 +116,27 @@ describe('usePeople (real mode)', () => {
     act(() => result.current.logMention({ personId: WIRE_PERSON.id, tone: 'mixed', text: 'Nehéz nap.' }))
     await waitFor(() => expect(posted).toEqual({ tone: 'mixed', text: 'Nehéz nap.' }))
     await waitFor(() => expect(gets).toBeGreaterThan(getsBefore)) // invalidation → server-truth refetch
+  })
+
+  it('savePerson creates then refetches (real mode)', async () => {
+    let persons: PersonResponse[] = [WIRE_PERSON]
+    server.use(
+      http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons, mentions: [WIRE_MENTION] })),
+      http.post(`${API_BASE}/api/people`, async ({ request }) => {
+        const req = (await request.json()) as { name: string }
+        const created: PersonResponse = {
+          ...WIRE_PERSON, id: crypto.randomUUID(), name: req.name, initial: req.name[0],
+        }
+        persons = [...persons, created]
+        return HttpResponse.json(created, { status: 201 })
+      }),
+    )
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    act(() => result.current.savePerson({
+      name: 'Marci', aliases: ['Marcika'], relationship: 'friend', relationshipHu: 'Barát',
+    }))
+    await waitFor(() => expect(result.current.people.map(p => p.name)).toContain('Marci'))
   })
 })
 

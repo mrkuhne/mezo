@@ -3,7 +3,7 @@ import { useDualQuery } from '@/data/useDualQuery'
 import { isMockMode } from '@/data/_client/mode'
 import { peopleApi, toMention, toPersonEntry } from '@/data/me/peopleApi'
 import { people as personSeed, mentions as mentionSeed } from '@/data/me/people'
-import type { Mention, MentionLogInput, PersonEntry } from '@/data/types'
+import type { Mention, MentionLogInput, PersonEntry, PersonSaveInput } from '@/data/types'
 
 export interface PeopleBootstrap {
   people: PersonEntry[]
@@ -39,15 +39,33 @@ export function usePeople() {
         mockLogMention(qc, input)
         return
       }
-      await peopleApi.logMention(input.personId, input.tone, input.text)
+      await peopleApi.logMention(input.personId, input.tone, input.text, input.contextLabel)
     },
     onSuccess: isMockMode() ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+  })
+
+  const saveM = useMutation({
+    mutationFn: async (input: PersonSaveInput) => {
+      if (mock) { mockSavePerson(qc, input); return }
+      if (input.id) await peopleApi.updatePerson(input.id, input)
+      else await peopleApi.createPerson(input)
+    },
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+  })
+  const delM = useMutation({
+    mutationFn: async (personId: string) => {
+      if (mock) { mockDeletePerson(qc, personId); return }
+      await peopleApi.deletePerson(personId)
+    },
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
   })
 
   return {
     people: data.people,
     mentions: data.mentions,
     logMention: (input: MentionLogInput) => logM.mutate(input),
+    savePerson: (input: PersonSaveInput) => saveM.mutate(input),
+    deletePerson: (personId: string) => delM.mutate(personId),
     isPending,
   }
 }
@@ -69,5 +87,37 @@ function mockLogMention(qc: QueryClient, input: MentionLogInput) {
       tone: input.tone,
     }
     return { ...base, mentions: [newMention, ...base.mentions] }
+  })
+}
+
+function mockSavePerson(qc: QueryClient, input: PersonSaveInput) {
+  qc.setQueryData<PeopleBootstrap>(PEOPLE_KEY, (old) => {
+    const base = old ?? MOCK_PEOPLE
+    if (input.id) {
+      return { ...base, people: base.people.map(p => p.id === input.id
+        ? { ...p, ...editable(input), initial: input.name.slice(0, 1).toUpperCase() } : p) }
+    }
+    const fresh: PersonEntry = {
+      id: crypto.randomUUID(), initial: input.name.slice(0, 1).toUpperCase(),
+      affect_baseline: input.affectBaseline ?? 'neutral',
+      mentionCount: 0, mentionsThisWeek: 0, last_mentioned_at: '',
+      lastMentionLabel: 'Még nincs említés', affectTrend: [], knownFacts: [], ties: [],
+      status: 'active', sourceKind: 'manual', ...editable(input),
+    }
+    return { ...base, people: [...base.people, fresh] }
+  })
+}
+function editable(i: PersonSaveInput) {
+  return { name: i.name, aliases: i.aliases, relationship: i.relationship,
+    relationshipHu: i.relationshipHu, contactCadenceLabel: i.contactCadenceLabel ?? '',
+    notes: i.notes ?? '' }
+}
+function mockDeletePerson(qc: QueryClient, personId: string) {
+  qc.setQueryData<PeopleBootstrap>(PEOPLE_KEY, (old) => {
+    const base = old ?? MOCK_PEOPLE
+    return {
+      people: base.people.filter(p => p.id !== personId),
+      mentions: base.mentions.filter(m => m.person_id !== personId),
+    }
   })
 }

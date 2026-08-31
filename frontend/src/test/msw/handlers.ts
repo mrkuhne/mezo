@@ -531,6 +531,49 @@ export const handlers = [
 
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
   http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),
+  http.post(`${API_BASE}/api/people`, async ({ request }) => {
+    const req = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: crypto.randomUUID(),
+      name: req.name,
+      initial: (req.name as string)[0],
+      relationship: req.relationship,
+      relationshipHu: req.relationshipHu,
+      aliases: req.aliases ?? [],
+      status: 'active',
+      sourceKind: 'manual',
+      affectBaseline: req.affectBaseline,
+      contactCadenceLabel: req.contactCadenceLabel,
+      notes: req.notes,
+      mentionCount: 0,
+      mentionsThisWeek: 0,
+      knownFacts: [],
+      ties: [],
+      affectTrend: [],
+    }, { status: 201 })
+  }),
+  http.put(`${API_BASE}/api/people/:id`, async ({ params, request }) => {
+    const req = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: params.id,
+      name: req.name,
+      initial: (req.name as string)[0],
+      relationship: req.relationship,
+      relationshipHu: req.relationshipHu,
+      aliases: req.aliases ?? [],
+      status: 'active',
+      sourceKind: 'manual',
+      affectBaseline: req.affectBaseline,
+      contactCadenceLabel: req.contactCadenceLabel,
+      notes: req.notes,
+      mentionCount: 0,
+      mentionsThisWeek: 0,
+      knownFacts: [],
+      ties: [],
+      affectTrend: [],
+    })
+  }),
+  http.delete(`${API_BASE}/api/people/:id`, () => new HttpResponse(null, { status: 204 })),
 
   http.post(`${API_BASE}/api/biometrics/checkin`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
