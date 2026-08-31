@@ -47,6 +47,7 @@ public class CharacterBootstrapService {
     private final KonziliumProposalRound proposalRound;
     private final KonziliumVerdictRound verdictRound;
     private final CharacterConferenceService conferenceService;
+    private final CharacterService characterService;
 
     /**
      * Runs the bootstrap konzílium for {@code owner}. A live BOOTSTRAP row already existing is a
@@ -59,6 +60,13 @@ public class CharacterBootstrapService {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("CHARACTER_BOOTSTRAP_ALREADY_RUN").build(), HttpStatus.CONFLICT);
         }
+
+        // A user can POST here before ever GETting /api/character — without this, the proposal
+        // round's NEW proposals validate fine (KonziliumProposalRound checks the STATIC CORE key
+        // catalog, not the DB) and get accepted rulings, but ClaimLifecycle.applyNew then finds no
+        // dimension row, logs a warning, and silently drops every claim — a 200 with a full
+        // transcript but an empty dossier (fix-round-1 finding, mezo-1gim.6).
+        characterService.ensureCoreDimensions(owner);
 
         List<ExpertEvidence> evidence = historyReads.gatherHistory(owner);
         if (evidence.isEmpty()) {

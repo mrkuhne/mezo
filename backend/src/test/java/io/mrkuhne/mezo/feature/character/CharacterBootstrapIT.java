@@ -4,14 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.CharacterConferenceResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterConferenceRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterObservationRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterPortraitRevisionRepository;
-import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
-import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.service.CharacterBootstrapService;
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import java.time.LocalDate;
@@ -26,8 +26,10 @@ import org.springframework.test.context.ActiveProfiles;
  * IT for the monthly bootstrap konzílium endpoint (Karakter S4, mezo-1gim.6):
  * {@code POST /api/character/bootstrap} — the honest empty state (204, no LLM calls), the
  * canned end-to-end happy path (BOOTSTRAP conference, ACTIVE claims, portraits at version 1, no
- * observation consumption), one-time-ever idempotency (409 on a second call), and the fake LLM's
- * marker mirror.
+ * observation consumption), one-time-ever idempotency (409 on a second call), the fake LLM's
+ * marker mirror, and — fix round 1 — that bootstrap seeds the 7 CORE dimensions itself, so a
+ * user who never called {@code GET /api/character} first still gets a real dossier out of it
+ * instead of a 200 whose claims were silently dropped.
  */
 @ActiveProfiles("companion-fake")
 class CharacterBootstrapIT extends ApiIntegrationTest {
@@ -43,30 +45,6 @@ class CharacterBootstrapIT extends ApiIntegrationTest {
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
-    }
-
-    private void seedCoreDimensions(UUID owner) {
-        // mirrors CharacterService.ensureCoreDimensions — the endpoint under test never calls it,
-        // so the bootstrap round needs its own NEW-target dimensions already present, exactly as
-        // a real user's dossier would have after their first /api/character GET.
-        for (String key : new String[] {"discipline", "physical", "athletic", "nutrition", "recovery", "mental",
-                "life"}) {
-            CharacterDimensionEntity entity = new CharacterDimensionEntity();
-            entity.setCreatedBy(owner);
-            entity.setKey(key);
-            entity.setTitle(key);
-            entity.setKind("CORE");
-            entity.setExpertKey(switch (key) {
-                case "discipline" -> "drill";
-                case "physical" -> "doki";
-                case "athletic" -> "edzo";
-                case "nutrition" -> "taplalkozo";
-                case "recovery" -> "szomnologus";
-                case "mental" -> "pszichologus";
-                default -> "antropologus";
-            });
-            dimensionRepository.save(entity);
-        }
     }
 
     @Test
@@ -86,10 +64,33 @@ class CharacterBootstrapIT extends ApiIntegrationTest {
         assertThat(conferenceRepository.findByCreatedByOrderByGeneratedAtDesc(owner)).isEmpty();
     }
 
+    /**
+     * The user has NEVER called {@code GET /api/character} — zero dimension rows exist when
+     * bootstrap runs. Before the fix-round-1 fix this silently dropped every claim (proposals
+     * validate against the static CORE catalog, not the DB, so they get accepted rulings; then
+     * {@code ClaimLifecycle.applyNew} finds no dimension row and returns null). This asserts BOTH
+     * halves: the 7 CORE dimensions now exist, AND the accepted claims actually landed.
+     */
+    @Test
+    void bootstrap_noPriorDimensionRows_seedsCoreDimensions_andClaimsLandForReal() {
+        UUID owner = ownerId();
+        assertThat(dimensionRepository.findByCreatedBy(owner)).isEmpty();
+        dailySummaryPopulator.summary(owner, LocalDate.of(2026, 7, 1), "Jó hónap volt, sokat fejlődtem.");
+        HttpHeaders headers = ownerAuthHeaders();
+
+        CharacterConferenceResponse response = postForBody("/api/character/bootstrap", null, headers,
+                HttpStatus.OK, CharacterConferenceResponse.class);
+
+        assertThat(dimensionRepository.findByCreatedBy(owner)).extracting(CharacterDimensionEntity::getKey)
+                .containsExactlyInAnyOrder("physical", "athletic", "nutrition", "recovery",
+                        "mental", "discipline", "life");
+        assertThat(claimRepository.findByCreatedByAndStatusOrderByConfidenceDesc(owner, "ACTIVE")).isNotEmpty();
+        assertThat(response.getChanges()).isNotEmpty();
+    }
+
     @Test
     void bootstrap_withHistory_returns200_persistsBootstrapConference_claimsAndPortraits_noObservationConsumed() {
         UUID owner = ownerId();
-        seedCoreDimensions(owner);
         dailySummaryPopulator.summary(owner, LocalDate.of(2026, 7, 1), "Jó hónap volt, sokat fejlődtem.");
         HttpHeaders headers = ownerAuthHeaders();
 
@@ -125,7 +126,6 @@ class CharacterBootstrapIT extends ApiIntegrationTest {
     @Test
     void bootstrap_secondCall_returns409_stillExactlyOneBootstrapRow() {
         UUID owner = ownerId();
-        seedCoreDimensions(owner);
         dailySummaryPopulator.summary(owner, LocalDate.of(2026, 7, 1), "Jó hónap volt.");
         HttpHeaders headers = ownerAuthHeaders();
 
