@@ -16,13 +16,14 @@
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMedication } from '@/data/hooks'
+import { useMedication, useMedicationActions } from '@/data/hooks'
 import { huMonthDayDow } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MedicationCycleBar } from '@/features/fuel/components/MedicationCycleBar'
 import { LogDoseSheet } from '@/features/fuel/sheets/LogDoseSheet'
+import { MedicationFormSheet } from '@/features/fuel/sheets/MedicationFormSheet'
 
 // route code → HU label (mockup: "subQ injekció"). Falls back to the raw code.
 const ROUTE_LABEL: Record<string, string> = {
@@ -57,7 +58,10 @@ function lastDoseAgo(lastDoseAt: string | null | undefined): string | null {
 export function FuelMedicationPage() {
   const navigate = useNavigate()
   const { medication: med, cycle, doses } = useMedication()
+  const { stopMedication } = useMedicationActions()
   const [logOpen, setLogOpen] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
+  const [confirmStop, setConfirmStop] = useState(false)
 
   // Honest empty state (mezo-lwmq): there is no active medication and no way to add one from
   // the UI — the slice keeps its generic machinery, but the owner tracks no medication. No hero
@@ -72,14 +76,23 @@ export function FuelMedicationPage() {
           <EntranceGroup>
           <div data-testid="medication-empty" className="mz-qcard rise" style={{ textAlign: 'center', padding: 24 }}>
             <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
-              Nincs aktív gyógyszer
+              Nincs követett gyógyszer
             </span>
             <span className="text-tertiary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
-              Nem követsz gyógyszert. Jelenleg nincs felvételi út a felületen — ha kellene, az külön fejlesztés.
+              Ha szedsz valamit ciklusban — ide kerül a fázis-térkép és a beadás-napló.
             </span>
+            <button
+              type="button"
+              className="cta-primary"
+              onClick={() => setFormOpen(true)}
+              style={{ marginTop: 14 }}
+            >
+              <Icon name="plus" size={12} /> Gyógyszer felvétele
+            </button>
           </div>
           </EntranceGroup>
         </PageBody>
+        {formOpen && <MedicationFormSheet onClose={() => setFormOpen(false)} />}
       </MozaikPage>
     )
   }
@@ -154,11 +167,47 @@ export function FuelMedicationPage() {
               ))}
             </ul>
           )}
+
+          {/* Szerkesztés + kétlépcsős Leállítás (fuel-mely.html). The stop is NEVER error-toned —
+              a decision, not a mistake: neutral ghosts, a dashed confirm card, and the lav CTA.
+              Stopping soft-archives (PUT active:false); the dose history stays server-side. */}
+          <div className="row gap-sm rise" style={{ '--d': '160ms', marginTop: 14 } as React.CSSProperties}>
+            <button type="button" className="cta-ghost flex-1" onClick={() => setFormOpen(true)}>
+              Szerkesztés
+            </button>
+            <button type="button" className="cta-ghost flex-1" onClick={() => setConfirmStop(true)}>
+              Leállítás
+            </button>
+          </div>
+          {confirmStop && (
+            <div
+              data-testid="medication-stop-confirm"
+              style={{
+                border: '1px dashed var(--border-strong)', borderRadius: 13,
+                padding: '10px 12px', marginTop: 8, fontSize: 12, color: 'var(--mz-ink-soft)',
+              }}
+            >
+              A {med.name} leáll — a beadás-történet megmarad, a Fuel-oldalak nem számolnak vele tovább.
+              <div className="row gap-sm" style={{ marginTop: 10 }}>
+                <button type="button" className="cta-ghost flex-1" onClick={() => setConfirmStop(false)}>
+                  Mégse
+                </button>
+                <button
+                  type="button"
+                  className="cta-primary flex-1"
+                  onClick={() => { stopMedication(med); setConfirmStop(false) }}
+                >
+                  Leállítom
+                </button>
+              </div>
+            </div>
+          )}
         </PageBody>
       </EntranceGroup>
 
       {/* LogDoseSheet — the dose-capture sheet (Task 13). "＋ Beadás" flips logOpen. */}
       {logOpen && <LogDoseSheet onClose={() => setLogOpen(false)} />}
+      {formOpen && <MedicationFormSheet medication={med} onClose={() => setFormOpen(false)} />}
     </MozaikPage>
   )
 }

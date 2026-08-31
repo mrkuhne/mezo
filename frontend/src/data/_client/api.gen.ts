@@ -1287,7 +1287,11 @@ export interface paths {
          */
         get: operations["getMedicationDay"];
         put?: never;
-        post?: never;
+        /**
+         * Create the owner's medication (the single-active slice's create path)
+         * @description The owner can have ONE active medication at a time — creating while an active one exists answers 400 with MEDICATION_ACTIVE_EXISTS. Re-creating after a stop (PUT active:false) is the normal path; the old row's dose history stays.
+         */
+        post: operations["createMedication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11484,6 +11488,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MedicationDayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createMedication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MedicationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicationResponse"];
+                };
+            };
+            /** @description Validation error, or an active medication already exists */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */
