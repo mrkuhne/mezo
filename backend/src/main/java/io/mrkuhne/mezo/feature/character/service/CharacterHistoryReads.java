@@ -3,9 +3,15 @@ package io.mrkuhne.mezo.feature.character.service;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
+import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
+import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
+import io.mrkuhne.mezo.feature.proactive.entity.WeeklyReviewEntity;
+import io.mrkuhne.mezo.feature.proactive.repository.WeeklyReviewRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -23,7 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Deterministic, no-LLM history reader for the monthly bootstrap konzílium (Karakter S4,
  * mezo-1gim.6): turns the companion's existing episodic memory (L1 daily narratives, L2
- * confirmed patterns, L3 prompt-eligible facts) into per-expert {@link ExpertEvidence} blocks so
+ * confirmed patterns, L3 prompt-eligible facts, plus — S7 widening, mezo-1gim.7 — weekly
+ * reviews, journal entries and life events) into per-expert {@link ExpertEvidence} blocks so
  * {@link KonziliumProposalRound#runOnEvidence} can run the SAME per-expert proposal pipeline over
  * a user's whole history instead of a single week's observations.
  *
@@ -44,8 +51,28 @@ import org.springframework.transaction.annotation.Transactional;
  *       ordering {@code KnowledgeFactService.topFactsForPrompt} uses), each fact's text capped at
  *       {@value #FACT_TEXT_CAP_CHARS} chars — {@code includeInPrompt} is persistent, so an
  *       unbounded read here would let a heavy user's fact set blow up the bootstrap prompt.</li>
+ *   <li>a {@code weekly_review} row goes to EVERY expert — same whole-life-prose treatment as a
+ *       daily-summary narrative. Capped at the newest {@value #HISTORY_WEEKLY_REVIEW_CAP} reviews,
+ *       one line each: {@code "<weekStart>: <summary capped at 300 chars>"}.</li>
+ *   <li>a journal entry goes to {@code pszichologus} only — it is the emotional-signal source
+ *       (mirrors {@link CharacterSignalReads}' own S2 use of the same repository method). Capped
+ *       at the newest {@value #HISTORY_JOURNAL_CAP} entries, one line each:
+ *       {@code "<occurredOn>: <text capped at 300 chars>"}.</li>
+ *   <li>an active {@code LIFE_EVENT} graph node goes to {@code antropologus} only — life context
+ *       is its dimension. Capped at the newest {@value #HISTORY_LIFE_EVENT_CAP} nodes, one line
+ *       each: the node's title, capped at {@value #LIFE_EVENT_TEXT_CAP_CHARS} chars.</li>
  * </ul>
  * Every line carries the source row's real id in {@code refIds} as {@code "<kind>:<uuid>"}.
+ *
+ * <p>Dependency-direction note (S7, mezo-1gim.7): this class now also depends on
+ * {@code feature.proactive} ({@link WeeklyReviewRepository}) and {@code feature.journal}
+ * ({@link JournalEntryRepository}, already imported by {@link CharacterSignalReads} for the S2
+ * detector). Neither {@code proactive} nor {@code journal} depends on {@code character}, so
+ * {@code character → proactive} / {@code character → journal} are BRAND NEW one-directional
+ * edges, not the closing leg of an existing cycle — unlike {@code companion → proactive}, which
+ * DOES close a cycle (proactive already depends on companion) and is why {@code
+ * feature.companion.WeekReviewSource} exists as a port. A direct repository import here is
+ * therefore safe and is what {@code ArchitectureTest#feature_slices_are_cycle_free} enforces.
  */
 @Service
 @RequiredArgsConstructor
@@ -75,6 +102,30 @@ public class CharacterHistoryReads {
 
     /** Per-fact text cap (chars) — mirrors {@link #NARRATIVE_CAP_CHARS}'s treatment of narratives. */
     private static final int FACT_TEXT_CAP_CHARS = 300;
+
+    /** Newest N {@code weekly_review} rows carried into the history evidence — same rationale as
+     *  {@link #HISTORY_SUMMARY_CAP}: whole-life prose with no natural upper bound. A weekly
+     *  review is generated at most once a week, so this cap (over a year's worth) is generous
+     *  in practice but still documented and enforced the same deterministic way. */
+    static final int HISTORY_WEEKLY_REVIEW_CAP = 60;
+
+    /** Newest N journal entries carried into the history evidence — mirrors
+     *  {@link #HISTORY_SUMMARY_CAP}'s treatment of narratives: free prose with no natural upper
+     *  bound, routed to a single expert rather than fanned out to every one. */
+    static final int HISTORY_JOURNAL_CAP = 60;
+
+    /** Per-journal-entry text cap (chars) — mirrors {@link #NARRATIVE_CAP_CHARS}. */
+    private static final int JOURNAL_TEXT_CAP_CHARS = 300;
+
+    /** Newest N active {@code LIFE_EVENT} graph nodes carried into the history evidence — capped
+     *  the same deterministic way the other unbounded-over-time sources are, even though life
+     *  events are naturally sparser than daily narratives or journal entries. */
+    static final int HISTORY_LIFE_EVENT_CAP = 40;
+
+    /** Per-life-event title cap (chars) — mirrors {@link #NARRATIVE_CAP_CHARS}; {@code
+     *  GraphNodeEntity.title} is already DB-bounded to 120 chars, but the cap is applied the same
+     *  way as every other source for consistency. */
+    private static final int LIFE_EVENT_TEXT_CAP_CHARS = 300;
 
     /** Practical "since forever" floor for the narrative read — {@link LocalDate#MIN} overflows
      *  postgres's {@code date} range (4713 BC..294276 AD, but the JDBC/text round-trip chokes on
@@ -118,6 +169,21 @@ public class CharacterHistoryReads {
     private final DailySummaryRepository dailySummaryRepository;
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
+    private final WeeklyReviewRepository weeklyReviewRepository;
+    private final JournalEntryRepository journalEntryRepository;
+    private final GraphNodeRepository graphNodeRepository;
+
+    /** Exposed for the routing-coverage IT ({@code CharacterHistoryReadsIT}, S4-review follow-up,
+     *  mezo-1gim.7): an immutable view of {@link #PATTERN_KEYWORDS} so the test can parameterize
+     *  over EVERY entry instead of a hand-picked subset. */
+    public static Map<String, String> patternKeywordRouting() {
+        return Map.copyOf(PATTERN_KEYWORDS);
+    }
+
+    /** Exposed for the routing-coverage IT, same rationale as {@link #patternKeywordRouting()}. */
+    public static Map<String, String> factCategoryRouting() {
+        return FACT_CATEGORY_EXPERT;
+    }
 
     /** Builds one {@link ExpertEvidence} per expert that has any evidence — empty list when the
      *  user has no history yet. */
@@ -129,6 +195,9 @@ public class CharacterHistoryReads {
         addNarratives(owner, linesByExpert, refIdsByExpert);
         addPatterns(owner, linesByExpert, refIdsByExpert);
         addFacts(owner, linesByExpert, refIdsByExpert);
+        addWeeklyReviews(owner, linesByExpert, refIdsByExpert);
+        addJournalEntries(owner, linesByExpert, refIdsByExpert);
+        addLifeEvents(owner, linesByExpert, refIdsByExpert);
 
         List<ExpertEvidence> evidence = new ArrayList<>();
         for (Map.Entry<String, List<String>> entry : linesByExpert.entrySet()) {
@@ -175,6 +244,49 @@ public class CharacterHistoryReads {
             String expertKey = FACT_CATEGORY_EXPERT.getOrDefault(fact.getCategory(), FALLBACK_FACT_EXPERT);
             String refId = "knowledge-fact:" + fact.getId();
             append(linesByExpert, refIdsByExpert, expertKey, cap(fact.getFactText(), FACT_TEXT_CAP_CHARS), refId);
+        }
+    }
+
+    private void addWeeklyReviews(UUID owner, Map<String, List<String>> linesByExpert,
+                                   Map<String, List<String>> refIdsByExpert) {
+        List<WeeklyReviewEntity> reviews = weeklyReviewRepository
+                .findByCreatedByAndWeekStartGreaterThanEqualOrderByWeekStartDesc(owner, EPOCH_FLOOR);
+        List<WeeklyReviewEntity> capped =
+                reviews.size() > HISTORY_WEEKLY_REVIEW_CAP ? reviews.subList(0, HISTORY_WEEKLY_REVIEW_CAP) : reviews;
+        for (WeeklyReviewEntity review : capped) {
+            String line = review.getWeekStart() + ": " + cap(review.getSummary(), NARRATIVE_CAP_CHARS);
+            String refId = "weekly-review:" + review.getId();
+            for (CharacterExpertCatalog.Expert expert : CharacterExpertCatalog.EXPERTS) {
+                append(linesByExpert, refIdsByExpert, expert.key(), line, refId);
+            }
+        }
+    }
+
+    private void addJournalEntries(UUID owner, Map<String, List<String>> linesByExpert,
+                                    Map<String, List<String>> refIdsByExpert) {
+        List<JournalEntryEntity> entries = journalEntryRepository
+                .findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnDescCreatedAtDesc(
+                        owner, EPOCH_FLOOR, LocalDate.now());
+        List<JournalEntryEntity> capped =
+                entries.size() > HISTORY_JOURNAL_CAP ? entries.subList(0, HISTORY_JOURNAL_CAP) : entries;
+        for (JournalEntryEntity entry : capped) {
+            String line = entry.getOccurredOn() + ": " + cap(entry.getText(), JOURNAL_TEXT_CAP_CHARS);
+            String refId = "journal:" + entry.getId();
+            append(linesByExpert, refIdsByExpert, "pszichologus", line, refId);
+        }
+    }
+
+    private void addLifeEvents(UUID owner, Map<String, List<String>> linesByExpert,
+                                Map<String, List<String>> refIdsByExpert) {
+        List<GraphNodeEntity> events = graphNodeRepository
+                .findByCreatedByAndKindAndStatusAndDeletedFalseOrderByCreatedAtDesc(
+                        owner, GraphNodeEntity.KIND_LIFE_EVENT, GraphNodeEntity.STATUS_ACTIVE);
+        List<GraphNodeEntity> capped =
+                events.size() > HISTORY_LIFE_EVENT_CAP ? events.subList(0, HISTORY_LIFE_EVENT_CAP) : events;
+        for (GraphNodeEntity event : capped) {
+            String line = cap(event.getTitle(), LIFE_EVENT_TEXT_CAP_CHARS);
+            String refId = "life-event:" + event.getId();
+            append(linesByExpert, refIdsByExpert, "antropologus", line, refId);
         }
     }
 
