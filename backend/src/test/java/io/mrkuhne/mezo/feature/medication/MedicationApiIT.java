@@ -43,9 +43,19 @@ class MedicationApiIT extends ApiIntegrationTest {
      */
     @Test
     void testGetDay_shouldReturn200AndEmptyPayload_whenOwnerHasNoActiveMedication() {
+        ResponseEntity<String> res = exchangeForResponse(
+            HttpMethod.GET, "/api/medication", null, ownerAuthHeaders());
+        assertThat(res.getStatusCode().value()).isEqualTo(200);
+
+        // The RAW wire shape is the contract the FE normalizer keys off: the keys are PRESENT and
+        // null (Jackson's Include.ALWAYS), not omitted — a DTO round-trip could not tell those apart.
+        assertThat(res.getBody())
+            .contains("\"medication\":null")
+            .contains("\"cycle\":null")
+            .contains("\"recentDoses\":[]");
+
         MedicationDayResponse day = getForBody(
             "/api/medication", ownerAuthHeaders(), HttpStatus.OK, MedicationDayResponse.class);
-
         assertThat(day.getMedication()).isNull();
         assertThat(day.getCycle()).isNull();
         assertThat(day.getRecentDoses()).isEmpty();

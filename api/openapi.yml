@@ -2584,10 +2584,10 @@ paths:
       summary: The owner's biometric profile
       description: >-
         Never 404s: having no profile yet is a normal state, answered with 200
-        and an empty payload (`{}`) (mezo-5cmq).
+        and an empty profile — an object whose every field is null (mezo-5cmq).
       responses:
         '200':
-          description: 'Profile, or an empty object when the owner has none yet'
+          description: 'Profile, or an all-null empty profile when the owner has none yet'
           content:
             application/json:
               schema:
@@ -11046,20 +11046,23 @@ components:
     BiometricProfileResponse:
       type: object
       description: >-
-        Every field is optional: an owner with no profile row yet gets an EMPTY
-        object (`{}`) with a 200, not a 404 (mezo-5cmq). The UPSERT request
-        keeps its required trio.
+        Every field is optional AND nullable: an owner with no profile row yet
+        gets a 200 with an empty profile — an object whose every field is null —
+        not a 404 (mezo-5cmq). The UPSERT request keeps its required trio.
       properties:
         sex:
           type: string
           enum:
             - M
             - F
+          nullable: true
         heightCm:
           type: number
+          nullable: true
         birthDate:
           type: string
           format: date
+          nullable: true
         bodyFatPct:
           type: number
           nullable: true
