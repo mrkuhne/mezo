@@ -327,7 +327,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### fuel
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-30, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-08-29, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done)
 
@@ -362,19 +362,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts, slotTemplateHooks.ts,
     stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts
 - **FE ui** `frontend/src/features/fuel`
-  - **pages:** FuelKamraPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx, FuelMezoPage.tsx, FuelNaploPage.tsx,
-    FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx, KamraItemDetailPage.tsx,
-    KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx, RecipesSkeleton.tsx
+  - **pages:** FuelKamraPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx, FuelMezoPage.tsx,
+    FuelNaploPage.tsx, FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx,
+    KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
+    RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx, FuelSettingsSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
     StackPickerSheet.tsx, WaterLogSheet.tsx
-  - **components:** ContextPanel.tsx, DimensionCard.tsx, KamraCard.tsx, KeretHero.tsx, MacroCells.tsx, MacroPanel.tsx,
-    MealScoreChip.tsx, MedicationCycleBar.tsx, MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx,
-    NutrientCells.tsx, PatternRow.tsx, RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx,
-    RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx,
-    ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx, StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx,
-    SuggestionCard.tsx, WeekRhythmGrid.tsx, WeeklySupplementGrid.tsx, WindowLane.tsx
+  - **components:** ContextPanel.tsx, DimensionCard.tsx, FuelLogHeroTile.tsx, KamraCard.tsx, KeretHero.tsx,
+    MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MedicationCycleBar.tsx,
+    MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx,
+    RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
+    RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx,
+    StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
+    WeeklySupplementGrid.tsx, WindowBlock.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
     dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, fuelMezoMessages.ts, fuelSwimlane.ts, heroWindow.ts,
     kamraItems.ts, keretHero.ts, matchMealsToStack.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts,
@@ -627,7 +629,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-30, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
@@ -727,7 +729,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### nutrition
 
-*BE* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-30, done)
+*BE* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **services:** `MealRole`, `MealScoringService`
@@ -738,7 +740,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### pantry
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-30, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
   - **entities→tables:** `PantryImportEntity`→`pantry_import`, `PantryItemEntity`→`pantry_item`
