@@ -17,32 +17,45 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 /**
  * Renders the [Karakter] dossier block for the companion system prompt (Karakter spec §8,
  * mezo-1gim.8): CORE dimensions in {@link CharacterCoreCatalog} order, then CHAPTER dimensions by
- * {@code createdAt}, each as an optional one-line portrait digest (first sentence, capped 160
- * chars, only once the dimension's maturity clears {@code portraitMinMaturity} — the full prose
- * stays a UI concern) followed by its qualifying ACTIVE claims, human confidence words only
- * (never the raw decimal — the Minták/PortraitWriter precedent), ranked by
- * {@code confidence × exp(-ageDays/τ)} so a fresher weaker claim can still lead (mirrors
- * {@code MemoryRecallService}'s similarity × recency decay). A dimension with neither a
- * qualifying digest nor a qualifying claim is omitted entirely; the whole block is capped at
- * {@code maxTotalChars} by dropping trailing dimension blocks WHOLE (never mid-line) so the
- * result never needs a truncation marker.
+ * {@code createdAt}, each as an optional one-line portrait digest (first sentence, flattened and
+ * capped 160 chars, only once the dimension's maturity clears {@code portraitMinMaturity} — the
+ * full prose stays a UI concern) followed by its qualifying ACTIVE claims, each flattened to one
+ * line and capped so model-authored text can never forge an extra bullet or a fake dimension
+ * header inside the block, human confidence words only (never the raw decimal — the
+ * Minták/PortraitWriter precedent), ranked by {@code confidence × exp(-ageDays/τ)} so a fresher
+ * weaker claim can still lead (mirrors {@code MemoryRecallService}'s similarity × recency decay).
+ * A dimension with neither a qualifying digest nor a qualifying claim is omitted entirely; the
+ * whole block is capped at {@code maxTotalChars} by dropping any dimension block that would blow
+ * the budget WHOLE (never mid-line) — an oversized dimension is skipped, not fatal to the ones
+ * after it, so the result never needs a truncation marker and never loses the whole dossier over
+ * one crowded dimension.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = {FeaturesConfiguration.CHARACTER_SWITCH, FeaturesConfiguration.COMPANION_SWITCH},
         havingValue = "true")
 public class CharacterPromptAssembler implements CharacterPromptSource {
 
-    private static final String HEADER = "[Karakter — amit eddig megtudtam Danielről]\n";
+    /** Same "\n\n[Blokk] (magyarázat):\n" shape as the facts/[Emlékek]/[Összefüggések] headers —
+     *  the parenthetical also supplies the facts-vs-claims + ÉRZÉKENY tone rule (spec §3, §8)
+     *  that would otherwise never reach the chat prompt itself. */
+    private static final String HEADER = "\n\n[Karakter — amit eddig megtudtam Danielről] (értelmezések,"
+            + " nem tények; az ÉRZÉKENY jelöléssel ellátott állításokat tükörként vagy kérdésként"
+            + " hozd fel, sosem ítélkezve):\n";
     private static final String CORE_KIND = "CORE";
     private static final String ACTIVE_STATUS = "ACTIVE";
     private static final int PORTRAIT_DIGEST_MAX_CHARS = 160;
+    /** Per-claim flatten cap — generous for a one-sentence observation, small enough that one
+     *  runaway claim can't eat the dimension's whole share of {@code maxTotalChars}. */
+    private static final int CLAIM_TEXT_MAX_CHARS = 300;
 
     /** Recency half-life for the confidence x recency ranking (mirrors
      *  {@code CompanionProperties.Recall#decayDays}'s shape) — not spec-tunable, so a plain
@@ -76,7 +89,9 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
         StringBuilder result = new StringBuilder(HEADER);
         for (String block : blocks) {
             if (result.length() + block.length() > config.maxTotalChars()) {
-                break;
+                // One oversized dimension must never suppress the ones after it — skip just this
+                // block WHOLE (never mid-line) and keep scanning (I3, mezo-1gim.8 final review).
+                continue;
             }
             result.append(block);
         }
@@ -107,16 +122,40 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
             if (Boolean.TRUE.equals(claim.getSensitive())) {
                 block.append(", ÉRZÉKENY");
             }
-            block.append(") ").append(claim.getText()).append('\n');
+            block.append(") ").append(oneLine(claim.getText(), CLAIM_TEXT_MAX_CHARS)).append('\n');
         }
         return block.toString();
     }
 
     private static String dimensionHeaderLine(CharacterDimensionEntity dimension, String digest) {
-        String label = dimension.getExpertKey() == null
-                ? dimension.getTitle()
-                : dimension.getTitle() + " (" + CharacterExpertCatalog.byKey(dimension.getExpertKey()).displayName() + ")";
+        String label = dimension.getExpertKey() == null ? dimension.getTitle() : expertLabel(dimension);
         return digest == null ? label + ":" : label + ": " + digest;
+    }
+
+    /** {@code "<title> (<expert display name>)"} — falls back to the bare title on a stale/unknown
+     *  {@code expertKey} instead of throwing, so a dossier data problem can never 500 a chat turn
+     *  (I5, mezo-1gim.8 final review): {@link CharacterExpertCatalog#byKey} throws on a miss. */
+    private static String expertLabel(CharacterDimensionEntity dimension) {
+        try {
+            return dimension.getTitle() + " (" + CharacterExpertCatalog.byKey(dimension.getExpertKey()).displayName() + ")";
+        } catch (RuntimeException e) {
+            log.warn("Unknown character expert key '{}' on dimension '{}' — omitting the expert label",
+                    dimension.getExpertKey(), dimension.getKey(), e);
+            return dimension.getTitle();
+        }
+    }
+
+    /** Flattens model-authored text to one line (all whitespace runs, including embedded
+     *  newlines, collapsed to a single space) and caps it — the same treatment
+     *  {@code PromptMemoryAssembler.oneLine} gives recalled memory content — so a claim or
+     *  portrait sentence can never forge an extra bullet or a fake dimension header inside the
+     *  block (I2, mezo-1gim.8 final review). */
+    private static String oneLine(String text, int maxChars) {
+        if (text == null) {
+            return "";
+        }
+        String flat = text.strip().replaceAll("\\s+", " ");
+        return flat.length() > maxChars ? flat.substring(0, maxChars) + "…" : flat;
     }
 
     private List<CharacterClaimEntity> qualifyingClaims(UUID userId, CharacterDimensionEntity dimension,
@@ -137,9 +176,11 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
         return confidence * Math.exp(-(double) ageDays / RECENCY_DECAY_DAYS);
     }
 
-    /** The portrait's first sentence (split on {@code ". "}), capped at 160 chars — never the
-     *  whole prose, which stays the UI's job — or {@code null} below {@code minMaturity} or with
-     *  no portrait yet. */
+    /** The portrait's first sentence (split on {@code ". "} after flattening all whitespace,
+     *  including embedded newlines, to single spaces — so a sentence ending {@code ".\n"} still
+     *  splits correctly instead of dragging the next paragraph into the digest), capped at 160
+     *  chars — never the whole prose, which stays the UI's job — or {@code null} below
+     *  {@code minMaturity} or with no portrait yet. */
     private static String portraitDigest(CharacterDimensionEntity dimension, int minMaturity) {
         Short maturity = dimension.getMaturity();
         if (maturity == null || maturity < minMaturity) {
@@ -149,9 +190,9 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
         if (portrait == null || portrait.isBlank()) {
             return null;
         }
-        int splitAt = portrait.indexOf(". ");
-        String firstSentence = splitAt >= 0 ? portrait.substring(0, splitAt + 1) : portrait.strip();
-        return firstSentence.length() > PORTRAIT_DIGEST_MAX_CHARS
-                ? firstSentence.substring(0, PORTRAIT_DIGEST_MAX_CHARS) : firstSentence;
+        String flat = portrait.strip().replaceAll("\\s+", " ");
+        int splitAt = flat.indexOf(". ");
+        String firstSentence = splitAt >= 0 ? flat.substring(0, splitAt + 1) : flat;
+        return oneLine(firstSentence, PORTRAIT_DIGEST_MAX_CHARS);
     }
 }
