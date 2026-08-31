@@ -1,0 +1,933 @@
+<style>
+  /* ===== keret hero (a fuel-tab prototípusból) ===== */
+  .kchips { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
+  .kchips span { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 3px 9px; background: rgba(255, 255, 255, 0.75); border: 0.5px solid rgba(43, 33, 24, 0.08); color: #6E6257; font-variant-numeric: tabular-nums; }
+  .kchips span.goal { background: rgba(143, 175, 126, 0.18); color: #4E6B42; border-color: transparent; }
+  .kbarwrap { position: relative; margin-top: 8px; }
+  .kbar { display: flex; gap: 2px; height: 7px; border-radius: 4px; background: rgba(43, 33, 24, 0.07); overflow: hidden; }
+  .kbar i { height: 100%; background: #8FAF7E; border-radius: 4px; flex: none; }
+  .kbar i.alt { background: #A9C69A; }
+  .kmark { position: absolute; top: -3px; bottom: -3px; width: 3px; border-radius: 2px; background: #C9962E; box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25); }
+  .frings { display: flex; gap: 4px; margin-top: 10px; }
+  .frings > * { flex: 1; display: grid; gap: 3px; justify-items: center; border: none; background: none; font-family: inherit; padding: 0; cursor: default; }
+  .fring { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0); }
+  .fring::after { content: attr(data-pct); width: 25px; height: 25px; border-radius: 50%; background: #FFFDF8; display: grid; place-items: center; font-size: 7.5px; font-weight: 800; color: #2B2118; font-variant-numeric: tabular-nums; }
+  .frings small { font-size: 6.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6E6257; }
+  .frings .fv { font-size: 7px; color: #A2958A; font-variant-numeric: tabular-nums; }
+
+  /* ===== ÚJ · Logolás hős-csempe a hubon (a swimlane helyén) ===== */
+  .logtile { position: relative; border-radius: 19px; padding: 12px 13px; cursor: pointer; overflow: hidden;
+    background: linear-gradient(140deg, #FFE3D4, #FFF8F4 72%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 18px 32px -14px rgba(216, 72, 31, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .logtile:active { transform: scale(0.975); }
+  .logtile.alldone { background: linear-gradient(140deg, #EFF3EA, #FBFDF9 72%); box-shadow: 0 18px 32px -14px rgba(110, 139, 94, 0.4), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+  .logtile .lt-eyebrow { font-size: 8px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: #A84A26; display: flex; align-items: center; gap: 6px; }
+  .logtile.alldone .lt-eyebrow { color: #4E6B42; }
+  .logtile .lt-nowdot { width: 7px; height: 7px; border-radius: 50%; background: #FF6B4A; }
+  .play .logtile .lt-nowdot { animation: nowpulse 2.6s ease-in-out 1.2s infinite; }
+  .logtile .lt-main { display: flex; align-items: center; gap: 11px; margin-top: 7px; }
+  .logtile .lt-big { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; }
+  .logtile .lt-sub { font-size: 9.5px; color: #6E6257; font-weight: 300; margin-top: 1px; }
+  .logtile .lt-chev { margin-left: auto; color: #A2958A; font-size: 15px; flex: none; }
+  .logtile .lt-dots { display: flex; gap: 4px; margin-top: 9px; align-items: center; }
+  .logtile .lt-dots i { flex: 1; height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.09); }
+  .logtile .lt-dots i.f { background: #8FAF7E; }
+  .logtile .lt-dots i.nw { background: #FF6B4A; }
+  .play .logtile .lt-dots i.nw { animation: nowpulse 2.6s ease-in-out 1.2s infinite; }
+  .logtile .lt-dots i.ms { background: rgba(201, 150, 46, 0.55); }
+  .logtile .lt-dline { font-size: 8px; font-weight: 700; color: #6E6257; margin-top: 5px; font-variant-numeric: tabular-nums; }
+
+  /* ===== ÚJ · függőleges ablak-blokkok a /fuel/log oldalon ===== */
+  .logblk { border-radius: 19px; margin-bottom: 10px; overflow: hidden;
+    background: #FFFFFF; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .logblk.done { background: linear-gradient(150deg, #EFF3EA, #FBFDF9); }
+  .logblk.now { border: 1px solid #FF6B4A; box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .logblk.missed { background: #FFFDF8; box-shadow: 0 10px 20px -14px rgba(201, 150, 46, 0.35); border: 1.2px dashed rgba(201, 150, 46, 0.55); }
+  .logblk.free { background: #FFFDF8; border: 1.2px dashed rgba(43, 33, 24, 0.2); box-shadow: none; }
+  .logblk .lb-in { padding: 10px 12px 11px; }
+  .lbtop { display: flex; align-items: center; gap: 6px; }
+  .lbtop time { font-size: 9.5px; font-weight: 800; font-variant-numeric: tabular-nums; color: #6E6257; }
+  .lbtop .lblbl { font-size: 7px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; }
+  .lbtop .wstamp { margin-left: auto; }
+  .lbmain { display: flex; align-items: center; gap: 10px; margin-top: 7px; }
+  .lbicon { width: 42px; height: 42px; border-radius: 14px; flex: none; display: grid; place-items: center;
+    background: rgba(255, 255, 255, 0.85); box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.05), 0 2px 6px rgba(43, 33, 24, 0.06); }
+  .logblk.done .lbicon { background: rgba(255, 255, 255, 0.7); }
+  .lbtxt { flex: 1; min-width: 0; }
+  .lbname { font-size: 11.5px; font-weight: 700; line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .lbname.ghosty { color: #A2958A; font-weight: 600; }
+  .lbmeta { font-size: 8px; color: #6E6257; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .lbdata { flex: none; display: grid; gap: 5px; justify-items: center; }
+  .lbkcal { border-radius: 11px; padding: 4px 10px 3px; text-align: center;
+    background: rgba(255, 255, 255, 0.88); box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.06), 0 2px 5px rgba(43, 33, 24, 0.06); }
+  .lbkcal b { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .lbkcal small { font-size: 6px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-left: 3px; }
+  .lbrings { display: flex; gap: 6px; }
+  .wring { display: grid; gap: 2px; justify-items: center; flex: none; }
+  .wring i { width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0); }
+  .wring i::after { content: attr(data-l); width: 12.5px; height: 12.5px; border-radius: 50%; background: #FFFDF8;
+    display: grid; place-items: center; font-size: 6px; font-weight: 800; color: #6E6257; }
+  .wring small { font-size: 6.5px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .logblk.missed .lbdata { opacity: 0.7; }
+  .wstamp { font-size: 6px; font-weight: 800; letter-spacing: 0.1em; border-radius: 5px; padding: 1.5px 5px; flex: none; }
+  .wstamp.now { background: rgba(255, 107, 74, 0.12); color: #A84A26; }
+  .wstamp.done { background: rgba(143, 175, 126, 0.2); color: #4E6B42; }
+  .wstamp.miss { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .scorech { font-size: 7.5px; font-weight: 800; border-radius: 999px; padding: 2px 7px; background: rgba(143, 175, 126, 0.18); color: #4E6B42; flex: none; font-variant-numeric: tabular-nums; }
+  .scorech.mid { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+  .scorech.pend { background: rgba(43, 33, 24, 0.06); color: #A2958A; }
+  .lbcta { display: flex; gap: 7px; margin-top: 9px; }
+  .lbcta .cta, .lbcta .ghost { flex: 1; padding: 7px 0; text-align: center; font-size: 9.5px; }
+  .lbcta .ghost { flex: 0.6; }
+  /* helyben nyíló composer */
+  .lbcomposer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(0.25, 0.8, 0.35, 1); }
+  .lbcomposer > .lbc-in { overflow: hidden; min-height: 0; }
+  .logblk.open .lbcomposer { grid-template-rows: 1fr; }
+  .logblk.open .lbcta { display: none; }
+  .lbc-body { padding: 4px 12px 12px; border-top: 0.5px solid rgba(43, 33, 24, 0.07); margin-top: 9px; padding-top: 10px; }
+  .logblk.justdone { animation: blkdone 0.5s cubic-bezier(0.3, 1.3, 0.5, 1); }
+  @keyframes blkdone { 0% { transform: scale(0.97); } 60% { transform: scale(1.015); } 100% { transform: scale(1); } }
+
+  /* ===== logolási flow — forrás-csempék, AI-panel, tétel-kártyák (a fuel-tab prototípusból) ===== */
+  .srctiles { display: flex; gap: 7px; margin: 8px 0 2px; }
+  .srct { flex: 1; border: none; font-family: inherit; cursor: pointer; border-radius: 15px; padding: 10px 6px 9px;
+    display: grid; gap: 3px; justify-items: center; text-align: center;
+    background: linear-gradient(150deg, var(--sw), #FFFDF8 78%);
+    box-shadow: 0 12px 22px -13px var(--sg), 0 1.5px 4px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .srct:active { transform: scale(0.94); }
+  .srct.on { box-shadow: 0 12px 22px -13px var(--sg), inset 0 0 0 1.5px var(--sd); }
+  .srct b { font-size: 10px; color: #2B2118; }
+  .srct small { font-size: 6.5px; font-weight: 700; color: #6E6257; }
+  .aipanel { border-radius: 15px; padding: 10px 11px 11px; margin-top: 8px;
+    background: linear-gradient(150deg, #EBE6F8, #FBFAFE 80%);
+    box-shadow: 0 12px 22px -13px rgba(138, 118, 204, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .aipanel textarea { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 10px; padding: 8px 10px;
+    font-family: inherit; font-size: 10.5px; color: #2B2118; background: #fff; resize: none; box-sizing: border-box; }
+  .aipanel textarea::placeholder { color: #A2958A; }
+  .airow { display: flex; gap: 6px; align-items: center; margin-top: 7px; }
+  .photochip { border: 1px dashed rgba(93, 79, 160, 0.4); background: rgba(255, 255, 255, 0.7); border-radius: 999px;
+    padding: 5px 11px; font-size: 9px; font-weight: 700; color: #5D4FA0; cursor: pointer; font-family: inherit; flex: none; }
+  .photothumb { display: inline-flex; align-items: center; gap: 6px; font-size: 8.5px; color: #5D4FA0; font-weight: 600; }
+  .photothumb i { width: 26px; height: 26px; border-radius: 8px; flex: none;
+    background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.25) 0 5px, transparent 5px 10px), linear-gradient(135deg, #D4CBF0, #8A76CC); }
+  .photothumb button { border: none; background: none; color: #A2958A; cursor: pointer; font-family: inherit; font-size: 10px; padding: 2px 4px; }
+  .aibusy { display: flex; gap: 8px; align-items: center; font-size: 10px; color: #5D4FA0; font-weight: 600; padding: 4px 2px; }
+  .aibusy .tw { width: 9px; height: 9px; border-radius: 50%; background: #8A76CC; animation: aitw 1s ease-in-out infinite; }
+  @keyframes aitw { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.15); } }
+  .lncard { position: relative; border-radius: 15px; padding: 9px 10px 9px 14px; margin-bottom: 8px; overflow: hidden;
+    background: linear-gradient(135deg, var(--lwsh, #fff) 0%, #FFFDF8 62%);
+    box-shadow: 0 10px 22px -14px var(--lg, rgba(43, 33, 24, 0.3)), 0 1.5px 4px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .lncard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--lc); }
+  .lncard.empty { background: none; box-shadow: none; border: 1.2px dashed rgba(43, 33, 24, 0.18); }
+  .lncard.empty::before { display: none; }
+  .lncard .l1 { display: flex; align-items: center; gap: 6px; }
+  .lncard .l1 .nm { font-size: 11px; font-weight: 700; min-width: 0;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .lntag { font-size: 6px; font-weight: 800; letter-spacing: 0.1em; border-radius: 5px; padding: 1.5px 6px; flex: none;
+    background: var(--lw); color: var(--lc); }
+  .lncard .xrm { margin-left: auto; border: none; background: none; color: #A2958A; font-size: 12px; cursor: pointer; padding: 2px 5px; font-family: inherit; flex: none; }
+  .lnq { display: flex; align-items: center; gap: 5px; margin-top: 8px; }
+  .lnq button { width: 24px; height: 24px; border-radius: 8px; border: 1px solid rgba(43, 33, 24, 0.14); background: rgba(255, 255, 255, 0.85);
+    font-size: 12px; color: #6E6257; cursor: pointer; font-family: inherit; padding: 0; flex: none; }
+  .lnq input { width: 44px; text-align: center; border: 1px solid rgba(43, 33, 24, 0.14); border-radius: 8px; padding: 4.5px 2px;
+    font-family: inherit; font-size: 10.5px; font-weight: 700; color: #2B2118; background: rgba(255, 255, 255, 0.9); font-variant-numeric: tabular-nums; }
+  .lnq .um { font-size: 8.5px; font-weight: 700; color: #6E6257; flex: none; }
+  .lnq .lnkcal { margin-left: auto; flex: none; border-radius: 10px; padding: 3.5px 9px 3px; text-align: center;
+    background: rgba(255, 255, 255, 0.88); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 5px rgba(43, 33, 24, 0.06); color: var(--lc); }
+  .lnq .lnkcal b { display: block; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .lnq .lnkcal small { font-size: 5.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+  .lnmac { display: flex; gap: 5px; margin-top: 7px; }
+  .lnmac span { flex: 1; border-radius: 9px; padding: 3px 2px 2px; text-align: center;
+    background: var(--mw); color: var(--md); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .lnmac b { display: block; font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .lnmac small { font-size: 5.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.78; }
+  .lnnote { font-size: 8px; color: #5D4FA0; margin-top: 6px; }
+  .totcard { border-radius: 14px; padding: 9px 11px; margin-top: 9px; background: linear-gradient(135deg, #E9F1E2, #FFFDF8); }
+  .totcard .tname { font-size: 10.5px; font-weight: 700; margin-top: 2px;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .ctxbar { display: flex; height: 6px; border-radius: 4px; overflow: hidden; background: rgba(43, 33, 24, 0.07); margin-top: 6px; }
+  .ctxbar .a { background: rgba(43, 33, 24, 0.22); }
+  .ctxbar .b { background: linear-gradient(90deg, #FF9A78, #E05535); }
+  .mcells { display: flex; gap: 5px; margin-top: 8px; }
+  .mcells span { flex: 1; border-radius: 11px; padding: 5px 2px 4px; text-align: center;
+    background: var(--mw); color: var(--md); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .mcells b { display: block; font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .mcells small { font-size: 6px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.78; }
+  .seg4 { display: flex; gap: 5px; margin: 6px 0 2px; }
+  .seg4 button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 11px; padding: 6px 0; font-size: 9px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .seg4 button.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .shrow { display: flex; gap: 8px; margin-top: 12px; }
+  .shrow .ghost, .shrow .cta { flex: 1; padding: 9px 0; }
+  .cta[disabled] { opacity: 0.45; box-shadow: none; cursor: default; }
+  .p-eyebrow2 { font-size: 7.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; }
+
+  /* ===== sheets ===== */
+  .bsheet-back { position: absolute; inset: 0; z-index: 11; border-radius: 42px; background: rgba(29, 23, 18, 0.35); opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+  .bsheet-back.open { opacity: 1; pointer-events: auto; }
+  .bsheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 12; background: #FDFAF4; border-radius: 26px 26px 34px 34px; padding: 14px 14px 16px;
+    transform: translateY(112%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    box-shadow: 0 -12px 44px rgba(29, 23, 18, 0.3); max-height: 84%; overflow-y: auto; scrollbar-width: none; }
+  .bsheet::-webkit-scrollbar { display: none; }
+  .bsheet.open { transform: none; }
+  .sh-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .sh-title { font-size: 14px; font-weight: 700; margin: 2px 0 6px; }
+  .sfield { display: flex; align-items: center; gap: 7px; background: #fff; border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 999px; padding: 7px 12px; margin-bottom: 9px; box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05); }
+  .sfield input { border: none; outline: none; background: none; font-family: inherit; font-size: 10.5px; color: #2B2118; width: 100%; padding: 0; }
+  .sfield input::placeholder { color: #A2958A; }
+  .chiprow { display: flex; gap: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -14px 10px; padding: 0 14px; }
+  .chiprow::-webkit-scrollbar { display: none; }
+  .fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #6E6257; cursor: pointer; font-family: inherit; flex: none; display: inline-flex; align-items: center; gap: 5px; }
+  .fchip .cdot { width: 7px; height: 7px; border-radius: 50%; background: var(--cc, #A2958A); }
+  .fchip.on { background: color-mix(in srgb, var(--cc, #FF6B4A) 12%, #fff); border-color: var(--cc, #FF6B4A); color: #2B2118; }
+  .novadot { width: 6px; height: 6px; border-radius: 50%; flex: none; display: inline-block; }
+  .novadot.n1 { background: #8FAF7E; }
+  .novadot.n2, .novadot.n3 { background: #C9962E; }
+  .novadot.n4 { background: #A8462E; }
+  /* színes picker-kártyák (a Kamra-oldal kind-wash nyelve) */
+  .pkitem { position: relative; display: flex; align-items: center; gap: 9px; border-radius: 15px; padding: 8px 10px 8px 14px; margin-bottom: 7px; overflow: hidden;
+    border: none; width: 100%; text-align: left; font-family: inherit; cursor: pointer; color: #2B2118;
+    background: linear-gradient(135deg, var(--kw) 0%, #FFFDF8 62%);
+    box-shadow: 0 10px 22px -14px var(--kg), 0 1.5px 4px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .pkitem:active { transform: scale(0.97); }
+  .pkitem::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kr); }
+  .pkitem .nm { font-size: 11px; font-weight: 700; }
+  .pkitem .sb { font-size: 8px; color: #A2958A; display: flex; align-items: center; gap: 4px; margin-top: 1px; }
+  .pkitem .kcell { margin-left: auto; flex: none; border-radius: 10px; padding: 4px 9px 3px; text-align: center;
+    background: rgba(255, 255, 255, 0.88); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 5px rgba(43, 33, 24, 0.06); color: var(--kd); }
+  .pkitem .kcell b { display: block; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .pkitem .kcell small { font-size: 5.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+  .pkitem .addic { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    border: 1.5px solid rgba(43, 33, 24, 0.18); font-size: 12px; color: #6E6257; background: rgba(255, 255, 255, 0.8); }
+  .pkitem.added { opacity: 0.75; }
+  .pkitem.added .addic { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); color: #fff; }
+  .pkitem .star { font-size: 10px; flex: none; }
+  .nohit { text-align: center; font-size: 10.5px; color: #6E6257; padding: 26px 10px; }
+
+  /* mozaik-csempék eyebrow-színei */
+  .p-eyebrow.sage { color: #4E6B42; }
+  .p-eyebrow.coral { color: #A84A26; }
+  .p-eyebrow.gold { color: #A8801F; }
+  .p-eyebrow.lav { color: #5D4FA0; }
+  .p-eyebrow.sky { color: #3E7396; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lbcomposer { transition: none; }
+    .logblk.justdone { animation: none; }
+    .play .logtile .lt-nowdot, .play .logtile .lt-dots i.nw { animation: none; }
+    .bsheet, .bsheet-back { transition: none; }
+    .aibusy .tw { animation: none; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Mezo · Design 2.0 · Fuel</div>
+  <h1>Fuel · Logolás 2.0</h1>
+  <p class="lede">A vízszintes ablak-swimlane helyét a hubon egy <strong>élő Logolás hős-csempe</strong> veszi
+  át, mögötte a <strong>/fuel/log oldal</strong>: minden étkezési ablak <strong>egymás alatt, széles színes
+  blokkban</strong> — és a Logold <strong>helyben nyitja ki</strong> a teljes logolási felületet (Kamra · Recept
+  · ✨ AI), külön oldalra ugrás nélkül. Nincs név-mező: a meal neve a tételekből áll össze magától.</p>
+
+  <div class="stage">
+    <div class="phone"><div class="screen">
+      <div class="isl"></div>
+      <div class="p-status"><span>9:41</span><span>🔋 82%</span></div>
+
+      <div class="p-body">
+        <div class="mrow" style="padding:2px 2px 0;">
+          <div class="grow">
+            <div class="p-eyebrow">Csütörtök · Aug 31.</div>
+            <div style="font-size:16px;font-weight:700;letter-spacing:-0.01em;">Fuel</div>
+          </div>
+          <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+        </div>
+
+        <div class="dp-panel on" id="panel">
+
+          <!-- ===== KERET HERO (változatlan) ===== -->
+          <div class="float3d hero rise" style="--d:0ms;background:linear-gradient(140deg,#E9F1E2,#FFFFFF 70%);">
+            <div class="mrow">
+              <svg width="42" height="42" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>
+              <div class="grow">
+                <div class="mrow" style="gap:6px;align-items:baseline;">
+                  <span class="big" style="font-size:34px;" id="kcalBig">420</span>
+                  <span class="mut" style="font-size:10px;">kcal ma</span>
+                </div>
+              </div>
+            </div>
+            <div class="kbarwrap">
+              <div class="kbar" id="kbar"></div>
+              <i class="kmark" style="left:52%;" aria-hidden="true"></i>
+            </div>
+            <div class="kchips">
+              <span>Alap 1 980</span><span>Mozgás +420</span><span class="goal">Cél −150</span>
+            </div>
+            <div class="frings" id="frings"></div>
+          </div>
+
+          <!-- ===== ÚJ · LOGOLÁS HŐS-CSEMPE (a swimlane helyén) ===== -->
+          <div class="logtile rise" style="--d:70ms;" id="logtile" role="button" tabindex="0" aria-label="Logolás"></div>
+
+          <!-- ===== MEZO-SÁV ===== -->
+          <div class="mezotile rise" style="--d:110ms;" role="button" tabindex="0" aria-label="Mezo Fuel-üzenetek">
+            <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb"/></svg>
+            <div class="txt"><b>Mezo</b> · 2 új Fuel-üzenet ma</div>
+            <span class="dot"></span>
+            <span class="chev">›</span>
+          </div>
+
+          <!-- ===== MOZAIK (kontextus, statikus) ===== -->
+          <div class="mosaic">
+            <div class="tile t-vital rise" style="--d:160ms;"><div class="p-eyebrow">Terv</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-rend"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">Protein 5/7 nap</div></div>
+            <div class="tile t-stack rise" style="--d:200ms;"><div class="p-eyebrow sage">Stack</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-stack"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">4/8 ma · köv. 16:45</div></div>
+            <div class="tile t-kreed rise" style="--d:240ms;"><div class="p-eyebrow coral">Receptek</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-recept"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">24 · 6 csillagos</div></div>
+            <div class="tile t-quest rise" style="--d:280ms;"><div class="p-eyebrow gold">Kamra</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-kamra"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">38 tétel</div></div>
+            <div class="tile t-habe rise" style="--d:320ms;"><div class="p-eyebrow lav">Gyógyszer</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-injekcio"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">D3 · stabil fázis</div></div>
+            <div class="tile t-water rise" style="--d:360ms;"><div class="p-eyebrow sky">Napló</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-naplo"/></svg></div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">AI-átlag 87 · ↗</div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ ÚJ · /fuel/log OLDAL — ablakok egymás alatt ============ -->
+      <div class="page p-coral" id="page-log">
+        <div class="page-head">
+          <button class="backbtn" data-back="page-log">‹ Fuel</button>
+          <span class="mut" style="margin-left:auto;font-size:9px;">ma · 13:30</span>
+        </div>
+        <div class="page-hero" style="padding-bottom:8px;">
+          <div class="p-eyebrow coral" style="letter-spacing:0.2em;">Logolás</div>
+          <div class="mrow" style="gap:7px;align-items:baseline;justify-content:center;">
+            <span class="bignum" id="pgKcal" style="font-size:34px;">420</span>
+            <span class="sb" id="pgGoal">/ 2 250 kcal</span>
+          </div>
+          <div class="sb" id="pgWins">1/5 ablak kész</div>
+        </div>
+        <div class="page-body" id="blkBody" style="padding-top:4px;"></div>
+      </div>
+
+      <div class="bsheet-back" id="sback"></div>
+      <div class="bsheet" id="sh-kpick"></div>
+      <div class="bsheet" id="sh-rpick"></div>
+
+      <div class="tabbar five">
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+        <div class="mtab on"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-emberek"/></svg>Én</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+
+    <aside>
+      <div>
+        <h2>Mi változott — és miért</h2>
+        <ul>
+          <li><strong>Logolás hős-csempe</strong> — a swimlane-t egyetlen élő csempe váltja a hero
+          alatt: a MOST-ablak nevét és terv-ételét mutatja, alatta ablak-pöttysor (zsálya = kész,
+          korall lüktet = MOST, borostyán = pótolható) és egy őszinte állapotsor. Ha minden ablak
+          kész, zsályára vált és ünnepel. Koppintásra nyílik a /fuel/log oldal.</li>
+          <li><strong>/fuel/log — ablakok egymás alatt</strong> — minden étkezési ablak széles,
+          állapot-mosott blokk: kész (zsálya, étel + AI-pont), MOST (korall keret + Logold),
+          kimaradt (szaggatott borostyán, „még pótolható" + Pótold), jövőbeli (terv-javaslat +
+          ghost Logold). Az oldal-hero a mai kcal-t és az ablak-számlálót követi élőben.</li>
+          <li><strong>Helyben nyíló logolás</strong> — a Logold nem visz máshova: a blokk kinyílik,
+          és benne a teljes composer — Kamra · Recept · ✨ AI forrás-csempék, tétel-kártyák
+          gépelhető mennyiséggel, élő összesítő. A slot maga az ablak, ezért slot-váltó csak az
+          „Ablakon kívül" blokkban van. Mentés után a blokk összecsukódik és készre pattan.</li>
+          <li><strong>Nincs név-mező</strong> — a meal neve a tételekből áll össze
+          (deriveMealName), és az összesítő kártya címeként látszik. Egy mezővel kevesebb,
+          nulla veszteség.</li>
+          <li><strong>Színes picker-polcok</strong> — a Kamra-választó kategória-chipeket kapott
+          (színpöttyös szűrők) és a Kamra-oldal kind-wash kártyanyelvét NOVA-ponttal; a
+          Recept-választó ★ csillagos szűrőt és korall wash-kártyákat. Mindkettő keresős,
+          a Kamra multi-add (nyitva marad), a Recept választásra zár.</li>
+        </ul>
+      </div>
+      <p class="note">Egy felület, egy mozdulat: görgetsz a napodon, és ott logolsz, ahol az ablak van —
+      a blokk kinyílik, elmenti, becsukódik. Az ugrálás megszűnt, a szín meg visszajött.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var panel = document.getElementById('panel');
+  void panel.offsetWidth;
+  panel.classList.add('play');
+
+  function huInt(n) {
+    var neg = n < 0 ? '−' : '';
+    return neg + String(Math.abs(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+  function hu1(n) { return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+
+  var T = { kcal: 2250, p: 165, c: 250, f: 70, fiber: 30, water: 3000 };
+  var C = { kcal: 420, p: 32, c: 48, f: 9, fiber: 5, water: 1300 };
+  var WINDOWS = [
+    { slot: 'Reggeli', time: '07:30', icon: 'i-reggeli', state: 'done',
+      meal: { name: 'Skyr-bowl zabbal', kcal: 420, p: 32, c: 48, f: 9, fiber: 5 }, score: 88, loggedTime: '07:30' },
+    { slot: 'Tízórai', time: '10:30', icon: 'i-snack', state: 'missed',
+      plan: { name: 'Sonkás-tojásos szendvics', kcal: 380, p: 26, c: 34, f: 15, fiber: 4 } },
+    { slot: 'Ebéd', time: '13:00', icon: 'i-ebed', state: 'now',
+      plan: { name: 'Csirkés rizs-bowl', kcal: 640, p: 42, c: 68, f: 14, fiber: 6 } },
+    { slot: 'Uzsonna', time: '16:30', icon: 'i-snack', state: 'pending',
+      plan: { name: 'Proteinpalacsinta', kcal: 320, p: 24, c: 38, f: 8, fiber: 3 } },
+    { slot: 'Vacsora', time: '19:00', icon: 'i-vacsora', state: 'pending',
+      plan: { name: 'Lazacos tészta', kcal: 610, p: 38, c: 64, f: 22, fiber: 7 } }
+  ];
+  function doneWins() { return WINDOWS.filter(function (w) { return w.state === 'done'; }); }
+
+  /* ===== hero ===== */
+  var RINGS = [
+    { key: 'p', lbl: 'Fehérje', c: '#E05535', val: function () { return C.p + '/' + T.p + ' g'; }, pct: function () { return Math.round(C.p / T.p * 100); } },
+    { key: 'c', lbl: 'Szénh.', c: '#C9962E', val: function () { return C.c + '/' + T.c + ' g'; }, pct: function () { return Math.round(C.c / T.c * 100); } },
+    { key: 'f', lbl: 'Zsír', c: '#8A76CC', val: function () { return C.f + '/' + T.f + ' g'; }, pct: function () { return Math.round(C.f / T.f * 100); } },
+    { key: 'fiber', lbl: 'Rost', c: '#8FAF7E', val: function () { return C.fiber + '/' + T.fiber + ' g'; }, pct: function () { return Math.round(C.fiber / T.fiber * 100); } },
+    { key: 'water', lbl: 'Víz', c: '#4E8FB8', val: function () { return hu1(C.water / 1000) + '/' + hu1(T.water / 1000) + ' l'; }, pct: function () { return Math.round(C.water / T.water * 100); } }
+  ];
+  function renderRings() {
+    document.getElementById('frings').innerHTML = RINGS.map(function (r) {
+      var pct = Math.min(100, r.pct());
+      return '<div role="progressbar" aria-valuenow="' + r.pct() + '" aria-valuemin="0" aria-valuemax="100" aria-label="' + r.lbl + '">' +
+        '<span class="fring" style="--c:' + r.c + ';--v:' + pct + ';" data-pct="' + r.pct() + '"></span>' +
+        '<small>' + r.lbl + '</small><span class="fv">' + r.val() + '</span></div>';
+    }).join('');
+  }
+  function renderKbar() {
+    document.getElementById('kbar').innerHTML = doneWins().map(function (w, i) {
+      return '<i' + (i % 2 ? ' class="alt"' : '') + ' style="width:' + (w.meal.kcal / T.kcal * 100).toFixed(1) + '%;"></i>';
+    }).join('');
+  }
+  function renderHero() {
+    document.getElementById('kcalBig').textContent = huInt(C.kcal);
+    renderKbar();
+    renderRings();
+  }
+
+  /* ===== ÚJ · Logolás hős-csempe ===== */
+  function renderLogTile() {
+    var el = document.getElementById('logtile');
+    var now = WINDOWS.filter(function (w) { return w.state === 'now'; })[0];
+    var missed = WINDOWS.filter(function (w) { return w.state === 'missed'; });
+    var next = WINDOWS.filter(function (w) { return w.state === 'pending'; })[0];
+    var done = doneWins().length;
+    var allDone = done === WINDOWS.length;
+    el.classList.toggle('alldone', allDone);
+    var eyebrow, big, sub;
+    if (now) {
+      eyebrow = '<span class="lt-nowdot"></span>Logolás · MOST';
+      big = now.slot + ' · ' + now.time;
+      sub = now.plan ? 'a tervből: ' + now.plan.name : 'mit ettél?';
+    } else if (allDone) {
+      eyebrow = 'Logolás';
+      big = 'Minden ablak kész ✓';
+      sub = 'szép nap volt — nézd meg a részleteket';
+    } else if (next) {
+      eyebrow = 'Logolás';
+      big = 'köv. ' + next.slot + ' · ' + next.time;
+      sub = next.plan ? 'a tervből: ' + next.plan.name : 'mit eszel majd?';
+    } else {
+      eyebrow = 'Logolás';
+      big = 'Ablakon kívül';
+      sub = 'logolj bármit, bármikor';
+    }
+    var dots = WINDOWS.map(function (w) {
+      var cls = w.state === 'done' ? ' class="f"' : w.state === 'now' ? ' class="nw"' : w.state === 'missed' ? ' class="ms"' : '';
+      return '<i' + cls + '></i>';
+    }).join('');
+    var dline = done + '/' + WINDOWS.length + ' ablak kész' +
+      (missed.length ? ' · ' + missed.length + ' pótolható' : '');
+    el.innerHTML = '<div class="lt-eyebrow">' + eyebrow + '</div>' +
+      '<div class="lt-main">' +
+      '<svg width="38" height="38" viewBox="0 0 100 100" style="flex:none;"><use href="#' + (now ? now.icon : 'i-fuel') + '"/></svg>' +
+      '<div class="grow"><div class="lt-big">' + big + '</div><div class="lt-sub">' + sub + '</div></div>' +
+      '<span class="lt-chev">›</span></div>' +
+      '<div class="lt-dots">' + dots + '</div>' +
+      '<div class="lt-dline">' + dline + '</div>';
+  }
+  var logtileEl = document.getElementById('logtile');
+  logtileEl.addEventListener('click', openLogPage);
+  logtileEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') openLogPage(); });
+
+  /* ===== oldal nyitás/zárás ===== */
+  function openLogPage() {
+    renderBlocks();
+    renderPageHero();
+    var pg = document.getElementById('page-log');
+    pg.classList.add('open'); pg.classList.remove('play');
+    void pg.offsetWidth; pg.classList.add('play');
+    document.getElementById('blkBody').scrollTop = 0;
+  }
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { document.getElementById(b.getAttribute('data-back')).classList.remove('open'); });
+  });
+
+  function renderPageHero() {
+    document.getElementById('pgKcal').textContent = huInt(C.kcal);
+    document.getElementById('pgGoal').textContent = '/ ' + huInt(T.kcal) + ' kcal';
+    document.getElementById('pgWins').textContent = doneWins().length + '/' + WINDOWS.length + ' ablak kész';
+  }
+
+  /* ===== függőleges blokkok ===== */
+  var OPEN = null;      /* nyitott blokk indexe vagy 'free' */
+  var LOG = null;       /* az épp szerkesztett meal draft */
+
+  var SRCPAL = {
+    kamra: { lc: '#A8801F', lw: 'rgba(201,150,46,0.14)', lwsh: '#F6E7C6', lg: 'rgba(201,150,46,0.4)', tag: 'KAMRA' },
+    recept: { lc: '#A84A26', lw: 'rgba(224,85,53,0.12)', lwsh: '#FFE3D8', lg: 'rgba(224,85,53,0.4)', tag: 'RECEPT' },
+    ai: { lc: '#5D4FA0', lw: 'rgba(138,118,204,0.14)', lwsh: '#EBE6F8', lg: 'rgba(138,118,204,0.4)', tag: 'BECSLÉS' }
+  };
+
+  function ringHtml(l, v, t, c) {
+    var pct = Math.min(100, Math.round(v / t * 100));
+    return '<span class="wring"><i style="--c:' + c + ';--v:' + pct + ';" data-l="' + l + '" role="img" aria-label="' + l + ' ' + v + ' gramm, a napi cél ' + pct + ' százaléka"></i><small>' + v + ' g</small></span>';
+  }
+  function dataCol(m) {
+    return '<div class="lbdata"><div class="lbkcal"><b>' + m.kcal + '</b><small>kcal</small></div>' +
+      '<div class="lbrings">' + ringHtml('P', m.p, T.p, '#E05535') + ringHtml('C', m.c, T.c, '#C9962E') + ringHtml('F', m.f, T.f, '#8A76CC') + '</div></div>';
+  }
+  function scoreChip(w) {
+    if (w.score != null) return '<span class="scorech' + (w.score < 90 ? ' mid' : '') + '">✨ ' + w.score + ' p</span>';
+    return '<span class="scorech pend">✨ folyamatban</span>';
+  }
+
+  function blkHtml(w, i) {
+    var open = OPEN === i;
+    var stamp = w.state === 'done' ? '<span class="wstamp done">KÉSZ ✓</span>'
+      : w.state === 'now' ? '<span class="wstamp now">MOST</span>'
+      : w.state === 'missed' ? '<span class="wstamp miss">KIMARADT</span>' : '';
+    var cls = w.state === 'pending' ? '' : ' ' + w.state;
+    var icon = '<div class="lbicon"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#' + w.icon + '"/></svg></div>';
+    var h = '<div class="logblk' + cls + (open ? ' open' : '') + '" data-i="' + i + '"><div class="lb-in">' +
+      '<div class="lbtop"><time>' + (w.state === 'done' ? (w.loggedTime || w.time) : w.time) + '</time>' +
+      '<span class="lblbl">' + w.slot + '</span>' + stamp + '</div>';
+    if (w.state === 'done') {
+      h += '<div class="lbmain">' + icon +
+        '<div class="lbtxt"><div class="lbname">' + w.meal.name + '</div>' +
+        '<div class="lbmeta" style="margin-top:4px;">' + scoreChip(w) + '</div></div>' +
+        dataCol(w.meal) + '</div>';
+    } else {
+      var meta = w.state === 'missed' ? 'még pótolható' : (w.plan ? 'a tervből' : '');
+      h += '<div class="lbmain">' + icon +
+        '<div class="lbtxt"><div class="lbname' + (w.state === 'missed' ? ' ghosty' : '') + '">' + (w.plan ? w.plan.name : 'Nincs terv-javaslat') + '</div>' +
+        '<div class="lbmeta">' + meta + '</div></div>' +
+        (w.plan ? dataCol(w.plan) : '') + '</div>';
+      h += '<div class="lbcta">' +
+        '<button class="cta" data-open="' + i + '">' + (w.state === 'missed' ? 'Pótold' : 'Logold') + '</button>' +
+        '<button class="ghost" data-openai="' + i + '">✨ AI</button></div>';
+      h += '<div class="lbcomposer"><div class="lbc-in"><div class="lbc-body" id="cmp-' + i + '"></div></div></div>';
+    }
+    h += '</div></div>';
+    return h;
+  }
+
+  function freeBlkHtml() {
+    var open = OPEN === 'free';
+    return '<div class="logblk free' + (open ? ' open' : '') + '" data-i="free"><div class="lb-in">' +
+      '<div class="lbtop"><span class="lblbl">Ablakon kívül</span></div>' +
+      '<div class="lbmain"><div class="lbicon"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-fuel"/></svg></div>' +
+      '<div class="lbtxt"><div class="lbname">Bármikor-logolás</div><div class="lbmeta">snack, kávé, ami épp jött</div></div></div>' +
+      '<div class="lbcta"><button class="cta" data-open="free">＋ Logolás</button>' +
+      '<button class="ghost" data-openai="free">✨ AI</button></div>' +
+      '<div class="lbcomposer"><div class="lbc-in"><div class="lbc-body" id="cmp-free"></div></div></div>' +
+      '</div></div>';
+  }
+
+  function renderBlocks() {
+    var body = document.getElementById('blkBody');
+    body.innerHTML = WINDOWS.map(blkHtml).join('') + freeBlkHtml();
+    body.querySelectorAll('[data-open]').forEach(function (b) {
+      b.addEventListener('click', function () { openComposer(b.getAttribute('data-open'), false); });
+    });
+    body.querySelectorAll('[data-openai]').forEach(function (b) {
+      b.addEventListener('click', function () { openComposer(b.getAttribute('data-openai'), true); });
+    });
+    if (OPEN != null) renderComposer();
+  }
+
+  /* ===== composer (helyben) ===== */
+  function keyOf(v) { return v === 'free' ? 'free' : +v; }
+  function openComposer(key, aiOpen) {
+    key = keyOf(key);
+    OPEN = key;
+    var w = key === 'free' ? null : WINDOWS[key];
+    LOG = {
+      w: w, slot: 'Snack', lines: [],
+      ai: { open: !!aiOpen, text: '', photo: false, busy: false }
+    };
+    if (w && w.plan && !aiOpen) {
+      LOG.lines.push({ src: 'recept', name: w.plan.name, amount: 1, unit: 'adag',
+        per: { kcal: w.plan.kcal, p: w.plan.p, c: w.plan.c, f: w.plan.f, fiber: w.plan.fiber || 0 } });
+    }
+    renderBlocks();
+    /* a kinyílt blokk kerüljön képbe */
+    /* csak a telefon belső listája gördül, a külső dokumentum nem */
+    var blk = document.querySelector('.logblk[data-i="' + key + '"]');
+    if (blk) setTimeout(function () {
+      var body = document.getElementById('blkBody');
+      body.scrollTo({ top: Math.max(0, blk.offsetTop - body.offsetTop - 6), behavior: 'smooth' });
+    }, 240);
+  }
+  function closeComposer() { OPEN = null; LOG = null; renderBlocks(); }
+
+  function lineContrib(l) {
+    var k = l.unit === 'adag' ? l.amount : l.amount / 100;
+    return { kcal: Math.round(l.per.kcal * k), p: Math.round(l.per.p * k),
+      c: Math.round(l.per.c * k), f: Math.round(l.per.f * k), fiber: Math.round((l.per.fiber || 0) * k) };
+  }
+  function logTotals() {
+    var t = { kcal: 0, p: 0, c: 0, f: 0, fiber: 0 };
+    LOG.lines.forEach(function (l) {
+      var c = lineContrib(l);
+      t.kcal += c.kcal; t.p += c.p; t.c += c.c; t.f += c.f; t.fiber += c.fiber;
+    });
+    return t;
+  }
+  function derivedName() {
+    var r = LOG.lines.filter(function (l) { return l.src === 'recept'; })[0];
+    if (r) return r.name;
+    var j = LOG.lines.map(function (l) { return l.name; }).join(', ');
+    return j.length > 64 ? j.slice(0, 63) + '…' : j;
+  }
+
+  function macCells(c, i) {
+    return '<div class="lnmac" data-mac="' + i + '">' +
+      '<span style="--mw:rgba(255,227,216,0.85);--md:#A84A26;"><b>' + c.p + ' g</b><small>feh.</small></span>' +
+      '<span style="--mw:rgba(246,231,198,0.85);--md:#A8801F;"><b>' + c.c + ' g</b><small>szénh.</small></span>' +
+      '<span style="--mw:rgba(235,230,248,0.85);--md:#5D4FA0;"><b>' + c.f + ' g</b><small>zsír</small></span></div>';
+  }
+  function lineCard(l, i) {
+    var pal = SRCPAL[l.src];
+    var c = lineContrib(l);
+    return '<div class="lncard" style="--lc:' + pal.lc + ';--lw:' + pal.lw + ';--lwsh:' + pal.lwsh + ';--lg:' + pal.lg + ';">' +
+      '<div class="l1"><span class="nm">' + l.name + '</span><span class="lntag">' + pal.tag + '</span>' +
+      '<button class="xrm" data-rm="' + i + '" aria-label="' + l.name + ' eltávolítása">✕</button></div>' +
+      '<div class="lnq">' +
+      '<button data-st="' + i + '" data-d="-1" aria-label="Csökkentés">−</button>' +
+      '<input type="text" inputmode="numeric" value="' + l.amount + '" data-amt="' + i + '" aria-label="' + l.name + ' mennyisége">' +
+      '<button data-st="' + i + '" data-d="1" aria-label="Növelés">＋</button>' +
+      '<span class="um">' + l.unit + '</span>' +
+      '<span class="lnkcal"><b data-kc="' + i + '">' + c.kcal + '</b><small>kcal</small></span></div>' +
+      macCells(c, i) +
+      (l.review ? '<div class="lnnote">✨ Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.</div>' : '') +
+      '</div>';
+  }
+
+  function renderTotals(root) {
+    var t = logTotals();
+    var el = root.querySelector('[data-tot]');
+    if (!el) return;
+    var after = C.kcal + t.kcal;
+    var nm = derivedName();
+    el.innerHTML = '<div class="mrow"><div class="p-eyebrow2" style="color:#4E6B42;">Ez az étkezés</div>' +
+      '<span class="mut" style="margin-left:auto;font-size:8px;">' + LOG.lines.length + ' tétel</span></div>' +
+      (nm ? '<div class="tname">' + nm + '</div>' : '') +
+      '<div class="mcells" style="margin-top:7px;">' +
+      '<span style="--mw:#E4EEDD;--md:#4E6B42;"><b>' + t.kcal + '</b><small>kcal</small></span>' +
+      '<span style="--mw:#FFE3D8;--md:#A84A26;"><b>' + t.p + ' g</b><small>fehérje</small></span>' +
+      '<span style="--mw:#F6E7C6;--md:#A8801F;"><b>' + t.c + ' g</b><small>szénh.</small></span>' +
+      '<span style="--mw:#EBE6F8;--md:#5D4FA0;"><b>' + t.f + ' g</b><small>zsír</small></span></div>' +
+      '<div class="mut" style="font-size:8.5px;margin-top:7px;">Mai nap eddig <b>' + huInt(C.kcal) + '</b> +' + t.kcal +
+      ' = <b>' + huInt(after) + '</b> · cél <b>' + huInt(T.kcal) + '</b> kcal</div>' +
+      '<div class="ctxbar"><i class="a" style="width:' + Math.min(100, C.kcal / T.kcal * 100).toFixed(0) + '%;"></i>' +
+      '<i class="b" style="width:' + Math.min(100 - Math.min(100, C.kcal / T.kcal * 100), t.kcal / T.kcal * 100).toFixed(0) + '%;"></i></div>';
+    var save = root.querySelector('[data-save]');
+    if (save) save.disabled = LOG.lines.length === 0;
+  }
+
+  function renderComposer() {
+    var root = document.getElementById('cmp-' + OPEN);
+    if (!root || !LOG) return;
+    var ai = LOG.ai;
+    var aiHtml = '';
+    if (ai.busy) {
+      aiHtml = '<div class="aipanel"><div class="aibusy"><span class="tw"></span>Elemzem az étkezést…</div></div>';
+    } else if (ai.open) {
+      aiHtml = '<div class="aipanel">' +
+        '<textarea rows="2" data-aitext aria-label="Mit ettél?" placeholder="pl. csirkés wrap és egy latte…">' + ai.text + '</textarea>' +
+        '<div class="airow">' +
+        (ai.photo
+          ? '<span class="photothumb"><i></i>étel-fotó.jpg<button data-aiphrm aria-label="Fotó eltávolítása">✕</button></span>'
+          : '<button class="photochip" data-aiph>📷 Fotó</button>') +
+        '<button class="cta" data-aigo style="margin-left:auto;padding:6px 16px;"' + (ai.text || ai.photo ? '' : ' disabled') + '>✨ Elemzés</button>' +
+        '</div>' +
+        '<div class="mut" style="font-size:7.5px;margin-top:6px;">Szöveg vagy fotó — vagy mindkettő. A felismert sorok a tételek közé kerülnek.</div></div>';
+    }
+    var slotSeg = OPEN === 'free'
+      ? '<div class="p-eyebrow2" style="padding:0 2px 2px;">Mikor</div>' +
+        '<div class="seg4" data-seg>' + ['Reggeli', 'Ebéd', 'Vacsora', 'Snack'].map(function (x) {
+          return '<button' + (x === LOG.slot ? ' class="on"' : '') + '>' + x + '</button>';
+        }).join('') + '</div>'
+      : '';
+    root.innerHTML = slotSeg +
+      '<div class="p-eyebrow2" style="padding:2px 2px 0;">Honnan adod hozzá?</div>' +
+      '<div class="srctiles">' +
+      '<button class="srct" data-srck style="--sw:#F6E7C6;--sd:#C9962E;--sg:rgba(201,150,46,0.45);">' +
+      '<svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-kamra"/></svg><b>Kamra</b><small>polcról, grammra</small></button>' +
+      '<button class="srct" data-srcr style="--sw:#FFE3D8;--sd:#E05535;--sg:rgba(224,85,53,0.45);">' +
+      '<svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-recept"/></svg><b>Recept</b><small>adagra</small></button>' +
+      '<button class="srct' + (ai.open || ai.busy ? ' on' : '') + '" data-srca style="--sw:#EBE6F8;--sd:#8A76CC;--sg:rgba(138,118,204,0.45);">' +
+      '<svg width="26" height="26" viewBox="0 0 100 100"><use href="#s-orb"/></svg><b>✨ AI</b><small>fotó vagy szöveg</small></button>' +
+      '</div>' + aiHtml +
+      '<div class="p-eyebrow2" style="padding:10px 2px 5px;">Tételek · ' + LOG.lines.length + '</div>' +
+      (LOG.lines.length
+        ? LOG.lines.map(lineCard).join('')
+        : '<div class="lncard empty">' +
+          '<div class="mut" style="font-size:9px;">Még nincs tétel — válassz forrást fent, vagy kombináld őket.</div></div>') +
+      '<div class="totcard" data-tot></div>' +
+      '<div class="shrow" style="margin-top:10px;"><button class="ghost" data-cancel>Mégse</button>' +
+      '<button class="cta" data-save>✓ Logolás · +10 XP</button></div>';
+    renderTotals(root);
+
+    /* — bekötések — */
+    var seg = root.querySelector('[data-seg]');
+    if (seg) seg.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        LOG.slot = b.textContent;
+        seg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+      });
+    });
+    root.querySelector('[data-srck]').addEventListener('click', openKpick);
+    root.querySelector('[data-srcr]').addEventListener('click', openRpick);
+    root.querySelector('[data-srca]').addEventListener('click', function () {
+      LOG.ai.open = !LOG.ai.open;
+      renderComposer();
+    });
+    if (ai.open && !ai.busy) {
+      root.querySelector('[data-aitext]').addEventListener('input', function (e) {
+        LOG.ai.text = e.target.value;
+        root.querySelector('[data-aigo]').disabled = !(LOG.ai.text || LOG.ai.photo);
+      });
+      var ph = root.querySelector('[data-aiph]');
+      if (ph) ph.addEventListener('click', function () { LOG.ai.photo = true; renderComposer(); });
+      var phr = root.querySelector('[data-aiphrm]');
+      if (phr) phr.addEventListener('click', function () { LOG.ai.photo = false; renderComposer(); });
+      root.querySelector('[data-aigo]').addEventListener('click', function () {
+        LOG.ai.busy = true; LOG.ai.open = false;
+        renderComposer();
+        setTimeout(function () {
+          LOG.lines.push(
+            { src: 'ai', name: 'Csirkés wrap', amount: 320, unit: 'g', per: { kcal: 172, p: 11, c: 16, f: 6 }, review: true },
+            { src: 'ai', name: 'Latte', amount: 250, unit: 'ml', per: { kcal: 54, p: 3, c: 5, f: 2 } }
+          );
+          LOG.ai.busy = false; LOG.ai.text = ''; LOG.ai.photo = false;
+          renderComposer();
+        }, 1100);
+      });
+    }
+    root.querySelectorAll('[data-rm]').forEach(function (b) {
+      b.addEventListener('click', function () { LOG.lines.splice(+b.getAttribute('data-rm'), 1); renderComposer(); });
+    });
+    root.querySelectorAll('[data-st]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var l = LOG.lines[+b.getAttribute('data-st')];
+        var step = l.unit === 'adag' ? 1 : 10;
+        l.amount = Math.max(1, l.amount + step * (+b.getAttribute('data-d')));
+        renderComposer();
+      });
+    });
+    root.querySelectorAll('[data-amt]').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var l = LOG.lines[+inp.getAttribute('data-amt')];
+        var v = parseInt(inp.value.replace(',', '.'), 10);
+        if (isFinite(v) && v > 0) l.amount = v;
+        var c = lineContrib(l);
+        var mac = root.querySelector('[data-mac="' + inp.getAttribute('data-amt') + '"]');
+        if (mac) mac.outerHTML = macCells(c, +inp.getAttribute('data-amt'));
+        var kc = root.querySelector('[data-kc="' + inp.getAttribute('data-amt') + '"]');
+        if (kc) kc.textContent = c.kcal;
+        renderTotals(root);
+      });
+      inp.addEventListener('blur', function () {
+        var l = LOG.lines[+inp.getAttribute('data-amt')];
+        if (l) inp.value = l.amount;
+      });
+    });
+    root.querySelector('[data-cancel]').addEventListener('click', closeComposer);
+    root.querySelector('[data-save]').addEventListener('click', function () {
+      if (!LOG.lines.length) return;
+      var t = logTotals();
+      C.kcal += t.kcal; C.p += t.p; C.c += t.c; C.f += t.f; C.fiber += t.fiber;
+      var w = LOG.w;
+      var savedKey = OPEN;
+      if (w) {
+        w.state = 'done';
+        w.meal = { name: derivedName(), kcal: t.kcal, p: t.p, c: t.c, f: t.f, fiber: t.fiber };
+        w.score = null; w.loggedTime = '13:30';
+      }
+      OPEN = null; LOG = null;
+      renderBlocks();
+      renderPageHero();
+      renderHero();
+      renderLogTile();
+      var blk = document.querySelector('.logblk[data-i="' + savedKey + '"]');
+      if (blk) { blk.classList.add('justdone'); setTimeout(function () { blk.classList.remove('justdone'); }, 600); }
+    });
+  }
+
+  /* ===== sheet infra ===== */
+  var sback = document.getElementById('sback');
+  var openSheetEl = null;
+  function openSheet(el) { openSheetEl = el; el.classList.add('open'); sback.classList.add('open'); }
+  function closeSheet() {
+    if (openSheetEl) openSheetEl.classList.remove('open');
+    openSheetEl = null;
+    sback.classList.remove('open');
+  }
+  sback.addEventListener('click', closeSheet);
+
+  /* ===== Kamra-picker — kategória-chipek + kind-wash kártyák ===== */
+  var KCATS = {
+    tej: { n: 'Tejtermék', cc: '#4E8FB8', kw: '#DFEDF5', kr: '#4E8FB8', kd: '#33749C', kg: 'rgba(78,143,184,0.4)' },
+    hus: { n: 'Hús-hal', cc: '#E05535', kw: '#FFE3D8', kr: '#E05535', kd: '#A84A26', kg: 'rgba(224,85,53,0.4)' },
+    gabona: { n: 'Gabona', cc: '#C9962E', kw: '#F6E7C6', kr: '#C9962E', kd: '#A8801F', kg: 'rgba(201,150,46,0.4)' },
+    zoldseg: { n: 'Zöldség-gyümölcs', cc: '#8FAF7E', kw: '#E9F1E2', kr: '#8FAF7E', kd: '#4E6B42', kg: 'rgba(143,175,126,0.4)' }
+  };
+  var PICK_K = [
+    { n: 'Skyr', b: 'Pilos', cat: 'tej', nova: 1, per: { kcal: 63, p: 9, c: 4, f: 0 } },
+    { n: 'Zabpehely', b: 'Alnatura', cat: 'gabona', nova: 1, per: { kcal: 372, p: 13, c: 58, f: 7 } },
+    { n: 'Csirkemell', b: '', cat: 'hus', nova: 1, per: { kcal: 105, p: 23, c: 0, f: 2 } },
+    { n: 'Basmati rizs', b: '', cat: 'gabona', nova: 1, per: { kcal: 350, p: 7, c: 78, f: 1 } },
+    { n: 'Tonhalkonzerv', b: 'Rio Mare', cat: 'hus', nova: 3, per: { kcal: 116, p: 26, c: 0, f: 1 } },
+    { n: 'Teljes kiőrlésű wrap', b: 'Santa Maria', cat: 'gabona', nova: 3, per: { kcal: 290, p: 9, c: 45, f: 7 } },
+    { n: 'Áfonya', b: '', cat: 'zoldseg', nova: 1, per: { kcal: 57, p: 1, c: 15, f: 0 } },
+    { n: 'Görög joghurt', b: 'Milbona', cat: 'tej', nova: 1, per: { kcal: 97, p: 9, c: 4, f: 5 } }
+  ];
+  var shK = document.getElementById('sh-kpick');
+  function openKpick() {
+    var kcat = 'mind';
+    function rows(q) {
+      var hits = PICK_K.filter(function (it) {
+        if (kcat !== 'mind' && it.cat !== kcat) return false;
+        return !q || (it.n + ' ' + it.b).toLowerCase().indexOf(q) >= 0;
+      });
+      if (!hits.length) return '<div class="nohit">Nincs találat ebben a kategóriában.</div>';
+      return hits.map(function (it) {
+        var c = KCATS[it.cat];
+        var added = LOG.lines.some(function (l) { return l.src === 'kamra' && l.name === it.n; });
+        return '<button class="pkitem' + (added ? ' added' : '') + '" data-kn="' + it.n + '" style="--kw:' + c.kw + ';--kr:' + c.kr + ';--kd:' + c.kd + ';--kg:' + c.kg + ';">' +
+          '<div><div class="nm">' + it.n + '</div>' +
+          '<div class="sb">' + (it.b ? it.b + ' · ' : '') + '<span class="novadot n' + it.nova + '"></span> NOVA ' + it.nova + ' · /100 g</div></div>' +
+          '<span class="kcell"><b>' + it.per.kcal + '</b><small>kcal</small></span>' +
+          '<span class="addic">' + (added ? '✓' : '＋') + '</span></button>';
+      }).join('');
+    }
+    function chips() {
+      var h = '<button class="fchip' + (kcat === 'mind' ? ' on' : '') + '" data-kc="mind" style="--cc:#6E6257;">Mind</button>';
+      Object.keys(KCATS).forEach(function (k) {
+        h += '<button class="fchip' + (kcat === k ? ' on' : '') + '" data-kc="' + k + '" style="--cc:' + KCATS[k].cc + ';"><span class="cdot"></span>' + KCATS[k].n + '</button>';
+      });
+      return h;
+    }
+    shK.innerHTML = '<div class="sh-eyebrow">Kamra · hozzáadás</div><div class="sh-title">Válassz a polcról</div>' +
+      '<div class="sfield" style="margin-top:6px;"><input type="text" id="kpQ" aria-label="Keresés a kamrában" placeholder="Keress a Kamrában…"></div>' +
+      '<div class="chiprow" id="kpChips">' + chips() + '</div>' +
+      '<div id="kpRows">' + rows('') + '</div>' +
+      '<div class="shrow"><button class="ghost" id="kpDone" style="flex:1;">Kész</button></div>';
+    function rerender() {
+      document.getElementById('kpChips').innerHTML = chips();
+      document.getElementById('kpRows').innerHTML = rows(document.getElementById('kpQ').value.trim().toLowerCase());
+      wire();
+    }
+    function wire() {
+      shK.querySelectorAll('[data-kc]').forEach(function (b) {
+        b.addEventListener('click', function () { kcat = b.getAttribute('data-kc'); rerender(); });
+      });
+      shK.querySelectorAll('.pkitem').forEach(function (r) {
+        r.addEventListener('click', function () {
+          if (r.classList.contains('added')) return;
+          var it = PICK_K.filter(function (x) { return x.n === r.getAttribute('data-kn'); })[0];
+          LOG.lines.push({ src: 'kamra', name: it.n, amount: 100, unit: 'g', per: it.per });
+          renderComposer();
+          rerender();
+        });
+      });
+    }
+    document.getElementById('kpQ').addEventListener('input', rerender);
+    document.getElementById('kpDone').addEventListener('click', closeSheet);
+    wire();
+    shK.scrollTop = 0;
+    openSheet(shK);
+  }
+
+  /* ===== Recept-picker — ★ szűrő + korall wash-kártyák ===== */
+  var PICK_R = [
+    { n: 'Csirkés rizs-bowl', cat: 'EBÉD', star: true, ing: 6, per: { kcal: 640, p: 42, c: 68, f: 14, fiber: 6 } },
+    { n: 'Skyr-bowl zabbal', cat: 'REGGELI', star: true, ing: 4, per: { kcal: 420, p: 32, c: 52, f: 9, fiber: 5 } },
+    { n: 'Proteinpalacsinta', cat: 'REGGELI', star: false, ing: 5, per: { kcal: 320, p: 24, c: 38, f: 8, fiber: 3 } },
+    { n: 'Lazacos tészta', cat: 'VACSORA', star: false, ing: 7, per: { kcal: 610, p: 38, c: 64, f: 22, fiber: 7 } },
+    { n: 'Tonhalas wrap', cat: 'EBÉD', star: true, ing: 5, per: { kcal: 590, p: 42, c: 55, f: 18, fiber: 4 } }
+  ];
+  var shR = document.getElementById('sh-rpick');
+  function openRpick() {
+    var onlyStar = false;
+    function rows(q) {
+      var hits = PICK_R.filter(function (it) {
+        if (onlyStar && !it.star) return false;
+        return !q || it.n.toLowerCase().indexOf(q) >= 0;
+      });
+      if (!hits.length) return '<div class="nohit">Nincs ilyen recept.</div>';
+      return hits.map(function (it) {
+        return '<button class="pkitem" data-rn="' + it.n + '" style="--kw:#FFE3D8;--kr:#E05535;--kd:#A84A26;--kg:rgba(224,85,53,0.4);">' +
+          '<div><div class="nm">' + it.n + (it.star ? ' <span class="star">★</span>' : '') + '</div>' +
+          '<div class="sb">' + it.cat + ' · ' + it.ing + ' hozzávaló · /adag</div></div>' +
+          '<span class="kcell"><b>' + it.per.kcal + '</b><small>kcal</small></span>' +
+          '<span class="addic">＋</span></button>';
+      }).join('');
+    }
+    shR.innerHTML = '<div class="sh-eyebrow">Recept · hozzáadás</div><div class="sh-title">Válassz receptet</div>' +
+      '<div class="sfield" style="margin-top:6px;"><input type="text" id="rpQ" aria-label="Keresés a receptek között" placeholder="Keress receptet…"></div>' +
+      '<div class="chiprow"><button class="fchip" id="rpStar" style="--cc:#C9962E;">★ csillagos</button></div>' +
+      '<div id="rpRows">' + rows('') + '</div>';
+    function rerender() {
+      document.getElementById('rpRows').innerHTML = rows(document.getElementById('rpQ').value.trim().toLowerCase());
+      wire();
+    }
+    function wire() {
+      shR.querySelectorAll('.pkitem').forEach(function (r) {
+        r.addEventListener('click', function () {
+          var it = PICK_R.filter(function (x) { return x.n === r.getAttribute('data-rn'); })[0];
+          LOG.lines.push({ src: 'recept', name: it.n, amount: 1, unit: 'adag', per: it.per });
+          renderComposer();
+          closeSheet();
+        });
+      });
+    }
+    document.getElementById('rpQ').addEventListener('input', rerender);
+    document.getElementById('rpStar').addEventListener('click', function () {
+      onlyStar = !onlyStar;
+      document.getElementById('rpStar').classList.toggle('on', onlyStar);
+      rerender();
+    });
+    wire();
+    shR.scrollTop = 0;
+    openSheet(shR);
+  }
+
+  /* ===== init ===== */
+  renderHero();
+  renderLogTile();
+})();
+</script>

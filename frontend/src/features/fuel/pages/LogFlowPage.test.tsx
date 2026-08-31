@@ -132,15 +132,15 @@ test('the ± steppers move a pantry line by 10 g and a recipe line by 1 adag', a
   expect(screen.getByRole('textbox', { name: `${recipe.name} mennyisége` })).toHaveValue('2')
 })
 
-test('the derived-until-touched name follows the lines until the user types', async () => {
+test('the derived meal name follows the lines — no name field, the totals card carries it (mezo-byo1)', async () => {
   const recipe = renderHook(() => useRecipes(), { wrapper }).result.current.recipes[0]
   renderPage()
+  // No editable name input anywhere any more.
+  expect(screen.queryByRole('textbox', { name: 'Étkezés neve' })).not.toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Recept · hozzáadás' }))
   await userEvent.click(screen.getByRole('button', { name: `${recipe.name} hozzáadása` }))
-  expect(screen.getByRole('textbox', { name: 'Étkezés neve' })).toHaveValue(recipe.name)
-  await userEvent.clear(screen.getByRole('textbox', { name: 'Étkezés neve' }))
-  await userEvent.type(screen.getByRole('textbox', { name: 'Étkezés neve' }), 'Saját név')
-  expect(screen.getByRole('textbox', { name: 'Étkezés neve' })).toHaveValue('Saját név')
+  // The derived name shows on the totals card (in addition to the line card itself).
+  expect(screen.getAllByText(recipe.name).length).toBeGreaterThanOrEqual(2)
 })
 
 test('the AI panel: Elemzés is disabled with neither text nor photo, enabled with either', async () => {

@@ -27,6 +27,7 @@ import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEdito
 import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
+import { FuelLogPage } from '@/features/fuel/pages/FuelLogPage'
 import { FuelMezoPage } from '@/features/fuel/pages/FuelMezoPage'
 import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
@@ -156,6 +157,8 @@ export const routes: RouteObject[] = [
       // current faces until their own F3 slices land) — the same idiom the Mezo
       // (mezo-d20.5.1) and Én (mezo-d20.6.1) tabs took.
       { path: 'fuel', element: <FuelMaiPage /> },
+      // The hub's Logolás hero tile → the stacked-window logging page (mezo-byo1).
+      { path: 'fuel/log', element: <FuelLogPage /> },
       // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
       { path: 'fuel/uzenetek', element: <FuelMezoPage /> },
       { path: 'fuel/plan', element: <FuelPlanPage /> },
