@@ -23,7 +23,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { ClayIcon } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
 import { affectColor } from '@/data/me/people'
-import { contextBreakdown, trendHeights } from '@/features/me/logic/peopleDerive'
+import { contextBreakdown, trendAxisLabels, trendHeights } from '@/features/me/logic/peopleDerive'
 import { TONE_META, CTX_META, SRC_META } from '@/features/me/logic/peopleVisuals'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
@@ -77,6 +77,7 @@ export function PersonDetailPage() {
   const ringPct = Math.max(0, Math.min(100, Math.round((last / 5) * 100)))
   const toneMeta = TONE_META[person.affect_baseline] as (typeof TONE_META)[keyof typeof TONE_META] | undefined
   const trend = trendHeights(person.affectTrend, TREND_MAX_PX)
+  const axisLabels = trendAxisLabels(person.affectTrend, new Date())
   const ctxSlices = contextBreakdown(personMentions)
   const timeline = personMentions.slice(0, TIMELINE_MAX)
   const hasTonelessRow = timeline.some((m) => !m.tone)
@@ -116,20 +117,26 @@ export function PersonDetailPage() {
 
           <div className="ppl-trendcard rise">
             <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-rose-ink)' }}>Hangulat-ív</span>
-            {trend.length > 0 ? (
-              <div className="ppl-affbars">
-                {trend.map((h, i) => (
-                  <i
-                    key={i}
-                    style={{
-                      height: `${h}px`,
-                      background: color,
-                      opacity: 0.4 + i * 0.08,
-                      '--d': `${200 + i * 50}ms`,
-                    } as CSSProperties}
-                  />
-                ))}
-              </div>
+            {trend.length > 0 && axisLabels ? (
+              <>
+                <div className="ppl-affbars">
+                  {trend.map((h, i) => (
+                    <i
+                      key={i}
+                      style={{
+                        height: `${h}px`,
+                        background: color,
+                        opacity: 0.4 + i * 0.08,
+                        '--d': `${200 + i * 50}ms`,
+                      } as CSSProperties}
+                    />
+                  ))}
+                </div>
+                <div className="ppl-affax">
+                  <span>{axisLabels[0]}</span>
+                  <span>{axisLabels[1]}</span>
+                </div>
+              </>
             ) : (
               <p className="ppl-empty" style={{ marginTop: 9 }}>— nincs elég adat a hangulat-ívhez</p>
             )}

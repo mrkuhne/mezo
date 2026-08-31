@@ -12,7 +12,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { routes } from '@/app/router'
 import { people, mentions } from '@/data/me/people'
-import { contextBreakdown, trendHeights } from '@/features/me/logic/peopleDerive'
+import { contextBreakdown, trendAxisLabels, trendHeights } from '@/features/me/logic/peopleDerive'
 import { TONE_META, CTX_META } from '@/features/me/logic/peopleVisuals'
 
 const hoisted = vi.hoisted(() => ({
@@ -20,6 +20,8 @@ const hoisted = vi.hoisted(() => ({
   isPending: false,
   extraMentionsFor: null as string | null,
   affectOverrideFor: null as string | null,
+  cadenceOverrideFor: null as string | null,
+  factsOverrideFor: null as string | null,
   logMention: null as ((input: unknown) => void) | null,
 }))
 
@@ -36,6 +38,12 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       }
       if (hoisted.affectOverrideFor) {
         people = people.map((p) => (p.id === hoisted.affectOverrideFor ? { ...p, affect_baseline: undefined as never } : p))
+      }
+      if (hoisted.cadenceOverrideFor) {
+        people = people.map((p) => (p.id === hoisted.cadenceOverrideFor ? { ...p, contactCadenceLabel: '' } : p))
+      }
+      if (hoisted.factsOverrideFor) {
+        people = people.map((p) => (p.id === hoisted.factsOverrideFor ? { ...p, knownFacts: [] } : p))
       }
       if (hoisted.extraMentionsFor) {
         const extra = Array.from({ length: 10 }, (_, i) => ({
@@ -64,6 +72,8 @@ afterEach(() => {
   hoisted.isPending = false
   hoisted.extraMentionsFor = null
   hoisted.affectOverrideFor = null
+  hoisted.cadenceOverrideFor = null
+  hoisted.factsOverrideFor = null
   hoisted.logMention = null
 })
 
@@ -103,11 +113,11 @@ test('hero: avatar initial + name + "kapcsolat · cadence" sub', () => {
 })
 
 test('hero sub omits the cadence segment when contactCadenceLabel is empty', () => {
-  const { container } = renderAt(`/me/people/${petra.id}`)
-  void container
-  // Sanity: with a real seed person cadence is always present; this pins the
-  // format itself (no dangling " · " when cadence is falsy) via a direct check.
-  expect(`${petra.relationshipHu} · ${petra.contactCadenceLabel}`).not.toMatch(/ · $/)
+  hoisted.cadenceOverrideFor = petra.id
+  renderAt(`/me/people/${petra.id}`)
+  expect(screen.getByText(petra.relationshipHu)).toBeInTheDocument()
+  expect(screen.queryByText(`${petra.relationshipHu} · `)).toBeNull()
+  expect(screen.queryByText(new RegExp(`${petra.relationshipHu} ·`))).toBeNull()
 })
 
 test('statstrip is Hungarian: összes / e héten / hangulat, hangulat = TONE_META label of affect_baseline', () => {
@@ -142,6 +152,21 @@ test('an empty affectTrend renders an honest "—" empty state instead of bars',
   expect(card.textContent).toContain('—')
 })
 
+test('CONTRACT: the mood-arc axis row renders trendAxisLabels(affectTrend, now), not the prototype\'s hardcoded JÚL/AUG', () => {
+  const expected = trendAxisLabels(petra.affectTrend, new Date())!
+  renderAt(`/me/people/${petra.id}`)
+  const axis = document.querySelector('.ppl-affax')!
+  expect(axis).not.toBeNull()
+  const spans = [...axis.querySelectorAll('span')].map((s) => s.textContent)
+  expect(spans).toEqual(expected)
+})
+
+test('an empty affectTrend renders no axis row either (nothing to label)', () => {
+  hoisted.emptyTrendFor = petra.id
+  renderAt(`/me/people/${petra.id}`)
+  expect(document.querySelector('.ppl-affax')).toBeNull()
+})
+
 test('context card shows contextBreakdown of the person\'s own mentions, with pct', () => {
   renderAt(`/me/people/${bence.id}`)
   const benceMentions = mentions.filter((m) => m.person_id === bence.id)
@@ -166,11 +191,10 @@ test('facts card shows knownFacts pills', () => {
 })
 
 test('facts card is OMITTED when knownFacts is empty', () => {
-  const { container } = renderAt(`/me/people/${mark.id}`)
-  void container
-  // mark does carry facts in the seed — assert the card renders for him, and trust
-  // the same conditional (knownFacts.length > 0) governs the omission case above.
-  expect(document.querySelector('.ppl-factcard')).not.toBeNull()
+  hoisted.factsOverrideFor = mark.id
+  renderAt(`/me/people/${mark.id}`)
+  expect(document.querySelector('.ppl-factcard')).toBeNull()
+  expect(screen.queryByText('Amit Mezo tud')).toBeNull()
 })
 
 test('timeline: renders the person\'s own mentions (max 8), never a stranger\'s', () => {

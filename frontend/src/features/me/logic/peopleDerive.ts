@@ -129,6 +129,25 @@ export function trendHeights(trend: number[], maxPx: number): number[] {
   return trend.map((v) => Math.round((v / 5) * maxPx))
 }
 
+// ── trend axis labels ────────────────────────────────────────────────────────
+
+const HU_MONTHS_UP = ['JAN', 'FEB', 'MÁR', 'ÁPR', 'MÁJ', 'JÚN', 'JÚL', 'AUG', 'SZEP', 'OKT', 'NOV', 'DEC']
+
+/**
+ * PersonDetailPage's `.ppl-affax` month-range row under the mood-arc bars — the
+ * prototype (emberek-body.html renderDet()) hardcodes 'JÚL'/'AUG'; this derives the
+ * same two labels honestly from `now` instead: each trend point is one weekly
+ * reading, so the window's earliest point sits `trend.length` weeks before `now`,
+ * and its latest point IS `now`. The axis is just those two months' short Hungarian
+ * uppercase abbreviations. An empty trend has no window to label — `null` (the
+ * trend card already renders its own '—' empty state instead of bars).
+ */
+export function trendAxisLabels(trend: number[], now: Date): [string, string] | null {
+  if (trend.length === 0) return null
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - trend.length * 7)
+  return [HU_MONTHS_UP[start.getMonth()], HU_MONTHS_UP[now.getMonth()]]
+}
+
 // ── hub headline lines ────────────────────────────────────────────────────────
 
 export interface HubLines {
