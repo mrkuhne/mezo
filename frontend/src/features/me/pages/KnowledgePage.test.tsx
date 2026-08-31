@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
@@ -13,6 +13,15 @@ afterEach(() => vi.unstubAllEnvs())
 const renderPage = () =>
   render(
     <MemoryRouter>
+      <KnowledgePage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
+
+// helper: render with an initial URL
+const renderAt = (url: string) =>
+  render(
+    <MemoryRouter initialEntries={[url]}>
       <KnowledgePage />
     </MemoryRouter>,
     { wrapper: QueryWrapper },
@@ -56,23 +65,49 @@ test('a Tudástárra mutató link ott van az összegző sáv alatt', () => {
   expect(link).toHaveAttribute('href', '/mezo/knowledge')
 })
 
-test('renders the Kapcsolatok section grouped by kind with strongest-edge lines', () => {
-  renderPage()
-  expect(screen.getByText(/Kapcsolatok/)).toBeInTheDocument()
-  expect(screen.getByText('Minták · 1')).toBeInTheDocument()
-  expect(screen.getByText('Késői evés rontja az alvást')).toBeInTheDocument()
-  expect(screen.getByText('Késői evés → kiváltja → Rossz alvás · erős')).toBeInTheDocument()
+test('the base view is the kind grid — six tiles, counts, no node cards', () => {
+  const { container } = renderPage()
+  expect(container.querySelector('.tud-summary')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Minták' })).toHaveTextContent('1')
+  expect(screen.getByText('Szezonok')).toBeInTheDocument() // empty kind still present
+  // the flat card list is gone
+  expect(container.querySelectorAll('[data-graph-node-card]')).toHaveLength(0)
+  expect(screen.queryByText('Késői evés → kiváltja → Rossz alvás · erős')).not.toBeInTheDocument()
 })
 
-test('archiving a graph node removes it from the Kapcsolatok section (mock mode)', async () => {
+test('tapping a kind tile opens the category view and sets ?kind=', async () => {
   renderPage()
-  // Scope to the Kapcsolatok node card (not the separate profile card, which also has an
-  // "Archivál" button) so this only exercises the "Kapcsolatok" archive path.
-  const card = screen.getByText('Késői evés rontja az alvást').closest('[data-graph-node-card]')
-  const { getByRole } = within(card as HTMLElement)
-  fireEvent.click(getByRole('button', { name: 'Archivál' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Minták' }))
+  expect(await screen.findByText('Minták · 1')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Késői evés rontja az alvást/ })).toBeInTheDocument()
+  expect(screen.getByText('2 kapcsolat')).toBeInTheDocument()
+  // grid + profile are replaced in this view
+  expect(screen.queryByRole('button', { name: 'Célok' })).not.toBeInTheDocument()
+  expect(screen.queryByText('Rólad tanultam')).not.toBeInTheDocument()
+})
+
+test('?kind= deep link lands in the category view; invalid kind falls back to the grid', () => {
+  renderAt('/?kind=PATTERN')
+  expect(screen.getByText('Minták · 1')).toBeInTheDocument()
+  cleanup()
+  renderAt('/?kind=NOPE')
+  expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
+})
+
+test('back chip returns to the grid', async () => {
+  renderAt('/?kind=PATTERN')
+  fireEvent.click(screen.getByRole('button', { name: '‹ Kategóriák' }))
+  expect(await screen.findByRole('button', { name: 'Minták' })).toBeInTheDocument()
+})
+
+test('node row opens the detail sheet; Archivál archives and the node disappears', async () => {
+  renderAt('/?kind=PATTERN')
+  fireEvent.click(screen.getByRole('button', { name: /^Késői evés rontja az alvást/ }))
+  // sheet content: edge lines now live HERE, not in the row
+  expect(await screen.findByText('Késői evés → kiváltja → Rossz alvás · erős')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Archivál' }))
   await waitFor(() =>
-    expect(screen.queryByText('Késői evés rontja az alvást')).not.toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: /^Késői evés rontja az alvást/ })).not.toBeInTheDocument())
 })
 
 test('lifts the profile node out of the Kapcsolatok groups into its own section', async () => {
@@ -81,17 +116,4 @@ test('lifts the profile node out of the Kapcsolatok groups into its own section'
   expect(await screen.findByText('Rólad tanultam')).toBeInTheDocument()
   // exactly once: it must not ALSO appear under the "Belátások" group
   expect(screen.getAllByText('Rólad tanultam')).toHaveLength(1)
-})
-
-// Mozaik re-face (mezo-d20.6.7): the summary tile + node/profile tiles wear the
-// Tudástár .mz-facttile recipe, per-kind washed (mezo-d20.5.5's shared vocabulary).
-test('the summary band and node tiles wear the Mozaik wash tiles', () => {
-  const { container } = renderPage()
-  expect(container.querySelector('.tud-summary')).toBeInTheDocument()
-  // the seeded PATTERN node ("Késői evés rontja az alvást") washes sage
-  const patternTile = screen.getByText('Késői evés rontja az alvást').closest('[data-graph-node-card]')
-  expect(patternTile).toHaveClass('mz-w-sage')
-  // the profile node reuses the same tile primitive, uncolored
-  const profileTile = screen.getByText('Rólad tanultam').closest('[data-profile-node-card]')
-  expect(profileTile).toHaveClass('mz-facttile')
 })

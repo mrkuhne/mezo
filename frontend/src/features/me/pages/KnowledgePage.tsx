@@ -16,25 +16,45 @@
 //
 // The Tudástár boundary (mezo-0ap9) is untouched: facts live on Mezo →
 // Tudástár, this page owns only how they CONNECT.
+//
+// mezo-2243: overview-first switch. The old page listed every graph node in
+// one flat, per-kind-grouped card list, which grew linearly with node count
+// and scrolled forever. This page now shows a constant-height KindTileGrid
+// (one tile per kind, spec §1) as its base view; tapping a tile drills into a
+// KindNodeList (compact rows, spec §2) driven by `?kind=`, and tapping a row
+// opens a NodeDetailSheet (summary + edges + archive, spec §3) for that node.
+// The view switch is pure derived state off the URL/selection — no local
+// list mutation to keep in sync.
 // ============================================================
-import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useKnowledge, useKnowledgeGraphActions, useKnowledgeGraphNodes } from '@/data/hooks'
 import { GRAPH_KIND_GROUPS, PROFILE_SOURCE_KIND } from '@/data/insights/graph'
-import { KIND_INK } from '@/features/me/logic/knowledgeNodeVisuals'
-import { CategoryHeader } from '@/features/me/components/CategoryHeader'
-import { KnowledgeGraphNodeCard } from '@/features/me/components/KnowledgeGraphNodeCard'
 import { ProfileNodeCard } from '@/features/me/components/ProfileNodeCard'
+import { KindTileGrid } from '@/features/me/components/KindTileGrid'
+import { KindNodeList } from '@/features/me/components/KindNodeList'
+import { NodeDetailSheet } from '@/features/me/sheets/NodeDetailSheet'
+import type { GraphNodeKind } from '@/data/types'
+
+const KIND_LABELS = new Map(GRAPH_KIND_GROUPS)
 
 export function KnowledgePage() {
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
   const { facts, edges, activeCount } = useKnowledge()
   const { nodes } = useKnowledgeGraphNodes()
   const { archive } = useKnowledgeGraphActions()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
   const profileNode = nodes.find(n => n.sourceKind === PROFILE_SOURCE_KIND) ?? null
   const graphNodes = nodes.filter(n => n.sourceKind !== PROFILE_SOURCE_KIND)
+
+  const rawKind = params.get('kind')
+  const kind = rawKind && KIND_LABELS.has(rawKind as GraphNodeKind) ? (rawKind as GraphNodeKind) : null
+  const selected = selectedId ? graphNodes.find(n => n.id === selectedId) ?? null : null
 
   return (
     <MozaikPage tone="lav">
@@ -48,7 +68,7 @@ export function KnowledgePage() {
       />
 
       <PageBody>
-        <EntranceGroup>
+        <EntranceGroup key={kind ?? 'grid'}>
           {/* The prototype's summary tile: the active/stabilised split as prose plus the
               Tudástár pointer. The fact and edge counts themselves belong to the hero above —
               stating them twice on one screen is what the old .pghead-np face did. */}
@@ -61,43 +81,36 @@ export function KnowledgePage() {
             </Link>
           </div>
 
-          {/* Pragmatic profile (W4.3, mezo-b3pp.17) — the card itself carries the "Rólad tanultam"
-              title, so the section eyebrow uses a distinct label to avoid rendering it twice. */}
-          {profileNode && (
+          {kind === null ? (
             <>
-              <div className="tud-lsec rise" style={{ '--d': '40ms' } as React.CSSProperties}>
-                <Eyebrow>Profil</Eyebrow>
-              </div>
-              <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
-                <ProfileNodeCard node={profileNode} onArchive={() => archive(profileNode.id)} />
-              </div>
-            </>
-          )}
+              {/* Pragmatic profile (W4.3, mezo-b3pp.17) — the card itself carries the "Rólad
+                  tanultam" title, so the section eyebrow uses a distinct label to avoid
+                  rendering it twice. */}
+              {profileNode && (
+                <>
+                  <div className="tud-lsec rise" style={{ '--d': '40ms' } as React.CSSProperties}>
+                    <Eyebrow>Profil</Eyebrow>
+                  </div>
+                  <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+                    <ProfileNodeCard node={profileNode} onArchive={() => archive(profileNode.id)} />
+                  </div>
+                </>
+              )}
 
-          {/* Graph connections (W2.6, mezo-b3pp.11) */}
-          {graphNodes.length > 0 && (
-            <>
-              <div className="tud-lsec rise" style={{ '--d': '90ms' } as React.CSSProperties}>
-                <Eyebrow>Kapcsolatok</Eyebrow>
-                <span className="tud-cnt">{graphNodes.length}</span>
-              </div>
-              <div className="col gap-md">
-                {GRAPH_KIND_GROUPS.map(([kind, label], gi) => {
-                  const items = graphNodes.filter(n => n.kind === kind)
-                  if (items.length === 0) return null
-                  return (
-                    <div key={kind} className="rise" style={{ '--d': `${110 + gi * 30}ms` } as React.CSSProperties}>
-                      <CategoryHeader label={label} color={KIND_INK[kind]} count={items.length} />
-                      <div className="col gap-xs">
-                        {items.map(n => (
-                          <KnowledgeGraphNodeCard key={n.id} node={n} onArchive={() => archive(n.id)} />
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="rise" style={{ '--d': '90ms' } as React.CSSProperties}>
+                <KindTileGrid nodes={graphNodes} onOpenKind={k => setParams({ kind: k })} />
               </div>
             </>
+          ) : (
+            <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+              <KindNodeList
+                kind={kind}
+                label={KIND_LABELS.get(kind)!}
+                nodes={graphNodes.filter(n => n.kind === kind)}
+                onBack={() => setParams({})}
+                onOpenNode={n => setSelectedId(n.id)}
+              />
+            </div>
           )}
 
           <p className="ntf-foot rise" style={{ '--d': '210ms' } as React.CSSProperties}>
@@ -105,6 +118,14 @@ export function KnowledgePage() {
           </p>
         </EntranceGroup>
       </PageBody>
+
+      {selected && (
+        <NodeDetailSheet
+          node={selected}
+          onArchive={() => archive(selected.id)}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
     </MozaikPage>
   )
 }
