@@ -1,13 +1,17 @@
 package io.mrkuhne.mezo.feature.character.controller;
 
 import io.mrkuhne.mezo.api.controller.CharacterApi;
+import io.mrkuhne.mezo.api.dto.CharacterClaimDto;
+import io.mrkuhne.mezo.api.dto.CharacterClaimFeedbackRequest;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceResponse;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceSummary;
 import io.mrkuhne.mezo.api.dto.CharacterDimensionResponse;
 import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
+import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.service.CharacterBootstrapService;
+import io.mrkuhne.mezo.feature.character.service.CharacterFeedbackService;
 import io.mrkuhne.mezo.feature.character.service.CharacterService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -41,6 +45,7 @@ public class CharacterController implements CharacterApi {
      * a silent 200.
      */
     private final ObjectProvider<CharacterBootstrapService> characterBootstrapService;
+    private final CharacterFeedbackService characterFeedbackService;
     private final CurrentUserId currentUserId;
 
     /**
@@ -91,5 +96,18 @@ public class CharacterController implements CharacterApi {
     @Override
     public CharacterConferenceResponse getCharacterConference(UUID conferenceId) {
         return characterService.conference(currentUserId.get(), conferenceId);
+    }
+
+    /**
+     * {@link CharacterFeedbackService} is gated on {@code CHARACTER_SWITCH} alone (no LLM in this
+     * path, mezo-1gim.10) — same switch as this controller itself — so unlike
+     * {@link #bootstrapCharacter()} there is no companion-off degradation to handle here; the bean
+     * is always present whenever this controller is.
+     */
+    @Override
+    public CharacterClaimDto submitCharacterClaimFeedback(UUID claimId, CharacterClaimFeedbackRequest request) {
+        CharacterClaimEntity claim = characterFeedbackService.apply(currentUserId.get(), claimId,
+                request.getKind().getValue(), request.getText());
+        return characterService.toClaimDto(claim);
     }
 }
