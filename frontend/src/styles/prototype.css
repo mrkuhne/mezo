@@ -5958,6 +5958,14 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 }
 .fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: fh-lt-nowpulse 2.6s ease-in-out 1.2s infinite; }
 
+/* the tile's own wrapper (mezo-1j3z) — the button stays the sole `.fh-logtile` root;
+   the hub-csali past-day chip sits below it, a sibling, never a nested button. */
+.fh-logtile-wrap { display: block; }
+.fh-lt-pastwrap { display: block; margin-top: 9px; }
+.fh-lt-past { border: none; font-family: inherit; cursor: pointer; display: inline-flex; gap: 5px;
+  align-items: center; min-height: 44px; font-size: 9.5px; font-weight: 700; color: var(--mz-cell-amber-ink);
+  background: var(--mz-cell-amber-bg); border-radius: 999px; padding: 5px 12px; }
+
 .fh-wstamp { margin-left: auto; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
   border-radius: 6px; padding: 2px 6px; flex: none; }
 .fh-st-now { background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }

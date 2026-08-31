@@ -16,6 +16,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
 
 // The mock demo day (fixed now 13:30) is a PARTIAL day (mezo-1oy5): breakfast + lunch
 // logged, the midday/evening windows open. To page-test the missed→Pótold CTA, the
@@ -223,6 +224,36 @@ test('an empty day names the gap on the tile instead of fabricating windows', ()
   const tile = container.querySelector('.fh-logtile') as HTMLElement
   expect(within(tile).getByText('nincs mai terv — tervezz és logolj')).toBeInTheDocument()
   expect(tile.querySelector('.fh-lt-dots')).toBeNull()
+})
+
+test('hub-csali: tegnapi pótolható ablakok chipje dátummal + darabszámmal, ?d=-re navigál', async () => {
+  // The mocked useFuelTimeline returns the SAME crafted plan for every date, so
+  // yesterday's past-normalized lane also carries 1 done + 1 now + 1 pending
+  // → 2 missed once the now/future tiles flip to 'missed'.
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20 },
+    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
+  ]
+  const yesterday = addDays(localDateString(), -1)
+  const dateLabel = `${huMonthDay(yesterday).toLowerCase()}.`
+  const { container } = renderView()
+  const chip = screen.getByRole('button', { name: /pótolható/ })
+  expect(chip.textContent).toContain(dateLabel)
+  expect(chip.textContent).toContain('2 ablak pótolható')
+  // The chip is a sibling of `.fh-logtile`, never nested inside it (no nested buttons).
+  expect(container.querySelector('.fh-logtile')?.contains(chip)).toBe(false)
+  await userEvent.click(chip)
+  expect(screen.getByTestId('loc').textContent).toBe(`/fuel/log?d=${yesterday}`)
+})
+
+test('hub-csali: ha tegnap minden ablak done, nincs chip', () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
+  ]
+  renderView()
+  expect(screen.queryByRole('button', { name: /pótolható/ })).toBeNull()
 })
 
 // ── Mezo counter banner ──────────────────────────────────────────────────────

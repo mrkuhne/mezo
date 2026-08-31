@@ -18,9 +18,11 @@ import type { WindowLaneVM } from '@/features/fuel/logic/fuelSwimlane'
 export interface FuelLogHeroTileProps {
   vm: WindowLaneVM
   onOpen: () => void
+  /** Tegnapi pótolható ablakok csali-chipje; null/undefined = nincs chip. */
+  pastHint?: { dateLabel: string; count: number; onOpen: () => void } | null
 }
 
-export function FuelLogHeroTile({ vm, onOpen }: FuelLogHeroTileProps) {
+export function FuelLogHeroTile({ vm, onOpen, pastHint }: FuelLogHeroTileProps) {
   const tiles = vm.tiles
   const now = tiles.find(t => t.state === 'now')
   const next = tiles.find(t => t.state === 'future')
@@ -48,34 +50,45 @@ export function FuelLogHeroTile({ vm, onOpen }: FuelLogHeroTileProps) {
   }
 
   return (
-    <button type="button" className={`fh-logtile${allDone ? ' is-alldone' : ''}`}
-      onClick={onOpen} aria-label="Logolás">
-      <span className="fh-lt-eyebrow">
-        {now && <i className="fh-lt-nowdot" aria-hidden="true" />}
-        {now ? 'Logolás · MOST' : 'Logolás'}
-      </span>
-      <span className="fh-lt-main">
-        <ClayIcon name={now?.icon ?? next?.icon ?? 'i-fuel'} size={45} />
-        <span className="fh-lt-txt">
-          <span className="fh-lt-big">{big}</span>
-          <span className="fh-lt-sub">{sub}</span>
+    <div className="fh-logtile-wrap">
+      <button type="button" className={`fh-logtile${allDone ? ' is-alldone' : ''}`}
+        onClick={onOpen} aria-label="Logolás">
+        <span className="fh-lt-eyebrow">
+          {now && <i className="fh-lt-nowdot" aria-hidden="true" />}
+          {now ? 'Logolás · MOST' : 'Logolás'}
         </span>
-        <span className="fh-lt-chev" aria-hidden="true">›</span>
-      </span>
-      {tiles.length > 0 && (
-        <>
-          <span className="fh-lt-dots" aria-hidden="true">
-            {tiles.map(t => (
-              <i key={t.key} className={
-                t.state === 'done' ? 'is-f' : t.state === 'now' ? 'is-nw' : t.state === 'missed' ? 'is-ms' : ''
-              } />
-            ))}
+        <span className="fh-lt-main">
+          <ClayIcon name={now?.icon ?? next?.icon ?? 'i-fuel'} size={45} />
+          <span className="fh-lt-txt">
+            <span className="fh-lt-big">{big}</span>
+            <span className="fh-lt-sub">{sub}</span>
           </span>
-          <span className="fh-lt-dline">
-            {done}/{tiles.length} ablak kész{missed > 0 ? ` · ${missed} pótolható` : ''}
-          </span>
-        </>
+          <span className="fh-lt-chev" aria-hidden="true">›</span>
+        </span>
+        {tiles.length > 0 && (
+          <>
+            <span className="fh-lt-dots" aria-hidden="true">
+              {tiles.map(t => (
+                <i key={t.key} className={
+                  t.state === 'done' ? 'is-f' : t.state === 'now' ? 'is-nw' : t.state === 'missed' ? 'is-ms' : ''
+                } />
+              ))}
+            </span>
+            <span className="fh-lt-dline">
+              {done}/{tiles.length} ablak kész{missed > 0 ? ` · ${missed} pótolható` : ''}
+            </span>
+          </>
+        )}
+      </button>
+      {pastHint && (
+        <span className="fh-lt-pastwrap">
+          <button type="button" className="fh-lt-past"
+            aria-label={`Pótlás · ${pastHint.dateLabel} · ${pastHint.count} ablak pótolható`}
+            onClick={e => { e.stopPropagation(); pastHint.onOpen() }}>
+            ↺ {pastHint.dateLabel} · {pastHint.count} ablak pótolható
+          </button>
+        </span>
       )}
-    </button>
+    </div>
   )
 }

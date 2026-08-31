@@ -36,10 +36,11 @@ import {
 } from '@/data/hooks'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { buildKeretHero, aiAverage } from '@/features/fuel/logic/keretHero'
-import { buildWindowLane } from '@/features/fuel/logic/fuelSwimlane'
+import { buildWindowLane, asPastDayLane } from '@/features/fuel/logic/fuelSwimlane'
 import { fuelMezoMessages } from '@/features/fuel/logic/fuelMezoMessages'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
 import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
+import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -72,6 +73,14 @@ export function FuelMaiPage() {
 
   // ── the Logolás hero tile's VM (the /fuel/log page reads the same lane) ─
   const lane = buildWindowLane({ slots: plan.slots, budget, meals: fuel.meals })
+
+  // ── hub-csali chip: tegnap pótolható ablakok (mezo-1j3z) — past-normalized lane,
+  // ONE live door into `/fuel/log?d=<tegnap>`; hides itself when nothing is missed.
+  const yesterday = addDays(localDateString(), -1)
+  const { fuel: fuelY } = useFuelDay(yesterday)
+  const { plan: planY, budget: budgetY } = useFuelTimeline(yesterday)
+  const laneY = asPastDayLane(buildWindowLane({ slots: planY.slots, budget: budgetY, meals: fuelY.meals }))
+  const yMissed = laneY.tiles.filter(t => t.state === 'missed').length
 
   // ── Mezo banner: the counter only, never the voice (iterations §2) ─────
   const scenario = useTodayScenario()
@@ -131,7 +140,12 @@ export function FuelMaiPage() {
         {/* The window swimlane dissolved (mezo-byo1): the whole day's logging lives on
             /fuel/log, and the hub carries ONE live door to it — the Logolás hero tile. */}
         <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties}>
-          <FuelLogHeroTile vm={lane} onOpen={() => navigate('/fuel/log')} />
+          <FuelLogHeroTile vm={lane} onOpen={() => navigate('/fuel/log')}
+            pastHint={yMissed > 0 ? {
+              dateLabel: `${huMonthDay(yesterday).toLowerCase()}.`,
+              count: yMissed,
+              onOpen: () => navigate(`/fuel/log?d=${yesterday}`),
+            } : null} />
         </div>
 
         {/* The companion voice left the hero: the banner carries only the counter, the
