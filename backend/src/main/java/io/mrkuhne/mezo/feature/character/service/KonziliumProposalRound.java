@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,6 +67,25 @@ public class KonziliumProposalRound {
             .map(CharacterCoreCatalog.CoreDimension::key)
             .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
+    /**
+     * CORE dimension key -> owning expert key (mezo-1gim.10), reused rather than re-derived, so a
+     * user-feedback observation naming a CORE dimension routes to exactly the same expert
+     * {@link CharacterCoreCatalog} already says owns it.
+     */
+    private static final Map<String, String> CORE_DIMENSION_TO_EXPERT = CharacterCoreCatalog.CORE.stream()
+            .collect(java.util.stream.Collectors.toUnmodifiableMap(
+                    CharacterCoreCatalog.CoreDimension::key, CharacterCoreCatalog.CoreDimension::expertKey));
+
+    /** A user-feedback observation naming a CHAPTER dimension (or an unknown/missing dimension
+     *  key) routes here — the cross-cutting behaviour expert, mirroring {@code CharacterHistoryReads}'
+     *  own fallback for its unmatched pattern/fact routing. */
+    private static final String USER_FEEDBACK_FALLBACK_EXPERT = "drill";
+
+    /** Prefix a routed user-feedback observation's evidence line gets (Karakter S6 spec §6,
+     *  mezo-1gim.10) — makes its authorship unmistakable so the expert cannot mistake Daniel's own
+     *  words for a detector signal. */
+    static final String USER_FEEDBACK_PREFIX = "DANIEL VÁLASZA — ";
+
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
     private final CompanionLlm companionLlm;
@@ -86,7 +106,9 @@ public class KonziliumProposalRound {
     public Result run(UUID owner, LocalDate weekStart, List<CharacterObservationEntity> weekObservations) {
         Map<String, List<CharacterObservationEntity>> byExpert = new LinkedHashMap<>();
         for (CharacterObservationEntity observation : weekObservations) {
-            byExpert.computeIfAbsent(observation.getExpertKey(), k -> new ArrayList<>()).add(observation);
+            for (String expertKey : routeToExperts(observation)) {
+                byExpert.computeIfAbsent(expertKey, k -> new ArrayList<>()).add(observation);
+            }
         }
 
         List<ExpertEvidence> evidence = new ArrayList<>();
@@ -94,7 +116,10 @@ public class KonziliumProposalRound {
             List<String> lines = new ArrayList<>();
             List<String> refIds = new ArrayList<>();
             for (CharacterObservationEntity observation : entry.getValue()) {
-                lines.add(observation.getDay() + " (súly " + observation.getSalience() + "): " + observation.getText());
+                String text = CharacterFeedbackService.USER_EXPERT_KEY.equals(observation.getExpertKey())
+                        ? USER_FEEDBACK_PREFIX + observation.getText()
+                        : observation.getText();
+                lines.add(observation.getDay() + " (súly " + observation.getSalience() + "): " + text);
                 refIds.add(observation.getId().toString());
             }
             evidence.add(new ExpertEvidence(entry.getKey(), lines, refIds));
@@ -232,6 +257,36 @@ public class KonziliumProposalRound {
         return new ExpertOutcome(expertProposals, turn);
     }
 
+    /**
+     * Routes one observation to the expert(s) whose evidence it should join (Karakter S6 spec §6,
+     * mezo-1gim.10, fixing the bug where {@code expertKey = "user"} had no matching
+     * {@link CharacterExpertCatalog} persona and so was silently skipped every week). A normal
+     * expert-authored observation stays with its own {@code expertKey} — the nightly pass already
+     * picked the right persona, nothing to route. A user-feedback observation (
+     * {@link CharacterFeedbackService#USER_EXPERT_KEY}) has no persona of its own, so it is routed
+     * by the dimension(s) it names instead: a CORE dimension key routes to that dimension's owning
+     * expert ({@link #CORE_DIMENSION_TO_EXPERT}); a CHAPTER dimension key or an unknown/missing
+     * dimension key falls back to {@link #USER_FEEDBACK_FALLBACK_EXPERT} — the same fallback shape
+     * {@link CharacterHistoryReads} uses for its own unmatched pattern/fact routing. One
+     * observation naming two dimensions can join two experts' evidence (a {@link Set} — never
+     * doubles up the same observation into the same expert's evidence twice).
+     */
+    private static Set<String> routeToExperts(CharacterObservationEntity observation) {
+        if (!CharacterFeedbackService.USER_EXPERT_KEY.equals(observation.getExpertKey())) {
+            return Set.of(observation.getExpertKey());
+        }
+        List<String> dimensionKeys = observation.getDimensionKeys() == null
+                ? List.of() : observation.getDimensionKeys().keys();
+        if (dimensionKeys.isEmpty()) {
+            return Set.of(USER_FEEDBACK_FALLBACK_EXPERT);
+        }
+        Set<String> experts = new LinkedHashSet<>();
+        for (String dimensionKey : dimensionKeys) {
+            experts.add(CORE_DIMENSION_TO_EXPERT.getOrDefault(dimensionKey, USER_FEEDBACK_FALLBACK_EXPERT));
+        }
+        return experts;
+    }
+
     private static Set<String> knownDimensionKeys(List<CharacterDimensionEntity> ownerDimensions) {
         Set<String> keys = new HashSet<>(CORE_DIMENSION_KEYS);
         for (CharacterDimensionEntity dimension : ownerDimensions) {
@@ -310,7 +365,10 @@ public class KonziliumProposalRound {
                 felsorolt aktív állítások egyikének claimId-ja kötelező. Minden javaslatot KIZÁRÓLAG \
                 a felsorolt megfigyelésekre alapozz — ne találj ki számot vagy tényt. Jelöld \
                 sensitive=true-val az önértékelési, elutasítás-mintázati vagy gyógyszerciklus \
-                jellegű állításokat.""";
+                jellegű állításokat. A "DANIEL VÁLASZA —" jelöléssel kezdődő sorok Daniel saját \
+                válaszai — ezek FELÜLÍRJÁK az érzékelt jeleket; egy "nem igaz" cáfolatot vagy \
+                pontosítást kötelező kezelni (RETIRE/DOWN javaslattal, vagy azt felváltó NEW \
+                javaslattal), sosem szabad figyelmen kívül hagyni.""";
     }
 
     /**
