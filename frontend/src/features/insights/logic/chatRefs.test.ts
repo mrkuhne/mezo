@@ -18,6 +18,13 @@ describe('chatRefDisplay (mezo-d20.5.2)', () => {
     expect(chatRefDisplay({ kind: 'Widget', id: 'x-1' }).kind).toBe('Widget')
   })
 
+  test('maps the full backend ref-kind vocabulary (mezo-vdf4)', () => {
+    expect(chatRefDisplay({ kind: 'Weight', id: 'x-1' }).kind).toBe('Súly')
+    expect(chatRefDisplay({ kind: 'FuelDay', id: 'x-1' }).kind).toBe('Fuel nap')
+    expect(chatRefDisplay({ kind: 'TrainingPlan', id: 'x-1' }).kind).toBe('Edzésterv')
+    expect(chatRefDisplay({ kind: 'Memory', id: 'x-1' }).kind).toBe('Emlék')
+  })
+
   test('derives a human date label when the id carries an ISO date', () => {
     expect(chatRefDisplay({ kind: 'Workout', id: 'w-2026-05-21' }).label).toBe('máj. 21.')
     expect(chatRefDisplay({ kind: 'Sleep', id: '2026-07-02' }).label).toBe('júl. 2.')
