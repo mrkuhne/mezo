@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.repository;
 
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,4 +18,8 @@ public interface ExerciseFeedbackRepository extends JpaRepository<ExerciseFeedba
         UUID createdBy, UUID workoutSessionId, UUID exerciseId);
 
     List<ExerciseFeedbackEntity> findByCreatedByAndWorkoutSessionId(UUID createdBy, UUID workoutSessionId);
+
+    /** Batch feedback lookup across many instances — {@code CharacterSignalReads}' gym-day read. */
+    List<ExerciseFeedbackEntity> findByCreatedByAndWorkoutSessionIdIn(
+        UUID createdBy, Collection<UUID> workoutSessionIds);
 }

@@ -17,7 +17,18 @@ class DetectorTest {
     private DetectorInput input(Set<LocalDate> mealDates, Map<LocalDate, Integer> checkins,
                                 List<DetectorInput.WeightPoint> weights,
                                 Map<LocalDate, List<String>> journal) {
-        return new DetectorInput(DAY, mealDates, checkins, weights, journal);
+        return input(mealDates, checkins, weights, journal, List.of(), List.of(), List.of(), List.of(),
+                null, new DetectorInput.TrendWindow(List.of(), List.of()));
+    }
+
+    /** Full-control builder for the round-1 detectors; existing helper delegates here. */
+    private DetectorInput input(Set<LocalDate> mealDates, Map<LocalDate, Integer> checkins,
+            List<DetectorInput.WeightPoint> weights, Map<LocalDate, List<String>> journal,
+            List<DetectorInput.GymDay> gymDays, List<DetectorInput.SportPoint> sport,
+            List<DetectorInput.RunPoint> runs, List<DetectorInput.SleepPoint> sleep,
+            DetectorInput.MesoContext meso, DetectorInput.TrendWindow trend) {
+        return new DetectorInput(DAY, mealDates, checkins, weights, journal,
+                gymDays, sport, runs, sleep, meso, trend);
     }
 
     @Test
