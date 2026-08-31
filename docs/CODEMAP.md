@@ -611,14 +611,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     NotificationsPage.tsx, PeoplePage.tsx, RoutineEditorPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx,
     WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
-    DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonDetailSheet.tsx,
-    PersonEditSheet.tsx, PersonLogSheet.tsx, SettingsSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx,
-    SleepStatsSheet.tsx, WeightLogSheet.tsx
+    DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, NodeDetailSheet.tsx,
+    PersonDetailSheet.tsx, PersonEditSheet.tsx, PersonLogSheet.tsx, SettingsSheet.tsx, SleepGoalSheet.tsx,
+    SleepLogSheet.tsx, SleepStatsSheet.tsx, WeightLogSheet.tsx
   - **components:** AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
     AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx, AiUsageHero.tsx, BadgesCard.tsx, CategoryHeader.tsx,
     DayNavTiles.tsx, DetailStat.tsx, FieldRow.tsx, GoalGate.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx,
-    GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthJournalCard.tsx, KnowledgeGraphNodeCard.tsx,
-    MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx,
+    GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthJournalCard.tsx, KindNodeList.tsx,
+    KindTileGrid.tsx, MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx,
     NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx, PersonCard.tsx, PhaseAverageCard.tsx,
     PhaseRail.tsx, PhaseReferenceRow.tsx, ProfileNodeCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx,
     RoutinesTab.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx,
