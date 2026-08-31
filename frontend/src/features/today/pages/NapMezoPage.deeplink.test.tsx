@@ -1,4 +1,5 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -7,6 +8,16 @@ import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { addDays, localDateString } from '@/shared/lib/dates'
+
+// jsdom implements no scrollIntoView at all — install a spy so the mount-centring call (and,
+// crucially, whether it re-fires) is observable (DayStrip.test.tsx precedent).
+function stubScrollIntoView() {
+  const spy = vi.fn()
+  Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+    configurable: true, writable: true, value: spy,
+  })
+  return spy
+}
 
 // The intervention-push deeplink (mezo-b3pp.36): the push carries `?n=<card uuid>&d=<the
 // card's OWN generation day>`. For a card deferred across midnight `d` is the day BEFORE the
@@ -28,6 +39,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   vi.unstubAllEnvs()
+  Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView')
 })
 
 const TODAY = localDateString()
@@ -124,4 +136,64 @@ test('ignores a deeplink whose card is not in that day\'s feed — no crash, no 
   expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
   expect(screen.queryByText(/Tegnapi napzáró/)).not.toBeInTheDocument()
   expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+})
+
+// Finding 3: the hero count must be TODAY's own message count, never inflated by a prepended
+// cross-day linked card.
+test('the hero count excludes a prepended cross-day linked card', async () => {
+  serveFeeds({ [YDAY]: [deepLinkedCard, yesterdayOther], [TODAY]: [todayMorning] })
+  renderAt(`/nap/uzenetek?n=${deepLinkedCard.id}&d=${YDAY}`)
+
+  await screen.findByText(/Éjfél után írtál/)
+  // Two cards render (the linked one + today's own), but today's OWN thread is one message.
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(2)
+  expect(await screen.findByText('1 üzenet · a napod fonala')).toBeInTheDocument()
+})
+
+// Finding 2: the common case is SAME-day — `n` names a row already inside today's own thread.
+// It must not be duplicated as a second card, and it must still get scrolled/highlighted.
+test('scrolls to the existing row for a same-day deeplink, without duplicating it', async () => {
+  const scrollIntoView = stubScrollIntoView()
+  serveFeeds({ [TODAY]: [todayMorning] })
+  renderAt(`/nap/uzenetek?n=${todayMorning.id}&d=${TODAY}`)
+
+  const card = (await screen.findByText(/Mai napod fonala/)).closest('.nap-mzmsg') as HTMLElement
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+  await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1))
+  expect(scrollIntoView.mock.instances[0]).toBe(card)
+  expect(scrollIntoView.mock.calls[0][0]).toMatchObject({ block: 'center' })
+})
+
+// Finding 1: the scroll must fire ONCE per linked card, not on every re-render — a bare object
+// identity in the effect's dependency array (the pre-fix `linkedItem`) would re-fire it on any
+// unrelated state change, e.g. a feedback vote landing elsewhere in the thread.
+test('does not re-fire the scroll when an unrelated part of the thread re-renders', async () => {
+  const scrollIntoView = stubScrollIntoView()
+  serveFeeds({ [YDAY]: [deepLinkedCard, yesterdayOther], [TODAY]: [todayMorning] })
+  // A mutable "stored" list so the vote's own PUT is reflected by the next GET — otherwise the
+  // default MSW handler's honest-empty GET would win the mutation's invalidate-refetch race and
+  // silently revert the optimistic write, which is not what this test is about (Finding 1).
+  let stored: unknown[] = []
+  server.use(
+    http.get(`${API_BASE}/api/companion/feedback`, () => HttpResponse.json(stored)),
+    http.put(`${API_BASE}/api/companion/feedback`, async ({ request }) => {
+      const body = (await request.json()) as { artifactId: string; verdict: string; reason?: string | null }
+      const saved = { ...body, reason: body.reason ?? null, updatedAt: '2026-08-21T12:00:00Z' }
+      stored = [saved]
+      return HttpResponse.json(saved)
+    }),
+  )
+  const user = userEvent.setup()
+  renderAt(`/nap/uzenetek?n=${deepLinkedCard.id}&d=${YDAY}`)
+
+  await screen.findByText(/Éjfél után írtál/)
+  await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1))
+
+  // Vote on TODAY's own card (not the linked one) — useFeedback's optimistic write re-renders
+  // the page. The linked card's scroll must not fire again.
+  const todayCard = (await screen.findByText(/Mai napod fonala/)).closest('.nap-mzmsg') as HTMLElement
+  await user.click(within(todayCard).getByRole('button', { name: /Segített/ }))
+  await waitFor(() => expect(within(todayCard).getByRole('button', { name: /Segített/ })).toHaveAttribute('aria-pressed', 'true'))
+
+  expect(scrollIntoView).toHaveBeenCalledTimes(1)
 })

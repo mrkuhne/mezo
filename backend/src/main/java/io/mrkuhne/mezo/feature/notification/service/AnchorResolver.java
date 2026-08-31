@@ -289,8 +289,10 @@ public class AnchorResolver {
      * next day, which is why yesterday's card is consulted too. Channel gate: a library entry
      * with {@code channel=feed} (or a key no longer in the library — honest absence) yields no
      * push anchor at all. Dedup carries the row id fragment (the feed-anchor shape, unaffected by
-     * the url below) because push-sw.js uses the url as the notification tag — two same-deeplink
-     * pushes would replace each other on the phone. The url itself points at the companion thread
+     * the url below) so two different intervention cards firing in the same clock minute keep
+     * distinct {@code push_log} dedup keys — a bare {@code HH:mm} would collapse them. (Not a
+     * push-sw.js tag concern: since mezo-b3pp.36 each card's url is per-card unique, so two
+     * intervention pushes no longer share a notification tag anyway.) The url itself points at the companion thread
      * page ({@code URL_THREAD}, not the legacy /today path) with the card's FULL id (so the page
      * can match it exactly) and its own {@code messageDate} (so a card deferred across midnight
      * still names the day whose feed actually holds it — mezo-b3pp.36).

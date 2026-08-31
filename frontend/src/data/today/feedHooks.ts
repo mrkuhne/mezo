@@ -17,9 +17,18 @@ import type { FeedMessage } from '@/data/types'
  * sleep/weight log mutations' invalidation) land without a manual reload. The endpoint is an
  * honest-empty list (never a 404) — any error still degrades to `[]` rather than crashing the
  * thread.
+ *
+ * `date` other than today (the deeplink's cross-day read, `NapMezoPage`, mezo-b3pp.36) never
+ * polls: a PAST day's feed cannot change, so re-fetching it every 60s would be pure waste.
+ * `options.enabled` lets a caller skip the fetch entirely — `NapMezoPage` passes `false` for a
+ * `d=` with no `n` to look up, since there is nothing to find and no reason to hit the network.
  */
-export function useCompanionFeed(date: string = localDateString()): FeedMessage[] {
+export function useCompanionFeed(
+  date: string = localDateString(),
+  options?: { enabled?: boolean },
+): FeedMessage[] {
   const mock = isMockMode()
+  const isToday = date === localDateString()
   const q = useQuery<FeedMessage[]>({
     queryKey: ['companionFeed', date],
     queryFn: mock
@@ -33,8 +42,9 @@ export function useCompanionFeed(date: string = localDateString()): FeedMessage[
         },
     initialData: mock ? [] : undefined,
     staleTime: mock ? Infinity : undefined,
-    refetchInterval: mock ? undefined : 60_000,
+    refetchInterval: mock || !isToday ? undefined : 60_000,
     retry: false,
+    enabled: mock ? true : (options?.enabled ?? true),
   })
   return q.data ?? []
 }

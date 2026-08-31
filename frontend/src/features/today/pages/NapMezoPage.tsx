@@ -44,18 +44,27 @@ export function NapMezoPage() {
   const deepLinkDay = params.get('d')
   const today = localDateString()
   const crossDay = deepLinkDay && deepLinkDay !== today ? deepLinkDay : undefined
-  // A cache hit when crossDay is undefined (same date, same query key as the read below) — not
-  // a second request.
-  const linkedFeed = useCompanionFeed(crossDay ?? today)
-  const linkedCard = crossDay && deepLinkId
+  // Only actually fetch the other day's feed when there is an id to look up in it — a `d=` with
+  // no `n` has nothing to find (Finding 6). When crossDay is undefined this stays enabled and
+  // is a cache hit (same date, same query key as the read below) — not a second request.
+  const wantsCrossDayFetch = crossDay != null && deepLinkId != null
+  const linkedFeed = useCompanionFeed(crossDay ?? today, { enabled: crossDay == null || wantsCrossDayFetch })
+  const linkedCard = wantsCrossDayFetch
     ? linkedFeed.find((m) => m.id === deepLinkId)
     : undefined
   // Same rendering as any other feed row (mezoMessages.ts's `feedToMessageItem`) — only the id
   // is overridden, since `m.kind` alone can collide with a same-kind card already in today's
   // own thread once a second day's card joins it.
-  const linkedItem: MezoMessageItem | null = linkedCard
-    ? { ...feedToMessageItem(linkedCard), id: `deeplink-${linkedCard.id}` }
-    : null
+  // Memoized on `linkedCard` (a stable reference across renders while the underlying feed query
+  // data is unchanged — `.find` on the same array returns the same element) rather than rebuilt
+  // as a fresh object literal every render: a fresh reference here would defeat the
+  // `displayMessages` memo below and re-fire the scroll effect on every unrelated re-render
+  // (Finding 1 — e.g. a `useFeedback` optimistic vote elsewhere in the thread, or a 60s poll
+  // tick that changes unrelated feed data).
+  const linkedItem: MezoMessageItem | null = useMemo(
+    () => (linkedCard ? { ...feedToMessageItem(linkedCard), id: `deeplink-${linkedCard.id}` } : null),
+    [linkedCard],
+  )
 
   // A szál a shell providerétől jön (mezo-atry): a fejléc olvasatlan-badge-e és ez az oldal
   // UGYANAZT a listát látja, tehát az itt lerakott olvasottság-vízjel ott biztosan találatot
@@ -83,10 +92,22 @@ export function NapMezoPage() {
   // deeplinked card is not part of the header's unread count.
   useEffect(() => { markSeen() }, [markSeen])
 
+  // Finding 2: most intervention pushes are SAME-day — `linkedCard`/`linkedItem` stay unset
+  // (crossDay is undefined) even though `n` names a row already inside today's own thread. That
+  // row still deserves the scroll/highlight; it is not duplicated as a second card since it is
+  // already in `messages`.
+  const sameDayTargetId = crossDay == null && deepLinkId
+    ? messages.find((m) => m.artifactId === deepLinkId)?.id
+    : undefined
+  // A stable string (or undefined), never an object — the effect below keys on this rather than
+  // on `linkedItem`'s identity so it only re-fires when the ACTUAL target changes, not on every
+  // unrelated re-render (Finding 1).
+  const scrollTargetId = linkedItem?.id ?? sameDayTargetId
+
   const linkedCardRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
-    if (linkedItem) linkedCardRef.current?.scrollIntoView({ block: 'center' })
-  }, [linkedItem])
+    if (scrollTargetId) linkedCardRef.current?.scrollIntoView({ block: 'center' })
+  }, [scrollTargetId])
 
   return (
     <MozaikPage tone="coral">
@@ -96,14 +117,16 @@ export function NapMezoPage() {
       <div className="mz-page-hero orb">
         <ClaySpot name="s-orb" size={83} />
         <div className="mz-hero-nm">Mezo · ma</div>
-        <div className="mz-hero-sb">{displayMessages.length} üzenet · a napod fonala</div>
+        {/* Today's own message count (Finding 3) — a cross-day deeplink prepends one extra card
+            to `displayMessages` that is not part of today's thread; the label must not count it. */}
+        <div className="mz-hero-sb">{messages.length} üzenet · a napod fonala</div>
       </div>
       <PageBody>
         <EntranceGroup>
           {displayMessages.map((m, i) => (
             <div
               key={m.id}
-              ref={m === linkedItem ? linkedCardRef : undefined}
+              ref={m.id === scrollTargetId ? linkedCardRef : undefined}
               className="nap-mzmsg rise"
               style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}
             >
