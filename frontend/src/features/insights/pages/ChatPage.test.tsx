@@ -6,6 +6,7 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
+import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { cannedReply } from '@/data/insights/chat'
 
 // The page reads its selected conversation from `?c=` (mezo-at8x.3), so it needs a router.
@@ -103,6 +104,79 @@ describe('ChatPage (mock mode)', () => {
     const patternRef = screen.getAllByText('Minta').find((el) => el.classList.contains('mzc-refk'))
     expect(patternRef).toBeTruthy()
     expect(patternRef!.parentElement).toHaveTextContent('p-medication-appetite')
+  })
+
+  // mezo-b3pp.29: the Emlékek row below the footer already carries every recalled memory's
+  // date, source and gist, so a bare [Memory] refs chip beside it is pure duplication — but
+  // ONLY once that row actually exists. These render ChatMessage directly (not the full seeded
+  // page) so the refs/recalled combination under test is exact and not incidental to the seed.
+  test('hides the Memory chips when the answer carries a recalled list, but keeps the Emlékek row and the other chips', () => {
+    render(
+      <ChatMessage
+        m={{
+          id: 'm-dedupe-1',
+          role: 'assistant',
+          ts: '10:00',
+          text: 'Válasz.',
+          refs: [
+            { kind: 'Memory', id: '2026-05-21' },
+            { kind: 'Workout', id: 'w-2026-05-20' },
+          ],
+          recalled: [
+            { occurredOn: '2026-05-21', kind: 'Journal', label: 'Napló', gist: 'jól aludtam', similarity: 0.9 },
+          ],
+        }}
+      />,
+    )
+    // the non-Memory chip survives the filter
+    expect(screen.getByText('Edzés')).toBeInTheDocument()
+    // no chip shows the raw 'Memory' kind label — it has no KIND_LABELS entry, so if it rendered
+    // it would render verbatim as 'Memory'
+    expect(
+      screen.queryAllByText('Memory').find((el) => el.classList.contains('mzc-refk')),
+    ).toBeUndefined()
+    // dedupe, not deletion: the recalled content is still reachable via the Emlékek row
+    expect(screen.getByText(/Emlékek · 1/)).toBeInTheDocument()
+  })
+
+  test('keeps the Memory chips when the answer has no recalled list — the chip is the only provenance', () => {
+    render(
+      <ChatMessage
+        m={{
+          id: 'm-dedupe-2',
+          role: 'assistant',
+          ts: '10:00',
+          text: 'Válasz.',
+          refs: [
+            { kind: 'Memory', id: '2026-05-21' },
+            { kind: 'Workout', id: 'w-2026-05-20' },
+          ],
+          // no `recalled` — nothing else in this render carries the memory's provenance
+        }}
+      />,
+    )
+    const memoryRef = screen.getAllByText('Memory').find((el) => el.classList.contains('mzc-refk'))
+    expect(memoryRef).toBeTruthy()
+    expect(screen.getByText('Edzés')).toBeInTheDocument()
+  })
+
+  test('hides the whole refs footer when filtering leaves nothing (latent empty-array-is-truthy bug)', () => {
+    render(
+      <ChatMessage
+        m={{
+          id: 'm-dedupe-3',
+          role: 'assistant',
+          ts: '10:00',
+          text: 'Válasz.',
+          refs: [{ kind: 'Memory', id: '2026-05-21' }],
+          recalled: [
+            { occurredOn: '2026-05-21', kind: 'Journal', label: 'Napló', gist: 'jól aludtam', similarity: 0.9 },
+          ],
+        }}
+      />,
+    )
+    // without the length guard, the eyebrow would render alone over an empty chip row
+    expect(screen.queryByText('Hivatkozott · L3')).not.toBeInTheDocument()
   })
 
   test('every assistant answer carries the Mezo eyebrow + timestamp meta row with the orb', () => {

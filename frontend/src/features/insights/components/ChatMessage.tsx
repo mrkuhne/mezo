@@ -21,6 +21,12 @@ export interface ChatMessageFeedback {
 // contracts (blank-answer naming, degraded badge, votable-only-persisted,
 // hidden-when-empty sections) are unchanged — this is a re-face, not a rewrite.
 export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatMessageFeedback }) {
+  // mezo-b3pp.29: the Emlékek row below carries the same recalled memories with their source and
+  // gist, so a bare [Memory] date chip beside it is pure duplication. Filtered ONLY when that row
+  // is actually there — with no recalled list the chip is the user's only provenance for the
+  // recall, and dropping it would destroy information rather than dedupe it.
+  const hasRecalled = !!m.recalled?.length
+  const visibleRefs = hasRecalled ? (m.refs ?? []).filter((r) => r.kind !== 'Memory') : (m.refs ?? [])
   if (m.role === 'user') {
     return (
       <div className="mzc-msg-u">
@@ -58,11 +64,13 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
         ) : (
           <p className="mzc-noanswer">Erre a körre nem érkezett válasz.</p>
         )}
-        {m.refs && (
+        {/* length, not truthiness: an empty array is truthy, and the filter above can now turn a
+            non-empty refs list into an empty one — without this the eyebrow would render alone. */}
+        {visibleRefs.length > 0 && (
           <div className="mzc-reffoot">
             <span className="mzc-refeb">Hivatkozott · L3</span>
             <div className="mzc-refrow">
-              {m.refs.map((r, i) => {
+              {visibleRefs.map((r, i) => {
                 // Gap-7 fix: human labels where the data provides them, raw id otherwise.
                 const d = chatRefDisplay(r)
                 return (
