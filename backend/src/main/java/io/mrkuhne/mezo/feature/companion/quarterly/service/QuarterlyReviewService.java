@@ -204,14 +204,27 @@ public class QuarterlyReviewService {
      * 04:00 on the 1st they describe roughly the quarter's LAST MONTH. A quiet July and August
      * followed by a rough September would otherwise be handed to the model as if September's 9
      * 👎 characterised the whole quarter — and that reading would become a durable SEASON
-     * candidate. {@code ProfileAssembler.renderPayload} already discloses its window the same way
-     * ("VISSZAJELZÉSEK (utolsó 30 nap)"); this is the two payload builders agreeing again.
+     * candidate.
      *
      * <p>The number is RENDERED from {@code FeedbackRollupEntity.windowDays}, not hardcoded — the
      * window is a config knob, and a heading that lies about it is the same class of bug. The rows
      * are keyed by {@code (created_by, scope, window_days)}, so a window change can leave rows
      * from two windows side by side; in that case the heading cannot name one window for all of
      * them and each line carries its own instead.
+     *
+     * <p><b>This deliberately DIVERGES from {@code ProfileAssembler.renderPayload} (mezo-b3pp.35,
+     * item 3), not agrees with it.</b> The profile filters to the ONE currently-configured window
+     * ({@code findByCreatedByAndWindowDaysAndDeletedFalseOrderByScopeAsc}) and names that one
+     * window in a single header, because it needs a single trustworthy count
+     * ({@code feedbackSignals}) for its honest-absence gate — a stale second window would inflate
+     * that count. This method instead reads EVERY row unfiltered
+     * ({@code findByCreatedByAndDeletedFalseOrderByScopeAsc}), because a quarterly retrospective
+     * has no such gate to protect and dropping a retired window's rows would silently erase real
+     * quarter-old evidence; the per-row window label below is how it stays honest about coexisting
+     * windows instead. Two legitimate resolutions of the same "windows can change under you"
+     * problem, not one bug and one echo of it — after a window-days change, seeing
+     * {@code surface:chat_message} twice with two different window labels in a quarterly payload
+     * is this method working as designed, not the profile's window filter leaking.
      */
     private void appendFeedback(StringBuilder sb, UUID userId) {
         List<FeedbackRollupEntity> rows = feedbackRollupRepository
