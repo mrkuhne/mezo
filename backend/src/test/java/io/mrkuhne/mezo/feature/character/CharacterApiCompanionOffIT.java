@@ -6,16 +6,24 @@ import io.mrkuhne.mezo.api.dto.CharacterClaimDto;
 import io.mrkuhne.mezo.api.dto.CharacterClaimFeedbackRequest;
 import io.mrkuhne.mezo.api.dto.CharacterExpertsResponse;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
+import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
+import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
+import io.mrkuhne.mezo.feature.character.entity.CharacterRunEntity;
 import io.mrkuhne.mezo.feature.character.entity.ClaimConfidenceHistoryEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ClaimEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ClaimFeedbackEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.RunDetectorKeysEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.RunExpertKeysEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
+import io.mrkuhne.mezo.feature.character.repository.CharacterRunRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -45,6 +53,7 @@ class CharacterApiCompanionOffIT extends ApiIntegrationTest {
 
     @Autowired private CharacterDimensionRepository dimensionRepository;
     @Autowired private CharacterClaimRepository claimRepository;
+    @Autowired private CharacterRunRepository runRepository;
     @Autowired private OwnerProperties ownerProperties;
 
     @Test
@@ -108,5 +117,32 @@ class CharacterApiCompanionOffIT extends ApiIntegrationTest {
         assertThat(row.getConfidence()).isEqualByComparingTo(new BigDecimal("0.55"));
         assertThat(row.getUserFeedback().events()).singleElement()
                 .satisfies(event -> assertThat(event.kind()).isEqualTo("TALAL"));
+    }
+
+    @Test
+    void testCharacterRuns_shouldSucceed_whenCompanionSwitchedOff() {
+        UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+        LocalDate day = LocalDate.of(2026, 8, 10);
+
+        CharacterRunEntity run = new CharacterRunEntity();
+        run.setCreatedBy(owner);
+        run.setKind("NIGHTLY");
+        run.setDay(day);
+        run.setObservationCount(0);
+        run.setCallCount(0);
+        run.setDetectorKeys(new RunDetectorKeysEnvelope(List.of()));
+        run.setExpertKeys(new RunExpertKeysEnvelope(List.of()));
+        run.setGeneratedAt(Instant.now());
+        run = runRepository.save(run);
+
+        CharacterRunSummary[] runs = getForBody(
+                "/api/character/runs?from=2026-08-01&to=2026-08-31",
+                ownerAuthHeaders(), HttpStatus.OK, CharacterRunSummary[].class);
+        assertThat(runs).hasSize(1);
+
+        CharacterRunResponse detail = getForBody("/api/character/run/" + run.getId(),
+                ownerAuthHeaders(), HttpStatus.OK, CharacterRunResponse.class);
+        assertThat(detail.getSummary().getId()).isEqualTo(run.getId());
+        assertThat(detail.getObservations()).isEmpty();
     }
 }

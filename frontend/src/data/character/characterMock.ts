@@ -12,6 +12,9 @@ import type {
   CharacterExpertDto,
   CharacterFeedItem,
   CharacterOverviewResponse,
+  CharacterRunObservation,
+  CharacterRunResponse,
+  CharacterRunSummary,
   ConferenceTurn,
 } from '@/data/character/characterApi'
 
@@ -363,17 +366,26 @@ export const MOCK_DIMENSIONS: Record<string, CharacterDimensionResponse> = Objec
 )
 
 // FEED (prototype's `var FEED`) — grouped-by-day rows flattened chronologically, newest first.
+//
+// Final review (mezo-1gim.14, I1): OBSERVATION `at` timestamps mirror PRODUCTION now, not the
+// observed day itself. `CharacterService#feed` sets `at` to the observation's `createdAt`
+// (`obs.getCreatedAt()`), and observations are written by the nightly job, which runs AFTER
+// midnight for the PREVIOUS day (spec: "processes yesterday") — so an observation about Aug 30
+// is created around Aug 31 02:5x, not Aug 30 itself. The old seed faked `at` == the observed
+// day, which is exactly what hid the I1 bug: the feed's ⚙ resolve-by-date join was never
+// exercised against a real write-lag. CONFERENCE_CHANGE items are untouched — their `at` is a
+// conference's own `generatedAt`, a different real timestamp with no such lag.
 export const MOCK_FEED: CharacterFeedItem[] = [
-  { kind: 'OBSERVATION', at: '2026-08-30T08:10:00Z', expertKey: 'doki', text: 'A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.' },
-  { kind: 'OBSERVATION', at: '2026-08-30T08:05:00Z', expertKey: 'drill', text: 'A tegnapi kihagyott logolást ma reggelre már pótoltad — ez a minta ismerős nálad.' },
+  { kind: 'OBSERVATION', at: '2026-08-31T02:52:00Z', expertKey: 'doki', text: 'A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.' }, // observed Aug 30
+  { kind: 'OBSERVATION', at: '2026-08-31T02:50:00Z', expertKey: 'drill', text: 'A tegnapi kihagyott logolást ma reggelre már pótoltad — ez a minta ismerős nálad.' }, // observed Aug 30
   { kind: 'CONFERENCE_CHANGE', at: '2026-08-30T07:00:00Z', expertKey: null, dimensionKeys: [], text: 'Vasárnapi konzílium: 2 új állítás · 1 portré átírva' },
-  { kind: 'OBSERVATION', at: '2026-08-29T19:30:00Z', expertKey: 'edzo', text: 'A tegnapi teremedzésen minden RIR-cél 1-en belül teljesült.' },
-  { kind: 'OBSERVATION', at: '2026-08-29T07:15:00Z', expertKey: 'szomnologus', text: 'Az elalvási idő 23:10-re csúszott — 35 perccel a szokásos után.' },
-  { kind: 'OBSERVATION', at: '2026-08-27T20:00:00Z', expertKey: 'pszichologus', text: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.' },
-  { kind: 'OBSERVATION', at: '2026-08-27T12:00:00Z', expertKey: 'taplalkozo', text: 'Három egymást követő napon a fehérjecél 5 g-on belül teljesült.' },
+  { kind: 'OBSERVATION', at: '2026-08-30T02:52:00Z', expertKey: 'edzo', text: 'A tegnapi teremedzésen minden RIR-cél 1-en belül teljesült.' }, // observed Aug 29
+  { kind: 'OBSERVATION', at: '2026-08-30T02:50:00Z', expertKey: 'szomnologus', text: 'Az elalvási idő 23:10-re csúszott — 35 perccel a szokásos után.' }, // observed Aug 29
+  { kind: 'OBSERVATION', at: '2026-08-28T02:52:00Z', expertKey: 'pszichologus', text: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.' }, // observed Aug 27
+  { kind: 'OBSERVATION', at: '2026-08-28T02:50:00Z', expertKey: 'taplalkozo', text: 'Három egymást követő napon a fehérjecél 5 g-on belül teljesült.' }, // observed Aug 27
   { kind: 'CONFERENCE_CHANGE', at: '2026-08-27T07:00:00Z', expertKey: null, dimensionKeys: ['recovery'], text: 'Portré frissült: Alvás & regeneráció — a hétvégi eltolódás mostantól „biztos” szintű állítás.' },
-  { kind: 'OBSERVATION', at: '2026-08-24T18:00:00Z', expertKey: 'antropologus', text: 'Petra harmadik alkalommal jelenik meg a hét naplóiban.' },
-  { kind: 'OBSERVATION', at: '2026-08-24T09:00:00Z', expertKey: 'drill', text: 'A heti fókuszok mindhárma teljesült — negyedik egymást követő hete.' },
+  { kind: 'OBSERVATION', at: '2026-08-25T02:52:00Z', expertKey: 'antropologus', text: 'Petra harmadik alkalommal jelenik meg a hét naplóiban.' }, // observed Aug 24
+  { kind: 'OBSERVATION', at: '2026-08-25T02:50:00Z', expertKey: 'drill', text: 'A heti fókuszok mindhárma teljesült — negyedik egymást követő hete.' }, // observed Aug 24
 ]
 
 // KONZ (prototype's `var KONZ`) — conference summaries, newest first.
@@ -446,4 +458,290 @@ export const MOCK_BOOTSTRAP_CONFERENCE: CharacterConferenceResponse = {
     { persona: 'mezo', text: 'A teljes eddigi történet beolvasva — 9 kezdő állítás felvéve a dossziéba.' },
   ],
   changes: [{ kind: 'BOOTSTRAP', dimensionKey: null, summary: 'a teljes eddigi történet beolvasva · 9 kezdő állítás' }],
+}
+
+// ---------------------------------------------------------------------------
+// Gépterem (mezo-1gim.14) — the run-log timeline. Mirrored VERBATIM from the v4.3 prototype,
+// docs/design_2.0/prototypes/karakter-tab.html (search `CHAIN_POOL`, `WEEKS`, `RARE_RUNS`,
+// `KONZ_POOL`) — signal chains, detector keys, and observation texts are copied 1:1; the day
+// numbers (Aug 10–30) are mapped onto the same 2026-08 window the rest of this file already
+// uses. `who` -> CORE dimension key follows the DIM_SEEDS expertKey mapping above.
+const WHO_TO_DIMENSION: Record<string, string> = Object.fromEntries(
+  DIM_SEEDS.filter((d) => d.expertKey != null).map((d) => [d.expertKey as string, d.key]),
+)
+
+interface ChainSeed {
+  detector: string
+  code: string
+  refs: string[]
+  who: string
+  obs: string
+}
+
+// CHAIN_POOL (prototype) — Aug day-of-month -> the night's fired signal chains. Days not listed
+// here are quiet nights (zero signals, zero calls) — the v4.1-corrected honest-empty semantics.
+//
+// M9 (final review): `logging-gap`'s real owner is `drill`, verified against the detector source
+// directly (`DetectorSignal(key, who, ...)` — same verification DetektorokPage.tsx's header
+// comment documents), NOT the prototype's `taplalkozo` guess this mock originally copied
+// verbatim. Every `logging-gap` chain below carries `who: 'drill'`.
+//
+// M4 (final review): `refs` is `[]` on every chain — production `DetectorSignal`s never carry
+// refIds today (no detector populates that list yet; see SignalChainCard.tsx's header comment),
+// so the mock's refCount must be 0 everywhere too, never a fabricated 1–3.
+const CHAIN_POOL: Record<number, ChainSeed[]> = {
+  13: [
+    {
+      detector: 'checkin-gap',
+      code: '2 egymást követő napon elmaradt a délutáni check-in',
+      refs: [],
+      who: 'drill',
+      obs: 'A kihagyások ritkák nálad — ezen a héten kétszer maradt el a délutáni check-in, érdemes visszaállni a ritmusba.',
+    },
+    {
+      detector: 'journal-note',
+      code: 'friss naplóbejegyzés érzékelve (aug 13., 140 karakter)',
+      refs: [],
+      who: 'pszichologus',
+      obs: 'A keddi bejegyzés hangneme fáradtabb volt a megszokottnál.',
+    },
+  ],
+  20: [
+    {
+      detector: 'logging-gap',
+      code: '2. napja nincs étkezés logolva (utolsó: aug 18.)',
+      refs: [],
+      who: 'drill',
+      obs: 'Hétfőn és kedden elmaradt az étkezés-logolás — ritka nálad ez a rés.',
+    },
+  ],
+  24: [
+    {
+      detector: 'under-logging',
+      code: 'a logolt bevitel két hete elmarad a súlytrendtől',
+      refs: [],
+      who: 'taplalkozo',
+      obs: 'Két hete rendszeresen kevesebbet mutat a napló, mint amit a súlyad enged sejtetni — érdemes átnézni, mi marad ki.',
+    },
+  ],
+  27: [
+    {
+      detector: 'journal-note',
+      code: 'friss naplóbejegyzés érzékelve (aug 27., 210 karakter)',
+      refs: [],
+      who: 'pszichologus',
+      obs: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.',
+    },
+    {
+      detector: 'logging-gap',
+      code: '3. napja nincs étkezés logolva (utolsó: aug 24.)',
+      refs: [],
+      who: 'drill',
+      obs: 'Három napja nem logoltál étkezést — ritkán fordul elő nálad ekkora szünet.',
+    },
+  ],
+  30: [
+    {
+      detector: 'logging-gap',
+      code: '3. napja nincs étkezés logolva (utolsó: aug 24.)',
+      refs: [],
+      who: 'drill',
+      obs: 'Hétvégén a logolási fegyelmed lazább — inkább kényelem, mint tudatos döntés.',
+    },
+    {
+      detector: 'checkin-gap',
+      code: '2 napja elmaradt a reggeli check-in',
+      refs: [],
+      who: 'drill',
+      obs: 'A hétvégén kétszer maradt el a reggeli check-in — hétköznap ritkán fordul elő nálad.',
+    },
+    {
+      detector: 'journal-note',
+      code: 'friss naplóbejegyzés érzékelve (aug 30., 180 karakter)',
+      refs: [],
+      who: 'pszichologus',
+      obs: 'A vasárnap esti bejegyzés hangneme nyugodtabb volt, mint a hét közepén.',
+    },
+  ],
+  // Fix round 1 (mezo-1gim.14): NOT a prototype-verbatim night — added so the callCount
+  // unique-expert dedup rule ("one LLM call per fired expert, not per signal") has a fixture to
+  // pin: two signals, same expert (drill), two different detectors -> observationCount 2,
+  // callCount 1.
+  15: [
+    {
+      detector: 'checkin-gap',
+      code: 'elmaradt a délutáni check-in',
+      refs: [],
+      who: 'drill',
+      obs: 'A pénteki délutáni check-in elmaradt.',
+    },
+    {
+      detector: 'checkin-gap',
+      code: 'elmaradt a reggeli check-in is',
+      refs: [],
+      who: 'drill',
+      obs: 'Ugyanaznap a reggeli check-in is elmaradt — két kihagyás egy napon belül.',
+    },
+  ],
+}
+
+function uniqueWho(chains: ChainSeed[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  chains.forEach((c) => {
+    if (!seen.has(c.who)) {
+      seen.add(c.who)
+      out.push(c.who)
+    }
+  })
+  return out
+}
+
+function nightlyRun(day: number): CharacterRunSummary {
+  const chains = CHAIN_POOL[day]
+  const iso = `2026-08-${String(day).padStart(2, '0')}`
+  if (!chains) {
+    // A quiet night — the run row IS the honest zero-signal record (spec's "csendes éjszaka"),
+    // never a fabricated one and never a missing row.
+    return {
+      id: `ejsz-${day}`,
+      kind: 'NIGHTLY',
+      day: iso,
+      observationCount: 0,
+      callCount: 0,
+      detectorKeys: [],
+      expertKeys: [],
+      conferenceId: null,
+    }
+  }
+  const who = uniqueWho(chains)
+  return {
+    id: `ejsz-${day}`,
+    kind: 'NIGHTLY',
+    day: iso,
+    observationCount: chains.length,
+    // One LLM call per fired expert (the DTO's "honest only for NIGHTLY" callCount rule) —
+    // NOT one per signal: two signals from the same expert in one night is still one call.
+    callCount: who.length,
+    detectorKeys: [...new Set(chains.map((c) => c.detector))],
+    expertKeys: who,
+    conferenceId: null,
+  }
+}
+
+function nightlyDetail(day: number): CharacterRunResponse {
+  const summary = nightlyRun(day)
+  const chains = CHAIN_POOL[day] ?? []
+  const observations: CharacterRunObservation[] = chains.map((c, i) => ({
+    id: `${summary.id}-obs-${i}`,
+    expertKey: c.who,
+    dimensionKeys: WHO_TO_DIMENSION[c.who] != null ? [WHO_TO_DIMENSION[c.who]] : [],
+    text: c.obs,
+    salience: 0.6,
+    signals: [{ detectorKey: c.detector, summary: c.code, refCount: c.refs.length }],
+  }))
+  return { summary, observations }
+}
+
+// The three seeded weeks (Aug 10–16, 17–23, 24–30) mirroring the prototype's `WEEKS` builder —
+// every day in the window gets a nightly run row (quiet unless CHAIN_POOL says otherwise).
+const NIGHTLY_DAYS = Array.from({ length: 21 }, (_, i) => 10 + i)
+
+export const MOCK_RUNS_NIGHTLY: CharacterRunSummary[] = NIGHTLY_DAYS.map(nightlyRun)
+
+// RULING (v4.1-corrected, mezo-1gim.14): conference-kind rows (WEEKLY/MONTHLY/BOOTSTRAP) carry
+// `callCount: 0` by design — the AI-napló is the call-level truth for those runs, not this row.
+// Never invent a non-zero callCount here.
+
+// WEEKLY (prototype's KONZ_POOL[30] -> id 'w2') — links the existing MOCK_CONFERENCES / w2
+// entry so a run-page "teljes transzkript" link resolves to real seeded conference data.
+// Consumed observations = the union of the week's nightly signal chains (24 + 27 + 30).
+const WEEKLY_OBSERVATIONS: CharacterRunObservation[] = [24, 27, 30].flatMap((day) => nightlyDetail(day).observations)
+// Fix round 1 (mezo-1gim.14): CharacterConferenceService computes detectorKeys for a WEEKLY row
+// as the union of its consumed observations' detector keys (unlike MONTHLY/BOOTSTRAP, which are
+// deliberately [] backend-side — a monthly/bootstrap re-read isn't detector-driven) — derive it
+// here instead of hardcoding, so it can never drift from WEEKLY_OBSERVATIONS.
+const WEEKLY_DETECTOR_KEYS = [...new Set(WEEKLY_OBSERVATIONS.flatMap((o) => o.signals.map((s) => s.detectorKey)))]
+// M6 (final review): CharacterConferenceService derives a WEEKLY row's expertKeys from the
+// distinct expertKey of its CONSUMED OBSERVATIONS (`weekObservations.stream().map(getExpertKey)
+// .distinct()`) — never a fixed catalog subset like "the 6 experts who spoke in the transcript"
+// (doki/szkeptikus/mezo never fired a nightly signal in this seed's week; taplalkozo/
+// pszichologus/drill did). Derived here so it can never drift from WEEKLY_OBSERVATIONS.
+const WEEKLY_EXPERT_KEYS = [...new Set(WEEKLY_OBSERVATIONS.map((o) => o.expertKey))]
+
+const WEEKLY_RUN: CharacterRunSummary = {
+  id: 'run-w2',
+  kind: 'WEEKLY',
+  day: '2026-08-24', // week_start (Monday) of the aug 24–30 week
+  observationCount: WEEKLY_OBSERVATIONS.length, // the week's 3 signal nights (24, 27, 30): 1 + 2 + 3 chains
+  callCount: 0,
+  detectorKeys: WEEKLY_DETECTOR_KEYS,
+  expertKeys: WEEKLY_EXPERT_KEYS,
+  conferenceId: 'w2',
+}
+
+const WEEKLY_DETAIL: CharacterRunResponse = { summary: WEEKLY_RUN, observations: WEEKLY_OBSERVATIONS }
+
+// MONTHLY (prototype's RARE_RUNS 'm1') — links the existing MOCK_CONFERENCES / m1 entry.
+// Fix round 1 (mezo-1gim.14): CharacterMonthlyService sets observationCount to
+// activeClaims.size() — the count of re-evaluated ACTIVE claims, NOT new observations consumed
+// (a monthly re-read re-evaluates the existing claim base rather than reading fresh nightly
+// signals). Derived from DIM_SEEDS so it can never drift from the seeded claim base above.
+const MONTHLY_ACTIVE_CLAIM_COUNT = DIM_SEEDS.reduce((sum, d) => sum + d.claims.length, 0)
+// M6 (final review): CharacterMonthlyService's `buildEvidence` groups every ACTIVE claim by its
+// owning expert — a CORE dimension's claims go to its own `expertKey`; a CHAPTER dimension's
+// claims (no owning expert) go to `CHAPTER_CLAIMS_EXPERT_KEY` = "drill" (see
+// CharacterMonthlyService.java's javadoc). `expertKeys` is the distinct set of those, never the
+// fixed ['mezo'] this mock hardcoded before — derived here so it can never drift from DIM_SEEDS.
+const MONTHLY_EXPERT_KEYS = [...new Set(
+  DIM_SEEDS.filter((d) => d.claims.length > 0).map((d) => (d.kind === 'CHAPTER' ? 'drill' : (d.expertKey as string))),
+)]
+
+const MONTHLY_RUN: CharacterRunSummary = {
+  id: 'run-m1',
+  kind: 'MONTHLY',
+  day: '2026-08-01',
+  observationCount: MONTHLY_ACTIVE_CLAIM_COUNT,
+  callCount: 0,
+  detectorKeys: [],
+  expertKeys: MONTHLY_EXPERT_KEYS,
+  conferenceId: 'm1',
+}
+
+const MONTHLY_DETAIL: CharacterRunResponse = { summary: MONTHLY_RUN, observations: [] }
+
+// BOOTSTRAP (prototype's RARE_RUNS 'b0') — links the existing MOCK_CONFERENCES / b0 entry and
+// MOCK_BOOTSTRAP_CONFERENCE (9 kezdő állítás).
+// M6 (final review): CharacterBootstrapService derives expertKeys from `CharacterHistoryReads`'
+// per-expert evidence — daily-summary narratives (this seed's only history source, per
+// CharacterRunLogIT's bootstrap fixture) are routed to EVERY expert ("daily-summary narratives
+// go to EVERY expert" — CharacterHistoryReads.java's routing-rule javadoc), i.e. the full CORE
+// catalog, never the fixed ['mezo'] this mock hardcoded before.
+const BOOTSTRAP_RUN: CharacterRunSummary = {
+  id: 'run-b0',
+  kind: 'BOOTSTRAP',
+  day: '2026-07-15', // the run date
+  observationCount: 9,
+  callCount: 0,
+  detectorKeys: [],
+  expertKeys: [...EXPERT_ORDER],
+  conferenceId: 'b0',
+}
+
+const BOOTSTRAP_DETAIL: CharacterRunResponse = { summary: BOOTSTRAP_RUN, observations: [] }
+
+/** The full run-log seed — 21 nightly rows (Aug 10–30, incl. quiet nights) + one WEEKLY, one
+ *  MONTHLY, one BOOTSTRAP, newest day first (mirrors the backend's day-desc ordering). */
+export const MOCK_RUNS: CharacterRunSummary[] = [
+  ...MOCK_RUNS_NIGHTLY,
+  WEEKLY_RUN,
+  MONTHLY_RUN,
+  BOOTSTRAP_RUN,
+].sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0))
+
+export const MOCK_RUN_DETAIL: Record<string, CharacterRunResponse> = {
+  ...Object.fromEntries(NIGHTLY_DAYS.map((day) => [`ejsz-${day}`, nightlyDetail(day)])),
+  'run-w2': WEEKLY_DETAIL,
+  'run-m1': MONTHLY_DETAIL,
+  'run-b0': BOOTSTRAP_DETAIL,
 }

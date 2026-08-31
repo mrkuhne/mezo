@@ -7791,6 +7791,85 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/character/runs:
+    get:
+      tags:
+        - Character
+      operationId: getCharacterRuns
+      summary: >-
+        The run timeline over an inclusive day window (Gépterem — Karakter S9,
+        mezo-1gim.14): one row per pipeline execution that actually ran, quiet
+        nights included; a day with no row means the pipeline never ran for it
+        (honest "nincs adat" — never fabricated)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Run summaries, newest day first (possibly empty — never a 404)'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CharacterRunSummary'
+        '400':
+          description: 'to before from, or the span exceeds 62 days'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/run/{runId}':
+    get:
+      tags:
+        - Character
+      operationId: getCharacterRun
+      summary: >-
+        One run's full detail: its summary plus the observations it resolved
+        from — by (owner, day) for a NIGHTLY row, by the conference it fed for a
+        WEEKLY/MONTHLY/BOOTSTRAP row
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterRunResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such run for this user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/character/conference/{conferenceId}':
     get:
       tags:
@@ -17928,6 +18007,112 @@ components:
                 nullable: true
               summary:
                 type: string
+    CharacterRunSummary:
+      type: object
+      required:
+        - id
+        - kind
+        - day
+        - observationCount
+        - callCount
+        - detectorKeys
+        - expertKeys
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - NIGHTLY
+            - WEEKLY
+            - MONTHLY
+            - BOOTSTRAP
+        day:
+          type: string
+          format: date
+          description: >-
+            The anchor day — the observed day for NIGHTLY, week_start for
+            WEEKLY, the month's first day for MONTHLY, the run date for
+            BOOTSTRAP
+        observationCount:
+          type: integer
+        callCount:
+          type: integer
+          description: >-
+            Honest only for NIGHTLY (one call per fired expert); always 0 for
+            WEEKLY/MONTHLY/ BOOTSTRAP rows — no reliable call count is derivable
+            there, so the FE should omit or relabel this cell for non-NIGHTLY
+            kinds. The AI-napló is the call-level truth.
+        detectorKeys:
+          type: array
+          items:
+            type: string
+        expertKeys:
+          type: array
+          items:
+            type: string
+        conferenceId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Soft ref to the conference this run produced — null for NIGHTLY
+    CharacterRunObservationSignal:
+      type: object
+      required:
+        - detectorKey
+        - summary
+        - refCount
+      properties:
+        detectorKey:
+          type: string
+        summary:
+          type: string
+        refCount:
+          type: integer
+          description: >-
+            Count of raw evidence refs the signal is grounded in ("N
+            forrás-hivatkozás", v4.1) — the raw ref ids stay backend-side, never
+            served to the client
+    CharacterRunObservation:
+      type: object
+      required:
+        - id
+        - expertKey
+        - dimensionKeys
+        - text
+        - salience
+        - signals
+      properties:
+        id:
+          type: string
+          format: uuid
+        expertKey:
+          type: string
+        dimensionKeys:
+          type: array
+          items:
+            type: string
+        text:
+          type: string
+        salience:
+          type: integer
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterRunObservationSignal'
+    CharacterRunResponse:
+      type: object
+      required:
+        - summary
+        - observations
+      properties:
+        summary:
+          $ref: '#/components/schemas/CharacterRunSummary'
+        observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterRunObservation'
     DiagnosisGenerateRequest:
       type: object
       required:

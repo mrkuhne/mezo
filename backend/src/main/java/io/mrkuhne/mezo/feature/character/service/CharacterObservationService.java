@@ -57,6 +57,7 @@ public class CharacterObservationService {
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final CharacterRunLog runLog;
 
     /** One drafted observation as the LLM returns it, before validation/clamping. */
     record Draft(String text, Integer salience, List<String> dimensionKeys) {}
@@ -65,23 +66,46 @@ public class CharacterObservationService {
     @Transactional
     public int generateForDay(UUID owner, LocalDate day) {
         List<DetectorSignal> signals = detectorRegistry.runAll(signalReads.gather(owner, day));
-        if (signals.isEmpty()) {
-            return 0;
-        }
-
-        Map<String, List<DetectorSignal>> byExpert = new LinkedHashMap<>();
-        for (DetectorSignal signal : signals) {
-            byExpert.computeIfAbsent(signal.expertKey(), k -> new ArrayList<>()).add(signal);
-        }
 
         int written = 0;
-        for (Map.Entry<String, List<DetectorSignal>> entry : byExpert.entrySet()) {
-            String expertKey = entry.getKey();
-            if (observationRepository.existsByCreatedByAndExpertKeyAndDay(owner, expertKey, day)) {
-                continue; // idempotent catch-up re-run
+        List<String> detectorKeys = List.of();
+        List<String> calledExpertKeys = List.of();
+        if (!signals.isEmpty()) {
+            detectorKeys = signals.stream().map(DetectorSignal::detectorKey).distinct().toList();
+
+            Map<String, List<DetectorSignal>> byExpert = new LinkedHashMap<>();
+            for (DetectorSignal signal : signals) {
+                byExpert.computeIfAbsent(signal.expertKey(), k -> new ArrayList<>()).add(signal);
             }
-            written += generateForExpert(owner, day, expertKey, entry.getValue());
+
+            List<String> called = new ArrayList<>();
+            for (Map.Entry<String, List<DetectorSignal>> entry : byExpert.entrySet()) {
+                String expertKey = entry.getKey();
+                if (observationRepository.existsByCreatedByAndExpertKeyAndDay(owner, expertKey, day)) {
+                    continue; // idempotent catch-up re-run
+                }
+                called.add(expertKey);
+                written += generateForExpert(owner, day, expertKey, entry.getValue());
+            }
+            calledExpertKeys = called;
         }
+
+        // NIGHTLY run-row, recorded BEFORE the (now removed) quiet-day early return used to sit
+        // (Karakter S9 Gépterem, mezo-1gim.14): a zero-signal day is a REAL run that found
+        // nothing, and recording (0, 0, [], []) IS the "csendes éjszaka" the Gépterem view
+        // celebrates — distinct from a day this pipeline never ran at all (no row at all).
+        // record() is itself idempotent per (created_by, kind, day), so a catch-up re-run of an
+        // already-logged day is a no-op here regardless of what the per-expert exists-checks above
+        // decided at the observation level. Own try/catch (defense in depth on top of record()'s
+        // internal one — the DailySummaryJob isolation idiom) so a run-log failure can never break
+        // this pipeline.
+        try {
+            runLog.record(owner, "NIGHTLY", day, written, calledExpertKeys.size(),
+                    detectorKeys, calledExpertKeys, null);
+        } catch (Exception e) {
+            log.warn("NIGHTLY run-log record call failed for owner {} day {}", owner, day, e);
+        }
+
         return written;
     }
 

@@ -58,6 +58,7 @@ public class CharacterConferenceService {
     private final KonziliumVerdictRound verdictRound;
     private final ClaimLifecycle claimLifecycle;
     private final PortraitWriter portraitWriter;
+    private final CharacterRunLog runLog;
 
     /**
      * Runs (or returns the already-run) weekly konzílium for {@code owner}'s {@code weekStart}
@@ -103,6 +104,33 @@ public class CharacterConferenceService {
             observation.setConsumedByConferenceId(conference.getId());
         }
         observationRepository.saveAll(weekObservations);
+
+        // WEEKLY run-row, ONLY on a newly created conference (Karakter S9 Gépterem, mezo-1gim.14)
+        // — the idempotent short-circuit above (a live row already exists) and the empty-week
+        // null return both skip this: neither one is a run that happened just now. call_count is
+        // deliberately left 0 here: KonziliumProposalRound/KonziliumVerdictRound's Result records
+        // don't expose a reliable "LLM calls actually made" count (a called expert can yield zero
+        // proposals, the verdict round can skip a call when there are no proposals, and portrait
+        // rewrites aren't counted here at all) — rather than fabricate an approximate number, this
+        // leaves call_count honestly at 0 and points readers at the AI-napló (llm_log_history,
+        // via LlmCallContext("character", ...)) as the actual call-count truth. Own try/catch
+        // (defense in depth on top of record()'s internal one) so a run-log failure can never
+        // break the konzílium.
+        try {
+            List<String> expertKeys = weekObservations.stream()
+                    .map(CharacterObservationEntity::getExpertKey)
+                    .distinct()
+                    .toList();
+            List<String> detectorKeys = weekObservations.stream()
+                    .flatMap(o -> o.getSignals().signals().stream())
+                    .map(ObservationSignalsEnvelope.Signal::detectorKey)
+                    .distinct()
+                    .toList();
+            runLog.record(owner, WEEKLY, weekStart, weekObservations.size(), 0,
+                    detectorKeys, expertKeys, conference.getId());
+        } catch (Exception e) {
+            log.warn("WEEKLY run-log record call failed for owner {} weekStart {}", owner, weekStart, e);
+        }
 
         return conference;
     }

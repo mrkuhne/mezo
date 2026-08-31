@@ -22,6 +22,8 @@ import {
   useCharacterConference as useCharacterConferenceFromCharacterHooks,
   useClaimFeedback as useClaimFeedbackFromCharacterHooks,
   useCharacterBootstrap as useCharacterBootstrapFromCharacterHooks,
+  useCharacterRuns as useCharacterRunsFromCharacterHooks,
+  useCharacterRun as useCharacterRunFromCharacterHooks,
 } from '@/data/character/characterHooks'
 
 describe('hooks.ts re-exports the dual-mode fuel-day hooks', () => {
@@ -86,5 +88,7 @@ describe('hooks.ts re-exports the character hooks (mezo-1gim.13)', () => {
     expect(hooks.useCharacterConference).toBe(useCharacterConferenceFromCharacterHooks)
     expect(hooks.useClaimFeedback).toBe(useClaimFeedbackFromCharacterHooks)
     expect(hooks.useCharacterBootstrap).toBe(useCharacterBootstrapFromCharacterHooks)
+    expect(hooks.useCharacterRuns).toBe(useCharacterRunsFromCharacterHooks)
+    expect(hooks.useCharacterRun).toBe(useCharacterRunFromCharacterHooks)
   })
 })

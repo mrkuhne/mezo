@@ -5,7 +5,7 @@ import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge
 import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import { addDays } from '@/shared/lib/dates'
-import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY } from '@/data/character/characterMock'
+import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -1461,4 +1461,19 @@ export const handlers = [
   http.get(`${API_BASE}/api/character/experts`, () => HttpResponse.json({ experts: MOCK_EXPERTS })),
   http.get(`${API_BASE}/api/character/feed`, () => HttpResponse.json([])),
   http.get(`${API_BASE}/api/character/conference`, () => HttpResponse.json([])),
+  // Gépterem (mezo-1gim.14): the run-log timeline writer runs on CHARACTER_SWITCH alone, not on
+  // the dossier's bootstrap state (Task 1's writer wiring runs from the nightly/weekly/monthly/
+  // bootstrap pipelines regardless of whether the user has bootstrapped their dossier yet) — so,
+  // unlike the empty-overview default above, these two are served FULLY from the seeded run log,
+  // consistent with "the pipelines' own switch combinations [are] unchanged" (Global Constraints).
+  http.get(`${API_BASE}/api/character/runs`, ({ request }) => {
+    const url = new URL(request.url)
+    const from = url.searchParams.get('from') ?? ''
+    const to = url.searchParams.get('to') ?? ''
+    return HttpResponse.json(MOCK_RUNS.filter((r) => r.day >= from && r.day <= to))
+  }),
+  http.get(`${API_BASE}/api/character/run/:id`, ({ params }) => {
+    const detail = MOCK_RUN_DETAIL[params.id as string]
+    return detail != null ? HttpResponse.json(detail) : new HttpResponse(null, { status: 404 })
+  }),
 ]

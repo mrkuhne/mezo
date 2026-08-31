@@ -3325,6 +3325,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The run timeline over an inclusive day window (Gépterem — Karakter S9, mezo-1gim.14): one row per pipeline execution that actually ran, quiet nights included; a day with no row means the pipeline never ran for it (honest "nincs adat" — never fabricated) */
+        get: operations["getCharacterRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/run/{runId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One run's full detail: its summary plus the observations it resolved from — by (owner, day) for a NIGHTLY row, by the conference it fed for a WEEKLY/MONTHLY/BOOTSTRAP row */
+        get: operations["getCharacterRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character/conference/{conferenceId}": {
         parameters: {
             query?: never;
@@ -7342,6 +7376,46 @@ export interface components {
                 dimensionKey?: string | null;
                 summary: string;
             }[];
+        };
+        CharacterRunSummary: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "NIGHTLY" | "WEEKLY" | "MONTHLY" | "BOOTSTRAP";
+            /**
+             * Format: date
+             * @description The anchor day — the observed day for NIGHTLY, week_start for WEEKLY, the month's first day for MONTHLY, the run date for BOOTSTRAP
+             */
+            day: string;
+            observationCount: number;
+            /** @description Honest only for NIGHTLY (one call per fired expert); always 0 for WEEKLY/MONTHLY/ BOOTSTRAP rows — no reliable call count is derivable there, so the FE should omit or relabel this cell for non-NIGHTLY kinds. The AI-napló is the call-level truth. */
+            callCount: number;
+            detectorKeys: string[];
+            expertKeys: string[];
+            /**
+             * Format: uuid
+             * @description Soft ref to the conference this run produced — null for NIGHTLY
+             */
+            conferenceId?: string | null;
+        };
+        CharacterRunObservationSignal: {
+            detectorKey: string;
+            summary: string;
+            /** @description Count of raw evidence refs the signal is grounded in ("N forrás-hivatkozás", v4.1) — the raw ref ids stay backend-side, never served to the client */
+            refCount: number;
+        };
+        CharacterRunObservation: {
+            /** Format: uuid */
+            id: string;
+            expertKey: string;
+            dimensionKeys: string[];
+            text: string;
+            salience: number;
+            signals: components["schemas"]["CharacterRunObservationSignal"][];
+        };
+        CharacterRunResponse: {
+            summary: components["schemas"]["CharacterRunSummary"];
+            observations: components["schemas"]["CharacterRunObservation"][];
         };
         DiagnosisGenerateRequest: {
             phenomenon: string;
@@ -16627,6 +16701,87 @@ export interface operations {
             };
             /** @description The claim is already retired — nothing to answer */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterRuns: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Run summaries, newest day first (possibly empty — never a 404) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRunSummary"][];
+                };
+            };
+            /** @description to before from, or the span exceeds 62 days */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRunResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such run for this user */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

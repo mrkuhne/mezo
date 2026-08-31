@@ -17,6 +17,8 @@ import type {
   CharacterExpertDto,
   CharacterFeedItem,
   CharacterOverviewResponse,
+  CharacterRunResponse,
+  CharacterRunSummary,
 } from '@/data/character/characterApi'
 import {
   MOCK_BOOTSTRAP_CONFERENCE,
@@ -27,6 +29,8 @@ import {
   MOCK_FEED,
   MOCK_OVERVIEW,
   MOCK_OVERVIEW_EMPTY,
+  MOCK_RUNS,
+  MOCK_RUN_DETAIL,
 } from '@/data/character/characterMock'
 
 const OVERVIEW_KEY = ['characterOverview']
@@ -245,3 +249,42 @@ export function useCharacterBootstrap(): { start: () => void; pending: boolean; 
 // Re-exported so page components can reach the seeded bootstrap conference (e.g. to show what
 // "just ran" after the mock ceremony) without importing the mock module directly.
 export { MOCK_BOOTSTRAP_CONFERENCE }
+
+// ---------------------------------------------------------------------------
+// Gépterem (mezo-1gim.14) — the run-log timeline. Mock mode filters the full seeded set by the
+// requested [fromIso, toIso] range client-side (mirroring the backend's day-range query); real
+// mode passes the range straight through to the endpoint, which does the filtering server-side.
+// ---------------------------------------------------------------------------
+
+/** Run summaries whose `day` falls within [fromIso, toIso] (inclusive), newest day first. */
+export function useCharacterRuns(fromIso: string, toIso: string): { runs: CharacterRunSummary[]; isLoading: boolean } {
+  const { data, isPending } = useDualQuery<CharacterRunSummary[]>({
+    queryKey: ['characterRuns', fromIso, toIso],
+    mockData: MOCK_RUNS.filter((r) => r.day >= fromIso && r.day <= toIso),
+    realFetch: () => characterApi.runs(fromIso, toIso),
+    realEmpty: [],
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+  })
+  return { runs: data, isLoading: isPending }
+}
+
+/** One run's full detail (summary + observations). `id === null` (nothing selected yet) never
+ *  fetches — the useCharacterConference idiom. 404 (unknown/foreign run) -> null. */
+export function useCharacterRun(id: string | null): { run: CharacterRunResponse | null; isLoading: boolean } {
+  const { data, isPending } = useDualQuery<CharacterRunResponse | null>({
+    queryKey: ['characterRun', id ?? 'none'],
+    mockData: id != null ? MOCK_RUN_DETAIL[id] ?? null : null,
+    realFetch: async () => {
+      if (id == null) return null
+      try {
+        return await characterApi.run(id)
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return null
+        throw e
+      }
+    },
+    realEmpty: null,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+  })
+  return { run: data, isLoading: isPending }
+}

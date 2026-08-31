@@ -109,6 +109,55 @@ test('/me/karakter/konzilium is the conference list — a stable full-page sibli
   expect(await screen.findByText('a csapat heti tanácskozásai')).toBeInTheDocument()
 })
 
+test('/me/karakter/gepterem is the geek-transparency hub — a stable full-page sibling (mezo-1gim.14, Task 4)', async () => {
+  renderApp('/me/karakter/gepterem')
+  expect(await screen.findByText('mi táplálja a dossziét — nyíltan')).toBeInTheDocument()
+  // Fix round 1 (a11y): the Futások tile carries no `aria-label` any more — its accessible
+  // name is its own text content (eyebrow + the live line), so the query matches on that.
+  expect(screen.getByRole('button', { name: /Futások/ })).toBeInTheDocument()
+})
+
+test('/me/karakter/gepterem/futasok is the week-stepped run timeline (mezo-1gim.14, Task 4)', async () => {
+  renderApp('/me/karakter/gepterem/futasok')
+  expect(await screen.findByText('a pipeline futásai, hetekre bontva')).toBeInTheDocument()
+})
+
+test('/me/karakter/gepterem/futas/:id opens one run\'s detail (mezo-1gim.14, Task 4)', async () => {
+  renderApp('/me/karakter/gepterem/futas/ejsz-27')
+  // ejsz-27 is a seeded signal night (2 fired chains) — the flow strip is the
+  // face-independent landmark.
+  expect(await screen.findByRole('group', { name: 'Futás-lánc' })).toBeInTheDocument()
+})
+
+test('/me/karakter/gepterem/adatforrasok is the Bekötve|Tervezett data-source inventory (mezo-1gim.14, Task 5)', async () => {
+  renderApp('/me/karakter/gepterem/adatforrasok')
+  expect(await screen.findByText('mit olvas a rendszer ma, és mit tervez')).toBeInTheDocument()
+})
+
+test('/me/karakter/gepterem/adatforrasok/kor/:n opens one MINDENT-be round\'s mini-page (mezo-1gim.14, Task 5)', async () => {
+  renderApp('/me/karakter/gepterem/adatforrasok/kor/1')
+  expect(await screen.findByText('1. KÖR')).toBeInTheDocument()
+})
+
+test('/me/karakter/gepterem/detektorok lists the 5 real detectors (mezo-1gim.14, Task 5)', async () => {
+  renderApp('/me/karakter/gepterem/detektorok')
+  expect(await screen.findByText('a ma aktív katalógus, egy mondatban')).toBeInTheDocument()
+})
+
+test('Adatforrások\' Tervezett segment survives a kör round-trip (fix round 1, mezo-1gim.14)', async () => {
+  // Bug: the segment used to be raw useState — remounting AdatforrasokPage on the way back
+  // from a kör mini-page silently reset it to Bekötve. Now useStickyTab-backed
+  // (character.adatforrasok.view), the same idiom Sport/Futás/Fuel-slots/Memória use for their
+  // own in-view segmented controls.
+  renderApp('/me/karakter/gepterem/adatforrasok')
+  await userEvent.click(await screen.findByRole('tab', { name: 'Tervezett' }))
+  expect(screen.getByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
+  await userEvent.click(screen.getByText('Edzés & test'))
+  expect(await screen.findByText('1. KÖR')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(await screen.findByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
+})
+
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's

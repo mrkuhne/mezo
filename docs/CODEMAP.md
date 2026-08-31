@@ -155,39 +155,43 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sub-features:** `detector`
   - **entities→tables:** `CharacterClaimEntity`→`character_claim`, `CharacterConferenceEntity`→`character_conference`,
     `CharacterDimensionEntity`→`character_dimension`, `CharacterObservationEntity`→`character_observation`,
-    `CharacterPortraitRevisionEntity`→`character_portrait_revision`
+    `CharacterPortraitRevisionEntity`→`character_portrait_revision`, `CharacterRunEntity`→`character_run`
   - **repositories:** `CharacterClaimRepository`, `CharacterConferenceRepository`, `CharacterDimensionRepository`,
-    `CharacterObservationRepository`, `CharacterPortraitRevisionRepository`
+    `CharacterObservationRepository`, `CharacterPortraitRevisionRepository`, `CharacterRunRepository`
   - **services:** `CharacterBootstrapService`, `CharacterConferenceJob`, `CharacterConferenceService`,
     `CharacterConfidenceWords`, `CharacterCoreCatalog`, `CharacterExpertCatalog`, `CharacterFeedbackService`,
     `CharacterHistoryReads`, `CharacterMonthlyJob`, `CharacterMonthlyService`, `CharacterObservationJob`,
-    `CharacterObservationService`, `CharacterPromptAssembler`, `CharacterService`, `CharacterSignalReads`,
-    `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`, `ExpertEvidence`, `KonziliumProposalRound`,
-    `KonziliumVerdictRound`, `PortraitWriter`
+    `CharacterObservationService`, `CharacterPromptAssembler`, `CharacterRunLog`, `CharacterService`,
+    `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`, `ExpertEvidence`,
+    `KonziliumProposalRound`, `KonziliumVerdictRound`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterProperties`
   - **other:** `CharacterDetector`, `CheckinGapDetector`, `ClaimConfidenceHistoryEnvelope`, `ClaimEvidenceEnvelope`,
     `ClaimFeedbackEnvelope`, `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`, `DetectorInput`,
     `DetectorRegistry`, `DetectorSignal`, `JournalNoteDetector`, `JournalSilenceDetector`, `LoggingGapDetector`,
-    `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `UnderLoggingDetector`
-- **Contract** `api/feature/character/character.yml` — 8 operations
+    `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `RunDetectorKeysEnvelope`,
+    `RunExpertKeysEnvelope`, `UnderLoggingDetector`
+- **Contract** `api/feature/character/character.yml` — 10 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
-    POST /api/character/conference · GET /api/character/conference/{conferenceId}
+    POST /api/character/conference · GET /api/character/runs · GET /api/character/run/{runId} ·
+    GET /api/character/conference/{conferenceId}
 - **FE data** `frontend/src/data/character`
   - **modules:** characterApi.ts, characterHooks.ts, characterMock.ts
 - **FE ui** `frontend/src/features/character`
-  - **pages:** CharacterFeedPage.tsx, CsapatPage.tsx, DimensionPage.tsx, DimensionsPage.tsx, KarakterHubPage.tsx,
-    KonziliumPage.tsx
-  - **components:** ClaimTile.tsx, MaturityRing.tsx, PersonaOrb.tsx, TranscriptTurn.tsx
-  - **root:** character.css, dossierState.ts, expertColors.ts, feedDayLabel.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 19 IT + 5 unit
+  - **pages:** AdatforrasokPage.tsx, CharacterFeedPage.tsx, CsapatPage.tsx, DetektorokPage.tsx, DimensionPage.tsx,
+    DimensionsPage.tsx, FutasokPage.tsx, GeptermPage.tsx, KarakterHubPage.tsx, KonziliumPage.tsx, KorPage.tsx,
+    RunPage.tsx
+  - **components:** ClaimTile.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx,
+    TranscriptTurn.tsx
+  - **root:** character.css, dossierState.ts, expertColors.ts, feedDayLabel.ts, inventory.ts, runLabels.ts
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 20 IT + 5 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterConferenceJobIT`, `CharacterConferenceServiceIT`, `CharacterFeedbackIT`, `CharacterHistoryReadsIT`,
     `CharacterMonthlyServiceIT`, `CharacterObservationJobIT`, `CharacterObservationServiceIT`,
     `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`,
-    `CharacterPromptWiringIT`, `ClaimLifecycleIT`, `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`,
-    `KonziliumVerdictRoundIT`
+    `CharacterPromptWiringIT`, `CharacterRunLogIT`, `ClaimLifecycleIT`, `KonziliumProposalRoundIT`,
+    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`
   - **populators:** `AiConversationPopulator`, `CheckInPopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
     `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `MealPopulator`, `PantryItemPopulator`,
     `PatternPopulator`, `SleepLogPopulator`, `UserPopulator`, `WeeklyReviewPopulator`
@@ -1125,22 +1129,22 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`,
   `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
   `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
-- **`ResetDatabase` TRUNCATE list** — 90 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 91 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
-    `character_portrait_revision`, `check_in`, `coin_event`, `companion_flag_log`, `companion_message`,
-    `daily_intention`, `daily_quest`, `daily_summary`, `decision_entry`, `diagnosis`, `exercise`, `exercise_feedback`,
-    `exercise_set`, `experiment`, `feedback_rollup`, `fuel_settings`, `gamification_profile`, `goal`, `goal_plan_link`,
-    `gratitude_entry`, `gym_schedule_slot`, `habit_chain`, `habit_day`, `habit_def`, `intention_creed`,
-    `intention_focus`, `journal_entry`, `knowledge_edge`, `knowledge_fact`, `knowledge_node`, `learned_fact`,
-    `level_up_event`, `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`, `medication`, `medication_dose`,
-    `memoir`, `memory_embedding`, `mention`, `meso_template`, `mesocycle`, `mesocycle_report`, `message_feedback`,
-    `muscle_group_volume_log`, `needs_day`, `notification_pref`, `notification_schedule`, `owned_title`,
-    `pantry_import`, `pantry_item`, `pattern`, `pattern_event`, `period_summary`, `perk_unlock`, `person`,
-    `prediction`, `protocol`, `protocol_item`, `push_log`, `push_subscription`, `recipe`, `recipe_ingredient`,
-    `ritual_day`, `run_session_log`, `running_block`, `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`,
-    `sport_schedule_slot`, `sport_session`, `supplement_intake`, `water_log`, `weekly_review`, `weekly_score`,
-    `weekly_suggestion`, `weight_log`, `workout_session`
+    `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
+    `companion_message`, `daily_intention`, `daily_quest`, `daily_summary`, `decision_entry`, `diagnosis`, `exercise`,
+    `exercise_feedback`, `exercise_set`, `experiment`, `feedback_rollup`, `fuel_settings`, `gamification_profile`,
+    `goal`, `goal_plan_link`, `gratitude_entry`, `gym_schedule_slot`, `habit_chain`, `habit_day`, `habit_def`,
+    `intention_creed`, `intention_focus`, `journal_entry`, `knowledge_edge`, `knowledge_fact`, `knowledge_node`,
+    `learned_fact`, `level_up_event`, `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`, `medication`,
+    `medication_dose`, `memoir`, `memory_embedding`, `mention`, `meso_template`, `mesocycle`, `mesocycle_report`,
+    `message_feedback`, `muscle_group_volume_log`, `needs_day`, `notification_pref`, `notification_schedule`,
+    `owned_title`, `pantry_import`, `pantry_item`, `pattern`, `pattern_event`, `period_summary`, `perk_unlock`,
+    `person`, `prediction`, `protocol`, `protocol_item`, `push_log`, `push_subscription`, `recipe`,
+    `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`, `skill_progress`, `sleep_goal`, `sleep_log`,
+    `sport_event`, `sport_schedule_slot`, `sport_session`, `supplement_intake`, `water_log`, `weekly_review`,
+    `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_session`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts
