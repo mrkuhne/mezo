@@ -165,7 +165,7 @@ public interface CompanionMapper {
             return List.of();
         }
         return envelope.refs().stream()
-                .map(ref -> MessageRef.builder().kind(ref.kind()).id(ref.id()).build())
+                .map(ref -> MessageRef.builder().kind(ref.kind()).id(ref.id()).label(ref.label()).build())
                 .toList();
     }
 

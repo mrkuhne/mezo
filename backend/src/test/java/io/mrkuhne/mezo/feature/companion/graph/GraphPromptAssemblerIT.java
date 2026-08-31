@@ -77,6 +77,29 @@ class GraphPromptAssemblerIT extends AbstractIntegrationTest {
                         c.getId().toString(), d.getId().toString());
     }
 
+    /** mezo-b3pp.33: the ref's label is the node's title, taken straight off {@code NeighborEdge}'s
+     *  {@code fromTitle}/{@code toTitle} — no separate lookup. */
+    @Test
+    void testAssemble_shouldLabelEachGraphRefWithItsNodeTitle_whenEdgesRender() {
+        UUID userId = databasePopulator.populateUser("graph-labels@test.local");
+        GraphNodeEntity a = graphPopulator.createNode(userId, GraphNodeEntity.KIND_PATTERN, "Késői evés");
+        GraphNodeEntity b = graphPopulator.createNode(userId, GraphNodeEntity.KIND_PATTERN, "Rossz alvás");
+        GraphNodeEntity c = graphPopulator.createNode(userId, GraphNodeEntity.KIND_PATTERN, "Gyenge edzés");
+        graphPopulator.createEdge(userId, a.getId(), b.getId(), GraphEdgeEntity.KIND_TRIGGERS, "0.800");
+        graphPopulator.createEdge(userId, b.getId(), c.getId(), GraphEdgeEntity.KIND_TRIGGERS, "0.600");
+
+        GraphPromptAssembler.GraphContext ctx = assembler.assemble(userId, "miért rossz az alvás mostanában?");
+
+        assertThat(ctx.refs()).hasSize(3);
+        assertThat(ctx.refs()).allSatisfy(ref -> assertThat(ref.kind()).isEqualTo(GraphPromptAssembler.REF_KIND));
+        assertThat(ctx.refs()).filteredOn(ref -> ref.id().equals(a.getId().toString()))
+                .singleElement().extracting(RefsEnvelope.Ref::label).isEqualTo("Késői evés");
+        assertThat(ctx.refs()).filteredOn(ref -> ref.id().equals(b.getId().toString()))
+                .singleElement().extracting(RefsEnvelope.Ref::label).isEqualTo("Rossz alvás");
+        assertThat(ctx.refs()).filteredOn(ref -> ref.id().equals(c.getId().toString()))
+                .singleElement().extracting(RefsEnvelope.Ref::label).isEqualTo("Gyenge edzés");
+    }
+
     @Test
     void testAssemble_shouldBeEmpty_whenNoSeedOrNoEdges() {
         UUID userId = databasePopulator.populateUser("graph-assemble-empty@test.local");

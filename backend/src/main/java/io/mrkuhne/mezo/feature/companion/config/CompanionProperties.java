@@ -168,6 +168,12 @@ public record CompanionProperties(
         @DecimalMin("0.0") @DecimalMax("1.0") double pruneFloor,
         /** Hard cap on the rendered [Összefüggések] block (estimated tokens, W2.4). */
         @Min(1) int renderMaxTokens,
+        /** Cap on GraphNode refs emitted per turn (mezo-b3pp.33) — topK edges yield up to 2×topK
+         *  node refs (each edge has two endpoints) against the shared
+         *  {@code tools.max-refs-per-turn} budget, and graph refs are added LAST, so an uncapped
+         *  graph turn would fill the whole footer with graph chips and truncate tool/Memory refs
+         *  mid-list. */
+        @Min(1) @Max(20) int maxRefs,
         /** W2.2 edge structurer: suggestions below this confidence are dropped (edges start humble). */
         @DecimalMin("0.0") @DecimalMax("1.0") double edgeConfidenceFloor,
         /** W2.5 (mezo-b3pp.10): cron for the nightly GraphMaintenanceJob (server zone). */

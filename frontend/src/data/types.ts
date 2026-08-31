@@ -881,7 +881,10 @@ export interface Experiment {
 }
 
 export type ChatRole = 'user' | 'assistant'
-export interface ChatRef { kind: string; id: string }
+/** `label` (mezo-b3pp.33): the wire's optional carried label — null on rows that omit it,
+ *  undefined for producers that never set it. `chatRefDisplay` prefers it and falls back to
+ *  the id-derived label (see chatRefs.ts). */
+export interface ChatRef { kind: string; id: string; label?: string | null }
 /** W3.1b (mezo-b3pp.28): one memory ambient recall injected into the answer's prompt —
  *  `similarity` is the raw cosine 0..1 (the row renders `Math.round(s * 100)%`). */
 export interface ChatRecalledMemory {
