@@ -14,4 +14,12 @@ public interface FeedbackRollupRepository extends JpaRepository<FeedbackRollupEn
     /** W4.3 (mezo-b3pp.17): every scope for one user in a single read — the ProfileAssembler needs
      *  all 11 rollups at once, and 11 point lookups would be 11 round trips for the same page. */
     List<FeedbackRollupEntity> findByCreatedByAndDeletedFalseOrderByScopeAsc(UUID createdBy);
+
+    /** Same as above, scoped to ONE window (mezo-b3pp.35, item 3) — nothing deletes a rollup row
+     *  when {@code feedback-learning.window-days} changes, so retired-window rows outlive the
+     *  config that produced them. {@code ProfileAssembler} must read only the window the nightly
+     *  job currently WRITES, or it renders one contradictory line per scope for every window that
+     *  ever existed. */
+    List<FeedbackRollupEntity> findByCreatedByAndWindowDaysAndDeletedFalseOrderByScopeAsc(
+        UUID createdBy, int windowDays);
 }
