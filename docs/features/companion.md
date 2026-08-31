@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-28
+updated: 2026-08-31
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -794,8 +794,25 @@ companion surface since V0.4, dual-mode:
   cosine similarity to the user's message, not a confidence in the answer. A turn that recalled
   nothing — and every user bubble, and every pre-W3.1b answer — renders **no row at all**, not an
   empty one. Both modes show it (mock seeds two items on the first assistant message, one on the
-  canned reply); the sibling „Hivatkozott · L3" ref row is unchanged and independent — refs collapse
-  a day into one chip, the disclosure lists every episode.
+  canned reply); refs collapse a day into one chip, the disclosure lists every episode.
+- **The `Memory` chip is deduped against the disclosure, conditionally (`mezo-b3pp.29`)** — the
+  sibling „Hivatkozott · L3" ref row is no longer unconditionally independent of the „Emlékek · N"
+  disclosure above: `ChatMessage.tsx` filters `Memory`-kind refs out of the chip row **when and
+  only when** the message carries a non-empty `recalled` list, because `RecalledMemoriesRow` then
+  shows the very same recalled memories with source and gist — a bare `[Memory]` date chip beside
+  it would be pure duplication. With no `recalled` list the `Memory` chips stay: they are then the
+  answer's only provenance for the recall, so filtering unconditionally would destroy information
+  rather than dedupe it. The footer's visibility guard changed to match — `visibleRefs.length > 0`,
+  not `m.refs`'s truthiness — because an empty array is truthy in JS: `refs: []` used to render a
+  bare „Hivatkozott · L3" eyebrow over nothing, and the new filter can now put a normal,
+  non-empty-`refs` message into exactly that state (all its refs were `Memory`, all filtered).
+  Pinned by three `ChatPage.test.tsx` cases: *hides the Memory chips when the answer carries a
+  recalled list, but keeps the Emlékek row and the other chips*, *keeps the Memory chips when the
+  answer has no recalled list — the chip is the only provenance*, and *hides the whole refs footer
+  when filtering leaves nothing (latent empty-array-is-truthy bug)*. Out of scope, seen and
+  deliberately deferred to `mezo-d20.12`: the eyebrow's own „· L3" label is arguably wrong (every
+  chip it labels today is an L0/L1 ref, never an L3 fact), but the string is pinned as prototype
+  copy in three Design 2.0 documents, so it is not touched here.
 - **Mock mode** (`VITE_USE_MOCK=true`): the Phase-1 demo — seeded `initialChat`, the canned
   1.2s `cannedReply` (branches on `"fáradt"`), subtitle `demo beszélgetés`. The V0.4 rewrite
   removed the fake `"23 facts active · Gemini 3.1 Pro"` line and the `"L4 aktív"` chip — the
@@ -4894,7 +4911,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Frontend (chat real since V0.4, knowledge since V1.2)**
 - `frontend/src/data/_client/api.ts` — `apiSse` (fetch-ReadableStream SSE reader) + its `api.sse.test.ts`.
 - `frontend/src/data/insights/chatApi.ts` — REST + stream client, `toChatMessage` wire mapper (+ `degraded` since V1.3; **`mezo-b3pp.28`** maps `recalled`, `[]` → `undefined` so a recall-less answer renders no disclosure at all).
-- `frontend/src/features/insights/components/ChatMessage.tsx` — the bubble (chips, refs, V1.3 `nem ellenőrzött` badge; **`mezo-b3pp.28`** mounts `RecalledMemoriesRow` under the card, above the W4.1 feedback chips).
+- `frontend/src/features/insights/components/ChatMessage.tsx` — the bubble (chips, refs, V1.3 `nem ellenőrzött` badge; **`mezo-b3pp.28`** mounts `RecalledMemoriesRow` under the card, above the W4.1 feedback chips; **`mezo-b3pp.29`** filters `Memory` refs out of the chip row when `recalled` is non-empty, and gates the footer on the filtered length — see §2 above).
 - `frontend/src/features/insights/components/RecalledMemoriesRow.tsx` — **`mezo-b3pp.28`** the W3.1b „Emlékek · N" disclosure: a collapsed `aria-expanded` button (the answer is the point; this is its provenance) that opens to one `YYYY-MM-DD · forrás · NN%` line + gist per recalled memory, in prompt order. `similarity` is rendered `Math.round(s*100)%` — the raw cosine, not the decayed rank score.
 - `frontend/src/data/insights/chatHooks.ts` — `useChat` (bootstrap dual-read) + `useChatActions` (send/stream state machine); re-exported from `data/hooks.ts`.
 - `frontend/src/data/insights/chat.ts` — the mock seed (`initialChat`) + the shared `cannedReply`.
