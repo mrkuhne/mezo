@@ -424,4 +424,149 @@ class DetectorTest {
                 new DetectorInput.TrendWindow(List.of(), List.of())));
         assertThat(fired).isEmpty();
     }
+
+    @Test
+    void hrRecoveryTrend_firesOnBandFlip_only() {
+        // Two runs (Mon+Thu) per week, 8 weeks. Oldest 4 weeks (n=7..4) both days = 120s.
+        // Middle 3 weeks (n=3..1) both days = 112s. Current week (n=0): Mon Aug24 = 108s;
+        // Thu Aug27 = DAY, value varies per scenario below.
+        //
+        // Hand-computed bands (TreeMap orders weekStart ascending, oldest first; half=4):
+        //  as-of DAY-1 (Aug26, excludes the DAY run): weekly avgs oldest->newest =
+        //    120,120,120,120 | 112,112,112,108(Mon-only, n=0 has 1 pt)
+        //    firstHalf = avg(120,120,120,120) = 120
+        //    lastHalf  = avg(112,112,112,108) = 444/4 = 111
+        //    delta = 120 - 111 = 9  -> |9| < 10 -> KOZOMBOS
+        //  as-of DAY (Aug27, includes the DAY run X): n=0 avg = (108+X)/2
+        //    lastHalf' = avg(112,112,112,(108+X)/2)
+        //    X=40  -> n=0 avg=74   -> lastHalf'=(112+112+112+74)/4=410/4=102.5 -> delta'=17.5 -> JAVUL (flip!)
+        //    X=108 -> n=0 avg=108  -> lastHalf'=(112+112+112+108)/4=444/4=111  -> delta'=9    -> KOZOMBOS (no flip)
+        HrRecoveryTrendDetector d = new HrRecoveryTrendDetector();
+        LocalDate mon0 = DAY.minusDays(3); // Aug24
+        List<DetectorInput.RunPoint> olderWeeks = List.of(
+                // n=7: Jul6/Jul9
+                new DetectorInput.RunPoint(DAY.minusDays(52), null, 120, null),
+                new DetectorInput.RunPoint(DAY.minusDays(49), null, 120, null),
+                // n=6: Jul13/Jul16
+                new DetectorInput.RunPoint(DAY.minusDays(45), null, 120, null),
+                new DetectorInput.RunPoint(DAY.minusDays(42), null, 120, null),
+                // n=5: Jul20/Jul23
+                new DetectorInput.RunPoint(DAY.minusDays(38), null, 120, null),
+                new DetectorInput.RunPoint(DAY.minusDays(35), null, 120, null),
+                // n=4: Jul27/Jul30
+                new DetectorInput.RunPoint(DAY.minusDays(31), null, 120, null),
+                new DetectorInput.RunPoint(DAY.minusDays(28), null, 120, null),
+                // n=3: Aug3/Aug6
+                new DetectorInput.RunPoint(DAY.minusDays(24), null, 112, null),
+                new DetectorInput.RunPoint(DAY.minusDays(21), null, 112, null),
+                // n=2: Aug10/Aug13
+                new DetectorInput.RunPoint(DAY.minusDays(17), null, 112, null),
+                new DetectorInput.RunPoint(DAY.minusDays(14), null, 112, null),
+                // n=1: Aug17/Aug20
+                new DetectorInput.RunPoint(DAY.minusDays(10), null, 112, null),
+                new DetectorInput.RunPoint(DAY.minusDays(7), null, 112, null),
+                // n=0: Aug24 (Mon)
+                new DetectorInput.RunPoint(mon0, null, 108, null));
+
+        // Scenario 1: DAY run at 40s -> band flips KOZOMBOS -> JAVUL -> fires "javul"
+        List<DetectorInput.RunPoint> withFlip = new java.util.ArrayList<>(olderWeeks);
+        withFlip.add(new DetectorInput.RunPoint(DAY, null, 40, null));
+        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of());
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), withFlip, List.of(), null, flipTrend));
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("hr-recovery-trend");
+            assertThat(s.expertKey()).isEqualTo("doki");
+            assertThat(s.summary()).contains("javul");
+        });
+
+        // Scenario 2: DAY run removed entirely -> no new run data -> empty regardless of band
+        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of());
+        assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), olderWeeks, List.of(), null, noDayTrend))).isEmpty();
+
+        // Scenario 3: DAY run at 108s (same as Mon) -> band stays KOZOMBOS -> band-change gate
+        // suppresses even though new run data exists
+        List<DetectorInput.RunPoint> noFlip = new java.util.ArrayList<>(olderWeeks);
+        noFlip.add(new DetectorInput.RunPoint(DAY, null, 108, null));
+        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of());
+        assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), noFlip, List.of(), null, noFlipTrend))).isEmpty();
+    }
+
+    @Test
+    void hrRecoveryTrend_quietUnderFourWeeks() {
+        HrRecoveryTrendDetector d = new HrRecoveryTrendDetector();
+        // 3 distinct weeks (current, -7d, -14d), incl. one run on DAY -> weekly.size()=3 < MIN_WEEKS
+        List<DetectorInput.RunPoint> runs = List.of(
+                new DetectorInput.RunPoint(DAY, null, 100, null),
+                new DetectorInput.RunPoint(DAY.minusDays(7), null, 100, null),
+                new DetectorInput.RunPoint(DAY.minusDays(14), null, 100, null));
+        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of());
+        assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), runs, List.of(), null, trend))).isEmpty();
+    }
+
+    @Test
+    void sleepChain_firesOnRepeatedPoorSleepDecline() {
+        SleepPerformanceChainDetector d = new SleepPerformanceChainDetector();
+        List<DetectorInput.SleepPoint> sleep = List.of(
+                new DetectorInput.SleepPoint(DAY.minusDays(3), 3, null, null),
+                new DetectorInput.SleepPoint(DAY, 3, null, null));
+        List<DetectorInput.RunPoint> runs = List.of(
+                new DetectorInput.RunPoint(DAY.minusDays(3), 9, null, null),
+                new DetectorInput.RunPoint(DAY, 9, null, null));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), runs, sleep, null,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("sleep-performance-chain");
+            assertThat(s.expertKey()).isEqualTo("szomnologus");
+            assertThat(s.summary()).contains("2");
+        });
+    }
+
+    @Test
+    void sleepChain_quietWithGoodSleep() {
+        SleepPerformanceChainDetector d = new SleepPerformanceChainDetector();
+        List<DetectorInput.SleepPoint> sleep = List.of(
+                new DetectorInput.SleepPoint(DAY.minusDays(3), 8, null, null),
+                new DetectorInput.SleepPoint(DAY, 8, null, null));
+        List<DetectorInput.RunPoint> runs = List.of(
+                new DetectorInput.RunPoint(DAY.minusDays(3), 9, null, null),
+                new DetectorInput.RunPoint(DAY, 9, null, null));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), runs, sleep, null,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).isEmpty();
+    }
+
+    @Test
+    void avoidance_firesOnRepeatedSkips() {
+        AvoidancePatternDetector d = new AvoidancePatternDetector();
+        DetectorInput.ExerciseWork skipped = new DetectorInput.ExerciseWork(
+                "Tricepsznyújtás", 0, 2, List.of(), null, null, null);
+        DetectorInput.GymDay gym1 = new DetectorInput.GymDay(DAY, List.of(skipped));
+        DetectorInput.GymDay gym2 = new DetectorInput.GymDay(DAY.minusDays(2), List.of(skipped));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gym1, gym2), List.of(), List.of(), List.of(), null,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("avoidance-pattern");
+            assertThat(s.expertKey()).isEqualTo("drill");
+            assertThat(s.summary()).contains("Tricepsznyújtás");
+        });
+    }
+
+    @Test
+    void avoidance_quietOnOneOff() {
+        AvoidancePatternDetector d = new AvoidancePatternDetector();
+        DetectorInput.ExerciseWork skipped = new DetectorInput.ExerciseWork(
+                "Tricepsznyújtás", 0, 1, List.of(), null, null, null);
+        DetectorInput.GymDay gym = new DetectorInput.GymDay(DAY, List.of(skipped));
+        List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(gym), List.of(), List.of(), List.of(), null,
+                new DetectorInput.TrendWindow(List.of(), List.of())));
+        assertThat(fired).isEmpty();
+    }
 }
