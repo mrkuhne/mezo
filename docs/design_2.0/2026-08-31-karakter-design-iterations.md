@@ -217,3 +217,102 @@ counterparts, reusing the identical wording.
 - New decision questions (tile-vs-wide-row placement, whether the Feed "⚙" duplication earns its
   keep, how much run history to keep, and inventory grouping by job-kind vs. domain) are listed
   in the prototype's own "Döntési kérdések Danielnek" section for the next round.
+
+## Round 2b — Adatforrás-leltár refined into four numbered rounds
+
+Mid-round refinement on the Gépterem's Adatforrás-leltár (still `mezo-1gim.14`): Daniel wanted
+the inventory to show the **planned full corpus**, not just today's connected sources, because
+the not-yet-connected rows will light up here as work lands. The flat "még nincs bekötve" list
+became three visual states: **bekötve** (solid rows — unchanged from round 2), **"N. KÖR"**
+(dashed, numbered group headers for four planned future rounds — 1. Edzés & test, 2. Fuel &
+ciklus, 3. Psziché & viselkedés-meta, 4. Kapcsolatok & AI-meta — each item showing its target
+detector key as a monospace ghost chip where one is named, and a lavender "érzékeny" tag on the
+medication-cycle, check-in-dimension, and knowledge-triage rows), and a fainter **"később"** tail
+for the genuine remainder (e.g. the still-missing `WeightGapDetector` variant of `logging-gap`).
+This list is explicitly framed as *being* the `mezo-1gim.15` ("MINDENT be") working checklist —
+rows are expected to migrate into "bekötve" as each round ships.
+
+## Round 3 (mezo-1gim.14) — run detail pages replace the accordion; week navigation replaces the flat list
+
+Daniel reviewed round 2/2b and gave two directives, verbatim: *"NE DROPDOWN LEGYEN, és szép és
+gazdag page legyen ahova átvisz"* and *"Mi van ha 1 évet nézek vissza? 1 évet kell görgetni?"*
+
+### 1. No dropdowns — every run is a tap-through to its own page
+
+The Futás-idővonal's expand-in-place accordion rows (`.runrow.open` / `.run-body`) are gone.
+Tapping a run row now slides in a **run detail page** (`#page-run`, the same Huawei tile→page
+pattern used everywhere else in this prototype) with:
+
+- A **hero** — a kind-specific clay/orb visual (`s-orb-ejszaka` for nightly runs, the coral
+  `s-orb` for konzílium since Mezo chairs it, `i-retegek`/`i-kristaly` for havi/bootstrap), the
+  run's label, and its date/time.
+- A **StatStrip** (`.runstats`, four tinted `.rc` cells) carrying the headline counts — for a
+  noisy night: megfigyelés/szakértő hívva/detektor tüzelt; for a quiet night: a proud `0 hívás ·
+  0 Ft · 0 detektor`; for a konzílium: feldolgozva/elfogadva (sage)/nyugdíjazva (amber)/portré
+  átírva (lavender).
+- The signal chains as **full-width, roomier cards** (`.chain.big` — the same two-tone
+  KÓD→LLM structure from round 2, just given breathing room instead of accordion-compressed
+  padding).
+- A **"Hívott szakértők"** section of op-chips (`.opchip`: orb avatar + persona name + the
+  actual operation — `megfigyelés` for nightly detector hits, `javaslat`/`ellenőrzés`/`döntés +
+  portré` for a konzílium's proposal/skeptic/integrate+portrait steps, derived from the real
+  `TRANSCRIPT.turns` for the one session with full transcript detail).
+- For konzílium runs: outcome cells +, only when the full transcript is loaded (today, only the
+  newest session), a **"Teljes transzkript megnyitása"** button that closes the run page and
+  opens the real Konzílium page's transcript view (`openKonzTranscript()`, extracted as a shared
+  function so both the konzílium list and any run-detail page can trigger it identically).
+  Older sessions without loaded transcript detail say so honestly instead of showing a dead link.
+- A run-scoped **AI-napló** deep-link row.
+- **Quiet nights get their own honest mini-page** — same template, just the zero-cost stat strip
+  and a single proud "0 hívás, 0 forint" panel — never a placeholder or degraded state.
+
+The Feed page's "⚙ miből?" **inline** disclosure is gone too — the gear button now **navigates**
+to the same run-detail page the observation came from (each `FEED` item carries a `runId`), so
+Feed and Gépterem are two entry points into literally the same data and the same page, not two
+diverging mocks. The run-detail page's back button reads the correct origin ("‹ Feed" vs.
+"‹ Gépterem") depending on where it was opened from.
+
+### 2. Week navigation replaces the flat, ever-growing list
+
+The flat run list didn't scale — Daniel's question was direct: a year of history can't mean a
+year of scrolling. The Futás-idővonal section now opens with a **week-stepper** header (‹ aug
+24–30 › — the app's existing WeekHub/DayNavigator idiom), and the list below shows only the
+selected week's runs, **grouped by day** (H–V labels, "MA" on today). Tapping the week label
+opens a compact **month-jump popover** (`.weekmenu`, a horizontal chip row — the
+dropdown/popover form already used elsewhere in this prototype for the notification bell and
+daypart switch, so it stays consistent with the established idiom rather than introducing a new
+one) letting Daniel jump straight to any available week in one tap instead of stepping through
+one at a time. The demo ships 3 weeks of mock data (aug 10–30, `WEEKS` array in
+`karakter-body.html`) with a real, working `‹`/`›` stepper (disabled at both ends of the mocked
+range) — the aside is explicit that a real implementation would page/lazy-load older weeks
+rather than hold a year in memory at once.
+
+Rare, non-weekly runs (havi mélyolvasás, bootstrap) don't fit the week grid naturally (they
+happen monthly / once) and got their own short **"Ritkább futások"** list below the week view,
+using the same tap-through run-detail page.
+
+### Implementation notes
+
+- `WEEKS` is built from three `WEEK_STARTDAYS` (Monday anchors) via `buildDay()`, which looks up
+  per-day noisy-chain data from a `CHAIN_POOL` keyed by day-of-month and per-Sunday konzílium
+  data from a `KONZ_POOL` — days without an entry default to a quiet nightly run, so the 21-day
+  mock didn't require hand-authoring every row.
+- A single `RUN_INDEX` (id → run object) flattens `WEEKS` + `RARE_RUNS` and backs both the week
+  list's navigation and the Feed's `⚙` navigation (`goToRun(id, origin)`), so there is exactly
+  one source of truth for "what does this run contain" no matter which surface links to it.
+- `chainPanelHTML()` lost its `source`-string fallback branch (no longer needed — quiet/no-chain
+  states are now handled by the run-detail template directly) and gained a `big` flag for the
+  roomier card variant.
+- The Konzílium page's own session list (`KONZ`) gained a third entry (`w0`, aug 16) so the
+  three mocked weeks' Sunday sessions are all consistently reachable from both surfaces.
+
+### Net effect / what's unchanged
+
+- The Dimenziók, Csapat, and Bootstrap-flow pages are untouched by this round.
+- The Konzílium page's own transcript UI (persona bubbles, phase labels, outcome cells) is
+  unchanged — the run-detail page links into it rather than duplicating it.
+- Updated decision questions (dropped: run-history depth and the accordion question, both now
+  answered by the week-nav + run-detail-page directions; kept: tile-vs-wide-row placement,
+  inventory grouping, and round order; reframed: whether the Feed "⚙" should keep navigating away
+  or also carry a shorter inline summary) are listed in the prototype's own "Döntési kérdések
+  Danielnek" section for the next round.

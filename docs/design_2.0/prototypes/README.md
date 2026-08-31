@@ -436,3 +436,17 @@ are usable without a build step).
   micro-interactions — all reduced-motion-guarded. New-content note: dimension/expert keys,
   detector keys, and the konzílium's read windows are pulled directly from
   `CharacterCoreCatalog`/`CharacterExpertCatalog`/`docs/features/character.md`, not invented.
+  **Round 2b — leltár in four rounds**: the Adatforrás-leltár's "még nincs bekötve" list became
+  four numbered, dashed **"N. KÖR"** groups (edzés & test / fuel & ciklus / psziché &
+  viselkedés-meta / kapcsolatok & AI-meta) each showing its target detector key as a monospace
+  ghost chip and a lavender "érzékeny" tag where relevant, plus a fainter "később" tail —
+  doubling as the literal `mezo-1gim.15` working checklist. **Round 3 — no dropdowns, week
+  navigation** (see [`2026-08-31-karakter-design-iterations.md`](../2026-08-31-karakter-design-iterations.md)
+  for the full rationale): the Futás-idővonal's accordion rows are gone — every run (including
+  quiet nights) now taps through to its own **run detail page** (kind-specific orb/clay hero +
+  StatStrip + full-width `.chain.big` signal cards + "Hívott szakértők" op-chips + a konzílium
+  outcome/transcript link + a run-scoped AI-napló row); the Feed's "⚙" now navigates to that same
+  page (dynamic "‹ Feed" vs "‹ Gépterem" back label) instead of expanding inline. The flat list
+  is replaced by a **week-stepper** (‹ aug 24–30 ›, day-grouped H–V rows, "MA" marker) with a
+  compact month-jump popover for fast multi-week travel; rare runs (havi/bootstrap) live in a
+  separate "Ritkább futások" list. Demo ships 3 mocked weeks with a fully working stepper.
