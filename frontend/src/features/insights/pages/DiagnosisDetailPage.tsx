@@ -61,7 +61,7 @@ function SuspectCard({ d, s, live, started, onProbe, delayMs }: {
         <div className="mzp-actual">◐ Aktív kísérlet lett — a Kísérletek oldalon követed.</div>
       ) : (
         <div className="mzp-decrow">
-          <button type="button" className="cta" disabled={!live} onClick={onProbe}>✓ Próbáljuk ki</button>
+          <button type="button" className="mzp-cta" disabled={!live} onClick={onProbe}>✓ Próbáljuk ki</button>
         </div>
       )}
     </div>
