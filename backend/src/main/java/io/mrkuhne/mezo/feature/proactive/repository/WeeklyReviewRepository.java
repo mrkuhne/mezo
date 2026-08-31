@@ -15,4 +15,9 @@ public interface WeeklyReviewRepository extends JpaRepository<WeeklyReviewEntity
      *  ({@code @SQLRestriction}), one per week (partial unique), so the row count IS the week
      *  count. */
     List<WeeklyReviewEntity> findByCreatedByAndWeekStartGreaterThanEqual(UUID createdBy, LocalDate from);
+
+    /** {@code CharacterHistoryReads}' bootstrap-corpus read (mezo-1gim.7): newest-first so the
+     *  caller can cap at the newest N without an extra sort. */
+    List<WeeklyReviewEntity> findByCreatedByAndWeekStartGreaterThanEqualOrderByWeekStartDesc(
+        UUID createdBy, LocalDate from);
 }

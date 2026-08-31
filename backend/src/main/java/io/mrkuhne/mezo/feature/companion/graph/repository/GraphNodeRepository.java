@@ -38,6 +38,13 @@ public interface GraphNodeRepository extends JpaRepository<GraphNodeEntity, UUID
     List<GraphNodeEntity> findByCreatedByAndKindAndStatusAndOccurredOnBetweenAndDeletedFalse(
         UUID createdBy, String kind, String status, LocalDate start, LocalDate end);
 
+    /** {@code CharacterHistoryReads}' bootstrap-corpus read (mezo-1gim.7): every active node of a
+     *  given kind, newest first — unlike {@link
+     *  #findByCreatedByAndKindAndStatusAndOccurredOnBetweenAndDeletedFalse}, not date-bounded, so
+     *  a LIFE_EVENT node with a null {@code occurredOn} is never silently dropped. */
+    List<GraphNodeEntity> findByCreatedByAndKindAndStatusAndDeletedFalseOrderByCreatedAtDesc(
+        UUID createdBy, String kind, String status);
+
     /**
      * W2.3's per-day idempotence probe: has the extractor ALREADY processed this day for this
      * user? Deliberately native and deliberately blind to {@code is_deleted} — a candidate the
