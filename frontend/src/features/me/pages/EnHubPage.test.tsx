@@ -98,15 +98,20 @@ function renderHub() {
   )
 }
 
-test('the identity hero carries the XP ring, the name, the title chip and the Lv · XP · 🔥 · 🪙 row', async () => {
+test('the identity hero carries the XP ring, the name, the title chip and the Lv · XP · streak · coin row', async () => {
   renderHub()
   const ring = await screen.findByRole('img', { name: /Szint 12/ })
   // in-level XP, not total: 60 / 520 ≈ 12%
   expect(ring).toHaveStyle({ '--xp': '12' })
   expect(screen.getByText('Lv 12')).toBeInTheDocument()
   expect(screen.getByText('3 140 XP')).toBeInTheDocument()
-  expect(screen.getByText('🔥 6 nap')).toBeInTheDocument()
-  expect(screen.getByText('🪙 240')).toBeInTheDocument()
+  // F7.4: the 🔥/🪙 emojis handed over to the clay flame/coin symbols
+  const streak = screen.getByRole('button', { name: 'Sorozat részletei' })
+  expect(streak).toHaveTextContent('6 nap')
+  expect(streak.querySelector('use')?.getAttribute('href')).toBe('#i-lang')
+  const coins = screen.getByRole('button', { name: 'Érme — címek' })
+  expect(coins).toHaveTextContent('240')
+  expect(coins.querySelector('use')?.getAttribute('href')).toBe('#i-erme')
   expect(document.querySelector('.enh-titlech')).not.toBeNull()
 })
 
@@ -270,29 +275,23 @@ test('the Beállítások band opens the theme sheet and the selector flips data-
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 
-// ── the coin sink's re-homed doors (mezo-d20.11, provisional pending F7.4) ──
-// AppHero was TitleShopSheet's and StreakSheet's only host and it was deleted, so
-// buying/equipping a title and buying a streak saver became unreachable while
-// useGamificationActions stayed canMutate in both modes — coins accumulated with no
-// sink at all. The identity hero is the replacement host.
+// ── the progression's HOME (F7.4, mezo-d20.8.4.1) ──
+// The retired StreakSheet/TitleShopSheet content lives on the Growth page's
+// Kitüntetések tab now — the hub's chips deep-link there instead of opening sheets.
 
-test('the title chip opens the title shop — the only coin sink there is', async () => {
+test('the title chip deep-links to the Growth awards tab', async () => {
   renderHub()
   await screen.findByText('Lv 12')
   const chip = document.querySelector<HTMLButtonElement>('button.enh-titlech')
   expect(chip).not.toBeNull()
   await userEvent.click(chip!)
-  expect(await screen.findByRole('heading', { name: 'Title-ök' })).toBeInTheDocument()
+  expect(screen.getByTestId('loc').textContent).toBe('/me/growth')
 })
 
-test('the coin stat opens the shop too, and the streak stat opens the streak sheet', async () => {
+test('the coin and streak stats deep-link to the Growth awards tab too', async () => {
   renderHub()
-  await userEvent.click(await screen.findByRole('button', { name: 'Érme — cím-bolt' }))
-  expect(await screen.findByRole('heading', { name: 'Title-ök' })).toBeInTheDocument()
-  await userEvent.keyboard('{Escape}')
-
-  await userEvent.click(await screen.findByRole('button', { name: 'Sorozat részletei' }))
-  expect(await screen.findByRole('heading', { name: /6 napos sorozat/ })).toBeInTheDocument()
+  await userEvent.click(await screen.findByRole('button', { name: 'Érme — címek' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/me/growth')
 })
 
 test('the entrance choreography is armed — every .rise sits inside .mz-play', async () => {
