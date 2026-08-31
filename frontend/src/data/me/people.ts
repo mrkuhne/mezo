@@ -121,6 +121,17 @@ export const people: PersonEntry[] = [
 
 export const mentions: Mention[] = [
   {
+    id: 'mn-auto1',
+    ts: '2026-05-24T09:00',
+    dayLabel: 'Ma',
+    timeLabel: '09:00',
+    person_id: 'pp-adam',
+    personName: 'Ádám',
+    source: 'text',
+    excerpt: 'Ádámmal átbeszéltük a hétvégi túrát.',
+    sourceRefKind: 'journal_entry',
+  },
+  {
     id: 'mn1',
     ts: '2026-05-23T20:14',
     dayLabel: 'Tegnap',

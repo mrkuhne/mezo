@@ -40,7 +40,7 @@ export function toMention(m: MentionResponse): Mention {
     source: m.source as MentionSource,
     duration_s: m.durationS ?? undefined,
     excerpt: m.excerpt,
-    tone: m.tone as Affect,
+    tone: (m.tone ?? undefined) as Affect | undefined,
     tiedTo: m.tiedToKind && m.tiedToLabel ? { kind: m.tiedToKind, label: m.tiedToLabel } : undefined,
     flagged: m.flagged || undefined,
     intensity: m.intensity ?? undefined,
@@ -100,4 +100,6 @@ export const peopleApi = {
       } satisfies UpdatePersonRequest),
     }),
   deletePerson: (id: string) => apiFetch<void>(`${PEOPLE}/${id}`, { method: 'DELETE' }),
+  deleteMention: (personId: string, mentionId: string) =>
+    apiFetch<void>(`${PEOPLE}/${personId}/mentions/${mentionId}`, { method: 'DELETE' }),
 }

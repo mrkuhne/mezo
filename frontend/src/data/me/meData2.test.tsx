@@ -8,7 +8,7 @@ test('usePeople returns the people list + mentions (mock seed)', () => {
   try {
     const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
     expect(result.current.people).toHaveLength(5)
-    expect(result.current.mentions).toHaveLength(10)
+    expect(result.current.mentions).toHaveLength(11)
     expect(result.current.mentions.filter(m => m.flagged)).toHaveLength(2)
   } finally {
     vi.unstubAllEnvs()

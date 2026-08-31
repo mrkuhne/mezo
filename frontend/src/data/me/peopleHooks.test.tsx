@@ -62,6 +62,15 @@ describe('usePeople (mock mode)', () => {
       expect(result.current.mentions.every(m => m.person_id !== victim.id)).toBe(true)
     })
   })
+
+  it('undoMention removes just that mention from the cache (mock mode)', async () => {
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    const victim = result.current.mentions[0]
+    act(() => result.current.undoMention(victim))
+    await waitFor(() => {
+      expect(result.current.mentions.map(m => m.id)).not.toContain(victim.id)
+    })
+  })
 })
 
 describe('usePeople (real mode)', () => {
@@ -116,6 +125,24 @@ describe('usePeople (real mode)', () => {
     act(() => result.current.logMention({ personId: WIRE_PERSON.id, tone: 'mixed', text: 'Nehéz nap.' }))
     await waitFor(() => expect(posted).toEqual({ tone: 'mixed', text: 'Nehéz nap.' }))
     await waitFor(() => expect(gets).toBeGreaterThan(getsBefore)) // invalidation → server-truth refetch
+  })
+
+  it('undoMention DELETEs the mention and refetches the bootstrap (real mode)', async () => {
+    let deleted: { personId?: string; mentionId?: string } = {}
+    let gets = 0
+    server.use(
+      http.get(`${API_BASE}/api/people`, () => { gets++; return HttpResponse.json(BOOTSTRAP) }),
+      http.delete(`${API_BASE}/api/people/:personId/mentions/:mentionId`, ({ params }) => {
+        deleted = { personId: params.personId as string, mentionId: params.mentionId as string }
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.mentions).toHaveLength(1))
+    const getsBefore = gets
+    act(() => result.current.undoMention(result.current.mentions[0]))
+    await waitFor(() => expect(deleted).toEqual({ personId: WIRE_PERSON.id, mentionId: WIRE_MENTION.id }))
+    await waitFor(() => expect(gets).toBeGreaterThan(getsBefore))
   })
 
   it('savePerson creates then refetches (real mode)', async () => {

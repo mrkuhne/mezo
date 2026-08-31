@@ -5589,6 +5589,10 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   text-transform: uppercase; letter-spacing: 0.06em; color: var(--mz-ink-mut); }
 .ppl-figy { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 7px;
   background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); flex: none; margin-left: auto; }
+.ppl-mundo { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 18px; height: 18px; margin-left: auto; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: var(--mz-ink-mut); opacity: 0.55; cursor: pointer; }
+.ppl-mundo:hover { opacity: 1; background: rgba(43, 33, 24, 0.06); }
 .ppl-mx { font-size: 12px; font-style: italic; font-weight: 300; line-height: 1.5; margin: 6px 0 0; color: var(--text-primary); }
 .ppl-mtie { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .ppl-mtie > .ppl-mtielbl { font-size: 9px; font-weight: 800; color: var(--mz-cell-rose-ink); }

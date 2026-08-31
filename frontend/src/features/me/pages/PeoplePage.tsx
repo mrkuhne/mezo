@@ -34,7 +34,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 export function PeoplePage() {
   const navigate = useNavigate()
-  const { people, mentions, logMention } = usePeople()
+  const { people, mentions, logMention, undoMention } = usePeople()
   const [filter, setFilter] = useState<Filter>('all')
   const [logOpen, setLogOpen] = useState(false)
   const [prechosen, setPrechosen] = useState<string | undefined>(undefined)
@@ -104,7 +104,7 @@ export function PeoplePage() {
 
           <div>
             {visible.slice(0, 8).map((m, i) => (
-              <MentionRow key={m.id} mention={m} delayMs={110 + i * 30} />
+              <MentionRow key={m.id} mention={m} delayMs={110 + i * 30} onUndo={undoMention} />
             ))}
             {visible.length === 0 && (
               <div className="ppl-mrowt rise" style={{ '--d': '110ms', textAlign: 'center' } as React.CSSProperties}>
