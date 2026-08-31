@@ -525,6 +525,13 @@ mezo:
       decay-factor: 0.99
       prune-floor: 0.05
       render-max-tokens: 800
+      # W2.4 review fix (mezo-b3pp.33): cap on GraphNode refs per turn. top-k=8 edges yield up to
+      # 2×top-k=16 node refs against the shared tools.max-refs-per-turn=10 budget, and graph refs
+      # are added LAST (after tool + Memory refs), so an uncapped graph turn fills the whole
+      # footer with graph chips and truncates mid-list. 6 leaves room for at least a few tool/
+      # Memory refs to survive alongside a graph-heavy turn while still showing a useful slice of
+      # the neighborhood (most turns render well under top-k distinct nodes anyway).
+      max-refs: 6
       # W2.2 (mezo-b3pp.7): the edge structurer drops suggestions below this confidence; the ones
       # that pass are created at weight = confidence × 0.5 and grow only through W2.5 reinforcement.
       edge-confidence-floor: 0.4
