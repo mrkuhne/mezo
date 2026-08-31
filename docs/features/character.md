@@ -55,8 +55,9 @@ opinion about the user, dimension by dimension, claim by claim.
 All seven backend slices (`mezo-1gim.1` schema+reads, `.3` detectors+nightly, `.5` weekly
 konzílium, `.6` bootstrap+monthly, `.8` prompt block, `.10`/S6 claim feedback, `.11`/S7
 consolidation — exact ids per the slice plans) are shipped. The detector catalog is still
-**narrower than the spec's v1 wishlist** (§9) — only 5 of 25 spec-listed detectors are
-implemented (`mezo-1gim.12` tracks the remaining 20) — but the `[Karakter]` block now reaches
+**narrower than the spec's v1 wishlist** (§9) — spec §5 names ~22 detector keys (some as
+variants of one bullet), and only 5 of them are implemented (`mezo-1gim.12` tracks most of the
+rest) — but the `[Karakter]` block now reaches
 all four narrative surfaces (chat, memoir, prediction, weekly review) and the bootstrap evidence
 corpus now matches the spec's full source list (daily summaries, patterns, facts, weekly
 reviews, journal entries, life events).
@@ -289,19 +290,25 @@ before investigating.
 
 - **Detector catalog is still narrower than spec §5's v1 wishlist** (S7 closed the polish items —
   HU decimal-comma formatting, switch-gated beans, honest streak-capping — but did NOT add new
-  detectors). Only 5 of 25 spec-listed detectors are implemented: `checkin-gap`, `journal-note`,
-  `journal-silence`, `logging-gap`, `under-logging` (all meta-behavior/single-domain; owned by
-  `drill`/`pszichologus`/`taplalkozo`). The entire cross-domain group (`comfort-eating`,
-  `sleep-performance-chain`, `sport-interference`, `med-cycle-covariance`, `people-mood-link`,
-  `weekend-gap`), the character-traits group (`resilience`, `all-or-nothing`,
-  `restart-pattern`, `promise-vs-delivery`, `self-calibration`, `decision-profile`), the
-  physiological group (`rir-calibration`, `niggle-map`, `hr-recovery-trend`), and the remaining
-  meta-behavior detectors (`retro-logging-ratio`, `checkin-latency`, `night-activity`,
-  `chat-topic-shift`, `knowledge-rejection-pattern`) — 20 detectors in all — are **not
+  detectors). Spec §5 names ~22 detector keys, several as variants noted under one bullet (the
+  `logging-gap` bullet covers "N consecutive days without meal logs (also variants: weight,
+  check-in, journal silence)"). 5 are implemented: `checkin-gap`, `journal-silence`,
+  `logging-gap`, `under-logging` (the meta-behavior/single-domain group, owned by
+  `drill`/`pszichologus`/`taplalkozo`) and `journal-note` — the last of which is a shipped
+  detector that is NOT one of the spec's named keys (it surfaces raw journal text; treat it as
+  an addition beyond §5, not a §5 key ticked off). The entire cross-domain group
+  (`comfort-eating`, `sleep-performance-chain`, `sport-interference`, `med-cycle-covariance`,
+  `people-mood-link`, `weekend-gap`), the character-traits group (`resilience`,
+  `all-or-nothing`, `restart-pattern`, `promise-vs-delivery`, `self-calibration`,
+  `decision-profile`), the physiological group (`rir-calibration`, `niggle-map`,
+  `hr-recovery-trend`), the remaining meta-behavior detectors (`retro-logging-ratio`,
+  `checkin-latency`, `night-activity`, `chat-topic-shift`, `knowledge-rejection-pattern`), and
+  the `logging-gap` bullet's `weight` variant (no `WeightGapDetector` exists) are **not
   implemented**. Practically: `edzo`, `szomnologus`, `doki`, and `antropologus` never receive a
   nightly-detector-sourced observation today — they only accumulate evidence via the
   weekly/monthly claim rounds' own reads (now widened, see below) and user-feedback routing.
-  `mezo-1gim.12` tracks writing the remaining detectors.
+  `mezo-1gim.12` tracks writing most of the remaining detectors, but its description does not
+  currently name the `weight`-gap variant.
 - **Detector beans are switch-gated, not just no-op** (S7). Each of the 5 detectors carries
   `@ConditionalOnProperty(CHARACTER_SWITCH)` directly, so with the switch off the beans don't
   exist at all — `CharacterApiSwitchOffIT.the_detector_beans_are_absent` asserts every detector
