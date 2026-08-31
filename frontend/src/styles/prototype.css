@@ -6264,6 +6264,62 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 @media (prefers-reduced-motion: reduce) {
   .logflow-srct { transition: none; }
 }
+
+/* ── Fuel · /fuel/log stacked window blocks (mezo-byo1) — prototype
+   fuel-logolas.html `.logblk` ×1.18 (330→390px frame). One full-width block per
+   eating window; the Logold CTA expands the MealComposer IN PLACE via the
+   grid-rows 0fr→1fr well. State washes: done sage, now coral ring, missed
+   dashed amber (never punitive red), free/empty dashed neutral. ── */
+.flog-goal { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.flog-blk {
+  border-radius: 22px; margin-bottom: 12px; overflow: hidden;
+  background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle);
+  box-shadow: var(--mz-shadow);
+}
+.flog-blk.is-done { background: var(--mz-wash-sage, linear-gradient(150deg, #EFF3EA, #FBFDF9)); }
+.flog-blk.is-now { border: 1px solid var(--coral); box-shadow: var(--mz-shadow-coral); }
+.flog-blk.is-missed {
+  border: 1.2px dashed color-mix(in srgb, var(--mz-cell-amber-ink, #A8801F) 55%, transparent);
+  box-shadow: none;
+}
+.flog-blk.is-free { border: 1.2px dashed var(--border-strong, rgba(43, 33, 24, 0.2)); box-shadow: none; }
+.flog-in { padding: 12px 14px 13px; }
+.flog-top { display: flex; align-items: center; gap: 7px; }
+.flog-top time { font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
+.flog-lbl { font-size: 8.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-tertiary); }
+.flog-top .fh-wstamp { margin-left: auto; }
+.flog-main { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.flog-icon {
+  width: 50px; height: 50px; border-radius: 16px; flex: none; display: grid; place-items: center;
+  background: var(--surface-1); box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+.flog-txt { flex: 1; min-width: 0; }
+.flog-name {
+  font-size: 13.5px; font-weight: 700; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.flog-name.is-ghost { color: var(--text-tertiary); font-weight: 600; }
+.flog-meta { font-size: 9.5px; color: var(--text-secondary); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.flog-data { flex: none; display: grid; gap: 6px; justify-items: center; margin-left: auto; }
+.flog-kcal {
+  border-radius: 12px; padding: 4px 12px 3px; text-align: center;
+  background: var(--surface-card, #fff); box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+.flog-kcal b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.flog-kcal small { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-left: 3px; }
+.flog-rings { display: flex; gap: 7px; }
+.flog-blk.is-missed .flog-data { opacity: 0.7; }
+.flog-ctas { display: flex; gap: 8px; margin-top: 10px; }
+.flog-ctas .cta-primary { flex: 1; padding: 8px 0; justify-content: center; }
+.flog-ctas .cta-ghost { flex: 0.6; padding: 8px 0; justify-content: center; }
+.flog-blk.is-open .flog-ctas { display: none; }
+.flog-composer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(0.25, 0.8, 0.35, 1); }
+.flog-cin { overflow: hidden; min-height: 0; }
+.flog-blk.is-open .flog-composer { grid-template-rows: 1fr; }
+.flog-cbody { border-top: 0.5px solid var(--border-subtle); margin-top: 10px; padding-top: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .flog-composer { transition: none; }
+}
 /* ── Fuel · Terv + Gyógyszer re-face (mezo-d20.4.7) — prototype fuel-body
    #page-terv / #page-gyogyszer ×1.18 (330→390px frame). The week-rhythm
    rows/track/markers (.fpl-*, prototype .rhyrow/.rhytrack/.rhyleg) and the
