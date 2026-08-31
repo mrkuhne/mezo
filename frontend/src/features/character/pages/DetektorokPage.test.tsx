@@ -1,9 +1,12 @@
-// DetektorokPage — the 5 real detectors, one line each (mezo-1gim.14, Task 5). Mode-agnostic
-// via the KarakterHubPage.test.tsx hook-override idiom (only useCharacterExperts is read).
+// DetektorokPage — the 13 real detectors, one line each (mezo-1gim.14/.15, Task 5).
+// Mode-agnostic via the KarakterHubPage.test.tsx hook-override idiom (only
+// useCharacterExperts is read). Expected keys/counts are derived from the page's own
+// DETECTORS array (imported directly) rather than pinned as literals, so a future round's
+// detector addition can't silently go untested here.
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { DetektorokPage } from './DetektorokPage'
+import { DetektorokPage, DETECTORS } from './DetektorokPage'
 import { MOCK_EXPERTS } from '@/data/character/characterMock'
 
 const mockNavigate = vi.fn()
@@ -25,16 +28,24 @@ beforeEach(() => {
 })
 
 describe('DetektorokPage', () => {
-  test('renders all 5 real detectors with their key chip + owning expert name', () => {
+  test('renders all 13 real detectors with their key chip + owning expert name', () => {
     render(<DetektorokPage />)
     expect(screen.getByText('Detektorok')).toBeInTheDocument()
-    for (const key of ['logging-gap', 'under-logging', 'checkin-gap', 'journal-silence', 'journal-note']) {
-      expect(screen.getByText(key)).toBeInTheDocument()
+    expect(DETECTORS.length).toBe(13)
+    for (const d of DETECTORS) {
+      expect(screen.getByText(d.key)).toBeInTheDocument()
     }
-    // journal-note is really pszichologus-owned, not the prototype's guess of any other expert.
-    expect(screen.getAllByText('Pszichológus').length).toBeGreaterThan(0)
-    // logging-gap and journal-silence are really drill-owned (verified against detector source).
-    expect(screen.getAllByText('Drill').length).toBeGreaterThanOrEqual(2)
+    // Each owning expert's display name should appear once per detector it owns — derived from
+    // DETECTORS itself so a future round's addition can't silently drift this assertion.
+    const countsByWho = DETECTORS.reduce<Record<string, number>>((acc, d) => {
+      acc[d.who] = (acc[d.who] ?? 0) + 1
+      return acc
+    }, {})
+    for (const [who, count] of Object.entries(countsByWho)) {
+      const displayName = MOCK_EXPERTS.find((e) => e.key === who)?.displayName
+      expect(displayName, `no MOCK_EXPERTS entry for detector owner "${who}"`).toBeTruthy()
+      expect(screen.getAllByText(displayName as string).length).toBe(count)
+    }
   })
 
   test('renders the closing "code only detects" principle line', () => {
