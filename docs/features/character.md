@@ -1,0 +1,373 @@
+---
+title: Karakter (user character dossier)
+type: feature-domain
+status: mixed
+updated: 2026-08-31
+tags: [character, karakter, ai, llm, backend, phase-3]
+key_files:
+  - backend/src/main/java/io/mrkuhne/mezo/feature/character
+  - api/feature/character/character.yml
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java
+  - backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql
+related: [companion, proactive, insights, me, _platform-api-backend]
+---
+
+# Karakter (user character dossier) — Feature Documentation
+
+> One-line: a synthesis layer over everything mezo already remembers — a persisted,
+> dimension-structured picture of *who Daniel is*, built by a visible team of 7 domain-expert
+> personas + a Szkeptikus, chaired by Mezo. **Status: backend ✅ S1–S6 (schema/reads, detectors +
+> nightly pass, weekly konzílium, bootstrap + monthly deep read, `[Karakter]` prompt block,
+> claim feedback loop); FE 🔴 not started (design 2.0 prototype round is a precondition, spec
+> §10).** No route/tab exists yet — this doc covers the backend domain only. Driving spec:
+> [`docs/superpowers/specs/2026-08-27-user-character-dossier-design.md`](../superpowers/specs/2026-08-27-user-character-dossier-design.md)
+> (bd epic `mezo-1gim`); six slice plans in `docs/superpowers/plans/2026-08-2*-character-slice*.md`
+> and `2026-08-3*-character-slice*.md` are the point-in-time build record. **This doc is written
+> against the CURRENT code (post-S6) and will get a refresh pass at the end of the S7
+> consolidation slice** (`mezo-1gim.11`, this doc, plus `.4`/`.7`/`.9` closing some of the gaps
+> named in §9 below).
+
+## 1. Summary
+
+Mezo already remembers a lot — L1 episodic embeddings, confirmed knowledge facts, the
+statistical pattern engine, life-event graph nodes, memoir, predictions, weekly review (all
+[companion](companion.md)/[proactive](proactive.md)-owned). Karakter is the **synthesis layer**
+on top: it doesn't add new raw signal, it turns existing signal into a structured, evolving
+opinion about the user, dimension by dimension, claim by claim.
+
+- **Dual consumer, equal rank** (spec §1): (a) the user — a future Én-tab surface where he
+  watches the profile being built and gives feedback (not built yet, §9); (b) the AI — a
+  deterministically rendered `[Karakter]` block injected into the companion chat prompt and
+  (partially — see §9 gap) the proactive narrative generators.
+- **Structure**: 7 fixed CORE dimensions (seeded, never deleted) + AI-opened CHAPTER dimensions
+  (proposed by the weekly konzílium, survives the Szkeptikus, can later be retired by the
+  monthly pass).
+- **Built by a visible AI team**: 7 named domain-expert personas + a cross-cutting Szkeptikus
+  (devil's advocate) + Mezo as Integrátor/chair. IDENT-1 is preserved — experts never message
+  the user directly; the user only *reads* the team's work (feed, konzílium transcript).
+- **Unit of truth**: the **claim** — confidence, evidence refs, a status
+  (`ACTIVE`/`RETIRED`), a lifecycle. Dimension portrait prose is written FROM claims, never the
+  other way around.
+- **User feedback is claim-level** (`TALAL`/`NEM_IGAZ`/`PONTOSITOM`) and is itself fed back into
+  the pipeline as a `character_observation` — the team has to reckon with being told it's wrong.
+
+All six backend slices (`mezo-1gim.1` schema+reads, `.3` detectors+nightly, `.5` weekly
+konzílium, `.6` bootstrap+monthly, `.8` prompt block, `.10`/S6 claim feedback — exact ids per the
+slice plans) are shipped. The detector catalog and the bootstrap evidence sources are
+**narrower than the spec's v1 wishlist** (§9), and the `[Karakter]` block is wired into chat +
+memoir + prediction but **not yet** `WeeklyReviewGenerator` (§9) — S7's remaining tasks close
+some of this.
+
+## 2. User-facing behavior
+
+**None yet.** There is no FE surface — no Karakter tile on Én, no dimension page, no konzílium
+transcript view, no claim feedback buttons in the UI. The spec's §10 FE skeleton (hero
+7-dimension maturity visual, dimension tiles, "Amit mostanában megtudtam rólad" feed, konzílium
+transcript bubbles, claim feedback buttons) is explicit slice 7 of the spec's decomposition
+(§12) and is deliberately sequenced AFTER the design 2.0 Karakter prototype round — it has not
+started. The only user-visible effect of Karakter today is indirect: claims that clear the
+prompt-injection threshold (§8 below) can shape what Mezo says in chat, in the weekly Memoir,
+and in Predictions.
+
+The `POST /api/character/claim/{id}/feedback` endpoint exists and is fully wired
+(`CharacterFeedbackService`), but nothing in the FE calls it yet.
+
+## 3. Architecture & data flow
+
+No `view → hook` path exists (§2). The backend flow is:
+
+```
+nightly:  domain reads (14-day window) → DetectorRegistry → per-expert cheap-tier LLM call
+          → character_observation rows (no LLM call on a quiet day)
+
+weekly:   unconsumed character_observation rows (grouped by expert)
+          → KonziliumProposalRound (per-expert cheap-tier call, ≤3 proposals each)
+          → KonziliumVerdictRound: Szkeptikus (smart-tier, KEEP|KILL) → Mezo/Integrátor
+             (smart-tier, accept/confidence/reason + optional chapter proposal)
+          → ClaimLifecycle.apply (NEW/UP/DOWN/RETIRE → character_claim rows)
+          → PortraitWriter.rewrite (one smart-tier call per touched dimension)
+          → character_conference (transcript + outcome diff) persisted; observations marked
+             consumed — ALL of the above in ONE @Transactional method (all-or-nothing)
+
+monthly:  same proposal/verdict/portrait tail, but reads ACTIVE claims (not fresh observations)
+          and steers toward UP/DOWN/RETIRE; then a separate stale-CHAPTER-retirement pass
+
+bootstrap: one-time; same proposal/verdict/portrait tail over CharacterHistoryReads.gatherHistory
+          (daily summaries + confirmed patterns + prompt-eligible facts)
+
+consume:  CharacterPromptAssembler.render(userId) → deterministic "[Karakter]" text block
+          → injected into ChatService / MemoirGenerator / PredictionGenerator system prompts
+```
+
+Every LLM call in this pipeline flows through the same `CompanionLlm` port
+([companion.md](companion.md)) and is audited under the `character` feature tag
+(`feature/llmlog`) — Karakter adds no new LLM adapter, only new callers. The choreography
+(proposal → Szkeptikus → Mezo ruling → portrait rewrite) is real code, not a single "do
+everything" prompt — it is the same "no theater" idiom the spec calls out (§3): the persisted
+`character_conference.transcript` is the actual multi-turn exchange that ran, never
+re-dramatized after the fact.
+
+## 4. Data model & API
+
+Five owned tables (`feature/character/entity/`), all house idioms (UUID PK, `@SQLDelete`/
+`@SQLRestriction` soft delete, `created_by`, typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)`).
+Migration: `db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql`
+(the 5 tables + the CORE-7 seed) plus two later unique-index fixes,
+`202608311000_mezo-1gim.6_character_conference_monthly_unique.sql` and
+`202608311100_mezo-1gim.6_character_conference_bootstrap_unique.sql`.
+
+- **`character_dimension`** — `key` (unique per live user row), `title`, `kind`
+  (`CORE`/`CHAPTER`), `expert_key` (nullable for chapters), `portrait text` (default `""`),
+  `maturity smallint` (default 0, computed roll-up — see §3's `PortraitWriter` formula below),
+  `version int`, `updated_at`.
+- **`character_claim`** — `dimension_id` FK, `text`, `confidence numeric(3,2)`, `status`
+  (`ACTIVE`/`RETIRED`), `origin_conference_id` FK, `proposed_by` (expert key), `sensitive
+  boolean`, and three typed-jsonb envelopes: `evidence` (`ClaimEvidenceEnvelope` — a list of
+  `{kind,id,label}` refs), `user_feedback` (`ClaimFeedbackEnvelope` — a list of
+  `{kind,text,at}` events), `confidence_history` (`ClaimConfidenceHistoryEnvelope` — a list of
+  `{value,cause,at}` points).
+- **`character_observation`** — `expert_key` (`user` for feedback-originated rows too),
+  `dimension_keys jsonb` (`ObservationDimensionKeysEnvelope{List<String> keys}` — a **typed
+  jsonb wrapper**, not a raw `text[]` array column; fixed post-hoc at `mezo-1gim.1` after the
+  List<String>-onto-ARRAY mapping leak, see the commit history on this file), `day`, `text`
+  (expert voice), `salience smallint` 1–5, `signals jsonb` (`ObservationSignalsEnvelope` — a
+  list of `{detectorKey,summary,refIds}`), `consumed_by_conference_id` FK (nullable).
+- **`character_conference`** — `kind` (`BOOTSTRAP`/`WEEKLY`/`MONTHLY`), `week_start date`
+  (nullable for BOOTSTRAP; **MONTHLY reuses this column for the month's first day** —
+  `CharacterMonthlyService`), `transcript jsonb` (`ConferenceTranscriptEnvelope` — ordered
+  `{persona,text,refIds}` turns), `outcome jsonb` (`ConferenceOutcomeEnvelope` — a list of
+  `{kind,dimensionKey,claimId,summary}` changes; the feed's diff source), `generated_at`.
+  Partial unique indexes: one LIVE row per user+week (WEEKLY) and per user (BOOTSTRAP).
+- **`character_portrait_revision`** — `dimension_id` FK, `version int`, `portrait text`,
+  `conference_id` FK, `created_at`. Every successful portrait rewrite appends one; a blank/failed
+  rewrite leaves the dimension entirely untouched (no revision, no version bump).
+
+### API (`api/feature/character/character.yml`)
+
+All seven endpoints gated on `CHARACTER_SWITCH` (`mezo.feature.character.enabled`); reads still
+work with the companion switch off (S1 deliberately kept dossier reads companion-free —
+`CharacterController` class javadoc), only `POST /api/character/bootstrap` needs
+`COMPANION_SWITCH` too (degrades to 404 via an absent `ObjectProvider<CharacterBootstrapService>`
+bean, never a silent 200).
+
+| Method + path | Returns | Notes |
+|---|---|---|
+| `GET /api/character` | `CharacterOverviewResponse` (all dimensions) | Lazily seeds the 7 CORE dimensions on first read |
+| `GET /api/character/dimension/{key}` | `CharacterDimensionResponse` | Portrait + ACTIVE claims + recent revisions; 404 unknown key |
+| `GET /api/character/feed?limit=` (1–100, default 30) | `CharacterFeedItem[]` | Observations + latest conference outcome diff, merged/sorted desc; `[]` honest empty, never 404 |
+| `GET /api/character/conference` | `CharacterConferenceSummary[]` | Summaries only |
+| `GET /api/character/conference/{id}` | `CharacterConferenceResponse` | Full persisted transcript + outcome; 404 unknown |
+| `POST /api/character/claim/{id}/feedback` | `CharacterClaimDto` | `{kind: TALAL\|NEM_IGAZ\|PONTOSITOM, text?}`; 400 malformed, 404 unknown, 409 already-retired |
+| `POST /api/character/bootstrap` | `CharacterConferenceResponse` \| 204 | 409 if a live BOOTSTRAP conference already exists; 204 if there is no history to read |
+
+Confidence is **never** returned as a raw number for display purposes in prose (the FE, once
+built, is expected to render human words — the Minták precedent); the wire DTO does carry the
+raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
+
+## 5. Integrations
+
+- **[Companion](companion.md)** — every LLM call rides `CompanionLlm` (cheap tier for
+  per-expert proposals/observations, smart tier for Szkeptikus/Mezo/portrait writes), audited
+  under the `character` feature tag. `CharacterPromptSource` (port defined in
+  `feature/companion/CharacterPromptSource.java`, implemented by `CharacterPromptAssembler`) is
+  consumed by `ChatService` (`feature/companion/service/ChatService.java`) to inject the
+  `[Karakter]` block into the chat system prompt, right alongside the confirmed-facts block —
+  facts are atomic data, claims are interpretation, both belong (spec §8).
+- **[Proactive](proactive.md)** — `CharacterPromptSource` is also consumed by
+  `MemoirGenerator` and `PredictionGenerator` (both inject `[Karakter]` into their gather).
+  🟡 **`WeeklyReviewGenerator` does NOT consume it** — a confirmed gap against the spec's stated
+  consumer list (§9).
+- **Daily summaries, confirmed patterns, prompt-eligible knowledge facts** — read (not
+  written) by `CharacterHistoryReads` as the bootstrap's evidence corpus; by the nightly
+  detectors' domain reads (meals, weight, check-ins, journal via `CharacterSignalReads`); and
+  by the monthly pass over the existing `character_claim` base. Karakter owns no meal/weight/
+  check-in/journal data itself — those live in their respective feature packages
+  (train/fuel/companion-journal).
+- **`feature/llmlog`** — every character LLM call is audited (feature tag `character`,
+  call-kind per pipeline step), the same idiom every other AI-domain doc documents.
+
+No FE integration exists yet (§2), so there is no cross-domain FE seam to list in the
+[README.md](README.md) integration matrix beyond the two backend seams above.
+
+## 6. How to use it (consume)
+
+Backend-only today — there is no `useX()` FE hook.
+
+- **Inside another backend generator that wants the `[Karakter]` block**: inject
+  `ObjectProvider<CharacterPromptSource>` (the house pattern for an optional cross-feature
+  dependency whose owning switch may be off), call `.getIfAvailable(() -> null)` /
+  `.render(userId)`, and treat an empty/null result as "nothing to add" (never fail the caller).
+  See `MemoirGenerator`/`PredictionGenerator` for the reference call sites.
+- **Reading the dossier from a test or a script**: `GET /api/character` (owner-scoped via the
+  JWT) always returns a 200 with the 7 CORE dimensions present, even pre-bootstrap — the
+  "honest pre-bootstrap state" (empty portraits, maturity 0, no claims). There is no
+  unauthenticated read.
+
+## 7. How to extend it
+
+- **Add a detector**: implement `CharacterDetector` (`detector/CharacterDetector.java`,
+  `String key(); List<DetectorSignal> detect(DetectorInput)`) as a `@Component` — it is
+  auto-discovered by `DetectorRegistry.runAll` and gains a free per-key kill switch
+  (`mezo.character.detector.<key>.enabled`, defaults enabled when the key is absent from the
+  map). Feed it from `CharacterSignalReads` if it needs a new domain read; keep it pure code —
+  interpretation of a detector's output is strictly the expert LLM's job downstream, per the
+  honest-state axiom (no number is ever invented by a model).
+- **Add/change a CORE dimension or expert persona**: `CharacterCoreCatalog` /
+  `CharacterExpertCatalog` are static lists — adding a CORE dimension needs a migration to seed
+  it for existing users (the S1 seed migration is the precedent) plus a catalog entry; CORE
+  dimensions are spec-fixed at 7 and are not expected to grow casually.
+- **Wire the prompt block into a new generator**: mirror `MemoirGenerator`'s
+  `ObjectProvider<CharacterPromptSource>` injection — never a hard `@Autowired` (the character
+  feature can be off while the caller's own feature stays on).
+- **New Konzílium round behavior**: `KonziliumProposalRound`/`KonziliumVerdictRound` are the
+  choreography; each step is one `CompanionLlm` call with a strict-JSON contract and a defensive
+  parse — follow the existing marker-constant + `FakeCompanionLlm` sentinel idiom for testability
+  (§8).
+- **FE work**: blocked on the design 2.0 Karakter prototype round (spec §10) — do not build FE
+  screens against this backend ahead of that round landing a visual spec.
+
+Backend conventions generally: [`docs/references/*.md`](../references/) for the exact house
+patterns (entities, migrations, tests); this doc only states what Karakter specifically does
+with them.
+
+## 8. Testing
+
+Backend only, `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (23 files). No FE tests
+exist (no FE surface).
+
+- **API/IT surface**: `CharacterApiIT` (overview lazy-seed, dimension 404, feed/conference
+  merge), `CharacterApiCompanionOffIT` (reads OK with companion off, bootstrap 404s),
+  `CharacterApiSwitchOffIT` (`CHARACTER_SWITCH` off degrade).
+- **Pipeline ITs**: `CharacterBootstrapIT`, `CharacterConferenceJobIT`,
+  `CharacterConferenceServiceIT`, `CharacterHistoryReadsIT`, `CharacterMonthlyServiceIT`,
+  `CharacterObservationJobIT`, `CharacterObservationServiceIT`, `CharacterFeedbackIT`,
+  `CharacterPersistenceIT` (entity round-trip + jsonb envelopes + soft-delete unique-key
+  behavior).
+- **Konzílium choreography**: `KonziliumProposalRoundIT`, `KonziliumVerdictRoundIT`,
+  `KonziliumUserFeedbackIT`, `ClaimLifecycleIT` — all via `FakeCompanionLlm` sentinels keyed on
+  a marker constant per round step (`PROPOSAL_MARKER`, `SKEPTIC_MARKER`, `INTEGRATOR_MARKER`,
+  `PORTRAIT_MARKER`, `BOOTSTRAP_MARKER`, `OBSERVATION_MARKER`) — the `[fake-memoir:…]` precedent
+  from [proactive.md](proactive.md).
+- **Prompt block**: `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`
+  (whole-block-drop-on-overflow), `CharacterPromptWiringIT` (`@Nested` switch-on/off; covers
+  chat + memoir + prediction wiring — **no weekly-review test exists**, consistent with the §9
+  wiring gap).
+- **Unit tests (pure code, no Spring context)**: `detector/DetectorTest` (fixture-day-in/
+  signal-out for all 5 detectors), `CharacterConferenceWeekDerivationTest`,
+  `CharacterMonthlyScheduleTest` (`isDeepReadDay` date pinning), `CharacterExpertCatalogTest`,
+  `service/PortraitWriterTest`.
+
+Run focused locally: `./mvnw test -Dtest='*Character*,Konzilium*' -Dmezo.test.use-testcontainers=true`
+(Testcontainers mode — the default fixed-DB mode races/fakes failures per house convention).
+Full suite is CI-gated (self-PR).
+
+## 9. Decisions, gotchas & deferred
+
+- **Detector catalog is narrower than spec §5's v1 wishlist.** Only 5 of ~20 listed detectors
+  are implemented: `checkin-gap`, `journal-note`, `journal-silence`, `logging-gap`,
+  `under-logging` (all meta-behavior/single-domain; owned by `drill`/`pszichologus`/
+  `taplalkozo`). The entire cross-domain group (`comfort-eating`, `sleep-performance-chain`,
+  `sport-interference`, `med-cycle-covariance`, `people-mood-link`, `weekend-gap`), the
+  character-traits group (`resilience`, `all-or-nothing`, `restart-pattern`,
+  `promise-vs-delivery`, `self-calibration`, `decision-profile`), the physiological group
+  (`rir-calibration`, `niggle-map`, `hr-recovery-trend`), and the remaining meta-behavior
+  detectors (`retro-logging-ratio`, `checkin-latency`, `night-activity`, `chat-topic-shift`,
+  `knowledge-rejection-pattern`) are **not implemented**. Practically: `edzo`, `szomnologus`,
+  `doki`, and `antropologus` never receive a nightly-detector-sourced observation today — they
+  only accumulate evidence via the weekly/monthly claim rounds' own reads and user-feedback
+  routing. Tracked as **`mezo-1gim.4`** (detector polish) — a task of this S7 slice.
+- **Bootstrap's evidence corpus is narrower than spec §6's list.** `CharacterHistoryReads`
+  reads daily-summary narratives (newest 60), CONFIRMED patterns (newest 60), and
+  prompt-eligible knowledge facts (top 40 by reinforcement) — journal entries, weekly reviews,
+  and life-event graph nodes (all named in the spec's bootstrap description) are **not** read.
+  Tracked as **`mezo-1gim.7`** (bootstrap corpus) — a task of this S7 slice.
+- **`[Karakter]` prompt wiring is incomplete.** `ChatService`, `MemoirGenerator`, and
+  `PredictionGenerator` all inject the block; `WeeklyReviewGenerator` does not, despite being
+  named as a consumer in spec §1/§8. Tracked as **`mezo-1gim.9`** — a task of this S7 slice.
+- **Confidence ceilings differ by path, deliberately.** The konzílium's own UP/accept path
+  clamps to `[0.30, 0.90]`; user "talál" feedback only ever adds `+0.05` capped at **0.85** —
+  a self-confirmation from the user alone can never saturate a claim to near-certainty without
+  independent evidence (`CharacterFeedbackService`). "nem igaz" is immediate `RETIRED`, no
+  konzílium round-trip needed. "pontosítom" never moves confidence directly — the free text is
+  logged as a top-salience `user` observation and left for the owning expert(s) to weigh at the
+  next konzílium; an unaddressed correction is logged (WARN), not silently dropped
+  (`CharacterConferenceService.warnUnaddressedUserFeedback`).
+- **`MONTHLY` conferences reuse the `week_start` column** to store the month's first day
+  (`CharacterMonthlyService`) rather than adding a new column — a deliberate reuse, not a bug;
+  don't be surprised reading raw rows.
+- **Monthly cron fires every Sunday but only acts on the first one of the month**
+  (`CharacterMonthlyJob.isDeepReadDay`, `dayOfMonth <= 7`) — Spring's cron syntax can't AND a
+  day-of-month with a day-of-week, so the narrowing lives in code, not the cron expression
+  (`mezo.character.monthly.cron = "0 0 20 * * SUN"`). Every other Sunday is a silent no-op.
+- **Chapter retirement is implemented** (monthly pass, `CharacterMonthlyService.retireStaleChapters`):
+  a `CHAPTER` dimension with zero ACTIVE claims and `updated_at` older than
+  `mezo.character.monthly.stale-chapter-days` (90d default) is soft-deleted, appending a
+  `CHAPTER_RETIRED` outcome change. CORE dimensions are never eligible.
+- **FE is fully deferred** (§2) — blocked on the design 2.0 prototype round per spec §10;
+  slice 7 of the spec's own decomposition (§12), out of scope for this S1–S6 backend build and
+  for the current S7 consolidation slice.
+- **Out of scope, spec-stated (never / not v1)**: the "Történet" (portrait-revision-timeline)
+  view, the identity-hero live self-portrait bio line, any expert direct-messaging to the user
+  (IDENT-1, never), any outward action from Karakter (IDENT-2).
+- **Companion tone guardrail** for `sensitive` claims (self-calibration,
+  knowledge-rejection-pattern classes per spec §3) is a persona-prompt instruction inside the
+  Szkeptikus/proposal prompts, not a separately enforced code gate — there is no automated test
+  asserting the mirror/question phrasing; it rides the same trust-the-persona-prompt model the
+  rest of the companion stack uses.
+
+## 10. Key files
+
+**Backend — feature package** (`backend/src/main/java/io/mrkuhne/mezo/feature/character/`):
+- `config/CharacterProperties.java` — every `mezo.character.*` tunable (§ below)
+- `controller/CharacterController.java` — the 7 endpoints, `CHARACTER_SWITCH`-gated
+- `entity/` — `CharacterDimensionEntity`, `CharacterClaimEntity`, `CharacterObservationEntity`,
+  `CharacterConferenceEntity`, `CharacterPortraitRevisionEntity` + 6 typed-jsonb envelope records
+- `detector/` — `CharacterDetector`, `DetectorRegistry`, `DetectorInput`/`DetectorSignal`, and
+  the 5 concrete detectors (`CheckinGapDetector`, `JournalNoteDetector`,
+  `JournalSilenceDetector`, `LoggingGapDetector`, `UnderLoggingDetector`)
+- `service/CharacterCoreCatalog.java` / `CharacterExpertCatalog.java` — the 7 CORE
+  dimensions / 7 expert personas (static catalogs)
+- `service/CharacterObservationJob.java` / `CharacterObservationService.java` — nightly pass
+- `service/CharacterConferenceJob.java` / `CharacterConferenceService.java` — weekly konzílium
+- `service/KonziliumProposalRound.java` / `KonziliumVerdictRound.java` / `ClaimLifecycle.java` /
+  `ClaimProposal.java` / `ClaimRuling.java` / `ExpertEvidence.java` — the choreography
+- `service/PortraitWriter.java` — per-dimension portrait rewrite + maturity roll-up
+- `service/CharacterMonthlyJob.java` / `CharacterMonthlyService.java` — monthly deep read +
+  stale-chapter retirement
+- `service/CharacterBootstrapService.java` / `CharacterHistoryReads.java` — one-time bootstrap
+- `service/CharacterFeedbackService.java` — TALAL/NEM_IGAZ/PONTOSITOM
+- `service/CharacterPromptAssembler.java` — the `[Karakter]` block renderer
+- `service/CharacterService.java` / `CharacterSignalReads.java` /
+  `CharacterConfidenceWords.java` — reads, detector-input gathering, human-words confidence
+
+**Cross-feature port**: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java`
+(interface) — consumed by `feature/companion/service/ChatService.java`,
+`feature/proactive/service/MemoirGenerator.java`, `feature/proactive/service/PredictionGenerator.java`.
+
+**API contract**: `api/feature/character/character.yml`
+
+**Migrations**: `backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql`,
+`202608311000_mezo-1gim.6_character_conference_monthly_unique.sql`,
+`202608311100_mezo-1gim.6_character_conference_bootstrap_unique.sql`
+
+**Switches/crons** (`backend/src/main/resources/application.yml`):
+- `mezo.feature.character.enabled: true` — the feature switch (`CHARACTER_SWITCH`); LLM-calling
+  beans additionally require `mezo.feature.companion.enabled`
+- `mezo.techcore.cron.character-observation-job.enabled: true`,
+  `character-conference-job.enabled: true`, `character-monthly-job.enabled: true` — per-job
+  backstop switches
+- `mezo.character.observation.cron: "0 50 2 * * *"`, `observation.catch-up-days: 3`
+- `mezo.character.conference.cron: "0 30 19 * * SUN"`, `conference.catch-up-weeks: 2`
+- `mezo.character.monthly.cron: "0 0 20 * * SUN"` (narrowed to the first Sunday in code),
+  `monthly.stale-chapter-days: 90`
+- `mezo.character.prompt.min-confidence: 0.45`, `prompt.max-claims-per-dimension: 3`,
+  `prompt.max-total-chars: 1800`, `prompt.portrait-min-maturity: 30`
+- `mezo.character.detector: {}` (per-key kill switches, all enabled by default/absence)
+
+**Tests**: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (23 files, §8)
+
+**Docs**: this file; driving spec
+[`docs/superpowers/specs/2026-08-27-user-character-dossier-design.md`](../superpowers/specs/2026-08-27-user-character-dossier-design.md);
+slice plans `docs/superpowers/plans/2026-08-2*-character-slice*.md`,
+`docs/superpowers/plans/2026-08-3*-character-slice*.md`; this S7 consolidation slice's own plan
+`docs/superpowers/plans/2026-08-31-character-slice7-consolidation.md`.
