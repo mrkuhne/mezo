@@ -14,18 +14,27 @@
 //
 // Content is entirely static (`@/features/character/inventory.ts`) — see that file's header
 // for why (it IS the mezo-1gim.15 checklist, not a live catalog read).
+//
+// Fix round 1 (coordinator review): the Bekötve|Tervezett segment used to be raw `useState`,
+// which reset to Bekötve every time this page remounted — including the round-trip into a kör
+// mini-page and back, breaking the browsing flow the prototype preserved. This is exactly the
+// bug `useStickyTab` (`@/shared/hooks/useStickyTab.ts`) exists to fix — "the global rule for
+// [in-view tab/segment switchers] instead of raw useState" — the same idiom Sport/Futás/Fuel-
+// slots/Memória already use for their own in-view segmented controls. Switched to it; the
+// segment now survives the kör round-trip (and a reload within the session) via sessionStorage,
+// keyed `character.adatforrasok.view`.
 // ============================================================
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
 import { PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { INVENTORY_LATER, INVENTORY_READS, INVENTORY_ROUNDS } from '@/features/character/inventory'
 
 type Segment = 'bekotve' | 'tervezett'
 
 export function AdatforrasokPage() {
   const navigate = useNavigate()
-  const [seg, setSeg] = useState<Segment>('bekotve')
+  const [seg, setSeg] = useStickyTab<Segment>('character.adatforrasok.view', 'bekotve')
 
   return (
     <div className="kr-hub">

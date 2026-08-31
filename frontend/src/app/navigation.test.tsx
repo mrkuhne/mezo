@@ -144,6 +144,20 @@ test('/me/karakter/gepterem/detektorok lists the 5 real detectors (mezo-1gim.14,
   expect(await screen.findByText('a ma aktív katalógus, egy mondatban')).toBeInTheDocument()
 })
 
+test('Adatforrások\' Tervezett segment survives a kör round-trip (fix round 1, mezo-1gim.14)', async () => {
+  // Bug: the segment used to be raw useState — remounting AdatforrasokPage on the way back
+  // from a kör mini-page silently reset it to Bekötve. Now useStickyTab-backed
+  // (character.adatforrasok.view), the same idiom Sport/Futás/Fuel-slots/Memória use for their
+  // own in-view segmented controls.
+  renderApp('/me/karakter/gepterem/adatforrasok')
+  await userEvent.click(await screen.findByRole('tab', { name: 'Tervezett' }))
+  expect(screen.getByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
+  await userEvent.click(screen.getByText('Edzés & test'))
+  expect(await screen.findByText('1. KÖR')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(await screen.findByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
+})
+
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's

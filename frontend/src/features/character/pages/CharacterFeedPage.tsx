@@ -68,11 +68,12 @@ export function CharacterFeedPage() {
   // The run-lookup window spans every item currently in the feed, clamped to the 62-day
   // CHARACTER_RUN_RANGE_INVALID cap (FutasokPage's identical clamp) — items are already
   // newest-first (feed contract), so items[0] is the newest day and the last item the oldest.
-  // Hooks can't be called conditionally, so this runs even for an empty feed (falls back to
-  // today, a harmless 1-day query).
-  const today = mondayIso()
-  const toIso = items.length > 0 ? localDayIso(items[0].at) : today
-  const oldestIso = items.length > 0 ? localDayIso(items[items.length - 1].at) : today
+  // Hooks can't be called conditionally, so this runs even for an empty feed (falls back to a
+  // harmless 1-day query anchored on the current week's Monday — NOT "today": `mondayIso()`
+  // returns the ISO Monday of the current week, so an honest name matters here, per fix round 1).
+  const fallbackIso = mondayIso()
+  const toIso = items.length > 0 ? localDayIso(items[0].at) : fallbackIso
+  const oldestIso = items.length > 0 ? localDayIso(items[items.length - 1].at) : fallbackIso
   const fromIso = oldestIso < addDays(toIso, -61) ? addDays(toIso, -61) : oldestIso
   const { runs } = useCharacterRuns(fromIso, toIso)
   const nightlyRunByDay = new Map(runs.filter((r) => r.kind === 'NIGHTLY').map((r) => [r.day, r.id]))
