@@ -80,8 +80,9 @@ export function scaleServings(draft: WorkshopDraft, next: number): WorkshopDraft
 }
 
 /** A line's identity across turns — the pantry ref when resolved, else a name-derived key for
- *  estimate lines (which have no stable ref). Exported implicitly via `diffLineKeys` only. */
-function lineKey(line: WorkshopLine): string {
+ *  estimate lines (which have no stable ref). Exported so the PAGE can match a row against
+ *  `diffLineKeys`' output with the very same rule (a private mirror there would drift). */
+export function lineKey(line: WorkshopLine): string {
   return line.refId ?? `est:${line.name}`
 }
 
