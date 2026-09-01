@@ -54,6 +54,64 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/conversation/{conversationId}:
+    patch:
+      tags: [Companion]
+      operationId: renameConversation
+      summary: Rename one conversation (the list label; reversible, no history impact) — F7.5 (mezo-d20.8.5)
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConversationRenameRequest' }
+      responses:
+        '200':
+          description: The renamed conversation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConversationResponse' }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    delete:
+      tags: [Companion]
+      operationId: deleteConversation
+      summary: Delete one conversation (soft; its messages become unreachable) — F7.5 (mezo-d20.8.5)
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/companion/conversation/{conversationId}/messages:
     get:
       tags: [Companion]
@@ -612,6 +670,15 @@ components:
           properties:
             kind: { type: string, pattern: '^(week|day)$', description: "'week' anchors an ISO-Monday week; 'day' anchors one day inside its week" }
             date: { type: string, format: date, description: 'ISO week-Monday for kind=week; any date inside the week for kind=day' }
+    ConversationRenameRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: The new list label — same cap as the auto-title column.
     ConversationResponse:
       type: object
       required: [id, startedAt]

@@ -8,31 +8,48 @@
 // ============================================================
 import { Sheet } from '@/shared/ui/Sheet'
 import { ClayIcon } from '@/shared/ui/clay'
-import { KIND_ICON } from '@/features/me/logic/knowledgeNodeVisuals'
+import { GRAPH_KIND_GROUPS } from '@/data/insights/graph'
+import { KIND_ICON, KIND_INK } from '@/features/me/logic/knowledgeNodeVisuals'
 import type { KnowledgeGraphNode } from '@/data/types'
+
+const KIND_LABELS = new Map(GRAPH_KIND_GROUPS)
 
 export function NodeDetailSheet({ node, onArchive, onClose }: {
   node: KnowledgeGraphNode
   onArchive: () => void
   onClose: () => void
 }) {
+  // The weekly graph builder sometimes emits a summary that is literally the
+  // title again (seen live on GOAL nodes, mezo-ni86) — repeating it right
+  // under the heading says nothing, so it only renders when it adds content.
+  const summary = node.summary && node.summary.trim() !== node.title.trim() ? node.summary : null
   return (
     <Sheet onClose={onClose} labelledBy="node-detail-title">
       {(close) => (
         <div className="col" style={{ padding: '4px 4px 8px' }}>
-          <div className="row" style={{ gap: 10, alignItems: 'center' }}>
+          {/* Which kind this node belongs to — without it the sheet gave no clue
+              what "Utolsó Cut" even was (mezo-ni86). */}
+          <span className="mz-eyebrow" style={{ color: KIND_INK[node.kind] }}>
+            {KIND_LABELS.get(node.kind)}
+          </span>
+          <div className="row" style={{ gap: 10, alignItems: 'center', marginTop: 6 }}>
             <div className="mz-fic"><ClayIcon name={KIND_ICON[node.kind]} size={20} /></div>
             <h2 id="node-detail-title" className="h-display size-md">{node.title}</h2>
           </div>
-          {node.summary && (
-            <p className="mz-fact-tx" style={{ marginTop: 10 }}>{node.summary}</p>
+          {summary && (
+            <p className="mz-fact-tx" style={{ marginTop: 10 }}>{summary}</p>
           )}
           {node.topEdges.length > 0 && (
-            <ul style={{ margin: '10px 0 0', padding: 0, listStyle: 'none' }}>
-              {node.topEdges.map((line) => (
-                <li key={line} className="mz-fact-sb">{line}</li>
-              ))}
-            </ul>
+            <>
+              <span className="mz-eyebrow" style={{ marginTop: 14, display: 'block' }}>
+                Kapcsolatok
+              </span>
+              <ul style={{ margin: '6px 0 0', padding: 0, listStyle: 'none' }}>
+                {node.topEdges.map((line) => (
+                  <li key={line} className="mz-fact-sb" style={{ lineHeight: 1.5 }}>{line}</li>
+                ))}
+              </ul>
+            </>
           )}
           <button
             type="button"

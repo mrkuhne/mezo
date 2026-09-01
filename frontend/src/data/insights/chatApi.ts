@@ -7,6 +7,7 @@ export type ConversationResponse = components['schemas']['ConversationResponse']
 export type MessageResponse = components['schemas']['MessageResponse']
 export type SendMessageRequest = components['schemas']['SendMessageRequest']
 export type CreateConversationRequest = components['schemas']['CreateConversationRequest']
+export type ConversationRenameRequest = components['schemas']['ConversationRenameRequest']
 export type StreamDelta = components['schemas']['StreamDelta']
 export type StreamToolCall = components['schemas']['StreamToolCall']
 export type StreamError = components['schemas']['StreamError']
@@ -58,6 +59,15 @@ export const chatApi = {
     }),
   listMessages: (conversationId: string) =>
     apiFetch<MessageResponse[]>(`${CONVERSATION}/${conversationId}/messages`),
+
+  // F7.5 (mezo-d20.8.5): the list label is user-editable; delete is a soft delete server-side.
+  renameConversation: (conversationId: string, title: string) =>
+    apiFetch<ConversationResponse>(`${CONVERSATION}/${conversationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ title } satisfies ConversationRenameRequest),
+    }),
+  deleteConversation: (conversationId: string) =>
+    apiFetch<void>(`${CONVERSATION}/${conversationId}`, { method: 'DELETE' }),
 
   /**
    * One streamed turn: emits `onDelta` per chunk and `onTool` as each tool actually

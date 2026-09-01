@@ -25,6 +25,13 @@
 // opens a NodeDetailSheet (summary + edges + archive, spec §3) for that node.
 // The view switch is pure derived state off the URL/selection — no local
 // list mutation to keep in sync.
+//
+// mezo-ni86: one back affordance per view. The category view's return chip
+// now IS the page-head chip („‹ Kategóriák" replaces „‹ Én") instead of a
+// second floating chip below the summary — two stacked back buttons read as
+// two different destinations when they were one. Clearing the param uses
+// replace:true so the grid entry overwrites the ?kind history slot and
+// „‹ Tudástár" (a deterministic /mezo/knowledge jump) truly leaves the page.
 // ============================================================
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -58,7 +65,10 @@ export function KnowledgePage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/mezo/knowledge')} label="‹ Tudástár" />
+      <PageHead
+        onBack={kind ? () => setParams({}, { replace: true }) : () => navigate('/mezo/knowledge')}
+        label={kind ? '‹ Kategóriák' : '‹ Tudástár'}
+      />
 
       <PageHero
         icon="i-tudas"
@@ -105,7 +115,6 @@ export function KnowledgePage() {
                 kind={kind}
                 label={KIND_LABELS.get(kind)!}
                 nodes={graphNodes.filter(n => n.kind === kind)}
-                onBack={() => setParams({})}
                 onOpenNode={n => setSelectedId(n.id)}
               />
             </div>

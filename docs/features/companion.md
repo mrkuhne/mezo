@@ -46,7 +46,9 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - **Two owned tables** — `ai_conversation` + `ai_message` (UUID PK, `created_by`, soft-delete;
   `ai_message.tool_calls`/`refs` are typed jsonb envelopes, **always null in V0.2**).
 - **A contract fragment** — `api/feature/companion/companion.yml`: 4 endpoints (`GET/POST`
-  conversation, `GET .../messages`, `POST .../message`).
+  conversation, `GET .../messages`, `POST .../message`; **F7.5 `mezo-d20.8.5.1`: `PATCH /api/companion/conversation/{id}`** —
+  rename, `ConversationRenameRequest{title 1..120}`, the list label only — **and `DELETE .../{id}`** — soft delete via the
+  entity's `@SQLDelete`; the thread and (through `getOwned`'s filter) its messages become unreachable, nothing is purged).
 - **Two switch-gated services** — `ConversationService` (CRUD spine) + `ChatService` (static
   Hungarian companion-voice system prompt + last-N-message history windowing → one sync
   `CompanionLlm.complete()` call → persists both turns).

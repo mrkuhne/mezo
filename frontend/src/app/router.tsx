@@ -28,7 +28,6 @@ import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuil
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { FuelLogPage } from '@/features/fuel/pages/FuelLogPage'
-import { FuelMezoPage } from '@/features/fuel/pages/FuelMezoPage'
 import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
@@ -43,6 +42,8 @@ import { MezoHubPage } from '@/features/insights/pages/MezoHubPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { PatternDetailPage } from '@/features/insights/pages/PatternDetailPage'
 import { MemoirPage } from '@/features/insights/pages/MemoirPage'
+import { MemoirArchivePage } from '@/features/insights/pages/MemoirArchivePage'
+import { MemoirChapterPage } from '@/features/insights/pages/MemoirChapterPage'
 import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
@@ -172,7 +173,6 @@ export const routes: RouteObject[] = [
       // The hub's Logolás hero tile → the stacked-window logging page (mezo-byo1).
       { path: 'fuel/log', element: <FuelLogPage /> },
       // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
-      { path: 'fuel/uzenetek', element: <FuelMezoPage /> },
       { path: 'fuel/plan', element: <FuelPlanPage /> },
       { path: 'fuel/stack', element: <FuelStackPage /> },
       { path: 'fuel/kamra', element: <FuelKamraPage /> },
@@ -205,6 +205,9 @@ export const routes: RouteObject[] = [
       // an honest redirect so any old bookmark/link still lands somewhere sensible.
       { path: 'mezo/weekly', element: <Navigate to="/me/week" replace /> },
       { path: 'mezo/memoir', element: <MemoirPage /> },
+      // F7.5 (mezo-d20.8.5): the archive shelf + one chapter (static segment ranks above the param)
+      { path: 'mezo/memoir/archivum', element: <MemoirArchivePage /> },
+      { path: 'mezo/memoir/:weekStart', element: <MemoirChapterPage /> },
       { path: 'mezo/knowledge', element: <KnowledgeListPage /> },
       { path: 'mezo/chat', element: <ChatPage /> },
       { path: 'mezo/predictions', element: <PredictionsPage /> },

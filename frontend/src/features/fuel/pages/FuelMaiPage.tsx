@@ -27,21 +27,19 @@
 // WindowIsland + the `?w=` selection URL state, EmptyDayIsland, the `.mai-logrow`
 // standing row (absorbed by the lane's trailing out-of-window tile), the sky shell.
 // ============================================================
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import {
   useFuelDay, useFuelTimeline, useFuelWeek, useMedication, usePantry, useRecipes,
-  useStackDay, useTodayScenario, useWaterActions, useCompanionFeed, resolveBriefing,
+  useStackDay, useWaterActions,
 } from '@/data/hooks'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { buildKeretHero, aiAverage } from '@/features/fuel/logic/keretHero'
 import { buildWindowLane, asPastDayLane } from '@/features/fuel/logic/fuelSwimlane'
-import { fuelMezoMessages } from '@/features/fuel/logic/fuelMezoMessages'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
-import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
 import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
+import { ClayIcon } from '@/shared/ui/clay'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { KeretHero } from '@/features/fuel/components/KeretHero'
@@ -81,14 +79,6 @@ export function FuelMaiPage() {
   const { plan: planY, budget: budgetY } = useFuelTimeline(yesterday)
   const laneY = asPastDayLane(buildWindowLane({ slots: planY.slots, budget: budgetY, meals: fuelY.meals }))
   const yMissed = laneY.tiles.filter(t => t.state === 'missed').length
-
-  // ── Mezo banner: the counter only, never the voice (iterations §2) ─────
-  const scenario = useTodayScenario()
-  const feed = useCompanionFeed()
-  const fuelMsgs = useMemo(
-    () => fuelMezoMessages(buildMezoMessages({ feed, demoBriefing: resolveBriefing(scenario.dayState) })),
-    [feed, scenario.dayState],
-  )
 
   // ── tile lines — each from its own page's hook, honest while unresolved ──
   const { weeklyStats } = useFuelWeek()
@@ -147,19 +137,6 @@ export function FuelMaiPage() {
               onOpen: () => navigate(`/fuel/log?d=${yesterday}`),
             } : null} />
         </div>
-
-        {/* The companion voice left the hero: the banner carries only the counter, the
-            messages themselves live on /fuel/uzenetek. No fuel-context message today →
-            the band stays a door, without a fabricated "0 új üzenet" count. */}
-        <button type="button" className="fh-mezotile rise" style={{ '--d': '110ms' } as React.CSSProperties}
-          aria-label="Mezo Fuel-üzenetek" onClick={() => navigate('/fuel/uzenetek')}>
-          <ClaySpot name="s-orb" size={31} />
-          <span className="txt">
-            <b>Mezo</b>{fuelMsgs.length > 0 ? ` · ${fuelMsgs.length} új Fuel-üzenet ma` : ' · Fuel-üzenetek'}
-          </span>
-          {fuelMsgs.length > 0 && <span className="fh-mzdot" aria-hidden="true" />}
-          <span className="chev" aria-hidden="true">›</span>
-        </button>
 
         <Mosaic>
           <Tile wash="white" icon="i-rend" eyebrow="Terv" delayMs={160}

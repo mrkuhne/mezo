@@ -27,6 +27,7 @@ they inline come from `../assets/`.
 | `en-mely.html` | https://claude.ai/code/artifact/d7744124-37bb-4e7d-ac57-45cf66f1fc24 |
 | `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
 | `emberek.html` | https://claude.ai/code/artifact/9c94ecde-f426-471a-a988-b0a60ca7fbcf |
+| `mezo-memoar.html` | https://claude.ai/code/artifact/95759be5-7de6-4d04-af7b-60d7862dbe50 |
 
 ## Workflow
 
@@ -366,7 +367,24 @@ are usable without a build step).
   grouped into **domain chips** (`Súly ×7 · Alvás ×5 · …`, tap → the group's date chips; ≤3
   refs render expanded), recalled memories as a **horizontal lavender card strip** (type icon +
   date + similarity ring + 4-line clamped gist, tap → card widens and unclamps), subtler
-  feedback chips, lav-sheen composer, and no floating FAB on the chat page.
+  feedback chips, lav-sheen composer, and no floating FAB on the chat page. The F7.5 deep
+  round added the **conversation actions**: a ⋯ disc in the header AND a kebab on every picker
+  row open the same action sheet — Átnevezés (inline input, no confirm; reversible) and Törlés
+  (two-step warm — never punishing — confirm; ChatGPT pattern minus swipe, which fights PWA
+  scroll/back gestures) — plus the **error bubble**: a failed send keeps the user bubble in
+  place and renders an amber bubble with **Újra** (re-sends the same turn — replace, don't
+  append, no duplicated message) and **Szerkesztés** (returns the text to the composer).
+- **mezo-memoar** — the Memoir archive (F7.5): the dead `Memoir archive` footer retired at
+  mezo-d20.5.5 becomes a real page. Day One-pattern month-grouped timeline (month header +
+  count, one card per week: week chip + date range + anchor count + Fraunces title + 2-line
+  excerpt; the whole card is one tap target — avoiding Apple Journal's ambiguous tap zones).
+  Tapping a card navigates — no modal — to the **chapter page** merged at mezo-uajy: hero
+  (week + title + date), the drop-cap memoir card with multi-paragraph body, the humanized
+  `Miből íródott` anchor chips (Emlék › day page, Minta › Patterns; Identitás static),
+  feedback chips, and the előző/következő pager which walks the timeline order. Contract
+  note baked into the aside: `GET /api/proactive/memoir/archive` returns the full list in
+  one round (weekly cadence — a year is ~52 small records); the latest endpoint and its
+  404 semantics stay untouched.
 - **fuel-mely** — the F7.3 Fuel deep round: the four blocks that close the tab's last
   mixed-generation surfaces. (1) **Gyógyszer full lifecycle** — the page finally carries its own
   write paths: a ＋ Beadás dose sheet, an edit sheet, and a two-step inline **Leállítás** that is

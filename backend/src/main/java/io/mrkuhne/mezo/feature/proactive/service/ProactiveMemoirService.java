@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.api.dto.MemoirArchiveResponse;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.mapper.ProactiveMapper;
@@ -43,5 +44,18 @@ public class ProactiveMemoirService {
                     SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
         }
         return mapper.toMemoirResponse(memoir);
+    }
+
+    /**
+     * F7.5 (mezo-d20.8.5): the archive lists what the Sunday cron / lazy-latest already wrote —
+     * it NEVER generates. Empty list = honest empty state (list-endpoint precedent).
+     */
+    @Transactional(readOnly = true)
+    public MemoirArchiveResponse archive(UUID userId) {
+        return MemoirArchiveResponse.builder()
+                .entries(memoirRepository.findByCreatedByOrderByWeekStartDesc(userId).stream()
+                        .map(mapper::toMemoirResponse)
+                        .toList())
+                .build();
     }
 }
