@@ -1,28 +1,28 @@
 // ============================================================
 // Mezo · KindNodeList (mezo-2243) — the Tudásgráf category view behind a
-// KindTileGrid tile: back chip + CategoryHeader + one COMPACT row per node
-// (icon disc, title, edge count). Summary/edges/archive moved to the
-// NodeDetailSheet — that is what keeps the rows one line tall, so a category
-// stays scannable even at dozens of nodes.
+// KindTileGrid tile: CategoryHeader + one COMPACT row per node (icon disc,
+// title, edge count). Summary/edges/archive moved to the NodeDetailSheet —
+// that is what keeps the rows one line tall, so a category stays scannable
+// even at dozens of nodes.
+//
+// mezo-ni86: the in-body „‹ Kategóriák" chip moved up into the page-head
+// (KnowledgePage owns it) — a second back button under the summary tile read
+// as a different destination than the head chip while doing the same thing.
 // ============================================================
 import { CategoryHeader } from '@/features/me/components/CategoryHeader'
 import { ClayIcon } from '@/shared/ui/clay'
 import { KIND_ICON, KIND_INK, KIND_WASH } from '@/features/me/logic/knowledgeNodeVisuals'
 import type { GraphNodeKind, KnowledgeGraphNode } from '@/data/types'
 
-export function KindNodeList({ kind, label, nodes, onBack, onOpenNode }: {
+export function KindNodeList({ kind, label, nodes, onOpenNode }: {
   kind: GraphNodeKind
   label: string
   nodes: KnowledgeGraphNode[]
-  onBack: () => void
   onOpenNode: (node: KnowledgeGraphNode) => void
 }) {
   return (
-    <div className="col gap-xs">
-      <div className="row rise" style={{ justifyContent: 'space-between', alignItems: 'center', '--d': '40ms' } as React.CSSProperties}>
-        <button type="button" className="chip" onClick={onBack}>‹ Kategóriák</button>
-      </div>
-      <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
+    <div className="col">
+      <div className="rise" style={{ '--d': '40ms' } as React.CSSProperties}>
         <CategoryHeader label={label} color={KIND_INK[kind]} count={nodes.length} />
       </div>
       <div className="col gap-xs">
@@ -32,7 +32,7 @@ export function KindNodeList({ kind, label, nodes, onBack, onOpenNode }: {
             type="button"
             data-kind-node-row
             className={`mz-facttile mz-w-${KIND_WASH[kind]} rise`}
-            style={{ textAlign: 'left', cursor: 'pointer', '--d': `${80 + i * 30}ms` } as React.CSSProperties}
+            style={{ textAlign: 'left', cursor: 'pointer', '--d': `${60 + i * 30}ms` } as React.CSSProperties}
             onClick={() => onOpenNode(n)}
           >
             <div className="mz-fic"><ClayIcon name={KIND_ICON[kind]} size={20} /></div>
