@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -26,6 +27,7 @@ import org.springframework.boot.test.context.TestComponent;
 public class MealPopulator {
 
     private final MealRepository repository;
+    private final PantryItemRepository pantryItemRepository;
 
     /** A lunch meal with one recipe-arm line referencing the given (real, persisted) recipe. */
     public MealEntity createRecipeMeal(UUID owner, RecipeEntity recipe) {
@@ -96,6 +98,54 @@ public class MealPopulator {
                 new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null)),
             List.of(), List.of(new MealBreakdownJson.ToolRow("compute", "score(deterministic)"))));
         return repository.saveAndFlush(meal);
+    }
+
+    /**
+     * A meal on an explicit date with N pantry-arm lines, each carrying its own macro/NOVA
+     * snapshot — the Karakter round-2 read-layer fixture (mezo-1gim.15) needs multi-line days with
+     * distinct NOVA classes, which the single-line {@code createPantryMeal} builders can't express.
+     * Each line gets its own throwaway {@code PantryItemEntity} persisted first — {@code
+     * pantry_item_id} carries an {@code ON DELETE RESTRICT} FK, so (unlike {@code recipeId} on the
+     * other arm in this populator) a random UUID is rejected at flush.
+     */
+    public MealEntity createMealWithItems(UUID owner, LocalDate mealDate, String slot, List<Line> lines) {
+        MealEntity meal = newMeal(owner, slot, slot);
+        meal.setMealDate(mealDate);
+        int order = 0;
+        for (Line line : lines) {
+            PantryItemEntity pantryItem = new PantryItemEntity();
+            pantryItem.setCreatedBy(owner);
+            pantryItem.setKind("food");
+            pantryItem.setName(line.name());
+            pantryItem.setSource("manual");
+            pantryItem.setCategory("meat");
+            pantryItem.setServingAmount(BigDecimal.ONE);
+            pantryItem.setServingUnit("adag");
+            pantryItem.setKcal(new BigDecimal(line.kcal()));
+            pantryItem.setProteinG(new BigDecimal(line.proteinG()));
+            pantryItem.setCarbsG(new BigDecimal(line.carbsG()));
+            pantryItem.setFatG(new BigDecimal(line.fatG()));
+            pantryItem.setNova(line.nova());
+            pantryItem = pantryItemRepository.saveAndFlush(pantryItem);
+
+            MealItemEntity item = baseLine(meal, owner, order++, BigDecimal.ONE, "adag");
+            item.setSource("pantry");
+            item.setPantryItemId(pantryItem.getId());
+            item.setSnapshotName(line.name());
+            item.setSnapshotPer(BigDecimal.ONE);
+            item.setSnapshotBasisUnit("adag");
+            item.setSnapshotKcal(new BigDecimal(line.kcal()));
+            item.setSnapshotProteinG(new BigDecimal(line.proteinG()));
+            item.setSnapshotCarbsG(new BigDecimal(line.carbsG()));
+            item.setSnapshotFatG(new BigDecimal(line.fatG()));
+            item.setSnapshotNova(line.nova());
+            meal.getItems().add(item);
+        }
+        return repository.saveAndFlush(meal);
+    }
+
+    /** One item line for {@link #createMealWithItems}: name + macro strings + NOVA class. */
+    public record Line(String name, String kcal, String proteinG, String carbsG, String fatG, short nova) {
     }
 
     private MealEntity newMeal(UUID owner, String slot, String title) {

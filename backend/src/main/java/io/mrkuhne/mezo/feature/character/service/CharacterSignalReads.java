@@ -6,9 +6,16 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.character.detector.DetectorInput;
+import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
+import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
+import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
+import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
+import io.mrkuhne.mezo.feature.meal.repository.WaterLogRepository;
+import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -26,8 +33,13 @@ import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -74,22 +86,26 @@ public class CharacterSignalReads {
     private final SleepLogRepository sleepLogRepository;
     private final MesocycleRepository mesocycleRepository;
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
+    private final WaterLogRepository waterLogRepository;
+    private final GoalRepository goalRepository;
+    private final NutritionTargetsProperties nutritionTargets;
 
     public DetectorInput gather(UUID owner, LocalDate day) {
         LocalDate windowStart = day.minusDays(WINDOW_DAYS - 1);
         LocalDate trendStart = day.minusWeeks(TREND_WEEKS).plusDays(1);
 
-        Set<LocalDate> mealDates = new HashSet<>();
+        List<DetectorInput.MealDayPoint> mealDays = gatherMealDays(owner, trendStart, day);
+        Set<LocalDate> mealDates = mealDays.stream()
+                .map(DetectorInput.MealDayPoint::date)
+                .filter(d -> !d.isBefore(windowStart))
+                .collect(java.util.stream.Collectors.toCollection(HashSet::new));
+
         Map<LocalDate, Integer> checkinCounts = new HashMap<>();
         for (LocalDate d = windowStart; !d.isAfter(day); d = d.plusDays(1)) {
-            if (!mealRepository
-                    .findByCreatedByAndMealDateAndDeletedFalseOrderByLoggedAtAsc(owner, d)
-                    .isEmpty()) {
-                mealDates.add(d);
-            }
-            int count = checkInRepository.findByCreatedByAndDateOrderBySlotTime(owner, d).size();
-            checkinCounts.put(d, count);
+            checkinCounts.put(d, checkInRepository.findByCreatedByAndDateOrderBySlotTime(owner, d).size());
         }
+
+        List<DetectorInput.WaterDayPoint> waterDays = gatherWaterDays(owner, trendStart, day);
 
         List<DetectorInput.WeightPoint> weights = weightLogRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(owner, windowStart)
@@ -141,7 +157,7 @@ public class CharacterSignalReads {
         return new DetectorInput(day, mealDates, checkinCounts, weights, journalTexts,
                 gymDays, sportSessions, runLogs, sleepPoints, meso,
                 new DetectorInput.TrendWindow(runsEightWeeks, gymEightWeeks,
-                        List.of(), List.of(), null, List.of(), null));
+                        mealDays, waterDays, null, List.of(), null));
     }
 
     /**
@@ -255,5 +271,108 @@ public class CharacterSignalReads {
 
     private DetectorInput.SleepPoint toSleepPoint(SleepLogEntity s) {
         return new DetectorInput.SleepPoint(s.getDate(), s.getQuality(), s.getDurationH(), s.getAwakenings());
+    }
+
+    /**
+     * One meal-aggregate row per day that has at least one logged meal. Macros are sums over the
+     * frozen item snapshots; the NOVA-4 share is kcal-weighted over the LINE level
+     * ({@code MealItemEntity.snapshotNova}) rather than the meal-level {@code breakdown.nova}
+     * envelope, because {@code breakdown} can be NULL on legacy/manual meals while the line
+     * snapshots are written for every line (round-2 spec §4.1). Targets mirror
+     * {@code FuelDayService}'s precedence exactly: the active goal's week segment prescribes kcal
+     * and protein, everything else comes from the config.
+     */
+    private List<DetectorInput.MealDayPoint> gatherMealDays(UUID owner, LocalDate from, LocalDate to) {
+        List<MealEntity> meals = mealRepository.findWithItemsBetween(owner, from, to);
+        if (meals.isEmpty()) {
+            return List.of();
+        }
+        GoalEntity goal = goalRepository.findByCreatedByAndStatusAndDeletedFalse(owner, "active")
+                .stream().findFirst().orElse(null);
+
+        Map<LocalDate, List<MealEntity>> byDate = new LinkedHashMap<>();
+        for (MealEntity m : meals) {
+            byDate.computeIfAbsent(m.getMealDate(), k -> new ArrayList<>()).add(m);
+        }
+        List<DetectorInput.MealDayPoint> out = new ArrayList<>();
+        for (Map.Entry<LocalDate, List<MealEntity>> e : byDate.entrySet()) {
+            LocalDate date = e.getKey();
+            BigDecimal kcal = BigDecimal.ZERO;
+            BigDecimal protein = BigDecimal.ZERO;
+            BigDecimal carbs = BigDecimal.ZERO;
+            BigDecimal fat = BigDecimal.ZERO;
+            BigDecimal classifiedKcal = BigDecimal.ZERO;
+            BigDecimal nova4Kcal = BigDecimal.ZERO;
+            List<DetectorInput.MealPoint> mealPoints = new ArrayList<>();
+            for (MealEntity m : e.getValue()) {
+                BigDecimal mealKcal = BigDecimal.ZERO;
+                Integer dominantNova = null;
+                BigDecimal dominantKcal = BigDecimal.ZERO;
+                for (MealItemEntity item : m.getItems()) {
+                    BigDecimal lineKcal = nz(item.getSnapshotKcal());
+                    mealKcal = mealKcal.add(lineKcal);
+                    protein = protein.add(nz(item.getSnapshotProteinG()));
+                    carbs = carbs.add(nz(item.getSnapshotCarbsG()));
+                    fat = fat.add(nz(item.getSnapshotFatG()));
+                    if (item.getSnapshotNova() != null) {
+                        classifiedKcal = classifiedKcal.add(lineKcal);
+                        if (item.getSnapshotNova() >= 4) {
+                            nova4Kcal = nova4Kcal.add(lineKcal);
+                        }
+                        if (lineKcal.compareTo(dominantKcal) > 0) {
+                            dominantKcal = lineKcal;
+                            dominantNova = item.getSnapshotNova().intValue();
+                        }
+                    }
+                }
+                kcal = kcal.add(mealKcal);
+                mealPoints.add(new DetectorInput.MealPoint(
+                        m.getSlot(),
+                        LocalTime.from(m.getLoggedAt().atZone(ZoneId.systemDefault())),
+                        mealKcal, dominantNova));
+            }
+            BigDecimal coverage = kcal.signum() == 0 ? null
+                    : classifiedKcal.divide(kcal, 4, RoundingMode.HALF_UP);
+            BigDecimal nova4Share = classifiedKcal.signum() == 0 ? null
+                    : nova4Kcal.divide(classifiedKcal, 4, RoundingMode.HALF_UP);
+            out.add(new DetectorInput.MealDayPoint(date, kcal, protein, carbs, fat,
+                    nova4Share, coverage, kcalTarget(goal, date), proteinTarget(goal, date),
+                    List.copyOf(mealPoints)));
+        }
+        return List.copyOf(out);
+    }
+
+    /** {@code FuelDayService#targetSet} precedence: goal-week segment kcal, else config. */
+    private BigDecimal kcalTarget(GoalEntity goal, LocalDate date) {
+        GoalPrescriptionJson.Segment seg = segmentFor(goal, date);
+        return BigDecimal.valueOf(seg != null && seg.kcal() != null ? seg.kcal() : nutritionTargets.kcal());
+    }
+
+    /** {@code FuelDayService#targetSet} precedence: goal-week segment protein, else config. */
+    private BigDecimal proteinTarget(GoalEntity goal, LocalDate date) {
+        GoalPrescriptionJson.Segment seg = segmentFor(goal, date);
+        return BigDecimal.valueOf(seg != null && seg.proteinG() != null ? seg.proteinG() : nutritionTargets.p());
+    }
+
+    private GoalPrescriptionJson.Segment segmentFor(GoalEntity goal, LocalDate date) {
+        if (goal == null || goal.getStartDate() == null) {
+            return null;
+        }
+        long week = ChronoUnit.DAYS.between(goal.getStartDate(), date) / 7 + 1;
+        return GoalPrescriptionJson.currentSegment(goal.getPrescription(), week);
+    }
+
+    /** Per-day water totals; a day with no log is ABSENT, never a 0 ml row. */
+    private List<DetectorInput.WaterDayPoint> gatherWaterDays(UUID owner, LocalDate from, LocalDate to) {
+        List<DetectorInput.WaterDayPoint> out = new ArrayList<>();
+        for (Object[] row : waterLogRepository.sumsBetween(owner, from, to)) {
+            out.add(new DetectorInput.WaterDayPoint((LocalDate) row[0],
+                    ((Number) row[1]).intValue(), nutritionTargets.water()));
+        }
+        return List.copyOf(out);
+    }
+
+    private static BigDecimal nz(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
     }
 }

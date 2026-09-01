@@ -10,11 +10,14 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +39,8 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private RunningPopulator runningPopulator;
+    @Autowired private MealPopulator mealPopulator;
+    @Autowired private WaterLogPopulator waterLogPopulator;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -131,5 +136,53 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         assertThat(input.sleepPoints()).isEmpty();
         assertThat(input.trend().runsEightWeeks()).isEmpty();
         assertThat(input.trend().gymEightWeeks()).isEmpty();
+    }
+
+    @Test
+    void gather_fillsMealAndWaterSeries_withRealTargetsAndNovaShare() {
+        UUID owner = owner();
+
+        mealPopulator.createMealWithItems(owner, DAY, "dinner",
+                List.of(new MealPopulator.Line("Csirke", "600", "50", "10", "20", (short) 1),
+                        new MealPopulator.Line("Chips", "400", "5", "40", "25", (short) 4)));
+        waterLogPopulator.createWaterLog(owner, DAY, 2500);
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().mealDays()).singleElement().satisfies(m -> {
+            assertThat(m.date()).isEqualTo(DAY);
+            assertThat(m.kcal()).isEqualByComparingTo("1000");
+            assertThat(m.proteinG()).isEqualByComparingTo("55");
+            // both lines carry a NOVA class -> full coverage; 400 of 1000 kcal are NOVA-4
+            assertThat(m.novaCoveragePct()).isEqualByComparingTo("1.0000");
+            assertThat(m.nova4KcalShare()).isEqualByComparingTo("0.4000");
+            // no active goal -> config fallback (mezo.nutrition.kcal / .p)
+            assertThat(m.kcalTarget()).isEqualByComparingTo("3100");
+            assertThat(m.proteinTarget()).isEqualByComparingTo("220");
+            assertThat(m.meals()).singleElement().satisfies(p ->
+                    assertThat(p.slot()).isEqualTo("dinner"));
+        });
+        assertThat(input.trend().waterDays()).singleElement().satisfies(w -> {
+            assertThat(w.date()).isEqualTo(DAY);
+            assertThat(w.amountMl()).isEqualTo(2500);
+            assertThat(w.targetMl()).isEqualTo(4000);
+        });
+        // the 14-day mealDates presence set is still derived correctly from the same read
+        assertThat(input.mealDates()).contains(DAY);
+    }
+
+    @Test
+    void gather_boundsMealAndWaterAboveByDay_forCatchUp() {
+        UUID owner = owner();
+
+        mealPopulator.createMealWithItems(owner, DAY.plusDays(1), "lunch",
+                List.of(new MealPopulator.Line("Későbbi", "500", "30", "40", "15", (short) 2)));
+        waterLogPopulator.createWaterLog(owner, DAY.plusDays(1), 3000);
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().mealDays()).isEmpty();
+        assertThat(input.trend().waterDays()).isEmpty();
+        assertThat(input.mealDates()).isEmpty();
     }
 }
