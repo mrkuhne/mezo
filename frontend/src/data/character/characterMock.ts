@@ -586,7 +586,7 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
     // HydrationConsistencyDetector's real summary.
     {
       detector: 'hydration-consistency',
-      code: '12 logolt napból 4 napon teljesült a vízcél — a sáv ma váltott',
+      code: '12 logolt napból 6 napon teljesült a vízcél — a sáv ma váltott (INGADOZO)',
       refs: [],
       who: 'taplalkozo',
       obs: 'A vízbevitel ingadozóra váltott ezen a héten — nem a mennyiség, a ritmus csúszott el.',

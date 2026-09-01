@@ -29,9 +29,13 @@ beforeEach(() => {
 
 describe('DetektorokPage', () => {
   test('renders all real detectors with their key chip + owning expert name', () => {
-    render(<DetektorokPage />)
+    const { container } = render(<DetektorokPage />)
     expect(screen.getByText('Detektorok')).toBeInTheDocument()
-    expect(DETECTORS.length).toBe(20)
+    // Derived from the page's own DETECTORS array (never a re-pinned literal) — counts the
+    // rendered `.kr-detchip` key chips, one per row, so a future round's addition (or an
+    // accidental duplicate/missing row) is caught by comparing rendered output against the
+    // array, not just the array against itself.
+    expect(container.querySelectorAll('.kr-detchip').length).toBe(DETECTORS.length)
     for (const d of DETECTORS) {
       expect(screen.getByText(d.key)).toBeInTheDocument()
     }

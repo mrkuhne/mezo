@@ -524,10 +524,11 @@ before investigating.
   `progression-adherence`, `avoidance-pattern` (all `edzo`-owned except the last, `drill`-owned),
   and — from the round-2 design spec
   (`docs/superpowers/specs/2026-09-01-character-round2-fuel-ciklus-design.md`) — the remaining two
-  cross-domain group keys (`comfort-eating`, `med-cycle-covariance`, doki-owned) plus three more
-  additions beyond §5: `macro-adherence`, `hydration-consistency`, `protein-training-mismatch`
-  (all `taplalkozo`-owned) and `late-eating-pattern` (`szomnologus`-owned), `stack-skip-pattern`
-  (`drill`-owned). The remaining cross-domain group (`people-mood-link`, `weekend-gap`), the
+  cross-domain group keys (`comfort-eating`, `taplalkozo`-owned; `med-cycle-covariance`,
+  `doki`-owned) plus three more additions beyond §5: `macro-adherence`, `hydration-consistency`,
+  `protein-training-mismatch` (all `taplalkozo`-owned) and `late-eating-pattern`
+  (`szomnologus`-owned), `stack-skip-pattern` (`drill`-owned). The remaining cross-domain group
+  (`people-mood-link`, `weekend-gap`), the
   character-traits group (`resilience`, `all-or-nothing`, `restart-pattern`,
   `promise-vs-delivery`, `self-calibration`, `decision-profile`), the remaining meta-behavior
   detectors (`retro-logging-ratio`, `checkin-latency`, `night-activity`, `chat-topic-shift`,
