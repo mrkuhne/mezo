@@ -143,6 +143,20 @@ chat): az „érkezett-e ma új adat" kapu majdnem mindig nyitva áll, ezért az
 túltüzelés-védelem az **állapotváltás-kapu**. Minden detektor kvalitatív állapotot számol a napra
 és a nap−1-re, és csak nem-null eltéréskor szólal meg. Állapot nélkül, tábla nélkül.
 
+**Az új-adat előszűrő nem univerzális.** A kör tervezése közben kiderült egy elv, ami az 1. és 2.
+körben még nem látszott: **ahol a hiány maga a jel, ott az „érkezett-e ma új adat" kapu elfojtja
+pont azt az átmenetet, amiért a detektor létezik.** Egy backlog attól nő, hogy telik az idő; egy
+streak attól szakad meg, hogy nincs sor; egy check-in slot attól kopik ki, hogy nem írják.
+Mindhárom esetben a jelző esemény az, hogy **nem történt semmi** — ilyenkor az új-adat kapu nulla
+napon engedne át. Ezek a detektorok tehát kizárólag az állapotváltás-kapura támaszkodnak, ami
+önmagában helyes és elegendő védelem.
+
+Előszűrőt **használ**: `self-calibration`, `promise-vs-delivery`, `decision-profile`,
+`gratitude-focus`, `checkin-latency`. Előszűrőt **nem használ**: `decision-review-backlog`,
+`streak-break-response`, `restart-pattern`, `needs-domain-imbalance`, `retro-logging-ratio`,
+`night-activity`, `checkin-slot-drift`. A `DetectorGates` ezért csak három új metódussal bővül
+(`newIntentionData`, `newDecisionData`, `newGratitudeData`) — a check-in kapu már létezik.
+
 **Az állapotkulcsba soha nem kerül mozgó számláló** — a 2. kör záró review-ja pontosan ezt buktatta
 meg négy detektorban, és két teszt emiatt volt rossz okból zöld. Minden állapot sáv- vagy
 címke-értékű.
@@ -269,6 +283,11 @@ Sávok: 0 → `nincs` · 1–2 → `nehany` · ≥3 → `halmozodik`.
 
 **Kapu:** legalább egy döntés létezzen egyáltalán, különben null állapot (különben minden
 döntésnapló nélküli felhasználó örökké `nincs` állapotban ülne).
+
+**Kivétel a közös kapu alól:** ez az egyetlen detektor, amely **nem** használ „ma érkezett új adat"
+előszűrőt. A backlog attól nő, hogy **telik az idő** — azon a napon, amikor egy döntés átlépi a saját
+határidejét, sehová nem íródik sor. Az új-adat kapu pontosan azt az átmenetet fojtaná el, amiért a
+detektor létezik; az állapotváltás-kapu önmagában helyes és elegendő védelem.
 
 **Állapot:** `"backlog:halmozodik"` — sáv, nem darabszám.
 
