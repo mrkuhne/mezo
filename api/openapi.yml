@@ -5012,6 +5012,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/people/{personId}/decision':
+    post:
+      tags:
+        - People
+      operationId: decidePerson
+      summary: >-
+        Decide a candidate person (S4 nightly extractor inbox) — accept
+        activates the person, reject soft-deletes it (the soft-deleted row is
+        the extractor's reject list: the name is never re-proposed). One
+        decision per candidate.
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonDecisionRequest'
+      responses:
+        '200':
+          description: >-
+            The decided person (status active on accept; the soft-deleted row
+            snapshot on reject)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonResponse'
+        '400':
+          description: PEOPLE_CANDIDATE_ALREADY_DECIDED / validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/proactive/feed:
     get:
       tags:
@@ -15136,6 +15186,14 @@ components:
         notes:
           type: string
           maxLength: 500
+    PersonDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          pattern: ^(accept|reject)$
     FeedRef:
       type: object
       required:

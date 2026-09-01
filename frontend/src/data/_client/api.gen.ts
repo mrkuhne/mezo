@@ -1925,6 +1925,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/people/{personId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide a candidate person (S4 nightly extractor inbox) — accept activates the person, reject soft-deletes it (the soft-deleted row is the extractor's reject list: the name is never re-proposed). One decision per candidate. */
+        post: operations["decidePerson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/proactive/feed": {
         parameters: {
             query?: never;
@@ -6159,6 +6176,9 @@ export interface components {
             affectBaseline?: "positive" | "neutral" | "mixed" | "negative";
             contactCadenceLabel?: string;
             notes?: string;
+        };
+        PersonDecisionRequest: {
+            decision: string;
         };
         FeedRef: {
             /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
@@ -13472,6 +13492,59 @@ export interface operations {
                 };
             };
             /** @description Mention missing, foreign, or belongs to a different person (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decidePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The decided person (status active on accept; the soft-deleted row snapshot on reject) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description PEOPLE_CANDIDATE_ALREADY_DECIDED / validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
             404: {
                 headers: {
                     [name: string]: unknown;

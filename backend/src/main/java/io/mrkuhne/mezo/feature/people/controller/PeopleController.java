@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.CreatePersonRequest;
 import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
+import io.mrkuhne.mezo.api.dto.PersonDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PersonResponse;
 import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
 import io.mrkuhne.mezo.feature.people.service.PeopleService;
@@ -49,5 +50,10 @@ public class PeopleController implements PeopleApi {
     @Override
     public void deleteMention(UUID personId, UUID mentionId) {
         service.deleteMention(currentUserId.get(), personId, mentionId);
+    }
+
+    @Override
+    public PersonResponse decidePerson(UUID personId, PersonDecisionRequest personDecisionRequest) {
+        throw new UnsupportedOperationException("mezo-06o0.3 Task 2");
     }
 }
