@@ -541,7 +541,7 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
         </div>
       </div>
 
-      <div className="row gap-sm" style={{ margin: '14px 0 12px' }}>
+      <div className="row gap-sm logflow-actions" style={{ margin: '14px 0 12px' }}>
         <button className="cta-ghost" onClick={onCancel} style={{ flex: 1 }}>Mégse</button>
         <button className="cta-primary" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
           {saveLabel ?? <><Icon name="check" size={15} /> Logolás · +10 XP</>}

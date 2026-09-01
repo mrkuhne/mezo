@@ -36,14 +36,14 @@ public class MedicationCycleService {
             .findFirstByCreatedByAndMedicationIdAndDeletedFalseAndAdministeredDateLessThanEqualOrderByAdministeredDateDesc(
                 userId, med.getId(), onDate);
         if (last.isEmpty()) {
-            return new MedicationCycle(0, null, null, null, ghostWeek(cfg)); // honest-zero
+            return new MedicationCycle(0, null, null, null, null, ghostWeek(cfg)); // honest-zero
         }
         LocalDate lastDate = last.get().getAdministeredDate();
         long since = ChronoUnit.DAYS.between(lastDate, onDate);
         int day = (int) Math.min(since + 1, cfg.cycleLengthDays()); // clamp past cycle length
         Phase phase = phaseOf(cfg, day);
-        return new MedicationCycle(
-            day, phase.key(), phase.label(), last.get().getAdministeredAt(), buildWeek(cfg, day));
+        return new MedicationCycle(day, phase.key(), phase.label(), last.get().getAdministeredAt(),
+            lastDate, buildWeek(cfg, day));
     }
 
     /** The phases[] entry whose fromDay..toDay (inclusive) contains {@code day}; the last phase if none. */

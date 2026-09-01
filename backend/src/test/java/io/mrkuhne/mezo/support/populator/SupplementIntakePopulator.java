@@ -31,4 +31,16 @@ public class SupplementIntakePopulator {
         e.setTakenDate(LocalDate.ofInstant(takenAt, ZoneId.systemDefault()));
         return repository.saveAndFlush(e);
     }
+
+    /** One logged intake anchored at noon local time on {@code date}, with a slot key — for tests
+     *  that reason about the calendar day directly rather than a precise instant. */
+    public SupplementIntakeEntity createIntake(UUID owner, UUID pantryItemId, LocalDate date, String slotKey) {
+        SupplementIntakeEntity e = new SupplementIntakeEntity();
+        e.setCreatedBy(owner);
+        e.setPantryItemId(pantryItemId);
+        e.setTakenAt(date.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant());
+        e.setTakenDate(date);
+        e.setSlotKey(slotKey);
+        return repository.saveAndFlush(e);
+    }
 }

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  * checked on that SAME date D: a systematic gym reps-vs-target decline (mean delta {@code <= -1},
  * reusing the {@code avgRepsVsTargetDelta} helper pattern from {@link SportInterferenceDetector}),
  * OR a run with {@code rpeActual >= 8}, OR a sport session with {@code rpe >= 8}. Fires on >= 2
- * such pairs in the 14-day window, gated on new sleep, gym, run, OR sport data (RoundOneGates).
+ * such pairs in the 14-day window, gated on new sleep, gym, run, OR sport data (DetectorGates).
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
@@ -36,8 +36,8 @@ public class SleepPerformanceChainDetector implements CharacterDetector {
 
     @Override
     public List<DetectorSignal> detect(DetectorInput in) {
-        if (!RoundOneGates.newSleepData(in) && !RoundOneGates.newGymData(in)
-                && !RoundOneGates.newRunData(in) && !RoundOneGates.newSportData(in)) {
+        if (!DetectorGates.newSleepData(in) && !DetectorGates.newGymData(in)
+                && !DetectorGates.newRunData(in) && !DetectorGates.newSportData(in)) {
             return List.of();
         }
         int pairs = 0;

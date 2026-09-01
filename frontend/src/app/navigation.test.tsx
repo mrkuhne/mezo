@@ -136,13 +136,14 @@ test('/me/karakter/gepterem/adatforrasok is the Bekötve|Tervezett data-source i
 })
 
 test('/me/karakter/gepterem/adatforrasok/kor/:n opens one MINDENT-be round\'s mini-page (mezo-1gim.14, Task 5)', async () => {
-  // Round 1 ("Edzés & test") landed for real via mezo-1gim.15 and is no longer in
-  // INVENTORY_ROUNDS — round 2 ("Fuel & ciklus") is the lowest-numbered round left.
-  renderApp('/me/karakter/gepterem/adatforrasok/kor/2')
-  expect(await screen.findByText('2. KÖR')).toBeInTheDocument()
+  // Rounds 1 ("Edzés & test") and 2 ("Fuel & ciklus") landed for real via mezo-1gim.15 and are
+  // no longer in INVENTORY_ROUNDS — round 3 ("Psziché & viselkedés-meta") is the lowest-numbered
+  // round left.
+  renderApp('/me/karakter/gepterem/adatforrasok/kor/3')
+  expect(await screen.findByText('3. KÖR')).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem/detektorok lists the 13 real detectors (mezo-1gim.14/.15, Task 5)', async () => {
+test('/me/karakter/gepterem/detektorok lists the 20 real detectors (mezo-1gim.14/.15, Tasks 5-6)', async () => {
   renderApp('/me/karakter/gepterem/detektorok')
   expect(await screen.findByText('a ma aktív katalógus, egy mondatban')).toBeInTheDocument()
 })
@@ -155,8 +156,8 @@ test('Adatforrások\' Tervezett segment survives a kör round-trip (fix round 1,
   renderApp('/me/karakter/gepterem/adatforrasok')
   await userEvent.click(await screen.findByRole('tab', { name: 'Tervezett' }))
   expect(screen.getByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
-  await userEvent.click(screen.getByText('Fuel & ciklus'))
-  expect(await screen.findByText('2. KÖR')).toBeInTheDocument()
+  await userEvent.click(screen.getByText('Psziché & viselkedés-meta'))
+  expect(await screen.findByText('3. KÖR')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
 })
@@ -239,6 +240,24 @@ test('the floating chat bubble is retired — Mezo is a first-class tab now (dec
 
 test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
   const { container } = renderApp('/mezo/chat')
+  expect(container.querySelector('.quicklog-fab')).toBeNull()
+  expect(container.querySelector('.tab-bar')).not.toBeNull()
+})
+
+test('/fuel/log/uj is a stable full-page sibling — the logging page (mezo-bq2t)', async () => {
+  // Pins the REAL route string: FuelLogNewPage.test.tsx builds its own memory router with a
+  // literal path, so only this test would catch a typo in the app's own route table.
+  const { container } = renderApp('/fuel/log/uj')
+  // No `w` → the honest out-of-window face is the route-independent landmark.
+  expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
+  expect(container.querySelector('.mz-page.flognew-page')).toBeInTheDocument()
+})
+
+test('hides the quick-log FAB on the logging page but keeps the tab bar (mezo-bq2t)', async () => {
+  // The sticky save bar owns the thumb zone there (measured: the FAB sat right on top of it),
+  // and a "quick log" FAB on the logging page itself is redundant — the /mezo/chat precedent.
+  const { container } = renderApp('/fuel/log/uj')
+  await screen.findByText('Ablakon kívül')
   expect(container.querySelector('.quicklog-fab')).toBeNull()
   expect(container.querySelector('.tab-bar')).not.toBeNull()
 })

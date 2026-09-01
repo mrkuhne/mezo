@@ -20,7 +20,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: backend
-          image: ghcr.io/mrkuhne/mezo-backend:2.103.0
+          image: ghcr.io/mrkuhne/mezo-backend:2.106.2
           ports:
             - containerPort: 8090
           env:

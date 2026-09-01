@@ -83,7 +83,15 @@ export interface WindowLaneVM {
   nowKey: string | null
 }
 
-function tileKey(slot: FuelSlot): string {
+/**
+ * A window's identity, `${time}-${label}`.
+ *
+ * EXPORTED on purpose (mezo-bq2t): this key is the contract two pages agree on ACROSS a URL —
+ * /fuel/log puts it in `?w=`, /fuel/log/uj resolves the window (and its plan-recipe prefill)
+ * back out of it. A hand-copied second implementation would let a change here silently break
+ * that round trip, so both sides — and their tests — must derive the key from this one symbol.
+ */
+export function tileKey(slot: FuelSlot): string {
   return `${slot.time}-${slot.label}`
 }
 

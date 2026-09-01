@@ -32,9 +32,7 @@ import org.hibernate.type.SqlTypes;
  * {@code cascade = ALL} + {@code orphanRemoval = true} persist/remove children with the parent,
  * {@code @OrderBy} loads them by {@code line_order}. Mirrors {@code RecipeEntity}.
  *
- * <p>{@code breakdown} is the typed jsonb meal-score envelope ({@link MealBreakdownJson}), always
- * NULL in v1 — the score is deferred to Phase-3 behind the FE pending-sparkle (same precedent as
- * {@code recipe.fit_score}).
+ * <p>{@code breakdown} is the typed jsonb meal-score envelope ({@link MealBreakdownJson}).
  *
  * <p>{@code createdBy}, {@code is_deleted} and {@code created_at} come from {@link OwnedEntity}.
  *

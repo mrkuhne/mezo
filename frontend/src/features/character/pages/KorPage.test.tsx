@@ -18,18 +18,19 @@ beforeEach(() => {
 })
 
 describe('KorPage', () => {
-  // Round 1 ("Edzés & test") landed for real via mezo-1gim.15 and no longer exists in
-  // INVENTORY_ROUNDS (see inventory.ts's header) — round 2 ("Fuel & ciklus") is now the
-  // lowest-numbered round left, so it covers this single-detector-chip case instead.
-  test('round 2 renders its hero + items, single-detector items get a ghost chip', () => {
-    hoisted.n = '2'
+  // Rounds 1 ("Edzés & test") and 2 ("Fuel & ciklus") landed for real via mezo-1gim.15 and no
+  // longer exist in INVENTORY_ROUNDS (see inventory.ts's header) — round 3
+  // ("Psziché & viselkedés-meta") is now the lowest-numbered round left, and it happens to carry
+  // both a single-detector item and a multi-detector item, so it covers both cases below.
+  test('round 3 renders its hero + items, single-detector items get a ghost chip', () => {
+    hoisted.n = '3'
     render(<KorPage />)
-    expect(screen.getByText('2. KÖR')).toBeInTheDocument()
-    expect(screen.getByText('Fuel & ciklus · 4 tétel')).toBeInTheDocument()
-    expect(screen.getByText('Makró-teljesítés, NOVA')).toBeInTheDocument()
-    expect(screen.getByText('comfort-eating')).toBeInTheDocument()
-    // 'Víz' has no det[] — no chip, no crash.
-    expect(screen.getByText('Víz')).toBeInTheDocument()
+    expect(screen.getByText('3. KÖR')).toBeInTheDocument()
+    expect(screen.getByText('Psziché & viselkedés-meta · 8 tétel')).toBeInTheDocument()
+    expect(screen.getByText('Kreed/fókusz × Napzárás')).toBeInTheDocument()
+    expect(screen.getByText('promise-vs-delivery')).toBeInTheDocument()
+    // 'Hála-témák' has no det[] — no chip, no crash.
+    expect(screen.getByText('Hála-témák')).toBeInTheDocument()
   })
 
   test('a multi-detector item shows a count, not each key', () => {
@@ -40,7 +41,7 @@ describe('KorPage', () => {
   })
 
   test('a sensitive item carries the ÉRZÉKENY dot', () => {
-    hoisted.n = '2'
+    hoisted.n = '3'
     render(<KorPage />)
     expect(screen.getByLabelText('érzékeny')).toBeInTheDocument()
   })

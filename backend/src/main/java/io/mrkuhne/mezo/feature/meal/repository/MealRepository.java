@@ -46,4 +46,16 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
         + "and e.mealDate between :from and :to and e.score is not null")
     List<BigDecimal> findScoresBetween(@Param("createdBy") UUID createdBy,
         @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /**
+     * Meals with their item lines in {@code [from, to]}, one query, no N+1 (Karakter round 2 —
+     * the character read layer needs every day's macro/NOVA aggregate over an 8-week window).
+     * {@code distinct} is required because the fetch join multiplies the meal row per item.
+     */
+    @Query("select distinct m from MealEntity m left join fetch m.items "
+        + "where m.createdBy = :createdBy and m.deleted = false "
+        + "and m.mealDate between :from and :to order by m.mealDate asc, m.loggedAt asc")
+    List<MealEntity> findWithItemsBetween(@Param("createdBy") UUID createdBy,
+                                          @Param("from") LocalDate from,
+                                          @Param("to") LocalDate to);
 }

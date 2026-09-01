@@ -30,7 +30,10 @@ export function AppLayout() {
   const hideChrome = ['/train/session', '/me/sleep/night', '/ritual'].includes(location.pathname)
   // mezo-vdf4: the chat's composer owns the thumb zone — the coral FAB overlapped the
   // send disc there. Chat keeps the rest of the chrome (header, tab bar).
-  const hideFab = hideChrome || location.pathname === '/mezo/chat'
+  // mezo-bq2t: /fuel/log/uj is the same situation — its sticky save bar owns the thumb zone
+  // (measured: the FAB sat right on top of it), and a "quick log" FAB on the logging page
+  // itself is redundant anyway. Same deal: header and tab bar stay.
+  const hideFab = hideChrome || ['/mezo/chat', '/fuel/log/uj'].includes(location.pathname)
   return (
     <>
       <CircadianTheme />
