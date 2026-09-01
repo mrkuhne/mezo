@@ -1601,8 +1601,10 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     needs its own retraction, same as a soft-deleted goal. A rejected candidate (reject = soft
     delete) also routes here and is typically a no-op — a candidate rarely had a node to archive.
   - All four titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
-    fact texts, goal titles, and person names can all exceed `knowledge_node.title varchar(120)`;
-    truncation cuts to 117 chars + `…`.
+    fact texts, and goal titles can all exceed `knowledge_node.title varchar(120)`; person names
+    cannot (`people.yml` pins `maxLength: 120` and `PersonExtractionService.validCandidates` drops
+    longer names, so `truncateTitle` is unreachable on the person branch). Truncation cuts to 117
+    chars + `…`.
   - **Retraction (`mezo-b3pp.31`) — promotion's mirror.** `retractPattern(userId, patternId)`,
     `retractGoal(userId, goalId)` and `retractFact(userId, factId)` each re-check their own
     source row's qualifying condition rather than trusting the caller (a pattern no longer
@@ -2169,17 +2171,16 @@ lives in [me.md §5.4](me.md); this section is the companion-side mechanics.
   `topEdges`.
 - **`PersonResponse.graphEdges`** — a **required, never-null** list field (empty when there is
   nothing to show, never absent), sourced from `PersonGraphEdgeAdapter.edgesByPerson` and merged
-  into `PeopleService`'s bootstrap/detail response. With the graph switch off, every
+  into `PeopleService`'s bootstrap response. With the graph switch off, every
   `PersonResponse.graphEdges` comes back `[]` — the FE section built on it (`PersonDetailPage`'s
   "Kapcsolt események · gráf" card, [me.md §5.4](me.md)) simply doesn't render, with no other
   effect on the page.
 - **Tests:** `PersonExtractionServiceIT`'s edge-suggestion branch covers the gate combinations
-  (no node, archived node, already-edged node, already-attempted marker, the nightly cap,
-  DataAccessException escaping vs. a per-person swallow); `syncPerson`/`retractPerson`/the
-  reconcile person loop live in their own `GraphPromotionPersonIT`
-  (`feature/companion/graph`), deliberately split out rather than grown onto the existing
-  `GraphPromotionServiceIT`; `PersonGraphEdgeAdapter` has its own `PersonGraphEdgeAdapterIT`;
-  FE coverage is `PersonDetailPage.test.tsx` in both modes.
+  (no node, archived node, already-edged node, already-attempted marker, the nightly cap);
+  `syncPerson`/`retractPerson`/the reconcile person loop live in their own
+  `GraphPromotionPersonIT` (`feature/companion/graph`), deliberately split out rather than grown
+  onto the existing `GraphPromotionServiceIT`; `PersonGraphEdgeAdapter` has its own
+  `PersonGraphEdgeAdapterIT`; FE coverage is `PersonDetailPage.test.tsx` in both modes.
 
 ### Backend tables (W3.2 consolidation ladder, ✅ `mezo-b3pp.13`)
 

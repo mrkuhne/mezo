@@ -305,6 +305,44 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void extractFor_shouldSkipEdgeStructuring_whenPersonNodeIsArchived() {
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[{\"index\":0,\"kind\":\"SUPPORTS\",\"confidence\":0.8}]]");
+        personRepository.save(person);
+        graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT, "Nyári szabadság", null,
+            "life_event_test", UUID.randomUUID(), null, Map.of());
+        GraphNodeEntity personNode = promotionService.syncPerson(owner, person.getId()).orElseThrow();
+        graphService.archive(owner, personNode.getId());
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.edgeLinked()).isZero();
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).isEmpty();
+    }
+
+    @Test
+    void extractFor_shouldCapAttemptsAtMaxEdgeLinksPerNight_whenFourPersonsAreMentioned() {
+        // MAX_EDGE_LINKS_PER_NIGHT == 3 (private const) — four edgeless, never-attempted person
+        // nodes mentioned on the same night must yield exactly 3 attempts, not 4.
+        UUID owner = ownerId();
+        graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT, "Nyári szabadság", null,
+            "life_event_test", UUID.randomUUID(), null, Map.of());
+        for (String name : List.of("Petra", "Réka", "Soma", "Tibi")) {
+            PersonEntity person = personPopulator.createPerson(owner, name);
+            person.setRelationshipHu("Ismerős [fake-graph-edges:[]]");
+            personRepository.save(person);
+            promotionService.syncPerson(owner, person.getId()).orElseThrow();
+            mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+        }
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.edgeLinked()).isEqualTo(3);
+    }
+
+    @Test
     void extractFor_shouldNeverRetry_whenAPriorAttemptYieldedNoEdges() {
         // Code review fix (Important 2): egy üres/konfidencia-küszöb-alatti strukturáló-válasz nem
         // hoz létre élt, de a node.meta "edgeStructuredOn" jelzője akkor is beíródik — a második
