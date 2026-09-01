@@ -6174,6 +6174,18 @@ export interface components {
             mentionsThisWeek: number;
             /** Format: date-time */
             lastMentionedAt?: string;
+            /** @description A személy PERSON node-jának legerősebb gráf-élei (legfeljebb 3, súly szerint csökkenő). Üres, ha a gráf ki van kapcsolva, vagy a személynek nincs node-ja/éle. */
+            graphEdges: components["schemas"]["PersonGraphEdge"][];
+        };
+        /** @description Egy gráf-él a személy felől nézve — a másik végpont, és hogy hogyan kapcsolódik. */
+        PersonGraphEdge: {
+            /** @description A másik végpont node-fajtája (PATTERN | PREFERENCE | GOAL | LIFE_EVENT | SEASON | INSIGHT | PERSON). */
+            nodeKind: string;
+            title: string;
+            /** @description Magyar kapcsolat-ige (kiváltja | megelőzte | támogatja | ütközik vele | kapcsolódik). */
+            relationHu: string;
+            /** @description erős | közepes | gyenge */
+            strength: string;
         };
         MentionResponse: {
             /** Format: uuid */

@@ -20,6 +20,7 @@ public interface PeopleMapper {
     @Mapping(target = "mentionCount", source = "mentionCount")
     @Mapping(target = "mentionsThisWeek", source = "mentionsThisWeek")
     @Mapping(target = "lastMentionedAt", source = "lastMentionedAt")
+    @Mapping(target = "graphEdges", ignore = true)   // a service tölti a gráf-portból
     PersonResponse toPersonResponse(PersonEntity entity, int mentionCount, int mentionsThisWeek,
         Instant lastMentionedAt);
 

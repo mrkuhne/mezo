@@ -5,8 +5,10 @@ import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
 import io.mrkuhne.mezo.api.dto.PersonDecisionRequest;
+import io.mrkuhne.mezo.api.dto.PersonGraphEdge;
 import io.mrkuhne.mezo.api.dto.PersonResponse;
 import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
+import io.mrkuhne.mezo.feature.people.PersonGraphEdgeSource;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.mapper.PeopleMapper;
@@ -23,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -40,6 +43,8 @@ public class PeopleService {
     private final MentionRepository mentionRepository;
     private final PeopleMapper mapper;
     private final ApplicationEventPublisher eventPublisher;
+    // ObjectProvider: kikapcsolt gráfnál nincs implementáció, és a személy-lista attól még teljes.
+    private final ObjectProvider<PersonGraphEdgeSource> graphEdgeSource;
 
     /**
      * One-call bootstrap (the knowledge pattern): persons with mention-derived stats computed
@@ -56,13 +61,20 @@ public class PeopleService {
         Map<UUID, List<MentionEntity>> byPerson = mentions.stream()
             .collect(Collectors.groupingBy(MentionEntity::getPersonId));
         Instant weekAgo = Instant.now().minus(WEEK);
+        Map<UUID, List<PersonGraphEdgeSource.Edge>> edgesByPerson = graphEdgeSource
+            .getIfAvailable(() -> u -> Map.of())
+            .edgesByPerson(userId);
 
         List<PersonResponse> personResponses = persons.stream()
             .map(p -> {
                 List<MentionEntity> own = byPerson.getOrDefault(p.getId(), List.of());
                 int thisWeek = (int) own.stream().filter(m -> !m.getTs().isBefore(weekAgo)).count();
                 Instant lastAt = own.isEmpty() ? null : own.getFirst().getTs(); // list is ts-desc
-                return mapper.toPersonResponse(p, own.size(), thisWeek, lastAt);
+                PersonResponse response = mapper.toPersonResponse(p, own.size(), thisWeek, lastAt);
+                response.setGraphEdges(edgesByPerson.getOrDefault(p.getId(), List.of()).stream()
+                    .map(e -> new PersonGraphEdge(e.nodeKind(), e.title(), e.relationHu(), e.strength()))
+                    .toList());
+                return response;
             })
             .sorted(Comparator.comparingInt(PersonResponse::getMentionCount).reversed()
                 .thenComparing(PersonResponse::getName))
@@ -110,7 +122,9 @@ public class PeopleService {
             req.getContactCadenceLabel(), req.getNotes());
         PersonEntity saved = personRepository.save(p);
         eventPublisher.publishEvent(new PersonSavedEvent(userId, saved.getId()));
-        return mapper.toPersonResponse(saved, 0, 0, null);
+        PersonResponse response = mapper.toPersonResponse(saved, 0, 0, null);
+        response.setGraphEdges(List.of());
+        return response;
     }
 
     @Transactional
@@ -127,8 +141,10 @@ public class PeopleService {
             .filter(m -> m.getPersonId().equals(personId)).toList();
         Instant weekAgo = Instant.now().minus(WEEK);
         int thisWeek = (int) own.stream().filter(m -> !m.getTs().isBefore(weekAgo)).count();
-        return mapper.toPersonResponse(saved, own.size(), thisWeek,
+        PersonResponse response = mapper.toPersonResponse(saved, own.size(), thisWeek,
             own.isEmpty() ? null : own.getFirst().getTs());
+        response.setGraphEdges(List.of());
+        return response;
     }
 
     @Transactional
@@ -158,12 +174,14 @@ public class PeopleService {
         }
         if ("reject".equals(req.getDecision())) {
             PersonResponse snapshot = mapper.toPersonResponse(p, 0, 0, null);
+            snapshot.setGraphEdges(List.of());
             personRepository.delete(p);   // @SQLDelete → soft; a sor marad reject-listának
             eventPublisher.publishEvent(new PersonDeletedEvent(userId, personId));
             return snapshot;
         }
         p.setStatus("active");
         PersonResponse response = mapper.toPersonResponse(personRepository.save(p), 0, 0, null);
+        response.setGraphEdges(List.of());
         eventPublisher.publishEvent(new PersonSavedEvent(userId, personId));
         return response;
     }

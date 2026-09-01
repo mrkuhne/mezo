@@ -236,8 +236,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`, `PatternConfirmedEvent`,
     `PatternDetectionJob`, `PatternDetectionService`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`,
     `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`,
-    `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `ProfileAssembler`,
-    `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`,
+    `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`,
+    `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`,
     `QuarterlyReviewService`, `Quarters`, `SeasonSuggestion`, `TranscriptionService`, `WeekContextRenderer`,
     `WeeklyScoreService`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
@@ -281,7 +281,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/companion/graph/node/candidate · POST /api/companion/graph/node/{id}/decision
 - **Contract** `api/feature/me-week/me-week.yml` — 2 operations
   - **endpoints:** GET /api/me/week/{start} · GET /api/me/week/{start}/trend
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 138 IT + 17 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 139 IT + 17 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`,
     `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`,
@@ -312,8 +312,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MetricSeriesExpansionIT`, `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`,
     `NoteEmbeddingSwitchOffIT`, `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`,
     `NoteVectorLifecycleIT`, `PatternDetectionJobSwitchOffIT`, `PatternDetectionServiceIT`,
-    `PeriodSummaryPersistenceIT`, `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`, `ProfileAssemblerIT`,
-    `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`,
+    `PeriodSummaryPersistenceIT`, `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`, `PersonGraphEdgeAdapterIT`,
+    `ProfileAssemblerIT`, `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`,
     `ProfilePromptAssemblerFailureIT`, `ProfilePromptAssemblerIT`, `ProfilePropertiesIT`, `ProfileSourceFindersIT`,
     `PromptMemoryAssemblerIT`, `PromptMemoryAssemblerShadowIT`, `PromptMemoryAssemblerSwitchOffIT`,
     `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`, `QuarterlyReviewJobProfileSwitchOffIT`,
@@ -791,7 +791,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PersonSavedEvent`, `ReflectionMentionListener`
   - **controllers→contract:** `PeopleController`→`PeopleApi`
   - **mappers:** `PeopleMapper`
-  - **other:** `MentionSeedData`, `PeopleSeedData`
+  - **other:** `MentionSeedData`, `PeopleSeedData`, `PersonGraphEdgeSource`
 - **Contract** `api/feature/people/people.yml` — 7 operations
   - **endpoints:** GET /api/people · POST /api/people · PUT /api/people/{personId} · DELETE /api/people/{personId} ·
     POST /api/people/{personId}/mentions · DELETE /api/people/{personId}/mentions/{mentionId} ·

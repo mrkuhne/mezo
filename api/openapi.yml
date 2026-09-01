@@ -15077,6 +15077,7 @@ components:
         - aliases
         - status
         - sourceKind
+        - graphEdges
       properties:
         id:
           type: string
@@ -15145,6 +15146,40 @@ components:
         lastMentionedAt:
           type: string
           format: date-time
+        graphEdges:
+          type: array
+          description: >-
+            A személy PERSON node-jának legerősebb gráf-élei (legfeljebb 3, súly
+            szerint csökkenő). Üres, ha a gráf ki van kapcsolva, vagy a
+            személynek nincs node-ja/éle.
+          items:
+            $ref: '#/components/schemas/PersonGraphEdge'
+    PersonGraphEdge:
+      type: object
+      description: >-
+        Egy gráf-él a személy felől nézve — a másik végpont, és hogy hogyan
+        kapcsolódik.
+      required:
+        - nodeKind
+        - title
+        - relationHu
+        - strength
+      properties:
+        nodeKind:
+          type: string
+          description: >-
+            A másik végpont node-fajtája (PATTERN | PREFERENCE | GOAL |
+            LIFE_EVENT | SEASON | INSIGHT | PERSON).
+        title:
+          type: string
+        relationHu:
+          type: string
+          description: >-
+            Magyar kapcsolat-ige (kiváltja | megelőzte | támogatja | ütközik
+            vele | kapcsolódik).
+        strength:
+          type: string
+          description: erős | közepes | gyenge
     MentionResponse:
       type: object
       required:
