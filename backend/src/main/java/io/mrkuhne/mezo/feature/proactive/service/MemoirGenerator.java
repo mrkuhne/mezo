@@ -21,6 +21,8 @@ import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.MemoirRepository;
 import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
@@ -109,6 +111,9 @@ public class MemoirGenerator {
 
     /** Server-side clip for a model-given anchor note. */
     private static final int NOTE_CLIP = 60;
+    /** Per-note and whole-section caps for the week's verbatim workout notes (mezo-d20.13). */
+    private static final int WORKOUT_NOTE_CLIP = 400;
+    private static final int WORKOUT_NOTES_TOTAL_CLIP = 1200;
 
     /** HU day label for a Memory anchor: {@code aug. 29., szombat}. */
     private static final DateTimeFormatter MEMORY_DAY_FORMAT =
@@ -121,6 +126,7 @@ public class MemoirGenerator {
     private final GraphNodeRepository graphNodeRepository;
     private final PredictionRepository predictionRepository;
     private final ExerciseRecordService exerciseRecordService;
+    private final WorkoutSessionRepository workoutSessionRepository;
     private final WeeklyReviewContextSources contextSources;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
@@ -233,6 +239,7 @@ public class MemoirGenerator {
         }
 
         appendWeekPrs(payload, candidates, userId, weekStart, weekEnd);
+        appendWorkoutNotes(payload, candidates, userId, weekStart, weekEnd);
 
         List<PredictionEntity> predictions =
                 predictionRepository.findByCreatedByAndWeekStart(userId, weekStart);
@@ -304,6 +311,49 @@ public class MemoirGenerator {
                     .append(" (").append(record.getBestSet().getDate()).append(")\n");
             candidates.add(new MemoirAnchorsEnvelope.Anchor(
                     "PR", record.getName() + " " + weight + " kg"));
+        }
+    }
+
+    /**
+     * The week's workout closing notes, VERBATIM (mezo-d20.13).
+     *
+     * <p>This is the highest signal-to-noise material the training week produces: a session is
+     * fully describable in numbers, but how it FELT exists only in the user's own sentence, and
+     * is unrecoverable from the data. It is therefore passed through unchanged — merely truncated
+     * when long. Summarizing it first would strip the numbers, the hedges and the specifics that
+     * are the whole reason it is here, and would make the app assert an interpretation of the
+     * user's state it was never told.
+     *
+     * <p>Every note also becomes an anchor candidate, so a chapter that leans on one stays
+     * traceable in the "Miből íródott" row. Unattributed echo of a person's own words is what
+     * reads as surveillance; a visible trail is what reads as attention.
+     *
+     * <p>Reads {@code closingNote}, NOT {@code note} — the latter is the template day's plan note
+     * on a different row of the same table.
+     */
+    private void appendWorkoutNotes(StringBuilder payload, List<MemoirAnchorsEnvelope.Anchor> candidates,
+            UUID userId, LocalDate weekStart, LocalDate weekEnd) {
+        List<WorkoutSessionEntity> withNotes = workoutSessionRepository
+                .findDoneInstancesBetween(userId, weekStart, weekEnd).stream()
+                .filter(w -> w.getClosingNote() != null && !w.getClosingNote().isBlank())
+                .toList();
+        if (withNotes.isEmpty()) {
+            return;
+        }
+        payload.append("\nAMIT AZ EDZÉSEK UTÁN ÍRT (a saját szavai, szó szerint):\n");
+        int budget = WORKOUT_NOTES_TOTAL_CLIP;
+        for (WorkoutSessionEntity w : withNotes) {
+            if (budget <= 0) {
+                break;
+            }
+            String note = w.getClosingNote().strip();
+            // Per-entry cap AS WELL AS the total: with only a total, one long note crowds every
+            // other one out of the week entirely.
+            int cap = Math.min(WORKOUT_NOTE_CLIP, budget);
+            String clipped = note.length() <= cap ? note : note.substring(0, cap) + "…";
+            payload.append("- ").append(w.getDate()).append(": \"").append(clipped).append("\"\n");
+            budget -= clipped.length();
+            candidates.add(new MemoirAnchorsEnvelope.Anchor("WorkoutNote", w.getDate().toString()));
         }
     }
 

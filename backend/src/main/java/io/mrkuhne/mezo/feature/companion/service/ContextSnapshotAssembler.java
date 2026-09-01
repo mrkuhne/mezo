@@ -263,15 +263,18 @@ public class ContextSnapshotAssembler {
                 .collect(Collectors.joining(", ")));
         int digestDays = properties.snapshot().digestDays();
         LocalDate from = today.minusDays(digestDays - 1L);
-        List<LocalDate> gymDates = workoutSessionRepository.findDoneInstanceDates(userId, from, today)
-                .stream().sorted().toList();
+        // Entities, not dates (mezo-d20.13): the digest now carries each session's closing note —
+        // the user's own sentence about how it went, which no number in this block can convey.
+        List<WorkoutSessionEntity> gymDone = workoutSessionRepository
+                .findDoneInstancesBetween(userId, from, today);
         int sportCount = sportSessionRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from).size();
         int runCount = runSessionLogRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from).size();
-        b.append("; elmúlt ").append(digestDays).append(" nap: ").append(gymDates.size()).append(" gym-edzés");
-        if (!gymDates.isEmpty()) {
-            b.append(" (").append(gymDates.stream().map(LocalDate::toString)
+        b.append("; elmúlt ").append(digestDays).append(" nap: ").append(gymDone.size()).append(" gym-edzés");
+        if (!gymDone.isEmpty()) {
+            b.append(" (").append(gymDone.stream()
+                    .map(w -> w.getDate() + workoutNoteSuffix(w))
                     .collect(Collectors.joining(", "))).append(')');
         }
         b.append(", ").append(sportCount).append(" sportalkalom, ").append(runCount).append(" futás");
@@ -287,14 +290,20 @@ public class ContextSnapshotAssembler {
      * count today's own logs.
      */
     private String todayLoggedLine(UUID userId, LocalDate today) {
-        boolean gymDone = !workoutSessionRepository.findDoneInstanceDates(userId, today, today).isEmpty();
+        List<WorkoutSessionEntity> gymToday =
+                workoutSessionRepository.findDoneInstancesBetween(userId, today, today);
+        boolean gymDone = !gymToday.isEmpty();
         long sportToday = sportSessionRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, today)
                 .stream().filter(s -> today.equals(s.getDate())).count();
         long runToday = runSessionLogRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, today)
                 .stream().filter(r -> today.equals(r.getDate())).count();
-        return "Ma eddig naplózva: gym: " + (gymDone ? "elvégezve" : "nincs elvégzett edzés")
+        String gym = gymDone
+                ? "elvégezve" + gymToday.stream().map(this::workoutNoteSuffix)
+                        .collect(Collectors.joining())
+                : "nincs elvégzett edzés";
+        return "Ma eddig naplózva: gym: " + gym
                 + "; sport: " + sportToday + " alkalom; futás: " + runToday + " alkalom";
     }
 
@@ -536,6 +545,28 @@ public class ContextSnapshotAssembler {
                     .append(checkInValues(checkIn));
         }
         return b.toString();
+    }
+
+    /**
+     * The workout's closing note as a quoted suffix, or "" when there is none (mezo-d20.13).
+     *
+     * <p>Reads {@code closingNote}, NOT {@code note}: the same table holds template rows whose
+     * {@code note} is the mesocycle PLAN's day note, and rendering that here would pass plan text
+     * off as something that happened.
+     *
+     * <p>Verbatim and merely TRUNCATED, never summarized — an LLM-shortened version of the user's
+     * own sentence loses exactly the numbers, hedges and specifics that make it worth carrying.
+     * An absent or blank note renders nothing at all: ADR 0010, the snapshot never remarks on
+     * what the user chose not to write.
+     */
+    private String workoutNoteSuffix(WorkoutSessionEntity workout) {
+        int max = properties.snapshot().workoutNoteMaxChars();
+        String note = workout.getClosingNote();
+        if (max == 0 || note == null || note.isBlank()) {
+            return "";
+        }
+        String trimmed = note.strip();
+        return " — \"" + (trimmed.length() <= max ? trimmed : trimmed.substring(0, max) + "…") + '"';
     }
 
     /** One check-in's rendered values — shared by the today and the MA MÉG NINCS branch above. */

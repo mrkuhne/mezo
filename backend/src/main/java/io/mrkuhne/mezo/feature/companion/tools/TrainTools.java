@@ -124,6 +124,14 @@ public class TrainTools {
             }
             b.append(" — ").append(sets.size()).append(" sorozat, volumen ")
                     .append(ToolText.num(volume)).append(" kg");
+            // The closing note in FULL here (mezo-d20.13). The context snapshot carries a clipped
+            // copy on every turn; this tool is the just-in-time layer the "hogy ment kedden?"
+            // question lands on, so it is the one place the whole sentence belongs. Blank renders
+            // nothing — never a placeholder for what the user chose not to write (ADR 0010).
+            String note = w.getClosingNote();
+            if (note != null && !note.isBlank()) {
+                b.append("\n  jegyzet: \"").append(note.strip()).append('"');
+            }
         }
         instances.reversed().stream().limit(5).forEach(w ->
                 ToolContexts.audit(toolContext).addRef("Workout", w.getDate().toString()));
