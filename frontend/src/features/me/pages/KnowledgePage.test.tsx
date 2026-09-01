@@ -43,14 +43,14 @@ const renderPageWithLocationProbe = () =>
     { wrapper: QueryWrapper },
   )
 
-// mezo-d20.11 (ADR 0032): the page wears its own Mozaik scaffold — the prototype's `‹ Én`
+// mezo-d20.11 (ADR 0032): the page wears its own Mozaik scaffold — the prototype's `‹ Tudástár`
 // back chip + the page-hero — instead of the old .pghead-np band, which offered no way back
 // and repeated the hero's own counts inside the summary tile.
 test('renders the Mozaik hero with the derived counts and a way back', () => {
   const { container } = renderPage()
   expect(screen.getByText('Tudásgráf')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
-  expect(screen.getByText('‹ Én')).toBeInTheDocument()
+  expect(screen.getByText('‹ Tudástár')).toBeInTheDocument()
   expect(container.querySelector('.mz-bignum')?.textContent).toBe('15')
   expect(screen.getByText('tudás · 13 kapcsolat · élő mindmap')).toBeInTheDocument()
   // The old .pghead-np band is gone — no page mixes the two header generations any more.
@@ -79,6 +79,14 @@ test('a Tudástárra mutató link ott van az összegző sáv alatt', () => {
   renderPage()
   const link = screen.getByRole('link', { name: /A tények kezelése/ })
   expect(link).toHaveAttribute('href', '/mezo/knowledge')
+})
+
+// mezo-u2lh: the grid is a section of its own — its „Kategóriák" eyebrow is what gives it
+// vertical rhythm against the profile card above and names the two blocks apart.
+test('the kind grid sits under its own section eyebrow, below the profile section', () => {
+  const { container } = renderPage()
+  const eyebrows = [...container.querySelectorAll('.tud-lsec')].map(el => el.textContent)
+  expect(eyebrows).toEqual(['Profil', 'Kategóriák'])
 })
 
 test('the base view is the kind grid — six tiles, counts, no node cards', () => {
@@ -111,10 +119,15 @@ test('?kind= deep link lands in the category view; invalid kind falls back to th
   expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
 })
 
-test('back chip returns to the grid', async () => {
+// mezo-ni86: the category view's back affordance IS the page-head chip — it reads
+// „‹ Kategóriák" there (instead of „‹ Tudástár"), and no second chip floats in the body.
+test('the page-head chip returns to the grid from the category view', async () => {
   renderAt('/?kind=PATTERN')
-  fireEvent.click(screen.getByRole('button', { name: '‹ Kategóriák' }))
+  expect(screen.getByText('‹ Kategóriák')).toBeInTheDocument()
+  expect(screen.queryByText('‹ Tudástár')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('button', { name: 'Minták' })).toBeInTheDocument()
+  expect(screen.getByText('‹ Tudástár')).toBeInTheDocument()
 })
 
 test('node row opens the detail sheet; Archivál archives and the node disappears', async () => {

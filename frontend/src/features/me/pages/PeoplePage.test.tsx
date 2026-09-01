@@ -32,14 +32,15 @@ const NOW = new Date('2026-05-24T12:00:00')
 // Flattens every person's affectTrend so nobody trends down/up — exercises the honest
 // '—' fallback (statstrip down-cell) and the empty-circle Mezo-band sentence, both of
 // which the always-has-a-down-person mock seed can never reach on its own.
-const hoisted = vi.hoisted(() => ({ flattenTrends: false, empty: false }))
+const hoisted = vi.hoisted(() => ({ flattenTrends: false, empty: false, noCandidates: false }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
     usePeople: () => {
       const real = actual.usePeople()
-      if (hoisted.empty) return { ...real, people: [], mentions: [] }
+      if (hoisted.empty) return { ...real, people: [], mentions: [], candidates: [] }
+      if (hoisted.noCandidates) return { ...real, candidates: [] }
       if (!hoisted.flattenTrends) return real
       return { ...real, people: real.people.map((p) => ({ ...p, affectTrend: [3, 3, 3, 3] })) }
     },
@@ -56,6 +57,7 @@ afterEach(() => {
   vi.unstubAllEnvs()
   hoisted.flattenTrends = false
   hoisted.empty = false
+  hoisted.noCandidates = false
 })
 
 /** Renders anything the whereabouts of `location.pathname`/`.search` — the catch-all target
@@ -118,7 +120,9 @@ test('the empty-circle Mezo-band sentence renders when there is no data at all',
 test('the Jelöltek tile navigates, through the REAL app router, to the real empty-state page (one continuous flow)', async () => {
   // Uses the app's own `routes` (from @/app/router) — a drift between the tile's
   // `navigate('/me/people/jeloltek')` and the router's own registration of that path
-  // would fail this test, unlike a mocked `useNavigate` assertion.
+  // would fail this test, unlike a mocked `useNavigate` assertion. No-candidate override
+  // keeps this test about the routing, not the S4 candidate-card content (own file's job).
+  hoisted.noCandidates = true
   const router = createMemoryRouter(appRoutes, { initialEntries: ['/me/people'] })
   render(
     <QueryWrapper>
@@ -147,10 +151,19 @@ test('A köröm / Említések / Heti kép navigate to their exact future sibling
   expect(r3.state.location.pathname).toBe('/me/people/heti')
 })
 
-test('Jelöltek carries no badge in S3 (no candidate source wired yet)', () => {
+test('Jelöltek carries the candidate-count badge and names the candidate on the tile-line', () => {
+  renderPage()
+  const tile = screen.getByRole('button', { name: 'Jelöltek' })
+  expect(tile.querySelector('.ppl-hub-badge')?.textContent).toBe('1')
+  expect(screen.getByText('Marci · visszatérő név')).toBeInTheDocument()
+})
+
+test('Jelöltek carries no badge and reads the honest quiet line when there is no candidate', () => {
+  hoisted.noCandidates = true
   renderPage()
   const tile = screen.getByRole('button', { name: 'Jelöltek' })
   expect(tile.querySelector('.ppl-hub-badge')).toBeNull()
+  expect(screen.getByText('nincs új arc — az éjszakai kör figyel')).toBeInTheDocument()
 })
 
 test('A köröm shows a facepile of the first four people\'s initials', () => {
@@ -190,7 +203,8 @@ test('header actions still open Log and Új személy (the existing PeoplePage sh
 })
 
 describe('Jelöltek route mounted directly', () => {
-  test('the empty state renders the honest copy', () => {
+  test('the empty state renders the honest copy when there is no candidate', () => {
+    hoisted.noCandidates = true
     const router = createMemoryRouter(localRoutes, { initialEntries: ['/me/people/jeloltek'] })
     render(<RouterProvider router={router} />, { wrapper: QueryWrapper })
     expect(screen.getByText('Nincs több jelölt — az éjszakai kör hajnalban néz újra.')).toBeInTheDocument()

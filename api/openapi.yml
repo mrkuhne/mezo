@@ -4142,6 +4142,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/conversation/{conversationId}':
+    patch:
+      tags:
+        - Companion
+      operationId: renameConversation
+      summary: >-
+        Rename one conversation (the list label; reversible, no history impact)
+        — F7.5 (mezo-d20.8.5)
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationRenameRequest'
+      responses:
+        '200':
+          description: The renamed conversation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Companion
+      operationId: deleteConversation
+      summary: >-
+        Delete one conversation (soft; its messages become unreachable) — F7.5
+        (mezo-d20.8.5)
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/companion/conversation/{conversationId}/messages':
     get:
       tags:
@@ -5012,6 +5087,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/people/{personId}/decision':
+    post:
+      tags:
+        - People
+      operationId: decidePerson
+      summary: >-
+        Decide a candidate person (S4 nightly extractor inbox) — accept
+        activates the person, reject soft-deletes it (the soft-deleted row is
+        the extractor's reject list: the name is never re-proposed). One
+        decision per candidate.
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonDecisionRequest'
+      responses:
+        '200':
+          description: >-
+            The decided person (status active on accept; the soft-deleted row
+            snapshot on reject)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonResponse'
+        '400':
+          description: PEOPLE_CANDIDATE_ALREADY_DECIDED / validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/proactive/feed:
     get:
       tags:
@@ -5121,6 +5246,32 @@ paths:
           description: >-
             No memoir possible — no narrative memory in the last completed week.
             The FE renders its honest "készül" state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/proactive/memoir/archive:
+    get:
+      tags:
+        - Proactive
+      operationId: getMemoirArchive
+      summary: >-
+        Every persisted memoir, newest week first — the archive shelf (F7.5,
+        mezo-d20.8.5)
+      description: >-
+        The full list in one round — weekly cadence keeps this small (~52
+        rows/year). Never generates: the archive lists what the Sunday cron /
+        lazy-latest already wrote. An empty list is the honest empty state
+        (never a 404 — list-endpoint precedent).
+      responses:
+        '200':
+          description: 'The persisted memoirs, weekStart descending (possibly empty)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoirArchiveResponse'
+        '401':
+          description: Missing or invalid token
           content:
             application/json:
               schema:
@@ -13828,6 +13979,16 @@ components:
               description: >-
                 ISO week-Monday for kind=week; any date inside the week for
                 kind=day
+    ConversationRenameRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: The new list label — same cap as the auto-title column.
     ConversationResponse:
       type: object
       required:
@@ -15136,6 +15297,14 @@ components:
         notes:
           type: string
           maxLength: 500
+    PersonDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          pattern: ^(accept|reject)$
     FeedRef:
       type: object
       required:
@@ -15265,6 +15434,16 @@ components:
         generatedAt:
           type: string
           format: date-time
+    MemoirArchiveResponse:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          description: 'Every persisted memoir, weekStart descending.'
+          items:
+            $ref: '#/components/schemas/MemoirResponse'
     PredictionResponse:
       type: object
       required:

@@ -11,6 +11,7 @@ export type MentionResponse = components['schemas']['MentionResponse']
 export type LogMentionRequest = components['schemas']['LogMentionRequest']
 export type CreatePersonRequest = components['schemas']['CreatePersonRequest']
 export type UpdatePersonRequest = components['schemas']['UpdatePersonRequest']
+export type PersonDecisionRequest = components['schemas']['PersonDecisionRequest']
 
 const PEOPLE = '/api/people'
 
@@ -100,6 +101,11 @@ export const peopleApi = {
       } satisfies UpdatePersonRequest),
     }),
   deletePerson: (id: string) => apiFetch<void>(`${PEOPLE}/${id}`, { method: 'DELETE' }),
+  decidePerson: (personId: string, decision: 'accept' | 'reject') =>
+    apiFetch<PersonResponse>(`${PEOPLE}/${personId}/decision`, {
+      method: 'POST',
+      body: JSON.stringify({ decision } satisfies PersonDecisionRequest),
+    }),
   deleteMention: (personId: string, mentionId: string) =>
     apiFetch<void>(`${PEOPLE}/${personId}/mentions/${mentionId}`, { method: 'DELETE' }),
 }

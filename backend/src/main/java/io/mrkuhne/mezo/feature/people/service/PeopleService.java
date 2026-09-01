@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.CreatePersonRequest;
 import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
+import io.mrkuhne.mezo.api.dto.PersonDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PersonResponse;
 import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
@@ -139,6 +140,24 @@ public class PeopleService {
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
         mentionRepository.delete(m); // @SQLDelete → soft
+    }
+
+    /** S4 jelölt-döntés: accept aktivál, reject soft-delete-tel elvet — a soft-deleted candidate
+     *  sor az extraktor reject-listája (a nevet nem javasolja újra). Egy döntés per jelölt. */
+    @Transactional
+    public PersonResponse decidePerson(UUID userId, UUID personId, PersonDecisionRequest req) {
+        PersonEntity p = requireOwnedPerson(userId, personId);
+        if (!"candidate".equals(p.getStatus())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("PEOPLE_CANDIDATE_ALREADY_DECIDED").build());
+        }
+        if ("reject".equals(req.getDecision())) {
+            PersonResponse snapshot = mapper.toPersonResponse(p, 0, 0, null);
+            personRepository.delete(p);   // @SQLDelete → soft; a sor marad reject-listának
+            return snapshot;
+        }
+        p.setStatus("active");
+        return mapper.toPersonResponse(personRepository.save(p), 0, 0, null);
     }
 
     /** Az AI-kurálta mezők (knownFacts/ties/affectTrend) szándékosan érintetlenek. */

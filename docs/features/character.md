@@ -103,7 +103,7 @@ the "new data today" gate, is round 2's primary overfiring protection.
 
 ## 2. User-facing behavior
 
-The Én tab carries a **Karakter** tile (`EnHubPage`) that opens `/me/karakter`, the dossier hub —
+The **Mezo hub** (`MezoHubPage`) carries a wide **Karakter** tile — full-width, like the hub's `Diagnózis` tile, bottom line = the average CORE-band maturity gated by `isDossierEmpty` — that opens `/me/karakter`, the dossier hub. **The dossier's entry point moved here from the Én hub in the hub-tile-reorg** (`mezo-o486`, 2026-09-01, spec [`2026-09-01-hub-tile-reorg-design.md`](../superpowers/specs/2026-09-01-hub-tile-reorg-design.md); guiding principle: *Mezo = everything AI-derived, Én = personal data* — the character dossier is companion-derived, [insights.md §2.0](insights.md)) — the route itself did not move, only the tile. `/me/karakter` and everything under it is
 Design 2.0's Mozaik idiom throughout: a hero + a compact tile mosaic, full-page siblings for each
 tile rather than in-page accordions.
 
@@ -380,7 +380,8 @@ raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
 - **`feature/llmlog`** — every character LLM call is audited (feature tag `character`,
   call-kind per pipeline step), the same idiom every other AI-domain doc documents.
 
-- **[Me](me.md)** — `EnHubPage` carries the Karakter tile that opens `/me/karakter`; the FE data
+- **[Insights](insights.md)** — `MezoHubPage` carries the wide Karakter tile that opens `/me/karakter`
+  (moved from the Én hub's `EnHubPage` by the hub-tile-reorg, `mezo-o486`, 2026-09-01); the FE data
   layer (`frontend/src/data/character/`) is a plain OpenAPI-client consumer of the seven
   endpoints in §4, following the house dual-mode idiom (`@/data/_client/mode.ts`) shared with
   every other Design 2.0 feature — no new cross-domain FE seam beyond the generated client.
@@ -817,7 +818,8 @@ before investigating.
   badges/labels)
 - `expertColors.ts` — the one shared `EXPERT_COLORS` map (ring arcs, orbs, tiles all key off it)
 - `dossierState.ts` — `isDossierEmpty()`, the one shared pre-bootstrap predicate (hub +
-  `EnHubPage`'s Karakter tile both call it, never re-derive it)
+  `MezoHubPage`'s Karakter tile both call it, never re-derive it — the tile's own call moved with
+  it from `EnHubPage.tsx` in the hub-tile-reorg, `mezo-o486`)
 - `character.css` — every `.kr-*` rule (source-cited per section against
   `docs/design_2.0/prototypes/src/karakter-head.html`/`karakter-body.html`)
 

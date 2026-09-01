@@ -291,6 +291,10 @@
   --mz-sc-non-ink: #A2958A;
   --mz-wk-cur-ring: rgba(138, 118, 204, 0.75);
 
+  /* S4 jelölt-kártya (mezo-06o0.3) — the prototype's own cream card-face stop
+     (`.candt`'s gradient light end); no existing token carries this exact hex. */
+  --mz-cand-cream: #FFFCF5;
+
   /* Heti elemzés-oldal (mezo-d20.6.10) — en-body.html #page-hanaly `.revcard` /
      `.float3d` / `.hlch` values, shadows ×1.18. `Minta`/`Emlék` reuse the lav/rose
      cell inks (identical hexes); only the gold + sky kickers need their own. */
@@ -581,6 +585,10 @@
   --mz-sc-low-1: color-mix(in srgb, var(--dv-coral) 70%, #fff); --mz-sc-low-2: var(--dv-coral);
   --mz-sc-low-ring: var(--dv-coral); --mz-sc-low-ink: var(--dv-coral);
   --mz-sc-non-ink: var(--text-muted);
+
+  /* S4 jelölt-kártya dark — same cream-tint derivation `--mz-wash-gold`'s second
+     stop already uses (dv-amber 5% into the dark surface-page). */
+  --mz-cand-cream: color-mix(in srgb, var(--dv-amber) 5%, var(--surface-page));
   --mz-wk-cur-ring: color-mix(in srgb, var(--dv-lav) 75%, transparent);
 
   /* Heti elemzés-oldal — dark ("Pulse") derivations on the dv ramp */
@@ -4852,6 +4860,24 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-msg-u time { display: block; text-align: right; margin-top: 4px; }
 .mzc-noanswer { font-size: 12.5px; font-style: italic; color: var(--text-tertiary); }
 
+/* F7.5 (mezo-d20.8.5): hiba-buborék + Újra/Szerkesztés — borostyán tónus (mezo-chat.html
+   .bub-err ×1.18): a hiba döccenő, nem dorgálás; a bukott üzenet a helyén marad. */
+.mzc-bub-err {
+  background: var(--mz-cell-amber-bg); border-radius: 5px 19px 19px 19px; padding: 11px 13px;
+  border: 0.5px solid color-mix(in srgb, var(--mz-cell-amber-ink) 25%, transparent);
+  font-size: 13px; line-height: 1.5; color: var(--text-secondary);
+}
+.mzc-bub-err b { font-weight: 700; color: var(--mz-cell-amber-ink); }
+.mzc-ebtn {
+  border: none; border-radius: 999px; padding: 7px 15px; font-family: inherit;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.mzc-ebtn.go { background: var(--mz-cell-amber-ink); color: var(--surface-card); }
+.mzc-ebtn.ghost {
+  background: color-mix(in srgb, var(--surface-card) 75%, transparent);
+  color: var(--text-secondary); border: 0.5px solid var(--border-subtle);
+}
+
 /* refs footer — human labels (gap-7 fix) */
 .mzc-reffoot { border-top: 0.5px solid rgba(43, 33, 24, 0.08); margin-top: 9px; padding-top: 8px; }
 .mzc-refeb { font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
@@ -5140,6 +5166,60 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
       #page-memoar / #page-tudas ×1.18 (330→390px frame). ── */
 
 /* Memoár: Fraunces-titled chapter card with the lavender glow */
+
+/* ==== F7.5 (mezo-d20.8.5): Memoár-archívum idővonal + fejezet-oldal (mezo-memoar.html ×1.18) ==== */
+.mz-march-mhead { display: flex; align-items: center; gap: 9px; margin: 16px 2px 9px; }
+.mz-march-mhead:first-child { margin-top: 4px; }
+.mz-march-mhead .eb { font-size: 10px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-cell-lav-ink); flex: none; }
+.mz-march-mhead .n { font-size: 9.5px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; flex: none; }
+.mz-march-mhead::after { content: ''; height: 0.5px; flex: 1; background: color-mix(in srgb, var(--mz-cell-lav-ink) 18%, transparent); }
+.mz-march-card {
+  display: block; width: 100%; text-align: left; font-family: inherit; cursor: pointer;
+  border: 0.5px solid color-mix(in srgb, var(--mz-cell-lav-ink) 12%, transparent);
+  border-radius: 19px; padding: 12px 14px 13px; margin-bottom: 11px;
+  background: var(--surface-card);
+  box-shadow: 0 16px 30px -19px color-mix(in srgb, var(--mz-cell-lav-ink) 45%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.mz-march-card:active { transform: scale(0.985); }
+.mz-march-card .top { display: flex; align-items: center; gap: 7px; }
+.mz-march-card .wk {
+  font-size: 8.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--mz-cell-lav-ink); background: var(--mz-cell-lav-bg);
+  border-radius: 999px; padding: 3px 9px; flex: none;
+}
+.mz-march-card .d { font-size: 9px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.mz-march-card .anc { margin-left: auto; font-size: 9px; color: var(--text-tertiary); display: flex; align-items: center; gap: 3px; flex: none; }
+.mz-march-card .ttl { display: block; font-family: var(--ff-display); font-style: italic; font-size: 15px; font-weight: 500; line-height: 1.3; margin-top: 7px; color: var(--text-primary); }
+.mz-march-card .ex {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  font-size: 11px; font-weight: 300; line-height: 1.5; color: var(--text-secondary); margin-top: 5px;
+}
+.mz-march-bd { font-size: 12px; font-weight: 300; line-height: 1.65; margin-top: 9px; color: var(--text-primary); }
+.mz-march-bd p { margin: 0; }
+.mz-march-bd p + p { margin-top: 8px; }
+.mz-march-bd p:first-child::first-letter {
+  font-family: var(--ff-display); font-style: italic; font-weight: 500;
+  font-size: 32px; line-height: 0.8; float: left; padding: 4px 6px 0 0; color: var(--mz-cell-lav-ink);
+}
+.mz-march-pager { display: flex; gap: 11px; }
+.mz-march-pager .tile {
+  display: flex; flex-direction: column; gap: 3px; cursor: pointer; flex: 1; text-align: left;
+  font-family: inherit; border-radius: 20px; padding: 12px 13px 11px;
+  background: var(--surface-card); border: 0.5px solid var(--border-subtle);
+  box-shadow: 0 16px 30px -17px color-mix(in srgb, var(--mz-cell-lav-ink) 40%, transparent);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.mz-march-pager .tile:active { transform: scale(0.97); }
+.mz-march-pager .tile.nx { text-align: right; align-items: flex-end; }
+.mz-march-pager .tile.ghost { visibility: hidden; pointer-events: none; }
+.mz-march-pager .dir { font-size: 9.5px; font-weight: 700; color: color-mix(in srgb, var(--mz-cell-lav-ink) 55%, var(--text-tertiary)); }
+.mz-march-pager .wk { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mz-cell-lav-ink); }
+.mz-march-pager .ct { font-family: var(--ff-display); font-style: italic; font-size: 12.5px; font-weight: 500; line-height: 1.3; color: var(--text-primary); }
+@media (prefers-reduced-motion: reduce) {
+  .mz-march-card:active, .mz-march-pager .tile:active { transform: none; }
+}
+
 .mz-memoir { position: relative; overflow: hidden; border-radius: 21px; padding: 17px 17px 15px;
   background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06);
   box-shadow: var(--mz-memoir-shadow); }
@@ -5246,7 +5326,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   border: 1.2px dashed var(--mz-chat-refch-bd); }
 .mzp-dgq .qq { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--mz-ink-soft); }
 .mzp-dgq .qs { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); margin-top: 4px; }
-.mzh-t-diag { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
+.mzh-t-diag, .mzh-t-karakter { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
 
 /* Chat quick-question chips (mezo-dz3y) — empty-state only, one tap sends. */
 .mzc-qq { border: 0.5px solid var(--mz-chat-refch-bd); border-radius: 999px; padding: 8px 13px;
@@ -5406,22 +5486,11 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .enh-eb-sky .mz-eyebrow   { color: var(--mz-cell-sky-ink); }
 .enh-eb-coral .mz-eyebrow { color: var(--mz-cell-coral-ink); }
 .enh-eb-rose .mz-eyebrow  { color: var(--mz-cell-rose-ink); }
-.enh-eb-gold .mz-eyebrow  { color: var(--mz-qxp-ink); }
 .enh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
-
-.enh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
-  cursor: pointer; border-radius: 20px; padding: 12px 14px; font-family: inherit; text-align: left;
-  color: var(--text-primary); background: var(--mz-wash-band);
-  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-coral);
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.enh-band:active { transform: scale(0.97); }
-.enh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
-.enh-band .txt b { font-weight: 700; }
-.enh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .mz-play .enh-gtrack .fill { animation: none; }
-  .enh-goalcard, .enh-band { transition: none; }
+  .enh-goalcard { transition: none; }
 }
 
 /* ── Cél page re-face (mezo-d20.6.2) — prototype en-body #page-cel ×1.18:
@@ -5748,6 +5817,9 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-hub-line { font-size: 10.5px; font-weight: 300; margin-top: 2px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ppl-hub-spot { flex: 1; display: grid; place-items: center; padding: 5px 0; position: relative; }
+/* S4 (mezo-06o0.3) — anchor for a badge that hugs the icon itself (prototype
+   `.spotwrap .anchor`) rather than the whole `.ppl-hub-spot` grid cell. */
+.ppl-hub-anchor { position: relative; display: inline-flex; }
 .ppl-hub-badge {
   position: absolute; top: -7px; right: -11px; min-width: 20px; height: 20px;
   border-radius: 999px; background: var(--mz-strength);
@@ -5784,6 +5856,39 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-empty { border: 1px dashed rgba(43, 33, 24, 0.18); border-radius: 18px; padding: 17px 14px;
   text-align: center; font-size: 11px; color: var(--mz-ink-soft); font-weight: 300; }
 .ppl-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 5px 2px 9px; line-height: 1.5; }
+
+/* ── Emberek S4 jelölt-kártya (mezo-06o0.3) — prototype emberek.html `.candt`/`.cta.gold`/
+   `.ghost` ×1.18 (18→21 radius, 11px 12px→13px 14px padding, 10→12 margin). Most of the
+   card's gold literals stay literal (never seen elsewhere as a token, and not flagged by
+   the mozaikCssTokens guard); the two stops the guard's hex-ban DOES catch (the card's
+   cream gradient-end and its CTA's gold gradient-start) are tokenized instead —
+   `--mz-cand-cream` (new, no prior token held this exact cream) and `--mz-sc-mid-1`
+   (fix round 1, mezo-06o0.3: reused as-is — it already carries this exact gold in both
+   `:root` blocks, from the heti-pontszám gold band). `.ppl-figy` (JELÖLT chip) is the
+   pre-existing shared chip class, reused as-is. ── */
+.ppl-candt {
+  border-radius: 21px; padding: 13px 14px; margin-bottom: 12px;
+  background: linear-gradient(150deg, #FDF0DA, var(--mz-cand-cream));
+  border: 1px solid #C9962E;
+  box-shadow: 0 19px 35px -17px rgba(201, 150, 46, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  animation: ppl-candpulse 3s ease-in-out 1.2s infinite;
+  text-align: left;
+}
+@keyframes ppl-candpulse {
+  0%, 100% { box-shadow: 0 19px 35px -17px rgba(201, 150, 46, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.75); }
+  50% { box-shadow: 0 19px 35px -12px rgba(201, 150, 46, 0.75), 0 0 0 5px rgba(201, 150, 46, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.75); }
+}
+.ppl-candt-head { display: flex; align-items: center; gap: 7px; }
+.ppl-candt-head b { font-size: 13px; }
+.ppl-candt-q { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 11.2px; font-weight: 300; color: #6E6257; margin-top: 6px; line-height: 1.5; }
+.ppl-candt-ev { font-size: 8.9px; color: #A8801F; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.ppl-candbtns { display: flex; gap: 7px; margin-top: 11px; }
+.ppl-cta-gold {
+  background: linear-gradient(135deg, var(--mz-sc-mid-1), #C9962E); color: #fff;
+  border-radius: 999px; padding: 7px 17px; font-size: 11.8px; font-weight: 600; flex: none;
+  box-shadow: 0 9px 19px -7px rgba(201, 150, 46, 0.55); border: none; font-family: inherit; cursor: pointer;
+}
+.ppl-ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 7px 14px; font-size: 11.8px; font-weight: 600; flex: none; cursor: pointer; }
 
 /* ── Emberek S3 "Heti kép" (mezo-06o0.2 Task 6) — prototype emberek-body.html renderHeti()
    + emberek-head.html `.tonemixc`/`.tonemix`/`.mixleg`/`.dirgrid`/`.dirt`/`.arr2`/`.why2`/
@@ -6187,18 +6292,16 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .fh-scorech.is-pend { background: var(--mz-chat-refch-bg); color: var(--mz-ink-mut); }
 button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-height: 44px; padding: 3px 14px; }
 
-/* ═══ Mezo counter banner + Fuel-beállítások band (the .enh-band shape) ═══ */
-.fh-mezotile, .fh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
+/* ═══ Fuel-beállítások band (the .enh-band shape; a Mezo-sáv retired — mezo-04lo) ═══ */
+.fh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
   cursor: pointer; border-radius: 20px; padding: 12px 14px; font-family: inherit; text-align: left;
   color: var(--text-primary); border: 0.5px solid rgba(43, 33, 24, 0.06);
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.fh-mezotile { background: var(--mz-wash-band); box-shadow: var(--mz-shadow-coral); }
 .fh-band { background: var(--mz-wash-white); box-shadow: var(--mz-shadow); }
-.fh-mezotile:active, .fh-band:active { transform: scale(0.97); }
-.fh-mezotile .txt, .fh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
-.fh-mezotile .txt b, .fh-band .txt b { font-weight: 700; }
-.fh-mezotile .chev, .fh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
-.fh-mzdot { width: 8px; height: 8px; border-radius: 50%; background: var(--mz-fh-now-ring); flex: none; }
+.fh-band:active { transform: scale(0.97); }
+.fh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
+.fh-band .txt b { font-weight: 700; }
+.fh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
 
 /* mosaic eyebrow inks — one per hub tile (the .enh-eb- family precedent) */
 .fh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
@@ -6223,8 +6326,8 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fh-naplo-empty { font-size: 12px; font-weight: 300; color: var(--mz-ink-soft); padding: 8px 2px; margin: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .fh-mezotile, .fh-band, .fh-logtile { transition: none; }
-  .fh-mezotile:active, .fh-band:active, .fh-logtile:active { transform: none; }
+  .fh-band, .fh-logtile { transition: none; }
+  .fh-band:active, .fh-logtile:active { transform: none; }
   .fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: none; }
 }
 /* ── Fuel · Stack v2 (mezo-d20.4.3) — day-arc timeline + featured KÖVETKEZŐ card + zone
@@ -7441,6 +7544,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 @media (prefers-reduced-motion: reduce) {
   .ppl-rbar, .mz-play .ppl-rbar { transform: scaleY(1); animation: none; }
   .ppl-figy { animation: none; }
+  .ppl-candt { animation: none; }
 }
 
 .mzj-decfoot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; margin: 0; }

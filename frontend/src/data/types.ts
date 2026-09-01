@@ -878,6 +878,10 @@ export interface Memoir {
   body: string
   anchors: MemoirAnchor[]
 }
+/** F7.5 (mezo-d20.8.5): one archive-shelf entry — weekStart drives grouping + the chapter route. */
+export interface MemoirEntry extends Memoir {
+  weekStart: string
+}
 
 export type PredictionStatus = 'pending' | 'validated' | 'missed'
 export interface Prediction {

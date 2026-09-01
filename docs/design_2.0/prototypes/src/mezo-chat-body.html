@@ -173,9 +173,10 @@
   .bsheet-back.open { opacity: 1; pointer-events: auto; }
   .bsheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 12; background: #FDFAF4; border-radius: 26px 26px 34px 34px; padding: 14px 14px 16px;
     max-height: 76%; overflow-y: auto; scrollbar-width: none;
-    box-shadow: 0 -10px 40px rgba(29, 23, 18, 0.3); transform: translateY(112%); transition: transform 0.32s cubic-bezier(0.25, 0.9, 0.35, 1); }
+    box-shadow: 0 -10px 40px rgba(29, 23, 18, 0.3); transform: translateY(calc(100% + 80px)); visibility: hidden;
+    transition: transform 0.32s cubic-bezier(0.25, 0.9, 0.35, 1), visibility 0s 0.32s; }
   .bsheet::-webkit-scrollbar { display: none; }
-  .bsheet.open { transform: none; }
+  .bsheet.open { transform: none; visibility: visible; transition: transform 0.32s cubic-bezier(0.25, 0.9, 0.35, 1); }
   .convrow { display: flex; align-items: center; gap: 9px; padding: 10px 10px; border-radius: 14px; margin-top: 7px;
     background: #fff; border: 1px solid rgba(43, 33, 24, 0.08); cursor: pointer; }
   .convrow.on { border-color: #8A76CC; background: #F4F1FB; }
@@ -184,6 +185,47 @@
   .convnew { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 9px;
     border: 1.2px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 14px; padding: 10px 0;
     font-size: 10px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; }
+
+  /* ===== beszélgetés-műveletek (F7.5) ===== */
+  .convrow .kebab { width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer; flex: none;
+    background: rgba(43, 33, 24, 0.05); font-family: inherit; display: grid; place-items: center;
+    color: #6E6257; font-size: 12px; font-weight: 800; padding: 0; line-height: 0; }
+  .convrow .kebab:focus-visible { outline: 2px solid #6C5FA3; outline-offset: 2px; }
+  .actrow { display: flex; align-items: center; gap: 9px; width: 100%; padding: 11px 10px; border-radius: 14px;
+    margin-top: 7px; background: #fff; border: 1px solid rgba(43, 33, 24, 0.08); cursor: pointer;
+    font-family: inherit; font-size: 10.5px; font-weight: 700; color: #2B2118; text-align: left; }
+  .actrow:focus-visible { outline: 2px solid #6C5FA3; outline-offset: 2px; }
+  .actrow .aic { width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center; flex: none;
+    background: #F4F1FB; font-size: 11px; }
+  .actrow.warn { color: #A84A26; }
+  .actrow.warn .aic { background: #FFEDE4; }
+  .actsub { font-size: 8px; color: #A2958A; font-weight: 400; margin-top: 1px; }
+  .renwrap { margin-top: 9px; }
+  .renwrap input { width: 100%; border: 1px solid rgba(93, 79, 160, 0.3); border-radius: 12px; padding: 9px 11px;
+    font-family: inherit; font-size: 10.5px; color: #2B2118; background: #fff; outline: none; box-sizing: border-box; }
+  .renwrap input:focus { border-color: #6C5FA3; box-shadow: 0 0 0 2.5px rgba(108, 95, 163, 0.15); }
+  .actbtns { display: flex; gap: 7px; margin-top: 9px; }
+  .abtn { flex: 1; border: none; border-radius: 12px; padding: 9px 0; font-family: inherit; font-size: 10px;
+    font-weight: 700; cursor: pointer; }
+  .abtn.ghost { background: rgba(43, 33, 24, 0.05); color: #6E6257; }
+  .abtn.go { background: linear-gradient(135deg, #8A76CC, #6C5FA3); color: #fff;
+    box-shadow: 0 6px 14px -6px rgba(108, 95, 163, 0.6); }
+  .abtn.del { background: linear-gradient(135deg, #E0703F, #A84A26); color: #fff;
+    box-shadow: 0 6px 14px -6px rgba(168, 74, 38, 0.55); }
+  .confnote { font-size: 9px; color: #6E6257; line-height: 1.5; margin-top: 9px; background: #FFF7F2;
+    border: 0.5px solid rgba(168, 74, 38, 0.18); border-radius: 12px; padding: 9px 11px; }
+
+  /* ===== hiba-buborék + retry (F7.5) ===== */
+  .bub-err { background: linear-gradient(150deg, #FFF1D6, #FFFAF0); border-radius: 4px 16px 16px 16px;
+    padding: 9px 11px; border: 0.5px solid rgba(181, 126, 20, 0.25);
+    box-shadow: 0 10px 20px -12px rgba(181, 126, 20, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    font-size: 10px; font-weight: 300; line-height: 1.5; color: #6E6257; }
+  .bub-err b { font-weight: 700; color: #A8801F; }
+  .errbtns { display: flex; gap: 6px; margin-top: 8px; }
+  .ebtn { border: none; border-radius: 999px; padding: 5px 12px; font-family: inherit; font-size: 8.5px;
+    font-weight: 700; cursor: pointer; }
+  .ebtn.go { background: #A8801F; color: #fff; box-shadow: 0 5px 12px -5px rgba(168, 128, 31, 0.6); }
+  .ebtn.ghost { background: rgba(255, 255, 255, 0.75); color: #6E6257; border: 0.5px solid rgba(43, 33, 24, 0.12); }
 
   @media (prefers-reduced-motion: reduce) {
     .horb svg, .screen.busy .horb svg, .screen.busy .horb::before { animation: none; }
@@ -227,6 +269,9 @@
           <button class="hdisc" id="newChatBtn" aria-label="Új beszélgetés">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6E6257" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           </button>
+          <button class="hdisc" id="menuBtn" aria-label="A beszélgetés műveletei">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#6E6257"><circle cx="5" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="19" cy="12" r="2.1"/></svg>
+          </button>
         </div>
 
         <div class="chthread" id="chthread"></div>
@@ -240,6 +285,7 @@
         <div class="homebar"></div>
         <div class="bsheet-back" id="sback"></div>
         <div class="bsheet" id="sh-conv"></div>
+        <div class="bsheet" id="sh-act"></div>
       </div>
     </div>
 
@@ -265,6 +311,16 @@
             nem ütköznek a composerrel; 👎-ra jönnek az ok-chipek.</li>
           <li><strong>Composer + FAB</strong> — a composer lav sheen-t kapott; a chat oldalon
             nincs lebegő logolás-FAB (itt a küldés korong él a hüvelykzónában).</li>
+          <li><strong>Beszélgetés-műveletek (F7.5)</strong> — a fejléc ⋯ korongja ÉS a
+            lista-sorok kebabja ugyanazt a műveleti sheetet nyitja: <strong>Átnevezés</strong>
+            (inline input, megerősítés nélkül — reverzibilis) és <strong>Törlés</strong>
+            (kétlépcsős, meleg — nem büntető — megerősítéssel). ChatGPT-minta, swipe nélkül:
+            PWA-ban a swipe a scroll/back ellen dolgozik.</li>
+          <li><strong>Hiba-buborék + Újra (F7.5)</strong> — ha a küldés elhasal, a bukott
+            üzeneted a helyén marad, és borostyán buborék jön <strong>Újra</strong> +
+            <strong>Szerkesztés</strong> gombbal. Az Újra ugyanazt a kört küldi újra
+            (replace, don't append — nincs duplikált üzenet); a Szerkesztés visszaadja
+            a szöveget a composerbe.</li>
         </ul>
       </div>
       <div>
@@ -275,6 +331,9 @@
           <li>Koppints egy hivatkozás-csoportra — kinyílnak a dátumok.</li>
           <li>„Emlékek · 7" — kártyasor; egy kártya koppintásra kinyílik.</li>
           <li>A fejléc státuszára koppintva váltakozik: élő → demo → nem elérhető.</li>
+          <li>Fejléc ⋯ vagy a lista kebabja — Átnevezés / Törlés (két lépcső).</li>
+          <li>Állítsd „nem elérhető"-re a státuszt, küldj üzenetet — hiba-buborék
+            Újra/Szerkesztés gombbal; váltsd vissza élőre és nyomd az Újrát.</li>
         </ol>
       </div>
       <p class="note">A viselkedési kontraktusok változatlanok: a tool-chipek és a refek
@@ -477,15 +536,18 @@
       { d: 'emlek', prm: '„fáradt reggelek"' }
     ];
     var busy = false;
-    function sendChat() {
+    var failedTurn = null; /* F7.5: { text, userEl } — a bukott kör, amit az Újra változatlanul újraküld */
+    function sendChat(retryText, existingUserEl) {
       if (busy) return;
-      var txt = cinput.value.trim() || 'Ma reggel fáradtan keltem, mit gondolsz, menjek edzeni?';
-      cinput.value = '';
+      var txt = retryText || cinput.value.trim() || 'Ma reggel fáradtan keltem, mit gondolsz, menjek edzeni?';
+      if (!retryText) cinput.value = '';
       busy = true;
+      failedTurn = null;
       screen.classList.add('busy');
       var prevStat = hstatTxt.textContent;
       hstatTxt.textContent = 'dolgozom rajta…';
-      thread.appendChild(renderMsg({ r: 'u', t: 'most', text: txt }));
+      var userEl = existingUserEl;
+      if (!userEl) { userEl = renderMsg({ r: 'u', t: 'most', text: txt }); thread.appendChild(userEl); }
 
       var ty = document.createElement('div');
       ty.className = 'msg-a';
@@ -493,6 +555,40 @@
         '<div data-live></div><div class="typing"><i></i><i></i><i></i></div>';
       thread.appendChild(ty);
       scrollDown();
+
+      /* F7.5: „nem elérhető" státusznál a kör elhasal — hiba-buborék Újra + Szerkesztés gombbal.
+         Replace, don't append: a bukott user-buborék a helyén marad, az Újra nem duplikálja. */
+      if (hstat.getAttribute('data-st') === 'off') {
+        setTimeout(function () {
+          ty.remove();
+          var err = document.createElement('div');
+          err.className = 'msg-a';
+          err.innerHTML = '<div class="msgmeta">' + icon('s-orb-figyel', 15) + '<span class="eb">Mezo</span></div>' +
+            '<div class="bub-err"><b>A társ most nem elérhető.</b> Az üzeneted nem veszett el — ' +
+            'próbáld újra, vagy szerkeszd és küldd el módosítva.' +
+            '<div class="errbtns"><button class="ebtn go" data-retry>Újra</button>' +
+            '<button class="ebtn ghost" data-edit>Szerkesztés</button></div></div>';
+          thread.appendChild(err);
+          failedTurn = { text: txt, userEl: userEl };
+          err.querySelector('[data-retry]').addEventListener('click', function () {
+            var ft = failedTurn;
+            err.remove();
+            sendChat(ft.text, ft.userEl);
+          });
+          err.querySelector('[data-edit]').addEventListener('click', function () {
+            cinput.value = failedTurn.text;
+            err.remove();
+            failedTurn.userEl.remove();
+            failedTurn = null;
+            cinput.focus();
+          });
+          screen.classList.remove('busy');
+          hstatTxt.textContent = prevStat;
+          scrollDown();
+          busy = false;
+        }, 900);
+        return;
+      }
 
       /* a munkacsík forrásonként épül */
       LIVE_TOOLS.forEach(function (_, i) {
@@ -527,7 +623,7 @@
         busy = false;
       }, 500 + LIVE_TOOLS.length * 620 + 900);
     }
-    document.getElementById('csend').addEventListener('click', sendChat);
+    document.getElementById('csend').addEventListener('click', function () { sendChat(); });
     cinput.addEventListener('keydown', function (e) { if (e.key === 'Enter') sendChat(); });
 
     /* ---------- mikrofon (mock) ---------- */
@@ -556,28 +652,102 @@
       hstatTxt.textContent = STATES[sti][1];
     });
 
-    /* ---------- beszélgetések sheet + új chat ---------- */
+    /* ---------- beszélgetések: adat + lista + műveletek (F7.5) ---------- */
+    var CONVS = [
+      { id: 'c1', orb: 's-orb',         nm: 'nézd meg kérlek a súlyomat az elmúlt…', sb: 'ma 11:25' },
+      { id: 'c2', orb: 's-orb-ejszaka', nm: 'Miért csúszik a fehérje hétvégén?',     sb: 'tegnap 21:12' },
+      { id: 'c3', orb: 's-orb-figyel',  nm: 'Névtelen beszélgetés',                  sb: 'aug 28.' }
+    ];
+    var currentId = 'c1';
     var sback = document.getElementById('sback');
     var shconv = document.getElementById('sh-conv');
-    function closeSheets() { sback.classList.remove('open'); shconv.classList.remove('open'); }
+    var shact = document.getElementById('sh-act');
+    function closeSheets() { sback.classList.remove('open'); shconv.classList.remove('open'); shact.classList.remove('open'); }
     sback.addEventListener('click', closeSheets);
-    document.getElementById('convBtn').addEventListener('click', function () {
-      shconv.innerHTML =
-        '<div class="p-eyebrow" style="color:#5D4FA0;">Beszélgetések</div>' +
-        '<div style="font-size:8.5px;color:#A2958A;margin-top:2px;">3 korábbi beszélgetés</div>' +
-        '<div class="convrow on">' + icon('s-orb', 18) + '<div class="grow"><div class="nm">nézd meg kérlek a súlyomat az elmúlt…</div><div class="sb">ma 11:25</div></div><span style="color:#5D4FA0;">✓</span></div>' +
-        '<div class="convrow">' + icon('s-orb-ejszaka', 18) + '<div class="grow"><div class="nm">Miért csúszik a fehérje hétvégén?</div><div class="sb">tegnap 21:12</div></div></div>' +
-        '<div class="convrow">' + icon('s-orb-figyel', 18) + '<div class="grow"><div class="nm">Névtelen beszélgetés</div><div class="sb">aug 28.</div></div></div>' +
-        '<button class="convnew">＋ Új beszélgetés</button>';
-      shconv.querySelectorAll('.convrow, .convnew').forEach(function (r) { r.addEventListener('click', closeSheets); });
-      sback.classList.add('open');
-      shconv.classList.add('open');
-    });
-    document.getElementById('newChatBtn').addEventListener('click', function () {
+
+    function newChat() {
       thread.innerHTML = '<div class="msg-a"><div class="bub-a" style="color:#6E6257;">Új beszélgetés — kérdezz bármit, vagy mondd fel a mikrofonnal.</div></div>';
       hstat.setAttribute('data-st', 'new');
       hstatTxt.textContent = 'új beszélgetés';
+    }
+    document.getElementById('newChatBtn').addEventListener('click', newChat);
+
+    function renderConvSheet() {
+      var h = '<div class="p-eyebrow" style="color:#5D4FA0;">Beszélgetések</div>' +
+        '<div style="font-size:8.5px;color:#A2958A;margin-top:2px;">' + CONVS.length + ' beszélgetés</div>';
+      CONVS.forEach(function (c) {
+        h += '<div class="convrow' + (c.id === currentId ? ' on' : '') + '" data-cid="' + c.id + '">' + icon(c.orb, 18) +
+          '<div class="grow"><div class="nm">' + esc(c.nm) + '</div><div class="sb">' + c.sb + '</div></div>' +
+          (c.id === currentId ? '<span style="color:#5D4FA0;flex:none;">✓</span>' : '') +
+          '<button class="kebab" data-act="' + c.id + '" aria-label="Műveletek: ' + esc(c.nm) + '">⋯</button></div>';
+      });
+      h += '<button class="convnew">＋ Új beszélgetés</button>';
+      shconv.innerHTML = h;
+      shconv.querySelector('.convnew').addEventListener('click', function () { closeSheets(); newChat(); });
+      shconv.querySelectorAll('.convrow').forEach(function (r) {
+        r.addEventListener('click', function (e) {
+          if (e.target.closest && e.target.closest('.kebab')) return;
+          currentId = r.getAttribute('data-cid');
+          closeSheets();
+        });
+      });
+      shconv.querySelectorAll('.kebab').forEach(function (k) {
+        k.addEventListener('click', function () { openActions(k.getAttribute('data-act')); });
+      });
+    }
+    document.getElementById('convBtn').addEventListener('click', function () {
+      renderConvSheet();
+      sback.classList.add('open');
+      shconv.classList.add('open');
     });
+
+    /* műveleti sheet: Átnevezés (megerősítés nélkül — reverzibilis) + Törlés (két lépcső) */
+    function openActions(cid) {
+      var c = CONVS.find(function (x) { return x.id === cid; });
+      if (!c) return;
+      shconv.classList.remove('open');
+      shact.innerHTML =
+        '<div class="p-eyebrow" style="color:#5D4FA0;">Beszélgetés</div>' +
+        '<div style="font-size:10px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(c.nm) + '</div>' +
+        '<div id="actBody">' +
+        '<button class="actrow" id="renameRow"><span class="aic">' + icon('i-naplo', 13) + '</span>' +
+        '<div class="grow">Átnevezés<div class="actsub">a lista címkéje változik — bármikor átírhatod újra</div></div></button>' +
+        '<button class="actrow warn" id="deleteRow"><span class="aic">✕</span>' +
+        '<div class="grow">Törlés<div class="actsub">a beszélgetés lekerül a listáról</div></div></button>' +
+        '</div>';
+      var body = shact.querySelector('#actBody');
+      shact.querySelector('#renameRow').addEventListener('click', function () {
+        body.innerHTML = '<div class="renwrap"><input type="text" id="renIn" maxlength="120" aria-label="A beszélgetés címe"></div>' +
+          '<div class="actbtns"><button class="abtn ghost" id="renCancel">Mégse</button><button class="abtn go" id="renSave">Mentés</button></div>';
+        var inp = body.querySelector('#renIn');
+        inp.value = c.nm; inp.focus(); inp.select();
+        function save() {
+          var v = inp.value.trim();
+          if (v) c.nm = v;
+          closeSheets();
+        }
+        body.querySelector('#renCancel').addEventListener('click', closeSheets);
+        body.querySelector('#renSave').addEventListener('click', save);
+        inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') save(); });
+      });
+      shact.querySelector('#deleteRow').addEventListener('click', function () {
+        body.innerHTML = '<div class="confnote">Biztosan törlöd? A beszélgetés és az üzenetei lekerülnek a listáról — ' +
+          'a belőlük tanult emlékeket ez nem érinti.</div>' +
+          '<div class="actbtns"><button class="abtn ghost" id="delCancel">Mégse</button><button class="abtn del" id="delGo">Törlöm</button></div>';
+        body.querySelector('#delCancel').addEventListener('click', closeSheets);
+        body.querySelector('#delGo').addEventListener('click', function () {
+          CONVS = CONVS.filter(function (x) { return x.id !== c.id; });
+          if (currentId === c.id) {
+            if (CONVS.length) currentId = CONVS[0].id;
+            else newChat();
+          }
+          closeSheets();
+        });
+      });
+      sback.classList.add('open');
+      shact.classList.add('open');
+    }
+    document.getElementById('menuBtn').addEventListener('click', function () { openActions(currentId); });
     document.getElementById('backBtn').addEventListener('click', function () {
       /* a hub ebben a prototípusban nincs — csak jelezzük az irányt */
       document.getElementById('backBtn').animate(

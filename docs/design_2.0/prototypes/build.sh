@@ -23,4 +23,5 @@ cat src/mezo-chat-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/mezo-cha
 cat src/emberek-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/emberek-body.html > emberek.html
 cat src/fuel-log-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/fuel-log-body.html > fuel-logolas.html
 cat src/fuel-log-multinap-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/fuel-log-multinap-body.html > fuel-log-multinap.html
-echo "OK — 18 prototype files assembled."
+cat src/mezo-memoar-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/mezo-memoar-body.html > mezo-memoar.html
+echo "OK — 19 prototype files assembled."

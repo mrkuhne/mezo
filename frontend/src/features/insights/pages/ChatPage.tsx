@@ -6,6 +6,8 @@ import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback } from
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
+import { ConversationActionsSheet } from '@/features/insights/sheets/ConversationActionsSheet'
+import type { ConversationResponse } from '@/data/insights/chatApi'
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { cn } from '@/shared/lib/cn'
@@ -56,6 +58,8 @@ export function ChatPage() {
   const [params, setParams] = useSearchParams()
   const selection = params.get('c')
   const [pickerOpen, setPickerOpen] = useState(false)
+  // F7.5 (mezo-d20.8.5): which conversation the actions sheet (Átnevezés/Törlés) is open for.
+  const [actionsFor, setActionsFor] = useState<ConversationResponse | null>(null)
   const { endRef, scrollToBottom, scrollIfStuck } = useStickToBottom<HTMLDivElement>()
 
   const selectConversation = (id: string | null) => {
@@ -64,7 +68,7 @@ export function ChatPage() {
 
   const { data, isPending } = useChat(selection)
   const { conversations, degraded: companionOff } = useConversations().data
-  const { send, turn, error } = useChatActions(selection, selectConversation)
+  const { send, turn, error, failedText, retry, editFailed } = useChatActions(selection, selectConversation)
   const [draft, setDraft] = useState('')
   const draftRef = useRef<HTMLTextAreaElement>(null)
   // The transcript lands in the composer rather than being sent — the user checks it first.
@@ -163,6 +167,24 @@ export function ChatPage() {
             <path d="M12 5v14M5 12h14" />
           </svg>
         </button>
+        {/* F7.5: the current conversation's actions (Átnevezés/Törlés). Disabled on a draft
+            thread — there is no persisted row to act on yet. The status precedence above is
+            untouched: this disc only appends to the row. */}
+        <button
+          type="button"
+          className="mzc-hdisc"
+          onClick={() => {
+            const currentId = isNew ? null : (selection ?? data.conversationId)
+            const current = conversations.find((c) => c.id === currentId)
+            if (current) setActionsFor(current)
+          }}
+          disabled={degraded || isNew || !conversations.some((c) => c.id === (selection ?? data.conversationId))}
+          aria-label="A beszélgetés műveletei"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="2.1" /><circle cx="12" cy="12" r="2.1" /><circle cx="19" cy="12" r="2.1" />
+          </svg>
+        </button>
       </div>
 
       {pickerOpen && (
@@ -172,6 +194,20 @@ export function ChatPage() {
           onSelect={(id) => { selectConversation(id); setPickerOpen(false) }}
           onNew={() => { selectConversation(NEW_CHAT); setPickerOpen(false) }}
           onClose={() => setPickerOpen(false)}
+          onActions={(c) => { setPickerOpen(false); setActionsFor(c) }}
+        />
+      )}
+
+      {actionsFor && (
+        <ConversationActionsSheet
+          conversation={actionsFor}
+          onClose={() => setActionsFor(null)}
+          onDeleted={() => {
+            // Deleting the on-screen conversation moves the URL off the dead id — the newest
+            // remaining thread takes over (or the empty state when none is left).
+            const currentId = isNew ? null : (selection ?? data.conversationId)
+            if (actionsFor.id === currentId) selectConversation(null)
+          }}
         />
       )}
 
@@ -252,8 +288,32 @@ export function ChatPage() {
           />
         )}
         {error && (
-          <div className="mzc-bub-a" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
-            <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{error}</p>
+          // F7.5: the error bubble grew hands — Újra re-sends the SAME failed turn (replace,
+          // don't append), Szerkesztés hands the text back to the composer. Amber tone per the
+          // prototype (a hiccup, not a scolding — ADR 0010).
+          <div className="mzc-bub-err" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
+            <p style={{ fontSize: 13, lineHeight: 1.5 }}>
+              <b>{error}</b>
+              {failedText ? ' Az üzeneted nem veszett el.' : ''}
+            </p>
+            {failedText && (
+              <div className="row gap-sm" style={{ marginTop: 8 }}>
+                <button type="button" className="mzc-ebtn go" onClick={retry}>
+                  Újra
+                </button>
+                <button
+                  type="button"
+                  className="mzc-ebtn ghost"
+                  onClick={() => {
+                    const text = editFailed()
+                    if (text) setDraft(text)
+                    draftRef.current?.focus()
+                  }}
+                >
+                  Szerkesztés
+                </button>
+              </div>
+            )}
           </div>
         )}
         {/* The scroll anchor useStickToBottom pins the view to. */}

@@ -29,6 +29,30 @@ test('summary and edges are optional', () => {
   )
   expect(screen.getByText('Új munkahely első hete')).toBeInTheDocument()
   expect(screen.queryByText(/Hétfőn kezdtél/)).not.toBeInTheDocument()
+  // no edges → no "Kapcsolatok" section label either
+  expect(screen.queryByText('Kapcsolatok')).not.toBeInTheDocument()
+})
+
+// mezo-ni86: the sheet says which category the node belongs to, and labels the
+// edge-line block — without these, a bare backend title („Utolsó Cut") gave the
+// reader nothing to anchor on.
+test('names the kind and labels the edge block', () => {
+  render(<NodeDetailSheet node={node} onArchive={() => {}} onClose={() => {}} />)
+  expect(screen.getByText('Életesemények')).toBeInTheDocument()
+  expect(screen.getByText('Kapcsolatok')).toBeInTheDocument()
+})
+
+// mezo-ni86: the weekly graph builder sometimes emits summary === title (live
+// GOAL nodes) — repeating the heading verbatim under itself says nothing.
+test('hides a summary that merely repeats the title', () => {
+  render(
+    <NodeDetailSheet
+      node={{ ...node, summary: 'Új munkahely első hete' }}
+      onArchive={() => {}}
+      onClose={() => {}}
+    />,
+  )
+  expect(screen.getAllByText('Új munkahely első hete')).toHaveLength(1)
 })
 
 test('Archivál calls onArchive and dismisses the sheet', () => {

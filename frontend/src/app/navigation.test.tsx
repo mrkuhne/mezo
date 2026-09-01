@@ -29,8 +29,9 @@ test('Me screen theme selector flips data-theme', async () => {
   // Default is now circadian-auto (wall-clock dependent); preset manual light so this
   // navigation smoke test stays deterministic. Auto/circadian resolution is covered by
   // CircadianTheme.test + ThemeProvider.test.
-  // The Me shell dissolved (mezo-d20.6.1): the settings sheet now opens from the Én hub's
-  // Beállítások band, not from the retired SubNavDropdown's ⚙️ extra action.
+  // The Me shell dissolved (mezo-d20.6.1): "Beállítások" is now a hub tile that navigates to
+  // its own full page (`/me/beallitasok`, `BeallitasokPage`), not the retired SubNavDropdown's
+  // ⚙️ extra action or a settings sheet.
   localStorage.setItem('mezo-theme', 'light')
   renderApp('/me')
   await userEvent.click(await screen.findByRole('button', { name: 'Beállítások' }))
@@ -72,8 +73,8 @@ test('/me/karakter is the Karakter dossier hub — reachable as a stable route (
   expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
 })
 
-test('the Én hub links to the Karakter dossier hub', async () => {
-  renderApp('/me')
+test('the Mezo hub links to the Karakter dossier hub (hub-tile-reorg)', async () => {
+  renderApp('/mezo')
   await userEvent.click(await screen.findByRole('button', { name: 'Karakter' }))
   expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
 })

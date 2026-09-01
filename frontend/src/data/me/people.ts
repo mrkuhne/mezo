@@ -117,6 +117,26 @@ export const people: PersonEntry[] = [
     ],
     ties: [],
   },
+  {
+    id: 'pp-marci',
+    name: 'Marci',
+    initial: 'M',
+    relationship: 'friend',
+    relationshipHu: 'Ismerős',
+    aliases: [],
+    status: 'candidate',
+    sourceKind: 'extractor',
+    affect_baseline: 'neutral',
+    mentionCount: 0,
+    mentionsThisWeek: 0,
+    last_mentioned_at: '',
+    lastMentionLabel: 'Még nincs említés',
+    contactCadenceLabel: '',
+    notes: '„…délben futottam Marcival a gáton, jó volt kimozdulni…"',
+    affectTrend: [],
+    knownFacts: [],
+    ties: [],
+  },
 ]
 
 export const mentions: Mention[] = [

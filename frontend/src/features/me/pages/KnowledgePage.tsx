@@ -4,7 +4,7 @@
 // #page-tudas (values ×1.18).
 //
 // ADR 0032: the dissolved Me shell means this page owns its own header — the
-// prototype's `‹ Én` back chip — and the prototype's page-hero (i-tudas + the
+// prototype's `‹ Tudástár` back chip (hub-tile-reorg: the Én hub's Tudás tile is gone — the Tudástár is the graph's door) — and the prototype's page-hero (i-tudas + the
 // fact count + „tudás · N kapcsolat · élő mindmap") replaces the old
 // .pghead-np band, which left the page with no way back AND repeated the
 // hero's own number inside the summary tile. The summary tile is now the
@@ -25,6 +25,13 @@
 // opens a NodeDetailSheet (summary + edges + archive, spec §3) for that node.
 // The view switch is pure derived state off the URL/selection — no local
 // list mutation to keep in sync.
+//
+// mezo-ni86: one back affordance per view. The category view's return chip
+// now IS the page-head chip („‹ Kategóriák" replaces „‹ Én") instead of a
+// second floating chip below the summary — two stacked back buttons read as
+// two different destinations when they were one. Clearing the param uses
+// replace:true so the grid entry overwrites the ?kind history slot and
+// „‹ Tudástár" (a deterministic /mezo/knowledge jump) truly leaves the page.
 // ============================================================
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -58,7 +65,10 @@ export function KnowledgePage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate(-1)} label="‹ Én" />
+      <PageHead
+        onBack={kind ? () => setParams({}, { replace: true }) : () => navigate('/mezo/knowledge')}
+        label={kind ? '‹ Kategóriák' : '‹ Tudástár'}
+      />
 
       <PageHero
         icon="i-tudas"
@@ -97,7 +107,17 @@ export function KnowledgePage() {
                 </>
               )}
 
-              <KindTileGrid nodes={graphNodes} onOpenKind={k => setParams({ kind: k })} />
+              {/* The grid is its own section, so it wears a section eyebrow like the profile
+                  above it (mezo-u2lh) — without one the tiles butted straight into the profile
+                  card with no vertical rhythm, and nothing said what the two blocks were. */}
+              <div className="tud-lsec rise" style={{ '--d': '80ms' } as React.CSSProperties}>
+                <Eyebrow>Kategóriák</Eyebrow>
+              </div>
+              <KindTileGrid
+                nodes={graphNodes}
+                onOpenKind={k => setParams({ kind: k })}
+                baseDelayMs={100}
+              />
             </>
           ) : (
             <div>
@@ -105,7 +125,6 @@ export function KnowledgePage() {
                 kind={kind}
                 label={KIND_LABELS.get(kind)!}
                 nodes={graphNodes.filter(n => n.kind === kind)}
-                onBack={() => setParams({})}
                 onOpenNode={n => setSelectedId(n.id)}
               />
             </div>

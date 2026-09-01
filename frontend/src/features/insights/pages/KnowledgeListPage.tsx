@@ -1,8 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
+import { ClayIcon } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
+import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useKnowledge, useKnowledgeActions, useLifeEventCandidates, useLifeEventActions } from '@/data/hooks'
@@ -31,6 +33,7 @@ function TudasFrame({ big, sub, children }: { big?: ReactNode; sub?: string; chi
 }
 
 export function KnowledgeListPage() {
+  const navigate = useNavigate()
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
   const { toggle, decide } = useKnowledgeActions()
   const { candidates: lifeEvents } = useLifeEventCandidates()
@@ -112,13 +115,17 @@ export function KnowledgeListPage() {
     <EntranceGroup className="col gap-md">
       <KnowledgeExplainer />
 
-      <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5, padding: '0 4px', margin: 0 }}>
-        A kapcsolatok és életesemények a{' '}
-        <Link to="/me/knowledge" style={{ color: 'var(--lav-deep)', fontWeight: 600, textDecoration: 'none' }}>
-          Tudásgráfon
-        </Link>{' '}
-        élnek.
-      </p>
+      <button type="button" className="card row" aria-label="Tudásgráf" onClick={() => navigate('/me/knowledge')}
+        style={{ justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left' }}>
+        <div className="row gap-md" style={{ alignItems: 'center' }}>
+          <ClayIcon name="i-tudas" size={28} />
+          <div className="col">
+            <span>Tudásgráf</span>
+            <span style={SECTION_LABEL}>kapcsolatok és életesemények · élő mindmap</span>
+          </div>
+        </div>
+        <span aria-hidden="true" style={{ color: 'var(--text-tertiary)' }}>›</span>
+      </button>
 
       {candidates.length > 0 && (
         <div className="col gap-sm rise" style={{ '--d': '0ms' } as React.CSSProperties}>

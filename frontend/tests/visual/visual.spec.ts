@@ -65,6 +65,9 @@ const SCREENS: Array<[string, string, string?]> = [
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
   ['insights-mintak', '/insights'],
   ['insights-memoar', '/insights/memoir'],
+  // F7.5 Mezo deep (mezo-d20.8.5.1): the memoir archive shelf + one chapter page.
+  ['mezo-memoar-archiv', '/mezo/memoir/archivum'],
+  ['mezo-memoar-fejezet', '/mezo/memoir/2026-05-04'],
   ['insights-tudastar', '/insights/knowledge'],
   ['insights-chat', '/insights/chat'],
   ['insights-elorejelzesek', '/insights/predictions'],

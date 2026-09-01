@@ -82,21 +82,20 @@ const renderView = (path = '/fuel') =>
 
 // ── shell dissolution + page anatomy ─────────────────────────────────────────
 
-test('the hub is the Mozaik face: hero → Logolás hero tile → Mezo banner → mosaic → band, no sub-nav shell', () => {
+test('the hub is the Mozaik face: hero → Logolás hero tile → mosaic → band, no sub-nav shell', () => {
   const { container } = renderView()
   expect(container.querySelector('.fh-hub')).toBeInTheDocument()
   expect(screen.queryByLabelText('Fuel alnavigáció')).toBeNull()
   const hero = container.querySelector('.fh-hero')
   const lane = container.querySelector('.fh-logtile')
-  const banner = container.querySelector('.fh-mezotile')
   const mosaic = container.querySelector('.mz-mosaic')
   expect(hero).toBeInTheDocument()
   expect(lane).toBeInTheDocument()
-  expect(banner).toBeInTheDocument()
   expect(mosaic).toBeInTheDocument()
+  // The Mezo Fuel-üzenetek band is retired (mezo-04lo) — unused, tile removed with its page.
+  expect(container.querySelector('.fh-mezotile')).toBeNull()
   expect(hero!.compareDocumentPosition(lane!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(lane!.compareDocumentPosition(banner!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(banner!.compareDocumentPosition(mosaic!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(lane!.compareDocumentPosition(mosaic!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   // The retired sky/island shell is gone.
   expect(container.querySelector('.sky-islands')).toBeNull()
   expect(container.querySelector('.kdone')).toBeNull()
@@ -254,18 +253,6 @@ test('hub-csali: ha tegnap minden ablak done, nincs chip', () => {
   ]
   renderView()
   expect(screen.queryByRole('button', { name: /pótolható/ })).toBeNull()
-})
-
-// ── Mezo counter banner ──────────────────────────────────────────────────────
-
-test('the Mezo banner is a counter-only door to /fuel/uzenetek — it never repeats the voice', async () => {
-  const { container } = renderView()
-  const banner = container.querySelector('.fh-mezotile') as HTMLElement
-  // Mock mode's companion feed is empty → the banner stays a door, with no fabricated count.
-  expect(banner).toHaveTextContent('Mezo · Fuel-üzenetek')
-  expect(banner.textContent).not.toMatch(/\d+ új Fuel-üzenet/)
-  fireEvent.click(banner)
-  expect(screen.getByTestId('loc').textContent).toBe('/fuel/uzenetek')
 })
 
 // ── the 6-tile mosaic ────────────────────────────────────────────────────────
