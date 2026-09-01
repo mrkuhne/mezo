@@ -291,6 +291,10 @@
   --mz-sc-non-ink: #A2958A;
   --mz-wk-cur-ring: rgba(138, 118, 204, 0.75);
 
+  /* S4 jelölt-kártya (mezo-06o0.3) — the prototype's own cream card-face stop
+     (`.candt`'s gradient light end); no existing token carries this exact hex. */
+  --mz-cand-cream: #FFFCF5;
+
   /* Heti elemzés-oldal (mezo-d20.6.10) — en-body.html #page-hanaly `.revcard` /
      `.float3d` / `.hlch` values, shadows ×1.18. `Minta`/`Emlék` reuse the lav/rose
      cell inks (identical hexes); only the gold + sky kickers need their own. */
@@ -581,6 +585,10 @@
   --mz-sc-low-1: color-mix(in srgb, var(--dv-coral) 70%, #fff); --mz-sc-low-2: var(--dv-coral);
   --mz-sc-low-ring: var(--dv-coral); --mz-sc-low-ink: var(--dv-coral);
   --mz-sc-non-ink: var(--text-muted);
+
+  /* S4 jelölt-kártya dark — same cream-tint derivation `--mz-wash-gold`'s second
+     stop already uses (dv-amber 5% into the dark surface-page). */
+  --mz-cand-cream: color-mix(in srgb, var(--dv-amber) 5%, var(--surface-page));
   --mz-wk-cur-ring: color-mix(in srgb, var(--dv-lav) 75%, transparent);
 
   /* Heti elemzés-oldal — dark ("Pulse") derivations on the dv ramp */
@@ -5789,13 +5797,17 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 5px 2px 9px; line-height: 1.5; }
 
 /* ── Emberek S4 jelölt-kártya (mezo-06o0.3) — prototype emberek.html `.candt`/`.cta.gold`/
-   `.ghost` ×1.18 (18→21 radius, 11px 12px→13px 14px padding, 10→12 margin). The card's own
-   gold literals (never seen elsewhere as a `--ppl-*` token) stay literal, matching the
-   prototype's own accept/candidate palette; `.ppl-figy` (JELÖLT chip) is the pre-existing
-   shared chip class, reused as-is. ── */
+   `.ghost` ×1.18 (18→21 radius, 11px 12px→13px 14px padding, 10→12 margin). Most of the
+   card's gold literals stay literal (never seen elsewhere as a token, and not flagged by
+   the mozaikCssTokens guard); the two stops the guard's hex-ban DOES catch (the card's
+   cream gradient-end and its CTA's gold gradient-start) are tokenized instead —
+   `--mz-cand-cream` (new, no prior token held this exact cream) and `--mz-sc-mid-1`
+   (fix round 1, mezo-06o0.3: reused as-is — it already carries this exact gold in both
+   `:root` blocks, from the heti-pontszám gold band). `.ppl-figy` (JELÖLT chip) is the
+   pre-existing shared chip class, reused as-is. ── */
 .ppl-candt {
   border-radius: 21px; padding: 13px 14px; margin-bottom: 12px;
-  background: linear-gradient(150deg, #FDF0DA, #FFFCF5);
+  background: linear-gradient(150deg, #FDF0DA, var(--mz-cand-cream));
   border: 1px solid #C9962E;
   box-shadow: 0 19px 35px -17px rgba(201, 150, 46, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.75);
   animation: ppl-candpulse 3s ease-in-out 1.2s infinite;
@@ -5811,7 +5823,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-candt-ev { font-size: 8.9px; color: #A8801F; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .ppl-candbtns { display: flex; gap: 7px; margin-top: 11px; }
 .ppl-cta-gold {
-  background: linear-gradient(135deg, #E5C46B, #C9962E); color: #fff;
+  background: linear-gradient(135deg, var(--mz-sc-mid-1), #C9962E); color: #fff;
   border-radius: 999px; padding: 7px 17px; font-size: 11.8px; font-weight: 600; flex: none;
   box-shadow: 0 9px 19px -7px rgba(201, 150, 46, 0.55); border: none; font-family: inherit; cursor: pointer;
 }
