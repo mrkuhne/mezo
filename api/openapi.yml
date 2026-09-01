@@ -15478,7 +15478,7 @@ components:
           type: string
           description: >-
             FE RefTag kind
-            (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory)
+            (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person)
         label:
           type: string
     FeedMessageResponse:
@@ -15504,8 +15504,8 @@ components:
         kind:
           type: string
           description: >-
-            Feed message kind — morning, sleep, weight, midday, or evening
-            LLM-generated messages; intervention is config text
+            Feed message kind — morning, sleep, weight, midday, evening, or
+            people LLM-generated messages; intervention is config text
             (mezo.companion.interventions), never LLM output.
           enum:
             - morning
@@ -15514,6 +15514,7 @@ components:
             - midday
             - evening
             - intervention
+            - people
         eyebrow:
           type: string
         body:

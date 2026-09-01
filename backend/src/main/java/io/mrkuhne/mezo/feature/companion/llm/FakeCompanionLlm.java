@@ -259,6 +259,14 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern WEIGHT_SENTINEL =
             Pattern.compile("\\[fake-feed-weight:(\\{.*?\\})]", Pattern.DOTALL);
 
+    /** Mirror of CompanionMessageGenerator.PEOPLE_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: same cycle rationale as {@link #SLEEP_MARKER_MIRROR}. */
+    public static final String PEOPLE_MARKER_MIRROR = "EMBEREK-ESZREVETEL-FELADAT";
+
+    /** Emberek S6: {@code [fake-people-obs:…]} planted in the heti összesítésbe. */
+    public static final Pattern PEOPLE_OBS_SENTINEL =
+            Pattern.compile("\\[fake-people-obs:(.*?)]", Pattern.DOTALL);
+
     /** Mirror of WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER (feature/proactive) — a
      *  LITERAL, not an import (package-cycle rule; drift fails WeeklySuggestionGeneratorIT loudly). */
     public static final String WEEKLY_MARKER_MIRROR = "HETI-TERVJAVASLAT";
@@ -538,6 +546,12 @@ public class FakeCompanionLlm implements CompanionLlm {
             // default = valid minimal JSON so the un-scripted happy path still persists a row
             return m.find() ? m.group(1)
                     : "{\"eyebrow\":\"Fake súly\",\"body\":[\"FAKE-SULY-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(PEOPLE_MARKER_MIRROR)) {
+            Matcher m = PEOPLE_OBS_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Emberek\",\"body\":[\"FAKE-EMBEREK-NARRATÍVA\"],\"refIndexes\":[]}";
         }
         if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
             Matcher m = WEEKLY_SENTINEL.matcher(userMessage);

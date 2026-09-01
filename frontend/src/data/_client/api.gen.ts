@@ -6294,7 +6294,7 @@ export interface components {
             decision: string;
         };
         FeedRef: {
-            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
+            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person) */
             kind: string;
             label: string;
         };
@@ -6307,10 +6307,10 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, or evening LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];
