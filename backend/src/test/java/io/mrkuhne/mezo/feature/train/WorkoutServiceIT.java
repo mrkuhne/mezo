@@ -335,7 +335,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         workoutService.logSet(user, started.getId(), setRequest(logged, 0, "100", 8, 1));
         // done = EXPLICITLY FINISHED (spec 2026-07-15): finishing (status→completed) flips the
         // gym done-state; the logged/skipped sets no longer decide it on their own.
-        workoutService.finishWorkout(user, started.getId());
+        workoutService.finishWorkout(user, started.getId(), null);
 
         WorkoutTodayResponse today = workoutService.getToday(user, null);
 
@@ -412,8 +412,8 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
         workoutService.logSet(user, started.getId(), setRequest(exercise, 0, "100", 8, 1));
 
-        WorkoutInstanceResponse finished = workoutService.finishWorkout(user, started.getId());
-        WorkoutInstanceResponse again = workoutService.finishWorkout(user, started.getId());
+        WorkoutInstanceResponse finished = workoutService.finishWorkout(user, started.getId(), null);
+        WorkoutInstanceResponse again = workoutService.finishWorkout(user, started.getId(), null);
         entityManager.flush();
         entityManager.clear();
 

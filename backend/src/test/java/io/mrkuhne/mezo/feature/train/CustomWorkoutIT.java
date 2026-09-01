@@ -105,7 +105,7 @@ class CustomWorkoutIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("custom-repeat@test.local");
         CustomWorkoutResponse cw = trainService.createCustomWorkout(user, upsert("Saját", "Row"));
         var first = workoutService.startWorkout(user, startRequest(cw.getId()));
-        workoutService.finishWorkout(user, first.getId());
+        workoutService.finishWorkout(user, first.getId(), null);
         // D5 (once per week) must NOT apply to custom templates — a second same-week start succeeds.
         var second = workoutService.startWorkout(user, startRequest(cw.getId()));
         assertThat(second.getId()).isNotEqualTo(first.getId());
@@ -147,7 +147,7 @@ class CustomWorkoutIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("custom-nocompleted@test.local");
         CustomWorkoutResponse cw = trainService.createCustomWorkout(user, upsert("Ismételhető", "Row"));
         var instance = workoutService.startWorkout(user, startRequest(cw.getId()));
-        workoutService.finishWorkout(user, instance.getId());
+        workoutService.finishWorkout(user, instance.getId(), null);
         var today = workoutService.getToday(user, cw.getId());
         // A custom day is repeatable — it must never flip the FE into the review redirect.
         assertThat(today.getCompletedWorkout()).isNull();
@@ -186,7 +186,7 @@ class CustomWorkoutIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("custom-summary@test.local");
         CustomWorkoutResponse cw = trainService.createCustomWorkout(user, upsert("Pihenőnapi felső", "Row"));
         var instance = workoutService.startWorkout(user, startRequest(cw.getId()));
-        workoutService.finishWorkout(user, instance.getId());
+        workoutService.finishWorkout(user, instance.getId(), null);
         java.time.LocalDate today = java.time.LocalDate.now();
         var summaries = workoutService.listWorkouts(user, today.minusDays(1), today.plusDays(1));
         assertThat(summaries).hasSize(1);

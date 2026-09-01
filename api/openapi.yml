@@ -1947,12 +1947,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/workouts/{id}/finish':
-    post:
+  '/api/train/workouts/{id}/note':
+    put:
       tags:
         - Train
-      operationId: finishWorkout
-      summary: Complete a workout instance (idempotent)
+      operationId: saveWorkoutNote
+      summary: Set (or clear) the workout's closing note
+      description: >
+        Last-write-wins. A null/blank note clears it. Used by the review page,
+        so a note can be written or corrected long after the workout was
+        finished (mezo-d20.8.2.2).
       parameters:
         - name: id
           in: path
@@ -1960,6 +1964,57 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutNoteRequest'
+      responses:
+        '204':
+          description: Note saved
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout instance not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/finish':
+    post:
+      tags:
+        - Train
+      operationId: finishWorkout
+      summary: Complete a workout instance (idempotent)
+      description: >
+        The optional body carries the closing note. Because finishing is
+        idempotent, the note is FILL-IF-EMPTY here: a re-finish (or a bodyless
+        retry) never wipes an existing note. Use PUT
+        /api/train/workouts/{id}/note to overwrite or clear it (mezo-d20.8.2.2).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutNoteRequest'
       responses:
         '200':
           description: The completed instance with its logged sets
@@ -1967,6 +2022,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkoutInstanceResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
           content:
@@ -10176,6 +10237,12 @@ components:
           description: '''Hét''..''Vas'''
         durationEst:
           type: integer
+        note:
+          type: string
+          nullable: true
+          description: >
+            The workout-level closing note, absent when none was written
+            (mezo-d20.8.2.2).
         exercises:
           type: array
           items:
@@ -10486,6 +10553,17 @@ components:
         note:
           type: string
           maxLength: 500
+          nullable: true
+    WorkoutNoteRequest:
+      type: object
+      description: >
+        The workout-level closing note — one sentence about the whole session
+        ("Hogy ment?"), distinct from the per-exercise and per-set notes. Shared
+        by the finish body and the note endpoint (mezo-d20.8.2.2).
+      properties:
+        note:
+          type: string
+          maxLength: 1000
           nullable: true
     WorkoutFeedbackInput:
       type: object
