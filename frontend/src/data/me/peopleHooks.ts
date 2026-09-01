@@ -130,7 +130,7 @@ function mockSavePerson(qc: QueryClient, input: PersonSaveInput) {
       id: crypto.randomUUID(), initial: input.name.slice(0, 1).toUpperCase(),
       affect_baseline: input.affectBaseline ?? 'neutral',
       mentionCount: 0, mentionsThisWeek: 0, last_mentioned_at: '',
-      lastMentionLabel: 'Még nincs említés', affectTrend: [], knownFacts: [], ties: [],
+      lastMentionLabel: 'Még nincs említés', affectTrend: [], knownFacts: [], ties: [], graphEdges: [],
       status: 'active', sourceKind: 'manual', ...editable(input),
     }
     return { ...base, people: [...base.people, fresh] }

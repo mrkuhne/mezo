@@ -552,6 +552,12 @@ export type MentionSource = 'voice' | 'camera' | 'chip' | 'text' | 'chat'
 export type MentionContext =
   | 'munka' | 'csalad' | 'baratok' | 'edzes'
   | 'konfliktus' | 'kozos_program' | 'segitseg' | 'egyeb'
+export interface PersonGraphEdge {
+  nodeKind: string
+  title: string
+  relationHu: string
+  strength: string
+}
 export interface PersonEntry {
   id: string
   name: string
@@ -571,6 +577,7 @@ export interface PersonEntry {
   affectTrend: number[]
   knownFacts: string[]
   ties: string[]
+  graphEdges: PersonGraphEdge[]
 }
 export interface Mention {
   id: string
@@ -741,7 +748,7 @@ export interface LifeEventCandidate {
 
 export type LifeEventDecision = 'accept' | 'reject'
 
-export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT'
+export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT' | 'PERSON'
 
 /** W2.6 (mezo-b3pp.11): one active knowledge-graph node for the Tudástár "Kapcsolatok" section —
  *  `topEdges` are pre-rendered Hungarian lines from the backend `GraphEdgeLineRenderer`, the same

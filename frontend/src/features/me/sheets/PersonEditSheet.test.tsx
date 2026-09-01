@@ -30,6 +30,7 @@ const PERSON: PersonEntry = {
   affectTrend: [],
   knownFacts: [],
   ties: [],
+  graphEdges: [],
 }
 
 it('gyűjti az aliasokat és menti az új személyt', () => {

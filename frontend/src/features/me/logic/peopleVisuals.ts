@@ -1,5 +1,6 @@
 import type { Affect, MentionContext, MentionSource } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
+import type { ClayIconName } from '@/shared/ui/clay'
 
 /**
  * Emberek S3 hub — visual meta for tones/contexts/sources (mezo-06o0.2).
@@ -41,3 +42,19 @@ export const SRC_META: Record<MentionSource, SrcMeta> = {
   voice: { label: 'hang', icon: 'mic' },
   camera: { label: 'kamera', icon: 'camera' },
 }
+
+/** Gráf-node fajta → magyar címke, clay ikon és csempe-tónus. A prototípus renderDet()
+ *  `.evt.amber` / `.evt.sage` / `.evt.lav` osztályai: életesemény = arany, cél = zsálya,
+ *  minden más (minta, preferencia, szezon, belátás, személy) = levendula. */
+export const GRAPH_KIND_META: Record<string, { label: string; clay: ClayIconName; tone: 'amber' | 'sage' | 'lav' }> = {
+  LIFE_EVENT: { label: 'Életesemény', clay: 'i-nap', tone: 'amber' },
+  GOAL: { label: 'Cél', clay: 'i-cel', tone: 'sage' },
+  PATTERN: { label: 'Minta', clay: 'i-minta', tone: 'lav' },
+  PREFERENCE: { label: 'Preferencia', clay: 'i-tudas', tone: 'lav' },
+  SEASON: { label: 'Szezon', clay: 'i-termes', tone: 'lav' },
+  INSIGHT: { label: 'Belátás', clay: 'i-kristaly', tone: 'lav' },
+  PERSON: { label: 'Ember', clay: 'i-emberek', tone: 'lav' },
+}
+
+/** Ismeretlen fajta (egy jövőbeli node-kind) nem tünteti el a csempét: semleges levendula. */
+export const GRAPH_KIND_FALLBACK = { label: 'Csomópont', clay: 'i-tudas', tone: 'lav' } as const
