@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1188,5 +1189,121 @@ class DetectorTest {
         DetectorInput in = trendOnly(DAY, new TrendBuilder().decisions(decisions).build());
 
         assertThat(new DecisionReviewBacklogDetector().detect(in)).isEmpty();
+    }
+
+    private static DetectorInput.GratitudePoint gratitude(LocalDate d, String area) {
+        return new DetectorInput.GratitudePoint(d, d, area);
+    }
+
+    private static DetectorInput.NeedsDayPoint needsDay(LocalDate d, boolean allGreen) {
+        int v = allGreen ? 80 : 30;
+        return new DetectorInput.NeedsDayPoint(d, 80, 80, 80, 80, allGreen ? 80 : 30, v,
+                allGreen ? 6 : 4, allGreen, allGreen ? 3 : 0);
+    }
+
+    private static DetectorInput.LogLatencyPoint latency(String genre, LocalDate about, int lagDays) {
+        return new DetectorInput.LogLatencyPoint(genre, "teszt", about, about.plusDays(lagDays));
+    }
+
+    @Test
+    void gratitudeFocus_firesOnAConcentratedArea() {
+        List<DetectorInput.GratitudePoint> entries = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            entries.add(gratitude(DAY.minusDays(i), i < 4 ? "connection" : "learning"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().gratitudes(entries).build());
+
+        List<DetectorSignal> fired = new GratitudeFocusDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("kapcsolatok");
+        assertThat(fired.getFirst().expertKey()).isEqualTo("antropologus");
+    }
+
+    @Test
+    void gratitudeFocus_silentWhenTooFewEntriesCarryAnArea() {
+        List<DetectorInput.GratitudePoint> entries = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            entries.add(gratitude(DAY.minusDays(i), i < 2 ? "connection" : null));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().gratitudes(entries).build());
+
+        assertThat(new GratitudeFocusDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void streakBreakResponse_firesOnACascade() {
+        // all-green up to DAY-4, break on DAY-3, then nothing complete on DAY-2..DAY.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 10; i >= 4; i--) {
+            days.add(needsDay(DAY.minusDays(i), true));
+        }
+        for (int i = 3; i >= 0; i--) {
+            days.add(needsDay(DAY.minusDays(i), false));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        List<DetectorSignal> fired = new StreakBreakResponseDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("egyike sem lett teljes");
+    }
+
+    @Test
+    void streakBreakResponse_silentWhileTheResponseWindowHasNotElapsed() {
+        // break on DAY-1: only one of the three response days exists yet.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 10; i >= 2; i--) {
+            days.add(needsDay(DAY.minusDays(i), true));
+        }
+        days.add(needsDay(DAY.minusDays(1), false));
+        days.add(needsDay(DAY, false));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        assertThat(new StreakBreakResponseDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void restartPattern_reportsAnOpenRestart() {
+        // all-green through DAY-1, break happens ON DAY: as of DAY-1 no break exists yet at all
+        // (state null), as of DAY the break is brand new and still open -> the state changes.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 20; i >= 1; i--) {
+            days.add(needsDay(DAY.minusDays(i), true));
+        }
+        days.add(needsDay(DAY, false));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        List<DetectorSignal> fired = new RestartPatternDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("még nem volt újra teljes");
+    }
+
+    @Test
+    void retroLogging_firesWhenReflectionEntriesAreMostlyBackfilled() {
+        List<DetectorInput.LogLatencyPoint> pts = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            pts.add(latency("reflexio", DAY.minusDays(i), i % 4 == 0 ? 0 : 2));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().latencies(pts).build());
+
+        List<DetectorSignal> fired = new RetroLoggingRatioDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("többnyire utólag rögzíti")
+                .contains("nem arról, hogy pontosak-e");
+    }
+
+    @Test
+    void retroLogging_silentBelowThePerGroupMinimum() {
+        List<DetectorInput.LogLatencyPoint> pts = List.of(
+                latency("reflexio", DAY, 3), latency("esemeny", DAY.minusDays(1), 2));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().latencies(pts).build());
+
+        assertThat(new RetroLoggingRatioDetector().detect(in)).isEmpty();
     }
 }
