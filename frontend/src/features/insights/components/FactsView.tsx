@@ -11,9 +11,11 @@ export function FactsView(props: {
   facts: KnowledgeFact[]
   buckets: { inPrompt: KnowledgeFact[]; waiting: KnowledgeFact[]; off: KnowledgeFact[] }
   onToggle: (id: string, active: boolean) => void
-  highlightFactId?: string | null // Task 10 tölti; addig undefined
+  /** T10 (mezo-ms9a): a `?fact=<id>` deep link célzott tény-id-je — a shell (KnowledgeListPage)
+   *  tölti, egy `useState`-ben tartva a param eltűnése után is, hogy a kiemelés egyszeri legyen. */
+  highlightFactId?: string | null
 }) {
-  const { facts, buckets, onToggle } = props
+  const { facts, buckets, onToggle, highlightFactId } = props
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<FactCategory | 'all'>('all')
 
@@ -26,9 +28,23 @@ export function FactsView(props: {
   const nothingMatches = facts.length > 0 && inPrompt.length + waiting.length + off.length === 0
   const filterActive = query.trim() !== '' || category !== 'all'
 
+  // T10 (mezo-ms9a): a highlightolt tény lehet a NEM-alapból-nyitott „Bekapcsolva, de most
+  // kimarad" / „Kikapcsolva" vödörben — a `?fact=` linknek akkor is meg kell mutatnia, nem
+  // csak akkor, ha véletlenül top-N-ben van. A membershipet a TELJES (szűretlen) vödrökön
+  // nézzük, mert a kiemelés a szűrőktől független — ha épp fut egy szűrő, a `filterActive`
+  // ág úgyis nyitva tartja mindkét szekciót.
+  const highlightInWaiting = highlightFactId != null && buckets.waiting.some((f) => f.id === highlightFactId)
+  const highlightInOff = highlightFactId != null && buckets.off.some((f) => f.id === highlightFactId)
+
   const rows = (list: KnowledgeFact[], bucket: FactBucket) =>
     list.map((f) => (
-      <KnowledgeFactRow key={f.id} fact={f} bucket={bucket} onToggle={() => onToggle(f.id, !f.active)} />
+      <KnowledgeFactRow
+        key={f.id}
+        fact={f}
+        bucket={bucket}
+        onToggle={() => onToggle(f.id, !f.active)}
+        highlight={f.id === highlightFactId}
+      />
     ))
 
   const clearFilters = () => {
@@ -96,7 +112,7 @@ export function FactsView(props: {
             accent="var(--text-secondary)"
             count={waiting.length}
             defaultOpen
-            forceOpen={filterActive}
+            forceOpen={filterActive || highlightInWaiting}
             footNote="Ha megerősödnek, vagy egy erősebb tény kiesik, bekerülnek a chatbe."
           >
             {rows(waiting, 'waiting')}
@@ -106,7 +122,7 @@ export function FactsView(props: {
             title="Kikapcsolva"
             accent="var(--text-tertiary)"
             count={off.length}
-            forceOpen={filterActive}
+            forceOpen={filterActive || highlightInOff}
             footNote="Megőrzöm őket, de a társ nem használja."
           >
             {rows(off, 'off')}

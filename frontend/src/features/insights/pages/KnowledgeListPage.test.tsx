@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { delay, http, HttpResponse } from 'msw'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -11,6 +11,23 @@ import { candidateSeed } from '@/data/insights/knowledge'
 const renderPage = (path = '/') =>
   render(
     <MemoryRouter initialEntries={[path]}>
+      <KnowledgeListPage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
+
+// T10 (mezo-ms9a): a `fact` param eltűnését az URL-ből egy hely-próbával figyeljük — a
+// PeoplePage.test.tsx `LocationProbe` idiómája, csak `useSearchParams` helyett `useLocation`,
+// mert itt kifejezetten a query-string alakja a kérdés (marad-e rajta más param).
+function LocationProbe() {
+  const location = useLocation()
+  return <div data-testid="loc-probe">{location.search}</div>
+}
+
+const renderPageWithProbe = (path = '/') =>
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <LocationProbe />
       <KnowledgeListPage />
     </MemoryRouter>,
     { wrapper: QueryWrapper },
@@ -69,6 +86,57 @@ describe('KnowledgeListPage (mock mode)', () => {
   test('(g) az inbox (jóváhagyás-jelöltek) az alapnézeten renderel', () => {
     renderPage()
     expect(screen.getByText(candidateSeed[0].text).closest('.mz-candc')).not.toBeNull()
+  })
+
+  // ---- Task 10: `?fact=` deep link + kiemelés (mezo-ms9a) --------------------------------
+
+  describe('(T10) ?fact= deep link + kiemelés', () => {
+    // f1 = top-N (in-prompt) seed fact; f9 = the sole `active:false` seed fact, so it lands in
+    // the "Kikapcsolva" bucket — the one LifecycleSection that starts COLLAPSED.
+    test('(a) ?fact=<seed-id> a Tények nézetre kényszerít, a sor kiemelés-osztályt visel', () => {
+      renderPage('/?fact=f1')
+      expect(screen.getByLabelText('Keresés a tények között')).toBeInTheDocument()
+      const row = screen.getByText('Pull Day-en a Chest Supported Row a key compound').closest('.mz-facttile')
+      expect(row).toHaveClass('mz-fact-hl')
+    })
+
+    test('(b) a fact param az első render után eltűnik az URL-ből, a kiemelés megmarad', async () => {
+      const { getByTestId } = renderPageWithProbe('/?fact=f1')
+      await waitFor(() => expect(getByTestId('loc-probe').textContent).toBe(''))
+      // a kiemelés a param eltűnése UTÁN is él (local state, nem a param hordozza)
+      const row = screen.getByText('Pull Day-en a Chest Supported Row a key compound').closest('.mz-facttile')
+      expect(row).toHaveClass('mz-fact-hl')
+    })
+
+    test('a fact-törlés csak a `fact` paramot dobja el, a `view`-t nem', async () => {
+      const { getByTestId } = renderPageWithProbe('/?view=kategoriak&fact=f1')
+      // a highlight a view-t Tényekre kényszeríti — de az URL-ben megmaradt `view` param nem
+      // a `fact` mellékterméke, hanem a highlight-kényszer maga; csak a `fact` tűnik el a query-ből
+      await waitFor(() => expect(getByTestId('loc-probe').textContent).not.toContain('fact'))
+      expect(getByTestId('loc-probe').textContent).toContain('view=kategoriak')
+    })
+
+    test('(c) ismeretlen fact id → Tények nézet, nincs kiemelés, nincs hiba', () => {
+      renderPage('/?fact=nope-does-not-exist')
+      expect(screen.getByLabelText('Keresés a tények között')).toBeInTheDocument()
+      expect(document.querySelector('.mz-fact-hl')).toBeNull()
+    })
+
+    test('a kiemelt sor mountkor középre görgeti magát', async () => {
+      const scrollIntoView = vi.fn()
+      Element.prototype.scrollIntoView = scrollIntoView
+      renderPage('/?fact=f1')
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
+      expect(scrollIntoView.mock.calls[0][0]).toMatchObject({ block: 'center' })
+    })
+
+    test('a "Kikapcsolva" (alapból csukott) vödör nyitva renderel, ha a kiemelt tény oda esik', async () => {
+      renderPage('/?fact=f9')
+      const row = await screen.findByText('kifli.hu primary food source')
+      expect(row.closest('.mz-facttile')).toHaveClass('mz-fact-hl')
+      // a szekció ténylegesen nyitva van — a sor nem csak a DOM-ban van jelen, hanem látszik is
+      expect(screen.getByText(/Kikapcsolva · 1/)).toBeInTheDocument()
+    })
   })
 
   // ---- Task 7: Kategóriák nézet + kind-lánc + Profil + Hogyan nézetek (mezo-ms9a) --------------

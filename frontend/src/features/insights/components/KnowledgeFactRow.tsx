@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { Toggle } from '@/shared/ui/Toggle'
@@ -24,16 +25,27 @@ const CATEGORY_SKIN: Record<FactCategory, { wash: string; icon: ClayIconName; in
  * honnan tudja, hányszor jött vissza magától, és épp bekerül-e a chat elé. Minden mondat
  * a `logic/factCopy` tiszta moduljából jön; a komponens csak propokat kap.
  */
-export function KnowledgeFactRow({ fact, bucket, onToggle }: {
+export function KnowledgeFactRow({ fact, bucket, onToggle, highlight = false }: {
   fact: KnowledgeFact
   bucket: FactBucket
   onToggle: () => void
+  /** T10 (mezo-ms9a): a `?fact=<id>` deep link egyszeri kiemelése — a hívó (FactsView) dönti el,
+   *  hogy EZ a sor a célzott. Mountkor középre görget és egy egyszeri sárgás CSS-animációt kap
+   *  (`mz-fact-hl`, prototype.css); az osztály önmagában ártalmatlan (nincs `!important`, a
+   *  `.off` variánssal is összefér). */
+  highlight?: boolean
 }) {
   const skin = CATEGORY_SKIN[fact.category]
   const title = humanizeFactText(fact.text)
+  const ref = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (highlight) ref.current?.scrollIntoView({ block: 'center' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot mount-centring per row instance
+  }, [])
 
   return (
-    <div className={cn('mz-facttile', fact.active ? skin.wash : 'off')}>
+    <div ref={ref} className={cn('mz-facttile', fact.active ? skin.wash : 'off', highlight && 'mz-fact-hl')}>
       <span className="mz-fic"><ClayIcon name={skin.icon} size={21} /></span>
       <div className="mz-fact-grow">
         <p className="mz-fact-tx">{title}</p>

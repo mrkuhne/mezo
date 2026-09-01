@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageHead, PageHero, PageBody, type PageTone } from '@/shared/ui/mozaik'
@@ -88,6 +88,12 @@ export function KnowledgeListPage() {
   const kind: GraphNodeKind | null =
     rawKind && KIND_LABELS.has(rawKind as GraphNodeKind) ? (rawKind as GraphNodeKind) : null
 
+  // T10 (mezo-ms9a): `?fact=<id>` deep link — a WeekDiscoveries innen már küld linkeket. Az id-t
+  // EGYSZER, mountkor rögzítjük `useState`-ben: a param maga egy alábbi `useEffect`-ben eltűnik
+  // az URL-ből (one-shot highlight), de a kiemelésnek a param eltűnése UTÁN is élnie kell —
+  // ezért nem a `params`-ból olvassuk újra minden rendernél, hanem ebből az állapotból.
+  const [highlightFactId] = useState<string | null>(() => params.get('fact'))
+
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
   const { toggle, decide } = useKnowledgeActions()
   const { candidates: lifeEvents } = useLifeEventCandidates()
@@ -124,7 +130,25 @@ export function KnowledgeListPage() {
 
   // `?view=profil` requires a profile-node to show anything (ProfileView has no "nincs profil"
   // state) — without one it reads as an unresolved/invalid view, same as a bad `?view=` value.
-  const view: KnowledgeView = requestedView === 'profil' && !profileNode ? 'base' : requestedView
+  // T10: `?fact=` (captured above, `highlightFactId`) OVERRIDES the requested view entirely — a
+  // deep link into a specific fact always lands on Tények, even for an unknown id (no crash,
+  // just no row lights up) and even once the param itself is gone from the URL.
+  const view: KnowledgeView = highlightFactId
+    ? 'tenyek'
+    : requestedView === 'profil' && !profileNode ? 'base' : requestedView
+
+  // T10: clears `?fact=` from the URL once, right after the deep link has been consumed above —
+  // `replace: true` so it doesn't leave a back-button entry, and only THIS param is dropped
+  // (other params, e.g. a future `?view=`, must survive). Runs once per mount by design: the
+  // highlight itself persists via `highlightFactId` state, not via the param's presence.
+  useEffect(() => {
+    if (params.get('fact')) {
+      const next = new URLSearchParams(params)
+      next.delete('fact')
+      setParams(next, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot: must fire exactly once on mount
+  }, [])
 
   const latestGraphNode = graphNodes[0] ?? null // useKnowledgeGraphNodes() már DESC updatedAt szerint rendezve (T3)
   const kategLine = latestGraphNode
@@ -184,7 +208,7 @@ export function KnowledgeListPage() {
               </span>
             </div>
           ) : (
-            <FactsView facts={facts} buckets={buckets} onToggle={toggle} />
+            <FactsView facts={facts} buckets={buckets} onToggle={toggle} highlightFactId={highlightFactId} />
           )}
         </EntranceGroup>
       </TudasFrame>
