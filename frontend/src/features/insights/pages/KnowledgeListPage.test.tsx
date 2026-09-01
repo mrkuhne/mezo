@@ -329,7 +329,7 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.queryByText(/Életesemény-jelöltek/)).not.toBeInTheDocument()
   })
 
-  it('elfogadás után megerősítő kártya marad a helyén, linkkel a Tudásgráfra', async () => {
+  it('elfogadás után megerősítő kártya marad a helyén, link nélkül (a gráf innen már nem külön oldal)', async () => {
     renderPage()
     const card = (await screen.findByText('Új munkahely első hete')).closest('.card') as HTMLElement
     await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
@@ -341,8 +341,7 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(within(screen.getByText(/Bekerült a gráfba/).closest('.card') as HTMLElement)
       .queryByRole('button', { name: 'Elfogad' })).not.toBeInTheDocument()
     const acceptedCard = screen.getByText(/Bekerült a gráfba/).closest('.card') as HTMLElement
-    const link = within(acceptedCard).getByRole('link', { name: /Tudásgráf/ })
-    expect(link).toHaveAttribute('href', '/me/knowledge')
+    expect(within(acceptedCard).queryByRole('link')).not.toBeInTheDocument()
   })
 })
 
