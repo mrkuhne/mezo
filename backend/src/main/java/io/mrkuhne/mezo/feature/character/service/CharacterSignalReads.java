@@ -1,11 +1,18 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.character.detector.DetectorInput;
+import io.mrkuhne.mezo.feature.fuel.entity.ProtocolEntity;
+import io.mrkuhne.mezo.feature.fuel.entity.ProtocolItemEntity;
+import io.mrkuhne.mezo.feature.fuel.entity.SupplementIntakeEntity;
+import io.mrkuhne.mezo.feature.fuel.repository.ProtocolItemRepository;
+import io.mrkuhne.mezo.feature.fuel.repository.ProtocolRepository;
+import io.mrkuhne.mezo.feature.fuel.repository.SupplementIntakeRepository;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
@@ -15,7 +22,13 @@ import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.repository.WaterLogRepository;
+import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
+import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
+import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -48,6 +61,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -89,6 +103,12 @@ public class CharacterSignalReads {
     private final WaterLogRepository waterLogRepository;
     private final GoalRepository goalRepository;
     private final NutritionTargetsProperties nutritionTargets;
+    private final ProtocolRepository protocolRepository;
+    private final ProtocolItemRepository protocolItemRepository;
+    private final SupplementIntakeRepository supplementIntakeRepository;
+    private final PantryItemRepository pantryItemRepository;
+    private final MedicationRepository medicationRepository;
+    private final MedicationCycleService medicationCycleService;
 
     public DetectorInput gather(UUID owner, LocalDate day) {
         LocalDate windowStart = day.minusDays(WINDOW_DAYS - 1);
@@ -100,10 +120,18 @@ public class CharacterSignalReads {
                 .filter(d -> !d.isBefore(windowStart))
                 .collect(java.util.stream.Collectors.toCollection(HashSet::new));
 
+        List<CheckInEntity> checkins =
+                checkInRepository.findByCreatedByAndDeletedFalseAndDateBetween(owner, trendStart, day);
         Map<LocalDate, Integer> checkinCounts = new HashMap<>();
         for (LocalDate d = windowStart; !d.isAfter(day); d = d.plusDays(1)) {
-            checkinCounts.put(d, checkInRepository.findByCreatedByAndDateOrderBySlotTime(owner, d).size());
+            checkinCounts.put(d, 0); // an entry for EVERY day of the 14-day window, zeros included
         }
+        for (CheckInEntity c : checkins) {
+            if (!c.getDate().isBefore(windowStart) && !c.getDate().isAfter(day)) {
+                checkinCounts.merge(c.getDate(), 1, Integer::sum);
+            }
+        }
+        List<DetectorInput.CheckinDayPoint> checkinDays = toCheckinDays(checkins);
 
         List<DetectorInput.WaterDayPoint> waterDays = gatherWaterDays(owner, trendStart, day);
 
@@ -154,10 +182,121 @@ public class CharacterSignalReads {
 
         DetectorInput.MesoContext meso = gatherMeso(owner, windowStart, day);
 
+        DetectorInput.StackContext stack = gatherStack(owner, trendStart, day);
+        DetectorInput.MedContext medCycle = gatherMedCycle(owner, trendStart, day);
+
         return new DetectorInput(day, mealDates, checkinCounts, weights, journalTexts,
                 gymDays, sportSessions, runLogs, sleepPoints, meso,
                 new DetectorInput.TrendWindow(runsEightWeeks, gymEightWeeks,
-                        mealDays, waterDays, null, List.of(), null));
+                        mealDays, waterDays, stack, checkinDays, medCycle));
+    }
+
+    /** Per-day means of the day's logged check-in slots; a scale nobody logged stays null. */
+    private List<DetectorInput.CheckinDayPoint> toCheckinDays(List<CheckInEntity> checkins) {
+        Map<LocalDate, List<CheckInEntity>> byDate = new TreeMap<>();
+        for (CheckInEntity c : checkins) {
+            byDate.computeIfAbsent(c.getDate(), k -> new ArrayList<>()).add(c);
+        }
+        List<DetectorInput.CheckinDayPoint> out = new ArrayList<>();
+        for (Map.Entry<LocalDate, List<CheckInEntity>> e : byDate.entrySet()) {
+            out.add(new DetectorInput.CheckinDayPoint(e.getKey(), e.getValue().size(),
+                    mean(e.getValue(), CheckInEntity::getEnergy),
+                    mean(e.getValue(), CheckInEntity::getStress),
+                    mean(e.getValue(), CheckInEntity::getBody),
+                    mean(e.getValue(), CheckInEntity::getMental)));
+        }
+        return List.copyOf(out);
+    }
+
+    private static BigDecimal mean(List<CheckInEntity> rows,
+                                   java.util.function.Function<CheckInEntity, Integer> field) {
+        int sum = 0;
+        int n = 0;
+        for (CheckInEntity c : rows) {
+            Integer v = field.apply(c);
+            if (v != null) {
+                sum += v;
+                n++;
+            }
+        }
+        return n == 0 ? null : BigDecimal.valueOf(sum).divide(BigDecimal.valueOf(n), 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * The active supplement protocol plus per-day intakes; null when there is no active protocol
+     * (absent, never "zero compliance"). The intake finder bounds only BELOW, so the upper bound
+     * is applied in memory — the round-1 weight-read precedent for catch-up honesty. Whether an
+     * item was EXPECTED on a given day is deliberately NOT decided here: it depends on that day's
+     * training, which the detector resolves from {@code trend().gymEightWeeks()} as of two
+     * different dates (round-2 spec §4.3).
+     */
+    private DetectorInput.StackContext gatherStack(UUID owner, LocalDate from, LocalDate to) {
+        ProtocolEntity protocol = protocolRepository
+                .findByCreatedByAndStatusAndDeletedFalse(owner, "active").orElse(null);
+        if (protocol == null) {
+            return null;
+        }
+        Map<UUID, String> names = new HashMap<>();
+        for (PantryItemEntity p : pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner)) {
+            names.put(p.getId(), p.getName());
+        }
+        List<DetectorInput.StackItem> items = new ArrayList<>();
+        for (ProtocolItemEntity pi : protocolItemRepository
+                .findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(protocol.getId())) {
+            items.add(new DetectorInput.StackItem(pi.getPantryItemId(),
+                    names.getOrDefault(pi.getPantryItemId(), "ismeretlen kiegészítő"),
+                    pi.getSlotKey(), pi.getRestDayFallback()));
+        }
+
+        Map<LocalDate, Set<UUID>> takenByDate = new TreeMap<>();
+        for (SupplementIntakeEntity si : supplementIntakeRepository
+                .findByCreatedByAndDeletedFalseAndTakenDateGreaterThanEqualOrderByTakenDateAscTakenAtAsc(
+                        owner, from)) {
+            if (si.getTakenDate().isAfter(to)) {
+                continue; // catch-up upper bound (the finder only bounds below)
+            }
+            takenByDate.computeIfAbsent(si.getTakenDate(), k -> new HashSet<>())
+                    .add(si.getPantryItemId());
+        }
+        List<DetectorInput.StackDayPoint> days = new ArrayList<>();
+        for (Map.Entry<LocalDate, Set<UUID>> e : takenByDate.entrySet()) {
+            days.add(new DetectorInput.StackDayPoint(e.getKey(), Set.copyOf(e.getValue())));
+        }
+        return new DetectorInput.StackContext(List.copyOf(items), List.copyOf(days));
+    }
+
+    /**
+     * The active medication's cycle projected onto every day of the window, reusing
+     * {@link MedicationCycleService} rather than reimplementing the cycle-day formula — that
+     * formula must have exactly one home. {@code derive} queries the latest dose at-or-before its
+     * own date, so it is catch-up-safe by construction.
+     *
+     * <p>{@code stale} is the round-2 precision guard: {@code derive} CLAMPS a cycle day when the
+     * last dose is older than a full cycle (a deliberate Fuel-UI behaviour), which for covariance
+     * would pile weeks of no-dose days into the last bucket. The flag lets the detector drop them.
+     */
+    private DetectorInput.MedContext gatherMedCycle(UUID owner, LocalDate from, LocalDate to) {
+        MedicationEntity med = medicationRepository
+                .findFirstByCreatedByAndActiveTrueAndDeletedFalse(owner).orElse(null);
+        if (med == null || med.getCycle() == null) {
+            return null;
+        }
+        int cycleLength = med.getCycle().cycleLengthDays();
+        List<DetectorInput.MedCycleDayPoint> days = new ArrayList<>();
+        for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
+            MedicationCycle cycle = medicationCycleService.derive(owner, med, d);
+            if (cycle.cycleDay() == 0 || cycle.lastDoseAt() == null) {
+                continue; // honest zero: no dose at or before this day
+            }
+            // cycle.cycleDay() is CLAMPED, so it is NOT a usable days-since-dose once the clamp
+            // bites — derive the true distance from the dose instant the cycle carries.
+            LocalDate lastDose = cycle.lastDoseAt().atZone(ZoneId.systemDefault()).toLocalDate();
+            int daysSince = (int) ChronoUnit.DAYS.between(lastDose, d);
+            boolean stale = daysSince + 1 > cycleLength;
+            days.add(new DetectorInput.MedCycleDayPoint(d, cycle.cycleDay(), cycle.phaseKey(),
+                    daysSince, stale));
+        }
+        return new DetectorInput.MedContext(cycleLength, List.copyOf(days));
     }
 
     /**

@@ -10,9 +10,15 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
+import io.mrkuhne.mezo.support.populator.MedicationPopulator;
+import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import java.math.BigDecimal;
@@ -41,6 +47,12 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private MealPopulator mealPopulator;
     @Autowired private WaterLogPopulator waterLogPopulator;
+    @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private MedicationPopulator medicationPopulator;
+    @Autowired private MedicationDosePopulator medicationDosePopulator;
+    @Autowired private PantryItemPopulator pantryPopulator;
+    @Autowired private ProtocolPopulator fuelPopulator;
+    @Autowired private SupplementIntakePopulator supplementIntakePopulator;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -184,5 +196,84 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         assertThat(input.trend().mealDays()).isEmpty();
         assertThat(input.trend().waterDays()).isEmpty();
         assertThat(input.mealDates()).isEmpty();
+    }
+
+    @Test
+    void gather_fillsCheckinScales_andKeepsCheckinCountSemantics() {
+        UUID owner = owner();
+        checkInPopulator.createCheckIn(owner, DAY, "06:30", 8, 3, 7, 8, null);
+        checkInPopulator.createCheckIn(owner, DAY, "18:00", 6, 5, 7, 6, null);
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().checkinDays()).singleElement().satisfies(c -> {
+            assertThat(c.date()).isEqualTo(DAY);
+            assertThat(c.count()).isEqualTo(2);
+            assertThat(c.energy()).isEqualByComparingTo("7.00");
+            assertThat(c.stress()).isEqualByComparingTo("4.00");
+        });
+        // unchanged legacy semantics: an entry for every day of the 14-day window, zeros included
+        assertThat(input.checkinCounts()).hasSize(14);
+        assertThat(input.checkinCounts().get(DAY)).isEqualTo(2);
+        assertThat(input.checkinCounts().get(DAY.minusDays(1))).isZero();
+    }
+
+    @Test
+    void gather_medCycle_marksStaleDays_andBoundsAboveByDay() {
+        UUID owner = owner();
+        var med = medicationPopulator.createMedication(owner);
+        medicationDosePopulator.createDose(owner, med.getId(), DAY.minusDays(2), new BigDecimal("6"));
+        medicationDosePopulator.createDose(owner, med.getId(), DAY.plusDays(1), new BigDecimal("6")); // must not leak
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().med()).isNotNull();
+        assertThat(input.trend().med().days()).anySatisfy(d -> {
+            assertThat(d.date()).isEqualTo(DAY);
+            assertThat(d.cycleDay()).isEqualTo(3);      // dose 2 days ago -> day 3, 1-based
+            assertThat(d.daysSinceDose()).isEqualTo(2);
+            assertThat(d.stale()).isFalse();
+        });
+        assertThat(input.trend().med().days()).noneMatch(d -> d.date().isAfter(DAY));
+        // days more than one cycle after the last dose are marked stale, not silently clamped
+        DetectorInput later = signalReads.gather(owner, DAY.plusDays(20));
+        assertThat(later.trend().med().days()).anySatisfy(d -> {
+            assertThat(d.date()).isEqualTo(DAY.plusDays(20));
+            assertThat(d.stale()).isTrue();
+        });
+    }
+
+    @Test
+    void gather_absentStackAndMedication_readAsNull_notZero() {
+        UUID owner = owner();
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().stack()).isNull();
+        assertThat(input.trend().med()).isNull();
+        assertThat(input.trend().mealDays()).isEmpty();
+        assertThat(input.trend().waterDays()).isEmpty();
+    }
+
+    @Test
+    void gather_stack_readsProtocolItemsAndIntakes_boundedAboveByDay() {
+        UUID owner = owner();
+        var creatine = pantryPopulator.createSupplement(owner, "Kreatin");
+        var protocol = fuelPopulator.createActiveProtocol(owner);
+        fuelPopulator.createProtocolItem(owner, protocol.getId(), creatine.getId(), "wake", null);
+        supplementIntakePopulator.createIntake(owner, creatine.getId(), DAY, "wake");
+        supplementIntakePopulator.createIntake(owner, creatine.getId(), DAY.plusDays(1), "wake");
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().stack()).isNotNull();
+        assertThat(input.trend().stack().items()).singleElement().satisfies(i -> {
+            assertThat(i.name()).isEqualTo("Kreatin");
+            assertThat(i.slotKey()).isEqualTo("wake");
+        });
+        assertThat(input.trend().stack().days()).singleElement().satisfies(d -> {
+            assertThat(d.date()).isEqualTo(DAY);
+            assertThat(d.takenPantryItemIds()).containsExactly(creatine.getId());
+        });
     }
 }
