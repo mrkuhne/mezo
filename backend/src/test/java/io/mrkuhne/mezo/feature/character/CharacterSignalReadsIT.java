@@ -5,6 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.detector.DetectorInput;
 import io.mrkuhne.mezo.feature.character.service.CharacterSignalReads;
+import io.mrkuhne.mezo.feature.intention.entity.DailyIntentionEntity;
+import io.mrkuhne.mezo.feature.intention.entity.IntentionFocusEntity;
+import io.mrkuhne.mezo.feature.intention.repository.DailyIntentionRepository;
+import io.mrkuhne.mezo.feature.intention.repository.IntentionFocusRepository;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionContextEnvelope;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
+import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
+import io.mrkuhne.mezo.feature.needs.entity.NeedsDayEntity;
+import io.mrkuhne.mezo.feature.needs.repository.NeedsDayRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
@@ -22,11 +31,15 @@ import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
@@ -53,9 +66,75 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
     @Autowired private PantryItemPopulator pantryPopulator;
     @Autowired private ProtocolPopulator fuelPopulator;
     @Autowired private SupplementIntakePopulator supplementIntakePopulator;
+    @Autowired private IntentionFocusRepository intentionFocusRepository;
+    @Autowired private DailyIntentionRepository dailyIntentionRepository;
+    @Autowired private DecisionEntryRepository decisionEntryRepository;
+    @Autowired private NeedsDayRepository needsDayRepository;
+    @Autowired private JdbcTemplate jdbcTemplate;
+
+    /** Owner shared by the round-3 read-layer tests below, which reference {@code owner} bare
+     *  (no local shadow) — the other tests in this file keep their own {@code UUID owner = owner();}
+     *  local convention, which simply shadows this field. */
+    private UUID owner;
+
+    @BeforeEach
+    void setUpSharedOwner() {
+        owner = owner();
+    }
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
+    }
+
+    private IntentionFocusEntity saveFocus(LocalDate date, String text) {
+        IntentionFocusEntity e = new IntentionFocusEntity();
+        e.setCreatedBy(owner);
+        e.setFocusDate(date);
+        e.setText(text);
+        return intentionFocusRepository.saveAndFlush(e);
+    }
+
+    private DailyIntentionEntity saveReflection(LocalDate date, String reflection) {
+        DailyIntentionEntity e = new DailyIntentionEntity();
+        e.setCreatedBy(owner);
+        e.setIntentionDate(date);
+        e.setReflection(reflection);
+        return dailyIntentionRepository.saveAndFlush(e);
+    }
+
+    /** {@code @CreationTimestamp} stamps {@code created_at} at real wall-clock "now" on insert,
+     *  which is AFTER every fixed {@code day} these tests use — so {@code writtenOn} is backdated
+     *  to {@code decidedOn} afterwards via a plain JDBC update (the {@code LlmLogPopulator.logAt}
+     *  precedent), avoiding the self-invocation trap a {@code @Transactional} helper on this
+     *  non-transactional {@link ApiIntegrationTest} would hit. */
+    private DecisionEntryEntity saveDecision(LocalDate decidedOn, LocalDate reviewDue, String text) {
+        DecisionEntryEntity e = new DecisionEntryEntity();
+        e.setCreatedBy(owner);
+        e.setDecidedOn(decidedOn);
+        e.setDecisionText(text);
+        e.setContextSnapshot(new DecisionContextEnvelope(null, java.time.Instant.now()));
+        e.setReviewDue(reviewDue);
+        DecisionEntryEntity saved = decisionEntryRepository.saveAndFlush(e);
+        jdbcTemplate.update("update decision_entry set created_at = ? where id = ?",
+                Timestamp.from(decidedOn.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return decisionEntryRepository.findById(saved.getId()).orElseThrow();
+    }
+
+    private NeedsDayEntity saveNeedsDay(LocalDate date, int energia, int hidratacio, int pihenes,
+            int mozgas, int lelek, int rend, int greenCount, boolean allGreen, int streakDays) {
+        NeedsDayEntity e = new NeedsDayEntity();
+        e.setCreatedBy(owner);
+        e.setNeedsDate(date);
+        e.setEnergia(energia);
+        e.setHidratacio(hidratacio);
+        e.setPihenes(pihenes);
+        e.setMozgas(mozgas);
+        e.setLelek(lelek);
+        e.setRend(rend);
+        e.setGreenCount(greenCount);
+        e.setAllGreen(allGreen);
+        e.setStreakDays(streakDays);
+        return needsDayRepository.saveAndFlush(e);
     }
 
     @Test
@@ -277,5 +356,64 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
             assertThat(d.date()).isEqualTo(DAY);
             assertThat(d.takenPantryItemIds()).containsExactly(creatine.getId());
         });
+    }
+
+    @Test
+    void gather_shouldPairFocusCountWithReflection_andKeepUnclosedDaysWithNullReflection() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveFocus(day.minusDays(1), "reggeli fókusz");
+        saveFocus(day.minusDays(1), "második fókusz");
+        saveReflection(day.minusDays(1), DailyIntentionEntity.REFLECTION_PARTIAL);
+        saveFocus(day, "csak fókusz, lezárás nélkül");
+
+        List<DetectorInput.IntentionDayPoint> days = signalReads.gather(owner, day).trend().intentionDays();
+
+        assertThat(days).hasSize(2);
+        assertThat(days.get(0).focusCount()).isEqualTo(2);
+        assertThat(days.get(0).reflection()).isEqualTo(DailyIntentionEntity.REFLECTION_PARTIAL);
+        assertThat(days.get(1).focusCount()).isEqualTo(1);
+        assertThat(days.get(1).reflection()).isNull();
+    }
+
+    @Test
+    void gather_shouldTreatAReviewAfterTheObservedDay_asStillUnreviewed() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        DecisionEntryEntity e = saveDecision(day.minusDays(10), day.minusDays(3), "döntés szövege");
+        e.setReviewedAt(day.plusDays(2).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        e.setOutcomeRating((short) 5);
+        decisionEntryRepository.save(e);
+
+        DetectorInput.DecisionPoint p = signalReads.gather(owner, day).trend().decisions().getFirst();
+
+        assertThat(p.reviewedOn()).isNull();
+        assertThat(p.outcomeRating()).isNull();
+    }
+
+    @Test
+    void gather_shouldReturnNullNeedsContext_whenNoDayWasEverClosed() {
+        assertThat(signalReads.gather(owner, LocalDate.of(2026, 5, 20)).trend().needs()).isNull();
+    }
+
+    @Test
+    void gather_shouldCarryTheConfiguredGreenThreshold_andThePerDayStreakSnapshot() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveNeedsDay(day.minusDays(1), 80, 80, 80, 80, 80, 80, 6, true, 4);
+        saveNeedsDay(day, 80, 30, 80, 80, 80, 80, 5, false, 0);
+
+        DetectorInput.NeedsContext ctx = signalReads.gather(owner, day).trend().needs();
+
+        assertThat(ctx.greenThreshold()).isEqualTo(60);
+        assertThat(ctx.days()).extracting(DetectorInput.NeedsDayPoint::streakDays)
+                .containsExactly(4, 0);
+    }
+
+    @Test
+    void gather_shouldTruncateDecisionEvidence_andNeverExceedTheEvidenceBudget() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveDecision(day.minusDays(2), day.plusDays(5), "x".repeat(400));
+
+        String preview = signalReads.gather(owner, day).trend().decisions().getFirst().textPreview();
+
+        assertThat(preview).hasSizeLessThanOrEqualTo(121).endsWith("…");
     }
 }

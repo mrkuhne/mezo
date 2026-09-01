@@ -13,4 +13,7 @@ public interface IntentionFocusRepository extends JpaRepository<IntentionFocusEn
         UUID createdBy, LocalDate focusDate);
 
     Optional<IntentionFocusEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
+    List<IntentionFocusEntity> findByCreatedByAndFocusDateBetweenAndDeletedFalseOrderByFocusDateAsc(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

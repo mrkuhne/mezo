@@ -16,7 +16,15 @@ import io.mrkuhne.mezo.feature.fuel.repository.SupplementIntakeRepository;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.intention.entity.DailyIntentionEntity;
+import io.mrkuhne.mezo.feature.intention.entity.IntentionFocusEntity;
+import io.mrkuhne.mezo.feature.intention.repository.DailyIntentionRepository;
+import io.mrkuhne.mezo.feature.intention.repository.IntentionFocusRepository;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
+import io.mrkuhne.mezo.feature.journal.entity.GratitudeEntryEntity;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
+import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
+import io.mrkuhne.mezo.feature.journal.repository.GratitudeEntryRepository;
 import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
@@ -26,6 +34,9 @@ import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
+import io.mrkuhne.mezo.feature.needs.config.NeedsProperties;
+import io.mrkuhne.mezo.feature.needs.entity.NeedsDayEntity;
+import io.mrkuhne.mezo.feature.needs.repository.NeedsDayRepository;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
@@ -86,6 +97,7 @@ public class CharacterSignalReads {
     private static final int WINDOW_DAYS = 14;
     private static final int TREND_WEEKS = 8;
     private static final String PHASE_DELOAD = "Deload";
+    private static final int EVIDENCE_CHARS = 120;
 
     private final MealRepository mealRepository;
     private final WeightLogRepository weightLogRepository;
@@ -109,6 +121,12 @@ public class CharacterSignalReads {
     private final PantryItemRepository pantryItemRepository;
     private final MedicationRepository medicationRepository;
     private final MedicationCycleService medicationCycleService;
+    private final IntentionFocusRepository intentionFocusRepository;
+    private final DailyIntentionRepository dailyIntentionRepository;
+    private final DecisionEntryRepository decisionEntryRepository;
+    private final GratitudeEntryRepository gratitudeEntryRepository;
+    private final NeedsDayRepository needsDayRepository;
+    private final NeedsProperties needsProperties;
 
     public DetectorInput gather(UUID owner, LocalDate day) {
         LocalDate windowStart = day.minusDays(WINDOW_DAYS - 1);
@@ -185,11 +203,17 @@ public class CharacterSignalReads {
         DetectorInput.StackContext stack = gatherStack(owner, trendStart, day);
         DetectorInput.MedContext medCycle = gatherMedCycle(owner, trendStart, day);
 
+        List<DetectorInput.IntentionDayPoint> intentionDays =
+                gatherIntentionDays(owner, trendStart, day);
+        List<DetectorInput.DecisionPoint> decisions = gatherDecisions(owner, day);
+        List<DetectorInput.GratitudePoint> gratitudes = gatherGratitudes(owner, trendStart, day);
+        DetectorInput.NeedsContext needs = gatherNeeds(owner, trendStart, day);
+
         return new DetectorInput(day, mealDates, checkinCounts, weights, journalTexts,
                 gymDays, sportSessions, runLogs, sleepPoints, meso,
                 new DetectorInput.TrendWindow(runsEightWeeks, gymEightWeeks,
                         mealDays, waterDays, stack, checkinDays, medCycle,
-                        List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(),
+                        List.of(), intentionDays, decisions, gratitudes, needs, List.of(), List.of(),
                         List.of()));
     }
 
@@ -528,5 +552,108 @@ public class CharacterSignalReads {
 
     private static BigDecimal nz(BigDecimal v) {
         return v == null ? BigDecimal.ZERO : v;
+    }
+
+    /**
+     * One row per day on which the user either set a focus or closed the day — a day with neither
+     * is absent, not a zero row. {@code reflection} stays null when the morning happened but the
+     * evening did not; that asymmetry IS the promise-vs-delivery signal, so it must survive here.
+     */
+    private List<DetectorInput.IntentionDayPoint> gatherIntentionDays(UUID owner, LocalDate from,
+                                                                      LocalDate to) {
+        Map<LocalDate, Integer> focusCounts = new TreeMap<>();
+        for (IntentionFocusEntity f : intentionFocusRepository
+                .findByCreatedByAndFocusDateBetweenAndDeletedFalseOrderByFocusDateAsc(owner, from, to)) {
+            focusCounts.merge(f.getFocusDate(), 1, Integer::sum);
+        }
+        Map<LocalDate, String> reflections = new TreeMap<>();
+        for (DailyIntentionEntity d : dailyIntentionRepository
+                .findByCreatedByAndIntentionDateBetweenAndDeletedFalseOrderByIntentionDateAsc(
+                        owner, from, to)) {
+            reflections.put(d.getIntentionDate(), d.getReflection());
+        }
+        Set<LocalDate> dates = new java.util.TreeSet<>(focusCounts.keySet());
+        dates.addAll(reflections.keySet());
+        List<DetectorInput.IntentionDayPoint> out = new ArrayList<>();
+        for (LocalDate d : dates) {
+            out.add(new DetectorInput.IntentionDayPoint(d, focusCounts.getOrDefault(d, 0),
+                    reflections.get(d)));
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * Every decision the owner has, bounded above by {@code day}. The whole history is read rather
+     * than a window because {@code decision-review-backlog} asks "what is still unreviewed as of
+     * day" — an entry decided months ago can be the backlog. Catch-up honesty is applied on BOTH
+     * timestamps: an entry written after {@code day} did not exist yet, and a review performed
+     * after {@code day} had not happened yet, so it is carried as still-unreviewed.
+     */
+    private List<DetectorInput.DecisionPoint> gatherDecisions(UUID owner, LocalDate day) {
+        List<DetectorInput.DecisionPoint> out = new ArrayList<>();
+        for (DecisionEntryEntity e : decisionEntryRepository
+                .findByCreatedByAndDeletedFalseOrderByDecidedOnDescCreatedAtDesc(owner)) {
+            LocalDate writtenOn = localDate(e.getCreatedAt());
+            if (writtenOn == null || writtenOn.isAfter(day)) {
+                continue;
+            }
+            LocalDate reviewedOn = localDate(e.getReviewedAt());
+            Short rating = e.getOutcomeRating();
+            if (reviewedOn != null && reviewedOn.isAfter(day)) {
+                reviewedOn = null;   // not yet reviewed AS OF day
+                rating = null;
+            }
+            out.add(new DetectorInput.DecisionPoint(e.getDecidedOn(), writtenOn, e.getReviewDue(),
+                    reviewedOn, rating, preview(e.getDecisionText())));
+        }
+        return List.copyOf(out);
+    }
+
+    private List<DetectorInput.GratitudePoint> gatherGratitudes(UUID owner, LocalDate from,
+                                                                LocalDate to) {
+        List<DetectorInput.GratitudePoint> out = new ArrayList<>();
+        for (GratitudeEntryEntity e : gratitudeEntryRepository
+                .findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnDescCreatedAtDesc(
+                        owner, from, to)) {
+            LocalDate writtenOn = localDate(e.getCreatedAt());
+            if (writtenOn != null && writtenOn.isAfter(to)) {
+                continue;
+            }
+            out.add(new DetectorInput.GratitudePoint(e.getOccurredOn(), writtenOn, e.getLifeArea()));
+        }
+        return List.copyOf(out);
+    }
+
+    /**
+     * The Életjel day series; null when the owner has never closed a day (absent, not "all zero").
+     * The green threshold travels with the series because a detector may not read configuration.
+     */
+    private DetectorInput.NeedsContext gatherNeeds(UUID owner, LocalDate from, LocalDate to) {
+        List<NeedsDayEntity> rows = needsDayRepository
+                .findByCreatedByAndNeedsDateBetweenAndDeletedFalseOrderByNeedsDateAsc(owner, from, to);
+        if (rows.isEmpty()) {
+            return null;
+        }
+        List<DetectorInput.NeedsDayPoint> days = rows.stream()
+                .map(r -> new DetectorInput.NeedsDayPoint(r.getNeedsDate(), r.getEnergia(),
+                        r.getHidratacio(), r.getPihenes(), r.getMozgas(), r.getLelek(), r.getRend(),
+                        r.getGreenCount(), r.isAllGreen(), r.getStreakDays()))
+                .toList();
+        return new DetectorInput.NeedsContext(needsProperties.greenThreshold(), days);
+    }
+
+    /** {@code Instant} → local date in the JVM default zone, the read layer's one convention. */
+    private static LocalDate localDate(java.time.Instant at) {
+        return at == null ? null : at.atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    /** Raw text truncated for EVIDENCE only. Never parsed, never interpreted (spec §4.4). */
+    private static String preview(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        String trimmed = text.strip();
+        return trimmed.length() <= EVIDENCE_CHARS ? trimmed
+                : trimmed.substring(0, EVIDENCE_CHARS).strip() + "…";
     }
 }
