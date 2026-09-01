@@ -8,7 +8,8 @@
 import { describe, expect, test } from 'vitest'
 import { buildWindowLane, asPastDayLane, type WindowLaneVM, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, FuelSlot } from '@/data/types'
+import type { ContextDimension, FuelMeal, FuelSlot } from '@/data/types'
+import { FIBER_TARGET_G } from '@/data/fuel/fuelConfig'
 
 const budget: DayBudget = {
   kcal: 2400, p: 180, c: 240, f: 72,
@@ -209,4 +210,30 @@ describe('asPastDayLane', () => {
   test('üres lane identitás-szerű: üres tiles + null nowKey', () => {
     expect(asPastDayLane({ tiles: [], nowKey: null })).toEqual({ tiles: [], nowKey: null })
   })
+})
+
+// ── Logolás 2.1 (mezo-zeeq): Rost ring only where it is real, context from the scored Szerep row ──
+
+test('a done window with fiberG gets a 4th Rost ring against FIBER_TARGET_G; without it, three', () => {
+  const withFiber = buildWindowLane({ slots: [slot({ state: 'done', mealId: 'm1' })], budget, meals: [meal({ fiberG: 9 })] })
+  expect(withFiber.tiles[0].rings.map(r => [r.key, r.grams, r.pct])).toEqual([
+    ['p', 36, 20], ['c', 48, 20], ['f', 9, 13], ['r', 9, Math.round((9 / FIBER_TARGET_G) * 100)],
+  ])
+  expect(withFiber.tiles[0].rings[3]).toMatchObject({ letter: 'R', label: 'Rost', color: 'var(--macro-fiber)' })
+  const noFiber = buildWindowLane({ slots: [slot({ state: 'done', mealId: 'm1' })], budget, meals: [meal({ fiberG: null })] })
+  expect(noFiber.tiles[0].rings).toHaveLength(3)
+  // a planned window has no fiber data at all (FuelSlot carries none) — never a fabricated ring
+  const planned = buildWindowLane({ slots: [slot({ state: 'now' })], budget, meals: [] })
+  expect(planned.tiles[0].rings).toHaveLength(3)
+})
+
+test('context: a done tile reads the scored Szerep row; unscored / planned → null', () => {
+  const dim = {
+    id: 'context', label: 'x', weight: 0.2, score: 0.5, color: 'x', detail: '',
+    context: [{ label: 'Szerep', value: 'Post-workout regeneráció' }],
+  } as ContextDimension
+  const scored = meal({ breakdown: { confidence: 0.8, summary: null, tagline: null, improve: [], tools: [], dimensions: [dim] } })
+  expect(buildWindowLane({ slots: [slot({ state: 'done', mealId: 'm1' })], budget, meals: [scored] }).tiles[0].context).toBe('post')
+  expect(buildWindowLane({ slots: [slot({ state: 'done', mealId: 'm1' })], budget, meals: [meal()] }).tiles[0].context).toBeNull()
+  expect(buildWindowLane({ slots: [slot({ state: 'now' })], budget, meals: [] }).tiles[0].context).toBeNull()
 })

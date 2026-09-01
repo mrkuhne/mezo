@@ -11,7 +11,8 @@ export const MEAL_CONTEXT_LABEL: Record<MealContext, string> = { standard: 'Stan
 export function mealContextOf(meal: Pick<FuelMeal, 'breakdown'>): MealContext | null {
   const b = meal.breakdown
   if (!b) return null
-  const dim = b.dimensions.find(d => d.id === 'context')
+  // A sparse breakdown (older seeds / tests) may carry no dimensions at all — still "scored".
+  const dim = b.dimensions?.find(d => d.id === 'context')
   const row = dim && 'context' in dim ? dim.context.find(r => r.label === 'Szerep') : undefined
   const v = row?.value ?? ''
   if (v.startsWith('Pre-workout')) return 'pre'
