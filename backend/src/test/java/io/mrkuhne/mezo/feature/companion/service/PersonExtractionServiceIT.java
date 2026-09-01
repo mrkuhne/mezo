@@ -182,6 +182,35 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testExtractFor_shouldCapNotesAt500Chars_whenThreeMaxLengthQuotesJoinOverTheColumnLimit() {
+        // person.notes is VARCHAR(500) (1.0.0_master.yml, 202607041030); three 200-char quotes
+        // joined with "\n" is 3*200+2 = 602 chars — without a cap this throws on persistNight and
+        // rolls back the WHOLE night (including the enrichment scripted in the very same answer).
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Anna");
+        MentionEntity mention = mentionPopulator.createMention(
+            owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+        String quote = "a".repeat(200);
+        plantEntry(owner, DAY, "Ma találkoztam Annával. Riko is beugrott délután, este Riko megint "
+            + "írt. [fake-people:{\"mentions\":[{\"index\":0,\"tone\":\"positive\",\"intensity\":2,"
+            + "\"context\":\"munka\"}],\"candidates\":[{\"name\":\"Riko\",\"quotes\":[\"" + quote
+            + "\",\"" + quote + "\",\"" + quote + "\"]}]}]");
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        // The night must NOT roll back: both the candidate AND the enrichment scripted in the same
+        // answer persist.
+        assertThat(result.enriched()).isEqualTo(1);
+        assertThat(result.candidates()).isEqualTo(1);
+        MentionEntity updatedMention = mentionRepository.findById(mention.getId()).orElseThrow();
+        assertThat(updatedMention.getTone()).isEqualTo("positive");
+        PersonEntity created = personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(owner)
+            .stream().filter(p -> "Riko".equals(p.getName())).findFirst().orElseThrow();
+        assertThat(created.getNotes().length()).isLessThanOrEqualTo(500);
+        assertThat(created.getNotes()).endsWith("…");
+    }
+
+    @Test
     void testExtractorMarker_shouldStayInSyncWithTheFakeDispatch() {
         assertThat(PersonExtractionService.EXTRACTOR_MARKER).isEqualTo("[person-extractor]");
     }

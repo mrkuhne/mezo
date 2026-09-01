@@ -12,15 +12,14 @@ import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +74,9 @@ public class PersonExtractionService {
     private static final int MAX_QUOTES = 3;
     private static final int QUOTE_MAX_CHARS = 200;
     private static final int MIN_NAME_FOLD_LENGTH = 3;
+    /** person.notes VARCHAR(500) (202607041030) — a join(quotes) sosem lépheti túl, különben a
+     *  candidate-sor persistálása kidobja az EGÉSZ éjszakát (persistNight egy tranzakció). */
+    static final int NOTES_MAX_CHARS = 500;
 
     private static final Set<String> TONES = Set.of("positive", "neutral", "mixed", "negative");
     private static final Set<String> CONTEXTS = Set.of("munka", "csalad", "baratok", "edzes",
@@ -175,7 +177,7 @@ public class PersonExtractionService {
             p.setAffectBaseline("neutral");
             p.setStatus("candidate");
             p.setSourceKind(SOURCE_EXTRACTOR);
-            p.setNotes(String.join("\n", c.quotes()));
+            p.setNotes(joinNotes(c.quotes()));
             personRepository.save(p);
             created++;
         }
@@ -314,6 +316,17 @@ public class PersonExtractionService {
             clean.add(s.length() <= QUOTE_MAX_CHARS ? s : s.substring(0, QUOTE_MAX_CHARS - 1) + "…");
         }
         return clean;
+    }
+
+    /** Az idézetek {@code \n}-nel összefűzött notes-szövege — ez a person.notes VARCHAR(500)
+     *  oszlopba kerül, ezért itt kap egy második, oszlop-szintű sapkát a cleanQuotes
+     *  idézetenkénti {@link #QUOTE_MAX_CHARS} sapkája fölé (a "…" idióma ugyanaz). */
+    private static String joinNotes(List<String> quotes) {
+        String joined = String.join("\n", quotes);
+        if (joined.length() <= NOTES_MAX_CHARS) {
+            return joined;
+        }
+        return SafeTruncate.truncate(joined, NOTES_MAX_CHARS - 1) + "…";
     }
 
     private NightAnswer parse(String raw) throws Exception {
