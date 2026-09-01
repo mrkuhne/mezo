@@ -160,6 +160,42 @@
   .snote i { font-style: normal; font-weight: 700; color: #A2958A; flex: none; font-variant-numeric: tabular-nums; }
 
   /* ============ ÚJ · LÉPTETÉS A TEMPLATE-NAP LÁNCÁN (F7.2) ============ */
+
+  /* ============ EDZÉS-JEGYZET (mezo-d20.8.2.2) ============
+     closing: kérdés-címkés, bekötött mező a lezáró CTA FÖLÖTT (a billentyűzet így
+     tolja a CTA-t, nem takarja). closed: a mentett mondat Fraunces-kurzívban,
+     jegyzet híján a blokk nem renderel — a review oldalon helyette egy csendes
+     "＋ Jegyzet" akció áll, mert ott a pótlás értelmes szándék. */
+  .wn { margin-top: 13px; }
+  .wn-q { display: block; font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: #A84A26; margin-bottom: 6px; }
+  .wn-ta {
+    width: 100%; box-sizing: border-box; min-height: 60px; resize: none; display: block;
+    font-family: inherit; font-size: 11px; line-height: 1.5; color: #2B2118;
+    background: rgba(255, 255, 255, 0.72); border: 1px solid rgba(43, 33, 24, 0.1);
+    border-radius: 14px; padding: 10px 12px;
+    box-shadow: 0 6px 16px -12px rgba(43, 33, 24, 0.4);
+  }
+  .wn-ta::placeholder { color: #B6A99C; font-style: italic; }
+  .wn-ta:focus { outline: none; border-color: #FF8A66; box-shadow: 0 0 0 3px rgba(255, 138, 102, 0.18); }
+  .wn-hint { font-size: 8px; color: #A2958A; margin-top: 5px; font-weight: 300; }
+
+  .wn-r { margin-top: 13px; position: relative; border-left: 2px solid #7E9B6A; padding: 1px 30px 1px 12px; }
+  .wn-r .lbl { display: block; font-size: 7.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; font-weight: 700; margin-bottom: 4px; }
+  .wn-r p { margin: 0; font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 12.5px; line-height: 1.55; color: #2B2118; white-space: pre-line; }
+  .wn-edit {
+    position: absolute; top: 0; right: 0; width: 24px; height: 24px; border: none; cursor: pointer;
+    background: rgba(43, 33, 24, 0.06); color: #6E6257; border-radius: 999px; font-size: 10px; font-family: inherit;
+  }
+  .wn-add {
+    width: 100%; margin-top: 13px; padding: 10px 0; cursor: pointer; font-family: inherit;
+    background: none; border: 1px dashed rgba(43, 33, 24, 0.22); border-radius: 14px;
+    font-size: 10px; font-weight: 600; color: #A2958A;
+  }
+  .wn-ed { display: flex; gap: 7px; margin-top: 7px; }
+  .wn-ed button { flex: 1; border: none; cursor: pointer; font-family: inherit; border-radius: 999px; padding: 7px 0; font-size: 10px; font-weight: 600; }
+  .wn-ed .save { background: linear-gradient(135deg, #7E9B6A, #5F7F4C); color: #fff; }
+  .wn-ed .cancel { background: rgba(43, 33, 24, 0.06); color: #6E6257; }
+
   .stepnav { display: flex; gap: 7px; margin-top: 13px; }
   .stepnav button {
     flex: 1; font-family: inherit; cursor: pointer; border-radius: 13px; padding: 8px 10px;
