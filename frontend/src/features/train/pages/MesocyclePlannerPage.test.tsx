@@ -342,8 +342,10 @@ test('day tabs switch between program days (replaces the old per-day accordion)'
   // the first training day (Hét · Push) is active by default once the program lands
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
   expect(screen.getByText('Push')).toBeInTheDocument()
-  // switching tabs swaps the active day's hero
-  await user.click(screen.getByRole('button', { name: /Sze/ }))
+  // switching tabs swaps the active day's hero. Anchored: a bare /Sze/ also matches
+  // the „Mentés + indítás · Szep 1" CTA every September (real-date suffix) — the
+  // day tab's accessible name starts with the weekday („Sze · Legs").
+  await user.click(screen.getByRole('button', { name: /^Sze\b/ }))
   expect(screen.getByText('Legs')).toBeInTheDocument()
 })
 
