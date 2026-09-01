@@ -1033,7 +1033,24 @@ active med with no dose would render `nincs rögzített dózis` — honest zero 
 (utolsó: {date} {slot} — energia x/10, stressz y/10)`, mezo-xrhd** — it used to render the latest
 row ever, dated but with no today-status, so "no check-in today" was something the model had to
 derive from the date and silently didn't; no check-in row at all still renders `nincs adat`). Every lookup uses `Optional`/status-filtered repo finders —
-the assembler NEVER throws for missing data. Composition is strictly one-way (companion → other
+the assembler NEVER throws for missing data.
+
+**The workout closing note in the snapshot (`mezo-d20.13`).** The `[Edzés]` block's `elmúlt N nap`
+digest listed only *dates*; it now reads the instances themselves
+(`WorkoutSessionRepository.findDoneInstancesBetween`, replacing `findDoneInstanceDates`) and
+appends each session's closing note as ` — "…"`, truncated to
+`snapshot.workout-note-max-chars`. The same suffix rides `Ma eddig naplózva: gym: elvégezve`, so
+today's note is present from the moment it is written — not the next morning, which is why the
+cheaper route through `DailySummaryService.addTrain` was rejected (those rows are written
+nightly, and they would also hand the memoir a *generated narrative* instead of the sentence
+itself). It reads `closingNote`, **not** `note` — the same table holds template rows whose `note`
+is the mesocycle plan's day note, and rendering that here would pass plan text off as something
+that happened. A blank or absent note renders **nothing at all** (ADR 0010: the snapshot never
+remarks on what the user chose not to write). `TrainTools.renderGymLog` carries the note
+**unabridged** — the just-in-time layer a "hogy ment kedden?" question lands on, per the
+smallest-high-signal-slot-plus-retrieval pattern.
+
+Composition is strictly one-way (companion → other
 features; ArchUnit's cycle rule guards the reverse).
 
 **The biometrics-free variant (companion-feed, `mezo-gst9`).** `renderWithoutBiometrics(userId,
@@ -2773,6 +2790,12 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   snapshot's train digest (gym/sport/run counts) looks, including today (V0.3).
 - `mezo.companion.snapshot.checkin-note-max-chars` = **200** (`@Min(0) @Max(1000)`) — the latest
   check-in note is included verbatim, truncated to this many characters (V0.3).
+- `mezo.companion.snapshot.workout-note-max-chars` = **180** (`@Min(0) @Max(1000)`) — the
+  workout-level closing note is included **verbatim**, truncated to this many characters
+  (`mezo-d20.13`); `0` turns the injection off. Never summarized: an LLM-shortened version of the
+  user's own sentence loses exactly the numbers, hedges and specifics that make it worth carrying,
+  and asserts an interpretation of their state the app was never told. The contract lets a note be
+  1000 chars and the snapshot rides EVERY turn, so this clip is load-bearing, not cosmetic.
 - `mezo.companion.tools.max-calls-per-turn` = **15** (`@Min(1) @Max(20)`, raised from 6 at
   mezo-xixu alongside the 8→15 tool expansion) — recorded tool calls per
   turn; past it every tool soft-fails with honest in-band text (V0.5).

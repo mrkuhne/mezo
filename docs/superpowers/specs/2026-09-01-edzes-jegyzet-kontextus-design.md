@@ -113,9 +113,12 @@ sima olvasás *maga* az idióma.
 1. **`note` ≠ `closing_note`.** Ugyanaz a tábla hordozza a terv-nap jegyzetét (`note`, amit a
    `MesoDay.note` publikál) és a példány záró jegyzetét (`closing_note`). Rossz oszlopot
    olvasva **terv-szöveg szivárogna a „mi történt" narratívába**.
-2. **A saját (custom) edzések kiesnének.** `findDoneInstancesBetween` csak
-   `templateSessionId IS NOT NULL` sorokat ad; egy saját edzésre írt jegyzet **némán eltűnne**.
-   Ez elfogadhatatlan — dátum-tartományos finder kell a custom példányokra is.
+2. ~~**A saját (custom) edzések kiesnének.**~~ **A recon tévedett, ellenőrizve.** A
+   `findDoneInstancesBetween` `templateSessionId IS NOT NULL` szűrője a custom *sablon* sorát
+   zárja ki (`TrainService.createCustomWorkout:384-391` nem állít templateSessionId-t), de az
+   indított **példány** megkapja a sablon id-ját (`WorkoutService:519`
+   `instance.setTemplateSessionId(template.getId())`), és a lekérdezésben nincs `origin` szűrő.
+   A saját edzések példányai tehát benne vannak. Nem kell új finder.
 3. **Prompt-költségvetés.** A pillanatkép **minden** fordulóban megy; a `closing_note` a
    szerződés szerint 1000 karakter lehet. Hét nap × 1 kB vágatlanul valós regresszió.
 4. **Az ArchUnit nincs a fókuszált teszt-halmazban** — csak CI-n (vagy teljes `./mvnw test`)
@@ -179,7 +182,7 @@ frontend-munkája.
   a `render` és a `renderWithoutBiometrics` is (a két összeállítási pont ne divergáljon).
 - `CompanionToolsRenderIT`: `renderGymLog` hozza a teljes jegyzetet.
 - `MemoirGeneratorIT`: a hét jegyzetei a gather payloadban **verbatim** · horgony-jelöltként is ·
-  az összesített plafon érvényesül · **saját (custom) edzés jegyzete sem esik ki** (§3.4/2).
+  az összesített plafon érvényesül · **saját (custom) edzés jegyzete is bekerül** (§3.4/2 — a lekérdezés ezt fedi, de teszt rögzíti).
 - `TrainPopulator`: `closingNote` beállítási út.
 - `ArchitectureTest` **kötelezően** a fókuszált futásban (a §3.4/4 miatt).
 - Switch-off IT nem kell: nem születik új `@ConditionalOnProperty` bean; a meglévő

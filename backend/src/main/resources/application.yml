@@ -427,6 +427,9 @@ mezo:
       digest-days: 7
       # The latest check-in note is included verbatim, truncated to this many characters
       checkin-note-max-chars: 200
+      # The workout closing note is included verbatim, truncated to this many characters
+      # (mezo-d20.13). Never summarized — truncation is honestly lossy, rewriting fabricates.
+      workout-note-max-chars: 180
     tools:
       # V0.5 tool calling — per-turn call budget + result-window clamps (spec §5 discipline)
       max-calls-per-turn: 15
