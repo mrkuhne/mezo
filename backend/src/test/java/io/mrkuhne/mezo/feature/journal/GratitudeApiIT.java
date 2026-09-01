@@ -84,8 +84,8 @@ class GratitudeApiIT extends ApiIntegrationTest {
                 HttpStatus.CREATED, GratitudeEntryResponse.class);
         var req2 = new CreateGratitudeEntryRequest();
         req2.setText("Újabb");
-        // pinned inside the fixed query window — an occurredOn defaulting to server-today
-        // fell out of the August window the day the calendar rolled to September
+        // Explicit occurredOn: the default (today) falls outside the fixed August
+        // listing window from September onward, so the test broke on 2026-09-01.
         req2.setOccurredOn(LocalDate.parse("2026-08-20"));
         var created2 = postForBody("/api/journal/gratitude", req2, ownerAuthHeaders(),
                 HttpStatus.CREATED, GratitudeEntryResponse.class);
