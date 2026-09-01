@@ -15,7 +15,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useFuelDay, useFuelTimeline } from '@/data/hooks'
-import { buildWindowLane, asPastDayLane, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
+import { buildWindowLane, asPastDayLane, tileKey, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
@@ -54,7 +54,7 @@ export function FuelLogNewPage() {
 
   // Az ablakból indított logolás a terv receptjét is hozza — pontosan úgy, ahogy a
   // /fuel/log blokkja tette. Az AI-ág kihagyja: a user a ✨ utat választotta.
-  const slot = tile != null ? plan.slots.find(s => `${s.time}-${s.label}` === tile.key) : undefined
+  const slot = tile != null ? plan.slots.find(s => tileKey(s) === tile.key) : undefined
   const prefill = slot?.suggestedRecipeId && !ai
     ? { source: 'recipe' as const, recipeId: slot.suggestedRecipeId }
     : null

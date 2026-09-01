@@ -8,6 +8,7 @@ import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
 import type { FuelPlanToday, FuelSlot } from '@/data/types'
+import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { addDays, localDateString } from '@/shared/lib/dates'
 
@@ -63,9 +64,13 @@ const renderView = (initialEntries: string[] = ['/fuel/log']) => {
 }
 const currentPath = () => router.state.location.pathname + router.state.location.search
 
-// Az ablak-kulcs az app saját szabálya (fuelSwimlane.tileKey) — sosem hardcode-olt string és
-// sosem a befagyasztott mock-seed véletlen időpontja.
-const keyOf = (s: FuelSlot) => `${s.time}-${s.label}`
+// Az ablak-kulcs az app saját EXPORTÁLT szabálya (fuelSwimlane.tileKey) — sosem hardcode-olt
+// string, sosem a befagyasztott mock-seed véletlen időpontja, és sosem egy helyi másolat.
+const keyOf = tileKey
+// A várt query a produkcióval AZONOS kódolóval épül (`URLSearchParams.toString()`), nem
+// `encodeURIComponent`-tel: a kettő szóköznél elválik (`+` vs `%20`), és egy kétszavas címkére
+// átkeresztelt fixture pirosra vinné a tesztet egy HELYES implementáció mellett is.
+const query = (params: Record<string, string>) => new URLSearchParams(params).toString()
 const UZSONNA: FuelSlot = {
   time: '16:30', kind: 'meal', label: 'Uzsonna', slotKey: 'snack', state: 'now',
   kcal: 380, p: 26, c: 34, f: 15,
@@ -85,7 +90,7 @@ test('a Logold CTA az új logoló oldalra navigál az ablak kulcsával', async (
   hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
   renderView()
   await userEvent.click(screen.getByRole('button', { name: `Logold · ${UZSONNA.label}` }))
-  expect(currentPath()).toBe(`/fuel/log/uj?w=${encodeURIComponent(keyOf(UZSONNA))}`)
+  expect(currentPath()).toBe(`/fuel/log/uj?${query({ w: keyOf(UZSONNA) })}`)
   expect(screen.getByText('LOG NEW PAGE PROBE')).toBeInTheDocument()
 })
 
@@ -93,7 +98,7 @@ test('az ✨ AI CTA ai=1-gyel navigál', async () => {
   hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
   renderView()
   await userEvent.click(screen.getByRole('button', { name: `AI naplózás · ${UZSONNA.label}` }))
-  expect(currentPath()).toBe(`/fuel/log/uj?w=${encodeURIComponent(keyOf(UZSONNA))}&ai=1`)
+  expect(currentPath()).toBe(`/fuel/log/uj?${query({ w: keyOf(UZSONNA), ai: '1' })}`)
 })
 
 test('múltbeli napon a d paramétert is átadja', async () => {
@@ -104,8 +109,24 @@ test('múltbeli napon a d paramétert is átadja', async () => {
   await user.click(screen.getByRole('button', { name: `Pótold · ${UZSONNA.label}` }))
   const yesterday = addDays(localDateString(), -1)
   expect(currentPath()).toBe(
-    `/fuel/log/uj?d=${yesterday}&w=${encodeURIComponent(keyOf(UZSONNA))}`,
+    `/fuel/log/uj?${query({ d: yesterday, w: keyOf(UZSONNA) })}`,
   )
+})
+
+test('a nap-léptető a URL-be is beírja a napot (a böngésző-vissza a helyes napra tér)', async () => {
+  // A `?d=` nélkül a böngésző/PWA vissza-gesztus egy query nélküli `/fuel/log` history-bejegyzésre
+  // esne vissza, és a user csendben MA-n kötne ki — pont azon a napon, amiről ellépett.
+  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  const user = userEvent.setup()
+  renderView()
+  expect(new URLSearchParams(router.state.location.search).has('d')).toBe(false)
+
+  await user.click(screen.getByRole('button', { name: 'Előző nap' }))
+  expect(currentPath()).toBe(`/fuel/log?${query({ d: addDays(localDateString(), -1) })}`)
+
+  // Vissza mára: a `d` eltűnik — a mai URL tiszta marad, ahogy az `openLog`-nál is.
+  await user.click(screen.getByRole('button', { name: 'Következő nap' }))
+  expect(currentPath()).toBe('/fuel/log')
 })
 
 test('mai napon nincs d paraméter az URL-ben', async () => {

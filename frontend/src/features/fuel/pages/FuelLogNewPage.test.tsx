@@ -37,7 +37,10 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 })
 
 import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
-import { useFuelDay } from '@/data/hooks'
+import { useFuelDay, useRecipes } from '@/data/hooks'
+// Az ablak-kulcsot az app SAJÁT exportált szabálya adja (mezo-bq2t) — egy helyi másolat zölden
+// hagyná a tesztet akkor is, ha a produkciós kulcsképzés elmozdul a /fuel/log ?w= szerződésétől.
+import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => {
@@ -65,7 +68,7 @@ const UZSONNA: FuelSlot = {
   kcal: 380, p: 26, c: 34, f: 15,
 }
 const TWO_WINDOWS = [REGGELI, UZSONNA]
-const keyOf = (s: FuelSlot) => `${s.time}-${s.label}`
+const keyOf = tileKey
 
 let router: ReturnType<typeof createMemoryRouter>
 const wrapper = ({ children }: { children: ReactNode }) => <QueryWrapper>{children}</QueryWrapper>
@@ -123,6 +126,33 @@ test('az ablak-kulcsból fejlécet és rögzített slotot old fel', async () => 
   expect(screen.getByText('Logolás')).toBeInTheDocument()
   // fixedSlot → nincs MIKOR szegmens
   expect(screen.queryByRole('button', { name: 'Reggeli' })).not.toBeInTheDocument()
+})
+
+// ── A terv-recept prefill (a `slot.suggestedRecipeId && !ai` ág). E nélkül a két teszt nélkül a
+// `prefill` prop törölhető vagy a `!ai` őr megfordítható lenne úgy, hogy az egész fuel-suite zöld
+// marad, miközben minden terv-javaslatos ablak ÜRESEN nyílna. ────────────────────────────────
+
+test('terv-receptes ablak a recept sorával, előtöltve nyílik', async () => {
+  const recipe = renderHook(() => useRecipes(), { wrapper }).result.current.recipes[0]
+  const withRecipe: FuelSlot = { ...UZSONNA, mealName: recipe.name, suggestedRecipeId: recipe.id }
+  hoisted.plan = { ...baseCtx, slots: [REGGELI, withRecipe] }
+  renderAt(`/fuel/log/uj?w=${encodeURIComponent(keyOf(withRecipe))}`)
+  expect(await screen.findByText('recept')).toBeInTheDocument()
+  expect(screen.getAllByText(recipe.name).length).toBeGreaterThanOrEqual(1)
+  // Az előtöltött sortól a mentés élő.
+  expect(screen.getByRole('button', { name: /logolás · \+10 XP/i })).toBeEnabled()
+})
+
+test('ai=1 SZÁNDÉKOSAN kihagyja a terv-recept előtöltést', async () => {
+  const recipe = renderHook(() => useRecipes(), { wrapper }).result.current.recipes[0]
+  const withRecipe: FuelSlot = { ...UZSONNA, mealName: recipe.name, suggestedRecipeId: recipe.id }
+  hoisted.plan = { ...baseCtx, slots: [REGGELI, withRecipe] }
+  renderAt(`/fuel/log/uj?w=${encodeURIComponent(keyOf(withRecipe))}&ai=1`)
+  // Az AI-panel elindul — tehát az oldal betöltött —, de a terv receptje NEM került be:
+  // a user a ✨ utat választotta, nem a terv-ételt.
+  expect(await screen.findByLabelText('Mit ettél?')).toBeInTheDocument()
+  expect(screen.queryByText('recept')).not.toBeInTheDocument()
+  expect(screen.queryByText(recipe.name)).not.toBeInTheDocument()
 })
 
 test('ismeretlen ablak-kulcsnál ablakon kívüli módra esik vissza', async () => {

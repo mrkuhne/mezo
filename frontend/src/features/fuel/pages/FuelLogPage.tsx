@@ -7,11 +7,15 @@
 // idiom); every user-scheduled eating window renders as ONE full-width
 // WindowBlock, stacked vertically — done / now / missed / future. The
 // Logold/Pótold/✨ AI CTAs NAVIGATE to /fuel/log/uj (mezo-bq2t) — the whole
-// context (day, window, AI intent) travels in the URL, so this list keeps its
-// scroll and day-offset untouched and the back button lands here. The trailing
-// „Ablakon kívül" block is the standing slot-less log door — it navigates with
-// NO `w`, never fabricating a window; an empty day leads with the tervezz block
-// instead of fabricating windows.
+// context (day, window, AI intent) travels in the URL. The day stepper mirrors
+// its result into this page's own `?d=` too (replace, so stepping does not pile
+// up history), which is what makes the browser/PWA back gesture land on the day
+// the user actually left — a `/fuel/log` history entry with no query would
+// silently drop them back on today. Scroll position is NOT preserved: the route
+// remounts on return and there is no scroll restoration in the app.
+// The trailing „Ablakon kívül" block is the standing slot-less log door — it
+// navigates with NO `w`, never fabricating a window; an empty day leads with the
+// tervezz block instead of fabricating windows.
 //
 // Same composed day as the hub (useFuelDay/useFuelTimeline → buildWindowLane) —
 // a save re-derives everything live: the page hero counter, the block states
@@ -37,7 +41,7 @@ const MAX_BACK = 7
 
 export function FuelLogPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   // Anchored once (mezo-1j3z, finding 4): re-computing this per render would let a re-render
   // after midnight shift `date` (and with it the `?d=` the CTAs hand the logging page). The page remounts
   // per navigation, so the staleness window is bounded to a single visit.
@@ -74,7 +78,21 @@ export function FuelLogPage() {
   }
 
   const stepDay = (d: number) => {
-    setOffset(o => Math.min(MAX_BACK, Math.max(0, o + d)))
+    const next = Math.min(MAX_BACK, Math.max(0, offset + d))
+    setOffset(next)
+    // The stepped day goes into the URL as well (mezo-bq2t): the logging page hands `?d=` back on
+    // its own return, but the browser/PWA back gesture just pops a history entry — one without a
+    // `d` would silently re-open on TODAY. `replace` so stepping never piles up history entries,
+    // and today stays param-free, exactly like `openLog`.
+    setSearchParams(
+      prev => {
+        const q = new URLSearchParams(prev)
+        if (next > 0) q.set('d', addDays(today, -next))
+        else q.delete('d')
+        return q
+      },
+      { replace: true },
+    )
     // The day switch re-renders the whole block list in place — without this the scroller
     // stays wherever it was on the PREVIOUS day, stranding the new day's top blocks off-screen.
     const body = document.querySelector('.mz-page-body')
