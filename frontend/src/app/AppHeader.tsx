@@ -13,7 +13,7 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { useToday } from '@/data/hooks'
 import { useNotificationFeed } from '@/data/notification/feedHooks'
@@ -137,7 +137,7 @@ export function AppHeader() {
       </div>
 
       <button type="button" className="nap-avatar" aria-label="Profil" onClick={() => navigate('/me')}>
-        <ClayIcon name="i-mezo" size={19} />
+        <ClaySpot name="s-orb" size={40} />
       </button>
     </header>
   )

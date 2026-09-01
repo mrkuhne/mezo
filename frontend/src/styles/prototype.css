@@ -4488,8 +4488,8 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-ntf-x { font-size: 11px; color: var(--mz-ink-soft); }
 .nap-ntffoot { border: none; background: none; font-family: inherit; cursor: pointer;
   font-size: 12px; font-weight: 700; color: var(--primary-deep); padding: 5px 4px 2px; text-align: left; }
-.nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-base);
-  background: var(--surface-card); display: grid; place-items: center; cursor: pointer; }
+.nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none;
+  display: grid; place-items: center; cursor: pointer; }
 .nap-hero { min-height: 0; cursor: default; }
 .nap-hero-row { display: flex; align-items: center; gap: 12px; }
 .nap-hero-line { display: flex; align-items: baseline; gap: 7px; }
