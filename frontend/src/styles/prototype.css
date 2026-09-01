@@ -6186,18 +6186,16 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .fh-scorech.is-pend { background: var(--mz-chat-refch-bg); color: var(--mz-ink-mut); }
 button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-height: 44px; padding: 3px 14px; }
 
-/* ═══ Mezo counter banner + Fuel-beállítások band (the .enh-band shape) ═══ */
-.fh-mezotile, .fh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
+/* ═══ Fuel-beállítások band (the .enh-band shape; a Mezo-sáv retired — mezo-04lo) ═══ */
+.fh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
   cursor: pointer; border-radius: 20px; padding: 12px 14px; font-family: inherit; text-align: left;
   color: var(--text-primary); border: 0.5px solid rgba(43, 33, 24, 0.06);
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.fh-mezotile { background: var(--mz-wash-band); box-shadow: var(--mz-shadow-coral); }
 .fh-band { background: var(--mz-wash-white); box-shadow: var(--mz-shadow); }
-.fh-mezotile:active, .fh-band:active { transform: scale(0.97); }
-.fh-mezotile .txt, .fh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
-.fh-mezotile .txt b, .fh-band .txt b { font-weight: 700; }
-.fh-mezotile .chev, .fh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
-.fh-mzdot { width: 8px; height: 8px; border-radius: 50%; background: var(--mz-fh-now-ring); flex: none; }
+.fh-band:active { transform: scale(0.97); }
+.fh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
+.fh-band .txt b { font-weight: 700; }
+.fh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
 
 /* mosaic eyebrow inks — one per hub tile (the .enh-eb- family precedent) */
 .fh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
@@ -6222,8 +6220,8 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fh-naplo-empty { font-size: 12px; font-weight: 300; color: var(--mz-ink-soft); padding: 8px 2px; margin: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .fh-mezotile, .fh-band, .fh-logtile { transition: none; }
-  .fh-mezotile:active, .fh-band:active, .fh-logtile:active { transform: none; }
+  .fh-band, .fh-logtile { transition: none; }
+  .fh-band:active, .fh-logtile:active { transform: none; }
   .fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: none; }
 }
 /* ── Fuel · Stack v2 (mezo-d20.4.3) — day-arc timeline + featured KÖVETKEZŐ card + zone

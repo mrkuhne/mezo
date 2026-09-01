@@ -28,7 +28,6 @@ import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuil
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { FuelLogPage } from '@/features/fuel/pages/FuelLogPage'
-import { FuelMezoPage } from '@/features/fuel/pages/FuelMezoPage'
 import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
@@ -171,7 +170,6 @@ export const routes: RouteObject[] = [
       // The hub's Logolás hero tile → the stacked-window logging page (mezo-byo1).
       { path: 'fuel/log', element: <FuelLogPage /> },
       // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
-      { path: 'fuel/uzenetek', element: <FuelMezoPage /> },
       { path: 'fuel/plan', element: <FuelPlanPage /> },
       { path: 'fuel/stack', element: <FuelStackPage /> },
       { path: 'fuel/kamra', element: <FuelKamraPage /> },
