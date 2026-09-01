@@ -12,7 +12,7 @@ they inline come from `../assets/`.
 | `clay-csomag.html` | https://claude.ai/code/artifact/79f7676e-7998-4a61-b098-44c2e0f8b905 |
 | `nap-gerinc.html` | https://claude.ai/code/artifact/e1eae7d4-05bc-41c9-8e7e-55bdbee70249 |
 | `edzes-tab.html` | https://claude.ai/code/artifact/d9fd807c-71ca-4c27-b8c9-7d32aca48d15 |
-| `mezociklus.html` | https://claude.ai/code/artifact/a4f4ecdd-decc-4524-9fab-931af7a9c8b3 |
+| `mezociklus.html` | https://claude.ai/code/artifact/46daab1d-d30f-4f44-a435-65f225cf6e38 |
 | `edzes-session.html` | https://claude.ai/code/artifact/0a747fcc-0359-462a-8b8b-1de02a611f77 |
 | `fuel-tab.html` | https://claude.ai/code/artifact/e0da58f6-f4ef-4874-b60e-b83a1998ba0e |
 | `mezo-tab.html` | https://claude.ai/code/artifact/dc2800aa-7c1f-41f0-b33d-b3d127b544fa |
