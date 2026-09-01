@@ -340,6 +340,22 @@ describe('KnowledgeListPage (mock mode)', () => {
     await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('15'))
   })
 
+  // Task 12 (mezo-ms9a): a seed c3 jelölt f4-gyel ütközik ("Volleyball: kedd + csütörtök +
+  // szombat") — elfogadáskor a bejelölt "A régit kikapcsolom" checkbox miatt f4-nek is ki
+  // kell kapcsolódnia (toggle(f4, false)), a Tények nézetben pedig "off" csempeként landol.
+  test('a konfliktusos c3 jelölt elfogadása a bejelölt checkboxszal kikapcsolja az ütköző f4 tényt', async () => {
+    renderPage()
+    const card = screen.getByText(candidateSeed[2].text).closest('.mz-candc') as HTMLElement
+    expect(within(card).getByLabelText('A régit kikapcsolom')).toBeChecked()
+    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tények' }))
+    // a „Kikapcsolva" szekció alapból csukott (LifecycleSection defaultOpen=false) — ki kell nyitni
+    await userEvent.click(screen.getByText(/Kikapcsolva/))
+    const f4Tile = await screen.findByText('Volleyball: kedd + csütörtök + szombat')
+    expect(f4Tile.closest('.mz-facttile')).toHaveClass('off')
+  })
+
   it('kirajzolja az életesemény-jelöltek csoportot és a döntés gombjait', async () => {
     renderPage()
     expect(await screen.findByText(/Életesemény-jelöltek/)).toBeInTheDocument()

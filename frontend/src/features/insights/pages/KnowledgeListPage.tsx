@@ -272,6 +272,7 @@ export function KnowledgeListPage() {
           degraded={degraded}
           candidates={candidates}
           onDecideCandidate={(id, decision, refinedText) => decide(id, decision, refinedText)}
+          onToggleConflict={toggle}
           pendingLifeEvents={pendingLifeEvents}
           acceptedEvents={acceptedEvents}
           onAcceptLifeEvent={(c, refined) =>

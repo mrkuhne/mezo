@@ -26,6 +26,9 @@ export function KnowledgeBaseView(props: {
   degraded: boolean
   candidates: FactCandidate[]
   onDecideCandidate: (id: string, decision: FactDecision, refinedText?: string) => void
+  /** Task 12 (mezo-ms9a): a konfliktus-jelzés „A régit kikapcsolom" checkboxa ezt hívja az
+   *  ütköző tény id-jával — a shell ide a meglévő `useKnowledgeActions().toggle`-t adja. */
+  onToggleConflict: (factId: string, active: boolean) => void
   pendingLifeEvents: LifeEventCandidate[]
   acceptedEvents: AcceptedEvent[]
   onAcceptLifeEvent: (candidate: LifeEventCandidate, refined?: { title?: string; summary?: string }) => void
@@ -39,7 +42,7 @@ export function KnowledgeBaseView(props: {
   onNavigate: (view: 'tenyek' | 'kategoriak' | 'profil') => void
 }) {
   const {
-    degraded, candidates, onDecideCandidate, pendingLifeEvents, acceptedEvents, onAcceptLifeEvent,
+    degraded, candidates, onDecideCandidate, onToggleConflict, pendingLifeEvents, acceptedEvents, onAcceptLifeEvent,
     onDecideLifeEvent, facts, buckets, kindCount, kategLine, profileNode, profileLine, onNavigate,
   } = props
 
@@ -61,6 +64,8 @@ export function KnowledgeBaseView(props: {
             <FactCandidateCard
               key={c.id}
               candidate={c}
+              conflictFact={facts.find((f) => f.id === c.conflictsWithFactId) ?? null}
+              onToggleConflict={onToggleConflict}
               onDecide={(decision, refinedText) => onDecideCandidate(c.id, decision, refinedText)}
             />
           ))}
