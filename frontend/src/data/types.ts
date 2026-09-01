@@ -733,7 +733,7 @@ export interface LifeEventCandidate {
 
 export type LifeEventDecision = 'accept' | 'reject'
 
-export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT'
+export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT' | 'PERSON'
 
 /** W2.6 (mezo-b3pp.11): one active knowledge-graph node for the Tudástár "Kapcsolatok" section —
  *  `topEdges` are pre-rendered Hungarian lines from the backend `GraphEdgeLineRenderer`, the same
