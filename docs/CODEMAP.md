@@ -369,10 +369,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts, slotTemplateHooks.ts,
     stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts
 - **FE ui** `frontend/src/features/fuel`
-  - **pages:** FuelKamraPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx, FuelMezoPage.tsx,
-    FuelNaploPage.tsx, FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx,
-    KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
-    RecipesSkeleton.tsx
+  - **pages:** FuelKamraPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx, FuelNaploPage.tsx,
+    FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx, KamraItemDetailPage.tsx,
+    KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx, FuelSettingsSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
@@ -385,9 +384,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
     WeeklySupplementGrid.tsx, WindowBlock.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
-    dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, fuelMezoMessages.ts, fuelSwimlane.ts, heroWindow.ts,
-    kamraItems.ts, keretHero.ts, matchMealsToStack.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts,
-    resolveDayType.ts, validateSlotPlan.ts
+    dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts, keretHero.ts,
+    matchMealsToStack.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts, resolveDayType.ts,
+    validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
