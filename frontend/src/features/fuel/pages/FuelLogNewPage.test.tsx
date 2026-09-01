@@ -5,9 +5,10 @@
 // slotokból (fuelSwimlane.tileKey). Minden MÁS hook valódi marad (mock mód) az importOriginal
 // spreaddel; a VITE_USE_MOCK stub miatt a fájl valós módban is ugyanezt méri.
 import type { ReactNode } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, renderHook, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, vi } from 'vitest'
 import type { FuelPlanToday, FuelSlot } from '@/data/types'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -36,6 +37,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 })
 
 import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
+import { useFuelDay } from '@/data/hooks'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => {
@@ -50,12 +52,19 @@ const baseCtx = {
   energy: { base: 2400, activity: 0, balance: 0, target: 2400 },
 }
 
-// Az uzsonna-ablak, amire a deep linkek mutatnak. A kulcsot az app saját szabálya adja,
-// nem egy találgatott string.
+// KÉT ablak, és a deep linkek a MÁSODIKRA mutatnak: egyeslemes tervnél a `tiles.find(key)` és a
+// `tiles[0]` megkülönböztethetetlen lenne, azaz a „kulcsból oldja fel az ablakot" teszt nem tudná
+// megmondani, hogy kulcs- vagy index-egyezést mér. A kulcsot az app saját `${time}-${label}`
+// szabálya adja (fuelSwimlane.tileKey), nem egy találgatott string.
+const REGGELI: FuelSlot = {
+  time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'pending',
+  kcal: 480, p: 30, c: 55, f: 12,
+}
 const UZSONNA: FuelSlot = {
   time: '16:30', kind: 'meal', label: 'Uzsonna', slotKey: 'snack', state: 'pending',
   kcal: 380, p: 26, c: 34, f: 15,
 }
+const TWO_WINDOWS = [REGGELI, UZSONNA]
 const keyOf = (s: FuelSlot) => `${s.time}-${s.label}`
 
 let router: ReturnType<typeof createMemoryRouter>
@@ -73,8 +82,41 @@ function renderAt(entry: string) {
 }
 const currentPath = () => router.state.location.pathname + router.state.location.search
 
+/** Ugyanaz a render, de MEGOSZTOTT QueryClienttel, hogy a mentés után a `useFuelDay` szonda
+ *  ugyanabból a cache-ből olvasson (a FuelLogPage.test.tsx múltbeli-mentés tesztjének mintája). */
+function renderAtSharedClient(entry: string) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  router = createMemoryRouter(
+    [
+      { path: '/fuel/log/uj', element: <FuelLogNewPage /> },
+      { path: '/fuel/log', element: <div>LOG PAGE PROBE</div> },
+    ],
+    { initialEntries: [entry] },
+  )
+  render(
+    <QueryClientProvider client={qc}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  )
+  return {
+    qc,
+    qcWrapper: ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    ),
+  }
+}
+
+/** Egy kamra-tétel felvétele a composerbe, majd mentés a (múltbeli) Pótlás-CTA-val. */
+async function addPantryLineAndSave(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: 'Kamra · hozzáadás' }))
+  const addBtn = (await screen.findAllByRole('button', { name: /hozzáadása$/i }))[0]
+  await user.click(addBtn)
+  await user.click(screen.getByRole('button', { name: 'Bezárás' }))
+  await user.click(screen.getByRole('button', { name: /pótlás/i }))
+}
+
 test('az ablak-kulcsból fejlécet és rögzített slotot old fel', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt(`/fuel/log/uj?w=${encodeURIComponent(keyOf(UZSONNA))}`)
   expect(await screen.findByText('Uzsonna')).toBeInTheDocument()
   expect(screen.getByText('16:30 · ablak')).toBeInTheDocument()
@@ -84,7 +126,7 @@ test('az ablak-kulcsból fejlécet és rögzített slotot old fel', async () => 
 })
 
 test('ismeretlen ablak-kulcsnál ablakon kívüli módra esik vissza', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj?w=99:99-Nincs')
   expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
   expect(screen.getByText('szabad tétel · te választod a mikort')).toBeInTheDocument()
@@ -92,14 +134,14 @@ test('ismeretlen ablak-kulcsnál ablakon kívüli módra esik vissza', async () 
 })
 
 test('hiányzó w-nél is ablakon kívüli mód, sosem fabrikál ablakot', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj')
   expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Reggeli' })).toBeInTheDocument()
 })
 
 test('múltbeli napon Pótlás-hangulatot és a nap-figyelmeztetést mutatja', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   const y = addDays(localDateString(), -1)
   renderAt(`/fuel/log/uj?d=${y}`)
   expect(await screen.findByText('Pótlás')).toBeInTheDocument()
@@ -107,34 +149,34 @@ test('múltbeli napon Pótlás-hangulatot és a nap-figyelmeztetést mutatja', a
 })
 
 test('jövőbeli d-t mára clampel', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt(`/fuel/log/uj?d=${addDays(localDateString(), 3)}`)
   expect(await screen.findByText('Logolás')).toBeInTheDocument()
   expect(screen.queryByText('Pótlás')).not.toBeInTheDocument()
 })
 
 test('értelmezhetetlen d-t mára clampel', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj?d=nem-datum')
   expect(await screen.findByText('Logolás')).toBeInTheDocument()
   expect(screen.queryByText('Pótlás')).not.toBeInTheDocument()
 })
 
 test('MAX_BACK-en túli múltbeli d-t mára clampel', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj?d=2020-01-01')
   expect(await screen.findByText('Logolás')).toBeInTheDocument()
   expect(screen.queryByText('Pótlás')).not.toBeInTheDocument()
 })
 
 test('ai=1 nyitott AI panellel indul', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj?ai=1')
   expect(await screen.findByLabelText('Mit ettél?')).toBeInTheDocument()
 })
 
 test('Mégse a listára visz vissza ugyanarra a napra', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   const y = addDays(localDateString(), -1)
   renderAt(`/fuel/log/uj?d=${y}`)
   await userEvent.click(await screen.findByRole('button', { name: 'Mégse' }))
@@ -143,15 +185,52 @@ test('Mégse a listára visz vissza ugyanarra a napra', async () => {
 })
 
 test('Mégse mai napon a lista alap-URL-jére visz', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj')
   await userEvent.click(await screen.findByRole('button', { name: 'Mégse' }))
   expect(currentPath()).toBe('/fuel/log')
 })
 
 test('a ‹ Vissza fejléc-gomb is a listára visz', async () => {
-  hoisted.plan = { ...baseCtx, slots: [UZSONNA] }
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   renderAt('/fuel/log/uj')
   await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
   expect(currentPath()).toBe('/fuel/log')
+})
+
+// ── A múltbeli könyvelés IGAZSÁGA (a FuelLogPage.test.tsx „múltbeli mentés a választott nap
+// loggedAt-jével" tesztjének mércéje). A Pótlás-eyebrow és a nap-figyelmeztetés csak a `past`
+// flaget méri: e nélkül a két teszt nélkül a `logDate`/`logTime` prop törölhető lenne úgy, hogy
+// a tétel csendben MÁRA könyvelődik — pontosan az a hazugság, amit a sáv a usernek ígér. ──
+
+test('múltbeli nap: a mentés a VÁLASZTOTT napra könyvelődik (logDate)', async () => {
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const y = addDays(localDateString(), -1)
+  const user = userEvent.setup()
+  const { qcWrapper } = renderAtSharedClient(`/fuel/log/uj?d=${y}`)
+  await addPantryLineAndSave(user)
+
+  const probe = renderHook(() => useFuelDay(y), { wrapper: qcWrapper })
+  await waitFor(() => {
+    expect(probe.result.current.fuel.meals.some(m => m.loggedAt?.startsWith(`${y}T`))).toBe(true)
+  })
+})
+
+test('d + w együtt: a pótlás az ABLAK saját órájára könyvelődik (logTime)', async () => {
+  // Ez az az URL-alak, amit a Task 4 blokk-CTA-i generálnak — ezért itt a `w` az ablak-kulcs,
+  // a várt óra pedig a crafted slot saját ideje, nem hardcode-olt találgatás.
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const y = addDays(localDateString(), -1)
+  const user = userEvent.setup()
+  const { qcWrapper } = renderAtSharedClient(
+    `/fuel/log/uj?d=${y}&w=${encodeURIComponent(keyOf(UZSONNA))}`,
+  )
+  expect(await screen.findByText('Uzsonna')).toBeInTheDocument()
+  await addPantryLineAndSave(user)
+
+  const probe = renderHook(() => useFuelDay(y), { wrapper: qcWrapper })
+  await waitFor(() => {
+    const meals = probe.result.current.fuel.meals
+    expect(meals.some(m => m.loggedAt?.startsWith(`${y}T${UZSONNA.time}`))).toBe(true)
+  })
 })

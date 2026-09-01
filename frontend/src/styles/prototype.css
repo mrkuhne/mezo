@@ -6746,7 +6746,11 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    `.cmp-savebar`, a hardcode-olt hexek helyett a meglévő tokenekkel (a prototípus
    #A84A26 → --coral, #A8801F/rgba(201,150,46,·) → --mz-cell-amber-ink/-bg, a
    savebar #FDFAF4 lapja → --surface-page), így a sötét mód is együtt fordul. */
-.flognew-head { display: flex; align-items: center; gap: 9px; padding: 8px 0 10px; }
+/* A 14px vízszintes inset a prototípusé (`.cmp-head { padding: 8px 14px 10px }`) és itt KÖTELEZŐ:
+   a fejléc a `.mz-page` közvetlen gyereke, annak pedig nincs oldalsó paddingja — minden testvér
+   a sajátját hozza (.mz-page-head 14px, .mz-page-hero/.mz-page-body 17px). Nélküle a clay-ikon
+   12px-re kezdődne a képernyő szélétől a fölötte lévő „‹ Vissza" 26px-e alatt: látható lépcső. */
+.flognew-head { display: flex; align-items: center; gap: 9px; padding: 8px 14px 10px; }
 .flognew-ic {
   width: 38px; height: 38px; border-radius: 13px; flex: none; display: grid; place-items: center;
   background: var(--surface-card); box-shadow: inset 0 0 0 1px var(--border-subtle);
@@ -6773,16 +6777,24 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .flognew-pastnote {
   display: flex; gap: 6px; align-items: center; font-size: 8px; font-weight: 600;
   color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg); border-radius: 10px;
-  padding: 6px 9px; margin-bottom: 8px;
+  padding: 6px 9px;
+  /* ugyanaz a 14px inset, mint a fejlécen (prototípus `.pastnote { margin: 0 14px 8px }`) */
+  margin: 0 14px 8px;
 }
 .flognew-pastnote b { margin: 0 3px; }
 .flognew-pastnote i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
 /* Ragadós mentés-sáv: a composer akció-sora az oldal aljára tapad, nem görög a tételek alá.
+   A `bottom` NEM 0: a `.tab-bar` lebegő kapszula (`position: absolute; bottom: 14px;
+   height: 64px`) = 78px-es sáv a képernyő alján, a `.mz-page-body` alsó paddingja pedig csak
+   19px — 0-val a kitapadt sáv alsó ~31px-e a tab-bar mögé kerül (futásidőben mérve).
+   14 + 64 + 8px levegő = 86px. A `border-top` a prototípus `.cmp-savebar` hajszálvonala
+   (fuel-log-oldal.html:1163), tokenre igazítva: nélküle sűrű lista alatt nincs elválasztás.
    A margót NEM állítjuk: a MealComposer sora inline `margin: 14px 0 12px`-t visz, azt egy
    osztály-szabály úgysem írná felül — a padding + a lap-színű átmenet a mi dolgunk. */
 .flognew-page .logflow-actions {
-  position: sticky; bottom: 0; z-index: 2;
+  position: sticky; bottom: 86px; z-index: 2;
   padding: 9px 0 10px;
+  border-top: 0.5px solid var(--border-subtle);
   background: linear-gradient(180deg, transparent 0%, var(--surface-page) 32%);
 }
 /* ── Fuel · Terv + Gyógyszer re-face (mezo-d20.4.7) — prototype fuel-body
