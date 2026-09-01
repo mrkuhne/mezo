@@ -288,3 +288,32 @@ test('üres múltbeli nap: nincs ＋ tervezz CTA, a meta „nem volt ablak"-ot m
   // fix wave): the hero subline AND the üres-nap block's meta line.
   expect(screen.getAllByText('ezen a napon nem volt étkezési ablak').length).toBeGreaterThanOrEqual(2)
 })
+
+// ── Logolás 2.1 (mezo-zeeq): score pill + kcal row, Rost ring, context chip ──────────────
+
+test('a scored done meal shows the big score pill (number + tone word) and a Rost ring', async () => {
+  renderView() // real mock day: the scored done meals carry fiberG
+  const pill = (await screen.findAllByRole('button', { name: /AI score részletek$/ }))[0]
+  expect(pill.className).toMatch(/fh-aisc/)
+  expect(pill.textContent).toMatch(/\d{1,3}(jó|közepes|gyenge)/)
+  expect(screen.getAllByRole('img', { name: /^Rost \d+ g, a napi cél/ }).length).toBeGreaterThan(0)
+})
+
+test('the context chip reads the scored Szerep row — mock m2 is Pre-workout, m1 Standard', async () => {
+  renderView()
+  expect(await screen.findByText('Pre-workout')).toBeInTheDocument()
+  expect(screen.getAllByText('Standard').length).toBeGreaterThan(0)
+})
+
+test('an unscored done window shows no context chip and the folyamatban pill', () => {
+  hoisted.plan = {
+    ...baseCtx,
+    slots: [
+      { time: '07:30', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealName: 'Skyr-bowl zabbal', kcal: 420, p: 32, c: 48, f: 9 },
+    ],
+  }
+  renderView()
+  expect(screen.getByText('✨ folyamatban')).toBeInTheDocument()
+  expect(screen.queryByText('Standard')).not.toBeInTheDocument()
+  expect(screen.queryByText('Pre-workout')).not.toBeInTheDocument()
+})

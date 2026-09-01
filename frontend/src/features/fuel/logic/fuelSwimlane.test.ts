@@ -186,7 +186,7 @@ test('a zero macro target never produces NaN — the ring reads 0%', () => {
 const tile = (over: Partial<WindowTileVM>): WindowTileVM => ({
   key: '07:30-Reggeli', slotKey: 'breakfast', state: 'future', icon: 'i-reggeli',
   label: 'Reggeli', time: '07:30', name: 'Reggeli', ghost: true, fromPlan: false,
-  kcal: null, rings: [], mealId: null, scorePct: null, scorable: false, ...over,
+  kcal: null, rings: [], mealId: null, scorePct: null, scorable: false, context: null, ...over,
 })
 
 describe('asPastDayLane', () => {
