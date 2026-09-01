@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
  * <p>Over the 14-day window, sets with both {@code weightKg} and {@code targetWeightKg} logged
  * (and not skipped) are classified: undershoot when the logged weight is >= 2.5 kg under target,
  * overshoot when it is >= 2.5 kg over. Fires on >= 4 such events with a dominant direction,
- * gated on new gym data (RoundOneGates).
+ * gated on new gym data (DetectorGates).
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
@@ -35,7 +35,7 @@ public class ProgressionAdherenceDetector implements CharacterDetector {
         if (in.meso() != null && in.meso().deloadWeek()) {
             return List.of();
         }
-        if (!RoundOneGates.newGymData(in)) {
+        if (!DetectorGates.newGymData(in)) {
             return List.of();
         }
         int under = 0;

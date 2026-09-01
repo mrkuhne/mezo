@@ -30,7 +30,7 @@ public class NiggleMapDetector implements CharacterDetector {
 
     @Override
     public List<DetectorSignal> detect(DetectorInput in) {
-        if (!RoundOneGates.newGymData(in) && !RoundOneGates.newSportData(in)) {
+        if (!DetectorGates.newGymData(in) && !DetectorGates.newSportData(in)) {
             return List.of();
         }
         Map<String, Integer> painCounts = new LinkedHashMap<>();

@@ -32,7 +32,7 @@ public class HrRecoveryTrendDetector implements CharacterDetector {
 
     @Override
     public List<DetectorSignal> detect(DetectorInput in) {
-        if (!RoundOneGates.newRunData(in)) {
+        if (!DetectorGates.newRunData(in)) {
             return List.of();
         }
         Band today = band(in.trend().runsEightWeeks(), in.day());
