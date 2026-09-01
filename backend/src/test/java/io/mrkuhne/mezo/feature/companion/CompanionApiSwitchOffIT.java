@@ -18,6 +18,26 @@ class CompanionApiSwitchOffIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testRenameConversation_shouldReturn404_whenCompanionSwitchedOff() {
+        // F7.5 (mezo-d20.8.5) — the new write ops sit behind the same bean-boundary gate
+        String body = patchForBody(
+                "/api/companion/conversation/" + java.util.UUID.randomUUID(),
+                io.mrkuhne.mezo.api.dto.ConversationRenameRequest.builder().title("x").build(),
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testDeleteConversation_shouldReturn404_whenCompanionSwitchedOff() {
+        String body = exchangeForBody(org.springframework.http.HttpMethod.DELETE,
+                "/api/companion/conversation/" + java.util.UUID.randomUUID(), null,
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
     void testListFacts_shouldReturn404_whenCompanionSwitchedOff() {
         // V1.1 fact surface — gated by the same switch as the rest of the companion
         String body = getForBody("/api/companion/fact", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);

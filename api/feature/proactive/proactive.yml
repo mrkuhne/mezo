@@ -88,6 +88,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/memoir/archive:
+    get:
+      tags: [Proactive]
+      operationId: getMemoirArchive
+      summary: Every persisted memoir, newest week first — the archive shelf (F7.5, mezo-d20.8.5)
+      description: >-
+        The full list in one round — weekly cadence keeps this small (~52 rows/year). Never
+        generates: the archive lists what the Sunday cron / lazy-latest already wrote. An empty
+        list is the honest empty state (never a 404 — list-endpoint precedent).
+      responses:
+        '200':
+          description: The persisted memoirs, weekStart descending (possibly empty)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemoirArchiveResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/proactive/prediction:
     get:
       tags: [Proactive]
@@ -475,6 +495,14 @@ components:
           type: array
           items: { $ref: '#/components/schemas/MemoirAnchor' }
         generatedAt: { type: string, format: date-time }
+    MemoirArchiveResponse:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          description: Every persisted memoir, weekStart descending.
+          items: { $ref: '#/components/schemas/MemoirResponse' }
     PredictionResponse:
       type: object
       required: [id, title, basis, metricKey, expectedDirection, validFrom, validTo, status, generatedAt]
