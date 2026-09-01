@@ -70,9 +70,15 @@ test('a beállítások vissza gombja a feedre visz, nem a belépési pontra', as
 // `/me/ertesitesek`-re megy (push), a feed viszont `navigate(-1)`-gyel jött vissza — a hub Értesítés
 // csempéjéről indulva a feed vissza gombja a beállításokra vitt, a kettőt váltogatva örökre bent
 // ragadtál, csak a tab-sáv vitt ki. A feed most fix `/me`-re megy: a létra kifelé vezet.
+//
+// hub-tile-reorg (mezo-o486, 2026-09-01): az Én hub Értesítés csempéje megszűnt — a belépés most
+// a Beállítások csempén át a BeallitasokPage Értesítések során keresztül vezet a kapcsolókhoz.
+// A lenti lánc onnantól változatlan (a kapcsolók ‹ Értesítések-je a feedre, a feed ‹ Én-je a hubra
+// visz), csak a hub oldali első lépés rövidebb: a feed vissza gombja most közvetlenül a hubra ér.
 test('a hub csempéjéről a létra visszavezet az Én hubra: beállítások → feed → hub', async () => {
   renderAt('/me')
-  await userEvent.click(await screen.findByRole('button', { name: 'Értesítések beállításai' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Beállítások' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Értesítések' }))
 
   expect(await screen.findByText('Értesítés-beállítások')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
@@ -83,7 +89,7 @@ test('a hub csempéjéről a létra visszavezet az Én hubra: beállítások →
   expect(back).toHaveTextContent('‹ Én')
 
   await userEvent.click(back)
-  expect(await screen.findByRole('button', { name: 'Értesítések beállításai' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
 })
 
 // Fix round 2 (final review, Minor 4): a `big` a NYITÁSKORI pillanatkép, a `sub` élő — egy végig
