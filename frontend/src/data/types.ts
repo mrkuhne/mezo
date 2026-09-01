@@ -552,6 +552,12 @@ export type MentionSource = 'voice' | 'camera' | 'chip' | 'text' | 'chat'
 export type MentionContext =
   | 'munka' | 'csalad' | 'baratok' | 'edzes'
   | 'konfliktus' | 'kozos_program' | 'segitseg' | 'egyeb'
+export interface PersonGraphEdge {
+  nodeKind: string
+  title: string
+  relationHu: string
+  strength: string
+}
 export interface PersonEntry {
   id: string
   name: string
@@ -571,6 +577,7 @@ export interface PersonEntry {
   affectTrend: number[]
   knownFacts: string[]
   ties: string[]
+  graphEdges: PersonGraphEdge[]
 }
 export interface Mention {
   id: string

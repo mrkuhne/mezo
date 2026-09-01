@@ -72,6 +72,7 @@ export function toPersonEntry(p: PersonResponse): PersonEntry {
     affectTrend: p.affectTrend,
     knownFacts: p.knownFacts,
     ties: p.ties,
+    graphEdges: p.graphEdges,
   }
 }
 
