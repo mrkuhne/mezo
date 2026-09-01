@@ -24,15 +24,20 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { FuelMeal } from '@/data/types'
-import { useFuelDay, useFuelTimeline } from '@/data/hooks'
+import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
+import { useFuelDay, useFuelTimeline, useWaterActions } from '@/data/hooks'
 import { buildWindowLane, asPastDayLane } from '@/features/fuel/logic/fuelSwimlane'
+import { buildKeretHero, asPastDayHero } from '@/features/fuel/logic/keretHero'
 import { huInt } from '@/shared/lib/huNum'
 import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { KeretHero } from '@/features/fuel/components/KeretHero'
 import { WindowBlock } from '@/features/fuel/components/WindowBlock'
 import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
+import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
+import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 
 // How far back the stepper lets you go — a week of catch-up, not an open-ended ledger
 // (mezo-1j3z). The ?d= deep link clamps to the same window (anything outside it, or
@@ -58,13 +63,31 @@ export function FuelLogPage() {
   const past = offset > 0
 
   const { fuel } = useFuelDay(date)
-  const { plan, budget } = useFuelTimeline(date)
+  const { plan, budget, nowHHmm, energyBreakdown } = useFuelTimeline(date)
+  const { logWater } = useWaterActions(date)
 
   const laneRaw = buildWindowLane({ slots: plan.slots, budget, meals: fuel.meals })
   const lane = past ? asPastDayLane(laneRaw) : laneRaw
   const doneCount = lane.tiles.filter(t => t.state === 'done').length
 
+  // The hub's own Keret-hero (Logolás 2.1, mezo-zeeq), fed exactly the way FuelMaiPage feeds it,
+  // so the two surfaces never disagree on the day. A past day drops the chips and the now-marker
+  // (asPastDayHero): useFuelTimeline's energy and clock describe TODAY, not the stepped date.
+  const staticEnergy = plan.energy.activity === 0 && plan.energy.balance === 0
+  const heroRaw = buildKeretHero({
+    budget, staticEnergy, consumed: fuel.consumed, meals: fuel.meals,
+    water: { currentMl: fuel.consumed.water, targetMl: fuel.targets.water },
+    slots: plan.slots, nowHHmm,
+  })
+  const heroVm = past ? asPastDayHero(heroRaw) : heroRaw
+  const remaining = heroVm.remainingKcal
+  const ofLine = lane.tiles.length > 0
+    ? `${doneCount}/${lane.tiles.length} ablak kész · ${huInt(Math.abs(remaining))} kcal ${remaining >= 0 ? 'még belefér' : 'fölötte'}`
+    : past ? 'ezen a napon nem volt étkezési ablak' : 'nincs mai étkezési ablak'
+
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
+  const [waterOpen, setWaterOpen] = useState(false)
+  const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
 
   // A logolás saját oldalra megy (mezo-bq2t): a kontextus — nap, ablak, AI-szándék — az URL-ben
   // utazik, így a lista állapota érintetlen marad és a vissza-gomb visszatesz ide.
@@ -121,21 +144,17 @@ export function FuelLogPage() {
         <div className="mz-eyebrow" style={{ color: past ? 'var(--mz-cell-amber-ink)' : 'var(--coral)' }}>
           {past ? 'Pótlás' : 'Logolás'}
         </div>
-        <div className="mz-hero-row">
-          <span className="mz-bignum">{huInt(fuel.consumed.kcal)}</span>
-          <span className="flog-goal">/ {huInt(fuel.targets.kcal)} kcal</span>
-        </div>
-        <div className="mz-hero-sb">
-          {lane.tiles.length > 0
-            ? `${doneCount}/${lane.tiles.length} ablak kész`
-            : past ? 'ezen a napon nem volt étkezési ablak' : 'nincs mai étkezési ablak'}
-        </div>
         {past && (
           <div className="flog-pastnote">
             <i aria-hidden="true" />
             Amit itt logolsz, erre a napra könyvelődik — pontszámot is kap.
           </div>
         )}
+      </div>
+      <div className="flog-khero">
+        <KeretHero vm={heroVm} ofLine={ofLine}
+          onChip={(section) => setEnergyOpen(section)}
+          onWaterRing={() => setWaterOpen(true)} />
       </div>
       <PageBody principle="Egy felület, egy mozdulat: görgetsz a napodon, és ott indítod a logolást, ahol az ablak van — a blokk átvisz a logoló oldalra, és vissza.">
         <EntranceGroup>
@@ -215,6 +234,17 @@ export function FuelLogPage() {
       </PageBody>
 
       {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
+      {waterOpen && (
+        <WaterLogSheet
+          currentMl={fuel.consumed.water}
+          targetMl={fuel.targets.water}
+          onLog={(ml) => logWater(ml)}
+          onClose={() => setWaterOpen(false)}
+        />
+      )}
+      {energyOpen && energyBreakdown && (
+        <EnergyBreakdownSheet breakdown={energyBreakdown} initial={energyOpen} onClose={() => setEnergyOpen(null)} />
+      )}
     </MozaikPage>
   )
 }

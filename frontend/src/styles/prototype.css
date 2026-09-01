@@ -6822,7 +6822,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    eating window; the Logold CTA expands the MealComposer IN PLACE via the
    grid-rows 0fr→1fr well. State washes: done sage, now coral ring, missed
    dashed amber (never punitive red), free/empty dashed neutral. ── */
-.flog-goal { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+/* The hub's KeretHero as the page hero (Logolás 2.1, mezo-zeeq): the page's own coral/gold
+   tone already washes the top, so the hero's halo-sage band is dropped here. */
+.flog-khero .khero { background: none; padding-top: 0; }
 /* Day stepper + Pótlás mood + the past-day closed card (mezo-1j3z) — prototype
    fuel-log-multinap.html `.daysw`/`.pastnote`/`.dayclosed`, tokens translated. */
 .flog-daysw { display: flex; align-items: center; gap: 7px; justify-content: center; margin: 2px 0 6px; }
