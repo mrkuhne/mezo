@@ -81,6 +81,14 @@ test('a Tudástárra mutató link ott van az összegző sáv alatt', () => {
   expect(link).toHaveAttribute('href', '/mezo/knowledge')
 })
 
+// mezo-u2lh: the grid is a section of its own — its „Kategóriák" eyebrow is what gives it
+// vertical rhythm against the profile card above and names the two blocks apart.
+test('the kind grid sits under its own section eyebrow, below the profile section', () => {
+  const { container } = renderPage()
+  const eyebrows = [...container.querySelectorAll('.tud-lsec')].map(el => el.textContent)
+  expect(eyebrows).toEqual(['Profil', 'Kategóriák'])
+})
+
 test('the base view is the kind grid — six tiles, counts, no node cards', () => {
   const { container } = renderPage()
   expect(container.querySelector('.tud-summary')).toBeInTheDocument()
