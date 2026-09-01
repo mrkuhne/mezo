@@ -43,14 +43,14 @@ const renderPageWithLocationProbe = () =>
     { wrapper: QueryWrapper },
   )
 
-// mezo-d20.11 (ADR 0032): the page wears its own Mozaik scaffold — the prototype's `‹ Én`
+// mezo-d20.11 (ADR 0032): the page wears its own Mozaik scaffold — the prototype's `‹ Tudástár`
 // back chip + the page-hero — instead of the old .pghead-np band, which offered no way back
 // and repeated the hero's own counts inside the summary tile.
 test('renders the Mozaik hero with the derived counts and a way back', () => {
   const { container } = renderPage()
   expect(screen.getByText('Tudásgráf')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
-  expect(screen.getByText('‹ Én')).toBeInTheDocument()
+  expect(screen.getByText('‹ Tudástár')).toBeInTheDocument()
   expect(container.querySelector('.mz-bignum')?.textContent).toBe('15')
   expect(screen.getByText('tudás · 13 kapcsolat · élő mindmap')).toBeInTheDocument()
   // The old .pghead-np band is gone — no page mixes the two header generations any more.

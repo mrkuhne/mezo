@@ -117,7 +117,7 @@ export function KnowledgeListPage() {
         <Link to="/me/knowledge" style={{ color: 'var(--lav-deep)', fontWeight: 600, textDecoration: 'none' }}>
           Tudásgráfon
         </Link>{' '}
-        élnek.
+        élnek — élő mindmap →
       </p>
 
       {candidates.length > 0 && (

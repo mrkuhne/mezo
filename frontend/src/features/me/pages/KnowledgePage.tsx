@@ -4,7 +4,7 @@
 // #page-tudas (values ×1.18).
 //
 // ADR 0032: the dissolved Me shell means this page owns its own header — the
-// prototype's `‹ Én` back chip — and the prototype's page-hero (i-tudas + the
+// prototype's `‹ Tudástár` back chip (hub-tile-reorg: the Én hub's Tudás tile is gone — the Tudástár is the graph's door) — and the prototype's page-hero (i-tudas + the
 // fact count + „tudás · N kapcsolat · élő mindmap") replaces the old
 // .pghead-np band, which left the page with no way back AND repeated the
 // hero's own number inside the summary tile. The summary tile is now the
@@ -58,7 +58,7 @@ export function KnowledgePage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate(-1)} label="‹ Én" />
+      <PageHead onBack={() => navigate('/mezo/knowledge')} label="‹ Tudástár" />
 
       <PageHero
         icon="i-tudas"
