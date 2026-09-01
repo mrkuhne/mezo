@@ -111,10 +111,15 @@ test('?kind= deep link lands in the category view; invalid kind falls back to th
   expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
 })
 
-test('back chip returns to the grid', async () => {
+// mezo-ni86: the category view's back affordance IS the page-head chip — it reads
+// „‹ Kategóriák" there (instead of „‹ Én"), and no second chip floats in the body.
+test('the page-head chip returns to the grid from the category view', async () => {
   renderAt('/?kind=PATTERN')
-  fireEvent.click(screen.getByRole('button', { name: '‹ Kategóriák' }))
+  expect(screen.getByText('‹ Kategóriák')).toBeInTheDocument()
+  expect(screen.queryByText('‹ Én')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('button', { name: 'Minták' })).toBeInTheDocument()
+  expect(screen.getByText('‹ Én')).toBeInTheDocument()
 })
 
 test('node row opens the detail sheet; Archivál archives and the node disappears', async () => {

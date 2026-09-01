@@ -10,16 +10,15 @@ const nodes: KnowledgeGraphNode[] = [
 ]
 
 const setup = (over: Partial<Parameters<typeof KindNodeList>[0]> = {}) => {
-  const onBack = vi.fn(); const onOpenNode = vi.fn()
+  const onOpenNode = vi.fn()
   render(<KindNodeList kind="PATTERN" label="Minták" nodes={nodes}
-    onBack={onBack} onOpenNode={onOpenNode} {...over} />)
-  return { onBack, onOpenNode }
+    onOpenNode={onOpenNode} {...over} />)
+  return { onOpenNode }
 }
 
-test('renders the category header, the back chip and one compact row per node', () => {
+test('renders the category header and one compact row per node', () => {
   setup()
   expect(screen.getByText('Minták · 2')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: '‹ Kategóriák' })).toBeInTheDocument()
   expect(screen.getByText('Késői evés rontja az alvást')).toBeInTheDocument()
   // edge count rides the row; zero-edge rows omit it
   expect(screen.getByText('2 kapcsolat')).toBeInTheDocument()
@@ -29,10 +28,15 @@ test('renders the category header, the back chip and one compact row per node', 
   expect(screen.queryByRole('button', { name: 'Archivál' })).not.toBeInTheDocument()
 })
 
-test('back chip and row taps report up', () => {
-  const { onBack, onOpenNode } = setup()
-  fireEvent.click(screen.getByRole('button', { name: '‹ Kategóriák' }))
-  expect(onBack).toHaveBeenCalled()
+// mezo-ni86: the back affordance lives in the page-head (KnowledgePage), not here —
+// a second in-body chip read as a different destination.
+test('renders no back chip of its own', () => {
+  setup()
+  expect(screen.queryByRole('button', { name: '‹ Kategóriák' })).not.toBeInTheDocument()
+})
+
+test('row taps report the node up', () => {
+  const { onOpenNode } = setup()
   fireEvent.click(screen.getByRole('button', { name: 'Futás-napokon jobban alszol' }))
   expect(onOpenNode).toHaveBeenCalledWith(nodes[1])
 })
