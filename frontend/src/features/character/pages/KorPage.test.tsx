@@ -1,47 +1,62 @@
 // KorPage — the generic per-round mini-page over static inventory content
 // (mezo-1gim.14, Task 5). No data hooks — mocks useParams directly, the RunPage idiom.
+//
+// Round 3 (mezo-1gim.15, Task 7): rounds 1-3 have all now landed for real and no longer exist in
+// INVENTORY_ROUNDS (see inventory.ts's header) — the one round left ("Kapcsolatok & AI-meta",
+// n: 4) happens to carry no multi-detector item, so pinning the "N detektor" count-rendering
+// behaviour to real content would make this test break every time a round lands, for a reason
+// unrelated to what it actually covers (KorPage's own rendering logic, not inventory.ts's
+// content). `@/features/character/inventory` is mocked with a synthetic round instead, so this
+// test stays stable across future round flips.
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { KorPage } from './KorPage'
 
 const mockNavigate = vi.fn()
-const hoisted = vi.hoisted(() => ({ n: '1' }))
+const hoisted = vi.hoisted(() => ({ n: '7' }))
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return { ...actual, useNavigate: () => mockNavigate, useParams: () => ({ n: hoisted.n }) }
 })
+vi.mock('@/features/character/inventory', () => ({
+  INVENTORY_ROUNDS: [
+    {
+      n: 7,
+      title: 'Teszt kör',
+      items: [
+        { t: 'Egy-detektoros tétel', det: ['solo-detector'] },
+        { t: 'Több-detektoros tétel', det: ['det-a', 'det-b', 'det-c'] },
+        { t: 'Érzékeny tétel', sensitive: true },
+        { t: 'Sima tétel' },
+      ],
+    },
+  ],
+}))
 
 beforeEach(() => {
-  hoisted.n = '1'
+  hoisted.n = '7'
   mockNavigate.mockReset()
 })
 
 describe('KorPage', () => {
-  // Rounds 1 ("Edzés & test") and 2 ("Fuel & ciklus") landed for real via mezo-1gim.15 and no
-  // longer exist in INVENTORY_ROUNDS (see inventory.ts's header) — round 3
-  // ("Psziché & viselkedés-meta") is now the lowest-numbered round left, and it happens to carry
-  // both a single-detector item and a multi-detector item, so it covers both cases below.
-  test('round 3 renders its hero + items, single-detector items get a ghost chip', () => {
-    hoisted.n = '3'
+  test('renders its hero + items, single-detector items get a ghost chip', () => {
     render(<KorPage />)
-    expect(screen.getByText('3. KÖR')).toBeInTheDocument()
-    expect(screen.getByText('Psziché & viselkedés-meta · 8 tétel')).toBeInTheDocument()
-    expect(screen.getByText('Kreed/fókusz × Napzárás')).toBeInTheDocument()
-    expect(screen.getByText('promise-vs-delivery')).toBeInTheDocument()
-    // 'Hála-témák' has no det[] — no chip, no crash.
-    expect(screen.getByText('Hála-témák')).toBeInTheDocument()
+    expect(screen.getByText('7. KÖR')).toBeInTheDocument()
+    expect(screen.getByText('Teszt kör · 4 tétel')).toBeInTheDocument()
+    expect(screen.getByText('Egy-detektoros tétel')).toBeInTheDocument()
+    expect(screen.getByText('solo-detector')).toBeInTheDocument()
+    // 'Sima tétel' has no det[] — no chip, no crash.
+    expect(screen.getByText('Sima tétel')).toBeInTheDocument()
   })
 
   test('a multi-detector item shows a count, not each key', () => {
-    hoisted.n = '3'
     render(<KorPage />)
-    expect(screen.getByText('Streak-törés/visszatérés')).toBeInTheDocument()
+    expect(screen.getByText('Több-detektoros tétel')).toBeInTheDocument()
     expect(screen.getByText('3 detektor')).toBeInTheDocument()
   })
 
   test('a sensitive item carries the ÉRZÉKENY dot', () => {
-    hoisted.n = '3'
     render(<KorPage />)
     expect(screen.getByLabelText('érzékeny')).toBeInTheDocument()
   })

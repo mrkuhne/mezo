@@ -7809,3 +7809,75 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   font: 400 11.5px/1.4 var(--ff-body); color: var(--text-secondary); margin-top: 2px;
 }
 .nf-page .nf-time { font: 600 10px/1 var(--ff-body); color: var(--text-muted); flex-shrink: 0; margin-top: 2px; white-space: nowrap; }
+
+/* ── Receptműhely (mezo-92pb) ────────────────────────────────────────────────
+   A /fuel/recipes/muhely vászon-first oldal saját recept-nyelve
+   (docs/design_2.0/prototypes/receptmuhely.html). Csak az a néhány szabály él itt,
+   amit inline stílussal nem lehet: az arany diff-villanás keyframe-je, a kcal-forrás
+   csík és a dokkolt chat sáv. A többi a Mozaik/logflow osztályokból jön. */
+.wsh-ing { position: relative; overflow: hidden; }
+.wsh-ing.diff::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--dv-amber) 32%, transparent),
+                                      color-mix(in srgb, var(--dv-amber) 10%, transparent));
+  box-shadow: inset 0 0 0 1.2px color-mix(in srgb, var(--dv-amber) 55%, transparent);
+  animation: wsh-difffade 2.6s ease-out forwards;
+}
+@keyframes wsh-difffade { 0%, 55% { opacity: 1; } 100% { opacity: 0; } }
+
+.wsh-kbar { display: flex; height: 9px; border-radius: 999px; overflow: hidden; margin-top: 9px; }
+.wsh-kbar i { display: block; transition: width 0.5s cubic-bezier(0.25, 0.8, 0.35, 1); }
+.wsh-kbar .kp { background: var(--coral); }
+.wsh-kbar .kc { background: var(--dv-amber); }
+.wsh-kbar .kf { background: var(--lav); }
+.wsh-klegend { display: flex; gap: 10px; margin-top: 5px; font-size: 8.5px; color: var(--text-tertiary); }
+.wsh-klegend b { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-secondary); }
+.wsh-klegend .sw { display: inline-block; width: 7px; height: 7px; border-radius: 3px; margin-right: 3px; vertical-align: -1px; }
+
+/* A mentés-sáv + a dokk a telefon-képernyőre portálódik (a .recipe-save-bar rendje),
+   nem a görgő tartalomba: a chat és a mentés mindig kéznél van, akármeddig nő a vászon. */
+.wsh-bottom {
+  position: absolute; left: 0; right: 0;
+  bottom: 92px;   /* a lebegő tab-bar kapszula fölött */
+  z-index: 45;    /* tab-bar (40) fölött, sheet-ek (200+) alatt */
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 14px 10px;
+  background: var(--canvas);
+  border-top: 1px solid var(--border-subtle);
+}
+@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .wsh-bottom { bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
+.wsh-dock { display: flex; flex-direction: column; gap: 6px; }
+.wsh-presets { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+.wsh-presets::-webkit-scrollbar { display: none; }
+.wsh-pchip {
+  flex: none; cursor: pointer; font-family: inherit; font-size: 9px; font-weight: 700;
+  color: var(--lav-deep); background: var(--surface-card); border-radius: 999px; padding: 6px 11px;
+  border: 1px solid color-mix(in srgb, var(--lav) 30%, transparent);
+}
+.wsh-pchip.on { background: var(--mz-tone-lav); box-shadow: inset 0 0 0 1.2px var(--lav-deep); }
+.wsh-last {
+  display: flex; align-items: center; gap: 7px; width: 100%; text-align: left; cursor: pointer;
+  background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 13px; padding: 7px 10px;
+}
+.wsh-last .tx {
+  flex: 1; min-width: 0; font-size: 10.5px; color: var(--text-secondary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.wsh-cfield {
+  flex: 1; display: flex; align-items: center; gap: 6px; background: var(--surface-card);
+  border-radius: 999px; padding: 5px 6px 5px 13px; border: 1px solid var(--border-subtle);
+}
+.wsh-cfield input { flex: 1; min-width: 0; border: none; background: none; font-family: inherit; font-size: 12px; color: var(--text-primary); }
+.wsh-cbtn {
+  width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--border-subtle); cursor: pointer;
+}
+.wsh-cbtn.send { background: var(--coral); color: var(--text-inverse); border-color: transparent; }
+.wsh-cbtn:disabled { opacity: 0.45; cursor: default; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wsh-ing.diff::after { animation: none; opacity: 0.5; }
+  .wsh-kbar i { transition: none; }
+}

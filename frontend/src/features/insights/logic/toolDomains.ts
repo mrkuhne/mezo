@@ -62,6 +62,11 @@ export function toolDomain(name: string): ToolDomain {
  *  gets an entry so live chips never fall back to the neutral orb (mezo-vdf4). */
 const REF_KINDS: Record<string, ToolDomain> = {
   Workout: { label: 'Edzés', icon: 'i-edzes', wash: 'coral' },
+  // mezo-d20.13 — the workout-level closing note as a memoir anchor. Distinct label from
+  // `Workout`: the chip's job here is to say the chapter leaned on something YOU wrote, not on
+  // the session's numbers. Unattributed echo of a person's own words is what reads as
+  // surveillance; a visible trail is what reads as attention.
+  WorkoutNote: { label: 'Edzés-jegyzet', icon: 'i-naplo', wash: 'coral' },
   Run: { label: 'Futás', icon: 'i-futas', wash: 'coral' },
   PR: { label: 'PR', icon: 'i-sport', wash: 'gold' },
   Pattern: { label: 'Minta', icon: 'i-minta', wash: 'gold' },

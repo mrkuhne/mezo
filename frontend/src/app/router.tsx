@@ -38,6 +38,7 @@ import { KamraItemDetailPage } from '@/features/fuel/pages/KamraItemDetailPage'
 import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
 import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
 import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
+import { RecipeWorkshopPage } from '@/features/fuel/pages/RecipeWorkshopPage'
 import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
 import { MezoHubPage } from '@/features/insights/pages/MezoHubPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
@@ -195,6 +196,8 @@ export const routes: RouteObject[] = [
       { path: 'fuel/naplo', element: <FuelNaploPage /> },
       // `new` is listed before `:id` for clarity (React Router ranks static over dynamic).
       { path: 'fuel/recipes/new', element: <RecipeEditorPage /> },
+      // Receptműhely (mezo-92pb) — static, so it must precede `:id`; `?recipeId=` seeds it.
+      { path: 'fuel/recipes/muhely', element: <RecipeWorkshopPage /> },
       { path: 'fuel/recipes', element: <FuelRecipesPage /> },
       { path: 'fuel/recipes/:id', element: <RecipeDetailPage /> },
       { path: 'fuel/recipes/:id/edit', element: <RecipeEditorPage /> },

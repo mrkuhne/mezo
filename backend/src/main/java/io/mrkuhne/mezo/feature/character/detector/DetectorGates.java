@@ -11,6 +11,13 @@ import java.time.LocalDate;
  * is genuinely selective. Round 2's sources (meals, water, stack, check-ins) arrive EVERY day, so
  * for those the same gate is nearly always open and the round-2 detectors rely primarily on their
  * own state-change gate (round-2 spec §6) — these methods stay as a cheap pre-filter.
+ *
+ * <p>Round 3 adds a limit to this pattern: where ABSENCE is the signal, a new-data pre-filter is
+ * wrong. A review backlog grows because time passes, a streak breaks because no row is written, a
+ * check-in slot dies out because nobody fills it — on the very day each of those transitions
+ * happens, nothing arrives. Gating those detectors on new data would silence exactly what they
+ * exist to catch, so they rely on their state-change gate alone. Only three gates are added here
+ * (intention, decision, gratitude); needs and chat deliberately get none.
  */
 final class DetectorGates {
     private DetectorGates() {}
@@ -57,5 +64,18 @@ final class DetectorGates {
 
     static boolean onDay(LocalDate date, DetectorInput in) {
         return date.equals(in.day());
+    }
+
+    static boolean newIntentionData(DetectorInput in) {
+        return in.trend().intentionDays().stream().anyMatch(i -> i.date().equals(in.day()));
+    }
+
+    static boolean newDecisionData(DetectorInput in) {
+        return in.trend().decisions().stream()
+                .anyMatch(d -> in.day().equals(d.writtenOn()) || in.day().equals(d.reviewedOn()));
+    }
+
+    static boolean newGratitudeData(DetectorInput in) {
+        return in.trend().gratitudes().stream().anyMatch(g -> g.occurredOn().equals(in.day()));
     }
 }

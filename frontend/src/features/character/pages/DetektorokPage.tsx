@@ -7,7 +7,7 @@
 //
 // CONTENT DEVIATES FROM THE PROTOTYPE'S DATA where the prototype's design-time guess about a
 // detector's owning expert doesn't match what the real, shipped code actually does — this page
-// lists the 20 REAL detectors (`backend/.../feature/character/detector/*Detector.java`,
+// lists the 32 REAL detectors (`backend/.../feature/character/detector/*Detector.java`,
 // `DetectorRegistry`-discovered), and the "who" here is each detector's REAL
 // `DetectorSignal(key, who, ...)` expert argument, not the prototype's `DETECTOR_CATALOG.who`.
 // Two of the original five differ: `logging-gap` is really owned by `drill` (not the
@@ -31,6 +31,16 @@
 // `backend/.../feature/character/detector/{ComfortEating,MacroAdherence,HydrationConsistency,
 // ProteinTrainingMismatch,LateEatingPattern,StackSkipPattern,MedCycleCovariance}Detector.java`'s
 // own `DetectorSignal(key(), who, ...)` calls. The catalog is now 20 detectors.
+//
+// The twelve round-3 detectors (mezo-1gim.15, Task 7) — self-calibration, decision-profile,
+// streak-break-response, needs-domain-imbalance (all `pszichologus`), promise-vs-delivery,
+// decision-review-backlog, restart-pattern, retro-logging-ratio, checkin-latency,
+// checkin-slot-drift (all `drill`), gratitude-focus (`antropologus`), night-activity
+// (`szomnologus`) — are appended below in that order, `who` verified the same way against
+// `backend/.../feature/character/detector/{SelfCalibration,PromiseVsDelivery,DecisionProfile,
+// DecisionReviewBacklog,GratitudeFocus,StreakBreakResponse,RestartPattern,RetroLoggingRatio,
+// NightActivity,CheckinLatency,CheckinSlotDrift,NeedsDomainImbalance}Detector.java`'s own
+// `DetectorSignal(key(), who, ...)` calls. The catalog is now 32 detectors.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
@@ -44,7 +54,7 @@ interface DetectorEntry {
   line: string
 }
 
-/** The 20 real detectors — key/who verified against the detector source (see header comment),
+/** The 32 real detectors — key/who verified against the detector source (see header comment),
  *  one-line semantics paraphrasing what each `detect()` actually checks. */
 export const DETECTORS: DetectorEntry[] = [
   { key: 'logging-gap', who: 'drill', line: 'N napja nincs étkezés logolva (2+ egymást követő nap, 14 napos honest cap) — hiányzó kaja-napló jelzés.' },
@@ -67,6 +77,18 @@ export const DETECTORS: DetectorEntry[] = [
   { key: 'late-eating-pattern', who: 'szomnologus', line: 'Késő esti nagyobb étkezés után rosszabb-e az azt követő éjszaka.' },
   { key: 'stack-skip-pattern', who: 'drill', line: 'Ismétlődő kiegészítő-kihagyások — a pihenőnapi elhagyás és a felvétel előtti napok nem számítanak kihagyásnak.' },
   { key: 'med-cycle-covariance', who: 'doki', line: 'A check-in skálák ciklusnap szerinti eltérése a ciklus átlagától — érzékeny, leíró jel.' },
+  { key: 'self-calibration', who: 'pszichologus', line: 'Együtt mozog-e az önértékelés a mérhető párjával: energia × előző éjszakai alvás, testi × ízületi terheltség. A mentális és a stressz skála kimarad — nincs objektív párjuk.' },
+  { key: 'promise-vs-delivery', who: 'drill', line: 'A reggel kitűzött fókuszok és az esti napzárás viszonya — külön a lezárás aránya és a lezárt napok teljesülése.' },
+  { key: 'decision-profile', who: 'pszichologus', line: 'A visszanézett döntések 1–5 kimenet-értékelése hat hét alatt; a döntés szövege példaként megy át, elemzés nélkül.' },
+  { key: 'decision-review-backlog', who: 'drill', line: 'Hány döntés lépte túl a saját visszanézési határidejét anélkül, hogy átnézték volna.' },
+  { key: 'gratitude-focus', who: 'antropologus', line: 'Melyik életterületre húznak a hála-bejegyzések négy hét alatt — a zárt címke alapján, sosem a szövegből.' },
+  { key: 'streak-break-response', who: 'pszichologus', line: 'A legutóbbi megszakadt Életjel-sorozat utáni három nap: kaszkádol vagy visszaáll.' },
+  { key: 'restart-pattern', who: 'drill', line: 'Mennyi idő telt el a megszakadás és az első újra teljes nap között. A sávok bevallottan heurisztikák — a szakirodalomban nincs validált vágópont.' },
+  { key: 'retro-logging-ratio', who: 'drill', line: 'Aznap vagy utólag rögzít — az esemény- és a naplózó bejegyzések külön. Arról szól, mikor íródtak, nem arról, hogy pontosak-e.' },
+  { key: 'night-activity', who: 'szomnologus', line: 'Hány napon írt éjfél és hajnali öt között a társnak. Ez a chat használatát bizonyítja, nem az ébrenlét teljes képét.' },
+  { key: 'checkin-latency', who: 'drill', line: 'Mennyivel a saját idősávja után készül el a check-in (a soron tárolt idősáv és az első írás között).' },
+  { key: 'checkin-slot-drift', who: 'drill', line: 'Melyik korábban rendszeres check-in idősáv kopott ki az elmúlt két hétben.' },
+  { key: 'needs-domain-imbalance', who: 'pszichologus', line: 'Melyik Életjel-terület marad tartósan a többi mögött — a kontraszt a jel, nem az alacsony szint önmagában.' },
 ]
 
 const PRINCIPLE = 'A kód csak észlel — az értelmezés mindig az adott szakértő LLM-hívása. '
