@@ -16,7 +16,7 @@
           <button class="hdisc" aria-label="Vissza" id="backBtn">‹</button>
           <div class="ttl">
             <div class="eb">Fuel · Receptek</div>
-            <div class="nm">Receptműhely</div>
+            <div class="nm" style="display:flex;align-items:center;gap:5px"><svg width="16" height="16" viewBox="0 0 100 100" style="flex:none"><use href="#i-muhely"/></svg>Receptműhely</div>
           </div>
           <div class="horb"><svg width="32" height="32" viewBox="0 0 100 100"><use href="#s-orb"/></svg></div>
         </div>
@@ -184,7 +184,7 @@
       if (!R) {
         canvas.innerHTML =
           '<div class="ghostcard rise" style="--d:0.15s">' +
-          '<div class="gich">' + icon('i-fuel', 30) + '</div>' +
+          '<div class="gich">' + icon('i-muhely', 34) + '</div>' +
           '<div class="gt">A recepted itt épül majd.</div>' +
           '<div class="gs">Mondd el lent, mit főznél — vagy nyisd a kamrát és indulj abból, ami itthon van.</div>' +
           '</div>';

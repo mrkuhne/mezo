@@ -568,6 +568,8 @@ are usable without a build step).
   two generic free-text rounds + honest demo-end fallback; F7.5 error bubble (Újra/Szerkesztés)
   via the aside's demo button; macros always computed from kamra facts (lineContribution math),
   never spoken by the LLM. Save → Receptkönyv with role toast; aside carries the demo script.
+  New sprite icon `i-muhely` (assets/clay-icons.svg): coral pot + steam + gold AI sparks — the
+  feature's entry-point icon, used in the header and the empty-canvas ghost card.
 - **emberek** — the Emberek page rebuilt as a tile hub (Heti recipe: one-screen hub, zero
   scroll): hero + 3 mini-cells + 4 menu tiles (**Jelöltek** gold with pulsing badge — the
   nightly extractor's person candidates, accept/reject live-updates every counter; **A köröm**
