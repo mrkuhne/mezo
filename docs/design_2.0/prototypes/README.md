@@ -28,6 +28,7 @@ they inline come from `../assets/`.
 | `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
 | `emberek.html` | https://claude.ai/code/artifact/9c94ecde-f426-471a-a988-b0a60ca7fbcf |
 | `mezo-memoar.html` | https://claude.ai/code/artifact/95759be5-7de6-4d04-af7b-60d7862dbe50 |
+| `receptmuhely.html` | https://claude.ai/code/artifact/dc39e817-e89e-43df-b93f-53b568efed9f |
 
 ## Workflow
 
@@ -552,6 +553,20 @@ are usable without a build step).
   `CharacterCoreCatalog`/`CharacterExpertCatalog` in the backend, not invented; the persona orb
   icons are a runtime-generated placeholder (`buildOrbDefs()` in `karakter-body.html`), pending
   graduation into hand-tuned `docs/design_2.0/assets/` sprites on approval.
+- **receptmuhely** — the Receptműhely (mezo-92pb): AI-driven recipe builder under Fuel,
+  vászon-first hybrid per the 2026-09-01 spec (`docs/superpowers/specs/2026-09-01-receptmuhely-design.md`).
+  The screen IS the live recipe canvas — editable Fraunces name + goal chip, macro overview card
+  (kcal + P/C/F cells, /adag↔egész toggle, kcal-source breakdown bar), serving stepper that scales
+  amounts proportionally, ingredient rows (Kamra tag + inline amount input with ± steppers and live
+  per-row kcal; unmatched AI line = ✨ BECSLÉS tag, "ízlés szerint"; no-data = honest `—`),
+  collapsible Elkészítés, portaled save bar — with a docked chat strip below (preset chips
+  High protein · Pre/Post workout · Lefekvés előtt · Reggeli, last-AI-message preview, composer +
+  🏺 kamra picker sheet feeding context chips). Every AI turn is prose + a structured **patch**
+  (never a full regen): only the touched rows flash a gold diff highlight and manual edits survive.
+  All five presets have scripted patch rounds (pre/post note the MealRole write-through on save);
+  two generic free-text rounds + honest demo-end fallback; F7.5 error bubble (Újra/Szerkesztés)
+  via the aside's demo button; macros always computed from kamra facts (lineContribution math),
+  never spoken by the LLM. Save → Receptkönyv with role toast; aside carries the demo script.
 - **emberek** — the Emberek page rebuilt as a tile hub (Heti recipe: one-screen hub, zero
   scroll): hero + 3 mini-cells + 4 menu tiles (**Jelöltek** gold with pulsing badge — the
   nightly extractor's person candidates, accept/reject live-updates every counter; **A köröm**
