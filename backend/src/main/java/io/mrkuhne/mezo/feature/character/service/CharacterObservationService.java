@@ -47,7 +47,7 @@ public class CharacterObservationService {
     private static final short MAX_SALIENCE = 5;
     private static final short DEFAULT_SALIENCE = 3;
 
-    private static final Set<String> KNOWN_DIMENSION_KEYS = CharacterCoreCatalog.CORE.stream()
+    private static final Set<String> KNOWN_DIMENSION_KEYS = CharacterCoreCatalog.SEEDED.stream()
             .map(CharacterCoreCatalog.CoreDimension::key)
             .collect(java.util.stream.Collectors.toUnmodifiableSet());
 

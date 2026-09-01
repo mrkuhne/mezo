@@ -220,6 +220,24 @@ class CharacterPromptAssemblerIT extends ApiIntegrationTest {
         assertThat(block).contains("Fizikai:").contains("Megfigyelés egy elavult expert_key mellett.");
     }
 
+    @Test
+    void render_ordersCoreThenMetaThenChapter_andHeaderCarriesTheSelfAuditClause() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity chapter = seedDimension(owner, "chapter-x", "Fejezet", "CHAPTER", null, "", 0);
+        CharacterDimensionEntity meta = seedDimension(owner, "self-audit", "A társ önvizsgálata", "META", "szkeptikus", "", 0);
+        CharacterDimensionEntity core = seedDimension(owner, "life", "Élet & kapcsolatok", "CORE", "antropologus", "", 0);
+        seedClaim(owner, chapter.getId(), "Fejezet-állítás.", "0.80", false, Instant.now());
+        seedClaim(owner, meta.getId(), "A predikcióimból 4-ből 1 talált.", "0.80", false, Instant.now());
+        seedClaim(owner, core.getId(), "Hétvégén máshogy alszol.", "0.80", false, Instant.now());
+
+        String block = promptSource.render(owner);
+
+        assertThat(block).contains("önvizsgálat sorai a saját találati arányomról");
+        assertThat(block.indexOf("Hétvégén máshogy")).isLessThan(block.indexOf("A predikcióimból"));
+        assertThat(block.indexOf("A predikcióimból")).isLessThan(block.indexOf("Fejezet-állítás"));
+        assertThat(block).contains("A társ önvizsgálata (Szkeptikus):");
+    }
+
     private static int countOccurrences(String haystack, String needle) {
         int count = 0;
         int index = 0;
