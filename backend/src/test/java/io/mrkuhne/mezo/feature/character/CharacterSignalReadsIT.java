@@ -501,12 +501,19 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         LocalDate day = LocalDate.of(2026, 5, 20);
         saveSleep(day.minusDays(1), 7, new BigDecimal("7.5"), 1);
         saveGratitude(day.minusDays(1), "hála", "connection");
+        // written genuinely AFTER `day` — must be dropped, unlike the two same-day rows above.
+        GratitudeEntryEntity late = saveGratitude(day.minusDays(2), "később írt hála", "connection");
+        jdbcTemplate.update("update gratitude_entry set created_at = ? where id = ?",
+                Timestamp.from(day.plusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant()),
+                late.getId());
 
         List<DetectorInput.LogLatencyPoint> pts = signalReads.gather(owner, day).trend().logLatencies();
 
         assertThat(pts).extracting(DetectorInput.LogLatencyPoint::genre)
                 .containsOnly("esemeny", "reflexio");
         assertThat(pts).allSatisfy(p -> assertThat(p.writtenDate()).isBeforeOrEqualTo(day));
+        // the late-written row's about-date must NOT surface — proves the writtenOn > day guard bites
+        assertThat(pts).noneMatch(p -> p.aboutDate().equals(day.minusDays(2)));
     }
 
     @Test
