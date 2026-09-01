@@ -123,9 +123,12 @@ states (per the standing §1 tile recipe in
   muscle grid with animated `current → ceiling` bars.
 - **Active run** — status-first instead of editor-central: weekly ramp timeline (week
   dot row with deload anchor), per-muscle tiles `12 → 22 · Emphasize` with ▲+2 weekly
-  chips; `VolumeDecider` HOLD/DELOAD outcomes rendered as Hungarian sentences. Editing
-  moves one level down; Fókusz block stays (live PUT) and a tier change visibly recolors
-  the muscle's band to the new ceiling.
+  chips; `VolumeDecider` HOLD/DELOAD outcomes rendered as Hungarian sentences; the
+  week's days as a tile mosaic (today marked, done days ticked) → a day tile opens the
+  editable day page (muscle-washed, grouped exercise tiles, stepper body). **No in-cycle
+  Fókusz change** (decided in the prototype round): tiers are set only in the wizard /
+  template editor, so the live `PUT …/muscle-priorities` on a running mesocycle leaves
+  the UI (the endpoint may stay for templates).
 - **Volumen** — provenance view kept; the arc draws the tier band with MV/MEV/MAV/MRV
   markers; derivation text speaks the new model's vocabulary.
 - **Sablonok + editor** — list becomes tiles (split icon, day count, emphasized-muscle
