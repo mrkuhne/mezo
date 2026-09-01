@@ -134,4 +134,5 @@ export const GRAPH_KIND_GROUPS: Array<[GraphNodeKind, string]> = [
   ['LIFE_EVENT', 'Életesemények'],
   ['SEASON', 'Szezonok'],
   ['INSIGHT', 'Belátások'],
+  ['PERSON', 'Emberek'],
 ]

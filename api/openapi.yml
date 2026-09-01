@@ -17667,6 +17667,7 @@ components:
             - LIFE_EVENT
             - SEASON
             - INSIGHT
+            - PERSON
         title:
           type: string
         summary:

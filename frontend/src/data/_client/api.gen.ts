@@ -7231,7 +7231,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            kind: "PATTERN" | "PREFERENCE" | "GOAL" | "LIFE_EVENT" | "SEASON" | "INSIGHT";
+            kind: "PATTERN" | "PREFERENCE" | "GOAL" | "LIFE_EVENT" | "SEASON" | "INSIGHT" | "PERSON";
             title: string;
             summary?: string | null;
             /** @enum {string} */

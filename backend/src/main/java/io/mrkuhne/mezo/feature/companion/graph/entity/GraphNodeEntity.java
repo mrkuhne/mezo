@@ -46,6 +46,8 @@ public class GraphNodeEntity extends OwnedEntity {
     public static final String KIND_LIFE_EVENT = "LIFE_EVENT";
     public static final String KIND_SEASON = "SEASON";
     public static final String KIND_INSIGHT = "INSIGHT";
+    /** Emberek S5 (mezo-06o0.4): egy aktív személy tükre a gráfban. */
+    public static final String KIND_PERSON = "PERSON";
 
     public static final String STATUS_CANDIDATE = "candidate";
     public static final String STATUS_ACTIVE = "active";
@@ -63,7 +65,7 @@ public class GraphNodeEntity extends OwnedEntity {
     /** Mirrors ck_knowledge_node_kind. */
     @NotNull
     @Size(max = 12)
-    @Pattern(regexp = "PATTERN|PREFERENCE|GOAL|LIFE_EVENT|SEASON|INSIGHT")
+    @Pattern(regexp = "PATTERN|PREFERENCE|GOAL|LIFE_EVENT|SEASON|INSIGHT|PERSON")
     @Column(nullable = false, length = 12)
     private String kind;
 
