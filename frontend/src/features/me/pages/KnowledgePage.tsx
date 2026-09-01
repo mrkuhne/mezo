@@ -107,7 +107,17 @@ export function KnowledgePage() {
                 </>
               )}
 
-              <KindTileGrid nodes={graphNodes} onOpenKind={k => setParams({ kind: k })} />
+              {/* The grid is its own section, so it wears a section eyebrow like the profile
+                  above it (mezo-u2lh) — without one the tiles butted straight into the profile
+                  card with no vertical rhythm, and nothing said what the two blocks were. */}
+              <div className="tud-lsec rise" style={{ '--d': '80ms' } as React.CSSProperties}>
+                <Eyebrow>Kategóriák</Eyebrow>
+              </div>
+              <KindTileGrid
+                nodes={graphNodes}
+                onOpenKind={k => setParams({ kind: k })}
+                baseDelayMs={100}
+              />
             </>
           ) : (
             <div>
