@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { NodeDetailSheet } from '@/features/me/sheets/NodeDetailSheet'
+import { NodeDetailSheet } from './NodeDetailSheet'
 import type { KnowledgeGraphNode } from '@/data/types'
 
 const node: KnowledgeGraphNode = {

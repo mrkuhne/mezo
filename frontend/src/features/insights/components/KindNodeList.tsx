@@ -9,7 +9,7 @@
 // (KnowledgePage owns it) — a second back button under the summary tile read
 // as a different destination than the head chip while doing the same thing.
 // ============================================================
-import { CategoryHeader } from '@/features/me/components/CategoryHeader'
+import { CategoryHeader } from './CategoryHeader'
 import { ClayIcon } from '@/shared/ui/clay'
 import { KIND_ICON, KIND_INK, KIND_WASH } from '@/features/me/logic/knowledgeNodeVisuals'
 import type { GraphNodeKind, KnowledgeGraphNode } from '@/data/types'

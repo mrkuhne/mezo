@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { KindTileGrid } from '@/features/me/components/KindTileGrid'
+import { KindTileGrid } from './KindTileGrid'
 import type { KnowledgeGraphNode } from '@/data/types'
 
 const mk = (id: string, kind: KnowledgeGraphNode['kind'], title: string): KnowledgeGraphNode =>

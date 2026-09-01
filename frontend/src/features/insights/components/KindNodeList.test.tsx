@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { KindNodeList } from '@/features/me/components/KindNodeList'
+import { KindNodeList } from './KindNodeList'
 import type { KnowledgeGraphNode } from '@/data/types'
 
 const nodes: KnowledgeGraphNode[] = [
