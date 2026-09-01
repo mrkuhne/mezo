@@ -18,6 +18,13 @@ describe('useKnowledge (mock mode)', () => {
     expect(result.current.activeCount).toBe(14)
     expect(result.current.mode).toBe('mock')
   })
+
+  it('pontosan egy jelölt hordoz conflictsWithFactId-t, ami egy létező tény id-ja (mezo-ms9a)', () => {
+    const { result } = renderHook(() => useKnowledge(), { wrapper: makeHookWrapper() })
+    const conflicting = result.current.candidates.filter((c) => c.conflictsWithFactId !== null)
+    expect(conflicting).toHaveLength(1)
+    expect(result.current.facts.some((f) => f.id === conflicting[0].conflictsWithFactId)).toBe(true)
+  })
 })
 
 describe('useKnowledge (real mode)', () => {
@@ -27,7 +34,8 @@ describe('useKnowledge (real mode)', () => {
   it('fetches facts + candidates; edges stay an honest empty array', async () => {
     const { result } = renderHook(() => useKnowledge(), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.facts).toHaveLength(15))
-    expect(result.current.candidates).toEqual(candidateSeed)
+    // real mode always maps conflictsWithFactId to null — the wire doesn't carry it yet (mezo-ms9a).
+    expect(result.current.candidates).toEqual(candidateSeed.map((c) => ({ ...c, conflictsWithFactId: null })))
     expect(result.current.edges).toEqual([])
     expect(result.current.mode).toBe('live')
     expect(result.current.degraded).toBe(false)
@@ -63,7 +71,7 @@ describe('useKnowledgeActions (mock mode)', () => {
     const wrapper = makeHookWrapper()
     const { result } = renderHook(() => ({ read: useKnowledge(), actions: useKnowledgeActions() }), { wrapper })
     act(() => result.current.actions.decide('c1', 'accept'))
-    await waitFor(() => expect(result.current.read.candidates).toHaveLength(1))
+    await waitFor(() => expect(result.current.read.candidates).toHaveLength(candidateSeed.length - 1))
     const promoted = result.current.read.facts.find((f) => f.id === 'kf-c1')
     expect(promoted).toMatchObject({ text: candidateSeed[0].text, category: 'fuel', active: true, reinforced: 0 })
   })
@@ -74,7 +82,7 @@ describe('useKnowledgeActions (mock mode)', () => {
     act(() => result.current.actions.decide('c1', 'refine', 'Pontosított tudás'))
     await waitFor(() => expect(result.current.read.facts.find((f) => f.id === 'kf-c1')?.text).toBe('Pontosított tudás'))
     act(() => result.current.actions.decide('c2', 'reject'))
-    await waitFor(() => expect(result.current.read.candidates).toHaveLength(0))
+    await waitFor(() => expect(result.current.read.candidates).toHaveLength(candidateSeed.length - 2))
     expect(result.current.read.facts.find((f) => f.id === 'kf-c2')).toBeUndefined()
   })
 })

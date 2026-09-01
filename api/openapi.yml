@@ -7702,6 +7702,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/graph/edge/count:
+    get:
+      tags:
+        - KnowledgeGraph
+      operationId: countGraphEdges
+      summary: >-
+        Count of active knowledge-graph edges for the current user
+        (KnowledgeGraph)
+      responses:
+        '200':
+          description: Active edge count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphEdgeCountResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/me/week/{start}':
     get:
       tags:
@@ -17796,6 +17817,25 @@ components:
         decision:
           type: string
           pattern: ^(accept|reject)$
+        refinedTitle:
+          type: string
+          minLength: 1
+          maxLength: 160
+          nullable: true
+          description: User-edited title applied on accept (edit-then-approve).
+        refinedSummary:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+          description: User-edited summary applied on accept.
+    GraphEdgeCountResponse:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
     MeWeekSubscores:
       type: object
       properties:

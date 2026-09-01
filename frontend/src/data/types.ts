@@ -711,7 +711,15 @@ export interface KnowledgeFact {
   createdAt: string
 }
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
-export interface FactCandidate { id: string; text: string; category: FactCategory }
+export interface FactCandidate {
+  id: string
+  text: string
+  category: FactCategory
+  /** FE-only in this slice (mezo-ms9a): the existing fact id this candidate contradicts, or
+   *  `null` when it doesn't conflict with anything. Real mode always maps to `null` — the wire
+   *  doesn't carry this yet. */
+  conflictsWithFactId: string | null
+}
 export type FactDecision = 'accept' | 'reject' | 'refine'
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
 
@@ -748,6 +756,8 @@ export interface KnowledgeGraphNode {
   /** W4.3 (mezo-b3pp.17): `'profile'` marks the singleton pragmatic-profile node, which the
    *  Tudástár renders in its own section instead of the kind groups. */
   sourceKind: string | null
+  /** ISO date-time (mezo-ms9a): `useKnowledgeGraphNodes()` sorts DESC by this. */
+  updatedAt: string
 }
 
 // --- Insights (AI-memory surface) ---

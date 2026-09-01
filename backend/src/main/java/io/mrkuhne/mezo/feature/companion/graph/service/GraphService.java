@@ -70,6 +70,13 @@ public class GraphService {
             userId, GraphNodeEntity.STATUS_ACTIVE);
     }
 
+    /** Count of active edges for the current user — same "active edge" filter as {@link
+     *  #listActiveWithTopEdges}'s edge source. */
+    @Transactional(readOnly = true)
+    public int countActiveEdges(UUID userId) {
+        return edgeRepository.countActiveByUserId(userId);
+    }
+
     /** Fixed UI display cap — not a {@code CompanionProperties.Graph} tuning knob, this is
      *  presentation, not graph behavior. */
     private static final int TOP_EDGES_PER_NODE = 3;

@@ -2058,18 +2058,22 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   a display concern, not graph behavior.
 - **`GraphController.listGraphNodes()`** now calls this instead of the plain `listActive`, setting
   `GraphNodeResponse.topEdges` per node; `listGraphCandidates()` is untouched (default `[]`).
-- **FE** — `frontend/src/features/me/pages/KnowledgePage.tsx` gains a "Kapcsolatok" section: the
-  new dual-mode `useKnowledgeGraphNodes()` (`data/insights/graphHooks.ts`) lists active nodes
-  grouped by `GRAPH_KIND_GROUPS` (`data/insights/graph.ts` — the 6 kind labels), each rendered as
-  a `KnowledgeGraphNodeCard` (title + optional summary + `topEdges` lines + an "Archivál" button
-  wired to `useKnowledgeGraphActions().archive`, `POST .../archive`). Real-mode 404 (graph switch
-  off) reads as an honest empty list — the `useLifeEventCandidates` idiom — so the rest of the
-  Tudástár page stays fully usable. No graph **visualization** — text lines only (`mezo-2m4` stays
-  parked, spec §12).
+- **FE** — at the time this shipped, `frontend/src/features/me/pages/KnowledgePage.tsx` gained a
+  "Kapcsolatok" section: the new dual-mode `useKnowledgeGraphNodes()` (`data/insights/graphHooks.ts`)
+  lists active nodes grouped by `GRAPH_KIND_GROUPS` (`data/insights/graph.ts` — the 6 kind labels),
+  each rendered as a `KnowledgeGraphNodeCard` (title + optional summary + `topEdges` lines + an
+  "Archivál" button wired to `useKnowledgeGraphActions().archive`, `POST .../archive`). Real-mode
+  404 (graph switch off) reads as an honest empty list — the `useLifeEventCandidates` idiom — so
+  the rest of the page stays fully usable. No graph **visualization** — text lines only (`mezo-2m4`
+  stays parked, spec §12). **Since `mezo-ms9a` (2026-09-01) `KnowledgePage.tsx` is deleted** — this
+  whole chain (now `KindTileGrid`/`KindNodeList`/`NodeDetailSheet`) lives inside the unified
+  Tudástár's `?view=kategoriak` (`features/insights/`, [`insights.md` §2.4](insights.md)); the hook
+  and its contract are unchanged, only the consumer moved.
 - **Acceptance:** `GraphApiIT` confirms `topEdges` is wired through HTTP; `GraphServiceIT` covers
-  the bucketing (weight-desc, capped at 3, edges to archived nodes excluded); FE
-  `graphHooks.test.tsx`/`KnowledgePage.test.tsx` cover mock, real, 404, and
-  archive-removes-from-list.
+  the bucketing (weight-desc, capped at 3, edges to archived nodes excluded); the original FE
+  coverage (`graphHooks.test.tsx`/`KnowledgePage.test.tsx` — mock, real, 404,
+  archive-removes-from-list) now lives in `KnowledgeListPage.test.tsx`'s `?view=kategoriak` cases
+  (`mezo-ms9a`).
 
 ### Backend tables (W3.2 consolidation ladder, ✅ `mezo-b3pp.13`)
 
@@ -3305,8 +3309,11 @@ redundancy guard reads the same confirmed set; V3.3 promotes patterns into it (s
 and increments `reinforcement_count`.
 
 **V1.2 Knowledge UI seam (✅ wired).** `useKnowledge()`/`useKnowledgeActions()`
-(`data/insights/knowledgeHooks.ts`) serve BOTH knowledge surfaces (Insights KnowledgeListPage —
-real inbox + toggles; Me KnowledgePage — mock-mode graph prototype, real-mode honest `edges: []`).
+(`data/insights/knowledgeHooks.ts`) serve BOTH knowledge surfaces at the time (Insights
+KnowledgeListPage — real inbox + toggles; Me KnowledgePage — mock-mode graph prototype, real-mode
+honest `edges: []`) — **since `mezo-ms9a` (2026-09-01) there is only one surface**, the unified
+`KnowledgeListPage` (`insights.md` §2.4); `useKnowledge()`'s `edges` field is still the same
+mock-only leg, just with a single consumer now.
 **Contract crossing the seam:** `knowledgeApi` maps the wire (`factText`/`includeInPrompt`/
 `reinforcementCount`, `candidateText`) onto the lean FE domain (`text`/`active`/`reinforced`);
 `FactCategory` IS the backend enum since V1.2 ([`insights.md`](insights.md) §2.4, §5.1).
@@ -3814,8 +3821,9 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **FE:** `knowledgeApi.test.ts` (wire mapping + PATCH/POST bodies), `knowledgeHooks.test.tsx`
   (mock seed; real bootstrap/degraded; mock cache-mutating + real invalidating actions),
   `KnowledgeListPage.test.tsx` both modes (candidate actions, inline refine, toggle, degraded),
-  `KnowledgePage.test.tsx` pinned to mock mode (graph prototype); MSW fact/candidate fixtures
-  mirror the seeds.
+  and at the time `KnowledgePage.test.tsx` pinned to mock mode (graph prototype) — deleted with the
+  page, its coverage folded into `KnowledgeListPage.test.tsx`'s `?view=kategoriak` cases
+  (`mezo-ms9a`); MSW fact/candidate fixtures mirror the seeds.
 
 **V1.3 test additions:**
 
@@ -4899,8 +4907,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **Advisor hardening (V1.3 follow-ups, bd-filed):** tool-RESULT capture into `ToolCallAudit`
   for the verdict judge · `SelfHealthCheck` persistence for violations (log-only today) ·
   latency/cost review of the verdict call after real-key usage (classifier-tier decision).
-- **Knowledge graph edges** — the Me KnowledgePage graph layer has no backend (real mode renders
-  `edges: []`); file its slice when the graph view earns it.
+- **Knowledge graph edges — RESOLVED (`mezo-ms9a`).** The graph layer (now the unified Tudástár's
+  `?view=kategoriak`) has real backend data since W2.6 (`GET /api/companion/graph/node`,
+  `topEdges` per node) and the hero's active-edge COUNT is real since `mezo-ms9a`'s
+  `GET /api/companion/graph/edge/count`; only `useKnowledge()`'s own legacy `edges` field (the
+  pre-graph mock fact-edges) is still mock-only real-mode-`[]` — see [`insights.md` §2.4/§5.1](insights.md).
 
 ## 10. Key files
 
@@ -4929,7 +4940,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROFILE_ASSEMBLER_JOB_SWITCH` (`mezo.techcore.cron.profile-assembler-job.enabled`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `profileBlock(userId)` (the `ObjectProvider<ProfilePromptAssembler>` idiom, mirroring `graphContext`) folded into `assembleSystemPrompt` between the pattern-ack block and `[Emlékek]`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/profile/{ProfileAssemblerJobIT,ProfileAssemblerJobSwitchOffIT,ProfilePromptAssemblerIT,ProfilePropertiesIT,ProfileSourceFindersIT,service/ProfileAssemblerIT,service/ProfileAssemblerCapTest}.java` — §8.
-- **FE side** — `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx` + `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`me.md` §2](me.md).
+- **FE side** — at ship time, `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx`; **since `mezo-ms9a` (2026-09-01)** the card is `frontend/src/features/insights/components/ProfileNodeCard.tsx`, rendered by `KnowledgeListPage`'s `?view=profil` ("Így beszélj velem") view — plus `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`insights.md` §2.4](insights.md).
 
 **Backend — composite flags (W5.1, `mezo-b3pp.18` — §3/§4, spec §4.5/§9.1)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + five per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
