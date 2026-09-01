@@ -3224,6 +3224,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/graph/edge/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count of active knowledge-graph edges for the current user (KnowledgeGraph) */
+        get: operations["countGraphEdges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/week/{start}": {
         parameters: {
             query?: never;
@@ -7252,6 +7269,13 @@ export interface components {
         };
         GraphCandidateDecisionRequest: {
             decision: string;
+            /** @description User-edited title applied on accept (edit-then-approve). */
+            refinedTitle?: string | null;
+            /** @description User-edited summary applied on accept. */
+            refinedSummary?: string | null;
+        };
+        GraphEdgeCountResponse: {
+            count: number;
         };
         MeWeekSubscores: {
             /** @description 0–100; null = no sleep data */
@@ -16590,6 +16614,35 @@ export interface operations {
             };
             /** @description GRAPH_NODE_NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    countGraphEdges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active edge count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphEdgeCountResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
