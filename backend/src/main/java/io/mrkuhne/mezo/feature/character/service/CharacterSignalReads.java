@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.character.detector.DetectorInput;
+import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolEntity;
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolItemEntity;
 import io.mrkuhne.mezo.feature.fuel.entity.SupplementIntakeEntity;
@@ -60,7 +61,9 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -98,8 +101,12 @@ public class CharacterSignalReads {
     private static final int TREND_WEEKS = 8;
     private static final String PHASE_DELOAD = "Deload";
     private static final int EVIDENCE_CHARS = 120;
+    private static final String CHAT_ROLE_USER = "user";
+    private static final String GENRE_EVENT = "esemeny";
+    private static final String GENRE_REFLECTION = "reflexio";
 
     private final MealRepository mealRepository;
+    private final AiMessageRepository aiMessageRepository;
     private final WeightLogRepository weightLogRepository;
     private final CheckInRepository checkInRepository;
     private final JournalEntryRepository journalEntryRepository;
@@ -192,10 +199,13 @@ public class CharacterSignalReads {
                 .filter(r -> !r.date().isBefore(windowStart))
                 .toList();
 
-        List<DetectorInput.SleepPoint> sleepPoints = sleepLogRepository
-                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, windowStart, day)
+        List<DetectorInput.SleepPoint> sleepEightWeeks = sleepLogRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, trendStart, day)
                 .stream()
                 .map(this::toSleepPoint)
+                .toList();
+        List<DetectorInput.SleepPoint> sleepPoints = sleepEightWeeks.stream()
+                .filter(s -> !s.date().isBefore(windowStart))
                 .toList();
 
         DetectorInput.MesoContext meso = gatherMeso(owner, windowStart, day);
@@ -209,12 +219,17 @@ public class CharacterSignalReads {
         List<DetectorInput.GratitudePoint> gratitudes = gatherGratitudes(owner, trendStart, day);
         DetectorInput.NeedsContext needs = gatherNeeds(owner, trendStart, day);
 
+        List<DetectorInput.CheckinSlotPoint> checkinSlots = toCheckinSlots(checkins);
+        List<LocalDateTime> userChatTimes = gatherUserChatTimes(owner, windowStart, day);
+        List<DetectorInput.LogLatencyPoint> logLatencies =
+                gatherLogLatencies(owner, windowStart, day);
+
         return new DetectorInput(day, mealDates, checkinCounts, weights, journalTexts,
                 gymDays, sportSessions, runLogs, sleepPoints, meso,
                 new DetectorInput.TrendWindow(runsEightWeeks, gymEightWeeks,
                         mealDays, waterDays, stack, checkinDays, medCycle,
-                        List.of(), intentionDays, decisions, gratitudes, needs, List.of(), List.of(),
-                        List.of()));
+                        sleepEightWeeks, intentionDays, decisions, gratitudes, needs,
+                        checkinSlots, userChatTimes, logLatencies));
     }
 
     /** Per-day means of the day's logged check-in slots; a scale nobody logged stays null. */
@@ -246,6 +261,121 @@ public class CharacterSignalReads {
             }
         }
         return n == 0 ? null : BigDecimal.valueOf(sum).divide(BigDecimal.valueOf(n), 2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Per-ROW check-in facts for the slot-behaviour detectors, beside the per-day scale aggregate.
+     *
+     * <p>{@code writtenAt} comes from {@code createdAt} and NOT from {@code savedAt}:
+     * {@code CheckInService.save()} overwrites {@code savedAt} on every upsert, so a check-in
+     * edited a week later would look like it was filled a week late. {@code createdAt} is the
+     * first write and never moves. A row whose {@code createdAt} is null (legacy) is dropped —
+     * absent, not "written at midnight".
+     */
+    private List<DetectorInput.CheckinSlotPoint> toCheckinSlots(List<CheckInEntity> checkins) {
+        List<DetectorInput.CheckinSlotPoint> out = new ArrayList<>();
+        for (CheckInEntity c : checkins) {
+            if (c.getCreatedAt() == null) {
+                continue;
+            }
+            out.add(new DetectorInput.CheckinSlotPoint(c.getDate(), c.getSlotTime(),
+                    c.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDateTime(),
+                    preview(c.getNote())));
+        }
+        out.sort(Comparator.comparing(DetectorInput.CheckinSlotPoint::date)
+                .thenComparing(DetectorInput.CheckinSlotPoint::slotTime));
+        return List.copyOf(out);
+    }
+
+    /**
+     * Local timestamps of the owner's OWN chat messages — the only deterministic proof that a
+     * person was using the app at a given wall-clock moment. Push and notification rows prove the
+     * SYSTEM acted, not the user, and {@code llm_log_history} moves 1:1 with this anyway.
+     * Bounded above by the end of {@code to} so a catch-up run sees no later activity.
+     */
+    private List<LocalDateTime> gatherUserChatTimes(UUID owner, LocalDate from, LocalDate to) {
+        Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant toExclusive = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        return aiMessageRepository
+                .findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+                        owner, CHAT_ROLE_USER, fromInstant, toExclusive)
+                .stream()
+                .map(m -> m.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                .toList();
+    }
+
+    /**
+     * Every (the day this record is about, the day it was actually written) pair in the 14-day
+     * window, tagged with its genre. Two genres are kept apart deliberately: a workout entered the
+     * next morning and a gratitude note backfilled a week later are different behaviours, and one
+     * blended ratio would be mush (round-3 spec §5.8).
+     *
+     * <p>A record whose write timestamp is missing is dropped, and a record written after
+     * {@code day} is dropped too — during a catch-up run it had not been written yet.
+     */
+    private List<DetectorInput.LogLatencyPoint> gatherLogLatencies(UUID owner, LocalDate from,
+                                                                   LocalDate to) {
+        List<DetectorInput.LogLatencyPoint> out = new ArrayList<>();
+
+        for (WorkoutSessionEntity s : workoutSessionRepository.findDoneInstancesBetween(owner, from, to)) {
+            addLatency(out, GENRE_EVENT, "gym", s.getDate(), s.getCreatedAt(), to);
+        }
+        for (RunSessionLogEntity r : runSessionLogRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, from, to)) {
+            addLatency(out, GENRE_EVENT, "futas", r.getDate(), r.getCreatedAt(), to);
+        }
+        for (SportSessionEntity s : sportSessionRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, from, to)) {
+            addLatency(out, GENRE_EVENT, "sport", s.getDate(), s.getCreatedAt(), to);
+        }
+        for (SleepLogEntity s : sleepLogRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(owner, from, to)) {
+            addLatency(out, GENRE_EVENT, "alvas", s.getDate(), s.getCreatedAt(), to);
+        }
+        for (WeightLogEntity w : weightLogRepository
+                .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(owner, from)) {
+            if (!w.getDate().isAfter(to)) {   // this finder bounds only below
+                addLatency(out, GENRE_EVENT, "suly", w.getDate(), w.getCreatedAt(), to);
+            }
+        }
+        for (MealEntity m : mealRepository
+                .findByCreatedByAndDeletedFalseAndMealDateBetweenOrderByMealDateAsc(owner, from, to)) {
+            addLatency(out, GENRE_EVENT, "etkezes", m.getMealDate(), m.getLoggedAt(), to);
+        }
+
+        for (CheckInEntity c : checkInRepository
+                .findByCreatedByAndDeletedFalseAndDateBetween(owner, from, to)) {
+            addLatency(out, GENRE_REFLECTION, "checkin", c.getDate(), c.getCreatedAt(), to);
+        }
+        for (JournalEntryEntity j : journalEntryRepository
+                .findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnDescCreatedAtDesc(
+                        owner, from, to)) {
+            addLatency(out, GENRE_REFLECTION, "naplo", j.getOccurredOn(), j.getCreatedAt(), to);
+        }
+        for (GratitudeEntryEntity g : gratitudeEntryRepository
+                .findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnDescCreatedAtDesc(
+                        owner, from, to)) {
+            addLatency(out, GENRE_REFLECTION, "hala", g.getOccurredOn(), g.getCreatedAt(), to);
+        }
+        for (DecisionEntryEntity d : decisionEntryRepository
+                .findByCreatedByAndDecidedOnBetweenAndDeletedFalseOrderByDecidedOnAsc(owner, from, to)) {
+            addLatency(out, GENRE_REFLECTION, "dontes", d.getDecidedOn(), d.getCreatedAt(), to);
+        }
+        for (IntentionFocusEntity f : intentionFocusRepository
+                .findByCreatedByAndFocusDateBetweenAndDeletedFalseOrderByFocusDateAsc(owner, from, to)) {
+            addLatency(out, GENRE_REFLECTION, "fokusz", f.getFocusDate(), f.getCreatedAt(), to);
+        }
+        return List.copyOf(out);
+    }
+
+    private static void addLatency(List<DetectorInput.LogLatencyPoint> out, String genre,
+                                   String source, LocalDate aboutDate, Instant writtenAt,
+                                   LocalDate upperBound) {
+        LocalDate writtenOn = localDate(writtenAt);
+        if (writtenOn == null || writtenOn.isAfter(upperBound)) {
+            return;
+        }
+        out.add(new DetectorInput.LogLatencyPoint(genre, source, aboutDate, writtenOn));
     }
 
     /**
