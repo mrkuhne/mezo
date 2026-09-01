@@ -232,6 +232,7 @@ components:
       required:
         - persons
         - mentions
+        - mezoNote
       properties:
         persons:
           type: array
@@ -241,6 +242,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MentionResponse'
+        mezoNote:
+          type: string
+          description: >-
+            Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet,
+            ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék.
+            Sosem üres — a sáv mindig igaz mondatot mutat.
     PersonResponse:
       type: object
       required:

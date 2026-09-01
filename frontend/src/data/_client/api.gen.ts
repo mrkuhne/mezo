@@ -6193,6 +6193,8 @@ export interface components {
         PeopleResponse: {
             persons: components["schemas"]["PersonResponse"][];
             mentions: components["schemas"]["MentionResponse"][];
+            /** @description Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet, ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék. Sosem üres — a sáv mindig igaz mondatot mutat. */
+            mezoNote: string;
         };
         PersonResponse: {
             /** Format: uuid */

@@ -43,7 +43,11 @@ const WIRE_MENTION: MentionResponse = {
   flagged: false,
 }
 
-const BOOTSTRAP: PeopleResponse = { persons: [WIRE_PERSON], mentions: [WIRE_MENTION] }
+const BOOTSTRAP: PeopleResponse = {
+  persons: [WIRE_PERSON],
+  mentions: [WIRE_MENTION],
+  mezoNote: 'Petra volt a leggyakoribb neved ezen a héten.',
+}
 
 describe('usePeople (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))

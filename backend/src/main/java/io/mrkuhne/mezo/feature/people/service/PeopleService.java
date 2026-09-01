@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.PersonDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PersonGraphEdge;
 import io.mrkuhne.mezo.api.dto.PersonResponse;
 import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
+import io.mrkuhne.mezo.feature.people.PeopleMezoNoteSource;
 import io.mrkuhne.mezo.feature.people.PersonGraphEdgeSource;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +49,9 @@ public class PeopleService {
     // ObjectProvider: kikapcsolt gráfnál nincs implementáció, és a személy-lista attól még teljes.
     private final ObjectProvider<PersonGraphEdgeSource> graphEdgeSource;
     private final PersonAffectTrendCalculator affectTrendCalculator;
+    // ObjectProvider: kikapcsolt companion/proaktív mellett nincs implementáció — a determinisztikus
+    // tartalék akkor is igaz mondatot mutat.
+    private final ObjectProvider<PeopleMezoNoteSource> mezoNoteSource;
 
     /**
      * One-call bootstrap (the knowledge pattern): persons with mention-derived stats computed
@@ -93,7 +98,46 @@ public class PeopleService {
             .map(m -> mapper.toMentionResponse(m, nameById.get(m.getPersonId())))
             .toList();
 
-        return new PeopleResponse(personResponses, mentionResponses);
+        String mezoNote = mezoNoteSource
+            .getIfAvailable(() -> (u, d) -> Optional.empty())
+            .todaysNote(userId, LocalDate.now())
+            .orElseGet(() -> derivedMezoNote(personResponses));
+        return new PeopleResponse(personResponses, mentionResponses, mezoNote);
+    }
+
+    /**
+     * Determinisztikus tartalék a Mezo-sávhoz, amikor ma nincs generált {@code people}
+     * companion-üzenet: nincs új lekérdezés, minden szükséges adat (név, heti említésszám,
+     * irány, indoklás) már a {@code personResponses}-en van (Task 1). Prioritási sorrend, az
+     * első találat nyer; holtversenynél név szerinti ábécé dönt, hogy a mondat két betöltés
+     * között ne ugráljon.
+     */
+    private String derivedMezoNote(List<PersonResponse> personResponses) {
+        Optional<PersonResponse> turnedDown = personResponses.stream()
+            .filter(p -> p.getDirection() == PersonResponse.DirectionEnum.DOWN)
+            .min(Comparator.comparing(PersonResponse::getName));
+        if (turnedDown.isPresent()) {
+            PersonResponse p = turnedDown.get();
+            return p.getName() + " hangulata lefelé fordult — " + p.getDirectionReason() + ".";
+        }
+
+        Optional<PersonResponse> unmentioned = personResponses.stream()
+            .filter(p -> p.getStatus() == PersonResponse.StatusEnum.ACTIVE)
+            .filter(p -> p.getMentionsThisWeek() == null || p.getMentionsThisWeek() == 0)
+            .min(Comparator.comparing(PersonResponse::getName));
+        if (unmentioned.isPresent()) {
+            return unmentioned.get().getName() + " nem került szóba ezen a héten.";
+        }
+
+        Optional<PersonResponse> mostMentioned = personResponses.stream()
+            .filter(p -> p.getMentionsThisWeek() != null && p.getMentionsThisWeek() > 0)
+            .max(Comparator.comparingInt(PersonResponse::getMentionsThisWeek)
+                .thenComparing(Comparator.comparing(PersonResponse::getName).reversed()));
+        if (mostMentioned.isPresent()) {
+            return mostMentioned.get().getName() + " volt a leggyakoribb neved ezen a héten.";
+        }
+
+        return "Még nincs elég említés a heti képhez.";
     }
 
     /** v1 chip write path: server stamps ts=now, source=chip, flagged=false (see MentionEntity). */
