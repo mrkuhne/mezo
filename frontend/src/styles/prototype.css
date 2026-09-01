@@ -5748,6 +5748,9 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-hub-line { font-size: 10.5px; font-weight: 300; margin-top: 2px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ppl-hub-spot { flex: 1; display: grid; place-items: center; padding: 5px 0; position: relative; }
+/* S4 (mezo-06o0.3) — anchor for a badge that hugs the icon itself (prototype
+   `.spotwrap .anchor`) rather than the whole `.ppl-hub-spot` grid cell. */
+.ppl-hub-anchor { position: relative; display: inline-flex; }
 .ppl-hub-badge {
   position: absolute; top: -7px; right: -11px; min-width: 20px; height: 20px;
   border-radius: 999px; background: var(--mz-strength);
@@ -5784,6 +5787,35 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-empty { border: 1px dashed rgba(43, 33, 24, 0.18); border-radius: 18px; padding: 17px 14px;
   text-align: center; font-size: 11px; color: var(--mz-ink-soft); font-weight: 300; }
 .ppl-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 5px 2px 9px; line-height: 1.5; }
+
+/* ── Emberek S4 jelölt-kártya (mezo-06o0.3) — prototype emberek.html `.candt`/`.cta.gold`/
+   `.ghost` ×1.18 (18→21 radius, 11px 12px→13px 14px padding, 10→12 margin). The card's own
+   gold literals (never seen elsewhere as a `--ppl-*` token) stay literal, matching the
+   prototype's own accept/candidate palette; `.ppl-figy` (JELÖLT chip) is the pre-existing
+   shared chip class, reused as-is. ── */
+.ppl-candt {
+  border-radius: 21px; padding: 13px 14px; margin-bottom: 12px;
+  background: linear-gradient(150deg, #FDF0DA, #FFFCF5);
+  border: 1px solid #C9962E;
+  box-shadow: 0 19px 35px -17px rgba(201, 150, 46, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  animation: ppl-candpulse 3s ease-in-out 1.2s infinite;
+  text-align: left;
+}
+@keyframes ppl-candpulse {
+  0%, 100% { box-shadow: 0 19px 35px -17px rgba(201, 150, 46, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.75); }
+  50% { box-shadow: 0 19px 35px -12px rgba(201, 150, 46, 0.75), 0 0 0 5px rgba(201, 150, 46, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.75); }
+}
+.ppl-candt-head { display: flex; align-items: center; gap: 7px; }
+.ppl-candt-head b { font-size: 13px; }
+.ppl-candt-q { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 11.2px; font-weight: 300; color: #6E6257; margin-top: 6px; line-height: 1.5; }
+.ppl-candt-ev { font-size: 8.9px; color: #A8801F; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.ppl-candbtns { display: flex; gap: 7px; margin-top: 11px; }
+.ppl-cta-gold {
+  background: linear-gradient(135deg, #E5C46B, #C9962E); color: #fff;
+  border-radius: 999px; padding: 7px 17px; font-size: 11.8px; font-weight: 600; flex: none;
+  box-shadow: 0 9px 19px -7px rgba(201, 150, 46, 0.55); border: none; font-family: inherit; cursor: pointer;
+}
+.ppl-ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 7px 14px; font-size: 11.8px; font-weight: 600; flex: none; cursor: pointer; }
 
 /* ── Emberek S3 "Heti kép" (mezo-06o0.2 Task 6) — prototype emberek-body.html renderHeti()
    + emberek-head.html `.tonemixc`/`.tonemix`/`.mixleg`/`.dirgrid`/`.dirt`/`.arr2`/`.why2`/
@@ -7441,6 +7473,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 @media (prefers-reduced-motion: reduce) {
   .ppl-rbar, .mz-play .ppl-rbar { transform: scaleY(1); animation: none; }
   .ppl-figy { animation: none; }
+  .ppl-candt { animation: none; }
 }
 
 .mzj-decfoot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; margin: 0; }

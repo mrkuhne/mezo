@@ -11,8 +11,9 @@
 // unchanged from the pre-hub PeoplePage (same PersonLogSheet/PersonEditSheet wiring).
 //
 // Honest states (per handoff and Task 1's `hubLines`): a null down/up person renders
-// '—', never a fabricated name; the Jelöltek tile carries NO badge in S3 (no candidate
-// source is wired until S4) rather than inventing a fake count.
+// '—', never a fabricated name. S4 (mezo-06o0.3): the Jelöltek tile now carries the real
+// `usePeople().candidates` count as its `.ppl-hub-badge` and names the first candidate on
+// the tile-line — the honest quiet copy only when there is truly no candidate.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -39,7 +40,7 @@ function mezoSentence(topName: string | null, downName: string | null): string {
 
 export function PeoplePage() {
   const navigate = useNavigate()
-  const { people, mentions, logMention } = usePeople()
+  const { people, mentions, candidates, logMention } = usePeople()
   const chat = useChatHandoff()
   const [logOpen, setLogOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -96,9 +97,16 @@ export function PeoplePage() {
             >
               <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-gold-ink)' }}>Jelöltek</span>
               <div className="ppl-hub-spot">
-                <ClayIcon name="i-kristaly" size={40} />
+                <span className="ppl-hub-anchor">
+                  <ClayIcon name="i-kristaly" size={40} />
+                  {candidates.length > 0 && <span className="ppl-hub-badge">{candidates.length}</span>}
+                </span>
               </div>
-              <div className="ppl-hub-line">nincs új arc — az éjszakai kör figyel</div>
+              <div className="ppl-hub-line">
+                {candidates.length > 0
+                  ? `${candidates[0].name} · visszatérő név`
+                  : 'nincs új arc — az éjszakai kör figyel'}
+              </div>
             </button>
 
             <button
