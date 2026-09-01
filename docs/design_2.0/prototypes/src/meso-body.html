@@ -59,6 +59,27 @@
   .dtile .sets { font-size: 9px; color: #6E6257; margin-top: 3px; }
   .dtile .mchips { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 5px; }
   .dtile .mchips span { font-size: 7.5px; font-weight: 700; border-radius: 999px; padding: 2px 7px; background: rgba(255, 255, 255, 0.75); color: #6E6257; }
+  .dtile.sage { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .dtile.sage .tt { color: #4E6B42; }
+  .dtile.rose { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); }
+  .dtile.rose .tt { color: #8E3F6F; }
+  .dtile.gold { background: linear-gradient(150deg, #FDF0DA, #FFFCF5); }
+  .dtile.gold .tt { color: #A8801F; }
+  .dtile .dhead { display: flex; align-items: flex-start; gap: 6px; }
+  .dtile .dhead .dl { font-size: 18px; line-height: 1; }
+  .dtile .dhead .tt { display: block; margin-top: 2px; }
+  .dtile .st { font-size: 7.5px; font-weight: 700; border-radius: 999px; padding: 2px 7px; flex: none; }
+  .dtile .st.done { background: rgba(110, 139, 94, 0.16); color: #4E6B42; }
+  .dtile .st.now { background: rgba(255, 107, 74, 0.14); color: #A84A26; }
+  .dtile .dcells { display: flex; gap: 4px; margin-top: 7px; }
+  .dtile .dcells div { flex: 1; text-align: center; padding: 4px 2px; border-radius: 9px; background: rgba(255, 255, 255, 0.7); }
+  .dtile .dcells b { display: block; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dtile .dcells small { font-size: 7px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #A2958A; }
+  .dtile .mlist { margin-top: 7px; display: grid; gap: 4px; }
+  .dtile .ml { display: grid; grid-template-columns: 38px 1fr 14px; align-items: center; gap: 5px; font-size: 8.5px; font-weight: 700; }
+  .dtile .ml .bar { height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); overflow: hidden; }
+  .dtile .ml .bar div { height: 100%; border-radius: 3px; }
+  .dtile .ml .n { text-align: right; font-variant-numeric: tabular-nums; color: #6E6257; }
   .dtile .rdot2 { width: 6px; height: 6px; border-radius: 50%; background: #C4634B; flex: none; }
 
   /* wizard szekció-kártyák (01 lépés) */
@@ -1347,17 +1368,25 @@
     var pd = document.getElementById('pickday');
     if (pd) pd.textContent = day + ' · ' + d.type + ' nap';
   }
+  var TYPECLS = { Upper: '', Pull: '', Lower: 'sage', Legs: 'sage', Push: 'rose', Full: 'gold' };
+  function dayTileHtml(day, d, attr, status) {
+    var rows = d.groups.map(function (p) {
+      var g = p[0], w = WASH[g.key], o = p[1] > SESSION_CAP;
+      return '<div class="ml"><span style="color:' + w[2] + ';">' + g.name + '</span><span class="bar"><div style="width:' + Math.min(100, Math.round(p[1] / SESSION_CAP * 100)) + '%;background:' + (o ? '#C4634B' : w[2]) + ';"></div></span><span class="n">' + p[1] + '</span></div>';
+    }).join('');
+    return '<div class="dtile ' + (TYPECLS[d.type] || '') + (d.over ? ' warnb' : '') + (status === 'now' ? ' today' : '') + '" ' + attr + ' role="button" tabindex="0" aria-label="' + day + ' · ' + d.type + ' nap">' +
+      '<div class="dhead"><div class="grow"><span class="dl">' + day + '</span><span class="tt">' + d.type + ' nap</span></div>' +
+      (status === 'now' ? '<span class="st now">ma</span>' : status === 'done' ? '<span class="st done">✓ kész</span>' : '') +
+      (d.over ? '<span class="rdot2" style="margin-top:4px;"></span>' : '') + '<span class="mut" style="font-size:11px;">›</span></div>' +
+      '<div class="dcells"><div><b>' + d.total + '</b><small>szett</small></div><div><b>~' + Math.round(d.total * 4.4) + '</b><small>perc</small></div></div>' +
+      '<div class="mlist">' + rows + '</div></div>';
+  }
   function refreshProgram() {
     document.getElementById('stdays').textContent = selectedDays.length + '×';
     if (activeDayIdx >= selectedDays.length) activeDayIdx = 0;
     var mos = document.getElementById('daymosaic');
     mos.innerHTML = selectedDays.map(function (day, i) {
-      var d = dayStats(i);
-      var chips = d.groups.map(function (p) { return '<span>' + p[0].name + ' ' + p[1] + '</span>'; }).join('');
-      return '<div class="dtile' + (d.over ? ' warnb' : '') + '" data-di="' + i + '" role="button" tabindex="0" aria-label="' + day + ' · ' + d.type + ' nap">' +
-        '<div class="mrow"><span class="dl">' + day + '</span><span class="tt">' + d.type + '</span>' + (d.over ? '<span class="rdot2"></span>' : '') + '<span class="grow"></span><span class="mut" style="font-size:11px;">›</span></div>' +
-        '<div class="sets">' + d.total + ' szett · ~' + Math.round(d.total * 4.4) + ' perc</div>' +
-        '<div class="mchips">' + chips + '</div></div>';
+      return dayTileHtml(day, dayStats(i), 'data-di="' + i + '"', null);
     }).join('');
     mos.querySelectorAll('.dtile').forEach(function (t) {
       function go(e) {
@@ -1580,13 +1609,7 @@
     var mos = document.getElementById('runmosaic');
     var TODAY = 1; /* Sze */
     mos.innerHTML = selectedDays.map(function (day, i) {
-      var d = dayStats(i, runSetsOf);
-      var chips = d.groups.map(function (p) { return '<span>' + p[0].name + ' ' + p[1] + '</span>'; }).join('');
-      var today = i === TODAY;
-      return '<div class="dtile' + (d.over ? ' warnb' : '') + (today ? ' today' : '') + '" data-ri="' + i + '" role="button" tabindex="0" aria-label="' + day + ' · ' + d.type + ' nap szerkesztése">' +
-        '<div class="mrow"><span class="dl">' + day + '</span><span class="tt">' + d.type + '</span>' + (today ? '<span class="todaychip">ma</span>' : '') + (d.over ? '<span class="rdot2"></span>' : '') + '<span class="grow"></span><span class="mut" style="font-size:11px;">›</span></div>' +
-        '<div class="sets">' + d.total + ' szett · ~' + Math.round(d.total * 4.4) + ' perc' + (i < TODAY ? ' · ✓ kész' : '') + '</div>' +
-        '<div class="mchips">' + chips + '</div></div>';
+      return dayTileHtml(day, dayStats(i, runSetsOf), 'data-ri="' + i + '"', i === TODAY ? 'now' : i < TODAY ? 'done' : null);
     }).join('');
     mos.querySelectorAll('.dtile').forEach(function (t) {
       function go(e) {
