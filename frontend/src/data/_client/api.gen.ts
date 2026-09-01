@@ -671,6 +671,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/{id}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set (or clear) the workout's closing note
+         * @description Last-write-wins. A null/blank note clears it. Used by the review page, so a note can be written or corrected long after the workout was finished (mezo-d20.8.2.2).
+         */
+        put: operations["saveWorkoutNote"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/workouts/{id}/finish": {
         parameters: {
             query?: never;
@@ -680,7 +700,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Complete a workout instance (idempotent) */
+        /**
+         * Complete a workout instance (idempotent)
+         * @description The optional body carries the closing note. Because finishing is idempotent, the note is FILL-IF-EMPTY here: a re-finish (or a bodyless retry) never wipes an existing note. Use PUT /api/train/workouts/{id}/note to overwrite or clear it (mezo-d20.8.2.2).
+         */
         post: operations["finishWorkout"];
         delete?: never;
         options?: never;
@@ -4267,6 +4290,8 @@ export interface components {
             /** @description 'Hét'..'Vas' */
             dayLabel: string;
             durationEst?: number;
+            /** @description The workout-level closing note, absent when none was written (mezo-d20.8.2.2). */
+            note?: string | null;
             exercises: components["schemas"]["WorkoutDetailExercise"][];
         };
         WorkoutDetailExercise: {
@@ -4382,6 +4407,10 @@ export interface components {
         };
         /** @description Set (or clear) the durable per-exercise note */
         ExerciseNoteRequest: {
+            note?: string | null;
+        };
+        /** @description The workout-level closing note — one sentence about the whole session ("Hogy ment?"), distinct from the per-exercise and per-set notes. Shared by the finish body and the note endpoint (mezo-d20.8.2.2). */
+        WorkoutNoteRequest: {
             note?: string | null;
         };
         WorkoutFeedbackInput: {
@@ -9782,6 +9811,57 @@ export interface operations {
             };
         };
     };
+    saveWorkoutNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Note saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout instance not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     finishWorkout: {
         parameters: {
             query?: never;
@@ -9791,7 +9871,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["WorkoutNoteRequest"];
+            };
+        };
         responses: {
             /** @description The completed instance with its logged sets */
             200: {
@@ -9800,6 +9884,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkoutInstanceResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */

@@ -19,6 +19,7 @@ export type WorkoutStartRequest = components['schemas']['WorkoutStartRequest']
 export type SetLogRequest = components['schemas']['SetLogRequest']
 export type SetUpdateRequest = components['schemas']['SetUpdateRequest']
 export type WorkoutSkipRequest = components['schemas']['WorkoutSkipRequest']
+export type WorkoutNoteRequest = components['schemas']['WorkoutNoteRequest']
 export type ExerciseSetResponse = components['schemas']['ExerciseSetResponse']
 export type PrescribedSet = components['schemas']['PrescribedSet']
 export type WorkoutFeedbackInput = components['schemas']['WorkoutFeedbackInput']
@@ -137,8 +138,18 @@ export const trainApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  finishWorkout: (workoutId: string): Promise<WorkoutInstanceResponse> =>
-    apiFetch<WorkoutInstanceResponse>(`/api/train/workouts/${workoutId}/finish`, { method: 'POST' }),
+  /** The optional body carries the closing note (mezo-d20.8.2.2); fill-if-empty server-side. */
+  finishWorkout: (workoutId: string, note?: string | null): Promise<WorkoutInstanceResponse> =>
+    apiFetch<WorkoutInstanceResponse>(`/api/train/workouts/${workoutId}/finish`, {
+      method: 'POST',
+      ...(note ? { body: JSON.stringify({ note } satisfies WorkoutNoteRequest) } : null),
+    }),
+  /** Overwrite or clear the workout's closing note — the review page's write path. */
+  saveWorkoutNote: (workoutId: string, note: string | null): Promise<void> =>
+    apiFetch<void>(`/api/train/workouts/${workoutId}/note`, {
+      method: 'PUT',
+      body: JSON.stringify({ note } satisfies WorkoutNoteRequest),
+    }),
   logSportSession: (body: SportSessionCreateRequest): Promise<SportSessionResponse> =>
     apiFetch<SportSessionResponse>('/api/train/sport-sessions', { method: 'POST', body: JSON.stringify(body) }),
   sportSchedule: (): Promise<SportScheduleSlotResponse[]> =>

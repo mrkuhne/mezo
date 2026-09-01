@@ -1155,6 +1155,10 @@ export const workoutDetailMock = {
   title: 'Pull Day',
   dayLabel: 'Hét',
   durationEst: 62,
+  // The workout-level closing note (mezo-d20.8.2.2). Seeded HERE and deliberately NOT on
+  // workoutDetailPrevMock: stepping back to the reference must reach a session with no note, so
+  // the `＋ Jegyzet ehhez az edzéshez` path is reachable offline too.
+  note: 'Öt órát aludtam, mégis vitt a lendület. A húzódzkodás az utolsó szettnél fogyott el.',
   exercises: [
     {
       exerciseId: 'ex0', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',

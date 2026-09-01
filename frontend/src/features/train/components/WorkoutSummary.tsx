@@ -2,8 +2,10 @@
 // Mezo · WorkoutSummary — the explicit-finish summary / review screen,
 // colorful pill/chip redesign (mezo-w943, spec 2026-08-10; supersedes the
 // grey 2026-07-15 layout). One shell, two modes:
-//   'closing': pre-finish — hero + halo(fire) + note + "Edzés lezárása ✓".
-//   'closed':  the same shell read-only (post-finish + /train/review).
+//   'closing': pre-finish — hero + halo(fire) + the closing note field + "Edzés lezárása ✓".
+//   'closed':  the same shell read-only (post-finish + /train/review), with the saved note.
+// The note (mezo-d20.8.2.2) is REAL since F7.2's tail: its value and its writes belong to the
+// page (this shell has two callers), so everything here is props.
 // All numbers come from logic/summaryStats (pure, table-tested).
 // ============================================================
 import { useState } from 'react'
@@ -41,6 +43,7 @@ const hu = (n: number, digits = 1) => n.toLocaleString('hu-HU', { maximumFractio
 export function WorkoutSummary({
   title, eyebrow, mode, exercises, challenges, medals = [], durationMin = null,
   comparison = null, prevTopByName = {}, footer = null,
+  note = null, draftNote = '', onDraftNote, onEditNote, noteEditing = false, onNoteSave, onNoteCancel,
   onFinish, finishPending = false, onBack, onExit,
 }: {
   title: string
@@ -58,6 +61,21 @@ export function WorkoutSummary({
   prevTopByName?: Record<string, SummarySetChip>
   /** Page-owned tail (the template-day stepping) — the shell knows nothing about routes. */
   footer?: ReactNode
+  /** The saved closing note (mezo-d20.8.2.2). `closed` renders it, absent → nothing rendered. */
+  note?: string | null
+  /** `closing` only: the in-progress note text, owned by the page so it survives a phase flip. */
+  draftNote?: string
+  onDraftNote?: (value: string) => void
+  /**
+   * `closed` only: opens the note for editing. Passed by the REVIEW page, where filling a gap
+   * is a meaningful intent — so an absent note offers `＋ Jegyzet` there. The just-finished
+   * summary passes nothing: you wrote it a second ago, there is nothing to revisit.
+   */
+  onEditNote?: () => void
+  /** `closed` only: the note is open for editing — the field replaces the read block. */
+  noteEditing?: boolean
+  onNoteSave?: () => void
+  onNoteCancel?: () => void
   onFinish?: () => void
   finishPending?: boolean
   onBack?: () => void
@@ -255,6 +273,49 @@ export function WorkoutSummary({
           })}
         </div>
       </div>
+
+      {/* The field: the closing screen's capture point, and the review page's editor. Both bind
+          the same page-owned draft, so neither the shell nor a phase flip owns the text. */}
+      {onDraftNote && (mode === 'closing' || noteEditing) ? (
+        <div className="wsum-note">
+          <span className="wsum-note-q">Hogy ment?</span>
+          <textarea
+            className="wsum-note-ta"
+            maxLength={1000}
+            value={draftNote}
+            aria-label="Hogy ment?"
+            placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…"
+            onChange={(e) => onDraftNote(e.target.value)}
+          />
+          {noteEditing ? (
+            <div className="wsum-note-ed">
+              <button type="button" className="save" onClick={onNoteSave}>Mentés</button>
+              <button type="button" className="cancel" onClick={onNoteCancel}>Mégse</button>
+            </div>
+          ) : (
+            <p className="wsum-note-hint">Nem kötelező — később is hozzáírhatod.</p>
+          )}
+        </div>
+      ) : null}
+
+      {/* `closed`: the saved sentence, or — only where revisiting is the point — a quiet way to
+          add one. No note and no editor means nothing renders (ADR 0010). */}
+      {mode === 'closed' && !noteEditing && note ? (
+        <div className="wsum-note-r">
+          <span className="wsum-note-lbl">Amit aznap írtál</span>
+          <p>{note}</p>
+          {onEditNote ? (
+            <button type="button" className="wsum-note-edit" aria-label="Jegyzet szerkesztése" onClick={onEditNote}>
+              <Icon name="pencil" size={12} />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {mode === 'closed' && !noteEditing && !note && onEditNote ? (
+        <button type="button" className="wsum-note-add" onClick={onEditNote}>
+          ＋ Jegyzet ehhez az edzéshez
+        </button>
+      ) : null}
 
       {footer}
       </EntranceGroup>

@@ -258,6 +258,30 @@ test('useTrain (real mode) finishWorkout forwards the levelUp on the finish resp
   expect((seen[0] as { levelUps?: string[] })?.levelUps).toContain('max_strength')
 })
 
+test('useTrain (real mode) finishWorkout sends the closing note, and no body without one', async () => {
+  const bodies: (string | null)[] = []
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/finish`, async ({ request, params }) => {
+      const raw = await request.text()
+      bodies.push(raw || null)
+      return HttpResponse.json({
+        id: String(params.id), templateSessionId: 't-1', date: '2026-06-12', status: 'completed', sets: [],
+      })
+    }),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+
+  result.current.finishWorkout('w-1', { note: 'Öt órát aludtam.' })
+  await waitFor(() => expect(bodies).toHaveLength(1))
+  expect(JSON.parse(bodies[0] as string)).toEqual({ note: 'Öt órát aludtam.' })
+
+  // A bodyless finish stays bodyless — the endpoint's requestBody is optional, and the
+  // server-side fill-if-empty rule depends on this retry never carrying an empty note.
+  result.current.finishWorkout('w-2')
+  await waitFor(() => expect(bodies).toHaveLength(2))
+  expect(bodies[1]).toBeNull()
+})
+
 // ---- T3 sport block: schedule mapping, week derivation, write mutations ----
 
 test('useTrain (real mode) maps the sport schedule slots into SportSchedule', async () => {
