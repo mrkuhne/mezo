@@ -184,6 +184,36 @@
   .daycells .statcell b { font-size: 14px; }
   .daycells .statcell small { font-weight: 700; }
 
+  /* Heti vizsgálat — izom-csempék sparkkal */
+  .mband .nums, .wnums { white-space: nowrap; }
+  .wtile {
+    border-radius: 17px; padding: 10px 11px; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .wtile:active { transform: scale(0.96); }
+  .mosaic > .wtile { min-width: 0; overflow: hidden; }
+  .wtile .mpill { width: auto; padding: 3px 8px; font-size: 9px; }
+  .wtile .tchip { font-size: 7px; padding: 2px 6px; }
+  .wtile .vcap span:nth-child(2) { display: none; }
+  .wnums { font-size: 20px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .wnums .arr { font-size: 13px; opacity: 0.6; margin: 0 2px; }
+  .wnums small { font-size: 9px; font-weight: 600; color: #6E6257; margin-left: 4px; }
+  .wtile .vb { height: 9px; margin-top: 5px; }
+  .wtile .vcap { font-size: 6.5px; }
+  .wspark { display: flex; gap: 2px; align-items: flex-end; height: 22px; margin-top: 7px; }
+  .wspark b { flex: 1; border-radius: 2px 2px 1px 1px; transform: scaleY(0); transform-origin: bottom; }
+  .play .wspark b { animation: growy 0.45s ease-out forwards; animation-delay: var(--d); }
+  @keyframes growy { to { transform: scaleY(1); } }
+  .wspark b.fut { opacity: 0.32; }
+  .wspark b.dl { background: repeating-linear-gradient(135deg, #E5C46B 0 3px, #F3E3B5 3px 6px) !important; }
+  .wstat { font-size: 8.5px; font-weight: 700; margin-top: 5px; }
+  .wmini { display: flex; gap: 3px; align-items: flex-end; height: 26px; margin: 6px 0 2px; }
+  .wmini b { flex: 1; border-radius: 3px 3px 1px 1px; transform: scaleY(0); transform-origin: bottom; }
+  .play .wmini b { animation: growy 0.45s ease-out forwards; animation-delay: var(--d); }
+  @media (prefers-reduced-motion: reduce) { .wspark b, .play .wspark b, .wmini b, .play .wmini b { transform: none; animation: none; } }
+
   /* volume band bar (MV → MEV → MAV → MRV) */
   .vbwrap { border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 14px; background: #fff; padding: 10px 12px; margin-bottom: 9px; box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.28); cursor: pointer; }
   .vb { position: relative; height: 16px; border-radius: 8px; overflow: hidden; margin-top: 7px; }
@@ -401,16 +431,47 @@
             <div class="mrow" style="margin-top:3px;"><span class="mut grow" style="font-size:8.5px;">W1 · W2 · <b style="color:#A8801F;">W3 · most</b> · W4 · W5 csúcs · deload</span></div>
           </div>
           <div class="coach rise" style="--d:60ms;margin-top:0;margin-bottom:9px;"><span class="dot"></span><span>A mell a múlt héten grindelt (RIR-rés), ezért most tartjuk a 10 szettet — a rámpa folytatódik, amint visszaáll a tempó.</span></div>
-          <div class="vcard rise" style="--d:90ms;padding:8px 12px;">
-            <div class="mrow" style="margin-bottom:2px;"><div class="p-eyebrow grow">Heti szetek · izmonként</div><span class="mut" style="font-size:8.5px;">most → plafon</span></div>
-            <div id="runbands"></div>
+          <div class="mosaic" style="margin-bottom:4px;">
+            <div class="tile t-train rise" style="--d:90ms;min-height:0;" data-page="page-week" role="button" tabindex="0" aria-label="Heti vizsgálat">
+              <div class="mrow"><div class="p-eyebrow grow" style="color:#A84A26;">Heti vizsgálat</div><span class="mut" style="font-size:11px;">›</span></div>
+              <div class="wmini" id="runmini"></div>
+              <div class="mut" style="font-size:9px;font-weight:600;" id="runminitxt">58 szett · 3 rámpázik</div>
+            </div>
+            <div class="tile t-vital rise" style="--d:120ms;min-height:0;" data-page="page-vol" role="button" tabindex="0" aria-label="Volumen-levezetés">
+              <div class="mrow"><div class="p-eyebrow grow">Volumen</div><span class="mut" style="font-size:11px;">›</span></div>
+              <div class="spotwrap" style="padding:2px 0;"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-meso"/></svg></div>
+              <div class="mut" style="font-size:9px;font-weight:600;text-align:center;">honnan a számok</div>
+            </div>
           </div>
           <div class="p-eyebrow rise" style="--d:120ms;padding:6px 2px 5px;">A heted · koppints egy napra a szerkesztéshez</div>
           <div class="daymosaic rise" style="--d:150ms;" id="runmosaic"></div>
           <div class="chips2 rise" style="--d:230ms;margin-top:10px;">
             <button class="ghost" style="color:#A84A26;" id="openclose">Meso lezárása</button>
-            <button class="ghost" data-page="page-vol">Volumen-levezetés ›</button>
           </div>
+        </div>
+      </div>
+
+      <!-- ============ HETI VIZSGÁLAT ============ -->
+      <div class="page p-coral" id="page-week">
+        <div class="page-head"><button class="backbtn" data-back="page-week">‹ A blokkod</button></div>
+        <div class="page-hero">
+          <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-meso"/></svg>
+          <div class="bignum" id="wkbig">58</div>
+          <div class="nm">Heti vizsgálat · 3. hét</div>
+          <div class="sb" id="wksub">szett ezen a héten · +8 a múlt héthez képest</div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;" id="wkstats"></div>
+          <div class="livebanner rise" style="--d:60ms;">
+            <span class="livedot"></span>
+            <div class="grow">
+              <div style="font-size:10px;font-weight:700;color:#4E6B42;">Élő rendszer · a következő görgetés hétfő hajnal</div>
+              <div class="mut" style="font-size:8.5px;">Hát +2 · Váll +2 · Comb +2 · Mell tart (grind) · Farizom MV-n</div>
+            </div>
+          </div>
+          <div class="mosaic" id="weekmosaic"></div>
+          <div class="coach rise" style="--d:420ms;margin-top:9px;"><span class="dot"></span><span>A hát és a váll a csúcshéten (W5) 20 szettig jut — a plafon 22, de a session-cap miatt itt megállunk. A mell grindje elmúlt, jövő héten újra +2.</span></div>
+          <p class="habnote">Koppints egy izomra a levezetésért (baseline → fókusz-sáv → eredő). Piros itt sincs: a tartás is döntés, nem hiba.</p>
         </div>
       </div>
 
@@ -1010,6 +1071,7 @@
           <li><strong>A tier végre vezérel</strong> — Emphasize: MEV+2 → MRV · Grow: MEV → MAV · Maintain: MV-n tart. A „szet-büdzsé %" pillek helyett minden felületen <strong>jelenlegi → plafon sáv</strong>: az Emphasize izmoké a legnagyobb szám, nem a legkisebb.</li>
           <li><strong>Hibrid generálás</strong> — determinisztikus váz (split, szet-keretek, rámpa, deload) + Gemini a gyakorlatválasztásban a célszöveg szerint; a Program-lépés mutatja a rationale-t és az ↺ Újragenerálást. Gemini-hiba esetén determinisztikus fallback, a wizard sosem akad el.</li>
           <li><strong>Aktív run — saját oldal</strong> — a hub hero kompakt lett (ív + izom-chipek) és koppintva a run-oldalra visz: blokk-ív, a VolumeDecider mondata, izmonkénti <em>most → plafon</em> sávok, a hét napjai mozaikban („ma" jelöléssel, a kész napok ✓) → egy nap csempéje a szerkesztő nap-oldalra visz (napi bontás + gyakorlat-akkordeon + picker), Meso lezárása. <em>Mezocikluson belül nincs Fókusz-váltás</em> — a tier a következő blokk wizardjában dől el.</li>
+          <li><strong>Heti vizsgálat — saját oldal a run-ról</strong> — a run-oldalon a heti szetek kártya helyett két csempe (Heti vizsgálat animált mini-oszlopokkal · Volumen); a Heti vizsgálat oldal: hero (heti szett + delta), 4 stat-cella, élő-rendszer sáv, majd izmonként <em>washed csempék</em>: <span style="white-space:nowrap;">most → plafon</span> nagy számmal (nem tördel), MEV/MAV/MRV-sáv múlt heti halvány + mostani izzó jelölővel, W1–W6 mini-spark (a mostani hét arany, a deload csíkos), státusz-sor (▲ +2 · tartás · MV-n). Koppintva a Volumen-levezetés nyílik.</li>
           <li><strong>Nap-oldal — felpimpelve</strong> — a nap típusa szerint washed oldal (Upper coral · Lower zsálya · Push rózsa), hero a nap betűjével, izmonkénti színes mini-cellák, majd <em>izomcsoportonként</em> rendezett gyakorlat-csempék (izom-wash + clay ikon-korong + séma-chip); a lista a nap típusából generálódik (Lower napon láb-gyakorlatok, nem evezés). Az első csempe nyitva: Failure/Volume + stepper-rács; a ▲▼ / Csere / Törlés a kibontott testbe költözött, a fejléc nem zsúfolt.</li>
           <li><strong>01 · Mikor és miért — szekció-kártyák</strong> — három washed kártya clay ikonnal és rise staggerrel: <em>Edzésnapok</em> (coral: napszám-csempék + 7 napos picker + a derivált split Mezo-buborékban), <em>A célod</em> (lavender: szabadszöveg), <em>Ami magától megy</em> (gold: 5+1 hét · +2 szett/hét · ~8 plafon mini-cellákban).</li>
           <li><strong>Hub hero: státusz-first</strong> — hét-pöttysor deload-horgonnyal, fázis-chip (Rámpa/Csúcs/Deload), izmonkénti sávok ▲+2 chipekkel, és a VolumeDecider döntése magyar mondatban („a mell grindelt → tartjuk").</li>
@@ -1398,6 +1460,66 @@
     }
   }
 
+  /* ==================== HETI VIZSGÁLAT ==================== */
+  function weekSeries(g) {
+    var out = [], cap = capOf(g);
+    for (var k = 1; k <= 5; k++) {
+      var v = g.tier === 'M' ? g.mv : Math.min(w1Of(g) + 2 * (k - 1), cap);
+      if (g.key === 'chest' && k >= 3) v = Math.min(v, 10 + 2 * (k - 3));
+      out.push(v);
+    }
+    out.push(Math.round(out[4] / 2));
+    return out;
+  }
+  function renderWeek() {
+    var NOW = 3, total = 0, prev = 0, ramp = 0, hold = 0, tw = 0, e = 0, c = 0, d = 0, w = 0;
+    var sorted = GROUPS.slice().sort(function (a, b) { return capOf(b) - capOf(a); });
+    var tiles = sorted.map(function (g, idx) {
+      var ser = weekSeries(g), cur = ser[NOW - 1], pv = ser[NOW - 2], cap = capOf(g), wsh = WASH[g.key];
+      total += cur; prev += pv;
+      var stat, statColor;
+      if (g.tier === 'M') { stat = 'MV-n tart · nem rámpázik'; statColor = '#8B7E6F'; hold++; }
+      else if (g.key === 'chest') { stat = '= tartás · grind a múlt héten'; statColor = '#A8801F'; hold++; }
+      else if (cur >= cap) { stat = 'plafonon'; statColor = '#A8801F'; hold++; }
+      else { stat = '▲ +2 e héten · ' + (cap - cur) + ' a plafonig'; statColor = '#4E6B42'; ramp++; }
+      var max = g.mrv;
+      var pct = function (v) { return Math.round(v / max * 100); };
+      var spark = ser.map(function (v, k) {
+        var cls = k === NOW - 1 ? '' : k < NOW - 1 ? '' : 'fut';
+        var bg = k === NOW - 1 ? 'linear-gradient(180deg,#FFD979,#C9962E)' : wsh[2];
+        return '<b class="' + (k === 5 ? 'dl' : cls) + '" style="--d:' + (200 + idx * 70 + k * 40) + 'ms;height:' + Math.max(12, Math.round(v / max * 100)) + '%;background:' + bg + ';"></b>';
+      }).join('');
+      var band = g.tier === 'M'
+        ? '<div class="mut" style="font-size:8px;margin-top:5px;">MV ' + g.mv + ' · nincs sáv, szinten tartás</div>'
+        : '<div class="vb"><span class="z1" style="left:0;right:0;"></span><span class="z2" style="left:' + pct(g.mev) + '%;width:' + (pct(g.mav) - pct(g.mev)) + '%;"></span><span class="z3" style="left:' + pct(g.mav) + '%;width:' + (100 - pct(g.mav)) + '%;"></span>' +
+          '<span class="hl" style="left:' + pct(g.mev) + '%;"></span><span class="hl" style="left:' + pct(g.mav) + '%;"></span>' +
+          '<span class="mk dim" style="left:' + pct(pv) + '%;"></span><span class="mk" style="left:' + pct(cur) + '%;"></span></div>' +
+          '<div class="vcap"><span>MEV ' + g.mev + '</span><span>MAV ' + g.mav + '</span><span>MRV ' + g.mrv + '</span></div>';
+      return '<div class="wtile rise" style="--d:' + (90 + idx * 60) + 'ms;background:linear-gradient(150deg,' + wsh[0] + ',' + wsh[1] + ');" data-page="page-vol" role="button" tabindex="0" aria-label="' + g.name + ' levezetés">' +
+        '<div class="mrow"><span class="mpill" style="' + g.pill + '">' + g.name + '</span><span class="grow"></span>' + tchipOf(g.tier) + '</div>' +
+        '<div class="wnums" style="color:' + wsh[2] + ';">' + cur + (g.tier === 'M' ? '<small>szett</small>' : '<span class="arr">→</span>' + cap + '<small>plafon</small>') + '</div>' +
+        band + '<div class="wspark">' + spark + '</div>' +
+        '<div class="wstat" style="color:' + statColor + ';">' + stat + '</div></div>';
+    }).join('');
+    var wm = document.getElementById('weekmosaic');
+    wm.innerHTML = tiles;
+    wm.querySelectorAll('[data-page]').forEach(function (el) {
+      el.addEventListener('click', function (e) { e.stopPropagation(); openPage(el.getAttribute('data-page')); });
+    });
+    document.getElementById('wkbig').textContent = total;
+    document.getElementById('wksub').textContent = 'szett ezen a héten · ' + (total - prev >= 0 ? '+' : '') + (total - prev) + ' a múlt héthez képest';
+    document.getElementById('wkstats').innerHTML =
+      '<div class="statcell"><b>' + total + '</b><small>szett · W3</small></div>' +
+      '<div class="statcell"><b>+' + (total - prev) + '</b><small>vs. W2</small></div>' +
+      '<div class="statcell"><b>' + ramp + '</b><small>rámpázik</small></div>' +
+      '<div class="statcell"><b>' + hold + '</b><small>tart</small></div>';
+    document.getElementById('runmini').innerHTML = sorted.map(function (g, idx) {
+      var cur = weekSeries(g)[NOW - 1];
+      return '<b style="--d:' + (300 + idx * 60) + 'ms;height:' + Math.max(15, Math.round(cur / 22 * 100)) + '%;background:' + WASH[g.key][2] + ';"></b>';
+    }).join('');
+    document.getElementById('runminitxt').textContent = total + ' szett · ' + ramp + ' rámpázik · ' + hold + ' tart';
+  }
+
   /* ==================== AKTÍV RUN oldal ==================== */
   function bandRow(g, cur, cap, stepTxt) {
     var pct = Math.round(cur / cap * 100);
@@ -1409,13 +1531,7 @@
       '</div>';
   }
   function renderRun() {
-    var sorted = GROUPS.slice().sort(function (a, b) { return capOf(b) - capOf(a); });
-    document.getElementById('runbands').innerHTML = sorted.map(function (g) {
-      var cur = runSetsOf(g), cap = capOf(g);
-      var st = g.tier === 'M' ? '' : (g.key === 'chest' ? '<span class="stepchip" style="color:#A8801F;">= tartás</span>'
-        : cur >= cap ? '<span class="stepchip" style="color:#A8801F;">plafonon</span>' : '<span class="stepchip">▲ +2 e héten</span>');
-      return bandRow(g, cur, cap, st);
-    }).join('');
+    renderWeek();
     var mos = document.getElementById('runmosaic');
     var TODAY = 1; /* Sze */
     mos.innerHTML = selectedDays.map(function (day, i) {
