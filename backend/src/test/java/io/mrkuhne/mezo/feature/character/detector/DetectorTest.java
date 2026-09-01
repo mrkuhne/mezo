@@ -1528,4 +1528,211 @@ class DetectorTest {
 
         assertThat(detectors).extracting(CharacterDetector::key).doesNotHaveDuplicates().hasSize(12);
     }
+
+    private static DetectorInput.MentionPoint mention(LocalDate d, String contextLabel) {
+        return new DetectorInput.MentionPoint(d, UUID.fromString("00000000-0000-0000-0000-000000000001"), contextLabel, false);
+    }
+
+    private static DetectorInput.SleepPoint sleepClock(LocalDate d, String bed, String wake) {
+        return new DetectorInput.SleepPoint(d, 7, new BigDecimal("7.5"), 1,
+                java.time.LocalTime.parse(bed), java.time.LocalTime.parse(wake));
+    }
+
+    private static DetectorInput.CheckinDayPoint mentalOnly(LocalDate d, String mental) {
+        return new DetectorInput.CheckinDayPoint(d, 1, null, null, null, new BigDecimal(mental));
+    }
+
+    // ── people-mood-link ────────────────────────────────────────────────────────
+
+    @Test
+    void peopleMoodLink_firesWhenMentionDaysRunHigher_firstTimeThePairedFloorIsMet() {
+        // 7 mention days (incl. DAY) at mental 8 + 7 other days at mental 5 → paired = 14 as of DAY
+        // (gate met, Δ = +3,0 → "magasabb", tier "gyenge" since |M| = 7); as of DAY-1 paired = 13 → null.
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        for (int i = 0; i < 14; i++) {
+            LocalDate d = DAY.minusDays(i);
+            boolean mentionDay = i % 2 == 0;           // i=0 is DAY → a mention day
+            if (mentionDay) {
+                mentions.add(mention(d, "munka"));
+            }
+            checkins.add(mentalOnly(d, mentionDay ? "8" : "5"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).checkins(checkins).build());
+
+        List<DetectorSignal> fired = new PeopleMoodLinkDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("people-mood-link");
+            assertThat(s.expertKey()).isEqualTo("antropologus");
+            assertThat(s.summary()).contains("7 napján").contains("8,0").contains("7 említés nélküli napon")
+                    .contains("5,0").contains("magasabb").contains("gyenge").contains("nem irány");
+            assertThat(s.salience()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void peopleMoodLink_silentBelowTheOnePointDelta() {
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        for (int i = 0; i < 14; i++) {
+            LocalDate d = DAY.minusDays(i);
+            if (i % 2 == 0) {
+                mentions.add(mention(d, null));
+            }
+            checkins.add(mentalOnly(d, i % 2 == 0 ? "6" : "5.5"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).checkins(checkins).build());
+
+        assertThat(new PeopleMoodLinkDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void peopleMoodLink_silentWhenTheBandIsUnchangedSinceYesterday() {
+        // nothing on DAY: both evaluations see the same 16 paired days → same band → no signal
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        for (int i = 1; i <= 16; i++) {
+            LocalDate d = DAY.minusDays(i);
+            if (i % 2 == 0) {
+                mentions.add(mention(d, "munka"));
+            }
+            checkins.add(mentalOnly(d, i % 2 == 0 ? "8" : "5"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).checkins(checkins).build());
+
+        assertThat(new PeopleMoodLinkDetector().detect(in)).isEmpty();
+    }
+
+    // ── mention-context-shift ───────────────────────────────────────────────────
+
+    @Test
+    void mentionContextShift_firesWhenADominantContextFirstAppears() {
+        // 6 labelled mentions, all on DAY: munka×3, csalad×2, konfliktus×1 → dominant munka (50%),
+        // konfliktus share 17% → "jelen". As of DAY-1: 0 labelled → null.
+        List<DetectorInput.MentionPoint> mentions = List.of(
+                mention(DAY, "munka"), mention(DAY, "munka"), mention(DAY, "munka"),
+                mention(DAY, "csalad"), mention(DAY, "csalad"), mention(DAY, "konfliktus"),
+                mention(DAY, null));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).build());
+
+        List<DetectorSignal> fired = new MentionContextShiftDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("mention-context-shift");
+            assertThat(s.expertKey()).isEqualTo("antropologus");
+            assertThat(s.summary()).contains("6 címkézett").contains("munka").contains("50%")
+                    .contains("17%").contains("jelen").contains("még kevés volt").contains("1 említés még címkézetlen")
+                    .contains("éjszakai osztályozója");
+            assertThat(s.salience()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void mentionContextShift_firesWithSalience4WhenTheKonfliktusBandRisesToMagas() {
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        for (int i = 1; i <= 4; i++) {
+            mentions.add(mention(DAY.minusDays(i), "munka"));
+        }
+        mentions.add(mention(DAY.minusDays(5), "csalad"));
+        mentions.add(mention(DAY.minusDays(6), "csalad"));          // as of DAY-1: munka|nincs (0% konfliktus)
+        for (int i = 0; i < 3; i++) {
+            mentions.add(mention(DAY, "konfliktus"));               // as of DAY: 3/9 = 33% → magas
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).build());
+
+        List<DetectorSignal> fired = new MentionContextShiftDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.summary()).contains("33%").contains("magas").contains("korábban munka/nincs");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void mentionContextShift_silentWhenUnchanged() {
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        for (int i = 1; i <= 8; i++) {
+            mentions.add(mention(DAY.minusDays(i), i <= 5 ? "edzes" : "baratok"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).build());
+
+        assertThat(new MentionContextShiftDetector().detect(in)).isEmpty();
+    }
+
+    // ── weekend-gap ─────────────────────────────────────────────────────────────
+
+    @Test
+    void weekendGap_midsleepMinutes_handlesMidnightCrossing() {
+        assertThat(WeekendGapDetector.midsleepMinutes(java.time.LocalTime.of(0, 30), java.time.LocalTime.of(8, 30)))
+                .isEqualTo(270);   // 04:30
+        assertThat(WeekendGapDetector.midsleepMinutes(java.time.LocalTime.of(23, 30), java.time.LocalTime.of(7, 30)))
+                .isEqualTo(210);   // 03:30
+    }
+
+    @Test
+    void weekendGap_firesWhenTheJetlagBandBecomesComputable() {
+        // DAY = 2026-08-27 (Thursday). Work nights: 14 weekday dates before DAY + DAY itself = 15
+        // (as of DAY-1 only 14 → "keves"; as of DAY → computable). Free nights: 6 (three weekends).
+        // Work midsleep 23:00→07:00 = 03:00 = 180; free 01:00→10:00 = 05:30 = 330; Δ = +150 → "jelentos".
+        List<DetectorInput.SleepPoint> sleep = new ArrayList<>();
+        for (LocalDate d : List.of(LocalDate.of(2026, 8, 26), LocalDate.of(2026, 8, 25), LocalDate.of(2026, 8, 24),
+                LocalDate.of(2026, 8, 21), LocalDate.of(2026, 8, 20), LocalDate.of(2026, 8, 19), LocalDate.of(2026, 8, 18),
+                LocalDate.of(2026, 8, 17), LocalDate.of(2026, 8, 14), LocalDate.of(2026, 8, 13), LocalDate.of(2026, 8, 12),
+                LocalDate.of(2026, 8, 11), LocalDate.of(2026, 8, 10), LocalDate.of(2026, 8, 7), DAY)) {
+            sleep.add(sleepClock(d, "23:00", "07:00"));
+        }
+        for (LocalDate d : List.of(LocalDate.of(2026, 8, 22), LocalDate.of(2026, 8, 23), LocalDate.of(2026, 8, 15),
+                LocalDate.of(2026, 8, 16), LocalDate.of(2026, 8, 8), LocalDate.of(2026, 8, 9))) {
+            sleep.add(sleepClock(d, "01:00", "10:00"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().sleep(sleep).build());
+
+        List<DetectorSignal> fired = new WeekendGapDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("weekend-gap");
+            assertThat(s.expertKey()).isEqualTo("antropologus");
+            assertThat(s.summary()).contains("150 perccel később").contains("jelentős social jetlag")
+                    .contains("6 szabad- és 15 munkaéjszakából").contains("nincs érdemi rés")
+                    .contains("Hétvége itt szombat–vasárnap");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void weekendGap_firesWhenTheLoggingGapCrossesTheQuarterLine() {
+        // 49-day window as of DAY (2026-08-27): Jul 10 .. Aug 27 → 35 weekdays, 14 weekend days.
+        // Check-ins on every weekday except Aug 24 (34/35 = 97%) and on 10 of 14 weekend days
+        // (skip Aug 15, 16, 22, 23 → 71%) → gap 26% ≥ 25% → "res". As of DAY-1 the window is
+        // Jul 9 .. Aug 26: Jul 9 unlogged too → 33/35 = 94% − 71% = 23% → "nincs-res". Change → fires.
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        Set<LocalDate> skip = Set.of(LocalDate.of(2026, 8, 24), LocalDate.of(2026, 8, 15), LocalDate.of(2026, 8, 16),
+                LocalDate.of(2026, 8, 22), LocalDate.of(2026, 8, 23));
+        for (LocalDate d = LocalDate.of(2026, 7, 10); !d.isAfter(DAY); d = d.plusDays(1)) {
+            if (!skip.contains(d)) {
+                checkins.add(mentalOnly(d, "6"));
+            }
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(checkins).build());
+
+        List<DetectorSignal> fired = new WeekendGapDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.summary()).contains("még kevés a hétvégi alvásnapló")
+                    .contains("hétvégén a napok 71%-án").contains("hétköznap 97%-án").contains("hétvégi rés");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void weekendGap_silentWhenNothingChanged() {
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        for (int i = 1; i <= 20; i++) {
+            checkins.add(mentalOnly(DAY.minusDays(i), "6"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(checkins).build());
+
+        assertThat(new WeekendGapDetector().detect(in)).isEmpty();
+    }
 }
