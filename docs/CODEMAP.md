@@ -261,8 +261,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
-- **Contract** `api/feature/companion/companion.yml` — 19 operations
+- **Contract** `api/feature/companion/companion.yml` — 21 operations
   - **endpoints:** GET /api/companion/conversation · POST /api/companion/conversation ·
+    PATCH /api/companion/conversation/{conversationId} · DELETE /api/companion/conversation/{conversationId} ·
     GET /api/companion/conversation/{conversationId}/messages ·
     POST /api/companion/conversation/{conversationId}/message · GET /api/companion/fact · POST /api/companion/fact ·
     PATCH /api/companion/fact/{factId} · GET /api/companion/fact/candidate ·
@@ -369,10 +370,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts, slotTemplateHooks.ts,
     stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts
 - **FE ui** `frontend/src/features/fuel`
-  - **pages:** FuelKamraPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx, FuelMezoPage.tsx,
-    FuelNaploPage.tsx, FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx,
-    KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
-    RecipesSkeleton.tsx
+  - **pages:** FuelKamraPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx, FuelNaploPage.tsx,
+    FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx, KamraItemDetailPage.tsx,
+    KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx, FuelSettingsSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
@@ -385,9 +385,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
     WeeklySupplementGrid.tsx, WindowBlock.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
-    dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, fuelMezoMessages.ts, fuelSwimlane.ts, heroWindow.ts,
-    kamraItems.ts, keretHero.ts, matchMealsToStack.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts,
-    resolveDayType.ts, validateSlotPlan.ts
+    dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts, keretHero.ts,
+    matchMealsToStack.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts, resolveDayType.ts,
+    validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
@@ -485,12 +485,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/insights.md](features/insights.md) (updated 2026-08-30, mixed)
 
 - **FE data** `frontend/src/data/insights`
-  - **hooks (via `@/data/hooks`):** `NEW_CHAT`, `useChat`, `useChatActions`, `useConversations`, `useDiagnoses`,
-    `useDiagnosis`, `useDiagnosisActions`, `useExperimentActions`, `useExperiments`, `useKnowledge`,
-    `useKnowledgeActions`, `useKnowledgeGraphActions`, `useKnowledgeGraphNodes`, `useLifeEventActions`,
-    `useLifeEventCandidates`, `useLlmUsage`, `useMemoir`, `useMemoryOverview`, `useMemorySummaries`,
-    `usePatternActions`, `usePatternMonitor`, `usePatternPairDetail`, `usePatterns`, `usePredictions`,
-    `useSimilarDays`, `useTranscribe`
+  - **hooks (via `@/data/hooks`):** `NEW_CHAT`, `useChat`, `useChatActions`, `useConversationActions`,
+    `useConversations`, `useDiagnoses`, `useDiagnosis`, `useDiagnosisActions`, `useExperimentActions`,
+    `useExperiments`, `useKnowledge`, `useKnowledgeActions`, `useKnowledgeGraphActions`, `useKnowledgeGraphNodes`,
+    `useLifeEventActions`, `useLifeEventCandidates`, `useLlmUsage`, `useMemoir`, `useMemoirArchive`,
+    `useMemoryOverview`, `useMemorySummaries`, `usePatternActions`, `usePatternMonitor`, `usePatternPairDetail`,
+    `usePatterns`, `usePredictions`, `useSimilarDays`, `useTranscribe`
   - **modules:** chat.ts, chatApi.ts, chatHooks.ts, diagnosisApi.ts, diagnosisHooks.ts, diagnosisMock.ts,
     experimentsApi.ts, experimentsHooks.ts, graph.ts, graphApi.ts, graphHooks.ts, insights.ts, knowledge.ts,
     knowledgeApi.ts, knowledgeHooks.ts, memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryHooks.ts,
@@ -498,17 +498,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts, weeklySuggestionApi.ts
 - **FE ui** `frontend/src/features/insights`
   - **pages:** ChatPage.tsx, DiagnosisDetailPage.tsx, DiagnosisListPage.tsx, ExperimentsPage.tsx,
-    KnowledgeListPage.tsx, MemoirPage.tsx, MemoryPage.tsx, MezoHubPage.tsx, PatternDetailPage.tsx, PatternsPage.tsx,
-    PredictionsPage.tsx
-  - **sheets:** ConversationPickerSheet.tsx
+    KnowledgeListPage.tsx, MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryPage.tsx,
+    MezoHubPage.tsx, PatternDetailPage.tsx, PatternsPage.tsx, PredictionsPage.tsx
+  - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx
   - **components:** ChatMessage.tsx, FactCandidateCard.tsx, FeedbackChips.tsx, KnowledgeExplainer.tsx,
     KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx,
     MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
     PatternDecisionCard.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternScatter.tsx, PatternStrengthChart.tsx,
     RecalledMemoriesRow.tsx, SimilarDayCard.tsx, TokenColumns.tsx, ToolWorkStrip.tsx
   - **logic:** chatRefs.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts, factCopy.ts, findings.ts,
-    humanizeCron.ts, lifecycle.ts, metricFormat.ts, patternHistory.ts, quickQuestions.ts, toolDomains.ts,
-    useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternHistory.ts, quickQuestions.ts,
+    toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
 
 ### intention
 
@@ -825,14 +825,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/diagnosis/diagnosis.yml` — 4 operations
   - **endpoints:** GET /api/proactive/diagnosis · POST /api/proactive/diagnosis · GET /api/proactive/diagnosis/{id} ·
     POST /api/proactive/diagnosis/{id}/suspect/{rank}/experiment
-- **Contract** `api/feature/proactive/proactive.yml` — 13 operations
+- **Contract** `api/feature/proactive/proactive.yml` — 14 operations
   - **endpoints:** GET /api/proactive/feed · GET /api/proactive/weekly-suggestion · GET /api/proactive/memoir ·
-    GET /api/proactive/prediction · GET /api/proactive/experiment · POST /api/proactive/experiment/propose ·
-    POST /api/proactive/experiment/{id}/decision · GET /api/proactive/challenge ·
-    POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
-    POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
-    GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 50 IT + 1 unit
+    GET /api/proactive/memoir/archive · GET /api/proactive/prediction · GET /api/proactive/experiment ·
+    POST /api/proactive/experiment/propose · POST /api/proactive/experiment/{id}/decision ·
+    GET /api/proactive/challenge · POST /api/proactive/challenge/{id}/decision ·
+    GET /api/proactive/weekly-review/{start} · POST /api/proactive/weekly-review/{start}/regenerate ·
+    GET /api/proactive/weekly-review/{start}/lessons · GET /api/proactive/weekly-review/{start}/digest
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 52 IT + 1 unit
   - **ITs:** `ChallengeGeneratorIT`, `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`,
     `ChallengePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
     `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`,
@@ -843,8 +843,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`, `OverloadChallengeGeneratorIT`,
     `PredictionGeneratorIT`, `PredictionJobIT`, `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`,
     `PredictionValidationIT`, `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`,
-    `ProactiveApiFeedIT`, `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `SleepDiagnosisIT`, `WeeklyLessonServiceIT`,
-    `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`,
+    `ProactiveApiFeedIT`, `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`,
+    `ProactiveMemoirArchiveSwitchOffIT`, `SleepDiagnosisIT`, `WeeklyLessonServiceIT`, `WeeklyReviewControllerIT`,
+    `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`,
     `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionPersistenceIT`
   - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
     `DailySummaryPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `GoalPopulator`, `GraphPopulator`,
