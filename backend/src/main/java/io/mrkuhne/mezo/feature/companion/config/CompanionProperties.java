@@ -57,7 +57,15 @@ public record CompanionProperties(
         /** How many days back the train digest (gym/sport/run counts) looks, including today. */
         @Min(1) @Max(30) int digestDays,
         /** The latest check-in note is included verbatim, truncated to this many characters. */
-        @Min(0) @Max(1000) int checkinNoteMaxChars
+        @Min(0) @Max(1000) int checkinNoteMaxChars,
+        /**
+         * The workout-level closing note (mezo-d20.13) is included VERBATIM, truncated to this
+         * many characters — never summarized. The note is the user's own sentence about how the
+         * session went, and summarizing it is what destroys the numbers, hedges and specifics
+         * that make it worth carrying at all; truncation is honestly lossy, rewriting fabricates.
+         * 0 turns the injection off. Applies per note, and the snapshot rides EVERY chat turn.
+         */
+        @Min(0) @Max(1000) int workoutNoteMaxChars
     ) {}
 
     /** V1.1 knowledge-fact injection — how much confirmed memory rides in every system prompt. */

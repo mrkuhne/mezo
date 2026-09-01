@@ -254,6 +254,66 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(snapshot).contains("1 sportalkalom").contains("1 futás");
     }
 
+    /**
+     * The workout closing note (mezo-d20.13) — the user's own sentence about how the session went,
+     * carried VERBATIM into both the digest and today's logged line. It is the one thing in the
+     * train block that no number can convey, so summarizing it is what would destroy it.
+     */
+    @Test
+    void testRender_shouldCarryClosingNotesVerbatim_whenWorkoutsHaveThem() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "upper", 0, "planned");
+        trainPopulator.createWorkoutInstance(owner, template, today.minusDays(2), "completed",
+            "Öt órát aludtam, mégis vitt a lendület.");
+        trainPopulator.createWorkoutInstance(owner, template, today, "completed",
+            "Ma könnyűnek érződött a lehúzás.");
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains(today.minusDays(2) + " — \"Öt órát aludtam, mégis vitt a lendület.\"");
+        assertThat(snapshot).contains("gym: elvégezve — \"Ma könnyűnek érződött a lehúzás.\"");
+        // The morning message strips data generated later in the day but NOT the train block —
+        // the two assembly points must not silently diverge on a new field.
+        assertThat(assembler.renderWithoutBiometrics(owner, today))
+            .contains("Ma könnyűnek érződött a lehúzás.");
+    }
+
+    /** ADR 0010: an absent note is not remarked on. Nothing is rendered where nothing was written. */
+    @Test
+    void testRender_shouldRenderNoNoteMarker_whenWorkoutHasNone() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "upper", 0, "planned");
+        trainPopulator.createWorkoutInstance(owner, template, today, "completed", "   ");
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("gym: elvégezve;");
+        assertThat(snapshot).doesNotContain("—  \"").doesNotContain("nincs jegyzet");
+    }
+
+    /**
+     * The snapshot rides EVERY chat turn and the contract lets a note be 1000 chars, so the clip
+     * is load-bearing, not cosmetic. Truncation is honestly lossy; an LLM rewrite would fabricate.
+     */
+    @Test
+    void testRender_shouldTruncateClosingNote_whenLongerThanTheConfiguredCap() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "upper", 0, "planned");
+        String longNote = "x".repeat(600);
+        trainPopulator.createWorkoutInstance(owner, template, today, "completed", longNote);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).doesNotContain(longNote);
+        assertThat(snapshot).contains("…\"");
+    }
+
     @Test
     void testTrainBlock_shouldResolveTomorrowGymAndSport_whenScheduledForTomorrowWeekday() {
         UUID owner = userPopulator.createUser().getId();

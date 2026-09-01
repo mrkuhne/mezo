@@ -5,6 +5,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { GRAPH_KIND_GROUPS } from '@/data/insights/graph'
 import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { candidateSeed } from '@/data/insights/knowledge'
 
@@ -148,7 +149,10 @@ describe('KnowledgeListPage (mock mode)', () => {
 
   // ---- Task 7: Kategóriák nézet + kind-lánc + Profil + Hogyan nézetek (mezo-ms9a) --------------
 
-  test('(T7-a) ?view=kategoriak → 6 kind-csempe, üres kind halványan, nem kattintható', () => {
+  // A kind-lista NEM fix hosszú: a `mezo-06o0.4` gráf-tükör felvette a PERSON ('Emberek')
+  // kind-et, miközben ez a teszt 6 csempét/2 üreset pinnelt — külön-külön mindkét ág zöld volt,
+  // mergelve piros. A számok ezért a GRAPH_KIND_GROUPS-ból derivált értékek, nem konstansok.
+  test('(T7-a) ?view=kategoriak → minden kind-csempe, üres kind halványan, nem kattintható', () => {
     const { container } = renderPage('/?view=kategoriak')
     expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Preferenciák' })).toBeInTheDocument()
@@ -160,7 +164,17 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.queryByRole('button', { name: 'Szezonok' })).not.toBeInTheDocument()
     expect(screen.getByText('Belátások')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Belátások' })).not.toBeInTheDocument()
-    expect(container.querySelectorAll('.tud-kind-empty')).toHaveLength(2)
+    // ...and Emberek, since the seed carries no PERSON graph node either.
+    expect(screen.getByText('Emberek')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Emberek' })).not.toBeInTheDocument()
+
+    // Every kind gets a tile: the ones with nodes are clickable, the rest dimmed and inert.
+    // Derived from GRAPH_KIND_GROUPS so adding a kind cannot silently drop a tile again.
+    const empty = container.querySelectorAll('.tud-kind-empty')
+    const clickable = GRAPH_KIND_GROUPS
+      .filter(([, label]) => screen.queryByRole('button', { name: label }) !== null).length
+    expect(empty.length + clickable).toBe(GRAPH_KIND_GROUPS.length)
+    expect(empty).toHaveLength(3)
   })
 
   test('(T7-b) &kind=PATTERN → kompakt sorok, PageHead ‹ Kategóriák', () => {
