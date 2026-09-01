@@ -269,6 +269,24 @@ this redesign and remain as shipped.
   raw ISO dates. The fake's `MEMOIR_SENTINEL` went GREEDY (nested `anchors` objects) and its
   default answer speaks the v2 shape; load-bearing prompt lines are pinned by
   `MemoirPromptTest`, the widened gather by `MemoirGeneratorIT`.
+  **The week's workout closing notes (`mezo-d20.13`,
+  [spec](../superpowers/specs/2026-09-01-edzes-jegyzet-kontextus-design.md))** are the newest
+  gather section — `AMIT AZ EDZÉSEK UTÁN ÍRT (a saját szavai, szó szerint)`, one line per
+  completed instance in `[weekStart, weekStart+6]` carrying a non-blank `closingNote`
+  (`WorkoutSessionRepository.findDoneInstancesBetween`, the same cycle-safe `proactive → train`
+  read the week PRs use). They go in **verbatim**: a session is fully describable in numbers, but
+  how it FELT exists only in the user's own sentence and is unrecoverable from the data, so
+  summarizing it first would strip the numbers, hedges and specifics that are the entire reason it
+  is carried — and would make the app assert an interpretation of the user's state it was never
+  told. Long notes are **truncated** (`WORKOUT_NOTE_CLIP` 400 per note, `WORKOUT_NOTES_TOTAL_CLIP`
+  1200 for the section): a per-entry cap as well as a total, because with only a total one long
+  note crowds the rest of the week out entirely. Each note is also a **`WorkoutNote` anchor
+  candidate**, so a chapter that leans on one stays traceable in the `Miből íródott` row —
+  unattributed echo of a person's own words reads as surveillance, a visible trail reads as
+  attention. Custom (saját) workouts are **in** scope: only the custom TEMPLATE row has a null
+  `templateSessionId`, its started instance carries one like any other. Reads `closingNote`, never
+  `note` (the template day's plan note, a different row of the same table). The FE chip label
+  lives in `toolDomains.ts` / `chatRefs.ts` (`Edzés-jegyzet`).
 - **A Sunday-evening cron** — `MemoirJob` `@Scheduled` on `mezo.proactive.memoir.cron`
   (**`0 0 19 * * SUN`** — Sunday 19:00 server zone, the old PRD journey 5.8) pre-generates the memoir
   for the week **ENDING that Sunday** (its Monday = `previousOrSame(MONDAY)` of "now"). At 19:00 the

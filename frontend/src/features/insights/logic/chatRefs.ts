@@ -48,6 +48,7 @@ const KIND_LABELS: Record<string, string> = {
   SleepGoal: 'Alváscél',
   Insight: 'Összefüggés',
   Memory: 'Emlék',
+  WorkoutNote: 'Edzés-jegyzet',
 }
 
 const ISO_DATE = /(\d{4})-(\d{2})-(\d{2})/

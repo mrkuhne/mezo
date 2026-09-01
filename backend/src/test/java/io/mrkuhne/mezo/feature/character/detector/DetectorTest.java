@@ -6,6 +6,8 @@ import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,7 +37,8 @@ class DetectorTest {
 
     static DetectorInput.TrendWindow emptyTrend() {
         return new DetectorInput.TrendWindow(List.of(), List.of(), List.of(), List.of(),
-                null, List.of(), null);
+                null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(),
+                List.of(), List.of());
     }
 
     /** Full-control builder for the round-2 detectors: only the trend window varies. */
@@ -69,13 +72,50 @@ class DetectorTest {
                 new BigDecimal("7"), new BigDecimal(mental));
     }
 
-    private static DetectorInput.TrendWindow trend(List<DetectorInput.MealDayPoint> meals,
-                                                   List<DetectorInput.WaterDayPoint> water,
-                                                   DetectorInput.StackContext stack,
-                                                   List<DetectorInput.CheckinDayPoint> checkins,
-                                                   DetectorInput.MedContext med,
-                                                   List<DetectorInput.GymDay> gym) {
-        return new DetectorInput.TrendWindow(List.of(), gym, meals, water, stack, checkins, med);
+    /** Fluent {@link DetectorInput.TrendWindow} builder — every component defaults to empty. */
+    private static final class TrendBuilder {
+        private List<DetectorInput.RunPoint> runs = List.of();
+        private List<DetectorInput.GymDay> gym = List.of();
+        private List<DetectorInput.MealDayPoint> meals = List.of();
+        private List<DetectorInput.WaterDayPoint> water = List.of();
+        private DetectorInput.StackContext stack;
+        private List<DetectorInput.CheckinDayPoint> checkins = List.of();
+        private DetectorInput.MedContext med;
+        private List<DetectorInput.SleepPoint> sleep = List.of();
+        private List<DetectorInput.IntentionDayPoint> intentions = List.of();
+        private List<DetectorInput.DecisionPoint> decisions = List.of();
+        private List<DetectorInput.GratitudePoint> gratitudes = List.of();
+        private DetectorInput.NeedsContext needs;
+        private List<DetectorInput.CheckinSlotPoint> slots = List.of();
+        private List<java.time.LocalDateTime> chat = List.of();
+        private List<DetectorInput.LogLatencyPoint> latencies = List.of();
+
+        TrendBuilder runs(List<DetectorInput.RunPoint> v) { this.runs = v; return this; }
+        TrendBuilder gym(List<DetectorInput.GymDay> v) { this.gym = v; return this; }
+        TrendBuilder meals(List<DetectorInput.MealDayPoint> v) { this.meals = v; return this; }
+        TrendBuilder water(List<DetectorInput.WaterDayPoint> v) { this.water = v; return this; }
+        TrendBuilder stack(DetectorInput.StackContext v) { this.stack = v; return this; }
+        TrendBuilder checkins(List<DetectorInput.CheckinDayPoint> v) { this.checkins = v; return this; }
+        TrendBuilder med(DetectorInput.MedContext v) { this.med = v; return this; }
+        TrendBuilder sleep(List<DetectorInput.SleepPoint> v) { this.sleep = v; return this; }
+        TrendBuilder intentions(List<DetectorInput.IntentionDayPoint> v) { this.intentions = v; return this; }
+        TrendBuilder decisions(List<DetectorInput.DecisionPoint> v) { this.decisions = v; return this; }
+        TrendBuilder gratitudes(List<DetectorInput.GratitudePoint> v) { this.gratitudes = v; return this; }
+        TrendBuilder needs(DetectorInput.NeedsContext v) { this.needs = v; return this; }
+        TrendBuilder slots(List<DetectorInput.CheckinSlotPoint> v) { this.slots = v; return this; }
+        TrendBuilder chat(List<java.time.LocalDateTime> v) { this.chat = v; return this; }
+        TrendBuilder latencies(List<DetectorInput.LogLatencyPoint> v) { this.latencies = v; return this; }
+
+        DetectorInput.TrendWindow build() {
+            return new DetectorInput.TrendWindow(runs, gym, meals, water, stack, checkins, med,
+                    sleep, intentions, decisions, gratitudes, needs, slots, chat, latencies);
+        }
+    }
+
+    /** A DetectorInput carrying only a trend window — the shape every round-2/3 detector reads. */
+    private static DetectorInput trendOnly(LocalDate day, DetectorInput.TrendWindow trend) {
+        return new DetectorInput(day, Set.of(), Map.of(), List.of(), Map.of(), List.of(),
+                List.of(), List.of(), List.of(), null, trend);
     }
 
     @Test
@@ -517,7 +557,7 @@ class DetectorTest {
         // Scenario 1: DAY run at 40s -> band flips KOZOMBOS -> JAVUL -> fires "javul"
         List<DetectorInput.RunPoint> withFlip = new java.util.ArrayList<>(olderWeeks);
         withFlip.add(new DetectorInput.RunPoint(DAY, null, 40, null));
-        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null);
+        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), withFlip, List.of(), null, flipTrend));
         assertThat(fired).singleElement().satisfies(s -> {
@@ -527,7 +567,7 @@ class DetectorTest {
         });
 
         // Scenario 2: DAY run removed entirely -> no new run data -> empty regardless of band
-        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null);
+        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), olderWeeks, List.of(), null, noDayTrend))).isEmpty();
 
@@ -535,7 +575,7 @@ class DetectorTest {
         // suppresses even though new run data exists
         List<DetectorInput.RunPoint> noFlip = new java.util.ArrayList<>(olderWeeks);
         noFlip.add(new DetectorInput.RunPoint(DAY, null, 108, null));
-        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null);
+        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), noFlip, List.of(), null, noFlipTrend))).isEmpty();
     }
@@ -548,7 +588,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(7), null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(14), null, 100, null));
-        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null);
+        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, List.of(), null, trend))).isEmpty();
     }
@@ -623,7 +663,8 @@ class DetectorTest {
                 List.of(new DetectorInput.MealDayPoint(DAY, new BigDecimal("2000"),
                         new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
                         null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
-                List.of(), null, List.of(), null);
+                List.of(), null, List.of(), null,
+                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(DetectorGates.newMealData(trendInput(todayMeal))).isTrue();
 
         DetectorInput.TrendWindow yesterdayMeal = new DetectorInput.TrendWindow(
@@ -631,7 +672,8 @@ class DetectorTest {
                 List.of(new DetectorInput.MealDayPoint(DAY.minusDays(1), new BigDecimal("2000"),
                         new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
                         null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
-                List.of(), null, List.of(), null);
+                List.of(), null, List.of(), null,
+                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(DetectorGates.newMealData(trendInput(yesterdayMeal))).isFalse();
     }
 
@@ -654,7 +696,7 @@ class DetectorTest {
         for (int i = 0; i < 15; i++) {
             stable.add(meal(DAY.minusDays(i), "2200", "180", null));
         }
-        assertThat(d.detect(trendInput(trend(stable, List.of(), null, List.of(), null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().meals(stable).build())))
                 .isEmpty();
 
         // a window that CROSSES the threshold exactly on DAY: 14 days at 2700 kcal against a
@@ -665,7 +707,7 @@ class DetectorTest {
             flipping.add(meal(DAY.minusDays(i), "2700", "220", null));
         }
         flipping.add(meal(DAY.minusDays(14), "4500", "220", null));
-        assertThat(d.detect(trendInput(trend(flipping, List.of(), null, List.of(), null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().meals(flipping).build())))
                 .singleElement().satisfies(s -> {
                     assertThat(s.detectorKey()).isEqualTo("macro-adherence");
                     assertThat(s.expertKey()).isEqualTo("taplalkozo");
@@ -683,7 +725,7 @@ class DetectorTest {
         for (int i = 0; i < 15; i++) {
             good.add(new DetectorInput.WaterDayPoint(DAY.minusDays(i), 4000, 4000));
         }
-        assertThat(d.detect(trendInput(trend(List.of(), good, null, List.of(), null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().water(good).build())))
                 .isEmpty();
 
         // three low days at offsets 0-2: as of DAY the 14-day window (offsets 0-13) holds all
@@ -696,7 +738,7 @@ class DetectorTest {
         for (int i = 3; i < 15; i++) {
             crossing.add(new DetectorInput.WaterDayPoint(DAY.minusDays(i), 4200, 4000));
         }
-        assertThat(d.detect(trendInput(trend(List.of(), crossing, null, List.of(), null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().water(crossing).build())))
                 .hasSize(1);
     }
 
@@ -709,7 +751,7 @@ class DetectorTest {
         List<DetectorInput.CheckinDayPoint> checkins = List.of(
                 checkin(DAY, "3", "9", "3"),
                 checkin(DAY.minusDays(1), "8", "2", "8"));
-        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().meals(meals).checkins(checkins).build())))
                 .isEmpty();
     }
 
@@ -728,7 +770,7 @@ class DetectorTest {
             checkins.add(bad ? checkin(DAY.minusDays(i), "3", "9", "3")
                              : checkin(DAY.minusDays(i), "8", "2", "8"));
         }
-        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().meals(meals).checkins(checkins).build())))
                 .singleElement().satisfies(s -> {
                     assertThat(s.detectorKey()).isEqualTo("comfort-eating");
                     assertThat(s.expertKey()).isEqualTo("taplalkozo");
@@ -755,7 +797,7 @@ class DetectorTest {
                     spike ? "0.75" : "0.15"));
             checkins.add(checkin(DAY.minusDays(i), "3", "9", "3")); // every day low-mood
         }
-        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().meals(meals).checkins(checkins).build())))
                 .isEmpty();
     }
 
@@ -770,7 +812,7 @@ class DetectorTest {
             checkins.add(bad ? checkin(DAY.minusDays(i), "3", "9", "3")
                              : checkin(DAY.minusDays(i), "8", "2", "8"));
         }
-        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().meals(meals).checkins(checkins).build())))
                 .isEmpty();
     }
 
@@ -791,7 +833,7 @@ class DetectorTest {
             checkins.add(bad ? checkin(DAY.minusDays(i), "3", "9", "3")
                              : checkin(DAY.minusDays(i), "8", "2", "8"));
         }
-        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().meals(meals).checkins(checkins).build())))
                 .isEmpty();
     }
 
@@ -813,7 +855,7 @@ class DetectorTest {
                 gym.add(new DetectorInput.GymDay(DAY.minusDays(i), List.of()));
             }
         }
-        assertThat(d.detect(trendInput(trend(meals, List.of(), null, List.of(), null, gym))))
+        assertThat(d.detect(trendInput(new TrendBuilder().meals(meals).gym(gym).build())))
                 .singleElement().satisfies(s -> {
                     assertThat(s.detectorKey()).isEqualTo("protein-training-mismatch");
                     assertThat(s.expertKey()).isEqualTo("taplalkozo");
@@ -839,7 +881,7 @@ class DetectorTest {
                 gym.add(new DetectorInput.GymDay(DAY.minusDays(i), List.of()));
             }
         }
-        assertThat(d.detect(trendInput(trend(meals, List.of(), null, List.of(), null, gym))))
+        assertThat(d.detect(trendInput(new TrendBuilder().meals(meals).gym(gym).build())))
                 .isEmpty();
     }
 
@@ -863,7 +905,7 @@ class DetectorTest {
         }
         DetectorInput in = new DetectorInput(DAY, Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), List.of(), sleep, null,
-                trend(meals, List.of(), null, List.of(), null, List.of()));
+                new TrendBuilder().meals(meals).build());
         assertThat(d.detect(in)).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("late-eating-pattern");
             assertThat(s.expertKey()).isEqualTo("szomnologus");
@@ -879,7 +921,7 @@ class DetectorTest {
                         DAY.minusDays(60))),
                 List.of(new DetectorInput.StackDayPoint(DAY, Set.of())));
         // no gym days anywhere -> the pre-workout item was never EXPECTED -> quiet
-        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().stack(stack).build())))
                 .isEmpty();
     }
 
@@ -896,7 +938,7 @@ class DetectorTest {
         DetectorInput.StackContext stack = new DetectorInput.StackContext(
                 List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null,
                         DAY.minusDays(60))), days);
-        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().stack(stack).build())))
                 .singleElement().satisfies(s -> {
                     assertThat(s.detectorKey()).isEqualTo("stack-skip-pattern");
                     assertThat(s.expertKey()).isEqualTo("drill");
@@ -914,7 +956,7 @@ class DetectorTest {
         DetectorInput.StackContext stack = new DetectorInput.StackContext(
                 List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null, DAY)),
                 List.of(new DetectorInput.StackDayPoint(DAY, Set.of(creatine))));
-        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().stack(stack).build())))
                 .isEmpty();
     }
 
@@ -930,7 +972,7 @@ class DetectorTest {
         DetectorInput.StackContext stack = new DetectorInput.StackContext(
                 List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null,
                         DAY.minusDays(3))), days);
-        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().stack(stack).build())))
                 .singleElement().satisfies(s ->
                         assertThat(s.summary()).contains("4 napon maradt ki a tervezett 4 napból"));
     }
@@ -947,7 +989,7 @@ class DetectorTest {
             checkins.add(checkin(DAY.minusDays(i), i % 7 >= 5 ? "3" : "8", "4", "7"));
         }
         DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
-        assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().checkins(checkins).med(med).build())))
                 .isEmpty();
     }
 
@@ -968,7 +1010,7 @@ class DetectorTest {
             checkins.add(checkin(DAY.minusDays(i), i == 0 ? "3" : "8", "4", "7"));
         }
         DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
-        assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().checkins(checkins).med(med).build())))
                 .singleElement().satisfies(s -> {
                     assertThat(s.detectorKey()).isEqualTo("med-cycle-covariance");
                     assertThat(s.expertKey()).isEqualTo("doki");
@@ -995,7 +1037,486 @@ class DetectorTest {
             checkins.add(checkin(DAY.minusDays(i), cycleDay == 1 ? "3" : "8", "4", "7"));
         }
         DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
-        assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
+        assertThat(d.detect(trendInput(new TrendBuilder().checkins(checkins).med(med).build())))
                 .isEmpty();
+    }
+
+    private static DetectorInput.CheckinDayPoint scale(LocalDate d, String energy, String body) {
+        return new DetectorInput.CheckinDayPoint(d, 1, new BigDecimal(energy), new BigDecimal("5"),
+                new BigDecimal(body), new BigDecimal("6"));
+    }
+
+    private static DetectorInput.SleepPoint sleep(LocalDate d, int quality) {
+        return new DetectorInput.SleepPoint(d, quality, new BigDecimal("7.0"), 1);
+    }
+
+    private static DetectorInput.IntentionDayPoint intention(LocalDate d, int foci, String reflection) {
+        return new DetectorInput.IntentionDayPoint(d, foci, reflection);
+    }
+
+    private static DetectorInput.DecisionPoint decision(LocalDate reviewedOn, Integer rating) {
+        return new DetectorInput.DecisionPoint(DAY.minusDays(40), DAY.minusDays(40),
+                DAY.minusDays(20), reviewedOn, rating == null ? null : rating.shortValue(),
+                "döntés szövege");
+    }
+
+    @Test
+    void selfCalibration_suppressesASingleDayFlip() {
+        // 10 paired days; the 5 highest self-rated days slept badly, the 5 lowest slept well.
+        // As of DAY-1 the window's low-self group collapses onto the median and is excluded, so
+        // verdict() returns null there -- the direction as of DAY has not held for two days, only
+        // one, so the confirmation gate (round-3 review fix, I10) must suppress it.
+        List<DetectorInput.CheckinDayPoint> scales = new java.util.ArrayList<>();
+        List<DetectorInput.SleepPoint> sleeps = new java.util.ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            LocalDate d = DAY.minusDays(i);
+            boolean highSelf = i < 5;
+            scales.add(scale(d, highSelf ? "8" : "3", "6"));
+            sleeps.add(sleep(d, highSelf ? 3 : 8));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(scales).sleep(sleeps).build());
+
+        assertThat(new SelfCalibrationDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void selfCalibration_firesOnlyOnceADirectionHasHeldForTwoDays() {
+        // Core 6 days sit inside every trailing-14-day window evaluated below (DAY, DAY-1, DAY-2)
+        // and alone are perfectly neutral (diff 0). Four edge days enter/leave the window as the
+        // evaluation date advances one day at a time:
+        //  - as of DAY-2 the window holds the neutral edges DAY-15/DAY-14 -> still neutral (nincs-jel)
+        //  - as of DAY-1 the window swaps in DAY-1's poor-sleep/high-energy pairing -> forditott
+        //  - as of DAY the window swaps in DAY's matching pairing too -> forditott again (confirmed)
+        // So the state changed between DAY-2 and DAY-1 and then HELD between DAY-1 and DAY: exactly
+        // the two-day-stable transition the confirmation gate (round-3 review fix, I10) must fire on.
+        List<DetectorInput.CheckinDayPoint> scales = new ArrayList<>();
+        List<DetectorInput.SleepPoint> sleeps = new ArrayList<>();
+        LocalDate[] coreHigh = {DAY.minusDays(10), DAY.minusDays(9), DAY.minusDays(8)};
+        LocalDate[] coreLow = {DAY.minusDays(7), DAY.minusDays(6), DAY.minusDays(5)};
+        for (LocalDate d : coreHigh) {
+            scales.add(scale(d, "8", "6"));
+            sleeps.add(sleep(d, 5));
+        }
+        for (LocalDate d : coreLow) {
+            scales.add(scale(d, "3", "6"));
+            sleeps.add(sleep(d, 5));
+        }
+        scales.add(scale(DAY.minusDays(15), "8", "6"));
+        sleeps.add(sleep(DAY.minusDays(15), 5));
+        scales.add(scale(DAY.minusDays(14), "3", "6"));
+        sleeps.add(sleep(DAY.minusDays(14), 5));
+        scales.add(scale(DAY.minusDays(1), "8", "6"));
+        sleeps.add(sleep(DAY.minusDays(1), 1));
+        // DAY itself is a low-self/high-sleep pairing rather than another high-self/low-sleep one:
+        // this keeps the high/low self-rating groups symmetric (4-and-4) once DAY-14 drops out of
+        // the window, while still widening the same forditott gap (a low self-rating paired with a
+        // good night's sleep pulls the LOW group's objective mean up, which pulls diff further
+        // negative) -- an asymmetric 5-and-3 split would instead push the high group's self-rating
+        // (8) to equal the window median and get excluded from both groups.
+        scales.add(scale(DAY, "3", "6"));
+        sleeps.add(sleep(DAY, 9));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(scales).sleep(sleeps).build());
+
+        List<DetectorSignal> fired = new SelfCalibrationDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("ellentétesen mozog")
+                .contains("nincs objektív párja");
+        assertThat(fired.getFirst().expertKey()).isEqualTo("pszichologus");
+    }
+
+    @Test
+    void selfCalibration_silentWhenOneSideOfTheContrastIsTooThin() {
+        // 10 paired days but only ONE day above the median -> no contrast group.
+        List<DetectorInput.CheckinDayPoint> scales = new java.util.ArrayList<>();
+        List<DetectorInput.SleepPoint> sleeps = new java.util.ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            LocalDate d = DAY.minusDays(i);
+            scales.add(scale(d, i == 0 ? "9" : "5", "6"));
+            sleeps.add(sleep(d, i == 0 ? 2 : 8));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(scales).sleep(sleeps).build());
+
+        assertThat(new SelfCalibrationDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void selfCalibration_silentWhenTheDirectionIsUnchangedSinceYesterday() {
+        // 11 paired days with the SAME direction on both evaluations -> state unchanged -> silent.
+        List<DetectorInput.CheckinDayPoint> scales = new java.util.ArrayList<>();
+        List<DetectorInput.SleepPoint> sleeps = new java.util.ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            LocalDate d = DAY.minusDays(i);
+            boolean highSelf = i % 2 == 0;
+            scales.add(scale(d, highSelf ? "8" : "3", "6"));
+            sleeps.add(sleep(d, highSelf ? 8 : 3));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(scales).sleep(sleeps).build());
+
+        assertThat(new SelfCalibrationDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void promiseVsDelivery_firesOnPoorClosure() {
+        // 5 focus days as of DAY (meets MIN_FOCUS_DAYS=5) but only 4 as of DAY-1 (below the
+        // gate, so yesterday's state is null) -- the pattern genuinely CROSSES its focus-day
+        // gate on the observed day, rather than merely holding a stable "hianyos" band on both.
+        List<DetectorInput.IntentionDayPoint> days = new java.util.ArrayList<>();
+        days.add(intention(DAY, 2, null));
+        for (int i = 1; i <= 4; i++) {
+            days.add(intention(DAY.minusDays(i), 1, i <= 3 ? null : "yes"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().intentions(days).build());
+
+        List<DetectorSignal> fired = new PromiseVsDeliveryDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("nem zárja le");
+        assertThat(fired.getFirst().expertKey()).isEqualTo("drill");
+    }
+
+    @Test
+    void promiseVsDelivery_silentBelowTheFocusDayGate() {
+        List<DetectorInput.IntentionDayPoint> days = List.of(
+                intention(DAY, 1, "yes"), intention(DAY.minusDays(1), 1, "no"));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().intentions(days).build());
+
+        assertThat(new PromiseVsDeliveryDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void decisionProfile_firesOnWeakOutcomes_andCarriesEvidence() {
+        List<DetectorInput.DecisionPoint> decisions = List.of(
+                decision(DAY, 1), decision(DAY.minusDays(3), 2),
+                decision(DAY.minusDays(9), 1), decision(DAY.minusDays(20), 2));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().decisions(decisions).build());
+
+        List<DetectorSignal> fired = new DecisionProfileDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("a skála alsó részén van")
+                .contains("legjobbra értékelt").contains("legrosszabbra értékelt")
+                .contains("döntés szövege");
+    }
+
+    @Test
+    void decisionProfile_silentBelowTheReviewGate() {
+        List<DetectorInput.DecisionPoint> decisions = List.of(decision(DAY, 1), decision(DAY, 2));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().decisions(decisions).build());
+
+        assertThat(new DecisionProfileDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void decisionReviewBacklog_firesWhenOverdueEntriesPileUp() {
+        List<DetectorInput.DecisionPoint> decisions = List.of(
+                new DetectorInput.DecisionPoint(DAY.minusDays(30), DAY.minusDays(30),
+                        DAY.minusDays(5), null, null, "a"),
+                new DetectorInput.DecisionPoint(DAY.minusDays(29), DAY.minusDays(29),
+                        DAY.minusDays(4), null, null, "b"),
+                new DetectorInput.DecisionPoint(DAY.minusDays(28), DAY.minusDays(28),
+                        DAY, null, null, "c"));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().decisions(decisions).build());
+
+        List<DetectorSignal> fired = new DecisionReviewBacklogDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("3 döntés");
+    }
+
+    @Test
+    void decisionReviewBacklog_stateKeyIsQualitative_soAnExtraOverdueEntryDoesNotRefire() {
+        // Four overdue yesterday, five today: the COUNT moved, the BAND did not -> silent.
+        // If this test ever fails, the state key has picked up a moving number (Global Constraints).
+        List<DetectorInput.DecisionPoint> decisions = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            decisions.add(new DetectorInput.DecisionPoint(DAY.minusDays(30), DAY.minusDays(30),
+                    i == 0 ? DAY : DAY.minusDays(5), null, null, "x"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().decisions(decisions).build());
+
+        assertThat(new DecisionReviewBacklogDetector().detect(in)).isEmpty();
+    }
+
+    private static DetectorInput.GratitudePoint gratitude(LocalDate d, String area) {
+        return new DetectorInput.GratitudePoint(d, d, area);
+    }
+
+    private static DetectorInput.NeedsDayPoint needsDay(LocalDate d, boolean allGreen) {
+        int v = allGreen ? 80 : 30;
+        return new DetectorInput.NeedsDayPoint(d, 80, 80, 80, 80, allGreen ? 80 : 30, v,
+                allGreen ? 6 : 4, allGreen, allGreen ? 3 : 0);
+    }
+
+    private static DetectorInput.LogLatencyPoint latency(String genre, LocalDate about, int lagDays) {
+        return new DetectorInput.LogLatencyPoint(genre, "teszt", about, about.plusDays(lagDays));
+    }
+
+    @Test
+    void gratitudeFocus_firesOnAConcentratedArea() {
+        List<DetectorInput.GratitudePoint> entries = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            entries.add(gratitude(DAY.minusDays(i), i < 4 ? "connection" : "learning"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().gratitudes(entries).build());
+
+        List<DetectorSignal> fired = new GratitudeFocusDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("kapcsolatok");
+        assertThat(fired.getFirst().expertKey()).isEqualTo("antropologus");
+    }
+
+    @Test
+    void gratitudeFocus_silentWhenTooFewEntriesCarryAnArea() {
+        List<DetectorInput.GratitudePoint> entries = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            entries.add(gratitude(DAY.minusDays(i), i < 2 ? "connection" : null));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().gratitudes(entries).build());
+
+        assertThat(new GratitudeFocusDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void streakBreakResponse_firesOnACascade() {
+        // all-green up to DAY-4, break on DAY-3, then nothing complete on DAY-2..DAY.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 10; i >= 4; i--) {
+            days.add(needsDay(DAY.minusDays(i), true));
+        }
+        for (int i = 3; i >= 0; i--) {
+            days.add(needsDay(DAY.minusDays(i), false));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        List<DetectorSignal> fired = new StreakBreakResponseDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("egyike sem lett teljes");
+    }
+
+    @Test
+    void streakBreakResponse_silentWhileTheResponseWindowHasNotElapsed() {
+        // break on DAY-1: only one of the three response days exists yet.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 10; i >= 2; i--) {
+            days.add(needsDay(DAY.minusDays(i), true));
+        }
+        days.add(needsDay(DAY.minusDays(1), false));
+        days.add(needsDay(DAY, false));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        assertThat(new StreakBreakResponseDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void restartPattern_reportsAnOpenRestart() {
+        // all-green through DAY-1, break happens ON DAY: as of DAY-1 no break exists yet at all
+        // (state null), as of DAY the break is brand new and still open -> the state changes.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 20; i >= 1; i--) {
+            days.add(needsDay(DAY.minusDays(i), true));
+        }
+        days.add(needsDay(DAY, false));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        List<DetectorSignal> fired = new RestartPatternDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("még nem volt újra teljes");
+    }
+
+    @Test
+    void restartPattern_reportsASlowButRealRecoveryAsAFactNotAsStillOpen() {
+        // Break on DAY-9 (DAY-10 all-green, DAY-9 not), nothing complete again until DAY itself
+        // (gap 9, past HOSSZU_MAX=7) -- the C1 regression: this used to fall into the same
+        // "nyitott" bucket as a break that never recovered, and the dossier said "still no
+        // complete day" on the very day the user got back on track. As of DAY-1 no recovery had
+        // happened yet (state "nyitott"), so the band genuinely changes as of DAY.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 27; i >= 10; i--) {
+            days.add(needsDay(DAY.minusDays(i), true));
+        }
+        for (int i = 9; i >= 1; i--) {
+            days.add(needsDay(DAY.minusDays(i), false));
+        }
+        days.add(needsDay(DAY, true));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        List<DetectorSignal> fired = new RestartPatternDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("9 nap telt el")
+                .doesNotContain("még nem volt újra teljes");
+    }
+
+    @Test
+    void retroLogging_firesWhenReflectionEntriesAreMostlyBackfilled() {
+        List<DetectorInput.LogLatencyPoint> pts = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            pts.add(latency("reflexio", DAY.minusDays(i), i % 4 == 0 ? 0 : 2));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().latencies(pts).build());
+
+        List<DetectorSignal> fired = new RetroLoggingRatioDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("többnyire utólag rögzíti")
+                .contains("nem arról, hogy pontosak-e");
+    }
+
+    @Test
+    void retroLogging_silentBelowThePerGroupMinimum() {
+        List<DetectorInput.LogLatencyPoint> pts = List.of(
+                latency("reflexio", DAY, 3), latency("esemeny", DAY.minusDays(1), 2));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().latencies(pts).build());
+
+        assertThat(new RetroLoggingRatioDetector().detect(in)).isEmpty();
+    }
+
+    private static DetectorInput.CheckinSlotPoint slot(LocalDate d, String slotTime, int hour,
+                                                       int minute, String note) {
+        return new DetectorInput.CheckinSlotPoint(d, slotTime, d.atTime(hour, minute), note);
+    }
+
+    private static DetectorInput.NeedsDayPoint needsDomains(LocalDate d, int lelek) {
+        return new DetectorInput.NeedsDayPoint(d, 80, 80, 80, 80, lelek, 80,
+                lelek >= 60 ? 6 : 5, lelek >= 60, 1);
+    }
+
+    @Test
+    void nightActivity_firesOnRegularLateNightChat() {
+        // 3 nights of chat as of DAY -> "rendszeres" (n=3 > ALKALMI_MAX=2); as of DAY-1 only the
+        // 2 older nights remain -> "alkalmi" (n=2 <= ALKALMI_MAX): the band crosses a boundary.
+        List<LocalDateTime> chat = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            chat.add(DAY.minusDays(i).atTime(1, 30));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().chat(chat).build());
+
+        List<DetectorSignal> fired = new NightActivityDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("a chat használatát mutatja");
+        assertThat(fired.getFirst().expertKey()).isEqualTo("szomnologus");
+    }
+
+    @Test
+    void nightActivity_silentWhenTheUserDoesNotChatAtAll() {
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().build());
+
+        assertThat(new NightActivityDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void checkinLatency_firesOnLateFilling_andIgnoresEarlyAsPunctual() {
+        // As of DAY-1: 3 punctual (10 min) + 3 late (300 min) -> median 155 -> "keses". Adding the
+        // DAY row (660 min late) as of DAY shifts the 7-row median to 300 -> "kesoi": a real
+        // band crossing, hand-verified (the brief's own single-outlier fixture never crosses a
+        // band since one row can never move a 6/7-element median past the majority).
+        List<DetectorInput.CheckinSlotPoint> slots = new ArrayList<>();
+        slots.add(slot(DAY, "07:00", 18, 0, null));               // 660 min late
+        slots.add(slot(DAY.minusDays(1), "07:00", 12, 0, null));  // 300 min late
+        slots.add(slot(DAY.minusDays(2), "07:00", 12, 0, null));  // 300 min late
+        slots.add(slot(DAY.minusDays(3), "07:00", 12, 0, null));  // 300 min late
+        slots.add(slot(DAY.minusDays(4), "07:00", 7, 10, null));  // 10 min, punctual
+        slots.add(slot(DAY.minusDays(5), "07:00", 7, 10, null));  // 10 min, punctual
+        slots.add(slot(DAY.minusDays(6), "07:00", 7, 10, null));  // 10 min, punctual
+        List<DetectorInput.CheckinDayPoint> scales = List.of(scale(DAY, "6", "6"));
+        DetectorInput in = trendOnly(DAY,
+                new TrendBuilder().slots(slots).checkins(scales).build());
+
+        List<DetectorSignal> fired = new CheckinLatencyDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("jóval a saját idősávjuk után");
+    }
+
+    @Test
+    void checkinSlotDrift_namesTheSlotThatStopped() {
+        List<DetectorInput.CheckinSlotPoint> slots = new ArrayList<>();
+        for (int i = 14; i < 20; i++) {                 // baseline window
+            slots.add(slot(DAY.minusDays(i), "07:00", 7, 5, null));
+            slots.add(slot(DAY.minusDays(i), "21:00", 21, 5, null));
+        }
+        for (int i = 0; i < 6; i++) {                   // recent window: only the evening survives
+            slots.add(slot(DAY.minusDays(i), "21:00", 21, 5, null));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().slots(slots).build());
+
+        List<DetectorSignal> fired = new CheckinSlotDriftDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("07:00").doesNotContain("21:00");
+    }
+
+    @Test
+    void checkinSlotDrift_firstEverStabilDoesNotClaimARecovery() {
+        // "07:00" only reaches MIN_BASELINE_ROWS(3) in the baseline window as of DAY (DAY-14,
+        // DAY-15, DAY-16); as of DAY-1 the baseline window shifts to end at DAY-15, so DAY-14 falls
+        // out and only 2 rows remain -> below the gate -> state(DAY-1) is null. So "slot:stabil" as
+        // of DAY is the FIRST state ever computed here, not a return from "kikopott" -- the C2
+        // regression said "visszaállt" (recovered) on a slot the user never actually dropped.
+        List<DetectorInput.CheckinSlotPoint> slots = new ArrayList<>();
+        slots.add(slot(DAY.minusDays(14), "07:00", 7, 5, null));
+        slots.add(slot(DAY.minusDays(15), "07:00", 7, 5, null));
+        slots.add(slot(DAY.minusDays(16), "07:00", 7, 5, null));
+        slots.add(slot(DAY, "07:00", 7, 5, null));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().slots(slots).build());
+
+        List<DetectorSignal> fired = new CheckinSlotDriftDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).doesNotContain("visszaállt")
+                .contains("Nincs olyan");
+    }
+
+    @Test
+    void needsDomainImbalance_firesWhenOneDomainLagsWhileTheRestAreGreen() {
+        // Exactly MIN_NEEDS_DAYS(7) rows: as of DAY the window holds all 7 (gate open, lélek is
+        // weak against 5 strong domains); as of DAY-1 only 6 remain (below the gate, state null) —
+        // a real state change, not a same-value coincidence like a wider uniform window would give.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            days.add(needsDomains(DAY.minusDays(i), 20));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        List<DetectorSignal> fired = new NeedsDomainImbalanceDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("lélek");
+        assertThat(fired.getFirst().expertKey()).isEqualTo("pszichologus");
+    }
+
+    @Test
+    void needsDomainImbalance_silentBelowTheClosedDayGate() {
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            days.add(needsDomains(DAY.minusDays(i), 20));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        assertThat(new NeedsDomainImbalanceDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void allTwelveRoundThreeDetectorsHaveDistinctKeysAndValidExperts() {
+        List<CharacterDetector> detectors = List.of(new SelfCalibrationDetector(),
+                new PromiseVsDeliveryDetector(), new DecisionProfileDetector(),
+                new DecisionReviewBacklogDetector(), new GratitudeFocusDetector(),
+                new StreakBreakResponseDetector(), new RestartPatternDetector(),
+                new RetroLoggingRatioDetector(), new NightActivityDetector(),
+                new CheckinLatencyDetector(), new CheckinSlotDriftDetector(),
+                new NeedsDomainImbalanceDetector());
+
+        assertThat(detectors).extracting(CharacterDetector::key).doesNotHaveDuplicates().hasSize(12);
     }
 }

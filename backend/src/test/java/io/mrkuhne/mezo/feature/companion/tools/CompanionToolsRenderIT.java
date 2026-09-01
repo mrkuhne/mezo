@@ -251,6 +251,28 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
                 .contains(new RefsEnvelope.Ref("Workout", LocalDate.now().minusDays(2).toString()));
     }
 
+    /**
+     * The just-in-time layer (mezo-d20.13): the context snapshot carries a CLIPPED copy of the
+     * closing note on every turn, but this tool — the surface a "hogy ment kedden?" question lands
+     * on — gets the whole sentence, unabridged.
+     */
+    @Test
+    void testGetTrainingLog_shouldRenderTheWholeClosingNote_whenScopeGym() {
+        UUID owner = userPopulator.createUser().getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), "Pull A", "pull", 0, "planned");
+        String note = "Öt órát aludtam, mégis vitt a lendület. " + "A húzódzkodás az utolsó szettnél fogyott el. ".repeat(6);
+        trainPopulator.createWorkoutInstance(owner, template, LocalDate.now().minusDays(1), "completed", note);
+        trainPopulator.createWorkoutInstance(owner, template, LocalDate.now(), "completed", "  ");
+
+        String out = trainTools.getTrainingLog("gym", 7, ctx(owner));
+
+        assertThat(out).contains("jegyzet: \"" + note.strip() + '"');
+        // ADR 0010: a blank note renders no line at all — never a placeholder for silence.
+        assertThat(out.lines().filter(l -> l.contains("jegyzet:")).count()).isEqualTo(1);
+    }
+
     @Test
     void testGetTrainingLog_shouldRenderNincsAdat_whenScopeGymAndWindowEmpty() {
         assertThat(trainTools.getTrainingLog(null, null, ctx(userPopulator.createUser().getId())))

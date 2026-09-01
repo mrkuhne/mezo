@@ -345,10 +345,26 @@ public class TrainPopulator {
         return exerciseSetRepository.saveAndFlush(set);
     }
 
+    /** Persist a hand-built session row — e.g. a custom (saját) template, which has no mesocycle. */
+    public WorkoutSessionEntity save(WorkoutSessionEntity session) {
+        return workoutSessionRepository.saveAndFlush(session);
+    }
+
     /** Instance row: copies the template's day fields, links back via templateSessionId. */
     public WorkoutSessionEntity createWorkoutInstance(UUID createdBy, WorkoutSessionEntity template,
         LocalDate date, String status) {
+        return createWorkoutInstance(createdBy, template, date, status, null);
+    }
+
+    /**
+     * Instance row carrying a workout-level CLOSING note (mezo-d20.13) — deliberately
+     * {@code closingNote}, not {@code note}: the latter is the template day's plan note, on a
+     * different row of the same table.
+     */
+    public WorkoutSessionEntity createWorkoutInstance(UUID createdBy, WorkoutSessionEntity template,
+        LocalDate date, String status, String closingNote) {
         WorkoutSessionEntity s = new WorkoutSessionEntity();
+        s.setClosingNote(closingNote);
         s.setCreatedBy(createdBy);
         s.setMesocycleId(template.getMesocycleId());
         s.setTemplateSessionId(template.getId());

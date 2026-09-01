@@ -61,7 +61,11 @@ export function FuelRecipesPage() {
   return (
     <MozaikPage tone="coral">
       <PageHead onBack={() => navigate('/fuel')} label="‹ Fuel">
-        <button type="button" className="pgact" style={{ marginLeft: 'auto' }} onClick={() => navigate('/fuel/recipes/new')}>
+        {/* Receptműhely (mezo-92pb) — the AI builder sits next to the manual editor. */}
+        <button type="button" className="pgact" style={{ marginLeft: 'auto' }} onClick={() => navigate('/fuel/recipes/muhely')}>
+          ✨ Műhely
+        </button>
+        <button type="button" className="pgact" onClick={() => navigate('/fuel/recipes/new')}>
           <Icon name="plus" size={12} /> Új
         </button>
       </PageHead>

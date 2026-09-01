@@ -42,7 +42,8 @@ import org.springframework.test.context.ActiveProfiles;
  * anchor candidates; strict-JSON {title, body, anchors:[{index,note}]} (legacy anchorIndexes
  * still accepted) scripted via [fake-memoir:{…}] (check-in note → the note is NOT in the memoir
  * gather, so the sentinel is planted via a daily-summary NARRATIVE instead — summaries carry
- * free text).
+ * free text). Since mezo-d20.13 the gather ALSO carries the week's workout closing notes,
+ * verbatim, each one an anchor candidate of its own.
  *
  * <p>No class-level {@code @Transactional} — an emit-reachable service running under
  * {@code AppNotificationEmitter}'s {@code REQUIRES_NEW} deadlocks against an uncommitted
@@ -85,6 +86,66 @@ class MemoirGeneratorIT extends AbstractIntegrationTest {
         // one Memory candidate per included summary
         assertThat(gather.candidates()).hasSize(1);
         assertThat(gather.candidates().get(0).kind()).isEqualTo("Memory");
+    }
+
+    @Test
+    void testGather_shouldCarryWorkoutClosingNotesVerbatim_whenTheWeekHasThem() {
+        UUID user = userPopulator.createUser("mg-wnote@test.local").getId();
+        dailySummaryPopulator.summary(user, WEEK_START.plusDays(1), "Kedden kemény edzés volt.");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Hipertrófia", "active");
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(user, meso.getId(), "Hétfő", "upper", 0, "planned");
+        trainPopulator.createWorkoutInstance(user, template, WEEK_START.plusDays(1), "completed",
+                "Öt órát aludtam, mégis vitt a lendület.");
+        // A saját (custom) workout INSTANCE also carries templateSessionId, so it is in scope —
+        // only the custom TEMPLATE row has a null one. A note here must not be silently dropped.
+        WorkoutSessionEntity customTemplate = new WorkoutSessionEntity();
+        customTemplate.setCreatedBy(user);
+        customTemplate.setOrigin("custom");
+        customTemplate.setDayLabel("");
+        customTemplate.setType("Reggeli kör");
+        customTemplate.setStatus("planned");
+        customTemplate = trainPopulator.save(customTemplate);
+        trainPopulator.createWorkoutInstance(user, customTemplate, WEEK_START.plusDays(3), "completed",
+                "Saját kör a kertben, jólesett.");
+        // Outside the week — must not leak in.
+        trainPopulator.createWorkoutInstance(user, template, WEEK_START.minusDays(2), "completed",
+                "Ez már a múlt hét.");
+
+        MemoirGenerator.MemoirGather gather = generator.gather(user, WEEK_START);
+
+        assertThat(gather).isNotNull();
+        assertThat(gather.payload())
+                .contains("AMIT AZ EDZÉSEK UTÁN ÍRT")
+                .contains("Öt órát aludtam, mégis vitt a lendület.")
+                .contains("Saját kör a kertben, jólesett.")
+                .doesNotContain("Ez már a múlt hét.");
+        // Every note is traceable: unattributed echo of a person's own words is what reads as
+        // surveillance, a visible trail is what reads as attention.
+        assertThat(gather.candidates()).anyMatch(c -> "WorkoutNote".equals(c.kind())
+                && (WEEK_START.plusDays(1)).toString().equals(c.label()));
+        assertThat(gather.candidates()).anyMatch(c -> "WorkoutNote".equals(c.kind())
+                && (WEEK_START.plusDays(3)).toString().equals(c.label()));
+    }
+
+    /** One long note must not crowd the rest of the week out — per-entry AND total caps. */
+    @Test
+    void testGather_shouldCapWorkoutNotes_whenOneIsVeryLong() {
+        UUID user = userPopulator.createUser("mg-wcap@test.local").getId();
+        dailySummaryPopulator.summary(user, WEEK_START.plusDays(1), "Kedden kemény edzés volt.");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Hipertrófia", "active");
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(user, meso.getId(), "Hétfő", "upper", 0, "planned");
+        String huge = "y".repeat(900);
+        trainPopulator.createWorkoutInstance(user, template, WEEK_START.plusDays(1), "completed", huge);
+        trainPopulator.createWorkoutInstance(user, template, WEEK_START.plusDays(2), "completed",
+                "A rövid is beférjen.");
+
+        MemoirGenerator.MemoirGather gather = generator.gather(user, WEEK_START);
+
+        assertThat(gather).isNotNull();
+        assertThat(gather.payload()).doesNotContain(huge).contains("…");
+        assertThat(gather.payload()).contains("A rövid is beférjen.");
     }
 
     @Test

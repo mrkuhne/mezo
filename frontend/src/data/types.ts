@@ -348,6 +348,35 @@ export interface RecipeInput {
   role: RecipeRole
   ingredients: { pantryItemId: string; amount: number; unit: string; note?: string | null }[]
 }
+
+// --- Recept-műhely (AI recipe workshop, mezo-92pb) — mirrors WorkshopTurnRequest/Response ---
+/** The chat-picked nutrition goal steering the workshop's suggestions; also selects the save role. */
+export type WorkshopGoal = 'high_protein' | 'pre_workout' | 'post_workout' | 'before_bed' | 'breakfast'
+/** One draft ingredient line — a resolved pantry ref (macros come from the live pantry row, never
+ *  carried on the wire) or a free-form AI/user estimate (`est` = totals for THIS line's current
+ *  amount, not a per-basis rate). Mirrors WorkshopDraftLine. */
+export interface WorkshopLine {
+  source: 'pantry' | 'estimate'
+  refId: string | null
+  name: string
+  amount: number
+  unit: string
+  est?: { kcal: number; p: number; c: number; f: number }
+}
+/** The AI-authored recipe-in-progress the workshop chat edits turn by turn. Mirrors WorkshopDraft. */
+export interface WorkshopDraft {
+  name: string
+  category: RecipeCategory
+  servings: number
+  steps: string[]
+  lines: WorkshopLine[]
+}
+/** One workshop turn's result — the assistant's reply text + the updated draft. Mirrors WorkshopTurnResponse. */
+export interface WorkshopTurn {
+  reply: string
+  draft: WorkshopDraft
+}
+
 export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }
 export interface PantrySuggestion { name: string; source: PantrySourceKey; price: string; reason: string }
 
