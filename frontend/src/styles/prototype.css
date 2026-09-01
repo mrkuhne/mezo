@@ -4851,6 +4851,24 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-msg-u time { display: block; text-align: right; margin-top: 4px; }
 .mzc-noanswer { font-size: 12.5px; font-style: italic; color: var(--text-tertiary); }
 
+/* F7.5 (mezo-d20.8.5): hiba-buborék + Újra/Szerkesztés — borostyán tónus (mezo-chat.html
+   .bub-err ×1.18): a hiba döccenő, nem dorgálás; a bukott üzenet a helyén marad. */
+.mzc-bub-err {
+  background: var(--mz-cell-amber-bg); border-radius: 5px 19px 19px 19px; padding: 11px 13px;
+  border: 0.5px solid color-mix(in srgb, var(--mz-cell-amber-ink) 25%, transparent);
+  font-size: 13px; line-height: 1.5; color: var(--text-secondary);
+}
+.mzc-bub-err b { font-weight: 700; color: var(--mz-cell-amber-ink); }
+.mzc-ebtn {
+  border: none; border-radius: 999px; padding: 7px 15px; font-family: inherit;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.mzc-ebtn.go { background: var(--mz-cell-amber-ink); color: var(--surface-card); }
+.mzc-ebtn.ghost {
+  background: color-mix(in srgb, var(--surface-card) 75%, transparent);
+  color: var(--text-secondary); border: 0.5px solid var(--border-subtle);
+}
+
 /* refs footer — human labels (gap-7 fix) */
 .mzc-reffoot { border-top: 0.5px solid rgba(43, 33, 24, 0.08); margin-top: 9px; padding-top: 8px; }
 .mzc-refeb { font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
