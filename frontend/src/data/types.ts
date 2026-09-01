@@ -575,6 +575,10 @@ export interface PersonEntry {
   contactCadenceLabel: string
   notes: string
   affectTrend: number[]
+  /** A hangulat-ív első olvasatának hete (ISO dátum), vagy null, ha nincs olvasat. */
+  affectTrendStart: string | null
+  direction: 'up' | 'down' | 'flat'
+  directionReason: string | null
   knownFacts: string[]
   ties: string[]
   graphEdges: PersonGraphEdge[]

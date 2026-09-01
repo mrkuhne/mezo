@@ -14,6 +14,12 @@
 // '—', never a fabricated name. S4 (mezo-06o0.3): the Jelöltek tile now carries the real
 // `usePeople().candidates` count as its `.ppl-hub-badge` and names the first candidate on
 // the tile-line — the honest quiet copy only when there is truly no candidate.
+//
+// S6 (mezo-06o0.8): the Mezo-band no longer derives its own sentence from `hubLines` —
+// it renders `usePeople().mezoNote` verbatim (today's real `people` companion message,
+// or the server's own deterministic fallback). An empty `mezoNote` (real mode before any
+// data) omits the whole band instead of rendering an empty snippet — the rest of the hub
+// is unchanged. The chat handoff (ADR 0032) stays wired to the band regardless.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -29,18 +35,9 @@ import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
 
 const d = (ms: number) => ({ '--d': `${ms}ms` } as CSSProperties)
 
-/** The Mezo-band sentence — down-trending person first (the thing worth checking on),
- *  then the week's top name (a quieter, positive observation), then the honest empty-circle
- *  line when there is simply nothing derived yet. */
-function mezoSentence(topName: string | null, downName: string | null): string {
-  if (downName) return `„${downName} hangulata lejt az utóbbi hetekben — ránézel?”`
-  if (topName) return `„${topName} volt e héten a legtöbbet veled — jó ránézni, mit adott.”`
-  return '„Ahogy írsz, magától épül itt a kapcsolati kép.”'
-}
-
 export function PeoplePage() {
   const navigate = useNavigate()
-  const { people, mentions, candidates, logMention } = usePeople()
+  const { people, mentions, candidates, mezoNote, logMention } = usePeople()
   const chat = useChatHandoff()
   const [logOpen, setLogOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -169,22 +166,24 @@ export function PeoplePage() {
             </button>
           </div>
 
-          <button
-            type="button"
-            className="ppl-hub-wide rise"
-            style={d(190)}
-            onClick={() => chat.open({ kind: 'day', date: localDateString() })}
-            disabled={chat.pending}
-          >
-            <div className="mz-tile-top">
-              <ClayIcon name="i-mezo" size={24} />
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-coral-ink)', marginLeft: 8 }}>
-                Mezo · észrevétel
-              </span>
-              <span style={{ marginLeft: 'auto', color: 'var(--mz-ink-mut)' }} aria-hidden="true">›</span>
-            </div>
-            <div className="ppl-hub-snip">{mezoSentence(lines.topName, lines.downName)}</div>
-          </button>
+          {mezoNote && (
+            <button
+              type="button"
+              className="ppl-hub-wide rise"
+              style={d(190)}
+              onClick={() => chat.open({ kind: 'day', date: localDateString() })}
+              disabled={chat.pending}
+            >
+              <div className="mz-tile-top">
+                <ClayIcon name="i-mezo" size={24} />
+                <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-coral-ink)', marginLeft: 8 }}>
+                  Mezo · észrevétel
+                </span>
+                <span style={{ marginLeft: 'auto', color: 'var(--mz-ink-mut)' }} aria-hidden="true">›</span>
+              </div>
+              <div className="ppl-hub-snip">{mezoNote}</div>
+            </button>
+          )}
         </EntranceGroup>
       </PageBody>
 

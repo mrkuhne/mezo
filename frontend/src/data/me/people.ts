@@ -18,6 +18,9 @@ export const people: PersonEntry[] = [
     contactCadenceLabel: 'Napi',
     notes: 'Közös háztartás · vasárnapi közös vacsorák a fix horgony.',
     affectTrend: [4, 4, 3, 4, 4, 3, 4, 5, 4, 4, 4, 5],
+    affectTrendStart: '2026-03-02',
+    direction: 'up',
+    directionReason: 'jobb hetek, mint korábban',
     knownFacts: [
       'Munkahely: ELTE doktorátus, jellemzően csüt-pénteken késő',
       'Allergén: kagyló · konyhakerülő',
@@ -46,6 +49,9 @@ export const people: PersonEntry[] = [
     contactCadenceLabel: 'Heti 3×',
     notes: 'Röplabda csapat · setter · 6 éve együtt játszunk.',
     affectTrend: [4, 4, 4, 5, 4, 4, 5, 4, 5, 4],
+    affectTrendStart: '2026-03-16',
+    direction: 'flat',
+    directionReason: 'kiegyensúlyozott hetek',
     knownFacts: [
       'Csütörtök 18:00 + Vasárnap 10:00 közös edzés',
       'Cipője utoljára májusban cserélve · figyel a térdére',
@@ -72,6 +78,9 @@ export const people: PersonEntry[] = [
     contactCadenceLabel: 'Havi 1:1',
     notes: 'Product manager · új rolet vesz fel · rendszer-szerelem közös téma.',
     affectTrend: [3, 4, 4, 4, 5, 4],
+    affectTrendStart: '2026-04-13',
+    direction: 'up',
+    directionReason: 'jobb hetek, mint korábban',
     knownFacts: [
       'Tanulja a glikogén ablakot · saját N=1-be belekezdett',
       "Áprilisi 1:1: 'új ötlet-pörgés' 14 napos micro-experiment",
@@ -98,6 +107,9 @@ export const people: PersonEntry[] = [
     contactCadenceLabel: 'Havi 1:1 · spike most',
     notes: 'Karrier-átmenet · márciusi szakítás · sűrűsödő mentions.',
     affectTrend: [4, 3, 3, 3, 2, 3, 3, 2, 3],
+    affectTrendStart: '2026-03-23',
+    direction: 'down',
+    directionReason: 'többször nehéz tónus, mint korábban',
     knownFacts: [
       "Március óta nehezebb hónapok · 'lebegés' szót sokszor használja",
       'Vasárnapi sétára meghívás többször visszamondva',
@@ -122,6 +134,9 @@ export const people: PersonEntry[] = [
     contactCadenceLabel: 'Havi 1:1',
     notes: 'Önálló dev · system-thinker · Daniel-fit profil.',
     affectTrend: [4, 5, 4, 5, 4, 4, 5],
+    affectTrendStart: '2026-04-06',
+    direction: 'flat',
+    directionReason: 'kiegyensúlyozott hetek',
     knownFacts: [
       'Saját kis Mezo-szerű naplót épít magának',
       'Áprilisi 1:1: gain & loss framing együtt felfedezve',
@@ -146,6 +161,9 @@ export const people: PersonEntry[] = [
     contactCadenceLabel: '',
     notes: '„…délben futottam Marcival a gáton, jó volt kimozdulni…"',
     affectTrend: [],
+    affectTrendStart: null,
+    direction: 'flat',
+    directionReason: null,
     knownFacts: [],
     ties: [],
     graphEdges: [],
@@ -293,6 +311,12 @@ export const mentions: Mention[] = [
     contextLabel: 'kozos_program',
   },
 ]
+
+/** The Emberek hub's Mezo-band sentence (PeopleResponse.mezoNote) — the mock mirrors the
+ *  backend's own deterministic fallback (PeopleService.derivedMezoNote): the alphabetically
+ *  first down-trending person's name + directionReason. Réka is the seed's only 'down'
+ *  person, so this MUST stay in lockstep with her `direction`/`directionReason` above. */
+export const mezoNote = 'Réka hangulata lefelé fordult — többször nehéz tónus, mint korábban.'
 
 export function affectColor(a: Affect): string {
   switch (a) {
