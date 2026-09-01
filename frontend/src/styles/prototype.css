@@ -5245,7 +5245,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   border: 1.2px dashed var(--mz-chat-refch-bd); }
 .mzp-dgq .qq { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--mz-ink-soft); }
 .mzp-dgq .qs { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); margin-top: 4px; }
-.mzh-t-diag { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
+.mzh-t-diag, .mzh-t-karakter { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
 
 /* Chat quick-question chips (mezo-dz3y) — empty-state only, one tap sends. */
 .mzc-qq { border: 0.5px solid var(--mz-chat-refch-bd); border-radius: 999px; padding: 8px 13px;

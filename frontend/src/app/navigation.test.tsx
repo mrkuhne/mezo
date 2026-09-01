@@ -72,8 +72,8 @@ test('/me/karakter is the Karakter dossier hub — reachable as a stable route (
   expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
 })
 
-test('the Én hub links to the Karakter dossier hub', async () => {
-  renderApp('/me')
+test('the Mezo hub links to the Karakter dossier hub (hub-tile-reorg)', async () => {
+  renderApp('/mezo')
   await userEvent.click(await screen.findByRole('button', { name: 'Karakter' }))
   expect(await screen.findByRole('button', { name: 'Kezdjétek el' })).toBeInTheDocument()
 })

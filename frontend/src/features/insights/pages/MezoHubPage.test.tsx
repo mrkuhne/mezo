@@ -3,6 +3,19 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { MezoHubPage } from '@/features/insights/pages/MezoHubPage'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { MOCK_OVERVIEW, MOCK_OVERVIEW_EMPTY } from '@/data/character/characterMock'
+import type { CharacterOverviewResponse } from '@/data/character/characterApi'
+
+const characterStore = vi.hoisted(() => ({
+  overview: null as unknown as CharacterOverviewResponse | null,
+}))
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    useCharacterOverview: () => ({ overview: characterStore.overview, isLoading: false }),
+  }
+})
 
 // Mezo hub — the /mezo index Mozaik face (mezo-d20.5.1), built against
 // docs/design_2.0/prototypes/src/mezo-body.html's hub section: breathing orb hero
@@ -27,7 +40,10 @@ const renderHub = () =>
   )
 
 describe('MezoHubPage (mock mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    characterStore.overview = MOCK_OVERVIEW_EMPTY
+  })
   afterEach(() => vi.unstubAllEnvs())
 
   test('orb hero: name, companion sentence and the honest status line', () => {
@@ -112,10 +128,39 @@ describe('MezoHubPage (mock mode)', () => {
     await userEvent.click(band)
     expect(screen.getByTestId('location')).toHaveTextContent('/mezo/memoria')
   })
+
+  test('a Karakter széles csempe a Mezo hubon él és a dossziéra navigál (hub-tile-reorg)', async () => {
+    renderHub()
+    const karakter = screen.getByRole('button', { name: 'Karakter' })
+    expect(karakter.classList.contains('mzh-t-karakter')).toBe(true)
+    await userEvent.click(karakter)
+    expect(screen.getByTestId('location')).toHaveTextContent('/me/karakter')
+  })
+
+  test('a Karakter csempe az élő átlag CORE érettséget mutatja (post-bootstrap)', () => {
+    characterStore.overview = MOCK_OVERVIEW
+    renderHub()
+    // MOCK_OVERVIEW's 7 CORE dims: (58+71+45+66+39+74+33)/7 = 55.14 -> 55
+    expect(screen.getByRole('button', { name: 'Karakter' })).toHaveTextContent('55% átlag érettség')
+  })
+
+  test('a Karakter csempe nem hord kitalált sort — kikapcsolt forrás (overview null)', () => {
+    characterStore.overview = null
+    renderHub()
+    expect(screen.getByRole('button', { name: 'Karakter' }).querySelector('.mz-tile-line')).toBeNull()
+  })
+
+  test('a Karakter csempe nem hord sort érintetlen (pre-bootstrap) dossziénál — az isDossierEmpty predikátum', () => {
+    renderHub() // beforeEach: MOCK_OVERVIEW_EMPTY
+    expect(screen.getByRole('button', { name: 'Karakter' }).querySelector('.mz-tile-line')).toBeNull()
+  })
 })
 
 describe('MezoHubPage (real mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    characterStore.overview = MOCK_OVERVIEW_EMPTY
+  })
   afterEach(() => vi.unstubAllEnvs())
 
   test('renders the hub from MSW fixtures — live status line, tiles, no fabricated zeros while loading', async () => {
@@ -124,6 +169,7 @@ describe('MezoHubPage (real mode)', () => {
     expect(screen.getByText('Mezo')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Beszélgetés a társsal' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Karakter' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Memória-rétegek' })).toBeInTheDocument()
     // live fixtures resolve → the real status line
     expect(await screen.findByText(/Gemini · élő/)).toBeInTheDocument()
