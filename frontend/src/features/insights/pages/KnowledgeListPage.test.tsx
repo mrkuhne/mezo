@@ -373,6 +373,55 @@ describe('KnowledgeListPage (real mode)', () => {
     expect(screen.queryByRole('switch')).not.toBeInTheDocument()
   })
 
+  test('(h) degraded a base nézeten: degraded kártya + Kategóriák csempe + életesemény-jelölt, Tények csempe nélkül', async () => {
+    // A társ-kapcsoló 404-je (fact + fact/candidate) NEM a gráf-hookok 404-je (graph/node,
+    // graph/node/candidate, graph/edge/count függetlenek) — ezért ezeket seed-szerű adattal
+    // mockoljuk, hogy a teszt ténylegesen bizonyítsa: a gráf-eredetű tartalom degraded alatt is
+    // renderel, nem csak azért „megy át", mert az unhandled-request realEmpty ([]/null) történetesen
+    // ugyanazt a UI-t adná vissza.
+    server.use(
+      http.get(`${API_BASE}/api/companion/fact`, () =>
+        HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })),
+      http.get(`${API_BASE}/api/companion/fact/candidate`, () =>
+        HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })),
+      http.get(`${API_BASE}/api/companion/graph/node/candidate`, () =>
+        HttpResponse.json([
+          {
+            id: 'n1', kind: 'LIFE_EVENT', title: 'Új munkahely első hete', summary: 'Első hét.',
+            status: 'candidate', occurredOn: '2026-08-21', proposedEdgeCount: 1,
+            createdAt: '2026-08-22T02:00:00Z', updatedAt: '2026-08-22T02:00:00Z',
+          },
+        ])),
+      http.get(`${API_BASE}/api/companion/graph/node`, () =>
+        HttpResponse.json([
+          {
+            id: 'n2', kind: 'PATTERN', title: 'Késői evés rontja az alvást', summary: null,
+            status: 'active', createdAt: '2026-08-22T02:00:00Z', updatedAt: '2026-08-22T02:00:00Z',
+            proposedEdgeCount: 0, topEdges: [],
+          },
+        ])),
+      http.get(`${API_BASE}/api/companion/graph/edge/count`, () => HttpResponse.json({ count: 3 })),
+    )
+    renderPage()
+    expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Kategóriák' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Tények' })).not.toBeInTheDocument()
+    expect(await screen.findByText('Új munkahely első hete')).toBeInTheDocument()
+  })
+
+  test('(i) degraded + ?view=tenyek: csak a degraded kártya, kereső nincs', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/fact`, () =>
+        HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })),
+      http.get(`${API_BASE}/api/companion/fact/candidate`, () =>
+        HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })),
+    )
+    renderPage('/?view=tenyek')
+    expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Keresés a tények között')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Még egy tényt sem tanultam rólad/)).not.toBeInTheDocument()
+  })
+
   test('renders the honest loading state while the fetch is unresolved, never a fabricated "0 tény / 0 megy a chatbe" header (mezo-9ryh review fix)', async () => {
     server.use(
       http.get(`${API_BASE}/api/companion/fact`, async () => {

@@ -118,26 +118,31 @@ export function KnowledgeListPage() {
     )
   }
 
-  if (degraded) {
-    return (
-      <TudasFrame>
-        <div className="card" style={{ padding: 14 }}>
-          <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
-            A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.
-          </span>
-        </div>
-      </TudasFrame>
-    )
-  }
-
+  // `degraded` (real-mode 404, companion switch off) EGYEDÜL a tény-felületet fedi le — a
+  // gráf-hookok (useLifeEventCandidates/useKnowledgeGraphNodes/useGraphEdgeCount) 404-szemantikája
+  // FÜGGETLEN a társ-kapcsolótól (l. graphHooks.ts), ezért egy régi teljes-oldalas early return
+  // itt egy MÁSIK réteg működő adatát is elnyomná. A degraded kártya csak a tény-részt fedi:
+  // a base nézeten az inbox candidate-blokkot és a Tények csempét helyettesíti (a LIFE_EVENT/
+  // SEASON csoportok és a Kategóriák/Így beszélj velem csempék változatlanul rendereinek, ha a
+  // gráf-hook adott adatot), a ?view=tenyek nézeten pedig egyedül ő látszik. A hero soha nem
+  // fabrikál „0 tény"-t degraded alatt — nagy szám/alcím nélkül marad.
   const hasNoFacts = facts.length === 0
-  const heroSub = `tény rólad · ${buckets.inPrompt.length} megy a chatbe${edgeCount !== null ? ` · ${edgeCount} kapcsolat` : ''}`
+  const heroBig = degraded ? undefined : heroCount
+  const heroSub = degraded
+    ? undefined
+    : `tény rólad · ${buckets.inPrompt.length} megy a chatbe${edgeCount !== null ? ` · ${edgeCount} kapcsolat` : ''}`
 
   if (view === 'tenyek') {
     return (
-      <TudasFrame view="tenyek" big={heroCount} sub={heroSub}>
+      <TudasFrame view="tenyek" big={heroBig} sub={heroSub}>
         <EntranceGroup className="col gap-md" replayKey={view}>
-          {hasNoFacts ? (
+          {degraded ? (
+            <div className="card rise" style={{ '--d': '0ms', padding: 14 } as React.CSSProperties}>
+              <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
+                A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.
+              </span>
+            </div>
+          ) : hasNoFacts ? (
             <div className="card rise" style={{ '--d': '0ms', padding: 14 } as React.CSSProperties}>
               <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
                 Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni.
@@ -166,9 +171,10 @@ export function KnowledgeListPage() {
      fact count + "tény rólad · N megy a chatbe". Same honest numbers as the old header
      (full-list buckets, never the filtered view). */
   return (
-    <TudasFrame view="base" big={heroCount} sub={heroSub} help>
+    <TudasFrame view="base" big={heroBig} sub={heroSub} help>
       <EntranceGroup className="col gap-md" replayKey={view}>
         <KnowledgeBaseView
+          degraded={degraded}
           candidates={candidates}
           onDecideCandidate={(id, decision, refinedText) => decide(id, decision, refinedText)}
           pendingLifeEvents={pendingLifeEvents}

@@ -20,6 +20,10 @@ interface AcceptedEvent {
  * only renders what it is handed.
  */
 export function KnowledgeBaseView(props: {
+  /** A társ-kapcsoló 404-je (mezo-ms9a): CSAK a tény-felületet fedi — a candidate-inbox blokk
+   *  és a Tények csempe helyett a degraded kártya áll, de a LIFE_EVENT/SEASON csoportok és a
+   *  Kategóriák/Így beszélj velem csempék a gráf-hookok saját (független) adatával rendereinek. */
+  degraded: boolean
   candidates: FactCandidate[]
   onDecideCandidate: (id: string, decision: FactDecision, refinedText?: string) => void
   pendingLifeEvents: LifeEventCandidate[]
@@ -35,13 +39,19 @@ export function KnowledgeBaseView(props: {
   onNavigate: (view: 'tenyek' | 'kategoriak' | 'profil') => void
 }) {
   const {
-    candidates, onDecideCandidate, pendingLifeEvents, acceptedEvents, onAcceptLifeEvent,
+    degraded, candidates, onDecideCandidate, pendingLifeEvents, acceptedEvents, onAcceptLifeEvent,
     onDecideLifeEvent, facts, buckets, kindCount, kategLine, profileNode, profileLine, onNavigate,
   } = props
 
   return (
     <>
-      {candidates.length > 0 && (
+      {degraded ? (
+        <div className="card rise" style={{ '--d': '0ms', padding: 14 } as React.CSSProperties}>
+          <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
+            A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.
+          </span>
+        </div>
+      ) : candidates.length > 0 && (
         <div className="col gap-sm rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           {/* prototype .candc: the approval inbox speaks gold, not lavender */}
           <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-amber-ink)' }}>
@@ -88,11 +98,13 @@ export function KnowledgeBaseView(props: {
       })}
 
       <Mosaic>
-        <Tile
-          wash="sage" icon="i-polc" eyebrow="Tények" badge={facts.length}
-          line={`${buckets.inPrompt.length} a chatben · ${buckets.waiting.length} vár · ${buckets.off.length} kikapcsolva`}
-          onClick={() => onNavigate('tenyek')} delayMs={100}
-        />
+        {!degraded && (
+          <Tile
+            wash="sage" icon="i-polc" eyebrow="Tények" badge={facts.length}
+            line={`${buckets.inPrompt.length} a chatben · ${buckets.waiting.length} vár · ${buckets.off.length} kikapcsolva`}
+            onClick={() => onNavigate('tenyek')} delayMs={100}
+          />
+        )}
         <Tile
           wash="lav" icon="i-retegek" eyebrow="Kategóriák" badge={kindCount}
           line={kategLine} onClick={() => onNavigate('kategoriak')} delayMs={130}
