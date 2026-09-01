@@ -2011,8 +2011,9 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   calls all already require at least `KNOWLEDGE_GRAPH_SWITCH`, so direct constructor injection is
   safe for them. `PersonExtractionService` is different — it's gated on `COMPANION_SWITCH ∧
   PEOPLE_SWITCH` instead, so the job reaches it through `ObjectProvider<PersonExtractionService>
-  .getIfAvailable()` and simply skips phase 4 when the bean isn't there (`people` feature package,
-  not `companion` — see [me.md §5.4](me.md) for the extraction logic itself).
+  .getIfAvailable()` and simply skips phase 4 when the bean isn't there (the class itself lives in
+  `feature/companion/service`, but it writes into the `people` feature's `person`/`mention` tables
+  — see [me.md §5.4](me.md) for the extraction logic itself).
 - **`GraphPromotionService.reconcile` per-row isolation (mezo-b3pp.32, fixed alongside this
   slice)** — a single pattern/fact/goal's promotion failure is now caught, logged, and skipped
   rather than aborting the rest of that user's sweep; a skip count is logged when any row failed.
