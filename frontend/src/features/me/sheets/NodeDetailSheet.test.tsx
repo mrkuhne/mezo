@@ -9,6 +9,7 @@ const node: KnowledgeGraphNode = {
   summary: 'Hétfőn kezdtél az új helyen, és a hét végére kimerültél.',
   topEdges: ['Új munkahely első hete → kiváltja → Megnövekedett stressz · közepes'],
   sourceKind: null,
+  updatedAt: '2026-08-22T08:00:00.000Z',
 }
 
 test('renders title, summary, edge lines and the archive footnote', () => {

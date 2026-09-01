@@ -4,8 +4,14 @@ import type { KnowledgeGraphNode, LifeEventCandidate, LifeEventDecision } from '
 
 export type GraphNodeResponse = components['schemas']['GraphNodeResponse']
 export type GraphCandidateDecisionRequest = components['schemas']['GraphCandidateDecisionRequest']
+export type GraphEdgeCountResponse = components['schemas']['GraphEdgeCountResponse']
 
 const NODE = '/api/companion/graph/node'
+const EDGE = '/api/companion/graph/edge'
+
+/** Edit-then-approve fields on a candidate accept (mezo-ms9a) — omitted (undefined) means "keep
+ *  the candidate's own title/summary", never an empty-string overwrite. */
+export interface RefinedCandidate { title?: string; summary?: string }
 
 /** Wire → FE domain (W2.3): only the fields the L2 inbox card needs. */
 export function toLifeEventCandidate(n: GraphNodeResponse): LifeEventCandidate {
@@ -30,17 +36,23 @@ export function toKnowledgeGraphNode(n: GraphNodeResponse): KnowledgeGraphNode {
     summary: n.summary ?? null,
     topEdges: n.topEdges ?? [],
     sourceKind: n.sourceKind ?? null,
+    updatedAt: n.updatedAt,
   }
 }
 
 export const graphApi = {
   listCandidates: async () =>
     (await apiFetch<GraphNodeResponse[]>(`${NODE}/candidate`)).map(toLifeEventCandidate),
-  decideCandidate: (id: string, decision: LifeEventDecision) =>
+  decideCandidate: (id: string, decision: LifeEventDecision, refined?: RefinedCandidate) =>
     apiFetch<GraphNodeResponse>(`${NODE}/${id}/decision`, {
       method: 'POST',
-      body: JSON.stringify({ decision } satisfies GraphCandidateDecisionRequest),
+      body: JSON.stringify({
+        decision,
+        refinedTitle: refined?.title,
+        refinedSummary: refined?.summary,
+      } satisfies GraphCandidateDecisionRequest),
     }),
   listNodes: async () => (await apiFetch<GraphNodeResponse[]>(NODE)).map(toKnowledgeGraphNode),
   archiveNode: (id: string) => apiFetch<GraphNodeResponse>(`${NODE}/${id}/archive`, { method: 'POST' }),
+  edgeCount: () => apiFetch<GraphEdgeCountResponse>(`${EDGE}/count`),
 }

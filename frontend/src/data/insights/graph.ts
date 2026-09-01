@@ -74,6 +74,10 @@ export const PROFILE_SOURCE_KIND = 'profile'
  * Mock-mód seed (W2.6): négy csomópont különböző kind-ekből, néhány kapcsolattal — ugyanazt a
  * Hungarian sorformátumot használva, amit a backend `GraphEdgeLineRenderer` (és a régi
  * `[Összefüggések]` prompt blokk) renderel, hogy a demó és az éles felület sose térjen el.
+ *
+ * `updatedAt` (mezo-ms9a) — szándékosan NEM a fenti sorrendben csökkenő, hogy a
+ * `useKnowledgeGraphNodes()` DESC rendezése ténylegesen bizonyítható legyen a teszttel (a seed
+ * sorrendje önmagában nem árulná el, ha a hook csak visszaadná a tömböt rendezés nélkül).
  */
 export const graphNodeSeed: KnowledgeGraphNode[] = [
   {
@@ -86,6 +90,7 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
       'Rossz alvás → támogatja → Gyenge edzés · közepes',
     ],
     sourceKind: null,
+    updatedAt: '2026-08-20T10:00:00.000Z',
   },
   {
     id: 'gn-2',
@@ -94,6 +99,7 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
     summary: null,
     topEdges: [],
     sourceKind: null,
+    updatedAt: '2026-08-25T09:00:00.000Z',
   },
   {
     id: 'gn-3',
@@ -104,6 +110,7 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
       'Identity goal: peak performance every life domain → kapcsolódik → PR celebration moments · gyenge',
     ],
     sourceKind: null,
+    updatedAt: '2026-08-18T12:00:00.000Z',
   },
   {
     id: 'gn-4',
@@ -112,6 +119,7 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
     summary: 'Hétfőn kezdtél az új helyen, és a hét végére kimerültél.',
     topEdges: ['Új munkahely első hete → kiváltja → Megnövekedett stressz · közepes'],
     sourceKind: null,
+    updatedAt: '2026-08-22T08:00:00.000Z',
   },
   {
     id: 'gn-profile',
@@ -122,8 +130,13 @@ export const graphNodeSeed: KnowledgeGraphNode[] = [
       + 'a bőséges tipplistát pedig rendre elutasítod.',
     sourceKind: PROFILE_SOURCE_KIND,
     topEdges: [],
+    updatedAt: '2026-08-15T07:00:00.000Z',
   },
 ]
+
+/** `graphNodeSeed` in `useKnowledgeGraphNodes()`'s DESC-by-`updatedAt` order. */
+export const graphNodeSeedByUpdatedAt: KnowledgeGraphNode[] =
+  [...graphNodeSeed].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
 
 /** Ordered kind → Hungarian label groups for the "Kapcsolatok" section (mirrors the backend enum
  *  `GraphNodeResponse.KindEnum`). */

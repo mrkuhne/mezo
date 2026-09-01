@@ -150,7 +150,7 @@ describe('KnowledgeListPage (mock mode)', () => {
     await userEvent.click(screen.getAllByRole('button', { name: 'Elfogad' })[0])
     // az elfogadás minden számlálót léptet: a hero nagy száma 15 → 16
     await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('16'))
-    expect(screen.getByText('Jóváhagyásra vár · 1')).toBeInTheDocument()
+    expect(screen.getByText(`Jóváhagyásra vár · ${candidateSeed.length - 1}`)).toBeInTheDocument()
   })
 
   test('refining reveals the inline input and promotes the corrected wording', async () => {
@@ -167,7 +167,7 @@ describe('KnowledgeListPage (mock mode)', () => {
   test('rejecting a candidate removes it without promoting', async () => {
     renderPage()
     await userEvent.click(screen.getAllByRole('button', { name: 'Elvet' })[0])
-    expect(await screen.findByText('Jóváhagyásra vár · 1')).toBeInTheDocument()
+    expect(await screen.findByText(`Jóváhagyásra vár · ${candidateSeed.length - 1}`)).toBeInTheDocument()
     await waitFor(() => expect(document.querySelector('.mz-bignum')?.textContent).toBe('15'))
   })
 
