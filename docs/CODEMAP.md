@@ -166,15 +166,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `KonziliumProposalRound`, `KonziliumVerdictRound`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterProperties`
-  - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CheckinGapDetector`, `ClaimConfidenceHistoryEnvelope`,
-    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`,
-    `ConferenceTranscriptEnvelope`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
-    `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
-    `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`, `MedCycleCovarianceDetector`,
-    `MesoAdherenceDetector`, `NiggleMapDetector`, `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`,
-    `ProgressionAdherenceDetector`, `ProteinTrainingMismatchDetector`, `RirCalibrationDetector`, `RoundTwoWindow`,
-    `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
-    `StackSkipPatternDetector`, `UnderLoggingDetector`
+  - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CheckinGapDetector`, `CheckinLatencyDetector`,
+    `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`, `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`,
+    `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`, `DecisionProfileDetector`,
+    `DecisionReviewBacklogDetector`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
+    `GratitudeFocusDetector`, `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`,
+    `JournalSilenceDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
+    `MedCycleCovarianceDetector`, `MesoAdherenceDetector`, `NeedsDomainImbalanceDetector`, `NiggleMapDetector`,
+    `NightActivityDetector`, `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`,
+    `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`, `ProteinTrainingMismatchDetector`,
+    `RestartPatternDetector`, `RetroLoggingRatioDetector`, `RirCalibrationDetector`, `RunDetectorKeysEnvelope`,
+    `RunExpertKeysEnvelope`, `SelfCalibrationDetector`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
+    `StackSkipPatternDetector`, `StreakBreakResponseDetector`, `TrailingWindow`, `UnderLoggingDetector`
 - **Contract** `api/feature/character/character.yml` — 10 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -196,11 +199,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`,
     `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
     `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`
-  - **populators:** `AiConversationPopulator`, `CheckInPopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
-    `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `MealPopulator`, `MedicationDosePopulator`,
-    `MedicationPopulator`, `PantryItemPopulator`, `PatternPopulator`, `ProtocolPopulator`, `RunningPopulator`,
-    `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
-    `WeeklyReviewPopulator`
+  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `CheckInPopulator`, `DailySummaryPopulator`,
+    `DatabasePopulator`, `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LlmLogPopulator`,
+    `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `PantryItemPopulator`, `PatternPopulator`,
+    `ProtocolPopulator`, `RunningPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`,
+    `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`
 
 ### companion
 
@@ -259,9 +262,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`, `PantryPhotoLlmAdapter`,
     `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`,
     `PracticeTools`, `ProfileMetaEnvelope`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
-    `RecordingToolCallback`, `RefsEnvelope`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `StackPlacementLlmAdapter`,
-    `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolText`,
-    `TrainTools`, `TurnVerdictCheck`, `WeekReviewSource`
+    `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RefsEnvelope`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`,
+    `StackPlacementLlmAdapter`, `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`,
+    `ToolContexts`, `ToolText`, `TrainTools`, `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -341,7 +344,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### fuel
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-01, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-08-29, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done)
 
@@ -369,17 +372,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useFuelWeek`, `useIntakes`, `useMealActions`, `useMealCoach`, `useMealCoachFor`, `useMedication`,
     `useMedicationActions`, `usePantry`, `usePantryActions`, `useProtocol`, `useProtocolActions`, `useRecipeActions`,
     `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`, `useReplanScenarios`, `useSlotTemplateActions`,
-    `useSlotTemplateEvaluation`, `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`
+    `useSlotTemplateEvaluation`, `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`,
+    `useWorkshop`
   - **modules:** coachApi.ts, coachHooks.ts, fuel.ts, fuelApi.ts, fuelConfig.ts, fuelHooks.ts, fuelReadHooks.ts,
     fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts, fuelWeekHooks.ts, mealApi.ts, medication.ts,
     medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts, pantryHooks.ts, pantryImpact.ts, pantryPickables.ts,
     queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts, slotTemplateHooks.ts,
-    stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts
+    stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts, workshopApi.ts, workshopHooks.ts,
+    workshopMock.ts, workshopState.ts
 - **FE ui** `frontend/src/features/fuel`
   - **pages:** FuelKamraPage.tsx, FuelLogNewPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx,
     FuelNaploPage.tsx, FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx,
     KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
-    RecipesSkeleton.tsx
+    RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx, FuelSettingsSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
@@ -390,7 +395,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
     RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx,
     StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
-    WeeklySupplementGrid.tsx, WindowBlock.tsx
+    WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
     dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts, keretHero.ts,
     matchMealsToStack.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts, resolveDayType.ts,
@@ -644,7 +649,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-01, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
@@ -744,7 +749,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### nutrition
 
-*BE* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done)
+*BE* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-01, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **services:** `MealRole`, `MealScoringService`
@@ -755,7 +760,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### pantry
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-01, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
   - **entities→tables:** `PantryImportEntity`→`pantry_import`, `PantryItemEntity`→`pantry_item`
@@ -933,15 +938,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
   - **repositories:** `RecipeIngredientRepository`, `RecipeRepository`
-  - **services:** `RecipeBreakdownLlm`, `RecipeBreakdownProseService`, `RecipeBreakdownService`, `RecipeService`
-  - **controllers→contract:** `RecipeController`→`RecipeApi`
+  - **services:** `RecipeBreakdownLlm`, `RecipeBreakdownProseService`, `RecipeBreakdownService`, `RecipeService`,
+    `RecipeWorkshopLlm`, `RecipeWorkshopService`, `RecipeWorkshopValidator`
+  - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeWorkshopController`→`RecipeWorkshopApi`
   - **mappers:** `RecipeMapper`
-- **Contract** `api/feature/recipe/recipe.yml` — 6 operations
+  - **config:** `RecipeWorkshopProperties`
+- **Contract** `api/feature/recipe/recipe.yml` — 7 operations
   - **endpoints:** GET /api/recipe · POST /api/recipe · GET /api/recipe/{id} · PUT /api/recipe/{id} ·
-    DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 5 IT + 3 unit
+    DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown · POST /api/recipe/workshop/turn
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 8 IT + 4 unit
   - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeRepositoryIT`,
-    `RecipeServiceIT`
+    `RecipeServiceIT`, `RecipeWorkshopApiIT`, `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`
   - **populators:** `DatabasePopulator`, `PantryItemPopulator`, `RecipePopulator`
 
 ### ritual
