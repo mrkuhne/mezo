@@ -4,7 +4,7 @@
 // #page-tudas (values ×1.18).
 //
 // ADR 0032: the dissolved Me shell means this page owns its own header — the
-// prototype's `‹ Én` back chip — and the prototype's page-hero (i-tudas + the
+// prototype's `‹ Tudástár` back chip (hub-tile-reorg: the Én hub's Tudás tile is gone — the Tudástár is the graph's door) — and the prototype's page-hero (i-tudas + the
 // fact count + „tudás · N kapcsolat · élő mindmap") replaces the old
 // .pghead-np band, which left the page with no way back AND repeated the
 // hero's own number inside the summary tile. The summary tile is now the
@@ -31,7 +31,7 @@
 // second floating chip below the summary — two stacked back buttons read as
 // two different destinations when they were one. Clearing the param uses
 // replace:true so the grid entry overwrites the ?kind history slot and
-// „‹ Én" (navigate(-1)) truly leaves the page.
+// „‹ Tudástár" (a deterministic /mezo/knowledge jump) truly leaves the page.
 // ============================================================
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -66,8 +66,8 @@ export function KnowledgePage() {
   return (
     <MozaikPage tone="lav">
       <PageHead
-        onBack={kind ? () => setParams({}, { replace: true }) : () => navigate(-1)}
-        label={kind ? '‹ Kategóriák' : '‹ Én'}
+        onBack={kind ? () => setParams({}, { replace: true }) : () => navigate('/mezo/knowledge')}
+        label={kind ? '‹ Kategóriák' : '‹ Tudástár'}
       />
 
       <PageHero

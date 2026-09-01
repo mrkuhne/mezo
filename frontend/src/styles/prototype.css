@@ -5318,7 +5318,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   border: 1.2px dashed var(--mz-chat-refch-bd); }
 .mzp-dgq .qq { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--mz-ink-soft); }
 .mzp-dgq .qs { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); margin-top: 4px; }
-.mzh-t-diag { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
+.mzh-t-diag, .mzh-t-karakter { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
 
 /* Chat quick-question chips (mezo-dz3y) — empty-state only, one tap sends. */
 .mzc-qq { border: 0.5px solid var(--mz-chat-refch-bd); border-radius: 999px; padding: 8px 13px;
@@ -5478,22 +5478,11 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .enh-eb-sky .mz-eyebrow   { color: var(--mz-cell-sky-ink); }
 .enh-eb-coral .mz-eyebrow { color: var(--mz-cell-coral-ink); }
 .enh-eb-rose .mz-eyebrow  { color: var(--mz-cell-rose-ink); }
-.enh-eb-gold .mz-eyebrow  { color: var(--mz-qxp-ink); }
 .enh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
-
-.enh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
-  cursor: pointer; border-radius: 20px; padding: 12px 14px; font-family: inherit; text-align: left;
-  color: var(--text-primary); background: var(--mz-wash-band);
-  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-coral);
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.enh-band:active { transform: scale(0.97); }
-.enh-band .txt { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 300; }
-.enh-band .txt b { font-weight: 700; }
-.enh-band .chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .mz-play .enh-gtrack .fill { animation: none; }
-  .enh-goalcard, .enh-band { transition: none; }
+  .enh-goalcard { transition: none; }
 }
 
 /* ── Cél page re-face (mezo-d20.6.2) — prototype en-body #page-cel ×1.18:

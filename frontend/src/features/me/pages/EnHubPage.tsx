@@ -6,9 +6,10 @@
 // routes (they keep their current faces until their own F5 slices land).
 // Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → identity hero (in-level XP ring around
 // the initial, name, equipped title chip, Lv · XP · 🔥 · 🪙, bio line) → the
-// coral-ringed GOAL CARD (animated track + Hátra/Tempó/ETA cells) → the 10-tile
-// mosaic with live bottom lines from the subpages' OWN hooks → the Beállítások
-// band opening the existing SettingsSheet (theme only).
+// coral-ringed GOAL CARD (animated track + Hátra/Tempó/ETA cells) → the 6-tile mosaic
+// with live bottom lines — Beállítások is a tile opening /me/beallitasok
+// (hub-tile-reorg: the AI tiles moved to the Mezo hub, Értesítés + AI-napló under
+// Beállítások).
 // Honest states (en-audit §6) are the contract, not the face:
 //  · the bio line renders only the bits that exist and vanishes at zero bits;
 //    with nothing set at all the hero offers BiometricCard's own CTA instead,
@@ -25,24 +26,19 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
-  useBiometricProfile, useCharacterOverview, useDecisions, useGamification, useGoal,
-  useGratitudeEntries, useKnowledge, useLlmUsageSummary, useMeWeek, useNotificationPrefs,
-  usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
+  useBiometricProfile, useDecisions, useGamification, useGoal,
+  useGratitudeEntries, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
 } from '@/data/hooks'
-import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
-import { SettingsSheet } from '@/features/me/sheets/SettingsSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import { buildTdeeBreakdown } from '@/features/me/logic/buildTdeeBreakdown'
 import { ageFromBirthDate } from '@/features/me/logic/biometricFields'
 import { TRAJECTORY_LABEL } from '@/features/me/logic/goalLabels'
 import { gratitudeStreakDays } from '@/features/me/logic/gratitudeStreak'
 import { etaWeeks } from '@/features/me/logic/weightStats'
-import { formatRollupCost } from '@/features/me/logic/llmCallFormat'
 import { useTheme } from '@/app/ThemeProvider'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { hu1, huInt } from '@/shared/lib/huNum'
-import { isDossierEmpty } from '@/features/character/dossierState'
 
 const THEME_LABEL = { light: 'világos', dark: 'sötét', auto: 'cirkadián' } as const
 
@@ -56,7 +52,7 @@ export function EnHubPage() {
   // F7.4 (mezo-d20.8.4.1): the progression moved HOME — the title chip and the
   // streak/coin stats deep-link to /me/growth?tab=awards (StreakCard + TitlesSection);
   // the two standalone sheets are retired.
-  const [sheet, setSheet] = useState<'settings' | 'biometric' | 'energy' | null>(null)
+  const [sheet, setSheet] = useState<'biometric' | 'energy' | null>(null)
 
   // ── identity hero ───────────────────────────────────────────────────
   const { user } = useProfile()
@@ -144,16 +140,6 @@ export function EnHubPage() {
   }
 
   // ── tile bottom lines — each from its page's own hook ────────────────
-  const { week } = useMeWeek(mondayIso())
-  const score = week?.weekly.score ?? null
-  const prevScore = week?.weekly.prevWeekScore ?? null
-  const scoreDelta = score != null && prevScore != null ? score - prevScore : null
-  const hetiLine = week == null
-    ? undefined
-    : score == null
-      ? 'tanulom'
-      : `${score} / 100${scoreDelta != null ? ` · ${scoreDelta >= 0 ? '+' : '−'}${Math.abs(scoreDelta)}` : ''}`
-
   const sulyLine = latestKg == null
     ? undefined
     : `${hu1(latestKg)} kg${rate !== 0 ? ` · ${huSigned(rate)} / hét` : ''}`
@@ -188,34 +174,6 @@ export function EnHubPage() {
     : topPerson != null && topPerson.mentionsThisWeek > 0
       ? `${topPerson.name} ${topPerson.mentionsThisWeek}× · e héten`
       : `${people.length} kapcsolat`
-
-  const knowledge = useKnowledge()
-  const tudasLine = knowledge.isPending || knowledge.degraded || knowledge.facts.length === 0
-    ? undefined
-    : `${knowledge.facts.length} tudás${knowledge.edges.length > 0 ? ` · ${knowledge.edges.length} kapcsolat` : ''}`
-
-  const { prefs, isPending: prefsPending } = useNotificationPrefs()
-  const enabledPrefs = prefs.filter((p) => p.enabled).length
-  const ertesitesLine = prefsPending || prefs.length === 0
-    ? undefined
-    : `${enabledPrefs} / ${prefs.length} kategória`
-
-  const { data: llm, isPending: llmPending } = useLlmUsageSummary()
-  const aiLine = llmPending
-    ? undefined
-    : `${llm.week.callCount} hívás · ${formatRollupCost(llm.week.costUsd)} / hét`
-
-  // Karakter dossier tile (mezo-1gim.13) — the hub's own hook, honest states: the switch-off
-  // 404 (overview null) drops the line, and so does the pre-bootstrap "untouched dossier"
-  // state (fix round 1: this used to compute its OWN pre-bootstrap check and disagreed with
-  // KarakterHubPage's — showing a fabricated "0% átlag érettség" for the exact data shape the
-  // hub itself treats as "not started" and renders the bootstrap face for). `isDossierEmpty`
-  // is the ONE shared predicate both surfaces read now.
-  const { overview: character } = useCharacterOverview()
-  const coreDims = character?.dimensions.filter((d) => d.kind === 'CORE') ?? []
-  const karakterLine = character == null || coreDims.length === 0 || isDossierEmpty(character)
-    ? undefined
-    : `${Math.round(coreDims.reduce((sum, d) => sum + d.maturity, 0) / coreDims.length)}% átlag érettség`
 
   return (
     <div className="enh-hub">
@@ -260,40 +218,23 @@ export function EnHubPage() {
         {/* ===== goal card ===== */}
         {goalCard}
 
-        {/* ===== 9-tile mosaic ===== */}
+        {/* ===== 6-tile mosaic ===== */}
         <Mosaic>
-          <Tile wash="lav" icon="i-rend" eyebrow="Heti" delayMs={130} className="enh-t-minta enh-eb-lav"
-            line={hetiLine} onClick={() => navigate('/me/week')} aria-label="Heti áttekintés" />
-          <Tile wash="sky" icon="i-suly" eyebrow="Súly" delayMs={150} className="enh-eb-sky"
+          <Tile wash="sky" icon="i-suly" eyebrow="Súly" delayMs={130} className="enh-eb-sky"
             line={sulyLine} onClick={() => navigate('/me/weight')} aria-label="Súly" />
-          <Tile wash="lav" icon="i-alvas" eyebrow="Alvás" delayMs={190} className="enh-eb-lav"
+          <Tile wash="lav" icon="i-alvas" eyebrow="Alvás" delayMs={170} className="enh-eb-lav"
             line={alvasLine} onClick={() => navigate('/me/sleep')} aria-label="Alvás" />
-          <Tile wash="lav" icon="i-growth" eyebrow="Growth" delayMs={230} className="enh-t-minta enh-eb-lav"
+          <Tile wash="lav" icon="i-growth" eyebrow="Growth" delayMs={210} className="enh-t-minta enh-eb-lav"
             line={growthLine} onClick={() => navigate('/me/growth')} aria-label="Growth" />
-          <Tile wash="lav" icon="i-kristaly" eyebrow="Karakter" delayMs={250} className="enh-eb-lav"
-            line={karakterLine} onClick={() => navigate('/me/karakter')} aria-label="Karakter" />
-          <Tile wash="white" icon="i-naplo" eyebrow="Napló" delayMs={270} className="enh-t-kreed enh-eb-coral"
+          <Tile wash="white" icon="i-naplo" eyebrow="Napló" delayMs={250} className="enh-t-kreed enh-eb-coral"
             line={naploLine} onClick={() => navigate('/me/naplo')} aria-label="Napló" />
-          <Tile wash="rose" icon="i-emberek" eyebrow="Emberek" delayMs={310} className="enh-eb-rose"
+          <Tile wash="rose" icon="i-emberek" eyebrow="Emberek" delayMs={290} className="enh-eb-rose"
             line={emberekLine} onClick={() => navigate('/me/people')} aria-label="Emberek" />
-          <Tile wash="gold" icon="i-tudas" eyebrow="Tudás" delayMs={350} className="enh-eb-gold"
-            line={tudasLine} onClick={() => navigate('/me/knowledge')} aria-label="Tudás" />
-          <Tile wash="sage" icon="i-ertesites" eyebrow="Értesítés" delayMs={390} className="enh-eb-sage"
-            line={ertesitesLine} onClick={() => navigate('/me/ertesitesek/beallitasok')} aria-label="Értesítések beállításai" />
-          <Tile wash="white" icon="i-erme" eyebrow="AI-napló" delayMs={430}
-            line={aiLine} onClick={() => navigate('/me/ai-usage')} aria-label="AI-napló" />
+          <Tile wash="sage" icon="i-beallitas" eyebrow="Beállítások" delayMs={330} className="enh-eb-sage"
+            line={`téma: ${THEME_LABEL[themeMode]}`} onClick={() => navigate('/me/beallitasok')} aria-label="Beállítások" />
         </Mosaic>
-
-        {/* ===== Beállítások band — the existing theme sheet, unchanged ===== */}
-        <button type="button" className="enh-band rise" style={{ '--d': '470ms' } as React.CSSProperties}
-          aria-label="Beállítások" onClick={() => setSheet('settings')}>
-          <ClayIcon name="i-beallitas" size={28} />
-          <span className="txt"><b>Beállítások</b> · téma: {THEME_LABEL[themeMode]}</span>
-          <span className="chev" aria-hidden="true">›</span>
-        </button>
       </EntranceGroup>
 
-      {sheet === 'settings' && <SettingsSheet onClose={() => setSheet(null)} />}
       {sheet === 'biometric' && (
         <BiometricSheet onClose={() => setSheet(null)} profile={biometric}
           onExplainEnergy={tdeeBreakdown != null ? () => setSheet('energy') : undefined} />
