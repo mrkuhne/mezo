@@ -58,4 +58,9 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
     List<MealEntity> findWithItemsBetween(@Param("createdBy") UUID createdBy,
                                           @Param("from") LocalDate from,
                                           @Param("to") LocalDate to);
+
+    /** Karakter round-3 logging-latency read: only the two timestamps are needed, so no item
+     *  join fetch (unlike {@link #findWithItemsBetween}). */
+    List<MealEntity> findByCreatedByAndDeletedFalseAndMealDateBetweenOrderByMealDateAsc(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

@@ -505,6 +505,18 @@ interface ChainSeed {
 // alongside the pre-existing chains — `code` paraphrases each detector's real `summary` string
 // (see `backend/.../feature/character/detector/*Detector.java`), `who` matches its real
 // `DetectorSignal(key(), who, ...)` owner exactly. Day 15 stays untouched, same as round 1.
+//
+// Round 3 (mezo-1gim.15, Task 7): the twelve new round-3 detectors (self-calibration,
+// promise-vs-delivery, decision-profile, decision-review-backlog, gratitude-focus,
+// streak-break-response, restart-pattern, retro-logging-ratio, night-activity, checkin-latency,
+// checkin-slot-drift, needs-domain-imbalance) get one chain each, spread across days
+// 13/20/24/27/30 alongside the pre-existing chains — `code` paraphrases each detector's real
+// summary string (see `backend/.../feature/character/detector/*Detector.java`), `who` matches
+// its real `DetectorSignal(key(), who, ...)` owner exactly, and every numeric seed satisfies the
+// detector's own real thresholds (e.g. `night-activity`'s "rendszeres" seed names 4 nights, past
+// its own 2-night `ALKALMI_MAX`; `gratitude-focus`'s dominant area is 5 of 8 tagged entries, at
+// its own 50% `CONCENTRATED_MIN`; `needs-domain-imbalance` names one weak domain while implying
+// at least three others green, its own `MIN_STRONG_DOMAINS` gate). Day 15 stays untouched.
 const CHAIN_POOL: Record<number, ChainSeed[]> = {
   13: [
     {
@@ -555,6 +567,22 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       who: 'taplalkozo',
       obs: 'A rosszabb hangulatú napjaidon gyakrabban ugrik meg a bevitel — hol a feldolgozott étel aránya, hol a napi kalória megy feljebb a szokásos átlagodhoz képest.',
     },
+    // Round 3 (mezo-1gim.15, Task 7): self-calibration/promise-vs-delivery join day 13 —
+    // paraphrase SelfCalibrationDetector's and PromiseVsDeliveryDetector's real summaries.
+    {
+      detector: 'self-calibration',
+      code: 'önértékelés-kalibráció: az energia-értékelés együtt mozog az előző éjszakai alvással (14 nap, irányt jelez, nem jellemvonást)',
+      refs: [],
+      who: 'pszichologus',
+      obs: 'Az energia-értékelésed az elmúlt két hétben együtt mozgott az előző éjszakai alvásod minőségével.',
+    },
+    {
+      detector: 'promise-vs-delivery',
+      code: 'napi fókusz × napzárás: 9 fókusznapból 7 lezárva, a lezártak többsége teljesült (14 nap)',
+      refs: [],
+      who: 'drill',
+      obs: 'A kitűzött napi fókuszaidat többnyire le is zárod, és amit vállalsz, azt teljesíted is.',
+    },
   ],
   20: [
     {
@@ -572,6 +600,22 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'taplalkozo',
       obs: 'Az elmúlt két hétben a fehérjebevitel rendre elmarad a napi céltól.',
+    },
+    // Round 3 (mezo-1gim.15, Task 7): decision-profile/gratitude-focus join day 20 —
+    // paraphrase DecisionProfileDetector's and GratitudeFocusDetector's real summaries.
+    {
+      detector: 'decision-profile',
+      code: 'döntésnapló: 6 visszanézett döntés hat hét alatt, vegyes kimenetellel',
+      refs: [],
+      who: 'pszichologus',
+      obs: 'A visszanézett döntéseid vegyes képet mutatnak az elmúlt hat hétben.',
+    },
+    {
+      detector: 'gratitude-focus',
+      code: 'hála-fókusz: a kapcsolatok terület dominál (5 a 8 címkézett bejegyzésből, négy hét)',
+      refs: [],
+      who: 'antropologus',
+      obs: 'A hála-bejegyzéseid négy hét alatt erősen a kapcsolatok területére húznak.',
     },
   ],
   24: [
@@ -615,6 +659,30 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       who: 'drill',
       obs: 'A guggolás kétszer maradt ki teljesen az elmúlt két hétben — érdemes ránézni, mi áll mögötte.',
     },
+    // Round 3 (mezo-1gim.15, Task 7): decision-review-backlog/streak-break-response/
+    // restart-pattern join day 24 — paraphrase DecisionReviewBacklogDetector's,
+    // StreakBreakResponseDetector's and RestartPatternDetector's real summaries.
+    {
+      detector: 'decision-review-backlog',
+      code: 'döntésnapló: 3 döntés vár visszanézésre a saját határidején túl',
+      refs: [],
+      who: 'drill',
+      obs: 'Három döntésed lépte túl a saját visszanézési határidejét anélkül, hogy átnézted volna.',
+    },
+    {
+      detector: 'streak-break-response',
+      code: 'streak-törésre adott válasz: a törés utáni három napból egyik sem lett teljes',
+      refs: [],
+      who: 'pszichologus',
+      obs: 'A legutóbbi megszakadt Életjel-sorozat után három napig egyik nap sem lett újra teljes.',
+    },
+    {
+      detector: 'restart-pattern',
+      code: 'újraindulási minta: a megszakadás után 9 nappal lett újra teljes Életjel-nap (28 nap)',
+      refs: [],
+      who: 'drill',
+      obs: 'A legutóbbi megszakadás után 9 nap telt el az első újra teljes Életjel-napig.',
+    },
   ],
   27: [
     {
@@ -647,6 +715,22 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'szomnologus',
       obs: 'Ha 21:30 után nagyobbat eszel, gyakrabban lesz rosszabb az azt követő éjszakád.',
+    },
+    // Round 3 (mezo-1gim.15, Task 7): retro-logging-ratio/night-activity join day 27 —
+    // paraphrase RetroLoggingRatioDetector's and NightActivityDetector's real summaries.
+    {
+      detector: 'retro-logging-ratio',
+      code: 'naplózási időzítés: az edzés-, alvás- és étkezésadatokat szinte mindig aznap rögzíti, a naplóbejegyzéseket többnyire utólag (14 nap)',
+      refs: [],
+      who: 'drill',
+      obs: 'Az edzés-, alvás- és étkezésadataidat szinte mindig aznap rögzíted, a naplózó bejegyzéseket viszont többnyire utólag írod meg.',
+    },
+    {
+      detector: 'night-activity',
+      code: 'éjszakai aktivitás: 4 napon írt éjfél és hajnali öt között a társnak (14 nap)',
+      refs: [],
+      who: 'szomnologus',
+      obs: 'Az elmúlt két hétből négy napon írtál éjfél és hajnali öt óra között a társnak.',
     },
   ],
   30: [
@@ -704,6 +788,31 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'doki',
       obs: 'A ciklus harmadik napján az energiaszint rendszerint a ciklusátlag alatt marad.',
+    },
+    // Round 3 (mezo-1gim.15, Task 7): checkin-latency/checkin-slot-drift/needs-domain-imbalance
+    // close out the twelve new round-3 detector chains on day 30 — paraphrase
+    // CheckinLatencyDetector's, CheckinSlotDriftDetector's and NeedsDomainImbalanceDetector's
+    // real summaries.
+    {
+      detector: 'checkin-latency',
+      code: 'check-in latencia: a median kitöltési késés a saját idősáv után 2,5 óra (14 nap)',
+      refs: [],
+      who: 'drill',
+      obs: 'A check-injeid jellemzően néhány órával a saját idősávjuk után készülnek el.',
+    },
+    {
+      detector: 'checkin-slot-drift',
+      code: 'check-in idősáv-kopás: a korábban rendszeres esti sáv kiesett (két egymást követő 14 napos ablak)',
+      refs: [],
+      who: 'drill',
+      obs: 'A korábban rendszeres esti check-in idősávod kiesett az elmúlt két hétben.',
+    },
+    {
+      detector: 'needs-domain-imbalance',
+      code: 'Életjel-egyensúly: a lélek terület tartósan lemarad, míg legalább három másik zöld (14 nap)',
+      refs: [],
+      who: 'pszichologus',
+      obs: 'Az Életjel-területeid többsége zöld, de a lélek terület tartósan lemarad a többitől.',
     },
   ],
   // Fix round 1 (mezo-1gim.14): NOT a prototype-verbatim night — added so the callCount

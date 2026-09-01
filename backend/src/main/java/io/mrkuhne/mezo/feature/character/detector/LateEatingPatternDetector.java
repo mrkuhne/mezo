@@ -57,7 +57,7 @@ public class LateEatingPatternDetector implements CharacterDetector {
         }
         int pairs = 0;
         for (DetectorInput.MealDayPoint m : in.trend().mealDays()) {
-            if (!RoundTwoWindow.inWindow(m.date(), asOf) || !hasLateMeal(m)) {
+            if (!TrailingWindow.inWindow(m.date(), asOf) || !hasLateMeal(m)) {
                 continue;
             }
             DetectorInput.SleepPoint night = nights.get(m.date().plusDays(1));

@@ -60,7 +60,7 @@ public class HydrationConsistencyDetector implements CharacterDetector {
     private static Band band(DetectorInput in, LocalDate asOf) {
         List<DetectorInput.WaterDayPoint> window = new ArrayList<>();
         for (DetectorInput.WaterDayPoint w : in.trend().waterDays()) {
-            if (RoundTwoWindow.inWindow(w.date(), asOf)) {
+            if (TrailingWindow.inWindow(w.date(), asOf)) {
                 window.add(w);
             }
         }

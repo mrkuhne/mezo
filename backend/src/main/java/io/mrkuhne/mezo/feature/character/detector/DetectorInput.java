@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.character.detector;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
@@ -102,13 +103,76 @@ public record DetectorInput(LocalDate day,
     public record MedCycleDayPoint(LocalDate date, int cycleDay, String phaseKey,
                                    Integer daysSinceDose, boolean stale) {}
 
+    /** One day of the intention loop. {@code focusCount} is how many foci were set that morning;
+     *  {@code reflection} is the evening day-close verdict ("yes"/"partial"/"no" — the
+     *  {@code DailyIntentionEntity.REFLECTION_*} values) or null when the day was never closed.
+     *  A day with neither a focus nor a reflection is OMITTED, never carried as a zero row. */
+    public record IntentionDayPoint(LocalDate date, int focusCount, String reflection) {}
+
+    /** One decision-journal entry. {@code writtenOn} is {@code createdAt} in the JVM default zone;
+     *  {@code reviewedOn} is {@code reviewedAt} in the same zone, or null when not yet reviewed.
+     *  {@code outcomeRating} is the 1..5 scale, null until reviewed. {@code textPreview} is the raw
+     *  decision text truncated for EVIDENCE only — no detector may parse or interpret it. */
+    public record DecisionPoint(LocalDate decidedOn, LocalDate writtenOn, LocalDate reviewDue,
+                                LocalDate reviewedOn, Short outcomeRating, String textPreview) {}
+
+    /** One gratitude entry. {@code lifeArea} is the closed tag (mindfulness|mindset|cooking|
+     *  financial|productivity|learning|connection|recovery) or null when the user left it off —
+     *  null is "untagged", never a category. */
+    public record GratitudePoint(LocalDate occurredOn, LocalDate writtenOn, String lifeArea) {}
+
+    /** The Életjel (needs) day series plus the domain threshold that defines "green"; null when the
+     *  owner has never closed a day. {@code greenThreshold} is carried because a detector may not
+     *  read configuration — it mirrors {@code NeedsProperties.greenThreshold}, exactly as round 2
+     *  carried the macro targets rather than re-deriving them. */
+    public record NeedsContext(int greenThreshold, List<NeedsDayPoint> days) {}
+
+    /** One closed Életjel day. The six domains are 0..100. {@code streakDays} is the streak as of
+     *  THAT day, snapshotted by {@code NeedsService.closeNew} — the only per-day streak history in
+     *  the system ({@code GamificationProfileEntity} carries live state only). An unclosed day has
+     *  NO row here; per the domain's own rule that is a streak break, not a zero. */
+    public record NeedsDayPoint(LocalDate date, int energia, int hidratacio, int pihenes,
+                                int mozgas, int lelek, int rend, int greenCount,
+                                boolean allGreen, int streakDays) {}
+
+    /** One check-in ROW (not a day aggregate — {@link CheckinDayPoint} carries the scales).
+     *  {@code slotTime} is the slot label stored on the row itself ("HH:mm"), which is the only
+     *  historically-faithful nominal time available: {@code notification_schedule} is replaced
+     *  wholesale on every save and has no history. {@code writtenAt} is {@code createdAt} in the
+     *  JVM default zone — deliberately NOT {@code savedAt}, which every edit moves forward.
+     *  {@code notePreview} is the raw note truncated for EVIDENCE only, or null. */
+    public record CheckinSlotPoint(LocalDate date, String slotTime, LocalDateTime writtenAt,
+                                   String notePreview) {}
+
+    /** One logged record's "the day it is about" vs "the day it was written" pair.
+     *  {@code genre} is {@code "esemeny"} (gym, run, sport, weight, sleep, meal) or
+     *  {@code "reflexio"} (check-in, journal, gratitude, decision, focus); {@code source} names the
+     *  entity for debugging. Same-day is the literature's "live logging" boundary; anything later
+     *  is retrospective (round-3 spec §2). */
+    public record LogLatencyPoint(String genre, String source, LocalDate aboutDate,
+                                  LocalDate writtenDate) {}
+
     /** Raw 8-week series ending at day — detectors aggregate these themselves so they can
      *  recompute their state both as-of day and as-of day-1 (stateless state-change gate).
-     *  Round-2 series (mealDays..med) live ONLY here: every round-2 detector windows them to a
-     *  trailing 14 days by an {@code asOf} parameter, so a duplicated 14-day copy would be dead
-     *  weight (round-2 spec §4). */
+     *  Round-2 and round-3 series live ONLY here: every such detector windows them by an
+     *  {@code asOf} parameter, so a duplicated shorter copy would be dead weight. Round 3's
+     *  episodic sources use longer windows (decisions 42 days, gratitude and restart 28 days),
+     *  which is why they need the full 8 weeks rather than 14 days.
+     *
+     *  <p>{@code sleepEightWeeks} widens the existing 14-day {@code sleepPoints} slice for the same
+     *  reason: {@code self-calibration} evaluates its state as of day AND as of day-1, and a
+     *  14-day slice would leave the day-1 window one day short — the state could then change
+     *  because a day fell off the end rather than because the behaviour changed. */
     public record TrendWindow(List<RunPoint> runsEightWeeks, List<GymDay> gymEightWeeks,
                               List<MealDayPoint> mealDays, List<WaterDayPoint> waterDays,
                               StackContext stack, List<CheckinDayPoint> checkinDays,
-                              MedContext med) {}
+                              MedContext med,
+                              List<SleepPoint> sleepEightWeeks,
+                              List<IntentionDayPoint> intentionDays,
+                              List<DecisionPoint> decisions,
+                              List<GratitudePoint> gratitudes,
+                              NeedsContext needs,
+                              List<CheckinSlotPoint> checkinSlots,
+                              List<LocalDateTime> userChatTimes,
+                              List<LogLatencyPoint> logLatencies) {}
 }
