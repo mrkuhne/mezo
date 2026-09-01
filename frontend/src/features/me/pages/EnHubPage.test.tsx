@@ -4,11 +4,9 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { MOCK_OVERVIEW, MOCK_OVERVIEW_EMPTY } from '@/data/character/characterMock'
-import type { CharacterOverviewResponse } from '@/data/character/characterApi'
 
 // Én hub (mezo-d20.6.1) — the /me index's Mozaik face: identity hero + coral-ringed goal
-// card + 10-tile mosaic + Beállítások band. The behavioral contracts it inherits from the
+// card + 6-tile mosaic (Beállítások csempével). The behavioral contracts it inherits from the
 // retired ProfilePage/MeSection are the spec: the bio line renders only filled bits, the
 // theme sheet still flips data-theme, biometrics stay editable, a maintain goal reads
 // „tartás" with no track, and a null statistic is `—`, never 0.
@@ -29,9 +27,6 @@ const bioStore = vi.hoisted(() => ({
   profile: { birthDate: '1991-03-04', heightCm: 180, bodyFatPct: 15, sex: 'male', activityLevel: 'mixed' } as Record<string, unknown> | null,
 }))
 const weightStore = vi.hoisted(() => ({ log: [{ date: '2026-05-22', value: 78.6 }], rate: -0.5 }))
-const characterStore = vi.hoisted(() => ({
-  overview: null as unknown as import('@/data/character/characterApi').CharacterOverviewResponse | null,
-}))
 
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -61,7 +56,6 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       lastNight: { date: '2026-05-22', bedtime: '00:42', wakeup: '09:03', duration: 7.5, quality: 9, awakenings: 1, mealToSleep: 125, notes: null },
       logSleep: vi.fn(),
     }),
-    useCharacterOverview: () => ({ overview: characterStore.overview, isLoading: false }),
   }
 })
 
@@ -72,7 +66,6 @@ beforeEach(() => {
   bioStore.profile = { birthDate: '1991-03-04', heightCm: 180, bodyFatPct: 15, sex: 'male', activityLevel: 'mixed' }
   weightStore.log = [{ date: '2026-05-22', value: 78.6 }]
   weightStore.rate = -0.5
-  characterStore.overview = MOCK_OVERVIEW
   localStorage.setItem('mezo-theme', 'light')
 })
 
@@ -181,19 +174,15 @@ test('with no active goal the card becomes the honest ＋ Új cél door', async 
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals')
 })
 
-test('the mosaic carries the ten tiles and each opens its own page', async () => {
+test('the mosaic carries the six tiles and each opens its own page', async () => {
   renderHub()
   const TILES: [string, string][] = [
-    ['Heti áttekintés', '/me/week'],
     ['Súly', '/me/weight'],
     ['Alvás', '/me/sleep'],
     ['Growth', '/me/growth'],
-    ['Karakter', '/me/karakter'],
     ['Napló', '/me/naplo'],
     ['Emberek', '/me/people'],
-    ['Tudás', '/me/knowledge'],
-    ['Értesítések beállításai', '/me/ertesitesek/beallitasok'],
-    ['AI-napló', '/me/ai-usage'],
+    ['Beállítások', '/me/beallitasok'],
   ]
   for (const [label] of TILES) expect(await screen.findByRole('button', { name: label })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Súly' }))
@@ -204,18 +193,14 @@ test('the mosaic carries the ten tiles and each opens its own page', async () =>
 // `[label]`-t bontotta ki, tehát a `Súly`-on kívül MINDEN útvonal holt adat volt a tuple-ökben — a
 // mezo-nol0 által átirányított `/me/ertesitesek/beallitasok` bejegyzés semmit nem állított, miközben
 // ez az ág épp rá támaszkodik. A hub navigálás után lecsatolódik, ezért csempénként friss render.
-test('a tíz csempe mindegyike a saját oldalára navigál', async () => {
+test('a hat csempe mindegyike a saját oldalára navigál', async () => {
   const TILES: [string, string][] = [
-    ['Heti áttekintés', '/me/week'],
     ['Súly', '/me/weight'],
     ['Alvás', '/me/sleep'],
     ['Growth', '/me/growth'],
-    ['Karakter', '/me/karakter'],
     ['Napló', '/me/naplo'],
     ['Emberek', '/me/people'],
-    ['Tudás', '/me/knowledge'],
-    ['Értesítések beállításai', '/me/ertesitesek/beallitasok'],
-    ['AI-napló', '/me/ai-usage'],
+    ['Beállítások', '/me/beallitasok'],
   ]
   for (const [label, path] of TILES) {
     const { unmount } = renderHub()
@@ -239,40 +224,12 @@ test('a tile whose source has nothing to say carries no fabricated line', async 
   expect(suly.querySelector('.mz-tile-line')).toBeNull()
 })
 
-test('the Karakter tile shows the live avg CORE maturity once the dossier has started (post-bootstrap, mezo-1gim.13)', async () => {
+test('a Beállítások csempe a témát mutatja és a Beállítások oldalra navigál', async () => {
   renderHub()
-  const karakter = await screen.findByRole('button', { name: 'Karakter' })
-  // MOCK_OVERVIEW's 7 CORE dims: (58+71+45+66+39+74+33)/7 = 55.14 -> 55
-  expect(karakter).toHaveTextContent('55% átlag érettség')
-})
-
-test('the Karakter tile carries no fabricated line when the switch is off (overview null)', async () => {
-  characterStore.overview = null as unknown as CharacterOverviewResponse
-  renderHub()
-  const karakter = await screen.findByRole('button', { name: 'Karakter' })
-  expect(karakter.querySelector('.mz-tile-line')).toBeNull()
-})
-
-// Fix round 1: this used to compute its own pre-bootstrap check and disagreed with
-// KarakterHubPage's — a fabricated "0% átlag érettség" for the exact untouched-dossier shape
-// the hub itself renders the bootstrap face for. Both surfaces now share `isDossierEmpty`.
-test('the Karakter tile carries no line for a pre-bootstrap (untouched) dossier — same predicate as the hub\'s bootstrap face', async () => {
-  characterStore.overview = MOCK_OVERVIEW_EMPTY
-  renderHub()
-  const karakter = await screen.findByRole('button', { name: 'Karakter' })
-  expect(karakter.querySelector('.mz-tile-line')).toBeNull()
-})
-
-test('the Beállítások band opens the theme sheet and the selector flips data-theme', async () => {
-  renderHub()
-  const band = await screen.findByRole('button', { name: 'Beállítások' })
-  expect(band).toHaveTextContent('téma: világos')
-  await userEvent.click(band)
-  expect(screen.getByText('Megjelenés')).toBeInTheDocument()
-  // Manual light => no attribute (light is the CSS base); choosing Sötét flips to dark.
-  expect(document.documentElement.getAttribute('data-theme')).toBeNull()
-  await userEvent.click(screen.getByRole('button', { name: /Sötét/ }))
-  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  const tile = await screen.findByRole('button', { name: 'Beállítások' })
+  expect(tile).toHaveTextContent('téma: világos')
+  await userEvent.click(tile)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/me/beallitasok')
 })
 
 // ── the progression's HOME (F7.4, mezo-d20.8.4.1) ──
