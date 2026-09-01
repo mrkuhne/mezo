@@ -411,6 +411,21 @@ describe('KnowledgeListPage (mock mode)', () => {
     const acceptedCard = screen.getByText(/Bekerült a gráfba/).closest('.card') as HTMLElement
     expect(within(acceptedCard).queryByRole('link')).not.toBeInTheDocument()
   })
+
+  it('Pontosít + Elfogad így után a megerősítő kártya a szerkesztett címet mutatja (mezo-ms9a)', async () => {
+    renderPage()
+    const card = (await screen.findByText('Új munkahely első hete')).closest('.card') as HTMLElement
+    await userEvent.click(within(card).getByRole('button', { name: 'Pontosít' }))
+
+    const titleInput = within(card).getByLabelText('Jelölt címe')
+    await userEvent.clear(titleInput)
+    await userEvent.type(titleInput, 'Első hét az új csapatban')
+    await userEvent.click(within(card).getByRole('button', { name: 'Elfogad így' }))
+
+    expect(await screen.findByText(/Bekerült a gráfba/)).toBeInTheDocument()
+    expect(screen.getByText('Első hét az új csapatban')).toBeInTheDocument()
+    expect(screen.queryByText('Új munkahely első hete')).not.toBeInTheDocument()
+  })
 })
 
 describe('KnowledgeListPage (V3.3 evidence link, real mode)', () => {

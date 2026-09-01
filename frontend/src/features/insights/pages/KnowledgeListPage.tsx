@@ -274,13 +274,13 @@ export function KnowledgeListPage() {
           onDecideCandidate={(id, decision, refinedText) => decide(id, decision, refinedText)}
           pendingLifeEvents={pendingLifeEvents}
           acceptedEvents={acceptedEvents}
-          onAcceptLifeEvent={(c) =>
+          onAcceptLifeEvent={(c, refined) =>
             setAcceptedEvents((prev) => [
               ...prev,
-              { id: c.id, kind: c.kind, title: c.title, edgeCount: c.proposedEdgeCount },
+              { id: c.id, kind: c.kind, title: refined?.title ?? c.title, edgeCount: c.proposedEdgeCount },
             ])
           }
-          onDecideLifeEvent={(id, decision) => decideLifeEvent(id, decision)}
+          onDecideLifeEvent={(id, decision, refined) => decideLifeEvent(id, decision, refined)}
           facts={facts}
           buckets={buckets}
           kindCount={GRAPH_KIND_GROUPS.length}

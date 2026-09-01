@@ -28,8 +28,8 @@ export function KnowledgeBaseView(props: {
   onDecideCandidate: (id: string, decision: FactDecision, refinedText?: string) => void
   pendingLifeEvents: LifeEventCandidate[]
   acceptedEvents: AcceptedEvent[]
-  onAcceptLifeEvent: (candidate: LifeEventCandidate) => void
-  onDecideLifeEvent: (id: string, decision: LifeEventDecision) => void
+  onAcceptLifeEvent: (candidate: LifeEventCandidate, refined?: { title?: string; summary?: string }) => void
+  onDecideLifeEvent: (id: string, decision: LifeEventDecision, refined?: { title?: string; summary?: string }) => void
   facts: KnowledgeFact[]
   buckets: { inPrompt: KnowledgeFact[]; waiting: KnowledgeFact[]; off: KnowledgeFact[] }
   kindCount: number
@@ -87,9 +87,9 @@ export function KnowledgeBaseView(props: {
               <LifeEventCandidateCard
                 key={c.id}
                 candidate={c}
-                onDecide={(decision) => {
-                  if (decision === 'accept') onAcceptLifeEvent(c)
-                  onDecideLifeEvent(c.id, decision)
+                onDecide={(decision, refined) => {
+                  if (decision === 'accept') onAcceptLifeEvent(c, refined)
+                  onDecideLifeEvent(c.id, decision, refined)
                 }}
               />
             ))}
