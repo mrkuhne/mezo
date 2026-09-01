@@ -39,11 +39,13 @@ export const facts: KnowledgeFact[] = [
 /** V1.2 mock candidates — the pending L2 confirm inbox of the demo. `c3` (mezo-ms9a) carries a
  *  `conflictsWithFactId` against `f4`'s established Tue/Thu/Sat schedule — the demo's one
  *  contradiction, showing what the L2 inbox looks like when a new candidate disagrees with
- *  something already learned. */
+ *  something already learned. The candidate text names the SAME schedule axis f4 does (weekly
+ *  volleyball cadence), just a different value — that's what makes it a genuine contradiction
+ *  rather than two unrelated facts. */
 export const candidateSeed: FactCandidate[] = [
   { id: 'c1', text: 'Edzés előtt 2-3 órával eszik a legszívesebben', category: 'fuel', conflictsWithFactId: null },
   { id: 'c2', text: 'Vasárnap esténként rendszeresen rövidebb az alvás', category: 'health', conflictsWithFactId: null },
-  { id: 'c3', text: 'Esti edzésre váltottál — 18:00 után jársz.', category: 'train', conflictsWithFactId: 'f4' },
+  { id: 'c3', text: 'A röplabdát heti egy alkalomra ritkítod — csak szombaton jársz.', category: 'train', conflictsWithFactId: 'f4' },
 ]
 
 export const edges: KnowledgeEdge[] = [
