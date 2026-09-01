@@ -149,7 +149,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-08-31, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-01, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -170,10 +170,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`,
     `ConferenceTranscriptEnvelope`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
     `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
-    `LoggingGapDetector`, `MacroAdherenceDetector`, `MesoAdherenceDetector`, `NiggleMapDetector`,
-    `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `ProgressionAdherenceDetector`,
-    `ProteinTrainingMismatchDetector`, `RirCalibrationDetector`, `RoundTwoWindow`, `RunDetectorKeysEnvelope`,
-    `RunExpertKeysEnvelope`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `UnderLoggingDetector`
+    `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`, `MedCycleCovarianceDetector`,
+    `MesoAdherenceDetector`, `NiggleMapDetector`, `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`,
+    `ProgressionAdherenceDetector`, `ProteinTrainingMismatchDetector`, `RirCalibrationDetector`, `RoundTwoWindow`,
+    `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
+    `StackSkipPatternDetector`, `UnderLoggingDetector`
 - **Contract** `api/feature/character/character.yml` — 10 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -203,7 +204,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### companion
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-08-31, shipped) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-01, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-08-31, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-08-31, mixed)

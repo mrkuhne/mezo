@@ -7,7 +7,7 @@
 //
 // CONTENT DEVIATES FROM THE PROTOTYPE'S DATA where the prototype's design-time guess about a
 // detector's owning expert doesn't match what the real, shipped code actually does — this page
-// lists the 13 REAL detectors (`backend/.../feature/character/detector/*Detector.java`,
+// lists the 20 REAL detectors (`backend/.../feature/character/detector/*Detector.java`,
 // `DetectorRegistry`-discovered), and the "who" here is each detector's REAL
 // `DetectorSignal(key, who, ...)` expert argument, not the prototype's `DETECTOR_CATALOG.who`.
 // Two of the original five differ: `logging-gap` is really owned by `drill` (not the
@@ -23,6 +23,14 @@
 // `backend/.../feature/character/detector/{RirCalibration,NiggleMap,SportInterference,
 // MesoAdherence,ProgressionAdherence,HrRecoveryTrend,SleepPerformanceChain,AvoidancePattern}
 // Detector.java`'s own `DetectorSignal(key(), who, ...)` calls.
+//
+// The seven round-2 detectors (mezo-1gim.15, Task 6) — comfort-eating, macro-adherence,
+// hydration-consistency, protein-training-mismatch (all `taplalkozo`), late-eating-pattern
+// (`szomnologus`), stack-skip-pattern (`drill`), med-cycle-covariance (`doki`) — are appended
+// below in that order, `who` verified the same way against
+// `backend/.../feature/character/detector/{ComfortEating,MacroAdherence,HydrationConsistency,
+// ProteinTrainingMismatch,LateEatingPattern,StackSkipPattern,MedCycleCovariance}Detector.java`'s
+// own `DetectorSignal(key(), who, ...)` calls. The catalog is now 20 detectors.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
@@ -36,7 +44,7 @@ interface DetectorEntry {
   line: string
 }
 
-/** The 13 real detectors — key/who verified against the detector source (see header comment),
+/** The 20 real detectors — key/who verified against the detector source (see header comment),
  *  one-line semantics paraphrasing what each `detect()` actually checks. */
 export const DETECTORS: DetectorEntry[] = [
   { key: 'logging-gap', who: 'drill', line: 'N napja nincs étkezés logolva (2+ egymást követő nap, 14 napos honest cap) — hiányzó kaja-napló jelzés.' },
@@ -52,6 +60,13 @@ export const DETECTORS: DetectorEntry[] = [
   { key: 'hr-recovery-trend', who: 'doki', line: '8 hetes pulzus-megnyugvás trend — csak sávváltáskor szólal meg.' },
   { key: 'sleep-performance-chain', who: 'szomnologus', line: 'Rossz alvás utáni napokon visszaesik-e az edzés-teljesítmény.' },
   { key: 'avoidance-pattern', who: 'drill', line: 'Ugyanannál a gyakorlatnál ismétlődő szett-kihagyások.' },
+  { key: 'comfort-eating', who: 'taplalkozo', line: 'Rossz közérzetű napokon feljebb megy-e a feldolgozott étel aránya — saját átlaghoz mérve, 8 hét.' },
+  { key: 'macro-adherence', who: 'taplalkozo', line: 'A kalória- vagy fehérje-cél szisztematikus alul-/túllövése a valós napi célhoz képest.' },
+  { key: 'hydration-consistency', who: 'taplalkozo', line: 'A napi vízcélt teljesítő napok aránya — csak sávváltáskor szólal meg.' },
+  { key: 'protein-training-mismatch', who: 'taplalkozo', line: 'A fehérje pont az edzésnapokon marad-e el, a pihenőnapokhoz képest.' },
+  { key: 'late-eating-pattern', who: 'szomnologus', line: 'Késő esti nagyobb étkezés után rosszabb-e az azt követő éjszaka.' },
+  { key: 'stack-skip-pattern', who: 'drill', line: 'Ismétlődő kiegészítő-kihagyások — a pihenőnapi elhagyás nem számít kihagyásnak.' },
+  { key: 'med-cycle-covariance', who: 'doki', line: 'A check-in skálák ciklusnap szerinti eltérése a ciklus átlagától — érzékeny, leíró jel.' },
 ]
 
 const PRINCIPLE = 'A kód csak észlel — az értelmezés mindig az adott szakértő LLM-hívása. '

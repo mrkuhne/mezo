@@ -1,4 +1,4 @@
-// DetektorokPage — the 13 real detectors, one line each (mezo-1gim.14/.15, Task 5).
+// DetektorokPage — the 20 real detectors, one line each (mezo-1gim.14/.15, Tasks 5-6).
 // Mode-agnostic via the KarakterHubPage.test.tsx hook-override idiom (only
 // useCharacterExperts is read). Expected keys/counts are derived from the page's own
 // DETECTORS array (imported directly) rather than pinned as literals, so a future round's
@@ -28,10 +28,10 @@ beforeEach(() => {
 })
 
 describe('DetektorokPage', () => {
-  test('renders all 13 real detectors with their key chip + owning expert name', () => {
+  test('renders all real detectors with their key chip + owning expert name', () => {
     render(<DetektorokPage />)
     expect(screen.getByText('Detektorok')).toBeInTheDocument()
-    expect(DETECTORS.length).toBe(13)
+    expect(DETECTORS.length).toBe(20)
     for (const d of DETECTORS) {
       expect(screen.getByText(d.key)).toBeInTheDocument()
     }

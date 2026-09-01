@@ -135,13 +135,14 @@ test('/me/karakter/gepterem/adatforrasok is the Bekötve|Tervezett data-source i
 })
 
 test('/me/karakter/gepterem/adatforrasok/kor/:n opens one MINDENT-be round\'s mini-page (mezo-1gim.14, Task 5)', async () => {
-  // Round 1 ("Edzés & test") landed for real via mezo-1gim.15 and is no longer in
-  // INVENTORY_ROUNDS — round 2 ("Fuel & ciklus") is the lowest-numbered round left.
-  renderApp('/me/karakter/gepterem/adatforrasok/kor/2')
-  expect(await screen.findByText('2. KÖR')).toBeInTheDocument()
+  // Rounds 1 ("Edzés & test") and 2 ("Fuel & ciklus") landed for real via mezo-1gim.15 and are
+  // no longer in INVENTORY_ROUNDS — round 3 ("Psziché & viselkedés-meta") is the lowest-numbered
+  // round left.
+  renderApp('/me/karakter/gepterem/adatforrasok/kor/3')
+  expect(await screen.findByText('3. KÖR')).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem/detektorok lists the 13 real detectors (mezo-1gim.14/.15, Task 5)', async () => {
+test('/me/karakter/gepterem/detektorok lists the 20 real detectors (mezo-1gim.14/.15, Tasks 5-6)', async () => {
   renderApp('/me/karakter/gepterem/detektorok')
   expect(await screen.findByText('a ma aktív katalógus, egy mondatban')).toBeInTheDocument()
 })
@@ -154,8 +155,8 @@ test('Adatforrások\' Tervezett segment survives a kör round-trip (fix round 1,
   renderApp('/me/karakter/gepterem/adatforrasok')
   await userEvent.click(await screen.findByRole('tab', { name: 'Tervezett' }))
   expect(screen.getByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
-  await userEvent.click(screen.getByText('Fuel & ciklus'))
-  expect(await screen.findByText('2. KÖR')).toBeInTheDocument()
+  await userEvent.click(screen.getByText('Psziché & viselkedés-meta'))
+  expect(await screen.findByText('3. KÖR')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
 })
