@@ -1,0 +1,525 @@
+<div class="wrap">
+  <p class="eyebrow">Mezo · Design 2.0 · Fuel</p>
+  <h1>Receptműhely</h1>
+  <p class="lede">AI-vezérelt recept-builder a Fuel alá: <strong>a képernyő maga az élő receptvászon</strong>,
+    alul dokkolt chat-sávval. Kamrából és/vagy szabad szövegből indul; minden AI-kör
+    <strong>patch-ként</strong> érkezik (sosem regenerál nulláról), a makrókat pedig
+    <strong>mindig a vászon számolja</strong> a kamra-tényekből — az LLM csak hozzávalót és mennyiséget javasol.</p>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="screen play" id="screen">
+        <div class="isl"></div>
+        <div class="p-status"><span>18:42</span><span class="mut">⌁ 5G · 81%</span></div>
+
+        <div class="whead rise" style="--d:0.05s">
+          <button class="hdisc" aria-label="Vissza" id="backBtn">‹</button>
+          <div class="ttl">
+            <div class="eb">Fuel · Receptek</div>
+            <div class="nm" style="display:flex;align-items:center;gap:5px"><svg width="16" height="16" viewBox="0 0 100 100" style="flex:none"><use href="#i-muhely"/></svg>Receptműhely</div>
+          </div>
+          <div class="horb"><svg width="32" height="32" viewBox="0 0 100 100"><use href="#s-orb"/></svg></div>
+        </div>
+
+        <div class="canvas" id="canvas"></div>
+
+        <div class="savebar" id="savebar" hidden>
+          <button class="savebtn" id="savebtn">Mentés a Receptkönyvbe</button>
+        </div>
+
+        <div class="dock" id="dock">
+          <div class="presets" id="presets"></div>
+          <button class="lastmsg" id="lastmsg" hidden>
+            <svg width="18" height="18" viewBox="0 0 100 100" style="flex:none"><use href="#s-orb"/></svg>
+            <span class="tx" id="lastmsgTx"></span>
+            <span class="chev">▲</span>
+          </button>
+          <div class="ctxchips" id="ctxchips" hidden></div>
+          <div class="composer" id="composer">
+            <button class="kamrabtn" id="kamraBtn" aria-label="Kamra">
+              <svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-polc"/></svg>
+              <span class="bdg" id="kamraBdg" hidden>0</span>
+            </button>
+            <div class="cfield">
+              <input type="text" id="cin" placeholder="Mit főzzünk? Mondd el szabadon…" aria-label="Üzenet Mezónak">
+              <button class="cbtn send" id="sendBtn" aria-label="Küldés"><span style="color:#FFF;font-size:12px">↑</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="homebar"></div>
+
+        <div class="chatsheet" id="chatsheet">
+          <div class="scrim" id="chatScrim"></div>
+          <div class="chatpanel">
+            <div class="grabber"></div>
+            <div class="chhead">
+              <span class="eb">Műhely-beszélgetés</span>
+              <button class="hdisc x" id="chatClose" aria-label="Bezárás">✕</button>
+            </div>
+            <div class="thread" id="thread"></div>
+            <div id="sheetComposerSlot" style="flex:none;padding:0 12px"></div>
+          </div>
+        </div>
+
+        <div class="ksheet" id="ksheet">
+          <div class="scrim" id="kScrim"></div>
+          <div class="kpanel">
+            <div class="grabber"></div>
+            <div class="khero">
+              <svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-polc"/></svg>
+              <div><div class="t">Kamra</div><div class="s">jelöld, amiből főznél — a Műhely ezekből indul ki</div></div>
+            </div>
+            <div class="klist" id="klist"></div>
+            <div class="kfoot"><button class="kdone" id="kDone">Hozzáadás</button></div>
+          </div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Mit mutat ez a prototípus</h2>
+        <ul>
+          <li><strong>Vászon-first hibrid:</strong> az élő receptkártya a főfelület — név, makró-összkép
+            kcal-breakdown csíkkal, adag-stepper, hozzávaló-sorok, elkészítés —, a chat alul dokkol
+            és felhúzható teljes beszélgetéssé.</li>
+          <li><strong>Patch-szemantika:</strong> az AI-válasz prózai indoklás + strukturált vászon-patch;
+            a változott sorok arany kiemeléssel villannak, a nem érintett sorok (és a kézi
+            szerkesztéseid) érintetlenek maradnak.</li>
+          <li><strong>Determinisztikus makrók:</strong> minden szám a kamra-tényekből számolódik
+            (lineContribution ≡ RecipeMapper); a kamra-fedés nélküli AI-sor BECSLÉS-taget kap.</li>
+          <li><strong>Cél-presetek chipként:</strong> High protein · Pre/Post workout · Lefekvés előtt ·
+            Reggeli — AI-instrukció, és ahol létező MealRole (pre/post), mentéskor a recept
+            <code>role</code> mezőjébe is beíródik.</li>
+          <li><strong>Kamra mint belépő:</strong> a 🏺 gombbal jelölt itemek kontextus-chipként mennek
+            a következő körrel.</li>
+          <li><strong>Adag-skálázás:</strong> a stepper arányosan skálázza a mennyiségeket; a
+            makró-összkép per-adag ↔ egész nézetben vált.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Demó-forgatókönyv</h2>
+        <ol>
+          <li>Nyisd a kamrát (🏺), jelölj 2–3 itemet, majd küldd el a javasolt nyitó üzenetet
+            (vagy írj bármit).</li>
+          <li>Az első kör felépíti a receptet — figyeld a kiemelést.</li>
+          <li>Üss rá egy presetre (pl. <strong>High protein</strong>) → célzott patch érkezik.</li>
+          <li>Állíts kézzel mennyiséget (± vagy beírás) és adagszámot — a makrók élőben követik.</li>
+          <li>Mentés a Receptkönyvbe — pre/post workout presetnél a szerep is mentődik.</li>
+        </ol>
+      </div>
+      <p class="note">Őszinteség-szabályok: a BECSLÉS-sor a MealComposer idiómája; szín sosem büntet
+        (piros tiltva); az AI sosem mond makrót — ha nincs kamra-tény és becslés sincs, a cella
+        őszinte kötőjelet mutat. A hiba-út az F7.5 retry-bubi mintát követi.</p>
+      <div class="demobtns">
+        <button class="demobtn" id="demoReset">↺ Újraindítás</button>
+        <button class="demobtn" id="demoErr">⚠ Hiba-bubi demó</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+  (function () {
+    'use strict';
+    var screen = document.getElementById('screen');
+    var canvas = document.getElementById('canvas');
+    var thread = document.getElementById('thread');
+    var toastEl = document.getElementById('toast');
+
+    function icon(id, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 100 100"><use href="#' + id + '"/></svg>'; }
+    function fmt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+    function toast(t) { toastEl.textContent = t; toastEl.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(function () { toastEl.classList.remove('show'); }, 2200); }
+
+    /* ---------- kamra-tények (per 100 g) ---------- */
+    var KAMRA = [
+      { id: 'csirke', nm: 'Csirkemell', per: { k: 110, p: 23, c: 0, f: 2 } },
+      { id: 'rizs', nm: 'Basmati rizs (főtt)', per: { k: 130, p: 2.7, c: 28, f: 0.3 } },
+      { id: 'gjog', nm: 'Görög joghurt 0%', per: { k: 57, p: 10, c: 4, f: 0.2 } },
+      { id: 'turo', nm: 'Félzsíros túró', per: { k: 98, p: 16, c: 4, f: 2 } },
+      { id: 'whey', nm: 'Whey vanília', per: { k: 380, p: 78, c: 6, f: 5 } },
+      { id: 'zab', nm: 'Zabpehely', per: { k: 370, p: 13, c: 59, f: 7 } },
+      { id: 'olaj', nm: 'Olívaolaj', per: { k: 884, p: 0, c: 0, f: 100 } },
+      { id: 'tojas', nm: 'Tojás', per: { k: 143, p: 13, c: 1, f: 10 } }
+    ];
+    function kamraBy(id) { for (var i = 0; i < KAMRA.length; i++) if (KAMRA[i].id === id) return KAMRA[i]; return null; }
+
+    /* ---------- állapot ---------- */
+    var R = null;              /* a recept a vásznon */
+    var mode = 'adag';         /* 'adag' | 'egesz' */
+    var goal = null;           /* preset kulcs */
+    var picks = [];            /* kamra-kijelölés (chipek) */
+    var msgs = [];             /* {who:'a'|'u'|'e', tx, patch} */
+    var busy = false, saved = false, dirty = false;
+    var errNext = false, genericIdx = 0;
+
+    var PRESETS = [
+      { key: 'hp', lbl: '⚡ High protein' },
+      { key: 'pre', lbl: 'Pre-workout' },
+      { key: 'post', lbl: 'Post-workout' },
+      { key: 'bed', lbl: 'Lefekvés előtt' },
+      { key: 'reggeli', lbl: 'Reggeli' }
+    ];
+    var GOAL_LBL = { hp: 'High protein', pre: 'Pre-workout', post: 'Post-workout', bed: 'Lefekvés előtt', reggeli: 'Reggeli' };
+    var ROLE = { pre: 'PRE_WORKOUT', post: 'POST_WORKOUT' };
+
+    /* ---------- makró-számítás (lineContribution ≡ RecipeMapper) ---------- */
+    function contrib(ing) {
+      if (ing.est) return ing.abs;                       /* BECSLÉS: abszolút becsült érték */
+      if (!ing.per) return null;                          /* nincs tény → őszinte — */
+      var f = ing.amt / 100;
+      return { k: ing.per.k * f, p: ing.per.p * f, c: ing.per.c * f, f: ing.per.f * f };
+    }
+    function totals() {
+      var t = { k: 0, p: 0, c: 0, f: 0 };
+      R.ings.forEach(function (g) { var c = contrib(g); if (c) { t.k += c.k; t.p += c.p; t.c += c.c; t.f += c.f; } });
+      return t;
+    }
+
+    /* ---------- vászon render ---------- */
+    function render(diffIds) {
+      diffIds = diffIds || [];
+      if (!R) {
+        canvas.innerHTML =
+          '<div class="ghostcard rise" style="--d:0.15s">' +
+          '<div class="gich">' + icon('i-muhely', 34) + '</div>' +
+          '<div class="gt">A recepted itt épül majd.</div>' +
+          '<div class="gs">Mondd el lent, mit főznél — vagy nyisd a kamrát és indulj abból, ami itthon van.</div>' +
+          '</div>';
+        document.getElementById('savebar').hidden = true;
+        return;
+      }
+      var t = totals();
+      var div = mode === 'adag' ? R.servings : 1;
+      var kP = t.p * 4, kC = t.c * 4, kF = t.f * 9, kSum = Math.max(kP + kC + kF, 1);
+      var h = '';
+      h += '<div class="namerow"><input class="rname" id="rname" value="' + R.name + '" aria-label="A recept neve">' +
+        '<span class="goalchip" id="goalchip"' + (goal ? '' : ' hidden') + '>✨ ' + (goal ? GOAL_LBL[goal] : '') + '</span></div>';
+      h += '<div class="macrocard"><div class="mtop">' +
+        '<span class="mkcal" id="mkcal">' + fmt(t.k / div) + '</span><span class="munit">kcal' + (mode === 'adag' ? ' / adag' : ' · egész') + '</span>' +
+        '<div class="servtog"><button id="togA" class="' + (mode === 'adag' ? 'on' : '') + '">/ adag</button>' +
+        '<button id="togE" class="' + (mode === 'egesz' ? 'on' : '') + '">egész</button></div></div>' +
+        '<div class="mcells">' +
+        '<div class="mcell" style="--cw:#FBE9E2"><div class="v">' + fmt(t.p / div) + ' g</div><div class="l">Fehérje</div></div>' +
+        '<div class="mcell" style="--cw:#F8EFD8"><div class="v">' + fmt(t.c / div) + ' g</div><div class="l">Szénhidrát</div></div>' +
+        '<div class="mcell" style="--cw:#EEEAF8"><div class="v">' + fmt(t.f / div) + ' g</div><div class="l">Zsír</div></div></div>' +
+        '<div class="kbar"><i class="kp" style="width:' + (kP / kSum * 100) + '%"></i><i class="kc" style="width:' + (kC / kSum * 100) + '%"></i><i class="kf" style="width:' + (kF / kSum * 100) + '%"></i></div>' +
+        '<div class="klegend"><span><span class="sw" style="background:#E2795B"></span>P <b>' + Math.round(kP / kSum * 100) + '%</b></span>' +
+        '<span><span class="sw" style="background:#DFB55C"></span>C <b>' + Math.round(kC / kSum * 100) + '%</b></span>' +
+        '<span><span class="sw" style="background:#A99BD9"></span>F <b>' + Math.round(kF / kSum * 100) + '%</b></span></div></div>';
+      h += '<div class="servrow"><div><div class="lbl">Adagok</div><div class="sub">a mennyiségek arányosan skálázódnak</div></div>' +
+        '<div class="step"><button class="stepbtn" id="servM"' + (R.servings <= 1 ? ' disabled' : '') + '>−</button>' +
+        '<span class="stepv">' + R.servings + '</span><button class="stepbtn" id="servP"' + (R.servings >= 8 ? ' disabled' : '') + '>＋</button></div></div>';
+      h += '<div class="sect">Hozzávalók <span class="n">· ' + R.ings.length + '</span></div>';
+      R.ings.forEach(function (g) {
+        var c = contrib(g);
+        var d = diffIds.indexOf(g.id) >= 0 ? ' diff' : '';
+        h += '<div class="ing' + d + '" data-id="' + g.id + '">' +
+          '<div class="idisc" style="--iw:' + ((g.est || g.estPer) ? '#F6ECD3' : '#E9EFDF') + '">' + g.nm.charAt(0) + '</div>' +
+          '<div class="imain"><div class="nm">' + g.nm + '</div><div class="src">' +
+          ((g.est || g.estPer) ? '<span class="tagb">✨ Becslés</span>' : '<span class="tagk">Kamra</span>') + '</div></div>' +
+          (g.est
+            ? '<div class="iamt"><span style="font-size:8px;color:#A2958A">ízlés szerint</span></div>'
+            : '<div class="iamt"><button class="ibtn" data-act="minus" data-id="' + g.id + '">−</button>' +
+              '<input value="' + g.amt + '" inputmode="numeric" data-id="' + g.id + '" aria-label="' + g.nm + ' mennyiség">' +
+              '<span class="u">' + g.unit + '</span>' +
+              '<button class="ibtn" data-act="plus" data-id="' + g.id + '">＋</button></div>') +
+          '<div class="ikc">' + (c ? '<div class="v">' + fmt(c.k / div) + '</div><div class="l">kcal</div>' : '<div class="v dash">—</div><div class="l">nincs adat</div>') + '</div>' +
+          '</div>';
+      });
+      h += '<div class="stepscard' + (R.stepsOpen ? ' open' : '') + '" id="stepscard">' +
+        '<button class="stepshead" id="stepstoggle">Elkészítés <span class="n">· ' + R.steps.length + ' lépés</span><span class="chev">▾</span></button>' +
+        '<div class="stepsbody">' + R.steps.map(function (s, i) { return '<div class="stp"><span class="no">' + (i + 1) + '</span><span>' + s + '</span></div>'; }).join('') + '</div></div>';
+      h += '<div style="height:4px"></div>';
+      canvas.innerHTML = h;
+
+      document.getElementById('savebar').hidden = false;
+      var sb = document.getElementById('savebtn');
+      if (saved && !dirty) { sb.classList.add('done'); sb.textContent = '✓ Elmentve a Receptkönyvbe'; }
+      else { sb.classList.remove('done'); sb.textContent = saved ? 'Változások mentése' : 'Mentés a Receptkönyvbe'; }
+
+      /* vászon-interakciók */
+      document.getElementById('togA').addEventListener('click', function () { mode = 'adag'; render(); });
+      document.getElementById('togE').addEventListener('click', function () { mode = 'egesz'; render(); });
+      document.getElementById('servM').addEventListener('click', function () { scaleServ(R.servings - 1); });
+      document.getElementById('servP').addEventListener('click', function () { scaleServ(R.servings + 1); });
+      document.getElementById('stepstoggle').addEventListener('click', function () { R.stepsOpen = !R.stepsOpen; document.getElementById('stepscard').classList.toggle('open', R.stepsOpen); });
+      document.getElementById('rname').addEventListener('change', function (e) { R.name = e.target.value; markDirty(); });
+      canvas.querySelectorAll('.ibtn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var g = ingBy(b.dataset.id); if (!g) return;
+          g.amt = Math.max(0, g.amt + (b.dataset.act === 'plus' ? 10 : -10));
+          g.touched = true; markDirty(); render([g.id]);
+        });
+      });
+      canvas.querySelectorAll('.iamt input').forEach(function (inp) {
+        inp.addEventListener('change', function () {
+          var g = ingBy(inp.dataset.id); if (!g) return;
+          var v = parseInt(inp.value, 10);
+          if (!isNaN(v) && v >= 0) { g.amt = v; g.touched = true; markDirty(); }
+          render([g ? g.id : null]);
+        });
+      });
+    }
+    function ingBy(id) { if (!R) return null; for (var i = 0; i < R.ings.length; i++) if (R.ings[i].id === id) return R.ings[i]; return null; }
+    function scaleServ(n) {
+      var f = n / R.servings;
+      R.ings.forEach(function (g) {
+        if (g.est) { g.abs = { k: g.abs.k * f, p: g.abs.p * f, c: g.abs.c * f, f: g.abs.f * f }; }
+        else { g.amt = Math.max(5, Math.round(g.amt * f / 5) * 5); }
+      });
+      R.servings = n; markDirty(); render();
+    }
+    function markDirty() { if (saved) { dirty = true; } }
+
+    /* ---------- chat render ---------- */
+    var lastmsg = document.getElementById('lastmsg');
+    var lastmsgTx = document.getElementById('lastmsgTx');
+    function renderThread() {
+      var h = '';
+      msgs.forEach(function (m) {
+        if (m.who === 'u') {
+          h += '<div class="msg-u"><div class="bub-u">' + m.tx + '</div><time>' + m.at + '</time></div>';
+        } else if (m.who === 'e') {
+          h += '<div class="msg-a"><div class="bub-err">' + m.tx +
+            '<div class="acts"><button class="retry" data-retry="' + m.retryTx + '">Újra</button><button class="edit" data-edit="' + m.retryTx + '">Szerkesztés</button></div></div></div>';
+        } else {
+          h += '<div class="msg-a"><div class="msgmeta"><span class="eb">Mezo · Műhely</span><time>' + m.at + '</time></div>' +
+            '<div class="bub-a">' + m.tx + (m.patch ? '<div class="patchline">' + icon('ig-spark', 11) + ' ' + m.patch + '</div>' : '') + '</div></div>';
+        }
+      });
+      if (busy) h += '<div class="typing"><i></i><i></i><i></i></div>';
+      thread.innerHTML = h;
+      thread.scrollTop = thread.scrollHeight;
+      thread.querySelectorAll('[data-retry]').forEach(function (b) { b.addEventListener('click', function () { msgs.pop(); send(b.dataset.retry, true); }); });
+      thread.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { msgs.pop(); renderThread(); cin.value = b.dataset.edit; closeChat(); cin.focus(); }); });
+      /* dokkolt előnézet */
+      var lastA = null;
+      for (var i = msgs.length - 1; i >= 0; i--) if (msgs[i].who !== 'u') { lastA = msgs[i]; break; }
+      if (busy) { lastmsg.hidden = false; lastmsgTx.innerHTML = '<b>Mezo dolgozik…</b>'; }
+      else if (lastA) { lastmsg.hidden = false; lastmsgTx.innerHTML = lastA.who === 'e' ? '<b>Nem ment át.</b> Nyisd ki az Újrához.' : lastA.tx; }
+      else lastmsg.hidden = true;
+    }
+
+    /* ---------- AI-körök ---------- */
+    function baseRecipe() {
+      return {
+        name: 'Citromos-joghurtos csirketál', servings: 2, stepsOpen: false,
+        ings: [
+          { id: 'csirke', nm: 'Csirkemell', amt: 300, unit: 'g', per: kamraBy('csirke').per },
+          { id: 'rizs', nm: 'Basmati rizs (főtt)', amt: 250, unit: 'g', per: kamraBy('rizs').per },
+          { id: 'gjog', nm: 'Görög joghurt 0%', amt: 200, unit: 'g', per: kamraBy('gjog').per },
+          { id: 'olaj', nm: 'Olívaolaj', amt: 10, unit: 'g', per: kamraBy('olaj').per },
+          { id: 'citrom', nm: 'Citrom + fűszerek', est: true, abs: { k: 25, p: 0, c: 5, f: 0 } }
+        ],
+        steps: [
+          'A csirkét kockázd, sózd, majd citromlével és a fűszerekkel pácold 10 percig.',
+          'Az olívaolajon süsd 6–8 perc alatt aranybarnára.',
+          'A joghurtot keverd el a pác maradékával, forgasd össze a csirkével.',
+          'Tálald a rizzsel, a tetejére reszelj citromhéjat.'
+        ]
+      };
+    }
+    function applyBuild() {
+      R = baseRecipe(); saved = false; dirty = false;
+      render(R.ings.map(function (g) { return g.id; }));
+    }
+    var PRESET_ROUNDS = {
+      hp: {
+        tx: 'Toltam a fehérje felé: a csirkét <b>300 → 360 g</b>-ra emeltem, a rizst <b>250 → 200 g</b>-ra vettem, a joghurtot <b>250 g</b>-ra emeltem. Így adagonként <b>~57 g fehérje</b> jön ki, a kcal alig mozdult.',
+        patch: 'Vászon frissítve · 3 sor',
+        fn: function () { setAmt('csirke', 360); setAmt('rizs', 200); setAmt('gjog', 250); return ['csirke', 'rizs', 'gjog']; }
+      },
+      pre: {
+        tx: 'Pre-workout irányba vittem: a rizst <b>300 g</b>-ra emeltem a gyorsabb energiáért, az olajat <b>5 g</b>-ra vettem, hogy ne üljön meg edzés előtt. Mentéskor a szerepet is beírom: <b>PRE_WORKOUT</b>.',
+        patch: 'Vászon frissítve · 2 sor',
+        fn: function () { setAmt('rizs', 300); setAmt('olaj', 5); return ['rizs', 'olaj']; }
+      },
+      post: {
+        tx: 'Post-workout verzió: bekevertem <b>30 g whey-t</b> a joghurtba és <b>+50 g rizst</b> tettem hozzá — gyors szénhidrát + fehérje a regenerációhoz. Mentéskor a szerep: <b>POST_WORKOUT</b>.',
+        patch: 'Vászon frissítve · +1 hozzávaló, 1 sor',
+        fn: function () {
+          R.ings.splice(3, 0, { id: 'whey', nm: 'Whey vanília', amt: 30, unit: 'g', per: kamraBy('whey').per });
+          setAmt('rizs', ingBy('rizs').amt + 50); return ['whey', 'rizs'];
+        }
+      },
+      bed: {
+        tx: 'Lefekvés előttire hangoltam: a rizst kivettem, helyette <b>150 g túró</b> ment bele — a kazein lassan szívódik, éjszakára pont jó. A kcal így jócskán lejjebb jött.',
+        patch: 'Vászon frissítve · −1 / +1 hozzávaló',
+        fn: function () {
+          R.ings = R.ings.filter(function (g) { return g.id !== 'rizs'; });
+          R.ings.splice(1, 0, { id: 'turo', nm: 'Félzsíros túró', amt: 150, unit: 'g', per: kamraBy('turo').per });
+          return ['turo'];
+        }
+      },
+      reggeli: {
+        tx: 'Reggeli változat: a rizs helyére <b>50 g zabpehely</b> került, a csirkét <b>200 g</b>-ra vettem — így könnyebb indítás, de marad a magas fehérje.',
+        patch: 'Vászon frissítve · −1 / +1 hozzávaló, 1 sor',
+        fn: function () {
+          R.ings = R.ings.filter(function (g) { return g.id !== 'rizs'; });
+          R.ings.splice(1, 0, { id: 'zab', nm: 'Zabpehely', amt: 50, unit: 'g', per: kamraBy('zab').per });
+          setAmt('csirke', 200); return ['zab', 'csirke'];
+        }
+      }
+    };
+    function setAmt(id, v) { var g = ingBy(id); if (g) g.amt = v; }
+    var GENERIC = [
+      {
+        tx: 'Tettem mellé <b>200 g édesburgonyát</b> — ezt nem találtam a kamrádban, úgyhogy ✨ <b>becsült értékkel</b> számolok (~86 kcal / 100 g). Ha egyszer felveszed a kamrába, a tényadataival pontosítom.',
+        patch: 'Vászon frissítve · +1 hozzávaló (becslés)',
+        fn: function () {
+          if (!ingBy('edesburi')) R.ings.splice(2, 0, { id: 'edesburi', nm: 'Édesburgonya', amt: 200, unit: 'g', per: { k: 86, p: 1.6, c: 20, f: 0.1 }, estPer: true });
+          return ['edesburi'];
+        }
+      },
+      {
+        tx: 'Finomítottam: az olívaolajat <b>a felére vettem</b> — az íz marad, adagonként ~5 g zsírt spórolsz. Ha valamelyik soromat kézzel átírtad, ahhoz nem nyúltam.',
+        patch: 'Vászon frissítve · 1 sor',
+        fn: function () { var g = ingBy('olaj'); if (g) { g.amt = Math.max(5, Math.round(g.amt / 2 / 5) * 5); return ['olaj']; } return []; }
+      },
+      {
+        tx: 'Átírtam az elkészítést: a pácidőt <b>20 percre</b> emeltem és grillserpenyőt javaslok — a makrókhoz nem nyúltam.',
+        patch: 'Elkészítés frissítve',
+        fn: function () { R.steps[0] = 'A csirkét kockázd, sózd, majd citromlével és a fűszerekkel pácold 20 percig.'; R.steps[1] = 'Grillserpenyőben, az olívaolajon süsd 6–8 perc alatt csíkosra.'; return []; }
+      }
+    ];
+    var FALLBACK = 'A demó forgatókönyve itt ér véget 🙂 — a vásznon kézzel bármit állíthatsz, vagy indítsd újra a Műhelyt az oldalsó gombbal.';
+
+    function aiTurn(userTx, presetKey) {
+      busy = true; screen.classList.add('busy'); renderThread();
+      setTimeout(function () {
+        busy = false; screen.classList.remove('busy');
+        var at = '18:4' + Math.min(9, 3 + msgs.length % 7);
+        if (errNext) {
+          errNext = false;
+          msgs.push({ who: 'e', tx: 'Nem sikerült elérni a Műhelyt — a hálózat megszakadt. Az üzeneted megvan, semmi nem veszett el.', retryTx: userTx });
+          renderThread(); return;
+        }
+        if (!R) {
+          applyBuild();
+          var g = goal ? ' A célod (<b>' + GOAL_LBL[goal] + '</b>) szerint hangoltam.' : '';
+          msgs.push({ who: 'a', at: at, tx: 'Összeraktam egy első verziót abból, ami itthon van: <b>citromos-joghurtos csirketál</b>, 2 adag. Adagonként <b>~441 kcal · 48 g fehérje</b>.' + g + ' Nézd a vásznat — bármelyik sort állíthatod kézzel is.', patch: 'Recept a vásznon · 5 hozzávaló' });
+        } else if (presetKey && PRESET_ROUNDS[presetKey]) {
+          var pr = PRESET_ROUNDS[presetKey];
+          var ids = pr.fn(); markDirty(); render(ids);
+          msgs.push({ who: 'a', at: at, tx: pr.tx, patch: pr.patch });
+        } else if (genericIdx < GENERIC.length) {
+          var gr = GENERIC[genericIdx++];
+          var ids2 = gr.fn(); markDirty(); render(ids2);
+          msgs.push({ who: 'a', at: at, tx: gr.tx, patch: gr.patch });
+        } else {
+          msgs.push({ who: 'a', at: at, tx: FALLBACK });
+        }
+        renderThread();
+      }, 1400);
+    }
+
+    /* ---------- küldés ---------- */
+    var cin = document.getElementById('cin');
+    function send(tx, isRetry) {
+      tx = (tx || '').trim();
+      if (!tx && !picks.length) return;
+      var full = tx || 'Ebből főzzünk valamit:';
+      if (picks.length && !isRetry) full += ' <span style="opacity:0.75">🏺 ' + picks.map(function (p) { return kamraBy(p).nm; }).join(' · ') + '</span>';
+      msgs.push({ who: 'u', tx: full, at: '18:4' + Math.min(9, 2 + msgs.length % 7) });
+      cin.value = ''; picks = []; renderPicks();
+      renderThread();
+      aiTurn(full, null);
+    }
+    document.getElementById('sendBtn').addEventListener('click', function () { send(cin.value || defaultSuggestion()); });
+    cin.addEventListener('keydown', function (e) { if (e.key === 'Enter') send(cin.value || defaultSuggestion()); });
+    function defaultSuggestion() { return R ? '' : 'Valami magas fehérjés vacsora, ami gyorsan megvan'; }
+
+    /* ---------- presetek ---------- */
+    var presetsEl = document.getElementById('presets');
+    function renderPresets() {
+      presetsEl.innerHTML = PRESETS.map(function (p) {
+        return '<button class="pchip' + (goal === p.key ? ' on' : '') + '" data-k="' + p.key + '">' + p.lbl + '</button>';
+      }).join('');
+      presetsEl.querySelectorAll('.pchip').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var k = b.dataset.k;
+          goal = goal === k ? null : k;
+          renderPresets();
+          if (!goal) { if (R) render(); return; }
+          if (!R) { toast('Cél beállítva — az első körben ezt veszem alapul'); return; }
+          msgs.push({ who: 'u', tx: 'Cél: ' + GOAL_LBL[goal], at: '18:4' + Math.min(9, 2 + msgs.length % 7) });
+          renderThread();
+          aiTurn('Cél: ' + GOAL_LBL[goal], goal);
+        });
+      });
+    }
+
+    /* ---------- kamra-sheet ---------- */
+    var ksheet = document.getElementById('ksheet');
+    var klist = document.getElementById('klist');
+    var ksel = [];
+    function openKamra() {
+      ksel = picks.slice();
+      klist.innerHTML = KAMRA.map(function (it) {
+        return '<button class="krow' + (ksel.indexOf(it.id) >= 0 ? ' on' : '') + '" data-id="' + it.id + '">' +
+          '<span class="nm">' + it.nm + '</span><span class="kc">' + it.per.k + ' kcal / 100 g</span><span class="tick">✓</span></button>';
+      }).join('');
+      klist.querySelectorAll('.krow').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var id = b.dataset.id, i = ksel.indexOf(id);
+          if (i >= 0) ksel.splice(i, 1); else ksel.push(id);
+          b.classList.toggle('on', i < 0);
+          document.getElementById('kDone').textContent = ksel.length ? 'Hozzáadás (' + ksel.length + ')' : 'Hozzáadás';
+        });
+      });
+      document.getElementById('kDone').textContent = ksel.length ? 'Hozzáadás (' + ksel.length + ')' : 'Hozzáadás';
+      ksheet.classList.add('open');
+    }
+    function closeKamra() { ksheet.classList.remove('open'); }
+    document.getElementById('kamraBtn').addEventListener('click', openKamra);
+    document.getElementById('kScrim').addEventListener('click', closeKamra);
+    document.getElementById('kDone').addEventListener('click', function () { picks = ksel.slice(); renderPicks(); closeKamra(); });
+    function renderPicks() {
+      var bdg = document.getElementById('kamraBdg');
+      bdg.hidden = !picks.length; bdg.textContent = picks.length;
+      var c = document.getElementById('ctxchips');
+      c.hidden = !picks.length;
+      c.innerHTML = picks.map(function (p) {
+        return '<span class="ctxchip">' + kamraBy(p).nm + '<button data-id="' + p + '" aria-label="Eltávolítás">✕</button></span>';
+      }).join('');
+      c.querySelectorAll('button').forEach(function (b) {
+        b.addEventListener('click', function () { picks = picks.filter(function (x) { return x !== b.dataset.id; }); renderPicks(); });
+      });
+    }
+
+    /* ---------- chat-sheet nyit/zár ---------- */
+    var chatsheet = document.getElementById('chatsheet');
+    var composer = document.getElementById('composer');
+    var dock = document.getElementById('dock');
+    function openChat() { chatsheet.classList.add('open'); document.getElementById('sheetComposerSlot').appendChild(composer); renderThread(); }
+    function closeChat() { chatsheet.classList.remove('open'); dock.appendChild(composer); }
+    lastmsg.addEventListener('click', openChat);
+    document.getElementById('chatScrim').addEventListener('click', closeChat);
+    document.getElementById('chatClose').addEventListener('click', closeChat);
+
+    /* ---------- mentés ---------- */
+    document.getElementById('savebtn').addEventListener('click', function () {
+      saved = true; dirty = false; render();
+      var role = goal && ROLE[goal] ? ' · szerep: ' + ROLE[goal] : '';
+      toast('Elmentve a Receptkönyvbe' + role);
+    });
+
+    /* ---------- demó-gombok ---------- */
+    document.getElementById('demoReset').addEventListener('click', function () {
+      R = null; msgs = []; goal = null; picks = []; saved = false; dirty = false; genericIdx = 0; errNext = false; mode = 'adag';
+      renderPresets(); renderPicks(); renderThread(); render(); closeChat(); closeKamra();
+      screen.classList.remove('play'); void screen.offsetWidth; screen.classList.add('play');
+    });
+    document.getElementById('demoErr').addEventListener('click', function () { errNext = true; toast('A következő küldés hibára fut — figyeld a retry-bubit'); });
+    document.getElementById('backBtn').addEventListener('click', function () {
+      document.getElementById('backBtn').animate([{ transform: 'scale(1)' }, { transform: 'scale(0.85)' }, { transform: 'scale(1)' }], { duration: 200 });
+    });
+
+    /* ---------- indulás ---------- */
+    msgs.push({ who: 'a', at: '18:42', tx: 'Szia! Ez itt a <b>Receptműhely</b>. Mondd el szabadon, mit főznél — vagy nyisd ki a kamrát, és abból indulunk, ami itthon van. Cél-chipet is üthetsz be fent.' });
+    renderPresets(); renderPicks(); renderThread(); render();
+  })();
+</script>

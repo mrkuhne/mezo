@@ -193,6 +193,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MEAL_SENTINEL =
             Pattern.compile("\\[fake-meal:(\\{.*})]", Pattern.DOTALL);
 
+    /** Scripted workshop turn (mezo-92pb): {@code [fake-workshop:{json}]} payload returned verbatim. */
+    private static final Pattern WORKSHOP_SENTINEL =
+            Pattern.compile("\\[fake-workshop:(\\{.*})]", Pattern.DOTALL);
+
     /** Scripted recipe breakdown prose (mezo-bw3y): {@code [fake-recipe-fit:{json}]} planted in the
      *  RECIPE NAME (it appears in the prompt's user message). GREEDY — the payload nests objects.
      *  No sentinel -> prompt echo -> unparseable -> the prose service degrades to the deterministic
@@ -719,6 +723,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         Matcher mealCoach = MEAL_COACH_SENTINEL.matcher(userMessage);
         if (mealCoach.find()) {
             return mealCoach.group(1);
+        }
+        // Receptműhely turn (mezo-92pb): sentinel planted in the user message is returned verbatim;
+        // no sentinel -> prompt echo -> unparseable -> 502, as the ITs assert.
+        Matcher workshop = WORKSHOP_SENTINEL.matcher(userMessage);
+        if (workshop.find()) {
+            return workshop.group(1);
         }
         return PREFIX + " system=[" + systemPrompt + "]"
                 + " history=[" + ChatHistory.render(history) + "]"

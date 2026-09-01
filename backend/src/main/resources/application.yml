@@ -140,6 +140,12 @@ mezo:
       - image/webp
     confidence-threshold: 0.6
     max-items: 12
+  recipe-workshop:
+    # Receptműhely AI turn (mezo-92pb) — off: the workshop endpoint is gone; the rest of the
+    # recipe surface (CRUD + breakdown) is unaffected. LLM needs the companion switch too.
+    max-lines: 30
+    max-steps: 20
+    max-history-turns: 20
   pantry-suggestion:
     # Deterministic Kamra swap heuristics (Fuel P6) — binds onto PantrySuggestionProperties
     # Max suggestions surfaced on the Kamra
@@ -184,6 +190,10 @@ mezo:
     # Recipe AI template breakdown prose (mezo-bw3y) — off: GET /api/recipe/{id}/breakdown still
     # serves the deterministic envelope, only summary/detail-prose/improve/fitsFor stay empty.
     recipe-ai-score:
+      enabled: true
+    # Receptműhely AI turn (mezo-92pb) — off: the workshop endpoint is gone; the rest of the
+    # recipe surface (CRUD + breakdown) is unaffected. LLM needs the companion switch too.
+    recipe-workshop:
       enabled: true
     # Meal coach verdicts (mezo-mr4n) — LLM prose (tagline/summary/improve) over the deterministic
     # meal score; needs the companion switch too (the MealCoachLlm adapter bean). Off: the coach
