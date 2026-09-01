@@ -198,6 +198,50 @@ class GraphCandidateApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testDecideGraphCandidate_shouldApplyRefinedTitle_whenAcceptedWithRefinedTitle() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = candidateWithEdgeTo(owner, active, 0.8);
+
+        GraphNodeResponse decided = postForBody("/api/companion/graph/node/" + candidate.getId() + "/decision",
+            Map.of("decision", "accept", "refinedTitle", "Finomított cím"), ownerAuthHeaders(),
+            HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(decided.getTitle()).isEqualTo("Finomított cím");
+        assertThat(nodeRepository.findById(candidate.getId()).orElseThrow().getTitle())
+            .isEqualTo("Finomított cím");
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldApplyRefinedSummary_whenAcceptedWithRefinedSummary() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = candidateWithEdgeTo(owner, active, 0.8);
+
+        GraphNodeResponse decided = postForBody("/api/companion/graph/node/" + candidate.getId() + "/decision",
+            Map.of("decision", "accept", "refinedSummary", "Finomított összegzés"), ownerAuthHeaders(),
+            HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(decided.getSummary()).isEqualTo("Finomított összegzés");
+        assertThat(nodeRepository.findById(candidate.getId()).orElseThrow().getSummary())
+            .isEqualTo("Finomított összegzés");
+    }
+
+    @Test
+    void testDecideGraphCandidate_shouldIgnoreRefinedFields_whenRejected() {
+        UUID owner = ownerId();
+        GraphNodeEntity active = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Aktív minta");
+        GraphNodeEntity candidate = candidateWithEdgeTo(owner, active, 0.8);
+
+        postForBody("/api/companion/graph/node/" + candidate.getId() + "/decision",
+            Map.of("decision", "reject", "refinedTitle", "Nem számít", "refinedSummary", "Ez sem"),
+            ownerAuthHeaders(), HttpStatus.OK, GraphNodeResponse.class);
+
+        assertThat(nodeRepository.findById(candidate.getId())).isEmpty();   // @SQLRestriction hides it
+        assertThat(edgeRepository.findAll()).isEmpty();
+    }
+
+    @Test
     void testDecideGraphCandidate_shouldReturn404_whenNodeIsUnknown() {
         ownerId();
         String body = postForBody("/api/companion/graph/node/" + UUID.randomUUID() + "/decision",
