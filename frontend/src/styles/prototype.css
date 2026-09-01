@@ -5405,7 +5405,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .enh-eb-sky .mz-eyebrow   { color: var(--mz-cell-sky-ink); }
 .enh-eb-coral .mz-eyebrow { color: var(--mz-cell-coral-ink); }
 .enh-eb-rose .mz-eyebrow  { color: var(--mz-cell-rose-ink); }
-.enh-eb-gold .mz-eyebrow  { color: var(--mz-qxp-ink); }
 .enh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
 
 @media (prefers-reduced-motion: reduce) {

@@ -159,6 +159,8 @@ describe('MezoHubPage (mock mode)', () => {
 describe('MezoHubPage (real mode)', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
+    // useCharacterOverview stays mocked (module-level vi.mock above) in real mode too —
+    // real-mode Karakter tile coverage rests on the hook's own tests, not this suite.
     characterStore.overview = MOCK_OVERVIEW_EMPTY
   })
   afterEach(() => vi.unstubAllEnvs())
