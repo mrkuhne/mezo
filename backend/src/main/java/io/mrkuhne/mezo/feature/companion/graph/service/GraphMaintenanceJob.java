@@ -79,7 +79,7 @@ public class GraphMaintenanceJob {
                 try {
                     PersonExtractionResult r = peopleExtractor.extractFor(user.getId(), yesterday);
                     log.info("Person extraction for user {} on {}: {} mention(s) enriched, "
-                            + "{} candidate(s) proposed, {} person node(s) edge-linked",
+                            + "{} candidate(s) proposed, {} person node(s) edge-structuring attempted",
                         user.getId(), yesterday, r.enriched(), r.candidates(), r.edgeLinked());
                 } catch (Exception e) {
                     log.warn("Person extraction failed for user {} on {}", user.getId(), yesterday, e);

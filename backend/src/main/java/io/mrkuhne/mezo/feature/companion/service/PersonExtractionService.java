@@ -33,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
@@ -92,6 +93,13 @@ public class PersonExtractionService {
     private static final int MAX_EDGE_LINKS_PER_NIGHT = 3;
     /** Az él-evidencia forrás-fajtája: a konkrét említés, ami miatt a személy aznap felmerült. */
     private static final String EDGE_EVIDENCE_KIND = "mention";
+    /** Code review fix (mezo-06o0.4): a node.meta jsonb kulcsa, ami azt jelzi, hogy a
+     *  {@link #linkPersonEdges} MÁR megpróbálta strukturálni ezt a node-ot — az érték az a nap
+     *  (ISO dátum), amikor ez történt. Ez zárja be a „legfeljebb egyszer fusson végig" kaput
+     *  akkor is, ha a strukturáló válasza üres vagy minden javaslata a konfidencia-küszöb alatt
+     *  van: egy éltelen kimenet enélkül minden éjjel újra megpróbálná ugyanazt a node-ot,
+     *  kiszorítva a napi sapkából a valódi, még meg sem próbált jelölteket. */
+    static final String META_EDGE_STRUCTURED_ON = "edgeStructuredOn";
 
     private static final Set<String> TONES = Set.of("positive", "neutral", "mixed", "negative");
     private static final Set<String> CONTEXTS = Set.of("munka", "csalad", "baratok", "edzes",
@@ -195,8 +203,14 @@ public class PersonExtractionService {
     }
 
     private int linkPersonEdgesSafely(UUID userId, LocalDate day, List<MentionEntity> dayMentions) {
+        if (dayMentions.isEmpty()) {
+            // Hoisted out of linkPersonEdges (code review fix): an empty day must cost NOTHING,
+            // not even an empty @Transactional round-trip — checking here, before the self-proxy
+            // call, means the transactional method is never even entered.
+            return 0;
+        }
         try {
-            return self.getObject().linkPersonEdges(userId, dayMentions);
+            return self.getObject().linkPersonEdges(userId, day, dayMentions);
         } catch (Exception e) {
             log.warn("Person edge-linking pass failed for {} on {}", userId, day, e);
             return 0;
@@ -205,30 +219,48 @@ public class PersonExtractionService {
 
     /**
      * S5 esemény-él passz (mezo-06o0.4): a nap említett személyei közül azok kapnak
-     * él-strukturálást, akiknek van AKTÍV PERSON node-juk, de még egyetlen élük sincs. A
-     * {@code syncPerson} szándékosan nem hív strukturálót (egy névjavítás nem indokol LLM-hívást),
-     * így ez a passz az egyetlen hely, ahol egy már promótált személy élt kap.
+     * él-strukturálást, akiknek van AKTÍV PERSON node-juk, de még egyszer sem próbálta meg a
+     * strukturáló, és még egyetlen élük sincs. A {@code syncPerson} szándékosan nem hív
+     * strukturálót (egy névjavítás nem indokol LLM-hívást), így ez a passz az egyetlen hely, ahol
+     * egy már promótált személy élt kap.
      *
-     * <p>Az „még nincs éle" kapu az, ami ezt bezárja: egy személy legfeljebb EGYSZER fut végig
-     * rajta, utána örökre kimarad — nincs éjszakánként ismétlődő költség. A napi
-     * {@value #MAX_EDGE_LINKS_PER_NIGHT}-es sapka pedig egy nagy backlog első éjszakáját fogja
-     * vissza.
+     * <p><b>A „legfeljebb egyszer" kapu perzisztens, nem edge-count-alapú (code review fix).</b>
+     * Egy PUSZTA edge-count gate ({@code edgesFrom/edgesTo} üres) nem záródna be egy olyan
+     * személynél, akinek a strukturáló válasza üres volt, vagy minden javaslata a
+     * konfidencia-küszöb alatt maradt — az a személy MINDEN éjjel újra megpróbálná, valahányszor
+     * megemlítik, ami (a) felesleges LLM-költség, és (b) mivel a {@code linked++} a KÍSÉRLETEKET
+     * számolja, egy pár permanensen éltelen személy örökre kiszoríthatná a determinisztikus
+     * dayMentions-sorrend elején állókat a napi {@value #MAX_EDGE_LINKS_PER_NIGHT}-es sapkából.
+     * Ezért a node {@link GraphNodeEntity#getMeta()}-jába egy {@value #META_EDGE_STRUCTURED_ON}
+     * jelzőt írunk MINDEN sikeres futás után (a kimenetétől függetlenül) — a kapu ez ÉS az
+     * edge-count együtt: {@code !hasMarker && edgesFrom.isEmpty() && edgesTo.isEmpty()}.
      *
      * <p>Evidencia: a konkrét említés id-ja ({@code mention}), nem a személy — így az él
      * visszavezethető arra a mondatra, ami miatt megszületett.
      *
-     * <p>IDENT-3: node-onként külön try/catch — egy személy hibája nem viszi el a többiét, és
-     * SOHA nem viszi el a már commitolt gazdagítást (ez a metódus a {@code persistNight} UTÁN,
-     * külön tranzakcióban fut).
+     * <p><b>A hurok izolációja NEM teljes (code review fix, javított javadoc).</b> A {@link
+     * GraphEdgeStructurer} class javadocjának "Transaction shape" bekezdése szerint egy {@link
+     * DataAccessException} szándékosan kiszökik a strukturálóból, hogy a hívó tranzakciója
+     * ténylegesen rollback-only legyen. Mivel ez a metódus EGY {@code @Transactional} a teljes
+     * napi hurok köré, egy ilyen kivétel a Hibernate session-t itt is rollback-only-ra állítja —
+     * a hurok többi tagját tovább próbálni ilyenkor hamis biztonságot adna (mindegyik
+     * {@code UnexpectedRollbackException}-nel bukna), ezért egy {@link DataAccessException}
+     * SZÁNDÉKOSAN kiszökik ebből a metódusból is, a self-proxy hívóján ({@link
+     * #linkPersonEdgesSafely}) át degradálva 0-ra — az egész éjszakai passz feladja, de a fenti
+     * {@code persistNight} már commitolt eredménye (IDENT-3) és maga a hívó tranzakciója
+     * (linkPersonEdgesSafely nem ugyanabban a tranzakcióban fut) érintetlen marad. Minden MÁS
+     * kivétel (pl. egy nem-DB hiba egyetlen node feldolgozásában) node-onként izolált marad —
+     * ilyenkor a hurok folytatódik a következő személlyel.
      *
-     * @return hány személy-node kapott ténylegesen él-strukturálást
+     * @return hány személy-node esetén futott le ténylegesen a strukturálás kísérlete (a kimenettől —
+     *         létrejött-e él vagy sem — függetlenül, lásd fent)
      */
     @Transactional
-    public int linkPersonEdges(UUID userId, List<MentionEntity> dayMentions) {
+    public int linkPersonEdges(UUID userId, LocalDate day, List<MentionEntity> dayMentions) {
         GraphService graph = graphService.getIfAvailable();
         GraphEdgeStructurer structurer = edgeStructurer.getIfAvailable();
-        if (graph == null || structurer == null || dayMentions.isEmpty()) {
-            return 0;   // gráf kikapcsolva, vagy nincs mit nézni
+        if (graph == null || structurer == null) {
+            return 0;   // gráf kikapcsolva
         }
         Map<UUID, MentionEntity> firstMentionByPerson = new LinkedHashMap<>();
         for (MentionEntity m : dayMentions) {
@@ -246,13 +278,20 @@ public class PersonExtractionService {
                     continue;   // jelölt vagy sosem promótált személy — nincs mit összekötni
                 }
                 GraphNodeEntity node = found.get();
+                boolean alreadyAttempted = node.getMeta() != null
+                    && node.getMeta().containsKey(META_EDGE_STRUCTURED_ON);
                 if (!GraphNodeEntity.STATUS_ACTIVE.equals(node.getStatus())
+                        || alreadyAttempted
                         || !graph.edgesFrom(userId, node.getId()).isEmpty()
                         || !graph.edgesTo(userId, node.getId()).isEmpty()) {
-                    continue;   // archivált, vagy már van éle — egyszer fut, nem éjszakánként
+                    continue;   // archivált, már megpróbálva, vagy már van éle — egyszer fut, nem éjszakánként
                 }
                 structurer.structureEdges(userId, node, EDGE_EVIDENCE_KIND, entry.getValue().getId());
+                graph.putMeta(userId, node.getId(), META_EDGE_STRUCTURED_ON, day.toString());
                 linked++;
+            } catch (DataAccessException e) {
+                // Szándékosan kiszökik — lásd a metódus javadocjának izolációs bekezdését.
+                throw e;
             } catch (Exception e) {
                 log.warn("Person edge structuring failed for person {} (user {})", entry.getKey(), userId, e);
             }

@@ -101,6 +101,23 @@ class GraphPromotionPersonIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void syncPerson_shouldMergeMeta_notClobberForeignKeys() {
+        // Code review fix (mezo-06o0.4): a PersonExtractionService.linkPersonEdges saját
+        // "edgeStructuredOn" kulcsot ír ugyanebbe a jsonb mezőbe — egy sima szinkron (pl. egy
+        // névjavítás) nem törölheti azt.
+        UUID userId = ownerId();
+        PersonEntity person = personPopulator.createPerson(userId, "Petra");
+        GraphNodeEntity node = promotionService.syncPerson(userId, person.getId()).orElseThrow();
+        graphService.putMeta(userId, node.getId(), "edgeStructuredOn", "2026-08-21");
+
+        GraphNodeEntity resynced = promotionService.syncPerson(userId, person.getId()).orElseThrow();
+
+        assertThat(resynced.getMeta()).containsEntry("edgeStructuredOn", "2026-08-21");
+        assertThat(resynced.getMeta()).containsEntry("relationship", person.getRelationship());
+        assertThat(resynced.getMeta()).containsEntry("status", person.getStatus());
+    }
+
+    @Test
     void reconcile_shouldSweepPersons_bothWays() {
         UUID userId = ownerId();
         PersonEntity live = personPopulator.createPerson(userId, "Petra");

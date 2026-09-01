@@ -2,6 +2,9 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
@@ -25,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -277,8 +281,54 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
         // szándékosan NINCS syncPerson hívás — a személy sosem lett promótálva
         mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
 
-        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+        // Ha a `found.isEmpty()` gate eltűnne, a `found.get()` NoSuchElementException-t dobna,
+        // amit a node-onkénti catch(Exception) elnyelne — az edgeLinked()==0 assert önmagában NEM
+        // tudná megkülönböztetni a tiszta skip-et az elnyelt kivételtől (code review fix: a
+        // korábbi verzió ezért volt vak a gate törlésére). A WARN-log hiánya viszont igen: a gate
+        // jelenlétében a folyamat csendben lép tovább, hiányában egy "Person edge structuring
+        // failed" WARN íródna.
+        Logger logger = (Logger) LoggerFactory.getLogger(PersonExtractionService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        PersonExtractionResult result;
+        try {
+            result = extractionService.extractFor(owner, DAY);
+        } finally {
+            logger.detachAppender(appender);
+        }
 
         assertThat(result.edgeLinked()).isZero();
+        assertThat(appender.list).noneMatch(
+            event -> event.getFormattedMessage().contains("Person edge structuring failed"));
+    }
+
+    @Test
+    void extractFor_shouldNeverRetry_whenAPriorAttemptYieldedNoEdges() {
+        // Code review fix (Important 2): egy üres/konfidencia-küszöb-alatti strukturáló-válasz nem
+        // hoz létre élt, de a node.meta "edgeStructuredOn" jelzője akkor is beíródik — a második
+        // futásnak MÁR ezt kell látnia, és nem szabad újra megpróbálnia (sem a napi sapkát
+        // fogyasztania, sem újabb LLM-hívást indítania).
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        // a szentinel üres tömböt ad vissza — a strukturáló nem hoz létre élt, de LEFUT
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[]]");
+        personRepository.save(person);
+        graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT, "Nyári szabadság", null,
+            "life_event_test", UUID.randomUUID(), null, Map.of());
+        GraphNodeEntity personNode = promotionService.syncPerson(owner, person.getId()).orElseThrow();
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        PersonExtractionResult first = extractionService.extractFor(owner, DAY);
+        assertThat(first.edgeLinked()).isEqualTo(1);   // megpróbálta, de nem hozott létre élt
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).isEmpty();
+
+        LocalDate nextDay = DAY.plusDays(1);
+        mentionPopulator.createMention(owner, person.getId(), nextDay.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+        PersonExtractionResult second = extractionService.extractFor(owner, nextDay);
+
+        assertThat(second.edgeLinked()).isZero();   // a marker miatt nem próbálja meg újra
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).isEmpty();
     }
 }

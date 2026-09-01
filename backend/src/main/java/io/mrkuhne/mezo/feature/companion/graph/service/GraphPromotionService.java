@@ -166,12 +166,20 @@ public class GraphPromotionService {
         }
         PersonEntity person = found.get();
         boolean active = "active".equals(person.getStatus());
-        if (!active && graphService.findBySource(userId, SOURCE_PERSON, personId).isEmpty()) {
+        Optional<GraphNodeEntity> existing = graphService.findBySource(userId, SOURCE_PERSON, personId);
+        if (!active && existing.isEmpty()) {
             return Optional.empty();   // sosem volt node — nincs mit árnyékolni
         }
+        // Meta MERGE, nem overwrite (code review fix, mezo-06o0.4): az éjszakai él-passz
+        // (PersonExtractionService.linkPersonEdges) a "edgeStructuredOn" kulcsot ugyanebbe a
+        // jsonb mezőbe írja — egy sima névjavítás-szinkron nem törölheti azt egy Map.of() felülírással.
+        Map<String, Object> meta = existing.map(GraphNodeEntity::getMeta)
+            .map(HashMap::new).orElseGet(HashMap::new);
+        meta.put("relationship", person.getRelationship());
+        meta.put("status", person.getStatus());
         GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PERSON,
             truncateTitle(person.getName()), personSummary(person), SOURCE_PERSON, person.getId(),
-            null, Map.of("relationship", person.getRelationship(), "status", person.getStatus()));
+            null, meta);
         String status = active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED;
         if (!status.equals(node.getStatus())) {
             node.setStatus(status);
