@@ -269,8 +269,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        assertThat(snapshot).contains("[Edzés]").contains("Holnap:");
-        String tail = snapshot.substring(snapshot.indexOf("Holnap:"));
+        assertThat(snapshot).contains("[Edzés]").contains("Holnap (terv):");
+        String tail = snapshot.substring(snapshot.indexOf("Holnap (terv):"));
         // exact rendered exercise line (name + working-sets × rep-range), not just a name
         // substring — pins exerciseLine's null-guarded formatting (TrainPopulator default
         // exercise: workingSets=3, repMin=6, repMax=8).
@@ -294,8 +294,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        assertThat(snapshot).contains("Ma: pihenőnap");
-        assertThat(snapshot).contains("Holnap: pihenőnap (gym)");
+        assertThat(snapshot).contains("Ma (terv): pihenőnap");
+        assertThat(snapshot).contains("Holnap (terv): pihenőnap (gym)");
     }
 
     @Test
@@ -311,8 +311,44 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
         assertThat(maSegment).contains("pihenőnap (gym)").doesNotContain("gym (");
+    }
+
+    @Test
+    void testTrainBlock_shouldRenderTodayGymAsNotDone_whenNoCompletedInstanceExistsForToday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "upper", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+
+        String snapshot = assembler.render(owner, today);
+
+        // mezo-xrhd: "Ma" used to render the PLAN alone — the midday companion note read the
+        // planned exercise list as history ("a reggeli edzéseden már túl vagy") on a day with no
+        // logged workout at all. The plan is now labelled a plan and carries today's REAL state.
+        assertThat(snapshot).contains("Ma (terv): gym (" + todayLabel + ")");
+        assertThat(snapshot).contains(
+            "Ma eddig naplózva: gym: nincs elvégzett edzés; sport: 0 alkalom; futás: 0 alkalom");
+    }
+
+    @Test
+    void testTrainBlock_shouldRenderTodayGymAsDone_whenCompletedInstanceExistsForToday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "upper", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        trainPopulator.createWorkoutInstance(owner, template, today, "completed");
+        trainPopulator.createSportSession(owner, today);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains(
+            "Ma eddig naplózva: gym: elvégezve; sport: 1 alkalom; futás: 0 alkalom");
     }
 
     @Test
@@ -331,7 +367,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         // "Ma:" must carry the same dated resolution as "Holnap:" (mezo-ajp) — the asymmetry was
         // why today's sport was only inferable from the trailing raw weekly "sport-rend" pattern.
-        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
         assertThat(maSegment).contains(todayLabel).contains("Fekvenyomás 3×6-8")
             .contains("sport: volleyball 18:00 training (120 perc)");
     }
@@ -344,7 +380,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
         assertThat(maSegment).contains("futás: Sprint-intervallum");
     }
 
@@ -359,7 +395,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        String tail = snapshot.substring(snapshot.indexOf("Holnap:"));
+        String tail = snapshot.substring(snapshot.indexOf("Holnap (terv):"));
         assertThat(tail).contains("futás: Sprint-intervallum");
     }
 
@@ -469,6 +505,20 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(snapshot).contains("alvás (" + today.minusDays(1) + "): 7.2 h, minőség 4/5");
         assertThat(snapshot).contains(
             "check-in (" + today + " 08:00): energia 4/10, stressz 2/10, megjegyzés: \"fáradtan ébredtem\"");
+    }
+
+    @Test
+    void testRender_shouldMarkCheckInMissingForToday_whenLatestCheckInIsFromAnEarlierDay() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today.minusDays(1), "08:00", 4, 2, "tegnapi");
+
+        String snapshot = assembler.render(owner, today);
+
+        // mezo-xrhd: the block rendered the latest check-in EVER, dated but with no today-status,
+        // so a day without one read as "nothing to say" and the midday note silently skipped it.
+        assertThat(snapshot).contains("check-in: MA MÉG NINCS (utolsó: " + today.minusDays(1)
+            + " 08:00 — energia 4/10, stressz 2/10, megjegyzés: \"tegnapi\")");
     }
 
     @Test
