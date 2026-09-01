@@ -11,9 +11,13 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter, useLocation, type RouteObject } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { people, mentions } from '@/data/me/people'
+import { people as personSeed, mentions } from '@/data/me/people'
 import { contextBreakdown, trendHeights } from '@/features/me/logic/peopleDerive'
 import { PeopleKorPage } from '@/features/me/pages/PeopleKorPage'
+
+// S4: usePeople's `people` is candidate-filtered (mezo-06o0.3) — this page only ever sees
+// the active circle, so the raw seed's "pp-marci" candidate is excluded here too.
+const people = personSeed.filter((p) => p.status !== 'candidate')
 
 const hoisted = vi.hoisted(() => ({ emptyTrendFor: null as string | null }))
 vi.mock('@/data/hooks', async (importOriginal) => {

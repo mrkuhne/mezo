@@ -590,6 +590,15 @@ export const handlers = [
   }),
   http.delete(`${API_BASE}/api/people/:id`, () => new HttpResponse(null, { status: 204 })),
   http.delete(`${API_BASE}/api/people/:personId/mentions/:mentionId`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API_BASE}/api/people/:personId/decision`, async ({ params, request }) => {
+    const body = await request.json() as { decision: string }
+    return HttpResponse.json({
+      id: params.personId, name: 'Marci', initial: 'M', relationship: 'friend',
+      relationshipHu: 'Ismerős', aliases: [], status: body.decision === 'accept' ? 'active' : 'candidate',
+      sourceKind: 'extractor', affectBaseline: 'neutral', knownFacts: [], ties: [], affectTrend: [],
+      mentionCount: 0, mentionsThisWeek: 0,
+    })
+  }),
 
   http.post(`${API_BASE}/api/biometrics/checkin`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>

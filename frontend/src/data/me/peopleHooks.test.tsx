@@ -49,7 +49,7 @@ describe('usePeople (mock mode)', () => {
 
   it('seeds people + mentions synchronously', () => {
     const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
-    expect(result.current.people).toEqual(personSeed)
+    expect(result.current.people).toEqual(personSeed.filter(p => p.status !== 'candidate'))
     expect(result.current.mentions).toEqual(mentionSeed)
   })
 
@@ -69,6 +69,37 @@ describe('usePeople (mock mode)', () => {
     act(() => result.current.undoMention(victim))
     await waitFor(() => {
       expect(result.current.mentions.map(m => m.id)).not.toContain(victim.id)
+    })
+  })
+
+  it('usePeople splits candidates from the circle', () => {
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    const candidateSeed = personSeed.filter(p => p.status === 'candidate')
+    const activeSeed = personSeed.filter(p => p.status !== 'candidate')
+    expect(result.current.candidates).toEqual(candidateSeed)
+    expect(result.current.candidates.length).toBeGreaterThan(0)
+    expect(result.current.people).toHaveLength(activeSeed.length)
+    expect(result.current.people.some(p => p.status === 'candidate')).toBe(false)
+  })
+
+  it('decidePerson accept activates the candidate (mock)', async () => {
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    const candidate = result.current.candidates[0]
+    act(() => result.current.decidePerson(candidate.id, 'accept'))
+    await waitFor(() => {
+      expect(result.current.candidates.map(p => p.id)).not.toContain(candidate.id)
+      const activated = result.current.people.find(p => p.id === candidate.id)
+      expect(activated?.status).toBe('active')
+    })
+  })
+
+  it('decidePerson reject removes the candidate (mock)', async () => {
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    const candidate = result.current.candidates[0]
+    act(() => result.current.decidePerson(candidate.id, 'reject'))
+    await waitFor(() => {
+      expect(result.current.candidates.map(p => p.id)).not.toContain(candidate.id)
+      expect(result.current.people.map(p => p.id)).not.toContain(candidate.id)
     })
   })
 })
@@ -143,6 +174,24 @@ describe('usePeople (real mode)', () => {
     act(() => result.current.undoMention(result.current.mentions[0]))
     await waitFor(() => expect(deleted).toEqual({ personId: WIRE_PERSON.id, mentionId: WIRE_MENTION.id }))
     await waitFor(() => expect(gets).toBeGreaterThan(getsBefore))
+  })
+
+  it('decidePerson POSTs the decision and refetches the bootstrap (real mode)', async () => {
+    let posted: unknown = null
+    let gets = 0
+    server.use(
+      http.get(`${API_BASE}/api/people`, () => { gets++; return HttpResponse.json(BOOTSTRAP) }),
+      http.post(`${API_BASE}/api/people/${WIRE_PERSON.id}/decision`, async ({ request }) => {
+        posted = await request.json()
+        return HttpResponse.json({ ...WIRE_PERSON, status: 'active' })
+      }),
+    )
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.people).toHaveLength(1))
+    const getsBefore = gets
+    act(() => result.current.decidePerson(WIRE_PERSON.id, 'accept'))
+    await waitFor(() => expect(posted).toEqual({ decision: 'accept' }))
+    await waitFor(() => expect(gets).toBeGreaterThan(getsBefore)) // invalidation → server-truth refetch
   })
 
   it('savePerson creates then refetches (real mode)', async () => {
