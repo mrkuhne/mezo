@@ -17,8 +17,8 @@ export const people: PersonEntry[] = [
     lastMentionLabel: 'Tegnap este · 20:14',
     contactCadenceLabel: 'Napi',
     notes: 'Közös háztartás · vasárnapi közös vacsorák a fix horgony.',
-    affectTrend: [4, 4, 3, 4, 4, 3, 4, 5, 4, 4, 4, 5],
-    affectTrendStart: '2026-03-02',
+    affectTrend: [4, 3, 4, 5, 4, 4, 4, 5],
+    affectTrendStart: '2026-03-30',
     direction: 'up',
     directionReason: 'jobb hetek, mint korábban',
     knownFacts: [
@@ -48,8 +48,8 @@ export const people: PersonEntry[] = [
     lastMentionLabel: 'Péntek · röpi után',
     contactCadenceLabel: 'Heti 3×',
     notes: 'Röplabda csapat · setter · 6 éve együtt játszunk.',
-    affectTrend: [4, 4, 4, 5, 4, 4, 5, 4, 5, 4],
-    affectTrendStart: '2026-03-16',
+    affectTrend: [4, 5, 4, 4, 5, 4, 5, 4],
+    affectTrendStart: '2026-03-30',
     direction: 'flat',
     directionReason: 'kiegyensúlyozott hetek',
     knownFacts: [
@@ -106,10 +106,10 @@ export const people: PersonEntry[] = [
     lastMentionLabel: 'Péntek éjjel · hosszabb hangjegy',
     contactCadenceLabel: 'Havi 1:1 · spike most',
     notes: 'Karrier-átmenet · márciusi szakítás · sűrűsödő mentions.',
-    affectTrend: [4, 3, 3, 3, 2, 3, 3, 2, 3],
-    affectTrendStart: '2026-03-23',
-    direction: 'down',
-    directionReason: 'többször nehéz tónus, mint korábban',
+    affectTrend: [3, 3, 3, 2, 3, 3, 2, 3],
+    affectTrendStart: '2026-03-30',
+    direction: 'flat',
+    directionReason: 'kiegyensúlyozott hetek',
     knownFacts: [
       "Március óta nehezebb hónapok · 'lebegés' szót sokszor használja",
       'Vasárnapi sétára meghívás többször visszamondva',
@@ -313,10 +313,12 @@ export const mentions: Mention[] = [
 ]
 
 /** The Emberek hub's Mezo-band sentence (PeopleResponse.mezoNote) — the mock mirrors the
- *  backend's own deterministic fallback (PeopleService.derivedMezoNote): the alphabetically
- *  first down-trending person's name + directionReason. Réka is the seed's only 'down'
- *  person, so this MUST stay in lockstep with her `direction`/`directionReason` above. */
-export const mezoNote = 'Réka hangulata lefelé fordult — többször nehéz tónus, mint korábban.'
+ *  backend's own deterministic fallback (PeopleService.derivedMezoNote), case-by-case over the
+ *  seed above: no active person is 'down' (the 8-reading server cap flattens Réka's affectTrend
+ *  once trimmed — see her `direction`/`directionReason`), and every active person already has
+ *  mentions this week, so it falls through to the "most mentioned this week" case — Petra (9).
+ *  This MUST stay in lockstep with `mentionsThisWeek` + `direction` above. */
+export const mezoNote = 'Petra volt a leggyakoribb neved ezen a héten.'
 
 export function affectColor(a: Affect): string {
   switch (a) {
