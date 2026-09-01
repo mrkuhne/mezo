@@ -187,7 +187,10 @@ to its `restDayFallback` zone or is deliberately skipped. So:
   completed gym session (round 1's `gymDays` — a genuine cross-round reuse);
 - it is **taken** if an intake row exists that day for its `pantryItemId` (slot-agnostic, matching
   the FE's legacy-intake tolerance);
-- a day with no active protocol contributes nothing (absent, not zero).
+- a day with no active protocol contributes nothing (absent, not zero) — and the same rule holds
+  at the ITEM-day level: a day that predates an item's own `startedOn` (its `createdAt` as a
+  `LocalDate`, carried on `DetectorInput.StackItem`) is not a skip of that item, so the
+  expectation loop starts at `max(asOf − 13, startedOn)` and the denominator shrinks with it.
 
 ## 5. The seven detectors
 
@@ -203,7 +206,7 @@ Exact thresholds are fixed in the plan and pinned by tests.
 | `protein-training-mismatch` | taplalkozo | protein target is missed specifically on gym days at a materially higher rate than on rest days |
 | `late-eating-pattern` | szomnologus | late-evening meals (by `loggedAt` local time) repeat and pair with worse sleep quality that night |
 | `stack-skip-pattern` | drill | derived skips cluster on the same supplement/slot, rest-day-fallback items excluded |
-| `med-cycle-covariance` | doki (**ÉRZÉKENY**) | check-in scales bucketed by cycle day differ materially from the cycle mean, over enough non-stale complete cycles |
+| `med-cycle-covariance` | doki (**ÉRZÉKENY**) | check-in scales bucketed by cycle day differ materially from the cycle mean, over enough non-stale usable cycle DAYS (14 — not a count of complete cycles) |
 
 **Expert routing rationale.** Táplálkozó's watch list already names "étkezési minták", "kajához való
 viszony" and "logolt vs valós bevitel eltérése" — all four nutrition detectors are hers, and the
@@ -240,9 +243,21 @@ overfiring the round-1 spec set out to prevent. Therefore, for round 2:
 - **The new-data gate stays as a cheap pre-filter.** `RoundOneGates` is renamed `DetectorGates`
   (same package-private, same pure-date-check nature) and gains `newMealData`, `newWaterData`,
   `newStackData`, `newCheckinData` and `newDoseData` beside the existing five.
-- **Minimum-sample silence.** The covariance detectors (`comfort-eating`, `med-cycle-covariance`)
-  additionally require a minimum number of paired days / complete cycles; below that they are silent
-  rather than noisy, which is the honest reading of a thin sample.
+- **Minimum-sample silence.** The covariance detectors additionally require a minimum sample
+  before firing at all; below that they are silent rather than noisy, which is the honest reading
+  of a thin sample. `comfort-eating` needs a minimum number of paired days AND a minimum number of
+  days in BOTH mood groups — with no non-low-mood days there is nothing to covary against, and the
+  rate-ratio guard would be skipped entirely. `med-cycle-covariance` needs 14 usable cycle DAYS
+  (not a number of complete cycles).
+- **A state string must never carry a moving COUNT.** A count that shifts as the 14-day window
+  slides — or as a normal user simply logs another day — differs between `day` and `day − 1` on
+  almost every night, so a count-valued state defeats the gate above and re-announces an unchanged
+  (or improving) pattern nightly. Every state is therefore purely qualitative: a band
+  (`macro-adherence`, `hydration-consistency`), a presence marker (`comfort-eating`,
+  `protein-training-mismatch`), `metric:cycleDay:direction` with no magnitude
+  (`med-cycle-covariance` — a continuous delta drifts nightly, and this is the sensitive
+  medication signal), or the offender key alone (`stack-skip-pattern`). The exact counts still
+  reach the user in the SUMMARY, which is not the gate.
 - **One documented widening.** `stack-skip-pattern` also fires when the observed day itself carries
   a miss for the offending item even though the state string is unchanged — the deliberate,
   documented shape round 1 settled on for `meso-adherence`, so a second consecutive skipped day is

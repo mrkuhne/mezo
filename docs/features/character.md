@@ -555,25 +555,49 @@ before investigating.
   `hr-recovery-trend` gate, generalised from one detector to all seven. The renamed
   `DetectorGates` (was `RoundOneGates`) new-data check stays only as a cheap pre-filter
   (`newMealData`/`newWaterData`/`newStackData`/`newCheckinData`/`newDoseData` beside the existing
-  five). `comfort-eating` and `med-cycle-covariance` additionally require a minimum number of
-  paired days / complete cycles before firing at all — below that they are silent rather than
-  noisy. `stack-skip-pattern` carries one documented widening mirroring `meso-adherence`'s shape:
+  five). `comfort-eating` additionally requires a minimum number of paired days AND a minimum
+  number of days in BOTH mood groups (a covariance computed against an empty contrast group is
+  not a covariance); `med-cycle-covariance` requires a minimum number of usable cycle DAYS — 14
+  of them, not a number of complete cycles. Below those thresholds they are silent, not noisy. `stack-skip-pattern` carries one documented widening mirroring `meso-adherence`'s shape:
   it also fires when the observed day itself carries a miss for the offending item even though
   the state string is unchanged, so a second consecutive skipped day is not swallowed.
+- **A round-2 state string must never carry a moving COUNT** — the rule that makes the gate above
+  actually work. A count that shifts as the 14-day window slides (or as a normal user simply logs
+  another day) differs between `day` and `day − 1` on almost every night, so a count-valued state
+  re-announces an unchanged — or even an IMPROVING — pattern as news, which is exactly what the
+  gate exists to prevent. So each of the seven states is purely qualitative: `macro-adherence` and
+  `hydration-consistency` a band, `comfort-eating` and `protein-training-mismatch` a presence
+  marker, `med-cycle-covariance` `metric:cycleDay:direction` with **no** magnitude (a continuous
+  delta drifts nightly, and this is the sensitive medication signal), `stack-skip-pattern` the
+  offending item key alone, `late-eating-pattern` its own qualitative finding. The exact counts
+  still reach the user — in the SUMMARY, which is not the gate.
 - **`med-cycle-covariance` drops `stale` cycle days rather than trusting the clamp.**
   `MedicationCycleService` deliberately CLAMPS a cycle day when the last dose is older than one
   full cycle (a product decision for the Fuel UI); left alone that clamp would pile weeks of
   no-dose days into the detector's last bucket. The read layer instead marks
   `MedCycleDayPoint.stale = daysSinceDose + 1 > cycleLengthDays` and the detector drops those days
   before bucketing — the one place the character read layer deliberately reads more precisely
-  than the source service exposes.
+  than the source service exposes. Crucially it recomputes that distance from the SAME day
+  authority `MedicationCycleService.derive` uses — the dose's `administeredDate` column, exposed
+  additively on the internal `MedicationCycle` DTO as `lastDoseDate` — and not from a local date
+  re-derived from the dose INSTANT in the server zone. Those two disagree whenever the server zone
+  differs from the offset the dose was logged in: a late-evening dose maps to a different local
+  date, `stale` flips a day early, and `DetectorGates.newDoseData` (which requires
+  `daysSinceDose == 0`) never sees the dose day at all.
 - **`stack-skip-pattern`'s "kihagyás" is derived, never a stored row**, and the derivation
   respects the product's own rest-day rule (FE precedent `features/fuel/logic/projectStackDay.ts`):
   an item placed in a peri-workout zone (`pre_workout`/`post_workout`) on a day with no completed
   gym session is **not** a miss — it either displaces to its `restDayFallback` zone or is
   deliberately skipped, so it is simply not "expected" that day. Every other item is expected
   daily; "taken" means an intake row exists for that `pantryItemId` that day, slot-agnostic
-  (matching the FE's legacy-intake tolerance).
+  (matching the FE's legacy-intake tolerance). Expectation is additionally bounded BELOW by the
+  item's own `startedOn` (its `createdAt` as a `LocalDate` in the JVM default zone, carried on
+  `DetectorInput.StackItem`): an item added today was never expected last week, so the loop starts
+  at `max(asOf − 13, startedOn)` and the denominator shrinks with it. Without that bound, adding
+  Kreatin today and taking it would be announced the same night as "13 napon maradt ki a tervezett
+  14 napból" — fabricated misses. This is §4.3's "a day with no active protocol contributes
+  nothing (absent, not zero)" applied at the item-day level, where it had only ever been
+  implemented as the whole-context null.
 - **`TrendWindow.gymEightWeeks` now has real consumers.** Round 1 gathered this field but never
   read it (documented as a deliberate leftover); round 2's `protein-training-mismatch` and
   `stack-skip-pattern` are its first readers — both need gym days as of two different `asOf`

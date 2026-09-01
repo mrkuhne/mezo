@@ -42,12 +42,15 @@ public class HydrationConsistencyDetector implements CharacterDetector {
             return List.of();
         }
         String phrase = switch (today.name()) {
-            case "JO" -> "stabilan tartja a napi vízcélt";
+            case "JO" -> "stabilan a napi vízcél közelében marad";
             case "INGADOZO" -> "ingadozik a napi vízcél körül";
             default -> "rendszeresen elmarad a napi vízcéltól";
         };
+        // The bar is 90% OF the target, not the target itself: a 3600/4000 ml day counts as an
+        // on-target day here, so the copy names the 90% bar rather than claiming "teljesült a cél".
         String summary = "A hidratáltság " + phrase + ": " + today.loggedDays()
-                + " logolt napból " + today.onTargetDays() + " napon teljesült a cél (14 nap).";
+                + " logolt napból " + today.onTargetDays()
+                + " napon érte el a napi vízcél 90%-át (14 nap).";
         int salience = "ALACSONY".equals(today.name()) ? 4 : 3;
         return List.of(new DetectorSignal(key(), "taplalkozo", summary, salience));
     }

@@ -718,10 +718,12 @@ class DetectorTest {
         ComfortEatingDetector d = new ComfortEatingDetector();
         List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
         List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
-        // 24 paired days: every 4th day is a low-mood day AND a high-NOVA day; the rest are calm
-        // and clean. Day 0 (DAY) is one of the low-mood/high-NOVA days, so the state turns on today.
+        // 24 paired days, of which exactly THREE (offsets 0, 4, 8) are low-mood AND spiking; the
+        // other 21 are calm and clean. As of DAY-1 only two low-mood days remain, which is below
+        // MIN_DAYS_PER_GROUP, so yesterday's state is null and the pattern genuinely turns on
+        // today -- the state-change gate is doing real work here, not a shifting count.
         for (int i = 0; i < 24; i++) {
-            boolean bad = i % 4 == 0;
+            boolean bad = i % 4 == 0 && i <= 8;
             meals.add(meal(DAY.minusDays(i), bad ? "3600" : "2900", "200", bad ? "0.75" : "0.15"));
             checkins.add(bad ? checkin(DAY.minusDays(i), "3", "9", "3")
                              : checkin(DAY.minusDays(i), "8", "2", "8"));
@@ -730,9 +732,31 @@ class DetectorTest {
                 .singleElement().satisfies(s -> {
                     assertThat(s.detectorKey()).isEqualTo("comfort-eating");
                     assertThat(s.expertKey()).isEqualTo("taplalkozo");
+                    // Finding A: the spike test is share OR kcal, so the copy must name both --
+                    // it must NOT attribute the whole count to processed-food share alone.
+                    assertThat(s.summary()).contains("feldolgozott étel aránya vagy a napi kalória");
                     // HU decimal comma: a digit.digit pair must never appear (the closing period is fine)
                     assertThat(s.summary()).doesNotMatch(".*\\d\\.\\d.*");
                 });
+    }
+
+    @Test
+    void comfortEating_silentWhenEveryPairedDayIsLowMood_noContrastGroup() {
+        // A chronically stressed user: every paired day is low-mood, so there is no contrast group
+        // to covary AGAINST. The rate-ratio guard would be skipped entirely (otherRate == 0), so
+        // without a floor on the non-low-mood group this would announce a "covariance" computed
+        // against nothing.
+        ComfortEatingDetector d = new ComfortEatingDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            boolean spike = i % 4 == 0;
+            meals.add(meal(DAY.minusDays(i), spike ? "3600" : "2900", "200",
+                    spike ? "0.75" : "0.15"));
+            checkins.add(checkin(DAY.minusDays(i), "3", "9", "3")); // every day low-mood
+        }
+        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+                .isEmpty();
     }
 
     @Test
@@ -776,9 +800,15 @@ class DetectorTest {
         ProteinTrainingMismatchDetector d = new ProteinTrainingMismatchDetector();
         List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
         List<DetectorInput.GymDay> gym = new java.util.ArrayList<>();
+        // Gym on offsets 0-3, no gym on 4-13. Protein missed on gym offsets 0 and 1, plus one
+        // non-gym miss on offset 4. As of DAY:   gym 2/4 = 0,50 vs non-gym 1/10 = 0,10 -> gap 0,40
+        //                                        (>= MIN_RATE_GAP 0,30) -> qualifies.
+        // As of DAY-1 the gym group is offsets 1-3: 1/3 = 0,33 vs 0,10 -> gap 0,23 -> does NOT
+        // qualify. So the pattern genuinely CROSSES its threshold on the observed day.
         for (int i = 0; i < 14; i++) {
-            boolean gymDay = i % 2 == 0;
-            meals.add(meal(DAY.minusDays(i), "2900", gymDay ? "120" : "230", null));
+            boolean gymDay = i <= 3;
+            boolean miss = i == 0 || i == 1 || i == 4;
+            meals.add(meal(DAY.minusDays(i), "2900", miss ? "120" : "230", null));
             if (gymDay) {
                 gym.add(new DetectorInput.GymDay(DAY.minusDays(i), List.of()));
             }
@@ -788,7 +818,29 @@ class DetectorTest {
                     assertThat(s.detectorKey()).isEqualTo("protein-training-mismatch");
                     assertThat(s.expertKey()).isEqualTo("taplalkozo");
                     assertThat(s.summary()).contains("edzésnap");
+                    // the contrast group is "no completed gym session", which is NOT a rest day:
+                    // a run or a sport session lands there too, so the copy must not claim rest
+                    assertThat(s.summary()).doesNotContain("pihenőnap");
                 });
+    }
+
+    @Test
+    void proteinTrainingMismatch_quietWhenTheSameGapAlreadyHeldYesterday() {
+        // Same qualitative finding on both days: gym days are missed at 100%, non-gym days at 0%,
+        // as of DAY (4/4) and as of DAY-1 (3/3) alike. Only the COUNTS move -- which is exactly
+        // what a count-valued state string would mistake for news, re-announcing nightly.
+        ProteinTrainingMismatchDetector d = new ProteinTrainingMismatchDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.GymDay> gym = new java.util.ArrayList<>();
+        for (int i = 0; i < 14; i++) {
+            boolean gymDay = i <= 3;
+            meals.add(meal(DAY.minusDays(i), "2900", gymDay ? "120" : "230", null));
+            if (gymDay) {
+                gym.add(new DetectorInput.GymDay(DAY.minusDays(i), List.of()));
+            }
+        }
+        assertThat(d.detect(trendInput(trend(meals, List.of(), null, List.of(), null, gym))))
+                .isEmpty();
     }
 
     @Test
@@ -823,7 +875,8 @@ class DetectorTest {
         StackSkipPatternDetector d = new StackSkipPatternDetector();
         UUID pwo = UUID.randomUUID();
         DetectorInput.StackContext stack = new DetectorInput.StackContext(
-                List.of(new DetectorInput.StackItem(pwo, "PWO", "pre_workout", null)),
+                List.of(new DetectorInput.StackItem(pwo, "PWO", "pre_workout", null,
+                        DAY.minusDays(60))),
                 List.of(new DetectorInput.StackDayPoint(DAY, Set.of())));
         // no gym days anywhere -> the pre-workout item was never EXPECTED -> quiet
         assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
@@ -841,7 +894,8 @@ class DetectorTest {
                     i % 2 == 0 ? Set.of() : Set.of(creatine)));
         }
         DetectorInput.StackContext stack = new DetectorInput.StackContext(
-                List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null)), days);
+                List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null,
+                        DAY.minusDays(60))), days);
         assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
                 .singleElement().satisfies(s -> {
                     assertThat(s.detectorKey()).isEqualTo("stack-skip-pattern");
@@ -851,7 +905,38 @@ class DetectorTest {
     }
 
     @Test
-    void medCycleCovariance_silentBelowMinimumCycles_andDropsStaleDays() {
+    void stackSkip_doesNotFabricateSkipsForDaysBeforeTheItemEnteredTheProtocol() {
+        // The user adds Kreatin TODAY and takes it. Without an item-start bound the expectation
+        // loop would run the whole 14-day window and report "13 napon maradt ki a tervezett 14
+        // napból" -- thirteen skips of an item that did not exist. Absent, not zero (spec §4.3).
+        StackSkipPatternDetector d = new StackSkipPatternDetector();
+        UUID creatine = UUID.randomUUID();
+        DetectorInput.StackContext stack = new DetectorInput.StackContext(
+                List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null, DAY)),
+                List.of(new DetectorInput.StackDayPoint(DAY, Set.of(creatine))));
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void stackSkip_denominatorShrinksToTheItemsOwnLifetime() {
+        // Item added 4 days ago and never taken: 4 expected days, 4 missed -- NOT 14 and 14.
+        StackSkipPatternDetector d = new StackSkipPatternDetector();
+        UUID creatine = UUID.randomUUID();
+        List<DetectorInput.StackDayPoint> days = new java.util.ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            days.add(new DetectorInput.StackDayPoint(DAY.minusDays(i), Set.of()));
+        }
+        DetectorInput.StackContext stack = new DetectorInput.StackContext(
+                List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null,
+                        DAY.minusDays(3))), days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+                .singleElement().satisfies(s ->
+                        assertThat(s.summary()).contains("4 napon maradt ki a tervezett 4 napból"));
+    }
+
+    @Test
+    void medCycleCovariance_silentBelowMinimumUsableDays_andDropsStaleDays() {
         MedCycleCovarianceDetector d = new MedCycleCovarianceDetector();
         List<DetectorInput.MedCycleDayPoint> days = new java.util.ArrayList<>();
         List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
@@ -871,12 +956,16 @@ class DetectorTest {
         MedCycleCovarianceDetector d = new MedCycleCovarianceDetector();
         List<DetectorInput.MedCycleDayPoint> days = new java.util.ArrayList<>();
         List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        // Energy is a flat 8 across all 28 days EXCEPT the observed day itself, which collapses to
+        // 3. That single day drags cycle-day-1's bucket mean to 6,75 against an overall 7,82 --
+        // a delta of -1,07, just past MIN_DELTA_POINTS. As of DAY-1 every bucket sits exactly on
+        // the mean, so yesterday's state is null: the finding genuinely CROSSES its threshold on
+        // the observed day rather than merely shifting a magnitude.
         for (int i = 0; i < 28; i++) {
             int cycleDay = (i % 7) + 1;
             days.add(new DetectorInput.MedCycleDayPoint(DAY.minusDays(i), cycleDay, "peak",
                     cycleDay - 1, false));
-            // energy collapses on cycle days 6-7 in every cycle
-            checkins.add(checkin(DAY.minusDays(i), cycleDay >= 6 ? "3" : "8", "4", "7"));
+            checkins.add(checkin(DAY.minusDays(i), i == 0 ? "3" : "8", "4", "7"));
         }
         DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
         assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
@@ -888,5 +977,25 @@ class DetectorTest {
                     // HU decimal comma: a digit.digit pair must never appear (the closing period is fine)
                     assertThat(s.summary()).doesNotMatch(".*\\d\\.\\d.*");
                 });
+    }
+
+    @Test
+    void medCycleCovariance_quietWhenTheSameCycleDayBucketAlreadyDivergedYesterday() {
+        // The same qualitative finding on both days -- energy is low on every cycle day 1 -- so
+        // only the DELTA'S MAGNITUDE moves (-4,29 as of DAY, -3,56 as of DAY-1). A state carrying
+        // that magnitude would re-announce this sensitive medication signal nightly; a state of
+        // metric + cycle day + direction correctly stays silent.
+        MedCycleCovarianceDetector d = new MedCycleCovarianceDetector();
+        List<DetectorInput.MedCycleDayPoint> days = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        for (int i = 0; i < 28; i++) {
+            int cycleDay = (i % 7) + 1;
+            days.add(new DetectorInput.MedCycleDayPoint(DAY.minusDays(i), cycleDay, "peak",
+                    cycleDay - 1, false));
+            checkins.add(checkin(DAY.minusDays(i), cycleDay == 1 ? "3" : "8", "4", "7"));
+        }
+        DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
+                .isEmpty();
     }
 }

@@ -19,10 +19,18 @@ import org.springframework.stereotype.Component;
  * {@code features/fuel/logic/projectStackDay.ts}). Training days come from
  * {@code trend().gymEightWeeks()}.
  *
- * <p>Overfiring: the state is the offending item plus its miss count, so an unchanged pattern is
- * silent. ONE documented widening, mirroring {@code MesoAdherenceDetector}'s shape: the detector
- * also fires when the observed day itself carries a miss for that item, so a second consecutive
- * skipped day is not swallowed by an unchanged state string.
+ * <p>Expectation is additionally bounded BELOW by the item's own {@code startedOn}: an item added
+ * to the protocol today cannot have been skipped last week. Without that bound a freshly added
+ * item would be announced as "13 napon maradt ki a tervezett 14 napból" on the very day it was
+ * added — fabricated misses. This is spec §4.3's "a day with no active protocol contributes
+ * nothing (absent, not zero)" applied at the item-day level.
+ *
+ * <p>Overfiring: the state is the OFFENDING ITEM KEY ALONE (spec §6 — a band, a direction, a
+ * headline bucket, an offender key). It deliberately carries no miss count: a count moves every
+ * night as the window slides, which would re-announce an unchanged — or even an IMPROVING —
+ * pattern as news. ONE documented widening, mirroring {@code MesoAdherenceDetector}'s shape: the
+ * detector also fires when the observed day itself carries a miss for that item, so a second
+ * consecutive skipped day is not swallowed by an unchanged state string.
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
@@ -51,7 +59,8 @@ public class StackSkipPatternDetector implements CharacterDetector {
             return List.of();
         }
         String summary = "Kiegészítő-kihagyás: a(z) " + today.name() + " " + today.missedDays()
-                + " napon maradt ki a tervezett " + today.expectedDays() + " napból (14 nap).";
+                + " napon maradt ki a tervezett " + today.expectedDays()
+                + " napból (14 napos ablak).";
         return List.of(new DetectorSignal(key(), "drill", summary, 3));
     }
 
@@ -74,8 +83,11 @@ public class StackSkipPatternDetector implements CharacterDetector {
             int expected = 0;
             int missed = 0;
             boolean missedToday = false;
-            for (LocalDate d = asOf.minusDays(RoundTwoWindow.WINDOW_DAYS - 1L); !d.isAfter(asOf);
-                    d = d.plusDays(1)) {
+            LocalDate windowStart = asOf.minusDays(RoundTwoWindow.WINDOW_DAYS - 1L);
+            LocalDate start = item.startedOn() != null && item.startedOn().isAfter(windowStart)
+                    ? item.startedOn()
+                    : windowStart;
+            for (LocalDate d = start; !d.isAfter(asOf); d = d.plusDays(1)) {
                 if (!expectedOn(item, d, gymDates)) {
                     continue;
                 }
@@ -91,7 +103,8 @@ public class StackSkipPatternDetector implements CharacterDetector {
                 continue;
             }
             if (best == null || missed > best.missedDays()) {
-                best = new Finding(item.pantryItemId() + ":" + missed + "/" + expected,
+                // state = the offender key alone; the counts live in the summary, never in the gate
+                best = new Finding("item:" + item.pantryItemId(),
                         item.name(), missed, expected, missedToday);
             }
         }

@@ -11,10 +11,18 @@ import org.springframework.stereotype.Component;
 
 /**
  * Protein × training mismatch (round 2, spec §5): the protein target is missed specifically on
- * TRAINING days at a materially higher rate than on rest days — protein missing exactly when it
+ * GYM days at a materially higher rate than on NON-GYM days — protein missing exactly when it
  * matters most. Gym days come from {@code trend().gymEightWeeks()} (round 1 gathered that field
  * but never read it; this detector and {@code stack-skip-pattern} are its first consumers), which
  * is what lets the state be recomputed as of {@code day - 1} too.
+ *
+ * <p>The contrast group is "every day without a completed GYM session", which is not the same as
+ * a rest day — a run or a sport session lands there too. The copy says so rather than calling
+ * those days "pihenőnap", which would claim a rest the data never established.
+ *
+ * <p>The STATE is a bare presence marker (spec §6). It deliberately carries no counts: the group
+ * sizes shift every night as the 14-day window slides, which re-announced an unchanged pattern.
+ * The exact counts still reach the user in the summary, which is not the gate.
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
@@ -40,12 +48,13 @@ public class ProteinTrainingMismatchDetector implements CharacterDetector {
             return List.of();
         }
         String summary = "A fehérje-cél az edzésnapokon marad el: " + today.gymMisses() + "/"
-                + today.gymDays() + " edzésnapon, szemben a pihenőnapok " + today.restMisses() + "/"
-                + today.restDays() + " arányával (14 nap).";
+                + today.gymDays() + " edzésnapon, szemben az edzés nélküli napok "
+                + today.nonGymMisses() + "/" + today.nonGymDays() + " arányával (14 nap).";
         return List.of(new DetectorSignal(key(), "taplalkozo", summary, 3));
     }
 
-    private record Finding(String state, int gymMisses, int gymDays, int restMisses, int restDays) {}
+    private record Finding(String state, int gymMisses, int gymDays,
+                           int nonGymMisses, int nonGymDays) {}
 
     private static Finding finding(DetectorInput in, LocalDate asOf) {
         Set<LocalDate> gymDates = new HashSet<>();
@@ -63,8 +72,8 @@ public class ProteinTrainingMismatchDetector implements CharacterDetector {
         }
         int gymDays = 0;
         int gymMisses = 0;
-        int restDays = 0;
-        int restMisses = 0;
+        int nonGymDays = 0;
+        int nonGymMisses = 0;
         for (DetectorInput.MealDayPoint m : window) {
             boolean miss = m.proteinG().doubleValue()
                     < m.proteinTarget().doubleValue() * MISS_FRACTION;
@@ -74,21 +83,22 @@ public class ProteinTrainingMismatchDetector implements CharacterDetector {
                     gymMisses++;
                 }
             } else {
-                restDays++;
+                nonGymDays++;
                 if (miss) {
-                    restMisses++;
+                    nonGymMisses++;
                 }
             }
         }
-        if (gymDays < MIN_DAYS_PER_GROUP || restDays < MIN_DAYS_PER_GROUP) {
+        if (gymDays < MIN_DAYS_PER_GROUP || nonGymDays < MIN_DAYS_PER_GROUP) {
             return null;
         }
         double gymRate = (double) gymMisses / gymDays;
-        double restRate = (double) restMisses / restDays;
-        if (gymRate - restRate < MIN_RATE_GAP) {
+        double nonGymRate = (double) nonGymMisses / nonGymDays;
+        if (gymRate - nonGymRate < MIN_RATE_GAP) {
             return null;
         }
-        return new Finding("gap:" + gymMisses + "/" + gymDays + ":" + restMisses + "/" + restDays,
-                gymMisses, gymDays, restMisses, restDays);
+        // state = presence + direction only; counts move with the sliding window, so they would
+        // defeat the state-change gate (spec §6)
+        return new Finding("gap:gym-worse", gymMisses, gymDays, nonGymMisses, nonGymDays);
     }
 }

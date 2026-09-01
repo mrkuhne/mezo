@@ -550,10 +550,10 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
     // ComfortEatingDetector's real summary.
     {
       detector: 'comfort-eating',
-      code: 'rossz közérzetű napokon feljebb megy a feldolgozott étel aránya: 4 ilyen nap a 21 összepárosított napból (8 hét, saját átlaghoz mérve)',
+      code: 'rossz közérzetű napokon gyakrabban ugrik meg a bevitel — feljebb megy a feldolgozott étel aránya vagy a napi kalória a saját 8 hetes átlagához képest: 4 ilyen nap a 21 összepárosított napból',
       refs: [],
       who: 'taplalkozo',
-      obs: 'A rosszabb hangulatú napjaidon gyakrabban emelkedik a feldolgozott étel aránya a szokásos átlagodhoz képest.',
+      obs: 'A rosszabb hangulatú napjaidon gyakrabban ugrik meg a bevitel — hol a feldolgozott étel aránya, hol a napi kalória megy feljebb a szokásos átlagodhoz képest.',
     },
   ],
   20: [
@@ -586,7 +586,7 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
     // HydrationConsistencyDetector's real summary.
     {
       detector: 'hydration-consistency',
-      code: '12 logolt napból 6 napon teljesült a vízcél — a sáv ma váltott (INGADOZO)',
+      code: '12 logolt napból 6 napon érte el a napi vízcél 90%-át — a sáv ma váltott (INGADOZO)',
       refs: [],
       who: 'taplalkozo',
       obs: 'A vízbevitel ingadozóra váltott ezen a héten — nem a mennyiség, a ritmus csúszott el.',
@@ -636,10 +636,10 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
     // summaries.
     {
       detector: 'protein-training-mismatch',
-      code: 'a fehérje-cél az edzésnapokon marad el: 5/6 edzésnapon, szemben a pihenőnapok 1/8 arányával (14 nap)',
+      code: 'a fehérje-cél az edzésnapokon marad el: 5/6 edzésnapon, szemben az edzés nélküli napok 1/8 arányával (14 nap)',
       refs: [],
       who: 'taplalkozo',
-      obs: 'Pont az edzésnapokon marad el a fehérje — a pihenőnapokon ez sokkal ritkábban fordul elő.',
+      obs: 'Pont az edzésnapokon marad el a fehérje — az edzés nélküli napokon ez sokkal ritkábban fordul elő.',
     },
     {
       detector: 'late-eating-pattern',
@@ -693,7 +693,7 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
     // MedCycleCovarianceDetector's real summaries.
     {
       detector: 'stack-skip-pattern',
-      code: 'kiegészítő-kihagyás: a kreatin 4 napon maradt ki a tervezett 14 napból (14 nap)',
+      code: 'kiegészítő-kihagyás: a kreatin 4 napon maradt ki a tervezett 14 napból (14 napos ablak)',
       refs: [],
       who: 'drill',
       obs: 'A kreatin négyszer maradt ki az elmúlt két hétben — érdemes visszaállni a napi ritmusra.',

@@ -228,7 +228,8 @@ public class CharacterSignalReads {
      * is applied in memory — the round-1 weight-read precedent for catch-up honesty. Whether an
      * item was EXPECTED on a given day is deliberately NOT decided here: it depends on that day's
      * training, which the detector resolves from {@code trend().gymEightWeeks()} as of two
-     * different dates (round-2 spec §4.3).
+     * different dates (round-2 spec §4.3). What IS decided here is the item's {@code startedOn} —
+     * the one bound the detector cannot derive from the day series alone.
      */
     private DetectorInput.StackContext gatherStack(UUID owner, LocalDate from, LocalDate to) {
         ProtocolEntity protocol = protocolRepository
@@ -243,9 +244,13 @@ public class CharacterSignalReads {
         List<DetectorInput.StackItem> items = new ArrayList<>();
         for (ProtocolItemEntity pi : protocolItemRepository
                 .findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(protocol.getId())) {
+            // startedOn bounds compliance BELOW: an item added today was never expected last week,
+            // so a day before it must not be scored as a skip (spec §4.3 at the item-day level).
+            LocalDate startedOn = pi.getCreatedAt() == null ? null
+                    : pi.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDate();
             items.add(new DetectorInput.StackItem(pi.getPantryItemId(),
                     names.getOrDefault(pi.getPantryItemId(), "ismeretlen kiegészítő"),
-                    pi.getSlotKey(), pi.getRestDayFallback()));
+                    pi.getSlotKey(), pi.getRestDayFallback(), startedOn));
         }
 
         Map<LocalDate, Set<UUID>> takenByDate = new TreeMap<>();
@@ -274,6 +279,11 @@ public class CharacterSignalReads {
      * <p>{@code stale} is the round-2 precision guard: {@code derive} CLAMPS a cycle day when the
      * last dose is older than a full cycle (a deliberate Fuel-UI behaviour), which for covariance
      * would pile weeks of no-dose days into the last bucket. The flag lets the detector drop them.
+     *
+     * <p>Trade-off, mirroring {@link #gatherGymDays}: {@code derive} is called once per window day,
+     * so an 8-week window costs ~56 indexed single-row lookups. That is acceptable for a nightly
+     * job, and the alternative — reimplementing the cycle-day formula here over one bulk dose read
+     * — would give that formula a second home, which is exactly what this method exists to avoid.
      */
     private DetectorInput.MedContext gatherMedCycle(UUID owner, LocalDate from, LocalDate to) {
         MedicationEntity med = medicationRepository
@@ -285,13 +295,16 @@ public class CharacterSignalReads {
         List<DetectorInput.MedCycleDayPoint> days = new ArrayList<>();
         for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
             MedicationCycle cycle = medicationCycleService.derive(owner, med, d);
-            if (cycle.cycleDay() == 0 || cycle.lastDoseAt() == null) {
+            if (cycle.cycleDay() == 0 || cycle.lastDoseDate() == null) {
                 continue; // honest zero: no dose at or before this day
             }
             // cycle.cycleDay() is CLAMPED, so it is NOT a usable days-since-dose once the clamp
-            // bites — derive the true distance from the dose instant the cycle carries.
-            LocalDate lastDose = cycle.lastDoseAt().atZone(ZoneId.systemDefault()).toLocalDate();
-            int daysSince = (int) ChronoUnit.DAYS.between(lastDose, d);
+            // bites — recompute the true distance. It MUST use the same day authority `derive`
+            // used (the dose's administeredDate column), not a local date re-derived from the
+            // dose INSTANT in the server zone: those disagree whenever the server zone differs
+            // from the offset the dose was logged in, which shifts `stale` by a day and can hide
+            // the dose day from DetectorGates.newDoseData (it requires daysSinceDose == 0).
+            int daysSince = (int) ChronoUnit.DAYS.between(cycle.lastDoseDate(), d);
             boolean stale = daysSince + 1 > cycleLength;
             days.add(new DetectorInput.MedCycleDayPoint(d, cycle.cycleDay(), cycle.phaseKey(),
                     daysSince, stale));

@@ -22,6 +22,13 @@ import org.springframework.stereotype.Component;
  * (because {@code MedicationCycleService} clamps them for the Fuel UI) and are dropped here — a
  * clamped day would otherwise pile weeks of no-dose days into the last bucket.
  *
+ * <p>Overfiring: the state is {@code metric:cycleDay:direction} — a headline bucket plus a
+ * direction, per spec §6, and deliberately WITHOUT the delta's magnitude. A magnitude is a
+ * continuous quantity that moves a little on almost every new day, so carrying it in the state
+ * would re-announce an unchanged finding nightly; that matters most here, of all seven detectors,
+ * because this is the sensitive medication signal. The magnitude still reaches the user in the
+ * summary, which is not the gate.
+ *
  * <p>Sensitivity is enforced at CLAIM level: the konzílium proposal prompt already marks
  * gyógyszerciklus topics {@code sensitive=true}, and the portrait writer / prompt assembler render
  * the ÉRZÉKENY marker. There is no code-level gate, so this summary's own wording must already be
@@ -112,8 +119,11 @@ public class MedCycleCovarianceDetector implements CharacterDetector {
                     continue;
                 }
                 if (best == null || Math.abs(delta) > Math.abs(best.delta())) {
+                    // state = metric + cycle day + DIRECTION, with NO magnitude. A rounded delta
+                    // is a continuous quantity: it drifts by 0,1 point on almost any new day and
+                    // would re-announce this sensitive medication signal nightly (spec §6).
                     best = new Finding(metric.key() + ":" + e.getKey() + ":"
-                            + Math.round(delta * 10), e.getKey(), metric.label(), delta,
+                            + (delta < 0 ? "down" : "up"), e.getKey(), metric.label(), delta,
                             e.getValue().size());
                 }
             }

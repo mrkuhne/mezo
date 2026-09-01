@@ -60,12 +60,12 @@ export const DETECTORS: DetectorEntry[] = [
   { key: 'hr-recovery-trend', who: 'doki', line: '8 hetes pulzus-megnyugvás trend — csak sávváltáskor szólal meg.' },
   { key: 'sleep-performance-chain', who: 'szomnologus', line: 'Rossz alvás utáni napokon visszaesik-e az edzés-teljesítmény.' },
   { key: 'avoidance-pattern', who: 'drill', line: 'Ugyanannál a gyakorlatnál ismétlődő szett-kihagyások.' },
-  { key: 'comfort-eating', who: 'taplalkozo', line: 'Rossz közérzetű napokon feljebb megy-e a feldolgozott étel aránya — saját átlaghoz mérve, 8 hét.' },
+  { key: 'comfort-eating', who: 'taplalkozo', line: 'Rossz közérzetű napokon megugrik-e a bevitel — a feldolgozott étel aránya vagy a napi kalória, saját 8 hetes átlaghoz mérve.' },
   { key: 'macro-adherence', who: 'taplalkozo', line: 'A kalória- vagy fehérje-cél szisztematikus alul-/túllövése a valós napi célhoz képest.' },
-  { key: 'hydration-consistency', who: 'taplalkozo', line: 'A napi vízcélt teljesítő napok aránya — csak sávváltáskor szólal meg.' },
-  { key: 'protein-training-mismatch', who: 'taplalkozo', line: 'A fehérje pont az edzésnapokon marad-e el, a pihenőnapokhoz képest.' },
+  { key: 'hydration-consistency', who: 'taplalkozo', line: 'A napi vízcél 90%-át elérő napok aránya — csak sávváltáskor szólal meg.' },
+  { key: 'protein-training-mismatch', who: 'taplalkozo', line: 'A fehérje pont az edzésnapokon marad-e el, az edzés nélküli napokhoz képest.' },
   { key: 'late-eating-pattern', who: 'szomnologus', line: 'Késő esti nagyobb étkezés után rosszabb-e az azt követő éjszaka.' },
-  { key: 'stack-skip-pattern', who: 'drill', line: 'Ismétlődő kiegészítő-kihagyások — a pihenőnapi elhagyás nem számít kihagyásnak.' },
+  { key: 'stack-skip-pattern', who: 'drill', line: 'Ismétlődő kiegészítő-kihagyások — a pihenőnapi elhagyás és a felvétel előtti napok nem számítanak kihagyásnak.' },
   { key: 'med-cycle-covariance', who: 'doki', line: 'A check-in skálák ciklusnap szerinti eltérése a ciklus átlagától — érzékeny, leíró jel.' },
 ]
 

@@ -26,7 +26,12 @@ import org.springframework.stereotype.Component;
  * additionally requires {@code novaCoveragePct >= }{@link #MIN_NOVA_COVERAGE} for a day to be
  * paired — a day with a non-null share but thin coverage is excluded just like a fully-null day.
  *
- * <p>The summary states an observed co-occurrence and nothing more — no cause, no diagnosis.
+ * <p>Both sides of the comparison need {@link #MIN_DAYS_PER_GROUP} days. Without a floor on the
+ * NON-low-mood group a chronically stressed user (every paired day low-mood) would receive a
+ * covariance claim computed against an empty contrast group.
+ *
+ * <p>The summary states an observed co-occurrence and nothing more — no cause, no diagnosis — and
+ * names BOTH halves of the spike test, because the test is a disjunction (share OR kcal).
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
@@ -34,11 +39,14 @@ public class ComfortEatingDetector implements CharacterDetector {
 
     private static final int MIN_PAIRED_DAYS = 14;
     private static final int MIN_COOCCURRENCES = 3;
+    /** Both groups need a floor, mirroring {@code ProteinTrainingMismatchDetector}: a covariance
+     *  claim computed against an EMPTY contrast group is not a covariance at all. */
+    private static final int MIN_DAYS_PER_GROUP = 3;
     private static final BigDecimal NOVA_SPIKE_OVER_BASELINE = new BigDecimal("0.15");
     private static final BigDecimal MIN_NOVA_COVERAGE = new BigDecimal("0.70");
     private static final double KCAL_SPIKE_FACTOR = 1.20;
     private static final double RATE_RATIO = 1.5;
-    private static final int LOW_STRESS_MIN = 7;   // stress: higher = worse
+    private static final int HIGH_STRESS_MIN = 7;  // stress: higher = worse
     private static final int LOW_MENTAL_MAX = 4;   // mental/energy: higher = better
     private static final int LOW_ENERGY_MAX = 4;
 
@@ -57,17 +65,24 @@ public class ComfortEatingDetector implements CharacterDetector {
         if (today == null || today.state().equals(yesterday == null ? "" : yesterday.state())) {
             return List.of();
         }
-        String summary = "Rossz közérzetű napokon feljebb megy a feldolgozott étel aránya: "
+        // The spike test is a DISJUNCTION (NOVA-4 share above baseline OR kcal above baseline), so
+        // the summary must name both clauses: attributing the whole count to processed-food share
+        // alone would state a number the detector never computed.
+        String summary = "Rossz közérzetű napokon gyakrabban ugrik meg a bevitel — feljebb megy a "
+                + "feldolgozott étel aránya vagy a napi kalória a saját 8 hetes átlagához képest: "
                 + today.cooccurrences() + " ilyen nap a " + today.pairedDays()
-                + " összepárosított napból (8 hét, saját átlaghoz mérve).";
+                + " összepárosított napból.";
         return List.of(new DetectorSignal(key(), "taplalkozo", summary, 3));
     }
 
     private record Finding(String state, int cooccurrences, int pairedDays) {}
 
     /**
-     * Pairs the whole 8-week series (a covariance needs the long window), and the STATE encodes
-     * the co-occurrence count, so a new qualifying day changes the state and re-announces once.
+     * Pairs the whole 8-week series (a covariance needs the long window). The STATE is a bare
+     * PRESENCE marker ({@code "cooc"} or null): spec §6 wants a band/direction/bucket/offender
+     * key, never a moving count. An earlier count-valued state re-announced nightly, because
+     * {@code paired.size()} grows on every day a normal user logs both a meal and a check-in.
+     * The exact counts still reach the user — in the summary, which is not the gate.
      */
     private static Finding finding(DetectorInput in, LocalDate asOf) {
         Map<LocalDate, DetectorInput.CheckinDayPoint> checkins = new HashMap<>();
@@ -111,19 +126,23 @@ public class ComfortEatingDetector implements CharacterDetector {
                 }
             }
         }
-        if (lowMoodDays == 0 || lowMoodSpikes < MIN_COOCCURRENCES) {
+        // BOTH groups need a floor: with no non-low-mood days there is nothing to covary AGAINST,
+        // and the rate-ratio guard below would be skipped entirely — a chronically stressed user
+        // (every paired day low-mood) would get a covariance claim computed against nothing.
+        if (lowMoodDays < MIN_DAYS_PER_GROUP || otherDays < MIN_DAYS_PER_GROUP
+                || lowMoodSpikes < MIN_COOCCURRENCES) {
             return null;
         }
         double lowMoodRate = (double) lowMoodSpikes / lowMoodDays;
-        double otherRate = otherDays == 0 ? 0 : (double) otherSpikes / otherDays;
+        double otherRate = (double) otherSpikes / otherDays;
         if (otherRate > 0 && lowMoodRate < otherRate * RATE_RATIO) {
             return null;
         }
-        return new Finding("cooc:" + lowMoodSpikes + "/" + paired.size(), lowMoodSpikes, paired.size());
+        return new Finding("cooc", lowMoodSpikes, paired.size());
     }
 
     private static boolean lowMood(DetectorInput.CheckinDayPoint c) {
-        return (c.stress() != null && c.stress().doubleValue() >= LOW_STRESS_MIN)
+        return (c.stress() != null && c.stress().doubleValue() >= HIGH_STRESS_MIN)
                 || (c.mental() != null && c.mental().doubleValue() <= LOW_MENTAL_MAX)
                 || (c.energy() != null && c.energy().doubleValue() <= LOW_ENERGY_MAX);
     }

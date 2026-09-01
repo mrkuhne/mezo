@@ -270,6 +270,8 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         assertThat(input.trend().stack().items()).singleElement().satisfies(i -> {
             assertThat(i.name()).isEqualTo("Kreatin");
             assertThat(i.slotKey()).isEqualTo("wake");
+            // startedOn is carried so the detector can refuse to score days that PREDATE the item
+            assertThat(i.startedOn()).isEqualTo(java.time.LocalDate.now());
         });
         assertThat(input.trend().stack().days()).singleElement().satisfies(d -> {
             assertThat(d.date()).isEqualTo(DAY);
