@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.controller;
 
 import io.mrkuhne.mezo.api.controller.CompanionApi;
+import io.mrkuhne.mezo.api.dto.ConversationRenameRequest;
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.CreateConversationRequest;
 import io.mrkuhne.mezo.api.dto.CreateFactRequest;
@@ -59,6 +60,16 @@ public class CompanionController implements CompanionApi {
     @Override
     public ConversationResponse createConversation(CreateConversationRequest request) {
         return conversationService.create(currentUserId.get(), request);
+    }
+
+    @Override
+    public ConversationResponse renameConversation(UUID conversationId, ConversationRenameRequest request) {
+        return conversationService.rename(currentUserId.get(), conversationId, request);
+    }
+
+    @Override
+    public void deleteConversation(UUID conversationId) {
+        conversationService.delete(currentUserId.get(), conversationId);
     }
 
     @Override

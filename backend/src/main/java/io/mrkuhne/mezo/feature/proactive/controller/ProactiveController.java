@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.ChallengeResponse;
 import io.mrkuhne.mezo.api.dto.ExperimentDecisionRequest;
 import io.mrkuhne.mezo.api.dto.ExperimentResponse;
 import io.mrkuhne.mezo.api.dto.FeedMessageResponse;
+import io.mrkuhne.mezo.api.dto.MemoirArchiveResponse;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.PredictionResponse;
 import io.mrkuhne.mezo.api.dto.WeeklyLessonResponse;
@@ -72,6 +73,11 @@ public class ProactiveController implements ProactiveApi {
     @Override
     public MemoirResponse getMemoir() {
         return memoirService.getMemoir(currentUserId.get());
+    }
+
+    @Override
+    public MemoirArchiveResponse getMemoirArchive() {
+        return memoirService.archive(currentUserId.get());
     }
 
     @Override

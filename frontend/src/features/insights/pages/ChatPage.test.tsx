@@ -614,3 +614,100 @@ describe('ChatPage (real mode)', () => {
     expect(screen.getByPlaceholderText('Mondj valamit…')).toBeDisabled()
   })
 })
+
+// ==== F7.5 (mezo-d20.8.5): beszélgetés-műveletek + hiba-buborék retry ====
+
+describe('ChatPage conversation actions (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('the ⋯ disc opens the actions sheet for the current conversation', async () => {
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'A beszélgetés műveletei' }))
+    expect(await screen.findByRole('button', { name: /Átnevezés/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Törlés/ })).toBeInTheDocument()
+  })
+
+  test('the picker rows carry a kebab that opens the actions sheet', async () => {
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Beszélgetések' }))
+    const kebabs = await screen.findAllByRole('button', { name: /^Műveletek:/ })
+    expect(kebabs.length).toBeGreaterThan(0)
+    fireEvent.click(kebabs[0])
+    expect(await screen.findByRole('button', { name: /Átnevezés/ })).toBeInTheDocument()
+  })
+
+  test('a draft thread disables the ⋯ disc — no persisted row to act on', async () => {
+    renderPage('/mezo/chat?c=new')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'A beszélgetés műveletei' })).toBeDisabled())
+  })
+})
+
+describe('ChatPage error bubble retry (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  const failStream = () =>
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, () => {
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(
+            `event:error\ndata:${JSON.stringify({ code: 'COMPANION_UPSTREAM' })}\n\n`))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+  test('a failed send renders the amber bubble with Újra + Szerkesztés', async () => {
+    failStream()
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await screen.findByText('Nem sikerült válaszolni — próbáld újra.')
+    expect(screen.getByText('Az üzeneted nem veszett el.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Szerkesztés' })).toBeInTheDocument()
+  })
+
+  test('Szerkesztés hands the failed text back to the composer and clears the bubble', async () => {
+    failStream()
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Elgépeelt üzenet' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await screen.findByRole('button', { name: 'Szerkesztés' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
+    expect(screen.getByPlaceholderText('Mondj valamit…')).toHaveValue('Elgépeelt üzenet')
+    expect(screen.queryByRole('button', { name: 'Újra' })).not.toBeInTheDocument()
+  })
+
+  test('Újra re-sends the same turn and a now-healthy stream completes it', async () => {
+    failStream()
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await screen.findByRole('button', { name: 'Újra' })
+
+    server.resetHandlers() // back to the healthy module handlers
+    fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
+
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Újra' })).not.toBeInTheDocument()
+    // replace, don't append: exactly one user bubble with the retried text
+    expect(screen.getAllByText('Fáradt vagyok')).toHaveLength(1)
+  })
+})

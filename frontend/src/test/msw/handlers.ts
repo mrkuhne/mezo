@@ -367,6 +367,8 @@ export const handlers = [
 
   // Proactive memoir (W2) — default: honest 404, MemoirPage renders its "készül" state.
   http.get(`${API_BASE}/api/proactive/memoir`, () => new HttpResponse(null, { status: 404 })),
+  // F7.5: the archive shelf — default honest empty list (list-endpoint precedent).
+  http.get(`${API_BASE}/api/proactive/memoir/archive`, () => HttpResponse.json({ entries: [] })),
 
   // Proactive prediction (P1) — default: honest empty ARRAY (list endpoint, never 404); the
   // PredictionsPage renders its "still learning" null-state.

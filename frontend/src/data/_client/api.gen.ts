@@ -1579,6 +1579,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/conversation/{conversationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete one conversation (soft; its messages become unreachable) — F7.5 (mezo-d20.8.5) */
+        delete: operations["deleteConversation"];
+        options?: never;
+        head?: never;
+        /** Rename one conversation (the list label; reversible, no history impact) — F7.5 (mezo-d20.8.5) */
+        patch: operations["renameConversation"];
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/messages": {
         parameters: {
             query?: never;
@@ -1971,6 +1989,26 @@ export interface paths {
         };
         /** The latest weekly memoir (lazily generated for the last completed week when none exists yet) */
         get: operations["getMemoir"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/memoir/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every persisted memoir, newest week first — the archive shelf (F7.5, mezo-d20.8.5)
+         * @description The full list in one round — weekly cadence keeps this small (~52 rows/year). Never generates: the archive lists what the Sunday cron / lazy-latest already wrote. An empty list is the honest empty state (never a 404 — list-endpoint precedent).
+         */
+        get: operations["getMemoirArchive"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5623,6 +5661,10 @@ export interface components {
                 date: string;
             } | null;
         };
+        ConversationRenameRequest: {
+            /** @description The new list label — same cap as the auto-title column. */
+            title: string;
+        };
         ConversationResponse: {
             /** Format: uuid */
             id: string;
@@ -6217,6 +6259,10 @@ export interface components {
             anchors: components["schemas"]["MemoirAnchor"][];
             /** Format: date-time */
             generatedAt: string;
+        };
+        MemoirArchiveResponse: {
+            /** @description Every persisted memoir, weekStart descending. */
+            entries: components["schemas"]["MemoirResponse"][];
         };
         PredictionResponse: {
             /** Format: uuid */
@@ -12485,6 +12531,97 @@ export interface operations {
             };
         };
     };
+    deleteConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    renameConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description The renamed conversation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     listMessages: {
         parameters: {
             query?: never;
@@ -13584,6 +13721,35 @@ export interface operations {
             };
             /** @description No memoir possible — no narrative memory in the last completed week. The FE renders its honest "készül" state. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMemoirArchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The persisted memoirs, weekStart descending (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoirArchiveResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
