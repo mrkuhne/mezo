@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
+import { useDualQuery } from '@/data/useDualQuery'
 import { ApiError } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
 import { memoirApi } from '@/data/insights/memoirApi'
-import { memoir as mockMemoir, anniversaryNote as mockAnniversaryNote } from '@/data/insights/insights'
-import type { Memoir } from '@/data/types'
+import { memoir as mockMemoir, memoirArchive as mockMemoirArchive, anniversaryNote as mockAnniversaryNote } from '@/data/insights/insights'
+import type { Memoir, MemoirEntry } from '@/data/types'
 
 export interface MemoirView {
   memoir: Memoir | null
@@ -38,4 +39,25 @@ export function useMemoir(): MemoirView {
     return { memoir: mockMemoir, anniversaryNote: mockAnniversaryNote, mode: 'mock' }
   }
   return { memoir: q.data ?? null, anniversaryNote: null, mode: 'live' }
+}
+
+/**
+ * F7.5 (mezo-d20.8.5): the archive shelf — every persisted memoir, newest week first.
+ * The switch-off 404 resolves to the honest empty shelf (the archive page renders its
+ * "még nincs fejezet" state), never a thrown error.
+ */
+export function useMemoirArchive() {
+  return useDualQuery<MemoirEntry[]>({
+    queryKey: ['memoir', 'archive'],
+    mockData: mockMemoirArchive,
+    realFetch: async () => {
+      try {
+        return await memoirApi.archive()
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return []
+        throw e
+      }
+    },
+    realEmpty: [],
+  })
 }
