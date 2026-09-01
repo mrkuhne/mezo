@@ -54,11 +54,11 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.getByText(candidateSeed[0].text).closest('.mz-candc')).not.toBeNull()
   })
 
-  test('a fejléc alatt kereszt-link mutat a Tudásgráfra', () => {
+  test('a fejléc alatt egy sor-gomb visz a Tudásgráfra', () => {
     renderPage()
-    const link = screen.getByRole('link', { name: /Tudásgráf/ })
-    expect(link).toHaveAttribute('href', '/me/knowledge')
-    expect(screen.getByText(/kapcsolatok és életesemények/)).toBeInTheDocument()
+    const row = screen.getByRole('button', { name: 'Tudásgráf' })
+    expect(row).toBeInTheDocument()
+    expect(screen.getByText(/kapcsolatok és életesemények · élő mindmap/)).toBeInTheDocument()
   })
 
   test('a három prompt-státusz szakasz a helyes darabszámokkal jelenik meg', () => {
