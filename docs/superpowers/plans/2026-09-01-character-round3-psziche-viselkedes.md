@@ -20,7 +20,7 @@
 - **Hungarian output.** Every summary is one Hungarian sentence. Decimal comma via `TrailingWindow.hu()` — never `BigDecimal.toString()`.
 - **Every threshold is a named constant** in its detector class. No magic numbers in expressions.
 - **Detector wiring:** `@Component`, `@ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")`, implements `CharacterDetector`, returns `DetectorSignal(key, expertKey, summary, salience)`. Valid `expertKey` values: `doki`, `edzo`, `taplalkozo`, `szomnologus`, `pszichologus`, `drill`, `antropologus`.
-- **Backend gate (per task):** `./mvnw test -Dtest='*Character*' -Dmezo.test.use-testcontainers=true` from `backend/`. NEVER the full suite locally. Any task changing cross-feature imports ALSO runs `-Dtest=ArchitectureTest` explicitly.
+- **Backend gate (per task):** `./mvnw test -Dtest='*Character*,DetectorTest' -Dmezo.test.use-testcontainers=true` from `backend/`. NEVER the full suite locally. Any task changing cross-feature imports ALSO runs `-Dtest=ArchitectureTest` explicitly. **`DetectorTest` must be named separately**: surefire's `-Dtest` matches the SIMPLE class name, and `DetectorTest` contains no "Character", so the bare `*Character*` sweep silently skips the entire detector unit-test file — the one file this round changes most. Rounds 1 and 2 ran that blind gate; CI's full suite covered them, the local gate did not.
 - **Frontend gate:** both modes — `pnpm test` AND `VITE_USE_MOCK=false pnpm test` — plus `pnpm build`.
 - **Work in the worktree** `/Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/user-character-profiling-f2a1ba` on branch `feat/character-s12-psziche`. Never `cd` to the primary repo.
 - Commit subjects carry `(mezo-1gim.15)` and end with `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
@@ -266,7 +266,7 @@ obvious-but-wrong instinct here:
 - [ ] **Step 7: Compile and run the existing suite**
 
 ```bash
-cd backend && ./mvnw test -Dtest='*Character*' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='*Character*,DetectorTest' -Dmezo.test.use-testcontainers=true
 ```
 Expected: PASS, unchanged test count. This task adds no behavior — a failure here means the rename or the record widening broke something.
 
@@ -526,7 +526,7 @@ Write the `saveFocus`, `saveReflection`, `saveDecision`, `saveNeedsDay` helpers 
 - [ ] **Step 6: Run the gates**
 
 ```bash
-cd backend && ./mvnw test -Dtest='*Character*' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='*Character*,DetectorTest' -Dmezo.test.use-testcontainers=true
 ./mvnw test -Dtest=ArchitectureTest -Dmezo.test.use-testcontainers=true
 ```
 Expected: both PASS. `ArchitectureTest` must pass WITHOUT regenerating the freeze store — the two new edges (`character → intention`, `character → needs`) are one-way and introduce no cycle. **If it reports a widened frozen cycle, stop and report BLOCKED** rather than regenerating the store; that would mean a real cycle exists and the design is wrong.
@@ -776,7 +776,7 @@ Add the `saveUserMessage`, `saveGratitude`, `saveSleep` helpers (reuse existing 
 - [ ] **Step 8: Run the gates**
 
 ```bash
-cd backend && ./mvnw test -Dtest='*Character*' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='*Character*,DetectorTest' -Dmezo.test.use-testcontainers=true
 ./mvnw test -Dtest=ArchitectureTest -Dmezo.test.use-testcontainers=true
 ```
 
@@ -1520,7 +1520,7 @@ Temporarily change `DecisionReviewBacklogDetector`'s state key to `"backlog:" + 
 - [ ] **Step 8: Run the gate**
 
 ```bash
-cd backend && ./mvnw test -Dtest='*Character*' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='*Character*,DetectorTest' -Dmezo.test.use-testcontainers=true
 ```
 
 - [ ] **Step 9: Commit**
@@ -2064,7 +2064,7 @@ Check the fixture arithmetic before running: `retroLogging_firesWhenReflectionEn
 - [ ] **Step 6: Run the gate**
 
 ```bash
-cd backend && ./mvnw test -Dtest='*Character*' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='*Character*,DetectorTest' -Dmezo.test.use-testcontainers=true
 ```
 
 - [ ] **Step 7: Commit**
@@ -2575,7 +2575,7 @@ Before running, sanity-check the two fixtures that carry arithmetic:
 - [ ] **Step 6: Run the gate**
 
 ```bash
-cd backend && ./mvnw test -Dtest='*Character*' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='*Character*,DetectorTest' -Dmezo.test.use-testcontainers=true
 ./mvnw test -Dtest=ArchitectureTest -Dmezo.test.use-testcontainers=true
 ```
 
@@ -2690,7 +2690,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 Run every gate once more on the finished branch, because the tasks landed incrementally:
 
 ```bash
-cd backend && ./mvnw test -Dtest='*Character*' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='*Character*,DetectorTest' -Dmezo.test.use-testcontainers=true
 cd backend && ./mvnw test -Dtest=ArchitectureTest -Dmezo.test.use-testcontainers=true
 cd frontend && pnpm test && VITE_USE_MOCK=false pnpm test && pnpm build
 node scripts/gen-codemap.mjs --check && node scripts/lint-docs.mjs --errors-only
