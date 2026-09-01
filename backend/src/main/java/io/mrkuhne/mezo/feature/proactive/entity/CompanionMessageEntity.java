@@ -38,6 +38,9 @@ public class CompanionMessageEntity extends OwnedEntity {
     /** W5.2 (bd mezo-b3pp.19): config-text intervention card — the only kind whose envelope
      *  carries an {@code interventionKey}; never LLM-generated. */
     public static final String KIND_INTERVENTION = "intervention";
+    /** Emberek S6 (mezo-06o0.8): napi megfigyelés az emberi körről — az Emberek hub
+     *  Mezo-sávja ezt mutatja, és a Napi Mezo szálban is megjelenik. */
+    public static final String KIND_PEOPLE = "people";
 
     @Id
     @GeneratedValue

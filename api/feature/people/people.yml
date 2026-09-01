@@ -232,6 +232,7 @@ components:
       required:
         - persons
         - mentions
+        - mezoNote
       properties:
         persons:
           type: array
@@ -241,6 +242,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MentionResponse'
+        mezoNote:
+          type: string
+          description: >-
+            Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet,
+            ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék.
+            Sosem üres — a sáv mindig igaz mondatot mutat.
     PersonResponse:
       type: object
       required:
@@ -255,6 +262,7 @@ components:
         - knownFacts
         - ties
         - affectTrend
+        - direction
         - aliases
         - status
         - sourceKind
@@ -298,8 +306,28 @@ components:
             type: string
         affectTrend:
           type: array
+          description: >-
+            Heti hangulat-olvasatok 1..5 skálán, időrendben (legfeljebb 8, a legfrissebbek).
+            Az említések tónusából és intenzitásából SZÁMÍTOTT érték — a person.affect_trend
+            oszlopot ez a válasz nem olvassa.
           items:
             type: integer
+        affectTrendStart:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            A hangulat-ív első olvasatának hete (hétfő). Az ív csak azokat a heteket
+            tartalmazza, ahol volt tónusozott említés, ezért az időablakot ebből kell
+            címkézni, nem az olvasatok számából. null, ha nincs olvasat.
+        direction:
+          type: string
+          enum: [up, down, flat]
+          description: A hangulat-ív iránya az utolsó két olvasat és a korábbiak átlaga alapján.
+        directionReason:
+          type: string
+          nullable: true
+          description: Magyar, determinisztikus indoklás az irány alatt. null, ha nincs olvasat.
         mentionCount:
           type: integer
           description: Count of live mention rows — computed, never seeded

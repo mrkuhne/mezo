@@ -104,23 +104,6 @@ export function toneMix(mentions: Mention[]): ToneSlice[] {
     .sort((a, b) => b.count - a.count)
 }
 
-// ── trend direction ──────────────────────────────────────────────────────────
-
-export type Direction = 'up' | 'down' | 'flat'
-
-function average(values: number[]): number {
-  return values.reduce((sum, v) => sum + v, 0) / values.length
-}
-
-export function directionFor(trend: number[]): Direction {
-  if (trend.length < 3) return 'flat'
-  const last2 = trend.slice(-2)
-  const earlier = trend.slice(0, -2)
-  const diff = average(last2) - average(earlier)
-  if (Math.abs(diff) < 0.4) return 'flat'
-  return diff > 0 ? 'up' : 'down'
-}
-
 // ── context breakdown ─────────────────────────────────────────────────────────
 
 export interface CtxSlice { ctx: MentionContext; count: number; pct: number }
@@ -171,16 +154,19 @@ const HU_MONTHS_UP = ['JAN', 'FEB', 'MÁR', 'ÁPR', 'MÁJ', 'JÚN', 'JÚL', 'AUG
 /**
  * PersonDetailPage's `.ppl-affax` month-range row under the mood-arc bars — the
  * prototype (emberek-body.html renderDet()) hardcodes 'JÚL'/'AUG'; this derives the
- * same two labels honestly from `now` instead: each trend point is one weekly
- * reading, so the window's earliest point sits `trend.length` weeks before `now`,
- * and its latest point IS `now`. The axis is just those two months' short Hungarian
- * uppercase abbreviations. An empty trend has no window to label — `null` (the
- * trend card already renders its own '—' empty state instead of bars).
+ * same two labels honestly from the server-carried `affectTrendStart` instead of
+ * inferring a window from the trend array's length: only weeks with an actual toned
+ * mention produce a reading, so the arc can be "gappy" relative to the calendar, and
+ * a `trend.length * 7 days before now` estimate would silently lie about how far back
+ * the arc actually starts. The axis is just the start week's and `now`'s months, as
+ * short Hungarian uppercase abbreviations. `null` startISO (no reading at all) has no
+ * window to label — `null` (the trend card already renders its own '—' empty state
+ * instead of bars).
  */
-export function trendAxisLabels(trend: number[], now: Date): [string, string] | null {
-  if (trend.length === 0) return null
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - trend.length * 7)
-  return [HU_MONTHS_UP[start.getMonth()], HU_MONTHS_UP[now.getMonth()]]
+export function trendAxisLabels(startISO: string | null, now: Date): [string, string] | null {
+  if (startISO === null) return null
+  const start = new Date(startISO)
+  return [HU_MONTHS_UP[start.getUTCMonth()], HU_MONTHS_UP[now.getMonth()]]
 }
 
 // ── hub headline lines ────────────────────────────────────────────────────────
@@ -215,8 +201,8 @@ export function hubLines(people: PersonEntry[], mentions: Mention[], now: Date):
     }
   }
 
-  const downPerson = people.find((p) => directionFor(p.affectTrend) === 'down')
-  const upPerson = people.find((p) => directionFor(p.affectTrend) === 'up')
+  const downPerson = people.find((p) => p.direction === 'down')
+  const upPerson = people.find((p) => p.direction === 'up')
 
   return {
     mentionsThisWeek: weekMentions.length,

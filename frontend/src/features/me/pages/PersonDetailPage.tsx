@@ -79,7 +79,7 @@ export function PersonDetailPage() {
   const ringPct = Math.max(0, Math.min(100, Math.round((last / 5) * 100)))
   const toneMeta = TONE_META[person.affect_baseline] as (typeof TONE_META)[keyof typeof TONE_META] | undefined
   const trend = trendHeights(person.affectTrend, TREND_MAX_PX)
-  const axisLabels = trendAxisLabels(person.affectTrend, new Date())
+  const axisLabels = trendAxisLabels(person.affectTrendStart, new Date())
   const ctxSlices = contextBreakdown(personMentions)
   const timeline = personMentions.slice(0, TIMELINE_MAX)
   const hasTonelessRow = timeline.some((m) => !m.tone)
