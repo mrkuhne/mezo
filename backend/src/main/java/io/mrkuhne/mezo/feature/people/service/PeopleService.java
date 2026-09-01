@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +39,7 @@ public class PeopleService {
     private final PersonRepository personRepository;
     private final MentionRepository mentionRepository;
     private final PeopleMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * One-call bootstrap (the knowledge pattern): persons with mention-derived stats computed
@@ -107,6 +109,7 @@ public class PeopleService {
             req.getAffectBaseline() == null ? "neutral" : req.getAffectBaseline().getValue(),
             req.getContactCadenceLabel(), req.getNotes());
         PersonEntity saved = personRepository.save(p);
+        eventPublisher.publishEvent(new PersonSavedEvent(userId, saved.getId()));
         return mapper.toPersonResponse(saved, 0, 0, null);
     }
 
@@ -118,6 +121,7 @@ public class PeopleService {
             req.getAffectBaseline() == null ? p.getAffectBaseline() : req.getAffectBaseline().getValue(),
             req.getContactCadenceLabel(), req.getNotes());
         PersonEntity saved = personRepository.save(p);
+        eventPublisher.publishEvent(new PersonSavedEvent(userId, personId));
         List<MentionEntity> own = mentionRepository
             .findAllByCreatedByAndDeletedFalseOrderByTsDesc(userId).stream()
             .filter(m -> m.getPersonId().equals(personId)).toList();
@@ -130,6 +134,7 @@ public class PeopleService {
     @Transactional
     public void deletePerson(UUID userId, UUID personId) {
         personRepository.delete(requireOwnedPerson(userId, personId)); // @SQLDelete → soft
+        eventPublisher.publishEvent(new PersonDeletedEvent(userId, personId));
     }
 
     /** ✕ visszavonás: bármely saját mention soft-deletálható; a személy-scope a 404-hez kell. */
@@ -154,10 +159,13 @@ public class PeopleService {
         if ("reject".equals(req.getDecision())) {
             PersonResponse snapshot = mapper.toPersonResponse(p, 0, 0, null);
             personRepository.delete(p);   // @SQLDelete → soft; a sor marad reject-listának
+            eventPublisher.publishEvent(new PersonDeletedEvent(userId, personId));
             return snapshot;
         }
         p.setStatus("active");
-        return mapper.toPersonResponse(personRepository.save(p), 0, 0, null);
+        PersonResponse response = mapper.toPersonResponse(personRepository.save(p), 0, 0, null);
+        eventPublisher.publishEvent(new PersonSavedEvent(userId, personId));
+        return response;
     }
 
     /** Az AI-kurálta mezők (knownFacts/ties/affectTrend) szándékosan érintetlenek. */
