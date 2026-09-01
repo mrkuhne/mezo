@@ -1735,4 +1735,78 @@ class DetectorTest {
 
         assertThat(new WeekendGapDetector().detect(in)).isEmpty();
     }
+
+    private static DetectorInput.ChatToolCallPoint toolCall(LocalDate d, String conv, String tool, String title) {
+        return new DetectorInput.ChatToolCallPoint(d, UUID.nameUUIDFromBytes(conv.getBytes()), tool, title);
+    }
+
+    @Test
+    void chatToolDomains_mapsBakedArgsAndUnknownsHonestly() {
+        assertThat(ChatToolDomains.domainOf("get_recovery(days=7)")).isEqualTo("alvas");
+        assertThat(ChatToolDomains.domainOf("get_training_log")).isEqualTo("edzes");
+        assertThat(ChatToolDomains.domainOf("compare_periods")).isEqualTo("mintak");
+        assertThat(ChatToolDomains.domainOf("get_medication")).isEqualTo("gyogyszer");
+        assertThat(ChatToolDomains.domainOf("something_new")).isNull();
+        assertThat(ChatToolDomains.hu("cel")).isEqualTo("cél és growth");
+    }
+
+    @Test
+    void chatTopicShift_firesWhenADominantDomainFirstAppears_withTwoTitlesAsEvidence() {
+        List<DetectorInput.ChatToolCallPoint> calls = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            calls.add(toolCall(DAY, i < 4 ? "c1" : "c2", "get_training_log(days=14)",
+                    i < 4 ? "Hogy ment a heti edzés?" : "Mit mutat a mellnyomás rekordom?"));
+        }
+        for (int i = 0; i < 3; i++) {
+            calls.add(toolCall(DAY, "c3", "get_fuel_log", "Ettem eleget fehérjét?"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().toolCalls(calls).build());
+
+        List<DetectorSignal> fired = new ChatTopicShiftDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("chat-topic-shift");
+            assertThat(s.expertKey()).isEqualTo("pszichologus");
+            assertThat(s.summary()).contains("70%").contains("edzés").contains("7 eszközhívás")
+                    .contains("nem volt kirajzolódó fő téma").contains("„Hogy ment a heti edzés?”")
+                    .contains("„Mit mutat a mellnyomás rekordom?”").doesNotContain("fehérjét");
+            assertThat(s.salience()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void chatTopicShift_silentBelowTheDominantShare_andBelowTenCalls() {
+        List<DetectorInput.ChatToolCallPoint> spread = new ArrayList<>();
+        String[] tools = {"get_training_log", "get_training_log", "get_training_log",
+                "get_fuel_log", "get_fuel_log", "get_fuel_log", "get_recovery", "get_recovery", "get_goal", "get_goal"};
+        for (String t : tools) {
+            spread.add(toolCall(DAY, "c", t, "t"));    // best share 3/10 = 30% < 40%
+        }
+        assertThat(new ChatTopicShiftDetector().detect(trendOnly(DAY, new TrendBuilder().toolCalls(spread).build())))
+                .isEmpty();
+
+        List<DetectorInput.ChatToolCallPoint> few = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            few.add(toolCall(DAY, "c", "get_training_log", "t"));
+        }
+        assertThat(new ChatTopicShiftDetector().detect(trendOnly(DAY, new TrendBuilder().toolCalls(few).build())))
+                .isEmpty();
+    }
+
+    @Test
+    void chatTopicShift_evidencePicksTheTwoMostRecentConversationsDeterministically() {
+        List<DetectorInput.ChatToolCallPoint> calls = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            calls.add(toolCall(DAY.minusDays(2), "old", "get_recovery", "Régi alvás-kérdés"));
+            calls.add(toolCall(DAY.minusDays(1), "mid", "get_recovery", "Középső alvás-kérdés"));
+            calls.add(toolCall(DAY, "new", "get_recovery", "Friss alvás-kérdés"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().toolCalls(calls).build());
+
+        // as of DAY-1: 8 calls (< 10) → null; as of DAY: 12 → alvas 100% → fires
+        List<DetectorSignal> fired = new ChatTopicShiftDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> assertThat(s.summary())
+                .contains("„Friss alvás-kérdés”, „Középső alvás-kérdés”").doesNotContain("Régi"));
+    }
 }
