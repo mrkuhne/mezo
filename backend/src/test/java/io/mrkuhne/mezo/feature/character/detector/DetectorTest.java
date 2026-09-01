@@ -38,7 +38,7 @@ class DetectorTest {
     static DetectorInput.TrendWindow emptyTrend() {
         return new DetectorInput.TrendWindow(List.of(), List.of(), List.of(), List.of(),
                 null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(),
-                List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
     }
 
     /** Full-control builder for the round-2 detectors: only the trend window varies. */
@@ -89,6 +89,9 @@ class DetectorTest {
         private List<DetectorInput.CheckinSlotPoint> slots = List.of();
         private List<java.time.LocalDateTime> chat = List.of();
         private List<DetectorInput.LogLatencyPoint> latencies = List.of();
+        private List<DetectorInput.MentionPoint> mentions = List.of();
+        private List<DetectorInput.ChatToolCallPoint> toolCalls = List.of();
+        private DetectorInput.MetaWindow meta = DetectorInput.MetaWindow.empty();
 
         TrendBuilder runs(List<DetectorInput.RunPoint> v) { this.runs = v; return this; }
         TrendBuilder gym(List<DetectorInput.GymDay> v) { this.gym = v; return this; }
@@ -105,10 +108,14 @@ class DetectorTest {
         TrendBuilder slots(List<DetectorInput.CheckinSlotPoint> v) { this.slots = v; return this; }
         TrendBuilder chat(List<java.time.LocalDateTime> v) { this.chat = v; return this; }
         TrendBuilder latencies(List<DetectorInput.LogLatencyPoint> v) { this.latencies = v; return this; }
+        TrendBuilder mentions(List<DetectorInput.MentionPoint> v) { this.mentions = v; return this; }
+        TrendBuilder toolCalls(List<DetectorInput.ChatToolCallPoint> v) { this.toolCalls = v; return this; }
+        TrendBuilder meta(DetectorInput.MetaWindow v) { this.meta = v; return this; }
 
         DetectorInput.TrendWindow build() {
             return new DetectorInput.TrendWindow(runs, gym, meals, water, stack, checkins, med,
-                    sleep, intentions, decisions, gratitudes, needs, slots, chat, latencies);
+                    sleep, intentions, decisions, gratitudes, needs, slots, chat, latencies,
+                    mentions, toolCalls, meta);
         }
     }
 
@@ -557,7 +564,7 @@ class DetectorTest {
         // Scenario 1: DAY run at 40s -> band flips KOZOMBOS -> JAVUL -> fires "javul"
         List<DetectorInput.RunPoint> withFlip = new java.util.ArrayList<>(olderWeeks);
         withFlip.add(new DetectorInput.RunPoint(DAY, null, 40, null));
-        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), withFlip, List.of(), null, flipTrend));
         assertThat(fired).singleElement().satisfies(s -> {
@@ -567,7 +574,7 @@ class DetectorTest {
         });
 
         // Scenario 2: DAY run removed entirely -> no new run data -> empty regardless of band
-        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), olderWeeks, List.of(), null, noDayTrend))).isEmpty();
 
@@ -575,7 +582,7 @@ class DetectorTest {
         // suppresses even though new run data exists
         List<DetectorInput.RunPoint> noFlip = new java.util.ArrayList<>(olderWeeks);
         noFlip.add(new DetectorInput.RunPoint(DAY, null, 108, null));
-        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), noFlip, List.of(), null, noFlipTrend))).isEmpty();
     }
@@ -588,7 +595,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(7), null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(14), null, 100, null));
-        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, List.of(), null, trend))).isEmpty();
     }
@@ -597,8 +604,8 @@ class DetectorTest {
     void sleepChain_firesOnRepeatedPoorSleepDecline() {
         SleepPerformanceChainDetector d = new SleepPerformanceChainDetector();
         List<DetectorInput.SleepPoint> sleep = List.of(
-                new DetectorInput.SleepPoint(DAY.minusDays(3), 3, null, null),
-                new DetectorInput.SleepPoint(DAY, 3, null, null));
+                new DetectorInput.SleepPoint(DAY.minusDays(3), 3, null, null, null, null),
+                new DetectorInput.SleepPoint(DAY, 3, null, null, null, null));
         List<DetectorInput.RunPoint> runs = List.of(
                 new DetectorInput.RunPoint(DAY.minusDays(3), 9, null, null),
                 new DetectorInput.RunPoint(DAY, 9, null, null));
@@ -616,8 +623,8 @@ class DetectorTest {
     void sleepChain_quietWithGoodSleep() {
         SleepPerformanceChainDetector d = new SleepPerformanceChainDetector();
         List<DetectorInput.SleepPoint> sleep = List.of(
-                new DetectorInput.SleepPoint(DAY.minusDays(3), 8, null, null),
-                new DetectorInput.SleepPoint(DAY, 8, null, null));
+                new DetectorInput.SleepPoint(DAY.minusDays(3), 8, null, null, null, null),
+                new DetectorInput.SleepPoint(DAY, 8, null, null, null, null));
         List<DetectorInput.RunPoint> runs = List.of(
                 new DetectorInput.RunPoint(DAY.minusDays(3), 9, null, null),
                 new DetectorInput.RunPoint(DAY, 9, null, null));
@@ -664,7 +671,8 @@ class DetectorTest {
                         new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
                         null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
                 List.of(), null, List.of(), null,
-                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(),
+                List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(DetectorGates.newMealData(trendInput(todayMeal))).isTrue();
 
         DetectorInput.TrendWindow yesterdayMeal = new DetectorInput.TrendWindow(
@@ -673,7 +681,8 @@ class DetectorTest {
                         new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
                         null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
                 List.of(), null, List.of(), null,
-                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(),
+                List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(DetectorGates.newMealData(trendInput(yesterdayMeal))).isFalse();
     }
 
@@ -901,7 +910,7 @@ class DetectorTest {
                             new BigDecimal("600"), null))));
             // SleepPoint dated D = the night leading INTO D, so day D's night is dated D+1
             sleep.add(new DetectorInput.SleepPoint(date.plusDays(1),
-                    late ? 4 : 8, new BigDecimal(late ? "5.5" : "8.0"), 1));
+                    late ? 4 : 8, new BigDecimal(late ? "5.5" : "8.0"), 1, null, null));
         }
         DetectorInput in = new DetectorInput(DAY, Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), List.of(), sleep, null,
@@ -1047,7 +1056,7 @@ class DetectorTest {
     }
 
     private static DetectorInput.SleepPoint sleep(LocalDate d, int quality) {
-        return new DetectorInput.SleepPoint(d, quality, new BigDecimal("7.0"), 1);
+        return new DetectorInput.SleepPoint(d, quality, new BigDecimal("7.0"), 1, null, null);
     }
 
     private static DetectorInput.IntentionDayPoint intention(LocalDate d, int foci, String reflection) {
