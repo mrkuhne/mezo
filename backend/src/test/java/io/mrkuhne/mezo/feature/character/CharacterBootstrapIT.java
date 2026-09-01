@@ -83,7 +83,7 @@ class CharacterBootstrapIT extends ApiIntegrationTest {
 
         assertThat(dimensionRepository.findByCreatedBy(owner)).extracting(CharacterDimensionEntity::getKey)
                 .containsExactlyInAnyOrder("physical", "athletic", "nutrition", "recovery",
-                        "mental", "discipline", "life");
+                        "mental", "discipline", "life", "self-audit");
         assertThat(claimRepository.findByCreatedByAndStatusOrderByConfidenceDesc(owner, "ACTIVE")).isNotEmpty();
         assertThat(response.getChanges()).isNotEmpty();
     }
