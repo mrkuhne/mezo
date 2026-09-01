@@ -71,6 +71,69 @@ describe('KnowledgeListPage (mock mode)', () => {
     expect(screen.getByText(candidateSeed[0].text).closest('.mz-candc')).not.toBeNull()
   })
 
+  // ---- Task 7: Kategóriák nézet + kind-lánc + Profil + Hogyan nézetek (mezo-ms9a) --------------
+
+  test('(T7-a) ?view=kategoriak → 6 kind-csempe, üres kind halványan, nem kattintható', () => {
+    const { container } = renderPage('/?view=kategoriak')
+    expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Preferenciák' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Célok' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Életesemények' })).toBeInTheDocument()
+    // empty kinds (seed has no SEASON node, and the profile node's INSIGHT kind is excluded) —
+    // present but dimmed/inert, not a clickable button
+    expect(screen.getByText('Szezonok')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Szezonok' })).not.toBeInTheDocument()
+    expect(screen.getByText('Belátások')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Belátások' })).not.toBeInTheDocument()
+    expect(container.querySelectorAll('.tud-kind-empty')).toHaveLength(2)
+  })
+
+  test('(T7-b) &kind=PATTERN → kompakt sorok, PageHead ‹ Kategóriák', () => {
+    renderPage('/?view=kategoriak&kind=PATTERN')
+    expect(screen.getByText('‹ Kategóriák')).toBeInTheDocument()
+    expect(screen.queryByText('‹ Tudástár')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Késői evés rontja az alvást/ })).toBeInTheDocument()
+    expect(screen.getByText('2 kapcsolat')).toBeInTheDocument()
+    // grid tiles are gone in this drill
+    expect(screen.queryByRole('button', { name: 'Célok' })).not.toBeInTheDocument()
+  })
+
+  test('(T7-c) érvénytelen kind → rács', () => {
+    renderPage('/?view=kategoriak&kind=NOPE')
+    expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
+    expect(screen.getByText('‹ Tudástár')).toBeInTheDocument()
+  })
+
+  test('(T7-d) sor-klikk → sheet nyílik, Archivál → node eltűnik + sheet záródik', async () => {
+    renderPage('/?view=kategoriak&kind=PATTERN')
+    await userEvent.click(screen.getByRole('button', { name: /^Késői evés rontja az alvást/ }))
+    expect(await screen.findByText('Késői evés → kiváltja → Rossz alvás · erős')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Archivál' }))
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /^Késői evés rontja az alvást/ })).not.toBeInTheDocument())
+    expect(screen.queryByText('Késői evés → kiváltja → Rossz alvás · erős')).not.toBeInTheDocument()
+  })
+
+  test('(T7-e) ?view=profil → „Így beszélj velem" cím + „Rólad tanultam" kártya + Archivál', () => {
+    renderPage('/?view=profil')
+    expect(screen.getByText('Így beszélj velem')).toBeInTheDocument()
+    expect(screen.getByText('Rólad tanultam')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Archivál' })).toBeInTheDocument()
+    // the retired word never appears user-visible
+    expect(screen.queryByText('Profil')).not.toBeInTheDocument()
+  })
+
+  test('(T7-f) ?view=hogyan → mind a 6 kérdés-cím látszik', () => {
+    renderPage('/?view=hogyan')
+    expect(screen.getByText('Mi az a tény?')).toBeInTheDocument()
+    expect(screen.getByText('Mit csinál a kapcsoló?')).toBeInTheDocument()
+    expect(screen.getByText('Mit jelent a visszaigazolás?')).toBeInTheDocument()
+    expect(screen.getByText('Miért marad ki néhány?')).toBeInTheDocument()
+    expect(screen.getByText('Mi vár jóváhagyásra?')).toBeInTheDocument()
+    expect(screen.getByText('Mik a kategóriák?')).toBeInTheDocument()
+    expect(screen.getByText(/Ugyanennek a tudásnak a térképe/)).toBeInTheDocument()
+  })
+
   test('a tények kategória-mosott csempék clay ikon-koronggal (iterációk §1 tile pass)', () => {
     // A FactsView-tartalom a T5 óta a ?view=tenyek nézet része, nem az alapnézeté.
     const { container } = renderPage('/?view=tenyek')
@@ -407,6 +470,24 @@ describe('KnowledgeListPage (real mode)', () => {
     expect(screen.getByRole('button', { name: 'Kategóriák' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Tények' })).not.toBeInTheDocument()
     expect(await screen.findByText('Új munkahely első hete')).toBeInTheDocument()
+  })
+
+  test('(T7-g) profil-node nélkül ?view=profil → alapnézet', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/graph/node`, () =>
+        HttpResponse.json([
+          {
+            id: 'n2', kind: 'PATTERN', title: 'Késői evés rontja az alvást', summary: null,
+            status: 'active', createdAt: '2026-08-22T02:00:00Z', updatedAt: '2026-08-22T02:00:00Z',
+            proposedEdgeCount: 0, topEdges: [], sourceKind: null,
+          },
+        ])),
+    )
+    renderPage('/?view=profil')
+    expect(await screen.findByRole('button', { name: 'Kategóriák' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Így beszélj velem' })).not.toBeInTheDocument()
+    expect(screen.getByText('‹ Mezo')).toBeInTheDocument()
+    expect(screen.queryByText('Rólad tanultam')).not.toBeInTheDocument()
   })
 
   test('(i) degraded + ?view=tenyek: csak a degraded kártya, kereső nincs', async () => {
