@@ -104,4 +104,26 @@ describe('useWorkshop (real mode)', () => {
     })
     expect(posted).toBe(true)
   })
+
+  it('workshopTurn caps a long history at the last 20 turns (contract @Size maxItems 20)', async () => {
+    let postedHistory: unknown[] = []
+    const longHistory: { role: 'user' | 'assistant'; text: string }[] = Array.from({ length: 25 }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      text: `turn ${i}`,
+    }))
+    server.use(http.post(`${API_BASE}/api/recipe/workshop/turn`, async ({ request }) => {
+      const body = await request.json() as { history: unknown[] }
+      postedHistory = body.history
+      return HttpResponse.json({
+        reply: 'ok',
+        draft: { name: 'X', category: 'lunch', servings: 1, steps: [], lines: [] },
+      })
+    }))
+    const { result } = renderHook(() => useWorkshop())
+    await act(async () => {
+      await result.current.workshopTurn({ message: 'szia', goal: null, history: longHistory, draft: null })
+    })
+    expect(postedHistory).toHaveLength(20)
+    expect(postedHistory).toEqual(longHistory.slice(-20))
+  })
 })

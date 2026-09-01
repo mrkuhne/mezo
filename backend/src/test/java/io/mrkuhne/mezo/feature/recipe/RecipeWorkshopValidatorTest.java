@@ -57,6 +57,20 @@ class RecipeWorkshopValidatorTest {
     }
 
     @Test
+    void testSanitize_shouldDefaultBlankPantryServingUnit_toGrams() {
+        UUID id = UUID.randomUUID();
+        PantryItemEntity blankUnit = pantry(id, "Zabpehely");
+        blankUnit.setServingUnit("   ");
+        RawDraft raw = new RawDraft("Zabkása", "breakfast", 1, List.of(),
+                List.of(new RawLine(id.toString(), "zab", BigDecimal.valueOf(50), "g",
+                        null, null, null, null)));
+
+        WorkshopDraft out = validator.sanitize(raw, x -> Optional.of(blankUnit));
+
+        assertThat(out.getLines().getFirst().getUnit()).isEqualTo("g");
+    }
+
+    @Test
     void testSanitize_shouldDropMacrolessEstimate_andClampMeta() {
         RawDraft raw = new RawDraft(null, "brunch", 0, List.of(),
                 List.of(new RawLine(null, "Valami", BigDecimal.ONE, "g", null, null, null, null),

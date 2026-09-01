@@ -138,7 +138,10 @@ public class RecipeWorkshopService {
         try {
             return objectMapper.writeValueAsString(draft);
         } catch (Exception e) {
-            throw new IllegalStateException("draft serialization failed", e);
+            log.warn("Workshop draft serialization failed", e);
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("RECIPE_WORKSHOP_DRAFT_SERIALIZE_FAILED").build(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

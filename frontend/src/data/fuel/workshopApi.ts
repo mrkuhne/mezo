@@ -87,7 +87,9 @@ export const workshopApi = {
       message: req.message,
       goal: req.goal,
       // `history` has a wire default but is typed non-optional (WorkshopTurnRequest) — always send it.
-      history: req.history as WorkshopChatMessage[],
+      // Contract caps history at maxItems 20 (@Size on the generated DTO) — keep the LAST 20 turns
+      // so a long-running chat doesn't 400 on the request-side validation.
+      history: req.history.slice(-20) as WorkshopChatMessage[],
       draft: req.draft ? draftToWire(req.draft) : null,
     } satisfies WorkshopTurnRequest
     return apiFetch<WorkshopTurnResponse>('/api/recipe/workshop/turn', {
