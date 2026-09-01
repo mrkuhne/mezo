@@ -791,19 +791,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PersonAffectTrendCalculator`, `PersonDeletedEvent`, `PersonSavedEvent`, `ReflectionMentionListener`
   - **controllers→contract:** `PeopleController`→`PeopleApi`
   - **mappers:** `PeopleMapper`
-  - **other:** `MentionSeedData`, `PeopleSeedData`, `PersonGraphEdgeSource`
+  - **other:** `MentionSeedData`, `PeopleMezoNoteSource`, `PeopleSeedData`, `PersonGraphEdgeSource`
 - **Contract** `api/feature/people/people.yml` — 7 operations
   - **endpoints:** GET /api/people · POST /api/people · PUT /api/people/{personId} · DELETE /api/people/{personId} ·
     POST /api/people/{personId}/mentions · DELETE /api/people/{personId}/mentions/{mentionId} ·
     POST /api/people/{personId}/decision
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 5 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 6 IT + 1 unit
   - **ITs:** `MentionDetectionListenerIT`, `MentionDetectionServiceIT`, `MentionDetectionSwitchOffIT`,
-    `PeopleContractIT`, `PeopleServiceIT`
-  - **populators:** `MentionPopulator`, `PersonPopulator`, `UserPopulator`
+    `PeopleContractIT`, `PeopleMezoNoteIT`, `PeopleServiceIT`
+  - **populators:** `CompanionMessagePopulator`, `MentionPopulator`, `PersonPopulator`, `UserPopulator`
 
 ### proactive
 
-*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-08-31, complete)
+*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-01, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -818,9 +818,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`,
     `FeedMessageKindService`, `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `InterventionEventListener`,
     `InterventionService`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`,
-    `OverloadChallengeGenerator`, `PatternImpactService`, `PredictionGenerator`, `PredictionJob`,
-    `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`,
-    `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`,
+    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PredictionGenerator`,
+    `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`,
+    `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`,
     `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`,
     `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`,
     `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
