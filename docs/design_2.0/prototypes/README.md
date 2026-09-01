@@ -31,6 +31,7 @@ they inline come from `../assets/`.
 | `mezo-memoar.html` | https://claude.ai/code/artifact/95759be5-7de6-4d04-af7b-60d7862dbe50 |
 | `receptmuhely.html` | https://claude.ai/code/artifact/dc39e817-e89e-43df-b93f-53b568efed9f |
 | `tudastar-egyben.html` | https://claude.ai/code/artifact/1ddf2a14-f5ce-4d4c-b125-c843e073797e |
+| `celok.html` | https://claude.ai/code/artifact/e404d1d4-55c3-4e81-a8b4-716c6ba45f87 |
 
 ## Workflow
 

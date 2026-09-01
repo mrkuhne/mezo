@@ -1,0 +1,2052 @@
+<meta charset="utf-8">
+<title>Célok</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  :root {
+    --ground: #EFE8DD; --ground-2: #E7DFD2; --card: #FFFFFF;
+    --ink: #2B2118; --ink-2: #6E6257; --accent: #A84A26;
+    --line: rgba(43, 33, 24, 0.12);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #191614; --ground-2: #211D19; --card: #262119;
+      --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+      --line: rgba(240, 233, 225, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614; --ground-2: #211D19; --card: #262119;
+    --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+    --line: rgba(240, 233, 225, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; padding: 48px 24px 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; }
+  .lede { max-width: 62ch; color: var(--ink-2); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 40px; display: flex; gap: 56px; flex-wrap: wrap; align-items: flex-start; }
+  aside { max-width: 400px; display: grid; gap: 24px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  aside ul, aside ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+
+  /* ============ PHONE ============ */
+  .phone {
+    width: 330px; height: 694px; flex: none;
+    background: #1D1712; border-radius: 52px; padding: 11px;
+    box-shadow: 0 30px 60px -22px rgba(29, 23, 18, 0.5);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.4;
+    color: #2B2118; transition: background 0.6s ease;
+    background: linear-gradient(180deg, #FDFAF4 0%, #F8F1E6 100%);
+  }
+  .screen[data-dp="reggel"] { background: linear-gradient(180deg, #FEF5E8 0%, #FAEBD6 100%); }
+  .screen[data-dp="este"] { background: linear-gradient(180deg, #F0ECF8 0%, #E6E0F2 100%); }
+  .isl { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 82px; height: 22px; border-radius: 999px; background: #1D1712; z-index: 14; }
+  .p-status { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px 2px; font-size: 11px; font-weight: 600; position: relative; z-index: 14; }
+  .p-body { flex: 1; min-height: 0; overflow: hidden; padding: 6px 14px; display: flex; flex-direction: column; gap: 9px; }
+  .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .grow { flex: 1; min-width: 0; }
+  .mrow { display: flex; align-items: center; gap: 8px; }
+  .mut { color: #6E6257; }
+  .big { font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+  .float3d {
+    background: #FFFFFF; border-radius: 18px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 18px 32px -16px rgba(43, 33, 24, 0.32), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .cta {
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    border-radius: 999px; padding: 6px 14px; font-size: 10.5px; font-weight: 600; flex: none;
+    box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); border: none; font-family: inherit; cursor: pointer;
+  }
+  .cta.lav { background: linear-gradient(135deg, #8A76CC, #6C5FA3); box-shadow: 0 8px 16px -6px rgba(108, 95, 163, 0.55); }
+  .ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 6px 12px; font-size: 10.5px; font-weight: 600; flex: none; cursor: pointer; }
+
+  .avatar-ring {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: conic-gradient(#FF6B4A 68%, rgba(43, 33, 24, 0.1) 0);
+    display: grid; place-items: center;
+  }
+  .avatar-ring .in { width: 27px; height: 27px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center; }
+
+  /* daypart switch — pici gomb a fejlécben */
+  .dpwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .dpswitch {
+    width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+    background: rgba(255, 255, 255, 0.85); font-family: inherit; cursor: pointer;
+    display: grid; place-items: center; position: relative;
+    box-shadow: 0 8px 16px -10px rgba(43, 33, 24, 0.3);
+  }
+  .dpswitch:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .dpswitch > .most { position: absolute; top: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px #FDFAF4; display: none; }
+  .dpswitch.away > .most { display: block; }
+  .dpmenu {
+    position: absolute; right: 0; top: 40px; z-index: 7;
+    display: flex; gap: 2px; padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.95); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    border-radius: 999px; backdrop-filter: blur(10px);
+    box-shadow: 0 14px 28px -12px rgba(43, 33, 24, 0.35);
+    opacity: 0; transform: translateY(-6px) scale(0.92); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .dpwrap.open .dpmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .dpmenu button {
+    width: 40px; height: 32px; border: none; background: none; font-family: inherit;
+    border-radius: 999px; display: grid; place-items: center; cursor: pointer; position: relative;
+  }
+  .dpmenu button svg { filter: grayscale(1) brightness(1.04) opacity(0.45); }
+  .dpmenu button.on { background: rgba(255, 107, 74, 0.1); }
+  .dpmenu button.on svg { filter: none; }
+  .dpmenu button .most { position: absolute; top: 3px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25); }
+  .dpmenu button:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+
+  /* értesítés-harang + dropdown */
+  .ntfwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .badge.mini { min-width: 15px; height: 15px; font-size: 8.5px; top: -3px; right: -4px; }
+  .ntfmenu {
+    position: absolute; right: -46px; top: 40px; z-index: 8; width: 238px;
+    background: #FDFAF4; border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 18px;
+    box-shadow: 0 20px 40px -14px rgba(29, 23, 18, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    padding: 12px 12px 6px;
+    opacity: 0; transform: translateY(-6px) scale(0.94); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .ntfwrap.open .ntfmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .ntfrow { display: flex; gap: 9px; padding: 8px 2px; align-items: flex-start; }
+  .ntfrow + .ntfrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .ntfrow .t { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+  .ntfrow .x { font-size: 10px; font-weight: 300; margin-top: 1px; }
+  .ntffoot { text-align: center; font-size: 9.5px; font-weight: 600; color: #A84A26; padding: 8px 0 4px; cursor: pointer; }
+
+  /* mezo tile */
+  .mezotile {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    border-radius: 17px; padding: 10px 12px;
+    background: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(216, 72, 31, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .mezotile:active { transform: scale(0.97); }
+  .mezotile .txt { flex: 1; min-width: 0; font-size: 10.5px; font-weight: 300; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mezotile .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF6B4A; flex: none; }
+  .mezotile .chev { color: #A2958A; font-size: 12px; flex: none; }
+
+  /* daypart panels */
+  .dp-panel { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 9px; overflow-y: auto; scrollbar-width: none; padding-bottom: 8px; }
+  .dp-panel::-webkit-scrollbar { display: none; }
+  .dp-panel.on { display: flex; }
+  .dp-panel > * { flex: none; }
+
+  .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
+  .play .rise { animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  /* keret hero */
+  .hero { padding: 12px 13px; background: linear-gradient(140deg, #F2F7EC, #FFFFFF 70%); }
+  .hero.lavw { background: linear-gradient(140deg, #EDE9F8, #FFFFFF 70%); }
+  .hero.dusk { background: linear-gradient(140deg, #E4DDF4, #F7F4FD 75%); }
+  .daybar { display: flex; gap: 3px; margin-top: 8px; align-items: center; }
+  .daybar i { height: 5px; border-radius: 3px; flex: 1; background: #E8DFD1; transform: scaleX(0); transform-origin: left; }
+  .daybar i.f { background: #8FAF7E; }
+  .daybar i.now { background: #C9962E; }
+  .play .daybar i { animation: segf 0.4s ease-out forwards; animation-delay: var(--d); }
+  @keyframes segf { to { transform: scaleX(1); } }
+  .play .daybar i.now { animation: segf 0.4s ease-out forwards, nowpulse 2.6s ease-in-out 1.4s infinite; }
+  @keyframes nowpulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0); }
+    50% { box-shadow: 0 0 0 3.5px rgba(201, 150, 46, 0.3); }
+  }
+
+  .nowcard {
+    padding: 11px 13px; border: 1px solid #FF6B4A; border-radius: 18px; background: #fff;
+    box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .tile {
+    border-radius: 17px; padding: 10px 11px; min-height: 88px;
+    display: flex; flex-direction: column;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); cursor: pointer;
+  }
+  .tile:active { transform: scale(0.96); }
+  .t-train { background: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
+  .t-vital { background: #FFFFFF; }
+  .t-water { background: linear-gradient(150deg, #DFEDF5, #F5FAFD); }
+  .t-stack { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .t-mezo { background: linear-gradient(150deg, #FFEDE4, #FFF8F4); box-shadow: 0 14px 26px -14px rgba(216, 72, 31, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-hab { background: linear-gradient(150deg, #FFF1D6, #FFFAF0); box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-habe { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-habe .hd.f { background: #6C5FA3; }
+  .t-quest { background: linear-gradient(150deg, #FDF0DA, #FFFCF5); box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-check { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-check .hd.f { background: #C46FA0; }
+  .t-kreed { background: linear-gradient(150deg, #FFF2EA, #FFFFFF); }
+  .t-most { border: 1px solid #FF6B4A; background: #FFFFFF; box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .t-minta { background: #F0EDF8; box-shadow: 0 14px 26px -14px rgba(108, 95, 163, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .tile.alldone { background: linear-gradient(150deg, #EFF3EA, #FAFCF7); }
+  .tile-line { font-size: 9px; font-weight: 300; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tile-more { font-size: 9.5px; font-weight: 600; }
+  .tile .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
+  .htick.sm { width: 30px; height: 30px; font-size: 13px; }
+  .spotwrap { flex: 1; display: grid; place-items: center; padding: 4px 0; }
+  .spotwrap .anchor { position: relative; display: grid; place-items: center; }
+  .badge {
+    position: absolute; top: -5px; right: -9px; min-width: 17px; height: 17px;
+    border-radius: 999px; background: linear-gradient(135deg, #FF7A55, #FF5B36);
+    color: #fff; font-size: 9.5px; font-weight: 700;
+    display: grid; place-items: center; padding: 0 4px;
+    box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.6);
+  }
+  .bigring { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; }
+  .bigring .hole { width: 40px; height: 40px; border-radius: 50%; background: #FFFFFF; display: grid; place-items: center; }
+  .bigdots .hd, .ckdots .hd { width: 11px; height: 11px; }
+  .digest {
+    border-radius: 15px; padding: 8px 12px; background: #F0EDF8;
+    border: 0.5px solid rgba(108, 95, 163, 0.14);
+    box-shadow: 0 10px 20px -12px rgba(108, 95, 163, 0.4);
+  }
+  .rr {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+    display: grid; place-items: center;
+  }
+  .rr::after { content: ''; width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; }
+  .rings6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 2px; justify-items: center; margin-top: 4px; }
+  .waterfill { height: 7px; border-radius: 4px; background: #D8E7F0; overflow: hidden; }
+  .waterfill div { width: 0; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #7FB6D9, #4E8FB8); transition: width 1s cubic-bezier(0.25, 0.8, 0.35, 1) 0.9s; }
+  .play .waterfill div { width: 43%; }
+  .stackdots { display: flex; gap: 4px; }
+  .stackdots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(43, 33, 24, 0.1); }
+  .stackdots i.f { background: #7FA06C; }
+
+  .coach {
+    font-weight: 300; font-size: 10.5px; color: #2B2118;
+    background: #FFF4EF; border-radius: 10px; padding: 7px 9px;
+    display: flex; gap: 7px; align-items: flex-start; margin-top: 7px;
+  }
+  .coach .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; margin-top: 1px; background: linear-gradient(135deg, #FF7A55, #FF5B36); }
+
+  .kreed { padding: 11px 13px; border-radius: 18px; background: linear-gradient(140deg, #FFF2EA, #FFFFFF 75%); }
+  .kreed .q { font-weight: 300; font-size: 11.5px; }
+  .foci { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .foci span { background: rgba(168, 74, 38, 0.08); color: #A84A26; border-radius: 999px; padding: 3px 10px; font-size: 9.5px; font-weight: 600; }
+
+  .statstrip { display: flex; gap: 9px; }
+  .statcell {
+    flex: 1; text-align: center; padding: 9px 4px; border-radius: 15px;
+    background: rgba(255, 255, 255, 0.72); border: 0.5px solid rgba(43, 33, 24, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25);
+  }
+  .statcell b { font-size: 13px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
+  .statcell small { font-size: 8.5px; color: #6E6257; }
+
+  /* habit tile */
+  .habtile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 8px;
+    background: linear-gradient(150deg, #FFF1D6, #FFFAF0);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .habtile:active { transform: scale(0.97); }
+  .habtile.eve {
+    background: linear-gradient(150deg, #EBE6F8, #F9F6FE);
+    box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .habtile.alldone { background: linear-gradient(150deg, #EFF3EA, #FAFCF7); }
+  .hprog { display: flex; gap: 4px; }
+  .hd { width: 8px; height: 8px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); }
+  .hd.f { background: #C9962E; }
+  .habtile.eve .hd.f { background: #6C5FA3; }
+  .htick {
+    width: 36px; height: 36px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 2px solid rgba(43, 33, 24, 0.18); background: rgba(255, 255, 255, 0.8);
+    display: grid; place-items: center; color: #fff; font-size: 16px; font-family: inherit; padding: 0;
+    transition: transform 0.12s ease;
+  }
+  .htick:active { transform: scale(0.88); }
+  .htick.f {
+    border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E);
+    box-shadow: 0 6px 12px -4px rgba(110, 139, 94, 0.6);
+    animation: tickpop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  @keyframes tickpop { 0% { transform: scale(0); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+  /* küldetés-csempe */
+  .qtile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 7px;
+    background: linear-gradient(150deg, #FDF0DA, #FFFCF5);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .qtile:active { transform: scale(0.97); }
+
+  /* check-in csempe */
+  .cktile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 7px;
+    background: linear-gradient(150deg, #FAE3ED, #FEF8FB);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .cktile:active { transform: scale(0.97); }
+  .cktile .hd.f { background: #C46FA0; }
+  .ckslot-hot { background: rgba(196, 111, 160, 0.08); border-radius: 12px; margin: 2px -4px; padding: 9px 8px !important; border-top: none !important; }
+  .ckchip {
+    width: 26px; height: 26px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 1.5px solid rgba(196, 111, 160, 0.45); background: #fff; font-family: inherit;
+    font-size: 10px; font-weight: 700; color: #8E3F6F;
+    display: grid; place-items: center; padding: 0;
+    transition: transform 0.12s ease;
+  }
+  .ckchip:active { transform: scale(0.88); }
+
+  /* ============ DETAIL PAGES — Huawei-minta: csempe → saját oldal ============ */
+  .page {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    padding-top: 34px;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    background: #FDFAF4;
+  }
+  .page.open { transform: none; }
+  .page.p-coral { background: linear-gradient(180deg, #FFE3D4 0%, #FDFAF4 36%); }
+  .page.p-gold { background: linear-gradient(180deg, #FBEBCB 0%, #FDFAF4 36%); }
+  .page.p-lav { background: linear-gradient(180deg, #E9E3F7 0%, #FDFAF4 36%); }
+  .page.p-rose { background: linear-gradient(180deg, #F7E3ED 0%, #FDFAF4 36%); }
+  .page-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .backbtn {
+    border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px 6px 9px; font-size: 11px; font-weight: 600; color: #2B2118;
+    display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3);
+  }
+  .backbtn:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .page-hero { display: grid; justify-items: center; text-align: center; gap: 1px; padding: 8px 14px 12px; }
+  .page-hero .bignum { font-weight: 200; font-size: 40px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .page-hero .nm { font-size: 15px; font-weight: 700; }
+  .page-hero .sb { font-size: 10px; color: #6E6257; }
+  .page-hero.orb svg { animation: orbbreathe 4.5s ease-in-out infinite; }
+  @keyframes orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+  .page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 14px 16px; }
+  .page-body::-webkit-scrollbar { display: none; }
+
+  .qcard, .mz-msg {
+    background: #FFFFFF; border-radius: 16px; padding: 11px 12px; margin-bottom: 10px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .qcard.done { background: linear-gradient(150deg, #EFF3EA, #FBFDF9); }
+  .qxp { font-size: 9px; font-weight: 700; color: #A8801F; background: rgba(201, 150, 46, 0.12); border-radius: 999px; padding: 3px 9px; flex: none; }
+  .mz-msg .t { font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A8801F; }
+  .mz-msg .txt { font-size: 11px; font-weight: 300; margin-top: 6px; }
+  .mz-cta { width: 100%; margin-top: 4px; padding: 9px 0; text-align: center; }
+
+  .vcard {
+    background: #FFFFFF; border-radius: 16px; padding: 4px 12px; margin-bottom: 10px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .vrow { display: flex; align-items: center; gap: 11px; padding: 9px 2px; }
+  .vrow + .vrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .vrow .rr { width: 34px; height: 34px; flex: none; }
+  .vrow .rr::after { width: 22px; height: 22px; }
+  .vrow.low { background: rgba(255, 107, 74, 0.07); border-radius: 12px; border-top: none; margin: 2px -4px; padding: 9px 8px; }
+  .vchip {
+    border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-family: inherit;
+    border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #A84A26;
+    cursor: pointer; flex: none;
+  }
+
+  .habrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+  .habrow + .habrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .tick {
+    width: 22px; height: 22px; border-radius: 50%; flex: none;
+    border: 1.5px solid rgba(43, 33, 24, 0.2); display: grid; place-items: center;
+    font-size: 12px; color: #fff; background: transparent;
+  }
+  .tick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .habrow .tick { padding: 0; cursor: pointer; font-family: inherit; }
+  .habrow .nm { font-size: 11.5px; font-weight: 600; }
+  .habrow .nm.done { color: #6E6257; font-weight: 500; text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
+  .hstr { height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 4px; }
+  .hstr div { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #E5C46B, #C9962E); }
+  .hpct { font-size: 9px; font-weight: 700; color: #A8801F; flex: none; width: 30px; text-align: right; }
+  .habnote { font-size: 9.5px; color: #A2958A; margin-top: 12px; font-weight: 300; }
+
+  .fbrow { display: flex; gap: 6px; margin-top: 7px; }
+  .fb {
+    border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit;
+    border-radius: 999px; padding: 3.5px 11px; font-size: 9px; font-weight: 600; color: #6E6257; cursor: pointer;
+  }
+  .fb.sel { background: #EDE9F8; border-color: #6C5FA3; color: #5D4FA0; }
+
+  /* tab bar */
+  .tabbar {
+    margin: 4px 12px 12px; padding: 8px 16px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 12px 24px -12px rgba(43, 33, 24, 0.3);
+  }
+  .mtab { text-align: center; font-size: 9.5px; font-weight: 600; color: #A2958A; display: grid; gap: 2px; justify-items: center; }
+  .mtab.on { color: #A84A26; }
+  .mtab.off svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
+  .fab {
+    width: 46px; height: 46px; border-radius: 50%; flex: none;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    display: grid; place-items: center;
+    box-shadow: 0 8px 18px -5px rgba(255, 91, 54, 0.6);
+    animation: fabglow 3.2s ease-in-out 1.6s infinite;
+  }
+  @keyframes fabglow {
+    0%, 100% { box-shadow: 0 8px 18px -5px rgba(255, 91, 54, 0.6); }
+    50% { box-shadow: 0 8px 26px -3px rgba(255, 91, 54, 0.85); }
+  }
+  .homebar { width: 118px; height: 4px; border-radius: 999px; background: #2B2118; margin: 2px auto 9px; flex: none; opacity: 0.85; position: relative; z-index: 14; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .play .rise { opacity: 1; transform: none; animation: none; }
+    .daybar i, .play .daybar i { transform: scaleX(1); animation: none; }
+    .waterfill div, .play .waterfill div { width: 43%; transition: none; }
+    .fab, .play .daybar i.now { animation: none; }
+    .tile, .qtile, .habtile, .mezotile { transition: none; }
+    .screen { transition: none; }
+    .dpmenu { transition: none; }
+    .ntfmenu { transition: none; }
+    .page { transition: none; }
+    .htick.f { animation: none; }
+    .page-hero.orb svg { animation: none; }
+  }
+  @media (max-width: 720px) { body { padding: 32px 14px 48px; } .stage { gap: 36px; } }
+</style>
+<style>
+  /* ============ CÉLOK · oldal-specifikus ============ */
+  .page.p-sage { background: linear-gradient(180deg, #E4EEDD 0%, #FDFAF4 36%); }
+  .page.p-sky  { background: linear-gradient(180deg, #DCEBF4 0%, #FDFAF4 36%); }
+  .tabbar.five { padding: 8px 10px; }
+  .floatfab { position: absolute; right: 14px; bottom: 88px; width: 50px; height: 50px; border-radius: 50%; z-index: 9;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); display: grid; place-items: center; cursor: pointer;
+    box-shadow: 0 10px 22px -6px rgba(255, 91, 54, 0.65); animation: fabglow 3.2s ease-in-out 1.6s infinite;
+    transition: transform 0.12s ease; }
+  .floatfab:active { transform: scale(0.92); }
+
+  /* PERMAH dimenzió-tokenek — a hat meglévő domain-színre képezve */
+  .d-p { --dc: #A8801F; --dw: #FDF0DA; --dw2: #FFFCF5; --ds: rgba(201, 150, 46, 0.45); }
+  .d-e { --dc: #5D4FA0; --dw: #EBE6F8; --dw2: #F9F6FE; --ds: rgba(93, 79, 160, 0.4); }
+  .d-r { --dc: #8E3F6F; --dw: #FAE3ED; --dw2: #FEF8FB; --ds: rgba(142, 63, 111, 0.35); }
+  .d-m { --dc: #A84A26; --dw: #FFE7DC; --dw2: #FFF7F2; --ds: rgba(216, 72, 31, 0.35); }
+  .d-a { --dc: #3E7396; --dw: #DFEDF5; --dw2: #F5FAFD; --ds: rgba(78, 143, 184, 0.4); }
+  .d-h { --dc: #4E6B42; --dw: #E9F1E2; --dw2: #F7FBF3; --ds: rgba(110, 139, 94, 0.45); }
+
+  /* hub-hero: hat-ívű gyűrű + egy mondat */
+  .celhero { padding: 9px 12px; display: flex; gap: 12px; align-items: center; background: linear-gradient(140deg, #F2F7EC, #FFFFFF 72%); }
+  .ring6 { width: 80px; height: 80px; position: relative; flex: none; display: grid; place-items: center; }
+  .ring6 svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .ring6 .arc { fill: none; stroke: var(--dc); stroke-width: 5.5; stroke-dasharray: 0 188.5; opacity: 0.2; }
+  .ring6 .arc.live { opacity: 1; stroke-width: 8; }
+  .play .ring6 .arc { animation: arcin 0.6s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: calc(260ms + var(--i) * 70ms); }
+  @keyframes arcin { to { stroke-dasharray: 27.4 161.1; } }
+  .ring6 .c { text-align: center; line-height: 1; position: relative; }
+  .ring6 .c b { font-size: 27px; font-weight: 200; display: block; letter-spacing: -0.02em; }
+  .ring6 .c small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; }
+  .celhero .t { font-size: 11.5px; font-weight: 300; }
+  .celhero .t strong { font-weight: 600; }
+  .celhero .sub { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+  .dimband { display: flex; gap: 4px; flex-wrap: wrap; }
+  .dimchip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 8px 3px 6px;
+    font-size: 7.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+    background: var(--dw); color: var(--dc); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .dimchip i { width: 7px; height: 7px; border-radius: 50%; background: var(--dc); flex: none; }
+  .dimchip b { font-weight: 800; opacity: 0.7; }
+  .dimchip.empty { background: rgba(43, 33, 24, 0.05); color: #A2958A; }
+  .dimchip.empty i { background: rgba(43, 33, 24, 0.18); }
+
+  /* cél-csempe */
+  .gtile { background: linear-gradient(150deg, var(--dw), var(--dw2)); min-height: 98px; gap: 2px;
+    box-shadow: 0 14px 26px -14px var(--ds), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .gtile .p-eyebrow { color: var(--dc); display: flex; align-items: center; gap: 4px; }
+  .gtile .nm { font-size: 11px; font-weight: 700; }
+  .gtile .drow { display: flex; align-items: center; gap: 7px; margin-top: 3px; }
+  .gtile .drow svg { flex: none; }
+  .arrow { display: inline-flex; align-items: baseline; gap: 3px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .arrow .g { font-size: 22px; font-weight: 300; display: inline-block; transform: translateX(-6px); opacity: 0; }
+  .arrow .v { font-size: 12px; font-weight: 600; }
+  .arrow.up { color: #4E6B42; } .arrow.flat { color: #6E6257; } .arrow.down { color: #A8801F; } .arrow.none { color: #A2958A; }
+  .arrow.none .g { font-size: 15px; }
+  .play .arrow .g { animation: arrowin 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: calc(var(--d, 0ms) + 340ms); }
+  @keyframes arrowin { to { transform: none; opacity: 1; } }
+  .wk7 { display: flex; gap: 4px; align-items: center; }
+  .wk7 i { width: 9px; height: 9px; border-radius: 50%; flex: none; background: rgba(43, 33, 24, 0.12); transform: scale(0); }
+  .wk7 i.h { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .wk7 i.p { background: linear-gradient(135deg, #E5C46B, #C9962E); }
+  .wk7 i.m { background: rgba(43, 33, 24, 0.12); }
+  .wk7 i.n { background: transparent; border: 1px dashed rgba(43, 33, 24, 0.28); }
+  .wk7 i.today { box-shadow: 0 0 0 2px rgba(255, 107, 74, 0.45); }
+  .play .wk7 i { animation: dotpop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) forwards; animation-delay: calc(var(--d, 0ms) + 280ms + var(--i) * 45ms); }
+  @keyframes dotpop { to { transform: scale(1); } }
+  .wk7 .lbl { font-size: 7px; font-weight: 700; color: #A2958A; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .newtile { border: 1.2px dashed rgba(216, 72, 31, 0.4); border-radius: 17px; padding: 10px 11px; display: grid; gap: 3px;
+    cursor: pointer; min-height: 98px; align-content: center; justify-items: center; text-align: center; }
+  .newtile b { font-size: 10px; color: #A84A26; }
+  .newtile small { font-size: 7.5px; color: #6E6257; }
+  .parkrow { display: flex; align-items: center; gap: 8px; padding: 8px 11px; border-radius: 15px;
+    background: rgba(255, 255, 255, 0.55); border: 0.5px dashed rgba(43, 33, 24, 0.18); }
+  .parkrow .nm { font-size: 10px; font-weight: 600; color: #6E6257; }
+  .parkrow .sb { font-size: 8px; color: #A2958A; }
+  .parkrow .act { margin-left: auto; font-size: 8.5px; font-weight: 700; color: #A84A26; border: 1px solid rgba(43, 33, 24, 0.14);
+    background: #fff; border-radius: 999px; padding: 3px 9px; cursor: pointer; font-family: inherit; flex: none; }
+  .principle { font-size: 9px; color: #A2958A; font-weight: 300; text-align: center; padding: 6px 8px 0;
+    font-family: "Fraunces", Georgia, serif; font-style: italic; }
+
+  /* cél-oldal */
+  .chiprow { display: flex; gap: 5px; margin-bottom: 9px; }
+  .fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .fchip.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .fchip:focus-visible, .actrow button:focus-visible, .newtile:focus-visible, .gtile:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .lsec { display: flex; align-items: center; gap: 6px; padding: 8px 2px 6px; }
+  .lsec .cnt { margin-left: auto; font-size: 9px; font-weight: 700; color: #A2958A; font-variant-numeric: tabular-nums; }
+  .pillar { border-radius: 16px; padding: 10px 12px 11px; margin-bottom: 9px; background: #fff;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .pillar.washed { background: linear-gradient(150deg, var(--dw), #FFFFFF 72%); }
+  .pillar.ghost { background: rgba(255, 255, 255, 0.5); border: 1px dashed rgba(43, 33, 24, 0.2); box-shadow: none; }
+  .pillar .ph { display: flex; align-items: center; gap: 7px; }
+  .pillar .ph svg { flex: none; }
+  .pillar .ph .nm { font-size: 11px; font-weight: 700; }
+  .pillar .ph .arrow { margin-left: auto; }
+  .pillar .ph .arrow .g { font-size: 18px; }
+  .kind { font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E6257;
+    background: rgba(43, 33, 24, 0.06); border-radius: 5px; padding: 2px 6px; flex: none; }
+  .kind.link { color: #3E7396; background: rgba(78, 143, 184, 0.14); }
+  .pillar .val { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+  .pillar .val b { font-size: 18px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .pillar .val small { font-size: 8.5px; color: #6E6257; }
+  .pillar .val .stch { margin-left: auto; }
+  .pbar { height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); overflow: visible; margin-top: 6px; position: relative; }
+  .pbar div { height: 100%; border-radius: 3px; transform: scaleX(0); transform-origin: left; background: linear-gradient(90deg, #A9C69A, #8FAF7E); }
+  .pbar div.amb { background: linear-gradient(90deg, #E5C46B, #C9962E); }
+  .pbar div.sky { background: linear-gradient(90deg, #7FB6D9, #4E8FB8); }
+  .pbar .tg { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #2B2118; opacity: 0.4; border-radius: 1px; }
+  .play .pbar div { animation: segf 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: calc(var(--d, 0ms) + 380ms); }
+  .pillar .wk7 { margin-top: 8px; }
+  .hm { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 8px; }
+  .hm i { height: 12px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); transform: scale(0); }
+  .hm i.h { background: #8FAF7E; } .hm i.p { background: #E5C46B; } .hm i.m { background: rgba(43, 33, 24, 0.1); }
+  .hm i.n { background: transparent; border: 1px dashed rgba(43, 33, 24, 0.2); }
+  .hm i.today { box-shadow: 0 0 0 1.5px rgba(255, 107, 74, 0.6); }
+  .play .hm i { animation: dotpop 0.3s cubic-bezier(0.3, 1.4, 0.5, 1) forwards; animation-delay: calc(var(--d, 0ms) + 200ms + var(--i) * 12ms); }
+  .hmlbl { display: flex; justify-content: space-between; font-size: 7px; font-weight: 700; color: #A2958A; margin-top: 4px; }
+  .mview { display: none; } .page.month .mview { display: block; } .page.month .wkview { display: none; }
+  .pillar .coach { margin-top: 8px; }
+  .whycard { border-radius: 16px; padding: 10px 12px; margin-bottom: 9px; background: linear-gradient(140deg, #FFF2EA, #FFFFFF 75%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 22px -15px rgba(43, 33, 24, 0.3); }
+  .whycard .q { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 11.5px; font-weight: 500; }
+  .ifthen { display: flex; gap: 7px; align-items: flex-start; padding: 6px 0; font-size: 9.5px; }
+  .ifthen + .ifthen { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .ifthen .ha { flex: none; font-size: 6.5px; font-weight: 800; letter-spacing: 0.1em; color: #A84A26; background: rgba(168, 74, 38, 0.1); border-radius: 5px; padding: 2px 6px; margin-top: 2px; }
+  .linkrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 7px 9px; border-radius: 11px;
+    background: rgba(43, 33, 24, 0.04); font-size: 9.5px; font-weight: 600; color: #A84A26; cursor: pointer; }
+  .linkrow .chev { margin-left: auto; color: #A2958A; }
+  .actrow { display: flex; gap: 7px; margin: 4px 0 8px; }
+  .actrow button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 7px 0;
+    font-size: 9.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .suggest { border-radius: 16px; padding: 10px 12px; margin-bottom: 9px; background: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 14px 26px -14px rgba(216, 72, 31, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .suggest .sh2 { display: flex; gap: 7px; align-items: center; }
+  .suggest .sh2 .orb { width: 18px; height: 18px; border-radius: 50%; flex: none; background: radial-gradient(circle at 35% 28%, #FFB79E, #FF5B36 60%, #C93F1E); box-shadow: 0 2px 6px rgba(255, 91, 54, 0.4); }
+  .suggest .sh2 .t { font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A84A26; }
+  .suggest p { font-size: 10.5px; font-weight: 300; margin-top: 6px; }
+  .suggest .btns { display: flex; gap: 6px; margin-top: 8px; }
+  .suggest .btns .cta, .suggest .btns .ghost { flex: 1; text-align: center; padding: 7px 0; }
+
+  /* ============ ŰRLAP-NYELV + VARÁZSLÓ (Mozaik közös) ============ */
+  .fcard { background: #fff; border-radius: 14px; padding: 9px 11px 10px; margin-bottom: 8px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .flabel { font-size: 7.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; margin-bottom: 4px; display: block; }
+  .fin { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 10px; padding: 7px 10px; font-family: inherit; font-size: 11px; background: #FDFAF4; color: #2B2118; }
+  .fin::placeholder { color: #A2958A; }
+  textarea.fin { resize: none; line-height: 1.4; }
+  .frow2 { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .chips { display: flex; gap: 5px; flex-wrap: wrap; }
+  .chips button { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4.5px 11px;
+    font-size: 9px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .chips button.on { background: #EDE9F8; border-color: #8A76CC; color: #5D4FA0; }
+  .chips.sage button.on { background: #E9F1E2; border-color: #7FA06C; color: #4E6B42; }
+  .chips.coral button.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .shrow { display: flex; gap: 8px; margin-top: 12px; }
+  .shrow .ghost, .shrow .cta { flex: 1; padding: 9px 0; text-align: center; }
+  .wprog { display: flex; gap: 5px; margin-bottom: 6px; }
+  .wprog i { flex: 1; height: 4px; border-radius: 2px; background: rgba(43, 33, 24, 0.1); transition: background 0.3s ease; }
+  .wprog i.f { background: linear-gradient(90deg, #FF9A78, #E05535); }
+  .wstep { font-size: 8px; font-weight: 800; letter-spacing: 0.16em; color: #A2958A; font-variant-numeric: tabular-nums; }
+  .togg { width: 34px; height: 20px; border-radius: 999px; background: rgba(43, 33, 24, 0.14); position: relative; flex: none; cursor: pointer; border: none; padding: 0; }
+  .togg::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left 0.15s ease; }
+  .togg.on { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .togg.on::after { left: 16px; }
+  .pilcard { display: flex; align-items: center; gap: 9px; border-radius: 15px; padding: 9px 11px; margin-bottom: 7px; background: #fff;
+    border: 1.5px solid rgba(43, 33, 24, 0.08); box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.28); transition: opacity 0.2s ease; }
+  .pilcard.on { border-color: #8FAF7E; background: linear-gradient(140deg, #EEF4E8, #FFFFFF 70%); }
+  .pilcard.off { opacity: 0.5; }
+  .pilcard svg { flex: none; }
+  .pilcard b { font-size: 11px; display: block; }
+  .pilcard small { font-size: 8.5px; color: #6E6257; display: block; }
+  .pilcard .kind { margin-top: 3px; display: inline-block; }
+  .framecard { border-radius: 15px; padding: 10px 12px; margin: 8px 0; background: linear-gradient(140deg, #FFF1D6, #FFFCF4);
+    box-shadow: 0 12px 22px -14px rgba(181, 126, 20, 0.45); }
+  .framecard.ok { background: linear-gradient(140deg, #E9F1E2, #FBFDF9); box-shadow: 0 12px 22px -14px rgba(110, 139, 94, 0.45); }
+  .framecard .lb { font-size: 9.5px; font-weight: 800; color: #A8801F; }
+  .framecard.ok .lb { color: #4E6B42; }
+  .framecard p { font-size: 9.5px; color: #6E6257; margin-top: 4px; font-weight: 300; }
+  .framecard p b { color: #2B2118; font-weight: 600; }
+  .aiwait { display: flex; align-items: center; gap: 8px; padding: 12px 12px; border-radius: 15px; background: rgba(255, 255, 255, 0.7); margin-bottom: 8px; font-size: 10px; color: #6E6257; }
+  .aiwait .tw { display: inline-flex; gap: 3px; }
+  .aiwait .tw i { width: 6px; height: 6px; border-radius: 50%; background: #FF6B4A; animation: twb 1.1s ease-in-out infinite; }
+  .aiwait .tw i:nth-child(2) { animation-delay: 0.18s; } .aiwait .tw i:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes twb { 0%, 100% { transform: translateY(0); opacity: 0.45; } 50% { transform: translateY(-3px); opacity: 1; } }
+  .addrow { width: 100%; border: 1.2px dashed rgba(43, 33, 24, 0.2); background: none; border-radius: 11px; padding: 8px 0;
+    font-size: 9.5px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; margin-top: 4px; }
+  .sumrow { display: flex; align-items: center; gap: 8px; padding: 7px 2px; font-size: 10px; }
+  .sumrow + .sumrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .sumrow .k { font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; width: 64px; flex: none; }
+
+  /* ============ SHEETEK ============ */
+  .bsheet-back { position: absolute; inset: 0; z-index: 15; border-radius: 42px; background: rgba(29, 23, 18, 0.35); opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+  .bsheet-back.open { opacity: 1; pointer-events: auto; }
+  .bsheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 16;
+    background: linear-gradient(180deg, #FFFDF9 0%, #FDFAF4 100%);
+    border-radius: 26px 26px 34px 34px; padding: 8px 14px 16px;
+    transform: translateY(calc(100% + 80px)); visibility: hidden;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1), visibility 0s 0.3s;
+    box-shadow: 0 -12px 44px rgba(29, 23, 18, 0.3); max-height: 86%; overflow-y: auto; scrollbar-width: none; }
+  .bsheet::-webkit-scrollbar { display: none; }
+  .bsheet.open { transform: none; visibility: visible; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1); }
+  .sh-grab { width: 34px; height: 4px; border-radius: 999px; background: rgba(43, 33, 24, 0.16); margin: 2px auto 10px; }
+  .sh-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .sh-title { font-size: 14px; font-weight: 700; margin: 2px 0 2px; }
+  .sh-head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .sh-x { margin-left: auto; border: none; background: rgba(43, 33, 24, 0.06); width: 26px; height: 26px; border-radius: 50%;
+    font-size: 12px; color: #6E6257; cursor: pointer; font-family: inherit; flex: none; }
+  .catgrp { margin-bottom: 9px; }
+  .catgrp .p-eyebrow { padding-bottom: 5px; }
+  .caprow { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 13px; margin-bottom: 6px; background: #fff;
+    border: 1.5px solid rgba(43, 33, 24, 0.08); cursor: pointer; }
+  .caprow.on { border-color: #C9962E; background: linear-gradient(140deg, #FFF1D6, #FFFFFF 70%); }
+  .caprow svg { flex: none; }
+  .caprow b { font-size: 10.5px; display: block; }
+  .caprow small { font-size: 8px; color: #6E6257; }
+  .caprow .rad { margin-left: auto; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.25); flex: none; }
+  .caprow.on .rad { border-color: #C9962E; background: radial-gradient(circle, #C9962E 40%, transparent 44%); }
+  .toast { position: absolute; left: 50%; bottom: 96px; transform: translate(-50%, 10px); z-index: 20; opacity: 0; pointer-events: none;
+    background: #2B2118; color: #FDFAF4; font-size: 10px; font-weight: 600; border-radius: 999px; padding: 7px 13px; white-space: nowrap;
+    transition: opacity 0.2s ease, transform 0.2s ease; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* Nap / Heti / Growth beágyazás */
+  .naphero { padding: 12px 13px; background: linear-gradient(140deg, #F2F7EC, #FFFFFF 70%); }
+  .naphero .big { font-size: 34px; }
+  .skrow { display: flex; align-items: center; gap: 9px; padding: 8px 2px; }
+  .skrow + .skrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .skrow .nm { font-size: 11px; font-weight: 600; }
+  .skrow .lv { font-size: 8.5px; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .goalchip { display: inline-flex; align-items: center; gap: 3px; font-size: 7px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+    border-radius: 999px; padding: 2px 7px; background: var(--dw); color: var(--dc); flex: none; margin-left: auto; }
+  .goalchip i { width: 5px; height: 5px; border-radius: 50%; background: var(--dc); }
+  .wgrow { display: flex; gap: 9px; align-items: flex-start; padding: 8px 2px; }
+  .wgrow + .wgrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .wgrow .arrow .g { font-size: 20px; }
+  .wgrow .arrow { flex: none; width: 34px; justify-content: center; }
+  .wgrow .nm { font-size: 10.5px; font-weight: 700; }
+  .wgrow .x { font-size: 9.5px; font-weight: 300; color: #2B2118; margin-top: 1px; }
+  .scorering { width: 58px; height: 58px; border-radius: 50%; flex: none;
+    background: conic-gradient(#8A76CC calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0); display: grid; place-items: center; }
+  .scorering .hole { width: 42px; height: 42px; border-radius: 50%; background: #FFFDF9; display: grid; place-items: center; }
+  .scorering .hole b { font-size: 15px; font-weight: 300; line-height: 1; }
+
+  .demobar { display: flex; gap: 7px; justify-content: center; margin-top: 16px; flex-wrap: wrap; max-width: 330px; }
+  .demobar button { font-family: inherit; cursor: pointer; border-radius: 999px; padding: 7px 13px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  .demobar button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring6 .arc, .play .ring6 .arc { stroke-dasharray: 27.4 161.1; animation: none; }
+    .arrow .g, .play .arrow .g { transform: none; opacity: 1; animation: none; }
+    .wk7 i, .play .wk7 i, .hm i, .play .hm i { transform: scale(1); animation: none; }
+    .pbar div, .play .pbar div { transform: scaleX(1); animation: none; }
+    .floatfab, .aiwait .tw i { animation: none; }
+    .bsheet, .bsheet-back, .togg::after, .toast, .wprog i { transition: none; }
+  }
+</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
+    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moonfull" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.45" stop-color="#B7A9E8"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-crater" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#8F81C6"/><stop offset="1" stop-color="#6D5FB0"/></radialGradient>
+    <radialGradient id="ig-harvest" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#E8B93A"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
+    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
+    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
+    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
+    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
+    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+
+    <symbol id="i-nap" viewBox="0 0 100 100">
+      <g>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="i-edzes" viewBox="0 0 100 100">
+      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
+      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
+    </symbol>
+
+    <symbol id="i-fuel" viewBox="0 0 100 100">
+      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
+      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
+      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
+      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-mezo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
+      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
+      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-polc" viewBox="0 0 100 100">
+      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
+    </symbol>
+
+    <symbol id="i-viz" viewBox="0 0 100 100">
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
+      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
+    </symbol>
+
+    <symbol id="i-alvas" viewBox="0 0 100 100">
+      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-eletjel" viewBox="0 0 100 100">
+      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
+      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
+    </symbol>
+
+    <symbol id="i-minta" viewBox="0 0 100 100">
+      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
+      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
+    </symbol>
+
+    <symbol id="i-naplo" viewBox="0 0 100 100">
+      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
+      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
+      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
+      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
+      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-cel" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
+      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
+      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
+    </symbol>
+
+    <symbol id="i-stack" viewBox="0 0 100 100">
+      <g transform="rotate(-32 50 50)">
+        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
+        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
+        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-suly" viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
+      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
+      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
+      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
+    </symbol>
+
+    <symbol id="i-sport" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
+      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
+    </symbol>
+
+    <symbol id="i-futas" viewBox="0 0 100 100">
+      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
+      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
+      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
+    </symbol>
+
+    <symbol id="i-meso" viewBox="0 0 100 100">
+      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
+      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="i-emberek" viewBox="0 0 100 100">
+      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
+      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
+      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
+      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
+      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
+    </symbol>
+
+    <symbol id="i-tudas" viewBox="0 0 100 100">
+      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
+      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
+      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
+    </symbol>
+
+    <symbol id="i-ertesites" viewBox="0 0 100 100">
+      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+    </symbol>
+
+    <symbol id="i-growth" viewBox="0 0 100 100">
+      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
+      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
+      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
+    </symbol>
+
+    <symbol id="i-erme" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
+      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
+    </symbol>
+
+    <symbol id="i-lang" viewBox="0 0 100 100">
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
+    </symbol>
+
+    <symbol id="i-beallitas" viewBox="0 0 100 100">
+      <g>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
+      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
+      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
+    </symbol>
+
+    <symbol id="i-mikrofon" viewBox="0 0 100 100">
+      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
+      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
+      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
+      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
+      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
+    </symbol>
+
+    <symbol id="i-kamra" viewBox="0 0 100 100">
+      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
+      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
+      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
+    </symbol>
+
+    <symbol id="i-recept" viewBox="0 0 100 100">
+      <g transform="rotate(-30 50 50)">
+        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
+        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
+        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
+        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-rend" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
+      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
+      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
+      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
+      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
+    </symbol>
+
+    <symbol id="i-level" viewBox="0 0 100 100">
+      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+    </symbol>
+
+    <symbol id="i-hajnal" viewBox="0 0 100 100">
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+    </symbol>
+
+    <symbol id="i-video" viewBox="0 0 100 100">
+      <rect x="12" y="22" width="76" height="56" rx="16" fill="url(#ig-drop)"/>
+      <path d="M44 38 L64 50 L44 62 Z" fill="#F4FAFD" stroke="#F4FAFD" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="27" cy="32" rx="9" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-18 27 32)"/>
+    </symbol>
+
+    <symbol id="i-idozito" viewBox="0 0 100 100">
+      <rect x="43" y="8" width="14" height="10" rx="5" fill="#5B7A4C"/>
+      <rect x="47" y="16" width="6" height="8" fill="#5B7A4C"/>
+      <rect x="68" y="16" width="12" height="7" rx="3.5" fill="#5B7A4C" transform="rotate(42 74 20)"/>
+      <circle cx="50" cy="56" r="32" fill="url(#ig-nsage)"/>
+      <circle cx="50" cy="56" r="21" fill="#F2F7EC"/>
+      <path d="M50 56 L50 42" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 56 L60 62" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 38)"/>
+    </symbol>
+
+    <symbol id="i-kihivas" viewBox="0 0 100 100">
+      <rect x="28" y="10" width="9" height="82" rx="4.5" fill="#8C7F72"/>
+      <path d="M37 14 L84 22 L66 34 L84 46 L37 54 Z" fill="url(#ig-plate)"/>
+      <ellipse cx="48" cy="23" rx="8" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-10 48 23)"/>
+      <circle cx="32.5" cy="13" r="5.5" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-checkin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
+      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
+      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
+      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
+    </symbol>
+
+    <symbol id="i-injekcio" viewBox="0 0 100 100">
+      <g transform="rotate(-38 50 50)">
+        <rect x="20" y="40" width="44" height="20" rx="7" fill="#F0E7D4"/>
+        <rect x="24" y="44" width="26" height="12" rx="5" fill="url(#ig-nlav)"/>
+        <rect x="10" y="44" width="10" height="12" rx="4" fill="url(#ig-scale)"/>
+        <rect x="2" y="47" width="9" height="6" rx="3" fill="url(#ig-scale)"/>
+        <rect x="64" y="45" width="6" height="10" rx="2" fill="url(#ig-scale)"/>
+        <path d="M70 50h20" stroke="#8C7F72" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-reggeli" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="56" rx="35" ry="26" fill="#F7F0E1"/>
+      <ellipse cx="44" cy="49" rx="10" ry="6" fill="rgba(255,255,255,0.7)" transform="rotate(-18 44 49)"/>
+      <circle cx="52" cy="56" r="13" fill="url(#ig-sun)"/>
+      <ellipse cx="48" cy="51" rx="4.5" ry="3" fill="rgba(255,255,255,0.6)"/>
+    </symbol>
+
+    <symbol id="i-ebed" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="66" rx="38" ry="13" fill="url(#ig-scale)"/>
+      <ellipse cx="50" cy="60" rx="25" ry="11" fill="url(#ig-bowl)"/>
+      <ellipse cx="42" cy="56" rx="8" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-16 42 56)"/>
+      <path d="M40 44q-3-6 0-12M52 46q-3-6 0-12M64 44q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-snack" viewBox="0 0 100 100">
+      <circle cx="50" cy="58" r="26" fill="url(#ig-p2)"/>
+      <path d="M50 33q-2-8 5-13" stroke="#9C5F33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="63" cy="27" rx="10" ry="6" fill="url(#ig-leaf)" transform="rotate(-22 63 27)"/>
+      <ellipse cx="41" cy="49" rx="8" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 41 49)"/>
+    </symbol>
+
+    <symbol id="i-vacsora" viewBox="0 0 100 100">
+      <path d="M17 52h66v5a27 27 0 0 1-27 27H44a27 27 0 0 1-27-27Z" fill="url(#ig-moon)"/>
+      <ellipse cx="50" cy="52" rx="33" ry="7.5" fill="#E6DFF9"/>
+      <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
+    </symbol>
+    <symbol id="i-muhely" viewBox="0 0 100 100">
+      <path d="M20 56h60v4a25 25 0 0 1-25 25H45a25 25 0 0 1-25-25Z" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="56" rx="30" ry="7" fill="#FFB597"/>
+      <path d="M17 60q-7 2-4 9M83 60q7 2 4 9" stroke="#B03E1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M40 46q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M67 14l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5Z" fill="url(#ig-spark)"/>
+      <path d="M50 8l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" fill="url(#ig-spark)"/>
+      <ellipse cx="35" cy="67" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 35 67)"/>
+    </symbol>
+    <symbol id="i-memoar" viewBox="0 0 100 100">
+      <path d="M50 26 Q34 16 16 22 L16 74 Q34 68 50 78 Z" fill="url(#ig-book)"/>
+      <path d="M50 26 Q66 16 84 22 L84 74 Q66 68 50 78 Z" fill="#F0E7D4"/>
+      <path d="M60 24 v22 l6 -5 6 5 V22" fill="url(#ig-flame)"/>
+      <path d="M58 38h18M58 48h18M58 58h16" stroke="#D8CCBB" stroke-width="3.5" stroke-linecap="round" opacity="0"/>
+      <ellipse cx="30" cy="32" rx="9" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-12 30 32)"/>
+    </symbol>
+    <symbol id="i-lombik" viewBox="0 0 100 100">
+      <path d="M42 14h16v22l20 34a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18l20-34Z" fill="#F0E7D4"/>
+      <path d="M35 58h30l13 12a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18Z" fill="url(#ig-nsage)"/>
+      <rect x="38" y="10" width="24" height="9" rx="4.5" fill="url(#ig-leaf)"/>
+      <circle cx="46" cy="72" r="4.5" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="58" cy="79" r="3" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="72" cy="30" r="5" fill="#9C8FD0"/>
+      <ellipse cx="42" cy="30" rx="4" ry="9" fill="rgba(255,255,255,0.5)" transform="rotate(8 42 30)"/>
+    </symbol>
+    <symbol id="i-kristaly" viewBox="0 0 100 100">
+      <path d="M28 82h44l-6 10H34Z" fill="url(#ig-wood)"/>
+      <circle cx="50" cy="48" r="33" fill="url(#ig-nlav)"/>
+      <path d="M36 56q14 10 28 0" stroke="rgba(255,255,255,0.45)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="38" cy="36" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 36)"/>
+      <path d="M80 12 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="url(#ig-spark)"/>
+    </symbol>
+    <symbol id="i-retegek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="72" rx="34" ry="13" fill="url(#ig-nsage)"/>
+      <ellipse cx="50" cy="54" rx="34" ry="13" fill="url(#ig-ngold)"/>
+      <ellipse cx="50" cy="36" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="50" cy="33" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="38" cy="28" rx="11" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-8 38 28)"/>
+    </symbol>
+    <symbol id="i-heti" viewBox="0 0 100 100">
+      <rect x="14" y="20" width="72" height="66" rx="12" fill="url(#ig-nlav)"/>
+      <rect x="14" y="20" width="72" height="16" rx="8" fill="#4A3E86"/>
+      <circle cx="32" cy="18" r="5" fill="#7E4A24"/><circle cx="68" cy="18" r="5" fill="#7E4A24"/>
+      <rect x="26" y="60" width="10" height="14" rx="4" fill="rgba(255,255,255,0.55)"/>
+      <rect x="42" y="50" width="10" height="24" rx="4" fill="rgba(255,255,255,0.8)"/>
+      <rect x="58" y="44" width="10" height="30" rx="4" fill="#FFE9A8"/>
+      <ellipse cx="36" cy="46" rx="10" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 36 46)"/>
+    </symbol>
+    <symbol id="i-hold" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="url(#ig-moonfull)"/>
+      <ellipse cx="36" cy="30" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-26 36 30)"/>
+      <circle cx="63" cy="42" r="7" fill="url(#ig-crater)" opacity="0.85"/>
+      <circle cx="44" cy="62" r="5" fill="url(#ig-crater)" opacity="0.7"/>
+      <circle cx="62" cy="66" r="3.5" fill="url(#ig-crater)" opacity="0.6"/>
+    </symbol>
+
+    <symbol id="i-termes" viewBox="0 0 100 100">
+      <path d="M50 6c5 20 12 27 32 32-20 5-27 12-32 32-5-20-12-27-32-32 20-5 27-12 32-32Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="41" cy="30" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30 41 30)"/>
+      <circle cx="81" cy="74" r="6" fill="url(#ig-harvest)"/>
+      <circle cx="18" cy="80" r="4" fill="url(#ig-harvest)" opacity="0.8"/>
+    </symbol>
+
+    <!-- ============ F7.4 · Életterület-ikonográfia (mezo-d20.8.4) ============
+         A 8 LIFE skill clay szimbóluma — a Growth-sorok, a hála-bejegyzések és a
+         Napzárás act-3 emoji-maradékának váltása. Nyelv: 100×100, közös ig-*
+         gradiensek, fehér spekuláris folt. -->
+    <radialGradient id="ig-life-eye" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.55" stop-color="#4E8FB8"/><stop offset="1" stop-color="#25577A"/></radialGradient>
+    <linearGradient id="ig-life-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8C7F72"/><stop offset="1" stop-color="#5E544A"/></linearGradient>
+    <radialGradient id="ig-life-pillow" cx="36%" cy="30%" r="90%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.5" stop-color="#B7A9E8"/><stop offset="1" stop-color="#7A6BbD"/></radialGradient>
+
+    <symbol id="i-life-tudatossag" viewBox="0 0 100 100">
+      <path d="M28 92a55 40 0 0 1 44 0c2-16-4-26-10-32H38c-6 6-12 16-10 32Z" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="38" r="17" fill="url(#ig-moonfull)"/>
+      <path d="M24 22a30 30 0 0 1 52 0" fill="none" stroke="#C9962E" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="44" cy="31" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-22 44 31)"/>
+    </symbol>
+    <symbol id="i-life-szemlelet" viewBox="0 0 100 100">
+      <path d="M8 50C20 30 36 20 50 20s30 10 42 30C80 70 64 80 50 80S20 70 8 50Z" fill="url(#ig-stone2)"/>
+      <circle cx="50" cy="50" r="19" fill="url(#ig-life-eye)"/>
+      <circle cx="50" cy="50" r="8" fill="#1D3B52"/>
+      <ellipse cx="43" cy="42" rx="6" ry="4.5" fill="rgba(255,255,255,0.7)" transform="rotate(-24 43 42)"/>
+    </symbol>
+    <symbol id="i-life-konyha" viewBox="0 0 100 100">
+      <path d="M74 42 92 24" stroke="url(#ig-wood)" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="44" cy="56" r="32" fill="url(#ig-life-pan)"/>
+      <circle cx="44" cy="56" r="24" fill="#F4E7D6"/>
+      <circle cx="40" cy="53" r="11" fill="url(#ig-sun)"/>
+      <ellipse cx="30" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 30 38)"/>
+    </symbol>
+    <symbol id="i-life-penzugyek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="74" rx="30" ry="13" fill="url(#ig-coin)"/>
+      <ellipse cx="50" cy="58" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="42" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="40" rx="20" ry="7.5" fill="none" stroke="rgba(255,240,200,0.6)" stroke-width="3"/>
+      <ellipse cx="38" cy="36" rx="8" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-12 38 36)"/>
+    </symbol>
+    <symbol id="i-life-produktivitas" viewBox="0 0 100 100">
+      <rect x="16" y="16" width="68" height="68" rx="16" fill="url(#ig-stone1)"/>
+      <path d="M32 52l14 14 24-30" fill="none" stroke="url(#ig-leaf)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="72" cy="26" r="6" fill="#C9962E"/>
+      <ellipse cx="32" cy="26" rx="9" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 26)"/>
+    </symbol>
+    <symbol id="i-life-tanulas" viewBox="0 0 100 100">
+      <path d="M50 26C40 18 28 16 14 18v56c14-2 26 0 36 8V26Z" fill="url(#ig-book)"/>
+      <path d="M50 26c10-8 22-10 36-8v56c-14-2-26 0-36 8V26Z" fill="url(#ig-shelf)"/>
+      <path d="M50 26v56" stroke="#7E4A24" stroke-width="4" stroke-linecap="round"/>
+      <path d="M60 34c8-3 14-4 20-4M60 46c8-3 14-4 20-4" stroke="rgba(120,90,50,0.4)" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="28" cy="28" rx="8" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-16 28 28)"/>
+    </symbol>
+    <symbol id="i-life-kapcsolatok" viewBox="0 0 100 100">
+      <circle cx="36" cy="50" r="22" fill="none" stroke="url(#ig-heart)" stroke-width="11"/>
+      <circle cx="64" cy="50" r="22" fill="none" stroke="url(#ig-drop)" stroke-width="11"/>
+      <path d="M50 33a22 22 0 0 1 0 34 22 22 0 0 1 0-34Z" fill="rgba(142,63,111,0.35)"/>
+      <ellipse cx="28" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-30 28 36)"/>
+    </symbol>
+    <symbol id="i-life-regeneracio" viewBox="0 0 100 100">
+      <path d="M14 46c-4 14-2 24 4 30 8 8 56 8 64 0 6-6 8-16 4-30-10-8-62-8-72 0Z" fill="url(#ig-life-pillow)"/>
+      <path d="M30 60c12 6 28 6 40 0" fill="none" stroke="rgba(93,79,160,0.45)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="74" cy="26" r="5" fill="#C9962E"/>
+      <path d="M28 22h12l-12 12h12" fill="none" stroke="#9C8FD0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="50" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-10 30 50)"/>
+    </symbol>
+  </defs>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="sg-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="sg-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="sg-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="sg-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="sg-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="sg-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="sg-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6BC9"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#463583"/></linearGradient>
+    <linearGradient id="sg-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3A79A"/><stop offset="1" stop-color="#7C7065"/></linearGradient>
+    <radialGradient id="sg-medal" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="sg-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <radialGradient id="sg-orbn" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#8A7FC0"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3A2E72"/></radialGradient>
+    <linearGradient id="sg-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <linearGradient id="sg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <radialGradient id="sg-mount" cx="40%" cy="25%" r="90%"><stop offset="0" stop-color="#C9BFE8"/><stop offset="1" stop-color="#4A3D85"/></radialGradient>
+
+    <symbol id="s-reggel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(181,126,20,0.25)"/>
+      <g>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="22" fill="url(#sg-sun)"/>
+      <ellipse cx="42" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.65)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="s-este" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(93,79,160,0.25)"/>
+      <path d="M66 71A30 30 0 1 1 55 17a25 25 0 0 0 11 54Z" fill="url(#sg-moon)"/>
+      <ellipse cx="35" cy="33" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-28 35 33)"/>
+      <circle cx="74" cy="24" r="3.5" fill="#C9962E"/>
+      <circle cx="83" cy="38" r="2" fill="rgba(201,150,46,0.6)"/>
+    </symbol>
+
+    <symbol id="s-viz" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(46,110,150,0.25)"/>
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#sg-drop)"/>
+      <ellipse cx="41" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.55)" transform="rotate(18 41 42)"/>
+    </symbol>
+
+    <symbol id="s-energia" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(196,61,20,0.25)"/>
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#sg-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#sg-flin)"/>
+    </symbol>
+
+    <symbol id="s-edzes" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="88" rx="30" ry="5.5" fill="rgba(70,53,131,0.22)"/>
+      <rect x="12" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="74" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="24" y="47" width="52" height="10" rx="5" fill="url(#sg-bar)"/>
+      <ellipse cx="17.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+      <ellipse cx="79.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+    </symbol>
+
+    <symbol id="s-medal" viewBox="0 0 100 100">
+      <path d="M36 8h12l-8 26h-14Z" fill="#D8481F"/>
+      <path d="M64 8H52l8 26h14Z" fill="#FF7A55"/>
+      <ellipse cx="50" cy="90" rx="22" ry="5" fill="rgba(169,119,15,0.28)"/>
+      <circle cx="50" cy="56" r="26" fill="url(#sg-medal)"/>
+      <circle cx="50" cy="56" r="19" fill="none" stroke="rgba(255,240,200,0.5)" stroke-width="2.5"/>
+      <path d="M50 45l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L50 61.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#8A5E07"/>
+      <path d="M49 44l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L49 60.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#FFEDB8"/>
+      <ellipse cx="41" cy="46" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 41 46)"/>
+    </symbol>
+
+    <symbol id="s-orb" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-ejszaka" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(58,46,114,0.3)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orbn)"/>
+      <ellipse cx="37" cy="32" rx="11" ry="7" fill="rgba(255,255,255,0.28)" transform="rotate(-24 37 32)"/>
+      <path d="M38 46q4 6 12 6t12-6" fill="none" stroke="rgba(230,223,249,0.7)" stroke-width="3.5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-figyel" viewBox="0 0 100 100">
+      <ellipse cx="46" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="46" cy="48" r="32" fill="url(#sg-orb)"/>
+      <ellipse cx="34" cy="33" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 34 33)"/>
+      <path d="M84 36a20 20 0 0 1 0 24" fill="none" stroke="rgba(201,150,46,0.75)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M92 28a32 32 0 0 1 0 40" fill="none" stroke="rgba(201,150,46,0.4)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-unnepel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="52" r="31" fill="url(#sg-orb)"/>
+      <ellipse cx="38" cy="38" rx="11" ry="7" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 38)"/>
+      <path d="M39 58q5 7 11 7t11-7" fill="none" stroke="rgba(255,230,210,0.8)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="20" cy="18" r="4.5" fill="#E0AC2F"/>
+      <rect x="72" y="8" width="6" height="11" rx="3" fill="#9C8FD0" transform="rotate(22 75 13)"/>
+      <circle cx="88" cy="30" r="3.5" fill="#7FA06C"/>
+      <rect x="8" y="38" width="5" height="10" rx="2.5" fill="#C46FA0" transform="rotate(-24 10 43)"/>
+      <circle cx="66" cy="6" r="3" fill="#FF7A55"/>
+    </symbol>
+
+    <symbol id="s-piheno" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M50 88C24 72 14 46 24 16c30 8 42 36 32 66q-3 4-6 6Z" fill="url(#sg-leaf)"/>
+      <path d="M44 78C38 58 40 40 48 26" fill="none" stroke="#E2EFD9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="34" cy="34" rx="7" ry="10" fill="rgba(255,255,255,0.35)" transform="rotate(20 34 34)"/>
+    </symbol>
+
+    <symbol id="s-napzaras" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="93" rx="30" ry="5" fill="rgba(93,79,160,0.28)"/>
+      <circle cx="50" cy="48" r="38" fill="url(#sg-sky)"/>
+      <circle cx="50" cy="58" r="15" fill="url(#sg-sun)"/>
+      <path d="M14 62a38 38 0 0 0 72 0q-18-10-36-10t-36 10Z" fill="#584673"/>
+      <circle cx="70" cy="24" r="2.5" fill="rgba(255,240,220,0.8)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="6" fill="rgba(255,255,255,0.35)" transform="rotate(-24 34 24)"/>
+    </symbol>
+
+    <symbol id="s-hajtas" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(78,107,66,0.22)"/>
+      <ellipse cx="50" cy="82" rx="24" ry="9" fill="#8A6B4A"/>
+      <path d="M50 80V46" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 52C32 48 22 34 24 16c18 2 28 16 26 36Z" fill="url(#sg-leaf)"/>
+      <path d="M50 64c16-4 26-16 24-32-16 2-26 16-24 32Z" fill="url(#sg-leaf)"/>
+      <ellipse cx="34" cy="28" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 34 28)"/>
+    </symbol>
+
+    <symbol id="s-hegycel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="32" ry="5.5" fill="rgba(74,61,133,0.25)"/>
+      <path d="M50 18q4 0 7 6l27 52q4 8-6 8H22q-10 0-6-8l27-52q3-6 7-6Z" fill="url(#sg-mount)"/>
+      <path d="M50 18q4 0 7 6l7 14c-6 5-10-2-14 3s-9-2-13 2l6-19q3-6 7-6Z" fill="#F1EDFB"/>
+      <rect x="48.5" y="4" width="3" height="16" rx="1.5" fill="#8C7F72"/>
+      <path d="M51.5 5h15l-4.5 5 4.5 5h-15Z" fill="#E0AC2F"/>
+      <ellipse cx="36" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(18 36 42)"/>
+    </symbol>
+  <radialGradient id="sg-orb-doki" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A8C0D0"/><stop offset="0.45" stop-color="#3E7396"/><stop offset="1" stop-color="#284B62"/></radialGradient><radialGradient id="sg-orb-edzo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8AE9D"/><stop offset="0.45" stop-color="#A84A26"/><stop offset="1" stop-color="#6D3019"/></radialGradient><radialGradient id="sg-orb-taplalkozo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AFBCAA"/><stop offset="0.45" stop-color="#4E6B42"/><stop offset="1" stop-color="#33462B"/></radialGradient><radialGradient id="sg-orb-szomnologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#B6B0D4"/><stop offset="0.45" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3C3368"/></radialGradient><radialGradient id="sg-orb-pszichologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#CCA9BE"/><stop offset="0.45" stop-color="#8E3F6F"/><stop offset="1" stop-color="#5C2948"/></radialGradient><radialGradient id="sg-orb-drill" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8C69A"/><stop offset="0.45" stop-color="#A8801F"/><stop offset="1" stop-color="#6D5314"/></radialGradient><radialGradient id="sg-orb-antropologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A1C5BC"/><stop offset="0.45" stop-color="#2E7D6B"/><stop offset="1" stop-color="#1E5146"/></radialGradient><radialGradient id="sg-orb-szkeptikus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AEA9A5"/><stop offset="0.45" stop-color="#4A4038"/><stop offset="1" stop-color="#302A24"/></radialGradient></defs>
+    <symbol id="s-orb-doki" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#3E739647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-doki)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(12 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-edzo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A84A2647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-edzo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(39 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-taplalkozo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4E6B4247"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-taplalkozo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(66 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szomnologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#5D4FA047"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szomnologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(93 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-pszichologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#8E3F6F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-pszichologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(120 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-drill" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A8801F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-drill)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(147 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-antropologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#2E7D6B47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-antropologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(174 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szkeptikus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4A403847"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szkeptikus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(201 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+</svg>
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · Én → Célok</p>
+  <h1>Célok</h1>
+  <p class="lede">Az általános életcél-rendszer első arca. <strong>Cél → 2–5 pillér → napi / heti / havi irány</strong>,
+  a pillérek a már naplózott jelekből (alvás, kaja, edzés, activity-ledger, napzárás, említett emberek) számolódnak, semmi új
+  naplózó felület. Életterület = <strong>PERMAH</strong> hat dimenziója (Érzelem · Elmélyülés · Kapcsolatok · Értelem · Teljesítmény ·
+  Egészség), gyakorlat-réteg = a Growth LIFE-skillek. Három valós cél demózza: <strong>Kockahas</strong>, <strong>Side hustle</strong>,
+  <strong>Az utolsó barátnő</strong>.</p>
+
+  <div class="stage">
+    <div>
+      <div class="phone"><div class="screen" id="scr">
+        <div class="isl"></div>
+        <div class="p-status"><span>13:30</span><span>ᯤ ▮▮▮</span></div>
+        <div class="p-body">
+
+          <div class="mrow">
+            <button class="backbtn" id="enBack" style="padding:5px 11px 5px 8px;">‹ Én</button>
+            <div class="grow"><div class="p-eyebrow" style="padding-left:2px;">Kedd · szept 1</div></div>
+            <div class="ntfwrap" id="ntfwrap">
+              <button class="dpswitch" id="ntfbtn" aria-label="Értesítések" aria-expanded="false">
+                <svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg>
+                <span class="badge mini" id="ntfbadge">1</span>
+              </button>
+              <div class="ntfmenu" role="menu">
+                <div class="p-eyebrow" style="padding:0 2px 6px;">Értesítések · ma</div>
+                <div class="ntfrow">
+                  <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-cel"/></svg>
+                  <div class="grow"><div class="t">07:10 · Célok</div><div class="x">Hétfő lezárva: a Kockahas felé mozdultál, a napzárás csúszik.</div></div>
+                </div>
+                <div class="ntffoot">Összes értesítés ›</div>
+              </div>
+            </div>
+            <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+          </div>
+
+          <!-- ============ CÉLOK HUB ============ -->
+          <div class="dp-panel on" id="panel">
+
+            <div class="mrow rise" style="--d:0ms;">
+              <div class="grow"><div style="font-size:15px;font-weight:700;">Célok</div><div class="p-eyebrow">3 aktív · 1 parkol</div></div>
+              <button class="pgact" data-page="page-wiz" style="margin-left:auto;">＋ Új cél</button>
+            </div>
+
+            <div class="float3d celhero rise" style="--d:40ms;">
+              <div class="ring6">
+                <svg viewBox="0 0 80 80" width="80" height="80" aria-hidden="true">
+                  <circle class="arc d-p"      cx="40" cy="40" r="30" style="--i:0;stroke-dashoffset:0;"/>
+                  <circle class="arc d-e"      cx="40" cy="40" r="30" style="--i:1;stroke-dashoffset:-31.4;"/>
+                  <circle class="arc d-r live" cx="40" cy="40" r="30" style="--i:2;stroke-dashoffset:-62.8;"/>
+                  <circle class="arc d-m"      cx="40" cy="40" r="30" style="--i:3;stroke-dashoffset:-94.2;"/>
+                  <circle class="arc d-a live" cx="40" cy="40" r="30" style="--i:4;stroke-dashoffset:-125.6;"/>
+                  <circle class="arc d-h live" cx="40" cy="40" r="30" style="--i:5;stroke-dashoffset:-157;"/>
+                </svg>
+                <div class="c"><b>3</b><small>aktív cél</small></div>
+              </div>
+              <div class="grow">
+                <div class="t">Ezen a héten <strong>két célod felé haladtál</strong>, a side hustle-nél álltál. A napzárás az, ami mindhármat húzza.</div>
+                <div class="sub">
+                  <span class="stch ok">↗ 2</span><span class="stch" style="background:rgba(43,33,24,0.06);color:#6E6257;">→ 1</span><span class="stch lav">35. hét</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="dimband rise" style="--d:90ms;" aria-label="Életterületek">
+              <span class="dimchip d-h"><i></i>Egészség <b>1</b></span>
+              <span class="dimchip d-a"><i></i>Teljesítmény <b>1</b></span>
+              <span class="dimchip d-r"><i></i>Kapcsolatok <b>1</b></span>
+              <span class="dimchip d-e empty"><i></i>Elmélyülés</span>
+              <span class="dimchip d-p empty"><i></i>Érzelem</span>
+              <span class="dimchip d-m empty"><i></i>Értelem</span>
+            </div>
+
+            <div class="mosaic">
+              <div class="tile gtile d-h rise" style="--d:130ms;" data-page="page-g1" role="button" tabindex="0" aria-label="Kockahas">
+                <div class="p-eyebrow"><i style="width:6px;height:6px;border-radius:50%;background:var(--dc);"></i>Egészség</div>
+                <div class="nm">Kockahas</div>
+                <div class="drow"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-life-regeneracio"/></svg><span class="arrow up" style="--d:130ms;"><span class="g">↗</span><span class="v">71%</span></span></div>
+                <div class="wk7" data-dots="hphhmhh" style="--d:130ms;"><span class="lbl">4. hét</span></div>
+              </div>
+              <div class="tile gtile d-a rise" style="--d:170ms;" data-page="page-g2" role="button" tabindex="0" aria-label="Side hustle">
+                <div class="p-eyebrow"><i style="width:6px;height:6px;border-radius:50%;background:var(--dc);"></i>Teljesítmény</div>
+                <div class="nm">Side hustle</div>
+                <div class="drow"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-life-produktivitas"/></svg><span class="arrow flat" style="--d:170ms;"><span class="g">→</span><span class="v">58%</span></span></div>
+                <div class="wk7" data-dots="hmphmhp" style="--d:170ms;"><span class="lbl">2. hét</span></div>
+              </div>
+              <div class="tile gtile d-r rise" style="--d:210ms;" data-page="page-g3" role="button" tabindex="0" aria-label="Az utolsó barátnő">
+                <div class="p-eyebrow"><i style="width:6px;height:6px;border-radius:50%;background:var(--dc);"></i>Kapcsolatok</div>
+                <div class="nm">Az utolsó barátnő</div>
+                <div class="drow"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-life-kapcsolatok"/></svg><span class="arrow up" style="--d:210ms;"><span class="g">↗</span><span class="v">64%</span></span></div>
+                <div class="wk7" data-dots="mhhphhh" style="--d:210ms;"><span class="lbl">5. hét</span></div>
+              </div>
+              <div class="newtile rise" style="--d:250ms;" data-page="page-wiz" role="button" tabindex="0" aria-label="Új cél">
+                <svg width="26" height="26" viewBox="0 0 100 100" style="opacity:0.7;"><use href="#i-cel"/></svg>
+                <b>＋ Új cél</b>
+                <small>Mezo pilléreket javasol</small>
+              </div>
+            </div>
+
+            <div class="parkrow rise" style="--d:290ms;">
+              <svg width="20" height="20" viewBox="0 0 100 100" style="opacity:0.55;flex:none;"><use href="#i-life-tanulas"/></svg>
+              <div class="grow"><div class="nm">Spanyol B2</div><div class="sb">parkol · júl 3 óta · Elmélyülés</div></div>
+              <button class="act" id="unpark">Vissza</button>
+            </div>
+
+            <div class="principle rise" style="--d:330ms;">Ami nincs naplózva, az nem nulla — az üres.</div>
+          </div>
+
+        </div>
+
+        <div class="floatfab" role="button" tabindex="0" aria-label="Gyors logolás"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div class="tabbar five">
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+          <div class="mtab on"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-growth"/></svg>Én</div>
+        </div>
+        <div class="homebar"></div>
+
+        <!-- ============ CÉL · KOCKAHAS ============ -->
+        <div class="page p-sage d-h" id="page-g1">
+          <div class="page-head"><button class="backbtn" data-back="page-g1">‹ Célok</button><button class="pgact" data-sheet="sh-more">⋯</button></div>
+          <div class="page-hero">
+            <div class="nm">Kockahas</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-life-regeneracio"/></svg>
+              <span class="arrow up" style="--d:0ms;"><span class="g" style="font-size:40px;">↗</span><span class="v" style="font-size:22px;font-weight:200;">71<span style="font-size:12px;">%</span></span></span>
+            </div>
+            <div class="sb">Egészség · aug 10 → nov 30 · 4. hét a 16-ból</div>
+          </div>
+          <div class="page-body">
+            <div class="chiprow rise" style="--d:0ms;">
+              <button class="fchip on" data-period="week">Hét</button><button class="fchip" data-period="month">Hónap</button>
+              <span class="stch ok" style="margin-left:auto;align-self:center;">+9 az előző 3 héthez</span>
+            </div>
+            <div class="coach rise" style="--d:30ms;margin-top:0;margin-bottom:9px;"><span class="dot"></span><span>Az alvás és a fehérje tartja — a napzárás az, ami csúszik. Ha a héten 5 este lezársz, a Fegyelem-nyíl két hét alatt fordul.</span></div>
+
+            <div class="lsec rise" style="--d:60ms;"><span class="p-eyebrow">Pillérek</span><span class="cnt">5 · 3 ↗ · 1 → · 1 ↘</span></div>
+
+            <div class="pillar washed rise" style="--d:90ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-suly"/></svg><span class="nm">Testkompozíció</span><span class="kind link">kapcsolt · súlycél</span><span class="arrow up" style="--d:90ms;"><span class="g">↗</span></span></div>
+              <div class="val"><b>−0,4</b><small>kg / hét · terv −0,5</small><span class="stch ok">ütemben</span></div>
+              <div class="pbar"><div style="--d:90ms;width:82%;"></div><i class="tg" style="left:100%;"></i></div>
+              <div class="wk7 wkview" data-dots="hhphhnh" style="--d:90ms;"><span class="lbl">6 mérés · 1 kimaradt</span></div>
+              <div class="mview"><div class="hm" data-hm="hhphhnhhhhphhmhhhhphhnhhhhhp" style="--d:90ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+              <div class="linkrow" data-page="page-suly-stub">Súly-idővonal · a cut receptje <span class="chev">›</span></div>
+            </div>
+
+            <div class="pillar rise" style="--d:130ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-konyha"/></svg><span class="nm">Fehérje</span><span class="kind">átlag · ≥ 160 g</span><span class="arrow up" style="--d:130ms;"><span class="g">↗</span></span></div>
+              <div class="val"><b>158</b><small>g · 7-nap átlag</small><span class="stch warn">majdnem</span></div>
+              <div class="pbar"><div class="amb" style="--d:130ms;width:79%;"></div><i class="tg" style="left:80%;"></i></div>
+              <div class="wk7 wkview" data-dots="hhmhphh" style="--d:130ms;"><span class="lbl">5 / 7 nap</span></div>
+              <div class="mview"><div class="hm" data-hm="mmhphhmhhhphhmhhhhhhmhhhmhph" style="--d:130ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="pillar rise" style="--d:170ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-alvas"/></svg><span class="nm">Alvás</span><span class="kind">átlag · ≥ 7,0 ó</span><span class="arrow flat" style="--d:170ms;"><span class="g">→</span></span></div>
+              <div class="val"><b>7,4</b><small>óra · 7-nap átlag</small><span class="stch ok">tartod</span></div>
+              <div class="pbar"><div style="--d:170ms;width:88%;"></div><i class="tg" style="left:83%;"></i></div>
+              <div class="wk7 wkview" data-dots="hhhphhh" style="--d:170ms;"><span class="lbl">6 / 7 nap</span></div>
+              <div class="mview"><div class="hm" data-hm="hhphhhhhhhhphhhhhhmhhhhhhhph" style="--d:170ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="pillar rise" style="--d:210ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg><span class="nm">Edzés</span><span class="kind">szokás · 4× / hét</span><span class="arrow up" style="--d:210ms;"><span class="g">↗</span></span></div>
+              <div class="val"><b>4</b><small>/ 4 edzésnap · 12 400 kg volumen</small><span class="stch ok">megvan</span></div>
+              <div class="wk7 wkview" data-dots="mhmhhmh" style="--d:210ms;"><span class="lbl">edzésnapok</span></div>
+              <div class="mview"><div class="hm" data-hm="mhmhmhmmhmhhmhmhmhhmhmhmhhmh" style="--d:210ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="pillar rise" style="--d:250ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-szemlelet"/></svg><span class="nm">Fegyelem · napzárás</span><span class="kind">szokás · 6× / hét</span><span class="arrow down" style="--d:250ms;"><span class="g">↘</span></span></div>
+              <div class="val"><b>4</b><small>/ 6 este lezárva</small><span class="stch warn">csúszik</span></div>
+              <div class="pbar"><div class="amb" style="--d:250ms;width:67%;"></div></div>
+              <div class="wk7 wkview" data-dots="hmhmmhh" style="--d:250ms;"><span class="lbl">3 este kimaradt</span></div>
+              <div class="mview"><div class="hm" data-hm="hhhhmhhhhhmhhhmhmhhhmmhhmhmh" style="--d:250ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+              <div class="coach"><span class="dot"></span><span>Egy 20:30-as jelzés visszafordítja: <b>~2 hét</b> a nyílhoz.</span></div>
+            </div>
+
+            <div class="lsec rise" style="--d:290ms;"><span class="p-eyebrow">Miért · ha–akkor</span></div>
+            <div class="whycard rise" style="--d:320ms;">
+              <div class="q">„Erős, egészséges test, ami bírja a röpit és a hétköznapokat — a kockahas ennek a jele, nem a célja.”</div>
+              <div style="margin-top:8px;">
+                <div class="ifthen"><span class="ha">HA</span><span>21 után éhes vagyok → <b>túró + fahéj</b>, nem nassolás</span></div>
+                <div class="ifthen"><span class="ha">HA</span><span>lábnap után fáradt vagyok → <b>20:30 lefekvés</b>, telefon a konyhában</span></div>
+              </div>
+            </div>
+            <div class="actrow rise" style="--d:350ms;"><button data-toast="Parkolva · a Kockahas nem számol tovább, de nem vész el">Parkolás</button><button data-toast="Lezárva ✓ — Mezo memoár-kapszulát ír róla">Lezárás</button></div>
+            <p class="principle">Az irány-nyíl 7 nap vs 21 nap · mindkettőben legalább 5 adat-nap kell.</p>
+          </div>
+        </div>
+
+        <!-- ============ CÉL · SIDE HUSTLE ============ -->
+        <div class="page p-sky d-a" id="page-g2">
+          <div class="page-head"><button class="backbtn" data-back="page-g2">‹ Célok</button><button class="pgact" data-sheet="sh-more">⋯</button></div>
+          <div class="page-hero">
+            <div class="nm">Side hustle</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-life-produktivitas"/></svg>
+              <span class="arrow flat" style="--d:0ms;"><span class="g" style="font-size:40px;">→</span><span class="v" style="font-size:22px;font-weight:200;">58<span style="font-size:12px;">%</span></span></span>
+            </div>
+            <div class="sb">Teljesítmény · Elmélyülés · aug 24 óta · nincs határidő</div>
+          </div>
+          <div class="page-body">
+            <div class="chiprow rise" style="--d:0ms;">
+              <button class="fchip on" data-period="week">Hét</button><button class="fchip" data-period="month">Hónap</button>
+              <span class="stch" style="margin-left:auto;align-self:center;background:rgba(43,33,24,0.06);color:#6E6257;">±0 az előző héthez</span>
+            </div>
+            <div class="coach rise" style="--d:30ms;margin-top:0;margin-bottom:9px;"><span class="dot"></span><span>A fejlesztés-idő a mediánod fölött van — ez viszi. A bevétel-pillérnek még nincs bejegyzése: ha bejön valami, mondd el a chatben, ide kerül.</span></div>
+
+            <div class="lsec rise" style="--d:60ms;"><span class="p-eyebrow">Pillérek</span><span class="cnt">4 · 1 ↗ · 2 → · 1 üres</span></div>
+
+            <div class="pillar washed rise" style="--d:90ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-produktivitas"/></svg><span class="nm">Fejlesztés</span><span class="kind">baseline · 28 nap</span><span class="arrow up" style="--d:90ms;"><span class="g">↗</span></span></div>
+              <div class="val"><b>6,5</b><small>óra e héten · mediánod 4,2</small><span class="stch ok">fölötte</span></div>
+              <div class="pbar"><div class="sky" style="--d:90ms;width:100%;"></div><i class="tg" style="left:65%;"></i></div>
+              <div class="wk7 wkview" data-dots="hmhhmhh" style="--d:90ms;"><span class="lbl">activity · „fejlesztettem a mezót”</span></div>
+              <div class="mview"><div class="hm" data-hm="nnnnnnnnnnnnnnmhmhmhhhmhhmhh" style="--d:90ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="pillar rise" style="--d:130ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-idozito"/></svg><span class="nm">Fókuszblokk</span><span class="kind">szokás · 4× / hét</span><span class="arrow flat" style="--d:130ms;"><span class="g">→</span></span></div>
+              <div class="val"><b>3</b><small>/ 4 blokk · habit „Mély munka 90 p”</small><span class="stch warn">egy hiányzik</span></div>
+              <div class="pbar"><div class="amb" style="--d:130ms;width:75%;"></div></div>
+              <div class="wk7 wkview" data-dots="hmmhmhm" style="--d:130ms;"><span class="lbl">ma még nyitott</span></div>
+              <div class="mview"><div class="hm" data-hm="nnnnnnnnnnnnnnhmmhmhmhmmhmhm" style="--d:130ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="pillar rise" style="--d:170ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-tanulas"/></svg><span class="nm">Tanulás</span><span class="kind">szokás · 2× / hét</span><span class="arrow flat" style="--d:170ms;"><span class="g">→</span></span></div>
+              <div class="val"><b>1</b><small>/ 2 · „Spring Modulith · 40 p”</small></div>
+              <div class="wk7 wkview" data-dots="mmhmmmm" style="--d:170ms;"><span class="lbl">activity · learning</span></div>
+              <div class="mview"><div class="hm" data-hm="nnnnnnnnnnnnnnmhmmmhmmmhmmmm" style="--d:170ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="pillar ghost rise" style="--d:210ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100" style="opacity:0.6;"><use href="#i-life-penzugyek"/></svg><span class="nm" style="color:#6E6257;">Bevétel</span><span class="kind">cél · 50 e Ft / hó · dec 31</span><span class="arrow none" style="--d:210ms;"><span class="g">·</span></span></div>
+              <div class="val"><b style="color:#A2958A;">—</b><small>még nincs bejegyzés · a nyíl 5 adat-nap után jön</small></div>
+              <div class="wk7 wkview" data-dots="nnnnnnn" style="--d:210ms;"><span class="lbl">üres ≠ nulla</span></div>
+              <div class="mview"><div class="hm" data-hm="nnnnnnnnnnnnnnnnnnnnnnnnnnnn" style="--d:210ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="lsec rise" style="--d:250ms;"><span class="p-eyebrow">Miért · ha–akkor</span></div>
+            <div class="whycard rise" style="--d:280ms;">
+              <div class="q">„Egy saját termék, ami mások napját is rendbe teszi — és ami nem függ egy munkáltatótól.”</div>
+              <div style="margin-top:8px;">
+                <div class="ifthen"><span class="ha">HA</span><span>este 20:00 és nincs edzés → <b>90 perc mély munka</b>, Slack lenémítva</span></div>
+                <div class="ifthen"><span class="ha">HA</span><span>új ötlet jön → <b>a bd-be írom</b>, nem kezdem el aznap</span></div>
+              </div>
+            </div>
+            <div class="actrow rise" style="--d:310ms;"><button data-toast="Parkolva">Parkolás</button><button data-toast="Lezárva ✓">Lezárás</button></div>
+            <p class="principle">Baseline-pillér: jobb vagy-e a saját 28 napos mediánodnál · legalább 14 adat-nap kell.</p>
+          </div>
+        </div>
+
+        <!-- ============ CÉL · AZ UTOLSÓ BARÁTNŐ ============ -->
+        <div class="page p-rose d-r" id="page-g3">
+          <div class="page-head"><button class="backbtn" data-back="page-g3">‹ Célok</button><button class="pgact" data-sheet="sh-more">⋯</button></div>
+          <div class="page-hero">
+            <div class="nm">Az utolsó barátnő</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-life-kapcsolatok"/></svg>
+              <span class="arrow up" style="--d:0ms;"><span class="g" style="font-size:40px;">↗</span><span class="v" style="font-size:22px;font-weight:200;">64<span style="font-size:12px;">%</span></span></span>
+            </div>
+            <div class="sb">Kapcsolatok · Érzelem · aug 1 óta · 5. hét</div>
+          </div>
+          <div class="page-body">
+            <div class="chiprow rise" style="--d:0ms;">
+              <button class="fchip on" data-period="week">Hét</button><button class="fchip" data-period="month">Hónap</button>
+              <span class="stch ok" style="margin-left:auto;align-self:center;">+11 az előző 3 héthez</span>
+            </div>
+            <div class="coach rise" style="--d:30ms;margin-top:0;margin-bottom:9px;"><span class="dot"></span><span>Több emberrel voltál, mint a nyári mediánod — és a röpi-estéken jobb a check-in hangulatod. Ez a két dolog most egy irányba húz.</span></div>
+
+            <div class="lsec rise" style="--d:60ms;"><span class="p-eyebrow">Pillérek</span><span class="cnt">3 · 2 ↗ · 1 →</span></div>
+
+            <div class="pillar washed rise" style="--d:90ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-emberek"/></svg><span class="nm">Társas élet</span><span class="kind">baseline · említések</span><span class="arrow up" style="--d:90ms;"><span class="g">↗</span></span></div>
+              <div class="val"><b>9</b><small>említett ember e héten · mediánod 6</small><span class="stch ok">fölötte</span></div>
+              <div class="pbar"><div style="--d:90ms;width:100%;"></div><i class="tg" style="left:66%;"></i></div>
+              <div class="wk7 wkview" data-dots="hhmhphh" style="--d:90ms;"><span class="lbl">Petra 3× · röpi-csapat · Bence</span></div>
+              <div class="mview"><div class="hm" data-hm="mhmhmhhmhmmhhhmhhmhhhmhhmhph" style="--d:90ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="pillar rise" style="--d:130ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-kapcsolatok"/></svg><span class="nm">Tudatos ismerkedés</span><span class="kind">szokás · 1× / hét</span><span class="arrow flat" style="--d:130ms;"><span class="g">→</span></span></div>
+              <div class="val"><b>1</b><small>/ 1 · „kávé Annával” · csüt</small><span class="stch ok">megvan</span></div>
+              <div class="wk7 wkview" data-dots="mmmhmmm" style="--d:130ms;"><span class="lbl">activity · connection</span></div>
+              <div class="mview"><div class="hm" data-hm="mmmmmmhmmmmmmmmmhmmmmmmmhmmm" style="--d:130ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="pillar rise" style="--d:170ms;">
+              <div class="ph"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg><span class="nm">Egészséges életmód</span><span class="kind">átlag · mozgás + pihenés ≥ 60%</span><span class="arrow up" style="--d:170ms;"><span class="g">↗</span></span></div>
+              <div class="val"><b>68</b><small>% · Életjel napzárási átlag</small><span class="stch ok">zöld</span></div>
+              <div class="pbar"><div style="--d:170ms;width:68%;"></div><i class="tg" style="left:60%;"></i></div>
+              <div class="wk7 wkview" data-dots="hhhphnh" style="--d:170ms;"><span class="lbl">1 este napzárás nélkül</span></div>
+              <div class="mview"><div class="hm" data-hm="hphhhhnhhhphhhhhmhhhhphhhnhh" style="--d:170ms;"></div><div class="hmlbl"><span>aug 5</span><span>szept 1</span></div></div>
+            </div>
+
+            <div class="suggest rise" style="--d:210ms;">
+              <div class="sh2"><span class="orb"></span><span class="t">Mezo javasol egy pillért</span></div>
+              <p><b>Hangulat</b> · átlag · esti check-in ≥ 7 — a napló szerint a jó estéid a társas napokra esnek. Ha méred, látod, hogy a cél tényleg jót tesz-e neked.</p>
+              <div class="btns"><button class="cta" data-toast="Pillér hozzáadva · Hangulat">Hozzáadom</button><button class="ghost" data-toast="Rendben, nem hozom fel újra">Most nem</button></div>
+            </div>
+
+            <div class="lsec rise" style="--d:250ms;"><span class="p-eyebrow">Miért · ha–akkor</span></div>
+            <div class="whycard rise" style="--d:280ms;">
+              <div class="q">„Olyan ember lenni, aki mellett jó lenni — és akkor jön, akinek jó.”</div>
+              <div style="margin-top:8px;">
+                <div class="ifthen"><span class="ha">HA</span><span>hétvégén nincs terv → <b>hívok valakit</b> szombat délelőtt, nem várok</span></div>
+                <div class="ifthen"><span class="ha">HA</span><span>tetszik valaki → <b>egy héten belül kérdezek</b>, nem elemzek</span></div>
+              </div>
+            </div>
+            <div class="actrow rise" style="--d:310ms;"><button data-toast="Parkolva">Parkolás</button><button data-toast="Lezárva ✓">Lezárás</button></div>
+            <p class="principle">A cél maga nem kap XP-t — a pillérek adnak a skillre. A ↘ soha nem piros, és sosem von le.</p>
+          </div>
+        </div>
+
+        <!-- ============ SÚLY-STUB ============ -->
+        <div class="page p-sky" id="page-suly-stub">
+          <div class="page-head"><button class="backbtn" data-back="page-suly-stub">‹ Kockahas</button></div>
+          <div class="page-hero">
+            <div class="nm">Súly-idővonal</div>
+            <div class="mrow" style="justify-content:center;gap:12px;"><svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-suly"/></svg><div class="bignum">−2,8<span style="font-size:15px;color:#6E6257;"> kg</span></div></div>
+            <div class="sb">a meglévő Cél-motor · változatlan · /me/goals/weight</div>
+          </div>
+          <div class="page-body">
+            <div class="statstrip rise" style="--d:0ms;margin-bottom:10px;">
+              <div class="statcell"><b>78,6</b><small>jelenleg</small></div>
+              <div class="statcell"><b style="color:#4E6B42;">−0,4</b><small>kg / hét</small></div>
+              <div class="statcell"><b>13 hét</b><small>eta</small></div>
+            </div>
+            <div class="qcard rise" style="--d:60ms;"><div class="p-eyebrow" style="padding-bottom:5px;">Recept · szakaszonként</div>
+              <div class="mcells" style="display:flex;gap:5px;">
+                <span style="flex:1;border-radius:11px;padding:5px 2px 4px;text-align:center;background:#FFF1D6;color:#A8801F;"><b style="display:block;font-size:11.5px;">2 150</b><small style="font-size:6px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;">kcal</small></span>
+                <span style="flex:1;border-radius:11px;padding:5px 2px 4px;text-align:center;background:#FFE3D8;color:#A84A26;"><b style="display:block;font-size:11.5px;">163 g</b><small style="font-size:6px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;">fehérje</small></span>
+                <span style="flex:1;border-radius:11px;padding:5px 2px 4px;text-align:center;background:#EBE6F8;color:#5D4FA0;"><b style="display:block;font-size:11.5px;">7,5 h</b><small style="font-size:6px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;">alvás</small></span>
+              </div>
+            </div>
+            <p class="habnote rise" style="--d:100ms;">Ez a mai <em>en-tab</em> Cél-oldala, csak új route-on. A Kockahas „Testkompozíció” pillére innen olvassa az „ütemben van-e” ítéletet — a recept továbbra is ebből megy a Fuelbe/Sleepbe/Trainbe.</p>
+          </div>
+        </div>
+
+        <!-- ============ ÚJ CÉL · VARÁZSLÓ ============ -->
+        <div class="page p-coral" id="page-wiz">
+          <div class="page-head"><button class="backbtn" data-back="page-wiz">‹ Célok</button></div>
+          <div class="page-body">
+            <div style="padding:2px 2px 0;">
+              <div class="wprog" id="wprog"><i class="f"></i><i></i><i></i><i></i><i></i></div>
+              <div class="mrow"><span class="wstep" id="wstepnum">01 / 05</span><span class="wstep" id="wstepname" style="margin-left:auto;color:#A84A26;">Cél</span></div>
+            </div>
+            <div class="page-hero" style="padding-top:4px;">
+              <div class="sb">Én · Új cél</div>
+              <div class="nm" id="wtitle">Mit építünk?</div>
+            </div>
+
+            <div class="wst" id="ws1">
+              <div class="fcard"><label class="flabel">A cél, a te szavaiddal</label><textarea class="fin" rows="2" id="wgoal">Félmaraton tavasszal</textarea></div>
+              <div class="fcard"><label class="flabel">Miért fontos? · egy mondat</label><textarea class="fin" rows="2" id="wwhy">Hogy lefogyjak és jobban nézzek ki a strandon.</textarea></div>
+              <div class="fcard"><label class="flabel">Határidő · opcionális</label><div class="frow2"><input class="fin" type="date" value="2027-05-10"><span class="chips" style="align-self:center;"><button class="on">Van dátum</button></span></div></div>
+              <div class="shrow"><button class="cta" data-wnext="2">Tovább →</button></div>
+            </div>
+
+            <div class="wst" id="ws2" style="display:none;">
+              <div class="qcard"><div class="p-eyebrow" style="padding-bottom:4px;">Mezo olvasata</div>
+                <div style="font-size:10.5px;font-weight:300;">A „lefogyjak és jobban nézzek ki” <b>kinézet-keret</b>. A kutatás szerint az ilyen célt el lehet érni, de a jólléted nem követi — a belső keret (egészség, képesség) tartósabb motiváció. Nem tiltom, csak felajánlok egy másikat.</div>
+              </div>
+              <div class="framecard" id="framewarn">
+                <div class="lb">⚠ Külső keret · kinézet</div>
+                <p>Javaslat: <b>„Olyan állóképesség, amivel 21 km-t végigfutok — és közben erősebb, egészségesebb leszek.”</b></p>
+              </div>
+              <div class="framecard ok" id="frameok" style="display:none;">
+                <div class="lb">✓ Belső keret · egészség + képesség</div>
+                <p>A célod mondata: <b>„Olyan állóképesség, amivel 21 km-t végigfutok — és közben erősebb, egészségesebb leszek.”</b></p>
+              </div>
+              <div class="chips coral" id="framechips" style="margin-top:6px;"><button data-frame="ok">Egészség-keret · elfogadom</button><button data-frame="keep">Maradjon a kinézet</button></div>
+              <div class="fcard" style="margin-top:8px;"><label class="flabel">Életterület · Mezo javaslata</label>
+                <div class="dimband"><span class="dimchip d-h"><i></i>Egészség</span><span class="dimchip d-a"><i></i>Teljesítmény <b>2.</b></span><span class="dimchip d-e empty"><i></i>Elmélyülés</span><span class="dimchip d-p empty"><i></i>Érzelem</span></div>
+              </div>
+              <div class="shrow"><button class="ghost" data-wnext="1">← Vissza</button><button class="cta" data-wnext="3">Pillérek →</button></div>
+            </div>
+
+            <div class="wst" id="ws3" style="display:none;">
+              <div class="aiwait" id="aiwait"><span class="tw"><i></i><i></i><i></i></span><span>Mezo a jel-katalógusból válogat…</span></div>
+              <div id="pilprops" style="display:none;">
+                <div class="pilcard on d-a"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-futas"/></svg><div class="grow"><b>Futás · heti 3 alkalom</b><small>futás-napló · szokás</small><span class="kind">szokás · 3× / hét</span></div><button class="togg on" aria-label="Pillér be"></button></div>
+                <div class="pilcard on d-a"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-cel"/></svg><div class="grow"><b>Leghosszabb futás · 8 → 21 km</b><small>futás-napló · ütemvonal máj 10-ig</small><span class="kind">cél-érték</span></div><button class="togg on" aria-label="Pillér be"></button></div>
+                <div class="pilcard on d-h"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-alvas"/></svg><div class="grow"><b>Alvás · ≥ 7 óra</b><small>alvás-napló · 7-nap átlag</small><span class="kind">átlag</span></div><button class="togg on" aria-label="Pillér be"></button></div>
+                <div class="pilcard on d-h"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-sport"/></svg><div class="grow"><b>Terhelés-gard · ACWR ≤ 1,3</b><small>sport + futás terhelésből · a röpi miatt</small><span class="kind">átlag · gard</span></div><button class="togg on" aria-label="Pillér be"></button></div>
+                <div class="pilcard off d-a"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-futas"/></svg><div class="grow"><b>Pulzus-visszaállás</b><small>futás-napló · a saját mediánodhoz</small><span class="kind">baseline</span></div><button class="togg" aria-label="Pillér ki"></button></div>
+                <button class="addrow" data-sheet="sh-catalog">＋ Pillér a katalógusból</button>
+                <p class="habnote" style="margin-top:8px;">Az AI csak a zárt jel-katalógusból választhat — ismeretlen metrikát nem találhat ki. 5 pillér a felső határ.</p>
+                <div class="shrow"><button class="ghost" data-wnext="2">← Vissza</button><button class="cta" data-wnext="4">Akadály →</button></div>
+              </div>
+            </div>
+
+            <div class="wst" id="ws4" style="display:none;">
+              <div class="fcard"><label class="flabel">Mi fog közbejönni? · egy akadály</label><input class="fin" value="Röpi-szezon: kedd–csüt este edzés, fáradt lábak"></div>
+              <div class="qcard"><div class="p-eyebrow" style="padding-bottom:5px;">Ha–akkor · Mezo javaslata, írd át</div>
+                <div class="ifthen"><span class="ha">HA</span><span class="grow"><input class="fin" value="röpi-est után fáradt a láb → másnap reggel csak 30 p laza kocogás"></span></div>
+                <div class="ifthen"><span class="ha">HA</span><span class="grow"><input class="fin" value="esik → futópad a teremben, nem hagyom ki"></span></div>
+                <button class="addrow">＋ Még egy ha–akkor</button>
+              </div>
+              <p class="habnote">Akadály + „ha X, akkor Y” terv — a megvalósítási szándék az egyik legerősebb ismert célelérés-fokozó.</p>
+              <div class="shrow"><button class="ghost" data-wnext="3">← Vissza</button><button class="cta" data-wnext="5">Összegzés →</button></div>
+            </div>
+
+            <div class="wst" id="ws5" style="display:none;">
+              <div class="float3d" style="padding:11px 13px;margin-bottom:9px;background:linear-gradient(140deg,#E9F1E2,#FFFFFF 72%);">
+                <div class="mrow"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-futas"/></svg><div class="grow"><b style="font-size:12.5px;">Félmaraton tavasszal</b><div class="p-eyebrow" style="color:#4E6B42;">Egészség · Teljesítmény · máj 10-ig</div></div></div>
+                <div style="margin-top:8px;">
+                  <div class="sumrow"><span class="k">Keret</span><span>Egészség + képesség</span></div>
+                  <div class="sumrow"><span class="k">Pillérek</span><span>4 aktív · futás, hosszú futás, alvás, terhelés-gard</span></div>
+                  <div class="sumrow"><span class="k">Ha–akkor</span><span>2 terv</span></div>
+                  <div class="sumrow"><span class="k">XP</span><span>pillér-nap → endurance · recovery skill</span></div>
+                </div>
+              </div>
+              <div class="framecard"><div class="lb">3 aktív célod már van</div><p>A negyediket csak úgy tudod aktiválni, ha egyet parkolsz — a kutatás szerint 3–5 fölött a célok egymást eszik. A parkolt cél nem vész el.</p></div>
+              <div class="shrow"><button class="ghost" data-toast="Mentve tervezettként">Mentés tervezettként</button><button class="cta" data-sheet="sh-cap">Aktiválás</button></div>
+              <button class="ghost" data-wnext="4" style="width:100%;margin-top:6px;">← Vissza</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ NAP · a Célok-csempe ============ -->
+        <div class="page" id="page-nap">
+          <div class="page-head"><button class="backbtn" data-back="page-nap">‹ vissza a demóból</button></div>
+          <div class="page-body" style="padding-top:8px;">
+            <div class="p-eyebrow rise" style="--d:0ms;padding:0 2px 6px;">Nap hub · délután · a beágyazott csempe</div>
+            <div class="float3d naphero rise" style="--d:30ms;margin-bottom:9px;">
+              <div class="p-eyebrow" style="color:#4E6B42;">Keret · ma</div>
+              <div class="mrow"><span class="big">1 240</span><span class="mut" style="font-size:9.5px;">kcal marad · fehérje 96 / 163 g</span></div>
+              <div class="daybar"><i class="f" style="--d:100ms;"></i><i class="f" style="--d:160ms;"></i><i class="now" style="--d:220ms;"></i><i style="--d:280ms;"></i><i style="--d:340ms;"></i></div>
+            </div>
+            <div class="mosaic">
+              <div class="tile t-most rise" style="--d:80ms;"><div class="p-eyebrow" style="color:#A84A26;">Most · uzsonna</div><div class="spotwrap"><svg width="36" height="36" viewBox="0 0 100 100"><use href="#i-snack"/></svg></div><div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">15:30 · 320 kcal</div></div>
+              <div class="tile gtile d-h rise" style="--d:120ms;" data-page="page-g1" role="button" tabindex="0" aria-label="Célok ma">
+                <div class="p-eyebrow"><i style="width:6px;height:6px;border-radius:50%;background:var(--dc);"></i>Célok · ma</div>
+                <div class="drow" style="margin-top:4px;"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-cel"/></svg><span class="arrow up" style="--d:120ms;"><span class="v" style="font-size:22px;font-weight:200;">5<span style="font-size:11px;color:#6E6257;font-weight:500;"> / 9</span></span></span></div>
+                <div class="wk7" data-dots="hhhphhmnn" style="--d:120ms;"><span class="lbl">pillér</span></div>
+              </div>
+              <div class="tile t-vital rise" style="--d:160ms;"><div class="p-eyebrow">Életjel</div><div class="spotwrap"><div class="bigring" style="background:conic-gradient(#C9962E 0 16%, #4E8FB8 17% 33%, #6C5FA3 34% 50%, #7FA06C 51% 66%, #C46FA0 67% 83%, #A2958A 84% 100%);"><div class="hole"><b style="font-size:11px;font-weight:600;">68%</b></div></div></div></div>
+              <div class="tile t-quest rise" style="--d:200ms;"><div class="p-eyebrow" style="color:#A8801F;">Küldetések</div><div class="spotwrap"><svg width="36" height="36" viewBox="0 0 100 100"><use href="#i-kihivas"/></svg></div><div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">2 / 3 · +20 XP</div></div>
+            </div>
+            <p class="habnote rise" style="--d:240ms;">A csempe egy adatot mond: ma hány pillér teljesült az összesből, élő számolással. A 9 pöttyből a két üres a még nyitott (napzárás, esti check-in). Csak akkor jelenik meg, ha van aktív cél.</p>
+          </div>
+        </div>
+
+        <!-- ============ HETI · cél-kártya ============ -->
+        <div class="page p-lav" id="page-heti">
+          <div class="page-head"><button class="backbtn" data-back="page-heti">‹ vissza a demóból</button></div>
+          <div class="page-hero">
+            <div class="nm">Heti · 35. hét</div>
+            <div class="mrow" style="justify-content:center;gap:12px;"><div class="scorering" style="--v:82;"><div class="hole"><b>82</b></div></div><div class="bignum" style="font-size:30px;">+4</div></div>
+            <div class="sb">aug 24 – 30 · friss visszatekintés</div>
+          </div>
+          <div class="page-body">
+            <div class="lsec rise" style="--d:0ms;"><span class="p-eyebrow" style="color:#5D4FA0;">Célok · a hét iránya</span><span class="cnt">3 cél</span></div>
+            <div class="qcard rise" style="--d:40ms;padding:4px 12px;">
+              <div class="wgrow d-h"><span class="arrow up" style="--d:40ms;"><span class="g">↗</span></span><div class="grow"><div class="nm">Kockahas <span class="goalchip" style="margin-left:4px;"><i></i>Egészség</span></div><div class="x">Alvás és fehérje tartja, a napzárás csúszik — 4 lezárt este a 6-ból.</div></div></div>
+              <div class="wgrow d-a"><span class="arrow flat" style="--d:80ms;"><span class="g">→</span></span><div class="grow"><div class="nm">Side hustle <span class="goalchip" style="margin-left:4px;"><i></i>Teljesítmény</span></div><div class="x">6,5 óra fejlesztés a 4,2-es mediánod fölött, de a fókuszblokkból egy kimaradt.</div></div></div>
+              <div class="wgrow d-r"><span class="arrow up" style="--d:120ms;"><span class="g">↗</span></span><div class="grow"><div class="nm">Az utolsó barátnő <span class="goalchip" style="margin-left:4px;"><i></i>Kapcsolatok</span></div><div class="x">9 említett ember, egy tudatos találkozó — a jó estéid a társas napokra estek.</div></div></div>
+            </div>
+            <div class="mz-msg rise" style="--d:160ms;"><div class="t">Mezo · a hét tanulsága</div><div class="txt">Egy dolog húzza mindhárom célodat: a napzárás. Nem új szokás kell, hanem az esti 20:30-as jelzés — a Kockahas fegyelem-pillére és a Side hustle fókuszblokkja ugyanazon az estén dől el.</div><button class="cta mz-cta" data-toast="Emlékeztető beállítva · 20:30">Beállítom a 20:30-as jelzést</button></div>
+            <p class="habnote rise" style="--d:200ms;">A nyilakat a motor számolja, a heti AI-visszatekintés csak magyarázza őket — és egy konkrét következő lépést mond, nem pontszámot.</p>
+          </div>
+        </div>
+
+        <!-- ============ GROWTH · skill-chip ============ -->
+        <div class="page p-lav" id="page-growth">
+          <div class="page-head"><button class="backbtn" data-back="page-growth">‹ vissza a demóból</button></div>
+          <div class="page-hero">
+            <div class="nm">Growth · Skillek</div>
+            <div class="mrow" style="justify-content:center;gap:12px;"><svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-growth"/></svg><div class="bignum">3 140</div></div>
+            <div class="sb">össz XP · 8 LIFE-skill</div>
+          </div>
+          <div class="page-body">
+            <div class="qcard rise" style="--d:0ms;padding:4px 12px;">
+              <div class="skrow d-h"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-regeneracio"/></svg><div class="grow"><div class="nm">Regeneráció</div><div class="lv">Lv 5 · 1 480 XP</div></div><span class="goalchip"><i></i>Kockahas</span></div>
+              <div class="skrow d-h"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-konyha"/></svg><div class="grow"><div class="nm">Konyha</div><div class="lv">Lv 3 · 820 XP</div></div><span class="goalchip"><i></i>Kockahas</span></div>
+              <div class="skrow d-a"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-produktivitas"/></svg><div class="grow"><div class="nm">Produktivitás</div><div class="lv">Lv 4 · 1 120 XP</div></div><span class="goalchip"><i></i>Side hustle</span></div>
+              <div class="skrow d-r"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-kapcsolatok"/></svg><div class="grow"><div class="nm">Kapcsolatok</div><div class="lv">Lv 4 · 1 240 XP</div></div><span class="goalchip"><i></i>Az utolsó barátnő</span></div>
+              <div class="skrow"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-szemlelet"/></svg><div class="grow"><div class="nm">Szemlélet</div><div class="lv">Lv 3 · 640 XP</div></div><span class="goalchip d-h"><i></i>Kockahas</span></div>
+              <div class="skrow"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-tanulas"/></svg><div class="grow"><div class="nm">Tanulás</div><div class="lv">Lv 2 · 390 XP</div></div><span class="goalchip d-a"><i></i>Side hustle</span></div>
+              <div class="skrow"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-penzugyek"/></svg><div class="grow"><div class="nm">Pénzügyek</div><div class="lv">Lv 2 · 310 XP</div></div></div>
+              <div class="skrow"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-life-tudatossag"/></svg><div class="grow"><div class="nm">Tudatosság</div><div class="lv">Lv 3 · 560 XP</div></div></div>
+            </div>
+            <p class="habnote rise" style="--d:60ms;">A skill-sor egy chipet kap, ha egy aktív cél pillére rá mutat. A pillér-nap XP-je ide érkezik — a cél maga nem szint, hanem irány.</p>
+          </div>
+        </div>
+
+        <!-- ============ SHEETEK ============ -->
+        <div class="bsheet-back" id="sback"></div>
+        <div class="bsheet" id="sh-catalog">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">Jel-katalógus</div><div class="sh-title">Pillér hozzáadása</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="catgrp"><div class="p-eyebrow">Alvás · pihenés</div><div class="chips sage"><button>Alváshossz</button><button>Lefekvés-szórás</button><button>Alvásminőség</button><button>Éjszakai ébredések</button></div></div>
+          <div class="catgrp"><div class="p-eyebrow">Fuel</div><div class="chips sage"><button>Fehérje</button><button>Kalória-sáv</button><button>Víz</button><button>Utolsó étkezés ideje</button><button>Étkezés-pontszám</button></div></div>
+          <div class="catgrp"><div class="p-eyebrow">Edzés · test</div><div class="chips sage"><button>Gym-volumen</button><button>Edzésnapok</button><button>Sportterhelés</button><button>ACWR</button><button>Súlycél · ütem</button><button>Pulzus-visszaállás</button></div></div>
+          <div class="catgrp"><div class="p-eyebrow">Elme · ritmus</div><div class="chips sage"><button>Napzárás</button><button>Kész szokások</button><button>Check-in energia</button><button>Check-in hangulat</button><button>Stressz</button><button>Napi XP</button></div></div>
+          <div class="catgrp"><div class="p-eyebrow">Activity-ledger · skill szerint</div><div class="chips sage"><button>Produktivitás · perc</button><button>Tanulás · alkalom</button><button>Pénzügy · Ft</button><button>Kapcsolatok · alkalom</button><button>Konyha · alkalom</button></div></div>
+          <div class="catgrp"><div class="p-eyebrow">Emberek · Életjel</div><div class="chips sage"><button>Társas említések</button><button>Mozgás-gyűrű</button><button>Pihenés-gyűrű</button><button>Lélek-gyűrű</button></div></div>
+          <div class="shrow"><button class="ghost" data-close>Mégse</button><button class="cta" data-close data-toast="Pillér hozzáadva">Hozzáadás</button></div>
+        </div>
+        <div class="bsheet" id="sh-cap">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">3 aktív cél már van</div><div class="sh-title">Melyiket parkoljuk?</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="caprow d-h" data-cap><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-life-regeneracio"/></svg><div class="grow"><b>Kockahas</b><small>↗ 71% · 4. hét · nov 30-ig</small></div><span class="rad"></span></div>
+          <div class="caprow d-a on" data-cap><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-life-produktivitas"/></svg><div class="grow"><b>Side hustle</b><small>→ 58% · 2. hét · nincs határidő</small></div><span class="rad"></span></div>
+          <div class="caprow d-r" data-cap><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-life-kapcsolatok"/></svg><div class="grow"><b>Az utolsó barátnő</b><small>↗ 64% · 5. hét</small></div><span class="rad"></span></div>
+          <p class="habnote" style="margin-top:6px;">Mezo a leglaposabb nyilút jelöli elő — de a döntés a tiéd. A parkolt cél pillérei nem számolnak, a történet megmarad.</p>
+          <div class="shrow"><button class="ghost" data-close>Mégse</button><button class="cta" data-close data-toast="Félmaraton aktív · Side hustle parkol">Parkolom és aktiválom</button></div>
+        </div>
+        <div class="bsheet" id="sh-more">
+          <div class="sh-grab"></div>
+          <div class="sh-head"><div><div class="sh-eyebrow">Cél · műveletek</div><div class="sh-title">Szerkesztés</div></div><button class="sh-x" data-close>✕</button></div>
+          <div class="chips coral" style="margin-bottom:8px;"><button class="on">Pillérek</button><button>Miért · ha–akkor</button><button>Határidő</button><button>Életterület</button></div>
+          <div class="pilcard on d-h"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-alvas"/></svg><div class="grow"><b>Alvás · ≥ 7 ó</b><small>súly 2 · átlag</small></div><button class="togg on"></button></div>
+          <div class="pilcard on d-h"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-life-szemlelet"/></svg><div class="grow"><b>Fegyelem · napzárás</b><small>súly 1 · szokás 6× / hét</small></div><button class="togg on"></button></div>
+          <button class="addrow" data-sheet="sh-catalog">＋ Pillér a katalógusból</button>
+          <div class="shrow"><button class="ghost" data-close>Mégse</button><button class="cta" data-close data-toast="Mentve · a motor újraszámol">Mentés</button></div>
+        </div>
+        <div class="toast" id="toast"></div>
+      </div></div>
+
+      <div class="demobar">
+        <button data-demo="hub" aria-pressed="true">Célok</button>
+        <button data-demo="page-g1" aria-pressed="false">Kockahas</button>
+        <button data-demo="page-g2" aria-pressed="false">Side hustle</button>
+        <button data-demo="page-g3" aria-pressed="false">Barátnő</button>
+        <button data-demo="page-wiz" aria-pressed="false">Új cél</button>
+        <button data-demo="page-nap" aria-pressed="false">Nap-csempe</button>
+        <button data-demo="page-heti" aria-pressed="false">Heti</button>
+        <button data-demo="page-growth" aria-pressed="false">Growth</button>
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Mit nézz meg</h2>
+        <ul>
+          <li><strong>Hub</strong> — a hat-ívű PERMAH-gyűrű a hero (élő ívek = ahol aktív cél van, halvány = üres terület, a közép a célszám), egy companion-mondat, a hat dimenzió-chip, aztán célonként egy csempe: terület-eyebrow, clay ikon, <strong>heti irány-nyíl + %</strong>, 7 pötty az elmúlt hét napra. Egy képernyő, nem scroll.</li>
+          <li><strong>Kockahas</strong> — az öt pillér öt fajtát mutat: <em>kapcsolt</em> (a meglévő súlycél-motor ítélete), <em>átlag</em>, <em>szokás</em>, plusz egy <strong>↘ borostyán</strong> pillér a „hány hét a fordulásig” mondattal. Koppints a <strong>Hónap</strong> chipre: a pöttyök 28-napos hőtérképpé nyílnak.</li>
+          <li><strong>Side hustle</strong> — <em>baseline</em>-pillér (a saját 28-napos mediánodhoz mérve, a jelölő a mediánnál) és egy <strong>üres</strong> pillér: nincs bejegyzés → szaggatott pöttyök, „—”, nincs nyíl. Üres ≠ nulla.</li>
+          <li><strong>Barátnő</strong> — társas említések baseline-je, Életjel-gyűrű átlag, és <strong>Mezo pillért javasol</strong> (Hangulat) a napló alapján — elfogad / most nem.</li>
+          <li><strong>Új cél</strong> — öt lépés: cél + miért → <strong>Mezo olvasata</strong> (kinézet-keret felismerve, egészség-keret felajánlva, nem tiltva) → AI-pillérjavaslat a zárt katalógusból (kapcsolók, ＋ katalógus-sheet) → akadály + ha–akkor → összegzés; az Aktiválás a <strong>3-as kapu</strong> sheetjét nyitja: melyiket parkoljuk.</li>
+          <li><strong>Nap-csempe · Heti · Growth</strong> — a három beágyazás: a Nap „Célok · ma” csempéje (x/y pillér élőben), a Heti cél-kártya (nyíl + egy mondat célonként + Mezo tanulsága egy CTA-val), a Growth skill-sorok cél-chippel.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Ami szándékosan nem változik</h2>
+        <ul>
+          <li>A súlycél-motor és a recept — a Kockahas „Testkompozíció” pillére csak <em>olvassa</em> az ütem-ítéletet; a Súly-idővonal külön oldalon marad.</li>
+          <li>Nulla új naplózó felület: minden pillér a meglévő jelekből (MetricSeries, activity-ledger, habit, needs_day, súlycél) számol.</li>
+          <li>A ↘ soha nem piros, sosem von le; a <code>no_data</code> sosem <code>miss</code>; a nyíl minimum-adat-kapu mögött van.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Döntendő ezen az oldalon</h2>
+        <ol>
+          <li>A hub hero a <strong>hat-ívű gyűrű</strong> legyen (terület-nézet), vagy inkább egy „heti összpont” szám a három nyíllal?</li>
+          <li>A cél-csempén a heti <strong>%</strong> kell a nyíl mellé, vagy elég a nyíl + a 7 pötty (kevesebb szám)?</li>
+          <li>A pillér-kártyán a <strong>Hét/Hónap</strong> váltó egy helyen (fent) jó, vagy pillérenként kellene?</li>
+          <li>A varázsló <strong>keret-lépése</strong> (kinézet → egészség) maradjon önálló lépés, vagy olvadjon a „miért” mezőbe egy inline kártyaként?</li>
+          <li>A dimenzió-chipek magyar nevei: Érzelem · Elmélyülés · Kapcsolatok · Értelem · Teljesítmény · Egészség — jó így?</li>
+        </ol>
+      </div>
+      <p class="note">Ami nincs naplózva, az nem nulla — az üres. A rendszer csak azt méri, amit már úgyis csinálsz, és csak ott mond irányt, ahol van elég adat hozzá.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var scr = $('scr');
+  var panel = $('panel');
+
+  /* ---- pöttyök + hőtérképek adatból ---- */
+  var CLS = { h: 'h', p: 'p', m: 'm', n: 'n' };
+  document.querySelectorAll('.wk7[data-dots]').forEach(function (el) {
+    var s = el.getAttribute('data-dots'); var lbl = el.querySelector('.lbl'); var frag = document.createDocumentFragment();
+    for (var i = 0; i < s.length; i++) {
+      var d = document.createElement('i'); d.className = CLS[s[i]] || 'm'; d.style.setProperty('--i', i);
+      if (i === s.length - 1 && el.closest('.gtile')) d.classList.add('today');
+      frag.appendChild(d);
+    }
+    if (lbl) el.insertBefore(frag, lbl); else el.appendChild(frag);
+  });
+  document.querySelectorAll('.hm[data-hm]').forEach(function (el) {
+    var s = el.getAttribute('data-hm');
+    for (var i = 0; i < s.length; i++) { var d = document.createElement('i'); d.className = CLS[s[i]] || 'm'; d.style.setProperty('--i', i); if (i === s.length - 1) d.classList.add('today'); el.appendChild(d); }
+  });
+
+  /* ---- belépő koreográfia ---- */
+  void panel.offsetWidth; panel.classList.add('play');
+
+  /* ---- oldal-navigáció (Huawei-minta) ---- */
+  function openPage(id) {
+    var pg = $(id); pg.classList.add('open'); pg.classList.remove('play');
+    var body = pg.querySelector('.page-body'); if (body) body.scrollTop = 0;
+    void pg.offsetWidth; pg.classList.add('play');
+    if (id === 'page-wiz') setStep(1);
+  }
+  function closePage(id) { $(id).classList.remove('open'); }
+  function closeAllPages() { document.querySelectorAll('.page.open').forEach(function (p) { p.classList.remove('open'); }); }
+  document.querySelectorAll('[data-back]').forEach(function (b) { b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); }); });
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    function go(e) { e.stopPropagation(); openPage(el.getAttribute('data-page')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(e); });
+  });
+  $('enBack').addEventListener('click', function () { toast('‹ Én hub — a demóban a Célok a gyökér'); });
+
+  /* ---- demobar ---- */
+  var order = ['page-g1', 'page-g2', 'page-g3', 'page-wiz', 'page-nap', 'page-heti', 'page-growth', 'page-suly-stub'];
+  document.querySelectorAll('.demobar button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('.demobar button').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      closeSheets(); closeAllPages();
+      var t = b.getAttribute('data-demo');
+      if (t === 'hub') { panel.classList.remove('play'); void panel.offsetWidth; panel.classList.add('play'); }
+      else openPage(t);
+    });
+  });
+
+  /* ---- értesítés-harang ---- */
+  var ntfwrap = $('ntfwrap'), ntfbtn = $('ntfbtn');
+  ntfbtn.addEventListener('click', function (e) {
+    e.stopPropagation(); var open = ntfwrap.classList.toggle('open');
+    ntfbtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) { var bd = $('ntfbadge'); if (bd) bd.style.display = 'none'; }
+  });
+  document.addEventListener('click', function (e) { if (!ntfwrap.contains(e.target)) { ntfwrap.classList.remove('open'); ntfbtn.setAttribute('aria-expanded', 'false'); } });
+
+  /* ---- Hét / Hónap váltó a cél-oldalakon ---- */
+  document.querySelectorAll('[data-period]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var pg = b.closest('.page');
+      pg.querySelectorAll('[data-period]').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      pg.classList.toggle('month', b.getAttribute('data-period') === 'month');
+      pg.classList.remove('play'); void pg.offsetWidth; pg.classList.add('play');
+    });
+  });
+
+  /* ---- sheetek ---- */
+  var sback = $('sback');
+  function closeSheets() { sback.classList.remove('open'); document.querySelectorAll('.bsheet').forEach(function (s) { s.classList.remove('open'); }); }
+  function openSheet(id) { closeSheets(); sback.classList.add('open'); $(id).classList.add('open'); }
+  document.querySelectorAll('[data-sheet]').forEach(function (b) { b.addEventListener('click', function (e) { e.stopPropagation(); openSheet(b.getAttribute('data-sheet')); }); });
+  document.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeSheets); });
+  sback.addEventListener('click', closeSheets);
+  document.querySelectorAll('[data-cap]').forEach(function (r) { r.addEventListener('click', function () { document.querySelectorAll('[data-cap]').forEach(function (x) { x.classList.remove('on'); }); r.classList.add('on'); }); });
+  document.querySelectorAll('.togg').forEach(function (t) { t.addEventListener('click', function (e) { e.stopPropagation(); t.classList.toggle('on'); var c = t.closest('.pilcard'); if (c) { c.classList.toggle('on', t.classList.contains('on')); c.classList.toggle('off', !t.classList.contains('on')); } }); });
+  $('unpark').addEventListener('click', function () { openSheet('sh-cap'); });
+
+  /* ---- toast ---- */
+  var tt = $('toast'), ttimer;
+  function toast(msg) { tt.textContent = msg; tt.classList.add('show'); clearTimeout(ttimer); ttimer = setTimeout(function () { tt.classList.remove('show'); }, 2200); }
+  document.querySelectorAll('[data-toast]').forEach(function (b) { b.addEventListener('click', function () { toast(b.getAttribute('data-toast')); }); });
+  document.querySelector('.floatfab').addEventListener('click', function () { toast('Gyors logolás · „2 órát fejlesztettem” → Side hustle pillér'); });
+
+  /* ---- varázsló ---- */
+  var NAMES = ['Cél', 'Keret', 'Pillérek', 'Ha–akkor', 'Összegzés'];
+  var TITLES = ['Mit építünk?', 'Miért fontos?', 'Miből mérjük?', 'Mi jön közbe?', 'Így indul'];
+  var aiTimer;
+  function setStep(n) {
+    for (var i = 1; i <= 5; i++) $('ws' + i).style.display = i === n ? '' : 'none';
+    $('wprog').querySelectorAll('i').forEach(function (seg, i) { seg.classList.toggle('f', i < n); });
+    $('wstepnum').textContent = '0' + n + ' / 05';
+    $('wstepname').textContent = NAMES[n - 1];
+    $('wtitle').textContent = TITLES[n - 1];
+    var pg = $('page-wiz'); var body = pg.querySelector('.page-body'); if (body) body.scrollTop = 0;
+    clearTimeout(aiTimer);
+    if (n === 3) {
+      $('aiwait').style.display = ''; $('pilprops').style.display = 'none';
+      aiTimer = setTimeout(function () { $('aiwait').style.display = 'none'; $('pilprops').style.display = ''; }, 1100);
+    }
+    if (n === 2) { $('framewarn').style.display = ''; $('frameok').style.display = 'none'; $('framechips').querySelectorAll('button').forEach(function (b) { b.classList.remove('on'); }); }
+  }
+  document.querySelectorAll('[data-wnext]').forEach(function (b) { b.addEventListener('click', function () { setStep(parseInt(b.getAttribute('data-wnext'), 10)); }); });
+  $('framechips').querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $('framechips').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on');
+      var ok = b.getAttribute('data-frame') === 'ok';
+      $('framewarn').style.display = ok ? 'none' : ''; $('frameok').style.display = ok ? '' : 'none';
+      if (!ok) toast('Rendben — a keret marad, a mérés ugyanaz');
+    });
+  });
+})();
+</script>
