@@ -243,3 +243,21 @@ test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
   expect(container.querySelector('.quicklog-fab')).toBeNull()
   expect(container.querySelector('.tab-bar')).not.toBeNull()
 })
+
+test('/fuel/log/uj is a stable full-page sibling — the logging page (mezo-bq2t)', async () => {
+  // Pins the REAL route string: FuelLogNewPage.test.tsx builds its own memory router with a
+  // literal path, so only this test would catch a typo in the app's own route table.
+  const { container } = renderApp('/fuel/log/uj')
+  // No `w` → the honest out-of-window face is the route-independent landmark.
+  expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
+  expect(container.querySelector('.mz-page.flognew-page')).toBeInTheDocument()
+})
+
+test('hides the quick-log FAB on the logging page but keeps the tab bar (mezo-bq2t)', async () => {
+  // The sticky save bar owns the thumb zone there (measured: the FAB sat right on top of it),
+  // and a "quick log" FAB on the logging page itself is redundant — the /mezo/chat precedent.
+  const { container } = renderApp('/fuel/log/uj')
+  await screen.findByText('Ablakon kívül')
+  expect(container.querySelector('.quicklog-fab')).toBeNull()
+  expect(container.querySelector('.tab-bar')).not.toBeNull()
+})

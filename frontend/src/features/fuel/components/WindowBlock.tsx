@@ -6,15 +6,13 @@
 // MOST stamp, plan meal, primary Logold), missed (dashed amber, "még
 // pótolható", Pótold — never punitive), future (plan suggestion, ghost Logold).
 //
-// The block owns the EXPAND-IN-PLACE well: when `open`, the CTA row hides and
-// `children` (the MealComposer the page mounts) renders inside the grid-rows
-// 0fr→1fr container — pure CSS expansion, switched off by the reduced-motion
-// media query, so there is nothing here for a JS motion guard to manage.
+// The CTAs are a NAVIGATION intent (mezo-bq2t): `onOpen` sends the page to
+// /fuel/log/uj with this window in the URL — the block no longer expands a
+// composer well in place, so it stays a card and nothing here animates open.
 //
 // Purely presentational: every datum comes from `WindowTileVM` (fuelSwimlane.ts),
 // every action is a prop. MiniRing/ScoreChip carry over from WindowLane verbatim.
 // ============================================================
-import type { ReactNode } from 'react'
 import { ClayIcon } from '@/shared/ui/clay'
 import { useCountUp } from '@/shared/ui/mozaik/motion'
 import { huInt } from '@/shared/lib/huNum'
@@ -64,20 +62,17 @@ function ScoreChip({ tile, onScore }: { tile: WindowTileVM; onScore: (mealId: st
 
 export interface WindowBlockProps {
   tile: WindowTileVM
-  /** The in-place composer well is expanded (the page mounts it as `children`). */
-  open: boolean
-  /** Open the composer for this window — `ai` = the ✨ AI ghost CTA (panel armed). */
+  /** Navigate to the logging page for this window — `ai` = the ✨ AI ghost CTA (panel armed). */
   onOpen: (ai: boolean) => void
   /** A done block's score chip → MealScoreSheet. */
   onScore: (mealId: string) => void
-  children?: ReactNode
 }
 
-export function WindowBlock({ tile, open, onOpen, onScore, children }: WindowBlockProps) {
+export function WindowBlock({ tile, onOpen, onScore }: WindowBlockProps) {
   const stamp = STAMP[tile.state]
   const done = tile.state === 'done'
   return (
-    <div className={`flog-blk is-${tile.state}${open ? ' is-open' : ''}`} data-state={tile.state}>
+    <div className={`flog-blk is-${tile.state}`} data-state={tile.state}>
       <div className="flog-in">
         <div className="flog-top">
           <time>{tile.time}</time>
@@ -115,21 +110,15 @@ export function WindowBlock({ tile, open, onOpen, onScore, children }: WindowBlo
               className={tile.state === 'now' ? 'cta-primary' : 'cta-ghost'}
               onClick={() => onOpen(false)}
               aria-label={`${tile.state === 'missed' ? 'Pótold' : 'Logold'} · ${tile.label}`}
-              aria-expanded={open}
             >
               {tile.state === 'missed' ? 'Pótold' : 'Logold'}
             </button>
             <button type="button" className="cta-ghost" onClick={() => onOpen(true)}
-              aria-label={`AI naplózás · ${tile.label}`} aria-expanded={open}>
+              aria-label={`AI naplózás · ${tile.label}`}>
               ✨ AI
             </button>
           </div>
         )}
-        <div className="flog-composer">
-          <div className="flog-cin">
-            {children && <div className="flog-cbody">{children}</div>}
-          </div>
-        </div>
       </div>
     </div>
   )
