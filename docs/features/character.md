@@ -113,9 +113,11 @@ medication-cycle domain data over a single **8-week raw series** (`TrendWindow`,
 day, no separate 14-day copy for these sources) because every one of them evaluates its own
 state twice — as of the observed day and as of the day before — and each evaluation needs a full
 trailing 14-day window; see §9 for why the state-change gate, not the "new data today" gate, is
-round 2's primary overfiring protection. Round 3 reads six more sources — daily intentions
+round 2's primary overfiring protection. Round 3 reads seven more sources — daily intentions
 (focus/reflection), the decision journal, gratitude entries, Életjel (`NeedsDayEntity`) days,
-check-in slot rows, and the user's own chat timestamps — and pushes the state-change-gate idiom
+check-in slot rows, the user's own chat timestamps, and the logging-latency series (the
+"day this is about" vs "day it was written" pair, gathered across eleven sources) — and pushes
+the state-change-gate idiom
 further still: seven of its twelve detectors carry **no** new-data pre-filter at all, because for
 them absence IS the signal (see §9's round-3 gate rule).
 
@@ -578,13 +580,16 @@ character regression — bd `mezo-oou9`; rerun once before investigating.
   user-feedback routing. `mezo-1gim.15`'s remaining round and `mezo-1gim.12` track writing most
   of the remaining detectors, but neither's description currently names the `weight`-gap
   variant.
-- **Round 3 widens the read layer with six more sources and two more one-way dependency edges**
+- **Round 3 widens the read layer with seven more sources and two more one-way dependency edges**
   (round-3 design spec, `mezo-1gim.15`). `CharacterSignalReads`/`TrendWindow` gained daily
   intentions (focus count + `reflection` enum), the decision journal (`writtenOn`/`reviewedOn`/
   `reviewDue`/`outcomeRating`/`textPreview`), gratitude entries (`occurredOn`/`lifeArea`),
   Életjel days (`NeedsDayEntity` — the six domain scores, `greenCount`, `allGreen`, and its own
   persisted `streakDays`), check-in slot rows (`slotTime`/`writtenAt`/`notePreview`, not just the
-  scale values rounds 1–2 already read), and the user's own chat timestamps. `character →
+  scale values rounds 1–2 already read), the user's own chat timestamps, and a flat
+  logging-latency series pairing each record's "about" date with the date it was actually
+  written, gathered across eleven sources (gym, futás, sport, alvás, súly, étkezés, check-in,
+  napló, hála, döntés, fókusz). `character →
   intention` and `character → needs` are two new one-directional dependency edges (§5) — safe the
   same way `character → proactive`/`character → journal` already are, because neither `intention`
   nor `needs` imports back from `character`. Three read choices are traps a future round could
