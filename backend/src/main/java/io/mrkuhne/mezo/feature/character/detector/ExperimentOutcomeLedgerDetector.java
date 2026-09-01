@@ -40,12 +40,12 @@ public class ExperimentOutcomeLedgerDetector implements CharacterDetector {
         if ("keves".equals(today.band())) {
             summary = "Az elmúlt 7 hétben " + closed + " javaslatom zárult, ebből " + today.good()
                     + " jó kimenettel — még kevés az ítélethez; " + today.dismissed()
-                    + " javaslatot elvetettél indulás előtt. Ez a javaslataim minősége, nem a te vállalkozó kedved.";
+                    + " javaslatom el sem indult (elvetve indulás előtt). Ez a javaslataim minősége, nem a te vállalkozó kedved.";
         } else {
             summary = "Az elmúlt 7 hét " + closed + " lezárt javaslatomból (" + today.experiments() + " kísérlet, "
                     + today.challenges() + " kihívás) " + today.good() + " járt jó kimenettel"
                     + (today.inconclusive() > 0 ? ", " + today.inconclusive() + " eldönthetetlen" : "") + "; "
-                    + today.dismissed() + " javaslatot elvetettél indulás előtt. Ez a javaslataim minősége, nem a te "
+                    + today.dismissed() + " javaslatom el sem indult (elvetve indulás előtt). Ez a javaslataim minősége, nem a te "
                     + "vállalkozó kedved.";
         }
         boolean loud = "gyenge".equals(today.band()) || "tobbseg-elvetve".equals(today.flag());

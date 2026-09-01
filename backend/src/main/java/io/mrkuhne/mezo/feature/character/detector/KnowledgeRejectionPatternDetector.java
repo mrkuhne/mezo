@@ -42,10 +42,10 @@ public class KnowledgeRejectionPatternDetector implements CharacterDetector {
         if (today == null || today.key().equals(yesterday == null ? "" : yesterday.key())) {
             return List.of();
         }
-        String summary = "Az elmúlt 4 hétben " + today.n() + " javaslatomról döntöttél: " + today.kept() + " megtartva ("
-                + today.refined() + " finomítva), " + today.rejected() + " elutasítva — "
+        String summary = "Az elmúlt 4 hétben " + today.n() + " javaslatomról született döntés: " + today.kept() + " maradt meg ("
+                + today.refined() + " finomítva), " + today.rejected() + " esett ki — "
                 + TrailingWindow.pct((double) today.kept() / today.n()) + "% találati arány"
-                + ("-".equals(today.category()) ? "" : ", az elutasítások főleg "
+                + ("-".equals(today.category()) ? "" : ", a kiesettek főleg "
                         + CATEGORY_HU.getOrDefault(today.category(), today.category()) + " kategóriából")
                 + ". Ez az én javaslataim minőségéről szól, nem a te tulajdonságodról. A tény-jelöltek döntésnapját "
                 + "a jelölt keletkezési napjával közelítem.";

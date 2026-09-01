@@ -1849,8 +1849,8 @@ class DetectorTest {
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("knowledge-rejection-pattern");
             assertThat(s.expertKey()).isEqualTo("szkeptikus");
-            assertThat(s.summary()).contains("6 javaslatomról").contains("1 megtartva (1 finomítva)")
-                    .contains("5 elutasítva").contains("17%").contains("főleg fuel")
+            assertThat(s.summary()).contains("6 javaslatomról született döntés").contains("1 maradt meg (1 finomítva)")
+                    .contains("5 esett ki").contains("17%").contains("főleg fuel")
                     .contains("nem a te tulajdonságodról").contains("keletkezési napjával közelítem");
             assertThat(s.salience()).isEqualTo(4);
         });
@@ -1881,7 +1881,7 @@ class DetectorTest {
         List<DetectorSignal> fired = new KnowledgeRejectionPatternDetector().detect(in);
 
         assertThat(fired).singleElement().satisfies(s -> {
-            assertThat(s.summary()).contains("9 javaslatomról").contains("56%").contains("főleg fuel");
+            assertThat(s.summary()).contains("9 javaslatomról született döntés").contains("56%").contains("főleg fuel");
             assertThat(s.salience()).isEqualTo(3);
         });
     }
@@ -2012,7 +2012,7 @@ class DetectorTest {
             assertThat(s.detectorKey()).isEqualTo("experiment-outcome-ledger");
             assertThat(s.expertKey()).isEqualTo("szkeptikus");
             assertThat(s.summary()).contains("4 lezárt javaslatomból (1 kísérlet, 3 kihívás) 1 járt jó kimenettel")
-                    .contains("1 eldönthetetlen").contains("0 javaslatot elvetettél")
+                    .contains("1 eldönthetetlen").contains("0 javaslatom el sem indult")
                     .contains("nem a te vállalkozó kedved");
             assertThat(s.salience()).isEqualTo(4);
         });
@@ -2029,7 +2029,7 @@ class DetectorTest {
 
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.summary()).contains("1 javaslatom zárult").contains("1 jó kimenettel")
-                    .contains("még kevés az ítélethez").contains("3 javaslatot elvetettél indulás előtt");
+                    .contains("még kevés az ítélethez").contains("3 javaslatom el sem indult");
             assertThat(s.salience()).isEqualTo(4);
         });
     }
