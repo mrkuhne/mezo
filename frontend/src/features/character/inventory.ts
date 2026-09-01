@@ -14,10 +14,12 @@
 // wired data source) ADDED to `reads` below, not silently left stale. Round 1 ("Edzés & test")
 // landed this way: its six items are gone from `rounds`, its five data sources are now the
 // last five `reads` rows above, and its eight detectors are wired into
-// `DetektorokPage.tsx`'s catalog. Do not treat this module as authoritative for "what is
-// actually wired today" — `DetektorokPage.tsx` (the 13 real, `DetectorRegistry`-discovered
-// detectors) and the backend detector catalog are that runtime truth; this file is the plan,
-// not the state of the world.
+// `DetektorokPage.tsx`'s catalog. Round 2 ("Fuel & ciklus") landed the same way: its four items
+// are gone from `rounds`, its six data sources are now the last six `reads` rows above, and its
+// seven detectors are wired into `DetektorokPage.tsx`'s catalog, bringing it to 20. Do not treat
+// this module as authoritative for "what is actually wired today" — `DetektorokPage.tsx` (the
+// 20 real, `DetectorRegistry`-discovered detectors) and the backend detector catalog are that
+// runtime truth; this file is the plan, not the state of the world.
 // ============================================================
 
 export interface InventoryRead {
@@ -57,22 +59,18 @@ export const INVENTORY_READS: InventoryRead[] = [
   { w: 'Futás-logok (HR-megnyugvás)', chips: ['14 nap', '8 hét'] },
   { w: 'Alvás (minőség, hossz)', chips: ['14 nap'] },
   { w: 'Mezociklus-kontextus (terv-napok, deload)', chips: ['aktív meso'] },
+  { w: 'Étkezés-napok (makrók, NOVA-arány, étkezés-időpont)', chips: ['8 hét'] },
+  { w: 'Makró-célok (aktív cél receptje, különben config)', chips: ['napi'] },
+  { w: 'Víz-logok (napi mennyiség vs cél)', chips: ['8 hét'] },
+  { w: 'Kiegészítő-stack (aktív protokoll + bevitelek)', chips: ['8 hét', 'aktív protokoll'] },
+  { w: 'Check-in skálák (energia, stressz, testi, mentális)', chips: ['8 hét'] },
+  { w: 'Gyógyszerciklus (ciklusnap, fázis)', chips: ['8 hét', 'aktív gyógyszer'] },
 ]
 
-/** Tervezett (prototype's `INVENTORY.rounds`) — the remaining three MINDENT-be rounds, verbatim
- *  (round 1, "Edzés & test", landed for real via mezo-1gim.15 — see `INVENTORY_READS` above and
- *  `DetektorokPage.tsx`'s 13-detector catalog). */
+/** Tervezett (prototype's `INVENTORY.rounds`) — the remaining two MINDENT-be rounds, verbatim
+ *  (round 1, "Edzés & test", and round 2, "Fuel & ciklus", landed for real via mezo-1gim.15 —
+ *  see `INVENTORY_READS` above and `DetektorokPage.tsx`'s 20-detector catalog). */
 export const INVENTORY_ROUNDS: InventoryRound[] = [
-  {
-    n: 2,
-    title: 'Fuel & ciklus',
-    items: [
-      { t: 'Makró-teljesítés, NOVA', det: ['comfort-eating'] },
-      { t: 'Víz' },
-      { t: 'Stack-kihagyások' },
-      { t: 'Gyógyszerciklus × check-in', det: ['med-cycle-covariance'], sensitive: true },
-    ],
-  },
   {
     n: 3,
     title: 'Psziché & viselkedés-meta',

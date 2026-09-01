@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
  * RIR should predict the next same-weight set. rir >= 2 followed by a reps collapse (>= 3 fewer)
  * means the RIR was OVERestimated (closer to failure than claimed); rir == 0 followed by reps
  * holding (drop <= 1) means UNDERestimated. Fires on >= 3 events in the 14-day window with a
- * dominant direction, gated on new gym data (RoundOneGates).
+ * dominant direction, gated on new gym data (DetectorGates).
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
@@ -25,7 +25,7 @@ public class RirCalibrationDetector implements CharacterDetector {
 
     @Override
     public List<DetectorSignal> detect(DetectorInput in) {
-        if (!RoundOneGates.newGymData(in)) {
+        if (!DetectorGates.newGymData(in)) {
             return List.of();
         }
         int over = 0;
