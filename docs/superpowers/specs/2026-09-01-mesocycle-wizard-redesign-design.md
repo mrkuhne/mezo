@@ -25,8 +25,8 @@ Decisions made with Daniel in this brainstorm:
   called from the backend; Fake adapter in mock/test mode.
 - **3 priority tiers with real effect** (Emphasize/Grow/Maintain now drive generated sets).
 - **3-step wizard**; length and phase curve become automatic defaults (editable in step 3).
-- **All 7 subpages stay** and are redesigned (hub, run, volume, templates+editor, report,
-  compare).
+- **All subpages redesigned** (hub, run, weekly review + muscle detail — which absorbs the
+  former Volumen page —, templates+editor, report, compare).
 - **Readable past, new future**: old runs/reports/templates stay viewable (preset label
   becomes plain text); new mesocycles only via the new model; starting an old template
   converts it.
@@ -129,8 +129,18 @@ states (per the standing §1 tile recipe in
   Fókusz change** (decided in the prototype round): tiers are set only in the wizard /
   template editor, so the live `PUT …/muscle-priorities` on a running mesocycle leaves
   the UI (the endpoint may stay for templates).
-- **Volumen** — provenance view kept; the arc draws the tier band with MV/MEV/MAV/MRV
-  markers; derivation text speaks the new model's vocabulary.
+- **Heti vizsgálat (weekly review) + muscle detail** — replaces the standalone Volumen
+  page (decided in the prototype round: the two drew the same band twice). Reached from
+  the hub tile and the run page: hero (this week's sets + delta vs last week), 4 stat
+  cells, next-rollover banner, then per-muscle washed tiles (`current → ceiling`,
+  MEV/MAV/MRV band with last-week/now markers, W1–W6 spark, status line). A muscle tile
+  opens the **muscle detail page**, which keeps every Volumen datum and adds more: stat
+  cells (now · ceiling · this week · frequency), the band, the block arc, the
+  `VolumeDecider` decision as a sentence, *where it works this week* (days + exercises
+  with sets), the 4-step derivation (Baseline → Fókusz-sáv → personalisation → resulting)
+  with confidence + Felülír, and the previous block's start → peak / ceiling. The
+  `VolumeArcChart`/`MesoOverviewPage` provenance code migrates here; `/train/mesocycles/:id/overview`
+  route is replaced by `/train/mesocycles/:id/week` and `/week/:muscle`.
 - **Sablonok + editor** — list becomes tiles (split icon, day count, emphasized-muscle
   chips); editor loses phase-curve and preset pickers, keeps day/exercise editing +
   Fókusz.
