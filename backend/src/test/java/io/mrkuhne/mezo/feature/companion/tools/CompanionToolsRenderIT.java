@@ -485,7 +485,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String toolOut = trainTools.getTrainingPlan("today", null, ctx(owner));
         String snapshot = contextSnapshotAssembler.render(owner, today);
-        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Ma eddig naplózva:"));
 
         // one gym rendering, one rest criterion: neither side may call this day a gym day
         assertThat(toolOut).contains("pihenőnap (gym)").doesNotContain("gym (");

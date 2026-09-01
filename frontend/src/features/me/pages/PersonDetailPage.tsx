@@ -5,8 +5,10 @@
 // emberek-body.html renderDet() + emberek-head.html `.trendcard`/`.affbars`/`.affax`/
 // `.ctxcard`/`.ctxbar`/`.factcard`/`.fact`/`.pavat.lg` (×1.18, ported as `.ppl-trendcard`/
 // `.ppl-affbars`/`.ppl-affax`/`.ppl-ctxcard`/`.ppl-ctxbar`/`.ppl-factcard`/`.ppl-fact`/
-// `.ppl-avat-lg` in prototype.css's existing ppl- section). NO "Kapcsolt események" here
-// — that's S5's job.
+// `.ppl-avat-lg` in prototype.css's existing ppl- section). S5 (mezo-06o0.4) adds the
+// "Kapcsolt események · gráf" section — `person.graphEdges` rendered `.ppl-lsec`/`.ppl-evt`
+// rows (renderDet() order: after "Milyen helyzetekben", before "Amit Mezo tud"), omitted
+// entirely when the person has no graph edges.
 //
 // Query-controlled route guard (house rule): an unknown :id redirects to `/me/people/kor`
 // ONLY once `usePeople().isPending` has settled — a pending bootstrap must never look like
@@ -24,7 +26,7 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
 import { affectColor } from '@/data/me/people'
 import { contextBreakdown, trendAxisLabels, trendHeights } from '@/features/me/logic/peopleDerive'
-import { TONE_META, CTX_META, SRC_META } from '@/features/me/logic/peopleVisuals'
+import { TONE_META, CTX_META, SRC_META, GRAPH_KIND_META, GRAPH_KIND_FALLBACK } from '@/features/me/logic/peopleVisuals'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
 import type { Mention } from '@/data/types'
@@ -155,6 +157,36 @@ export function PersonDetailPage() {
                 </div>
               ))}
             </div>
+          )}
+
+          {person.graphEdges.length > 0 && (
+            <>
+              <div className="ppl-lsec rise">
+                <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>
+                  Kapcsolt események · gráf
+                </span>
+                <span className="ppl-lcnt">{person.graphEdges.length}</span>
+              </div>
+              {person.graphEdges.map((edge, i) => {
+                const meta = GRAPH_KIND_META[edge.nodeKind] ?? GRAPH_KIND_FALLBACK
+                return (
+                  <button
+                    key={`${i}-${edge.nodeKind}-${edge.title}`}
+                    type="button"
+                    className={`ppl-evt ppl-evt-${meta.tone} rise`}
+                    style={{ '--d': `${130 + i * 30}ms` } as CSSProperties}
+                    onClick={() => navigate(`/me/knowledge?kind=${edge.nodeKind}`)}
+                  >
+                    <span className="ppl-evtpic"><ClayIcon name={meta.clay} size={18} /></span>
+                    <span className="grow">
+                      <b>{edge.title}</b>
+                      <span className="ppl-evtmt">{meta.label} · {edge.relationHu} · {edge.strength}</span>
+                    </span>
+                    <Icon name="chevron-right" size={10} />
+                  </button>
+                )
+              })}
+            </>
           )}
 
           {person.knownFacts.length > 0 && (

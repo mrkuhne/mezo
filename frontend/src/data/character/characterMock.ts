@@ -498,6 +498,13 @@ interface ChainSeed {
 // `DetectorSignal(key(), who, ...)` owner exactly (same verification DetektorokPage.tsx's
 // header comment documents). Day 15's two-signal/one-expert dedup fixture is deliberately left
 // untouched — it's a pinned fixture for `characterHooks.test.tsx`'s callCount-dedup test.
+//
+// Round 2 (mezo-1gim.15, Task 6): the seven new round-2 detectors (comfort-eating,
+// macro-adherence, hydration-consistency, protein-training-mismatch, late-eating-pattern,
+// stack-skip-pattern, med-cycle-covariance) get one chain each, spread across days 13/20/24/27/30
+// alongside the pre-existing chains — `code` paraphrases each detector's real `summary` string
+// (see `backend/.../feature/character/detector/*Detector.java`), `who` matches its real
+// `DetectorSignal(key(), who, ...)` owner exactly. Day 15 stays untouched, same as round 1.
 const CHAIN_POOL: Record<number, ChainSeed[]> = {
   13: [
     {
@@ -539,6 +546,15 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       who: 'edzo',
       obs: 'A fekvenyomásnál kétszer jelezted az ízület-fájdalmat két hét alatt — érdemes figyelni.',
     },
+    // Round 2 (mezo-1gim.15, Task 6): comfort-eating joins day 13 — paraphrases
+    // ComfortEatingDetector's real summary.
+    {
+      detector: 'comfort-eating',
+      code: 'rossz közérzetű napokon gyakrabban ugrik meg a bevitel — feljebb megy a feldolgozott étel aránya vagy a napi kalória a saját 8 hetes átlagához képest: 4 ilyen nap a 21 összepárosított napból',
+      refs: [],
+      who: 'taplalkozo',
+      obs: 'A rosszabb hangulatú napjaidon gyakrabban ugrik meg a bevitel — hol a feldolgozott étel aránya, hol a napi kalória megy feljebb a szokásos átlagodhoz képest.',
+    },
   ],
   20: [
     {
@@ -548,6 +564,15 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       who: 'drill',
       obs: 'Hétfőn és kedden elmaradt az étkezés-logolás — ritka nálad ez a rés.',
     },
+    // Round 2 (mezo-1gim.15, Task 6): macro-adherence joins day 20 — paraphrases
+    // MacroAdherenceDetector's real summary.
+    {
+      detector: 'macro-adherence',
+      code: 'a fehérje-cél szisztematikus eltérése: 9 logolt napon átlagosan 18%-kal alálövi a napi célt (14 nap)',
+      refs: [],
+      who: 'taplalkozo',
+      obs: 'Az elmúlt két hétben a fehérjebevitel rendre elmarad a napi céltól.',
+    },
   ],
   24: [
     {
@@ -556,6 +581,15 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'taplalkozo',
       obs: 'Két hete rendszeresen kevesebbet mutat a napló, mint amit a súlyad enged sejtetni — érdemes átnézni, mi marad ki.',
+    },
+    // Round 2 (mezo-1gim.15, Task 6): hydration-consistency joins day 24 — paraphrases
+    // HydrationConsistencyDetector's real summary.
+    {
+      detector: 'hydration-consistency',
+      code: '12 logolt napból 6 napon érte el a napi vízcél 90%-át — a sáv ma váltott (INGADOZO)',
+      refs: [],
+      who: 'taplalkozo',
+      obs: 'A vízbevitel ingadozóra váltott ezen a héten — nem a mennyiség, a ritmus csúszott el.',
     },
     // Round 1 (mezo-1gim.15, Task 5): sleep-performance-chain/progression-adherence/
     // avoidance-pattern spread across day 24 — paraphrases SleepPerformanceChainDetector,
@@ -597,6 +631,23 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       who: 'drill',
       obs: 'Három napja nem logoltál étkezést — ritkán fordul elő nálad ekkora szünet.',
     },
+    // Round 2 (mezo-1gim.15, Task 6): protein-training-mismatch/late-eating-pattern join day 27
+    // — paraphrase ProteinTrainingMismatchDetector's and LateEatingPatternDetector's real
+    // summaries.
+    {
+      detector: 'protein-training-mismatch',
+      code: 'a fehérje-cél az edzésnapokon marad el: 5/6 edzésnapon, szemben az edzés nélküli napok 1/8 arányával (14 nap)',
+      refs: [],
+      who: 'taplalkozo',
+      obs: 'Pont az edzésnapokon marad el a fehérje — az edzés nélküli napokon ez sokkal ritkábban fordul elő.',
+    },
+    {
+      detector: 'late-eating-pattern',
+      code: 'késő esti evés után rosszabb az éjszaka: 3 ilyen nap 14 napon belül (21:30 után 300+ kcal)',
+      refs: [],
+      who: 'szomnologus',
+      obs: 'Ha 21:30 után nagyobbat eszel, gyakrabban lesz rosszabb az azt követő éjszakád.',
+    },
   ],
   30: [
     {
@@ -636,6 +687,23 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'edzo',
       obs: 'Ezen a héten két tervezett edzésnap maradt ki — nem deload-hét, érdemes visszaállni a ritmusba.',
+    },
+    // Round 2 (mezo-1gim.15, Task 6): stack-skip-pattern/med-cycle-covariance close out the seven
+    // new round-2 detector chains on day 30 — paraphrase StackSkipPatternDetector's and
+    // MedCycleCovarianceDetector's real summaries.
+    {
+      detector: 'stack-skip-pattern',
+      code: 'kiegészítő-kihagyás: a kreatin 4 napon maradt ki a tervezett 14 napból (14 napos ablak)',
+      refs: [],
+      who: 'drill',
+      obs: 'A kreatin négyszer maradt ki az elmúlt két hétben — érdemes visszaállni a napi ritmusra.',
+    },
+    {
+      detector: 'med-cycle-covariance',
+      code: 'gyógyszerciklus 3. napján az energia átlaga 1,4 ponttal alacsonyabb a ciklus átlagánál (5 ilyen nap, 8 hét)',
+      refs: [],
+      who: 'doki',
+      obs: 'A ciklus harmadik napján az energiaszint rendszerint a ciklusátlag alatt marad.',
     },
   ],
   // Fix round 1 (mezo-1gim.14): NOT a prototype-verbatim night — added so the callCount

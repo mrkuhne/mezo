@@ -1,0 +1,1574 @@
+<meta charset="utf-8">
+<title>Tudástár egyben</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  :root {
+    --ground: #EFE8DD; --ground-2: #E7DFD2; --card: #FFFFFF;
+    --ink: #2B2118; --ink-2: #6E6257; --accent: #A84A26;
+    --line: rgba(43, 33, 24, 0.12);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #191614; --ground-2: #211D19; --card: #262119;
+      --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+      --line: rgba(240, 233, 225, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614; --ground-2: #211D19; --card: #262119;
+    --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+    --line: rgba(240, 233, 225, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; padding: 48px 24px 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; }
+  .lede { max-width: 62ch; color: var(--ink-2); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 40px; display: flex; gap: 56px; flex-wrap: wrap; align-items: flex-start; }
+  aside { max-width: 400px; display: grid; gap: 24px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  aside ul, aside ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+
+  /* ============ PHONE ============ */
+  .phone {
+    width: 330px; height: 694px; flex: none;
+    background: #1D1712; border-radius: 52px; padding: 11px;
+    box-shadow: 0 30px 60px -22px rgba(29, 23, 18, 0.5);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.4;
+    color: #2B2118; transition: background 0.6s ease;
+    background: linear-gradient(180deg, #FDFAF4 0%, #F8F1E6 100%);
+  }
+  .screen[data-dp="reggel"] { background: linear-gradient(180deg, #FEF5E8 0%, #FAEBD6 100%); }
+  .screen[data-dp="este"] { background: linear-gradient(180deg, #F0ECF8 0%, #E6E0F2 100%); }
+  .isl { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 82px; height: 22px; border-radius: 999px; background: #1D1712; z-index: 14; }
+  .p-status { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px 2px; font-size: 11px; font-weight: 600; position: relative; z-index: 14; }
+  .p-body { flex: 1; min-height: 0; overflow: hidden; padding: 6px 14px; display: flex; flex-direction: column; gap: 9px; }
+  .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .grow { flex: 1; min-width: 0; }
+  .mrow { display: flex; align-items: center; gap: 8px; }
+  .mut { color: #6E6257; }
+  .big { font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+  .float3d {
+    background: #FFFFFF; border-radius: 18px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 18px 32px -16px rgba(43, 33, 24, 0.32), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .cta {
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    border-radius: 999px; padding: 6px 14px; font-size: 10.5px; font-weight: 600; flex: none;
+    box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); border: none; font-family: inherit; cursor: pointer;
+  }
+  .cta.lav { background: linear-gradient(135deg, #8A76CC, #6C5FA3); box-shadow: 0 8px 16px -6px rgba(108, 95, 163, 0.55); }
+  .ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 6px 12px; font-size: 10.5px; font-weight: 600; flex: none; cursor: pointer; }
+
+  .avatar-ring {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: conic-gradient(#FF6B4A 68%, rgba(43, 33, 24, 0.1) 0);
+    display: grid; place-items: center;
+  }
+  .avatar-ring .in { width: 27px; height: 27px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center; }
+
+  /* daypart switch — pici gomb a fejlécben */
+  .dpwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .dpswitch {
+    width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+    background: rgba(255, 255, 255, 0.85); font-family: inherit; cursor: pointer;
+    display: grid; place-items: center; position: relative;
+    box-shadow: 0 8px 16px -10px rgba(43, 33, 24, 0.3);
+  }
+  .dpswitch:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .dpswitch > .most { position: absolute; top: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px #FDFAF4; display: none; }
+  .dpswitch.away > .most { display: block; }
+  .dpmenu {
+    position: absolute; right: 0; top: 40px; z-index: 7;
+    display: flex; gap: 2px; padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.95); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    border-radius: 999px; backdrop-filter: blur(10px);
+    box-shadow: 0 14px 28px -12px rgba(43, 33, 24, 0.35);
+    opacity: 0; transform: translateY(-6px) scale(0.92); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .dpwrap.open .dpmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .dpmenu button {
+    width: 40px; height: 32px; border: none; background: none; font-family: inherit;
+    border-radius: 999px; display: grid; place-items: center; cursor: pointer; position: relative;
+  }
+  .dpmenu button svg { filter: grayscale(1) brightness(1.04) opacity(0.45); }
+  .dpmenu button.on { background: rgba(255, 107, 74, 0.1); }
+  .dpmenu button.on svg { filter: none; }
+  .dpmenu button .most { position: absolute; top: 3px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.25); }
+  .dpmenu button:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+
+  /* értesítés-harang + dropdown */
+  .ntfwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .badge.mini { min-width: 15px; height: 15px; font-size: 8.5px; top: -3px; right: -4px; }
+  .ntfmenu {
+    position: absolute; right: -46px; top: 40px; z-index: 8; width: 238px;
+    background: #FDFAF4; border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 18px;
+    box-shadow: 0 20px 40px -14px rgba(29, 23, 18, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    padding: 12px 12px 6px;
+    opacity: 0; transform: translateY(-6px) scale(0.94); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .ntfwrap.open .ntfmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .ntfrow { display: flex; gap: 9px; padding: 8px 2px; align-items: flex-start; }
+  .ntfrow + .ntfrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .ntfrow .t { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+  .ntfrow .x { font-size: 10px; font-weight: 300; margin-top: 1px; }
+  .ntffoot { text-align: center; font-size: 9.5px; font-weight: 600; color: #A84A26; padding: 8px 0 4px; cursor: pointer; }
+
+  /* mezo tile */
+  .mezotile {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    border-radius: 17px; padding: 10px 12px;
+    background: linear-gradient(150deg, #FFEDE4, #FFF8F4);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(216, 72, 31, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .mezotile:active { transform: scale(0.97); }
+  .mezotile .txt { flex: 1; min-width: 0; font-size: 10.5px; font-weight: 300; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .mezotile .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF6B4A; flex: none; }
+  .mezotile .chev { color: #A2958A; font-size: 12px; flex: none; }
+
+  /* daypart panels */
+  .dp-panel { display: none; flex: 1; min-height: 0; flex-direction: column; gap: 9px; overflow-y: auto; scrollbar-width: none; padding-bottom: 8px; }
+  .dp-panel::-webkit-scrollbar { display: none; }
+  .dp-panel.on { display: flex; }
+  .dp-panel > * { flex: none; }
+
+  .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
+  .play .rise { animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  /* keret hero */
+  .hero { padding: 12px 13px; background: linear-gradient(140deg, #F2F7EC, #FFFFFF 70%); }
+  .hero.lavw { background: linear-gradient(140deg, #EDE9F8, #FFFFFF 70%); }
+  .hero.dusk { background: linear-gradient(140deg, #E4DDF4, #F7F4FD 75%); }
+  .daybar { display: flex; gap: 3px; margin-top: 8px; align-items: center; }
+  .daybar i { height: 5px; border-radius: 3px; flex: 1; background: #E8DFD1; transform: scaleX(0); transform-origin: left; }
+  .daybar i.f { background: #8FAF7E; }
+  .daybar i.now { background: #C9962E; }
+  .play .daybar i { animation: segf 0.4s ease-out forwards; animation-delay: var(--d); }
+  @keyframes segf { to { transform: scaleX(1); } }
+  .play .daybar i.now { animation: segf 0.4s ease-out forwards, nowpulse 2.6s ease-in-out 1.4s infinite; }
+  @keyframes nowpulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0); }
+    50% { box-shadow: 0 0 0 3.5px rgba(201, 150, 46, 0.3); }
+  }
+
+  .nowcard {
+    padding: 11px 13px; border: 1px solid #FF6B4A; border-radius: 18px; background: #fff;
+    box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .tile {
+    border-radius: 17px; padding: 10px 11px; min-height: 88px;
+    display: flex; flex-direction: column;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); cursor: pointer;
+  }
+  .tile:active { transform: scale(0.96); }
+  .t-train { background: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
+  .t-vital { background: #FFFFFF; }
+  .t-water { background: linear-gradient(150deg, #DFEDF5, #F5FAFD); }
+  .t-stack { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .t-mezo { background: linear-gradient(150deg, #FFEDE4, #FFF8F4); box-shadow: 0 14px 26px -14px rgba(216, 72, 31, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-hab { background: linear-gradient(150deg, #FFF1D6, #FFFAF0); box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-habe { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-habe .hd.f { background: #6C5FA3; }
+  .t-quest { background: linear-gradient(150deg, #FDF0DA, #FFFCF5); box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-check { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-check .hd.f { background: #C46FA0; }
+  .t-kreed { background: linear-gradient(150deg, #FFF2EA, #FFFFFF); }
+  .t-most { border: 1px solid #FF6B4A; background: #FFFFFF; box-shadow: 0 20px 34px -14px rgba(255, 107, 74, 0.42), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .t-minta { background: #F0EDF8; box-shadow: 0 14px 26px -14px rgba(108, 95, 163, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .tile.alldone { background: linear-gradient(150deg, #EFF3EA, #FAFCF7); }
+  .tile-line { font-size: 9px; font-weight: 300; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tile-more { font-size: 9.5px; font-weight: 600; }
+  .tile .dot { width: 7px; height: 7px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
+  .htick.sm { width: 30px; height: 30px; font-size: 13px; }
+  .spotwrap { flex: 1; display: grid; place-items: center; padding: 4px 0; }
+  .spotwrap .anchor { position: relative; display: grid; place-items: center; }
+  .badge {
+    position: absolute; top: -5px; right: -9px; min-width: 17px; height: 17px;
+    border-radius: 999px; background: linear-gradient(135deg, #FF7A55, #FF5B36);
+    color: #fff; font-size: 9.5px; font-weight: 700;
+    display: grid; place-items: center; padding: 0 4px;
+    box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.6);
+  }
+  .bigring { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; }
+  .bigring .hole { width: 40px; height: 40px; border-radius: 50%; background: #FFFFFF; display: grid; place-items: center; }
+  .bigdots .hd, .ckdots .hd { width: 11px; height: 11px; }
+  .digest {
+    border-radius: 15px; padding: 8px 12px; background: #F0EDF8;
+    border: 0.5px solid rgba(108, 95, 163, 0.14);
+    box-shadow: 0 10px 20px -12px rgba(108, 95, 163, 0.4);
+  }
+  .rr {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: conic-gradient(var(--c) calc(var(--v) * 1%), rgba(43, 33, 24, 0.08) 0);
+    display: grid; place-items: center;
+  }
+  .rr::after { content: ''; width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; }
+  .rings6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px 2px; justify-items: center; margin-top: 4px; }
+  .waterfill { height: 7px; border-radius: 4px; background: #D8E7F0; overflow: hidden; }
+  .waterfill div { width: 0; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #7FB6D9, #4E8FB8); transition: width 1s cubic-bezier(0.25, 0.8, 0.35, 1) 0.9s; }
+  .play .waterfill div { width: 43%; }
+  .stackdots { display: flex; gap: 4px; }
+  .stackdots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(43, 33, 24, 0.1); }
+  .stackdots i.f { background: #7FA06C; }
+
+  .coach {
+    font-weight: 300; font-size: 10.5px; color: #2B2118;
+    background: #FFF4EF; border-radius: 10px; padding: 7px 9px;
+    display: flex; gap: 7px; align-items: flex-start; margin-top: 7px;
+  }
+  .coach .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; margin-top: 1px; background: linear-gradient(135deg, #FF7A55, #FF5B36); }
+
+  .kreed { padding: 11px 13px; border-radius: 18px; background: linear-gradient(140deg, #FFF2EA, #FFFFFF 75%); }
+  .kreed .q { font-weight: 300; font-size: 11.5px; }
+  .foci { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+  .foci span { background: rgba(168, 74, 38, 0.08); color: #A84A26; border-radius: 999px; padding: 3px 10px; font-size: 9.5px; font-weight: 600; }
+
+  .statstrip { display: flex; gap: 9px; }
+  .statcell {
+    flex: 1; text-align: center; padding: 9px 4px; border-radius: 15px;
+    background: rgba(255, 255, 255, 0.72); border: 0.5px solid rgba(43, 33, 24, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25);
+  }
+  .statcell b { font-size: 13px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
+  .statcell small { font-size: 8.5px; color: #6E6257; }
+
+  /* habit tile */
+  .habtile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 8px;
+    background: linear-gradient(150deg, #FFF1D6, #FFFAF0);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .habtile:active { transform: scale(0.97); }
+  .habtile.eve {
+    background: linear-gradient(150deg, #EBE6F8, #F9F6FE);
+    box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .habtile.alldone { background: linear-gradient(150deg, #EFF3EA, #FAFCF7); }
+  .hprog { display: flex; gap: 4px; }
+  .hd { width: 8px; height: 8px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); }
+  .hd.f { background: #C9962E; }
+  .habtile.eve .hd.f { background: #6C5FA3; }
+  .htick {
+    width: 36px; height: 36px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 2px solid rgba(43, 33, 24, 0.18); background: rgba(255, 255, 255, 0.8);
+    display: grid; place-items: center; color: #fff; font-size: 16px; font-family: inherit; padding: 0;
+    transition: transform 0.12s ease;
+  }
+  .htick:active { transform: scale(0.88); }
+  .htick.f {
+    border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E);
+    box-shadow: 0 6px 12px -4px rgba(110, 139, 94, 0.6);
+    animation: tickpop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  @keyframes tickpop { 0% { transform: scale(0); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+  /* küldetés-csempe */
+  .qtile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 7px;
+    background: linear-gradient(150deg, #FDF0DA, #FFFCF5);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .qtile:active { transform: scale(0.97); }
+
+  /* check-in csempe */
+  .cktile {
+    border-radius: 17px; padding: 10px 12px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 7px;
+    background: linear-gradient(150deg, #FAE3ED, #FEF8FB);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.35), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .cktile:active { transform: scale(0.97); }
+  .cktile .hd.f { background: #C46FA0; }
+  .ckslot-hot { background: rgba(196, 111, 160, 0.08); border-radius: 12px; margin: 2px -4px; padding: 9px 8px !important; border-top: none !important; }
+  .ckchip {
+    width: 26px; height: 26px; border-radius: 50%; flex: none; cursor: pointer;
+    border: 1.5px solid rgba(196, 111, 160, 0.45); background: #fff; font-family: inherit;
+    font-size: 10px; font-weight: 700; color: #8E3F6F;
+    display: grid; place-items: center; padding: 0;
+    transition: transform 0.12s ease;
+  }
+  .ckchip:active { transform: scale(0.88); }
+
+  /* ============ DETAIL PAGES — Huawei-minta: csempe → saját oldal ============ */
+  .page {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    padding-top: 34px;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    background: #FDFAF4;
+  }
+  .page.open { transform: none; }
+  .page.p-coral { background: linear-gradient(180deg, #FFE3D4 0%, #FDFAF4 36%); }
+  .page.p-gold { background: linear-gradient(180deg, #FBEBCB 0%, #FDFAF4 36%); }
+  .page.p-lav { background: linear-gradient(180deg, #E9E3F7 0%, #FDFAF4 36%); }
+  .page.p-rose { background: linear-gradient(180deg, #F7E3ED 0%, #FDFAF4 36%); }
+  .page-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .backbtn {
+    border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px 6px 9px; font-size: 11px; font-weight: 600; color: #2B2118;
+    display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3);
+  }
+  .backbtn:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .page-hero { display: grid; justify-items: center; text-align: center; gap: 1px; padding: 8px 14px 12px; }
+  .page-hero .bignum { font-weight: 200; font-size: 40px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .page-hero .nm { font-size: 15px; font-weight: 700; }
+  .page-hero .sb { font-size: 10px; color: #6E6257; }
+  .page-hero.orb svg { animation: orbbreathe 4.5s ease-in-out infinite; }
+  @keyframes orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+  .page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 14px 16px; }
+  .page-body::-webkit-scrollbar { display: none; }
+
+  .qcard, .mz-msg {
+    background: #FFFFFF; border-radius: 16px; padding: 11px 12px; margin-bottom: 10px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .qcard.done { background: linear-gradient(150deg, #EFF3EA, #FBFDF9); }
+  .qxp { font-size: 9px; font-weight: 700; color: #A8801F; background: rgba(201, 150, 46, 0.12); border-radius: 999px; padding: 3px 9px; flex: none; }
+  .mz-msg .t { font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A8801F; }
+  .mz-msg .txt { font-size: 11px; font-weight: 300; margin-top: 6px; }
+  .mz-cta { width: 100%; margin-top: 4px; padding: 9px 0; text-align: center; }
+
+  .vcard {
+    background: #FFFFFF; border-radius: 16px; padding: 4px 12px; margin-bottom: 10px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .vrow { display: flex; align-items: center; gap: 11px; padding: 9px 2px; }
+  .vrow + .vrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .vrow .rr { width: 34px; height: 34px; flex: none; }
+  .vrow .rr::after { width: 22px; height: 22px; }
+  .vrow.low { background: rgba(255, 107, 74, 0.07); border-radius: 12px; border-top: none; margin: 2px -4px; padding: 9px 8px; }
+  .vchip {
+    border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-family: inherit;
+    border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #A84A26;
+    cursor: pointer; flex: none;
+  }
+
+  .habrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+  .habrow + .habrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .tick {
+    width: 22px; height: 22px; border-radius: 50%; flex: none;
+    border: 1.5px solid rgba(43, 33, 24, 0.2); display: grid; place-items: center;
+    font-size: 12px; color: #fff; background: transparent;
+  }
+  .tick.f { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .habrow .tick { padding: 0; cursor: pointer; font-family: inherit; }
+  .habrow .nm { font-size: 11.5px; font-weight: 600; }
+  .habrow .nm.done { color: #6E6257; font-weight: 500; text-decoration: line-through; text-decoration-color: rgba(110, 139, 94, 0.5); }
+  .hstr { height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 4px; }
+  .hstr div { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #E5C46B, #C9962E); }
+  .hpct { font-size: 9px; font-weight: 700; color: #A8801F; flex: none; width: 30px; text-align: right; }
+  .habnote { font-size: 9.5px; color: #A2958A; margin-top: 12px; font-weight: 300; }
+
+  .fbrow { display: flex; gap: 6px; margin-top: 7px; }
+  .fb {
+    border: 1px solid rgba(43, 33, 24, 0.14); background: none; font-family: inherit;
+    border-radius: 999px; padding: 3.5px 11px; font-size: 9px; font-weight: 600; color: #6E6257; cursor: pointer;
+  }
+  .fb.sel { background: #EDE9F8; border-color: #6C5FA3; color: #5D4FA0; }
+
+  /* tab bar */
+  .tabbar {
+    margin: 4px 12px 12px; padding: 8px 16px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 12px 24px -12px rgba(43, 33, 24, 0.3);
+  }
+  .mtab { text-align: center; font-size: 9.5px; font-weight: 600; color: #A2958A; display: grid; gap: 2px; justify-items: center; }
+  .mtab.on { color: #A84A26; }
+  .mtab.off svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
+  .fab {
+    width: 46px; height: 46px; border-radius: 50%; flex: none;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    display: grid; place-items: center;
+    box-shadow: 0 8px 18px -5px rgba(255, 91, 54, 0.6);
+    animation: fabglow 3.2s ease-in-out 1.6s infinite;
+  }
+  @keyframes fabglow {
+    0%, 100% { box-shadow: 0 8px 18px -5px rgba(255, 91, 54, 0.6); }
+    50% { box-shadow: 0 8px 26px -3px rgba(255, 91, 54, 0.85); }
+  }
+  .homebar { width: 118px; height: 4px; border-radius: 999px; background: #2B2118; margin: 2px auto 9px; flex: none; opacity: 0.85; position: relative; z-index: 14; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .play .rise { opacity: 1; transform: none; animation: none; }
+    .daybar i, .play .daybar i { transform: scaleX(1); animation: none; }
+    .waterfill div, .play .waterfill div { width: 43%; transition: none; }
+    .fab, .play .daybar i.now { animation: none; }
+    .tile, .qtile, .habtile, .mezotile { transition: none; }
+    .screen { transition: none; }
+    .dpmenu { transition: none; }
+    .ntfmenu { transition: none; }
+    .page { transition: none; }
+    .htick.f { animation: none; }
+    .page-hero.orb svg { animation: none; }
+  }
+  @media (max-width: 720px) { body { padding: 32px 14px 48px; } .stage { gap: 36px; } }
+</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
+    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moonfull" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.45" stop-color="#B7A9E8"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-crater" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#8F81C6"/><stop offset="1" stop-color="#6D5FB0"/></radialGradient>
+    <radialGradient id="ig-harvest" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#E8B93A"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
+    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
+    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
+    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
+    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
+    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+
+    <symbol id="i-nap" viewBox="0 0 100 100">
+      <g>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="i-edzes" viewBox="0 0 100 100">
+      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
+      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
+    </symbol>
+
+    <symbol id="i-fuel" viewBox="0 0 100 100">
+      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
+      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
+      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
+      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-mezo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
+      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
+      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-polc" viewBox="0 0 100 100">
+      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
+    </symbol>
+
+    <symbol id="i-viz" viewBox="0 0 100 100">
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
+      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
+    </symbol>
+
+    <symbol id="i-alvas" viewBox="0 0 100 100">
+      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-eletjel" viewBox="0 0 100 100">
+      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
+      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
+    </symbol>
+
+    <symbol id="i-minta" viewBox="0 0 100 100">
+      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
+      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
+    </symbol>
+
+    <symbol id="i-naplo" viewBox="0 0 100 100">
+      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
+      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
+      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
+      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
+      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-cel" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
+      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
+      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
+    </symbol>
+
+    <symbol id="i-stack" viewBox="0 0 100 100">
+      <g transform="rotate(-32 50 50)">
+        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
+        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
+        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-suly" viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
+      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
+      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
+      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
+    </symbol>
+
+    <symbol id="i-sport" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
+      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
+    </symbol>
+
+    <symbol id="i-futas" viewBox="0 0 100 100">
+      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
+      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
+      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
+    </symbol>
+
+    <symbol id="i-meso" viewBox="0 0 100 100">
+      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
+      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="i-emberek" viewBox="0 0 100 100">
+      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
+      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
+      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
+      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
+      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
+    </symbol>
+
+    <symbol id="i-tudas" viewBox="0 0 100 100">
+      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
+      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
+      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
+    </symbol>
+
+    <symbol id="i-ertesites" viewBox="0 0 100 100">
+      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+    </symbol>
+
+    <symbol id="i-growth" viewBox="0 0 100 100">
+      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
+      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
+      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
+    </symbol>
+
+    <symbol id="i-erme" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
+      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
+    </symbol>
+
+    <symbol id="i-lang" viewBox="0 0 100 100">
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
+    </symbol>
+
+    <symbol id="i-beallitas" viewBox="0 0 100 100">
+      <g>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
+      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
+      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
+    </symbol>
+
+    <symbol id="i-mikrofon" viewBox="0 0 100 100">
+      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
+      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
+      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
+      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
+      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
+    </symbol>
+
+    <symbol id="i-kamra" viewBox="0 0 100 100">
+      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
+      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
+      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
+    </symbol>
+
+    <symbol id="i-recept" viewBox="0 0 100 100">
+      <g transform="rotate(-30 50 50)">
+        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
+        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
+        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
+        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-rend" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
+      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
+      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
+      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
+      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
+    </symbol>
+
+    <symbol id="i-level" viewBox="0 0 100 100">
+      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+    </symbol>
+
+    <symbol id="i-hajnal" viewBox="0 0 100 100">
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+    </symbol>
+
+    <symbol id="i-video" viewBox="0 0 100 100">
+      <rect x="12" y="22" width="76" height="56" rx="16" fill="url(#ig-drop)"/>
+      <path d="M44 38 L64 50 L44 62 Z" fill="#F4FAFD" stroke="#F4FAFD" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="27" cy="32" rx="9" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-18 27 32)"/>
+    </symbol>
+
+    <symbol id="i-idozito" viewBox="0 0 100 100">
+      <rect x="43" y="8" width="14" height="10" rx="5" fill="#5B7A4C"/>
+      <rect x="47" y="16" width="6" height="8" fill="#5B7A4C"/>
+      <rect x="68" y="16" width="12" height="7" rx="3.5" fill="#5B7A4C" transform="rotate(42 74 20)"/>
+      <circle cx="50" cy="56" r="32" fill="url(#ig-nsage)"/>
+      <circle cx="50" cy="56" r="21" fill="#F2F7EC"/>
+      <path d="M50 56 L50 42" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 56 L60 62" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 38)"/>
+    </symbol>
+
+    <symbol id="i-kihivas" viewBox="0 0 100 100">
+      <rect x="28" y="10" width="9" height="82" rx="4.5" fill="#8C7F72"/>
+      <path d="M37 14 L84 22 L66 34 L84 46 L37 54 Z" fill="url(#ig-plate)"/>
+      <ellipse cx="48" cy="23" rx="8" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-10 48 23)"/>
+      <circle cx="32.5" cy="13" r="5.5" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-checkin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
+      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
+      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
+      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
+    </symbol>
+
+    <symbol id="i-injekcio" viewBox="0 0 100 100">
+      <g transform="rotate(-38 50 50)">
+        <rect x="20" y="40" width="44" height="20" rx="7" fill="#F0E7D4"/>
+        <rect x="24" y="44" width="26" height="12" rx="5" fill="url(#ig-nlav)"/>
+        <rect x="10" y="44" width="10" height="12" rx="4" fill="url(#ig-scale)"/>
+        <rect x="2" y="47" width="9" height="6" rx="3" fill="url(#ig-scale)"/>
+        <rect x="64" y="45" width="6" height="10" rx="2" fill="url(#ig-scale)"/>
+        <path d="M70 50h20" stroke="#8C7F72" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-reggeli" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="56" rx="35" ry="26" fill="#F7F0E1"/>
+      <ellipse cx="44" cy="49" rx="10" ry="6" fill="rgba(255,255,255,0.7)" transform="rotate(-18 44 49)"/>
+      <circle cx="52" cy="56" r="13" fill="url(#ig-sun)"/>
+      <ellipse cx="48" cy="51" rx="4.5" ry="3" fill="rgba(255,255,255,0.6)"/>
+    </symbol>
+
+    <symbol id="i-ebed" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="66" rx="38" ry="13" fill="url(#ig-scale)"/>
+      <ellipse cx="50" cy="60" rx="25" ry="11" fill="url(#ig-bowl)"/>
+      <ellipse cx="42" cy="56" rx="8" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-16 42 56)"/>
+      <path d="M40 44q-3-6 0-12M52 46q-3-6 0-12M64 44q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-snack" viewBox="0 0 100 100">
+      <circle cx="50" cy="58" r="26" fill="url(#ig-p2)"/>
+      <path d="M50 33q-2-8 5-13" stroke="#9C5F33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="63" cy="27" rx="10" ry="6" fill="url(#ig-leaf)" transform="rotate(-22 63 27)"/>
+      <ellipse cx="41" cy="49" rx="8" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 41 49)"/>
+    </symbol>
+
+    <symbol id="i-vacsora" viewBox="0 0 100 100">
+      <path d="M17 52h66v5a27 27 0 0 1-27 27H44a27 27 0 0 1-27-27Z" fill="url(#ig-moon)"/>
+      <ellipse cx="50" cy="52" rx="33" ry="7.5" fill="#E6DFF9"/>
+      <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
+    </symbol>
+    <symbol id="i-muhely" viewBox="0 0 100 100">
+      <path d="M20 56h60v4a25 25 0 0 1-25 25H45a25 25 0 0 1-25-25Z" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="56" rx="30" ry="7" fill="#FFB597"/>
+      <path d="M17 60q-7 2-4 9M83 60q7 2 4 9" stroke="#B03E1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M40 46q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M67 14l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5Z" fill="url(#ig-spark)"/>
+      <path d="M50 8l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" fill="url(#ig-spark)"/>
+      <ellipse cx="35" cy="67" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 35 67)"/>
+    </symbol>
+    <symbol id="i-memoar" viewBox="0 0 100 100">
+      <path d="M50 26 Q34 16 16 22 L16 74 Q34 68 50 78 Z" fill="url(#ig-book)"/>
+      <path d="M50 26 Q66 16 84 22 L84 74 Q66 68 50 78 Z" fill="#F0E7D4"/>
+      <path d="M60 24 v22 l6 -5 6 5 V22" fill="url(#ig-flame)"/>
+      <path d="M58 38h18M58 48h18M58 58h16" stroke="#D8CCBB" stroke-width="3.5" stroke-linecap="round" opacity="0"/>
+      <ellipse cx="30" cy="32" rx="9" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-12 30 32)"/>
+    </symbol>
+    <symbol id="i-lombik" viewBox="0 0 100 100">
+      <path d="M42 14h16v22l20 34a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18l20-34Z" fill="#F0E7D4"/>
+      <path d="M35 58h30l13 12a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18Z" fill="url(#ig-nsage)"/>
+      <rect x="38" y="10" width="24" height="9" rx="4.5" fill="url(#ig-leaf)"/>
+      <circle cx="46" cy="72" r="4.5" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="58" cy="79" r="3" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="72" cy="30" r="5" fill="#9C8FD0"/>
+      <ellipse cx="42" cy="30" rx="4" ry="9" fill="rgba(255,255,255,0.5)" transform="rotate(8 42 30)"/>
+    </symbol>
+    <symbol id="i-kristaly" viewBox="0 0 100 100">
+      <path d="M28 82h44l-6 10H34Z" fill="url(#ig-wood)"/>
+      <circle cx="50" cy="48" r="33" fill="url(#ig-nlav)"/>
+      <path d="M36 56q14 10 28 0" stroke="rgba(255,255,255,0.45)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="38" cy="36" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 36)"/>
+      <path d="M80 12 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="url(#ig-spark)"/>
+    </symbol>
+    <symbol id="i-retegek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="72" rx="34" ry="13" fill="url(#ig-nsage)"/>
+      <ellipse cx="50" cy="54" rx="34" ry="13" fill="url(#ig-ngold)"/>
+      <ellipse cx="50" cy="36" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="50" cy="33" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="38" cy="28" rx="11" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-8 38 28)"/>
+    </symbol>
+    <symbol id="i-heti" viewBox="0 0 100 100">
+      <rect x="14" y="20" width="72" height="66" rx="12" fill="url(#ig-nlav)"/>
+      <rect x="14" y="20" width="72" height="16" rx="8" fill="#4A3E86"/>
+      <circle cx="32" cy="18" r="5" fill="#7E4A24"/><circle cx="68" cy="18" r="5" fill="#7E4A24"/>
+      <rect x="26" y="60" width="10" height="14" rx="4" fill="rgba(255,255,255,0.55)"/>
+      <rect x="42" y="50" width="10" height="24" rx="4" fill="rgba(255,255,255,0.8)"/>
+      <rect x="58" y="44" width="10" height="30" rx="4" fill="#FFE9A8"/>
+      <ellipse cx="36" cy="46" rx="10" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 36 46)"/>
+    </symbol>
+    <symbol id="i-hold" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="url(#ig-moonfull)"/>
+      <ellipse cx="36" cy="30" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-26 36 30)"/>
+      <circle cx="63" cy="42" r="7" fill="url(#ig-crater)" opacity="0.85"/>
+      <circle cx="44" cy="62" r="5" fill="url(#ig-crater)" opacity="0.7"/>
+      <circle cx="62" cy="66" r="3.5" fill="url(#ig-crater)" opacity="0.6"/>
+    </symbol>
+
+    <symbol id="i-termes" viewBox="0 0 100 100">
+      <path d="M50 6c5 20 12 27 32 32-20 5-27 12-32 32-5-20-12-27-32-32 20-5 27-12 32-32Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="41" cy="30" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30 41 30)"/>
+      <circle cx="81" cy="74" r="6" fill="url(#ig-harvest)"/>
+      <circle cx="18" cy="80" r="4" fill="url(#ig-harvest)" opacity="0.8"/>
+    </symbol>
+
+    <!-- ============ F7.4 · Életterület-ikonográfia (mezo-d20.8.4) ============
+         A 8 LIFE skill clay szimbóluma — a Growth-sorok, a hála-bejegyzések és a
+         Napzárás act-3 emoji-maradékának váltása. Nyelv: 100×100, közös ig-*
+         gradiensek, fehér spekuláris folt. -->
+    <radialGradient id="ig-life-eye" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.55" stop-color="#4E8FB8"/><stop offset="1" stop-color="#25577A"/></radialGradient>
+    <linearGradient id="ig-life-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8C7F72"/><stop offset="1" stop-color="#5E544A"/></linearGradient>
+    <radialGradient id="ig-life-pillow" cx="36%" cy="30%" r="90%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.5" stop-color="#B7A9E8"/><stop offset="1" stop-color="#7A6BbD"/></radialGradient>
+
+    <symbol id="i-life-tudatossag" viewBox="0 0 100 100">
+      <path d="M28 92a55 40 0 0 1 44 0c2-16-4-26-10-32H38c-6 6-12 16-10 32Z" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="38" r="17" fill="url(#ig-moonfull)"/>
+      <path d="M24 22a30 30 0 0 1 52 0" fill="none" stroke="#C9962E" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="44" cy="31" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-22 44 31)"/>
+    </symbol>
+    <symbol id="i-life-szemlelet" viewBox="0 0 100 100">
+      <path d="M8 50C20 30 36 20 50 20s30 10 42 30C80 70 64 80 50 80S20 70 8 50Z" fill="url(#ig-stone2)"/>
+      <circle cx="50" cy="50" r="19" fill="url(#ig-life-eye)"/>
+      <circle cx="50" cy="50" r="8" fill="#1D3B52"/>
+      <ellipse cx="43" cy="42" rx="6" ry="4.5" fill="rgba(255,255,255,0.7)" transform="rotate(-24 43 42)"/>
+    </symbol>
+    <symbol id="i-life-konyha" viewBox="0 0 100 100">
+      <path d="M74 42 92 24" stroke="url(#ig-wood)" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="44" cy="56" r="32" fill="url(#ig-life-pan)"/>
+      <circle cx="44" cy="56" r="24" fill="#F4E7D6"/>
+      <circle cx="40" cy="53" r="11" fill="url(#ig-sun)"/>
+      <ellipse cx="30" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 30 38)"/>
+    </symbol>
+    <symbol id="i-life-penzugyek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="74" rx="30" ry="13" fill="url(#ig-coin)"/>
+      <ellipse cx="50" cy="58" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="42" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="40" rx="20" ry="7.5" fill="none" stroke="rgba(255,240,200,0.6)" stroke-width="3"/>
+      <ellipse cx="38" cy="36" rx="8" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-12 38 36)"/>
+    </symbol>
+    <symbol id="i-life-produktivitas" viewBox="0 0 100 100">
+      <rect x="16" y="16" width="68" height="68" rx="16" fill="url(#ig-stone1)"/>
+      <path d="M32 52l14 14 24-30" fill="none" stroke="url(#ig-leaf)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="72" cy="26" r="6" fill="#C9962E"/>
+      <ellipse cx="32" cy="26" rx="9" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 26)"/>
+    </symbol>
+    <symbol id="i-life-tanulas" viewBox="0 0 100 100">
+      <path d="M50 26C40 18 28 16 14 18v56c14-2 26 0 36 8V26Z" fill="url(#ig-book)"/>
+      <path d="M50 26c10-8 22-10 36-8v56c-14-2-26 0-36 8V26Z" fill="url(#ig-shelf)"/>
+      <path d="M50 26v56" stroke="#7E4A24" stroke-width="4" stroke-linecap="round"/>
+      <path d="M60 34c8-3 14-4 20-4M60 46c8-3 14-4 20-4" stroke="rgba(120,90,50,0.4)" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="28" cy="28" rx="8" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-16 28 28)"/>
+    </symbol>
+    <symbol id="i-life-kapcsolatok" viewBox="0 0 100 100">
+      <circle cx="36" cy="50" r="22" fill="none" stroke="url(#ig-heart)" stroke-width="11"/>
+      <circle cx="64" cy="50" r="22" fill="none" stroke="url(#ig-drop)" stroke-width="11"/>
+      <path d="M50 33a22 22 0 0 1 0 34 22 22 0 0 1 0-34Z" fill="rgba(142,63,111,0.35)"/>
+      <ellipse cx="28" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-30 28 36)"/>
+    </symbol>
+    <symbol id="i-life-regeneracio" viewBox="0 0 100 100">
+      <path d="M14 46c-4 14-2 24 4 30 8 8 56 8 64 0 6-6 8-16 4-30-10-8-62-8-72 0Z" fill="url(#ig-life-pillow)"/>
+      <path d="M30 60c12 6 28 6 40 0" fill="none" stroke="rgba(93,79,160,0.45)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="74" cy="26" r="5" fill="#C9962E"/>
+      <path d="M28 22h12l-12 12h12" fill="none" stroke="#9C8FD0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="50" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-10 30 50)"/>
+    </symbol>
+  </defs>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="sg-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="sg-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="sg-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="sg-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="sg-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="sg-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="sg-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6BC9"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#463583"/></linearGradient>
+    <linearGradient id="sg-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3A79A"/><stop offset="1" stop-color="#7C7065"/></linearGradient>
+    <radialGradient id="sg-medal" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="sg-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <radialGradient id="sg-orbn" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#8A7FC0"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3A2E72"/></radialGradient>
+    <linearGradient id="sg-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <linearGradient id="sg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <radialGradient id="sg-mount" cx="40%" cy="25%" r="90%"><stop offset="0" stop-color="#C9BFE8"/><stop offset="1" stop-color="#4A3D85"/></radialGradient>
+
+    <symbol id="s-reggel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(181,126,20,0.25)"/>
+      <g>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="22" fill="url(#sg-sun)"/>
+      <ellipse cx="42" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.65)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="s-este" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(93,79,160,0.25)"/>
+      <path d="M66 71A30 30 0 1 1 55 17a25 25 0 0 0 11 54Z" fill="url(#sg-moon)"/>
+      <ellipse cx="35" cy="33" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-28 35 33)"/>
+      <circle cx="74" cy="24" r="3.5" fill="#C9962E"/>
+      <circle cx="83" cy="38" r="2" fill="rgba(201,150,46,0.6)"/>
+    </symbol>
+
+    <symbol id="s-viz" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(46,110,150,0.25)"/>
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#sg-drop)"/>
+      <ellipse cx="41" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.55)" transform="rotate(18 41 42)"/>
+    </symbol>
+
+    <symbol id="s-energia" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(196,61,20,0.25)"/>
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#sg-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#sg-flin)"/>
+    </symbol>
+
+    <symbol id="s-edzes" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="88" rx="30" ry="5.5" fill="rgba(70,53,131,0.22)"/>
+      <rect x="12" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="74" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="24" y="47" width="52" height="10" rx="5" fill="url(#sg-bar)"/>
+      <ellipse cx="17.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+      <ellipse cx="79.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+    </symbol>
+
+    <symbol id="s-medal" viewBox="0 0 100 100">
+      <path d="M36 8h12l-8 26h-14Z" fill="#D8481F"/>
+      <path d="M64 8H52l8 26h14Z" fill="#FF7A55"/>
+      <ellipse cx="50" cy="90" rx="22" ry="5" fill="rgba(169,119,15,0.28)"/>
+      <circle cx="50" cy="56" r="26" fill="url(#sg-medal)"/>
+      <circle cx="50" cy="56" r="19" fill="none" stroke="rgba(255,240,200,0.5)" stroke-width="2.5"/>
+      <path d="M50 45l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L50 61.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#8A5E07"/>
+      <path d="M49 44l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L49 60.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#FFEDB8"/>
+      <ellipse cx="41" cy="46" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 41 46)"/>
+    </symbol>
+
+    <symbol id="s-orb" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-ejszaka" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(58,46,114,0.3)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orbn)"/>
+      <ellipse cx="37" cy="32" rx="11" ry="7" fill="rgba(255,255,255,0.28)" transform="rotate(-24 37 32)"/>
+      <path d="M38 46q4 6 12 6t12-6" fill="none" stroke="rgba(230,223,249,0.7)" stroke-width="3.5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-figyel" viewBox="0 0 100 100">
+      <ellipse cx="46" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="46" cy="48" r="32" fill="url(#sg-orb)"/>
+      <ellipse cx="34" cy="33" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 34 33)"/>
+      <path d="M84 36a20 20 0 0 1 0 24" fill="none" stroke="rgba(201,150,46,0.75)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M92 28a32 32 0 0 1 0 40" fill="none" stroke="rgba(201,150,46,0.4)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-unnepel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="52" r="31" fill="url(#sg-orb)"/>
+      <ellipse cx="38" cy="38" rx="11" ry="7" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 38)"/>
+      <path d="M39 58q5 7 11 7t11-7" fill="none" stroke="rgba(255,230,210,0.8)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="20" cy="18" r="4.5" fill="#E0AC2F"/>
+      <rect x="72" y="8" width="6" height="11" rx="3" fill="#9C8FD0" transform="rotate(22 75 13)"/>
+      <circle cx="88" cy="30" r="3.5" fill="#7FA06C"/>
+      <rect x="8" y="38" width="5" height="10" rx="2.5" fill="#C46FA0" transform="rotate(-24 10 43)"/>
+      <circle cx="66" cy="6" r="3" fill="#FF7A55"/>
+    </symbol>
+
+    <symbol id="s-piheno" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M50 88C24 72 14 46 24 16c30 8 42 36 32 66q-3 4-6 6Z" fill="url(#sg-leaf)"/>
+      <path d="M44 78C38 58 40 40 48 26" fill="none" stroke="#E2EFD9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="34" cy="34" rx="7" ry="10" fill="rgba(255,255,255,0.35)" transform="rotate(20 34 34)"/>
+    </symbol>
+
+    <symbol id="s-napzaras" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="93" rx="30" ry="5" fill="rgba(93,79,160,0.28)"/>
+      <circle cx="50" cy="48" r="38" fill="url(#sg-sky)"/>
+      <circle cx="50" cy="58" r="15" fill="url(#sg-sun)"/>
+      <path d="M14 62a38 38 0 0 0 72 0q-18-10-36-10t-36 10Z" fill="#584673"/>
+      <circle cx="70" cy="24" r="2.5" fill="rgba(255,240,220,0.8)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="6" fill="rgba(255,255,255,0.35)" transform="rotate(-24 34 24)"/>
+    </symbol>
+
+    <symbol id="s-hajtas" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(78,107,66,0.22)"/>
+      <ellipse cx="50" cy="82" rx="24" ry="9" fill="#8A6B4A"/>
+      <path d="M50 80V46" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 52C32 48 22 34 24 16c18 2 28 16 26 36Z" fill="url(#sg-leaf)"/>
+      <path d="M50 64c16-4 26-16 24-32-16 2-26 16-24 32Z" fill="url(#sg-leaf)"/>
+      <ellipse cx="34" cy="28" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 34 28)"/>
+    </symbol>
+
+    <symbol id="s-hegycel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="32" ry="5.5" fill="rgba(74,61,133,0.25)"/>
+      <path d="M50 18q4 0 7 6l27 52q4 8-6 8H22q-10 0-6-8l27-52q3-6 7-6Z" fill="url(#sg-mount)"/>
+      <path d="M50 18q4 0 7 6l7 14c-6 5-10-2-14 3s-9-2-13 2l6-19q3-6 7-6Z" fill="#F1EDFB"/>
+      <rect x="48.5" y="4" width="3" height="16" rx="1.5" fill="#8C7F72"/>
+      <path d="M51.5 5h15l-4.5 5 4.5 5h-15Z" fill="#E0AC2F"/>
+      <ellipse cx="36" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(18 36 42)"/>
+    </symbol>
+  <radialGradient id="sg-orb-doki" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A8C0D0"/><stop offset="0.45" stop-color="#3E7396"/><stop offset="1" stop-color="#284B62"/></radialGradient><radialGradient id="sg-orb-edzo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8AE9D"/><stop offset="0.45" stop-color="#A84A26"/><stop offset="1" stop-color="#6D3019"/></radialGradient><radialGradient id="sg-orb-taplalkozo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AFBCAA"/><stop offset="0.45" stop-color="#4E6B42"/><stop offset="1" stop-color="#33462B"/></radialGradient><radialGradient id="sg-orb-szomnologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#B6B0D4"/><stop offset="0.45" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3C3368"/></radialGradient><radialGradient id="sg-orb-pszichologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#CCA9BE"/><stop offset="0.45" stop-color="#8E3F6F"/><stop offset="1" stop-color="#5C2948"/></radialGradient><radialGradient id="sg-orb-drill" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8C69A"/><stop offset="0.45" stop-color="#A8801F"/><stop offset="1" stop-color="#6D5314"/></radialGradient><radialGradient id="sg-orb-antropologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A1C5BC"/><stop offset="0.45" stop-color="#2E7D6B"/><stop offset="1" stop-color="#1E5146"/></radialGradient><radialGradient id="sg-orb-szkeptikus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AEA9A5"/><stop offset="0.45" stop-color="#4A4038"/><stop offset="1" stop-color="#302A24"/></radialGradient></defs>
+    <symbol id="s-orb-doki" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#3E739647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-doki)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(12 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-edzo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A84A2647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-edzo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(39 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-taplalkozo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4E6B4247"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-taplalkozo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(66 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szomnologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#5D4FA047"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szomnologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(93 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-pszichologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#8E3F6F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-pszichologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(120 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-drill" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A8801F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-drill)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(147 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-antropologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#2E7D6B47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-antropologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(174 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szkeptikus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4A403847"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szkeptikus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(201 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+</svg>
+<style>
+  /* ---- lap-tónusok (mezo-body idióma) ---- */
+  .page.p-sage { background: linear-gradient(180deg, #E4EEDD 0%, #FDFAF4 36%); }
+  .screen { background: linear-gradient(180deg, #E4EEDD 0%, #FDFAF4 34%); }
+
+  /* ---- Tudástár-lokális elemek (mezo-body #page-tudas készletéből) ---- */
+  .decrow { display: flex; gap: 6px; margin-top: 9px; }
+  .decrow .cta, .decrow .ghost { flex: 1; padding: 7px 0; text-align: center; font-size: 9px; }
+  .decrow .ghost.no { color: #A8462E; }
+  .sfield { display: flex; align-items: center; gap: 7px; background: #fff; border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 999px; padding: 7px 12px; margin-bottom: 9px; box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05); }
+  .sfield input { border: none; outline: none; background: none; font-family: inherit; font-size: 10.5px; color: #2B2118; width: 100%; padding: 0; }
+  .sfield input::placeholder { color: #A2958A; }
+  .chiprow { display: flex; gap: 5px; margin-bottom: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 3px; }
+  .chiprow::-webkit-scrollbar { display: none; }
+  .fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #6E6257; cursor: pointer; font-family: inherit; flex: none; }
+  .fchip.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .lsec { display: flex; align-items: center; gap: 6px; padding: 10px 2px 6px; }
+  .lsec .cnt { margin-left: auto; font-size: 9px; font-weight: 700; color: #A2958A; font-variant-numeric: tabular-nums; }
+  .foot9 { font-size: 8.5px; color: #A2958A; font-weight: 300; padding: 6px 2px 0; }
+  .facttile { display: flex; gap: 9px; align-items: flex-start; border-radius: 16px; padding: 10px 11px; margin-bottom: 8px;
+    background: var(--fw, #fff); border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 12px 22px -14px var(--fg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.75); }
+  .facttile .fic { width: 30px; height: 30px; border-radius: 11px; display: grid; place-items: center; flex: none;
+    background: rgba(255, 255, 255, 0.75); box-shadow: 0 2px 5px rgba(43, 33, 24, 0.08); }
+  .facttile .tx { font-size: 10px; line-height: 1.45; }
+  .facttile .sb { font-size: 7.5px; color: #6E6257; margin-top: 2px; }
+  .facttile.off { background: rgba(255, 255, 255, 0.6); box-shadow: none; border: 1.2px dashed rgba(43, 33, 24, 0.16); }
+  .facttile.off .tx { color: #6E6257; }
+  .tgl { width: 30px; height: 18px; border-radius: 999px; flex: none; border: none; cursor: pointer; position: relative;
+    background: rgba(43, 33, 24, 0.14); transition: background 0.2s ease; }
+  .tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(43, 33, 24, 0.3); transition: left 0.2s ease; }
+  .tgl.on { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .tgl.on::after { left: 14px; }
+  .candc { border: 1px solid #C9962E; border-radius: 16px; background: #fff; padding: 10px 12px 11px; margin-bottom: 10px;
+    box-shadow: 0 18px 30px -14px rgba(201, 150, 46, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .candc.done { border-color: rgba(110, 139, 94, 0.5); background: linear-gradient(150deg, #EFF3EA, #FBFDF9); }
+  .predtile { border-radius: 18px; padding: 11px 13px; margin-bottom: 10px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    background: #fff; box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .predtile.rose { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.3), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .predtile .pic { width: 32px; height: 32px; border-radius: 11px; display: grid; place-items: center; flex: none;
+    background: rgba(255, 255, 255, 0.8); box-shadow: 0 2px 5px rgba(43, 33, 24, 0.08); }
+  .pgact { border: 1px solid rgba(43, 33, 24, 0.16); background: #fff; font-family: inherit; border-radius: 999px;
+    padding: 4px 12px; font-size: 8.5px; font-weight: 600; color: #A84A26; cursor: pointer; flex: none; }
+
+  /* ---- ÚJ az egyesített laphoz ---- */
+  /* alap-nézet: nem slide-in .page, hanem a képernyő törzse maga */
+  .base { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-top: 24px; }
+  .helpchip { margin-left: auto; width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255, 255, 255, 0.7); color: #6E6257; font-size: 12px; font-weight: 700; font-family: "Fraunces", Georgia, serif;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3); }
+  /* szekció-csempék: a hub .tile idiómája, tudás-színekre hangolva */
+  .t-tenyek { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); box-shadow: 0 14px 26px -14px rgba(110, 139, 94, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-kateg { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .tile.wide2 { grid-column: 1 / 3; min-height: 0; flex-direction: row; align-items: center; gap: 10px;
+    background: linear-gradient(150deg, #FAE3ED, #FEF8FB); box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.3), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .tile .bignum2 { font-weight: 200; font-size: 24px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  /* kategória-rács a Kategóriák drill-oldalon (KindTileGrid megfelelője) */
+  .kgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .ktile { border-radius: 16px; padding: 9px 11px; min-height: 72px; display: flex; flex-direction: column; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--kw, #fff);
+    box-shadow: 0 12px 22px -14px var(--kg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); position: relative; }
+  .ktile:active { transform: scale(0.96); }
+  .ktile.empty { opacity: 0.45; cursor: default; }
+  .ktile .kcnt { position: absolute; top: 8px; right: 10px; font-size: 10px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .ktile .kline { font-size: 8.5px; font-weight: 300; margin-top: auto; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* kompakt node-sor (KindNodeList megfelelője) */
+  .krow { display: flex; align-items: center; gap: 9px; background: #fff; border-radius: 14px; padding: 9px 11px; margin-bottom: 7px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); cursor: pointer;
+    box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+  .krow .nm { font-size: 10.5px; font-weight: 600; }
+  .krow .ec { margin-left: auto; font-size: 8px; color: #A2958A; font-variant-numeric: tabular-nums; flex: none; }
+  .krow .chev { color: #A2958A; font-size: 11px; flex: none; }
+  .edge { font-size: 9.5px; font-weight: 300; padding: 7px 2px; line-height: 1.45; }
+  .edge + .edge { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .edge b { font-weight: 600; }
+  .edge .st { font-size: 7.5px; font-weight: 700; color: #5D4FA0; margin-left: 5px; }
+  /* hogyan-oldal Q&A */
+  .qa { background: #fff; border-radius: 16px; padding: 11px 12px; margin-bottom: 8px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 22px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .qa b { font-size: 10.5px; }
+  .qa p { font-size: 9.5px; font-weight: 300; color: #6E6257; margin-top: 3px; line-height: 1.5; }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Mezo · Design 2.0 · prototípus</div>
+  <h1>Tudástár egyben</h1>
+  <p class="lede">A <strong>Tudástár</strong> (tények, prompt-vödrök, jóváhagyás-inbox) és a <strong>Tudásgráf</strong>
+  (kategóriák, kapcsolatok, profil) egyetlen oldalként — Huawei-minta: a döntést kérő inbox azonnal látszik,
+  minden más <strong>csempe mögül nyílik</strong>. A hosszú magyarázó a hero „?" gombja mögé költözik.</p>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="screen" id="panel">
+        <div class="isl"></div>
+        <div class="p-status"><span>13:30</span><span>ᯤ ▮▮▮</span></div>
+
+        <!-- ============ ALAP: az egyesített Tudástár ============ -->
+        <div class="base">
+          <div class="page-head" style="padding-top:0;">
+            <button class="backbtn">‹ Mezo</button>
+            <button class="helpchip" data-page="page-hogyan" aria-label="Hogyan működik?">?</button>
+          </div>
+          <div class="page-hero">
+            <div class="nm">Tudástár</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="54" height="54" viewBox="0 0 100 100"><use href="#i-tudas"/></svg>
+              <div class="bignum" id="heroBig">15</div>
+            </div>
+            <div class="sb">tény rólad · <b>10 megy a chatbe</b> · 13 kapcsolat</div>
+          </div>
+          <div class="page-body">
+
+            <!-- jóváhagyás-inbox: az egyetlen blokk, ami döntést kér — nem kerül csempe mögé -->
+            <div class="lsec rise" style="--d:0ms;padding-top:2px;"><span class="p-eyebrow" style="color:#A8801F;">Jóváhagyásra vár</span><span class="cnt" id="inboxCnt">2</span></div>
+            <div class="candc rise" style="--d:30ms;" id="cand1">
+              <div class="mrow" style="gap:7px;">
+                <svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb-figyel"/></svg>
+                <span class="p-eyebrow" style="color:#A8801F;">Tény-jelölt</span>
+              </div>
+              <div style="font-size:10.5px;line-height:1.45;margin-top:5px;">„A délutáni kávé után nehezebben alszol el — 22:30 után már kerülöd."</div>
+              <div style="font-size:8px;color:#A2958A;margin-top:3px;">a máj 19-i beszélgetésből tanulnám</div>
+              <div class="decrow">
+                <button class="cta" data-accept="cand1" data-done="Bekerült a tudásba — a tények közt találod.">Elfogad</button>
+                <button class="ghost">Pontosít</button>
+                <button class="ghost no" data-dismiss="cand1">Elvet</button>
+              </div>
+            </div>
+            <div class="candc rise" style="--d:60ms;" id="cand2">
+              <div class="mrow" style="gap:7px;">
+                <svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#i-nap"/></svg>
+                <span class="p-eyebrow" style="color:#A8801F;">Életesemény-jelölt · máj 18</span>
+              </div>
+              <div style="font-size:10.5px;font-weight:700;margin-top:5px;">Új munkahely első hete</div>
+              <div style="font-size:9.5px;font-weight:300;line-height:1.45;margin-top:2px;">Sűrű hét volt: korai kelések, kevesebb edzés, este kimerültél.</div>
+              <div style="font-size:8px;color:#A2958A;margin-top:3px;">a napod szövegeiből szűrtem ki</div>
+              <div class="decrow">
+                <button class="cta" data-accept="cand2" data-done="Bekerült a gráfba · 2 kapcsolattal — a Kategóriák → Életesemények alatt.">Elfogad</button>
+                <button class="ghost no" data-dismiss="cand2">Elvet</button>
+              </div>
+              <div class="foot9" style="padding-bottom:0;">Elfogad → bekerül a gráfba 2 kapcsolattal · Elvet → eldobom.</div>
+            </div>
+
+            <!-- szekció-mozaik: minden referencia-tartalom egy koppintással -->
+            <div class="mosaic rise" style="--d:100ms;">
+              <div class="tile t-tenyek" data-page="page-tenyek" role="button" tabindex="0" aria-label="Tények">
+                <div class="p-eyebrow" style="color:#4E6B42;">Tények</div>
+                <div class="mrow" style="gap:8px;margin-top:4px;">
+                  <svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-polc"/></svg>
+                  <span class="bignum2" id="tenyTileBig">15</span>
+                </div>
+                <div class="tile-line mut">10 a chatben · 4 vár · 1 kikapcsolva</div>
+              </div>
+              <div class="tile t-kateg" data-page="page-kategoriak" role="button" tabindex="0" aria-label="Kategóriák">
+                <div class="p-eyebrow" style="color:#5D4FA0;">Kategóriák</div>
+                <div class="mrow" style="gap:8px;margin-top:4px;">
+                  <svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-retegek"/></svg>
+                  <span class="bignum2">6</span>
+                </div>
+                <div class="tile-line mut" id="kategTileLine">minták · célok · életesemények · 13 él</div>
+              </div>
+              <div class="tile wide2" data-page="page-profil" role="button" tabindex="0" aria-label="Profil">
+                <svg width="30" height="30" viewBox="0 0 100 100" style="flex:none;"><use href="#i-checkin"/></svg>
+                <div class="grow">
+                  <div class="p-eyebrow" style="color:#8E3F6F;">Így beszélj velem</div>
+                  <div class="tile-line mut">rövid reggeli üzenet · adatvezérelt · heti frissítés</div>
+                </div>
+                <span class="chev" style="color:#A2958A;font-size:12px;">›</span>
+              </div>
+            </div>
+
+            <div class="foot9 rise" style="--d:140ms;">Archiválás után a következő heti összegzésig nem kerül a beszélgetésbe.</div>
+          </div>
+          <div class="homebar"></div>
+        </div>
+
+        <!-- ============ TÉNYEK (drill) ============ -->
+        <div class="page p-sage" id="page-tenyek">
+          <div class="page-head"><button class="backbtn" data-back="page-tenyek">‹ Tudástár</button></div>
+          <div class="page-hero">
+            <div class="nm">Tények</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-polc"/></svg>
+              <div class="bignum" style="font-size:34px;">15</div>
+            </div>
+            <div class="sb">a 10 legerősebb bekapcsolt tény megy a chatbe</div>
+          </div>
+          <div class="page-body">
+            <div class="sfield rise" style="--d:0ms;"><span style="color:#A2958A;">⌕</span><input type="text" placeholder="Keresés · pl. alvás, kávé, váll" aria-label="Keresés"></div>
+            <div class="chiprow rise" style="--d:30ms;">
+              <button class="fchip on">Mind</button><button class="fchip">Edzés</button><button class="fchip">Étkezés</button><button class="fchip">Egészség</button><button class="fchip">Élet</button>
+            </div>
+            <div class="lsec rise" style="--d:60ms;"><span class="p-eyebrow" style="color:#4E6B42;">Most ezeket kapja meg a társ</span><span class="cnt">10</span></div>
+            <div class="rise" style="--d:90ms;">
+              <div class="facttile" style="--fw:linear-gradient(150deg,#FFE7DC,#FFF7F2);--fg:rgba(216,72,31,0.3);">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></span>
+                <div class="grow"><div class="tx">Vállból a ferde nyomás fájdalmas — helyette gépi nyomást használunk.</div><div class="sb">edzés · 24× megerősítve · chatből</div></div>
+                <button class="tgl on" aria-label="Bekapcsolva"></button>
+              </div>
+              <div class="facttile" style="--fw:linear-gradient(150deg,#FFF1D6,#FFFAF0);--fg:rgba(181,126,20,0.35);">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-injekcio"/></svg></span>
+                <div class="grow"><div class="tx">A D3-fázis 3. napján megugrik az étvágyad — ilyenkor előre tervezünk.</div><div class="sb">egészség · 18× megerősítve · mintából</div></div>
+                <button class="tgl on" aria-label="Bekapcsolva"></button>
+              </div>
+              <div class="facttile" style="--fw:linear-gradient(150deg,#FFE7DC,#FFF7F2);--fg:rgba(216,72,31,0.3);">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-hajnal"/></svg></span>
+                <div class="grow"><div class="tx">Reggel edzel a legszívesebben — a délutáni edzés gyakran csúszik.</div><div class="sb">edzés · 15× megerősítve · chatből</div></div>
+                <button class="tgl on" aria-label="Bekapcsolva"></button>
+              </div>
+            </div>
+            <div class="foot9 rise" style="--d:110ms;padding:0 2px 10px;">A 10 legerősebb bekapcsolt tény, plusz a frissen megerősített minták.</div>
+            <div class="lsec rise" style="--d:130ms;"><span class="p-eyebrow">Bekapcsolva, de most kimarad</span><span class="cnt">4</span></div>
+            <div class="rise" style="--d:150ms;">
+              <div class="facttile" style="--fw:linear-gradient(150deg,#DFEDF5,#F5FAFD);--fg:rgba(78,143,184,0.3);">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-nap"/></svg></span>
+                <div class="grow"><div class="tx">Hétvégén később kelsz — a reggeli ablak eltolódik.</div><div class="sb">élet · 4× megerősítve</div></div>
+                <button class="tgl on" aria-label="Bekapcsolva"></button>
+              </div>
+            </div>
+            <div class="foot9 rise" style="--d:170ms;padding:0 2px 10px;">Ha megerősödnek, maguktól bekerülnek a chatbe.</div>
+            <div class="lsec rise" style="--d:190ms;"><span class="p-eyebrow" style="color:#A2958A;">Kikapcsolva</span><span class="cnt">1</span></div>
+            <div class="rise" style="--d:210ms;">
+              <div class="facttile off">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-futas"/></svg></span>
+                <div class="grow"><div class="tx">A futás után estig nem vagy éhes.</div><div class="sb">étkezés · 6× megerősítve</div></div>
+                <button class="tgl" aria-label="Kikapcsolva"></button>
+              </div>
+            </div>
+            <div class="foot9 rise" style="--d:230ms;padding:0 2px;">Megőrzöm őket, de a társ nem használja.</div>
+          </div>
+        </div>
+
+        <!-- ============ KATEGÓRIÁK (drill) ============ -->
+        <div class="page p-lav" id="page-kategoriak">
+          <div class="page-head"><button class="backbtn" data-back="page-kategoriak">‹ Tudástár</button></div>
+          <div class="page-hero">
+            <div class="nm">Kategóriák</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-retegek"/></svg>
+              <div class="bignum" style="font-size:34px;">6</div>
+            </div>
+            <div class="sb">ahogy a tudásod összefügg · 13 kapcsolat</div>
+          </div>
+          <div class="page-body">
+            <div class="kgrid rise" style="--d:0ms;">
+              <div class="ktile" style="--kw:linear-gradient(150deg,#E9F1E2,#F7FBF3);--kg:rgba(110,139,94,0.4);" data-page="page-kind-mintak" role="button" tabindex="0" aria-label="Minták">
+                <div class="p-eyebrow" style="color:#4E6B42;">Minták</div><span class="kcnt">2</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-minta"/></svg>
+                <div class="kline mut">Késői evés rontja az alvást</div>
+              </div>
+              <div class="ktile" style="--kw:linear-gradient(150deg,#FAE3ED,#FEF8FB);--kg:rgba(142,63,111,0.3);">
+                <div class="p-eyebrow" style="color:#8E3F6F;">Preferenciák</div><span class="kcnt">1</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-checkin"/></svg>
+                <div class="kline mut">Gépi nyomás a ferde helyett</div>
+              </div>
+              <div class="ktile" style="--kw:linear-gradient(150deg,#EBE6F8,#F9F6FE);--kg:rgba(93,79,160,0.35);">
+                <div class="p-eyebrow" style="color:#5D4FA0;">Célok</div><span class="kcnt">1</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-cel"/></svg>
+                <div class="kline mut">Csúcsforma minden életterületen</div>
+              </div>
+              <div class="ktile" style="--kw:linear-gradient(150deg,#FFF1D6,#FFFAF0);--kg:rgba(181,126,20,0.35);">
+                <div class="p-eyebrow" style="color:#A8801F;">Életesemények</div><span class="kcnt" id="lifeCnt">2</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-nap"/></svg>
+                <div class="kline mut">Nyári szabadság · júl 14–21</div>
+              </div>
+              <div class="ktile" style="--kw:linear-gradient(150deg,#FDF0DA,#FFFCF5);--kg:rgba(201,150,46,0.4);">
+                <div class="p-eyebrow" style="color:#A8801F;">Szezonok</div><span class="kcnt">1</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-hold"/></svg>
+                <div class="kline mut">Nyári alapozás · 2026 Q3</div>
+              </div>
+              <div class="ktile empty" style="--kw:#fff;">
+                <div class="p-eyebrow">Belátások</div><span class="kcnt">0</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-kristaly"/></svg>
+                <div class="kline mut">még üres</div>
+              </div>
+            </div>
+            <div class="foot9 rise" style="--d:60ms;">Egy kategória a benne lévő tudás-elemeket és a kapcsolataikat mutatja.</div>
+          </div>
+        </div>
+
+        <!-- ============ MINTÁK kind-lista (drill 2) ============ -->
+        <div class="page p-lav" id="page-kind-mintak">
+          <div class="page-head"><button class="backbtn" data-back="page-kind-mintak">‹ Kategóriák</button></div>
+          <div class="page-hero">
+            <div class="nm" style="color:#4E6B42;">Minták</div>
+            <div class="sb">2 elem · kapcsolataikkal</div>
+          </div>
+          <div class="page-body">
+            <div class="krow rise" style="--d:0ms;" data-page="page-node" role="button" tabindex="0" aria-label="Késői evés rontja az alvást">
+              <svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#i-minta"/></svg>
+              <span class="nm">Késői evés rontja az alvást</span>
+              <span class="ec">2 kapcsolat</span><span class="chev">›</span>
+            </div>
+            <div class="krow rise" style="--d:30ms;">
+              <svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#i-futas"/></svg>
+              <span class="nm">Futás-napokon jobban alszol</span>
+              <span class="ec">1 kapcsolat</span><span class="chev">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ NODE-RÉSZLET (drill 3) ============ -->
+        <div class="page p-lav" id="page-node">
+          <div class="page-head"><button class="backbtn" data-back="page-node">‹ Minták</button></div>
+          <div class="page-hero">
+            <div class="p-eyebrow" style="color:#4E6B42;">Minták</div>
+            <div class="mrow" style="justify-content:center;gap:9px;margin-top:2px;">
+              <svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-minta"/></svg>
+              <div class="nm">Késői evés rontja az alvást</div>
+            </div>
+          </div>
+          <div class="page-body">
+            <div class="predtile rise" style="--d:0ms;">
+              <div style="font-size:10px;font-weight:300;line-height:1.5;">A 21:30 utáni vacsora éjszakáin átlagosan 40 perccel kevesebb a mélyalvásod — 6 hét adata alapján.</div>
+            </div>
+            <div class="lsec rise" style="--d:40ms;"><span class="p-eyebrow" style="color:#5D4FA0;">Kapcsolatok</span><span class="cnt">2</span></div>
+            <div class="predtile rise" style="--d:70ms;">
+              <div class="edge">Késői evés → <b>kiváltja</b> → Rossz alvás<span class="st">erős</span></div>
+              <div class="edge">Alvás-cél 7,5 h → <b>sérül tőle</b><span class="st">közepes</span></div>
+            </div>
+            <button class="pgact rise" style="--d:100ms;width:100%;padding:8px 0;" data-arch>Archivál</button>
+            <div class="foot9 rise" style="--d:120ms;">Archiválás után a következő heti összegzésig nem kerül a beszélgetésbe.</div>
+          </div>
+        </div>
+
+        <!-- ============ PROFIL (drill) ============ -->
+        <div class="page p-rose" id="page-profil">
+          <div class="page-head"><button class="backbtn" data-back="page-profil">‹ Tudástár</button></div>
+          <div class="page-hero">
+            <div class="nm">Így beszélj velem</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-checkin"/></svg>
+            </div>
+            <div class="sb">a társ heti olvasata arról, hogyan érdemes veled beszélnie</div>
+          </div>
+          <div class="page-body">
+            <div class="predtile rose rise" style="--d:0ms;" id="profCard">
+              <div class="mrow" style="gap:8px;">
+                <div class="grow"><b style="font-size:10.5px;">Rólad tanultam</b><div style="font-size:8px;color:#6E6257;margin-top:1px;">frissítve hétfőn 03:45 · a heted szövegeiből</div></div>
+                <button class="pgact" data-arch>Archivál</button>
+              </div>
+              <div style="font-size:10px;font-weight:300;line-height:1.55;margin-top:7px;">A rövid, konkrét reggeli üzenet válik be nálad; a hosszabb elemzést délben olvasod el, a bőséges tipplistát pedig rendre elutasítod.</div>
+            </div>
+            <div class="qa rise" style="--d:50ms;">
+              <b>Mire megy ez?</b>
+              <p>Ez a bekezdés minden beszélgetés elé odakerül, hogy a társ a te ritmusodban szólaljon meg. Az Archiválás a „felejtsd el, amit rólam gondolsz" kar: a blokk kiürül, és a következő heti futás építi újra.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ HOGYAN MŰKÖDIK (drill, a mai explainer helye) ============ -->
+        <div class="page p-gold" id="page-hogyan">
+          <div class="page-head"><button class="backbtn" data-back="page-hogyan">‹ Tudástár</button></div>
+          <div class="page-hero">
+            <div class="nm">Hogyan működik?</div>
+            <div class="sb">a tudástár szabályai — egyszer elolvasod, aztán nem áll az utadba</div>
+          </div>
+          <div class="page-body">
+            <div class="qa rise" style="--d:0ms;"><b>Mi az a tény?</b><p>Egy rólad szóló mondat, amit a társ megjegyzett — beszélgetésből, megerősített mintából, vagy kézzel vetted fel.</p></div>
+            <div class="qa rise" style="--d:30ms;"><b>Mit csinál a kapcsoló?</b><p>Bekapcsolva a tény versenyben van a beszélgetés elejéért. Kikapcsolva a társ soha nem látja.</p></div>
+            <div class="qa rise" style="--d:60ms;"><b>Miért marad ki néhány?</b><p>Csak a 10 legerősebb bekapcsolt tény fér be. A frissen megerősített minta-tények 3 napig soron kívül bekerülnek.</p></div>
+            <div class="qa rise" style="--d:90ms;"><b>Mi vár jóváhagyásra?</b><p>A társ javaslatai — tények és életesemények. Amíg nem döntesz, semmi nem történik velük.</p></div>
+            <div class="qa rise" style="--d:120ms;"><b>Mik a kategóriák?</b><p>Ugyanennek a tudásnak a térképe: minták, célok, életesemények és a köztük lévő kapcsolatok.</p></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Mi vonódik egybe</h2>
+        <ul>
+          <li><strong>Egy cím, egy oldal</strong> — a /mezo/knowledge marad; a /me/knowledge Tudásgráf-oldal megszűnik (átirányít). A hub-ajtó a Mezo „Tudástár" csempéje.</li>
+          <li><strong>Inbox fent, nulla koppintás</strong> — a tény- és életesemény-jelöltek az egyetlen döntést kérő blokk; elfogadás után a kártya helyben vált megerősítéssé, és nem kell másik oldalra átugrani az eredményért.</li>
+          <li><strong>Három szekció-csempe</strong> — Tények (a mai vödrök + kereső), Kategóriák (a mai KindTileGrid → lista → részletlap lánc), „Így beszélj velem" (a volt „Profil", átnevezve, magyarázattal).</li>
+          <li><strong>A magyarázó a „?" mögé költözik</strong> — a mai, alapból nyitott 5-blokkos panel a scroll fő oka volt.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Megőrzött szerződések</h2>
+        <ul>
+          <li><strong>mezo-0ap9 szellemében</strong> — tény-lista továbbra is pontosan egy van (a Tények drillben); a kategória-nézet sosem listáz tényeket.</li>
+          <li><strong>Őszinte számok</strong> — a hero „10 megy a chatbe" a teljes listán számolt vödrökből jön; szűrő nem írja át.</li>
+          <li><strong>Archiválás-lábjegyzet</strong> — minden archiváló felületen ugyanaz a mondat.</li>
+        </ul>
+      </div>
+      <div class="note">Nyitott kérdés: a lap tónusa sage maradt (Tudástár-örökség), a Kategóriák drill lav
+      (gráf-örökség) — ha zavaró a váltás, az egész lánc mehet sage-re. A Belátások üres csempéje
+      szándékosan bent marad, halványan: a rács nem rendeződik át, amikor megjön az első elem.</div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var panel = document.getElementById('panel');
+  void panel.offsetWidth;
+  panel.classList.add('play');
+
+  function openPage(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open');
+    pg.classList.remove('play');
+    var body = pg.querySelector('.page-body');
+    if (body) body.scrollTop = 0;
+    void pg.offsetWidth;
+    pg.classList.add('play');
+  }
+  function closePage(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); });
+  });
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    function go() { openPage(el.getAttribute('data-page')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+  });
+
+  /* kapcsolók */
+  document.querySelectorAll('.tgl').forEach(function (t) {
+    t.addEventListener('click', function () { t.classList.toggle('on'); });
+  });
+  /* szűrő-chipek (vizuális) */
+  document.querySelectorAll('.chiprow').forEach(function (row) {
+    row.querySelectorAll('.fchip').forEach(function (c) {
+      c.addEventListener('click', function () {
+        row.querySelectorAll('.fchip').forEach(function (x) { x.classList.remove('on'); });
+        c.classList.add('on');
+      });
+    });
+  });
+
+  /* inbox: elfogad → helyben megerősítés; elvet → eltűnik; számláló frissül */
+  var inboxCnt = 2;
+  function bumpInbox() {
+    inboxCnt -= 1;
+    document.getElementById('inboxCnt').textContent = inboxCnt;
+  }
+  document.querySelectorAll('[data-accept]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var card = document.getElementById(b.getAttribute('data-accept'));
+      card.classList.add('done');
+      card.innerHTML = '<div class="mrow" style="gap:7px;"><span style="font-size:13px;">✓</span>' +
+        '<div style="font-size:10px;font-weight:300;line-height:1.45;">' + b.getAttribute('data-done') + '</div></div>';
+      bumpInbox();
+      if (b.getAttribute('data-accept') === 'cand2') {
+        document.getElementById('lifeCnt').textContent = '3';
+      } else {
+        document.getElementById('heroBig').textContent = '16';
+        document.getElementById('tenyTileBig').textContent = '16';
+      }
+    });
+  });
+  document.querySelectorAll('[data-dismiss]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var card = document.getElementById(b.getAttribute('data-dismiss'));
+      card.style.display = 'none';
+      bumpInbox();
+    });
+  });
+
+  /* archiválás */
+  document.querySelectorAll('[data-arch]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      b.textContent = 'Archiválva ✓';
+      b.style.color = '#4E6B42';
+      var card = b.closest('.predtile');
+      if (card) card.style.opacity = '0.55';
+    });
+  });
+})();
+</script>

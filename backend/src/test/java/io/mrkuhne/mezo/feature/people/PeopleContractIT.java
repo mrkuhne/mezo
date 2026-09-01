@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.CreatePersonRequest;
 import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
+import io.mrkuhne.mezo.api.dto.PersonDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PersonResponse;
 import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
@@ -103,6 +104,18 @@ class PeopleContractIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.CREATED, MentionResponse.class);
 
         assertThat(created.getContextLabel()).isEqualTo(MentionResponse.ContextLabelEnum.KOZOS_PROGRAM);
+    }
+
+    @Test
+    void testGetPeopleBootstrap_shouldReturnEmptyGraphEdges_notNull_whenNoGraph() {
+        // Task 5 (mezo-06o0.4): a required `graphEdges` mező sosem hiányozhat a wire-ról — gráf
+        // nélküli/tétlen tesztprofilban ez üres tömb, nem null.
+        UUID owner = ownerId();
+        personPopulator.createPerson(owner, "Nóra", "friend", "positive");
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+
+        assertThat(res.getPersons().getFirst().getGraphEdges()).isNotNull().isEmpty();
     }
 
     @Test
@@ -258,5 +271,62 @@ class PeopleContractIT extends ApiIntegrationTest {
             .findFirst().orElseThrow();
         assertThat(found.getTone()).isNull();
         assertThat(found.getSource()).isEqualTo(MentionResponse.SourceEnum.TEXT);
+    }
+
+    @Test
+    void testDecidePerson_shouldActivate_whenAccepted() {
+        UUID owner = ownerId();
+        PersonEntity candidate = personPopulator.createCandidate(owner, "Jelölt", "Kivonatolva egy naplóból.");
+
+        PersonResponse decided = postForBody("/api/people/" + candidate.getId() + "/decision",
+            new PersonDecisionRequest("accept"),
+            ownerAuthHeaders(), HttpStatus.OK, PersonResponse.class);
+
+        assertThat(decided.getStatus()).isEqualTo(PersonResponse.StatusEnum.ACTIVE);
+        assertThat(decided.getSourceKind()).isEqualTo(PersonResponse.SourceKindEnum.EXTRACTOR);
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+        PersonResponse fromBootstrap = res.getPersons().stream()
+            .filter(p -> p.getId().equals(candidate.getId())).findFirst().orElseThrow();
+        assertThat(fromBootstrap.getStatus()).isEqualTo(PersonResponse.StatusEnum.ACTIVE);
+    }
+
+    @Test
+    void testDecidePerson_shouldSoftDeleteAndKeepRow_whenRejected() {
+        UUID owner = ownerId();
+        PersonEntity candidate = personPopulator.createCandidate(owner, "Elvetett", "Kivonatolva egy naplóból.");
+
+        PersonResponse decided = postForBody("/api/people/" + candidate.getId() + "/decision",
+            new PersonDecisionRequest("reject"),
+            ownerAuthHeaders(), HttpStatus.OK, PersonResponse.class);
+        assertThat(decided.getId()).isEqualTo(candidate.getId());
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+        assertThat(res.getPersons()).extracting(PersonResponse::getId).doesNotContain(candidate.getId());
+
+        // A sor fizikailag megvan (soft-delete), de findByIdAndCreatedByAndDeletedFalse már nem
+        // látja — egy második döntés a candidate-en ezért 404-et ad, ez bizonyítja a soft-delete-et.
+        postForBody("/api/people/" + candidate.getId() + "/decision",
+            new PersonDecisionRequest("accept"),
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+    }
+
+    @Test
+    void testDecidePerson_shouldReturn400_whenPersonIsNotCandidate() {
+        UUID owner = ownerId();
+        PersonEntity active = personPopulator.createPerson(owner, "Aktív");
+
+        String body = postForBody("/api/people/" + active.getId() + "/decision",
+            new PersonDecisionRequest("accept"),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "PEOPLE_CANDIDATE_ALREADY_DECIDED");
+    }
+
+    @Test
+    void testDecidePerson_shouldReturn404_whenPersonIsForeignOrMissing() {
+        postForBody("/api/people/" + UUID.randomUUID() + "/decision",
+            new PersonDecisionRequest("accept"),
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
     }
 }

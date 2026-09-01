@@ -28,6 +28,7 @@ import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuil
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { FuelLogPage } from '@/features/fuel/pages/FuelLogPage'
+import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
 import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
@@ -73,11 +74,11 @@ import { PeopleKorPage } from '@/features/me/pages/PeopleKorPage'
 import { PeopleEmlitesekPage } from '@/features/me/pages/PeopleEmlitesekPage'
 import { PeopleHetiPage } from '@/features/me/pages/PeopleHetiPage'
 import { PersonDetailPage } from '@/features/me/pages/PersonDetailPage'
-import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
 import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
+import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
 import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
@@ -97,6 +98,16 @@ import { DetektorokPage } from '@/features/character/pages/DetektorokPage'
 function LegacyPathRedirect({ prefix, to }: { prefix: string; to: string }) {
   const location = useLocation()
   return <Navigate to={location.pathname.replace(prefix, to) + location.search} replace />
+}
+
+/** `/me/knowledge` — the old standalone Tudásgráf page (mezo-ms9a: merged into the
+ *  unified Tudástár) — redirects to that page's Kategóriák view. A `?kind=` deep link
+ *  (old page's tile-drill) is forwarded as `&kind=` so bookmarks/notifications still
+ *  land in the same category. */
+function MeKnowledgeRedirect() {
+  const [params] = useSearchParams()
+  const kind = params.get('kind')
+  return <Navigate to={`/mezo/knowledge?view=kategoriak${kind ? `&kind=${kind}` : ''}`} replace />
 }
 
 /** `/train` is the Edzés hub — except for the Heti drill-in, which still speaks
@@ -172,6 +183,8 @@ export const routes: RouteObject[] = [
       { path: 'fuel', element: <FuelMaiPage /> },
       // The hub's Logolás hero tile → the stacked-window logging page (mezo-byo1).
       { path: 'fuel/log', element: <FuelLogPage /> },
+      // A blokk-CTA-k saját logoló oldala (mezo-bq2t) — a kontextus az URL-ben él (d/w/ai).
+      { path: 'fuel/log/uj', element: <FuelLogNewPage /> },
       // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
       { path: 'fuel/plan', element: <FuelPlanPage /> },
       { path: 'fuel/stack', element: <FuelStackPage /> },
@@ -283,11 +296,14 @@ export const routes: RouteObject[] = [
       // above (React Router ranks static over dynamic regardless of source order, but
       // the ordering stays explicit here per the WeekHub/`me/week/napok/:date` precedent).
       { path: 'me/people/:id', element: <PersonDetailPage /> },
-      { path: 'me/knowledge', element: <KnowledgePage /> },
+      { path: 'me/knowledge', element: <MeKnowledgeRedirect /> },
       // mezo-nol0: a főnevet a FEED viszi (ide vezet a fejléc dropdown „Összes értesítés ›"
       // lábléce), a kapcsolók alá költöztek.
       { path: 'me/ertesitesek', element: <NotificationFeedPage /> },
       { path: 'me/ertesitesek/beallitasok', element: <NotificationsPage /> },
+      // Beállítások oldal (hub-tile-reorg): az Én hub Beállítások csempéjének célja —
+      // Téma helyben + az Értesítések-kapcsolók és az AI-napló ajtajai.
+      { path: 'me/beallitasok', element: <BeallitasokPage /> },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },
       // Full-screen routine editor (mezo-n5e9.2) — same sibling idiom (no Me sub-nav chrome).
       { path: 'me/routines/edit', element: <RoutineEditorPage /> },

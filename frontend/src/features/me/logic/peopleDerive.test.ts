@@ -49,6 +49,7 @@ function person(over: Partial<PersonEntry> = {}): PersonEntry {
     affectTrend: [],
     knownFacts: [],
     ties: [],
+    graphEdges: [],
     ...over,
   }
 }

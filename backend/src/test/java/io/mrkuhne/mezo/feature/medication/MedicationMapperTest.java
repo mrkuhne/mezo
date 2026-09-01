@@ -20,6 +20,7 @@ class MedicationMapperTest {
     void testToCycleResponse_shouldMapWeekAndCurrent_whenCycleActive() {
         var cycle = new MedicationCycle(3, "stable", "Stabil",
             java.time.Instant.parse("2026-06-22T00:00:00Z"),
+            java.time.LocalDate.of(2026, 6, 22),
             java.util.List.of(new MedicationCycle.Cell(1, "peak", "Peak", false),
                               new MedicationCycle.Cell(3, "stable", "Stabil", true)));
         var resp = m.toCycleResponse(cycle);

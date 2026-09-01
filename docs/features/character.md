@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-08-31
+updated: 2026-09-01
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -34,16 +34,23 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 > `progression-adherence`, `hr-recovery-trend`, `sleep-performance-chain`, `avoidance-pattern`)
 > wired onto real gym/sport/run/sleep/meso domain reads, taking the catalog from 5 to 13
 > detectors; `inventory.ts`'s round-1 checklist row is now gone, its data sources moved into
-> `AdatforrasokPage`'s Bekötve segment. Rounds 2–4 remain open. See §3/§4/§10's Gépterem
-> subsections below.** Driving spec:
+> `AdatforrasokPage`'s Bekötve segment. **Round 2 ("Fuel & ciklus") ✅ shipped**: seven more
+> detectors (`comfort-eating`, `macro-adherence`, `hydration-consistency`,
+> `protein-training-mismatch` — all `taplalkozo`; `late-eating-pattern` — `szomnologus`;
+> `stack-skip-pattern` — `drill`; `med-cycle-covariance` — `doki`, ÉRZÉKENY) wired onto real
+> meal/water/stack/check-in/medication-cycle domain reads, taking the catalog from 13 to 20
+> detectors; round 2's four inventory rows are gone the same way round 1's were. Rounds 3–4
+> remain open. See §3/§4/§9/§10's Gépterem subsections below.** Driving spec:
 > [`docs/superpowers/specs/2026-08-27-user-character-dossier-design.md`](../superpowers/specs/2026-08-27-user-character-dossier-design.md)
 > (bd epic `mezo-1gim`); the backend slice plans (`docs/superpowers/plans/2026-08-2*-character-slice*.md`,
 > `2026-08-3*-character-slice*.md`), the FE slice plan
 > (`docs/superpowers/plans/2026-09-01-character-slice8-fe.md`), the Gépterem slice plan
-> (`docs/superpowers/plans/2026-09-01-character-slice9-gepterem.md`), and the round-1 design spec
-> (`docs/superpowers/specs/2026-08-31-character-round1-edzes-test-design.md`) are the point-in-time
-> build record. **This doc reflects the code as it stands after `mezo-1gim.15` round 1's Task 5**
-> (route/page/doc ship-prep).
+> (`docs/superpowers/plans/2026-09-01-character-slice9-gepterem.md`), the round-1 design spec
+> (`docs/superpowers/specs/2026-08-31-character-round1-edzes-test-design.md`), and the round-2
+> design spec
+> (`docs/superpowers/specs/2026-09-01-character-round2-fuel-ciklus-design.md`) are the
+> point-in-time build record. **This doc reflects the code as it stands after `mezo-1gim.15`
+> round 2's Task 6** (route/page/doc ship-prep).
 
 ## 1. Summary
 
@@ -75,9 +82,11 @@ consolidation — exact ids per the slice plans) are shipped. The detector catal
 **narrower than the spec's v1 wishlist** (§9) — spec §5 names ~22 detector keys (some as
 variants of one bullet), and, after round 1 of `mezo-1gim.15` ("Edzés & test") landed eight more
 (`rir-calibration`, `niggle-map`, `sport-interference`, `meso-adherence`,
-`progression-adherence`, `hr-recovery-trend`, `sleep-performance-chain`, `avoidance-pattern`),
-13 of them are implemented (`mezo-1gim.15`'s remaining three rounds and `mezo-1gim.12` track the
-rest) — but the `[Karakter]` block now reaches
+`progression-adherence`, `hr-recovery-trend`, `sleep-performance-chain`, `avoidance-pattern`)
+and round 2 ("Fuel & ciklus") landed seven more still (`comfort-eating`, `macro-adherence`,
+`hydration-consistency`, `protein-training-mismatch`, `late-eating-pattern`,
+`stack-skip-pattern`, `med-cycle-covariance`), 20 of them are implemented (`mezo-1gim.15`'s
+remaining two rounds and `mezo-1gim.12` track the rest) — but the `[Karakter]` block now reaches
 all four narrative surfaces (chat, memoir, prediction, weekly review) and the bootstrap evidence
 corpus now matches the spec's full source list (daily summaries, patterns, facts, weekly
 reviews, journal entries, life events). The round-1 detectors read gym/sport/run/sleep/meso
@@ -85,11 +94,16 @@ domain data over the standard 14-day window, except `hr-recovery-trend`, which r
 additional 8-week run-log window for its HR-recovery trend band; all eight are **stateless
 per-call gates** — no detector persists its own prior-fired state, so a detector that only
 fires "on change" (`hr-recovery-trend`'s band-change rule) recomputes yesterday's band from the
-same domain reads every time rather than reading back its own last signal.
+same domain reads every time rather than reading back its own last signal. The round-2 detectors
+read meal/water/stack/check-in/medication-cycle domain data over a single **8-week raw series**
+(`TrendWindow`, one record per day, no separate 14-day copy for these sources) because every one
+of them evaluates its own state twice — as of the observed day and as of the day before — and
+each evaluation needs a full trailing 14-day window; see §9 for why the state-change gate, not
+the "new data today" gate, is round 2's primary overfiring protection.
 
 ## 2. User-facing behavior
 
-The Én tab carries a **Karakter** tile (`EnHubPage`) that opens `/me/karakter`, the dossier hub —
+The **Mezo hub** (`MezoHubPage`) carries a wide **Karakter** tile — full-width, like the hub's `Diagnózis` tile, bottom line = the average CORE-band maturity gated by `isDossierEmpty` — that opens `/me/karakter`, the dossier hub. **The dossier's entry point moved here from the Én hub in the hub-tile-reorg** (`mezo-o486`, 2026-09-01, spec [`2026-09-01-hub-tile-reorg-design.md`](../superpowers/specs/2026-09-01-hub-tile-reorg-design.md); guiding principle: *Mezo = everything AI-derived, Én = personal data* — the character dossier is companion-derived, [insights.md §2.0](insights.md)) — the route itself did not move, only the tile. `/me/karakter` and everything under it is
 Design 2.0's Mozaik idiom throughout: a hero + a compact tile mosaic, full-page siblings for each
 tile rather than in-page accordions.
 
@@ -159,10 +173,12 @@ tile rather than in-page accordions.
     Tervezett segmented control. Bekötve is a single sage card — the 4 original read cadences
     (éjszakai kör, vasárnapi konzílium, havi mélyolvasás, bootstrap) plus, since round 1 of
     `mezo-1gim.15` landed, its five domain-read rows (gym szettek+feedback, sport-sessionök,
-    futás-logok, alvás, mezociklus-kontextus — with volume/cadence chips), all real, wired
-    reads. Tervezett is a compact index into the **remaining three** MINDENT-be round
-    mini-pages (round 1, "Edzés & test", is gone from here — its items are the Bekötve rows
-    above and its detectors are in the Detektorok catalog below)
+    futás-logok, alvás, mezociklus-kontextus — with volume/cadence chips), plus, since round 2
+    landed, its six domain-read rows (étkezés-napok, makró-célok, víz-logok, kiegészítő-stack,
+    check-in skálák, gyógyszerciklus — round 2's rows are `8 hét`-chipped, reflecting the
+    8-week-only series §1 describes), all real, wired reads. Tervezett is a compact index into
+    the **remaining two** MINDENT-be round mini-pages (rounds 1 and 2 are gone from here — their
+    items are the Bekötve rows above and their detectors are in the Detektorok catalog below)
     (`/me/karakter/gepterem/adatforrasok/kor/:n`, `KorPage` — a path param, matching
     `DimensionsPage`'s `/dimenzio/:key` sibling idiom for discrete indexed items, deliberately
     NOT FutasokPage's `?start=` continuous-range idiom), plus a "+ még N terület később" tail.
@@ -171,7 +187,7 @@ tile rather than in-page accordions.
     live read off any backend catalog, and most of its remaining `det` (detector) keys name
     detectors that don't exist yet (§9's "detector catalog is narrower than spec" ledger already
     tracks this).
-  - **Detektorok** (`/me/karakter/gepterem/detektorok`, `DetektorokPage`) — the 13 REAL,
+  - **Detektorok** (`/me/karakter/gepterem/detektorok`, `DetektorokPage`) — the 20 REAL,
     `DetectorRegistry`-discovered detectors, one line each (key, one-line semantic, owning expert
     in their domain color), closing with "A kód csak észlel — az értelmezés mindig az adott
     szakértő LLM-hívása." This is the runtime truth `inventory.ts` explicitly is NOT.
@@ -364,7 +380,8 @@ raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
 - **`feature/llmlog`** — every character LLM call is audited (feature tag `character`,
   call-kind per pipeline step), the same idiom every other AI-domain doc documents.
 
-- **[Me](me.md)** — `EnHubPage` carries the Karakter tile that opens `/me/karakter`; the FE data
+- **[Insights](insights.md)** — `MezoHubPage` carries the wide Karakter tile that opens `/me/karakter`
+  (moved from the Én hub's `EnHubPage` by the hub-tile-reorg, `mezo-o486`, 2026-09-01); the FE data
   layer (`frontend/src/data/character/`) is a plain OpenAPI-client consumer of the seven
   endpoints in §4, following the house dual-mode idiom (`@/data/_client/mode.ts`) shared with
   every other Design 2.0 feature — no new cross-domain FE seam beyond the generated client.
@@ -436,7 +453,7 @@ dual-mode hook idiom) and the Mozaik component set (`frontend/src/shared/ui/moza
 
 ## 8. Testing
 
-Backend: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (25 files, listed below by
+Backend: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (26 files, listed below by
 shape). FE: `frontend/src/data/character/characterHooks.test.tsx` (dual-mode hook coverage) +
 one `.test.tsx` per page/component under `frontend/src/features/character/` — every page test
 uses the `DimensionsPage.test.tsx` hook-override idiom (stub `@/data/hooks` directly), which
@@ -475,8 +492,11 @@ Adatforrások+kör/Detektorok) were added to it.
   (whole-block-drop-on-overflow), `CharacterPromptWiringIT` (`@Nested`: `SwitchOn` covers all
   four wired surfaces — chat, memoir, prediction, weekly review; `SwitchOff` covers chat only).
 - **Unit tests (pure code, no Spring context)**: `detector/DetectorTest` (fixture-day-in/
-  signal-out for all 13 detectors, incl. the HU decimal-comma formatting and the 14-day honest
-  streak-cap case), `CharacterConferenceWeekDerivationTest`,
+  signal-out for all 20 detectors, incl. the HU decimal-comma formatting, the 14-day honest
+  streak-cap case, the round-2 state-change gate fire/no-fire/quiet-when-no-new-data cases, the
+  `hydration-consistency` band-change gate, the `comfort-eating`/`med-cycle-covariance`
+  below-minimum-sample silence, the `stack-skip-pattern` rest-day-fallback exclusion, and the
+  `med-cycle-covariance` stale-cycle-day exclusion), `CharacterConferenceWeekDerivationTest`,
   `CharacterMonthlyScheduleTest` (`isDeepReadDay` date pinning), `CharacterExpertCatalogTest`,
   `service/PortraitWriterTest`.
 
@@ -488,35 +508,102 @@ before investigating.
 
 ## 9. Decisions, gotchas & deferred
 
-- **Detector catalog is narrower than spec §5's v1 wishlist, but round 1 closed the physiological
-  and Edzés-side cross-domain gap** (S7 closed the polish items — HU decimal-comma formatting,
-  switch-gated beans, honest streak-capping; `mezo-1gim.15` round 1 then added eight new
-  detectors, all Edzés & test domain). Spec §5 names ~22 detector keys, several as variants noted
-  under one bullet (the `logging-gap` bullet covers "N consecutive days without meal logs (also
-  variants: weight, check-in, journal silence)"). 13 are implemented: `checkin-gap`,
-  `journal-silence`, `logging-gap`, `under-logging` (the meta-behavior/single-domain group, owned
-  by `drill`/`pszichologus`/`taplalkozo`), `journal-note` (a shipped detector that is NOT one of
+- **Detector catalog is narrower than spec §5's v1 wishlist, but rounds 1 and 2 closed the
+  physiological, Edzés-side, and fuel/cycle cross-domain gaps** (S7 closed the polish items — HU
+  decimal-comma formatting, switch-gated beans, honest streak-capping; `mezo-1gim.15` round 1
+  then added eight new detectors, all Edzés & test domain; round 2 added seven more, all Fuel &
+  ciklus domain). Spec §5 names ~22 detector keys, several as variants noted under one bullet
+  (the `logging-gap` bullet covers "N consecutive days without meal logs (also variants: weight,
+  check-in, journal silence)"). 20 are implemented: `checkin-gap`, `journal-silence`,
+  `logging-gap`, `under-logging` (the meta-behavior/single-domain group, owned by
+  `drill`/`pszichologus`/`taplalkozo`), `journal-note` (a shipped detector that is NOT one of
   the spec's named keys — it surfaces raw journal text; treat it as an addition beyond §5, not a
   §5 key ticked off), the physiological group (`rir-calibration`, `niggle-map`,
   `hr-recovery-trend`), two of the cross-domain group (`sport-interference`,
-  `sleep-performance-chain`), and three more additions beyond §5 from the round-1 design spec
+  `sleep-performance-chain`), three more additions beyond §5 from the round-1 design spec
   (`docs/superpowers/specs/2026-08-31-character-round1-edzes-test-design.md`): `meso-adherence`,
-  `progression-adherence`, `avoidance-pattern` (all `edzo`-owned except the last, `drill`-owned).
-  The remaining cross-domain group (`comfort-eating`, `med-cycle-covariance`, `people-mood-link`,
-  `weekend-gap`), the character-traits group (`resilience`, `all-or-nothing`, `restart-pattern`,
+  `progression-adherence`, `avoidance-pattern` (all `edzo`-owned except the last, `drill`-owned),
+  and — from the round-2 design spec
+  (`docs/superpowers/specs/2026-09-01-character-round2-fuel-ciklus-design.md`) — the remaining two
+  cross-domain group keys (`comfort-eating`, `taplalkozo`-owned; `med-cycle-covariance`,
+  `doki`-owned) plus three more additions beyond §5: `macro-adherence`, `hydration-consistency`,
+  `protein-training-mismatch` (all `taplalkozo`-owned) and `late-eating-pattern`
+  (`szomnologus`-owned), `stack-skip-pattern` (`drill`-owned). The remaining cross-domain group
+  (`people-mood-link`, `weekend-gap`), the
+  character-traits group (`resilience`, `all-or-nothing`, `restart-pattern`,
   `promise-vs-delivery`, `self-calibration`, `decision-profile`), the remaining meta-behavior
   detectors (`retro-logging-ratio`, `checkin-latency`, `night-activity`, `chat-topic-shift`,
   `knowledge-rejection-pattern`), and the `logging-gap` bullet's `weight` variant (no
   `WeightGapDetector` exists) are **not implemented**. Practically: `antropologus` still never
-  receives a nightly-detector-sourced observation today (`edzo`, `doki`, and `szomnologus` now do,
-  via round 1) — the un-covered experts only accumulate evidence via the weekly/monthly claim
-  rounds' own reads (now widened, see below) and user-feedback routing. `mezo-1gim.15`'s
-  remaining three rounds and `mezo-1gim.12` track writing most of the remaining detectors, but
-  neither's description currently names the `weight`-gap variant.
-- **Detector beans are switch-gated, not just no-op** (S7). Each of the 13 detectors carries
+  receives a nightly-detector-sourced observation today (`edzo`, `doki`, `szomnologus`, `drill`,
+  and `taplalkozo` now do, via rounds 1–2) — the un-covered experts only accumulate evidence via
+  the weekly/monthly claim rounds' own reads (now widened, see below) and user-feedback routing.
+  `mezo-1gim.15`'s remaining two rounds and `mezo-1gim.12` track writing most of the remaining
+  detectors, but neither's description currently names the `weight`-gap variant.
+- **Detector beans are switch-gated, not just no-op** (S7). Each of the 20 detectors carries
   `@ConditionalOnProperty(CHARACTER_SWITCH)` directly, so with the switch off the beans don't
   exist at all — `CharacterApiSwitchOffIT.the_detector_beans_are_absent` asserts every detector
   bean and `DetectorRegistry` itself are absent from the context, not merely quiet.
+- **Round 2 inverts which half of the overfiring protection does the work** (round-2 design spec
+  §6). Round 1's sources are episodic (a gym session or a run happens a few times a week), so
+  "new data for this source arrived today" was a genuinely selective gate. Round 2's sources —
+  meals, water, check-ins, supplement intakes — arrive every single day, so that same gate is
+  nearly always open; left alone it would re-announce an unchanged 14-day pattern nightly. So for
+  round 2 **the state-change gate is primary, and every one of the seven detectors has one**: each
+  exposes its finding as a `String` state computed as of a date (a band, a direction, a headline
+  bucket, an offender key — null when it does not qualify), and `detect()` fires only when the
+  state as of `day` is non-null and differs from the state as of `day − 1` — the round-1
+  `hr-recovery-trend` gate, generalised from one detector to all seven. The renamed
+  `DetectorGates` (was `RoundOneGates`) new-data check stays only as a cheap pre-filter
+  (`newMealData`/`newWaterData`/`newStackData`/`newCheckinData`/`newDoseData` beside the existing
+  five). `comfort-eating` additionally requires a minimum number of paired days AND a minimum
+  number of days in BOTH mood groups (a covariance computed against an empty contrast group is
+  not a covariance); `med-cycle-covariance` requires a minimum number of usable cycle DAYS — 14
+  of them, not a number of complete cycles. Below those thresholds they are silent, not noisy. `stack-skip-pattern` carries one documented widening mirroring `meso-adherence`'s shape:
+  it also fires when the observed day itself carries a miss for the offending item even though
+  the state string is unchanged, so a second consecutive skipped day is not swallowed.
+- **A round-2 state string must never carry a moving COUNT** — the rule that makes the gate above
+  actually work. A count that shifts as the 14-day window slides (or as a normal user simply logs
+  another day) differs between `day` and `day − 1` on almost every night, so a count-valued state
+  re-announces an unchanged — or even an IMPROVING — pattern as news, which is exactly what the
+  gate exists to prevent. So each of the seven states is purely qualitative: `macro-adherence` and
+  `hydration-consistency` a band, `comfort-eating` and `protein-training-mismatch` a presence
+  marker, `med-cycle-covariance` `metric:cycleDay:direction` with **no** magnitude (a continuous
+  delta drifts nightly, and this is the sensitive medication signal), `stack-skip-pattern` the
+  offending item key alone, `late-eating-pattern` its own qualitative finding. The exact counts
+  still reach the user — in the SUMMARY, which is not the gate.
+- **`med-cycle-covariance` drops `stale` cycle days rather than trusting the clamp.**
+  `MedicationCycleService` deliberately CLAMPS a cycle day when the last dose is older than one
+  full cycle (a product decision for the Fuel UI); left alone that clamp would pile weeks of
+  no-dose days into the detector's last bucket. The read layer instead marks
+  `MedCycleDayPoint.stale = daysSinceDose + 1 > cycleLengthDays` and the detector drops those days
+  before bucketing — the one place the character read layer deliberately reads more precisely
+  than the source service exposes. Crucially it recomputes that distance from the SAME day
+  authority `MedicationCycleService.derive` uses — the dose's `administeredDate` column, exposed
+  additively on the internal `MedicationCycle` DTO as `lastDoseDate` — and not from a local date
+  re-derived from the dose INSTANT in the server zone. Those two disagree whenever the server zone
+  differs from the offset the dose was logged in: a late-evening dose maps to a different local
+  date, `stale` flips a day early, and `DetectorGates.newDoseData` (which requires
+  `daysSinceDose == 0`) never sees the dose day at all.
+- **`stack-skip-pattern`'s "kihagyás" is derived, never a stored row**, and the derivation
+  respects the product's own rest-day rule (FE precedent `features/fuel/logic/projectStackDay.ts`):
+  an item placed in a peri-workout zone (`pre_workout`/`post_workout`) on a day with no completed
+  gym session is **not** a miss — it either displaces to its `restDayFallback` zone or is
+  deliberately skipped, so it is simply not "expected" that day. Every other item is expected
+  daily; "taken" means an intake row exists for that `pantryItemId` that day, slot-agnostic
+  (matching the FE's legacy-intake tolerance). Expectation is additionally bounded BELOW by the
+  item's own `startedOn` (its `createdAt` as a `LocalDate` in the JVM default zone, carried on
+  `DetectorInput.StackItem`): an item added today was never expected last week, so the loop starts
+  at `max(asOf − 13, startedOn)` and the denominator shrinks with it. Without that bound, adding
+  Kreatin today and taking it would be announced the same night as "13 napon maradt ki a tervezett
+  14 napból" — fabricated misses. This is §4.3's "a day with no active protocol contributes
+  nothing (absent, not zero)" applied at the item-day level, where it had only ever been
+  implemented as the whole-context null.
+- **`TrendWindow.gymEightWeeks` now has real consumers.** Round 1 gathered this field but never
+  read it (documented as a deliberate leftover); round 2's `protein-training-mismatch` and
+  `stack-skip-pattern` are its first readers — both need gym days as of two different `asOf`
+  dates (today and yesterday), which only the 8-week raw series makes possible without a second,
+  duplicated read.
 - **`LoggingGapDetector` caps its streak count honestly at the read window's boundary.** The
   domain read only looks back 14 days, so a streak that reaches 14 could actually be much
   longer; past that point the detector reports "legalább 14 napja nincs étkezés logolva"
@@ -586,22 +673,24 @@ before investigating.
   detectors that don't exist yet (see the detector-catalog ledger above); its own header comment
   says rows are expected to move OUT of `inventory.ts` and (if fully wired) INTO
   `DetektorokPage`'s real detector list as `mezo-1gim.15` lands each round for real — round 1
-  ("Edzés & test") already did this move (its five reads are now `INVENTORY_READS` rows, its
-  eight detectors are now `DetektorokPage`'s catalog rows); don't treat this module as runtime
-  truth for what's left. The Feed's ⚙ has no `runId` to key off (`CharacterFeedItem` never
-  carried one — it's a merged observation+diff view, not run-scoped) — it resolves the matching
-  run CLIENT-SIDE by the observation's own local calendar day against a `useCharacterRuns` window
-  spanning the feed's visible items (clamped to the 62-day range cap), matching NIGHTLY rows
-  only; when no such row exists the ⚙ is simply absent rather than a dead button. The kör
-  mini-pages use a path param (`/kor/:n`, `DimensionsPage`'s discrete-item sibling idiom), not
-  `?kor=` — the brief's own explicit fork, decided because the (originally four, now three)
-  rounds are discrete indexed items, not a continuous steppable range like FutasokPage's week
-  window. `DetektorokPage`'s "who" (owning expert) per detector is taken from the REAL
-  `DetectorSignal` argument in each detector's source, not the design prototype's
-  `DETECTOR_CATALOG.who` guess — two of the original five differ (`logging-gap` and
-  `journal-silence` are both really `drill`-owned, not the prototype's
-  `taplalkozo`/`pszichologus` guesses respectively); the eight round-1 additions were verified
-  the same way and all matched their design spec's owner column with no drift.
+  ("Edzés & test") and round 2 ("Fuel & ciklus") already did this move (their eleven combined
+  reads are now `INVENTORY_READS` rows, their fifteen combined detectors are now
+  `DetektorokPage`'s catalog rows); don't treat this module as runtime truth for what's left. The
+  Feed's ⚙ has no `runId` to key off (`CharacterFeedItem` never carried one — it's a merged
+  observation+diff view, not run-scoped) — it resolves the matching run CLIENT-SIDE by the
+  observation's own local calendar day against a `useCharacterRuns` window spanning the feed's
+  visible items (clamped to the 62-day range cap), matching NIGHTLY rows only; when no such row
+  exists the ⚙ is simply absent rather than a dead button. The kör mini-pages use a path param
+  (`/kor/:n`, `DimensionsPage`'s discrete-item sibling idiom), not `?kor=` — the brief's own
+  explicit fork, decided because the (originally four, now two) rounds are discrete indexed
+  items, not a continuous steppable range like FutasokPage's week window. `DetektorokPage`'s
+  "who" (owning expert) per detector is taken from the REAL `DetectorSignal` argument in each
+  detector's source, not the design prototype's `DETECTOR_CATALOG.who` guess — two of the
+  original five differ (`logging-gap` and `journal-silence` are both really `drill`-owned, not
+  the prototype's
+  `taplalkozo`/`pszichologus` guesses respectively); the eight round-1 additions and the seven
+  round-2 additions were both verified the same way and all matched their design spec's owner
+  column with no drift.
 - **Companion tone guardrail** for `sensitive` claims (self-calibration,
   knowledge-rejection-pattern classes per spec §3) is a persona-prompt instruction inside the
   Szkeptikus/proposal prompts, not a separately enforced code gate — there is no automated test
@@ -624,11 +713,16 @@ before investigating.
   idempotency check), the day-range and single-run-by-owner reads the controller/service use
 - `detector/` — `CharacterDetector`, `DetectorRegistry`, `DetectorInput`/`DetectorSignal`, the
   original 5 concrete detectors (`CheckinGapDetector`, `JournalNoteDetector`,
-  `JournalSilenceDetector`, `LoggingGapDetector`, `UnderLoggingDetector`), and round 1's
+  `JournalSilenceDetector`, `LoggingGapDetector`, `UnderLoggingDetector`), round 1's
   (`mezo-1gim.15`) 8 more (`RirCalibrationDetector`, `NiggleMapDetector`,
   `SportInterferenceDetector`, `MesoAdherenceDetector`, `ProgressionAdherenceDetector`,
-  `HrRecoveryTrendDetector`, `SleepPerformanceChainDetector`, `AvoidancePatternDetector`) +
-  `RoundOneGates` (the shared "new domain data since last run" gate helpers)
+  `HrRecoveryTrendDetector`, `SleepPerformanceChainDetector`, `AvoidancePatternDetector`), and
+  round 2's 7 more (`ComfortEatingDetector`, `MacroAdherenceDetector`,
+  `HydrationConsistencyDetector`, `ProteinTrainingMismatchDetector`,
+  `LateEatingPatternDetector`, `StackSkipPatternDetector`, `MedCycleCovarianceDetector`) +
+  `DetectorGates` (renamed from `RoundOneGates` in round 2 — the shared "new domain data since
+  last run" gate helpers, now covering both rounds' sources) + `RoundTwoWindow` (round 2's
+  shared 14-day-as-of-a-date windowing + HU decimal formatting helper over the 8-week series)
 - `service/CharacterCoreCatalog.java` / `CharacterExpertCatalog.java` — the 7 CORE
   dimensions / 7 expert personas (static catalogs)
 - `service/CharacterRunLog.java` (S9) — the run-log writer all four pipelines call; see §3
@@ -676,7 +770,7 @@ before investigating.
   `prompt.max-total-chars: 1800`, `prompt.portrait-min-maturity: 30`
 - `mezo.character.detector: {}` (per-key kill switches, all enabled by default/absence)
 
-**Tests**: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (25 files, see §8)
+**Tests**: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (26 files, see §8)
 
 **Frontend — data layer** (`frontend/src/data/character/`):
 - `characterApi.ts` — the fetch client + `confidenceWord()` (the 0.75/0.5 word thresholds)
@@ -687,7 +781,9 @@ before investigating.
   `KONZ`/`TRANSCRIPT` content verbatim, mapped onto the real DTO shapes; S9 adds `MOCK_RUNS`/
   `MOCK_RUN_DETAIL` — 3 seeded weeks of NIGHTLY rows incl. quiet nights + one WEEKLY/MONTHLY/
   BOOTSTRAP row each; round 1, `mezo-1gim.15`, adds one `CHAIN_POOL` chain per new detector,
-  spread across days 13/24/30 — all derived counts, never a re-pinned literal)
+  spread across days 13/24/30; round 2 adds one more per new detector, spread across days
+  13/20/24/27/30 — all derived counts, never a re-pinned literal; day 15 stays a pinned
+  two-signal/one-expert dedup fixture for `characterHooks.test.tsx` untouched by either round)
 
 **Frontend — feature package** (`frontend/src/features/character/`):
 - `pages/KarakterHubPage.tsx` — the hub (ring hero + 4-tile mosaic + bootstrap ceremony faces +
@@ -706,9 +802,10 @@ before investigating.
 - `pages/AdatforrasokPage.tsx` (S9) — Bekötve | Tervezett segmented control over
   `inventory.ts`'s static content
 - `pages/KorPage.tsx` (S9) — one MINDENT-be round's item list (`/kor/:n`)
-- `pages/DetektorokPage.tsx` (S9) — the 13 real detectors, one line + owning expert each
-- `inventory.ts` (S9) — the Adatforrások/Tervezett static corpus module (3 rounds left after
-  round 1 landed); ALSO the `mezo-1gim.15` working checklist (see its own header comment and §9)
+- `pages/DetektorokPage.tsx` (S9) — the 20 real detectors, one line + owning expert each
+- `inventory.ts` (S9) — the Adatforrások/Tervezett static corpus module (2 rounds left after
+  rounds 1 and 2 landed); ALSO the `mezo-1gim.15` working checklist (see its own header comment
+  and §9)
 - `components/PersonaOrb.tsx` — the domain-color orb-variant sprite wrapper (`s-orb-*`)
 - `components/MaturityRing.tsx` — the 7-arc SVG ring
 - `components/ClaimTile.tsx` — one claim's confidence chip + feedback pills
@@ -721,7 +818,8 @@ before investigating.
   badges/labels)
 - `expertColors.ts` — the one shared `EXPERT_COLORS` map (ring arcs, orbs, tiles all key off it)
 - `dossierState.ts` — `isDossierEmpty()`, the one shared pre-bootstrap predicate (hub +
-  `EnHubPage`'s Karakter tile both call it, never re-derive it)
+  `MezoHubPage`'s Karakter tile both call it, never re-derive it — the tile's own call moved with
+  it from `EnHubPage.tsx` in the hub-tile-reorg, `mezo-o486`)
 - `character.css` — every `.kr-*` rule (source-cited per section against
   `docs/design_2.0/prototypes/src/karakter-head.html`/`karakter-body.html`)
 
@@ -739,4 +837,8 @@ backend slice plans `docs/superpowers/plans/2026-08-2*-character-slice*.md`,
 (`docs/superpowers/plans/2026-08-31-character-slice7-consolidation.md`); the FE slice plan
 `docs/superpowers/plans/2026-09-01-character-slice8-fe.md` (`mezo-1gim.13`, Tasks 1–5); the
 Gépterem slice plan `docs/superpowers/plans/2026-09-01-character-slice9-gepterem.md`
-(`mezo-1gim.14`, Tasks 1–5).
+(`mezo-1gim.14`, Tasks 1–5); the round-1 design spec
+[`docs/superpowers/specs/2026-08-31-character-round1-edzes-test-design.md`](../superpowers/specs/2026-08-31-character-round1-edzes-test-design.md)
+and the round-2 design spec
+[`docs/superpowers/specs/2026-09-01-character-round2-fuel-ciklus-design.md`](../superpowers/specs/2026-09-01-character-round2-fuel-ciklus-design.md)
+(`mezo-1gim.15`, Task 6).

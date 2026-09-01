@@ -19,6 +19,8 @@ const MOCK_PEOPLE: PeopleBootstrap = { people: personSeed, mentions: mentionSeed
  * (the knowledge pattern). Real mode maps the wire DTOs to the mock-era domain shapes with
  * FE-derived display labels; `logMention` POSTs and invalidates (mock: cache prepend, exactly
  * what the old useState version did). Signature `{ people, mentions, logMention }` is unchanged.
+ * S4: `people` is now candidate-filtered (status !== 'candidate'), with a parallel `candidates`
+ * array and a `decidePerson(personId, decision)` mutation to accept/reject a candidate.
  */
 export function usePeople() {
   const qc = useQueryClient()
@@ -68,13 +70,24 @@ export function usePeople() {
     onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
   })
 
+  const decideM = useMutation({
+    mutationFn: async (input: { personId: string; decision: 'accept' | 'reject' }) => {
+      if (mock) { mockDecidePerson(qc, input.personId, input.decision); return }
+      await peopleApi.decidePerson(input.personId, input.decision)
+    },
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: PEOPLE_KEY }),
+  })
+
   return {
-    people: data.people,
+    people: data.people.filter(p => p.status !== 'candidate'),
+    candidates: data.people.filter(p => p.status === 'candidate'),
     mentions: data.mentions,
     logMention: (input: MentionLogInput) => logM.mutate(input),
     savePerson: (input: PersonSaveInput) => saveM.mutate(input),
     deletePerson: (personId: string) => delM.mutate(personId),
     undoMention: (m: Mention) => undoM.mutate(m),
+    decidePerson: (personId: string, decision: 'accept' | 'reject') =>
+      decideM.mutate({ personId, decision }),
     isPending,
   }
 }
@@ -117,7 +130,7 @@ function mockSavePerson(qc: QueryClient, input: PersonSaveInput) {
       id: crypto.randomUUID(), initial: input.name.slice(0, 1).toUpperCase(),
       affect_baseline: input.affectBaseline ?? 'neutral',
       mentionCount: 0, mentionsThisWeek: 0, last_mentioned_at: '',
-      lastMentionLabel: 'Még nincs említés', affectTrend: [], knownFacts: [], ties: [],
+      lastMentionLabel: 'Még nincs említés', affectTrend: [], knownFacts: [], ties: [], graphEdges: [],
       status: 'active', sourceKind: 'manual', ...editable(input),
     }
     return { ...base, people: [...base.people, fresh] }
@@ -138,5 +151,15 @@ function mockDeletePerson(qc: QueryClient, personId: string) {
       people: base.people.filter(p => p.id !== personId),
       mentions: base.mentions.filter(m => m.person_id !== personId),
     }
+  })
+}
+
+function mockDecidePerson(qc: QueryClient, personId: string, decision: 'accept' | 'reject') {
+  qc.setQueryData<PeopleBootstrap>(PEOPLE_KEY, (old) => {
+    const base = old ?? MOCK_PEOPLE
+    if (decision === 'reject') {
+      return { ...base, people: base.people.filter(p => p.id !== personId) }
+    }
+    return { ...base, people: base.people.map(p => p.id === personId ? { ...p, status: 'active' } : p) }
   })
 }

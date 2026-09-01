@@ -75,6 +75,12 @@ public class LifeEventCandidateService {
             nodeRepository.delete(node);   // @SQLDelete soft delete — no edges were ever written
             return response;
         }
+        if (request.getRefinedTitle() != null) {
+            node.setTitle(request.getRefinedTitle());
+        }
+        if (request.getRefinedSummary() != null) {
+            node.setSummary(request.getRefinedSummary());
+        }
         node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
         GraphNodeEntity active = nodeRepository.saveAndFlush(node);
         proposedEdges(active).forEach(edge -> createEdge(userId, active, edge));

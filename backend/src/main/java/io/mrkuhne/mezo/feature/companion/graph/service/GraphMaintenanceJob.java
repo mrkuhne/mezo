@@ -2,10 +2,13 @@ package io.mrkuhne.mezo.feature.companion.graph.service;
 
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.companion.service.PersonExtractionResult;
+import io.mrkuhne.mezo.feature.companion.service.PersonExtractionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -18,7 +21,9 @@ import org.springframework.stereotype.Component;
  * already per-row isolated internally, mezo-b3pp.32), (3) {@link
  * LifeEventExtractionService#extractFor} for YESTERDAY (the W2.3 extraction pass; "yesterday" the
  * same convention {@code DailySummaryJob}/{@code PatternDetectionJob} use — a night's narrative
- * is only complete once the night is over).
+ * is only complete once the night is over), (4) {@link PersonExtractionService#extractFor} for
+ * YESTERDAY (Emberek S4, mezo-06o0.3) — behind an {@link ObjectProvider} because its switches
+ * (COMPANION ∧ PEOPLE) differ from this job's own trio, so the bean may legitimately be absent.
  *
  * <p>Phase isolation is at the PHASE level here, not just per-user: a failure in phase 1 for a
  * user must not skip phases 2/3 for that SAME user, and a failure anywhere must not skip the next
@@ -40,6 +45,7 @@ public class GraphMaintenanceJob {
     private final GraphMaintenanceService graphMaintenanceService;
     private final GraphPromotionService graphPromotionService;
     private final LifeEventExtractionService lifeEventExtractionService;
+    private final ObjectProvider<PersonExtractionService> personExtractionService;
 
     @Scheduled(cron = "${mezo.companion.graph.cron}")
     public void run() {
@@ -67,6 +73,17 @@ public class GraphMaintenanceJob {
                     yesterday, candidates);
             } catch (Exception e) {
                 log.warn("Life-event extraction failed for user {} on {}", user.getId(), yesterday, e);
+            }
+            PersonExtractionService peopleExtractor = personExtractionService.getIfAvailable();
+            if (peopleExtractor != null) {
+                try {
+                    PersonExtractionResult r = peopleExtractor.extractFor(user.getId(), yesterday);
+                    log.info("Person extraction for user {} on {}: {} mention(s) enriched, "
+                            + "{} candidate(s) proposed, {} person node(s) edge-structuring attempted",
+                        user.getId(), yesterday, r.enriched(), r.candidates(), r.edgeLinked());
+                } catch (Exception e) {
+                    log.warn("Person extraction failed for user {} on {}", user.getId(), yesterday, e);
+                }
             }
         }
     }

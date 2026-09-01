@@ -671,6 +671,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/{id}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set (or clear) the workout's closing note
+         * @description Last-write-wins. A null/blank note clears it. Used by the review page, so a note can be written or corrected long after the workout was finished (mezo-d20.8.2.2).
+         */
+        put: operations["saveWorkoutNote"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/workouts/{id}/finish": {
         parameters: {
             query?: never;
@@ -680,7 +700,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Complete a workout instance (idempotent) */
+        /**
+         * Complete a workout instance (idempotent)
+         * @description The optional body carries the closing note. Because finishing is idempotent, the note is FILL-IF-EMPTY here: a re-finish (or a bodyless retry) never wipes an existing note. Use PUT /api/train/workouts/{id}/note to overwrite or clear it (mezo-d20.8.2.2).
+         */
         post: operations["finishWorkout"];
         delete?: never;
         options?: never;
@@ -1960,6 +1983,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/people/{personId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide a candidate person (S4 nightly extractor inbox) — accept activates the person, reject soft-deletes it (the soft-deleted row is the extractor's reject list: the name is never re-proposed). One decision per candidate. */
+        post: operations["decidePerson"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/proactive/feed": {
         parameters: {
             query?: never;
@@ -3224,6 +3264,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/graph/edge/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count of active knowledge-graph edges for the current user (KnowledgeGraph) */
+        get: operations["countGraphEdges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/week/{start}": {
         parameters: {
             query?: never;
@@ -4267,6 +4324,8 @@ export interface components {
             /** @description 'Hét'..'Vas' */
             dayLabel: string;
             durationEst?: number;
+            /** @description The workout-level closing note, absent when none was written (mezo-d20.8.2.2). */
+            note?: string | null;
             exercises: components["schemas"]["WorkoutDetailExercise"][];
         };
         WorkoutDetailExercise: {
@@ -4382,6 +4441,10 @@ export interface components {
         };
         /** @description Set (or clear) the durable per-exercise note */
         ExerciseNoteRequest: {
+            note?: string | null;
+        };
+        /** @description The workout-level closing note — one sentence about the whole session ("Hogy ment?"), distinct from the per-exercise and per-set notes. Shared by the finish body and the note endpoint (mezo-d20.8.2.2). */
+        WorkoutNoteRequest: {
             note?: string | null;
         };
         WorkoutFeedbackInput: {
@@ -6208,6 +6271,18 @@ export interface components {
             mentionsThisWeek: number;
             /** Format: date-time */
             lastMentionedAt?: string;
+            /** @description A személy PERSON node-jának legerősebb gráf-élei (legfeljebb 3, súly szerint csökkenő). Üres, ha a gráf ki van kapcsolva, vagy a személynek nincs node-ja/éle. */
+            graphEdges: components["schemas"]["PersonGraphEdge"][];
+        };
+        /** @description Egy gráf-él a személy felől nézve — a másik végpont, és hogy hogyan kapcsolódik. */
+        PersonGraphEdge: {
+            /** @description A másik végpont node-fajtája (PATTERN | PREFERENCE | GOAL | LIFE_EVENT | SEASON | INSIGHT | PERSON). */
+            nodeKind: string;
+            title: string;
+            /** @description Magyar kapcsolat-ige (kiváltja | megelőzte | támogatja | ütközik vele | kapcsolódik). */
+            relationHu: string;
+            /** @description erős | közepes | gyenge */
+            strength: string;
         };
         MentionResponse: {
             /** Format: uuid */
@@ -6252,6 +6327,9 @@ export interface components {
             affectBaseline?: "positive" | "neutral" | "mixed" | "negative";
             contactCadenceLabel?: string;
             notes?: string;
+        };
+        PersonDecisionRequest: {
+            decision: string;
         };
         FeedRef: {
             /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
@@ -7262,7 +7340,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            kind: "PATTERN" | "PREFERENCE" | "GOAL" | "LIFE_EVENT" | "SEASON" | "INSIGHT";
+            kind: "PATTERN" | "PREFERENCE" | "GOAL" | "LIFE_EVENT" | "SEASON" | "INSIGHT" | "PERSON";
             title: string;
             summary?: string | null;
             /** @enum {string} */
@@ -7283,6 +7361,13 @@ export interface components {
         };
         GraphCandidateDecisionRequest: {
             decision: string;
+            /** @description User-edited title applied on accept (edit-then-approve). */
+            refinedTitle?: string | null;
+            /** @description User-edited summary applied on accept. */
+            refinedSummary?: string | null;
+        };
+        GraphEdgeCountResponse: {
+            count: number;
         };
         MeWeekSubscores: {
             /** @description 0–100; null = no sleep data */
@@ -9801,6 +9886,57 @@ export interface operations {
             };
         };
     };
+    saveWorkoutNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Note saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout instance not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     finishWorkout: {
         parameters: {
             query?: never;
@@ -9810,7 +9946,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["WorkoutNoteRequest"];
+            };
+        };
         responses: {
             /** @description The completed instance with its logged sets */
             200: {
@@ -9819,6 +9959,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkoutInstanceResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */
@@ -13730,6 +13879,59 @@ export interface operations {
             };
         };
     };
+    decidePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The decided person (status active on accept; the soft-deleted row snapshot on reject) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description PEOPLE_CANDIDATE_ALREADY_DECIDED / validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getFeed: {
         parameters: {
             query?: {
@@ -16628,6 +16830,35 @@ export interface operations {
             };
             /** @description GRAPH_NODE_NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    countGraphEdges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active edge count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphEdgeCountResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

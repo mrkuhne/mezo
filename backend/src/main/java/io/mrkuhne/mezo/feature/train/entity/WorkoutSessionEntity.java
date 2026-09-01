@@ -58,8 +58,17 @@ public class WorkoutSessionEntity extends OwnedEntity {
     @Column(name = "muscle_accent", nullable = false)
     private boolean muscleAccent;
 
+    /** The TEMPLATE day's plan note (template rows only) — published as MesoDay.note. */
     @Column
     private String note;
+
+    /**
+     * The workout-level closing note on an INSTANCE row (mezo-d20.8.2.2) — "Hogy ment?", written
+     * at finish and editable afterwards from the review page. Deliberately separate from {@link
+     * #note}, which carries the template day's plan note and reaches a different response.
+     */
+    @Column(name = "closing_note")
+    private String closingNote;
 
     @Column
     private LocalDate date;

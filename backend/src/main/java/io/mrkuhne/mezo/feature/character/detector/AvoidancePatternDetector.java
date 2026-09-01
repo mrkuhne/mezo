@@ -36,7 +36,7 @@ public class AvoidancePatternDetector implements CharacterDetector {
 
     @Override
     public List<DetectorSignal> detect(DetectorInput in) {
-        if (!RoundOneGates.newGymData(in)) {
+        if (!DetectorGates.newGymData(in)) {
             return List.of();
         }
         Map<String, Set<LocalDate>> skipDaysByExercise = new LinkedHashMap<>();

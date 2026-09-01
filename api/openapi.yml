@@ -1947,12 +1947,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/workouts/{id}/finish':
-    post:
+  '/api/train/workouts/{id}/note':
+    put:
       tags:
         - Train
-      operationId: finishWorkout
-      summary: Complete a workout instance (idempotent)
+      operationId: saveWorkoutNote
+      summary: Set (or clear) the workout's closing note
+      description: >
+        Last-write-wins. A null/blank note clears it. Used by the review page,
+        so a note can be written or corrected long after the workout was
+        finished (mezo-d20.8.2.2).
       parameters:
         - name: id
           in: path
@@ -1960,6 +1964,57 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutNoteRequest'
+      responses:
+        '204':
+          description: Note saved
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout instance not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/finish':
+    post:
+      tags:
+        - Train
+      operationId: finishWorkout
+      summary: Complete a workout instance (idempotent)
+      description: >
+        The optional body carries the closing note. Because finishing is
+        idempotent, the note is FILL-IF-EMPTY here: a re-finish (or a bodyless
+        retry) never wipes an existing note. Use PUT
+        /api/train/workouts/{id}/note to overwrite or clear it (mezo-d20.8.2.2).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutNoteRequest'
       responses:
         '200':
           description: The completed instance with its logged sets
@@ -1967,6 +2022,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkoutInstanceResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
           content:
@@ -5132,6 +5193,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/people/{personId}/decision':
+    post:
+      tags:
+        - People
+      operationId: decidePerson
+      summary: >-
+        Decide a candidate person (S4 nightly extractor inbox) — accept
+        activates the person, reject soft-deletes it (the soft-deleted row is
+        the extractor's reject list: the name is never re-proposed). One
+        decision per candidate.
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonDecisionRequest'
+      responses:
+        '200':
+          description: >-
+            The decided person (status active on accept; the soft-deleted row
+            snapshot on reject)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonResponse'
+        '400':
+          description: PEOPLE_CANDIDATE_ALREADY_DECIDED / validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/proactive/feed:
     get:
       tags:
@@ -7632,6 +7743,27 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: GRAPH_NODE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/graph/edge/count:
+    get:
+      tags:
+        - KnowledgeGraph
+      operationId: countGraphEdges
+      summary: >-
+        Count of active knowledge-graph edges for the current user
+        (KnowledgeGraph)
+      responses:
+        '200':
+          description: Active edge count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphEdgeCountResponse'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -10171,6 +10303,12 @@ components:
           description: '''Hét''..''Vas'''
         durationEst:
           type: integer
+        note:
+          type: string
+          nullable: true
+          description: >
+            The workout-level closing note, absent when none was written
+            (mezo-d20.8.2.2).
         exercises:
           type: array
           items:
@@ -10481,6 +10619,17 @@ components:
         note:
           type: string
           maxLength: 500
+          nullable: true
+    WorkoutNoteRequest:
+      type: object
+      description: >
+        The workout-level closing note — one sentence about the whole session
+        ("Hogy ment?"), distinct from the per-exercise and per-set notes. Shared
+        by the finish body and the note endpoint (mezo-d20.8.2.2).
+      properties:
+        note:
+          type: string
+          maxLength: 1000
           nullable: true
     WorkoutFeedbackInput:
       type: object
@@ -15183,6 +15332,7 @@ components:
         - aliases
         - status
         - sourceKind
+        - graphEdges
       properties:
         id:
           type: string
@@ -15251,6 +15401,40 @@ components:
         lastMentionedAt:
           type: string
           format: date-time
+        graphEdges:
+          type: array
+          description: >-
+            A személy PERSON node-jának legerősebb gráf-élei (legfeljebb 3, súly
+            szerint csökkenő). Üres, ha a gráf ki van kapcsolva, vagy a
+            személynek nincs node-ja/éle.
+          items:
+            $ref: '#/components/schemas/PersonGraphEdge'
+    PersonGraphEdge:
+      type: object
+      description: >-
+        Egy gráf-él a személy felől nézve — a másik végpont, és hogy hogyan
+        kapcsolódik.
+      required:
+        - nodeKind
+        - title
+        - relationHu
+        - strength
+      properties:
+        nodeKind:
+          type: string
+          description: >-
+            A másik végpont node-fajtája (PATTERN | PREFERENCE | GOAL |
+            LIFE_EVENT | SEASON | INSIGHT | PERSON).
+        title:
+          type: string
+        relationHu:
+          type: string
+          description: >-
+            Magyar kapcsolat-ige (kiváltja | megelőzte | támogatja | ütközik
+            vele | kapcsolódik).
+        strength:
+          type: string
+          description: erős | közepes | gyenge
     MentionResponse:
       type: object
       required:
@@ -15403,6 +15587,14 @@ components:
         notes:
           type: string
           maxLength: 500
+    PersonDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          pattern: ^(accept|reject)$
     FeedRef:
       type: object
       required:
@@ -17765,6 +17957,7 @@ components:
             - LIFE_EVENT
             - SEASON
             - INSIGHT
+            - PERSON
         title:
           type: string
         summary:
@@ -17816,6 +18009,25 @@ components:
         decision:
           type: string
           pattern: ^(accept|reject)$
+        refinedTitle:
+          type: string
+          minLength: 1
+          maxLength: 160
+          nullable: true
+          description: User-edited title applied on accept (edit-then-approve).
+        refinedSummary:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+          description: User-edited summary applied on accept.
+    GraphEdgeCountResponse:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
     MeWeekSubscores:
       type: object
       properties:

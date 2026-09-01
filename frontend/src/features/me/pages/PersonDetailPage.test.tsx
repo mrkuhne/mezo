@@ -228,8 +228,17 @@ test('the footnote is absent when every rendered row already carries a tone', ()
   expect(screen.queryByText('A tónust az éjszakai kör tölti.')).toBeNull()
 })
 
-test('there is NO "Kapcsolt események" section (S5 builds it)', () => {
+test('renders the "Kapcsolt események · gráf" section from graphEdges (S5)', async () => {
   renderAt(`/me/people/${petra.id}`)
+  expect(await screen.findByText('Kapcsolt események · gráf')).toBeInTheDocument()
+  expect(screen.getByText('Nyári szabadság · júl 14–21')).toBeInTheDocument()
+  expect(screen.getByText(/Cél · támogatja/)).toBeInTheDocument()
+})
+
+test('the section is OMITTED entirely when the person has no graph edges', async () => {
+  const reka = people.find((p) => p.id === 'pp-reka')!
+  renderAt(`/me/people/${reka.id}`)
+  expect(await screen.findByText('Hangulat-ív')).toBeInTheDocument()
   expect(screen.queryByText(/Kapcsolt események/)).toBeNull()
 })
 

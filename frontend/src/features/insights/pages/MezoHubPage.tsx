@@ -7,8 +7,8 @@
 // number — one companion sentence + the quiet status line) → composer-shaped
 // chat opener → the motor's SINGLE decision card in a gold ring (the same
 // decide mutation PatternsPage uses; deciding flips it to the sage
-// acknowledgement) → 6-tile mosaic with live bottom lines from the pages'
-// own hooks → the full-width L0→L3 memory band.
+// acknowledgement) → 6+2-tile mosaic (a széles Diagnózis + Karakter csempékkel) with live
+// bottom lines from the pages' own hooks → the full-width L0→L3 memory band.
 // Honest states: no fabricated numbers — tile lines vanish (or say
 // „tanulom", the pages' own vocabulary) while their source is unresolved.
 // ============================================================
@@ -22,7 +22,9 @@ import {
   useTodayScenario, resolveBriefing, useCompanionFeed, useConversations,
   usePatterns, usePatternMonitor, usePatternActions, useMemoryOverview,
   useMeWeek, useMemoir, useKnowledge, usePredictions, useExperiments, useDiagnoses,
+  useCharacterOverview,
 } from '@/data/hooks'
+import { isDossierEmpty } from '@/features/character/dossierState'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
 import { bucketize } from '@/features/insights/logic/lifecycle'
@@ -126,6 +128,16 @@ export function MezoHubPage() {
       ? `${experiments.filter((e) => e.status === 'active').length} aktív · ${activeExp.day}/${activeExp.total} nap`
       : `${experiments.length} kísérlet`
 
+  // Karakter dossier tile (hub-tile-reorg — moved from the Én hub): honest states — the
+  // switch-off 404 (overview null) drops the line, and so does the pre-bootstrap
+  // "untouched dossier" state. `isDossierEmpty` is the ONE shared predicate (mezo-1gim.13
+  // fix round 1) both this tile and KarakterHubPage's bootstrap face read.
+  const { overview: character } = useCharacterOverview()
+  const coreDims = character?.dimensions.filter((d) => d.kind === 'CORE') ?? []
+  const karakterLine = character == null || coreDims.length === 0 || isDossierEmpty(character)
+    ? undefined
+    : `${Math.round(coreDims.reduce((sum, d) => sum + d.maturity, 0) / coreDims.length)}% átlag érettség`
+
   // ── memory band counts — the real L0→L3 overview, no numbers without it ──
   const l2Count = overview?.l2.patterns.reduce((s, p) => s + p.count, 0) ?? null
   const l3Count = overview?.l3.facts.reduce((s, f) => s + f.count, 0) ?? null
@@ -207,6 +219,10 @@ export function MezoHubPage() {
             className="mzh-eb-gold mzh-t-diag" line={diagLine} onClick={() => navigate('/mezo/diagnozis')}>
             <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>Miért vagyok fáradt? <span style={{ color: 'var(--mz-decring)' }}>✦</span></div>
           </Tile>
+          {/* Karakter (hub-tile-reorg): AI-domain dossier — wide like Diagnózis, so the
+              6-cell 2-col pairing stays intact. */}
+          <Tile wash="lav" icon="i-kristaly" eyebrow="Karakter" delayMs={440} aria-label="Karakter"
+            className="mzh-eb-sage mzh-t-karakter" line={karakterLine} onClick={() => navigate('/me/karakter')} />
         </Mosaic>
 
         {/* ===== L0→L3 memory band ===== */}

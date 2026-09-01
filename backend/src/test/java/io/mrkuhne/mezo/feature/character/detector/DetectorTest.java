@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class DetectorTest {
@@ -19,7 +20,7 @@ class DetectorTest {
                                 List<DetectorInput.WeightPoint> weights,
                                 Map<LocalDate, List<String>> journal) {
         return input(mealDates, checkins, weights, journal, List.of(), List.of(), List.of(), List.of(),
-                null, new DetectorInput.TrendWindow(List.of(), List.of()));
+                null, emptyTrend());
     }
 
     /** Full-control builder for the round-1 detectors; existing helper delegates here. */
@@ -30,6 +31,51 @@ class DetectorTest {
             DetectorInput.MesoContext meso, DetectorInput.TrendWindow trend) {
         return new DetectorInput(DAY, mealDates, checkins, weights, journal,
                 gymDays, sport, runs, sleep, meso, trend);
+    }
+
+    static DetectorInput.TrendWindow emptyTrend() {
+        return new DetectorInput.TrendWindow(List.of(), List.of(), List.of(), List.of(),
+                null, List.of(), null);
+    }
+
+    /** Full-control builder for the round-2 detectors: only the trend window varies. */
+    private DetectorInput trendInput(DetectorInput.TrendWindow trend) {
+        return new DetectorInput(DAY, Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), List.of(), List.of(), null, trend);
+    }
+
+    private static DetectorInput.MealDayPoint meal(LocalDate d, String kcal, String protein,
+                                                   String nova4Share) {
+        return new DetectorInput.MealDayPoint(d, new BigDecimal(kcal), new BigDecimal(protein),
+                new BigDecimal("200"), new BigDecimal("60"),
+                nova4Share == null ? null : new BigDecimal(nova4Share),
+                nova4Share == null ? null : new BigDecimal("1.0000"),
+                new BigDecimal("3100"), new BigDecimal("220"), List.of());
+    }
+
+    /** Same as {@link #meal} but with an explicit (possibly thin) NOVA coverage fraction. */
+    private static DetectorInput.MealDayPoint mealWithCoverage(LocalDate d, String kcal,
+            String protein, String nova4Share, String novaCoveragePct) {
+        return new DetectorInput.MealDayPoint(d, new BigDecimal(kcal), new BigDecimal(protein),
+                new BigDecimal("200"), new BigDecimal("60"),
+                nova4Share == null ? null : new BigDecimal(nova4Share),
+                novaCoveragePct == null ? null : new BigDecimal(novaCoveragePct),
+                new BigDecimal("3100"), new BigDecimal("220"), List.of());
+    }
+
+    private static DetectorInput.CheckinDayPoint checkin(LocalDate d, String energy, String stress,
+                                                         String mental) {
+        return new DetectorInput.CheckinDayPoint(d, 1, new BigDecimal(energy), new BigDecimal(stress),
+                new BigDecimal("7"), new BigDecimal(mental));
+    }
+
+    private static DetectorInput.TrendWindow trend(List<DetectorInput.MealDayPoint> meals,
+                                                   List<DetectorInput.WaterDayPoint> water,
+                                                   DetectorInput.StackContext stack,
+                                                   List<DetectorInput.CheckinDayPoint> checkins,
+                                                   DetectorInput.MedContext med,
+                                                   List<DetectorInput.GymDay> gym) {
+        return new DetectorInput.TrendWindow(List.of(), gym, meals, water, stack, checkins, med);
     }
 
     @Test
@@ -144,7 +190,7 @@ class DetectorTest {
         DetectorInput.GymDay day = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(day), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("rir-calibration");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -169,7 +215,7 @@ class DetectorTest {
         DetectorInput.GymDay day = new DetectorInput.GymDay(DAY.minusDays(1), List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(day), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -191,7 +237,7 @@ class DetectorTest {
         DetectorInput.GymDay day = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(day), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -212,7 +258,7 @@ class DetectorTest {
                 DAY.minusDays(2), "kerékpár", new BigDecimal("6"), 6, null, null);
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gym1, gym2), List.of(sport1, sport2), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("niggle-map");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -233,7 +279,7 @@ class DetectorTest {
                 DAY.minusDays(1), "futás", new BigDecimal("7"), 7, null, null);
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gym), List.of(sport), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -255,7 +301,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymBefore, gymOn), List.of(sport1, sport2), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("sport-interference");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -263,9 +309,9 @@ class DetectorTest {
             assertThat(s.summary()).contains("2");
         });
         // the DAY gym day is what satisfies the gate (newGymData)
-        assertThat(RoundOneGates.newGymData(input(Set.of(), Map.of(), List.of(), Map.of(),
+        assertThat(DetectorGates.newGymData(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymBefore, gymOn), List.of(sport1, sport2), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())))).isTrue();
+                emptyTrend()))).isTrue();
     }
 
     @Test
@@ -284,7 +330,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymBefore, gymOn), List.of(sport1, sport2), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -298,7 +344,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("meso-adherence");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -316,7 +362,7 @@ class DetectorTest {
                 Set.of(DayOfWeek.THURSDAY), Set.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -330,7 +376,7 @@ class DetectorTest {
                 Set.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), Set.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.summary()).contains("2");
             assertThat(s.summary()).contains("3/6");
@@ -345,7 +391,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -366,7 +412,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("progression-adherence");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -393,7 +439,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("progression-adherence");
             assertThat(s.summary()).contains("lőtt túl");
@@ -421,7 +467,7 @@ class DetectorTest {
                 Set.of(), Set.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -471,7 +517,7 @@ class DetectorTest {
         // Scenario 1: DAY run at 40s -> band flips KOZOMBOS -> JAVUL -> fires "javul"
         List<DetectorInput.RunPoint> withFlip = new java.util.ArrayList<>(olderWeeks);
         withFlip.add(new DetectorInput.RunPoint(DAY, null, 40, null));
-        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of());
+        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null);
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), withFlip, List.of(), null, flipTrend));
         assertThat(fired).singleElement().satisfies(s -> {
@@ -481,7 +527,7 @@ class DetectorTest {
         });
 
         // Scenario 2: DAY run removed entirely -> no new run data -> empty regardless of band
-        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of());
+        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null);
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), olderWeeks, List.of(), null, noDayTrend))).isEmpty();
 
@@ -489,7 +535,7 @@ class DetectorTest {
         // suppresses even though new run data exists
         List<DetectorInput.RunPoint> noFlip = new java.util.ArrayList<>(olderWeeks);
         noFlip.add(new DetectorInput.RunPoint(DAY, null, 108, null));
-        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of());
+        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null);
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), noFlip, List.of(), null, noFlipTrend))).isEmpty();
     }
@@ -502,7 +548,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(7), null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(14), null, 100, null));
-        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of());
+        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null);
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, List.of(), null, trend))).isEmpty();
     }
@@ -518,7 +564,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, 9, null, null));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, sleep, null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("sleep-performance-chain");
             assertThat(s.expertKey()).isEqualTo("szomnologus");
@@ -537,7 +583,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, 9, null, null));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, sleep, null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -550,7 +596,7 @@ class DetectorTest {
         DetectorInput.GymDay gym2 = new DetectorInput.GymDay(DAY.minusDays(2), List.of(skipped));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gym1, gym2), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("avoidance-pattern");
             assertThat(s.expertKey()).isEqualTo("drill");
@@ -566,7 +612,390 @@ class DetectorTest {
         DetectorInput.GymDay gym = new DetectorInput.GymDay(DAY, List.of(skipped));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gym), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
+    }
+
+    @Test
+    void detectorGates_roundTwoFamilies_seeOnlyDataDatedOnTheObservedDay() {
+        DetectorInput.TrendWindow todayMeal = new DetectorInput.TrendWindow(
+                List.of(), List.of(),
+                List.of(new DetectorInput.MealDayPoint(DAY, new BigDecimal("2000"),
+                        new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
+                        null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
+                List.of(), null, List.of(), null);
+        assertThat(DetectorGates.newMealData(trendInput(todayMeal))).isTrue();
+
+        DetectorInput.TrendWindow yesterdayMeal = new DetectorInput.TrendWindow(
+                List.of(), List.of(),
+                List.of(new DetectorInput.MealDayPoint(DAY.minusDays(1), new BigDecimal("2000"),
+                        new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
+                        null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
+                List.of(), null, List.of(), null);
+        assertThat(DetectorGates.newMealData(trendInput(yesterdayMeal))).isFalse();
+    }
+
+    @Test
+    void detectorGates_absentRoundTwoContexts_areQuietNotCrashing() {
+        DetectorInput in = trendInput(emptyTrend());
+        assertThat(DetectorGates.newMealData(in)).isFalse();
+        assertThat(DetectorGates.newWaterData(in)).isFalse();
+        assertThat(DetectorGates.newStackData(in)).isFalse();
+        assertThat(DetectorGates.newCheckinData(in)).isFalse();
+        assertThat(DetectorGates.newDoseData(in)).isFalse();
+    }
+
+    @Test
+    void macroAdherence_firesOnSystematicUndershoot_quietWhenUnchangedYesterday() {
+        MacroAdherenceDetector d = new MacroAdherenceDetector();
+        // 15 consecutive days at 2200 kcal against a 3100 target = a stable ~29% undershoot:
+        // the state is the same as of DAY and DAY-1, so a stable pattern stays QUIET.
+        List<DetectorInput.MealDayPoint> stable = new java.util.ArrayList<>();
+        for (int i = 0; i < 15; i++) {
+            stable.add(meal(DAY.minusDays(i), "2200", "180", null));
+        }
+        assertThat(d.detect(trendInput(trend(stable, List.of(), null, List.of(), null, List.of()))))
+                .isEmpty();
+
+        // a window that CROSSES the threshold exactly on DAY: 14 days at 2700 kcal against a
+        // 3100 target is a ~13% undershoot, but as of DAY-1 the window still contains a 4500 kcal
+        // day (offset 14) that pulls the mean back inside the band -> yesterday null, today fires.
+        List<DetectorInput.MealDayPoint> flipping = new java.util.ArrayList<>();
+        for (int i = 0; i < 14; i++) {
+            flipping.add(meal(DAY.minusDays(i), "2700", "220", null));
+        }
+        flipping.add(meal(DAY.minusDays(14), "4500", "220", null));
+        assertThat(d.detect(trendInput(trend(flipping, List.of(), null, List.of(), null, List.of()))))
+                .singleElement().satisfies(s -> {
+                    assertThat(s.detectorKey()).isEqualTo("macro-adherence");
+                    assertThat(s.expertKey()).isEqualTo("taplalkozo");
+                    assertThat(s.summary()).contains("alálövi");
+                    // HU decimal comma: a digit.digit pair must never appear (the closing period is fine)
+                    assertThat(s.summary()).doesNotMatch(".*\\d\\.\\d.*");
+                });
+    }
+
+    @Test
+    void hydrationConsistency_firesOnBandChangeOnly() {
+        HydrationConsistencyDetector d = new HydrationConsistencyDetector();
+        // 14 days all on target -> band JO both as of DAY and DAY-1 -> quiet
+        List<DetectorInput.WaterDayPoint> good = new java.util.ArrayList<>();
+        for (int i = 0; i < 15; i++) {
+            good.add(new DetectorInput.WaterDayPoint(DAY.minusDays(i), 4000, 4000));
+        }
+        assertThat(d.detect(trendInput(trend(List.of(), good, null, List.of(), null, List.of()))))
+                .isEmpty();
+
+        // three low days at offsets 0-2: as of DAY the 14-day window (offsets 0-13) holds all
+        // three -> 11/14 = 79% -> INGADOZO; as of DAY-1 (offsets 1-14) it holds only two ->
+        // 12/14 = 86% -> JO. Exactly one band change, on DAY.
+        List<DetectorInput.WaterDayPoint> crossing = new java.util.ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            crossing.add(new DetectorInput.WaterDayPoint(DAY.minusDays(i), 500, 4000));
+        }
+        for (int i = 3; i < 15; i++) {
+            crossing.add(new DetectorInput.WaterDayPoint(DAY.minusDays(i), 4200, 4000));
+        }
+        assertThat(d.detect(trendInput(trend(List.of(), crossing, null, List.of(), null, List.of()))))
+                .hasSize(1);
+    }
+
+    @Test
+    void comfortEating_silentBelowMinimumPairedDays() {
+        ComfortEatingDetector d = new ComfortEatingDetector();
+        List<DetectorInput.MealDayPoint> meals = List.of(
+                meal(DAY, "3000", "200", "0.70"),
+                meal(DAY.minusDays(1), "2900", "200", "0.20"));
+        List<DetectorInput.CheckinDayPoint> checkins = List.of(
+                checkin(DAY, "3", "9", "3"),
+                checkin(DAY.minusDays(1), "8", "2", "8"));
+        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void comfortEating_firesWhenHighNovaDaysClusterOnLowMoodDays() {
+        ComfortEatingDetector d = new ComfortEatingDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        // 24 paired days, of which exactly THREE (offsets 0, 4, 8) are low-mood AND spiking; the
+        // other 21 are calm and clean. As of DAY-1 only two low-mood days remain, which is below
+        // MIN_DAYS_PER_GROUP, so yesterday's state is null and the pattern genuinely turns on
+        // today -- the state-change gate is doing real work here, not a shifting count.
+        for (int i = 0; i < 24; i++) {
+            boolean bad = i % 4 == 0 && i <= 8;
+            meals.add(meal(DAY.minusDays(i), bad ? "3600" : "2900", "200", bad ? "0.75" : "0.15"));
+            checkins.add(bad ? checkin(DAY.minusDays(i), "3", "9", "3")
+                             : checkin(DAY.minusDays(i), "8", "2", "8"));
+        }
+        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+                .singleElement().satisfies(s -> {
+                    assertThat(s.detectorKey()).isEqualTo("comfort-eating");
+                    assertThat(s.expertKey()).isEqualTo("taplalkozo");
+                    // Finding A: the spike test is share OR kcal, so the copy must name both --
+                    // it must NOT attribute the whole count to processed-food share alone.
+                    assertThat(s.summary()).contains("feldolgozott étel aránya vagy a napi kalória");
+                    // HU decimal comma: a digit.digit pair must never appear (the closing period is fine)
+                    assertThat(s.summary()).doesNotMatch(".*\\d\\.\\d.*");
+                });
+    }
+
+    @Test
+    void comfortEating_silentWhenEveryPairedDayIsLowMood_noContrastGroup() {
+        // A chronically stressed user: every paired day is low-mood, so there is no contrast group
+        // to covary AGAINST. The rate-ratio guard would be skipped entirely (otherRate == 0), so
+        // without a floor on the non-low-mood group this would announce a "covariance" computed
+        // against nothing.
+        ComfortEatingDetector d = new ComfortEatingDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            boolean spike = i % 4 == 0;
+            meals.add(meal(DAY.minusDays(i), spike ? "3600" : "2900", "200",
+                    spike ? "0.75" : "0.15"));
+            checkins.add(checkin(DAY.minusDays(i), "3", "9", "3")); // every day low-mood
+        }
+        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void comfortEating_ignoresDaysWithoutNovaCoverage() {
+        ComfortEatingDetector d = new ComfortEatingDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            boolean bad = i % 4 == 0;
+            meals.add(meal(DAY.minusDays(i), bad ? "3600" : "2900", "200", null)); // no NOVA class
+            checkins.add(bad ? checkin(DAY.minusDays(i), "3", "9", "3")
+                             : checkin(DAY.minusDays(i), "8", "2", "8"));
+        }
+        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void comfortEating_ignoresDaysWithThinNovaCoverageEvenWhenShareNonNull() {
+        // Task 2 review carry-forward: the read layer only nulls nova4KcalShare when coverage is
+        // ZERO, so the 70% pairing gate has no home except here. A day with a non-null share but
+        // thin coverage (40%) must not be paired -- even though it would otherwise look identical
+        // to a qualifying high-NOVA low-mood day.
+        ComfortEatingDetector d = new ComfortEatingDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            boolean bad = i % 4 == 0;
+            // thin coverage (0.40 < MIN_NOVA_COVERAGE 0.70) on every day -> never pairable
+            meals.add(mealWithCoverage(DAY.minusDays(i), bad ? "3600" : "2900", "200",
+                    bad ? "0.75" : "0.15", "0.40"));
+            checkins.add(bad ? checkin(DAY.minusDays(i), "3", "9", "3")
+                             : checkin(DAY.minusDays(i), "8", "2", "8"));
+        }
+        assertThat(d.detect(trendInput(trend(meals, List.of(), null, checkins, null, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void proteinTrainingMismatch_firesWhenProteinIsMissedOnGymDaysSpecifically() {
+        ProteinTrainingMismatchDetector d = new ProteinTrainingMismatchDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.GymDay> gym = new java.util.ArrayList<>();
+        // Gym on offsets 0-3, no gym on 4-13. Protein missed on gym offsets 0 and 1, plus one
+        // non-gym miss on offset 4. As of DAY:   gym 2/4 = 0,50 vs non-gym 1/10 = 0,10 -> gap 0,40
+        //                                        (>= MIN_RATE_GAP 0,30) -> qualifies.
+        // As of DAY-1 the gym group is offsets 1-3: 1/3 = 0,33 vs 0,10 -> gap 0,23 -> does NOT
+        // qualify. So the pattern genuinely CROSSES its threshold on the observed day.
+        for (int i = 0; i < 14; i++) {
+            boolean gymDay = i <= 3;
+            boolean miss = i == 0 || i == 1 || i == 4;
+            meals.add(meal(DAY.minusDays(i), "2900", miss ? "120" : "230", null));
+            if (gymDay) {
+                gym.add(new DetectorInput.GymDay(DAY.minusDays(i), List.of()));
+            }
+        }
+        assertThat(d.detect(trendInput(trend(meals, List.of(), null, List.of(), null, gym))))
+                .singleElement().satisfies(s -> {
+                    assertThat(s.detectorKey()).isEqualTo("protein-training-mismatch");
+                    assertThat(s.expertKey()).isEqualTo("taplalkozo");
+                    assertThat(s.summary()).contains("edzésnap");
+                    // the contrast group is "no completed gym session", which is NOT a rest day:
+                    // a run or a sport session lands there too, so the copy must not claim rest
+                    assertThat(s.summary()).doesNotContain("pihenőnap");
+                });
+    }
+
+    @Test
+    void proteinTrainingMismatch_quietWhenTheSameGapAlreadyHeldYesterday() {
+        // Same qualitative finding on both days: gym days are missed at 100%, non-gym days at 0%,
+        // as of DAY (4/4) and as of DAY-1 (3/3) alike. Only the COUNTS move -- which is exactly
+        // what a count-valued state string would mistake for news, re-announcing nightly.
+        ProteinTrainingMismatchDetector d = new ProteinTrainingMismatchDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.GymDay> gym = new java.util.ArrayList<>();
+        for (int i = 0; i < 14; i++) {
+            boolean gymDay = i <= 3;
+            meals.add(meal(DAY.minusDays(i), "2900", gymDay ? "120" : "230", null));
+            if (gymDay) {
+                gym.add(new DetectorInput.GymDay(DAY.minusDays(i), List.of()));
+            }
+        }
+        assertThat(d.detect(trendInput(trend(meals, List.of(), null, List.of(), null, gym))))
+                .isEmpty();
+    }
+
+    @Test
+    void lateEating_firesOnRepeatedLateMealsFollowedByWorseSleep() {
+        LateEatingPatternDetector d = new LateEatingPatternDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.SleepPoint> sleep = new java.util.ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            LocalDate date = DAY.minusDays(i);
+            boolean late = i % 2 == 0;
+            meals.add(new DetectorInput.MealDayPoint(date, new BigDecimal("2900"),
+                    new BigDecimal("200"), new BigDecimal("200"), new BigDecimal("60"),
+                    null, null, new BigDecimal("3100"), new BigDecimal("220"),
+                    List.of(new DetectorInput.MealPoint("snack",
+                            late ? java.time.LocalTime.of(22, 30) : java.time.LocalTime.of(19, 0),
+                            new BigDecimal("600"), null))));
+            // SleepPoint dated D = the night leading INTO D, so day D's night is dated D+1
+            sleep.add(new DetectorInput.SleepPoint(date.plusDays(1),
+                    late ? 4 : 8, new BigDecimal(late ? "5.5" : "8.0"), 1));
+        }
+        DetectorInput in = new DetectorInput(DAY, Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), List.of(), sleep, null,
+                trend(meals, List.of(), null, List.of(), null, List.of()));
+        assertThat(d.detect(in)).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("late-eating-pattern");
+            assertThat(s.expertKey()).isEqualTo("szomnologus");
+        });
+    }
+
+    @Test
+    void stackSkip_ignoresPeriWorkoutItemsOnRestDays() {
+        StackSkipPatternDetector d = new StackSkipPatternDetector();
+        UUID pwo = UUID.randomUUID();
+        DetectorInput.StackContext stack = new DetectorInput.StackContext(
+                List.of(new DetectorInput.StackItem(pwo, "PWO", "pre_workout", null,
+                        DAY.minusDays(60))),
+                List.of(new DetectorInput.StackDayPoint(DAY, Set.of())));
+        // no gym days anywhere -> the pre-workout item was never EXPECTED -> quiet
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void stackSkip_firesOnRepeatedMissesOfAnEverydayItem() {
+        StackSkipPatternDetector d = new StackSkipPatternDetector();
+        UUID creatine = UUID.randomUUID();
+        List<DetectorInput.StackDayPoint> days = new java.util.ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            // taken on odd offsets, missed on even ones (5 misses, DAY itself among them)
+            days.add(new DetectorInput.StackDayPoint(DAY.minusDays(i),
+                    i % 2 == 0 ? Set.of() : Set.of(creatine)));
+        }
+        DetectorInput.StackContext stack = new DetectorInput.StackContext(
+                List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null,
+                        DAY.minusDays(60))), days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+                .singleElement().satisfies(s -> {
+                    assertThat(s.detectorKey()).isEqualTo("stack-skip-pattern");
+                    assertThat(s.expertKey()).isEqualTo("drill");
+                    assertThat(s.summary()).contains("Kreatin");
+                });
+    }
+
+    @Test
+    void stackSkip_doesNotFabricateSkipsForDaysBeforeTheItemEnteredTheProtocol() {
+        // The user adds Kreatin TODAY and takes it. Without an item-start bound the expectation
+        // loop would run the whole 14-day window and report "13 napon maradt ki a tervezett 14
+        // napból" -- thirteen skips of an item that did not exist. Absent, not zero (spec §4.3).
+        StackSkipPatternDetector d = new StackSkipPatternDetector();
+        UUID creatine = UUID.randomUUID();
+        DetectorInput.StackContext stack = new DetectorInput.StackContext(
+                List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null, DAY)),
+                List.of(new DetectorInput.StackDayPoint(DAY, Set.of(creatine))));
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void stackSkip_denominatorShrinksToTheItemsOwnLifetime() {
+        // Item added 4 days ago and never taken: 4 expected days, 4 missed -- NOT 14 and 14.
+        StackSkipPatternDetector d = new StackSkipPatternDetector();
+        UUID creatine = UUID.randomUUID();
+        List<DetectorInput.StackDayPoint> days = new java.util.ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            days.add(new DetectorInput.StackDayPoint(DAY.minusDays(i), Set.of()));
+        }
+        DetectorInput.StackContext stack = new DetectorInput.StackContext(
+                List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null,
+                        DAY.minusDays(3))), days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+                .singleElement().satisfies(s ->
+                        assertThat(s.summary()).contains("4 napon maradt ki a tervezett 4 napból"));
+    }
+
+    @Test
+    void medCycleCovariance_silentBelowMinimumUsableDays_andDropsStaleDays() {
+        MedCycleCovarianceDetector d = new MedCycleCovarianceDetector();
+        List<DetectorInput.MedCycleDayPoint> days = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            // every day marked stale -> nothing usable, regardless of how strong the pattern is
+            days.add(new DetectorInput.MedCycleDayPoint(DAY.minusDays(i), (i % 7) + 1, "peak",
+                    i + 10, true));
+            checkins.add(checkin(DAY.minusDays(i), i % 7 >= 5 ? "3" : "8", "4", "7"));
+        }
+        DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void medCycleCovariance_firesOnACycleDayBucketThatDivergesFromTheCycleMean() {
+        MedCycleCovarianceDetector d = new MedCycleCovarianceDetector();
+        List<DetectorInput.MedCycleDayPoint> days = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        // Energy is a flat 8 across all 28 days EXCEPT the observed day itself, which collapses to
+        // 3. That single day drags cycle-day-1's bucket mean to 6,75 against an overall 7,82 --
+        // a delta of -1,07, just past MIN_DELTA_POINTS. As of DAY-1 every bucket sits exactly on
+        // the mean, so yesterday's state is null: the finding genuinely CROSSES its threshold on
+        // the observed day rather than merely shifting a magnitude.
+        for (int i = 0; i < 28; i++) {
+            int cycleDay = (i % 7) + 1;
+            days.add(new DetectorInput.MedCycleDayPoint(DAY.minusDays(i), cycleDay, "peak",
+                    cycleDay - 1, false));
+            checkins.add(checkin(DAY.minusDays(i), i == 0 ? "3" : "8", "4", "7"));
+        }
+        DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
+                .singleElement().satisfies(s -> {
+                    assertThat(s.detectorKey()).isEqualTo("med-cycle-covariance");
+                    assertThat(s.expertKey()).isEqualTo("doki");
+                    // descriptive only: no advice, no diagnosis verbs
+                    assertThat(s.summary()).doesNotContain("javaslom").doesNotContain("kellene");
+                    // HU decimal comma: a digit.digit pair must never appear (the closing period is fine)
+                    assertThat(s.summary()).doesNotMatch(".*\\d\\.\\d.*");
+                });
+    }
+
+    @Test
+    void medCycleCovariance_quietWhenTheSameCycleDayBucketAlreadyDivergedYesterday() {
+        // The same qualitative finding on both days -- energy is low on every cycle day 1 -- so
+        // only the DELTA'S MAGNITUDE moves (-4,29 as of DAY, -3,56 as of DAY-1). A state carrying
+        // that magnitude would re-announce this sensitive medication signal nightly; a state of
+        // metric + cycle day + direction correctly stays silent.
+        MedCycleCovarianceDetector d = new MedCycleCovarianceDetector();
+        List<DetectorInput.MedCycleDayPoint> days = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        for (int i = 0; i < 28; i++) {
+            int cycleDay = (i % 7) + 1;
+            days.add(new DetectorInput.MedCycleDayPoint(DAY.minusDays(i), cycleDay, "peak",
+                    cycleDay - 1, false));
+            checkins.add(checkin(DAY.minusDays(i), cycleDay == 1 ? "3" : "8", "4", "7"));
+        }
+        DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
+                .isEmpty();
     }
 }

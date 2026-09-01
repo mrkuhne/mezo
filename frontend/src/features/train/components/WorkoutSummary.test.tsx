@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { WorkoutSummary } from '@/features/train/components/WorkoutSummary'
@@ -118,17 +118,56 @@ describe('WorkoutSummary', () => {
     expect(cells[3].textContent).toContain('–')
   })
 
-  // mezo-d20.8.2.1: the workout-note textarea is GONE, in both modes. It had no value, no
-  // onChange and no field on the wire — it accepted what you typed and dropped it. Making it
-  // real is its own slice (mezo-d20.8.2.2); until then the report does not offer it.
-  it('offers no workout-note field it cannot keep, in either mode', () => {
+  // mezo-d20.8.2.1 removed the workout-note textarea because it accepted what you typed and
+  // dropped it. mezo-d20.8.2.2 brings it back WIRED — so the guard flips from "the field must
+  // not exist" to "the field must be connected to something that keeps it".
+  it('offers a wired note field in closing mode, and none when the page owns no draft', () => {
+    const typed: string[] = []
     const { unmount } = render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
+      exercises={exercises} challenges={challenges} draftNote="" onDraftNote={(v) => typed.push(v)}
+      onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
+    expect(screen.getByText('Hogy ment?')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Hogy ment?'), { target: { value: 'Nehéz nap volt.' } })
+    expect(typed).toEqual(['Nehéz nap volt.'])
+    unmount()
+
+    // No handler → no field. A caller that cannot keep the text must not offer the box.
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
       exercises={exercises} challenges={challenges} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
     expect(document.querySelector('textarea')).toBeNull()
-    unmount()
-    render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
-      exercises={exercises} challenges={challenges} onExit={() => {}} />)
+  })
+
+  it('renders the saved note read-only in closed mode, and nothing when there is none', () => {
+    const { unmount } = render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={challenges} note="Öt órát aludtam." onExit={() => {}} />)
+    expect(screen.getByText('Öt órát aludtam.')).toBeInTheDocument()
+    expect(screen.getByText('Amit aznap írtál')).toBeInTheDocument()
     expect(document.querySelector('textarea')).toBeNull()
+    unmount()
+
+    // ADR 0010: an absent note is not an empty placeholder — and without an editor (the
+    // just-finished summary) there is no `＋ Jegyzet` either.
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={challenges} note={null} onExit={() => {}} />)
+    expect(document.querySelector('.wsum-note-r')).toBeNull()
+    expect(document.querySelector('.wsum-note-add')).toBeNull()
+  })
+
+  it('offers ＋ Jegyzet only where editing is possible, and swaps in the editor', () => {
+    let editing = false
+    const { rerender } = render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={challenges} note={null}
+      onEditNote={() => { editing = true }} onExit={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: /Jegyzet ehhez az edzéshez/ }))
+    expect(editing).toBe(true)
+
+    rerender(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={challenges} note={null} noteEditing
+      draftNote="pótolva" onDraftNote={() => {}} onNoteSave={() => {}} onNoteCancel={() => {}}
+      onEditNote={() => {}} onExit={() => {}} />)
+    expect((screen.getByLabelText('Hogy ment?') as HTMLTextAreaElement).value).toBe('pótolva')
+    expect(screen.getByRole('button', { name: 'Mentés' })).toBeInTheDocument()
+    expect(document.querySelector('.wsum-note-add')).toBeNull()
   })
 
   // The comparison tile and the stepping are the REVISIT's own; the closing report gets neither.

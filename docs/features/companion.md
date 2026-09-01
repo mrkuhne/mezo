@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-08-31
+updated: 2026-09-01
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -110,7 +110,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   (`SportService.getSchedule`, slot convention `0=Hét..6=Vas`, mezo-ajp); `scope=meso` renders the
   full active mesocycle (`TrainService.listMesocycles`) — weeks/phases/day-templates. One day
   renders as `gym (…): … ; sport: … ; futás: …`, the same three parts in the same order as the
-  snapshot's `Ma:`/`Holnap:`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
+  snapshot's `Ma (terv):`/`Holnap (terv):`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
   and `ToolText.gymLine` (mezo-4qu) — so the tool and the prompt snapshot cannot disagree about a day.
   The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
   is a rest day, rendering `pihenőnap (gym)` on both sides, and a populated one renders
@@ -598,7 +598,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7`, retraction `mezo-b3pp.31`, fact opt-out `mezo-b3pp.30` | Phase 5 W2.2 — confirmed patterns, active AND prompt-included non-pattern-sourced knowledge facts, and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent`/`KnowledgeFactChangedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. **Promotion is two-way (`mezo-b3pp.31`)**: `retractPattern`/`retractGoal`/`retractFact` archive the mirror node when a pattern is un-confirmed, a goal is soft-deleted, or a fact is soft-deleted or opted out of the prompt (`include_in_prompt=false`) — see the W2.2 section below for the event wiring, `syncFact`, and the honest gap that remains around `knowledge_fact` hard/soft deletes. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
 | Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, punctuation stripped, ≥3 chars, not a Hungarian stopword, no LLM) against active node titles/summaries at a WORD START (`startsAWordInFolded`, mezo-b3pp.34), ranks matches (title hit, then distinct token hits, ties left to the query's own TOTAL `created_at desc, id` row order) and caps them at `graph.max-seeds` (default 8); `GraphTraversalQuery` (both reads raw JDBC under one savepoint: the seed-candidate read + the recursive CTE — undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted + owner-scoped nodes only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines (`PRECEDED_BY` swapped so the line stays cause-first) under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode` ref per rendered node — carrying the traversal's own `fromTitle`/`toTitle` as its `label` (`mezo-b3pp.33`), capped at `graph.max-refs` (default 6) — after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
-| Graph maintenance job (decay + reinforcement) | ✅ `mezo-b3pp.10`, retraction sweep `mezo-b3pp.31` | Phase 5 W2.5 — nightly `GraphMaintenanceJob` (`mezo.companion.graph.cron`, dawn slot, `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own job switch): per-user, three phase-isolated steps — `GraphMaintenanceService.runMaintenance` (edge weight ×= `decayFactor` daily, edges under `pruneFloor` soft-deleted in the same pass, candidate nodes older than `candidateMaxAgeDays` soft-deleted, fresh same-night `pattern_event` snapshot evidence bumps a promoted pattern's touching edges by `reinforcementBump` capped at 1.0), then W2.2's `GraphPromotionService.reconcile` (now per-row isolated, mezo-b3pp.32 fixed alongside) — **its phase-2 promotion loops now run BOTH directions (`mezo-b3pp.31`)**: the original three promoter loops UPSERT forward from a still-qualifying source row, and a fourth complement-set sweep runs after them, walking every active node back to its source row and archiving any whose source stopped qualifying — the backstop for a retraction missed while the switch was off, and (for the still-untriggered delete half of `retractFact`) the ONLY trigger it gets, since nothing in main source soft-deletes a `knowledge_fact`; the opt-out half reaches `retractFact` on the same turn via `syncFact` (`mezo-b3pp.30`) — then W2.3's `LifeEventExtractionService.extractFor(yesterday)`. A failure in any phase for any user never skips the rest. |
+| Graph maintenance job (decay + reinforcement) | ✅ `mezo-b3pp.10`, retraction sweep `mezo-b3pp.31`, person-extraction phase `mezo-06o0.3` | Phase 5 W2.5 — nightly `GraphMaintenanceJob` (`mezo.companion.graph.cron`, dawn slot, `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own job switch): per-user, four phase-isolated steps — `GraphMaintenanceService.runMaintenance` (edge weight ×= `decayFactor` daily, edges under `pruneFloor` soft-deleted in the same pass, candidate nodes older than `candidateMaxAgeDays` soft-deleted, fresh same-night `pattern_event` snapshot evidence bumps a promoted pattern's touching edges by `reinforcementBump` capped at 1.0), then W2.2's `GraphPromotionService.reconcile` (now per-row isolated, mezo-b3pp.32 fixed alongside) — **its phase-2 promotion loops now run BOTH directions (`mezo-b3pp.31`)**: the original three promoter loops UPSERT forward from a still-qualifying source row, and a fourth complement-set sweep runs after them, walking every active node back to its source row and archiving any whose source stopped qualifying — the backstop for a retraction missed while the switch was off, and (for the still-untriggered delete half of `retractFact`) the ONLY trigger it gets, since nothing in main source soft-deletes a `knowledge_fact`; the opt-out half reaches `retractFact` on the same turn via `syncFact` (`mezo-b3pp.30`) — then W2.3's `LifeEventExtractionService.extractFor(yesterday)` — then, since **Emberek S4** (`mezo-06o0.3`), `feature/people`'s `PersonExtractionService.extractFor(userId, yesterday)`: gated on its own `COMPANION_SWITCH ∧ PEOPLE_SWITCH` pair (not the job's trio), so it's wired via `ObjectProvider<PersonExtractionService>.getIfAvailable()` — the bean can legitimately be absent. It enriches the day's toneless mentions with `tone`/`intensity`/`contextLabel` and proposes `candidate` persons for unknown names recurring often enough (see [me.md §5.4](me.md)). A failure in any phase for any user never skips the rest. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs the kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (four here, five since W3.2 added the rungs) (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter ambient floor, today-and-later dates skipped (the snapshot already carries the day), the group's cap of items kept (a cap of 0 skips the query entirely) — **since W3.3 (`mezo-b3pp.14`) the floor, τ and cap are all per kind-group, `ambient-recall.<group>.{min-similarity,decay-days,cap}`**. Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → **[Összefüggések]** (W2.4) → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Consolidation ladder (W3.2) | ✅ `mezo-b3pp.13` | Phase 5 W3.2 — `period_summary` (`week`/`month` rungs, uq `(created_by, granularity, period_start)`) generated by `service/PeriodSummaryService`: pure-code gather (the week's `daily_summary` narratives → the week rung; the month's week rungs → the month rung) + ONE cheap-tier condensation call (`LlmCallContext("companion_consolidation", "weekly"|"monthly", …)`), idempotent per period (an existing rung is returned, the model is NOT called) and honest (no source rows or a blank answer ⇒ no row). `service/ConsolidationJob` (Monday 03:30 weekly + 1st-of-month 03:50 monthly, switch `mezo.techcore.cron.consolidation-job.enabled`) fills and embeds every missing rung of its backfill window per user, so the catch-up doubles as the history backfill; each rung is embedded through `MemoryEmbeddingWriter.writePeriodSummary` as `weekly_summary`/`monthly_summary` at `occurred_on = period_start` (unchanged text short-circuits before the provider call). Recall SHADOWING: `PromptMemoryAssembler` asks for `daily_summary` hits only inside `ambient-recall.weekly-shadow-days` and queries the rung group unfiltered — beyond the cutoff a stretch is remembered through its rung. **Nothing is ever deleted** (spec §12). |
@@ -1000,7 +1000,14 @@ be two near-identical renderers that had drifted: `Ma:` resolved gym only, so to
 were invisible and the model had to re-derive them from the trailing weekly `sport-rend` pattern —
 the very hallucination path this dated resolution exists to remove. The recurring
 `gym-rend`/`sport-rend` strings + last-N-days gym/sport/run digest stay as TRAILING
-background context, no longer the only forward signal), `[Növekedés]` (`GamificationService.getProfile` account level/XP/coins/
+background context, no longer the only forward signal. **`Ma (terv):` is labelled a PLAN and is
+followed by `Ma eddig naplózva: gym: …; sport: N alkalom; futás: N alkalom` (mezo-xrhd)** — the
+plan line alone had no completion state at all, so the companion-feed midday note read the planned
+exercise list back as history ("a reggeli edzéseden már túl vagy") on a day with nothing logged.
+Gym uses the same completed-instance signal as the habit metric `training_done_today`
+(`WorkoutSessionRepository.findDoneInstanceDates(userId, today, today)`); sport/run count today's
+own logs. The `WINDOW_PROMPT` carries the matching rule: the `Ma (terv)` line may never be narrated
+as fact unless `Ma eddig naplózva` or a tool answer confirms it), `[Növekedés]` (`GamificationService.getProfile` account level/XP/coins/
 streak, `ProgressionService.getProfile`'s top-3 skills by level with real XP — 0-XP taxonomy
 ghosts filtered out, else `nincs adat` — and `GrowthWeekService.growthWeek`'s weekly LIFE-XP +
 quest-closed rollup, an honest zero), `[Napi gyakorlat]` (today's quest completion count via the
@@ -1022,7 +1029,10 @@ active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService
 phase; no active medication — since `mezo-lwmq` the standing state — renders `nincs adat`; an
 active med with no dose would render `nincs rögzített dózis` — honest zero either way), and
 `[Regeneráció]` (latest sleep + latest check-in, note truncated to
-`snapshot.checkin-note-max-chars`). Every lookup uses `Optional`/status-filtered repo finders —
+`snapshot.checkin-note-max-chars`; **a check-in older than `today` renders `check-in: MA MÉG NINCS
+(utolsó: {date} {slot} — energia x/10, stressz y/10)`, mezo-xrhd** — it used to render the latest
+row ever, dated but with no today-status, so "no check-in today" was something the model had to
+derive from the date and silently didn't; no check-in row at all still renders `nincs adat`). Every lookup uses `Optional`/status-filtered repo finders —
 the assembler NEVER throws for missing data. Composition is strictly one-way (companion → other
 features; ArchUnit's cycle rule guards the reverse).
 
@@ -1550,8 +1560,9 @@ build was chosen after living with W3.1's always-on recall.
 Existing knowledge starts flowing INTO the graph (spec §6.2) — still no REST surface; promotion is
 internal, driven by async event hooks and (from W2.5) a nightly reconciler.
 
-- **`GraphPromotionService`** (`graph/service/GraphPromotionService.java`) — three promotion
-  entries, each `@Transactional` and idempotent on `GraphNodeEntity`'s
+- **`GraphPromotionService`** (`graph/service/GraphPromotionService.java`) — four promotion
+  entries (a fourth, `syncPerson`, joined the original three in **Emberek S5**, `mezo-06o0.4` —
+  see below), each `@Transactional` and idempotent on `GraphNodeEntity`'s
   `(createdBy, sourceKind, sourceId)` unique index (re-promoting the same row UPSERTs, never
   duplicates):
   - `promotePattern(userId, patternId)` — a `confirmed` pattern (own, not deleted) → a
@@ -1583,9 +1594,27 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     **not** active and has never been promoted (`findBySource` empty) is skipped entirely — nothing
     to archive yet. Its finder is `findByCreatedByAndDeletedFalse...`, so a **soft-deleted** goal is
     invisible to `syncGoal` — deletion needs its own mirror, `retractGoal` below.
-  - All three titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
-    fact texts and goal titles can all exceed `knowledge_node.title varchar(120)`; truncation cuts
-    to 117 chars + `…`.
+  - **`syncPerson(userId, personId)`** (**Emberek S5**, `mezo-06o0.4`, `SOURCE_PERSON = "person"`)
+    — the fourth promotion entry, the `syncGoal` shape applied to a person: an active person →
+    `KIND_PERSON` node, title = the person's name (`truncateTitle`), summary = `personSummary` —
+    `relationshipHu` alone, or `relationshipHu + " · " + cadence` when the person has a contact
+    cadence label. Anything else (`candidate`, `archived`) archives the node instead, the same
+    `syncGoal`-style demotion. **A candidate is deliberately never promoted**: an overnight
+    extractor proposal is not a fact until the user accepts it, so a never-promoted, non-active
+    person is a no-op — there is nothing to shadow yet, exactly as `syncGoal` treats a
+    never-active goal. Meta is a **merge, not an overwrite** (`HashMap` seeded from the existing
+    node's meta, code-review fix `mezo-06o0.4`): the nightly edge pass below writes an
+    `edgeStructuredOn` marker into the same jsonb column, and a plain rename/relationship-edit
+    sync must not clobber it with a fresh `Map.of()`.
+  - **`retractPerson(userId, personId)`** — the DELETE-path mirror of `retractGoal`: a
+    soft-deleted person is invisible to `syncPerson`'s `...AndDeletedFalse` finder, so deletion
+    needs its own retraction, same as a soft-deleted goal. A rejected candidate (reject = soft
+    delete) also routes here and is typically a no-op — a candidate rarely had a node to archive.
+  - All four titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
+    fact texts, and goal titles can all exceed `knowledge_node.title varchar(120)`; person names
+    cannot (`people.yml` pins `maxLength: 120` and `PersonExtractionService.validCandidates` drops
+    longer names, so `truncateTitle` is unreachable on the person branch). Truncation cuts to 117
+    chars + `…`.
   - **Retraction (`mezo-b3pp.31`) — promotion's mirror.** `retractPattern(userId, patternId)`,
     `retractGoal(userId, goalId)` and `retractFact(userId, factId)` each re-check their own
     source row's qualifying condition rather than trusting the caller (a pattern no longer
@@ -1643,26 +1672,29 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     `summary` only once a week — so content retracted mid-week can still be quoted inside
     `[Rólad tanultam]` until the next weekly regeneration. Self-healing (the next `rebuild` drops
     it), not fixed here.
-  - `reconcile(userId)` — the nightly sweep (patterns/facts/goals the write-path hooks could have
-    missed: pre-graph confirmations, manually created facts, drifted titles). Pure UPSERT, so
-    running it twice in a row is a no-op on the second pass. **Exists in this slice but nothing
-    schedules it yet** — no cron, no REST trigger; W2.5's `GraphMaintenanceJob` wires it in.
+  - `reconcile(userId)` — the nightly sweep (patterns/facts/goals/**people** the write-path hooks
+    could have missed: pre-graph confirmations, manually created facts, drifted titles, a person
+    whose status changed while the graph switch was off). Pure UPSERT, so running it twice in a
+    row is a no-op on the second pass. **Exists in this slice but nothing schedules it yet** — no
+    cron, no REST trigger; W2.5's `GraphMaintenanceJob` wires it in.
     **Since `mezo-b3pp.31` it returns `GraphReconcileResult(int upserted, int retracted)`** (a
-    new record, replacing a bare `int`) and runs a FOURTH loop after the three promotion loops
-    above: the complement-set sweep, walking every one of the user's active nodes back to its
-    source row and archiving any whose source stopped qualifying (a pattern no longer confirmed, a
-    soft-deleted goal or fact) — per-row isolated through the same `self`/`proxy`
+    new record, replacing a bare `int`) and runs a promotion loop per source kind — pattern, fact,
+    goal, and (**Emberek S5**, `mezo-06o0.4`) **person**, in that order — followed by a FIFTH,
+    complement-set sweep: walking every one of the user's active nodes back to its source row and
+    archiving any whose source stopped qualifying (a pattern no longer confirmed, a soft-deleted
+    goal, fact, or person) — per-row isolated through the same `self`/`proxy`
     per-item-transaction idiom as the promotion loops, and skipping `sourceKind`s it does not own
     (`sourceId == null` for extractor/quarterly nodes; the `switch`'s `default -> false` branch for
-    the profile node, which DOES carry a `sourceId` — see the code comment). This is the fourth
-    loop's whole reason to exist: the three promotion loops above only ever see rows that STILL
-    qualify, so a row that LEAVES its qualifying set (un-confirmed, soft-deleted) is invisible to
-    them and its node would otherwise stay active forever; the sweep is what heals a retraction
-    missed while the switch was off (no listener existed to hear the event). For a `knowledge_fact`
-    specifically it remains the ONLY path that ever retracts one for the *delete* half (nothing in
-    main source soft-deletes a `knowledge_fact`) — the *opt-out* half now also reaches `retractFact`
-    on the next turn via `syncFact` (`mezo-b3pp.30`), with the sweep as its backstop, same as every
-    other source kind.
+    the profile node, which DOES carry a `sourceId` — see the code comment). This is the
+    complement loop's whole reason to exist: the four promotion loops above only ever see rows
+    that STILL qualify, so a row that LEAVES its qualifying set (un-confirmed, soft-deleted) is
+    invisible to them and its node would otherwise stay active forever; the sweep is what heals a
+    retraction missed while the switch was off (no listener existed to hear the event). For a
+    `knowledge_fact` specifically it remains the ONLY path that ever retracts one for the *delete*
+    half (nothing in main source soft-deletes a `knowledge_fact`) — the *opt-out* half now also
+    reaches `retractFact` on the next turn via `syncFact` (`mezo-b3pp.30`), with the sweep as its
+    backstop, same as every other source kind. The `person` branch of the complement switch calls
+    `retractPerson`, the same backstop role.
   - **Deliberate transaction shape**: `promotePattern`/`promoteFact`/`syncGoal` are each
     all-or-nothing (node + any structured edges commit or roll back together, one DB transaction).
     A failure mid-promotion loses that one promotion, but promotion is idempotent, so the next
@@ -1744,6 +1776,15 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     it is NOT a complete enumeration of every place an opted-out fact's words can still surface.
     The weekly `[Rólad tanultam]` block is a separate, slower channel with its own residue
     window; see "Residual window via the weekly profile snapshot" above.
+  - **Person hooks (`mezo-06o0.4`, Emberek S5), the same AFTER_COMMIT/`@Async` idiom, on the same
+    `GraphPromotionListener`:** `PersonSavedEvent(userId, personId)` → `syncPerson` and
+    `PersonDeletedEvent(userId, personId)` → `retractPerson`. `PeopleService` publishes both,
+    unconditionally and switch-blind (the same posture as every other event above), on every
+    create/update/delete and every `decide(accept)`/`decide(reject)` — an accept flips a person's
+    status to `active` and a save-event follows it into the graph on the same turn; a reject is a
+    soft delete and fires the delete event. The event records live in
+    `feature/people/service/`, not `feature/companion/`: the people feature never imports
+    companion, same boundary `GoalSavedEvent`/`GoalDeletedEvent` already established for goals.
   - Each handler wraps its call in its own try/catch + `log.warn` — a promotion or retraction
     failure is logged, never rethrown into the async executor.
 
@@ -2004,12 +2045,18 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   logged per user by the job.
 - **`GraphMaintenanceJob`** (`graph/service/GraphMaintenanceJob.java`) — the `FeedbackLearningJob`
   per-user-isolation idiom, cron `mezo.companion.graph.cron` (03:20, a free dawn slot). Per user,
-  THREE independently try/caught phases, in order: `GraphMaintenanceService.runMaintenance` →
+  FOUR independently try/caught phases, in order: `GraphMaintenanceService.runMaintenance` →
   `GraphPromotionService.reconcile` (W2.2) → `LifeEventExtractionService.extractFor(yesterday)`
-  (W2.3) — a failure in one phase never skips the other two for that user, and never skips the
-  next user. Gated on `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own
-  `mezo.techcore.cron.graph-maintenance-job.enabled` switch; the three collaborators it calls all
-  already require at least `KNOWLEDGE_GRAPH_SWITCH`, so direct constructor injection is safe.
+  (W2.3) → `PersonExtractionService.extractFor(yesterday)` (**Emberek S4**, `mezo-06o0.3`) — a
+  failure in one phase never skips the other three for that user, and never skips the next user.
+  Gated on `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own
+  `mezo.techcore.cron.graph-maintenance-job.enabled` switch; the first three collaborators it
+  calls all already require at least `KNOWLEDGE_GRAPH_SWITCH`, so direct constructor injection is
+  safe for them. `PersonExtractionService` is different — it's gated on `COMPANION_SWITCH ∧
+  PEOPLE_SWITCH` instead, so the job reaches it through `ObjectProvider<PersonExtractionService>
+  .getIfAvailable()` and simply skips phase 4 when the bean isn't there (the class itself lives in
+  `feature/companion/service`, but it writes into the `people` feature's `person`/`mention` tables
+  — see [me.md §5.4](me.md) for the extraction logic itself).
 - **`GraphPromotionService.reconcile` per-row isolation (mezo-b3pp.32, fixed alongside this
   slice)** — a single pattern/fact/goal's promotion failure is now caught, logged, and skipped
   rather than aborting the rest of that user's sweep; a skip count is logged when any row failed.
@@ -2022,6 +2069,8 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
 - **Tests:** `GraphMaintenanceServiceIT` (decay math, floor-prune, stale-candidate-prune vs.
   active-node survival, reinforcement on fresh evidence, no reinforcement on stale evidence),
   `GraphMaintenanceJobSwitchOffIT`, plus the new `GraphPromotionServiceReconcileIsolationIT`.
+  Phase 4 (`PersonExtractionService`) has its own `PersonExtractionServiceIT` under
+  `feature/companion/service` — see [me.md §7](me.md).
 
 ### W2.6 Tudástár Kapcsolatok surface (✅ `mezo-b3pp.11`)
 
@@ -2040,18 +2089,112 @@ user just said, rendered into the chat prompt. No LLM anywhere in the slice.
   a display concern, not graph behavior.
 - **`GraphController.listGraphNodes()`** now calls this instead of the plain `listActive`, setting
   `GraphNodeResponse.topEdges` per node; `listGraphCandidates()` is untouched (default `[]`).
-- **FE** — `frontend/src/features/me/pages/KnowledgePage.tsx` gains a "Kapcsolatok" section: the
-  new dual-mode `useKnowledgeGraphNodes()` (`data/insights/graphHooks.ts`) lists active nodes
-  grouped by `GRAPH_KIND_GROUPS` (`data/insights/graph.ts` — the 6 kind labels), each rendered as
-  a `KnowledgeGraphNodeCard` (title + optional summary + `topEdges` lines + an "Archivál" button
-  wired to `useKnowledgeGraphActions().archive`, `POST .../archive`). Real-mode 404 (graph switch
-  off) reads as an honest empty list — the `useLifeEventCandidates` idiom — so the rest of the
-  Tudástár page stays fully usable. No graph **visualization** — text lines only (`mezo-2m4` stays
-  parked, spec §12).
+- **FE** — at the time this shipped, `frontend/src/features/me/pages/KnowledgePage.tsx` gained a
+  "Kapcsolatok" section: the new dual-mode `useKnowledgeGraphNodes()` (`data/insights/graphHooks.ts`)
+  lists active nodes grouped by `GRAPH_KIND_GROUPS` (`data/insights/graph.ts` — the 6 kind labels),
+  each rendered as a `KnowledgeGraphNodeCard` (title + optional summary + `topEdges` lines + an
+  "Archivál" button wired to `useKnowledgeGraphActions().archive`, `POST .../archive`). Real-mode
+  404 (graph switch off) reads as an honest empty list — the `useLifeEventCandidates` idiom — so
+  the rest of the page stays fully usable. No graph **visualization** — text lines only (`mezo-2m4`
+  stays parked, spec §12). **Since `mezo-ms9a` (2026-09-01) `KnowledgePage.tsx` is deleted** — this
+  whole chain (now `KindTileGrid`/`KindNodeList`/`NodeDetailSheet`) lives inside the unified
+  Tudástár's `?view=kategoriak` (`features/insights/`, [`insights.md` §2.4](insights.md)); the hook
+  and its contract are unchanged, only the consumer moved.
 - **Acceptance:** `GraphApiIT` confirms `topEdges` is wired through HTTP; `GraphServiceIT` covers
-  the bucketing (weight-desc, capped at 3, edges to archived nodes excluded); FE
-  `graphHooks.test.tsx`/`KnowledgePage.test.tsx` cover mock, real, 404, and
-  archive-removes-from-list.
+  the bucketing (weight-desc, capped at 3, edges to archived nodes excluded); the original FE
+  coverage (`graphHooks.test.tsx`/`KnowledgePage.test.tsx` — mock, real, 404,
+  archive-removes-from-list) now lives in `KnowledgeListPage.test.tsx`'s `?view=kategoriak` cases
+  (`mezo-ms9a`).
+
+### Emberek S5 — gráf-tükör (✅ `mezo-06o0.4`)
+
+The active person becomes a first-class PERSON node (`GraphPromotionService.syncPerson`/
+`retractPerson`, `GraphPromotionListener`'s two new hooks, and `reconcile`'s person loop, all
+documented in W2.2/W2.5 above), and this is the second write path: the nightly proposal of
+**typed event edges** for a person's PERSON node, plus the FE surface that reads them back. Full
+person-facing narrative (why a candidate is never promoted, what the detail-page card looks like)
+lives in [me.md §5.4](me.md); this section is the companion-side mechanics.
+
+- **`PersonExtractionService.linkPersonEdges(userId, day, dayMentions)`** (`feature/companion/
+  service/PersonExtractionService.java`) — the event-edge pass `LifeEventExtractionService`'s
+  sibling never had: runs in **its own `@Transactional`**, called through the self-proxy
+  (`linkPersonEdgesSafely`) strictly AFTER that night's `persistNight` has already committed —
+  the enrichment/candidate work above never shares a transaction with graph writes, so a graph
+  hiccup can't roll back a mention enrichment. For each of the day's mentioned people (first
+  mention per person, `dayMentions` order — a byproduct of the same query the enrichment pass
+  already ran, no second lookup), it structures edges via `GraphEdgeStructurer` when — and only
+  when — ALL of these hold:
+  - the person has an **active** PERSON node (`GraphService.findBySource(userId,
+    GraphPromotionService.SOURCE_PERSON, personId)`, `status = ACTIVE`) — a candidate or archived
+    person is skipped, nothing to link;
+  - the node has **no edges yet**, in either direction (`edgesFrom`/`edgesTo` both empty);
+  - the node's `meta` carries **no `edgeStructuredOn` marker** — see below.
+  - **Daily cap `MAX_EDGE_LINKS_PER_NIGHT = 3`**: at most 3 people get a structuring attempt per
+    night, in `dayMentions` order; the rest wait for a later night they're mentioned again.
+  - **Evidence** is `sourceKind = "mention"` with the triggering mention's own id — the edge
+    traces back to the exact sentence that put the person in that day's list, the same evidence
+    idiom `LifeEventExtractionService` uses for its own edges.
+  - **At most once, ever, per person — not gated on edge count alone (code-review fix).** A pure
+    "has this person got edges yet" check would retry a person on every future mention if the
+    structurer's answer was ever empty or entirely below the confidence floor — wasted LLM spend,
+    and a few permanently edge-less people could crowd the deterministic `dayMentions` ordering
+    and starve genuinely untried people out of the nightly cap forever. So `linkPersonEdges`
+    writes `edgeStructuredOn = <today's ISO date>` into the node's `meta` (via `GraphService
+    .putMeta`) after **every** attempt, regardless of outcome — the gate is
+    `!hasMarker && edgesFrom.isEmpty() && edgesTo.isEmpty()`, and a person is structured at most
+    once for the whole lifetime of that node.
+  - **Isolation is deliberately NOT complete.** `GraphEdgeStructurer`'s own contract lets a
+    `DataAccessException` from the edge upsert escape uncaught, so the caller's transaction is
+    left properly rollback-only. Because `linkPersonEdges` wraps the WHOLE nightly loop in one
+    `@Transactional`, that same exception propagates out of `linkPersonEdges` itself (through the
+    self-proxy call in `linkPersonEdgesSafely`, degrading to `0`) rather than being swallowed
+    per-person — the whole night's edge pass gives up, but the already-committed `persistNight`
+    result (IDENT-3) and the caller's own transaction (a separate one) are untouched. Any OTHER
+    exception (a non-DB failure structuring one person) stays per-person isolated; the loop moves
+    on to the next person.
+  - `PersonExtractionResult` gained a third field, `edgeLinked` — how many people the structuring
+    was **attempted** for that night, not how many edges were created (a zero-edge attempt still
+    counts, since it still spent the marker and closed the "try again" gate).
+  - `ObjectProvider<GraphService>`/`ObjectProvider<GraphEdgeStructurer>`: `KNOWLEDGE_GRAPH_SWITCH`
+    is independent of the `COMPANION_SWITCH ∧ PEOPLE_SWITCH` pair that gates
+    `PersonExtractionService` itself, so with the graph off these beans simply don't exist and
+    `linkPersonEdges` returns `0` immediately — the enrichment/candidate work above is completely
+    unaffected.
+- **`PersonGraphEdgeSource`** (`feature/people/PersonGraphEdgeSource.java`) — a
+  **fogyasztó-tulajdonú port** (ADR 0012, the `NarrativeNoteSource` idiom): `people` needs to show
+  a person's graph edges on the detail page, but `people` must never depend on `companion` — the
+  reverse dependency (`companion` → `people`, e.g. `PersonExtractionService` reading
+  `PersonRepository`) already exists, and the other direction would close a cycle. So `people`
+  declares the shape it needs (`Edge(nodeKind, title, relationHu, strength)`,
+  `edgesByPerson(userId): Map<UUID, List<Edge>>`) and the graph side implements it.
+  `PeopleService` requests it via `ObjectProvider` and works with an empty map when the bean is
+  absent.
+- **`PersonGraphEdgeAdapter`** (`graph/service/PersonGraphEdgeAdapter.java`, implements
+  `PersonGraphEdgeSource`) — **lives in `feature/companion/graph/service`, not somewhere more
+  neutral, because `GraphEdgeLineRenderer` is package-private** to that package: the adapter
+  reuses `GraphEdgeLineRenderer.KIND_VERBS`/`strength(weight)` for the exact same Hungarian
+  vocabulary the `[Összefüggések]` prompt block and the Tudástár `topEdges` surface already use,
+  and the only way to call a package-private static without changing its visibility is to sit in
+  the same package. `@ConditionalOnProperty(KNOWLEDGE_GRAPH_SWITCH)` — off, the bean doesn't
+  exist, `people` falls back to its empty-map default. For each active PERSON node it collects
+  `edgesFrom` + `edgesTo`, **sorts on the raw edge weight** (before mapping to the coarse
+  strong/medium/weak `Edge.strength` string — sorting after mapping would lose the real order),
+  drops any edge whose OTHER endpoint isn't itself an active node (an edge naming an
+  archived/candidate node would mislead, not inform — the same rule `listActiveWithTopEdges`
+  applies), and caps at `MAX_EDGES_PER_PERSON = 3` — the same display cap as the Tudástár's
+  `topEdges`.
+- **`PersonResponse.graphEdges`** — a **required, never-null** list field (empty when there is
+  nothing to show, never absent), sourced from `PersonGraphEdgeAdapter.edgesByPerson` and merged
+  into `PeopleService`'s bootstrap response. With the graph switch off, every
+  `PersonResponse.graphEdges` comes back `[]` — the FE section built on it (`PersonDetailPage`'s
+  "Kapcsolt események · gráf" card, [me.md §5.4](me.md)) simply doesn't render, with no other
+  effect on the page.
+- **Tests:** `PersonExtractionServiceIT`'s edge-suggestion branch covers the gate combinations
+  (no node, archived node, already-edged node, already-attempted marker, the nightly cap);
+  `syncPerson`/`retractPerson`/the reconcile person loop live in their own
+  `GraphPromotionPersonIT` (`feature/companion/graph`), deliberately split out rather than grown
+  onto the existing `GraphPromotionServiceIT`; `PersonGraphEdgeAdapter` has its own
+  `PersonGraphEdgeAdapterIT`; FE coverage is `PersonDetailPage.test.tsx` in both modes.
 
 ### Backend tables (W3.2 consolidation ladder, ✅ `mezo-b3pp.13`)
 
@@ -3287,8 +3430,11 @@ redundancy guard reads the same confirmed set; V3.3 promotes patterns into it (s
 and increments `reinforcement_count`.
 
 **V1.2 Knowledge UI seam (✅ wired).** `useKnowledge()`/`useKnowledgeActions()`
-(`data/insights/knowledgeHooks.ts`) serve BOTH knowledge surfaces (Insights KnowledgeListPage —
-real inbox + toggles; Me KnowledgePage — mock-mode graph prototype, real-mode honest `edges: []`).
+(`data/insights/knowledgeHooks.ts`) serve BOTH knowledge surfaces at the time (Insights
+KnowledgeListPage — real inbox + toggles; Me KnowledgePage — mock-mode graph prototype, real-mode
+honest `edges: []`) — **since `mezo-ms9a` (2026-09-01) there is only one surface**, the unified
+`KnowledgeListPage` (`insights.md` §2.4); `useKnowledge()`'s `edges` field is still the same
+mock-only leg, just with a single consumer now.
 **Contract crossing the seam:** `knowledgeApi` maps the wire (`factText`/`includeInPrompt`/
 `reinforcementCount`, `candidateText`) onto the lean FE domain (`text`/`active`/`reinforced`);
 `FactCategory` IS the backend enum since V1.2 ([`insights.md`](insights.md) §2.4, §5.1).
@@ -3796,8 +3942,9 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **FE:** `knowledgeApi.test.ts` (wire mapping + PATCH/POST bodies), `knowledgeHooks.test.tsx`
   (mock seed; real bootstrap/degraded; mock cache-mutating + real invalidating actions),
   `KnowledgeListPage.test.tsx` both modes (candidate actions, inline refine, toggle, degraded),
-  `KnowledgePage.test.tsx` pinned to mock mode (graph prototype); MSW fact/candidate fixtures
-  mirror the seeds.
+  and at the time `KnowledgePage.test.tsx` pinned to mock mode (graph prototype) — deleted with the
+  page, its coverage folded into `KnowledgeListPage.test.tsx`'s `?view=kategoriak` cases
+  (`mezo-ms9a`); MSW fact/candidate fixtures mirror the seeds.
 
 **V1.3 test additions:**
 
@@ -4881,8 +5028,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **Advisor hardening (V1.3 follow-ups, bd-filed):** tool-RESULT capture into `ToolCallAudit`
   for the verdict judge · `SelfHealthCheck` persistence for violations (log-only today) ·
   latency/cost review of the verdict call after real-key usage (classifier-tier decision).
-- **Knowledge graph edges** — the Me KnowledgePage graph layer has no backend (real mode renders
-  `edges: []`); file its slice when the graph view earns it.
+- **Knowledge graph edges — RESOLVED (`mezo-ms9a`).** The graph layer (now the unified Tudástár's
+  `?view=kategoriak`) has real backend data since W2.6 (`GET /api/companion/graph/node`,
+  `topEdges` per node) and the hero's active-edge COUNT is real since `mezo-ms9a`'s
+  `GET /api/companion/graph/edge/count`; only `useKnowledge()`'s own legacy `edges` field (the
+  pre-graph mock fact-edges) is still mock-only real-mode-`[]` — see [`insights.md` §2.4/§5.1](insights.md).
 
 ## 10. Key files
 
@@ -4911,7 +5061,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROFILE_ASSEMBLER_JOB_SWITCH` (`mezo.techcore.cron.profile-assembler-job.enabled`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `profileBlock(userId)` (the `ObjectProvider<ProfilePromptAssembler>` idiom, mirroring `graphContext`) folded into `assembleSystemPrompt` between the pattern-ack block and `[Emlékek]`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/profile/{ProfileAssemblerJobIT,ProfileAssemblerJobSwitchOffIT,ProfilePromptAssemblerIT,ProfilePropertiesIT,ProfileSourceFindersIT,service/ProfileAssemblerIT,service/ProfileAssemblerCapTest}.java` — §8.
-- **FE side** — `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx` + `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`me.md` §2](me.md).
+- **FE side** — at ship time, `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx`; **since `mezo-ms9a` (2026-09-01)** the card is `frontend/src/features/insights/components/ProfileNodeCard.tsx`, rendered by `KnowledgeListPage`'s `?view=profil` ("Így beszélj velem") view — plus `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`insights.md` §2.4](insights.md).
 
 **Backend — composite flags (W5.1, `mezo-b3pp.18` — §3/§4, spec §4.5/§9.1)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + five per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).

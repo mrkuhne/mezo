@@ -24,6 +24,10 @@ export const people: PersonEntry[] = [
       'Közös mozgás: vasárnap reggeli séta a Duna-parton',
     ],
     ties: ['Csütörtökönként későn jön → vacsora csúszik 21:00 utánra', 'Vasárnapi séta után stabilan jobb hét'],
+    graphEdges: [
+      { nodeKind: 'LIFE_EVENT', title: 'Nyári szabadság · júl 14–21', relationHu: 'kapcsolódik', strength: 'erős' },
+      { nodeKind: 'GOAL', title: 'Esti rutin', relationHu: 'támogatja', strength: 'közepes' },
+    ],
   },
   {
     id: 'pp-bence',
@@ -47,6 +51,9 @@ export const people: PersonEntry[] = [
       'Cipője utoljára májusban cserélve · figyel a térdére',
     ],
     ties: ['Bence játéknapja után stabilan magasabb HRV'],
+    graphEdges: [
+      { nodeKind: 'PATTERN', title: 'Lemondott programok × hangulat', relationHu: 'kapcsolódik', strength: 'közepes' },
+    ],
   },
   {
     id: 'pp-adam',
@@ -70,6 +77,9 @@ export const people: PersonEntry[] = [
       "Áprilisi 1:1: 'új ötlet-pörgés' 14 napos micro-experiment",
     ],
     ties: ['Mizu-péntek utáni szombat reggel: +0.8 SD energia'],
+    graphEdges: [
+      { nodeKind: 'GOAL', title: 'Futóblokk · 8 hét', relationHu: 'támogatja', strength: 'erős' },
+    ],
   },
   {
     id: 'pp-reka',
@@ -93,6 +103,7 @@ export const people: PersonEntry[] = [
       'Vasárnapi sétára meghívás többször visszamondva',
     ],
     ties: ['Réka-említés után 2× 22:00 utáni snack a múlt héten'],
+    graphEdges: [],
   },
   {
     id: 'pp-mark',
@@ -116,6 +127,28 @@ export const people: PersonEntry[] = [
       'Áprilisi 1:1: gain & loss framing együtt felfedezve',
     ],
     ties: [],
+    graphEdges: [],
+  },
+  {
+    id: 'pp-marci',
+    name: 'Marci',
+    initial: 'M',
+    relationship: 'friend',
+    relationshipHu: 'Ismerős',
+    aliases: [],
+    status: 'candidate',
+    sourceKind: 'extractor',
+    affect_baseline: 'neutral',
+    mentionCount: 0,
+    mentionsThisWeek: 0,
+    last_mentioned_at: '',
+    lastMentionLabel: 'Még nincs említés',
+    contactCadenceLabel: '',
+    notes: '„…délben futottam Marcival a gáton, jó volt kimozdulni…"',
+    affectTrend: [],
+    knownFacts: [],
+    ties: [],
+    graphEdges: [],
   },
 ]
 

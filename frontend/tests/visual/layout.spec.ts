@@ -151,3 +151,21 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
   // scroll to reach it — the one thing a clipped fixed-height box could not do.
   if (m.contentOverflow > 0) expect(m.pageScrollable).toBe(true)
 })
+
+test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async ({ page }) => {
+  // mezo-bq2t: `.fkp-item` carried `overflow: hidden`, which zeroes the flex-item auto
+  // min-height — so the picker list's `max-height: 400px` flex column squashed every row
+  // down to ~20px once there were more hits than fit. `flex: none` is the fix; this test
+  // pins the row height so it cannot regress silently.
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('/fuel/log')
+  // The first openable window CTA → navigates to /fuel/log/uj → Kamra source tile → picker.
+  await page.getByRole('button', { name: /^(Logold|Pótold) · / }).first().click()
+  await page.getByRole('button', { name: 'Kamra · hozzáadás' }).click()
+  const rows = page.locator('.fkp-item')
+  await expect(rows.first()).toBeVisible()
+  const heights = await rows.evaluateAll(els => els.map(e => e.getBoundingClientRect().height))
+  expect(heights.length).toBeGreaterThan(4)
+  // A healthy row is ~114px; the squash bug collapsed every row to ~20px.
+  expect(Math.min(...heights)).toBeGreaterThan(60)
+})
