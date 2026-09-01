@@ -6732,14 +6732,6 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .flog-ctas { display: flex; gap: 8px; margin-top: 10px; }
 .flog-ctas .cta-primary { flex: 1; padding: 8px 0; justify-content: center; }
 .flog-ctas .cta-ghost { flex: 0.6; padding: 8px 0; justify-content: center; }
-.flog-blk.is-open .flog-ctas { display: none; }
-.flog-composer { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.38s cubic-bezier(0.25, 0.8, 0.35, 1); }
-.flog-cin { overflow: hidden; min-height: 0; }
-.flog-blk.is-open .flog-composer { grid-template-rows: 1fr; }
-.flog-cbody { border-top: 0.5px solid var(--border-subtle); margin-top: 10px; padding-top: 10px; }
-@media (prefers-reduced-motion: reduce) {
-  .flog-composer { transition: none; }
-}
 
 /* ===== /fuel/log/uj — a logolás saját oldala (mezo-bq2t) =====
    Prototype fuel-log-oldal.html `.cmp-head` / `.cmp-daychip` / `.pastnote` /

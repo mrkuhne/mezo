@@ -5,12 +5,13 @@
 //
 // The hub's Logolás hero tile opens this page (the Huawei „tile → own page"
 // idiom); every user-scheduled eating window renders as ONE full-width
-// WindowBlock, stacked vertically — done / now / missed / future — and the
-// Logold/Pótold/✨ AI CTAs expand the MealComposer IN PLACE inside the block
-// (mezo-bnsf: the block's window slotKey is the composer's fixedSlot, so the
-// MIKOR segment never shows there). The trailing „Ablakon kívül" block is the
-// standing slot-less log door (visible MIKOR segment); an empty day leads with
-// the tervezz block instead of fabricating windows.
+// WindowBlock, stacked vertically — done / now / missed / future. The
+// Logold/Pótold/✨ AI CTAs NAVIGATE to /fuel/log/uj (mezo-bq2t) — the whole
+// context (day, window, AI intent) travels in the URL, so this list keeps its
+// scroll and day-offset untouched and the back button lands here. The trailing
+// „Ablakon kívül" block is the standing slot-less log door — it navigates with
+// NO `w`, never fabricating a window; an empty day leads with the tervezz block
+// instead of fabricating windows.
 //
 // Same composed day as the hub (useFuelDay/useFuelTimeline → buildWindowLane) —
 // a save re-derives everything live: the page hero counter, the block states
@@ -20,14 +21,13 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { FuelMeal } from '@/data/types'
 import { useFuelDay, useFuelTimeline } from '@/data/hooks'
-import { buildWindowLane, asPastDayLane, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
+import { buildWindowLane, asPastDayLane } from '@/features/fuel/logic/fuelSwimlane'
 import { huInt } from '@/shared/lib/huNum'
 import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
 import { ClayIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { WindowBlock } from '@/features/fuel/components/WindowBlock'
-import { MealComposer } from '@/features/fuel/components/MealComposer'
 import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 
 // How far back the stepper lets you go — a week of catch-up, not an open-ended ledger
@@ -39,7 +39,7 @@ export function FuelLogPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   // Anchored once (mezo-1j3z, finding 4): re-computing this per render would let a re-render
-  // after midnight shift `date` (and an open composer's logDate) mid-edit. The page remounts
+  // after midnight shift `date` (and with it the `?d=` the CTAs hand the logging page). The page remounts
   // per navigation, so the staleness window is bounded to a single visit.
   const [today] = useState(() => localDateString())
 
@@ -60,25 +60,20 @@ export function FuelLogPage() {
   const lane = past ? asPastDayLane(laneRaw) : laneRaw
   const doneCount = lane.tiles.filter(t => t.state === 'done').length
 
-  // One composer open at a time: a window tile's key, or 'free' for the trailing block.
-  const [openKey, setOpenKey] = useState<string | null>(null)
-  const [aiOnMount, setAiOnMount] = useState(false)
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
 
-  const openComposer = (key: string, ai: boolean) => {
-    setAiOnMount(ai)
-    setOpenKey(key)
-  }
-  const closeComposer = () => {
-    setOpenKey(null)
-    setAiOnMount(false)
+  // A logolás saját oldalra megy (mezo-bq2t): a kontextus — nap, ablak, AI-szándék — az URL-ben
+  // utazik, így a lista állapota érintetlen marad és a vissza-gomb visszatesz ide.
+  const openLog = (windowKey: string | null, ai: boolean) => {
+    const q = new URLSearchParams()
+    if (past) q.set('d', date)
+    if (windowKey) q.set('w', windowKey)
+    if (ai) q.set('ai', '1')
+    const s = q.toString()
+    navigate(`/fuel/log/uj${s ? `?${s}` : ''}`)
   }
 
-  // Switching days closes any open composer and resets the AI-on-mount flag — the well
-  // belongs to the day it was opened on, never carries across a step (mezo-1j3z).
   const stepDay = (d: number) => {
-    setOpenKey(null)
-    setAiOnMount(false)
     setOffset(o => Math.min(MAX_BACK, Math.max(0, o + d)))
     // The day switch re-renders the whole block list in place — without this the scroller
     // stays wherever it was on the PREVIOUS day, stranding the new day's top blocks off-screen.
@@ -86,23 +81,11 @@ export function FuelLogPage() {
     if (body) body.scrollTop = 0
   }
 
-  // A log opened FROM a window always carries that window's slotKey (mezo-bnsf) — and a
-  // recipe-suggestion window pre-fills its plan recipe, exactly as the retired hub lane did.
-  // An AI launch skips the prefill: the user chose the ✨ path, not the plan meal.
-  const prefillFor = (tile: WindowTileVM, ai: boolean) => {
-    if (ai) return null
-    const slot = plan.slots.find(s => `${s.time}-${s.label}` === tile.key)
-    return slot?.suggestedRecipeId ? { source: 'recipe' as const, recipeId: slot.suggestedRecipeId } : null
-  }
-
   const openScoreForMeal = (mealId: string) => {
     const meal = fuel.meals.find(m => m.id === mealId)
     if (meal) setScoreMeal(meal)
   }
 
-  // Past-day save label: the composer's CTA reads "✓ Pótlás · aug 30." instead of the
-  // usual "Logolás · +10 XP" — the day it books to is right there on the button (mezo-1j3z).
-  const saveLabel = past ? `✓ Pótlás · ${huMonthDay(date).toLowerCase()}.` : undefined
   const allDone = lane.tiles.length > 0 && lane.tiles.every(t => t.state === 'done')
 
   return (
@@ -136,7 +119,7 @@ export function FuelLogPage() {
           </div>
         )}
       </div>
-      <PageBody principle="Egy felület, egy mozdulat: görgetsz a napodon, és ott logolsz, ahol az ablak van — a blokk kinyílik, elmenti, becsukódik.">
+      <PageBody principle="Egy felület, egy mozdulat: görgetsz a napodon, és ott indítod a logolást, ahol az ablak van — a blokk átvisz a logoló oldalra, és vissza.">
         <EntranceGroup>
           {/* A closed-out past day: every window is done — the free block below still stands
               for anything left out (mezo-1j3z). */}
@@ -177,29 +160,15 @@ export function FuelLogPage() {
             <div key={tile.key} className="rise" style={{ '--d': `${40 + i * 45}ms` } as React.CSSProperties}>
               <WindowBlock
                 tile={tile}
-                open={openKey === tile.key}
-                onOpen={(ai) => openComposer(tile.key, ai)}
+                onOpen={(ai) => openLog(tile.key, ai)}
                 onScore={openScoreForMeal}
-              >
-                {openKey === tile.key && (
-                  <MealComposer
-                    fixedSlot={tile.slotKey}
-                    prefill={prefillFor(tile, aiOnMount)}
-                    aiPanelOpenOnMount={aiOnMount}
-                    logDate={past ? date : undefined}
-                    logTime={past ? tile.time : undefined}
-                    saveLabel={saveLabel}
-                    onSaved={closeComposer}
-                    onCancel={closeComposer}
-                  />
-                )}
-              </WindowBlock>
+              />
             </div>
           ))}
 
           {/* Trailing out-of-window block — the standing log path (mezo-66te): the window CTAs
               all vanish once every window is done, so the list must always end with a door. */}
-          <div className={`flog-blk is-free rise${openKey === 'free' ? ' is-open' : ''}`}
+          <div className="flog-blk is-free rise"
             style={{ '--d': `${40 + lane.tiles.length * 45}ms` } as React.CSSProperties}>
             <div className="flog-in">
               <div className="flog-top"><span className="flog-lbl">Ablakon kívül</span></div>
@@ -210,30 +179,17 @@ export function FuelLogPage() {
                   <div className="flog-meta">{past ? 'ami még kimaradt erről a napról' : 'snack, kávé, ami épp jött'}</div>
                 </div>
               </div>
+              {/* Ablak-kulcs NÉLKÜL navigál: a szabad tétel nem tartozik egyetlen ablakhoz sem,
+                  és az oldal sem fabrikál egyet hozzá. */}
               <div className="flog-ctas">
-                <button type="button" className="cta-primary" onClick={() => openComposer('free', false)}
-                  aria-label="Logolás · ablakon kívül" aria-expanded={openKey === 'free'}>
+                <button type="button" className="cta-primary" onClick={() => openLog(null, false)}
+                  aria-label="Logolás · ablakon kívül">
                   ＋ Logolás
                 </button>
-                <button type="button" className="cta-ghost" onClick={() => openComposer('free', true)}
-                  aria-label="AI naplózás · ablakon kívül" aria-expanded={openKey === 'free'}>
+                <button type="button" className="cta-ghost" onClick={() => openLog(null, true)}
+                  aria-label="AI naplózás · ablakon kívül">
                   ✨ AI
                 </button>
-              </div>
-              <div className="flog-composer">
-                <div className="flog-cin">
-                  {openKey === 'free' && (
-                    <div className="flog-cbody">
-                      <MealComposer
-                        aiPanelOpenOnMount={aiOnMount}
-                        logDate={past ? date : undefined}
-                        saveLabel={saveLabel}
-                        onSaved={closeComposer}
-                        onCancel={closeComposer}
-                      />
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </div>
