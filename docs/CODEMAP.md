@@ -167,12 +167,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterProperties`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CheckinGapDetector`, `ClaimConfidenceHistoryEnvelope`,
-    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`,
-    `DetectorInput`, `DetectorRegistry`, `DetectorSignal`, `HrRecoveryTrendDetector`, `JournalNoteDetector`,
-    `JournalSilenceDetector`, `LoggingGapDetector`, `MesoAdherenceDetector`, `NiggleMapDetector`,
+    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`,
+    `ConferenceTranscriptEnvelope`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
+    `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
+    `LoggingGapDetector`, `MacroAdherenceDetector`, `MesoAdherenceDetector`, `NiggleMapDetector`,
     `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `ProgressionAdherenceDetector`,
-    `RirCalibrationDetector`, `RoundOneGates`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`,
-    `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `UnderLoggingDetector`
+    `ProteinTrainingMismatchDetector`, `RirCalibrationDetector`, `RoundTwoWindow`, `RunDetectorKeysEnvelope`,
+    `RunExpertKeysEnvelope`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `UnderLoggingDetector`
 - **Contract** `api/feature/character/character.yml` — 10 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -195,8 +196,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
     `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`
   - **populators:** `AiConversationPopulator`, `CheckInPopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
-    `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `MealPopulator`, `PantryItemPopulator`,
-    `PatternPopulator`, `RunningPopulator`, `SleepLogPopulator`, `TrainPopulator`, `UserPopulator`,
+    `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `MealPopulator`, `MedicationDosePopulator`,
+    `MedicationPopulator`, `PantryItemPopulator`, `PatternPopulator`, `ProtocolPopulator`, `RunningPopulator`,
+    `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
     `WeeklyReviewPopulator`
 
 ### companion
