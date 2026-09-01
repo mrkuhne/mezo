@@ -44,7 +44,7 @@ public class MacroAdherenceDetector implements CharacterDetector {
         String metric = today.protein() ? "fehérje" : "kalória";
         String direction = today.deviation() < 0 ? "alálövi" : "túllövi";
         String summary = "A " + metric + "-cél szisztematikus eltérése: " + today.days()
-                + " logolt napon átlagosan " + RoundTwoWindow.pct(Math.abs(today.deviation()))
+                + " logolt napon átlagosan " + TrailingWindow.pct(Math.abs(today.deviation()))
                 + "%-kal " + direction + " a napi célt (14 nap).";
         return List.of(new DetectorSignal(key(), "taplalkozo", summary, 3));
     }
@@ -54,7 +54,7 @@ public class MacroAdherenceDetector implements CharacterDetector {
     private static Finding finding(DetectorInput in, LocalDate asOf) {
         List<DetectorInput.MealDayPoint> window = new ArrayList<>();
         for (DetectorInput.MealDayPoint m : in.trend().mealDays()) {
-            if (RoundTwoWindow.inWindow(m.date(), asOf) && m.kcal().signum() > 0) {
+            if (TrailingWindow.inWindow(m.date(), asOf) && m.kcal().signum() > 0) {
                 window.add(m);
             }
         }

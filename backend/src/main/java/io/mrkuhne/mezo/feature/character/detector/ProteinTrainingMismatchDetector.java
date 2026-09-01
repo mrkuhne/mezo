@@ -59,13 +59,13 @@ public class ProteinTrainingMismatchDetector implements CharacterDetector {
     private static Finding finding(DetectorInput in, LocalDate asOf) {
         Set<LocalDate> gymDates = new HashSet<>();
         for (DetectorInput.GymDay g : in.trend().gymEightWeeks()) {
-            if (RoundTwoWindow.inWindow(g.date(), asOf)) {
+            if (TrailingWindow.inWindow(g.date(), asOf)) {
                 gymDates.add(g.date());
             }
         }
         List<DetectorInput.MealDayPoint> window = new ArrayList<>();
         for (DetectorInput.MealDayPoint m : in.trend().mealDays()) {
-            if (RoundTwoWindow.inWindow(m.date(), asOf) && m.kcal().signum() > 0
+            if (TrailingWindow.inWindow(m.date(), asOf) && m.kcal().signum() > 0
                     && m.proteinTarget() != null && m.proteinTarget().signum() > 0) {
                 window.add(m);
             }

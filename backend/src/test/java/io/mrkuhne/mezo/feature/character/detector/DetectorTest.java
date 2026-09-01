@@ -35,7 +35,8 @@ class DetectorTest {
 
     static DetectorInput.TrendWindow emptyTrend() {
         return new DetectorInput.TrendWindow(List.of(), List.of(), List.of(), List.of(),
-                null, List.of(), null);
+                null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(),
+                List.of(), List.of());
     }
 
     /** Full-control builder for the round-2 detectors: only the trend window varies. */
@@ -75,7 +76,8 @@ class DetectorTest {
                                                    List<DetectorInput.CheckinDayPoint> checkins,
                                                    DetectorInput.MedContext med,
                                                    List<DetectorInput.GymDay> gym) {
-        return new DetectorInput.TrendWindow(List.of(), gym, meals, water, stack, checkins, med);
+        return new DetectorInput.TrendWindow(List.of(), gym, meals, water, stack, checkins, med,
+                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
     }
 
     @Test
@@ -517,7 +519,7 @@ class DetectorTest {
         // Scenario 1: DAY run at 40s -> band flips KOZOMBOS -> JAVUL -> fires "javul"
         List<DetectorInput.RunPoint> withFlip = new java.util.ArrayList<>(olderWeeks);
         withFlip.add(new DetectorInput.RunPoint(DAY, null, 40, null));
-        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null);
+        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), withFlip, List.of(), null, flipTrend));
         assertThat(fired).singleElement().satisfies(s -> {
@@ -527,7 +529,7 @@ class DetectorTest {
         });
 
         // Scenario 2: DAY run removed entirely -> no new run data -> empty regardless of band
-        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null);
+        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), olderWeeks, List.of(), null, noDayTrend))).isEmpty();
 
@@ -535,7 +537,7 @@ class DetectorTest {
         // suppresses even though new run data exists
         List<DetectorInput.RunPoint> noFlip = new java.util.ArrayList<>(olderWeeks);
         noFlip.add(new DetectorInput.RunPoint(DAY, null, 108, null));
-        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null);
+        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), noFlip, List.of(), null, noFlipTrend))).isEmpty();
     }
@@ -548,7 +550,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(7), null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(14), null, 100, null));
-        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null);
+        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, List.of(), null, trend))).isEmpty();
     }
@@ -623,7 +625,8 @@ class DetectorTest {
                 List.of(new DetectorInput.MealDayPoint(DAY, new BigDecimal("2000"),
                         new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
                         null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
-                List.of(), null, List.of(), null);
+                List.of(), null, List.of(), null,
+                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(DetectorGates.newMealData(trendInput(todayMeal))).isTrue();
 
         DetectorInput.TrendWindow yesterdayMeal = new DetectorInput.TrendWindow(
@@ -631,7 +634,8 @@ class DetectorTest {
                 List.of(new DetectorInput.MealDayPoint(DAY.minusDays(1), new BigDecimal("2000"),
                         new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
                         null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
-                List.of(), null, List.of(), null);
+                List.of(), null, List.of(), null,
+                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
         assertThat(DetectorGates.newMealData(trendInput(yesterdayMeal))).isFalse();
     }
 

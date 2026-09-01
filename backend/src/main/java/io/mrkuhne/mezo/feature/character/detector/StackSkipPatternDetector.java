@@ -83,7 +83,7 @@ public class StackSkipPatternDetector implements CharacterDetector {
             int expected = 0;
             int missed = 0;
             boolean missedToday = false;
-            LocalDate windowStart = asOf.minusDays(RoundTwoWindow.WINDOW_DAYS - 1L);
+            LocalDate windowStart = asOf.minusDays(TrailingWindow.WINDOW_DAYS - 1L);
             LocalDate start = item.startedOn() != null && item.startedOn().isAfter(windowStart)
                     ? item.startedOn()
                     : windowStart;

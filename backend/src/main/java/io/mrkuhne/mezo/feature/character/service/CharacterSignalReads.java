@@ -188,7 +188,9 @@ public class CharacterSignalReads {
         return new DetectorInput(day, mealDates, checkinCounts, weights, journalTexts,
                 gymDays, sportSessions, runLogs, sleepPoints, meso,
                 new DetectorInput.TrendWindow(runsEightWeeks, gymEightWeeks,
-                        mealDays, waterDays, stack, checkinDays, medCycle));
+                        mealDays, waterDays, stack, checkinDays, medCycle,
+                        List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(),
+                        List.of()));
     }
 
     /** Per-day means of the day's logged check-in slots; a scale nobody logged stays null. */
