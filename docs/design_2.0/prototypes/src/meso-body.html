@@ -214,6 +214,25 @@
   .play .wmini b { animation: growy 0.45s ease-out forwards; animation-delay: var(--d); }
   @media (prefers-reduced-motion: reduce) { .wspark b, .play .wspark b, .wmini b, .play .wmini b { transform: none; animation: none; } }
 
+  /* levezetés — lépcsős idővonal */
+  .dsteps { position: relative; margin-top: 6px; }
+  .dstep { display: flex; gap: 9px; padding: 6px 0 10px; position: relative; }
+  .dstep + .dstep::before { content: ''; position: absolute; left: 10px; top: -8px; height: 10px; width: 1.5px; background: rgba(43, 33, 24, 0.12); }
+  .dnum { width: 21px; height: 21px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 8.5px; font-weight: 700; color: #fff; box-shadow: 0 4px 10px -5px rgba(43, 33, 24, 0.5); }
+  .dstep .dt { font-size: 8.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6E6257; margin-top: 3px; }
+  .dcells { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+  .dcell { min-width: 44px; text-align: center; padding: 5px 6px; border-radius: 10px; background: rgba(43, 33, 24, 0.045); }
+  .dcell b { display: block; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dcell small { font-size: 7.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #A2958A; }
+  .dcell.hot { background: rgba(201, 150, 46, 0.16); }
+  .dcell.hot b { color: #A8801F; }
+  .dcell.hot small { color: #A8801F; }
+  .dadj { display: flex; align-items: center; gap: 7px; padding: 5px 0; }
+  .dadj + .dadj { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .dadj .ico { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; flex: none; background: rgba(255, 255, 255, 0.85); }
+  .dadj .tx { font-size: 9.5px; flex: 1; min-width: 0; }
+  .dadj .eff { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2px 7px; flex: none; }
+
   /* volume band bar (MV → MEV → MAV → MRV) */
   .vbwrap { border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 14px; background: #fff; padding: 10px 12px; margin-bottom: 9px; box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.28); cursor: pointer; }
   .vb { position: relative; height: 16px; border-radius: 8px; overflow: hidden; margin-top: 7px; }
@@ -1509,12 +1528,34 @@
         '<div class="p-eyebrow" style="padding:8px 0 2px;">Ezen a héten · hol dolgozik</div>' + dayRows +
       '</div>' +
       '<div class="vcard rise" style="--d:180ms;padding:10px 12px;">' +
-        '<div class="p-eyebrow">Honnan a sáv · levezetés</div>' +
-        '<div class="stg">01 · Baseline</div><div class="mut" style="font-size:9.5px;">RP landmark-tábla · intermediate — MV ' + g.mv + ' · MEV ' + g.mev + ' · MAV ' + g.mav + ' · MRV ' + g.mrv + '</div>' +
-        '<div class="stg">02 · Fókusz-sáv</div><div class="mut" style="font-size:9.5px;">' + (g.tier === 'E' ? 'Emphasize → indulás MEV+2 = ' + (g.mev + 2) + ' · plafon MRV ' + g.mrv : g.tier === 'G' ? 'Grow → indulás MEV ' + g.mev + ' · plafon MAV ' + g.mav : 'Maintain → MV ' + g.mv + ', nincs rámpa') + ' · heti lépés +2</div>' +
-        '<div class="stg">03 · Rád szabva</div><div class="mut" style="font-size:9.5px;">' + (pers.length ? pers.join('<br>') : 'nincs igazítás — a baseline érvényes') + '</div>' +
-        '<div class="stg">04 · Eredő · most</div><div class="mut" style="font-size:9.5px;">' + ser.slice(0, NOW).map(function (v, k) { return (k === NOW - 1 ? '<b>W' + (k + 1) + ' ' + v + '</b>' : 'W' + (k + 1) + ' ' + v); }).join(' → ') + ' · hétfőn <b style="color:#4E6B42;">' + (hold ? 'tartás' : '+2') + '</b></div>' +
-        '<div class="mrow" style="margin-top:8px;"><span class="mut grow" style="font-size:8.5px;">Confidence 65%</span><button class="ghost" style="padding:3px 10px;font-size:8.5px;">🔧 Felülír</button></div>' +
+        '<div class="mrow"><div class="p-eyebrow grow">Honnan a sáv · levezetés</div><span class="mut" style="font-size:8.5px;">4 réteg, egymásra</span></div>' +
+        '<div class="dsteps">' +
+        /* 01 */
+        '<div class="dstep"><span class="dnum" style="background:#A2958A;">1</span><div class="grow"><div class="dt">Baseline · RP tábla</div>' +
+          '<div class="dcells"><div class="dcell"><b>' + g.mv + '</b><small>MV</small></div><div class="dcell"><b>' + g.mev + '</b><small>MEV</small></div><div class="dcell"><b>' + g.mav + '</b><small>MAV</small></div><div class="dcell"><b>' + g.mrv + '</b><small>MRV</small></div></div></div></div>' +
+        /* 02 */
+        '<div class="dstep"><span class="dnum" style="background:' + wsh[2] + ';">2</span><div class="grow"><div class="dt">Fókusz-sáv · ' + (g.tier === 'E' ? 'Emphasize' : g.tier === 'G' ? 'Grow' : 'Maintain') + '</div>' +
+          (g.tier === 'M'
+            ? '<div class="dcells"><div class="dcell"><b>' + g.mv + '</b><small>tart</small></div><div class="dcell"><b>0</b><small>/ hét</small></div></div>'
+            : '<div class="dcells"><div class="dcell"><b>' + w1Of(g) + '</b><small>indul</small></div><div class="dcell"><b>' + cap + '</b><small>plafon</small></div><div class="dcell"><b>+2</b><small>/ hét</small></div></div>') +
+          '</div></div>' +
+        /* 03 */
+        '<div class="dstep"><span class="dnum" style="background:#6C5FA3;">3</span><div class="grow"><div class="dt">Rád szabva</div>' +
+          (pers.length ? pers.map(function (t) {
+            var isWarn = t.indexOf('⚠') === 0;
+            var eff = t.indexOf('MAV +1') > -1 ? '<span class="eff" style="background:rgba(110,139,94,0.16);color:#4E6B42;">MAV +1</span>'
+              : isWarn ? '<span class="eff" style="background:rgba(201,150,46,0.16);color:#A8801F;">variáns</span>'
+              : '<span class="eff" style="background:rgba(108,95,163,0.14);color:#5D4FA0;">tier</span>';
+            return '<div class="dadj"><span class="ico">' + (isWarn ? '⚠' : '✨') + '</span><span class="tx">' + t.replace(/^[✨⚠]\s*/, '').replace(/ → MAV \+1$/, '') + '</span>' + eff + '</div>';
+          }).join('') : '<div class="mut" style="font-size:9px;margin-top:4px;">nincs igazítás — a baseline érvényes</div>') +
+          '</div></div>' +
+        /* 04 */
+        '<div class="dstep" style="padding-bottom:4px;"><span class="dnum" style="background:linear-gradient(135deg,#FFD979,#C9962E);">4</span><div class="grow"><div class="dt">Eredő · a blokkban</div>' +
+          '<div class="dcells">' + ser.slice(0, NOW).map(function (v, k) { return '<div class="dcell' + (k === NOW - 1 ? ' hot' : '') + '"><b>' + v + '</b><small>W' + (k + 1) + (k === NOW - 1 ? ' · most' : '') + '</small></div>'; }).join('') +
+          '<div class="dcell" style="background:rgba(110,139,94,0.14);"><b style="color:#4E6B42;">' + (hold ? '=' : '+2') + '</b><small style="color:#4E6B42;">hétfőn</small></div></div>' +
+          '</div></div>' +
+        '</div>' +
+        '<div class="mrow" style="margin-top:6px;"><span class="mut grow" style="font-size:8.5px;">Mennyire biztos a sáv · 65%</span><button class="ghost" style="padding:3px 10px;font-size:8.5px;">🔧 Felülír</button></div>' +
         '<div class="confbar"><div style="width:65%;"></div></div>' +
       '</div>' +
       '<div class="vcard rise" style="--d:210ms;padding:10px 12px;">' +
