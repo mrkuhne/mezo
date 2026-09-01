@@ -110,7 +110,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   (`SportService.getSchedule`, slot convention `0=Hét..6=Vas`, mezo-ajp); `scope=meso` renders the
   full active mesocycle (`TrainService.listMesocycles`) — weeks/phases/day-templates. One day
   renders as `gym (…): … ; sport: … ; futás: …`, the same three parts in the same order as the
-  snapshot's `Ma:`/`Holnap:`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
+  snapshot's `Ma (terv):`/`Holnap (terv):`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
   and `ToolText.gymLine` (mezo-4qu) — so the tool and the prompt snapshot cannot disagree about a day.
   The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
   is a rest day, rendering `pihenőnap (gym)` on both sides, and a populated one renders
@@ -1000,7 +1000,14 @@ be two near-identical renderers that had drifted: `Ma:` resolved gym only, so to
 were invisible and the model had to re-derive them from the trailing weekly `sport-rend` pattern —
 the very hallucination path this dated resolution exists to remove. The recurring
 `gym-rend`/`sport-rend` strings + last-N-days gym/sport/run digest stay as TRAILING
-background context, no longer the only forward signal), `[Növekedés]` (`GamificationService.getProfile` account level/XP/coins/
+background context, no longer the only forward signal. **`Ma (terv):` is labelled a PLAN and is
+followed by `Ma eddig naplózva: gym: …; sport: N alkalom; futás: N alkalom` (mezo-xrhd)** — the
+plan line alone had no completion state at all, so the companion-feed midday note read the planned
+exercise list back as history ("a reggeli edzéseden már túl vagy") on a day with nothing logged.
+Gym uses the same completed-instance signal as the habit metric `training_done_today`
+(`WorkoutSessionRepository.findDoneInstanceDates(userId, today, today)`); sport/run count today's
+own logs. The `WINDOW_PROMPT` carries the matching rule: the `Ma (terv)` line may never be narrated
+as fact unless `Ma eddig naplózva` or a tool answer confirms it), `[Növekedés]` (`GamificationService.getProfile` account level/XP/coins/
 streak, `ProgressionService.getProfile`'s top-3 skills by level with real XP — 0-XP taxonomy
 ghosts filtered out, else `nincs adat` — and `GrowthWeekService.growthWeek`'s weekly LIFE-XP +
 quest-closed rollup, an honest zero), `[Napi gyakorlat]` (today's quest completion count via the
@@ -1022,7 +1029,10 @@ active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService
 phase; no active medication — since `mezo-lwmq` the standing state — renders `nincs adat`; an
 active med with no dose would render `nincs rögzített dózis` — honest zero either way), and
 `[Regeneráció]` (latest sleep + latest check-in, note truncated to
-`snapshot.checkin-note-max-chars`). Every lookup uses `Optional`/status-filtered repo finders —
+`snapshot.checkin-note-max-chars`; **a check-in older than `today` renders `check-in: MA MÉG NINCS
+(utolsó: {date} {slot} — energia x/10, stressz y/10)`, mezo-xrhd** — it used to render the latest
+row ever, dated but with no today-status, so "no check-in today" was something the model had to
+derive from the date and silently didn't; no check-in row at all still renders `nincs adat`). Every lookup uses `Optional`/status-filtered repo finders —
 the assembler NEVER throws for missing data. Composition is strictly one-way (companion → other
 features; ArchUnit's cycle rule guards the reverse).
 
