@@ -28,6 +28,7 @@ they inline come from `../assets/`.
 | `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
 | `emberek.html` | https://claude.ai/code/artifact/9c94ecde-f426-471a-a988-b0a60ca7fbcf |
 | `mezo-memoar.html` | https://claude.ai/code/artifact/95759be5-7de6-4d04-af7b-60d7862dbe50 |
+| `tudastar-egyben.html` | https://claude.ai/code/artifact/1ddf2a14-f5ce-4d4c-b125-c843e073797e |
 
 ## Workflow
 
