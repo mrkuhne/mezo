@@ -21,7 +21,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import type { Recipe, WorkshopDraft, WorkshopGoal, WorkshopLine } from '@/data/types'
+import type { Recipe, RecipeRole, WorkshopDraft, WorkshopGoal, WorkshopLine } from '@/data/types'
 import { useRecipes, useRecipeActions, useWorkshop } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { recipeApi } from '@/data/fuel/recipeApi'
@@ -42,16 +42,19 @@ import { WorkshopIngredientRow } from '@/features/fuel/components/workshop/Works
 import { WorkshopChatDock, type WorkshopChatMessage } from '@/features/fuel/components/workshop/WorkshopChatDock'
 
 /** The base fields a workshop draft does NOT model — carried through verbatim from the seed
- *  recipe (or defaults) so a save is never a silent full-replace that drops them. */
+ *  recipe (or defaults) so a save is never a silent full-replace that drops them. `role` is one
+ *  of them: an untouched workshop session must NOT retarget a saved recipe's scoring rubric
+ *  (the mezo-uavr wipe class — only an explicit goal preset may change it). */
 interface BaseMeta {
   slot?: string | null
   tags: string[]
   starred: boolean
   prepMins?: number | null
   cookMins?: number | null
+  role: RecipeRole
 }
 
-const DEFAULT_META: BaseMeta = { slot: null, tags: [], starred: false, prepMins: 0, cookMins: 0 }
+const DEFAULT_META: BaseMeta = { slot: null, tags: [], starred: false, prepMins: 0, cookMins: 0, role: 'standard' }
 
 const GOAL_LABEL: Record<WorkshopGoal, string> = {
   high_protein: 'High protein',
@@ -123,12 +126,17 @@ export function RecipeWorkshopPage() {
       starred: seedRecipe.starred,
       prepMins: seedRecipe.prepMins,
       cookMins: seedRecipe.cookMins,
+      role: seedRecipe.role,
     })
     setSourceRecipeId(seedRecipe.id)
   }
 
   // The gold flash is a one-shot: clear the keys 2.6 s after a turn (the CSS keyframe's length),
   // and never leave a timer behind on unmount.
+  // Per-line rescale base for estimate rows (see `setAmount`) — a ref, so a keystroke never
+  // re-renders on it and a turn can reset it.
+  const estBase = useRef(new Map<string, { amount: number; est: { kcal: number; p: number; c: number; f: number } }>())
+
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current) }, [])
   const flash = useCallback((keys: string[]) => {
@@ -141,15 +149,21 @@ export function RecipeWorkshopPage() {
   // The user bubble is pushed BEFORE the call and survives a failure (the error bubble's whole
   // promise is „az üzeneted megvan"); `history` on the wire is the conversation BEFORE this
   // message, which is what the backend prompt builder appends `message` to.
-  const runTurn = useCallback(async (message: string, forGoal: WorkshopGoal | null) => {
+  const runTurn = useCallback(async (message: string, forGoal: WorkshopGoal | null, prior?: WorkshopChatMessage[]) => {
     if (busy) return
-    const priorHistory = history
+    // `prior` lets a RETRY pass the history it just trimmed the failed bubble out of: the state
+    // update behind that trim is not visible in this closure, so reading `history` here would
+    // put the retried message on the wire TWICE (once in history, once as `message`).
+    const priorHistory = prior ?? history
     setHistory(h => [...h, { role: 'user', text: message }])
     setError(null)
     setBusy(true)
     try {
       const res = await workshopTurn({ message, goal: forGoal, history: priorHistory, draft })
       flash(diffLineKeys(draft, res.draft))
+      // The incoming draft's `est` values are authoritative — the old rescale bases would keep
+      // scaling a line off a snapshot the model has just replaced.
+      estBase.current.clear()
       setDraft(res.draft)
       setHistory(h => [...h, { role: 'assistant', text: res.reply }])
       setContextNames([])
@@ -180,10 +194,12 @@ export function RecipeWorkshopPage() {
   const retry = () => {
     if (!error || busy) return
     const failed = error.retryText
-    // Replace the failed turn, don't append a second copy of the same user bubble.
-    setHistory(h => (h.length > 0 && h[h.length - 1].role === 'user' ? h.slice(0, -1) : h))
+    // Replace the failed turn, don't append a second copy of the same user bubble — and send the
+    // TRIMMED history, so the retried payload carries the message exactly once.
+    const trimmed = history.length > 0 && history[history.length - 1].role === 'user' ? history.slice(0, -1) : history
+    setHistory(trimmed)
     setError(null)
-    void runTurn(failed, goal)
+    void runTurn(failed, goal, trimmed)
   }
 
   const editFailed = () => {
@@ -193,21 +209,34 @@ export function RecipeWorkshopPage() {
     setError(null)
   }
 
+
   // --- canvas edits ----------------------------------------------------------
-  // A manual amount edit on an ESTIMATE line rescales its frozen `est` snapshot from the line's
-  // own before/after ratio — the same rule `scaleServings` applies (there is no pantry row to
-  // recompute an estimate from). Without it the row's kcal would contradict its own amount.
+  // A manual amount edit on an ESTIMATE line rescales its frozen `est` snapshot — there is no
+  // pantry row to recompute an estimate from, so the ratio is the only honest rule (the same one
+  // `scaleServings` applies). The base is the amount+est pair the line ARRIVED with, held per
+  // line key and reset by every turn — NOT the previous keystroke's values:
+  //   · chained per-keystroke ratios erode precision (a select-all-retype walks 2 → 20 → 200), and
+  //   · an empty field passes through amount 0, which would zero `est` and make recovery a
+  //     division by zero — the row would then read 0 kcal forever.
+  // While the field is empty/0 the snapshot is therefore left ALONE, not scaled to nothing.
   const setAmount = (l: WorkshopLine, amount: number): WorkshopLine => {
     if (l.source !== 'estimate' || !l.est) return { ...l, amount }
-    const factor = l.amount ? amount / l.amount : 0
+    const key = lineKey(l)
+    let base = estBase.current.get(key)
+    if (!base) {
+      base = { amount: l.amount, est: l.est }
+      estBase.current.set(key, base)
+    }
+    if (amount <= 0 || base.amount <= 0) return { ...l, amount }
+    const factor = amount / base.amount
     return {
       ...l,
       amount,
       est: {
-        kcal: roundMacro(l.est.kcal * factor),
-        p: roundMacro(l.est.p * factor),
-        c: roundMacro(l.est.c * factor),
-        f: roundMacro(l.est.f * factor),
+        kcal: roundMacro(base.est.kcal * factor),
+        p: roundMacro(base.est.p * factor),
+        c: roundMacro(base.est.c * factor),
+        f: roundMacro(base.est.f * factor),
       },
     }
   }
@@ -237,7 +266,9 @@ export function RecipeWorkshopPage() {
   }
 
   // --- save flow -------------------------------------------------------------
-  const input = draft ? draftToInput(draft, baseMeta, goalRole(goal)) : null
+  // Only an explicitly picked goal may set the role; otherwise the seed recipe's own role rides
+  // through untouched (a fresh session's default is `standard`, which is what a new recipe gets).
+  const input = draft ? draftToInput(draft, baseMeta, goal ? goalRole(goal) : baseMeta.role) : null
   const canSave = Boolean(input) && (draft?.lines.length ?? 0) > 0 && (draft?.name.trim().length ?? 0) > 0
   const save = () => {
     if (!input || !canSave) return
