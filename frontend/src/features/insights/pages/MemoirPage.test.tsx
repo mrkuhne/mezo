@@ -108,3 +108,14 @@ describe('MemoirPage (real mode)', () => {
     expect(screen.queryByRole('group', { name: FEEDBACK_GROUP })).not.toBeInTheDocument()
   })
 })
+
+// F7.5 (mezo-d20.8.5): the un-retired archive footer navigates to the shelf.
+describe('MemoirPage archive CTA', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('the Archívum card is a real navigation affordance, not a dead label', () => {
+    renderPage()
+    expect(screen.getByRole('button', { name: /Archívum — a korábbi fejezetek/ })).toBeInTheDocument()
+  })
+})

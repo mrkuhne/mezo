@@ -343,7 +343,8 @@ test('day tabs switch between program days (replaces the old per-day accordion)'
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
   expect(screen.getByText('Push')).toBeInTheDocument()
   // switching tabs swaps the active day's hero
-  await user.click(screen.getByRole('button', { name: /Sze/ }))
+  // exact name: a bare /Sze/ also matches September date labels (month-rollover flake)
+  await user.click(screen.getByRole('button', { name: 'Sze · Legs' }))
   expect(screen.getByText('Legs')).toBeInTheDocument()
 })
 

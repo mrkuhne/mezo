@@ -83,6 +83,24 @@ export function MemoirPage() {
           <p>{anniversaryNote}</p>
         </div>
       ) : null}
+
+      {/* F7.5 (mezo-d20.8.5): the archive footer returns — retired at mezo-d20.5.5 as a dead
+          affordance, un-retired now that a real shelf lives behind it. */}
+      <button
+        type="button"
+        className="mz-qcard rise"
+        style={{
+          '--d': '160ms', display: 'flex', alignItems: 'center', gap: 8,
+          padding: '13px 16px', cursor: 'pointer', textAlign: 'left', width: '100%',
+          fontFamily: 'inherit', border: 'none',
+        } as React.CSSProperties}
+        onClick={() => navigate('/mezo/memoir/archivum')}
+      >
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', flex: 1 }}>
+          Archívum — a korábbi fejezetek
+        </span>
+        <span aria-hidden style={{ color: 'var(--mz-cell-lav-ink)', fontWeight: 700 }}>›</span>
+      </button>
     </EntranceGroup>,
   )
 }
