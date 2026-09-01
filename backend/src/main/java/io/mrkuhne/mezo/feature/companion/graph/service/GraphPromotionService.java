@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
+import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -41,11 +43,16 @@ public class GraphPromotionService {
     public static final String SOURCE_PATTERN = "pattern";
     public static final String SOURCE_FACT = "knowledge_fact";
     public static final String SOURCE_GOAL = "goal";
+    /** Emberek S5 (mezo-06o0.4). A companion → people függés már létezik
+     *  (PersonExtractionService); a fordított irány TILOS, ezért a people oldal nem tud
+     *  a gráfról, és nem is kell tudnia: minden itt dől el. */
+    public static final String SOURCE_PERSON = "person";
 
     private final GraphService graphService;
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final GoalRepository goalRepository;
+    private final PersonRepository personRepository;
     // ObjectProvider, not a direct dependency: the companion switch can be off while the graph
     // switch is on, so GraphEdgeStructurer's bean may not exist (see its @ConditionalOnProperty).
     private final ObjectProvider<GraphEdgeStructurer> edgeStructurer;
@@ -139,6 +146,40 @@ public class GraphPromotionService {
     }
 
     /**
+     * Aktív személy -> PERSON node; minden más állapot (jelölt, archivált) archiválja a node-ját —
+     * a {@link #syncGoal} alakja, ugyanazzal a „soha nem felejt, csak leveszi a színpadról"
+     * szerződéssel.
+     *
+     * <p>A jelölt SZÁNDÉKOSAN nem kerül a gráfba: egy éjszakai extraktor-javaslat nem tény, amíg
+     * a felhasználó rá nem bólint. Egy soha nem promótált, nem aktív személy tehát no-op (nincs mit
+     * árnyékolni), pontosan mint a {@code syncGoal}-nál.
+     *
+     * <p>{@code summary} = kapcsolat + cadence (spec „Gráf-tükör"), mert ez az, amit a
+     * {@code [Összefüggések]} prompt-blokk és a {@link GraphEdgeStructurer} olvas a személyről —
+     * a `notes` a felhasználó szabad szövege, oda nem való.
+     */
+    @Transactional
+    public Optional<GraphNodeEntity> syncPerson(UUID userId, UUID personId) {
+        Optional<PersonEntity> found = personRepository.findByIdAndCreatedByAndDeletedFalse(personId, userId);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        PersonEntity person = found.get();
+        boolean active = "active".equals(person.getStatus());
+        if (!active && graphService.findBySource(userId, SOURCE_PERSON, personId).isEmpty()) {
+            return Optional.empty();   // sosem volt node — nincs mit árnyékolni
+        }
+        GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PERSON,
+            truncateTitle(person.getName()), personSummary(person), SOURCE_PERSON, person.getId(),
+            null, Map.of("relationship", person.getRelationship(), "status", person.getStatus()));
+        String status = active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED;
+        if (!status.equals(node.getStatus())) {
+            node.setStatus(status);
+        }
+        return Optional.of(node);
+    }
+
+    /**
      * The mirror of {@link #promotePattern} (bd mezo-b3pp.31): a pattern that is no longer
      * confirmed must stop asserting itself in the graph. Archives the node rather than deleting
      * it — {@code status='archived'} keeps the row (and with it the
@@ -187,6 +228,21 @@ public class GraphPromotionService {
             return Optional.empty();
         }
         return archiveBySource(userId, SOURCE_GOAL, goalId);
+    }
+
+    /** A {@link #syncPerson} DELETE-ági tükre, a {@link #retractGoal} mintájára: a soft-deleted
+     *  személy láthatatlan a {@code ...AndDeletedFalse} finder számára, ezért a törlésnek saját
+     *  visszavonása kell, különben a node örökre aktív marad. Az elvetett jelölt is ide fut
+     *  (a reject soft-delete) — annak jellemzően nincs is node-ja, így ez no-op. */
+    @Transactional
+    public Optional<GraphNodeEntity> retractPerson(UUID userId, UUID personId) {
+        boolean stillActive = personRepository.findByIdAndCreatedByAndDeletedFalse(personId, userId)
+            .filter(p -> "active".equals(p.getStatus()))
+            .isPresent();
+        if (stillActive) {
+            return Optional.empty();
+        }
+        return archiveBySource(userId, SOURCE_PERSON, personId);
     }
 
     /** The mirror of {@link #promoteFact} (bd mezo-b3pp.31). A fact stops qualifying two ways:
@@ -245,25 +301,27 @@ public class GraphPromotionService {
     /**
      * The nightly sweep (spec §6.2) — everything the write-path hooks could have missed: patterns
      * confirmed before the graph existed, manually created facts (no promote hook), goals whose
-     * title drifted since they were last synced. Pure UPSERT (every write is keyed on
+     * title drifted since they were last synced, and people whose status changed while the graph
+     * listener was off (Task 3). Pure UPSERT (every write is keyed on
      * {@code (createdBy, sourceKind, sourceId)}), so running it every night — or twice in a row —
      * is free of side effects: {@code reconcile(userId)} called back-to-back returns the same
      * count and leaves the same rows. W2.5 wires it into {@code GraphMaintenanceJob}; nothing
      * schedules it in this slice, and it is not exposed over REST.
      *
-     * <p>Deliberately reuses {@link #promotePattern}/{@link #promoteFact}/{@link #syncGoal}
-     * rather than re-deriving their skip rules here: this method fetches confirmed patterns, all
-     * (non-deleted) facts, and all (non-deleted) goals for the user, and lets each promote/sync
-     * method's own filter decide whether a given row actually produces a node (unconfirmed
-     * patterns are excluded at the query level since the repository already has a
-     * status-scoped finder; pattern-sourced facts, opted-out facts (mezo-b3pp.30), and
-     * never-promoted/inactive goals are excluded by {@link #promoteFact} and {@link #syncGoal}
+     * <p>Deliberately reuses {@link #promotePattern}/{@link #promoteFact}/{@link #syncGoal}/
+     * {@link #syncPerson} rather than re-deriving their skip rules here: this method fetches
+     * confirmed patterns, all (non-deleted) facts, all (non-deleted) goals, and all (non-deleted)
+     * people for the user, and lets each promote/sync method's own filter decide whether a given
+     * row actually produces a node (unconfirmed patterns are excluded at the query level since the
+     * repository already has a status-scoped finder; pattern-sourced facts, opted-out facts
+     * (mezo-b3pp.30), never-promoted/inactive goals, and never-promoted candidate/archived people
+     * are excluded by {@link #promoteFact}, {@link #syncGoal}, and {@link #syncPerson}
      * respectively).
      *
      * <p><b>Deliberately NOT {@code @Transactional} itself.</b> Each promote/sync call below goes
      * through {@link #self}, the injected proxy, so it runs inside its OWN transaction — the one
      * {@code @Transactional} already puts on {@link #promotePattern}/{@link #promoteFact}/
-     * {@link #syncGoal}. Calling them on {@code this} instead (ordinary Spring self-invocation)
+     * {@link #syncGoal}/{@link #syncPerson}. Calling them on {@code this} instead (ordinary Spring self-invocation)
      * would bypass the proxy entirely: no new transactional advice would apply, and if reconcile
      * itself carried {@code @Transactional}, every promotion in the sweep would silently merge
      * into that one outer transaction. For a large first sweep over a backlog — where every
@@ -282,14 +340,14 @@ public class GraphPromotionService {
      * <p>Per-row isolation (mezo-b3pp.32): a single row's promotion/sync failure is caught,
      * logged, and skipped — it does not abort the rest of the sweep for this user. This matters
      * once W2.5's {@code GraphMaintenanceJob} calls this nightly across every user: one corrupt
-     * pattern must not silently stop that user's facts and goals from reconciling too.
+     * pattern must not silently stop that user's facts, goals, and people from reconciling too.
      *
-     * <p>After the three promotion loops, a fourth pass — the COMPLEMENT sweep (mezo-b3pp.31) —
+     * <p>After the four promotion loops, a fifth pass — the COMPLEMENT sweep (mezo-b3pp.31) —
      * walks the user's ACTIVE nodes back to their source row and retracts (archives) every one
-     * whose source stopped qualifying. The three loops above only ever see rows that still
-     * qualify, so a row that LEFT a qualifying set (a pattern un-confirmed, a goal or fact
-     * soft-deleted, or a fact opted out via {@code includeInPrompt = false}, mezo-b3pp.30) is
-     * invisible to them and its node would otherwise stay active forever. This
+     * whose source stopped qualifying. The four loops above only ever see rows that still
+     * qualify, so a row that LEFT a qualifying set (a pattern un-confirmed, a goal, fact, or
+     * person soft-deleted, or a fact opted out via {@code includeInPrompt = false}, mezo-b3pp.30)
+     * is invisible to them and its node would otherwise stay active forever. This
      * is what heals a retraction that happened while the graph switch was off (no listener
      * existed to hear the event), and it is the ONLY path that retracts a soft-deleted
      * {@code knowledge_fact}, since nothing in main source deletes one and so no event is
@@ -329,9 +387,18 @@ public class GraphPromotionService {
                 log.warn("Reconcile: goal {} sync failed for user {}", goal.getId(), userId, e);
             }
         }
-        // The COMPLEMENT sweep (mezo-b3pp.31). The three loops above only ever see rows that
-        // still qualify — confirmed patterns, non-deleted facts, non-deleted goals — so a row
-        // that LEAVES those sets is invisible to them and its node would stay active forever.
+        for (PersonEntity person : personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId)) {
+            try {
+                count += proxy.syncPerson(userId, person.getId()).isPresent() ? 1 : 0;
+            } catch (Exception e) {
+                skipped++;
+                log.warn("Reconcile: person {} sync failed for user {}", person.getId(), userId, e);
+            }
+        }
+        // The COMPLEMENT sweep (mezo-b3pp.31). The four loops above only ever see rows that
+        // still qualify — confirmed patterns, non-deleted facts, non-deleted goals, non-deleted
+        // people — so a row that LEAVES those sets is invisible to them and its node would stay
+        // active forever.
         // This walks the other way round: from the user's active nodes back to their source row,
         // archiving every node whose source stopped qualifying. It is what heals a retraction
         // that happened while the graph switch was off (no listener existed to hear the event).
@@ -356,6 +423,7 @@ public class GraphPromotionService {
                     case SOURCE_PATTERN -> proxy.retractPattern(userId, sourceId).isPresent();
                     case SOURCE_FACT -> proxy.retractFact(userId, sourceId).isPresent();
                     case SOURCE_GOAL -> proxy.retractGoal(userId, sourceId).isPresent();
+                    case SOURCE_PERSON -> proxy.retractPerson(userId, sourceId).isPresent();
                     default -> false;
                 };
                 retracted += archived ? 1 : 0;
@@ -378,6 +446,14 @@ public class GraphPromotionService {
         meta.put("n", pattern.getN());
         meta.put("direction", r == null ? null : (r.signum() < 0 ? "negative" : "positive"));
         return meta;
+    }
+
+    /** „Élettárs · Napi" — kapcsolat, és ha van, a cadence-címke. */
+    private static String personSummary(PersonEntity person) {
+        String cadence = person.getContactCadenceLabel();
+        return cadence == null || cadence.isBlank()
+            ? person.getRelationshipHu()
+            : person.getRelationshipHu() + " · " + cadence;
     }
 
     /** knowledge_node.title is varchar(120); pattern titles (up to 200, LLM-generated hypotheses),
