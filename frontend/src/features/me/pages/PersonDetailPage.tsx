@@ -171,7 +171,7 @@ export function PersonDetailPage() {
                 const meta = GRAPH_KIND_META[edge.nodeKind] ?? GRAPH_KIND_FALLBACK
                 return (
                   <button
-                    key={`${edge.nodeKind}-${edge.title}`}
+                    key={`${i}-${edge.nodeKind}-${edge.title}`}
                     type="button"
                     className={`ppl-evt ppl-evt-${meta.tone} rise`}
                     style={{ '--d': `${130 + i * 30}ms` } as CSSProperties}
