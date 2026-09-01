@@ -558,7 +558,8 @@ are usable without a build step).
   The screen IS the live recipe canvas — editable Fraunces name + goal chip, macro overview card
   (kcal + P/C/F cells, /adag↔egész toggle, kcal-source breakdown bar), serving stepper that scales
   amounts proportionally, ingredient rows (Kamra tag + inline amount input with ± steppers and live
-  per-row kcal; unmatched AI line = ✨ BECSLÉS tag, "ízlés szerint"; no-data = honest `—`),
+  per-row kcal; unmatched AI line = ✨ BECSLÉS tag — either gram-based with estimated per-100g macros and an
+  editable amount, or "ízlés szerint" with a fixed estimate; no-data = honest `—`),
   collapsible Elkészítés, portaled save bar — with a docked chat strip below (preset chips
   High protein · Pre/Post workout · Lefekvés előtt · Reggeli, last-AI-message preview, composer +
   🏺 kamra picker sheet feeding context chips). Every AI turn is prose + a structured **patch**

@@ -217,9 +217,9 @@
         var c = contrib(g);
         var d = diffIds.indexOf(g.id) >= 0 ? ' diff' : '';
         h += '<div class="ing' + d + '" data-id="' + g.id + '">' +
-          '<div class="idisc" style="--iw:' + (g.est ? '#F6ECD3' : '#E9EFDF') + '">' + g.nm.charAt(0) + '</div>' +
+          '<div class="idisc" style="--iw:' + ((g.est || g.estPer) ? '#F6ECD3' : '#E9EFDF') + '">' + g.nm.charAt(0) + '</div>' +
           '<div class="imain"><div class="nm">' + g.nm + '</div><div class="src">' +
-          (g.est ? '<span class="tagb">✨ Becslés</span>' : '<span class="tagk">Kamra</span>') + '</div></div>' +
+          ((g.est || g.estPer) ? '<span class="tagb">✨ Becslés</span>' : '<span class="tagk">Kamra</span>') + '</div></div>' +
           (g.est
             ? '<div class="iamt"><span style="font-size:8px;color:#A2958A">ízlés szerint</span></div>'
             : '<div class="iamt"><button class="ibtn" data-act="minus" data-id="' + g.id + '">−</button>' +
@@ -366,6 +366,14 @@
     };
     function setAmt(id, v) { var g = ingBy(id); if (g) g.amt = v; }
     var GENERIC = [
+      {
+        tx: 'Tettem mellé <b>200 g édesburgonyát</b> — ezt nem találtam a kamrádban, úgyhogy ✨ <b>becsült értékkel</b> számolok (~86 kcal / 100 g). Ha egyszer felveszed a kamrába, a tényadataival pontosítom.',
+        patch: 'Vászon frissítve · +1 hozzávaló (becslés)',
+        fn: function () {
+          if (!ingBy('edesburi')) R.ings.splice(2, 0, { id: 'edesburi', nm: 'Édesburgonya', amt: 200, unit: 'g', per: { k: 86, p: 1.6, c: 20, f: 0.1 }, estPer: true });
+          return ['edesburi'];
+        }
+      },
       {
         tx: 'Finomítottam: az olívaolajat <b>a felére vettem</b> — az íz marad, adagonként ~5 g zsírt spórolsz. Ha valamelyik soromat kézzel átírtad, ahhoz nem nyúltam.',
         patch: 'Vászon frissítve · 1 sor',
