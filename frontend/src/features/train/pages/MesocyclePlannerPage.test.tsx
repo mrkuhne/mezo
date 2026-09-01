@@ -343,7 +343,9 @@ test('day tabs switch between program days (replaces the old per-day accordion)'
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
   expect(screen.getByText('Push')).toBeInTheDocument()
   // switching tabs swaps the active day's hero
-  await user.click(screen.getByRole('button', { name: /Sze/ }))
+  // Anchored + separator: a loose /Sze/ also matches the September start-date
+  // chip ("Szep 1"), so this test only failed in September (mezo bug, 2026-09-01).
+  await user.click(screen.getByRole('button', { name: /^Sze ·/ }))
   expect(screen.getByText('Legs')).toBeInTheDocument()
 })
 
