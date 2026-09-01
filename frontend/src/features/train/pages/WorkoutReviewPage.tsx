@@ -9,9 +9,10 @@
 // template day, the reference top set per exercise, and the stepping along that
 // same chain. All of it rides existing endpoints; no contract changed.
 // ============================================================
+import { useState } from 'react'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useChallenges, useMedals, useTemplateDayChain, useWorkoutDetail } from '@/data/hooks'
+import { useChallenges, useMedals, useTemplateDayChain, useWorkoutDetail, useWorkoutNote } from '@/data/hooks'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
@@ -58,6 +59,10 @@ export function WorkoutReviewPage() {
   // no chain — the comparison tile and the stepping simply do not render for it.
   const { prev, next } = useTemplateDayChain(detail?.templateSessionId, detail?.date ?? null)
   const { detail: prevDetail } = useWorkoutDetail(prev?.id ?? null)
+  // Closing-note editing state (mezo-d20.8.2.2) — above the early returns, as hooks must be.
+  const { saveNote } = useWorkoutNote()
+  const [noteEditing, setNoteEditing] = useState(false)
+  const [noteDraft, setNoteDraft] = useState('')
 
   if (pending) return <ScreenSkeleton />
   if (error || !detail) {
@@ -120,6 +125,16 @@ export function WorkoutReviewPage() {
       comparison={comparison}
       prevTopByName={prevTopByName}
       footer={stepping}
+      // The closing note (mezo-d20.8.2.2). This page is the ONLY one that offers editing:
+      // revisiting is its whole job, so filling a gap here is a deliberate intent — which is
+      // also why an absent note still offers `＋ Jegyzet` rather than rendering nothing.
+      note={detail.note ?? null}
+      draftNote={noteDraft}
+      onDraftNote={setNoteDraft}
+      noteEditing={noteEditing}
+      onEditNote={() => { setNoteDraft(detail.note ?? ''); setNoteEditing(true) }}
+      onNoteSave={() => { saveNote(detail.id, noteDraft); setNoteEditing(false) }}
+      onNoteCancel={() => setNoteEditing(false)}
       onExit={goBack}
     />
   )

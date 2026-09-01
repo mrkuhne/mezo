@@ -6228,6 +6228,42 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 /* the closing/closed report's quiet principle line (prototype .habnote) */
 .wsum-principle { font-size: 11px; font-weight: 300; line-height: 1.5; color: var(--text-tertiary);
   margin: 14px 24px 20px; }
+
+/* ── Edzés-szintű záró jegyzet (mezo-d20.8.2.2) — prototype review-body .wn* ×1.18.
+   `closing`: a question-shaped label over the field, sitting ABOVE the CTA block, which is in
+   flow (never position:fixed) so the mobile keyboard pushes the finish button rather than
+   covering it. `closed`: the saved sentence in Fraunces italic; absent note renders nothing,
+   except on the review page, where `＋ Jegyzet` offers the deliberate fill-in. */
+.wsum-note { margin: 15px 24px 0; }
+.wsum-note-q { display: block; font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  font-weight: 700; color: var(--mz-cell-coral-ink); margin-bottom: 7px; }
+.wsum-note-ta { display: block; width: 100%; box-sizing: border-box; min-height: 71px; resize: none;
+  font-family: inherit; font-size: 13px; line-height: 1.5; color: var(--text-primary);
+  background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 16px;
+  padding: 12px 14px; box-shadow: 0 6px 16px -12px rgba(43, 33, 24, 0.4); }
+.wsum-note-ta::placeholder { color: var(--text-tertiary); font-style: italic; }
+.wsum-note-ta:focus { outline: none; border-color: var(--mz-cell-coral-ink);
+  box-shadow: 0 0 0 3px rgba(168, 74, 38, 0.18); }
+.wsum-note-hint { font-size: 9.5px; font-weight: 300; color: var(--text-tertiary); margin-top: 6px; }
+
+.wsum-note-r { position: relative; margin: 15px 24px 0; padding: 1px 34px 1px 14px;
+  border-left: 2px solid var(--mz-cell-sage-ink); }
+.wsum-note-lbl { display: block; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  font-weight: 700; color: var(--text-tertiary); margin-bottom: 5px; }
+.wsum-note-r p { margin: 0; font-family: 'Fraunces', Georgia, serif; font-style: italic;
+  font-size: 14.5px; line-height: 1.55; color: var(--text-primary); white-space: pre-line; }
+.wsum-note-edit { position: absolute; top: 0; right: 0; width: 28px; height: 28px; border: none;
+  cursor: pointer; display: grid; place-items: center; border-radius: 50%;
+  background: var(--surface-2); color: var(--text-tertiary); }
+.wsum-note-add { display: block; width: calc(100% - 48px); margin: 15px 24px 0; padding: 12px 0;
+  cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 600;
+  color: var(--text-tertiary); background: none; border-radius: 16px;
+  border: 1px dashed var(--border-subtle); }
+.wsum-note-ed { display: flex; gap: 8px; margin-top: 8px; }
+.wsum-note-ed button { flex: 1; border: none; cursor: pointer; font-family: inherit;
+  border-radius: 999px; padding: 9px 0; font-size: 12px; font-weight: 600; }
+.wsum-note-ed .save { background: var(--mz-cell-sage-ink); color: #fff; }
+.wsum-note-ed .cancel { background: var(--surface-2); color: var(--text-secondary); }
 /* ── Fuel hub re-face (mezo-d20.4.1) — prototype fuel-body hub section ×1.18:
    the keret-hero as a rounded sage card (ONE number, hub v3), the WINDOW SWIMLANE
    (.fh-lane / .fh-wtile with its kcal mini-tile and three mini macro rings), the
