@@ -2,7 +2,14 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
@@ -14,11 +21,14 @@ import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -40,6 +50,8 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
+    @Autowired private GraphService graphService;
+    @Autowired private GraphPromotionService promotionService;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -213,5 +225,148 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     @Test
     void testExtractorMarker_shouldStayInSyncWithTheFakeDispatch() {
         assertThat(PersonExtractionService.EXTRACTOR_MARKER).isEqualTo("[person-extractor]");
+    }
+
+    @Test
+    void extractFor_shouldStructureEdges_forEdgelessPersonNode() {
+        // A GraphEdgeStructurer a node CÍMÉT és SUMMARY-ját küldi a modellnek; a fake a
+        // user-üzenetben keresi a [fake-graph-edges:[...]] szentinelt, ezért a summary-ba
+        // (relationshipHu) rejtjük.
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[{\"index\":0,\"kind\":\"SUPPORTS\",\"confidence\":0.8}]]");
+        personRepository.save(person);
+        // egy másik aktív node, hogy legyen mihez kötni (a strukturáló emptiness-gate-je)
+        graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT, "Nyári szabadság", null,
+            "life_event_test", UUID.randomUUID(), null, Map.of());
+        GraphNodeEntity personNode = promotionService.syncPerson(owner, person.getId()).orElseThrow();
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.edgeLinked()).isEqualTo(1);
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).hasSize(1);
+    }
+
+    @Test
+    void extractFor_shouldSkipEdgeStructuring_whenPersonNodeAlreadyHasEdges() {
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[{\"index\":0,\"kind\":\"SUPPORTS\",\"confidence\":0.8}]]");
+        personRepository.save(person);
+        GraphNodeEntity other = graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT,
+            "Nyári szabadság", null, "life_event_test", UUID.randomUUID(), null, Map.of());
+        GraphNodeEntity personNode = promotionService.syncPerson(owner, person.getId()).orElseThrow();
+        // kézzel húzott él, mielőtt az extraktor futna — a passznak ezt kell tiszteletben tartania
+        graphService.upsertEdge(owner, personNode.getId(), other.getId(),
+            GraphEdgeEntity.KIND_RELATES_TO, new BigDecimal("0.500"), List.of());
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        // Ha a strukturáló futott volna, a szentinel egy MÁSODIK (SUPPORTS) élt hozott volna létre
+        // a meglévő (RELATES_TO) mellé — a mérete tehát a hitelesebb bizonyíték, mint egy globális
+        // LLM-hívásszámláló, mert a person-extraction saját (üres) modellhívása ETTŐL függetlenül
+        // lefut, valahányszor van tone-nélküli mention.
+        assertThat(result.edgeLinked()).isZero();
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).hasSize(1);
+    }
+
+    @Test
+    void extractFor_shouldSkipEdgeStructuring_whenPersonHasNoGraphNode() {
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[{\"index\":0,\"kind\":\"SUPPORTS\",\"confidence\":0.8}]]");
+        personRepository.save(person);
+        // szándékosan NINCS syncPerson hívás — a személy sosem lett promótálva
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        // Ha a `found.isEmpty()` gate eltűnne, a `found.get()` NoSuchElementException-t dobna,
+        // amit a node-onkénti catch(Exception) elnyelne — az edgeLinked()==0 assert önmagában NEM
+        // tudná megkülönböztetni a tiszta skip-et az elnyelt kivételtől (code review fix: a
+        // korábbi verzió ezért volt vak a gate törlésére). A WARN-log hiánya viszont igen: a gate
+        // jelenlétében a folyamat csendben lép tovább, hiányában egy "Person edge structuring
+        // failed" WARN íródna.
+        Logger logger = (Logger) LoggerFactory.getLogger(PersonExtractionService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        PersonExtractionResult result;
+        try {
+            result = extractionService.extractFor(owner, DAY);
+        } finally {
+            logger.detachAppender(appender);
+        }
+
+        assertThat(result.edgeLinked()).isZero();
+        assertThat(appender.list).noneMatch(
+            event -> event.getFormattedMessage().contains("Person edge structuring failed"));
+    }
+
+    @Test
+    void extractFor_shouldSkipEdgeStructuring_whenPersonNodeIsArchived() {
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[{\"index\":0,\"kind\":\"SUPPORTS\",\"confidence\":0.8}]]");
+        personRepository.save(person);
+        graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT, "Nyári szabadság", null,
+            "life_event_test", UUID.randomUUID(), null, Map.of());
+        GraphNodeEntity personNode = promotionService.syncPerson(owner, person.getId()).orElseThrow();
+        graphService.archive(owner, personNode.getId());
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.edgeLinked()).isZero();
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).isEmpty();
+    }
+
+    @Test
+    void extractFor_shouldCapAttemptsAtMaxEdgeLinksPerNight_whenFourPersonsAreMentioned() {
+        // MAX_EDGE_LINKS_PER_NIGHT == 3 (private const) — four edgeless, never-attempted person
+        // nodes mentioned on the same night must yield exactly 3 attempts, not 4.
+        UUID owner = ownerId();
+        graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT, "Nyári szabadság", null,
+            "life_event_test", UUID.randomUUID(), null, Map.of());
+        for (String name : List.of("Petra", "Réka", "Soma", "Tibi")) {
+            PersonEntity person = personPopulator.createPerson(owner, name);
+            person.setRelationshipHu("Ismerős [fake-graph-edges:[]]");
+            personRepository.save(person);
+            promotionService.syncPerson(owner, person.getId()).orElseThrow();
+            mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+        }
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.edgeLinked()).isEqualTo(3);
+    }
+
+    @Test
+    void extractFor_shouldNeverRetry_whenAPriorAttemptYieldedNoEdges() {
+        // Code review fix (Important 2): egy üres/konfidencia-küszöb-alatti strukturáló-válasz nem
+        // hoz létre élt, de a node.meta "edgeStructuredOn" jelzője akkor is beíródik — a második
+        // futásnak MÁR ezt kell látnia, és nem szabad újra megpróbálnia (sem a napi sapkát
+        // fogyasztania, sem újabb LLM-hívást indítania).
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        // a szentinel üres tömböt ad vissza — a strukturáló nem hoz létre élt, de LEFUT
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[]]");
+        personRepository.save(person);
+        graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT, "Nyári szabadság", null,
+            "life_event_test", UUID.randomUUID(), null, Map.of());
+        GraphNodeEntity personNode = promotionService.syncPerson(owner, person.getId()).orElseThrow();
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        PersonExtractionResult first = extractionService.extractFor(owner, DAY);
+        assertThat(first.edgeLinked()).isEqualTo(1);   // megpróbálta, de nem hozott létre élt
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).isEmpty();
+
+        LocalDate nextDay = DAY.plusDays(1);
+        mentionPopulator.createMention(owner, person.getId(), nextDay.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+        PersonExtractionResult second = extractionService.extractFor(owner, nextDay);
+
+        assertThat(second.edgeLinked()).isZero();   // a marker miatt nem próbálja meg újra
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).isEmpty();
     }
 }

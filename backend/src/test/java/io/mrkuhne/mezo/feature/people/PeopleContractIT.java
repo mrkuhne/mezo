@@ -107,6 +107,18 @@ class PeopleContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testGetPeopleBootstrap_shouldReturnEmptyGraphEdges_notNull_whenNoGraph() {
+        // Task 5 (mezo-06o0.4): a required `graphEdges` mező sosem hiányozhat a wire-ról — gráf
+        // nélküli/tétlen tesztprofilban ez üres tömb, nem null.
+        UUID owner = ownerId();
+        personPopulator.createPerson(owner, "Nóra", "friend", "positive");
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+
+        assertThat(res.getPersons().getFirst().getGraphEdges()).isNotNull().isEmpty();
+    }
+
+    @Test
     void testGetPeopleBootstrap_shouldReturn401_whenNoToken() {
         getForBody("/api/people", null, HttpStatus.UNAUTHORIZED, String.class);
     }

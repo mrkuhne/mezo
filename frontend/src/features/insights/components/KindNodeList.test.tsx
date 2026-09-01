@@ -1,12 +1,12 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { KindNodeList } from '@/features/me/components/KindNodeList'
+import { KindNodeList } from './KindNodeList'
 import type { KnowledgeGraphNode } from '@/data/types'
 
 const nodes: KnowledgeGraphNode[] = [
   { id: 'n1', kind: 'PATTERN', title: 'Késői evés rontja az alvást', summary: null,
-    topEdges: ['a → b · erős', 'b → c · közepes'], sourceKind: null },
+    topEdges: ['a → b · erős', 'b → c · közepes'], sourceKind: null, updatedAt: '2026-08-20T10:00:00.000Z' },
   { id: 'n2', kind: 'PATTERN', title: 'Futás-napokon jobban alszol', summary: null,
-    topEdges: [], sourceKind: null },
+    topEdges: [], sourceKind: null, updatedAt: '2026-08-19T10:00:00.000Z' },
 ]
 
 const setup = (over: Partial<Parameters<typeof KindNodeList>[0]> = {}) => {

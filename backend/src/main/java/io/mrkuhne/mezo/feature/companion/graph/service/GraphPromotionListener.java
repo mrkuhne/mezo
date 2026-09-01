@@ -6,6 +6,8 @@ import io.mrkuhne.mezo.feature.companion.service.PatternConfirmedEvent;
 import io.mrkuhne.mezo.feature.companion.service.PatternRetractedEvent;
 import io.mrkuhne.mezo.feature.goal.service.GoalDeletedEvent;
 import io.mrkuhne.mezo.feature.goal.service.GoalSavedEvent;
+import io.mrkuhne.mezo.feature.people.service.PersonDeletedEvent;
+import io.mrkuhne.mezo.feature.people.service.PersonSavedEvent;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -96,6 +98,28 @@ public class GraphPromotionListener {
             promotionService.retractGoal(event.userId(), event.goalId());
         } catch (Exception e) {
             log.warn("Graph goal retraction failed for goal {}", event.goalId(), e);
+        }
+    }
+
+    /** Emberek S5 (mezo-06o0.4): a személy-írás élőben frissíti a PERSON node-ot; a nightly
+     *  {@code reconcile} már csak gyógyító háló (pl. ha a gráf-kapcsoló ki volt kapcsolva). */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onPersonSaved(PersonSavedEvent event) {
+        try {
+            promotionService.syncPerson(event.userId(), event.personId());
+        } catch (Exception e) {
+            log.warn("Graph person sync failed for person {}", event.personId(), e);
+        }
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onPersonDeleted(PersonDeletedEvent event) {
+        try {
+            promotionService.retractPerson(event.userId(), event.personId());
+        } catch (Exception e) {
+            log.warn("Graph person retraction failed for person {}", event.personId(), e);
         }
     }
 }

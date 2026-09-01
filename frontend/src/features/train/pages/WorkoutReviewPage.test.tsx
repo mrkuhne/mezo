@@ -30,9 +30,33 @@ test('renders the closed report from the workout detail (mock fixture)', () => {
   expect(lane.querySelector('.wr-extile .top')!.textContent).toMatch(/85\s*×\s*8/)
   // The abandoned exercise reads "nincs szett" on its tile.
   expect(within(lane).getByText('nincs szett')).toBeInTheDocument()
-  // No finish CTA in review — and the dead workout-note field is gone entirely.
+  // No finish CTA in review. The workout note is now REAL (mezo-d20.8.2.2): the seeded fixture
+  // carries one, so it reads back here — and it is read-only until the ✎ is used.
   expect(screen.queryByRole('button', { name: /Edzés lezárása/ })).toBeNull()
   expect(document.querySelector('textarea')).toBeNull()
+  expect(screen.getByText('Amit aznap írtál')).toBeInTheDocument()
+  expect(screen.getByText(/Öt órát aludtam/)).toBeInTheDocument()
+})
+
+test('the closing note is editable in place, and an empty one offers ＋ Jegyzet', async () => {
+  setup()
+  await userEvent.click(screen.getByRole('button', { name: 'Jegyzet szerkesztése' }))
+  const field = screen.getByLabelText('Hogy ment?') as HTMLTextAreaElement
+  expect(field.value).toMatch(/Öt órát aludtam/)
+
+  await userEvent.clear(field)
+  await userEvent.type(field, 'Átírva utólag.')
+  await userEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+
+  // Mock mode writes the detail cache rather than no-oping — a note the user just typed must
+  // not vanish while the UI pretends it saved.
+  expect(await screen.findByText('Átírva utólag.')).toBeInTheDocument()
+
+  // Clearing it lands on the honest empty state: no placeholder, but a way to fill the gap.
+  await userEvent.click(screen.getByRole('button', { name: 'Jegyzet szerkesztése' }))
+  await userEvent.clear(screen.getByLabelText('Hogy ment?'))
+  await userEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+  expect(await screen.findByRole('button', { name: /Jegyzet ehhez az edzéshez/ })).toBeInTheDocument()
 })
 
 test('renders the Medálok section with the seeded medal in mock mode', () => {

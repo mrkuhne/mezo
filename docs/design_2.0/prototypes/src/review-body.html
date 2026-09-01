@@ -1,5 +1,5 @@
 <div class="wrap">
-  <p class="eyebrow">Design 2.0 · F7.2 · mezo-d20.8.2</p>
+  <p class="eyebrow">Design 2.0 · F7.2 · mezo-d20.8.2 + mezo-d20.8.2.2</p>
   <h1>Edzés-review — a visszanézés kontextus-riportja</h1>
   <p class="lede">
     A lezáráskori riport a <strong>„mit csináltál"</strong> leltára. A visszanézés más helyzet:
@@ -62,7 +62,16 @@
             <strong>nincs mihez hasonlítani → a csempe nem renderel.</strong> Nincs „nincs adat"
             helykitöltő.</li>
           <li><strong>Váltsd „Lezárás"-ra</strong>: a kontextus-csempe és a léptetés eltűnik
-            (lezáráskor nincs hova lépni), és megjelenik a lezáró CTA.</li>
+            (lezáráskor nincs hova lépni), és megjelenik a lezáró CTA — fölötte az
+            <strong>edzés-jegyzet mezője</strong>.</li>
+          <li><strong>A záró jegyzet</strong> (<code>mezo-d20.8.2.2</code>) — lezáráskor nem csupasz
+            doboz, hanem egy kérdés: <em>„Hogy ment?"</em>. Opcionális és átugorható; a CTA a mező
+            ALATT áll a lap folyamában, így a billentyűzet tolja, nem takarja.</li>
+          <li><strong>Visszanézésben</strong> a mentett mondat Fraunces-kurzívban tér vissza
+            („Amit aznap írtál"), a ✎ helyben szerkeszthetővé teszi, üresre mentve pedig törli.
+            Az <strong>aug. 12-i napnak nincs jegyzete</strong> — ott nem üres helyőrző áll, hanem
+            egy csendes <em>＋ Jegyzet ehhez az edzéshez</em>: a pótlás a visszanézésen értelmes
+            szándék, a hiány mutogatása nem lenne az.</li>
         </ul>
       </div>
       <div>
@@ -87,8 +96,9 @@
         </ol>
       </div>
       <p class="note">
-        A halott edzés-jegyzet mező eltűnik: nem ígérünk olyat, amit nem tartunk meg.
-        Az edzés-szintű jegyzet valódivá tétele külön slice — kontraktus, oszlop, visszaolvasás.
+        Az edzés-szintű jegyzet valódi: kérdés-címkés mező a lezáró CTA fölött, a mentett
+        mondat pedig Fraunces-kurzívban tér vissza a visszanézésen — ott utólag szerkeszthető
+        és pótolható is. Jegyzet híján a blokk nem renderel.
       </p>
     </aside>
   </div>
@@ -109,6 +119,7 @@
   var SESSIONS = [
     {
       id: 'w1', date: 'júl. 29.', dow: 'Ke', iso: '2026-07-29', dur: 68,
+      note: 'Öt órát aludtam, a húzódzkodás az első szett után elfogyott. Nem a program hibája.',
       medals: [],
       challenges: [
         { t: 'Volumen', ex: 'Húzódzkodás', target: '≥ 1 800 kg', k: 'hit', o: 'megcsináltad' },
@@ -152,6 +163,7 @@
     },
     {
       id: 'w3', date: 'aug. 26.', dow: 'Ke', iso: '2026-08-26', dur: 71,
+      note: 'Ez volt az első nap, amikor a lehúzás könnyűnek érződött. Reggeli edzés,\nés végig volt levegőm.',
       medals: [
         { type: 'e1RM-rekord', exn: 'Húzódzkodás', value: '112,4 kg', prev: '109,8 kg', est: '90 × 8-ból becsülve' },
         { type: 'Volumen-rekord', exn: 'Lehúzás gépen', value: '2 068 kg', prev: '2 185 kg', skipPrev: true }
@@ -217,6 +229,12 @@
     return w + ' héttel korábban';
   }
   var hu = function (n, d) { return n.toLocaleString('hu-HU', { maximumFractionDigits: d == null ? 1 : d }); };
+  /* A jegyzet felhasználói szöveg — innerHTML-be csak escape-elve mehet. */
+  function esc(t) {
+    return String(t).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
   /* Egy tizedes FIXEN a törtszámú deltákon: a '−1' a '2,7 volt' mellett elgépelésnek olvas. */
   var hu1 = function (n) { return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); };
   var signed = function (n, d) { return (n > 0 ? '+' : n < 0 ? '−' : '±') + hu(Math.abs(n), d); };
@@ -225,6 +243,8 @@
   /* ---------- állapot ---------- */
   var idx = SESSIONS.length - 1;   /* a legfrissebb Pull A */
   var mode = 'closed';
+  var draft = '';        /* closing: a még el nem küldött jegyzet */
+  var editing = false;   /* closed: a review oldal szerkesztő állapota */
 
   function render() {
     var s = SESSIONS[idx];
@@ -331,10 +351,30 @@
     }).join('') + '</div>';
 
     if (closing) {
-      /* A halott <textarea> HELYE — a lezáró CTA. Jegyzet-mezőt nem ígérünk. */
+      /* A jegyzet-mező a CTA FÖLÖTT: opcionális, átugorható, és a billentyűzet
+         a lezáró gombot tolja maga előtt, nem takarja el. */
+      h += '<div class="wn"><span class="wn-q">Hogy ment?</span>' +
+        '<textarea class="wn-ta" maxlength="1000" placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…">' +
+          esc(draft) + '</textarea>' +
+        '<p class="wn-hint">Nem kötelező — később is hozzáírhatod.</p></div>';
       h += '<button class="cta" style="width:100%;margin-top:12px;padding:11px 0;font-size:12px;">Edzés lezárása ✓</button>' +
         '<button class="ghost" style="width:100%;margin-top:7px;padding:9px 0;">← Vissza az edzéshez</button>';
     } else {
+      /* Visszanézés: a mentett mondat, vagy — mert a pótlás itt értelmes szándék —
+         egy csendes hozzáadó akció. Üres helyőrző semmiért nincs. */
+      if (editing) {
+        h += '<div class="wn"><span class="wn-q">Hogy ment?</span>' +
+          '<textarea class="wn-ta" maxlength="1000" placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…">' +
+            esc(s.note || '') + '</textarea>' +
+          '<div class="wn-ed"><button class="save">Mentés</button>' +
+          '<button class="cancel">Mégse</button></div></div>';
+      } else if (s.note) {
+        h += '<div class="wn-r"><span class="lbl">Amit aznap írtál</span><p>' + esc(s.note) + '</p>' +
+          '<button class="wn-edit" aria-label="Jegyzet szerkesztése">✎</button></div>';
+      } else {
+        h += '<button class="wn-add">＋ Jegyzet ehhez az edzéshez</button>';
+      }
+
       /* ---- ÚJ: léptetés a template-nap láncán ---- */
       var nx = idx < SESSIONS.length - 1 ? SESSIONS[idx + 1] : null;
       h += '<div class="stepnav">' +
@@ -353,6 +393,21 @@
     Array.prototype.forEach.call(body.querySelectorAll('.extile'), function (t) {
       t.addEventListener('click', function () { openEx(Number(t.getAttribute('data-ex'))); });
     });
+
+    var ta = body.querySelector('.wn-ta');
+    if (ta && closing) ta.addEventListener('input', function () { draft = ta.value; });
+
+    var edb = body.querySelector('.wn-edit');
+    if (edb) edb.addEventListener('click', function () { editing = true; render(); });
+    var addb = body.querySelector('.wn-add');
+    if (addb) addb.addEventListener('click', function () { editing = true; render(); });
+    var sv = body.querySelector('.wn-ed .save');
+    if (sv) sv.addEventListener('click', function () {
+      s.note = body.querySelector('.wn-ta').value.trim();   /* üres = törlés */
+      editing = false; render();
+    });
+    var cn = body.querySelector('.wn-ed .cancel');
+    if (cn) cn.addEventListener('click', function () { editing = false; render(); });
 
     var pv = body.querySelector('.stepnav .pv');
     var nb = body.querySelector('.stepnav .nx');
@@ -458,6 +513,7 @@
 
   function replay() {
     closeEx();
+    editing = false;
     var sc = document.getElementById('screen');
     if (reduced) { render(); return; }
     sc.classList.remove('play');

@@ -205,7 +205,7 @@ interface SessionProps {
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
-  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
+  finishWorkout: (workoutId: string, opts?: { note?: string | null; onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
 }
 
@@ -274,6 +274,9 @@ function ActiveWorkoutSession({
   const [toastMedal, setToastMedal] = useState<{ medal: Medal; extra: number } | null>(null)
   // The explicit-finish POST is in flight — disables the "Edzés lezárása ✓" CTA.
   const [finishPending, setFinishPending] = useState(false)
+  /** The workout-level closing note (mezo-d20.8.2.2) — a page-owned draft, so stepping back to
+   *  `active` and returning to the summary does not throw away what was already typed. */
+  const [closingNote, setClosingNote] = useState('')
   const { showLevelUp } = useLevelUp()
   // The just-finished exercise pinned for the debrief modal (and the active card
   // it overlays): once resolved, the view advances to the next exercise, so we keep
@@ -676,6 +679,9 @@ function ActiveWorkoutSession({
   const finishAndCelebrate = () => {
     setFinishPending(true)
     finishWorkout(workoutId ?? 'mock', {
+      // The closing note rides the finish body (mezo-d20.8.2.2). Server-side it is
+      // fill-if-empty, so the retry path above cannot erase a note a first attempt landed.
+      note: closingNote.trim() || null,
       onSuccess: (r) => {
         if (r?.levelUp) showLevelUp(r.levelUp)
         // SESSION_VOLUME (and any medal not already seen from a set-log onSuccess)
@@ -945,6 +951,11 @@ function ActiveWorkoutSession({
         challenges={summaryChallenges}
         medals={sessionMedals}
         durationMin={W.durationEst}
+        // The draft lives on the page, not in the shell: the summary/complete phase flip
+        // remounts nothing here, but the note must also survive a trip back to `active`.
+        note={closing ? null : closingNote.trim() || null}
+        draftNote={closingNote}
+        onDraftNote={closing ? setClosingNote : undefined}
         onFinish={finishAndCelebrate}
         finishPending={finishPending}
         onBack={() => setPhase('active')}

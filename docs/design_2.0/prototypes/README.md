@@ -21,6 +21,7 @@ they inline come from `../assets/`.
 | `napzaras.html` | https://claude.ai/code/artifact/0e4e02ba-d5c8-49ce-a738-b924f1583cf6 |
 | `fuel-logolas.html` | — (not yet published; mezo-byo1 design source) |
 | `fuel-log-multinap.html` | — (not yet published; A /fuel/log nap-léptetője + Pótlás-hangulat + hub-csali — mezo-1j3z) |
+| `fuel-log-oldal.html` | — (not yet published; A logolás saját oldala a helyben nyíló composer helyett — /fuel/log/uj) |
 | `mezo-chat.html` | https://claude.ai/code/artifact/ae02e856-1e3d-4c60-aad5-842e75190538 |
 | `edzes-review.html` | https://claude.ai/code/artifact/66f5a4de-8afe-48ff-b04f-e861b3ba22ee |
 | `fuel-mely.html` | https://claude.ai/code/artifact/d5c6d770-a067-4642-baa3-9dee63613718 |
@@ -28,6 +29,7 @@ they inline come from `../assets/`.
 | `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
 | `emberek.html` | https://claude.ai/code/artifact/9c94ecde-f426-471a-a988-b0a60ca7fbcf |
 | `mezo-memoar.html` | https://claude.ai/code/artifact/95759be5-7de6-4d04-af7b-60d7862dbe50 |
+| `tudastar-egyben.html` | https://claude.ai/code/artifact/1ddf2a14-f5ce-4d4c-b125-c843e073797e |
 
 ## Workflow
 
@@ -211,9 +213,15 @@ are usable without a build step).
   including the honesty gate: the oldest is the mesocycle's first Pull A, so **the tile does not
   render at all** — no "nincs adat" placeholder. The `Lezárás` toggle shows the other mode: no
   tile, no stepping (there is nowhere to step while closing), and the closing CTA — where today's
-  **dead `<textarea>` used to be**. That note field is removed rather than kept: nothing is
-  promised that is not persisted; making the workout-level note real is its own slice
-  (contract + column + read-back).
+  **dead `<textarea>` used to be**. (4) **That slice has now landed in the prototype**
+  (`mezo-d20.8.2.2`): the closing screen's note field is back, but *real* — not a bare box but a
+  question, **„Hogy ment?"**, optional and skippable, sitting ABOVE the finish CTA so the mobile
+  keyboard pushes the button rather than covering it (the CTA is in flow, never `position: fixed`).
+  In `closed` mode the saved sentence returns as a **Fraunces-italic block** ("Amit aznap írtál")
+  with a ✎ that opens it for in-place editing — saving it empty clears it. The **aug. 12. session
+  deliberately has no note**, so the honesty gate is visible here too: no empty placeholder, but a
+  quiet **`＋ Jegyzet ehhez az edzéshez`** — on the revisit page, filling a gap is a meaningful
+  intent, while displaying its absence would not be.
 - **mezo-tab** — the Mezo tab (the companion's home), audited against the real `/insights`
   section (in the live app the companion is the Chat sub-tab of Insights; the redesign
   promotes it to a first-class tab). **Hub**: a breathing clay **orb hero** — no number hero,

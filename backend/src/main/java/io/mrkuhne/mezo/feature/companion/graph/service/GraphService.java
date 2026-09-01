@@ -64,10 +64,31 @@ public class GraphService {
         return nodeRepository.findByCreatedByAndSourceKindAndSourceIdAndDeletedFalse(userId, sourceKind, sourceId);
     }
 
+    /** MERGE a single meta key onto an owned node (code review fix, S5 mezo-06o0.4) — unlike
+     *  {@link #upsertNode}, which replaces the whole {@code meta} map, this only ever adds/updates
+     *  ONE key, so a caller that owns a narrow slice of the jsonb (e.g. {@code
+     *  PersonExtractionService.linkPersonEdges}'s {@code edgeStructuredOn} marker) can never
+     *  clobber keys another caller (e.g. {@code GraphPromotionService.syncPerson}) owns. */
+    @Transactional
+    public GraphNodeEntity putMeta(UUID userId, UUID nodeId, String key, Object value) {
+        GraphNodeEntity node = findOwnedNode(userId, nodeId);
+        Map<String, Object> meta = node.getMeta() == null ? new HashMap<>() : new HashMap<>(node.getMeta());
+        meta.put(key, value);
+        node.setMeta(meta);
+        return nodeRepository.saveAndFlush(node);
+    }
+
     @Transactional(readOnly = true)
     public List<GraphNodeEntity> listActive(UUID userId) {
         return nodeRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(
             userId, GraphNodeEntity.STATUS_ACTIVE);
+    }
+
+    /** Count of active edges for the current user — same "active edge" filter as {@link
+     *  #listActiveWithTopEdges}'s edge source. */
+    @Transactional(readOnly = true)
+    public int countActiveEdges(UUID userId) {
+        return edgeRepository.countActiveByUserId(userId);
     }
 
     /** Fixed UI display cap — not a {@code CompanionProperties.Graph} tuning knob, this is

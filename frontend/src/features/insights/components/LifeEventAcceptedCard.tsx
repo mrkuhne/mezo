@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom'
-
 /**
  * Az elfogadott életesemény-jelölt helyén maradó megerősítés (mezo-0ap9). A jóváhagyás a
- * Tudástárban történik, de az eredmény a Tudásgráfon él — enélkül a kártya némán eltűnik, és
- * a felhasználó azt látja, hogy „elfogadtam, mégsem lett belőle semmi" (IDENT-6: a megerősítés
- * sosem néma, a `LifeEventCandidateCard` idiómája).
+ * Tudástárban történik, az eredmény is ott, a Tudástár Kategóriák nézetében él — enélkül a
+ * kártya némán eltűnik, és a felhasználó azt látja, hogy „elfogadtam, mégsem lett belőle semmi"
+ * (IDENT-6: a megerősítés sosem néma, a `LifeEventCandidateCard` idiómája). A külön Tudásgráf
+ * oldal megszűnt (mezo-ms9a) — a „Megnézed? → Tudásgráf" link vele együtt törlődött; a csík +
+ * szöveg önmagában elég megerősítés.
  */
 export function LifeEventAcceptedCard({ title, edgeCount }: { title: string; edgeCount: number }) {
   return (
@@ -15,13 +15,6 @@ export function LifeEventAcceptedCard({ title, edgeCount }: { title: string; edg
         {edgeCount > 0 ? `Bekerült a gráfba · ${edgeCount} kapcsolattal` : 'Bekerült a gráfba'}
       </span>
       <p style={{ fontSize: 15, lineHeight: 1.4, color: 'var(--text-primary)', margin: '6px 0 0' }}>{title}</p>
-      <Link
-        to="/me/knowledge"
-        className="eyebrow"
-        style={{ color: 'var(--lav-deep)', display: 'inline-block', marginTop: 8, textDecoration: 'none' }}
-      >
-        Megnézed? → Tudásgráf
-      </Link>
     </div>
   )
 }
