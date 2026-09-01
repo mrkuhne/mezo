@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.ExperimentRepository;
+import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -54,6 +55,7 @@ class CharacterMetaReadsIT extends ApiIntegrationTest {
     @Autowired private PatternEventPopulator patternEventPopulator;
     @Autowired private PatternEventRepository patternEventRepository;
     @Autowired private PredictionPopulator predictionPopulator;
+    @Autowired private PredictionRepository predictionRepository;
     @Autowired private QuestPopulator questPopulator;
     @Autowired private ExperimentPopulator experimentPopulator;
     @Autowired private ExperimentRepository experimentRepository;
@@ -135,6 +137,7 @@ class CharacterMetaReadsIT extends ApiIntegrationTest {
         PredictionEntity p = predictionPopulator.prediction(owner, DAY.minusDays(10), "sleep_avg", "up",
                 PredictionEntity.STATUS_VALIDATED);          // validTo = DAY-4
         p.setConfidence(new BigDecimal("0.80"));
+        predictionRepository.saveAndFlush(p);
         predictionPopulator.prediction(owner, DAY.minusDays(70), "sleep_avg", "up", PredictionEntity.STATUS_MISSED); // out
         predictionPopulator.prediction(owner, DAY.plusDays(1), "sleep_avg", "up", PredictionEntity.STATUS_PENDING);   // validTo after day: out
 
@@ -143,6 +146,7 @@ class CharacterMetaReadsIT extends ApiIntegrationTest {
         assertThat(preds).singleElement().satisfies(x -> {
             assertThat(x.validTo()).isEqualTo(DAY.minusDays(4));
             assertThat(x.status()).isEqualTo("validated");
+            assertThat(x.confidence()).isEqualByComparingTo("0.80");
         });
     }
 
