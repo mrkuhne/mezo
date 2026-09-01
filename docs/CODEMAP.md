@@ -149,7 +149,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-08-31, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-01, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -167,12 +167,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterProperties`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CheckinGapDetector`, `ClaimConfidenceHistoryEnvelope`,
-    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`,
-    `DetectorInput`, `DetectorRegistry`, `DetectorSignal`, `HrRecoveryTrendDetector`, `JournalNoteDetector`,
-    `JournalSilenceDetector`, `LoggingGapDetector`, `MesoAdherenceDetector`, `NiggleMapDetector`,
-    `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`, `ProgressionAdherenceDetector`,
-    `RirCalibrationDetector`, `RoundOneGates`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`,
-    `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `UnderLoggingDetector`
+    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`,
+    `ConferenceTranscriptEnvelope`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
+    `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
+    `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`, `MedCycleCovarianceDetector`,
+    `MesoAdherenceDetector`, `NiggleMapDetector`, `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`,
+    `ProgressionAdherenceDetector`, `ProteinTrainingMismatchDetector`, `RirCalibrationDetector`, `RoundTwoWindow`,
+    `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
+    `StackSkipPatternDetector`, `UnderLoggingDetector`
 - **Contract** `api/feature/character/character.yml` — 10 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -195,13 +197,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
     `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`
   - **populators:** `AiConversationPopulator`, `CheckInPopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
-    `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `MealPopulator`, `PantryItemPopulator`,
-    `PatternPopulator`, `RunningPopulator`, `SleepLogPopulator`, `TrainPopulator`, `UserPopulator`,
+    `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `MealPopulator`, `MedicationDosePopulator`,
+    `MedicationPopulator`, `PantryItemPopulator`, `PatternPopulator`, `ProtocolPopulator`, `RunningPopulator`,
+    `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
     `WeeklyReviewPopulator`
 
 ### companion
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-08-31, shipped) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-01, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-01, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-01, mixed)
@@ -372,9 +375,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts, slotTemplateHooks.ts,
     stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts
 - **FE ui** `frontend/src/features/fuel`
-  - **pages:** FuelKamraPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx, FuelNaploPage.tsx,
-    FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx, KamraItemDetailPage.tsx,
-    KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx, RecipesSkeleton.tsx
+  - **pages:** FuelKamraPage.tsx, FuelLogNewPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx,
+    FuelNaploPage.tsx, FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx,
+    KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
+    RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx, FuelSettingsSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
