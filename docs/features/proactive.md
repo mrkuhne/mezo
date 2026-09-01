@@ -51,7 +51,10 @@ related: [companion, today, insights, train, me, _platform-api-backend, _platfor
 > Monday-06:00 `WeeklySuggestionJob`, and a lazy `GET /api/proactive/weekly-suggestion` the
 > **Insights Weekly „heti tervjavaslat" card renders** in real mode (404 = the FE's honest
 > placeholder). **W2** — a `memoir` table (title + body + typed-jsonb `anchors`) + a **smart-tier**
-> `MemoirGenerator`, a **Sunday-19:00** `MemoirJob`, and a lazy `GET /api/proactive/memoir` (latest
+> `MemoirGenerator`, a **Sunday-19:00** `MemoirJob`, and a lazy `GET /api/proactive/memoir` (latest;
+> since F7.5 `mezo-d20.8.5.1` also **`GET /api/proactive/memoir/archive`** — every persisted memoir
+> newest-week-first in one `MemoirArchiveResponse{entries[]}`, NEVER generating, empty list honest —
+> the read behind the FE archive shelf ([insights.md §2.3b](insights.md))
 > row, else generate the LAST COMPLETED week) the **Insights Memoir tab un-ghosts** in real mode
 > (404 = the FE's honest „készül" state). **P1** — a `prediction` table (pattern-grounded, code-set
 > validity windows, nullable confidence) + a **smart-tier** `PredictionGenerator`, a weekly
