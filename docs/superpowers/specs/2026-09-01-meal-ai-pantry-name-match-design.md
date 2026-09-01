@@ -108,7 +108,37 @@ becslés mennyisége változtatás nélkül átvihető a kamra-sorba.
 
 ### Frontend
 
-Egyetlen copy-módosítás a `MealComposer`-ben. A mai üzenet
+**1. A forrás-címke igazat mond (a valódi tünet).** Ma
+[`MealComposer.tsx:86`](../../../frontend/src/features/fuel/components/MealComposer.tsx)
+minden AI-ból származó sort `becslés`-nek címkéz, akkor is, ha valódi
+kamra-találat DB-makrókkal:
+
+```ts
+const tag = l.fromAi ? 'becslés' : l.source === 'recipe' ? 'recept' : 'kamra'
+```
+
+Ez szándékos egyszerűsítés volt (design 2.0 iterations §7), de a felhasználó
+számára letagadja a működő párosítást — nagy eséllyel ez az eredeti panasz
+oka. Az új szabály a `source`-ból származzon:
+
+| sor | címke |
+|---|---|
+| AI, `pantry` | `kamra ✨` |
+| AI, `recipe` | `recept ✨` |
+| AI, `estimate` | `becslés` |
+| kézi | `kamra` / `recept` (változatlan) |
+
+A `logflow-lntag` stílusa a `data-tag` attribútumra épül
+(`prototype.css:6742–6743`: `[data-tag="kamra"]`, `[data-tag="becslés"]`),
+ezért a `✨` **nem** kerülhet a `data-tag`-be. A `lineMeta` két mezőt ad
+vissza: `tag` (szemantikus, `data-tag`-be és a CSS-nek) és `tagLabel`
+(megjelenített szöveg, a `✨`-gal). A JSX a `data-tag={meta.tag}` mellett
+`{meta.tagLabel}`-t renderel.
+
+A `LogFlowPage.test.tsx` mai asszerciója (két AI-sorból mindkettő
+`becslés`) ezzel együtt frissül: a mock-draft kamra-sora `kamra ✨` lesz.
+
+**2. A review-üzenet copy-ja.** A mai szöveg
 
 > ✨ Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.
 
@@ -154,8 +184,10 @@ Kontraktus-változás nincs: ma egy kamra-sor `needsReview=true`-val csak az
 - hallucinált `pantryItemId` + egyező név → a lefokozott sor is
   kamra-sorrá párosul, `needsReview=true`
 
-**FE:** a `MealComposer` / `LogFlowPage` teszt egy kamra-forrású,
-`needsReview=true` sorra az azonosság-szövegre asszertál.
+**FE:** a `LogFlowPage.test.tsx` mai vegyes-forrás tesztje frissül — a
+mock-draft kamra-sora `kamra ✨`, a becslés-sora `becslés`, a kézi sor
+`kamra`. Új asszerció egy kamra-forrású, `needsReview=true` sorra az
+azonosság-szövegre.
 
 ## Hatókörön kívül
 
