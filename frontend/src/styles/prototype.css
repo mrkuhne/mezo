@@ -5785,6 +5785,17 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   .ppl-ctxbar .ppl-ctxtr div, .mz-play .ppl-ctxbar .ppl-ctxtr div { width: var(--w); transition: none; }
 }
 
+/* mezo-ms9a shell: the base-view „?" help chip (top-right of the hero, base only) and the
+   wide-tile idiom for the base mosaic's 3rd (profil) tile — the `.mz-page-hero` positioning
+   context is only claimed here, so every other page's hero keeps its plain static layout. */
+.mz-page-hero { position: relative; }
+.tud-help { position: absolute; top: 9px; right: 17px; width: 30px; height: 30px;
+  border-radius: 50%; border: none; background: var(--mz-chipbg); font-family: inherit;
+  font-size: 14px; font-weight: 700; color: var(--text-primary); cursor: pointer;
+  display: grid; place-items: center; box-shadow: 0 7px 17px -9px rgba(43, 33, 24, 0.3); }
+.tud-help:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
+.mz-tile-wide { grid-column: 1 / -1; }
+
 .tud-summary { border-radius: 20px; padding: 14px 15px;
   background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
 .tud-summary-link { display: block; margin-top: 10px; font-size: 11px; font-weight: 700;
