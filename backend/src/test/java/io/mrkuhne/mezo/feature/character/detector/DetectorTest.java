@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -1305,5 +1306,125 @@ class DetectorTest {
         DetectorInput in = trendOnly(DAY, new TrendBuilder().latencies(pts).build());
 
         assertThat(new RetroLoggingRatioDetector().detect(in)).isEmpty();
+    }
+
+    private static DetectorInput.CheckinSlotPoint slot(LocalDate d, String slotTime, int hour,
+                                                       int minute, String note) {
+        return new DetectorInput.CheckinSlotPoint(d, slotTime, d.atTime(hour, minute), note);
+    }
+
+    private static DetectorInput.NeedsDayPoint needsDomains(LocalDate d, int lelek) {
+        return new DetectorInput.NeedsDayPoint(d, 80, 80, 80, 80, lelek, 80,
+                lelek >= 60 ? 6 : 5, lelek >= 60, 1);
+    }
+
+    @Test
+    void nightActivity_firesOnRegularLateNightChat() {
+        // 3 nights of chat as of DAY -> "rendszeres" (n=3 > ALKALMI_MAX=2); as of DAY-1 only the
+        // 2 older nights remain -> "alkalmi" (n=2 <= ALKALMI_MAX): the band crosses a boundary.
+        List<LocalDateTime> chat = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            chat.add(DAY.minusDays(i).atTime(1, 30));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().chat(chat).build());
+
+        List<DetectorSignal> fired = new NightActivityDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("a chat használatát mutatja");
+        assertThat(fired.getFirst().expertKey()).isEqualTo("szomnologus");
+    }
+
+    @Test
+    void nightActivity_silentWhenTheUserDoesNotChatAtAll() {
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().build());
+
+        assertThat(new NightActivityDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void checkinLatency_firesOnLateFilling_andIgnoresEarlyAsPunctual() {
+        // As of DAY-1: 3 punctual (10 min) + 3 late (300 min) -> median 155 -> "keses". Adding the
+        // DAY row (660 min late) as of DAY shifts the 7-row median to 300 -> "kesoi": a real
+        // band crossing, hand-verified (the brief's own single-outlier fixture never crosses a
+        // band since one row can never move a 6/7-element median past the majority).
+        List<DetectorInput.CheckinSlotPoint> slots = new ArrayList<>();
+        slots.add(slot(DAY, "07:00", 18, 0, null));               // 660 min late
+        slots.add(slot(DAY.minusDays(1), "07:00", 12, 0, null));  // 300 min late
+        slots.add(slot(DAY.minusDays(2), "07:00", 12, 0, null));  // 300 min late
+        slots.add(slot(DAY.minusDays(3), "07:00", 12, 0, null));  // 300 min late
+        slots.add(slot(DAY.minusDays(4), "07:00", 7, 10, null));  // 10 min, punctual
+        slots.add(slot(DAY.minusDays(5), "07:00", 7, 10, null));  // 10 min, punctual
+        slots.add(slot(DAY.minusDays(6), "07:00", 7, 10, null));  // 10 min, punctual
+        List<DetectorInput.CheckinDayPoint> scales = List.of(scale(DAY, "6", "6"));
+        DetectorInput in = trendOnly(DAY,
+                new TrendBuilder().slots(slots).checkins(scales).build());
+
+        List<DetectorSignal> fired = new CheckinLatencyDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("jóval a saját idősávjuk után");
+    }
+
+    @Test
+    void checkinSlotDrift_namesTheSlotThatStopped() {
+        List<DetectorInput.CheckinSlotPoint> slots = new ArrayList<>();
+        for (int i = 14; i < 20; i++) {                 // baseline window
+            slots.add(slot(DAY.minusDays(i), "07:00", 7, 5, null));
+            slots.add(slot(DAY.minusDays(i), "21:00", 21, 5, null));
+        }
+        for (int i = 0; i < 6; i++) {                   // recent window: only the evening survives
+            slots.add(slot(DAY.minusDays(i), "21:00", 21, 5, null));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().slots(slots).build());
+
+        List<DetectorSignal> fired = new CheckinSlotDriftDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("07:00").doesNotContain("21:00");
+    }
+
+    @Test
+    void needsDomainImbalance_firesWhenOneDomainLagsWhileTheRestAreGreen() {
+        // Exactly MIN_NEEDS_DAYS(7) rows: as of DAY the window holds all 7 (gate open, lélek is
+        // weak against 5 strong domains); as of DAY-1 only 6 remain (below the gate, state null) —
+        // a real state change, not a same-value coincidence like a wider uniform window would give.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            days.add(needsDomains(DAY.minusDays(i), 20));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        List<DetectorSignal> fired = new NeedsDomainImbalanceDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("lélek");
+        assertThat(fired.getFirst().expertKey()).isEqualTo("pszichologus");
+    }
+
+    @Test
+    void needsDomainImbalance_silentBelowTheClosedDayGate() {
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            days.add(needsDomains(DAY.minusDays(i), 20));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        assertThat(new NeedsDomainImbalanceDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void allTwelveRoundThreeDetectorsHaveDistinctKeysAndValidExperts() {
+        List<CharacterDetector> detectors = List.of(new SelfCalibrationDetector(),
+                new PromiseVsDeliveryDetector(), new DecisionProfileDetector(),
+                new DecisionReviewBacklogDetector(), new GratitudeFocusDetector(),
+                new StreakBreakResponseDetector(), new RestartPatternDetector(),
+                new RetroLoggingRatioDetector(), new NightActivityDetector(),
+                new CheckinLatencyDetector(), new CheckinSlotDriftDetector(),
+                new NeedsDomainImbalanceDetector());
+
+        assertThat(detectors).extracting(CharacterDetector::key).doesNotHaveDuplicates().hasSize(12);
     }
 }
