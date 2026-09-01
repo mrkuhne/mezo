@@ -39,10 +39,15 @@ public class CheckinSlotDriftDetector implements CharacterDetector {
         if (today == null || today.equals(yesterday)) {
             return List.of();
         }
-        String summary = "slot:stabil".equals(today)
-                ? "A check-in idősávok használata visszaállt: mindegyik korábban rendszeres sáv újra kap kitöltést."
-                : "A korábban rendszeres check-in idősávok közül kiesett: "
-                        + today.substring("slot:kikopott:".length()).replace(",", ", ") + ".";
+        String summary;
+        if ("slot:stabil".equals(today)) {
+            summary = yesterday != null && yesterday.startsWith("slot:kikopott")
+                    ? "A check-in idősávok használata visszaállt: mindegyik korábban rendszeres sáv újra kap kitöltést."
+                    : "Nincs olyan korábban rendszeres check-in idősáv, ami kikopott volna.";
+        } else {
+            summary = "A korábban rendszeres check-in idősávok közül kiesett: "
+                    + today.substring("slot:kikopott:".length()).replace(",", ", ") + ".";
+        }
         return List.of(new DetectorSignal(key(), "drill", summary, 3));
     }
 

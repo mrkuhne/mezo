@@ -103,12 +103,20 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
     }
 
+    /** {@code @CreationTimestamp} stamps {@code created_at} at real wall-clock "now" on insert, so
+     *  it is backdated to {@code date} afterwards via a plain JDBC update — the {@code saveDecision}
+     *  precedent above. Needed since the round-3 review fix (minor) added the same catch-up upper
+     *  bound to {@code gatherIntentionDays} that {@code gatherDecisions}/{@code gatherGratitudes}
+     *  already had. */
     private IntentionFocusEntity saveFocus(LocalDate date, String text) {
         IntentionFocusEntity e = new IntentionFocusEntity();
         e.setCreatedBy(owner);
         e.setFocusDate(date);
         e.setText(text);
-        return intentionFocusRepository.saveAndFlush(e);
+        IntentionFocusEntity saved = intentionFocusRepository.saveAndFlush(e);
+        jdbcTemplate.update("update intention_focus set created_at = ? where id = ?",
+                Timestamp.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return intentionFocusRepository.findById(saved.getId()).orElseThrow();
     }
 
     private DailyIntentionEntity saveReflection(LocalDate date, String reflection) {
@@ -116,7 +124,10 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         e.setCreatedBy(owner);
         e.setIntentionDate(date);
         e.setReflection(reflection);
-        return dailyIntentionRepository.saveAndFlush(e);
+        DailyIntentionEntity saved = dailyIntentionRepository.saveAndFlush(e);
+        jdbcTemplate.update("update daily_intention set created_at = ? where id = ?",
+                Timestamp.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return dailyIntentionRepository.findById(saved.getId()).orElseThrow();
     }
 
     /** {@code @CreationTimestamp} stamps {@code created_at} at real wall-clock "now" on insert,
@@ -151,7 +162,12 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         e.setGreenCount(greenCount);
         e.setAllGreen(allGreen);
         e.setStreakDays(streakDays);
-        return needsDayRepository.saveAndFlush(e);
+        // Backdated like saveFocus/saveReflection above — gatherNeeds picked up the same
+        // catch-up upper bound in the round-3 review fix (minor).
+        NeedsDayEntity saved = needsDayRepository.saveAndFlush(e);
+        jdbcTemplate.update("update needs_day set created_at = ? where id = ?",
+                Timestamp.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return needsDayRepository.findById(saved.getId()).orElseThrow();
     }
 
     private CheckInEntity saveCheckIn(LocalDate date, String slotTime, Integer energy, Integer stress,
@@ -442,6 +458,33 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
     }
 
     @Test
+    void gather_shouldDropAFocusDayWrittenAfterTheObservedDay() {
+        // Minor round-3 review fix: gatherIntentionDays didn't apply the same catch-up upper
+        // bound gatherDecisions/gatherGratitudes already do.
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        IntentionFocusEntity late = saveFocus(day.minusDays(1), "később írt fókusz");
+        jdbcTemplate.update("update intention_focus set created_at = ? where id = ?",
+                Timestamp.from(day.plusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant()),
+                late.getId());
+
+        List<DetectorInput.IntentionDayPoint> days = signalReads.gather(owner, day).trend().intentionDays();
+
+        assertThat(days).isEmpty();
+    }
+
+    @Test
+    void gather_shouldDropANeedsDayWrittenAfterTheObservedDay() {
+        // Minor round-3 review fix: gatherNeeds didn't apply the same catch-up upper bound.
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        NeedsDayEntity late = saveNeedsDay(day.minusDays(1), 80, 80, 80, 80, 80, 80, 6, true, 3);
+        jdbcTemplate.update("update needs_day set created_at = ? where id = ?",
+                Timestamp.from(day.plusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant()),
+                late.getId());
+
+        assertThat(signalReads.gather(owner, day).trend().needs()).isNull();
+    }
+
+    @Test
     void gather_shouldTreatAReviewAfterTheObservedDay_asStillUnreviewed() {
         LocalDate day = LocalDate.of(2026, 5, 20);
         DecisionEntryEntity e = saveDecision(day.minusDays(10), day.minusDays(3), "döntés szövege");
@@ -524,5 +567,23 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
 
         assertThat(signalReads.gather(owner, day).trend().userChatTimes())
                 .allSatisfy(t -> assertThat(t.toLocalDate()).isBeforeOrEqualTo(day));
+    }
+
+    @Test
+    void gather_shouldReadLogLatenciesAndChatTimesOverTheFullEightWeekTrendWindow() {
+        // I4 (round-3 review fix): both reads used to be bounded below at day-13 (the 14-day
+        // detector window), one day too short for detectors that evaluate that window BOTH as of
+        // `day` and as of `day-1` (TrailingWindow's own javadoc). 20 days ago is well outside a
+        // 14-day window but well inside the 8-week (56-day) trend window every sibling read uses.
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveSleep(day.minusDays(20), 7, new BigDecimal("7.5"), 1);
+        saveUserMessage(day.minusDays(20).atTime(23, 30));
+
+        DetectorInput input = signalReads.gather(owner, day);
+
+        assertThat(input.trend().logLatencies())
+                .anyMatch(p -> p.aboutDate().equals(day.minusDays(20)));
+        assertThat(input.trend().userChatTimes())
+                .anyMatch(t -> t.toLocalDate().equals(day.minusDays(20)));
     }
 }

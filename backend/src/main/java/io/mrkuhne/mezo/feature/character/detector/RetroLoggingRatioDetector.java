@@ -48,7 +48,7 @@ public class RetroLoggingRatioDetector implements CharacterDetector {
         }
         List<String> parts = new ArrayList<>();
         if (today.event() != null) {
-            parts.add("az edzés- és testadatokat " + phrase(today.event()));
+            parts.add("az edzés-, alvás- és étkezésadatokat " + phrase(today.event()));
         }
         if (today.reflection() != null) {
             parts.add("a naplózó bejegyzéseket " + phrase(today.reflection()));

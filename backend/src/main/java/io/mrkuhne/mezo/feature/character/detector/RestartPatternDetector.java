@@ -38,21 +38,25 @@ public class RestartPatternDetector implements CharacterDetector {
         if (in.trend().needs() == null) {
             return List.of();
         }
-        String today = state(in, in.day());
-        String yesterday = state(in, in.day().minusDays(1));
-        if (today == null || today.equals(yesterday)) {
+        RestartState today = state(in, in.day());
+        RestartState yesterday = state(in, in.day().minusDays(1));
+        if (today == null || today.band().equals(yesterday == null ? null : yesterday.band())) {
             return List.of();
         }
-        String summary = switch (today) {
-            case "ujraindulas:azonnal" -> "A legutóbbi megszakadás után már a következő nap ismét teljes Életjel-nap lett.";
-            case "ujraindulas:rovid" -> "A legutóbbi megszakadás után néhány napon belül lett újra teljes Életjel-nap.";
-            case "ujraindulas:hosszu" -> "A legutóbbi megszakadás után több mint három nap telt el az első újra teljes Életjel-napig.";
+        String summary = switch (today.band()) {
+            case "azonnal" -> "A legutóbbi megszakadás után már a következő nap ismét teljes Életjel-nap lett.";
+            case "rovid" -> "A legutóbbi megszakadás után néhány napon belül lett újra teljes Életjel-nap.";
+            case "hosszu" -> "A legutóbbi megszakadás után több mint három nap telt el az első újra teljes Életjel-napig.";
+            case "elhuzodo" -> "A legutóbbi megszakadás után " + today.gapDays()
+                    + " nap telt el az első újra teljes Életjel-napig.";
             default -> "A legutóbbi megszakadás óta még nem volt újra teljes Életjel-nap.";
         };
         return List.of(new DetectorSignal(key(), "drill", summary, 3));
     }
 
-    private static String state(DetectorInput in, LocalDate asOf) {
+    private record RestartState(String band, Long gapDays) {}
+
+    private static RestartState state(DetectorInput in, LocalDate asOf) {
         Map<LocalDate, DetectorInput.NeedsDayPoint> days = StreakBreakResponseDetector.byDate(in);
         LocalDate broke = StreakBreakResponseDetector.lastBreak(days, asOf, WINDOW_DAYS);
         if (broke == null) {
@@ -62,10 +66,10 @@ public class RestartPatternDetector implements CharacterDetector {
             if (StreakBreakResponseDetector.allGreen(days, d)) {
                 long gap = java.time.temporal.ChronoUnit.DAYS.between(broke, d);
                 String band = gap <= 1 ? "azonnal" : gap <= ROVID_MAX ? "rovid"
-                        : gap <= HOSSZU_MAX ? "hosszu" : "nyitott";
-                return "ujraindulas:" + band;
+                        : gap <= HOSSZU_MAX ? "hosszu" : "elhuzodo";
+                return new RestartState(band, gap);
             }
         }
-        return "ujraindulas:nyitott";
+        return new RestartState("nyitott", null);
     }
 }

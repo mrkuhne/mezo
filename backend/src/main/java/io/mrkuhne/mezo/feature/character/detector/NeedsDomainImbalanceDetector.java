@@ -61,8 +61,8 @@ public class NeedsDomainImbalanceDetector implements CharacterDetector {
             return List.of();
         }
         String summary = "gyenge:nincs".equals(today)
-                ? "Az Életjel-területek kiegyensúlyozottak: nincs olyan, amelyik tartósan lemaradna a többitől."
-                : "Az Életjel-területek közül tartósan lemarad a többitől: "
+                ? "Az Életjel-területek kiegyensúlyozottak: nincs olyan, amelyik lemaradna a többitől."
+                : "Az Életjel-területek közül az elmúlt két hétben a többi mögött marad: "
                         + today.substring("gyenge:".length()).replace(",", ", ") + ".";
         int salience = "gyenge:nincs".equals(today) ? 2 : 4;
         return List.of(new DetectorSignal(key(), "pszichologus", summary, salience));

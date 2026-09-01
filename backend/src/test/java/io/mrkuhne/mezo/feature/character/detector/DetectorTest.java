@@ -1061,8 +1061,11 @@ class DetectorTest {
     }
 
     @Test
-    void selfCalibration_firesWhenHighEnergyDaysHadWorseSleep() {
+    void selfCalibration_suppressesASingleDayFlip() {
         // 10 paired days; the 5 highest self-rated days slept badly, the 5 lowest slept well.
+        // As of DAY-1 the window's low-self group collapses onto the median and is excluded, so
+        // verdict() returns null there -- the direction as of DAY has not held for two days, only
+        // one, so the confirmation gate (round-3 review fix, I10) must suppress it.
         List<DetectorInput.CheckinDayPoint> scales = new java.util.ArrayList<>();
         List<DetectorInput.SleepPoint> sleeps = new java.util.ArrayList<>();
         for (int i = 0; i < 10; i++) {
@@ -1071,6 +1074,47 @@ class DetectorTest {
             scales.add(scale(d, highSelf ? "8" : "3", "6"));
             sleeps.add(sleep(d, highSelf ? 3 : 8));
         }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(scales).sleep(sleeps).build());
+
+        assertThat(new SelfCalibrationDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void selfCalibration_firesOnlyOnceADirectionHasHeldForTwoDays() {
+        // Core 6 days sit inside every trailing-14-day window evaluated below (DAY, DAY-1, DAY-2)
+        // and alone are perfectly neutral (diff 0). Four edge days enter/leave the window as the
+        // evaluation date advances one day at a time:
+        //  - as of DAY-2 the window holds the neutral edges DAY-15/DAY-14 -> still neutral (nincs-jel)
+        //  - as of DAY-1 the window swaps in DAY-1's poor-sleep/high-energy pairing -> forditott
+        //  - as of DAY the window swaps in DAY's matching pairing too -> forditott again (confirmed)
+        // So the state changed between DAY-2 and DAY-1 and then HELD between DAY-1 and DAY: exactly
+        // the two-day-stable transition the confirmation gate (round-3 review fix, I10) must fire on.
+        List<DetectorInput.CheckinDayPoint> scales = new ArrayList<>();
+        List<DetectorInput.SleepPoint> sleeps = new ArrayList<>();
+        LocalDate[] coreHigh = {DAY.minusDays(10), DAY.minusDays(9), DAY.minusDays(8)};
+        LocalDate[] coreLow = {DAY.minusDays(7), DAY.minusDays(6), DAY.minusDays(5)};
+        for (LocalDate d : coreHigh) {
+            scales.add(scale(d, "8", "6"));
+            sleeps.add(sleep(d, 5));
+        }
+        for (LocalDate d : coreLow) {
+            scales.add(scale(d, "3", "6"));
+            sleeps.add(sleep(d, 5));
+        }
+        scales.add(scale(DAY.minusDays(15), "8", "6"));
+        sleeps.add(sleep(DAY.minusDays(15), 5));
+        scales.add(scale(DAY.minusDays(14), "3", "6"));
+        sleeps.add(sleep(DAY.minusDays(14), 5));
+        scales.add(scale(DAY.minusDays(1), "8", "6"));
+        sleeps.add(sleep(DAY.minusDays(1), 1));
+        // DAY itself is a low-self/high-sleep pairing rather than another high-self/low-sleep one:
+        // this keeps the high/low self-rating groups symmetric (4-and-4) once DAY-14 drops out of
+        // the window, while still widening the same forditott gap (a low self-rating paired with a
+        // good night's sleep pulls the LOW group's objective mean up, which pulls diff further
+        // negative) -- an asymmetric 5-and-3 split would instead push the high group's self-rating
+        // (8) to equal the window median and get excluded from both groups.
+        scales.add(scale(DAY, "3", "6"));
+        sleeps.add(sleep(DAY, 9));
         DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(scales).sleep(sleeps).build());
 
         List<DetectorSignal> fired = new SelfCalibrationDetector().detect(in);
@@ -1150,7 +1194,9 @@ class DetectorTest {
         List<DetectorSignal> fired = new DecisionProfileDetector().detect(in);
 
         assertThat(fired).hasSize(1);
-        assertThat(fired.getFirst().summary()).contains("gyengének").contains("döntés szövege");
+        assertThat(fired.getFirst().summary()).contains("a skála alsó részén van")
+                .contains("legjobbra értékelt").contains("legrosszabbra értékelt")
+                .contains("döntés szövege");
     }
 
     @Test
@@ -1285,6 +1331,31 @@ class DetectorTest {
     }
 
     @Test
+    void restartPattern_reportsASlowButRealRecoveryAsAFactNotAsStillOpen() {
+        // Break on DAY-9 (DAY-10 all-green, DAY-9 not), nothing complete again until DAY itself
+        // (gap 9, past HOSSZU_MAX=7) -- the C1 regression: this used to fall into the same
+        // "nyitott" bucket as a break that never recovered, and the dossier said "still no
+        // complete day" on the very day the user got back on track. As of DAY-1 no recovery had
+        // happened yet (state "nyitott"), so the band genuinely changes as of DAY.
+        List<DetectorInput.NeedsDayPoint> days = new ArrayList<>();
+        for (int i = 27; i >= 10; i--) {
+            days.add(needsDay(DAY.minusDays(i), true));
+        }
+        for (int i = 9; i >= 1; i--) {
+            days.add(needsDay(DAY.minusDays(i), false));
+        }
+        days.add(needsDay(DAY, true));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder()
+                .needs(new DetectorInput.NeedsContext(60, days)).build());
+
+        List<DetectorSignal> fired = new RestartPatternDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).contains("9 nap telt el")
+                .doesNotContain("még nem volt újra teljes");
+    }
+
+    @Test
     void retroLogging_firesWhenReflectionEntriesAreMostlyBackfilled() {
         List<DetectorInput.LogLatencyPoint> pts = new ArrayList<>();
         for (int i = 0; i < 8; i++) {
@@ -1382,6 +1453,27 @@ class DetectorTest {
 
         assertThat(fired).hasSize(1);
         assertThat(fired.getFirst().summary()).contains("07:00").doesNotContain("21:00");
+    }
+
+    @Test
+    void checkinSlotDrift_firstEverStabilDoesNotClaimARecovery() {
+        // "07:00" only reaches MIN_BASELINE_ROWS(3) in the baseline window as of DAY (DAY-14,
+        // DAY-15, DAY-16); as of DAY-1 the baseline window shifts to end at DAY-15, so DAY-14 falls
+        // out and only 2 rows remain -> below the gate -> state(DAY-1) is null. So "slot:stabil" as
+        // of DAY is the FIRST state ever computed here, not a return from "kikopott" -- the C2
+        // regression said "visszaállt" (recovered) on a slot the user never actually dropped.
+        List<DetectorInput.CheckinSlotPoint> slots = new ArrayList<>();
+        slots.add(slot(DAY.minusDays(14), "07:00", 7, 5, null));
+        slots.add(slot(DAY.minusDays(15), "07:00", 7, 5, null));
+        slots.add(slot(DAY.minusDays(16), "07:00", 7, 5, null));
+        slots.add(slot(DAY, "07:00", 7, 5, null));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().slots(slots).build());
+
+        List<DetectorSignal> fired = new CheckinSlotDriftDetector().detect(in);
+
+        assertThat(fired).hasSize(1);
+        assertThat(fired.getFirst().summary()).doesNotContain("visszaállt")
+                .contains("Nincs olyan");
     }
 
     @Test

@@ -75,8 +75,8 @@ export const INVENTORY_READS: InventoryRead[] = [
   { w: 'Hála-bejegyzések (életterület-címke)', chips: ['8 hét'] },
   { w: 'Életjel-napok (hat terület, streak-pillanatkép)', chips: ['8 hét'] },
   { w: 'Check-in sorok (idősáv, első írás ideje, jegyzet)', chips: ['8 hét'] },
-  { w: 'Naplózási latencia (a nap vs. mikor íródott)', chips: ['14 nap', '10 forrás'] },
-  { w: 'Chat-időbélyegek (saját üzenetek)', chips: ['14 nap'] },
+  { w: 'Naplózási latencia (a nap vs. mikor íródott)', chips: ['8 hét', '11 forrás'] },
+  { w: 'Chat-időbélyegek (saját üzenetek)', chips: ['8 hét'] },
 ]
 
 /** Tervezett (prototype's `INVENTORY.rounds`) — the remaining MINDENT-be round, verbatim

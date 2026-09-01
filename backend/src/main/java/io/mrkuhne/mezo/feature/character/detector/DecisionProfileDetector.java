@@ -42,20 +42,23 @@ public class DecisionProfileDetector implements CharacterDetector {
             return List.of();
         }
         String phrase = switch (today.band()) {
-            case "jo" -> "a visszanézett döntései többnyire jól sültek el";
-            case "vegyes" -> "a visszanézett döntései vegyes képet mutatnak";
-            default -> "a visszanézett döntései többségét utólag gyengének értékelte";
+            case "jo" -> "a visszanézett döntéseinek átlagos utólagos megítélése a skála felső részén van";
+            case "vegyes" -> "a visszanézett döntéseinek átlagos utólagos megítélése vegyes képet mutat";
+            default -> "a visszanézett döntéseinek átlagos utólagos megítélése a skála alsó részén van";
         };
         StringBuilder sb = new StringBuilder("A döntésnapló szerint ").append(phrase)
                 .append(" (").append(today.reviews()).append(" értékelt döntés, hat hét).");
-        for (String text : today.evidence()) {
-            sb.append(" Példa: „").append(text).append("”.");
+        if (today.best() != null) {
+            sb.append(" A legjobbra értékelt: „").append(today.best()).append("”.");
+        }
+        if (today.worst() != null) {
+            sb.append(" A legrosszabbra értékelt: „").append(today.worst()).append("”.");
         }
         int salience = "gyenge".equals(today.band()) ? 4 : 3;
         return List.of(new DetectorSignal(key(), "pszichologus", sb.toString(), salience));
     }
 
-    private record State(String key, String band, int reviews, List<String> evidence) {}
+    private record State(String key, String band, int reviews, String best, String worst) {}
 
     private static State state(DetectorInput in, LocalDate asOf) {
         List<DetectorInput.DecisionPoint> reviewed = new ArrayList<>();
@@ -79,13 +82,8 @@ public class DecisionProfileDetector implements CharacterDetector {
         List<DetectorInput.DecisionPoint> sorted = reviewed.stream()
                 .sorted(Comparator.comparing(DetectorInput.DecisionPoint::outcomeRating))
                 .toList();
-        List<String> evidence = new ArrayList<>();
-        if (sorted.getLast().textPreview() != null) {
-            evidence.add(sorted.getLast().textPreview());
-        }
-        if (sorted.getFirst().textPreview() != null && sorted.size() > 1) {
-            evidence.add(sorted.getFirst().textPreview());
-        }
-        return new State("kimenet:" + band, band, reviewed.size(), List.copyOf(evidence));
+        String best = sorted.getLast().textPreview();
+        String worst = sorted.size() > 1 ? sorted.getFirst().textPreview() : null;
+        return new State("kimenet:" + band, band, reviewed.size(), best, worst);
     }
 }

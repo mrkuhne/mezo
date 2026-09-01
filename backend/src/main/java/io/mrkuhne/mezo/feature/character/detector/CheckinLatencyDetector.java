@@ -52,7 +52,7 @@ public class CheckinLatencyDetector implements CharacterDetector {
         }
         String summary = switch (today) {
             case "keses:pontos" -> "A check-ineket jellemzően a saját idősávjuk körül tölti ki.";
-            case "keses:keses" -> "A check-inek jellemzően néhány órával a saját idősávjuk után készülnek el.";
+            case "keses:keses" -> "A check-inek jellemzően egy-négy órával a saját idősávjuk után készülnek el.";
             default -> "A check-inek jellemzően jóval a saját idősávjuk után, gyakran a nap későbbi részében készülnek el.";
         };
         return List.of(new DetectorSignal(key(), "drill", summary, 3));

@@ -220,9 +220,9 @@ public class CharacterSignalReads {
         DetectorInput.NeedsContext needs = gatherNeeds(owner, trendStart, day);
 
         List<DetectorInput.CheckinSlotPoint> checkinSlots = toCheckinSlots(checkins);
-        List<LocalDateTime> userChatTimes = gatherUserChatTimes(owner, windowStart, day);
+        List<LocalDateTime> userChatTimes = gatherUserChatTimes(owner, trendStart, day);
         List<DetectorInput.LogLatencyPoint> logLatencies =
-                gatherLogLatencies(owner, windowStart, day);
+                gatherLogLatencies(owner, trendStart, day);
 
         return new DetectorInput(day, mealDates, checkinCounts, weights, journalTexts,
                 gymDays, sportSessions, runLogs, sleepPoints, meso,
@@ -694,12 +694,20 @@ public class CharacterSignalReads {
         Map<LocalDate, Integer> focusCounts = new TreeMap<>();
         for (IntentionFocusEntity f : intentionFocusRepository
                 .findByCreatedByAndFocusDateBetweenAndDeletedFalseOrderByFocusDateAsc(owner, from, to)) {
+            LocalDate writtenOn = localDate(f.getCreatedAt());
+            if (writtenOn != null && writtenOn.isAfter(to)) {
+                continue;
+            }
             focusCounts.merge(f.getFocusDate(), 1, Integer::sum);
         }
         Map<LocalDate, String> reflections = new TreeMap<>();
         for (DailyIntentionEntity d : dailyIntentionRepository
                 .findByCreatedByAndIntentionDateBetweenAndDeletedFalseOrderByIntentionDateAsc(
                         owner, from, to)) {
+            LocalDate writtenOn = localDate(d.getCreatedAt());
+            if (writtenOn != null && writtenOn.isAfter(to)) {
+                continue;
+            }
             reflections.put(d.getIntentionDate(), d.getReflection());
         }
         Set<LocalDate> dates = new java.util.TreeSet<>(focusCounts.keySet());
@@ -760,7 +768,13 @@ public class CharacterSignalReads {
      */
     private DetectorInput.NeedsContext gatherNeeds(UUID owner, LocalDate from, LocalDate to) {
         List<NeedsDayEntity> rows = needsDayRepository
-                .findByCreatedByAndNeedsDateBetweenAndDeletedFalseOrderByNeedsDateAsc(owner, from, to);
+                .findByCreatedByAndNeedsDateBetweenAndDeletedFalseOrderByNeedsDateAsc(owner, from, to)
+                .stream()
+                .filter(r -> {
+                    LocalDate writtenOn = localDate(r.getCreatedAt());
+                    return writtenOn == null || !writtenOn.isAfter(to);
+                })
+                .toList();
         if (rows.isEmpty()) {
             return null;
         }

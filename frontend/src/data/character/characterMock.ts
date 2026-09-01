@@ -571,10 +571,10 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
     // paraphrase SelfCalibrationDetector's and PromiseVsDeliveryDetector's real summaries.
     {
       detector: 'self-calibration',
-      code: 'önértékelés-kalibráció: az energia-értékelés együtt mozog az előző éjszakai alvással (14 nap)',
+      code: 'önértékelés-kalibráció: az energia-értékelés együtt mozog az előző éjszakai alvással (14 nap, irányt jelez, nem jellemvonást)',
       refs: [],
       who: 'pszichologus',
-      obs: 'Az energia-értékelésed szorosan követi az előző éjszakai alvásod minőségét — jól érzékeled a saját fáradtságodat.',
+      obs: 'Az energia-értékelésed az elmúlt két hétben együtt mozgott az előző éjszakai alvásod minőségével.',
     },
     {
       detector: 'promise-vs-delivery',
@@ -678,10 +678,10 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
     },
     {
       detector: 'restart-pattern',
-      code: 'újraindulási minta: a megszakadás után 2 nappal lett újra teljes Életjel-nap (28 nap)',
+      code: 'újraindulási minta: a megszakadás után 9 nappal lett újra teljes Életjel-nap (28 nap)',
       refs: [],
       who: 'drill',
-      obs: 'A legutóbbi megszakadás után két nappal újra teljes Életjel-napod volt.',
+      obs: 'A legutóbbi megszakadás után 9 nap telt el az első újra teljes Életjel-napig.',
     },
   ],
   27: [
@@ -720,10 +720,10 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
     // paraphrase RetroLoggingRatioDetector's and NightActivityDetector's real summaries.
     {
       detector: 'retro-logging-ratio',
-      code: 'naplózási időzítés: az edzés-adatokat szinte mindig aznap rögzíti, a naplóbejegyzéseket többnyire utólag (14 nap)',
+      code: 'naplózási időzítés: az edzés-, alvás- és étkezésadatokat szinte mindig aznap rögzíti, a naplóbejegyzéseket többnyire utólag (14 nap)',
       refs: [],
       who: 'drill',
-      obs: 'Az edzés- és testadataidat szinte mindig aznap rögzíted, a naplózó bejegyzéseket viszont többnyire utólag írod meg.',
+      obs: 'Az edzés-, alvás- és étkezésadataidat szinte mindig aznap rögzíted, a naplózó bejegyzéseket viszont többnyire utólag írod meg.',
     },
     {
       detector: 'night-activity',

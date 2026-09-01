@@ -28,6 +28,16 @@ import org.springframework.stereotype.Component;
  * relationship, never a verdict on whether the user "knows themselves", and states outright that
  * one 14-day window shows a direction rather than a trait (spec §2 — the validating literature
  * measures over weeks-to-months against instrumented ground truth).
+ *
+ * <p><b>Confirmation gate (round-3 review fix):</b> {@link #verdict} thresholds a moving group-mean
+ * difference at exactly {@link #MIN_SEPARATION} over a window that shifts by one day every night,
+ * behind a gate ({@code DetectorGates.newCheckinData}) that is open on nearly every day. Without an
+ * extra safeguard the dossier could receive "tracks your sleep" → "no direction" → "moves inversely"
+ * within a fortnight — this is the one detector whose WORDING is the only defence for a sensitive
+ * claim, so a single noisy day must not be enough to change it. The detector therefore only fires
+ * when the state as of {@code day} equals the state as of {@code day-1} (it has already held for two
+ * consecutive days) AND differs from the state as of {@code day-2} (it is a genuine change, not a
+ * repeat of an already-announced state). A one-day flip is silently suppressed.
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
@@ -55,22 +65,30 @@ public class SelfCalibrationDetector implements CharacterDetector {
         }
         State today = state(in, in.day());
         State yesterday = state(in, in.day().minusDays(1));
-        if (today == null || today.key().equals(yesterday == null ? "" : yesterday.key())) {
+        State dayBefore = state(in, in.day().minusDays(2));
+        String keyToday = today == null ? "" : today.key();
+        String keyYesterday = yesterday == null ? "" : yesterday.key();
+        String keyDayBefore = dayBefore == null ? "" : dayBefore.key();
+        if (today == null || !keyToday.equals(keyYesterday) || keyYesterday.equals(keyDayBefore)) {
             return List.of();
         }
         StringBuilder sb = new StringBuilder("Az önértékelés és a mérhető adat viszonya az elmúlt két hétben: ")
                 .append(String.join("; ", today.phrases()))
                 .append(". A mentális és a stressz skálának nincs objektív párja a rendszerben, ezért kimaradt, és egy kéthetes ablak irányt mutat, nem jellemvonást.");
-        for (String note : today.notes()) {
-            sb.append(" Aznapi jegyzet: „").append(note).append("”.");
+        for (Note note : today.notes()) {
+            sb.append(" A ").append(note.label()).append(" nap jegyzete (").append(note.date())
+                    .append("): „").append(note.text()).append("”.");
         }
         int salience = today.key().contains(FORDITOTT) ? 4 : 2;
         return List.of(new DetectorSignal(key(), "pszichologus", sb.toString(), salience));
     }
 
-    private record State(String key, List<String> phrases, List<String> notes) {}
+    private record State(String key, List<String> phrases, List<Note> notes) {}
 
     private record Pair(LocalDate date, double self, double objective) {}
+
+    /** A window note attributed to a named day, so the persona cannot mistake it for today's. */
+    private record Note(String label, LocalDate date, String text) {}
 
     private static State state(DetectorInput in, LocalDate asOf) {
         String energia = verdict(energyPairs(in, asOf));
@@ -88,9 +106,9 @@ public class SelfCalibrationDetector implements CharacterDetector {
         if (testi != null) {
             keyParts.add("testi:" + testi);
             phrases.add(switch (testi) {
-                case EGYEZIK -> "a testi értékelés együtt mozog az aznapi ízületi terheltséggel";
-                case FORDITOTT -> "a testi értékelés az aznapi ízületi terheltséggel ellentétesen mozog";
-                default -> "a testi értékelés és az aznapi ízületi terheltség között nem látszik irány";
+                case EGYEZIK -> "a testi értékelés az edzésnapokon együtt mozog az aznapi ízületi terheltséggel";
+                case FORDITOTT -> "a testi értékelés az edzésnapokon az aznapi ízületi terheltséggel ellentétesen mozog";
+                default -> "a testi értékelés és az aznapi ízületi terheltség között az edzésnapokon nem látszik irány";
             });
         }
         if (keyParts.isEmpty()) {
@@ -182,7 +200,7 @@ public class SelfCalibrationDetector implements CharacterDetector {
      * EVIDENCE for the expert persona. Deterministic selection, zero interpretation — the shipped
      * {@code JournalNoteDetector} precedent (spec §4.1).
      */
-    private static List<String> notes(DetectorInput in, LocalDate asOf) {
+    private static List<Note> notes(DetectorInput in, LocalDate asOf) {
         List<DetectorInput.CheckinDayPoint> rated = in.trend().checkinDays().stream()
                 .filter(c -> TrailingWindow.inWindow(c.date(), asOf) && c.energy() != null)
                 .sorted(Comparator.comparing(DetectorInput.CheckinDayPoint::energy))
@@ -190,16 +208,20 @@ public class SelfCalibrationDetector implements CharacterDetector {
         if (rated.isEmpty()) {
             return List.of();
         }
+        List<String> labels = new ArrayList<>();
         List<LocalDate> wanted = new ArrayList<>();
         wanted.add(rated.getLast().date());
+        labels.add("legmagasabbra értékelt");
         if (rated.size() > 1) {
             wanted.add(rated.getFirst().date());
+            labels.add("legalacsonyabbra értékelt");
         }
-        List<String> notes = new ArrayList<>();
-        for (LocalDate d : wanted) {
+        List<Note> notes = new ArrayList<>();
+        for (int i = 0; i < wanted.size() && notes.size() < MAX_NOTES; i++) {
+            LocalDate d = wanted.get(i);
             for (DetectorInput.CheckinSlotPoint s : in.trend().checkinSlots()) {
-                if (s.date().equals(d) && s.notePreview() != null && notes.size() < MAX_NOTES) {
-                    notes.add(s.notePreview());
+                if (s.date().equals(d) && s.notePreview() != null) {
+                    notes.add(new Note(labels.get(i), d, s.notePreview()));
                     break;
                 }
             }
