@@ -51,6 +51,25 @@ describe('LifeEventCandidateCard — Pontosít (szerkeszt-aztán-elfogad, mezo-m
     })
   })
 
+  it('(b2) üres összefoglalóval az „Elfogad így" a summary mezőt undefined-ként küldi (nem ""-ként)', async () => {
+    const onDecide = vi.fn()
+    render(<LifeEventCandidateCard candidate={candidate} onDecide={onDecide} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Pontosít' }))
+
+    const summaryInput = screen.getByLabelText('Jelölt összefoglalója')
+    await userEvent.clear(summaryInput)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Elfogad így' }))
+
+    expect(onDecide).toHaveBeenCalledWith('accept', {
+      title: candidate.title,
+      summary: undefined,
+    })
+    const [, refined] = onDecide.mock.calls[0]
+    expect('summary' in refined).toBe(true)
+    expect(refined.summary).toBeUndefined()
+  })
+
   it('(c) „Mégse" visszaviszi a normál kártyához, döntés nélkül, az edit eldobva', async () => {
     const onDecide = vi.fn()
     render(<LifeEventCandidateCard candidate={candidate} onDecide={onDecide} />)

@@ -242,4 +242,23 @@ describe('useLifeEventActions decide (refined accept, mezo-ms9a)', () => {
     }))
     vi.unstubAllEnvs()
   })
+
+  it('real módban undefined summary esetén a body NEM tartalmazza a refinedSummary kulcsot (üres string helyett)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    let sentBody: unknown
+    server.use(
+      http.post(`${API_BASE}/api/companion/graph/node/n1/decision`, async ({ request }) => {
+        sentBody = await request.json()
+        return HttpResponse.json({
+          id: 'n1', kind: 'LIFE_EVENT', title: 'Pontosított cím', status: 'active',
+          createdAt: '2026-08-22T02:00:00Z', updatedAt: '2026-08-22T02:00:00Z', proposedEdgeCount: 0,
+        })
+      }),
+    )
+    const { result } = renderHook(() => useLifeEventActions(), { wrapper: makeHookWrapper() })
+    result.current.decide('n1', 'accept', { title: 'Pontosított cím', summary: undefined })
+    await waitFor(() => expect(sentBody).toEqual({ decision: 'accept', refinedTitle: 'Pontosított cím' }))
+    await waitFor(() => expect(sentBody && Object.prototype.hasOwnProperty.call(sentBody, 'refinedSummary')).toBe(false))
+    vi.unstubAllEnvs()
+  })
 })

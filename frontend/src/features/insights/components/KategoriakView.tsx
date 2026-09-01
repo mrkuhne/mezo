@@ -19,10 +19,6 @@ export function KategoriakView({ nodes, kind, onOpenKind, onOpenNode }: {
   nodes: KnowledgeGraphNode[]
   kind: GraphNodeKind | null
   onOpenKind: (kind: GraphNodeKind) => void
-  /** Unused inside this view (the shell's TudasFrame page-head chip is the single back
-   *  affordance for the kind drill) — kept in the contract so callers can wire it the same way
-   *  as onOpenKind/onOpenNode without reaching into the shell for it. */
-  onClearKind: () => void
   onOpenNode: (node: KnowledgeGraphNode) => void
 }) {
   if (kind === null) {

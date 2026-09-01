@@ -100,20 +100,27 @@ describe('KnowledgeListPage (mock mode)', () => {
       expect(row).toHaveClass('mz-fact-hl')
     })
 
-    test('(b) a fact param az első render után eltűnik az URL-ből, a kiemelés megmarad', async () => {
+    test('(b) a fact param az első render után eltűnik az URL-ből (view=tenyek marad helyette), a kiemelés megmarad', async () => {
       const { getByTestId } = renderPageWithProbe('/?fact=f1')
-      await waitFor(() => expect(getByTestId('loc-probe').textContent).toBe(''))
+      await waitFor(() => expect(getByTestId('loc-probe').textContent).toBe('?view=tenyek'))
       // a kiemelés a param eltűnése UTÁN is él (local state, nem a param hordozza)
       const row = screen.getByText('Pull Day-en a Chest Supported Row a key compound').closest('.mz-facttile')
       expect(row).toHaveClass('mz-fact-hl')
     })
 
-    test('a fact-törlés csak a `fact` paramot dobja el, a `view`-t nem', async () => {
+    test('a fact-törlés a `view`-t is `tenyek`-re írja át, hogy a „‹ Tudástár" chip ne ragadjon be (review fix, mezo-ms9a)', async () => {
       const { getByTestId } = renderPageWithProbe('/?view=kategoriak&fact=f1')
-      // a highlight a view-t Tényekre kényszeríti — de az URL-ben megmaradt `view` param nem
-      // a `fact` mellékterméke, hanem a highlight-kényszer maga; csak a `fact` tűnik el a query-ből
+      // a one-shot effekt a `fact` törlésével EGYÜTT `view=tenyek`-re írja az URL-t — nem hagyja
+      // a korábbi `view=kategoriak`-ot érintetlenül, mert a kényszerített Tények-nézet különben csak
+      // a `highlightFactId` state-en élne tovább, az URL-lel divergálva (a back-chip innen nem tudna
+      // kilépni: az `onBack` a `view`-t törli, nem a highlightot).
       await waitFor(() => expect(getByTestId('loc-probe').textContent).not.toContain('fact'))
-      expect(getByTestId('loc-probe').textContent).toContain('view=kategoriak')
+      expect(getByTestId('loc-probe').textContent).toContain('view=tenyek')
+
+      // a back-chip innentől a normál Tények-nézet chipje — kattintásra visszavisz az alapnézetre.
+      await userEvent.click(screen.getByText('‹ Tudástár'))
+      expect(screen.getByRole('button', { name: 'Tények' })).toBeInTheDocument()
+      expect(getByTestId('loc-probe').textContent).toBe('')
     })
 
     test('(c) ismeretlen fact id → Tények nézet, nincs kiemelés, nincs hiba', () => {
@@ -494,6 +501,22 @@ describe('KnowledgeListPage (real mode)', () => {
     const { container } = renderPage()
     expect(await screen.findByText(/tény rólad · 10 megy a chatbe/)).toBeInTheDocument()
     expect(container.querySelector('.mz-hero-sb')?.textContent).not.toMatch(/kapcsolat/)
+  })
+
+  test('profileLine csak akkor tesz „…"-ot a profil-összegzés mögé, ha 40 karakternél hosszabb (review fix, mezo-ms9a)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/graph/node`, () =>
+        HttpResponse.json([
+          {
+            id: 'gn-profile', kind: 'INSIGHT', title: 'Rólad tanultam', summary: 'Rövid összegzés.',
+            status: 'active', createdAt: '2026-08-15T07:00:00Z', updatedAt: '2026-08-15T07:00:00Z',
+            proposedEdgeCount: 0, topEdges: [], sourceKind: 'profile',
+          },
+        ])),
+    )
+    renderPage()
+    expect(await screen.findByText('Rövid összegzés. · heti frissítés')).toBeInTheDocument()
+    expect(screen.queryByText(/…/)).not.toBeInTheDocument()
   })
 
   test('accepting a candidate POSTs the decision and refetches without it', async () => {

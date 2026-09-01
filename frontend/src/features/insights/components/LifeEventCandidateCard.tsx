@@ -26,7 +26,9 @@ export function LifeEventCandidateCard({ candidate, onDecide }: {
   }
 
   const acceptRefined = () => {
-    onDecide('accept', { title: title.trim(), summary: summary.trim() })
+    // Üres összefoglaló undefined-ként megy tovább, sosem ""-ként — a backend DTO
+    // @Size(min=1)-et ír elő refinedSummary-re, egy üres string 400-at dobna real módban.
+    onDecide('accept', { title: title.trim() || undefined, summary: summary.trim() || undefined })
   }
 
   return (

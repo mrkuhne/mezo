@@ -92,6 +92,9 @@ export function KnowledgeListPage() {
   // EGYSZER, mountkor rögzítjük `useState`-ben: a param maga egy alábbi `useEffect`-ben eltűnik
   // az URL-ből (one-shot highlight), de a kiemelésnek a param eltűnése UTÁN is élnie kell —
   // ezért nem a `params`-ból olvassuk újra minden rendernél, hanem ebből az állapotból.
+  // Mount-only capture: egy in-app, ugyanerre a route-ra mutató `?fact=` navigáció (pl. egy
+  // második WeekDiscoveries-kattintás mount nélkül) NEM váltaná újra a kiemelést — jelenleg
+  // nincs ilyen producer, de ha lesz, ennek a state-nek a mountot is újra kell futtatnia.
   const [highlightFactId] = useState<string | null>(() => params.get('fact'))
 
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
@@ -130,21 +133,26 @@ export function KnowledgeListPage() {
 
   // `?view=profil` requires a profile-node to show anything (ProfileView has no "nincs profil"
   // state) — without one it reads as an unresolved/invalid view, same as a bad `?view=` value.
-  // T10: `?fact=` (captured above, `highlightFactId`) OVERRIDES the requested view entirely — a
-  // deep link into a specific fact always lands on Tények, even for an unknown id (no crash,
-  // just no row lights up) and even once the param itself is gone from the URL.
-  const view: KnowledgeView = highlightFactId
+  // T10: `?fact=` OVERRIDES the requested view entirely, but ONLY while the param is still in the
+  // URL (i.e. the very first render after a deep-link arrival) — the effect below rewrites the URL
+  // to `?view=tenyek` in the same tick, so on every render after that the normal `requestedView`
+  // read already says `tenyek` and the back chip (which clears `view`, not `fact`) works again.
+  // Reading `params.get('fact')` here (not the `highlightFactId` state) is what makes the override
+  // self-expiring instead of pinning `view` for the whole mount lifetime (review finding, mezo-ms9a).
+  const view: KnowledgeView = params.get('fact')
     ? 'tenyek'
     : requestedView === 'profil' && !profileNode ? 'base' : requestedView
 
   // T10: clears `?fact=` from the URL once, right after the deep link has been consumed above —
-  // `replace: true` so it doesn't leave a back-button entry, and only THIS param is dropped
-  // (other params, e.g. a future `?view=`, must survive). Runs once per mount by design: the
-  // highlight itself persists via `highlightFactId` state, not via the param's presence.
+  // `replace: true` so it doesn't leave a back-button entry — and in the SAME rewrite bakes the
+  // forced view into `?view=tenyek` so it survives the param's removal (other params, e.g. a
+  // future `?kind=`, must still survive too). Runs once per mount by design: the highlight itself
+  // persists via `highlightFactId` state, not via the param's presence.
   useEffect(() => {
     if (params.get('fact')) {
       const next = new URLSearchParams(params)
       next.delete('fact')
+      next.set('view', 'tenyek')
       setParams(next, { replace: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot: must fire exactly once on mount
@@ -155,7 +163,7 @@ export function KnowledgeListPage() {
     ? `${latestGraphNode.title}${edgeCount !== null ? ` · ${edgeCount} él` : ''}`
     : 'Még nincs kategorizált kapcsolat'
   const profileLine = profileNode?.summary
-    ? `${profileNode.summary.slice(0, 40)}… · heti frissítés`
+    ? `${profileNode.summary.slice(0, 40)}${profileNode.summary.length > 40 ? '…' : ''} · heti frissítés`
     : 'Még nincs profil-összegzés · heti frissítés'
 
   // Real-mode-only cold-load window (mock mode's isPending is always false): facts=[]/degraded=false
@@ -224,7 +232,6 @@ export function KnowledgeListPage() {
               nodes={graphNodes}
               kind={kind}
               onOpenKind={(k) => setParams({ view: 'kategoriak', kind: k })}
-              onClearKind={() => setParams({ view: 'kategoriak' }, { replace: true })}
               onOpenNode={(n) => setSelectedId(n.id)}
             />
           </EntranceGroup>
