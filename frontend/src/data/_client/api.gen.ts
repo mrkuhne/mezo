@@ -1103,6 +1103,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipe/workshop/turn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** One stateless Receptműhely AI turn — history + current draft in, prose reply + full updated draft out (mezo-92pb); nothing persisted */
+        post: operations["workshopTurn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fuel/day/{date}": {
         parameters: {
             query?: never;
@@ -5065,6 +5082,40 @@ export interface components {
         };
         RecipeListResponse: {
             recipes: components["schemas"]["RecipeResponse"][];
+        };
+        WorkshopChatMessage: {
+            role: string;
+            text: string;
+        };
+        WorkshopDraftLine: {
+            source: string;
+            /** Format: uuid */
+            pantryItemId?: string | null;
+            name: string;
+            amount: number;
+            unit: string;
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+        };
+        WorkshopDraft: {
+            name: string;
+            category: string;
+            servings: number;
+            steps: string[];
+            lines: components["schemas"]["WorkshopDraftLine"][];
+        };
+        WorkshopTurnRequest: {
+            message: string;
+            goal?: string | null;
+            /** @default [] */
+            history: components["schemas"]["WorkshopChatMessage"][];
+            draft?: components["schemas"]["WorkshopDraft"] | null;
+        };
+        WorkshopTurnResponse: {
+            reply: string;
+            draft: components["schemas"]["WorkshopDraft"];
         };
         Macros: {
             kcal: number;
@@ -11234,6 +11285,66 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    workshopTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkshopTurnRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkshopTurnResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM answer unparseable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM port unavailable (companion off) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -3104,6 +3104,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/recipe/workshop/turn:
+    post:
+      tags:
+        - RecipeWorkshop
+      operationId: workshopTurn
+      summary: >-
+        One stateless Receptműhely AI turn — history + current draft in, prose
+        reply + full updated draft out (mezo-92pb); nothing persisted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkshopTurnRequest'
+      responses:
+        '200':
+          description: Updated draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkshopTurnResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: LLM answer unparseable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: LLM port unavailable (companion off)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/fuel/day/{date}':
     get:
       tags:
@@ -12406,6 +12451,117 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecipeResponse'
+    WorkshopChatMessage:
+      type: object
+      required:
+        - role
+        - text
+      properties:
+        role:
+          type: string
+          pattern: ^(user|assistant)$
+        text:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    WorkshopDraftLine:
+      type: object
+      required:
+        - source
+        - name
+        - amount
+        - unit
+      properties:
+        source:
+          type: string
+          pattern: ^(pantry|estimate)$
+        pantryItemId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+        amount:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          type: string
+          minLength: 1
+        kcal:
+          type: number
+          nullable: true
+        proteinG:
+          type: number
+          nullable: true
+        carbsG:
+          type: number
+          nullable: true
+        fatG:
+          type: number
+          nullable: true
+    WorkshopDraft:
+      type: object
+      required:
+        - name
+        - category
+        - servings
+        - steps
+        - lines
+      properties:
+        name:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          pattern: ^(breakfast|lunch|dinner|snack)$
+        servings:
+          type: integer
+          minimum: 1
+          maximum: 12
+        steps:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkshopDraftLine'
+          maxItems: 30
+    WorkshopTurnRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        goal:
+          type: string
+          nullable: true
+          pattern: ^(high_protein|pre_workout|post_workout|before_bed|breakfast)$
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkshopChatMessage'
+          maxItems: 20
+          default: []
+        draft:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/WorkshopDraft'
+    WorkshopTurnResponse:
+      type: object
+      required:
+        - reply
+        - draft
+      properties:
+        reply:
+          type: string
+        draft:
+          $ref: '#/components/schemas/WorkshopDraft'
     Macros:
       type: object
       required:
