@@ -17,8 +17,9 @@ cross-feature edge or an extra query, we pay it.
 **In:** the four round-2 inventory rows wired for real, as seven detectors plus the read widening
 that feeds them. **Out:** rounds 3–4, the remaining spec §5 detectors (mezo-1gim.12), any contract
 (OpenAPI) change, any new persistence, any new endpoint, meal free-text/notes mining (no LLM-side
-text work inside a detector), and the `TrendWindow.gymEightWeeks` leftover from round 1 (still
-reserved for a future rir-trend clause).
+text work inside a detector), and any new rir-trend clause on the round-1 detectors. (Round 1's
+`TrendWindow.gymEightWeeks` was gathered but unread; round 2 does not add a rir-trend clause, but it
+does become the field's first real consumer — see §4.)
 
 ## 2. Prior art
 
@@ -60,7 +61,7 @@ The `investigator` recon mapped the terrain; every field below was then verified
 
 **Affected features:** `character` (BE detector package + `CharacterSignalReads`, FE
 `features/character` + `data/character`), and read-only into `meal`, `nutrition`, `fuel`,
-`medication`, `biometrics/checkin`, `goal`.
+`pantry`, `medication`, `biometrics/checkin`, `goal`.
 
 **Sources (verified fields):**
 
@@ -71,6 +72,7 @@ The `investigator` recon mapped the terrain; every field below was then verified
 | Makró-célok | `GoalPrescriptionJson.Segment` + `NutritionTargetsProperties` | goal-week segment `kcal`+`proteinG`, else config `kcal/p/c/f/water` |
 | Víz | `WaterLogEntity` | `logDate`, `amountMl` |
 | Stack-terv | `ProtocolEntity` (status `active`) + `ProtocolItemEntity` | `pantryItemId`, `slotKey`, `restDayFallback` |
+| Stack-nevek | `PantryItemEntity` | `name` (readable summaries instead of UUIDs) |
 | Stack-bevitel | `SupplementIntakeEntity` | `pantryItemId`, `takenDate`, `slotKey` |
 | Gyógyszer | `MedicationEntity` (active) + `MedicationDoseEntity` | `cycle` (`cycleLengthDays`, `phases[]`), `administeredDate` |
 | Check-in | `CheckInEntity` | `date`, `slotTime`, `energy`, `stress`, `body`, `mental` (1–10, nullable) |
@@ -100,11 +102,17 @@ means.** A day is the atomic unit for every round-2 signal, and the detector doe
 — which is what lets a cycle-aligned analysis (dose-anchored, not calendar-anchored) run correctly
 out of a plain date-ordered window.
 
-- **14-day detailed slice** (fast detectors): meal days with per-meal detail, water days, stack
-  days, check-in days, medication-cycle days.
-- **8-week raw series** (`TrendWindow`, baseline/covariance detectors): the same per-day records
-  over eight weeks. The 14-day slice is derived by filtering the 8-week list — the round-1 gym/run
-  idiom — so the two windows can never disagree.
+- **8-week raw series** (`TrendWindow`): meal days with per-meal detail, water days, stack days,
+  check-in days and medication-cycle days, one record per day.
+- **No separate 14-day copy for round-2 sources.** Every round-2 detector needs to evaluate its own
+  state twice — as of `day` and as of `day − 1` (see §6) — and each evaluation needs a full trailing
+  14-day window, so the detectors window the 8-week series internally by an `asOf` parameter. A
+  duplicated 14-day field would be dead weight that could only ever disagree with its own source.
+  The existing 14-day round-1 fields (`mealDates` included) keep their present meaning untouched.
+
+A welcome consequence: `protein-training-mismatch` and `stack-skip-pattern` need gym days as of two
+different dates, so they become the **first consumers of `TrendWindow.gymEightWeeks`** — the one
+deliberate leftover round 1 documented ("gathered but unread"). Round 2 closes it.
 
 Every read stays bounded above by the observed `day` (catch-up honesty): via the finder's upper
 bound where one exists, otherwise by an in-memory filter, exactly as the round-1 weight read does.
@@ -146,13 +154,21 @@ bound where one exists, otherwise by an in-memory filter, exactly as the round-1
 ```
 MealDayPoint(date, kcal, proteinG, carbsG, fatG, nova4KcalShare, novaCoveragePct,
              kcalTarget, proteinTarget, meals List<MealPoint>)
-MealPoint(slot, loggedAt, kcal, nova)                 // loggedAt = the meal's Instant
-WaterDay(date, amountMl)                              // absent day = no log, never 0
-StackDay(date, expected int, taken int, missedKeys List<String>)
-CheckinDay(date, count, energy, stress, body, mental) // per-day means of the logged slots
-MedCycleDay(date, cycleDay, phaseKey, daysSinceDose, stale boolean)
-MedContext(cycleLengthDays, days List<MedCycleDay>)
+MealPoint(slot, loggedAtLocalTime, kcal, nova)        // local time per the house LocalDate.now() zone
+WaterDayPoint(date, amountMl, targetMl)               // absent day = no log, never 0
+StackContext(items List<StackItem>, days List<StackDayPoint>)
+StackItem(pantryItemId, name, slotKey, restDayFallback)
+StackDayPoint(date, takenPantryItemIds Set<UUID>)
+CheckinDayPoint(date, count, energy, stress, body, mental)  // per-day means of the logged slots
+MedCycleDayPoint(date, cycleDay, phaseKey, daysSinceDose, stale boolean)
+MedContext(cycleLengthDays, days List<MedCycleDayPoint>)
 ```
+
+`MealPoint.loggedAtLocalTime` converts the meal's `loggedAt` `Instant` with the JVM default zone —
+the same convention the character jobs already use when they take `LocalDate.now()`; the day
+boundary and the meal's own `mealDate` come from the same clock, so no second time authority is
+introduced. `StackItem.name` comes from `PantryItemRepository`, which makes a readable summary
+possible ("Kreatin 3 napon maradt ki") instead of a UUID.
 
 `MedCycleDay.stale` is the round's precision guard: `MedicationCycleService` deliberately CLAMPS a
 cycle day when the last dose is older than one full cycle (a product decision for the Fuel UI). For
@@ -206,19 +222,34 @@ detector's own summary text must already be neutral and descriptive ("a ciklus 5
 
 ## 6. Overfiring protection
 
-Round 1's stateless change-gating (spec §5 of the round-1 design) is generalised, not replaced.
-`RoundOneGates` is renamed `DetectorGates` (same package-private, same pure-date-check nature) and
-gains `newMealData`, `newWaterData`, `newStackData`, `newCheckinData`, `newDoseData` beside the
-existing five. Rules:
+Round 1's stateless change-gating (spec §5 of the round-1 design) carries over, but round 2 inverts
+which half of it does the work — a finding from the design pass worth stating plainly:
 
-- Every detector fires only if new data for **its own source family** is dated `day`. No new data →
-  silence, even when the window still shows the condition.
-- Band/state detectors (`hydration-consistency`, and the trend clause of `macro-adherence`)
-  additionally recompute their band as of `day − 1` and fire only on a band change — the round-1
-  double-computation gate, no state and no table.
-- The covariance detectors (`comfort-eating`, `med-cycle-covariance`) fire on the new-data gate plus
-  a **minimum paired-day / complete-cycle count**; below that count they are silent rather than
-  noisy, which is the honest reading of a thin sample.
+**Round 1's sources are episodic; round 2's are daily.** A gym session or a run happens two or three
+times a week, so "new data for this source arrived today" was a genuinely selective gate. Meals,
+water, check-ins and supplement intakes arrive *every single day*, so that same gate is nearly
+always open. Left alone it would re-announce an unchanged 14-day pattern nightly — precisely the
+overfiring the round-1 spec set out to prevent. Therefore, for round 2:
+
+- **The state-change gate is primary, and every detector has one.** Each detector exposes its
+  finding as a `String` state computed `asOf` a date (a band, a direction, a headline bucket, an
+  offender key — null when it does not qualify). `detect()` computes the state as of `day` and as of
+  `day − 1` and fires only when the state is non-null **and different** from yesterday's. Double
+  computation, deterministic, no state and no table — the round-1 `hr-recovery-trend` gate,
+  generalised from one detector to all seven.
+- **The new-data gate stays as a cheap pre-filter.** `RoundOneGates` is renamed `DetectorGates`
+  (same package-private, same pure-date-check nature) and gains `newMealData`, `newWaterData`,
+  `newStackData`, `newCheckinData` and `newDoseData` beside the existing five.
+- **Minimum-sample silence.** The covariance detectors (`comfort-eating`, `med-cycle-covariance`)
+  additionally require a minimum number of paired days / complete cycles; below that they are silent
+  rather than noisy, which is the honest reading of a thin sample.
+- **One documented widening.** `stack-skip-pattern` also fires when the observed day itself carries
+  a miss for the offending item even though the state string is unchanged — the deliberate,
+  documented shape round 1 settled on for `meso-adherence`, so a second consecutive skipped day is
+  not swallowed.
+
+Because both evaluations need a full trailing 14-day window, this is what forces the round-2 series
+into the 8-week window rather than a 14-day slice (§4).
 
 ## 7. Gépterem + FE
 
@@ -244,7 +275,7 @@ existing five. Rules:
   into **no** slice, trend window included; plus a no-active-protocol / no-active-medication test
   proving absent-not-zero.
 - `ArchitectureTest` named explicitly in the focused sweep: `character → fuel`, `character →
-  medication`, `character → nutrition` and `character → goal` are new one-way edges (nothing outside
+  medication`, `character → nutrition`, `character → pantry` and `character → goal` are new one-way edges (nothing outside
   `feature/character` imports it), so they must be proven cycle-free before merge.
 - FE tests in both modes for `inventory.ts`, `DetektorokPage` and the mock chains; `pnpm build`.
 - CODEMAP regeneration + `lint-docs --errors-only` in the same change.
