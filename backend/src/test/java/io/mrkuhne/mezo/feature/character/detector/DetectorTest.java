@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 class DetectorTest {
@@ -787,6 +788,105 @@ class DetectorTest {
                     assertThat(s.detectorKey()).isEqualTo("protein-training-mismatch");
                     assertThat(s.expertKey()).isEqualTo("taplalkozo");
                     assertThat(s.summary()).contains("edzésnap");
+                });
+    }
+
+    @Test
+    void lateEating_firesOnRepeatedLateMealsFollowedByWorseSleep() {
+        LateEatingPatternDetector d = new LateEatingPatternDetector();
+        List<DetectorInput.MealDayPoint> meals = new java.util.ArrayList<>();
+        List<DetectorInput.SleepPoint> sleep = new java.util.ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            LocalDate date = DAY.minusDays(i);
+            boolean late = i % 2 == 0;
+            meals.add(new DetectorInput.MealDayPoint(date, new BigDecimal("2900"),
+                    new BigDecimal("200"), new BigDecimal("200"), new BigDecimal("60"),
+                    null, null, new BigDecimal("3100"), new BigDecimal("220"),
+                    List.of(new DetectorInput.MealPoint("snack",
+                            late ? java.time.LocalTime.of(22, 30) : java.time.LocalTime.of(19, 0),
+                            new BigDecimal("600"), null))));
+            // SleepPoint dated D = the night leading INTO D, so day D's night is dated D+1
+            sleep.add(new DetectorInput.SleepPoint(date.plusDays(1),
+                    late ? 4 : 8, new BigDecimal(late ? "5.5" : "8.0"), 1));
+        }
+        DetectorInput in = new DetectorInput(DAY, Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), List.of(), sleep, null,
+                trend(meals, List.of(), null, List.of(), null, List.of()));
+        assertThat(d.detect(in)).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("late-eating-pattern");
+            assertThat(s.expertKey()).isEqualTo("szomnologus");
+        });
+    }
+
+    @Test
+    void stackSkip_ignoresPeriWorkoutItemsOnRestDays() {
+        StackSkipPatternDetector d = new StackSkipPatternDetector();
+        UUID pwo = UUID.randomUUID();
+        DetectorInput.StackContext stack = new DetectorInput.StackContext(
+                List.of(new DetectorInput.StackItem(pwo, "PWO", "pre_workout", null)),
+                List.of(new DetectorInput.StackDayPoint(DAY, Set.of())));
+        // no gym days anywhere -> the pre-workout item was never EXPECTED -> quiet
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void stackSkip_firesOnRepeatedMissesOfAnEverydayItem() {
+        StackSkipPatternDetector d = new StackSkipPatternDetector();
+        UUID creatine = UUID.randomUUID();
+        List<DetectorInput.StackDayPoint> days = new java.util.ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            // taken on odd offsets, missed on even ones (5 misses, DAY itself among them)
+            days.add(new DetectorInput.StackDayPoint(DAY.minusDays(i),
+                    i % 2 == 0 ? Set.of() : Set.of(creatine)));
+        }
+        DetectorInput.StackContext stack = new DetectorInput.StackContext(
+                List.of(new DetectorInput.StackItem(creatine, "Kreatin", "wake", null)), days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), stack, List.of(), null, List.of()))))
+                .singleElement().satisfies(s -> {
+                    assertThat(s.detectorKey()).isEqualTo("stack-skip-pattern");
+                    assertThat(s.expertKey()).isEqualTo("drill");
+                    assertThat(s.summary()).contains("Kreatin");
+                });
+    }
+
+    @Test
+    void medCycleCovariance_silentBelowMinimumCycles_andDropsStaleDays() {
+        MedCycleCovarianceDetector d = new MedCycleCovarianceDetector();
+        List<DetectorInput.MedCycleDayPoint> days = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            // every day marked stale -> nothing usable, regardless of how strong the pattern is
+            days.add(new DetectorInput.MedCycleDayPoint(DAY.minusDays(i), (i % 7) + 1, "peak",
+                    i + 10, true));
+            checkins.add(checkin(DAY.minusDays(i), i % 7 >= 5 ? "3" : "8", "4", "7"));
+        }
+        DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
+                .isEmpty();
+    }
+
+    @Test
+    void medCycleCovariance_firesOnACycleDayBucketThatDivergesFromTheCycleMean() {
+        MedCycleCovarianceDetector d = new MedCycleCovarianceDetector();
+        List<DetectorInput.MedCycleDayPoint> days = new java.util.ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new java.util.ArrayList<>();
+        for (int i = 0; i < 28; i++) {
+            int cycleDay = (i % 7) + 1;
+            days.add(new DetectorInput.MedCycleDayPoint(DAY.minusDays(i), cycleDay, "peak",
+                    cycleDay - 1, false));
+            // energy collapses on cycle days 6-7 in every cycle
+            checkins.add(checkin(DAY.minusDays(i), cycleDay >= 6 ? "3" : "8", "4", "7"));
+        }
+        DetectorInput.MedContext med = new DetectorInput.MedContext(7, days);
+        assertThat(d.detect(trendInput(trend(List.of(), List.of(), null, checkins, med, List.of()))))
+                .singleElement().satisfies(s -> {
+                    assertThat(s.detectorKey()).isEqualTo("med-cycle-covariance");
+                    assertThat(s.expertKey()).isEqualTo("doki");
+                    // descriptive only: no advice, no diagnosis verbs
+                    assertThat(s.summary()).doesNotContain("javaslom").doesNotContain("kellene");
+                    // HU decimal comma: a digit.digit pair must never appear (the closing period is fine)
+                    assertThat(s.summary()).doesNotMatch(".*\\d\\.\\d.*");
                 });
     }
 }
