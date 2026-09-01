@@ -212,9 +212,15 @@ are usable without a build step).
   including the honesty gate: the oldest is the mesocycle's first Pull A, so **the tile does not
   render at all** — no "nincs adat" placeholder. The `Lezárás` toggle shows the other mode: no
   tile, no stepping (there is nowhere to step while closing), and the closing CTA — where today's
-  **dead `<textarea>` used to be**. That note field is removed rather than kept: nothing is
-  promised that is not persisted; making the workout-level note real is its own slice
-  (contract + column + read-back).
+  **dead `<textarea>` used to be**. (4) **That slice has now landed in the prototype**
+  (`mezo-d20.8.2.2`): the closing screen's note field is back, but *real* — not a bare box but a
+  question, **„Hogy ment?"**, optional and skippable, sitting ABOVE the finish CTA so the mobile
+  keyboard pushes the button rather than covering it (the CTA is in flow, never `position: fixed`).
+  In `closed` mode the saved sentence returns as a **Fraunces-italic block** ("Amit aznap írtál")
+  with a ✎ that opens it for in-place editing — saving it empty clears it. The **aug. 12. session
+  deliberately has no note**, so the honesty gate is visible here too: no empty placeholder, but a
+  quiet **`＋ Jegyzet ehhez az edzéshez`** — on the revisit page, filling a gap is a meaningful
+  intent, while displaying its absence would not be.
 - **mezo-tab** — the Mezo tab (the companion's home), audited against the real `/insights`
   section (in the live app the companion is the Chat sub-tab of Insights; the redesign
   promotes it to a first-class tab). **Hub**: a breathing clay **orb hero** — no number hero,

@@ -39,6 +39,7 @@ import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutDetailResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
+import io.mrkuhne.mezo.api.dto.WorkoutNoteRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSkipRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
@@ -310,8 +311,15 @@ public class TrainController implements TrainApi {
     }
 
     @Override
-    public WorkoutInstanceResponse finishWorkout(UUID id) {
-        return workoutService.finishWorkout(currentUserId.get(), id);
+    public void saveWorkoutNote(UUID id, WorkoutNoteRequest workoutNoteRequest) {
+        workoutService.saveClosingNote(currentUserId.get(), id, workoutNoteRequest.getNote());
+    }
+
+    @Override
+    public WorkoutInstanceResponse finishWorkout(UUID id, WorkoutNoteRequest workoutNoteRequest) {
+        // The body is optional, so the generated signature hands us null when none was sent.
+        return workoutService.finishWorkout(currentUserId.get(), id,
+            workoutNoteRequest != null ? workoutNoteRequest.getNote() : null);
     }
 
     @Override

@@ -341,6 +341,7 @@ public class WorkoutService {
             .title(instance.getType())
             .dayLabel(instance.getDayLabel())
             .durationEst(instance.getDurationEst())
+            .note(instance.getClosingNote())
             .exercises(exercises.stream().map(e -> {
                 List<ExerciseSetEntity> all = setsByExercise.getOrDefault(e.getId(), List.of());
                 return WorkoutDetailExercise.builder()
@@ -727,11 +728,34 @@ public class WorkoutService {
         exerciseRepository.save(exercise);
     }
 
+    /**
+     * The workout-level closing note (mezo-d20.8.2.2) — last-write-wins, blank clears, mirroring
+     * {@link #saveExerciseNote}. This is the review page's write path, so a note can be corrected
+     * or added long after the session was finished.
+     */
     @Transactional
-    public WorkoutInstanceResponse finishWorkout(UUID createdBy, UUID workoutId) {
+    public void saveClosingNote(UUID createdBy, UUID workoutId, String note) {
+        WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
+        instance.setClosingNote(blankToNull(note));
+        workoutSessionRepository.save(instance);
+    }
+
+    private static String blankToNull(String note) {
+        return note == null || note.isBlank() ? null : note;
+    }
+
+    @Transactional
+    public WorkoutInstanceResponse finishWorkout(UUID createdBy, UUID workoutId, String closingNote) {
         WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
         if ("active".equals(instance.getStatus())) {
             instance.setStatus("completed"); // dirty-checked, flushed at commit
+        }
+        // FILL-IF-EMPTY, like closeMesocycle's self-eval: finishing is contractually idempotent, so
+        // a re-finish (or a bodyless retry after a failed one) must never erase what was written.
+        // Overwriting and clearing are the note endpoint's job, not this one's.
+        String incoming = blankToNull(closingNote);
+        if (incoming != null && blankToNull(instance.getClosingNote()) == null) {
+            instance.setClosingNote(incoming);
         }
         WorkoutInstanceResponse base = toInstanceResponse(createdBy, instance);
         // Progression runs ONLY when the feature switch is on (gate bean present) and only here in
