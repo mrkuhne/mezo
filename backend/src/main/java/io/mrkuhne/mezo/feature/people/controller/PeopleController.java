@@ -54,6 +54,6 @@ public class PeopleController implements PeopleApi {
 
     @Override
     public PersonResponse decidePerson(UUID personId, PersonDecisionRequest personDecisionRequest) {
-        throw new UnsupportedOperationException("mezo-06o0.3 Task 2");
+        return service.decidePerson(currentUserId.get(), personId, personDecisionRequest);
     }
 }
