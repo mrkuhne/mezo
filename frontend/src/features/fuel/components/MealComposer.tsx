@@ -453,9 +453,9 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
             )}
             {l.needsReview && (
               <p className="logflow-lnnote">
-                {l.source === 'estimate'
-                  ? '✨ Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.'
-                  : '✨ Ezt a kamrádból párosítottuk név alapján — ellenőrizd, hogy tényleg ez a tétel.'}
+                {l.source === 'pantry'
+                  ? '✨ Ezt a kamrádból párosítottuk név alapján — ellenőrizd, hogy tényleg ez a tétel, és nézd át a mennyiséget.'
+                  : '✨ Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.'}
               </p>
             )}
             {l.source === 'recipe' && (() => {

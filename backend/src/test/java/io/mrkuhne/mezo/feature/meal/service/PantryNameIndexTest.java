@@ -22,6 +22,7 @@ class PantryNameIndexTest {
         e.setBrand(brand);
         e.setServingAmount(new BigDecimal("100"));
         e.setServingUnit(servingUnit);
+        e.setKind("food");
         return e;
     }
 
@@ -101,6 +102,19 @@ class PantryNameIndexTest {
 
         assertThat(index.match("Mák", "g")).contains(e);
         assertThat(index.match("Mák", "db")).isEmpty();
+    }
+
+    @Test
+    void testMatch_shouldNotMatch_whenRowIsNotAFoodKind() {
+        // Only kind="food" rows reach the composer's ingredient list (PantryService.getPantry
+        // splits food into `ingredients`, everything else into `stash`); matching a supplement
+        // by name would return a source=pantry line the frontend can't resolve, desyncing the
+        // displayed totals from what actually gets logged on save.
+        PantryItemEntity magnezium = item("Magnézium", null, "db");
+        magnezium.setKind("supplement");
+        PantryNameIndex index = PantryNameIndex.of(List.of(magnezium));
+
+        assertThat(index.match("Magnézium", "db")).isEmpty();
     }
 
     @Test

@@ -174,7 +174,10 @@ test('AI lines carry their REAL source tag next to a manual pantry line — mixe
   expect(screen.getByText('becslés')).toBeInTheDocument()
   // The manual line keeps its own unadorned tag.
   expect(screen.getByText('kamra')).toBeInTheDocument()
+  // Both review notes are on screen at once now (the mock pantry line is needsReview:true,
+  // mezo-qrks) — assert each note's own distinct copy so neither assertion is ambiguous.
   expect(screen.getByText(/Az AI nem teljesen biztos ebben a sorban/)).toBeInTheDocument()
+  expect(screen.getByText(/Ezt a kamrádból párosítottuk név alapján/)).toBeInTheDocument()
 })
 
 test('save logs a manual-only meal with no provenance envelope (parity with the legacy manual path)', async () => {

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,6 +34,12 @@ public final class PantryNameIndex {
                     Pattern.CASE_INSENSITIVE);
     private static final Map<String, String> UNIT_SYNONYMS = Map.of(
             "gramm", "g", "gr", "g", "milliliter", "ml", "darab", "db", "piece", "db");
+    // DIVERGES ON PURPOSE from the other two null-serving-unit sites, which both default to
+    // "unit": MealAiDraftService.pantryItem (its `per`/unit fallback) and MealService (its
+    // buildItem pantry arm). Mandated by the approved design spec and pinned by
+    // PantryNameIndexTest#testMatch_shouldTreatNullServingUnitAsGrams; unreachable in practice
+    // since the pantry contract requires a non-null serving unit. Ruled to stand as-is - do not
+    // "fix" this into agreement with the other two without revisiting the spec.
     private static final String DEFAULT_SERVING_UNIT = "g";
 
     /** Keys that survived the ambiguity check; a key claimed by two different rows is dropped. */
@@ -46,6 +53,14 @@ public final class PantryNameIndex {
         Map<String, PantryItemEntity> byKey = new HashMap<>();
         Set<String> ambiguous = new HashSet<>();
         for (PantryItemEntity item : items) {
+            // Only kind="food" rows reach the composer's `usePantry().ingredients` list
+            // (PantryService.getPantry splits food into ingredients, everything else into
+            // stash) - matching a supplement/stim/med row here would return a source=pantry
+            // line the frontend can't resolve, desyncing the displayed totals (0 kcal, falls
+            // back to a missing ingredient) from what MealService actually snapshots on save.
+            if (!"food".equals(item.getKind())) {
+                continue;
+            }
             for (String key : keysOf(item)) {
                 PantryItemEntity previous = byKey.putIfAbsent(key, item);
                 if (previous != null && !Objects.equals(previous.getId(), item.getId())) {
@@ -92,7 +107,7 @@ public final class PantryNameIndex {
         }
         String decomposed = Normalizer.normalize(raw, Normalizer.Form.NFD);
         String bare = DIACRITICS.matcher(decomposed).replaceAll("");
-        return NON_ALPHANUMERIC.matcher(bare).replaceAll(" ").trim().toLowerCase();
+        return NON_ALPHANUMERIC.matcher(bare).replaceAll(" ").trim().toLowerCase(Locale.ROOT);
     }
 
     /** The draft's unit must be the row's serving unit; a blank draft unit never matches. */
