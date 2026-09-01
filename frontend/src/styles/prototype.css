@@ -6626,7 +6626,10 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .fkp-chip.is-on { background: color-mix(in srgb, var(--cc) 14%, var(--surface-1));
   border-color: var(--cc); color: var(--text-primary); }
 .fkp-cdot { width: 7px; height: 7px; border-radius: 50%; background: var(--cc); flex: none; }
+/* flex: none — the row's `overflow: hidden` zeroes the flex item's auto min-height, so the
+   max-height picker list would squash every row to ~20px once there are many hits (mezo-bq2t). */
 .fkp-item { position: relative; overflow: hidden; border-radius: 15px; padding: 10px 11px 10px 15px;
+  flex: none;
   background: linear-gradient(135deg, color-mix(in srgb, var(--kc) 10%, var(--surface-1)) 0%, var(--surface-1) 62%);
   box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05); }
 .fkp-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kc); }
