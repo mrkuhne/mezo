@@ -59,6 +59,26 @@ describe('useWorkshop (mock mode)', () => {
     const originalChicken = round1.draft.lines.find(l => l.name.includes('Csirke'))!
     expect(chickenLine?.amount).toBe(originalChicken.amount + 60)
   })
+
+  it('a before_bed goal turn merges the rice→túró swap into the existing túró line (no duplicate refId)', async () => {
+    vi.useFakeTimers()
+    const { result } = renderHook(() => useWorkshop())
+    const round1Promise = result.current.workshopTurn({ message: 'csirkés tál', goal: null, history: [], draft: null })
+    await vi.advanceTimersByTimeAsync(700)
+    const round1 = await round1Promise
+
+    const beforeBedPromise = result.current.workshopTurn({
+      message: 'legyen lefekvés előttre jó', goal: 'before_bed', history: [], draft: round1.draft,
+    })
+    await vi.advanceTimersByTimeAsync(700)
+    const beforeBedTurn = await beforeBedPromise
+
+    const refIds = beforeBedTurn.draft.lines.map(l => l.refId).filter((id): id is string => id != null)
+    expect(new Set(refIds).size).toBe(refIds.length)
+    expect(beforeBedTurn.draft.lines.some(l => l.name.includes('Rizs') || l.name.includes('rizs'))).toBe(false)
+    const turoLines = beforeBedTurn.draft.lines.filter(l => l.name.includes('Túró'))
+    expect(turoLines.length).toBe(1)
+  })
 })
 
 describe('useWorkshop (real mode)', () => {

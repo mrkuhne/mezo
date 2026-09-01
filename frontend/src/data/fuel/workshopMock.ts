@@ -1,10 +1,10 @@
 // ============================================================
 // Mezo · Recept-műhely scripted mock rounds (mezo-92pb)
-// mockWorkshopTurn is a PURE function over the incoming request — it never reads or
-// mutates module state for its DRAFT logic (so a manual edit the user made to the draft
-// between turns always survives a tweak that doesn't touch that line). The only module-level
-// state is the free-text tweak cycle counter (round-robin demo variety), which does not
-// affect draft content beyond which of the two generic tweaks fires.
+// mockWorkshopTurn is a PURE function over the incoming request — no module-level state at
+// all, so a manual edit the user made to the draft between turns always survives a tweak
+// that doesn't touch that line. The free-text tweak round-robin (2 generic tweaks then an
+// honest fallback) is derived from `req.history.length` rather than a module counter, so
+// repeated calls with the same request always produce the same result.
 // Pantry lines below use REAL mock-pantry ids (frontend/src/data/fuel/pantry.ts `ingredients`)
 // so every line resolves against `buildPickables(ingredients, supplementsStash)` — a workshop
 // draft must never point at a made-up refId.
@@ -71,6 +71,7 @@ const RICE_RE = /rizs/i
 const CHICKEN_RE = /csirke/i
 const OIL_RE = /olaj|zsír|vaj/i
 const WHEY_RE = /whey|fehérje-?por/i
+const TURO_RE = /túró/i
 
 function applyHighProtein(draft: WorkshopDraft): { draft: WorkshopDraft; reply: string } {
   let lines = draft.lines
@@ -116,6 +117,19 @@ function applyBeforeBed(draft: WorkshopDraft): { draft: WorkshopDraft; reply: st
   if (riceIx < 0) {
     return { draft, reply: 'Nem találtam rizst a receptben, amit lecserélhetnék — a többi rész maradhat lefekvés előttre is.' }
   }
+  // The base draft already carries a túró line (the yogurt stand-in) — swapping rice for a
+  // SECOND túró line would leave two "Túró" rows with different amounts. Merge into the
+  // existing one instead when it's already there; only add a new túró line when it isn't.
+  const existingTuroIx = findLineIndex(draft.lines, TURO_RE)
+  if (existingTuroIx >= 0) {
+    const lines = draft.lines
+      .map((l, i) => (i === existingTuroIx ? { ...l, amount: l.amount + 150 } : l))
+      .filter((_, i) => i !== riceIx)
+    return {
+      draft: { ...draft, lines },
+      reply: 'Lefekvés előttre elvettem a rizst, és a meglévő túró adagját megnöveltem — éjszakára ez a lassan felszívódó fehérje jobb választás.',
+    }
+  }
   const lines = replaceLine(draft.lines, riceIx, pantryLine(TURO, 150))
   return {
     draft: { ...draft, lines },
@@ -143,8 +157,7 @@ const GOAL_TWEAKS: Record<WorkshopGoal, (draft: WorkshopDraft) => { draft: Works
   breakfast: applyBreakfast,
 }
 
-// -- Free-text turns: 2 generic tweaks, then an honest fallback, round-robin per call. --
-let freeTextTweakCounter = 0
+// -- Free-text turns: 2 generic tweaks, then an honest fallback, round-robin on history length. --
 
 function genericTweakA(draft: WorkshopDraft): { draft: WorkshopDraft; reply: string } {
   const estIx = draft.lines.findIndex(l => l.source === 'estimate')
@@ -187,8 +200,9 @@ export function mockWorkshopTurn(req: WorkshopTurnParams): WorkshopTurn {
     const { draft, reply } = GOAL_TWEAKS[req.goal](req.draft)
     return { reply, draft }
   }
-  const step = freeTextTweakCounter % 3
-  freeTextTweakCounter += 1
+  // Derived from the incoming request (not module state) so mockWorkshopTurn stays pure —
+  // repeated calls with the same req always yield the same result.
+  const step = req.history.length % 3
   const { draft, reply } =
     step === 0 ? genericTweakA(req.draft) : step === 1 ? genericTweakB(req.draft) : fallbackReply(req.draft)
   return { reply, draft }
