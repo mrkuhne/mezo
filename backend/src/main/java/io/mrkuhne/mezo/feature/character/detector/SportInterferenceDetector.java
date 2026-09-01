@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * Sport-interference (round 1, spec §4): a heavy sport day (shoulder strain >= 6 or RPE >= 8)
  * followed the next day by a gym session whose sets show a systematic reps-vs-target decline
  * (mean delta <= -1) means the sport load is eating into training capacity. Fires on >= 2 such
- * pairs in the 14-day window, gated on new gym OR new sport data (RoundOneGates).
+ * pairs in the 14-day window, gated on new gym OR new sport data (DetectorGates).
  */
 @Component
 @ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")
@@ -29,7 +29,7 @@ public class SportInterferenceDetector implements CharacterDetector {
 
     @Override
     public List<DetectorSignal> detect(DetectorInput in) {
-        if (!RoundOneGates.newGymData(in) && !RoundOneGates.newSportData(in)) {
+        if (!DetectorGates.newGymData(in) && !DetectorGates.newSportData(in)) {
             return List.of();
         }
         int pairs = 0;

@@ -19,7 +19,7 @@ class DetectorTest {
                                 List<DetectorInput.WeightPoint> weights,
                                 Map<LocalDate, List<String>> journal) {
         return input(mealDates, checkins, weights, journal, List.of(), List.of(), List.of(), List.of(),
-                null, new DetectorInput.TrendWindow(List.of(), List.of()));
+                null, emptyTrend());
     }
 
     /** Full-control builder for the round-1 detectors; existing helper delegates here. */
@@ -30,6 +30,17 @@ class DetectorTest {
             DetectorInput.MesoContext meso, DetectorInput.TrendWindow trend) {
         return new DetectorInput(DAY, mealDates, checkins, weights, journal,
                 gymDays, sport, runs, sleep, meso, trend);
+    }
+
+    static DetectorInput.TrendWindow emptyTrend() {
+        return new DetectorInput.TrendWindow(List.of(), List.of(), List.of(), List.of(),
+                null, List.of(), null);
+    }
+
+    /** Full-control builder for the round-2 detectors: only the trend window varies. */
+    private DetectorInput trendInput(DetectorInput.TrendWindow trend) {
+        return new DetectorInput(DAY, Set.of(), Map.of(), List.of(), Map.of(),
+                List.of(), List.of(), List.of(), List.of(), null, trend);
     }
 
     @Test
@@ -144,7 +155,7 @@ class DetectorTest {
         DetectorInput.GymDay day = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(day), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("rir-calibration");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -169,7 +180,7 @@ class DetectorTest {
         DetectorInput.GymDay day = new DetectorInput.GymDay(DAY.minusDays(1), List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(day), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -191,7 +202,7 @@ class DetectorTest {
         DetectorInput.GymDay day = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(day), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -212,7 +223,7 @@ class DetectorTest {
                 DAY.minusDays(2), "kerékpár", new BigDecimal("6"), 6, null, null);
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gym1, gym2), List.of(sport1, sport2), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("niggle-map");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -233,7 +244,7 @@ class DetectorTest {
                 DAY.minusDays(1), "futás", new BigDecimal("7"), 7, null, null);
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gym), List.of(sport), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -255,7 +266,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymBefore, gymOn), List.of(sport1, sport2), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("sport-interference");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -263,9 +274,9 @@ class DetectorTest {
             assertThat(s.summary()).contains("2");
         });
         // the DAY gym day is what satisfies the gate (newGymData)
-        assertThat(RoundOneGates.newGymData(input(Set.of(), Map.of(), List.of(), Map.of(),
+        assertThat(DetectorGates.newGymData(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymBefore, gymOn), List.of(sport1, sport2), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())))).isTrue();
+                emptyTrend()))).isTrue();
     }
 
     @Test
@@ -284,7 +295,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymBefore, gymOn), List.of(sport1, sport2), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -298,7 +309,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("meso-adherence");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -316,7 +327,7 @@ class DetectorTest {
                 Set.of(DayOfWeek.THURSDAY), Set.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -330,7 +341,7 @@ class DetectorTest {
                 Set.of(DayOfWeek.MONDAY, DayOfWeek.THURSDAY), Set.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.summary()).contains("2");
             assertThat(s.summary()).contains("3/6");
@@ -345,7 +356,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -366,7 +377,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("progression-adherence");
             assertThat(s.expertKey()).isEqualTo("edzo");
@@ -393,7 +404,7 @@ class DetectorTest {
         DetectorInput.GymDay gymOn = new DetectorInput.GymDay(DAY, List.of(work));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("progression-adherence");
             assertThat(s.summary()).contains("lőtt túl");
@@ -421,7 +432,7 @@ class DetectorTest {
                 Set.of(), Set.of());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gymOn), List.of(), List.of(), List.of(), meso,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -471,7 +482,7 @@ class DetectorTest {
         // Scenario 1: DAY run at 40s -> band flips KOZOMBOS -> JAVUL -> fires "javul"
         List<DetectorInput.RunPoint> withFlip = new java.util.ArrayList<>(olderWeeks);
         withFlip.add(new DetectorInput.RunPoint(DAY, null, 40, null));
-        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of());
+        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null);
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), withFlip, List.of(), null, flipTrend));
         assertThat(fired).singleElement().satisfies(s -> {
@@ -481,7 +492,7 @@ class DetectorTest {
         });
 
         // Scenario 2: DAY run removed entirely -> no new run data -> empty regardless of band
-        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of());
+        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null);
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), olderWeeks, List.of(), null, noDayTrend))).isEmpty();
 
@@ -489,7 +500,7 @@ class DetectorTest {
         // suppresses even though new run data exists
         List<DetectorInput.RunPoint> noFlip = new java.util.ArrayList<>(olderWeeks);
         noFlip.add(new DetectorInput.RunPoint(DAY, null, 108, null));
-        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of());
+        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null);
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), noFlip, List.of(), null, noFlipTrend))).isEmpty();
     }
@@ -502,7 +513,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(7), null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(14), null, 100, null));
-        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of());
+        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null);
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, List.of(), null, trend))).isEmpty();
     }
@@ -518,7 +529,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, 9, null, null));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, sleep, null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("sleep-performance-chain");
             assertThat(s.expertKey()).isEqualTo("szomnologus");
@@ -537,7 +548,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, 9, null, null));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, sleep, null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
     }
 
@@ -550,7 +561,7 @@ class DetectorTest {
         DetectorInput.GymDay gym2 = new DetectorInput.GymDay(DAY.minusDays(2), List.of(skipped));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gym1, gym2), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("avoidance-pattern");
             assertThat(s.expertKey()).isEqualTo("drill");
@@ -566,7 +577,36 @@ class DetectorTest {
         DetectorInput.GymDay gym = new DetectorInput.GymDay(DAY, List.of(skipped));
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(gym), List.of(), List.of(), List.of(), null,
-                new DetectorInput.TrendWindow(List.of(), List.of())));
+                emptyTrend()));
         assertThat(fired).isEmpty();
+    }
+
+    @Test
+    void detectorGates_roundTwoFamilies_seeOnlyDataDatedOnTheObservedDay() {
+        DetectorInput.TrendWindow todayMeal = new DetectorInput.TrendWindow(
+                List.of(), List.of(),
+                List.of(new DetectorInput.MealDayPoint(DAY, new BigDecimal("2000"),
+                        new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
+                        null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
+                List.of(), null, List.of(), null);
+        assertThat(DetectorGates.newMealData(trendInput(todayMeal))).isTrue();
+
+        DetectorInput.TrendWindow yesterdayMeal = new DetectorInput.TrendWindow(
+                List.of(), List.of(),
+                List.of(new DetectorInput.MealDayPoint(DAY.minusDays(1), new BigDecimal("2000"),
+                        new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
+                        null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
+                List.of(), null, List.of(), null);
+        assertThat(DetectorGates.newMealData(trendInput(yesterdayMeal))).isFalse();
+    }
+
+    @Test
+    void detectorGates_absentRoundTwoContexts_areQuietNotCrashing() {
+        DetectorInput in = trendInput(emptyTrend());
+        assertThat(DetectorGates.newMealData(in)).isFalse();
+        assertThat(DetectorGates.newWaterData(in)).isFalse();
+        assertThat(DetectorGates.newStackData(in)).isFalse();
+        assertThat(DetectorGates.newCheckinData(in)).isFalse();
+        assertThat(DetectorGates.newDoseData(in)).isFalse();
     }
 }

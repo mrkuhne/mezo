@@ -140,7 +140,8 @@ public class CharacterSignalReads {
 
         return new DetectorInput(day, mealDates, checkinCounts, weights, journalTexts,
                 gymDays, sportSessions, runLogs, sleepPoints, meso,
-                new DetectorInput.TrendWindow(runsEightWeeks, gymEightWeeks));
+                new DetectorInput.TrendWindow(runsEightWeeks, gymEightWeeks,
+                        List.of(), List.of(), null, List.of(), null));
     }
 
     /**
