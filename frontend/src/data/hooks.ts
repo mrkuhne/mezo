@@ -19,7 +19,7 @@ export { useLifeEventCandidates, useLifeEventActions, useKnowledgeGraphNodes, us
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
 export { usePatternMonitor } from '@/data/insights/monitorHooks'
 export { usePatternPairDetail } from '@/data/insights/patternDetailHooks'
-export { useChat, useChatActions, useConversations, useTranscribe, NEW_CHAT } from '@/data/insights/chatHooks'
+export { useChat, useChatActions, useConversations, useConversationActions, useTranscribe, NEW_CHAT } from '@/data/insights/chatHooks'
 export { useLlmUsage, useMemoryOverview, useMemorySummaries, useSimilarDays } from '@/data/insights/memoryHooks'
 export { useFuelTimeline } from '@/data/fuel/timelineHooks'
 export { useFuelWeek } from '@/data/fuel/fuelWeekHooks'
