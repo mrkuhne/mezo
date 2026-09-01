@@ -21,6 +21,9 @@ public interface PeopleMapper {
     @Mapping(target = "mentionsThisWeek", source = "mentionsThisWeek")
     @Mapping(target = "lastMentionedAt", source = "lastMentionedAt")
     @Mapping(target = "graphEdges", ignore = true)   // a service tölti a gráf-portból
+    // A kontraktus szerint affectTrend sosem olvassa a person.affect_trend oszlopot — a service
+    // számítja élő mention-sorokból (getBootstrap) vagy üres listát állít explicit (a többi út).
+    @Mapping(target = "affectTrend", ignore = true)
     @Mapping(target = "affectTrendStart", ignore = true)
     @Mapping(target = "direction", ignore = true)
     @Mapping(target = "directionReason", ignore = true)

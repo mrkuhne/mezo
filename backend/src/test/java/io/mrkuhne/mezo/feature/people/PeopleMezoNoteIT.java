@@ -112,6 +112,24 @@ class PeopleMezoNoteIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetBootstrap_shouldSkipTurnedDownCandidate_andFallThroughPastAllActiveCases() {
+        // Jelöltek inbox: egy meg nem erősített extractor-találat, három lefelé húzó tónussal —
+        // a hangulat-ív itt is "down"-t számol, de a mondat nem nevezhet meg jelöltet. Mivel
+        // nincs más (aktív) személy, a mostMentioned/unmentioned esetek is kimaradnak, és az
+        // általános tartalékra kell esnie — nem szabad "Kata"-t megnevezni sehol.
+        UUID owner = userPopulator.createUser("owner-mezonote-candidate-down@test.hu").getId();
+        PersonEntity candidate = personPopulator.createCandidate(owner, "Kata", "Jelölt teszt személy.");
+        Instant now = Instant.now();
+        mentionPopulator.createMention(owner, candidate.getId(), now.minus(Duration.ofDays(21)), "positive");
+        mentionPopulator.createMention(owner, candidate.getId(), now.minus(Duration.ofDays(14)), "positive");
+        mentionPopulator.createMention(owner, candidate.getId(), now, "negative");
+
+        PeopleResponse res = peopleService.getBootstrap(owner);
+
+        assertThat(res.getMezoNote()).isEqualTo("Még nincs elég említés a heti képhez.");
+    }
+
+    @Test
     void testGetBootstrap_shouldFallBackToUnmentionedActivePerson_whenNoOneMentionedThisWeek() {
         UUID owner = userPopulator.createUser("owner-mezonote-unmentioned@test.hu").getId();
         PersonEntity petra = personPopulator.createPerson(owner, "Petra");

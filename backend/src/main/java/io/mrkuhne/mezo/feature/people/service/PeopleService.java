@@ -114,6 +114,7 @@ public class PeopleService {
      */
     private String derivedMezoNote(List<PersonResponse> personResponses) {
         Optional<PersonResponse> turnedDown = personResponses.stream()
+            .filter(p -> p.getStatus() == PersonResponse.StatusEnum.ACTIVE)
             .filter(p -> p.getDirection() == PersonResponse.DirectionEnum.DOWN)
             .min(Comparator.comparing(PersonResponse::getName));
         if (turnedDown.isPresent()) {
@@ -130,6 +131,7 @@ public class PeopleService {
         }
 
         Optional<PersonResponse> mostMentioned = personResponses.stream()
+            .filter(p -> p.getStatus() == PersonResponse.StatusEnum.ACTIVE)
             .filter(p -> p.getMentionsThisWeek() != null && p.getMentionsThisWeek() > 0)
             .max(Comparator.comparingInt(PersonResponse::getMentionsThisWeek)
                 .thenComparing(Comparator.comparing(PersonResponse::getName).reversed()));
@@ -175,6 +177,7 @@ public class PeopleService {
         eventPublisher.publishEvent(new PersonSavedEvent(userId, saved.getId()));
         PersonResponse response = mapper.toPersonResponse(saved, 0, 0, null);
         response.setGraphEdges(List.of());
+        response.setAffectTrend(List.of());
         response.setDirection(PersonResponse.DirectionEnum.FLAT);
         return response;
     }
@@ -196,6 +199,7 @@ public class PeopleService {
         PersonResponse response = mapper.toPersonResponse(saved, own.size(), thisWeek,
             own.isEmpty() ? null : own.getFirst().getTs());
         response.setGraphEdges(List.of());
+        response.setAffectTrend(List.of());
         response.setDirection(PersonResponse.DirectionEnum.FLAT);
         return response;
     }
@@ -228,6 +232,7 @@ public class PeopleService {
         if ("reject".equals(req.getDecision())) {
             PersonResponse snapshot = mapper.toPersonResponse(p, 0, 0, null);
             snapshot.setGraphEdges(List.of());
+            snapshot.setAffectTrend(List.of());
             snapshot.setDirection(PersonResponse.DirectionEnum.FLAT);
             personRepository.delete(p);   // @SQLDelete → soft; a sor marad reject-listának
             eventPublisher.publishEvent(new PersonDeletedEvent(userId, personId));
@@ -236,6 +241,7 @@ public class PeopleService {
         p.setStatus("active");
         PersonResponse response = mapper.toPersonResponse(personRepository.save(p), 0, 0, null);
         response.setGraphEdges(List.of());
+        response.setAffectTrend(List.of());
         response.setDirection(PersonResponse.DirectionEnum.FLAT);
         eventPublisher.publishEvent(new PersonSavedEvent(userId, personId));
         return response;

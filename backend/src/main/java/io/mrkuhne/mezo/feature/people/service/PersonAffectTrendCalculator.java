@@ -66,6 +66,11 @@ public class PersonAffectTrendCalculator {
             }
             LocalDate week = monday(LocalDate.ofInstant(m.getTs(), ZoneOffset.UTC));
             if (week.isAfter(thisMonday)) {
+                // Ez az őrfeltétel csak akkor helyes, ha a host zónája >= UTC: a hívó
+                // (PeopleService) `today`-t a host zónájából veszi (LocalDate.now()), a
+                // heti kosarak viszont UTC-ben épülnek — negatív offsetű hostnál `today` UTC
+                // szerint még "tegnap" lehet, és egy ma UTC-ben rögzített mention tévesen
+                // jövőbelinek tűnne.
                 continue;   // jövőbeli időbélyeg (mis-seed) sosem tol ki az ablakból
             }
             int intensity = m.getIntensity() == null ? DEFAULT_INTENSITY : m.getIntensity();

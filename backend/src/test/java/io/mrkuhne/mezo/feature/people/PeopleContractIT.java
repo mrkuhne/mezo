@@ -349,6 +349,7 @@ class PeopleContractIT extends ApiIntegrationTest {
         assertThat(person.getAffectTrendStart())
             .isEqualTo(java.time.LocalDate.ofInstant(now.minus(Duration.ofDays(21)), java.time.ZoneOffset.UTC)
                 .with(java.time.DayOfWeek.MONDAY));
-        assertThat(person.getDirection()).isNotNull();
+        // 2 heti olvasat < MIN_READINGS_FOR_DIRECTION (3) — determinisztikusan flat.
+        assertThat(person.getDirection()).isEqualTo(PersonResponse.DirectionEnum.FLAT);
     }
 }

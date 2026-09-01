@@ -1761,8 +1761,8 @@ companion message and `PersonDetailPage`'s own arc).
   the `people` feature's port interface only) — the reverse, `people → proactive`, is the one this
   inversion exists to forbid. It is a NEW slice edge (this doc's package now depends on
   `feature/people`'s port interface), verified cycle-free by `ArchitectureTest`'s
-  `feature_slices_are_cycle_free`: `people` itself only points outward to `auth`/`journal`/`ritual`,
-  so nothing closes a loop back through it.
+  `feature_slices_are_cycle_free`: `people` itself only points outward to
+  `auth`/`journal`/`ritual`/`goal`, so nothing closes a loop back through it.
 
 ## 6. How to use it (consume)
 
