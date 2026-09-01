@@ -23,6 +23,7 @@ const WIRE_PERSON: PersonResponse = {
   knownFacts: ['ELTE doktorátus'],
   ties: [],
   affectTrend: [4, 5, 4],
+  direction: 'flat',
   mentionCount: 2,
   mentionsThisWeek: 1,
   lastMentionedAt: '2026-07-03T20:14:00Z',

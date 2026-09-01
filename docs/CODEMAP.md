@@ -276,9 +276,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/companion/pattern/pair/{pairKey} · POST /api/companion/conversation/{conversationId}/message/stream ·
     POST /api/companion/transcribe · GET /api/companion/memory/overview · GET /api/companion/memory/summary ·
     GET /api/companion/memory/similar-days · GET /api/companion/memory/llm-usage
-- **Contract** `api/feature/knowledge-graph/knowledge-graph.yml` — 4 operations
+- **Contract** `api/feature/knowledge-graph/knowledge-graph.yml` — 5 operations
   - **endpoints:** GET /api/companion/graph/node · POST /api/companion/graph/node/{id}/archive ·
-    GET /api/companion/graph/node/candidate · POST /api/companion/graph/node/{id}/decision
+    GET /api/companion/graph/node/candidate · POST /api/companion/graph/node/{id}/decision ·
+    GET /api/companion/graph/edge/count
 - **Contract** `api/feature/me-week/me-week.yml` — 2 operations
   - **endpoints:** GET /api/me/week/{start} · GET /api/me/week/{start}/trend
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 139 IT + 17 unit
@@ -493,10 +494,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `NEW_CHAT`, `useChat`, `useChatActions`, `useConversationActions`,
     `useConversations`, `useDiagnoses`, `useDiagnosis`, `useDiagnosisActions`, `useExperimentActions`,
-    `useExperiments`, `useKnowledge`, `useKnowledgeActions`, `useKnowledgeGraphActions`, `useKnowledgeGraphNodes`,
-    `useLifeEventActions`, `useLifeEventCandidates`, `useLlmUsage`, `useMemoir`, `useMemoirArchive`,
-    `useMemoryOverview`, `useMemorySummaries`, `usePatternActions`, `usePatternMonitor`, `usePatternPairDetail`,
-    `usePatterns`, `usePredictions`, `useSimilarDays`, `useTranscribe`
+    `useExperiments`, `useGraphEdgeCount`, `useKnowledge`, `useKnowledgeActions`, `useKnowledgeGraphActions`,
+    `useKnowledgeGraphNodes`, `useLifeEventActions`, `useLifeEventCandidates`, `useLlmUsage`, `useMemoir`,
+    `useMemoirArchive`, `useMemoryOverview`, `useMemorySummaries`, `usePatternActions`, `usePatternMonitor`,
+    `usePatternPairDetail`, `usePatterns`, `usePredictions`, `useSimilarDays`, `useTranscribe`
   - **modules:** chat.ts, chatApi.ts, chatHooks.ts, diagnosisApi.ts, diagnosisHooks.ts, diagnosisMock.ts,
     experimentsApi.ts, experimentsHooks.ts, graph.ts, graphApi.ts, graphHooks.ts, insights.ts, knowledge.ts,
     knowledgeApi.ts, knowledgeHooks.ts, memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryHooks.ts,
@@ -506,12 +507,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **pages:** ChatPage.tsx, DiagnosisDetailPage.tsx, DiagnosisListPage.tsx, ExperimentsPage.tsx,
     KnowledgeListPage.tsx, MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryPage.tsx,
     MezoHubPage.tsx, PatternDetailPage.tsx, PatternsPage.tsx, PredictionsPage.tsx
-  - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx
-  - **components:** ChatMessage.tsx, FactCandidateCard.tsx, FeedbackChips.tsx, KnowledgeExplainer.tsx,
+  - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
+  - **components:** CategoryHeader.tsx, ChatMessage.tsx, FactCandidateCard.tsx, FactsView.tsx, FeedbackChips.tsx,
+    HowItWorksView.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx,
     KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx,
     MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
     PatternDecisionCard.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternScatter.tsx, PatternStrengthChart.tsx,
-    RecalledMemoriesRow.tsx, SimilarDayCard.tsx, TokenColumns.tsx, ToolWorkStrip.tsx
+    ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, SimilarDayCard.tsx, TokenColumns.tsx,
+    ToolWorkStrip.tsx
   - **logic:** chatRefs.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts, factCopy.ts, findings.ts,
     humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternHistory.ts, quickQuestions.ts,
     toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
@@ -616,26 +619,23 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     weekLessonsHooks.ts, weeklyReviewApi.ts, weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
   - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, EnHubPage.tsx, GoalPlannerPage.tsx,
-    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthPage.tsx, JournalPage.tsx, KnowledgePage.tsx, NightPage.tsx,
-    NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx,
-    PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx, RoutineEditorPage.tsx,
-    SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx,
-    WeekLessonsPage.tsx, WeightPage.tsx
+    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx,
+    NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx,
+    PeoplePage.tsx, PersonDetailPage.tsx, RoutineEditorPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx,
+    WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
-    DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, NodeDetailSheet.tsx,
-    PersonEditSheet.tsx, PersonLogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx,
-    WeightLogSheet.tsx
+    DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx,
+    PersonLogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, WeightLogSheet.tsx
   - **components:** AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
-    AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx, AiUsageHero.tsx, BadgesCard.tsx, CategoryHeader.tsx,
-    DayNavTiles.tsx, DetailStat.tsx, FieldRow.tsx, GoalGate.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx,
-    GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthJournalCard.tsx, KindNodeList.tsx,
-    KindTileGrid.tsx, MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx,
-    NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx, PersonCard.tsx, PhaseAverageCard.tsx,
-    PhaseRail.tsx, PhaseReferenceRow.tsx, ProfileNodeCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx,
-    RoutinesTab.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx,
-    SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx, WeekLessonCard.tsx,
-    WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx,
-    WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
+    AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx, AiUsageHero.tsx, BadgesCard.tsx, DayNavTiles.tsx,
+    DetailStat.tsx, FieldRow.tsx, GoalGate.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalTimeline.tsx,
+    GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthJournalCard.tsx, MentionRow.tsx, NightArcCard.tsx,
+    NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx,
+    PerksCard.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PushInstallGate.tsx,
+    RemDurationCard.tsx, RoutinesTab.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx,
+    SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx,
+    WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx,
+    WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, gratitudeStreak.ts,
     growthJournal.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, llmCallFormat.ts,
     nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
@@ -787,8 +787,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
   - **repositories:** `MentionRepository`, `PersonRepository`
-  - **services:** `MentionDetectionListener`, `MentionDetectionService`, `PeopleService`, `PersonDeletedEvent`,
-    `PersonSavedEvent`, `ReflectionMentionListener`
+  - **services:** `MentionDetectionListener`, `MentionDetectionService`, `PeopleService`, `PersonAffectTrend`,
+    `PersonAffectTrendCalculator`, `PersonDeletedEvent`, `PersonSavedEvent`, `ReflectionMentionListener`
   - **controllers→contract:** `PeopleController`→`PeopleApi`
   - **mappers:** `PeopleMapper`
   - **other:** `MentionSeedData`, `PeopleSeedData`, `PersonGraphEdgeSource`
@@ -796,7 +796,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/people · POST /api/people · PUT /api/people/{personId} · DELETE /api/people/{personId} ·
     POST /api/people/{personId}/mentions · DELETE /api/people/{personId}/mentions/{mentionId} ·
     POST /api/people/{personId}/decision
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 5 IT + 0 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 5 IT + 1 unit
   - **ITs:** `MentionDetectionListenerIT`, `MentionDetectionServiceIT`, `MentionDetectionSwitchOffIT`,
     `PeopleContractIT`, `PeopleServiceIT`
   - **populators:** `MentionPopulator`, `PersonPopulator`, `UserPopulator`

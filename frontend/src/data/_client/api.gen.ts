@@ -6213,7 +6213,20 @@ export interface components {
             notes?: string;
             knownFacts: string[];
             ties: string[];
+            /** @description Heti hangulat-olvasatok 1..5 skálán, időrendben (legfeljebb 8, a legfrissebbek). Az említések tónusából és intenzitásából SZÁMÍTOTT érték — a person.affect_trend oszlopot ez a válasz nem olvassa. */
             affectTrend: number[];
+            /**
+             * Format: date
+             * @description A hangulat-ív első olvasatának hete (hétfő). Az ív csak azokat a heteket tartalmazza, ahol volt tónusozott említés, ezért az időablakot ebből kell címkézni, nem az olvasatok számából. null, ha nincs olvasat.
+             */
+            affectTrendStart?: string | null;
+            /**
+             * @description A hangulat-ív iránya az utolsó két olvasat és a korábbiak átlaga alapján.
+             * @enum {string}
+             */
+            direction: "up" | "down" | "flat";
+            /** @description Magyar, determinisztikus indoklás az irány alatt. null, ha nincs olvasat. */
+            directionReason?: string | null;
             /** @description Count of live mention rows — computed, never seeded */
             mentionCount: number;
             /** @description Mentions in the rolling last 7 days */
