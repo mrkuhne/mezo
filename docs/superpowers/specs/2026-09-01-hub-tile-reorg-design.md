@@ -59,7 +59,8 @@ A Tudás csempe nem költözik, hanem megszűnik. A Tudástár oldal
 ### Vissza-chipek
 
 - `KnowledgePage` „‹ Én" → **„‹ Tudástár"** (`/mezo/knowledge`)
-- `KarakterHubPage` „‹ Én" → **„‹ Mezo"** (`/mezo`)
+- `KarakterHubPage`: nincs saját vissza-chipje (a shell-fejléc viszi a
+  navigációt) — ott nincs teendő.
 
 ## Döntések és indoklásuk
 
