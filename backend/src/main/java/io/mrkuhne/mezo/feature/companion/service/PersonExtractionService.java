@@ -1,6 +1,10 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
@@ -19,7 +23,10 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +43,10 @@ import tools.jackson.databind.ObjectMapper;
  * és tone-nélküli mention-jeire, két feladattal: (1) a nap tone-nélküli mention-jeinek gazdagítása
  * (tónus + intenzitás + kontextus-címke); (2) ismeretlen, VISSZATÉRŐ nevekre
  * {@code person(status='candidate', source_kind='extractor')} javaslat, evidencia-idézetekkel a
- * {@code notes}-ban. Az esemény-él javaslat (PERSON↔LIFE_EVENT) S5 után élesedik — ez a kör
- * szándékosan nem ír gráfot.
+ * {@code notes}-ban. A harmadik, S5-ben (mezo-06o0.4) élesedő feladat — {@link #linkPersonEdges} —
+ * a nap aznap említett, még éltelen PERSON node-jait futtatja végig a {@code GraphEdgeStructurer}-en;
+ * a fenti két feladat viszont sosem ír gráfot, ez a passz is csak a {@code persistNight} UTÁN,
+ * külön tranzakcióban.
  *
  * <p><b>Bizonytalan utalás SOHA nem ír.</b> A modell javaslata csak jelölt: a szerviz maga
  * validál — a név foldja nem eshet egybe egyetlen ismert névvel/aliasszal sem (a soft-deleted,
@@ -78,6 +87,12 @@ public class PersonExtractionService {
      *  candidate-sor persistálása kidobja az EGÉSZ éjszakát (persistNight egy tranzakció). */
     static final int NOTES_MAX_CHARS = 500;
 
+    /** Egy éjszaka legfeljebb ennyi személy-node-ért fizet él-strukturálást (cheap-tier hívás,
+     *  de node-onként egy): a maradék a következő éjszakákon kerül sorra. */
+    private static final int MAX_EDGE_LINKS_PER_NIGHT = 3;
+    /** Az él-evidencia forrás-fajtája: a konkrét említés, ami miatt a személy aznap felmerült. */
+    private static final String EDGE_EVIDENCE_KIND = "mention";
+
     private static final Set<String> TONES = Set.of("positive", "neutral", "mixed", "negative");
     private static final Set<String> CONTEXTS = Set.of("munka", "csalad", "baratok", "edzes",
         "konfliktus", "kozos_program", "segitseg", "egyeb");
@@ -115,16 +130,31 @@ public class PersonExtractionService {
     // Self-injected proxy — lásd LifeEventExtractionService: a persistNight csak a proxyn át kap
     // tranzakciós advice-t.
     private final ObjectProvider<PersonExtractionService> self;
+    // ObjectProvider, nem közvetlen függés: a gráf-kapcsoló (KNOWLEDGE_GRAPH) függetlenül
+    // kapcsolható a COMPANION∧PEOPLE pártól, ami ezt a szervizt élteti — kikapcsolt gráfnál
+    // ezek a beanek nem léteznek, és az él-passz egyszerűen kimarad.
+    private final ObjectProvider<GraphService> graphService;
+    private final ObjectProvider<GraphEdgeStructurer> edgeStructurer;
 
     public PersonExtractionResult extractFor(UUID userId, LocalDate day) {
         Instant from = day.atStartOfDay(ZoneOffset.UTC).toInstant();
         Instant to = day.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-        List<MentionEntity> toneless = mentionRepository
-            .findByCreatedByAndTsGreaterThanEqualAndTsLessThanAndDeletedFalse(userId, from, to)
-            .stream().filter(m -> m.getTone() == null).toList();
+        // A teljes napi mention-lista mellékterméke a lekérdezésnek — a tone-szűrés itt, Java
+        // oldalon fut, ezért NEM kell egy második lekérdezés az él-passz számára (lásd
+        // linkPersonEdges hívásai lent): a `dayMentions` és a `toneless` ugyanabból a listából ered.
+        List<MentionEntity> dayMentions = mentionRepository
+            .findByCreatedByAndTsGreaterThanEqualAndTsLessThanAndDeletedFalse(userId, from, to);
+        List<MentionEntity> toneless = dayMentions.stream().filter(m -> m.getTone() == null).toList();
         String narrative = gatherNarrative(userId, day);
         if (toneless.isEmpty() && narrative.isBlank()) {
-            return PersonExtractionResult.ZERO;   // pre-spend kapu — üres éjszaka = nincs hívás
+            // Pre-spend kapu: nincs tone-nélküli mention ÉS nincs narratíva — a gazdagítás/jelölt
+            // LLM-hívás elmarad. De ha VOLT aznapi említés (csak épp mindegyik már tónusos), az
+            // él-passznak akkor is futnia kell (S5, mezo-06o0.4) — egy teljesen üres napon nincs
+            // kit összekötni, de egy csak-már-gazdagított napon van. linkPersonEdges maga no-op
+            // egy üres listán, úgyhogy a hívás feltétel nélkül biztonságos.
+            int edgeLinked = linkPersonEdgesSafely(userId, day, dayMentions);
+            return edgeLinked == 0 ? PersonExtractionResult.ZERO
+                : new PersonExtractionResult(0, 0, edgeLinked);
         }
         List<PersonEntity> persons = personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId);
         NightAnswer answer;
@@ -140,15 +170,94 @@ public class PersonExtractionService {
         List<Enrichment> enrichments = validEnrichments(answer, toneless);
         List<CandidateProposal> candidates = validCandidates(answer, userId, day, narrative);
         if (enrichments.isEmpty() && candidates.isEmpty()) {
-            return PersonExtractionResult.ZERO;
+            // Nincs mit gazdagítani/jelölni ebből a válaszból — de az él-passz ettől független: ha
+            // van aznapi említés, akkor is lefut (S5, mezo-06o0.4). Ez a gate akkor is igaz tud
+            // lenni, amikor a fenti pre-spend kapu nem zárta ki a napot (pl. van tone-nélküli
+            // mention, de a modell válasza üres) — pontosan ilyenkor is kell az él-passz.
+            int edgeLinked = linkPersonEdgesSafely(userId, day, dayMentions);
+            return edgeLinked == 0 ? PersonExtractionResult.ZERO
+                : new PersonExtractionResult(0, 0, edgeLinked);
         }
+        PersonExtractionResult night;
         try {
-            return self.getObject().persistNight(userId, toneless, enrichments, candidates);
+            night = self.getObject().persistNight(userId, toneless, enrichments, candidates);
         } catch (Exception e) {
             log.warn("Person-extraction persistence failed for {} on {} — degrading to zero so the"
                 + " night stays reprocessable", userId, day, e);
             return PersonExtractionResult.ZERO;
         }
+        // Külön tranzakció, a gazdagítás/jelölt commitja UTÁN — külön try/catch a persistNight-étól
+        // is: egy gráf-hiba itt SOHA nem viheti el a fenti persistNight már commitolt eredményét
+        // (IDENT-3), sem a saját tranzakcióját (linkPersonEdges), sem a visszaadott enriched/
+        // candidates számokat.
+        int edgeLinked = linkPersonEdgesSafely(userId, day, dayMentions);
+        return new PersonExtractionResult(night.enriched(), night.candidates(), edgeLinked);
+    }
+
+    private int linkPersonEdgesSafely(UUID userId, LocalDate day, List<MentionEntity> dayMentions) {
+        try {
+            return self.getObject().linkPersonEdges(userId, dayMentions);
+        } catch (Exception e) {
+            log.warn("Person edge-linking pass failed for {} on {}", userId, day, e);
+            return 0;
+        }
+    }
+
+    /**
+     * S5 esemény-él passz (mezo-06o0.4): a nap említett személyei közül azok kapnak
+     * él-strukturálást, akiknek van AKTÍV PERSON node-juk, de még egyetlen élük sincs. A
+     * {@code syncPerson} szándékosan nem hív strukturálót (egy névjavítás nem indokol LLM-hívást),
+     * így ez a passz az egyetlen hely, ahol egy már promótált személy élt kap.
+     *
+     * <p>Az „még nincs éle" kapu az, ami ezt bezárja: egy személy legfeljebb EGYSZER fut végig
+     * rajta, utána örökre kimarad — nincs éjszakánként ismétlődő költség. A napi
+     * {@value #MAX_EDGE_LINKS_PER_NIGHT}-es sapka pedig egy nagy backlog első éjszakáját fogja
+     * vissza.
+     *
+     * <p>Evidencia: a konkrét említés id-ja ({@code mention}), nem a személy — így az él
+     * visszavezethető arra a mondatra, ami miatt megszületett.
+     *
+     * <p>IDENT-3: node-onként külön try/catch — egy személy hibája nem viszi el a többiét, és
+     * SOHA nem viszi el a már commitolt gazdagítást (ez a metódus a {@code persistNight} UTÁN,
+     * külön tranzakcióban fut).
+     *
+     * @return hány személy-node kapott ténylegesen él-strukturálást
+     */
+    @Transactional
+    public int linkPersonEdges(UUID userId, List<MentionEntity> dayMentions) {
+        GraphService graph = graphService.getIfAvailable();
+        GraphEdgeStructurer structurer = edgeStructurer.getIfAvailable();
+        if (graph == null || structurer == null || dayMentions.isEmpty()) {
+            return 0;   // gráf kikapcsolva, vagy nincs mit nézni
+        }
+        Map<UUID, MentionEntity> firstMentionByPerson = new LinkedHashMap<>();
+        for (MentionEntity m : dayMentions) {
+            firstMentionByPerson.putIfAbsent(m.getPersonId(), m);
+        }
+        int linked = 0;
+        for (Map.Entry<UUID, MentionEntity> entry : firstMentionByPerson.entrySet()) {
+            if (linked >= MAX_EDGE_LINKS_PER_NIGHT) {
+                break;
+            }
+            try {
+                Optional<GraphNodeEntity> found =
+                    graph.findBySource(userId, GraphPromotionService.SOURCE_PERSON, entry.getKey());
+                if (found.isEmpty()) {
+                    continue;   // jelölt vagy sosem promótált személy — nincs mit összekötni
+                }
+                GraphNodeEntity node = found.get();
+                if (!GraphNodeEntity.STATUS_ACTIVE.equals(node.getStatus())
+                        || !graph.edgesFrom(userId, node.getId()).isEmpty()
+                        || !graph.edgesTo(userId, node.getId()).isEmpty()) {
+                    continue;   // archivált, vagy már van éle — egyszer fut, nem éjszakánként
+                }
+                structurer.structureEdges(userId, node, EDGE_EVIDENCE_KIND, entry.getValue().getId());
+                linked++;
+            } catch (Exception e) {
+                log.warn("Person edge structuring failed for person {} (user {})", entry.getKey(), userId, e);
+            }
+        }
+        return linked;
     }
 
     /** Az éjszaka minden írása EGY tranzakcióban (LifeEvent-minta, self-proxyn át hívva). */
@@ -181,7 +290,7 @@ public class PersonExtractionService {
             personRepository.save(p);
             created++;
         }
-        return new PersonExtractionResult(enriched, created);
+        return new PersonExtractionResult(enriched, created, 0);
     }
 
     /** Ugyanaz a nap-narratíva, mint a LifeEvent-extraktoré: napló + esti reflexió + napi összefoglaló. */

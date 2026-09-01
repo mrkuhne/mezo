@@ -3,6 +3,10 @@ package io.mrkuhne.mezo.feature.companion.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
@@ -14,9 +18,11 @@ import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +46,8 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
+    @Autowired private GraphService graphService;
+    @Autowired private GraphPromotionService promotionService;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -213,5 +221,64 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     @Test
     void testExtractorMarker_shouldStayInSyncWithTheFakeDispatch() {
         assertThat(PersonExtractionService.EXTRACTOR_MARKER).isEqualTo("[person-extractor]");
+    }
+
+    @Test
+    void extractFor_shouldStructureEdges_forEdgelessPersonNode() {
+        // A GraphEdgeStructurer a node CÍMÉT és SUMMARY-ját küldi a modellnek; a fake a
+        // user-üzenetben keresi a [fake-graph-edges:[...]] szentinelt, ezért a summary-ba
+        // (relationshipHu) rejtjük.
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[{\"index\":0,\"kind\":\"SUPPORTS\",\"confidence\":0.8}]]");
+        personRepository.save(person);
+        // egy másik aktív node, hogy legyen mihez kötni (a strukturáló emptiness-gate-je)
+        graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT, "Nyári szabadság", null,
+            "life_event_test", UUID.randomUUID(), null, Map.of());
+        GraphNodeEntity personNode = promotionService.syncPerson(owner, person.getId()).orElseThrow();
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.edgeLinked()).isEqualTo(1);
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).hasSize(1);
+    }
+
+    @Test
+    void extractFor_shouldSkipEdgeStructuring_whenPersonNodeAlreadyHasEdges() {
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[{\"index\":0,\"kind\":\"SUPPORTS\",\"confidence\":0.8}]]");
+        personRepository.save(person);
+        GraphNodeEntity other = graphService.upsertNode(owner, GraphNodeEntity.KIND_LIFE_EVENT,
+            "Nyári szabadság", null, "life_event_test", UUID.randomUUID(), null, Map.of());
+        GraphNodeEntity personNode = promotionService.syncPerson(owner, person.getId()).orElseThrow();
+        // kézzel húzott él, mielőtt az extraktor futna — a passznak ezt kell tiszteletben tartania
+        graphService.upsertEdge(owner, personNode.getId(), other.getId(),
+            GraphEdgeEntity.KIND_RELATES_TO, new BigDecimal("0.500"), List.of());
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        // Ha a strukturáló futott volna, a szentinel egy MÁSODIK (SUPPORTS) élt hozott volna létre
+        // a meglévő (RELATES_TO) mellé — a mérete tehát a hitelesebb bizonyíték, mint egy globális
+        // LLM-hívásszámláló, mert a person-extraction saját (üres) modellhívása ETTŐL függetlenül
+        // lefut, valahányszor van tone-nélküli mention.
+        assertThat(result.edgeLinked()).isZero();
+        assertThat(graphService.edgesFrom(owner, personNode.getId())).hasSize(1);
+    }
+
+    @Test
+    void extractFor_shouldSkipEdgeStructuring_whenPersonHasNoGraphNode() {
+        UUID owner = ownerId();
+        PersonEntity person = personPopulator.createPerson(owner, "Petra");
+        person.setRelationshipHu("Élettárs [fake-graph-edges:[{\"index\":0,\"kind\":\"SUPPORTS\",\"confidence\":0.8}]]");
+        personRepository.save(person);
+        // szándékosan NINCS syncPerson hívás — a személy sosem lett promótálva
+        mentionPopulator.createMention(owner, person.getId(), DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), null);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.edgeLinked()).isZero();
     }
 }
