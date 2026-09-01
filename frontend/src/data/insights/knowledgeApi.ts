@@ -25,8 +25,9 @@ export function toKnowledgeFact(f: KnowledgeFactResponse): KnowledgeFact {
   }
 }
 
+/** The wire doesn't carry conflict detection yet (mezo-ms9a) — always an honest `null`. */
 export function toFactCandidate(c: FactCandidateResponse): FactCandidate {
-  return { id: c.id, text: c.candidateText, category: c.category as FactCategory }
+  return { id: c.id, text: c.candidateText, category: c.category as FactCategory, conflictsWithFactId: null }
 }
 
 export const knowledgeApi = {

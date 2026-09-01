@@ -552,6 +552,12 @@ export type MentionSource = 'voice' | 'camera' | 'chip' | 'text' | 'chat'
 export type MentionContext =
   | 'munka' | 'csalad' | 'baratok' | 'edzes'
   | 'konfliktus' | 'kozos_program' | 'segitseg' | 'egyeb'
+export interface PersonGraphEdge {
+  nodeKind: string
+  title: string
+  relationHu: string
+  strength: string
+}
 export interface PersonEntry {
   id: string
   name: string
@@ -571,6 +577,7 @@ export interface PersonEntry {
   affectTrend: number[]
   knownFacts: string[]
   ties: string[]
+  graphEdges: PersonGraphEdge[]
 }
 export interface Mention {
   id: string
@@ -711,7 +718,15 @@ export interface KnowledgeFact {
   createdAt: string
 }
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
-export interface FactCandidate { id: string; text: string; category: FactCategory }
+export interface FactCandidate {
+  id: string
+  text: string
+  category: FactCategory
+  /** FE-only in this slice (mezo-ms9a): the existing fact id this candidate contradicts, or
+   *  `null` when it doesn't conflict with anything. Real mode always maps to `null` — the wire
+   *  doesn't carry this yet. */
+  conflictsWithFactId: string | null
+}
 export type FactDecision = 'accept' | 'reject' | 'refine'
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
 
@@ -733,7 +748,7 @@ export interface LifeEventCandidate {
 
 export type LifeEventDecision = 'accept' | 'reject'
 
-export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT'
+export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT' | 'PERSON'
 
 /** W2.6 (mezo-b3pp.11): one active knowledge-graph node for the Tudástár "Kapcsolatok" section —
  *  `topEdges` are pre-rendered Hungarian lines from the backend `GraphEdgeLineRenderer`, the same
@@ -748,6 +763,8 @@ export interface KnowledgeGraphNode {
   /** W4.3 (mezo-b3pp.17): `'profile'` marks the singleton pragmatic-profile node, which the
    *  Tudástár renders in its own section instead of the kind groups. */
   sourceKind: string | null
+  /** ISO date-time (mezo-ms9a): `useKnowledgeGraphNodes()` sorts DESC by this. */
+  updatedAt: string
 }
 
 // --- Insights (AI-memory surface) ---

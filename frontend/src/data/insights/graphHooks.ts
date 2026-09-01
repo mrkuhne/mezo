@@ -2,12 +2,19 @@ import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-q
 import { useDualQuery } from '@/data/useDualQuery'
 import { isMockMode } from '@/data/_client/mode'
 import { ApiError } from '@/data/_client/api'
-import { graphApi } from '@/data/insights/graphApi'
+import { graphApi, type RefinedCandidate } from '@/data/insights/graphApi'
 import { lifeEventCandidateSeed, graphNodeSeed } from '@/data/insights/graph'
+import { edges as edgeSeed } from '@/data/insights/knowledge'
 import type { KnowledgeGraphNode, LifeEventCandidate, LifeEventDecision } from '@/data/types'
 
 const GRAPH_CANDIDATE_KEY = ['graph', 'candidates'] as const
 const GRAPH_NODE_KEY = ['graph', 'nodes'] as const
+const GRAPH_EDGE_COUNT_KEY = ['graph', 'edgeCount'] as const
+
+/** DESC-by-`updatedAt` — newest-touched node first (mezo-ms9a). ISO strings sort lexicographically. */
+function byUpdatedAtDesc(nodes: KnowledgeGraphNode[]): KnowledgeGraphNode[] {
+  return [...nodes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+}
 
 /**
  * W2.3 életesemény-jelöltek (L2 inbox). A gráf-kapcsoló FÜGGETLEN a társ-kapcsolótól, ezért a
@@ -31,33 +38,58 @@ export function useLifeEventCandidates() {
   return { candidates: data, isPending, isError, refetch }
 }
 
-/** Elfogad → aktív csomópont + a javasolt kapcsolatok; Elvet → nyom nélkül eltűnik. */
+/** Elfogad → aktív csomópont + a javasolt kapcsolatok; Elvet → nyom nélkül eltűnik. `refined`
+ *  (mezo-ms9a) az edit-then-approve cím/összefoglaló felülírás — csak accept mellett van
+ *  értelme, reject-nél figyelmen kívül marad. */
 export function useLifeEventActions() {
   const qc = useQueryClient()
   const mock = isMockMode()
 
   const decideM = useMutation({
-    mutationFn: async (input: { id: string; decision: LifeEventDecision }) => {
+    mutationFn: async (input: { id: string; decision: LifeEventDecision; refined?: RefinedCandidate }) => {
       if (mock) {
-        mockDecide(qc, input.id)
+        mockDecide(qc, input.id, input.decision, input.refined)
         return
       }
-      await graphApi.decideCandidate(input.id, input.decision)
+      await graphApi.decideCandidate(input.id, input.decision, input.refined)
     },
     onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: GRAPH_CANDIDATE_KEY }),
   })
 
   return {
-    decide: (id: string, decision: LifeEventDecision) => decideM.mutate({ id, decision }),
+    decide: (id: string, decision: LifeEventDecision, refined?: RefinedCandidate) =>
+      decideM.mutate({ id, decision, refined }),
     pending: decideM.isPending,
   }
 }
 
-/** Mindkét döntés ugyanazt teszi a listával: a jelölt lekerül róla (elfogadva a gráfba került,
- *  elvetve eldobtuk) — mock módban nincs gráf-nézet, ahol az elfogadott megjelenhetne. */
-function mockDecide(qc: QueryClient, id: string) {
+/** Elvetve nyom nélkül eltűnik a jelölt-listáról. Elfogadva ugyanúgy lekerül a jelölt-listáról,
+ *  DE ALSO belép a csomópont-cache-be (mezo-ms9a) — a `refined` cím/összefoglaló felülírja a
+ *  jelölt eredeti szövegét, ha adott. */
+function mockDecide(
+  qc: QueryClient,
+  id: string,
+  decision: LifeEventDecision,
+  refined?: RefinedCandidate,
+) {
+  const candidates = qc.getQueryData<LifeEventCandidate[]>(GRAPH_CANDIDATE_KEY) ?? lifeEventCandidateSeed
+  const candidate = candidates.find((c) => c.id === id)
+
   qc.setQueryData<LifeEventCandidate[]>(GRAPH_CANDIDATE_KEY, (old) =>
     (old ?? lifeEventCandidateSeed).filter((c) => c.id !== id))
+
+  if (decision !== 'accept' || !candidate) return
+
+  const promoted: KnowledgeGraphNode = {
+    id: candidate.id,
+    kind: candidate.kind,
+    title: refined?.title ?? candidate.title,
+    summary: refined?.summary ?? candidate.summary,
+    topEdges: [],
+    sourceKind: null,
+    updatedAt: new Date().toISOString(),
+  }
+  qc.setQueryData<KnowledgeGraphNode[]>(GRAPH_NODE_KEY, (old) => [promoted, ...(old ?? graphNodeSeed)])
 }
 
 /**
@@ -79,7 +111,30 @@ export function useKnowledgeGraphNodes() {
     },
     realEmpty: [],
   })
-  return { nodes: data, isPending, isError, refetch }
+  return { nodes: byUpdatedAtDesc(data), isPending, isError, refetch }
+}
+
+/**
+ * W-tudastar-egyben (mezo-ms9a): the hero's "N kapcsolat" segment — the active-edge count
+ * between active nodes. Independent of both the companion AND the graph node switches, so any
+ * failure (404, network, still pending) reads as `null`, never a fabricated 0 — the hero simply
+ * omits the segment rather than lying about having zero edges.
+ */
+export function useGraphEdgeCount(): { count: number | null } {
+  const { data } = useDualQuery<number | null>({
+    queryKey: GRAPH_EDGE_COUNT_KEY,
+    mockData: edgeSeed.length,
+    realFetch: async () => {
+      try {
+        return (await graphApi.edgeCount()).count
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return null
+        throw err
+      }
+    },
+    realEmpty: null,
+  })
+  return { count: data }
 }
 
 /** Archivál egy csomópontot — L2 kontroll, azonnal lekerül az aktív listáról/promptból. */

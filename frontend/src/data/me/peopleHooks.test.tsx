@@ -26,6 +26,7 @@ const WIRE_PERSON: PersonResponse = {
   mentionCount: 2,
   mentionsThisWeek: 1,
   lastMentionedAt: '2026-07-03T20:14:00Z',
+  graphEdges: [],
 }
 
 const WIRE_MENTION: MentionResponse = {

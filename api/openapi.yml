@@ -7702,6 +7702,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/graph/edge/count:
+    get:
+      tags:
+        - KnowledgeGraph
+      operationId: countGraphEdges
+      summary: >-
+        Count of active knowledge-graph edges for the current user
+        (KnowledgeGraph)
+      responses:
+        '200':
+          description: Active edge count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphEdgeCountResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/me/week/{start}':
     get:
       tags:
@@ -15155,6 +15176,7 @@ components:
         - aliases
         - status
         - sourceKind
+        - graphEdges
       properties:
         id:
           type: string
@@ -15223,6 +15245,40 @@ components:
         lastMentionedAt:
           type: string
           format: date-time
+        graphEdges:
+          type: array
+          description: >-
+            A személy PERSON node-jának legerősebb gráf-élei (legfeljebb 3, súly
+            szerint csökkenő). Üres, ha a gráf ki van kapcsolva, vagy a
+            személynek nincs node-ja/éle.
+          items:
+            $ref: '#/components/schemas/PersonGraphEdge'
+    PersonGraphEdge:
+      type: object
+      description: >-
+        Egy gráf-él a személy felől nézve — a másik végpont, és hogy hogyan
+        kapcsolódik.
+      required:
+        - nodeKind
+        - title
+        - relationHu
+        - strength
+      properties:
+        nodeKind:
+          type: string
+          description: >-
+            A másik végpont node-fajtája (PATTERN | PREFERENCE | GOAL |
+            LIFE_EVENT | SEASON | INSIGHT | PERSON).
+        title:
+          type: string
+        relationHu:
+          type: string
+          description: >-
+            Magyar kapcsolat-ige (kiváltja | megelőzte | támogatja | ütközik
+            vele | kapcsolódik).
+        strength:
+          type: string
+          description: erős | közepes | gyenge
     MentionResponse:
       type: object
       required:
@@ -17745,6 +17801,7 @@ components:
             - LIFE_EVENT
             - SEASON
             - INSIGHT
+            - PERSON
         title:
           type: string
         summary:
@@ -17796,6 +17853,25 @@ components:
         decision:
           type: string
           pattern: ^(accept|reject)$
+        refinedTitle:
+          type: string
+          minLength: 1
+          maxLength: 160
+          nullable: true
+          description: User-edited title applied on accept (edit-then-approve).
+        refinedSummary:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+          description: User-edited summary applied on accept.
+    GraphEdgeCountResponse:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
     MeWeekSubscores:
       type: object
       properties:

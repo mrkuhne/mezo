@@ -5273,6 +5273,19 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   border: 1.2px dashed rgba(43, 33, 24, 0.16); }
 .mz-facttile.off .mz-fact-tx { color: var(--mz-ink-soft); }
 
+/* T10 (mezo-ms9a): `?fact=<id>` deep-link kiemelés — egyszeri sárgás háttér-lecsengés a
+   csempén (WeekDiscoveries linkjei érkeznek ide). `background-color` a `background` shorthand
+   fölé animál, a csempe saját wash/off háttere alól — az animáció végén (fill-mode: none, az
+   alapértelmezett) visszaesik a statikus háttérre, nem ragad be arany. */
+.mz-facttile.mz-fact-hl { animation: mz-fact-hl-fade 1.6s ease-out; }
+@keyframes mz-fact-hl-fade {
+  from { background-color: color-mix(in srgb, var(--mz-hl-gold, var(--dv-amber)) 38%, transparent); }
+  to { background-color: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mz-facttile.mz-fact-hl { animation: none; }
+}
+
 /* ── Előrejelzések + Kísérletek (mezo-d20.5.6) — prototype mezo-body
       #page-josla / #page-kiserlet .predtile family, ×1.18. Status wears the
       surface: ◐ Folyamatban = lavender + animated confidence bar, ✓ Bevált /
@@ -5788,10 +5801,50 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .ppl-fact { display: inline-flex; border-radius: 999px; padding: 4px 12px; font-size: 10px; font-weight: 600;
   color: var(--mz-cell-rose-ink); background: var(--mz-cell-rose-bg); margin: 2px 4px 2px 0; }
 
+/* Emberek S5 (mezo-06o0.4) — „Kapcsolt események · gráf" a személy részletek-oldalán.
+   Forrás: emberek-head.html .lsec / .evt (×1,18). */
+.ppl-lsec { display: flex; align-items: center; gap: 7px; padding: 12px 2px 7px; }
+.ppl-lcnt {
+  margin-left: auto; font-size: 10.6px; font-weight: 700;
+  color: var(--mz-ink-soft); font-variant-numeric: tabular-nums;
+}
+.ppl-evt {
+  display: flex; gap: 11px; align-items: center; width: 100%; text-align: left;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); border-radius: 19px; padding: 13px 14px;
+  margin-bottom: 11px; cursor: pointer;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+}
+.ppl-evt:active { transform: scale(0.97); }
+.ppl-evt-amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.ppl-evt-sage  { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.ppl-evt-lav   { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.ppl-evt .grow { flex: 1; min-width: 0; }
+.ppl-evtpic {
+  width: 35px; height: 35px; border-radius: 12px; display: grid; place-items: center;
+  flex: none; background: var(--surface-card); box-shadow: 0 2px 6px rgba(43, 33, 24, 0.08);
+}
+.ppl-evt b { font-size: 11.6px; font-weight: 700; }
+.ppl-evtmt {
+  display: block; font-size: 8.9px; color: var(--mz-ink-soft); margin-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ppl-affbars i, .mz-play .ppl-affbars i { transform: scaleY(1); animation: none; }
   .ppl-ctxbar .ppl-ctxtr div, .mz-play .ppl-ctxbar .ppl-ctxtr div { width: var(--w); transition: none; }
+  .ppl-evt { transition: none; }
 }
+
+/* mezo-ms9a shell: the base-view „?" help chip (top-right of the hero, base only) and the
+   wide-tile idiom for the base mosaic's 3rd (profil) tile — the `.mz-page-hero` positioning
+   context is only claimed here, so every other page's hero keeps its plain static layout. */
+.mz-page-hero { position: relative; }
+.tud-help { position: absolute; top: 9px; right: 17px; width: 30px; height: 30px;
+  border-radius: 50%; border: none; background: var(--mz-chipbg); font-family: inherit;
+  font-size: 14px; font-weight: 700; color: var(--text-primary); cursor: pointer;
+  display: grid; place-items: center; box-shadow: 0 7px 17px -9px rgba(43, 33, 24, 0.3); }
+.tud-help:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
+.mz-tile-wide { grid-column: 1 / -1; }
 
 .tud-summary { border-radius: 20px; padding: 14px 15px;
   background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }

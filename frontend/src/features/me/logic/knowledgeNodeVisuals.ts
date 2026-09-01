@@ -15,6 +15,7 @@ export const KIND_ICON: Record<GraphNodeKind, ClayIconName> = {
   LIFE_EVENT: 'i-nap',
   SEASON: 'i-nap',
   INSIGHT: 'i-injekcio',
+  PERSON: 'i-emberek',
 }
 
 export const KIND_WASH: Record<GraphNodeKind, MozaikWash> = {
@@ -24,6 +25,7 @@ export const KIND_WASH: Record<GraphNodeKind, MozaikWash> = {
   LIFE_EVENT: 'gold',
   SEASON: 'gold',
   INSIGHT: 'lav',
+  PERSON: 'rose',
 }
 
 export const KIND_INK: Record<GraphNodeKind, string> = {
@@ -33,4 +35,5 @@ export const KIND_INK: Record<GraphNodeKind, string> = {
   LIFE_EVENT: 'var(--mz-cell-gold-ink)',
   SEASON: 'var(--mz-cell-gold-ink)',
   INSIGHT: 'var(--mz-cell-lav-ink)',
+  PERSON: 'var(--mz-cell-rose-ink)',
 }

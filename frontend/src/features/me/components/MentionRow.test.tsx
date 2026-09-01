@@ -38,6 +38,7 @@ const PERSON: PersonEntry = {
   affectTrend: [],
   knownFacts: [],
   ties: [],
+  graphEdges: [],
 }
 
 test('tone-less mention renders no ppl-tw-* wash', () => {
