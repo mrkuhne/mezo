@@ -144,13 +144,14 @@ test('no toned mentions this week renders the honest line instead of a bar', () 
 test('Irányok: only mentionsThisWeek > 0 people appear, sorted ↘ down, ↗ up, → flat', () => {
   renderAt('/me/people/heti')
   const cards = [...document.querySelectorAll('.ppl-dirt')]
-  // Petra (up), Ádám (up), Bence (flat), Réka (flat), Márk (flat) — the server's own
+  // Bence (down), Petra (up), Ádám (up), Réka (flat), Márk (flat) — the server's own
   // `direction` field on each mock person (data/me/people.ts), consistent with their
-  // affectTrend arrays (all 8-reading, the server's cap; nobody trends down in the seed).
+  // affectTrend arrays (all trimmed to the server's 8-reading cap; Bence is the seed's
+  // one honest down-trender).
   expect(cards.map((c) => c.querySelector('b')?.textContent)).toEqual([
-    petra.name, adam.name, bence.name, reka.name, mark.name,
+    bence.name, petra.name, adam.name, reka.name, mark.name,
   ])
-  expect(cards.map((c) => c.querySelector('.ppl-arr2')?.textContent)).toEqual(['↗', '↗', '→', '→', '→'])
+  expect(cards.map((c) => c.querySelector('.ppl-arr2')?.textContent)).toEqual(['↘', '↗', '↗', '→', '→'])
 })
 
 test('each direction card carries a real trendHeights spark (same idiom as PersonCard/kor)', () => {
@@ -167,13 +168,14 @@ test('each direction card shows "N× E HÉTEN" off the person\'s own mentionsThi
   expect(screen.getByText(`${petra.mentionsThisWeek}× E HÉTEN`)).toBeInTheDocument()
 })
 
-test('CONTRACT: the "why" line under a direction card is the server\'s own directionReason, not FE-guessed prose', () => {
+test('CONTRACT: the "why" line under a down-trending card is the server\'s own directionReason, not FE-guessed prose', () => {
   renderAt('/me/people/heti')
-  const petraCard = [...document.querySelectorAll('.ppl-dirt')].find((c) => c.querySelector('b')?.textContent === petra.name)!
-  expect(petra.direction).toBe('up')
-  expect(petraCard.querySelector('.ppl-why2')?.textContent).toBe(petra.directionReason)
   const benceCard = [...document.querySelectorAll('.ppl-dirt')].find((c) => c.querySelector('b')?.textContent === bence.name)!
+  expect(bence.direction).toBe('down')
   expect(benceCard.querySelector('.ppl-why2')?.textContent).toBe(bence.directionReason)
+  const rekaCard = [...document.querySelectorAll('.ppl-dirt')].find((c) => c.querySelector('b')?.textContent === reka.name)!
+  expect(reka.direction).toBe('flat')
+  expect(rekaCard.querySelector('.ppl-why2')?.textContent).toBe(reka.directionReason)
 })
 
 test('a null directionReason omits the .ppl-why2 line entirely — never an empty row', () => {

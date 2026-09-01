@@ -104,9 +104,9 @@ test('statstrip: 3 cells — mentions·week, top name, down name (or em dash)', 
   expect(cells[0].querySelector('small')?.textContent).toBe('említés · hét')
   expect(cells[1].querySelector('b')?.textContent).toBe('Petra')
   expect(cells[1].querySelector('small')?.textContent).toBe('legtöbbet említett')
-  // Nobody trends down in the seed (every affectTrend is trimmed to the server's 8-reading
-  // cap, which flattens Réka's) — the honest em-dash fallback, not a fabricated name.
-  expect(cells[2].querySelector('b')?.textContent).toBe('—')
+  // Bence is the seed's only down-trending active person (his 8-reading affectTrend,
+  // trimmed to the server's cap, genuinely trends down under the server rule).
+  expect(cells[2].querySelector('b')?.textContent).toBe('Bence ↘')
   expect(cells[2].querySelector('small')?.textContent).toBe('hangulat-lejtő')
 })
 
