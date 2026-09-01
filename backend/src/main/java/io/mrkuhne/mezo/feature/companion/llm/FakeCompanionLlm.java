@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.PeriodSummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
 import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
+import io.mrkuhne.mezo.feature.companion.service.PersonExtractionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -432,6 +433,12 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  exercise the catch-and-log degrade instead of the "empty answer" path. */
     public static final String LIFE_EVENTS_BROKEN = "[fake-life-events-broken]";
 
+    /** Scripted people-extraction (S4, mezo-06o0.3): a [fake-people:{json}] planted in the
+     *  narrative is returned verbatim; no sentinel → "{}" (üres éjszaka). */
+    public static final Pattern PEOPLE_SENTINEL =
+            Pattern.compile("\\[fake-people:(\\{.*})]", Pattern.DOTALL);
+    public static final String PEOPLE_BROKEN = "[fake-people-broken]";
+
     /** Scripted season proposal (W5.3): [fake-season:[…]] planted in a month rung's text (the
      *  gather renders every rung verbatim, so that is this pipeline's sentinel-planting channel). */
     public static final Pattern SEASON_SENTINEL =
@@ -663,6 +670,15 @@ public class FakeCompanionLlm implements CompanionLlm {
             Matcher m = LIFE_EVENTS_SENTINEL.matcher(userMessage);
             // default = no life events: an un-scripted narrative proposes nothing
             return m.find() ? m.group(1) : "[]";
+        }
+        if (systemPrompt.startsWith(PersonExtractionService.EXTRACTOR_MARKER)) {
+            if (userMessage.contains(PEOPLE_BROKEN)) {
+                // matching braces, invalid JSON inside — a catch-and-log ág, nem az üres-válasz ág
+                return "{\"mentions\":[{\"index\":0,\"tone\":}],\"candidates\":[]}";
+            }
+            Matcher m = PEOPLE_SENTINEL.matcher(userMessage);
+            // default = üres éjszaka: script nélkül se gazdagítás, se jelölt
+            return m.find() ? m.group(1) : "{}";
         }
         if (systemPrompt.startsWith(QuarterlyReviewService.SEASON_MARKER)) {
             if (userMessage.contains(SEASON_BROKEN)) {
