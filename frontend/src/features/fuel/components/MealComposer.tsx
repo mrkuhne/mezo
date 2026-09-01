@@ -73,8 +73,8 @@ interface DraftLine {
   name: string
   amount: number
   unit: string
-  /** true when this line came out of the AI panel — always shown tagged BECSLÉS regardless of
-   *  the underlying matched source (design 2.0 iterations §7's deliberate simplification). */
+  /** true when this line came out of the AI panel — shown as a ✨-suffixed source tag, so a
+   *  pantry-matched AI line reads "kamra ✨" rather than pretending to be an estimate. */
   fromAi?: boolean
   needsReview?: boolean
   estimate?: EstimateSnapshot
@@ -83,13 +83,19 @@ interface DraftLine {
 }
 
 function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
-  const tag = l.fromAi ? 'becslés' : l.source === 'recipe' ? 'recept' : 'kamra'
+  // The tag names where the MACROS came from; ✨ marks who put the line there. Keeping the two
+  // apart is why an AI line matched to a real Kamra row no longer lies about being an estimate
+  // (mezo-qrks). `tag` alone feeds data-tag — prototype.css selects on its exact value.
+  const tag = l.source === 'estimate' ? 'becslés' : l.source === 'recipe' ? 'recept' : 'kamra'
+  // 'becslés' only ever comes from the AI panel (there's no manual estimate path), so the tag
+  // already says "AI" on its own — a ✨ there would be redundant, not honest-making.
+  const tagLabel = l.fromAi && l.source !== 'estimate' ? `${tag} ✨` : tag
   if (l.source === 'estimate') {
     const est = l.estimate!
     const per = est.per || 1
     const factor = l.amount / per
     return {
-      name: l.name, tag, step: 10, min: 1,
+      name: l.name, tag, tagLabel, step: 10, min: 1,
       contribution: {
         kcal: round(est.kcal * factor), p: round(est.proteinG * factor),
         c: round(est.carbsG * factor), f: round(est.fatG * factor),
@@ -112,7 +118,7 @@ function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
       ? computeRecipeNutrientsWithOverrides(r!.ingredients, ingredients, l.overrides!)
       : (r ? computeRecipeNutrients(r.ingredients) : NO_NUTRIENTS)
     return {
-      name: l.fromAi ? l.name : (r?.name ?? l.name), tag, step: 1, min: 1,
+      name: l.fromAi ? l.name : (r?.name ?? l.name), tag, tagLabel, step: 1, min: 1,
       contribution: {
         kcal: round(whole.kcal / s * factor), p: round(whole.p / s * factor),
         c: round(whole.c / s * factor), f: round(whole.f / s * factor),
@@ -124,7 +130,7 @@ function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
   const per = ing?.per || 1
   const factor = l.amount / per
   return {
-    name: l.fromAi ? l.name : (ing?.name ?? l.name), tag, step: 10, min: 1,
+    name: l.fromAi ? l.name : (ing?.name ?? l.name), tag, tagLabel, step: 10, min: 1,
     contribution: {
       kcal: round((ing?.macros.kcal ?? 0) * factor), p: round((ing?.macros.p ?? 0) * factor),
       c: round((ing?.macros.c ?? 0) * factor), f: round((ing?.macros.f ?? 0) * factor),
@@ -417,7 +423,7 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
             <div className="row" style={{ alignItems: 'center', gap: 9 }}>
               <div className="row gap-xs flex-1" style={{ minWidth: 0, alignItems: 'center', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{meta.name}</span>
-                <span className="logflow-lntag" data-tag={meta.tag}>{meta.tag}</span>
+                <span className="logflow-lntag" data-tag={meta.tag}>{meta.tagLabel}</span>
               </div>
               <button onClick={() => removeLine(l.key)} aria-label={`${meta.name} eltávolítása`} style={{ padding: 3, color: 'var(--text-tertiary)', flexShrink: 0 }}>
                 <Icon name="x" size={12} />
@@ -446,7 +452,11 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
               </div>
             )}
             {l.needsReview && (
-              <p className="logflow-lnnote">✨ Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.</p>
+              <p className="logflow-lnnote">
+                {l.source === 'estimate'
+                  ? '✨ Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.'
+                  : '✨ Ezt a kamrádból párosítottuk név alapján — ellenőrizd, hogy tényleg ez a tétel.'}
+              </p>
             )}
             {l.source === 'recipe' && (() => {
               const r = recipes.find(x => x.id === l.refId)

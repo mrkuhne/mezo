@@ -152,7 +152,7 @@ test('the AI panel: Elemzés is disabled with neither text nor photo, enabled wi
   expect(go).toBeEnabled()
 })
 
-test('AI-recognized lines land BECSLÉS-tagged next to a manual pantry line — mixed sources in one meal', async () => {
+test('AI lines carry their REAL source tag next to a manual pantry line — mixed sources in one meal', async () => {
   const ing = renderHook(() => usePantry(), { wrapper }).result.current.ingredients[0]
   renderPage()
   // Manual Kamra line first.
@@ -167,10 +167,12 @@ test('AI-recognized lines land BECSLÉS-tagged next to a manual pantry line — 
 
   expect(await screen.findByText('Elemzem az étkezést…')).toBeInTheDocument()
   expect(await screen.findByText('Csirkés wrap')).toBeInTheDocument()
-  // Both AI lines are tagged "becslés" even though one of them matched a real pantry item —
-  // design 2.0 iterations §7's deliberate simplification (never show Kamra/Recept for an AI line).
-  expect(screen.getAllByText('becslés').length).toBe(2)
-  // The manual line keeps its own honest tag.
+  // The draft's pantry-matched line says so (mezo-qrks) — only the genuinely estimated line
+  // is tagged 'becslés'. The ✨ marks who put the line there, the word stays honest about
+  // where the macros came from.
+  expect(screen.getByText('kamra ✨')).toBeInTheDocument()
+  expect(screen.getByText('becslés')).toBeInTheDocument()
+  // The manual line keeps its own unadorned tag.
   expect(screen.getByText('kamra')).toBeInTheDocument()
   expect(screen.getByText(/Az AI nem teljesen biztos ebben a sorban/)).toBeInTheDocument()
 })
