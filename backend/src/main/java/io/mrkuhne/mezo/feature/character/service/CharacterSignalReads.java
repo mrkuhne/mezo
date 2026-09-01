@@ -140,6 +140,7 @@ public class CharacterSignalReads {
     private final NeedsDayRepository needsDayRepository;
     private final NeedsProperties needsProperties;
     private final MentionRepository mentionRepository;
+    private final CharacterMetaReads metaReads;
 
     /**
      * Round 4 (mezo-1gim.15): {@code gatherChatToolCalls} lazily navigates {@code AiMessageEntity
@@ -247,7 +248,7 @@ public class CharacterSignalReads {
                         mealDays, waterDays, stack, checkinDays, medCycle,
                         sleepEightWeeks, intentionDays, decisions, gratitudes, needs,
                         checkinSlots, userChatTimes, logLatencies, mentions, chatToolCalls,
-                        DetectorInput.MetaWindow.empty()));
+                        metaReads.gather(owner, trendStart, day)));
     }
 
     /** People mentions in the window, {@code ts} → local date; bounded above by the end of {@code to}. */
