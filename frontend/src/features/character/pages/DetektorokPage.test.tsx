@@ -1,4 +1,4 @@
-// DetektorokPage — the 20 real detectors, one line each (mezo-1gim.14/.15, Tasks 5-6).
+// DetektorokPage — the 32 real detectors, one line each (mezo-1gim.14/.15, Tasks 5-7).
 // Mode-agnostic via the KarakterHubPage.test.tsx hook-override idiom (only
 // useCharacterExperts is read). Expected keys/counts are derived from the page's own
 // DETECTORS array (imported directly) rather than pinned as literals, so a future round's

@@ -166,15 +166,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `KonziliumProposalRound`, `KonziliumVerdictRound`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterProperties`
-  - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CheckinGapDetector`, `ClaimConfidenceHistoryEnvelope`,
-    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`,
-    `ConferenceTranscriptEnvelope`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
-    `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
-    `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`, `MedCycleCovarianceDetector`,
-    `MesoAdherenceDetector`, `NiggleMapDetector`, `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`,
-    `ProgressionAdherenceDetector`, `ProteinTrainingMismatchDetector`, `RirCalibrationDetector`, `RoundTwoWindow`,
-    `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
-    `StackSkipPatternDetector`, `UnderLoggingDetector`
+  - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CheckinGapDetector`, `CheckinLatencyDetector`,
+    `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`, `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`,
+    `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`, `DecisionProfileDetector`,
+    `DecisionReviewBacklogDetector`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
+    `GratitudeFocusDetector`, `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`,
+    `JournalSilenceDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
+    `MedCycleCovarianceDetector`, `MesoAdherenceDetector`, `NeedsDomainImbalanceDetector`, `NiggleMapDetector`,
+    `NightActivityDetector`, `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`,
+    `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`, `ProteinTrainingMismatchDetector`,
+    `RestartPatternDetector`, `RetroLoggingRatioDetector`, `RirCalibrationDetector`, `RunDetectorKeysEnvelope`,
+    `RunExpertKeysEnvelope`, `SelfCalibrationDetector`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
+    `StackSkipPatternDetector`, `StreakBreakResponseDetector`, `TrailingWindow`, `UnderLoggingDetector`
 - **Contract** `api/feature/character/character.yml` — 10 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -196,11 +199,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`,
     `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
     `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`
-  - **populators:** `AiConversationPopulator`, `CheckInPopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
-    `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `MealPopulator`, `MedicationDosePopulator`,
-    `MedicationPopulator`, `PantryItemPopulator`, `PatternPopulator`, `ProtocolPopulator`, `RunningPopulator`,
-    `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
-    `WeeklyReviewPopulator`
+  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `CheckInPopulator`, `DailySummaryPopulator`,
+    `DatabasePopulator`, `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LlmLogPopulator`,
+    `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `PantryItemPopulator`, `PatternPopulator`,
+    `ProtocolPopulator`, `RunningPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`,
+    `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`
 
 ### companion
 
