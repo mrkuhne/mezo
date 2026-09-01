@@ -3284,7 +3284,11 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
 
 /* ===== NightPage — full-screen, forced extra-dark, no clock (mezo-d71m, spec D4/D5) ===== */
 .night { display: flex; flex-direction: column; min-height: 100%; padding: 26px 20px 24px;
-         background: #0E0B09; }
+         background: #0E0B09;
+         /* Full-bleed dark ground: light --screen-gutter strips beside the extra-dark
+            surface would defeat the <30 lux goal — pull out of the gutter, the 20px
+            inner padding keeps the content off the edge. */
+         margin-inline: calc(-1 * var(--screen-gutter)); }
 .night-back { font: 600 11px/1 var(--ff-body); color: #6E6156; text-decoration: none; margin-bottom: 20px; }
 .night-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .night-eye { font: 700 10px/1 var(--ff-body); letter-spacing: .14em; color: #6E6156;
@@ -4420,6 +4424,10 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-page {
   display: flex; flex-direction: column; min-height: 100%;
   background: var(--canvas);
+  /* Full-bleed page background: pull out of the scroller's --screen-gutter so the
+     tone gradient reaches the physical screen edge — only the CONTENT keeps the
+     gutter, via the head/hero/body's own 14-17px inner padding (user QA, mezo-eczm). */
+  margin-inline: calc(-1 * var(--screen-gutter));
 }
 .mz-p-coral { background: linear-gradient(180deg, var(--mz-tone-coral) 0%, var(--canvas) 36%); }
 .mz-p-gold  { background: linear-gradient(180deg, var(--mz-tone-gold) 0%, var(--canvas) 36%); }
