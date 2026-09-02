@@ -11,6 +11,8 @@ import io.mrkuhne.mezo.feature.character.detector.DetectorInput;
 import io.mrkuhne.mezo.feature.character.service.CharacterSignalReads;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.intention.entity.DailyIntentionEntity;
 import io.mrkuhne.mezo.feature.intention.entity.IntentionFocusEntity;
 import io.mrkuhne.mezo.feature.intention.repository.DailyIntentionRepository;
@@ -22,6 +24,8 @@ import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
 import io.mrkuhne.mezo.feature.journal.repository.GratitudeEntryRepository;
 import io.mrkuhne.mezo.feature.needs.entity.NeedsDayEntity;
 import io.mrkuhne.mezo.feature.needs.repository.NeedsDayRepository;
+import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
+import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
@@ -33,7 +37,9 @@ import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
+import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
@@ -88,6 +94,10 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
     @Autowired private GratitudeEntryRepository gratitudeEntryRepository;
     @Autowired private AiConversationPopulator aiConversationPopulator;
     @Autowired private AiMessagePopulator aiMessagePopulator;
+    @Autowired private PersonPopulator personPopulator;
+    @Autowired private MentionPopulator mentionPopulator;
+    @Autowired private MentionRepository mentionRepository;
+    @Autowired private AiMessageRepository aiMessageRepository;
 
     /** Owner shared by the round-3 read-layer tests below, which reference {@code owner} bare
      *  (no local shadow) — the other tests in this file keep their own {@code UUID owner = owner();}
@@ -585,5 +595,75 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
                 .anyMatch(p -> p.aboutDate().equals(day.minusDays(20)));
         assertThat(input.trend().userChatTimes())
                 .anyMatch(t -> t.toLocalDate().equals(day.minusDays(20)));
+    }
+
+    private MentionEntity saveMention(UUID personId, LocalDateTime at, String contextLabel) {
+        MentionEntity m = mentionPopulator.createMention(owner, personId,
+                at.atZone(ZoneId.systemDefault()).toInstant(), null);
+        m.setContextLabel(contextLabel);
+        return mentionRepository.saveAndFlush(m);
+    }
+
+    /** An assistant row carrying one executed tool call, created_at backdated (the saveFocus idiom). */
+    private AiMessageEntity saveToolCallRow(AiConversationEntity conversation, LocalDateTime at, String toolName) {
+        AiMessageEntity m = aiMessagePopulator.message(conversation, "assistant", "…");
+        m.setToolCalls(new ToolCallsEnvelope(List.of(new ToolCallsEnvelope.ToolCall("tool", toolName, "days=7"))));
+        AiMessageEntity saved = aiMessageRepository.saveAndFlush(m);
+        jdbcTemplate.update("update ai_message set created_at = ? where id = ?",
+                Timestamp.from(at.atZone(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return saved;
+    }
+
+    @Test
+    void gather_readsMentionsWithContextLabel_boundedAboveByDay() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        UUID person = personPopulator.createPerson(owner, "Petra").getId();
+        saveMention(person, day.atTime(18, 0), "munka");
+        saveMention(person, day.minusDays(30).atTime(9, 0), null);
+        saveMention(person, day.plusDays(1).atTime(8, 0), "csalad");
+
+        List<DetectorInput.MentionPoint> mentions = signalReads.gather(owner, day).trend().mentions();
+
+        assertThat(mentions).extracting(DetectorInput.MentionPoint::date)
+                .containsExactly(day.minusDays(30), day);
+        assertThat(mentions).extracting(DetectorInput.MentionPoint::contextLabel).containsExactly(null, "munka");
+        assertThat(mentions).allSatisfy(m -> assertThat(m.personId()).isEqualTo(person));
+    }
+
+    @Test
+    void gather_readsAssistantToolCallsWithConversationTitle_boundedAboveByDay() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        AiConversationEntity conv = aiConversationPopulator.conversation(owner,
+                "Mennyit aludtam a héten, és mit mond a súlytrend?", day.atStartOfDay(ZoneId.systemDefault()).toInstant());
+        saveToolCallRow(conv, day.atTime(21, 0), "get_recovery");
+        saveToolCallRow(conv, day.plusDays(1).atTime(1, 0), "get_weight_trend");
+        saveUserMessage(day.atTime(20, 59)); // a user row: never a tool-call point
+
+        List<DetectorInput.ChatToolCallPoint> calls = signalReads.gather(owner, day).trend().chatToolCalls();
+
+        assertThat(calls).singleElement().satisfies(c -> {
+            assertThat(c.date()).isEqualTo(day);
+            assertThat(c.conversationId()).isEqualTo(conv.getId());
+            assertThat(c.toolName()).isEqualTo("get_recovery");
+            assertThat(c.titlePreview()).isEqualTo("Mennyit aludtam a héten, és mit mond a súlytrend?");
+        });
+    }
+
+    @Test
+    void gather_sleepPointCarriesParsedClocks_nullWhenAbsentOrMalformed() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        sleepLogPopulator.createSleepLog(owner, day, "23:30", "07:15", new BigDecimal("7.5"));
+        sleepLogPopulator.createSleepLog(owner, day.minusDays(1), new BigDecimal("7.0"), 7);
+        SleepLogEntity bad = sleepLogPopulator.createSleepLog(owner, day.minusDays(2), "late", "07:00", new BigDecimal("7.0"));
+
+        List<DetectorInput.SleepPoint> sleep = signalReads.gather(owner, day).trend().sleepEightWeeks();
+
+        DetectorInput.SleepPoint parsed = sleep.stream().filter(s -> s.date().equals(day)).findFirst().orElseThrow();
+        assertThat(parsed.bedtime()).isEqualTo(java.time.LocalTime.of(23, 30));
+        assertThat(parsed.wakeup()).isEqualTo(java.time.LocalTime.of(7, 15));
+        assertThat(sleep.stream().filter(s -> s.date().equals(day.minusDays(1))).findFirst().orElseThrow().bedtime()).isNull();
+        DetectorInput.SleepPoint malformed = sleep.stream().filter(s -> s.date().equals(bad.getDate())).findFirst().orElseThrow();
+        assertThat(malformed.bedtime()).isNull();
+        assertThat(malformed.wakeup()).isEqualTo(java.time.LocalTime.of(7, 0));
     }
 }

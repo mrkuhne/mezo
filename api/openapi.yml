@@ -115,9 +115,9 @@ tags:
   - name: Character
     description: >-
       Karakter dossier (mezo-1gim) — the synthesized user profile: 7 CORE
-      dimensions + AI-opened chapters, confidence-carrying claims, expert
-      observations, and persisted konzílium transcripts. Slice 1 ships reads
-      over an honestly empty dossier.
+      dimensions + 1 META (the companion's self-audit) + AI-opened chapters,
+      confidence-carrying claims, expert observations, and persisted konzílium
+      transcripts. Slice 1 ships reads over an honestly empty dossier.
   - name: Diagnosis
     description: >-
       On-demand diagnostic reports (mezo-hqfi) — a phenomenon question answered
@@ -18317,6 +18317,7 @@ components:
           enum:
             - CORE
             - CHAPTER
+            - META
         expertKey:
           type: string
           nullable: true
@@ -18365,7 +18366,9 @@ components:
         dimensionKey:
           type: string
           nullable: true
-          description: null for szkeptikus/mezo — they are not CORE dimension owners
+          description: >-
+            null for mezo; for szkeptikus the META dimension key (self-audit);
+            the owned CORE key for experts
         kind:
           type: string
           enum:
@@ -18415,6 +18418,7 @@ components:
           enum:
             - CORE
             - CHAPTER
+            - META
         expertKey:
           type: string
           nullable: true
