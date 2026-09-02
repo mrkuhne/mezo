@@ -41,6 +41,8 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -346,6 +348,9 @@ public class WorkoutService {
             .dayLabel(instance.getDayLabel())
             .durationEst(instance.getDurationEst())
             .note(instance.getClosingNote())
+            .startedAt(toOffsetDateTime(instance.getStartedAt()))
+            .finishedAt(toOffsetDateTime(instance.getFinishedAt()))
+            .activeSeconds(instance.getActiveSeconds())
             .exercises(exercises.stream().map(e -> {
                 List<ExerciseSetEntity> all = setsByExercise.getOrDefault(e.getId(), List.of());
                 return WorkoutDetailExercise.builder()
@@ -822,7 +827,15 @@ public class WorkoutService {
             .sets(exerciseSetRepository
                 .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId())
                 .stream().map(mapper::toSetResponse).toList())
+            .startedAt(toOffsetDateTime(instance.getStartedAt()))
+            .finishedAt(toOffsetDateTime(instance.getFinishedAt()))
+            .activeSeconds(instance.getActiveSeconds())
             .build();
+    }
+
+    /** {@code format: date-time} contract fields generate as {@link OffsetDateTime}; entities store {@link Instant}. */
+    private static OffsetDateTime toOffsetDateTime(Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */

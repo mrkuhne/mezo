@@ -10320,6 +10320,24 @@ components:
           items:
             $ref: '#/components/schemas/Medal'
           description: 'Medals earned across the session, including SESSION_VOLUME'
+        startedAt:
+          type: string
+          format: date-time
+          description: >-
+            Wall-clock start of the instance. Absent on rows created before
+            mezo-1jm8.
+        finishedAt:
+          type: string
+          format: date-time
+          description: >
+            Wall-clock finish. ABSENT on an auto-closed (abandoned) session even
+            though its status is 'completed' — that pair is exactly "the timing
+            here is not trustworthy".
+        activeSeconds:
+          type: integer
+          description: >
+            Derived work time: consecutive set-completion intervals, each
+            clipped at the gap cap. Absent when nothing was logged.
     WorkoutSummaryResponse:
       type: object
       required:
@@ -10401,6 +10419,24 @@ components:
           description: >
             The workout-level closing note, absent when none was written
             (mezo-d20.8.2.2).
+        startedAt:
+          type: string
+          format: date-time
+          description: >-
+            Wall-clock start of the instance. Absent on rows created before
+            mezo-1jm8.
+        finishedAt:
+          type: string
+          format: date-time
+          description: >
+            Wall-clock finish. ABSENT on an auto-closed (abandoned) session even
+            though its status is 'completed' — that pair is exactly "the timing
+            here is not trustworthy".
+        activeSeconds:
+          type: integer
+          description: >
+            Derived work time: consecutive set-completion intervals, each
+            clipped at the gap cap. Absent when nothing was logged.
         exercises:
           type: array
           items:
@@ -10598,6 +10634,12 @@ components:
           items:
             $ref: '#/components/schemas/Medal'
           description: Medals this set earned (empty when none)
+        doneAt:
+          type: string
+          format: date-time
+          description: >-
+            When the set was completed. Already persisted since mezo-n5q;
+            exposed by mezo-1jm8.
     WorkoutStartRequest:
       type: object
       required:

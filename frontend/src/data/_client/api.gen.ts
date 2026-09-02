@@ -4325,6 +4325,18 @@ export interface components {
             levelUp?: components["schemas"]["LevelUpResult"];
             /** @description Medals earned across the session, including SESSION_VOLUME */
             medals?: components["schemas"]["Medal"][];
+            /**
+             * Format: date-time
+             * @description Wall-clock start of the instance. Absent on rows created before mezo-1jm8.
+             */
+            startedAt?: string;
+            /**
+             * Format: date-time
+             * @description Wall-clock finish. ABSENT on an auto-closed (abandoned) session even though its status is 'completed' — that pair is exactly "the timing here is not trustworthy".
+             */
+            finishedAt?: string;
+            /** @description Derived work time: consecutive set-completion intervals, each clipped at the gap cap. Absent when nothing was logged. */
+            activeSeconds?: number;
         };
         WorkoutSummaryResponse: {
             /** Format: uuid */
@@ -4362,6 +4374,18 @@ export interface components {
             durationEst?: number;
             /** @description The workout-level closing note, absent when none was written (mezo-d20.8.2.2). */
             note?: string | null;
+            /**
+             * Format: date-time
+             * @description Wall-clock start of the instance. Absent on rows created before mezo-1jm8.
+             */
+            startedAt?: string;
+            /**
+             * Format: date-time
+             * @description Wall-clock finish. ABSENT on an auto-closed (abandoned) session even though its status is 'completed' — that pair is exactly "the timing here is not trustworthy".
+             */
+            finishedAt?: string;
+            /** @description Derived work time: consecutive set-completion intervals, each clipped at the gap cap. Absent when nothing was logged. */
+            activeSeconds?: number;
             exercises: components["schemas"]["WorkoutDetailExercise"][];
         };
         WorkoutDetailExercise: {
@@ -4440,6 +4464,11 @@ export interface components {
             kind?: "warmup" | "working";
             /** @description Medals this set earned (empty when none) */
             medals?: components["schemas"]["Medal"][];
+            /**
+             * Format: date-time
+             * @description When the set was completed. Already persisted since mezo-n5q; exposed by mezo-1jm8.
+             */
+            doneAt?: string;
         };
         WorkoutStartRequest: {
             /** Format: uuid */

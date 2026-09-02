@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutDetailResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
@@ -151,5 +152,45 @@ class WorkoutTimingIT extends AbstractIntegrationTest {
         WorkoutSessionEntity reloaded = workoutSessionRepository.findById(abandoned.getId()).orElseThrow();
         assertThat(reloaded.getStatus()).isIn("completed", "skipped");
         assertThat(reloaded.getFinishedAt()).isNull();
+    }
+
+    @Test
+    void testFinishWorkout_shouldReturnTimingInTheResponse_whenTheSessionIsClosed() {
+        UUID user = databasePopulator.populateUser("timing-response@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T3 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+        workoutService.logSet(user, started.getId(), setRequest(exercise, 0, "60.0", 8, 1));
+        workoutService.logSet(user, started.getId(), setRequest(exercise, 1, "60.0", 8, 1));
+
+        WorkoutInstanceResponse finished = workoutService.finishWorkout(user, started.getId(), null);
+
+        assertThat(finished.getStartedAt()).isNotNull();
+        assertThat(finished.getFinishedAt()).isNotNull();
+        assertThat(finished.getActiveSeconds()).isNotNull();
+        assertThat(finished.getActiveSeconds()).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    void testGetWorkoutDetail_shouldReturnDoneAtOnEverySet_whenSetsWereLogged() {
+        UUID user = databasePopulator.populateUser("timing-detail@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T3 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+        workoutService.logSet(user, started.getId(), setRequest(exercise, 0, "60.0", 8, 1));
+        workoutService.logSet(user, started.getId(), setRequest(exercise, 1, "60.0", 8, 1));
+        workoutService.finishWorkout(user, started.getId(), null);
+
+        WorkoutDetailResponse detail = workoutService.getWorkoutDetail(user, started.getId());
+
+        assertThat(detail.getStartedAt()).isNotNull();
+        assertThat(detail.getFinishedAt()).isNotNull();
+        assertThat(detail.getExercises()).isNotEmpty();
+        assertThat(detail.getExercises().get(0).getSets()).hasSize(2)
+            .allSatisfy(set -> assertThat(set.getDoneAt()).isNotNull());
     }
 }
