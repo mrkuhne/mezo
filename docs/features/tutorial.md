@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-09-02
+updated: 2026-09-03
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -11,7 +11,7 @@ key_files:
   - frontend/src/data/tutorial
   - backend/src/main/java/io/mrkuhne/mezo/feature/tutorial
   - api/feature/tutorial/tutorial-progress.yml
-related: [today, fuel, _platform-design-system, _platform-data-layer, _platform-auth-security]
+related: [today, train, insights, me, fuel, _platform-design-system, _platform-data-layer, _platform-auth-security]
 ---
 
 # Mezo-kalauz — In-App Page Guides
@@ -19,7 +19,9 @@ related: [today, fuel, _platform-design-system, _platform-data-layer, _platform-
 > One-line: per-route onboarding tutorials ("kalauz"), a five-card sheet auto-shown once per route
 > tier and reachable any time from the header "?" button. **Status: mixed — backend ✅ done
 > (`tutorial_progress` singleton, 3 endpoints), FE ✅ done for the motor (`TutorialProvider`,
-> `KalauzSheet`, registry, header "?"), content 🔶 one guide only (`fuel`).**
+> `KalauzSheet`, registry, header "?"), content 🔶 five T1 guides shipped (`nap`, `train`, `fuel`,
+> `mezo`, `me` — all five tab roots, all version 1) plus the shared `fogalmak.ts` glossary; the
+> `T0` first-launch welcome flow and any `T2`/`T3` guide are still unbuilt.**
 
 ## 1. Summary
 
@@ -31,12 +33,14 @@ a **seen-store**. The driving design is
 [`docs/superpowers/plans/2026-09-02-mezo-kalauz-s1-motor.md`](../superpowers/plans/2026-09-02-mezo-kalauz-s1-motor.md);
 the prototype is [`docs/design_2.0/prototypes/kalauz.html`](../design_2.0/prototypes/kalauz.html).
 
-**This slice (S1, `mezo-gb1s.1`) ships the motor, not the content library**: the seen-store
-(backend + FE), the `TutorialProvider` engine (auto-open, session-guard, local-first write,
-server-merge), the `KalauzSheet` UI (five card kinds, spotlight peek), the header "?" affordance,
-and exactly **one real guide** — `fuel` (T1, the Fuel hub). Everything is real end-to-end for that
-one guide: no mock-vs-real split inside the tutorial domain itself, `useTutorialProgress` runs the
-same dual-mode data-layer contract every other backed hook does.
+**S1 (`mezo-gb1s.1`) shipped the motor, not the content library**: the seen-store (backend + FE),
+the `TutorialProvider` engine (auto-open, session-guard, local-first write, server-merge), the
+`KalauzSheet` UI (five card kinds, spotlight peek), the header "?" affordance, and exactly **one
+real guide** — `fuel` (T1, the Fuel hub). **S2a (`mezo-gb1s.3`) then added the four remaining
+tab-root guides** — `nap`, `train`, `mezo`, `me` (all T1, version 1) — plus the shared
+`fogalmak.ts` concept glossary a `fogalom` card's `term`/`def` now spread from (§7). Every guide is
+real end-to-end: no mock-vs-real split inside the tutorial domain itself, `useTutorialProgress`
+runs the same dual-mode data-layer contract every other backed hook does.
 
 Guide **tiers** (`KalauzTier`): `T1`/`T2` auto-open once per route-visit-and-not-yet-seen (after
 the page's entrance choreography settles); `T3` never auto-opens — it is reachable only via the
@@ -131,9 +135,19 @@ Gated by the switch `mezo.feature.tutorial.enabled`
   state, and the `.nap-offnow` dot for unseen `T3` guides.
 - **`AppLayout`** (`frontend/src/app/AppLayout.tsx`) — mounts `TutorialProvider` once, around
   `MezoThreadProvider`, so every route inside the shell shares one guide-engine instance.
-- **Fuel** (`frontend/src/features/fuel/pages/FuelMaiPage.tsx`) — the only page seam so far: the
-  Logolás hero tile wrapper carries `data-kalauz-anchor="fuel-log"`, the DOM hook the `fuel`
-  registry entry's `hogyan` card spotlight peeks at.
+- **Five page seams**, one `data-kalauz-anchor` DOM hook per tab-root guide's `hogyan` card
+  spotlight:
+  - `fuel-log` — the Logolás hero tile wrapper, `frontend/src/features/fuel/pages/FuelMaiPage.tsx`
+    (one node).
+  - `nap-hero` — all four `.nap-hero` nodes (one per daypart face) in
+    `frontend/src/features/today/pages/NapHubPage.tsx`.
+  - `train-hero` — all six `.eh-hero` variants in
+    `frontend/src/features/train/pages/EdzesHubPage.tsx`.
+  - `mezo-chat` — the composer-shaped chat opener, one node, in
+    `frontend/src/features/insights/pages/MezoHubPage.tsx` (the `Mezo` tab's page module still
+    lives under `features/insights` — see [`insights.md`](insights.md) for the tab-rename
+    history).
+  - `me-idhero` — the identity hero, one node, in `frontend/src/features/me/pages/EnHubPage.tsx`.
 - **Auth** — `created_by` is stamped server-side from `CurrentUserId`, never client-supplied (same
   ownership seam as every other backed feature, [`_platform-auth-security.md`](_platform-auth-security.md)
   §4). The **`tutorialSeen.ts` localStorage key is `mezo.kalauz.v1`, with no user-id prefix** —
@@ -273,6 +287,12 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - `frontend/src/app/AppHeader.tsx` — the "?" button.
 - `frontend/src/app/AppLayout.tsx` — `TutorialProvider` mount point.
 - `frontend/src/features/fuel/pages/FuelMaiPage.tsx` — `data-kalauz-anchor="fuel-log"`.
+- `frontend/src/features/today/pages/NapHubPage.tsx` — `data-kalauz-anchor="nap-hero"` × 4
+  (one per daypart face).
+- `frontend/src/features/train/pages/EdzesHubPage.tsx` — `data-kalauz-anchor="train-hero"` × 6
+  (one per hero variant).
+- `frontend/src/features/insights/pages/MezoHubPage.tsx` — `data-kalauz-anchor="mezo-chat"`.
+- `frontend/src/features/me/pages/EnHubPage.tsx` — `data-kalauz-anchor="me-idhero"`.
 
 **Frontend — data layer**
 - `frontend/src/data/tutorial/tutorialProgressApi.ts`, `tutorialProgressHooks.ts` —
