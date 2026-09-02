@@ -26,6 +26,7 @@ const hoisted = vi.hoisted(() => ({
   quietPersonId: null as string | null,
   emptyMentions: false,
   noToneMentions: false,
+  noReasonFor: null as string | null,
   logMention: null as ((input: unknown) => void) | null,
 }))
 
@@ -39,6 +40,9 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       let mentions = real.mentions
       if (hoisted.quietPersonId) {
         people = people.map((p) => (p.id === hoisted.quietPersonId ? { ...p, mentionsThisWeek: 0 } : p))
+      }
+      if (hoisted.noReasonFor) {
+        people = people.map((p) => (p.id === hoisted.noReasonFor ? { ...p, directionReason: null } : p))
       }
       if (hoisted.emptyMentions) mentions = []
       if (hoisted.noToneMentions) mentions = mentions.map((m) => ({ ...m, tone: undefined }))
@@ -60,6 +64,7 @@ afterEach(() => {
   hoisted.quietPersonId = null
   hoisted.emptyMentions = false
   hoisted.noToneMentions = false
+  hoisted.noReasonFor = null
   hoisted.logMention = null
 })
 
@@ -139,11 +144,12 @@ test('no toned mentions this week renders the honest line instead of a bar', () 
 test('Irányok: only mentionsThisWeek > 0 people appear, sorted ↘ down, ↗ up, → flat', () => {
   renderAt('/me/people/heti')
   const cards = [...document.querySelectorAll('.ppl-dirt')]
-  // Réka (down, negative-trend), Petra (up, tie -> "változó hetek" not asserted here),
-  // Ádám (up), Bence (flat), Márk (flat) — hand-verified against each person's own
-  // affectTrend via directionFor's average-of-last-2-vs-earlier rule.
+  // Bence (down), Petra (up), Ádám (up), Réka (flat), Márk (flat) — the server's own
+  // `direction` field on each mock person (data/me/people.ts), consistent with their
+  // affectTrend arrays (all trimmed to the server's 8-reading cap; Bence is the seed's
+  // one honest down-trender).
   expect(cards.map((c) => c.querySelector('b')?.textContent)).toEqual([
-    reka.name, petra.name, adam.name, bence.name, mark.name,
+    bence.name, petra.name, adam.name, reka.name, mark.name,
   ])
   expect(cards.map((c) => c.querySelector('.ppl-arr2')?.textContent)).toEqual(['↘', '↗', '↗', '→', '→'])
 })
@@ -162,21 +168,21 @@ test('each direction card shows "N× E HÉTEN" off the person\'s own mentionsThi
   expect(screen.getByText(`${petra.mentionsThisWeek}× E HÉTEN`)).toBeInTheDocument()
 })
 
-test('why line: majority tone among the person\'s OWN week mentions — deterministic S3 stand-in', () => {
+test('CONTRACT: the "why" line under a down-trending card is the server\'s own directionReason, not FE-guessed prose', () => {
   renderAt('/me/people/heti')
-  // Bence's only week mention (mn3) is positive -> majority positive.
   const benceCard = [...document.querySelectorAll('.ppl-dirt')].find((c) => c.querySelector('b')?.textContent === bence.name)!
-  expect(benceCard.querySelector('.ppl-why2')?.textContent).toBe('sok jó pillanat')
-  // Ádám's two week mentions (mn6, mn7) are both positive -> majority positive.
-  const adamCard = [...document.querySelectorAll('.ppl-dirt')].find((c) => c.querySelector('b')?.textContent === adam.name)!
-  expect(adamCard.querySelector('.ppl-why2')?.textContent).toBe('sok jó pillanat')
-  // Réka's two week mentions (mn2, mn8) are both mixed -> no positive/negative majority.
+  expect(bence.direction).toBe('down')
+  expect(benceCard.querySelector('.ppl-why2')?.textContent).toBe(bence.directionReason)
   const rekaCard = [...document.querySelectorAll('.ppl-dirt')].find((c) => c.querySelector('b')?.textContent === reka.name)!
-  expect(rekaCard.querySelector('.ppl-why2')?.textContent).toBe('változó hetek')
-  // Márk has NO week mention in the mock feed (mn10 falls outside the 7d window) even
-  // though his own mentionsThisWeek field is 1 -> no toned week mentions -> "változó hetek".
-  const markCard = [...document.querySelectorAll('.ppl-dirt')].find((c) => c.querySelector('b')?.textContent === mark.name)!
-  expect(markCard.querySelector('.ppl-why2')?.textContent).toBe('változó hetek')
+  expect(reka.direction).toBe('flat')
+  expect(rekaCard.querySelector('.ppl-why2')?.textContent).toBe(reka.directionReason)
+})
+
+test('a null directionReason omits the .ppl-why2 line entirely — never an empty row', () => {
+  hoisted.noReasonFor = reka.id
+  renderAt('/me/people/heti')
+  const rekaCard = [...document.querySelectorAll('.ppl-dirt')].find((c) => c.querySelector('b')?.textContent === reka.name)!
+  expect(rekaCard.querySelector('.ppl-why2')).toBeNull()
 })
 
 test('clicking a direction card navigates to /me/people/:id (real router)', () => {

@@ -923,3 +923,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609011200_mezo-d20.8.2.2_workout_session_closing_note.sql
+  - changeSet:
+      id: "1.0.0:202609021000_mezo-06o0.8_companion_message_people_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021000_mezo-06o0.8_companion_message_people_kind.sql

@@ -34,7 +34,9 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       let people = real.people
       let mentions = real.mentions
       if (hoisted.emptyTrendFor) {
-        people = people.map((p) => (p.id === hoisted.emptyTrendFor ? { ...p, affectTrend: [] } : p))
+        people = people.map((p) => (p.id === hoisted.emptyTrendFor
+          ? { ...p, affectTrend: [], affectTrendStart: null, direction: 'flat' as const, directionReason: null }
+          : p))
       }
       if (hoisted.affectOverrideFor) {
         people = people.map((p) => (p.id === hoisted.affectOverrideFor ? { ...p, affect_baseline: undefined as never } : p))
@@ -157,8 +159,8 @@ test('an empty affectTrend renders an honest "—" empty state instead of bars',
   expect(card.textContent).toContain('—')
 })
 
-test('CONTRACT: the mood-arc axis row renders trendAxisLabels(affectTrend, now), not the prototype\'s hardcoded JÚL/AUG', () => {
-  const expected = trendAxisLabels(petra.affectTrend, new Date())!
+test('CONTRACT: the mood-arc axis row renders trendAxisLabels(affectTrendStart, now), not the prototype\'s hardcoded JÚL/AUG', () => {
+  const expected = trendAxisLabels(petra.affectTrendStart, new Date())!
   renderAt(`/me/people/${petra.id}`)
   const axis = document.querySelector('.ppl-affax')!
   expect(axis).not.toBeNull()

@@ -168,4 +168,70 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
         assertThat(res.getItems().getFirst().getConfidence()).isEqualByComparingTo("0.6");
         assertThat(res.getItems().getFirst().getNeedsReview()).isTrue(); // <= threshold, boundary-INCLUSIVE
     }
+
+    @Test
+    void testDraft_shouldMatchPantryByName_whenLlmLeftTheIdNull() {
+        UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
+        PantryItemEntity pantry = pantryItemPopulator.createFood(owner, "Zabpehely", LocalDate.now().plusDays(30));
+
+        // The LLM recognized the food but did NOT link it — the deterministic index must.
+        String json = """
+            {"slot":"breakfast","title":"Reggeli","note":null,"items":[
+              {"pantryItemId":null,"recipeId":null,"name":"zabpehely","amount":60,"unit":"g",
+               "kcal":220,"proteinG":8,"carbsG":38,"fatG":4}
+            ]}""";
+
+        MealAiDraftResponse res = service.draft(owner, LocalDate.now(),
+                "[fake-meal:" + json + "]", null);
+
+        MealAiDraftItem line = res.getItems().getFirst();
+        assertThat(line.getSource()).isEqualTo("pantry");
+        assertThat(line.getPantryItemId()).isEqualTo(pantry.getId());
+        assertThat(line.getName()).isEqualTo(pantry.getName());          // DB name, not the LLM's casing
+        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getKcal()); // DB macros, not the LLM's 220
+        assertThat(line.getAmount()).isEqualByComparingTo("60");           // the draft's own portion
+        assertThat(line.getBasisUnit()).isEqualTo("g");
+        assertThat(line.getNeedsReview()).isTrue();                        // identity is the uncertain part
+    }
+
+    @Test
+    void testDraft_shouldStayEstimate_whenNameMatchesButUnitDisagrees() {
+        UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
+        pantryItemPopulator.createFood(owner, "Zabpehely", LocalDate.now().plusDays(30)); // serving: g
+
+        String json = """
+            {"slot":"breakfast","title":null,"note":null,"items":[
+              {"pantryItemId":null,"recipeId":null,"name":"Zabpehely","amount":1,"unit":"db",
+               "kcal":220,"proteinG":8,"carbsG":38,"fatG":4}
+            ]}""";
+
+        MealAiDraftResponse res = service.draft(owner, LocalDate.now(),
+                "[fake-meal:" + json + "]", null);
+
+        MealAiDraftItem line = res.getItems().getFirst();
+        assertThat(line.getSource()).isEqualTo("estimate");
+        assertThat(line.getPantryItemId()).isNull();
+        assertThat(line.getKcal()).isEqualByComparingTo("220"); // the LLM's own numbers
+    }
+
+    @Test
+    void testDraft_shouldMatchByName_whenTheLlmIdWasHallucinated() {
+        UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
+        PantryItemEntity pantry = pantryItemPopulator.createFood(owner, "Zabpehely", LocalDate.now().plusDays(30));
+
+        String json = """
+            {"slot":"breakfast","title":null,"note":null,"items":[
+              {"pantryItemId":"%s","recipeId":null,"name":"Zabpehely","amount":60,"unit":"g",
+               "kcal":220,"proteinG":8,"carbsG":38,"fatG":4}
+            ]}""".formatted(UUID.randomUUID());
+
+        MealAiDraftResponse res = service.draft(owner, LocalDate.now(),
+                "[fake-meal:" + json + "]", null);
+
+        MealAiDraftItem line = res.getItems().getFirst();
+        assertThat(line.getSource()).isEqualTo("pantry"); // demoted, then rescued by the name index
+        assertThat(line.getPantryItemId()).isEqualTo(pantry.getId());
+        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getKcal());
+        assertThat(line.getNeedsReview()).isTrue();
+    }
 }
