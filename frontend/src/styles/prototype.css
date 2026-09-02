@@ -379,6 +379,18 @@
   --ppl-ctx-kozos-program: #C46FA0;
   --ppl-ctx-segitseg:      #6C5FA3;
   --ppl-ctx-egyeb:         #8A7A6A;
+  /* Életcél-rendszer (mezo-iizd) — PERMAH dimension surface hexes. Tokenized here (rather
+     than inlined on the .lg-d-* rules below in the Mozaik section) so the Mozaik section
+     stays hex-free outside :root (mozaikCssTokens.test.ts's "no hardcoded light-surface
+     hexes outside :root token definitions" guard, mezo-d20.1.5). */
+  --lg-p-dc: #A8801F; --lg-p-dw: #FDF0DA; --lg-p-dw2: #FFFCF5;
+  --lg-e-dc: #5D4FA0; --lg-e-dw: #EBE6F8; --lg-e-dw2: #F9F6FE;
+  --lg-r-dc: #8E3F6F; --lg-r-dw: #FAE3ED; --lg-r-dw2: #FEF8FB;
+  --lg-m-dc: #A84A26; --lg-m-dw: #FFE7DC; --lg-m-dw2: #FFF7F2;
+  --lg-a-dc: #3E7396; --lg-a-dw: #DFEDF5; --lg-a-dw2: #F5FAFD;
+  --lg-h-dc: #4E6B42; --lg-h-dw: #E9F1E2; --lg-h-dw2: #F7FBF3;
+  --lg-white: #FFFFFF;
+  --lg-wk7-p2: #E5C46B;
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -7700,6 +7712,60 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .mzj-decprose { margin-left: auto; flex: none; min-height: 44px; border: 1px solid rgba(43, 33, 24, 0.14);
   background: var(--mz-stripbg); border-radius: 999px; padding: 5px 13px; font-size: 11px; font-weight: 700;
   color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+
+
+/* ===== Életcél-rendszer (mezo-iizd) — PERMAH tokens + hub/goal-page family =====
+   The surface hexes themselves live as --lg-*-dc/dw/dw2 tokens in :root (mezo-d20.1.5's
+   "Mozaik section stays hex-free outside :root" guard) — these rules just alias them into
+   the local --dc/--dw/--dw2/--ds names the .lg-* component rules below read. */
+.lg-d-p { --dc: var(--lg-p-dc); --dw: var(--lg-p-dw); --dw2: var(--lg-p-dw2); --ds: rgba(201,150,46,0.45); }
+.lg-d-e { --dc: var(--lg-e-dc); --dw: var(--lg-e-dw); --dw2: var(--lg-e-dw2); --ds: rgba(93,79,160,0.4); }
+.lg-d-r { --dc: var(--lg-r-dc); --dw: var(--lg-r-dw); --dw2: var(--lg-r-dw2); --ds: rgba(142,63,111,0.35); }
+.lg-d-m { --dc: var(--lg-m-dc); --dw: var(--lg-m-dw); --dw2: var(--lg-m-dw2); --ds: rgba(216,72,31,0.35); }
+.lg-d-a { --dc: var(--lg-a-dc); --dw: var(--lg-a-dw); --dw2: var(--lg-a-dw2); --ds: rgba(78,143,184,0.4); }
+.lg-d-h { --dc: var(--lg-h-dc); --dw: var(--lg-h-dw); --dw2: var(--lg-h-dw2); --ds: rgba(110,139,94,0.45); }
+.lg-hero { display: flex; gap: 14px; align-items: center; padding: 13px 15px; border-radius: 21px;
+  background: linear-gradient(140deg, #F2F7EC, var(--lg-white) 72%); border: 0.5px solid rgba(43,33,24,0.06);
+  box-shadow: 0 18px 32px -16px rgba(43,33,24,0.32), inset 0 1px 0 rgba(255,255,255,0.85); }
+.lg-ring { width: 94px; height: 94px; position: relative; flex: none; display: grid; place-items: center; }
+.lg-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.lg-ring .arc { fill: none; stroke: var(--dc); stroke-width: 5.5; stroke-dasharray: 0 188.5; opacity: 0.2; }
+.lg-ring .arc.live { opacity: 1; stroke-width: 8; }
+.play .lg-ring .arc { animation: lg-arcin 0.6s cubic-bezier(0.25,0.8,0.35,1) forwards; animation-delay: calc(260ms + var(--i) * 70ms); }
+@keyframes lg-arcin { to { stroke-dasharray: 27.4 161.1; } }
+.lg-ring .c { text-align: center; line-height: 1; }
+.lg-ring .c b { font-size: 32px; font-weight: 200; display: block; letter-spacing: -0.02em; }
+.lg-ring .c small { font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted, #A2958A); }
+.lg-dimband { display: flex; gap: 5px; flex-wrap: wrap; }
+.lg-dimchip { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 10px 4px 7px;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: var(--dw); color: var(--dc); border: none; font-family: inherit; }
+.lg-dimchip i { width: 8px; height: 8px; border-radius: 50%; background: var(--dc); flex: none; }
+.lg-dimchip.empty { background: rgba(43,33,24,0.05); color: #A2958A; }
+.lg-dimchip.empty i { background: rgba(43,33,24,0.18); }
+.lg-tile { background: linear-gradient(150deg, var(--dw), var(--dw2)) !important; box-shadow: 0 14px 26px -14px var(--ds), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7) !important; }
+.lg-tile .mz-eyebrow { color: var(--dc); }
+.lg-tile .nm { font-size: 13px; font-weight: 700; text-align: left; }
+.lg-arrow { display: inline-flex; align-items: baseline; gap: 4px; line-height: 1; font-variant-numeric: tabular-nums; }
+.lg-arrow .g { font-size: 26px; font-weight: 300; }
+.lg-arrow .v { font-size: 14px; font-weight: 600; }
+.lg-arrow.up { color: #4E6B42; } .lg-arrow.flat { color: #6E6257; } .lg-arrow.down { color: #A8801F; } .lg-arrow.none { color: #A2958A; }
+.lg-wk7 { display: flex; gap: 5px; align-items: center; }
+.lg-wk7 i { width: 11px; height: 11px; border-radius: 50%; flex: none; background: rgba(43,33,24,0.12); transform: scale(0); }
+.lg-wk7 i.h { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+.lg-wk7 i.p { background: linear-gradient(135deg, var(--lg-wk7-p2), #C9962E); }
+.lg-wk7 i.n { background: transparent; border: 1px dashed rgba(43,33,24,0.28); }
+.play .lg-wk7 i { animation: lg-dotpop 0.35s cubic-bezier(0.3,1.4,0.5,1) forwards; animation-delay: calc(var(--d, 0ms) + 280ms + var(--i) * 45ms); }
+@keyframes lg-dotpop { to { transform: scale(1); } }
+.lg-wk7 .lbl { font-size: 8.5px; font-weight: 700; color: #A2958A; margin-left: auto; }
+.lg-parkrow { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border-radius: 17px; width: 100%; text-align: left;
+  background: rgba(255,255,255,0.55); border: 0.5px dashed rgba(43,33,24,0.18); font-family: inherit; cursor: pointer; }
+.lg-parkrow .nm { font-size: 12px; font-weight: 600; color: #6E6257; }
+.lg-parkrow .sb { font-size: 9.5px; color: #A2958A; }
+.lg-parkrow .act { margin-left: auto; font-size: 10px; font-weight: 700; color: #A84A26; border: 1px solid rgba(43,33,24,0.14); background: #fff; border-radius: 999px; padding: 4px 11px; flex: none; }
+@media (prefers-reduced-motion: reduce) {
+  .lg-ring .arc, .play .lg-ring .arc { stroke-dasharray: 27.4 161.1; animation: none; }
+  .lg-wk7 i, .play .lg-wk7 i { transform: scale(1); animation: none; }
+}
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)

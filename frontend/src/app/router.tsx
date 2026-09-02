@@ -66,6 +66,7 @@ import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
 import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
 import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
+import { CelokPage } from '@/features/me/pages/CelokPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
@@ -279,9 +280,9 @@ export const routes: RouteObject[] = [
       { path: 'me/week/napok/:date', element: <WeekDayPage /> },
       { path: 'me/week/tanulsagok', element: <WeekLessonsPage /> },
       { path: 'me/week/felfedezesek', element: <WeekDiscoveriesPage /> },
-      { path: 'me/goals', element: <GoalsPage /> },
-      // Weight goal moves under /me/goals/weight (mezo-iizd.1, Task 8) — /me/goals itself
-      // becomes the Célok (life-goals) hub in Task 9, and Task 10 adds `me/goals/:id`; these
+      { path: 'me/goals', element: <CelokPage /> },
+      // Weight goal moved under /me/goals/weight (mezo-iizd.1, Task 8) — /me/goals itself is
+      // now the Célok (life-goals) hub (Task 9), and Task 10 adds `me/goals/:id`; these
       // static children stay registered ahead of that future dynamic sibling per the
       // `me/people/*` precedent above (React Router ranks static over dynamic regardless of
       // source order, but the ordering stays explicit here too).
