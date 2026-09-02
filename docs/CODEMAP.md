@@ -634,8 +634,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GoalsPage.tsx, GoalsSkeleton.tsx, GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx,
     GrowthSkillsPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx,
     PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx,
-    PersonDetailPage.tsx, RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx,
-    WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
+    PersonDetailPage.tsx, RoutineWizardPage.tsx, RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx,
+    WeekDayPage.tsx, WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
     DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx,
     PersonLogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, WeightLogSheet.tsx

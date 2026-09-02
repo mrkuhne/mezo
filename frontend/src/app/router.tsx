@@ -58,6 +58,7 @@ import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthHubPage } from '@/features/me/pages/GrowthHubPage'
 import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
+import { RoutineWizardPage } from '@/features/me/pages/RoutineWizardPage'
 import { RutinHubPage } from '@/features/me/pages/RutinHubPage'
 import { GrowthNaploPage } from '@/features/me/pages/GrowthNaploPage'
 import { GrowthAwardsPage } from '@/features/me/pages/GrowthAwardsPage'
@@ -276,6 +277,9 @@ export const routes: RouteObject[] = [
       // hub's full-width Rutin tile. It absorbed /me/growth/rutin (mezo-rmi0.1) and the
       // /me/routines/edit editor — build and edit here, tick on /nap/rutin.
       { path: 'me/rutin', element: <RutinHubPage /> },
+      // The 4-step recipe wizard (mezo-3zue.4). Registered BEFORE any `:param` sibling so
+      // "uj" can never be swallowed as a habit key.
+      { path: 'me/rutin/uj', element: <RoutineWizardPage /> },
       // Both former homes keep working as redirects.
       { path: 'me/growth/rutin', element: <Navigate to="/me/rutin" replace /> },
       { path: 'me/routines/edit', element: <Navigate to="/me/rutin" replace /> },
