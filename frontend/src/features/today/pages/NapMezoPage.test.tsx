@@ -95,8 +95,11 @@ test('the back chip navigates back to the hub', async () => {
 test('feed messages render as thread cards: time · eyebrow head, body, refs, daypart spot', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
   renderPage()
+  // sleep (07:12) is the thread's last voice → full card by default; morning (07:05) is
+  // collapsed (mezo-ho9k) — tap its row open before asserting the full-card contents.
+  expect(await screen.findByText('07:12 · Alvás-reakció')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /07:05.*Reggeli briefing/ }))
   expect(await screen.findByText('07:05 · Reggeli briefing')).toBeInTheDocument()
-  expect(screen.getByText('07:12 · Alvás-reakció')).toBeInTheDocument()
   expect(screen.getByText(/W3-csúcs/)).toBeInTheDocument()
   expect(screen.getByText(/Pull A$/)).toBeInTheDocument() // the ref tag
   // kind → spot mapping: morning → s-reggel, sleep → s-este
@@ -107,10 +110,42 @@ test('feed messages render as thread cards: time · eyebrow head, body, refs, da
 test('no morning message in the feed → the labelled demo briefing leads the thread', async () => {
   feedMock.useCompanionFeed.mockReturnValue([sleepMsg])
   renderPage()
+  // sleep is the thread's last voice → full card by default; the demo briefing (leading
+  // the thread) is collapsed (mezo-ho9k) — tap its row open to reach "Demo tartalom".
+  expect(await screen.findByText('07:12 · Alvás-reakció')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Reggeli briefing/ }))
   expect(await screen.findByText('Demo tartalom')).toBeInTheDocument()
   const cards = document.querySelectorAll('.nap-mzmsg')
   expect(cards).toHaveLength(2)
   expect(within(cards[0] as HTMLElement).getByText('Demo tartalom')).toBeInTheDocument()
+})
+
+// ── Összecsukott régebbiek (mezo-ho9k): a legújabb teljes, a többi egysoros.
+test('a legújabb üzenet teljes kártya, a régebbi összecsukott sor — koppintva kinyílik chipekkel', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
+  renderPage()
+  // a szál vége (sleep, 07:12) a legfrissebb → az teljes kártya
+  expect(await screen.findByText('07:12 · Alvás-reakció')).toBeInTheDocument()
+  expect(screen.getByText(/zsinórban a harmadik/)).toBeInTheDocument()
+  // a morning (07:05) összecsukott: a fejsora látszik, a törzse (teljes kártya body) nem —
+  // a `.pv` egysoros előnézet a saját szövegét (ellipszissel vágva CSS-ben) megjelenítheti,
+  // csak a teljes kártya `.txt` bekezdése nem létezhet még.
+  expect(screen.queryByText(/W3-csúcs/, { selector: '.txt' })).toBeNull()
+  const row = screen.getByRole('button', { name: /07:05.*Reggeli briefing/ })
+  expect(row).toHaveAttribute('aria-expanded', 'false')
+  await userEvent.click(row)
+  expect(await screen.findByText(/W3-csúcs/)).toBeInTheDocument()
+  // kibontva a chipjei is élnek (mezo-kr9v: artifactos sor)
+  const msg = screen.getByText('07:05 · Reggeli briefing').closest('.nap-mzmsg') as HTMLElement
+  await userEvent.click(within(msg).getByRole('button', { name: /Segített/ }))
+  expect(voteMock.vote).toHaveBeenCalledWith('fm-1', 'up', undefined)
+})
+
+test('egyetlen üzenet nem kap összecsukott sort', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  renderPage()
+  expect(await screen.findByText(/W3-csúcs/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /07:05.*Reggeli briefing/ })).toBeNull()
 })
 
 test('a persisted feed message carries the feedback chips and votes with its artifactId', async () => {

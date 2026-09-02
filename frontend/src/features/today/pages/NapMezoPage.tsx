@@ -10,7 +10,7 @@
 // olvasottság-vízjel a shell `MezoThreadProvider`-ébe költözött (mezo-atry) — ez az
 // oldal és a fejléc badge-e ugyanazt az EGY szálat olvassa, így nem tudnak szétcsúszni.
 // ============================================================
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ClaySpot, type ClaySpotName } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
@@ -123,6 +123,13 @@ export function NapMezoPage() {
     if (scrollTargetId) linkedCardRef.current?.scrollIntoView({ block: 'center' })
   }, [scrollTargetId])
 
+  // Régebbi üzenetek összecsukva (mezo-ho9k): csak a szál legfrissebb hangja (a lista
+  // vége) nyílik teljes kártyaként alapból — a korábbiak egysoros gombok, kinyitásuk
+  // nem csukható vissza (YAGNI — a prototípus sem csukja).
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const isExpanded = (id: string) => expandedIds.has(id)
+  const expand = (id: string) => setExpandedIds((s) => new Set(s).add(id))
+
   // Egyetlen kártya-JSX mindkét pane-nek (mezo-ho9k): a chips-ág magától sem fut az
   // Életjelek nudge-okon, mert azoknak nincs `artifactId`-jük (mezo-kr9v szerződés).
   const renderCard = (m: MezoMessageItem, i: number) => (
@@ -187,7 +194,19 @@ export function NapMezoPage() {
         </div>
         {tab === 'uzenetek' && (
           <EntranceGroup>
-            {displayUzenetek.map((m, i) => renderCard(m, i))}
+            {displayUzenetek.map((m, i) =>
+              i === displayUzenetek.length - 1 || isExpanded(m.id) || m.id === scrollTargetId ? (
+                renderCard(m, i)
+              ) : (
+                <button type="button" key={m.id} className="nap-mzrow rise"
+                  style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}
+                  aria-expanded="false" onClick={() => expand(m.id)}>
+                  <span className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</span>
+                  <span className="pv">{m.paragraphs[0]}</span>
+                  <span className="chev" aria-hidden="true">▾</span>
+                </button>
+              ),
+            )}
             <button type="button" className="nap-mz-cta rise" style={{ '--d': `${40 + displayUzenetek.length * 60}ms` } as React.CSSProperties}
               onClick={() => navigate('/mezo/chat')}>
               Beszélgess Mezóval ›
