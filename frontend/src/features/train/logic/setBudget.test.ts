@@ -25,7 +25,7 @@ describe('setStyle', () => {
 
 // budgetOf/setStyle/FAILURE_WEEKLY_CAP/VOLUME_WEEKLY_CAP/GROUP_MEV are the ORIGINAL fatigue-cap
 // model — muscleBudgets below no longer uses it (reframed against tier targets, mezo-3m5m), but
-// programFit.ts and weekZone.ts still call these directly, so they stay and stay tested here.
+// weekZone.ts still calls these directly, so they stay and stay tested here.
 describe('budgetOf', () => {
   it('caps: 12 failure sets or 20 volume sets exactly fill the fatigue budget', () => {
     expect(budgetOf(12, 0)).toBeCloseTo(1)

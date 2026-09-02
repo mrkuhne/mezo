@@ -4,7 +4,7 @@ import type { ExerciseLibraryItem } from '@/data/types'
 import type { GymExerciseInput, MesoDayInput, MesoPlanGenerateRequest, MesoPlanGenerateResponse } from '@/data/train/trainApi'
 import { GROUP_LANDMARKS, budgetGroup } from '@/features/train/logic/setBudget'
 import { SPLIT_LABELS, dayFrames } from '@/features/train/logic/mesoPlan'
-import { getSeason } from '@/features/train/logic/planner'
+import { getSeason } from '@/features/train/logic/mesoDates'
 
 const phaseCurve = (weeks: number): MesoPlanGenerateResponse['template']['phaseCurve'] => {
   const ramp = Math.max(1, weeks - 1)

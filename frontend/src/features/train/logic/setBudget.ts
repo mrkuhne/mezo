@@ -6,7 +6,7 @@
 //    VOLUME_WEEKLY_CAP/GROUP_MEV) — source: Built With Science video (yt
 //    ehQ_5TThkRI, Zourdos/Remmert): failure style (RIR≤1) is productive up
 //    to ~12 sets/muscle/week, volume style (RIR≥2) up to ~20. Still used
-//    directly by programFit.ts and weekZone.ts — kept verbatim here.
+//    directly by weekZone.ts — kept verbatim here.
 //  - The per-tier LANDMARK model (GROUP_LANDMARKS + muscleBudgets below):
 //    each muscle group's weekly budget is now measured against its OWN
 //    tier target (Maintain→MEV, Grow→MAV, Emphasize→MRV — see

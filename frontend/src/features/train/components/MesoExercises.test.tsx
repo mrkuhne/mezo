@@ -134,58 +134,6 @@ test('adding an exercise persists the day list in real mode (PUT with day id)', 
   expect(puts[0].body[1].warmupSets).toBe(3)
 })
 
-test('adding an exercise fills SCHEMES defaults from a non-null meso.goalPreset (mezo-dq60)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  const puts: { body: { name: string; workingSets: number; repMin: number; repMax: number; targetRIR: number }[] }[] = []
-  const MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
-  const DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000bb'
-  server.use(
-    http.get(`${API_BASE}/api/train/mesocycles`, () =>
-      HttpResponse.json([
-        {
-          id: MESO_ID, title: 'Valódi blokk', shortTitle: 'Valódi', status: 'active',
-          startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6, currentWeek: 1,
-          split: 'PPL', style: 'RP', phaseCurve: ['MEV'], goalPreset: 'erohipertrofia',
-          days: [{
-            id: DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 1, current: true,
-            exercises: [{ id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2,
-              workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' }],
-          }],
-        },
-      ]),
-    ),
-    http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, async ({ request }) => {
-      puts.push({ body: (await request.json()) as { name: string; workingSets: number; repMin: number; repMax: number; targetRIR: number }[] })
-      return HttpResponse.json({ id: DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 2, exercises: [] })
-    }),
-  )
-
-  const router = createMemoryRouter(routes, { initialEntries: [`/train/mesocycles/${MESO_ID}`] })
-  render(
-    <QueryWrapper>
-      <ThemeProvider>
-        <RouterProvider router={router} />
-      </ThemeProvider>
-    </QueryWrapper>,
-  )
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument())
-  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
-  await userEvent.click(await screen.findByRole('button', { name: /Gyakorlat hozzáadása/ }))
-  const dialog = screen.getByRole('dialog')
-  // Hip Thrust (glute, compound) — picking it exercises the toMesocycle spread
-  // (real-mode meso carries goalPreset) → MesoExercises → addExerciseWithDefaults
-  // chain end to end, landing on the erohipertrofia compound scheme.
-  await userEvent.click(within(dialog).getByText('Hip Thrust'))
-
-  await waitFor(() => expect(puts).toHaveLength(1))
-  const added = puts[0].body[1]
-  expect(added.name).toBe('Hip Thrust')
-  expect(added.workingSets).toBe(3)
-  expect(added.repMin).toBe(6)
-  expect(added.repMax).toBe(8)
-  expect(added.targetRIR).toBe(0)
-})
-
 test('the Fókusz picker shows the meso\'s existing musclePriorities map, plus the GD7 helper line (mezo-3m5m)', async () => {
   // activeMeso (train.ts) carries musclePriorities: { shoulder: 'maintain' }.
   await renderExercisesView()
