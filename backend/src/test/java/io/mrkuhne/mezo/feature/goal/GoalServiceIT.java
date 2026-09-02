@@ -144,7 +144,7 @@ class GoalServiceIT extends AbstractIntegrationTest {
             "formula",
             // dailyEnergyBalanceKcal = intake − tdee = 2300 − 2821 = −521 (a cut).
             List.of(new GoalPrescriptionJson.Segment(
-                1, 4, "Indító deficit", 2300, 168, new BigDecimal("7.5"),
+                1, 4, "Indító deficit", 2300, 168, null, null, new BigDecimal("7.5"),
                 List.of(3, 6), new BigDecimal("-0.55"), -521, "Mérsékelt deficit, erő megtartva.")),
             new GoalPrescriptionJson.GuardStatus(
                 new GoalPrescriptionJson.GuardStatus.Strength(

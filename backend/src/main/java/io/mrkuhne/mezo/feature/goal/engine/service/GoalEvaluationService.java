@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.Feasibility;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.GuardStatus;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.Segment;
+import io.mrkuhne.mezo.feature.nutrition.service.DietPreferences;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -79,6 +80,7 @@ public class GoalEvaluationService {
      * @param bodyFatPct   body-fat % when known (enables the LBM protein path), else {@code null}
      * @param segments     the projection segments (Task 6) — the per-segment kcal/rate spine
      * @param guards       the soft-guard status (Task 7)
+     * @param prefs        the resolved diet preferences (Task 4) — split preset + protein tier
      * @return the assembled {@link GoalPrescriptionJson}; {@code basis="formula"}, {@code generatedAt=now}
      */
     public GoalPrescriptionJson assemble(
@@ -86,19 +88,25 @@ public class GoalEvaluationService {
         BigDecimal weightKg,
         BigDecimal bodyFatPct,
         List<ProjectionSegment> segments,
-        GuardStatus guards) {
+        GuardStatus guards,
+        DietPreferences prefs) {
 
         Feasibility feasibility = grade(goal, segments, guards);
-        int proteinG = proteinTargetGrams(weightKg, bodyFatPct);
+        int proteinG = proteinTargetGrams(weightKg, bodyFatPct, prefs.proteinTier());
 
         List<Segment> rxSegments = new ArrayList<>(segments.size());
         for (ProjectionSegment seg : segments) {
+            int kcal = seg.targetKcal().setScale(0, RoundingMode.HALF_UP).intValueExact();
+            int fatG = fatTargetGrams(kcal, weightKg, prefs);
+            int carbsG = carbsTargetGrams(kcal, proteinG, fatG);
             rxSegments.add(new Segment(
                 seg.fromWeek(),
                 seg.toWeek(),
                 seg.label(),
-                seg.targetKcal().setScale(0, RoundingMode.HALF_UP).intValueExact(),
+                kcal,
                 proteinG,
+                carbsG,
+                fatG,
                 DEFAULT_SLEEP_TARGET_H,
                 List.of(), // rest-day placement is a future Train bridge (no deload weeks derivable here).
                 seg.projectedRateKgPerWk(),
@@ -108,6 +116,23 @@ public class GoalEvaluationService {
 
         return new GoalPrescriptionJson(
             OffsetDateTime.now(), BASIS_FORMULA, rxSegments, guards, feasibility);
+    }
+
+    /**
+     * Prescribed fat (g): the split's fat energy-share of the segment kcal, floored at the ISSN
+     * fat minimum (fat-floor g/kg × body weight). A custom split's fat% obeys the same floor.
+     */
+    int fatTargetGrams(int segmentKcal, BigDecimal weightKg, DietPreferences prefs) {
+        double share = props.diet().fatShareFor(prefs.splitPreset(), prefs.fatPctX10());
+        double shareGrams = segmentKcal * share / 9.0;
+        double floorGrams = props.diet().fatFloorGPerKg() * weightKg.doubleValue();
+        return (int) Math.round(Math.max(shareGrams, floorGrams));
+    }
+
+    /** Prescribed carbs (g): the energy remainder after protein + fat — never negative. The custom
+     *  split's protein/carb %s are advisory: the g/kg protein target wins, carbs absorb the delta. */
+    int carbsTargetGrams(int segmentKcal, int proteinG, int fatG) {
+        return Math.max(0, Math.round((segmentKcal - 4f * proteinG - 9f * fatG) / 4f));
     }
 
     /**
@@ -237,12 +262,15 @@ public class GoalEvaluationService {
     // ── protein target ──────────────────────────────────────────────────────────────────────────
 
     /**
-     * Protein target (g/day). The BW path is {@code gPerKgBwDefault} (2.0) × weight; when bf% is known
-     * the LBM path {@code gPerKgLbmHigh} (3.1) × LBM is also considered, the higher of the two is
-     * taken, and the result is capped at {@code gPerKgBwCap} (2.6) × weight. Rounded to whole grams.
+     * Protein target (g/day). The BW path is {@code gPerKgBwDefault} (2.0) × weight — or, for the
+     * {@code high} protein tier, {@code gPerKgBwCeil} (2.2) × weight; when bf% is known the LBM path
+     * {@code gPerKgLbmHigh} (3.1) × LBM is also considered, the higher of the two is taken, and the
+     * result is capped at {@code gPerKgBwCap} (2.6) × weight. Rounded to whole grams.
      */
-    int proteinTargetGrams(BigDecimal weightKg, BigDecimal bodyFatPct) {
-        BigDecimal bwTarget = BigDecimal.valueOf(props.protein().gPerKgBwDefault()).multiply(weightKg);
+    int proteinTargetGrams(BigDecimal weightKg, BigDecimal bodyFatPct, String proteinTier) {
+        double gPerKgBw = "high".equals(proteinTier)
+            ? props.protein().gPerKgBwCeil() : props.protein().gPerKgBwDefault();
+        BigDecimal bwTarget = BigDecimal.valueOf(gPerKgBw).multiply(weightKg);
         BigDecimal target = bwTarget;
         if (bodyFatPct != null) {
             BigDecimal lbm = weightKg.multiply(
