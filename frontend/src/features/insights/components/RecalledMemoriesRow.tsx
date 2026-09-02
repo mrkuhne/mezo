@@ -22,7 +22,9 @@ export function RecalledMemoriesRow({ items }: { items: ChatRecalledMemory[] }) 
         title="Ezekre emlékezett a társ a válasz előtt (W3.1 ambient recall)"
         aria-expanded={open}
       >
-        <span className="mzc-memeb">✦ Emlékek · {items.length}</span>
+        <span className="mzc-memeb">
+          <Icon name="sparkle" size={10} /> Emlékek · {items.length}
+        </span>
         <Icon name={open ? 'chevron-up' : 'chevron-down'} size={10} color="var(--text-tertiary)" />
       </button>
       {open && (

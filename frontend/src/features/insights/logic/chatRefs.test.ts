@@ -68,3 +68,27 @@ describe('chatRefDisplay — carried label (mezo-b3pp.33)', () => {
     ).toBe('Összefüggés')
   })
 })
+
+// mezo-z4h4: BriefingRef (the Mezo-messages page's ref type) often carries a BARE ISO date as
+// its label — the page's own honest fallback when it had no real title. chatRefDisplay must
+// humanise that the same way it humanises an id-carried date, while any OTHER label (a real
+// title, or a label with extra context glued onto a date) stays verbatim — nothing invented.
+describe('chatRefDisplay — bare ISO-date label humanised (mezo-z4h4)', () => {
+  test('a label that is ENTIRELY a valid ISO date is humanised like an id', () => {
+    expect(chatRefDisplay({ kind: 'FuelDay', id: 'x-1', label: '2026-08-27' }).label).toBe('aug. 27.')
+  })
+
+  test('a label that is ENTIRELY a valid ISO date, with surrounding whitespace, is still humanised', () => {
+    expect(chatRefDisplay({ kind: 'FuelDay', id: 'x-1', label: '  2026-08-27  ' }).label).toBe('aug. 27.')
+  })
+
+  test('a real title stays verbatim — not date-shaped', () => {
+    expect(chatRefDisplay({ kind: 'GraphNode', id: 'x-1', label: 'Késői evés' }).label).toBe('Késői evés')
+  })
+
+  test('a label with extra context beyond the date stays verbatim — not ENTIRELY a date', () => {
+    expect(chatRefDisplay({ kind: 'Practice', id: 'x-1', label: '2026-08-27 · reggel' }).label).toBe(
+      '2026-08-27 · reggel',
+    )
+  })
+})

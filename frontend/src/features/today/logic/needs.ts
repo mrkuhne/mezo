@@ -1,4 +1,5 @@
 import { clampPct } from '@/shared/lib/pct'
+import type { ClayIconName } from '@/shared/ui/clay'
 
 /**
  * "Életjel-ringek" (Sims-style needs) decay/refill engine — pure, no I/O.
@@ -98,6 +99,18 @@ export const NEED_META: Record<NeedKey, { emoji: string; label: string; color: s
   mozgas: { emoji: '💪', label: 'Mozgás', color: 'var(--dv-coral)' },
   lelek: { emoji: '💗', label: 'Lélek', color: 'var(--dv-rose)' },
   rend: { emoji: '⚡', label: 'Rend', color: 'var(--accent-base)' },
+}
+
+/** mezo-z4h4: EGY forrás a NeedKey → domain clay ikon leképezésnek — az Életjel oldal
+ *  tile-jai (`VITAL_TILE`, EletjelPage.tsx) és a küszöb-nudge kártyák (`needsNudges.ts`)
+ *  ugyanezt olvassák, hogy sose csússzanak szét. */
+export const NEED_ICON: Record<NeedKey, ClayIconName> = {
+  energia: 'i-fuel',
+  hidratacio: 'i-viz',
+  pihenes: 'i-alvas',
+  mozgas: 'i-edzes',
+  lelek: 'i-emberek',
+  rend: 'i-rend',
 }
 
 const NEED_ORDER: NeedKey[] = ['energia', 'hidratacio', 'pihenes', 'mozgas', 'lelek', 'rend']
