@@ -242,13 +242,13 @@ test('the title chip deep-links to the Growth awards tab', async () => {
   const chip = document.querySelector<HTMLButtonElement>('button.enh-titlech')
   expect(chip).not.toBeNull()
   await userEvent.click(chip!)
-  expect(screen.getByTestId('loc').textContent).toBe('/me/growth')
+  expect(screen.getByTestId('loc').textContent).toBe('/me/growth/kituntetesek')
 })
 
 test('the coin and streak stats deep-link to the Growth awards tab too', async () => {
   renderHub()
   await userEvent.click(await screen.findByRole('button', { name: 'Érme — címek' }))
-  expect(screen.getByTestId('loc').textContent).toBe('/me/growth')
+  expect(screen.getByTestId('loc').textContent).toBe('/me/growth/kituntetesek')
 })
 
 test('the entrance choreography is armed — every .rise sits inside .mz-play', async () => {

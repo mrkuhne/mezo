@@ -129,7 +129,7 @@ export function FuelMaiPage() {
 
         {/* The window swimlane dissolved (mezo-byo1): the whole day's logging lives on
             /fuel/log, and the hub carries ONE live door to it — the Logolás hero tile. */}
-        <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties}>
+        <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties} data-kalauz-anchor="fuel-log">
           <FuelLogHeroTile vm={lane} onOpen={() => navigate('/fuel/log')}
             pastHint={!yPending && yMissed > 0 ? {
               dateLabel: `${huMonthDay(yesterday).toLowerCase()}.`,

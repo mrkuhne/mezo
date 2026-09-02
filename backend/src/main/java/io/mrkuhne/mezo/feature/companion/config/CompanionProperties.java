@@ -66,7 +66,13 @@ public record CompanionProperties(
          * that make it worth carrying at all; truncation is honestly lossy, rewriting fabricates.
          * 0 turns the injection off. Applies per note, and the snapshot rides EVERY chat turn.
          */
-        @Min(0) @Max(1000) int workoutNoteMaxChars
+        @Min(0) @Max(1000) int workoutNoteMaxChars,
+        /**
+         * mezo-x6oa: how many ACTIVE people (newest mention first) the [Emberek] block of the chat
+         * snapshot lists — name, relationship, this week's mention count and mood direction, one
+         * line each, never quotes. 0 turns the block off entirely (it is omitted, not "nincs adat").
+         */
+        @Min(0) @Max(30) int peopleMaxPersons
     ) {}
 
     /** V1.1 knowledge-fact injection — how much confirmed memory rides in every system prompt. */

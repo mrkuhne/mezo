@@ -40,9 +40,10 @@ public record DetectorInput(LocalDate day,
                              Integer shoulderStrain, Integer jumpCount, Integer intensity) {}
     public record RunPoint(LocalDate date, Integer rpeActual, Integer hrRecoverySec,
                            Integer completedRounds) {}
-    /** date = the night leading into that day (companion "last night" convention). */
-    public record SleepPoint(LocalDate date, Integer quality, BigDecimal durationH,
-                             Integer awakenings) {}
+    /** date = the night leading into that day (companion "last night" convention); bedtime/wakeup are the
+     *  row's HH:mm clock strings parsed to LocalTime, null when absent or malformed (round 4). */
+    public record SleepPoint(LocalDate date, Integer quality, BigDecimal durationH, Integer awakenings,
+                             LocalTime bedtime, LocalTime wakeup) {}
     /** Active mesocycle context; null when no active meso. plannedDays from gym schedule slots. */
     public record MesoContext(String title, int currentWeek, int totalWeeks, boolean deloadWeek,
                               Set<DayOfWeek> plannedDays, Set<LocalDate> doneDays) {}
@@ -152,6 +153,32 @@ public record DetectorInput(LocalDate day,
     public record LogLatencyPoint(String genre, String source, LocalDate aboutDate,
                                   LocalDate writtenDate) {}
 
+    /** One people mention. {@code contextLabel} is the people feature's nightly classifier output
+     *  (closed DB-CHECK set) or null = unlabelled — never "egyeb". tone/intensity are deliberately
+     *  NOT carried (round-4 spec §4.4): the mood side is the user's own check-in scale. */
+    public record MentionPoint(LocalDate date, UUID personId, String contextLabel, boolean flagged) {}
+    /** One executed companion tool call (assistant row). {@code titlePreview} is the conversation
+     *  title (= the first user message, truncated) for EVIDENCE only — never parsed. */
+    public record ChatToolCallPoint(LocalDate date, UUID conversationId, String toolName, String titlePreview) {}
+    /** One Tudástár triage decision. source = "fact" (LearnedFact, date = the candidate's createdAt —
+     *  a PROXY, there is no decidedAt) or "pattern" (PatternEvent confirmed|rejected, date = occurredAt).
+     *  decision = "kept" | "rejected"; refined = the fact was accepted with an edit. */
+    public record TriageDecisionPoint(LocalDate date, String source, String category, String decision,
+                                      boolean refined) {}
+    public record PredictionPoint(LocalDate validFrom, LocalDate validTo, String status,
+                                  BigDecimal confidence, String metricKey) {}
+    public record QuestPoint(LocalDate questDate, String slot, String status) {}
+    /** kind = "experiment" (date = generatedAt) | "challenge" (date = workoutDate); status is the
+     *  source row's own status string; outcomeGood null = no verdict recorded. */
+    public record ProposalOutcomePoint(LocalDate date, String kind, String status, Boolean outcomeGood) {}
+    /** The system-side (AI-meta) series, gathered by {@code CharacterMetaReads}. */
+    public record MetaWindow(List<TriageDecisionPoint> triageDecisions, List<PredictionPoint> predictions,
+                             List<QuestPoint> quests, List<ProposalOutcomePoint> proposalOutcomes) {
+        public static MetaWindow empty() {
+            return new MetaWindow(List.of(), List.of(), List.of(), List.of());
+        }
+    }
+
     /** Raw 8-week series ending at day — detectors aggregate these themselves so they can
      *  recompute their state both as-of day and as-of day-1 (stateless state-change gate).
      *  Round-2 and round-3 series live ONLY here: every such detector windows them by an
@@ -162,7 +189,10 @@ public record DetectorInput(LocalDate day,
      *  <p>{@code sleepEightWeeks} widens the existing 14-day {@code sleepPoints} slice for the same
      *  reason: {@code self-calibration} evaluates its state as of day AND as of day-1, and a
      *  14-day slice would leave the day-1 window one day short — the state could then change
-     *  because a day fell off the end rather than because the behaviour changed. */
+     *  because a day fell off the end rather than because the behaviour changed.
+     *
+     *  <p>Round 4 adds the people mentions, the assistant tool-call series and the nested
+     *  {@code MetaWindow} (system-side sources, gathered by {@code CharacterMetaReads}). */
     public record TrendWindow(List<RunPoint> runsEightWeeks, List<GymDay> gymEightWeeks,
                               List<MealDayPoint> mealDays, List<WaterDayPoint> waterDays,
                               StackContext stack, List<CheckinDayPoint> checkinDays,
@@ -174,5 +204,8 @@ public record DetectorInput(LocalDate day,
                               NeedsContext needs,
                               List<CheckinSlotPoint> checkinSlots,
                               List<LocalDateTime> userChatTimes,
-                              List<LogLatencyPoint> logLatencies) {}
+                              List<LogLatencyPoint> logLatencies,
+                              List<MentionPoint> mentions,
+                              List<ChatToolCallPoint> chatToolCalls,
+                              MetaWindow meta) {}
 }

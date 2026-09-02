@@ -12,7 +12,7 @@ they inline come from `../assets/`.
 | `clay-csomag.html` | https://claude.ai/code/artifact/79f7676e-7998-4a61-b098-44c2e0f8b905 |
 | `nap-gerinc.html` | https://claude.ai/code/artifact/e1eae7d4-05bc-41c9-8e7e-55bdbee70249 |
 | `edzes-tab.html` | https://claude.ai/code/artifact/d9fd807c-71ca-4c27-b8c9-7d32aca48d15 |
-| `mezociklus.html` | https://claude.ai/code/artifact/a4f4ecdd-decc-4524-9fab-931af7a9c8b3 |
+| `mezociklus.html` | https://claude.ai/code/artifact/46daab1d-d30f-4f44-a435-65f225cf6e38 |
 | `edzes-session.html` | https://claude.ai/code/artifact/0a747fcc-0359-462a-8b8b-1de02a611f77 |
 | `fuel-tab.html` | https://claude.ai/code/artifact/e0da58f6-f4ef-4874-b60e-b83a1998ba0e |
 | `mezo-tab.html` | https://claude.ai/code/artifact/dc2800aa-7c1f-41f0-b33d-b3d127b544fa |
@@ -22,6 +22,7 @@ they inline come from `../assets/`.
 | `fuel-logolas.html` | — (not yet published; mezo-byo1 design source) |
 | `fuel-log-multinap.html` | — (not yet published; A /fuel/log nap-léptetője + Pótlás-hangulat + hub-csali — mezo-1j3z) |
 | `fuel-log-oldal.html` | — (not yet published; A logolás saját oldala a helyben nyíló composer helyett — /fuel/log/uj) |
+| `fuel-logolas-2.1.html` | https://claude.ai/code/artifact/f4af0e21-8293-4732-a9e2-2a2c48a3427e (Logolás 2.1 — Keret-hero a /fuel/log-on, AI score pill + kcal, rost gyűrű, kontextus chip, breakdown sheet — mezo-zeeq) |
 | `mezo-chat.html` | https://claude.ai/code/artifact/ae02e856-1e3d-4c60-aad5-842e75190538 |
 | `edzes-review.html` | https://claude.ai/code/artifact/66f5a4de-8afe-48ff-b04f-e861b3ba22ee |
 | `fuel-mely.html` | https://claude.ai/code/artifact/d5c6d770-a067-4642-baa3-9dee63613718 |
@@ -31,6 +32,9 @@ they inline come from `../assets/`.
 | `mezo-memoar.html` | https://claude.ai/code/artifact/95759be5-7de6-4d04-af7b-60d7862dbe50 |
 | `receptmuhely.html` | https://claude.ai/code/artifact/dc39e817-e89e-43df-b93f-53b568efed9f |
 | `tudastar-egyben.html` | https://claude.ai/code/artifact/1ddf2a14-f5ce-4d4c-b125-c843e073797e |
+| `kalauz.html` | https://claude.ai/code/artifact/aff4eff9-775c-4222-82cf-487d143479bf |
+| `growth-tab.html` | https://claude.ai/code/artifact/393bca87-9095-42dd-ac55-127162ad0412 |
+| `rutin-epito.html` | https://claude.ai/code/artifact/78c8f0f9-925f-44a9-93b4-3e9cc077e162 (Rutin-építő — széles Rutin csempe az Én hubon, /me/rutin hub erő-csíkokkal, 4 lépéses szokás-recept wizard Fogg / Clear keretre, szokás-szerkesztő — mezo-3zue) |
 | `celok.html` | https://claude.ai/code/artifact/e404d1d4-55c3-4e81-a8b4-716c6ba45f87 |
 
 ## Workflow
@@ -591,6 +595,42 @@ are usable without a build step).
   + a Mezo observation band. Sheets: Log (ki · tónus · kontextus · jegyzet) and Új személy
   (name + alias chips for the name-matcher + relationship). All-clay iconography, no emoji.
   Backend vision it mocks: spec `docs/superpowers/specs/2026-08-31-emberek-section-design.md`.
+- **growth-tab** — the Growth page (`/me/growth`) rebuilt from a hero + 4-way segment switch
+  into the Fuel/Edzés **hub idiom** (brainstorm decisions IA=A · hero=A · Ma-strip=A): a
+  **live hero** (XP count-up that continues from the last shown value after every chip tap /
+  saved activity, three labelled bars — Szint `340 / 500`, Fegyelem `84%` that honestly
+  *disappears* when null, Ritmus as the last-8-weeks dot row), a **Ma strip** (quest chips:
+  done sage ✓ · open neutral · `csendben lejárt` dashed and faded, tap = the real DailyQuestList
+  "Kész"; `＋ Tevékenység` opens the activity sheet in place → `+15 XP · Tanulás` toast; head
+  → `/nap/kuldetesek`), and a **2×2 mosaic** whose lines come from each page's own hook
+  (`33 skill · legjobb Lv 9` derived from band lengths, not the hardcoded 8/12/13; `12 reggel ·
+  18 este / 30`; `18 ✓ · 4 ✎`; `5 / 9 jelvény · 12 napos sorozat` + pulsing dot while a
+  milestone is near) — one screen, no scroll. Sub-pages: **Skillek** (lav; stat strip + three
+  parallel band cards — clay LIFE icons, `Lv` plaques, animated meters, top-4 + `Mind a 8 ▸`
+  expand, `→ perk Lv n` hint one level before a perk milestone), **Rutin** (gold; two 30-cell
+  chain tiles, milestone pill only at 7/30, day navigator max today, ◦/✓ chain rows with 30-day
+  strength %, past days summarise and a miss reads "holnap folytatódik", never terracotta),
+  **Napló** (sky; an "Ez a hét" tile fed by the still-unconsumed `GET /api/progression/growth-week`
+  — 4 mini-cells + savings —, then 30-day day tiles with `csendben lejárt` honesty),
+  **Kitüntetések** (sage; streak card with milestone bar + saver, Címek Létra/Bolt with working
+  Felvesz/Megveszem — the coin's only sink —, badge grid where unearned badges keep a conic
+  progress ring instead of vanishing, perks). Demo controls: milestone flash, empty Ma strip,
+  Fegyelem unknown, reset.
+- **rutin-epito** — Rutin-építő (mezo-3zue): the routine surface leaves the Growth segments.
+  **Én hub** with the six small tiles + a **full-width Rutin tile** (Mezo-hub Diagnózis/Karakter
+  precedent; one live datum: today done / total + morning/evening chain strength, vanishes when
+  there are no habits). **Rutin hub** (`/me/rutin`): hero (done / total + 28-day mean strength),
+  statstrip (perfect mornings / evenings / active habits), chain cards with per-habit **strength
+  bar + framework badge** (⚓ FOGG · ◈ CLEAR · – legacy), chain toggles, `＋ Új szokás-recept` +
+  `✨ AI javaslat`; rows open the habit page, no tick control (ticking stays on `/nap/rutin`).
+  **Wizard** (`/me/rutin/uj`, 4 steps, dot Stepper): framework cards (Fogg Habit Stacking /
+  Clear Four Laws) → anchor chips from existing habits + mezo events / cue chips → tiny behavior
+  (soft "too big" warning on the Fogg branch) + chain + LIFE area + XP (+ craving/identity on the
+  Clear branch) → celebration / reward chips + **Vállalom** commitment tick that gates save; a
+  **live sentence card** assembles the recipe as the blanks fill; save returns to the hub with
+  the new row highlighted. **Habit page** (`/me/rutin/szokas/:id`): framework band, the recipe
+  sentence large, 28-day history strip, framework fields, pause-without-losing-progress.
+  Backend vision it mocks: spec `docs/superpowers/specs/2026-09-02-routine-builder-design.md`.
 - **celok** — the Célok (life goals) hub + goal detail + five-step creation wizard, spec
   `docs/superpowers/specs/2026-09-02-lifegoal-system-design.md`. **Slice 1 implemented**
   (`mezo-iizd.1`, real backend `docs/features/lifegoal.md`): the PERMAH-ring hero, dimension

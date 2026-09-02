@@ -105,7 +105,7 @@ describe('DailyQuestsCard', () => {
     renderCard()
     off()
     expect(consumeLevelUps).toHaveBeenCalledTimes(1)
-    // GrowthPage mounts DailyQuestsCard without a TodayPage above it (mezo-k5sa) — this is
+    // This test renders DailyQuestsCard without a TodayPage above it (mezo-k5sa) — this is
     // the only test reaching this call site, so it must pin the reward toast, not just the
     // cache-consume side effect.
     expect(seen.filter((t) => t.kind === 'reward')).toHaveLength(1)

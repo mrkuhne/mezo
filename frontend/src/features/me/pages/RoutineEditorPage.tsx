@@ -3,7 +3,7 @@
 // (mezo-n5e9.2): every chain as a card (daypart + title + active toggle + edit), its defs as a
 // SortableList (drag or ▲▼ to reorder — MesoEditor.tsx:195-207 idiom), a per-chain "+ Új habit"
 // row, and a bottom "+ Új rutin" CTA. Sibling of `me/goals/weight/new` (full-screen, no Me
-// sub-nav chrome) — entered from RoutinesTab's "Szerkesztés" button (today view only).
+// sub-nav chrome) — entered from GrowthRutinPage's "Szerkesztés" button (today view only).
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -42,7 +42,7 @@ export function RoutineEditorPage() {
   return (
     // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): gold shell + eyebrow/title block.
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/me/growth')} label="‹ Growth" />
+      <PageHead onBack={() => navigate('/me/growth/rutin')} label="‹ Rutin" />
       <PageBody>
       <div style={{ padding: '2px 2px 12px' }}>
         <span className="mz-eyebrow">Growth · Rutin</span>

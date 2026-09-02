@@ -17,7 +17,6 @@ import { useParams } from 'react-router-dom'
 import { useMesoTemplates } from '@/data/hooks'
 import type { ExerciseLibraryItem, GymExercise, MesoDay, MesoTemplate, MusclePriorities } from '@/data/types'
 import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
-import { GOAL_PRESETS } from '@/data/train/train'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -26,11 +25,6 @@ import { MusclePriorityPicker } from '@/features/train/components/MusclePriority
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays, toDayInputs } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
-
-// The Cél select's options — the six wizard presets plus an empty "unset" one
-// (labeled with the fallback it actually behaves as — SCHEMES defaults an
-// unset/unknown preset to hypertrophy, see exerciseDefaults.ts).
-const GOAL_PRESET_OPTIONS = [{ value: '', label: '— (hypertrophy)' }, ...GOAL_PRESETS.map((p) => ({ value: p.id, label: p.label }))]
 
 // Same full-replace shape as the exercise-save path (a template has no per-field PATCH) —
 // shared here so the Cél select AND the Fókusz tier picker persist through the identical
@@ -197,18 +191,6 @@ function TemplateDayEditor({ template, onPersist }: {
         {template.split ? (
           <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{template.split}</span>
         ) : null}
-        <select
-          aria-label="Cél"
-          value={template.goalPreset ?? ''}
-          // Built from THIS render's `days`/`priorities` state (current, possibly
-          // unsaved-to-server edits included) — never the parent's query-cache
-          // `template.days`/`template.musclePriorities` copy (the latter would otherwise
-          // clobber a tier pick still in flight — mezo-3m5m final review, fix 2).
-          onChange={(e) => onPersist(days, e.target.value || null, priorities)}
-          style={{ fontSize: 9, color: 'var(--text-primary)', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', padding: '3px 6px' }}
-        >
-          {GOAL_PRESET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
       </div>
       <details style={{ padding: '0 24px 8px' }}>
         <summary className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', cursor: 'pointer' }}>

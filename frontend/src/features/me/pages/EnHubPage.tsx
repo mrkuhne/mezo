@@ -50,7 +50,8 @@ export function EnHubPage() {
   const navigate = useNavigate()
   const { mode: themeMode } = useTheme()
   // F7.4 (mezo-d20.8.4.1): the progression moved HOME — the title chip and the
-  // streak/coin stats deep-link to /me/growth?tab=awards (StreakCard + TitlesSection);
+  // streak/coin stats deep-link to /me/growth/kituntetesek (StreakCard + TitlesSection,
+  // mezo-rmi0.1: the Growth hub's sibling route, was the ?tab=awards deep link);
   // the two standalone sheets are retired.
   const [sheet, setSheet] = useState<'biometric' | 'energy' | null>(null)
 
@@ -187,7 +188,7 @@ export function EnHubPage() {
           <div className="enh-nm">{user.name}</div>
           <button type="button" className={equipped != null ? 'enh-titlech' : 'enh-titlech is-none'}
             aria-label={equipped != null ? `Viselt cím: ${equipped.name} — cím-bolt` : 'Cím-bolt'}
-            onClick={() => navigate('/me/growth?tab=awards')}>
+            onClick={() => navigate('/me/growth/kituntetesek')}>
             {equipped != null ? equipped.name : 'Válassz címet'}
           </button>
           <div className="enh-idstats">
@@ -195,10 +196,10 @@ export function EnHubPage() {
             <span>{huInt(gam.totalXp)} XP</span>
             <button type="button" className="enh-idstat" aria-label="Sorozat részletei"
               style={{ opacity: gam.streakAlive === false ? 0.45 : 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
-              onClick={() => navigate('/me/growth?tab=awards')}><ClayIcon name="i-lang" size={13} /> {gam.streakDays} nap</button>
+              onClick={() => navigate('/me/growth/kituntetesek')}><ClayIcon name="i-lang" size={13} /> {gam.streakDays} nap</button>
             <button type="button" className="enh-idstat" aria-label="Érme — címek"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}
-              onClick={() => navigate('/me/growth?tab=awards')}><ClayIcon name="i-erme" size={13} /> {gam.coins}</button>
+              onClick={() => navigate('/me/growth/kituntetesek')}><ClayIcon name="i-erme" size={13} /> {gam.coins}</button>
           </div>
           {bioBits.length > 0 ? (
             <button type="button" className="enh-bio" aria-label="Biometria szerkesztése"

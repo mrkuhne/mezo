@@ -175,6 +175,14 @@ const mesoReportFixture = {
   },
 }
 
+// Mezo-kalauz seen-store (mezo-gb1s.1) in-memory state — module-level so the GET/PUT/DELETE
+// handlers below share it across a whole test file; `resetTutorialProgressState` is called from
+// `src/test/setup.ts`'s afterEach so one test's PUT can't leak into the next.
+let tutorialProgressState: Record<string, unknown> = {}
+export function resetTutorialProgressState(): void {
+  tutorialProgressState = {}
+}
+
 // ── Life-goal write helpers (mezo-iizd.1) ────────────────────────────────────────────────
 // The five write endpoints all answer with a full LifeGoalResponse built off the seeded goal,
 // so a real-mode test of a write path asserts against the SAME shape the backend echoes
@@ -529,6 +537,10 @@ export const handlers = [
       ],
       perks: [],
     })),
+  // Growth week rollup (mezo-rmi0.1) — honest zeros are a valid contract answer.
+  http.get(`${API_BASE}/api/progression/growth-week/:date`, ({ params }) =>
+    HttpResponse.json({ weekStart: params.date, questCompleted: 0, questClosed: 0, lifeXp: 0, activities: 0, savingsHuf: 0 }),
+  ),
 
   // ── Activity log (E2, mezo-jzca). Defaults: empty day; create echoes a confident AI verdict.
   http.get(`${API_BASE}/api/activity/day/:date`, () => HttpResponse.json([])),
@@ -572,7 +584,7 @@ export const handlers = [
   }),
 
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
-  http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),
+  http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [], mezoNote: '' })),
   http.post(`${API_BASE}/api/people`, async ({ request }) => {
     const req = (await request.json()) as Record<string, unknown>
     return HttpResponse.json({
@@ -592,6 +604,7 @@ export const handlers = [
       knownFacts: [],
       ties: [],
       affectTrend: [],
+      direction: 'flat',
     }, { status: 201 })
   }),
   http.put(`${API_BASE}/api/people/:id`, async ({ params, request }) => {
@@ -613,6 +626,7 @@ export const handlers = [
       knownFacts: [],
       ties: [],
       affectTrend: [],
+      direction: 'flat',
     })
   }),
   http.delete(`${API_BASE}/api/people/:id`, () => new HttpResponse(null, { status: 204 })),
@@ -623,7 +637,7 @@ export const handlers = [
       id: params.personId, name: 'Marci', initial: 'M', relationship: 'friend',
       relationshipHu: 'Ismerős', aliases: [], status: body.decision === 'accept' ? 'active' : 'candidate',
       sourceKind: 'extractor', affectBaseline: 'neutral', knownFacts: [], ties: [], affectTrend: [],
-      mentionCount: 0, mentionsThisWeek: 0,
+      direction: 'flat', mentionCount: 0, mentionsThisWeek: 0,
     })
   }),
 
@@ -784,6 +798,22 @@ export const handlers = [
       split: 'Pull / Push / Legs · 5×/hét',
       style: 'RP · 6 hét',
       phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+    })
+  }),
+  // Meso plan generator (wizard redesign): deterministic default so real-mode wizard tests
+  // can render a 7-day proposal without scripting; tests override per case with server.use.
+  http.post(`${API_BASE}/api/train/meso-plans/generate`, async ({ request }) => {
+    const body = (await request.json()) as { daysOfWeek: string[]; weeks: number; priorities?: Record<string, string> | null; goalText?: string | null }
+    const training = new Set(body.daysOfWeek)
+    const days = ['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'].map((day, i) => training.has(day)
+      ? { day, type: i % 2 === 0 ? 'Upper' : 'Lower', muscle: i % 2 === 0 ? 'back' : 'quad', exercises: [
+          { name: i % 2 === 0 ? 'Row' : 'Squat', muscle: i % 2 === 0 ? 'back-mid' : 'quad', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound', catalogId: 'c1f3a0e2-0000-4000-8000-000000000002' } ] }
+      : { day, type: 'Rest', muscle: '', note: 'Pihenőnap', exercises: [] })
+    return HttpResponse.json({
+      template: { title: 'Hypertrophy · Ősz', shortTitle: 'Hypertrophy', goal: 'Izomtömeg építés', goalPreset: 'hypertrophy',
+        musclePriorities: body.priorities ?? null, weeks: body.weeks, split: `Upper / Lower · ${body.daysOfWeek.length}×/hét`, style: `RP · ${body.weeks} hét`,
+        phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'], notes: body.goalText ?? null, volumePerMuscle: null, days },
+      rationale: 'MSW alap kiosztás', llmUsed: false,
     })
   }),
   http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) =>
@@ -1121,8 +1151,7 @@ export const handlers = [
   // override with server.use() when they need a populated stash or feed.
   http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [], imports: [], suggestions: [] })),
 
-  // Pantry import (P6, mezo-bka) — OFF lookup proxy + confirmed-draft import.
-  http.get(`${API_BASE}/api/pantry-import/lookup`, () => HttpResponse.json({ results: [] })),
+  // Pantry import (P6, mezo-bka) — confirmed-draft import.
   // URL scrape (P8, mezo-8vum) — honest-empty default; tests override with server.use().
   http.post(`${API_BASE}/api/pantry-import/scrape`, () => HttpResponse.json({ result: null })),
   // Photo import (mezo-d8tr) — honest-empty default; tests override with server.use().
@@ -1156,6 +1185,17 @@ export const handlers = [
     HttpResponse.json({ mealsPerDay: 4, caffeineCutoff: '14:00' })),
   http.put(`${API_BASE}/api/fuel/settings`, async ({ request }) =>
     HttpResponse.json(await request.json())),
+
+  // Mezo-kalauz seen-store (mezo-gb1s.1) — empty ghost; PUT replaces, DELETE clears. In-memory (module-
+  // level, not closure-local) so a test's PUT is visible to its next GET; `server.resetHandlers()` does
+  // NOT reset this state (it only re-registers handlers), so `src/test/setup.ts` also calls
+  // `resetTutorialProgressState()` in its own `afterEach` to stop one test's PUT leaking into the next.
+  http.get(`${API_BASE}/api/tutorial/progress`, () => HttpResponse.json({ progress: tutorialProgressState })),
+  http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+    tutorialProgressState = ((await request.json()) as { progress: Record<string, unknown> }).progress
+    return HttpResponse.json({ progress: tutorialProgressState })
+  }),
+  http.delete(`${API_BASE}/api/tutorial/progress`, () => { tutorialProgressState = {}; return new HttpResponse(null, { status: 204 }) }),
 
   // Fuel meal-slot templates (mezo-7102) — honest-empty default list; PUT echoes the
   // saved body under the path dayType, DELETE is a plain 204. Tests override with server.use().

@@ -131,4 +131,19 @@ class KonziliumProposalRoundIT extends ApiIntegrationTest {
 
         assertThat(result.proposals()).extracting(ClaimProposal::expertKey).containsExactly("drill");
     }
+
+    @Test
+    void run_szkeptikusObservation_proposesIntoTheSelfAuditDimension() {
+        UUID owner = ownerId();
+        seedObservation(owner, "szkeptikus", WEEK_START.plusDays(2), "A predikcióim közül 4-ből 1 talált.", (short) 4);
+
+        KonziliumProposalRound.Result result = proposalRound.run(owner, WEEK_START,
+                observationRepository.findByCreatedByAndDayBetweenAndConsumedByConferenceIdIsNullOrderByDayAscCreatedAtAsc(
+                        owner, WEEK_START, WEEK_START.plusDays(6)));
+
+        assertThat(result.proposals()).singleElement().satisfies(p -> {
+            assertThat(p.expertKey()).isEqualTo("szkeptikus");
+            assertThat(p.dimensionKey()).isEqualTo("self-audit");
+        });
+    }
 }

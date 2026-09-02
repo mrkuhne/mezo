@@ -92,7 +92,7 @@ class GeminiCompanionLlmPromptOrderTest {
         return new CompanionProperties(
                 new Llm("gemini-2.5-flash", "gemini-2.5-pro"),
                 new Chat(20, 80),
-                new Snapshot(7, 200, 180),
+                new Snapshot(7, 200, 180, 12),
                 new Tools(15, 30, 26, 10),
                 new Facts(10, 3),
                 new Extraction(true, 3),

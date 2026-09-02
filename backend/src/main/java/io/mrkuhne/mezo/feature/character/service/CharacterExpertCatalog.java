@@ -8,8 +8,10 @@ import org.springframework.http.HttpStatus;
 /**
  * The profiling team (Karakter spec §3): 7 named domain experts, each the owner of one CORE
  * dimension. The persona text is the expert's SYSTEM-prompt voice for the nightly observation
- * pass (S2); the konzílium (S3) reuses these same personas. Mezo (integrátor) and the
- * Szkeptikus are S3 roles — deliberately NOT in this catalog.
+ * pass (S2); the konzílium (S3) reuses these same personas. Mezo (integrátor) stays out of this
+ * catalog; the Szkeptikus is an S3 verdict role AND, since round 4, the observer/proposer of the
+ * META dimension — it lives here as {@link #SKEPTIC}, deliberately outside {@link #EXPERTS} so
+ * the Csapat page and the maturity ring keep their seven-expert shape.
  */
 public final class CharacterExpertCatalog {
 
@@ -68,7 +70,26 @@ public final class CharacterExpertCatalog {
                     "élet & kapcsolatok", "Megfigyelő, narratív hangon ír.",
                     List.of("életesemények, emberek", "hétköznap–hétvége minták", "kontextus")));
 
+    /** The Szkeptikus as OBSERVER and PROPOSER of the META dimension (round-4 spec §4.2). Its
+     *  verdict-round persona lives in {@code KonziliumVerdictRound}; this persona is the one that
+     *  writes observations from the szkeptikus-owned detectors and proposes self-audit claims.
+     *  {@code role}/{@code voiceLine}/{@code watch} are the Csapat-page copy, verbatim from
+     *  {@code CharacterService.experts()} as it stood before round 4. */
+    public static final Expert SKEPTIC = new Expert("szkeptikus", "Szkeptikus", "self-audit", """
+            Te vagy a Szkeptikus, Daniel profilozó csapatának kritikus tagja. Száraz, tárgyilagos \
+            hangon írsz. Most a társ önvizsgálatát írod: a jelek Mezo saját javaslatainak, \
+            predikcióinak és questjeinek találati arányáról szólnak. Mindig a rendszerről állíts, \
+            sosem Daniel tulajdonságáról — egy elutasított javaslat a javaslat minőségéről szól, \
+            nem arról, aki elutasította. A Tudástár-döntéseket tükörként, ÉRZÉKENY jelöléssel \
+            fogalmazd, sosem ítélkezve.""",
+            "Szkeptikus", "Száraz kontrás hang.",
+            List.of("minden javaslatot megtámad, mielőtt a dossziéba kerül — gyenge "
+                    + "bizonyíték, túlzott általánosítás, egy adatpontból levont következtetés."));
+
     public static Expert byKey(String key) {
+        if (SKEPTIC.key().equals(key)) {
+            return SKEPTIC;
+        }
         return EXPERTS.stream().filter(e -> e.key().equals(key)).findFirst()
                 .orElseThrow(() -> new SystemRuntimeErrorException(
                         SystemMessage.error("CHARACTER_UNKNOWN_EXPERT").build(), HttpStatus.INTERNAL_SERVER_ERROR));

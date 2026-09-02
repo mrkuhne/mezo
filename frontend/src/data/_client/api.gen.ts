@@ -245,6 +245,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/meso-plans/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a hypertrophy mesocycle proposal (deterministic skeleton + optional LLM exercise pick); returns a MesoTemplateUpsertRequest-compatible template */
+        post: operations["generateMesoPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/meso-templates": {
         parameters: {
             query?: never;
@@ -2707,6 +2724,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tutorial/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The user's guide progress; empty map ghost when nothing seen — never 404 (TutorialProgress) */
+        get: operations["getTutorialProgress"];
+        /** Replace the whole progress map (per-user singleton upsert) (TutorialProgress) */
+        put: operations["setTutorialProgress"];
+        post?: never;
+        /** Forget every seen guide (Beállítások · Kalauzok újranézése) (TutorialProgress) */
+        delete: operations["resetTutorialProgress"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ritual/day/{date}": {
         parameters: {
             query?: never;
@@ -4016,6 +4052,25 @@ export interface components {
             imageStartUrl?: string | null;
             /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
             imageEndUrl?: string | null;
+        };
+        MesoPlanGenerateRequest: {
+            /** @description Training days, FE day tokens; any weekday incl. weekend */
+            daysOfWeek: string[];
+            /** @description Total length incl. the terminal deload week */
+            weeks: number;
+            /** @description Sparse per-muscle tier map over the 9 coarse groups (chest, back, shoulder, biceps, triceps, quad, ham, glute, calf); absent = grow */
+            priorities?: {
+                [key: string]: string;
+            } | null;
+            /** @description Free-text goal steering exercise choice (e.g. "röplabda mellett, vállra figyelve") */
+            goalText?: string | null;
+        };
+        MesoPlanGenerateResponse: {
+            template: components["schemas"]["MesoTemplateUpsertRequest"];
+            /** @description One Hungarian sentence on what was chosen and why (LLM or deterministic) */
+            rationale: string;
+            /** @description false when the LLM port was absent, failed, or its answer changed nothing (no accepted pick) — the deterministic filler produced the plan */
+            llmUsed: boolean;
         };
         MesoTemplateUpsertRequest: {
             title: string;
@@ -6355,6 +6410,8 @@ export interface components {
         PeopleResponse: {
             persons: components["schemas"]["PersonResponse"][];
             mentions: components["schemas"]["MentionResponse"][];
+            /** @description Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet, ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék. Sosem üres — a sáv mindig igaz mondatot mutat. */
+            mezoNote: string;
         };
         PersonResponse: {
             /** Format: uuid */
@@ -6375,7 +6432,20 @@ export interface components {
             notes?: string;
             knownFacts: string[];
             ties: string[];
+            /** @description Heti hangulat-olvasatok 1..5 skálán, időrendben (legfeljebb 8, a legfrissebbek). Az említések tónusából és intenzitásából SZÁMÍTOTT érték — a person.affect_trend oszlopot ez a válasz nem olvassa. */
             affectTrend: number[];
+            /**
+             * Format: date
+             * @description A hangulat-ív első olvasatának hete (hétfő). Az ív csak azokat a heteket tartalmazza, ahol volt tónusozott említés, ezért az időablakot ebből kell címkézni, nem az olvasatok számából. null, ha nincs olvasat.
+             */
+            affectTrendStart?: string | null;
+            /**
+             * @description A hangulat-ív iránya az utolsó két olvasat és a korábbiak átlaga alapján.
+             * @enum {string}
+             */
+            direction: "up" | "down" | "flat";
+            /** @description Magyar, determinisztikus indoklás az irány alatt. null, ha nincs olvasat. */
+            directionReason?: string | null;
             /** @description Count of live mention rows — computed, never seeded */
             mentionCount: number;
             /** @description Mentions in the rolling last 7 days */
@@ -6443,7 +6513,7 @@ export interface components {
             decision: string;
         };
         FeedRef: {
-            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
+            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person) */
             kind: string;
             label: string;
         };
@@ -6456,10 +6526,10 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, or evening LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];
@@ -6843,6 +6913,14 @@ export interface components {
             skillKey: string;
             xp: number;
             linkUrl?: string | null;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            anchorHabitKey?: string | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
+            identity?: string | null;
             isActive: boolean;
         };
         HabitCatalogResponse: {
@@ -6872,6 +6950,14 @@ export interface components {
             skillKey: string;
             xp: number;
             linkUrl?: string | null;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            anchorHabitKey?: string | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
+            identity?: string | null;
             /** @description Defaults to end of chain */
             position?: number;
         };
@@ -6883,6 +6969,14 @@ export interface components {
             position?: number;
             xp?: number;
             linkUrl?: string | null;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            anchorHabitKey?: string | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
+            identity?: string | null;
             isActive?: boolean;
         };
         HabitReorderRequest: {
@@ -6901,6 +6995,12 @@ export interface components {
             skillKey: string;
             xp: number;
             chainKey: string;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
         };
         HabitSuggestResponse: {
             suggestions: components["schemas"]["HabitSuggestion"][];
@@ -6996,6 +7096,33 @@ export interface components {
         SetFuelSettingsRequest: {
             mealsPerDay: number;
             caffeineCutoff: string;
+        };
+        TutorialProgressEntry: {
+            /** @description The registry version of the guide that was seen — a bump re-arms the auto-show */
+            version: number;
+            /**
+             * Format: date-time
+             * @description First time the guide appeared (seen = appeared, Appcues modal rule)
+             */
+            seenAt: string;
+            /**
+             * Format: date-time
+             * @description Set on "Értem, kezdjük" (last card confirmed)
+             */
+            completedAt?: string | null;
+            /** @description Zero-based card index when Kihagyom / ✕ / Escape closed it */
+            dismissedAtStep?: number | null;
+        };
+        TutorialProgressResponse: {
+            /** @description Keyed by guide id from the frontend registry (e.g. `fuel`, `welcome`) */
+            progress: {
+                [key: string]: components["schemas"]["TutorialProgressEntry"];
+            };
+        };
+        SetTutorialProgressRequest: {
+            progress: {
+                [key: string]: components["schemas"]["TutorialProgressEntry"];
+            };
         };
         RitualWindow: {
             /**
@@ -7586,7 +7713,7 @@ export interface components {
             key: string;
             title: string;
             /** @enum {string} */
-            kind: "CORE" | "CHAPTER";
+            kind: "CORE" | "CHAPTER" | "META";
             expertKey?: string | null;
             /** @description 0–100; 0 = "tanulom" */
             maturity: number;
@@ -7604,7 +7731,7 @@ export interface components {
             /** @description the persona's short voice/manner line (Csapat card) */
             voiceLine: string;
             watch: string[];
-            /** @description null for szkeptikus/mezo — they are not CORE dimension owners */
+            /** @description null for mezo; for szkeptikus the META dimension key (self-audit); the owned CORE key for experts */
             dimensionKey?: string | null;
             /** @enum {string} */
             kind: "EXPERT" | "SKEPTIC" | "CHAIR";
@@ -7622,7 +7749,7 @@ export interface components {
             key: string;
             title: string;
             /** @enum {string} */
-            kind: "CORE" | "CHAPTER";
+            kind: "CORE" | "CHAPTER" | "META";
             expertKey?: string | null;
             maturity: number;
             portrait: string;
@@ -8559,6 +8686,48 @@ export interface operations {
             };
             /** @description Mesocycle not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    generateMesoPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoPlanGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Generated proposal — not persisted; save it via POST /api/train/meso-templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoPlanGenerateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15768,6 +15937,104 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTutorialProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The progress map (empty before the first guide is shown) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TutorialProgressResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setTutorialProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetTutorialProgressRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved progress */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TutorialProgressResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    resetTutorialProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Progress cleared; the next GET returns the empty ghost */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Missing/invalid token */
             401: {

@@ -210,6 +210,9 @@ public class FeaturesConfiguration {
      *  (companion, task 15) additionally needs COMPANION_SWITCH (it calls the CompanionLlm port). */
     public static final String MESO_REVIEW_SWITCH = "mezo.feature.meso-review.enabled";
 
+    /** Meso plan generator — Gemini exercise pick on POST /api/train/meso-plans/generate. Off → deterministic filler only. */
+    public static final String MESO_PLAN_AI_SWITCH = "mezo.feature.meso-plan-ai.enabled";
+
     /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
     public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
 
@@ -258,4 +261,7 @@ public class FeaturesConfiguration {
     /** Emberek szekció (mezo-06o0) — az automata mention-detektálás rétege. Off ⇒ egyetlen
      *  detektáló listener-bean sem létezik; a kézi /api/people felület ettől függetlenül él. */
     public static final String PEOPLE_SWITCH = "mezo.feature.people.enabled";
+
+    /** Mezo-kalauz seen-store (mezo-gb1s.1). */
+    public static final String TUTORIAL_SWITCH = "mezo.feature.tutorial.enabled";
 }

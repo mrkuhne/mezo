@@ -23,4 +23,8 @@ public interface PredictionRepository extends JpaRepository<PredictionEntity, UU
 
     /** Weekly review gather (mezo-p2tr): this week's predictions + status lines. */
     List<PredictionEntity> findByCreatedByAndWeekStart(UUID createdBy, LocalDate weekStart);
+
+    /** Karakter round-4 read layer (CharacterMetaReads): window read, bounded above for catch-up honesty. */
+    List<PredictionEntity> findByCreatedByAndValidToBetweenAndDeletedFalse(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

@@ -253,6 +253,10 @@
   --mz-stch-mut-bg: rgba(43, 33, 24, 0.05);     --mz-stch-mut-ink: #6E6257;
   --mz-gbar-bg: rgba(43, 33, 24, 0.08);
   --mz-gbar-lav: linear-gradient(90deg, #B4A4E4, #8A76CC);
+  --mz-gbar-sage: linear-gradient(90deg, #A9C69A, #8FAF7E);   /* Growth ritmus dots / atlétikus meters */
+  --mz-gbar-sky:  linear-gradient(90deg, #9CC4DE, #4E8FB8);   /* Growth napló accents */
+  --mz-line: rgba(43, 33, 24, 0.12);
+  --mz-line-soft: rgba(43, 33, 24, 0.07);
   --mz-daydot: rgba(43, 33, 24, 0.1);
   --mz-daydot-f: #C9962E;
   --mz-prop-border: #C9962E;
@@ -567,6 +571,10 @@
   --mz-stch-mut-bg: var(--surface-recess); --mz-stch-mut-ink: var(--text-secondary);
   --mz-gbar-bg: rgba(245, 239, 230, 0.1);
   --mz-gbar-lav: linear-gradient(90deg, color-mix(in srgb, var(--dv-lav) 55%, var(--surface-card)), var(--dv-lav));
+  --mz-gbar-sage: linear-gradient(90deg, color-mix(in srgb, var(--dv-sage) 55%, var(--surface-card)), var(--dv-sage));
+  --mz-gbar-sky:  linear-gradient(90deg, color-mix(in srgb, var(--dv-sky) 55%, var(--surface-card)), var(--dv-sky));
+  --mz-line: rgba(245, 239, 230, 0.14);
+  --mz-line-soft: rgba(245, 239, 230, 0.08);
   --mz-daydot: rgba(245, 239, 230, 0.12);
   --mz-daydot-f: var(--dv-amber);
   --mz-prop-border: var(--dv-amber);
@@ -4405,6 +4413,7 @@ button.mz-tile:active { transform: scale(0.96); }
 
 .mz-tile-top { display: flex; align-items: center; }
 .mz-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.mz-mut { color: var(--mz-ink-soft); }
 .mz-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
 /* The counted sibling of .mz-dot (prototype `.badge.unread`). A number already carries the
    "there is something here" signal, so a tile renders one or the other, never both. */
@@ -4517,6 +4526,58 @@ button.mz-tile:active { transform: scale(0.96); }
   font-size: 12px; font-weight: 700; color: var(--primary-deep); padding: 5px 4px 2px; text-align: left; }
 .nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none;
   display: grid; place-items: center; cursor: pointer; }
+
+/* Mezo-kalauz „?" (mezo-gb1s.1) — Fraunces-dőlt kérdőjel, coral; nyitva coral wash. */
+.nap-q .nap-q-glyph { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 19px; font-weight: 500; color: var(--primary-deep); line-height: 1; }
+.nap-q.is-open { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
+
+/* ── Mezo-kalauz (mezo-gb1s.1) — the page-guide sheet; prototype docs/design_2.0/prototypes/kalauz.html ×1.18 ── */
+.kalauz-sheet { padding: 4px 16px 16px; border-radius: 30px 30px 0 0; }
+.kalauz-sheet.is-peek { animation: none; transform: translateY(calc(100% - 76px)); transition: transform 0.32s cubic-bezier(0.25, 0.8, 0.35, 1); }
+.sheet-backdrop.kalauz-clear { background: transparent; backdrop-filter: none; }
+.kalauz-spot { position: absolute; z-index: 200; border-radius: 22px; pointer-events: none;
+  box-shadow: 0 0 0 3px var(--dv-amber), 0 0 0 9999px rgba(29, 23, 18, 0.42); }
+.kalauz-body.is-hidden { visibility: hidden; }
+.kalauz-peekbar { position: absolute; left: 16px; right: 16px; top: 10px; height: 56px; display: flex; align-items: center; gap: 10px; }
+.kalauz-peektxt { flex: 1; font-size: 13px; font-weight: 300; color: var(--text-primary); }
+.kalauz-peekhint { color: var(--mz-ink-soft); }
+.kalauz-top { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.kalauz-step { margin-left: auto; font-variant-numeric: tabular-nums; }
+.kalauz-x { border: none; background: var(--mz-chipbg); width: 40px; height: 40px; border-radius: 50%; font-size: 15px; color: var(--mz-ink-soft); cursor: pointer; font-family: inherit; }
+.kalauz-card { min-height: 340px; padding: 4px 2px 0; animation: kalauz-in 0.32s cubic-bezier(0.22, 0.9, 0.32, 1.1) both; }
+@keyframes kalauz-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+.kalauz-q { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--primary-deep); }
+.kalauz-n { color: var(--mz-ink-soft); margin-right: 7px; font-variant-numeric: tabular-nums; }
+.kalauz-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin-top: 4px; text-wrap: balance; color: var(--text-primary); }
+.kalauz-art { display: flex; align-items: flex-end; justify-content: center; gap: 8px; height: 110px; margin: 6px 0 2px; }
+.kalauz-orb { animation: kalauz-breathe 4.5s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes kalauz-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+.kalauz-spotart { filter: drop-shadow(0 10px 12px rgba(43, 33, 24, 0.18)); }
+.kalauz-voice { font-size: 16px; font-weight: 300; line-height: 1.5; margin-top: 8px; color: var(--text-primary); }
+.kalauz-voice strong, .kalauz-def strong { font-weight: 600; }
+.kalauz-fogalom { margin-top: 10px; border-radius: 15px; padding: 10px 13px 11px; background: var(--mz-wash-coral, var(--surface-card)); border: 0.5px solid color-mix(in srgb, var(--primary-deep) 22%, transparent); }
+.kalauz-term { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 16px; color: var(--primary-deep); }
+.kalauz-def { font-size: 13px; font-weight: 300; margin-top: 2px; color: var(--text-primary); }
+.kalauz-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.kalauz-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-strong); background: var(--surface-card); font-family: inherit; border-radius: 999px; padding: 6px 12px 6px 8px; font-size: 12px; font-weight: 600; color: var(--text-primary); cursor: pointer; min-height: 40px; }
+.kalauz-chip-to { color: var(--mz-ink-soft); font-weight: 500; }
+.kalauz-show { margin-top: 11px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid color-mix(in srgb, var(--dv-amber) 55%, transparent); background: color-mix(in srgb, var(--dv-amber) 12%, transparent); color: var(--dv-amber-deep, var(--primary-deep)); border-radius: 999px; padding: 7px 13px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 40px; }
+.kalauz-dots { display: flex; justify-content: center; gap: 0; margin: 8px 0 12px; }
+.kalauz-dot { width: 40px; height: 40px; border-radius: 999px; background: none; border: none; padding: 0; cursor: pointer; position: relative; display: grid; place-items: center; }
+.kalauz-dot::after { content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--border-strong); transition: width 0.25s ease, background 0.25s ease; }
+.kalauz-dot.on::after { width: 21px; background: var(--primary-deep); }
+.kalauz-dot.seen::after { background: color-mix(in srgb, var(--primary-deep) 45%, transparent); }
+.kalauz-foot { display: flex; align-items: center; gap: 8px; }
+.kalauz-ghost { background: var(--mz-chipbg); color: var(--mz-ink-soft); border: none; font-family: inherit; border-radius: 999px; padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 40px; }
+.kalauz-ghost[disabled] { opacity: 0.35; cursor: default; }
+.kalauz-link { background: none; padding-left: 4px; }
+.kalauz-back { margin-left: auto; }
+.kalauz-cta { padding: 10px 22px; min-height: 40px; background: var(--gradient-cta); color: #fff; border: none; border-radius: 999px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+@media (prefers-reduced-motion: reduce) {
+  .kalauz-orb, .kalauz-card { animation: none; }
+  .kalauz-sheet.is-peek, .kalauz-dot::after { transition: none; }
+}
+
 .nap-hero { min-height: 0; cursor: default; }
 .nap-hero-row { display: flex; align-items: center; gap: 12px; }
 .nap-hero-line { display: flex; align-items: baseline; gap: 7px; }
@@ -4640,6 +4701,15 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
 .nap-mzmsg .txt { font-size: 13px; font-weight: 300; margin-top: 7px; margin-bottom: 0; }
 .nap-mzmsg-refs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
 .nap-mzmsg-meta { font-size: 11px; color: var(--mz-ink-mut); margin-top: 6px; }
+/* Régebbi, felhasználó által kinyitott kártya visszacsukás-gombja (mezo-z4h4) — jobbra
+   igazítva a kártya fejsorában, 44pt érintési célterülettel. A legújabb és a deeplink-cél
+   kártyák sosem kapják meg (mindig teljes kártyák maradnak). */
+.nap-mzmsg-collapse {
+  margin-left: auto; flex: none; min-width: 44px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; font-family: inherit; font-size: 15px;
+  color: var(--mz-ink-mut); cursor: pointer;
+}
 .nap-mz-cta {
   /* prototype .cta + .mz-cta; padding 14px (not 9×1.18) so the target clears 44pt */
   width: 100%; margin-top: 5px; padding: 14px 0; text-align: center;
@@ -4647,6 +4717,43 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
   font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
   box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55);
 }
+/* ── Üzenetek | Életjelek tab-váltó (mezo-ho9k) — a mem-seg pill-idióma a nap
+      oldalon: 44pt gombok, aktív = gradient CTA. ── */
+.nap-mzseg { display: flex; gap: 5px; border-radius: 999px; padding: 4px; margin-bottom: 12px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.nap-mzseg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.nap-mzseg button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+/* Tab-pöttyök (mezo-ho9k): belépéskori olvasatlan-pillanatkép, session-lokális. */
+.nap-mzdot { width: 6px; height: 6px; border-radius: 50%; background: var(--gradient-cta); flex: none; }
+/* ── Életjelek tab: státusz-sáv + rendben-sor (mezo-ho9k) ── */
+.nap-ejstrip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; width: 100%;
+  box-sizing: border-box; margin-bottom: 12px; padding: 0; border: none; background: none;
+  font-family: inherit; cursor: pointer; color: var(--text-primary); }
+.nap-ejcell { display: grid; justify-items: center; gap: 4px; padding: 9px 2px 7px; min-height: 44px;
+  background: var(--surface-card); border-radius: 13px; border: 0.5px solid rgba(43, 33, 24, 0.06); }
+.nap-ejcell .eb { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.nap-ejcell .pct { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.nap-ejcell.warn { border-color: color-mix(in srgb, var(--coral-deep) 55%, transparent); }
+.nap-ejok { font-size: 12px; font-weight: 600; color: var(--sage-deep); text-align: center; margin: 4px 0 10px; }
+.nap-ejok svg { vertical-align: -2px; margin-left: 2px; }
+/* Honest-states variant (mezo-z4h4): no nudge CARD in the thread does not mean the rings are
+   fine (deriveNudges swallows fresh nudges in the quiet window / after a same-day repeat) — the
+   coral/alert tone mirrors .nap-ejcell.warn rather than the reassuring sage-deep above. */
+.nap-ejok.warn { color: var(--coral-deep); }
+/* ── Összecsukott régebbi üzenet-sor (mezo-ho9k) ── */
+.nap-mzrow { width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px;
+  text-align: left; min-height: 44px; margin-bottom: 8px; padding: 10px 14px; cursor: pointer;
+  background: var(--surface-card); border-radius: 15px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 10px 22px -17px rgba(43, 33, 24, 0.3); font-family: inherit; color: var(--text-primary); }
+.nap-mzrow .t { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: #A8801F; flex: none; }
+.nap-mzrow .pv { flex: 1; min-width: 0; font-size: 12px; font-weight: 300; color: var(--mz-ink-mut);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nap-mzrow .mt { flex: none; font-size: 10px; color: var(--mz-ink-mut); white-space: nowrap; }
+.nap-mzrow .chev { color: var(--mz-ink-mut); font-size: 12px; flex: none; }
 /* ── Nap · Napi küldetések page (mezo-d20.2.4) — prototype nap-body #page-quest,
       values ×1.18 (330→390px frame). The reroll/CTA chips keep the prototype's slim
       pill face but grow to the 44pt touch floor. ── */
@@ -4916,7 +5023,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 
 /* Emlékek · N disclosure */
 .mzc-membtn { border: none; background: none; font-family: inherit; cursor: pointer; padding: 5px 0; align-items: center; }
-.mzc-memeb { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); }
+.mzc-memeb { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-tertiary); display: inline-flex; align-items: center; gap: 4px; }
 
 /* typing bubble */
 .mzc-typing {
@@ -4944,6 +5051,27 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-csend { background: var(--mz-chat-send-bg); color: #fff; box-shadow: var(--mz-chat-send-shadow); }
 .mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
 .mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
+
+/* ===== WeeklyBandsCard (wizard redesign, mezo-d20.14) — current → ceiling per
+   muscle, no percentages. Reuses existing --mz-cell-, --mz-ink- and --mz-cellbg
+   tokens; the hairline literal mirrors .nck-row / .nr-row above (no --mz-line
+   token exists). */
+.mz-card { background: var(--surface-1); border: 1px solid var(--card-border); border-radius: var(--r-2xl); filter: var(--card-elevation); padding: 16px; }
+.mz-bands { display: grid; gap: 2px; }
+.mz-band { padding: 7px 0; }
+.mz-band + .mz-band { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.mz-band-row { display: flex; align-items: center; gap: 8px; }
+.mz-pill { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.mz-grow { flex: 1; }
+.mz-band-nums { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mz-band-bar { height: 9px; border-radius: 5px; background: var(--mz-cellbg); overflow: hidden; margin-top: 5px; }
+.mz-band-bar > div { height: 100%; border-radius: 5px; }
+.mz-tchip { font-size: 9px; font-weight: 700; border-radius: 999px; padding: 2px 9px; }
+.mz-tchip-emphasize { background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }
+.mz-tchip-grow { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.mz-tchip-maintain { border: 1px dashed var(--mz-ink-mut); color: var(--mz-ink-mut); }
+.mz-stepchip { font-size: 9.5px; font-weight: 700; color: var(--mz-cell-sage-ink); }
+.mz-habnote { font-size: 10px; color: var(--mz-ink-mut); margin-top: 10px; line-height: 1.4; }
 
 /* ===== mezo-vdf4: munkacsík — a tool-hívások egyetlen emberi sora ===== */
 /* Domain wash + deep text pairs — shared by the work panel and the grouped refs. */
@@ -5659,71 +5787,171 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   font-size: 9px; font-weight: 800; color: var(--lav-deep); white-space: nowrap;
   box-shadow: 0 2px 7px rgba(43, 33, 24, 0.2); }
 
-/* ── Growth (mezo-d20.6.5) — prototype en-body #page-growth (.segtabs/.predtile/
-   .sklrow/.covgrid/.bdggrid family), ×1.18. Skill bands (LIFE/Atlétikus/Izom) wear the
-   predtile wash; per-skill rows keep the shared .skl meter (GrowthSummaryCard's Profil
-   preview reads the identical rows, so that markup stays untouched). Rutin gets the
-   30-day 🌅/🌙 counter tiles above the chain cards; Napló keeps its honest "csendben
-   lejárt" line inside washed day tiles; Kitüntetések gets the 3-col badge grid (achieved
-   sage ✓, else a gold progress bar) — all sharing the .mzp-fill keyframe already declared
-   above for the predictions/experiments family. ── */
-.gr-seg { display: flex; gap: 5px; border-radius: 999px; padding: 4px;
-  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
-.gr-seg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px;
-  font-size: 11px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
-.gr-seg button.on { background: var(--gradient-cta); color: #fff;
-  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
-.gr-xpwrap { display: flex; align-items: baseline; gap: 4px; }
-.gr-unit { font-size: 15px; font-weight: 400; color: var(--mz-ink-soft); }
-
-.gr-band { border-radius: 21px; padding: 13px 15px; margin-bottom: 10px;
-  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+/* ── Growth hub + 4 aloldal (mezo-rmi0.1) — prototype growth-tab.html (src/growth-head.html)
+      ×1.18. Hero bars + ritmus dots, Ma strip chips, band cards with .gr-skl rows, Rutin
+      30-cell counters + chain rows, Napló day cards, Kitüntetések streak/titles/badge rings/
+      perks. Every color is a --mz-* token (both :root blocks); infinite animations are
+      reduced-motion guarded at the bottom. ── */
+/* hero */
+.gr-hero { display: grid; gap: 5px; padding: 2px 5px 2px; }
+.gr-hero-ttl { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; text-align: center; }
+.gr-hero-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.gr-hero-num { font-size: 45px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.gr-hero-unit { font-size: 13px; font-weight: 700; color: var(--mz-cell-amber-ink); margin-left: 5px; letter-spacing: 0.04em; }
+.gr-hero-icon { transform-origin: 50% 80%; }
+.gr-traits { display: grid; gap: 6px; padding: 5px 7px 0; }
+.gr-trait { display: grid; grid-template-columns: 68px 1fr 64px; align-items: center; gap: 9px; }
+.gr-trait-lb { font-size: 9.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.gr-trait-val { font-size: 11px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.gr-trait-val small { font-weight: 500; color: var(--mz-ink-soft); font-size: 9.5px; }
+.gr-tbar { height: 7px; border-radius: 4px; background: var(--mz-gbar-bg); overflow: hidden; }
+.gr-tbar i { display: block; height: 100%; border-radius: 4px; transform: scaleX(0); transform-origin: left; width: var(--w, 0%); }
+.mz-play .gr-tbar i { animation: mzp-fill 0.9s cubic-bezier(0.22, 0.9, 0.32, 1) forwards; animation-delay: var(--d, 0ms); }
+.gr-tbar i.gold { background: var(--mz-strength); }
+.gr-tbar i.lav  { background: var(--mz-gbar-lav); }
+.gr-tbar i.sage { background: var(--mz-gbar-sage); }
+.gr-wdots { display: flex; gap: 5px; align-items: center; }
+.gr-wdots i { flex: 1; height: 8px; border-radius: 5px; background: var(--mz-gbar-bg); transform: scale(0.3); opacity: 0; }
+.gr-wdots i.on { background: var(--mz-gbar-sage); }
+.gr-wdots i.now { box-shadow: 0 0 0 1.5px var(--mz-cell-sage-ink); }
+.mz-play .gr-wdots i { animation: gr-dotpop 0.4s cubic-bezier(0.3, 1.4, 0.4, 1) forwards; animation-delay: var(--d); }
+@keyframes gr-dotpop { to { transform: none; opacity: 1; } }
+@keyframes gr-breathe { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.05) rotate(-2deg); } }
+@keyframes gr-flame { 0%, 100% { transform: rotate(-3deg) scale(1); } 50% { transform: rotate(3deg) scale(1.06); } }
+@keyframes gr-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+/* Ma strip */
+.gr-ma { border-radius: 19px; padding: 9px 12px 11px; background: var(--mz-stripbg); border: 0.5px solid var(--mz-line-soft); box-shadow: var(--mz-shadow); }
+.gr-ma-head { display: flex; align-items: center; gap: 7px; cursor: pointer; border: none; background: none; font-family: inherit; padding: 0 2px 7px; width: 100%; text-align: left; min-height: 44px; }
+.gr-ma-head .mz-eyebrow { color: var(--mz-cell-amber-ink); }
+.gr-ma-xp { margin-left: auto; font-size: 9.5px; font-weight: 800; color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); border-radius: 7px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.gr-ma-chev { color: var(--mz-ink-mut); font-size: 14px; }
+.gr-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 1px 2px 2px; margin: 0 -2px; }
+.gr-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 8px 12px 8px 9px; font-size: 10.5px; font-weight: 600; font-family: inherit; min-height: 34px;
+  border: 1px solid var(--mz-line); background: var(--mz-chipbg); color: var(--text-primary); cursor: pointer; max-width: 224px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4), background 0.3s ease; }
+.gr-chip:active { transform: scale(0.95); }
+.gr-chip-mk { width: 15px; height: 15px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 9.5px; border: 1.2px solid var(--mz-line); }
+.gr-chip.done { background: var(--mz-cell-sage-bg); border-color: var(--mz-cell-sage-ink); color: var(--mz-cell-sage-ink); cursor: default; }
+.gr-chip.done .gr-chip-mk { background: var(--mz-cell-sage-ink); border-color: var(--mz-cell-sage-ink); color: #fff; }
+.gr-chip.gone { opacity: 0.5; border-style: dashed; cursor: default; }
+.gr-chip.gone .gr-chip-mk { border-style: dashed; }
+.gr-chip.add { background: var(--mz-wash-gold); border-color: var(--mz-cell-amber-ink); color: var(--mz-cell-amber-ink); font-weight: 700; }
+.gr-chip.act { background: var(--mz-cell-lav-bg); border-color: var(--mz-cell-lav-ink); color: var(--mz-cell-lav-ink); cursor: default; }
+.gr-chip.act .gr-chip-mk { border-color: var(--mz-cell-lav-ink); color: var(--mz-cell-lav-ink); }
+.gr-chip-skel { min-width: 120px; background: var(--mz-gbar-bg); border-color: transparent; }
+.gr-ma-empty { font-size: 11px; font-weight: 300; color: var(--mz-ink-soft); padding: 2px 2px 6px; line-height: 1.5; }
+.gr-ma-empty b { color: var(--text-primary); font-weight: 600; }
+/* hub tiles */
+.gr-tile-line b { color: var(--text-primary); }
+.gr-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--mz-cell-amber-ink); box-shadow: 0 0 0 2px var(--mz-cell-amber-bg); margin-left: auto; flex: none; }
+/* skill bands */
+.gr-band { border-radius: 20px; padding: 13px 14px; margin-bottom: 11px; border: 0.5px solid var(--mz-line-soft); background: var(--mz-stripbg); box-shadow: var(--mz-shadow); }
 .gr-band.lav   { background: var(--mz-wash-lav);  box-shadow: var(--mz-shadow-lav); }
 .gr-band.sage  { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
 .gr-band.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
-.gr-band-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
-.gr-band-chip { font-size: 10px; font-weight: 800; letter-spacing: 0.05em; border-radius: 7px;
-  padding: 3px 8px; flex: none; background: var(--mz-stch-pend-bg); color: var(--mz-stch-pend-ink); }
-.gr-band-foot { display: flex; justify-content: space-between; margin-top: 11px; padding-top: 9px;
-  border-top: 1px solid rgba(43, 33, 24, 0.08); font-size: 12px; }
-
-.gr-day { border-radius: 19px; padding: 12px 14px; margin-bottom: 10px;
-  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
-.gr-day-head { display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 5px;
-  border-bottom: 1px solid rgba(43, 33, 24, 0.08); }
-.gr-row { display: flex; gap: 9px; align-items: flex-start; padding-top: 7px; }
-
-.gr-covgrid { display: flex; gap: 9px; margin-bottom: 10px; }
-.gr-covtile { flex: 1; text-align: center; border-radius: 15px; padding: 10px 4px 9px;
-  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25);
-  display: grid; justify-items: center; gap: 4px; }
-.gr-covtile b { font-size: 11px; }
-.gr-covtile small { font-size: 9px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
-.gr-covtrack { width: 80%; height: 5px; border-radius: 3px; background: var(--mz-gbar-bg); overflow: hidden; }
-.gr-covtrack div { height: 100%; border-radius: 3px; background: var(--mz-strength);
-  transform: scaleX(0); transform-origin: left; }
-.mz-play .gr-covtrack div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
-
-.gr-chain { border-radius: 20px; padding: 13px 15px; margin-bottom: 10px;
-  background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
-
-.gr-bdggrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.gr-bdg { border-radius: 14px; padding: 9px 6px; text-align: center; display: grid; gap: 4px; justify-items: center;
-  background: var(--mz-cellbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 6px 12px -8px rgba(43, 33, 24, 0.2); }
+.gr-band.sky   { background: var(--mz-wash-sky);  box-shadow: var(--mz-shadow-sky); }
+.gr-band-top { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+.gr-band-chip { margin-left: auto; font-size: 8.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 7px; padding: 2px 8px; flex: none; font-variant-numeric: tabular-nums; background: var(--mz-chipbg); color: var(--mz-ink-soft); }
+.gr-band-chip.ok   { background: var(--mz-cell-sage-bg);  color: var(--mz-cell-sage-ink); }
+.gr-band-chip.warn { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.gr-band-chip.lav  { background: var(--mz-cell-lav-bg);   color: var(--mz-cell-lav-ink); }
+.gr-band-chip.sky  { background: var(--mz-cell-sky-bg);   color: var(--mz-cell-sky-ink); }
+.gr-band-foot { font-size: 10px; color: var(--mz-ink-mut); font-weight: 300; padding: 7px 2px 0; line-height: 1.5; }
+.gr-band-foot b { color: var(--mz-cell-sage-ink); font-weight: 700; }
+.gr-skl { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+.gr-skl-ic { width: 24px; height: 24px; border-radius: 8px; flex: none; display: grid; place-items: center; background: var(--mz-chipbg); font-size: 9.5px; font-weight: 800; color: var(--tc, var(--mz-ink-soft)); }
+.gr-skl-nm { font-size: 11px; font-weight: 600; width: 97px; flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gr-skl .gr-tbar { flex: 1; height: 6px; }
+.gr-skl-lv { font-size: 9.5px; font-weight: 800; color: var(--text-primary); background: var(--mz-chipbg); border-radius: 7px; padding: 2px 6px; flex: none; font-variant-numeric: tabular-nums; min-width: 35px; text-align: center; }
+.gr-skl-perk { font-size: 8.5px; font-weight: 700; color: var(--mz-cell-amber-ink); flex: none; }
+.gr-skl.more { display: none; }
+.gr-band.expanded .gr-skl.more { display: flex; }
+.gr-expand { width: 100%; border: none; background: none; font-family: inherit; font-size: 10.5px; font-weight: 700; color: var(--tc, var(--mz-ink-soft)); cursor: pointer; padding: 7px 0 0; text-align: center; min-height: 44px; }
+/* rutin */
+.gr-covgrid { display: flex; gap: 9px; margin-bottom: 11px; }
+.gr-covtile { flex: 1; border-radius: 18px; padding: 11px 12px; background: var(--mz-stripbg); border: 0.5px solid var(--mz-line-soft); box-shadow: var(--mz-shadow); }
+.gr-cov-hd { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.gr-cov-hd b { font-size: 11px; font-weight: 700; }
+.gr-cov-n { margin-left: auto; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gr-cov-n small { font-size: 9px; color: var(--mz-ink-mut); font-weight: 600; }
+.gr-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.gr-cells i { aspect-ratio: 1; border-radius: 4px; background: var(--mz-gbar-bg); transform: scale(0.4); opacity: 0; }
+.gr-cells i.on { background: var(--mz-strength); }
+.gr-cells i.ev.on { background: var(--mz-gbar-lav); }
+.mz-play .gr-cells i { animation: gr-dotpop 0.35s cubic-bezier(0.3, 1.4, 0.4, 1) forwards; animation-delay: calc(var(--d) + var(--i) * 14ms); }
+.gr-daynav { display: flex; align-items: center; gap: 9px; padding: 2px 2px 9px; }
+.gr-chain { border-radius: 20px; padding: 13px 14px; margin-bottom: 11px; border: 0.5px solid var(--mz-line-soft); background: var(--mz-stripbg); box-shadow: var(--mz-shadow); }
+.gr-chain.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.gr-chain.lav   { background: var(--mz-wash-lav);  box-shadow: var(--mz-shadow-lav); }
+.gr-chainrow { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 11px; }
+.gr-chainrow + .gr-chainrow { border-top: 0.5px solid var(--mz-line-soft); }
+.gr-ck { width: 18px; height: 18px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 9.5px; border: 1.2px solid var(--mz-line); color: transparent; }
+.gr-chainrow.done .gr-ck { background: var(--mz-cell-sage-ink); border-color: var(--mz-cell-sage-ink); color: #fff; }
+.gr-chainrow.skip .gr-ck { border-style: dashed; }
+.gr-chainrow .tx { flex: 1; font-weight: 500; }
+.gr-chainrow.skip .tx { color: var(--mz-ink-mut); }
+.gr-chain-pct { font-size: 9.5px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; font-style: italic; }
+.gr-daysum { font-size: 11px; font-weight: 300; line-height: 1.55; }
+.gr-daysum b { font-weight: 700; }
+.gr-softnote { font-size: 10.5px; color: var(--mz-ink-soft); font-weight: 300; background: var(--mz-gbar-bg); border-radius: 11px; padding: 7px 11px; margin-top: 7px; line-height: 1.5; }
+/* napló */
+.gr-dayhd { display: flex; align-items: baseline; gap: 7px; padding: 9px 2px 5px; }
+.gr-dayhd .dow { font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mz-cell-sky-ink); }
+.gr-dayhd .dt { font-size: 9.5px; color: var(--mz-ink-mut); }
+.gr-dayhd .xp { margin-left: auto; font-size: 9.5px; font-weight: 800; color: var(--mz-cell-sage-ink); font-variant-numeric: tabular-nums; }
+.gr-day { border-radius: 20px; padding: 5px 14px; margin-bottom: 11px; border: 0.5px solid var(--mz-line-soft); background: var(--mz-stripbg); box-shadow: var(--mz-shadow); }
+.gr-jrow { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; font-size: 11px; }
+.gr-jrow + .gr-jrow { border-top: 0.5px solid var(--mz-line-soft); }
+.gr-jk { width: 15px; flex: none; text-align: center; font-weight: 800; color: var(--mz-cell-sage-ink); }
+.gr-jrow.act .gr-jk { color: var(--mz-cell-lav-ink); }
+.gr-jrow.gone .gr-jk, .gr-jrow.gone .tx { color: var(--mz-ink-mut); }
+.gr-jrow .tx { flex: 1; font-weight: 500; }
+.gr-jmeta { font-size: 9.5px; color: var(--mz-ink-soft); font-style: italic; flex: none; }
+/* kitüntetések */
+.gr-streak { display: flex; gap: 13px; align-items: center; }
+.gr-streak-n { font-size: 31px; font-weight: 200; font-variant-numeric: tabular-nums; line-height: 1; }
+.gr-flame { transform-origin: 50% 90%; }
+.gr-msbar { height: 6px; border-radius: 4px; background: var(--mz-gbar-bg); overflow: hidden; margin-top: 7px; position: relative; }
+.gr-msbar i { display: block; height: 100%; border-radius: 4px; background: var(--gradient-cta); transform: scaleX(0); transform-origin: left; width: var(--w); }
+.mz-play .gr-msbar i { animation: mzp-fill 0.9s cubic-bezier(0.22, 0.9, 0.32, 1) forwards; animation-delay: var(--d, 200ms); }
+.gr-seg { display: flex; gap: 5px; background: var(--mz-gbar-bg); border-radius: 999px; padding: 4px; margin: 5px 0 7px; }
+.gr-seg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px; padding: 7px 0; font-size: 10px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.gr-seg button.on { background: var(--mz-cell-amber-ink); color: #fff; box-shadow: var(--mz-shadow-gold); }
+.gr-titrow { display: flex; align-items: center; gap: 9px; padding: 8px 2px; font-size: 12.5px; min-height: 44px; }
+.gr-titrow + .gr-titrow { border-top: 0.5px solid var(--mz-line-soft); }
+.gr-titrow .nm { font-weight: 600; flex: 1; min-width: 0; }
+.gr-titrow.lock .nm { color: var(--mz-ink-mut); font-weight: 500; }
+.gr-titrow .sub { font-size: 9.5px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 3px; }
+.gr-titact { flex: none; font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 6px 13px; min-height: 32px; border: 1px solid var(--mz-line); background: var(--mz-stripbg); color: var(--mz-cell-coral-ink); cursor: pointer; font-family: inherit; }
+.gr-titact.worn { background: var(--mz-cell-sage-bg); border-color: transparent; color: var(--mz-cell-sage-ink); cursor: default; }
+.gr-titact:disabled { opacity: 0.45; cursor: default; }
+.gr-lockmk { font-size: 9.5px; font-weight: 800; color: var(--mz-ink-mut); letter-spacing: 0.06em; }
+.gr-bdggrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.gr-bdg { border-radius: 17px; padding: 11px 6px 9px; text-align: center; display: grid; gap: 5px; justify-items: center; background: var(--mz-stripbg); border: 0.5px solid var(--mz-line-soft); box-shadow: var(--mz-shadow); }
 .gr-bdg.done { background: var(--mz-wash-sage); }
-.gr-bdg-em { font-size: 18px; }
-.gr-bdg b { font-size: 9.5px; font-weight: 700; line-height: 1.25; }
+.gr-ring { width: 45px; height: 45px; border-radius: 50%; position: relative; display: grid; place-items: center; background: conic-gradient(var(--mz-cell-amber-ink) calc(var(--v, 0) * 1%), var(--mz-gbar-bg) 0); }
+.gr-bdg.done .gr-ring { background: var(--mz-cell-sage-ink); }
+.gr-ring::after { content: ''; position: absolute; width: 37px; height: 37px; border-radius: 50%; background: var(--mz-stripbg); }
+.gr-bdg.done .gr-ring::after { background: var(--mz-cell-sage-bg); }
+.gr-ring span { position: relative; z-index: 1; font-size: 18px; }
+.gr-bdg:not(.done) .gr-ring span { filter: grayscale(1) opacity(0.55); }
+.gr-bdg b { font-size: 9px; font-weight: 700; line-height: 1.25; }
 .gr-bdg small { font-size: 8px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
-.gr-bdg-bar { width: 100%; height: 4px; border-radius: 3px; background: var(--mz-gbar-bg); overflow: hidden; }
-.gr-bdg-bar div { height: 100%; border-radius: 3px; background: var(--mz-strength);
-  transform: scaleX(0); transform-origin: left; }
-.mz-play .gr-bdg-bar div { animation: mzp-fill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
-
+.gr-bdg.done small { color: var(--mz-cell-sage-ink); font-weight: 800; }
+.gr-perkrow { display: flex; align-items: center; gap: 11px; padding: 8px 0; font-size: 11px; }
+.gr-perkrow + .gr-perkrow { border-top: 0.5px solid var(--mz-line-soft); }
+.gr-perk-pi { width: 31px; height: 31px; border-radius: 11px; flex: none; display: grid; place-items: center; background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); font-size: 9.5px; font-weight: 800; }
+.gr-perkrow .pn { font-weight: 700; }
+.gr-perkrow .pe { font-size: 10px; color: var(--mz-ink-soft); font-weight: 300; }
+.gr-perkrow .pl { margin-left: auto; font-size: 9px; font-weight: 800; color: var(--mz-ink-mut); flex: none; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: no-preference) {
+  .gr-hero-icon { animation: gr-breathe 5s ease-in-out infinite; }
+  .gr-flame { animation: gr-flame 2.6s ease-in-out infinite; }
+  .gr-pulse { animation: gr-pulse 2.2s ease-in-out infinite; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .gr-covtrack div, .mz-play .gr-covtrack div,
-  .gr-bdg-bar div, .mz-play .gr-bdg-bar div { transform: none; animation: none; }
+  .gr-tbar i, .mz-play .gr-tbar i, .gr-msbar i, .mz-play .gr-msbar i,
+  .gr-wdots i, .mz-play .gr-wdots i, .gr-cells i, .mz-play .gr-cells i { transform: none; opacity: 1; animation: none; }
 }
 /* ── Napló re-face (mezo-d20.6.6) — prototype en-body.html #page-naplo ×1.18.
       The gratitude tile and the gold decision card reuse the Előrejelzések/Kísérletek family's
@@ -5924,7 +6152,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral);
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
 .ppl-hub-wide:active { transform: scale(0.975); }
-.ppl-hub-snip { font-size: 11px; font-weight: 300; line-height: 1.5; margin-top: 5px; color: var(--text-primary); }
+.ppl-hub-snip { font-size: 11px; font-weight: 300; line-height: 1.5; margin-top: 5px; color: var(--text-primary); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   .ppl-hub-tile, .ppl-hub-wide { transition: none; }
@@ -6394,19 +6622,78 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .fh-st-done { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
 .fh-st-miss { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
 
-.fh-wring { display: grid; gap: 2px; justify-items: center; flex: none; }
-.fh-wring i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
-  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-gbar-bg) 0); }
-.fh-wring i::after { content: attr(data-l); width: 15px; height: 15px; border-radius: 50%;
-  background: var(--mz-fh-ringhole); display: grid; place-items: center;
-  font-size: 7px; font-weight: 800; color: var(--mz-ink-soft); }
-.fh-wring small { font-size: 7.5px; font-weight: 700; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+/* 44px SVG macro rings on the /fuel/log block (Logolás 2.1, mezo-zeeq; prototype
+   fuel-logolas-2.1.html `.m`) — stroke-dashoffset transition, the .khero-ring-fill recipe;
+   the letter sits in the hole, the grams under it, then the share of the DAILY target. */
+.fh-wring { display: grid; gap: 1px; justify-items: center; flex: 1; min-width: 0; }
+.fh-wring-w { position: relative; width: 44px; height: 44px; }
+.fh-wring-w svg { transform: rotate(-90deg); display: block; }
+.fh-wring-t { fill: none; stroke: var(--mz-gbar-bg); }
+:where(.fh-wring-f) { fill: none; stroke-linecap: round; transition: stroke-dashoffset 1.4s cubic-bezier(.2, .8, .2, 1); }
+.fh-wring-w i { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal;
+  font-size: 11px; font-weight: 800; color: var(--mz-ink-soft); }
+.fh-wring b { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; margin-top: 3px;
+  font-variant-numeric: tabular-nums; }
+.fh-wring b em { font-style: normal; font-size: 9px; font-weight: 600; color: var(--mz-ink-mut); }
+.fh-wring small { font-size: 8.5px; font-weight: 600; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.flog-rings.is-done { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px;
+  padding-top: 10px; border-top: 1px solid var(--border-subtle); }
+/* a planned window's 3 rings stay compact beside the kcal cell */
+.flog-data .fh-wring { flex: none; }
+.flog-data .fh-wring-w { width: 34px; height: 34px; }
+.flog-data .fh-wring-w svg { width: 34px; height: 34px; }
+.flog-data .fh-wring b { font-size: 11px; }
+.flog-data .fh-wring small { display: none; }
 
 .fh-scorech { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none;
   font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
 .fh-scorech.is-mid { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
 .fh-scorech.is-pend { background: var(--mz-chat-refch-bg); color: var(--mz-ink-mut); }
 button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-height: 44px; padding: 3px 14px; }
+.flog-srow .fh-scorech.is-pend { min-height: 36px; display: inline-flex; align-items: center; padding: 3px 14px; font-size: 11px; }
+
+/* AI score pill (Logolás 2.1, mezo-zeeq): 30px ring + 19px number + tone word + chevron. It
+   nudges every 2.6s (the fh-lt-nowpulse cadence) with a tone-coloured halo so it reads as
+   tappable — the user's explicit ask; :active and reduced motion stop it (see the .fh-*
+   reduced-motion block below). */
+.fh-aisc { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px 4px 5px; border-radius: 999px;
+  background: var(--surface-card, #fff); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), inset 0 0 0 1px var(--border-subtle);
+  color: var(--text-primary); transform-origin: 40% 50%; border: none; font-family: inherit; text-align: left; }
+.fh-aisc.is-tap { cursor: pointer; min-height: 44px; }
+.fh-aisc-r { position: relative; width: 30px; height: 30px; flex: none; }
+.fh-aisc-r svg { transform: rotate(-90deg); display: block; }
+.fh-aisc-t { fill: none; stroke: var(--mz-gbar-bg); }
+:where(.fh-aisc-f) { fill: none; stroke-linecap: round; stroke: var(--sc); transition: stroke-dashoffset 1.2s cubic-bezier(.2, .8, .2, 1); }
+.fh-aisc-r i { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 10px; }
+.fh-aisc-t2 { display: grid; line-height: 1.1; }
+.fh-aisc-t2 b { font-size: 19px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.fh-aisc-t2 small { font-size: 8.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sc-ink); }
+.fh-aisc-chev { font-size: 16px; color: var(--mz-ink-mut); margin-left: -2px; }
+.fh-aisc.s-hi { --sc: var(--dv-sage); --sc-ink: var(--mz-cell-sage-ink); }
+.fh-aisc.s-md { --sc: var(--dv-amber); --sc-ink: var(--mz-cell-amber-ink); }
+.fh-aisc.s-lo { --sc: var(--dv-coral); --sc-ink: var(--mz-cell-coral-ink); }
+@keyframes fh-aisc-nudge {
+  0%, 14%, 100% { transform: rotate(0) scale(1); }
+  3% { transform: rotate(-5deg) scale(1.05); }
+  6% { transform: rotate(5deg) scale(1.06); }
+  9% { transform: rotate(-3deg) scale(1.04); }
+  12% { transform: rotate(2deg) scale(1.02); }
+}
+@keyframes fh-aisc-halo {
+  0%, 14%, 100% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), inset 0 0 0 1px var(--border-subtle); }
+  6% { box-shadow: 0 4px 18px color-mix(in srgb, var(--sc) 45%, transparent), inset 0 0 0 1.5px var(--sc); }
+}
+.fh-aisc.is-tap { animation: fh-aisc-nudge 2.6s ease-in-out 0.3s infinite, fh-aisc-halo 2.6s ease-in-out 0.3s infinite; }
+.fh-aisc.is-tap:active { animation: none; transform: scale(0.96); }
+
+/* Context chip — the role the meal was SCORED under: Standard / Pre-workout / Post-workout
+   (mezo-zeeq; amber = pre, lavender = post, the Stack-zone cell tones). */
+.fh-ctx { display: inline-flex; align-items: center; gap: 5px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 999px; flex: none; white-space: nowrap; }
+.fh-ctx i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.fh-ctx.is-standard { background: var(--mz-gbar-bg); color: var(--mz-ink-soft); }
+.fh-ctx.is-pre { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.fh-ctx.is-post { background: var(--mz-cell-lav-bg); color: var(--mz-cell-lav-ink); }
 
 /* ═══ Fuel-beállítások band (the .enh-band shape; a Mezo-sáv retired — mezo-04lo) ═══ */
 .fh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
@@ -6445,6 +6732,8 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   .fh-band, .fh-logtile { transition: none; }
   .fh-band:active, .fh-logtile:active { transform: none; }
   .fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: none; }
+  .fh-aisc.is-tap { animation: none; }
+  :where(.fh-wring-f), :where(.fh-aisc-f) { transition: none; }
 }
 /* ── Fuel · Stack v2 (mezo-d20.4.3) — day-arc timeline + featured KÖVETKEZŐ card + zone
    mini-mosaic. Values follow the Mozaik 2.0 recipe (mz-cell-, mz-wash- and mz-shadow- tokens
@@ -6780,7 +7069,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    eating window; the Logold CTA expands the MealComposer IN PLACE via the
    grid-rows 0fr→1fr well. State washes: done sage, now coral ring, missed
    dashed amber (never punitive red), free/empty dashed neutral. ── */
-.flog-goal { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+/* The hub's KeretHero as the page hero (Logolás 2.1, mezo-zeeq): the page's own coral/gold
+   tone already washes the top, so the hero's halo-sage band is dropped here. */
+.flog-khero .khero { background: none; padding-top: 0; }
 /* Day stepper + Pótlás mood + the past-day closed card (mezo-1j3z) — prototype
    fuel-log-multinap.html `.daysw`/`.pastnote`/`.dayclosed`, tokens translated. */
 .flog-daysw { display: flex; align-items: center; gap: 7px; justify-content: center; margin: 2px 0 6px; }
@@ -6831,7 +7122,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 }
 .flog-txt { flex: 1; min-width: 0; }
 .flog-name {
-  font-size: 13.5px; font-weight: 700; line-height: 1.3;
+  font-size: 15px; font-weight: 700; line-height: 1.3;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .flog-name.is-ghost { color: var(--text-tertiary); font-weight: 600; }
@@ -6844,10 +7135,85 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .flog-kcal b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .flog-kcal small { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-left: 3px; }
 .flog-rings { display: flex; gap: 7px; }
+/* done card: score pill + kcal on ONE row under the name (mezo-zeeq) */
+.flog-srow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.flog-srow .flog-kcal { background: none; box-shadow: none; padding: 0; text-align: right; line-height: 1; }
+.flog-srow .flog-kcal b { font-size: 24px; letter-spacing: -0.03em; }
+.flog-srow .flog-kcal small { font-size: 8px; margin-left: 4px; }
 .flog-blk.is-missed .flog-data { opacity: 0.7; }
 .flog-ctas { display: flex; gap: 8px; margin-top: 10px; }
 .flog-ctas .cta-primary { flex: 1; padding: 8px 0; justify-content: center; }
 .flog-ctas .cta-ghost { flex: 0.6; padding: 8px 0; justify-content: center; }
+
+/* ═══ Score breakdown 2.1 (mezo-zeeq) — MealScoreSheet + RecipeScoreSheet body: tone hero,
+   contribution ledger, collapsible dimension cards, gain cards. Prototype fuel-logolas-2.1.html
+   `.shero` / `.ledger` / `.dim` / `.imp`, tokens translated. ═══ */
+.sb-sec { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 2px 8px; }
+.sb-sec-r { font-size: 10.5px; font-weight: 700; color: var(--mz-ink-mut); }
+
+.sb-ledger { border-radius: 18px; background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle); padding: 12px 14px; }
+.sb-ledger-bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 2px; }
+.sb-ledger-seg { position: relative; display: block; height: 100%; background: var(--mz-gbar-bg); }
+.sb-ledger-seg i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 3px 3px 0; display: block; }
+.sb-ledger-sum { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px;
+  color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.sb-ledger-sum b { font-weight: 800; color: var(--text-primary); }
+.sb-ledger-sum em { font-style: normal; }
+
+.sb-dim { border-radius: 18px; background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle); overflow: hidden; }
+.sb-dim-head { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; width: 100%;
+  padding: 12px 14px; border: none; background: none; font-family: inherit; text-align: left;
+  color: var(--text-primary); cursor: pointer; }
+.sb-dim-ring { position: relative; width: 52px; height: 52px; }
+.sb-dim-ring svg { transform: rotate(-90deg); display: block; }
+.sb-dim-t { fill: none; stroke: var(--mz-gbar-bg); }
+.sb-dim-f { fill: none; stroke: var(--c); stroke-linecap: round; }
+.sb-dim-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 16px; font-weight: 700;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.sb-dim-txt { display: grid; gap: 2px; min-width: 0; }
+.sb-dim-lb { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.sb-dim-lb i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.sb-dim-w { font-size: 10.5px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.sb-dim-w b { color: var(--mz-ink-soft); font-weight: 700; }
+.sb-dim-one { font-size: 12px; color: var(--mz-ink-soft); line-height: 1.35; margin-top: 3px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sb-dim-arr { font-size: 16px; color: var(--mz-ink-mut); transition: transform 0.25s; }
+.sb-dim-head[aria-expanded="true"] .sb-dim-arr { transform: rotate(90deg); }
+.sb-dim-body { padding: 0 14px 14px; }
+.sb-dim-body > p { margin: 0 0 10px; font-size: 13px; line-height: 1.5; }
+
+.sb-hero { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; padding: 16px; border-radius: 22px;
+  border: 0.5px solid var(--border-subtle);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--sc) 18%, var(--surface-card)), color-mix(in srgb, var(--sc) 4%, var(--surface-page))); }
+.sb-hero.s-hi { --sc: var(--dv-sage); }
+.sb-hero.s-md { --sc: var(--dv-amber); }
+.sb-hero.s-lo { --sc: var(--dv-coral); }
+.sb-hero-ring { position: relative; width: 112px; height: 112px; }
+.sb-hero-ring svg { transform: rotate(-90deg); display: block; }
+.sb-hero-t { fill: none; stroke: var(--mz-gbar-bg); }
+.sb-hero-f { fill: none; stroke: var(--sc); stroke-linecap: round; }
+.sb-hero-n { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1; }
+.sb-hero-n b { display: block; font-size: 40px; font-weight: 200; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.sb-hero-n small { display: block; font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin-top: 4px; }
+.sb-hero-word { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; text-transform: capitalize; }
+.sb-hero-facts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.sb-hero-facts span { font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 999px;
+  background: var(--surface-card, #fff); color: var(--mz-ink-soft); }
+.sb-hero-facts i { font-style: normal; color: var(--mz-ink-mut); font-weight: 600; margin-right: 3px; }
+.sb-hero-conf { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 9.5px; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.sb-hero-conf .bar { flex: 1; max-width: 90px; height: 4px; border-radius: 999px; background: var(--mz-gbar-bg); overflow: hidden; }
+.sb-hero-conf .bar i { display: block; height: 100%; background: var(--sc); border-radius: 999px; }
+.sb-hero-conf b { color: var(--mz-ink-soft); }
+
+.sb-imp { border-radius: 16px; background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle);
+  padding: 12px 12px 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.sb-imp p { margin: 0; font-size: 13px; line-height: 1.45; }
+.sb-imp-gain { font-size: 15px; font-weight: 700; color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg);
+  padding: 6px 10px; border-radius: 12px; white-space: nowrap; letter-spacing: -0.02em; text-align: center;
+  font-variant-numeric: tabular-nums; }
+.sb-imp-gain small { display: block; font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800; opacity: 0.8; }
 
 /* ===== /fuel/log/uj — a logolás saját oldala (mezo-bq2t) =====
    Prototype fuel-log-oldal.html `.cmp-head` / `.cmp-daychip` / `.pastnote` /
@@ -7720,6 +8086,120 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   background: var(--mz-stripbg); border-radius: 999px; padding: 5px 13px; font-size: 11px; font-weight: 700;
   color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
 
+/* ── Mezociklus varázsló v2 (mezo-d20.14) — meso-body.html #page-wizard +
+      #page-day, px ×1.18. Három lépés: szekció-kártyák (01), tier-sorok (02),
+      kompakt hero + nap-mozaik (03). Minden szín meglévő --mz-* tokenből. ── */
+.mz-wprog { display: flex; gap: 5px; padding: 5px 17px 0; }
+.mz-wprog button { flex: 1; height: 5px; min-height: 5px; padding: 0; border: none; border-radius: 3px;
+  background: var(--mz-gbar-bg); cursor: pointer; }
+.mz-wprog button.on { background: var(--gradient-cta); }
+.mz-wprog button:disabled { cursor: default; }
+.mz-stepct { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--mz-ink-mut); }
+.mz-steptitle { font-size: 18px; font-weight: 700; padding: 7px 0 2px; }
+.mz-steplead { font-size: 11px; color: var(--mz-ink-mut); margin: 0 0 12px; line-height: 1.45; }
+
+/* 01 · szekció-kártyák */
+.mz-stepcard { border-radius: 20px; padding: 13px 15px; margin-bottom: 11px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-wash-white); box-shadow: var(--mz-shadow); }
+.mz-stepcard-coral { background: var(--mz-wash-coral); }
+.mz-stepcard-lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mz-stepcard-gold { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mz-stephead { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.mz-eb-coral { color: var(--mz-cell-coral-ink); }
+.mz-eb-lav { color: var(--mz-cell-lav-ink); }
+.mz-eb-gold { color: var(--mz-cell-gold-ink); }
+.mz-stepnote { font-size: 10px; color: var(--mz-ink-mut); margin-top: 8px; line-height: 1.45; }
+.mz-stepcard textarea { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 14px;
+  padding: 11px 13px; font-family: inherit; font-size: 13px; background: var(--mz-chipbg);
+  color: var(--text-primary); resize: none; }
+
+/* napszám-csempék + 7 kerek nap-chip */
+.mz-dcgrid { display: flex; gap: 7px; }
+.mz-dct { flex: 1; min-width: 0; border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 17px;
+  background: var(--mz-chipbg); padding: 12px 0 9px; text-align: center; font-family: inherit;
+  cursor: pointer; box-shadow: 0 12px 24px -17px rgba(43, 33, 24, 0.3); }
+.mz-dct b { display: block; font-size: 20px; font-weight: 200; font-variant-numeric: tabular-nums; }
+.mz-dct small { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--mz-ink-mut); }
+.mz-dct[aria-pressed='true'] { border-color: var(--primary-base); background: var(--mz-cellbg); }
+.mz-dct[aria-pressed='true'] b { color: var(--mz-cell-coral-ink); font-weight: 400; }
+.mz-daypick { display: flex; gap: 6px; justify-content: space-between; margin-top: 11px; }
+.mz-daypick button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(43, 33, 24, 0.14);
+  background: var(--mz-chipbg); font-family: inherit; font-size: 11px; font-weight: 700;
+  color: var(--mz-ink-soft); cursor: pointer; padding: 0; }
+.mz-daypick button[aria-pressed='true'] { border-color: var(--primary-base); background: var(--gradient-cta);
+  color: #fff; box-shadow: 0 7px 14px -6px rgba(255, 91, 54, 0.6); }
+.mz-dct, .mz-daypick button { transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mz-dct:active, .mz-daypick button:active { transform: scale(0.9); }
+
+/* a kísérő egy mondata — az .eh-coach buborék a varázslóban */
+.mz-coach { display: flex; align-items: flex-start; gap: 8px; margin-top: 11px;
+  background: var(--mz-coach-bg); border-radius: 12px; padding: 8px 11px;
+  font-size: 12px; font-weight: 300; color: var(--text-primary); line-height: 1.45; }
+.mz-coach .dot { width: 17px; height: 17px; border-radius: 50%; flex: none; margin-top: 1px;
+  background: var(--gradient-cta); }
+.mz-coachsub { font-size: 10px; color: var(--mz-ink-mut); margin-top: 6px; }
+
+/* 03 · generálás-várakozó */
+.mz-genwait { text-align: center; padding: 50px 0 35px; }
+.mz-genwait-orb { width: 61px; height: 61px; border-radius: 50%; margin: 0 auto 14px;
+  background: var(--gradient-cta); box-shadow: 0 17px 35px -9px rgba(255, 91, 54, 0.6);
+  animation: mz-genpulse 1.2s ease-in-out infinite; }
+@keyframes mz-genpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+.mz-genwait b { display: block; font-size: 13px; font-weight: 700; }
+.mz-genwait small { display: block; font-size: 11px; color: var(--mz-ink-soft); margin-top: 4px; }
+@media (prefers-reduced-motion: reduce) { .mz-genwait-orb { animation: none; } }
+
+/* 03 · kompakt hero */
+.mz-edhero { border-radius: 19px; padding: 12px 14px; background: var(--mz-wash-trainhero);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.mz-edhero-top { display: flex; align-items: center; gap: 9px; }
+.mz-edhero input { width: 100%; border: none; background: transparent; font-family: inherit;
+  font-size: 19px; font-weight: 700; padding: 3px 0; color: inherit; }
+.mz-minighost { flex: none; border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-stripbg);
+  border-radius: 999px; padding: 5px 12px; font-family: inherit; font-size: 10px; font-weight: 700;
+  color: var(--mz-ink-soft); cursor: pointer; }
+.mz-confirm { margin-top: 9px; border-radius: 12px; padding: 9px 11px; background: var(--mz-cell-gold-bg);
+  color: var(--mz-cell-gold-ink); font-size: 11px; line-height: 1.45; }
+.mz-confirm-acts { display: flex; gap: 7px; margin-top: 8px; }
+
+/* 03 · nap-mozaik — csempe → saját nap-oldal */
+.mz-dtile { display: block; width: 100%; border-radius: 18px; padding: 11px 13px; text-align: left; font-family: inherit;
+  color: var(--text-primary); cursor: pointer; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-coral); box-shadow: 0 14px 26px -17px rgba(43, 33, 24, 0.28);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mz-dtile:active { transform: scale(0.96); }
+.mz-dtile-sage { background: var(--mz-wash-sage); }
+.mz-dtile-rose { background: var(--mz-wash-rose); }
+.mz-dtile-gold { background: var(--mz-wash-gold); }
+.mz-dtile-warn { background: var(--mz-cell-gold-bg); }
+.mz-dtile-head { display: flex; align-items: flex-start; gap: 7px; }
+.mz-dtile-dl { font-size: 21px; font-weight: 700; line-height: 1; }
+.mz-dtile-tt { display: block; margin-top: 3px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--mz-cell-coral-ink); }
+.mz-dtile-sage .mz-dtile-tt { color: var(--mz-cell-sage-ink); }
+.mz-dtile-rose .mz-dtile-tt { color: var(--mz-cell-rose-ink); }
+.mz-dtile-gold .mz-dtile-tt { color: var(--mz-cell-gold-ink); }
+.mz-dtile-st { flex: none; font-size: 9px; font-weight: 700; border-radius: 999px; padding: 3px 8px;
+  background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }
+.mz-dtile-st-done { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.mz-dtile-cells { display: flex; gap: 5px; margin-top: 8px; }
+.mz-dtile-cell { flex: 1; text-align: center; padding: 5px 2px; border-radius: 11px;
+  background: var(--mz-cellbg); }
+.mz-dtile-cells b { display: block; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mz-dtile-cells small { font-size: 8px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--mz-ink-mut); }
+.mz-dtile-mlist { margin-top: 8px; display: grid; gap: 5px; }
+.mz-dtile-ml { display: grid; grid-template-columns: 45px 1fr 17px; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 700; }
+.mz-dtile-ml .bar { display: block; height: 6px; border-radius: 4px; background: var(--mz-gbar-bg); overflow: hidden; }
+.mz-dtile-ml .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--mz-ink-soft); }
+.mz-dtile-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--error); flex: none; margin-top: 5px; }
+
+/* lépés-lábléc — egy elsődleges CTA, mellette a csendes társa */
+.mz-wfoot { display: flex; gap: 9px; margin-top: 14px; }
+.mz-wfoot > :first-child { flex: 1; }
 
 /* ===== Életcél-rendszer (mezo-iizd) — PERMAH tokens + hub/goal-page family =====
    The surface hexes themselves live as --lg-*-dc/dw/dw2 tokens in :root (mezo-d20.1.5's

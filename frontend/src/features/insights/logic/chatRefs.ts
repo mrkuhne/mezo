@@ -52,6 +52,12 @@ const KIND_LABELS: Record<string, string> = {
 }
 
 const ISO_DATE = /(\d{4})-(\d{2})-(\d{2})/
+// mezo-z4h4: BriefingRef's label is often a BARE ISO date ("2026-08-27" — the messages page's
+// honest fallback when it had nothing better), unlike ChatRef's fromTitle-style carried labels.
+// A label that IS entirely an ISO date is really an id-shaped value that slipped into the label
+// field, so it deserves the same humanisation as an id — anything else (a real title, or a label
+// with extra context like "2026-08-27 · reggel") is a producer-supplied string and stays verbatim.
+const FULL_ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 
 /** The id's human label: a hu-HU short date when the id carries a REAL ISO date
  *  (`w-2026-05-21` → `máj. 21.`), the raw id otherwise — honest fallback. */
@@ -75,5 +81,9 @@ function labelFromId(id: string): string {
  *  refs, whose uuid `labelFromId` can never humanise); otherwise the id-derived label, which is
  *  also what pre-mezo-b3pp.33 rows fall back to. Still nothing fabricated. */
 export function chatRefDisplay(ref: ChatRef): { kind: string; label: string } {
-  return { kind: KIND_LABELS[ref.kind] ?? ref.kind, label: ref.label?.trim() || labelFromId(ref.id) }
+  const trimmed = ref.label?.trim()
+  const label = trimmed
+    ? FULL_ISO_DATE.test(trimmed) ? labelFromId(trimmed) : trimmed
+    : labelFromId(ref.id)
+  return { kind: KIND_LABELS[ref.kind] ?? ref.kind, label }
 }

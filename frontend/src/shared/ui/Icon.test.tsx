@@ -15,3 +15,8 @@ test('BrandGlyph renders an svg', () => {
   const { container } = render(<BrandGlyph />)
   expect(container.querySelector('svg')).toBeTruthy()
 })
+test.each(['thumb-up', 'thumb-down'] as const)('renders an svg for %s', (name) => {
+  const { container } = render(<Icon name={name} />)
+  expect(container.querySelector('svg')).toBeTruthy()
+  expect(container.querySelectorAll('path, line, polyline, polygon, circle').length).toBeGreaterThan(0)
+})

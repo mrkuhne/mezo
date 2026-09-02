@@ -16,6 +16,13 @@ import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
+import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
+import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
+import io.mrkuhne.mezo.feature.people.repository.MentionSignal;
+import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
+import io.mrkuhne.mezo.feature.people.service.PersonAffectTrend;
+import io.mrkuhne.mezo.feature.people.service.PersonAffectTrendCalculator;
 import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
@@ -23,11 +30,14 @@ import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -143,6 +153,22 @@ public class CompanionMessageGenerator {
             + "- Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
             + "- Sima folyószöveg, markdown és felsorolás nélkül.";
 
+    /** Emberek S6 (mezo-06o0.8) — a fake LLM erre a prefixre diszpécsel. */
+    public static final String PEOPLE_MARKER = "EMBEREK-ESZREVETEL-FELADAT";
+
+    private static final String PEOPLE_PROMPT = PEOPLE_MARKER + "\n"
+            + "Írj EGYETLEN rövid magyar mondatot Danielnek társ-szemszögből az emberi köréről, "
+            + "kizárólag a megadott heti összesítésből. "
+            + "Szabályok: "
+            + "- Pontosan egy mondat, legfeljebb 22 szó, sima folyószöveg. "
+            + "- Csak azt állítsd, amit az összesítés kimond; nevet, számot kitalálni tilos. "
+            + "- Ha valakinél lefelé fordult a hangulat vagy elhallgatott, azt emeld ki — "
+            + "  ez a mondat arra való, hogy Daniel észrevegye, kire érdemes ránéznie. "
+            + "- Ne adj utasítást és ne moralizálj; egy megfigyelés, nem feladat. "
+            + "Válaszolj KIZÁRÓLAG szigorú JSON-nal, markdown nélkül, pontosan ebben a formában: "
+            + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"a mondat\"], "
+            + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
+
     record ParsedMessage(String eyebrow, List<String> body, List<Integer> refIndexes) {
     }
 
@@ -158,6 +184,9 @@ public class CompanionMessageGenerator {
     private final SleepLogRepository sleepLogRepository;
     private final WeightLogRepository weightLogRepository;
     private final WeightTrendService weightTrendService;
+    private final PersonRepository personRepository;
+    private final MentionRepository mentionRepository;
+    private final PersonAffectTrendCalculator affectTrendCalculator;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -376,6 +405,103 @@ public class CompanionMessageGenerator {
         message.setContent(new CompanionMessageEnvelope(eyebrow, List.of(answer.strip()), refs));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
+    }
+
+    /**
+     * Emberek S6 (mezo-06o0.8): a hét emberi képéről szóló egymondatos megfigyelés. Adat-kapu:
+     * e heti említés nélkül NINCS LLM-hívás és nincs sor — az Emberek hub ilyenkor a
+     * determinisztikus tartalék-mondatot mutatja (Task 3), nem üres sávot.
+     *
+     * <p>A payload SZÁNDÉKOSAN már aggregált (személyenként egy sor), nem nyers említés-lista:
+     * a modellnek nem kell — és nem is szabad — idézeteket újraértelmeznie, csak a heti képet
+     * megfogalmaznia. A hét hétfő-alapú (UTC), konzisztensen a
+     * {@link PersonAffectTrendCalculator}-ral: a {@code date} hetének hétfőjétől a következő
+     * hétfőig tartó félig-nyitott ablak.
+     */
+    @Transactional
+    public CompanionMessageEntity generatePeopleObservation(UUID userId, LocalDate date) {
+        CompanionMessageEntity existing = companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(userId, date, CompanionMessageEntity.KIND_PEOPLE)
+                .orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+        LocalDate monday = date.with(DayOfWeek.MONDAY);
+        Instant weekStart = monday.atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant weekEnd = monday.plusDays(7).atStartOfDay(ZoneOffset.UTC).toInstant();
+        List<MentionEntity> weekMentions = mentionRepository
+                .findByCreatedByAndTsGreaterThanEqualAndTsLessThanAndDeletedFalse(userId, weekStart, weekEnd);
+        if (weekMentions.isEmpty()) {
+            log.debug("No mentions this week for {} on {} — no people-observation message", userId, date);
+            return null;
+        }
+        List<PersonEntity> persons = personRepository
+                .findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId).stream()
+                .filter(p -> "active".equals(p.getStatus()))
+                .toList();
+        Map<UUID, List<MentionSignal>> allByPerson = mentionRepository.findSignals(userId).stream()
+                .collect(Collectors.groupingBy(MentionSignal::personId));
+        Map<UUID, Long> weekCountByPerson = weekMentions.stream()
+                .collect(Collectors.groupingBy(MentionEntity::getPersonId, Collectors.counting()));
+
+        List<CompanionMessageEnvelope.Ref> candidates = new ArrayList<>();
+        StringBuilder mentionedLines = new StringBuilder();
+        List<String> silentNames = new ArrayList<>();
+        for (PersonEntity p : persons) {
+            long thisWeek = weekCountByPerson.getOrDefault(p.getId(), 0L);
+            candidates.add(new CompanionMessageEnvelope.Ref("Person", p.getName()));
+            if (thisWeek == 0) {
+                silentNames.add(p.getName());
+                continue;
+            }
+            PersonAffectTrend trend = affectTrendCalculator.calculate(
+                    allByPerson.getOrDefault(p.getId(), List.of()), date);
+            mentionedLines.append("- ").append(p.getName()).append(" (").append(p.getRelationshipHu())
+                    .append("): ").append(thisWeek).append(" említés e héten, irány ")
+                    .append(directionHu(trend.direction())).append(", ")
+                    .append(trend.reason() == null ? "kevés adat" : trend.reason()).append('\n');
+        }
+        if (mentionedLines.isEmpty()) {
+            // e heti mention volt, de egyikük sem tartozik aktív személyhez (pl. csak candidate) —
+            // becsületes hiány, nem kitalált kép.
+            log.debug("No active person has a mention this week for {} on {} — no people-observation message",
+                    userId, date);
+            return null;
+        }
+        StringBuilder payload = new StringBuilder();
+        payload.append("HETI EMBERKÉP:\n").append(mentionedLines);
+        if (!silentNames.isEmpty()) {
+            payload.append("CSENDBEN MARADT: ").append(String.join(", ", silentNames)).append('\n');
+        }
+        appendCandidates(payload, candidates);
+
+        String answer = llmCallContextHolder.runWith(
+                new LlmCallContext("proactive_feed", "people", null, null),
+                () -> companionLlm.complete(PEOPLE_PROMPT, payload.toString()));
+        ParsedMessage parsed = parse(answer, CompanionMessageEntity.KIND_PEOPLE);
+        if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
+                || parsed.body() == null || parsed.body().isEmpty()) {
+            log.warn("Unusable people-observation answer for {} on {} — no row persisted", userId, date);
+            return null;
+        }
+        CompanionMessageEntity message = new CompanionMessageEntity();
+        message.setCreatedBy(userId);
+        message.setMessageDate(date);
+        message.setKind(CompanionMessageEntity.KIND_PEOPLE);
+        message.setContent(new CompanionMessageEnvelope(
+                parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), candidates)));
+        message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        return companionMessageRepository.saveAndFlush(message);
+    }
+
+    /** Determinisztikus magyar irány-címke a payload-sorokhoz — nem a {@link PersonAffectTrend}
+     *  indoklása, csak a puszta irány szava. */
+    private static String directionHu(String direction) {
+        return switch (direction) {
+            case PersonAffectTrend.DIRECTION_UP -> "javuló";
+            case PersonAffectTrend.DIRECTION_DOWN -> "romló";
+            default -> "stagnáló";
+        };
     }
 
     /** Numbered HIVATKOZÁS-JELÖLTEK block, identical shape to {@link #generateMorning}'s. */

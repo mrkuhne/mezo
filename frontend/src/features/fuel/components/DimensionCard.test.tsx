@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { test, expect } from 'vitest'
 import { DimensionCard } from '@/features/fuel/components/DimensionCard'
 import type { RowsDimension } from '@/data/types'
@@ -18,12 +19,15 @@ const whoDim: RowsDimension = {
   ],
 }
 
-test('renders a RowsDimension: header label, weighted contribution line, and the label/value rows', () => {
+test('collapsed header shows label, ring score, weight→pont line; the rows appear after expanding (mezo-zeeq)', async () => {
   render(<DimensionCard dim={whoDim} />)
-  // header (dimension label + weight contribution)
-  expect(screen.getByText('Ajánlások · WHO')).toBeInTheDocument()
-  expect(screen.getByText(/× súly 14% = 12\.6 pt/)).toBeInTheDocument()
-  // the rows panel — each label + value pair renders
+  const head = screen.getByRole('button', { name: /Ajánlások · WHO/ })
+  expect(head).toHaveAttribute('aria-expanded', 'false')
+  expect(screen.getByText('90')).toBeInTheDocument()
+  expect(screen.getByText(/súly/)).toHaveTextContent('súly 14% → 12,6 pont')
+  expect(screen.queryByText('6 E% / 10 E% limit')).not.toBeInTheDocument()
+  await userEvent.click(head)
+  expect(head).toHaveAttribute('aria-expanded', 'true')
   expect(screen.getByText('Cukor')).toBeInTheDocument()
   expect(screen.getByText('6 E% / 10 E% limit')).toBeInTheDocument()
   expect(screen.getByText('Só')).toBeInTheDocument()
