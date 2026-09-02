@@ -11,7 +11,7 @@ import type { MesoPlanGenerateRequest, MesoTemplateUpsertRequest } from '@/data/
 import type { MesoPlanProposal } from '@/data/train/mesoPlanHooks'
 import { getSeason } from '@/features/train/logic/mesoDates'
 import { toDayInputs } from '@/features/train/logic/mesoDays'
-import { recommendedDays } from '@/features/train/logic/mesoPlan'
+import { phaseCurve, recommendedDays } from '@/features/train/logic/mesoPlan'
 import { huMonthDay } from '@/shared/lib/dates'
 
 export interface WizardState {
@@ -102,9 +102,11 @@ export function generateInput(s: WizardState): MesoPlanGenerateRequest {
 }
 
 /**
- * The saved template: the generator's own template metadata (split/style/phase curve/
- * landmarks) with everything the user owns written over it — title, length, tiers, the
- * edited program and the free-text goal as notes.
+ * The saved template: the generator's own template metadata (split/style/landmarks) with
+ * everything the user owns written over it — title, length, tiers, the edited program and the
+ * free-text goal as notes. The phase curve is DERIVED from `weeks` rather than carried over
+ * from the proposal: the Hossz strip can move the length after a generation, and a 6-entry
+ * curve on an 8-week block is a lie the save must not write.
  */
 export function toUpsert(s: WizardState): MesoTemplateUpsertRequest {
   const base = s.proposal?.template
@@ -118,7 +120,7 @@ export function toUpsert(s: WizardState): MesoTemplateUpsertRequest {
     weeks: s.weeks,
     split: base?.split ?? null,
     style: base?.style ?? null,
-    phaseCurve: base?.phaseCurve ?? [],
+    phaseCurve: phaseCurve(s.weeks),
     notes: s.goalText.trim() || null,
     volumePerMuscle: base?.volumePerMuscle ?? null,
     days: toDayInputs(s.program),

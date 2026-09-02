@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  SESSION_CAP, ceilingSets, dayFrames, frequencyOf, recommendedDays, splitLine, weekOneSets, weekTotals,
+  SESSION_CAP, ceilingSets, dayFrames, frequencyOf, phaseCurve, recommendedDays, splitLine, weekOneSets, weekTotals,
 } from './mesoPlan'
 
 const LM = { mev: 10, mav: 16, mrv: 22 }
@@ -45,6 +45,14 @@ describe('mesoPlan', () => {
       }
       frames.forEach((f) => f.muscles.forEach((m) => expect(m.sets).toBeLessThanOrEqual(SESSION_CAP)))
     }
+  })
+
+  // Mirror of the backend MesoPlanSkeleton.phaseCurve: ramp = weeks - 1, 1-2 MEV weeks
+  // (2 once the ramp is 4+), an MRV peak week, MAV in between, always a closing Deload.
+  it('derives the phase curve from the block length alone', () => {
+    expect(phaseCurve(4)).toEqual(['MEV', 'MAV', 'MRV', 'Deload'])
+    expect(phaseCurve(6)).toEqual(['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'])
+    expect(phaseCurve(8)).toEqual(['MEV', 'MEV', 'MAV', 'MAV', 'MAV', 'MAV', 'MRV', 'Deload'])
   })
 
   it('sums week-1 and peak totals over the nine groups', () => {

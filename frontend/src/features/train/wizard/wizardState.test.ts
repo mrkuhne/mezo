@@ -24,4 +24,12 @@ describe('wizardReducer', () => {
     expect(wizardReducer(g, { type: 'editProgram', program: [] }).dirty).toBe(true)
     expect(toUpsert(g)).toMatchObject({ title: 'Hypertrophy · Ősz', weeks: 6, musclePriorities: null, days: [{ day: 'Hét', type: 'Upper' }] })
   })
+  it('derives the saved phase curve from weeks, so a post-generation length change stays honest', () => {
+    const proposal = { template: { title: 't', weeks: 6, phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'], days: [] }, days: [], rationale: 'r', llmUsed: false } as never
+    const s = wizardReducer(wizardReducer(s0, { type: 'generated', proposal }), { type: 'setWeeks', weeks: 8 })
+    const saved = toUpsert(s)
+    expect(saved.weeks).toBe(8)
+    expect(saved.phaseCurve).toHaveLength(8)
+    expect(saved.phaseCurve.at(-1)).toBe('Deload')
+  })
 })

@@ -5,7 +5,7 @@
 // proposal its frames. Same tables as backend/…/MesoPlanSkeleton.java — change both.
 // ============================================================
 import { DAY_ORDER } from '@/data/train/train'
-import type { MusclePriorities, MuscleTier } from '@/data/types'
+import type { MesoPhase, MusclePriorities, MuscleTier } from '@/data/types'
 import { GROUP_LANDMARKS } from '@/features/train/logic/setBudget'
 import { TIER_GROUPS, tierOf } from '@/features/train/logic/musclePriorities'
 
@@ -47,6 +47,21 @@ export function recommendedDays(n: number): string[] { return [...RECOMMENDED[cl
 export function splitLine(days: string[]): string {
   const n = clampN(days.length)
   return `${days.length} nap → ${SPLIT_LABELS[n]} · minden izom 2×/hét`
+}
+
+/**
+ * The block's weekly phase curve, derived from its LENGTH alone — mirror of the backend's
+ * MesoPlanSkeleton.phaseCurve (change both): ramp = weeks - 1, the first 1-2 ramp weeks are
+ * MEV (2 once the ramp is 4+ weeks long), the last ramp week is MRV, everything between is
+ * MAV, and the block always closes on a Deload week.
+ */
+export function phaseCurve(weeks: number): MesoPhase[] {
+  const ramp = Math.max(1, weeks - 1)
+  const mevWeeks = ramp >= 4 ? 2 : 1
+  const out: MesoPhase[] = []
+  for (let i = 0; i < ramp; i++) out.push(i === ramp - 1 && ramp > 1 ? 'MRV' : i < mevWeeks ? 'MEV' : 'MAV')
+  out.push('Deload')
+  return out
 }
 
 export function weekOneSets(tier: MuscleTier, lm: Landmark): number {

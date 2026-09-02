@@ -3,17 +3,9 @@
 import type { ExerciseLibraryItem } from '@/data/types'
 import type { GymExerciseInput, MesoDayInput, MesoPlanGenerateRequest, MesoPlanGenerateResponse } from '@/data/train/trainApi'
 import { GROUP_LANDMARKS, budgetGroup } from '@/features/train/logic/setBudget'
-import { SPLIT_LABELS, dayFrames } from '@/features/train/logic/mesoPlan'
+import { SPLIT_LABELS, dayFrames, phaseCurve } from '@/features/train/logic/mesoPlan'
 import { getSeason } from '@/features/train/logic/mesoDates'
-
-const phaseCurve = (weeks: number): MesoPlanGenerateResponse['template']['phaseCurve'] => {
-  const ramp = Math.max(1, weeks - 1)
-  const mevWeeks = ramp >= 4 ? 2 : 1
-  const out: ('MEV' | 'MAV' | 'MRV' | 'Deload')[] = []
-  for (let i = 0; i < ramp; i++) out.push(i === ramp - 1 && ramp > 1 ? 'MRV' : i < mevWeeks ? 'MEV' : 'MAV')
-  out.push('Deload')
-  return out
-}
+import { huMonthDay, localDateString } from '@/shared/lib/dates'
 
 function pick(group: string, sets: number, library: ExerciseLibraryItem[], rotation: number): GymExerciseInput[] {
   const pool = library
@@ -54,7 +46,7 @@ export function mockMesoPlan(input: MesoPlanGenerateRequest, library: ExerciseLi
   const n = Math.min(6, Math.max(2, input.daysOfWeek.length))
   return {
     template: {
-      title: `Hypertrophy · ${getSeason(new Date().toISOString().slice(0, 10))}`,
+      title: `Hypertrophy · ${getSeason(huMonthDay(localDateString()))}`,
       shortTitle: 'Hypertrophy', goal: 'Izomtömeg építés', goalPreset: 'hypertrophy',
       musclePriorities: Object.keys(priorities).length ? priorities : null,
       weeks: input.weeks, split: `${SPLIT_LABELS[n]} · ${input.daysOfWeek.length}×/hét`, style: `RP · ${input.weeks} hét`,

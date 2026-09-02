@@ -12,11 +12,13 @@
 //    saját oldalán történik (`state.activeDay`), ami OLDAL-ÁLLAPOT, nem route:
 //    a még nem mentett vázlat így éli túl a be-/kilépést (session-prep minta);
 //  • generálás/mentés közben sosem üres a test — orb, retry vagy a kész blokk.
+// A varázsló az állandó edzőtermi időpontokhoz NEM nyúl: a szlot ideje kötelező HH:mm, a
+// varázsló pedig nem kérdez időpontot — kitalálni nem fog. A Heti nézet elviseli a hiányzó
+// szlotot (deriveGymSchedule `time: null`-t ad), az időpont-szerkesztésnek saját felülete van.
 // ============================================================
 import { useReducer, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { DAY_ORDER } from '@/data/train/train'
-import { useMesoPlanGenerate, useMesoTemplates, useTrain } from '@/data/hooks'
+import { useMesoPlanGenerate, useMesoTemplates } from '@/data/hooks'
 import type { ExerciseLibraryItem, MesoDay } from '@/data/types'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
@@ -41,7 +43,6 @@ export function MesocyclePlannerPage() {
   const [state, dispatch] = useReducer(wizardReducer, todayIso, initialWizardState)
   const { generate, generating } = useMesoPlanGenerate()
   const { createTemplate, startTemplate } = useMesoTemplates()
-  const { gymSlots, saveGymSchedule } = useTrain()
   const [failed, setFailed] = useState(false)
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -72,13 +73,6 @@ export function MesocyclePlannerPage() {
   const save = async (alsoStart: boolean) => {
     setSaving(true)
     try {
-      // The standing gym schedule follows the chosen days: an existing slot keeps its
-      // time, a newly picked day gets the house default (the contract's slot time is a
-      // required HH:mm — there is no "no time yet" slot to write).
-      saveGymSchedule(state.daysOfWeek.map((day) => {
-        const dayOfWeek = DAY_ORDER.indexOf(day as (typeof DAY_ORDER)[number])
-        return { dayOfWeek, time: gymSlots.find((s) => s.dayOfWeek === dayOfWeek)?.time ?? '18:00' }
-      }))
       const tpl = await createTemplate(toUpsert(state))
       if (!alsoStart) {
         navigate('/train/mesocycles')
