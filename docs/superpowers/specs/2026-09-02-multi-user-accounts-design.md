@@ -177,7 +177,7 @@ Migrációs IT (két user átfedő ételekkel → egy katalógus-sor, két kamra
 ## 9. S5 — Gyakorlat-katalógus (E1)
 
 - `ExerciseCatalogService.list()` marad "mindenki mindent lát"; a válasz + `authoredByMe: boolean`, `authorName?: string`. FE: "közös" badge idegen sorokon.
-- Média (`setVideo`, kép-feltöltés), szerkesztés, törlés: master → csak OWNER; user-sor → szerző vagy OWNER; különben 403 `EXERCISE_CATALOG_NOT_EDITABLE`. Törlés soft-delete (más userek `exercise.catalog_id`-ja mutathat rá).
+- Jogosultsági mátrix (a tervezéskor pontosítva): master sor **tartalma** senkinek nem szerkeszthető, OWNER-nek sem (409 `CATALOG_MASTER_READONLY` marad — a loader minden indításkor felülírná, és egy soft-deletelt master sor a loader slug-upsertjét törné); master sor **médiája** csak OWNER; user-sor tartalma és médiája szerző vagy OWNER; idegen USER → 403 `EXERCISE_CATALOG_NOT_EDITABLE` (a katalógus publikus, a 404 hazudna). A válasz `editable` (tartalom) és `mediaEditable` flageket hordoz. Törlés soft-delete (`is_deleted` + `@SQLDelete` már létezik `mezo-52zg` óta, nincs új changeset).
 - Slug-verseny: `uniqueSlug` check-then-insert helyett `DataIntegrityViolationException`-re suffix-újrapróba (max 3). `mezo-2fc1` bezárul.
 - Tesztek: jogosultsági IT (USER master-médiára 403, saját sorra 200, idegen user-sorra 403, OWNER mindenre 200), párhuzamos slug-IT.
 
