@@ -27,7 +27,7 @@ function SaverRow({ compact }: { compact?: boolean }) {
       </div>
       <button
         type="button"
-        className="chip np-press"
+        className="gr-titact"
         disabled={!canMutate || profile.coins < SAVER_PRICE || profile.streakSavers >= MAX_SAVERS}
         onClick={buyStreakSaver}
       >
@@ -45,21 +45,18 @@ export function StreakCard({ delayMs }: { delayMs?: number }) {
   const pct = next ? Math.round(((profile.streakDays - prev) / (next - prev)) * 100) : 100
   return (
     <div
-      className="mz-qcard rise"
+      className="gr-band rise gr-streak"
       data-testid="streak-card"
       style={{
         '--d': `${delayMs ?? 0}ms`,
         background: 'var(--mz-wash-coral)',
-        display: 'flex', gap: 12, alignItems: 'center',
         opacity: profile.streakAlive === false ? 0.6 : 1,
       } as React.CSSProperties}
     >
-      <ClayIcon name="i-lang" size={38} />
+      <ClayIcon name="i-lang" size={45} className="gr-flame" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="row" style={{ alignItems: 'baseline', gap: 6 }}>
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 300, fontVariantNumeric: 'tabular-nums' }}>
-            {profile.streakDays}
-          </span>
+          <span className="gr-streak-n">{profile.streakDays}</span>
           <span style={{ fontSize: 11, fontWeight: 700 }}>napos sorozat</span>
         </div>
         <div style={{ fontSize: 10, color: 'var(--mz-ink-soft)', marginTop: 2 }}>
@@ -67,8 +64,8 @@ export function StreakCard({ delayMs }: { delayMs?: number }) {
             ? <>következő mérföldkő: {next} nap — +{STREAK_MILESTONE_COINS[next]} érme</>
             : 'Minden mérföldkő megvan 💪'}
         </div>
-        <div style={{ height: 5, borderRadius: 3, background: 'rgba(43,33,24,0.08)', overflow: 'hidden', marginTop: 6 }}>
-          <i style={{ display: 'block', height: '100%', width: `${pct}%`, borderRadius: 3, background: 'var(--gradient-cta, var(--coral))' }} />
+        <div className="gr-msbar">
+          <i style={{ '--w': `${pct}%` } as React.CSSProperties} />
         </div>
         <p style={{ fontSize: 10, color: 'var(--mz-ink-soft)', marginTop: 6, lineHeight: 1.4 }}>
           A sorozatot bármilyen mai log életben tartja — étkezés, súly, alvás, edzés vagy quest.
@@ -90,32 +87,30 @@ function TitleRow({ t, coins, canMutate, onBuy, onEquip }: {
   onEquip: (key: string) => void
 }) {
   return (
-    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
+    <div className={cn('gr-titrow', !t.owned && 'lock')}>
       <div>
-        <div style={{ fontWeight: 800, fontSize: 13, color: t.owned ? 'var(--ink)' : 'var(--faint)' }}>
-          {t.name}
-        </div>
-        <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--faint)' }}>
-          {t.kind === 'LADDER' ? `LV ${t.unlockLevel}` : `🪙 ${t.priceCoins}`}
-        </div>
+        <span className="nm">{t.name}</span>
+        <span className="sub">
+          {t.kind === 'LADDER' ? `LV ${t.unlockLevel}` : <><ClayIcon name="i-erme" size={11} /> {t.priceCoins}</>}
+        </span>
       </div>
       {t.equipped ? (
-        <span className="chip brand">Viselve</span>
+        <span className="gr-titact worn">Viselve</span>
       ) : t.owned ? (
-        <button type="button" className="chip np-press" disabled={!canMutate} onClick={() => onEquip(t.key)}>
+        <button type="button" className="gr-titact" disabled={!canMutate} onClick={() => onEquip(t.key)}>
           Felvesz
         </button>
       ) : t.kind === 'SHOP' ? (
         <button
           type="button"
-          className="chip np-press"
+          className="gr-titact"
           disabled={!canMutate || coins < (t.priceCoins ?? 0)}
           onClick={() => onBuy(t.key)}
         >
           Megveszem
         </button>
       ) : (
-        <span className="chip" aria-label="Zárolva">🔒</span>
+        <span className="gr-lockmk">LV {t.unlockLevel}-TŐL</span>
       )}
     </div>
   )
@@ -130,7 +125,7 @@ export function TitlesSection({ delayMs }: { delayMs?: number }) {
   const equipped = titles.find((t) => t.equipped)
   const shown = titles.filter((t) => (seg === 'ladder' ? t.kind === 'LADDER' : t.kind === 'SHOP'))
   return (
-    <div className="mz-qcard rise" data-testid="titles-section" style={{ '--d': `${delayMs ?? 0}ms` } as React.CSSProperties}>
+    <div className="gr-band rise" data-testid="titles-section" style={{ '--d': `${delayMs ?? 0}ms` } as React.CSSProperties}>
       <div className="row" style={{ alignItems: 'center', marginBottom: 6 }}>
         <span className="mz-eyebrow">Címek</span>
         <span className="row" style={{ marginLeft: 'auto', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 700 }}>
@@ -143,11 +138,11 @@ export function TitlesSection({ delayMs }: { delayMs?: number }) {
           <b style={{ color: 'var(--mz-cell-amber-ink, var(--warning))' }}>{equipped.name}</b>
         </div>
       )}
-      <div className="row gap-sm" style={{ marginBottom: 6 }}>
-        <button type="button" className={cn('chip np-press', seg === 'ladder' && 'brand')} onClick={() => setSeg('ladder')}>
+      <div className="gr-seg" role="tablist" style={{ marginBottom: 6 }}>
+        <button type="button" className={cn(seg === 'ladder' && 'on')} onClick={() => setSeg('ladder')}>
           Létra
         </button>
-        <button type="button" className={cn('chip np-press', seg === 'shop' && 'brand')} onClick={() => setSeg('shop')}>
+        <button type="button" className={cn(seg === 'shop' && 'on')} onClick={() => setSeg('shop')}>
           Bolt
         </button>
       </div>

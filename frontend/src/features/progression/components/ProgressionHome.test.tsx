@@ -34,8 +34,10 @@ describe('TitlesSection', () => {
   it('renders the ladder by default with the lock state machine, and the shop tab swaps the list', () => {
     renderIn(<TitlesSection />)
     const sec = screen.getByTestId('titles-section')
-    // ladder rows carry LV sublines; at least one locked row
+    // ladder rows carry LV sublines; at least one locked row reads LV n-TŐL, no lock emoji
     expect(within(sec).getAllByText(/^LV \d+/).length).toBeGreaterThan(0)
+    expect(within(sec).getAllByText(/^LV \d+-TŐL$/).length).toBeGreaterThan(0)
+    expect(within(sec).queryByText('🔒')).toBeNull()
     fireEvent.click(within(sec).getByRole('button', { name: 'Bolt' }))
     // shop rows price in coins + the saver row appended
     expect(within(sec).getAllByText(/🪙 \d+/).length).toBeGreaterThan(0)

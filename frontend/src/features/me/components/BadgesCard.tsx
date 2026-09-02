@@ -1,38 +1,28 @@
 import type { GrowthBadge } from '@/data/types'
+import { huInt } from '@/shared/lib/huNum'
 
-/**
- * 9 computed growth badges — achieved = sage tint + ✓; else a gold progress bar
- * (Growth page Kitüntetések tab). Mozaik reface (mezo-d20.6.5): the prototype's
- * `.bdggrid`/`.bdg` 3-col tile grid, the unearned tiles' bar animating in once
- * (mzp-fill, prefers-reduced-motion guarded) like the predictions/experiments family.
- */
+/** Badge grid (mezo-rmi0.1): earned = sage wash + full sage ring + "✓ megvan"; unearned keeps a conic
+ *  progress ring (--v = current/target %) and a muted icon — reachable badges stay visible. */
 export function BadgesCard({ badges }: { badges: GrowthBadge[] }) {
   const done = badges.filter((b) => b.achieved).length
   return (
-    <div className="rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-      <div className="row" style={{ justifyContent: 'space-between', padding: '0 2px 8px' }}>
-        <span className="mz-eyebrow">Badge-ek</span>
-        <span className="gr-band-chip">{done} / {badges.length} megszerezve</span>
+    <>
+      <div className="gr-band-top rise" style={{ '--d': '110ms', padding: '4px 2px 7px' } as React.CSSProperties}>
+        <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sage-ink)' }}>Jelvények</span>
+        <span className="gr-band-chip ok">{done} / {badges.length} megszerezve</span>
       </div>
-      <div className="gr-bdggrid">
-        {badges.map((b, i) => (
-          <div key={b.key} className={b.achieved ? 'gr-bdg done' : 'gr-bdg'}>
-            <div className="gr-bdg-em" aria-hidden="true">{b.icon}</div>
-            <b>{b.name}</b>
-            {b.achieved ? (
-              <small style={{ color: 'var(--mz-cell-sage-ink)', fontWeight: 800 }}>✓</small>
-            ) : (
-              /* prototype `.bdg` order: name → count → bar (en-body #page-growth) */
-              <>
-                <small>{b.current.toLocaleString('hu-HU').replace(/[  ]/g, ' ')} / {b.target.toLocaleString('hu-HU').replace(/[  ]/g, ' ')}</small>
-                <div className="gr-bdg-bar">
-                  <div style={{ width: `${Math.min(100, (b.current / b.target) * 100)}%`, '--d': `${350 + i * 60}ms` } as React.CSSProperties} />
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+      <div className="gr-bdggrid rise" style={{ '--d': '140ms' } as React.CSSProperties}>
+        {badges.map((b) => {
+          const v = b.achieved ? 100 : Math.min(100, Math.round((b.current / b.target) * 100))
+          return (
+            <div key={b.key} className={b.achieved ? 'gr-bdg done' : 'gr-bdg'}>
+              <div className="gr-ring" style={{ '--v': v } as React.CSSProperties}><span aria-hidden="true">{b.icon}</span></div>
+              <b>{b.name}</b>
+              <small>{b.achieved ? '✓ megvan' : `${huInt(b.current)} / ${huInt(b.target)}`}</small>
+            </div>
+          )
+        })}
       </div>
-    </div>
+    </>
   )
 }
