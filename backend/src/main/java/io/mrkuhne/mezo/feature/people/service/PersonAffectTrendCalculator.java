@@ -1,6 +1,6 @@
 package io.mrkuhne.mezo.feature.people.service;
 
-import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
+import io.mrkuhne.mezo.feature.people.repository.MentionSignal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -52,19 +52,19 @@ public class PersonAffectTrendCalculator {
     }
 
     /**
-     * @param personMentions EGY személy említései, tetszőleges sorrendben (a hívó szűr személyre)
+     * @param personMentions EGY személy hangulat-jelei, tetszőleges sorrendben (a hívó szűr személyre)
      * @param today          a mai nap; a heti kosarak ennek a hetének hétfőjéig futnak
      */
-    public PersonAffectTrend calculate(List<MentionEntity> personMentions, LocalDate today) {
+    public PersonAffectTrend calculate(List<MentionSignal> personMentions, LocalDate today) {
         LocalDate thisMonday = monday(today);
         // Hétfő -> (pontösszeg, darab). LinkedHashMap + rendezett beszúrás helyett rendezzük a
         // kulcsokat a végén: a bemenet sorrendje nem garantált.
         Map<LocalDate, double[]> byWeek = new LinkedHashMap<>();
-        for (MentionEntity m : personMentions) {
-            if (m.getTone() == null || m.getTs() == null) {
+        for (MentionSignal m : personMentions) {
+            if (m.tone() == null || m.ts() == null) {
                 continue;   // az éjszakai kör még nem töltötte — nem olvasat, nem is nulla
             }
-            LocalDate week = monday(LocalDate.ofInstant(m.getTs(), ZoneOffset.UTC));
+            LocalDate week = monday(LocalDate.ofInstant(m.ts(), ZoneOffset.UTC));
             if (week.isAfter(thisMonday)) {
                 // Ez az őrfeltétel csak akkor helyes, ha a host zónája >= UTC: a hívó
                 // (PeopleService) `today`-t a host zónájából veszi (LocalDate.now()), a
@@ -73,8 +73,8 @@ public class PersonAffectTrendCalculator {
                 // jövőbelinek tűnne.
                 continue;   // jövőbeli időbélyeg (mis-seed) sosem tol ki az ablakból
             }
-            int intensity = m.getIntensity() == null ? DEFAULT_INTENSITY : m.getIntensity();
-            double score = 3.0 + toneSign(m.getTone()) * intensity * (2.0 / 3.0);
+            int intensity = m.intensity() == null ? DEFAULT_INTENSITY : m.intensity();
+            double score = 3.0 + toneSign(m.tone()) * intensity * (2.0 / 3.0);
             double[] acc = byWeek.computeIfAbsent(week, k -> new double[2]);
             acc[0] += score;
             acc[1] += 1;
