@@ -660,7 +660,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
   - **repositories:** `MealItemRepository`, `MealRepository`, `WaterLogRepository`
   - **services:** `FuelDayService`, `MealAiDraftService`, `MealAiDraftValidator`, `MealCoachLlm`, `MealCoachPrompt`,
-    `MealCoachService`, `MealCoachStore`, `MealDraftLlm`, `MealService`, `WaterLogService`
+    `MealCoachService`, `MealCoachStore`, `MealDraftLlm`, `MealService`, `PantryNameIndex`, `WaterLogService`
   - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
@@ -669,7 +669,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 19 IT + 3 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 19 IT + 4 unit
   - **ITs:** `FuelDayServiceIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`,
     `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`,
     `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`, `MealOverridesScoringIT`,
@@ -797,23 +797,23 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
   - **repositories:** `MentionRepository`, `PersonRepository`
-  - **services:** `MentionDetectionListener`, `MentionDetectionService`, `PeopleService`, `PersonDeletedEvent`,
-    `PersonSavedEvent`, `ReflectionMentionListener`
+  - **services:** `MentionDetectionListener`, `MentionDetectionService`, `PeopleService`, `PersonAffectTrend`,
+    `PersonAffectTrendCalculator`, `PersonDeletedEvent`, `PersonSavedEvent`, `ReflectionMentionListener`
   - **controllers→contract:** `PeopleController`→`PeopleApi`
   - **mappers:** `PeopleMapper`
-  - **other:** `MentionSeedData`, `PeopleSeedData`, `PersonGraphEdgeSource`
+  - **other:** `MentionSeedData`, `PeopleMezoNoteSource`, `PeopleSeedData`, `PersonGraphEdgeSource`
 - **Contract** `api/feature/people/people.yml` — 7 operations
   - **endpoints:** GET /api/people · POST /api/people · PUT /api/people/{personId} · DELETE /api/people/{personId} ·
     POST /api/people/{personId}/mentions · DELETE /api/people/{personId}/mentions/{mentionId} ·
     POST /api/people/{personId}/decision
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 5 IT + 0 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 6 IT + 1 unit
   - **ITs:** `MentionDetectionListenerIT`, `MentionDetectionServiceIT`, `MentionDetectionSwitchOffIT`,
-    `PeopleContractIT`, `PeopleServiceIT`
-  - **populators:** `MentionPopulator`, `PersonPopulator`, `UserPopulator`
+    `PeopleContractIT`, `PeopleMezoNoteIT`, `PeopleServiceIT`
+  - **populators:** `CompanionMessagePopulator`, `MentionPopulator`, `PersonPopulator`, `UserPopulator`
 
 ### proactive
 
-*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-08-31, complete)
+*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-01, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -828,9 +828,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`,
     `FeedMessageKindService`, `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `InterventionEventListener`,
     `InterventionService`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`,
-    `OverloadChallengeGenerator`, `PatternImpactService`, `PredictionGenerator`, `PredictionJob`,
-    `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`,
-    `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`,
+    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PredictionGenerator`,
+    `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`,
+    `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`,
     `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`,
     `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`,
     `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
