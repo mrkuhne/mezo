@@ -20,10 +20,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ClaySpot, type ClaySpotName } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { RefTag } from '@/shared/ui/RefTag'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { cn } from '@/shared/lib/cn'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
+import { RefChips } from '@/features/insights/components/RefChips'
 import { EletjelStrip } from '@/features/today/components/EletjelStrip'
 import { useCompanionFeed, useFeedback } from '@/data/hooks'
 import { feedToMessageItem, partitionMezoThread, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
@@ -178,10 +178,22 @@ export function NapMezoPage() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const isExpanded = (id: string) => expandedIds.has(id)
   const expand = (id: string) => setExpandedIds((s) => new Set(s).add(id))
+  // mezo-z4h4: a user-expanded older card must be collapsible again — the earlier `expand`-only
+  // set meant an opened card could never be closed back into its one-line row.
+  const collapse = (id: string) =>
+    setExpandedIds((s) => {
+      const next = new Set(s)
+      next.delete(id)
+      return next
+    })
 
   // Egyetlen kártya-JSX mindkét pane-nek (mezo-ho9k): a chips-ág magától sem fut az
   // Életjelek nudge-okon, mert azoknak nincs `artifactId`-jük (mezo-kr9v szerződés).
-  const renderCard = (m: MezoMessageItem, i: number) => (
+  // `collapsible` (mezo-z4h4): csak akkor igaz, amikor a kártya KIZÁRÓLAG a felhasználó
+  // kézi kinyitása miatt látszik teljes kártyaként — a legújabb üzenet és a deeplink-cél
+  // mindig teljes kártya marad, összecsukás-gomb nélkül (az Életjelek pane pedig eleve nem
+  // ad át semmit, tehát ott is hiányzik).
+  const renderCard = (m: MezoMessageItem, i: number, opts?: { collapsible?: boolean }) => (
     <div
       key={m.id}
       ref={m.id === scrollTargetId ? linkedCardRef : undefined}
@@ -191,15 +203,22 @@ export function NapMezoPage() {
       <div className="nap-mzmsg-h">
         <ClaySpot name={messageSpot(m)} size={35} />
         <div className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</div>
+        {opts?.collapsible && (
+          <button
+            type="button"
+            className="nap-mzmsg-collapse"
+            aria-label="Összecsukás"
+            aria-expanded={true}
+            onClick={() => collapse(m.id)}
+          >
+            ▴
+          </button>
+        )}
       </div>
       {m.paragraphs.map((p, j) => (
         <p key={j} className="txt"><SafeMarkdown text={p} /></p>
       ))}
-      {m.refs.length > 0 && (
-        <div className="nap-mzmsg-refs">
-          {m.refs.map((r, j) => <RefTag key={j} kind={r.kind} label={r.label} />)}
-        </div>
-      )}
+      {m.refs.length > 0 && <RefChips refs={m.refs} eyebrow="Amire épült" />}
       {m.meta && <div className="nap-mzmsg-meta">{m.meta}</div>}
       {/* Chips CSAK perzisztált AI-artifactre (mezo-kr9v); a „Segített?" felirat a
           W5.2 intervention-változat (mezo-b3pp.19) — a sheet szerződése változatlanul. */}
@@ -247,7 +266,10 @@ export function NapMezoPage() {
           <EntranceGroup>
             {displayUzenetek.map((m, i) =>
               i === displayUzenetek.length - 1 || isExpanded(m.id) || m.id === scrollTargetId ? (
-                renderCard(m, i)
+                renderCard(m, i, {
+                  collapsible:
+                    isExpanded(m.id) && i !== displayUzenetek.length - 1 && m.id !== scrollTargetId,
+                })
               ) : (
                 <button type="button" key={m.id} className="nap-mzrow rise"
                   style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}

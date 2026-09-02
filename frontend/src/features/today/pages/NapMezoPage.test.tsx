@@ -52,6 +52,20 @@ const sleepMsg: FeedMessage = {
   refs: [],
   generatedAt: '2026-05-22T07:12:00',
 }
+// mezo-z4h4: 4+ refs across two kinds — proves the chat-style grouped chips (human kind label,
+// domain icon, one group open at a time) replace the raw `[FuelDay]` RefTag rendering. The
+// labels are bare ISO dates, the honest-label fallback chatRefDisplay must humanise.
+const refsMsg: FeedMessage = {
+  id: 'fm-3', kind: 'evening', eyebrow: 'Napi összegzés',
+  body: [{ type: 'p', text: 'Sok forrásra épült ez a nap.' }],
+  refs: [
+    { kind: 'FuelDay', label: '2026-08-25' },
+    { kind: 'FuelDay', label: '2026-08-26' },
+    { kind: 'Practice', label: '2026-08-27' },
+    { kind: 'Practice', label: '2026-09-02' },
+  ],
+  generatedAt: '2026-05-22T20:00:00',
+}
 
 beforeEach(() => {
   feedMock.useCompanionFeed.mockReturnValue([])
@@ -150,6 +164,62 @@ test('egyetlen üzenet nem kap összecsukott sort', async () => {
   renderPage()
   expect(await screen.findByText(/W3-csúcs/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /07:05.*Reggeli briefing/ })).toBeNull()
+})
+
+// ── Chat-mintájú ref-chipek (mezo-z4h4): a "mit nézett meg Mezo" rész a chat-oldal
+// domain-ikonos, emberi címkés, csoportosított chipjeit kapja a nyers `[FuelDay]` szöveg
+// helyett.
+test('a ref-chipek a chat-mintát követik: csoportosított, emberi címkés, nem nyers [Kind] szöveg', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([refsMsg])
+  renderPage()
+  expect(await screen.findByText('Sok forrásra épült ez a nap.')).toBeInTheDocument()
+  expect(screen.getByText('Amire épült')).toBeInTheDocument()
+  expect(screen.queryByText(/\[FuelDay\]/)).toBeNull()
+  expect(screen.queryByText(/\[Practice\]/)).toBeNull()
+  const fuelGroup = screen.getByRole('button', { name: /Fuel nap.*×2/ })
+  expect(fuelGroup).toHaveAttribute('aria-expanded', 'false')
+  expect(screen.getByRole('button', { name: /Gyakorlat.*×2/ })).toBeInTheDocument()
+  await userEvent.click(fuelGroup)
+  expect(await screen.findByText('aug. 25.')).toBeInTheDocument()
+  expect(screen.getByText('aug. 26.')).toBeInTheDocument()
+})
+
+// ── Visszacsukható régebbi üzenet (mezo-z4h4): a korábbi `expand`-only halmaz miatt egy
+// felhasználó által kinyitott régebbi kártyát soha nem lehetett visszacsukni.
+test('egy felhasználó által kinyitott régebbi kártya az összecsukás gombbal visszacsukható', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
+  renderPage()
+  const row = await screen.findByRole('button', { name: /07:05.*Reggeli briefing/ })
+  await userEvent.click(row)
+  expect(await screen.findByText(/W3-csúcs/)).toBeInTheDocument()
+  const msg = screen.getByText('07:05 · Reggeli briefing').closest('.nap-mzmsg') as HTMLElement
+  const collapseBtn = within(msg).getByRole('button', { name: 'Összecsukás' })
+  expect(collapseBtn).toHaveAttribute('aria-expanded', 'true')
+  await userEvent.click(collapseBtn)
+  expect(screen.queryByText(/W3-csúcs/, { selector: '.txt' })).toBeNull()
+  expect(await screen.findByRole('button', { name: /07:05.*Reggeli briefing/ })).toBeInTheDocument()
+})
+
+test('a legújabb üzenetnek nincs összecsukás gombja', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
+  renderPage()
+  const sleepCard = (await screen.findByText('07:12 · Alvás-reakció')).closest('.nap-mzmsg') as HTMLElement
+  expect(within(sleepCard).queryByRole('button', { name: 'Összecsukás' })).toBeNull()
+})
+
+test('a deeplink célkártyának nincs összecsukás gombja, akkor sem, ha nem a legújabb', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={[`/nap/uzenetek?n=fm-1&d=${localDateString()}`]}>
+        <MezoThreadProvider>
+          <Routes><Route path="/nap/uzenetek" element={<NapMezoPage />} /></Routes>
+        </MezoThreadProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  const card = (await screen.findByText('07:05 · Reggeli briefing')).closest('.nap-mzmsg') as HTMLElement
+  expect(within(card).queryByRole('button', { name: 'Összecsukás' })).toBeNull()
 })
 
 test('a persisted feed message carries the feedback chips and votes with its artifactId', async () => {
