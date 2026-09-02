@@ -19,9 +19,12 @@ import { RefTag } from '@/shared/ui/RefTag'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { cn } from '@/shared/lib/cn'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
+import { EletjelStrip } from '@/features/today/components/EletjelStrip'
 import { useCompanionFeed, useFeedback } from '@/data/hooks'
 import { feedToMessageItem, partitionMezoThread, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
+import { useNeeds } from '@/features/today/logic/useNeeds'
+import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { localDateString } from '@/shared/lib/dates'
 
 /** Prototype: each message head carries a daypart clay spot (s-reggel / s-este /
@@ -73,6 +76,8 @@ export function NapMezoPage() {
   // az oldal továbbra is közvetlenül olvassa (mezo-e26w / mezo-b3pp.15).
   const { messages, markSeen } = useMezoThread()
   const feed = useCompanionFeed()
+  const tick = useMinuteTick()
+  const needs = useNeeds(tick)
 
   // Üzenetek | Életjelek tab-váltó (mezo-ho9k): a szál (sorrend, tartalom, a hero számláló
   // forrása) érintetlen — ez CSAK megjelenítési bontás a `?tab=` URL-en keresztül.
@@ -215,7 +220,13 @@ export function NapMezoPage() {
         )}
         {tab === 'eletjelek' && (
           <EntranceGroup>
+            {!needs.isPending && <EletjelStrip states={needs.states} onOpen={() => navigate('/nap/eletjel')} />}
             {eletjelek.map((m, i) => renderCard(m, i))}
+            {!needs.isPending && eletjelek.length === 0 && (
+              <p className="nap-ejok rise" style={{ '--d': '100ms' } as React.CSSProperties}>
+                Minden gyűrű rendben — ma nincs teendő. ✓
+              </p>
+            )}
           </EntranceGroup>
         )}
       </PageBody>

@@ -215,6 +215,51 @@ test('a healthy ring set adds nothing to the thread', async () => {
   expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
 })
 
+// ── Életjelek tab státusz-sáv (mezo-ho9k): mindig látszik, sosem üres a tab.
+test('az Életjelek tab a 6 gyűrű státusz-sávját mutatja, riasztás nélkül "minden rendben" sorral', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [
+    { key: 'energia', pct: 72, band: 'green' }, { key: 'hidratacio', pct: 82, band: 'green' },
+    { key: 'pihenes', pct: 88, band: 'green' }, { key: 'mozgas', pct: 65, band: 'green' },
+    { key: 'lelek', pct: 60, band: 'green' }, { key: 'rend', pct: 55, band: 'yellow' },
+  ]
+  renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
+  expect(await screen.findByText('Víz')).toBeInTheDocument() // hidratacio eyebrow (EletjelPage tile-nyelv)
+  expect(screen.getByText('82%')).toBeInTheDocument()
+  expect(screen.getByText(/Minden gyűrű rendben/)).toBeInTheDocument()
+  expect(document.querySelectorAll('.nap-ejcell')).toHaveLength(6)
+})
+
+test('piros gyűrű cellája warn jelölést kap, és a nudge-kártya alatta áll — nincs "minden rendben"', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
+  expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
+  expect(document.querySelector('.nap-ejcell.warn')).not.toBeNull()
+  expect(screen.queryByText(/Minden gyűrű rendben/)).toBeNull()
+})
+
+test('a státusz-sáv a teljes életjel-oldalra visz', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 82, band: 'green' }]
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/nap/uzenetek?tab=eletjelek']}>
+        <MezoThreadProvider>
+          <Routes>
+            <Route path="/nap/uzenetek" element={<NapMezoPage />} />
+            <Route path="/nap/eletjel" element={<div>eletjel-page</div>} />
+          </Routes>
+        </MezoThreadProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  await userEvent.click(await screen.findByRole('button', { name: 'Életjelek részletei' }))
+  expect(await screen.findByText('eletjel-page')).toBeInTheDocument()
+})
+
 test('the chat CTA navigates to /mezo/chat', async () => {
   renderPage()
   await userEvent.click(await screen.findByRole('button', { name: 'Beszélgess Mezóval ›' }))
