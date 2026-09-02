@@ -51,11 +51,17 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const autoShown = useRef<Set<string>>(new Set())
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // `setProgress` is a fresh closure every render (the hook doesn't memoize it) — a ref
-  // mirror keeps the sync effect below off that unstable reference, so it only reruns when
-  // the SERVER state actually changes, not on every local render.
+
+  // Unstable-closure mirrors, assigned during render (no effect involved). `setProgress` is a
+  // fresh closure every render (the hook doesn't memoize it). `progress` is mirrored too: any
+  // callback that reads it must see the LATEST map, never the one from the render that created
+  // the callback — otherwise a delayed setTimeout (the auto-open timer) or the route-change
+  // effect can `persist()` a stale snapshot and clobber a server-merge write that landed in the
+  // window between the callback being created and it actually running.
   const setProgressRef = useRef(setProgress)
   setProgressRef.current = setProgress
+  const progressRef = useRef(progress)
+  progressRef.current = progress
 
   // A lokális az igazság a PUT visszaérkezéséig; a szerver-állapot beolvad, a többlet visszaíródik.
   useEffect(() => {
@@ -73,18 +79,20 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     })
   }, [serverProgress, isPending])
 
+  // No deps beyond refs — `persist` never needs to change identity, so nothing downstream that
+  // calls it needs to either.
   const persist = useCallback((next: TutorialProgress) => {
     setLocal(next)
     writeLocalProgress(next)
-    void setProgress(next).catch(() => undefined) // PUT-hiba: a lokális marad; a következő merge újrapróbál
-  }, [setProgress])
+    void setProgressRef.current(next).catch(() => undefined) // PUT-hiba: a lokális marad; a következő merge újrapróbál
+  }, [])
 
   const isUnseen = useCallback((id: string) => {
     const e = getKalauz(id)
     if (!e) return false
-    const p = progress[id]
+    const p = progressRef.current[id]
     return !p || p.version < e.version
-  }, [progress])
+  }, [])
 
   const open = useCallback((id: string) => {
     const e = getKalauz(id)
@@ -92,25 +100,29 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     if (timer.current) { clearTimeout(timer.current); timer.current = null }
     setOpenId(id)
     // Látva = megjelent. Frissebb verzió esetén új rekord, completedAt/dismissedAtStep nullázva.
-    const prev = progress[id]
+    const map = progressRef.current
+    const prev = map[id]
     if (!prev || prev.version < e.version) {
-      persist({ ...progress, [id]: { version: e.version, seenAt: new Date().toISOString(), completedAt: null, dismissedAtStep: null } })
+      persist({ ...map, [id]: { version: e.version, seenAt: new Date().toISOString(), completedAt: null, dismissedAtStep: null } })
     }
-  }, [progress, persist])
+  }, [persist])
 
   const close = useCallback((reason: KalauzCloseReason, step: number) => {
-    if (openId === null) return
-    const prev = progress[openId]
-    if (prev) {
-      persist({
-        ...progress,
-        [openId]: reason === 'done'
-          ? { ...prev, completedAt: new Date().toISOString() }
-          : { ...prev, dismissedAtStep: step },
-      })
-    }
-    setOpenId(null)
-  }, [openId, progress, persist])
+    setOpenId((id) => {
+      if (id === null) return null
+      const map = progressRef.current
+      const prev = map[id]
+      if (prev) {
+        persist({
+          ...map,
+          [id]: reason === 'done'
+            ? { ...prev, completedAt: new Date().toISOString() }
+            : { ...prev, dismissedAtStep: step },
+        })
+      }
+      return null
+    })
+  }, [persist])
 
   const resetAll = useCallback(async () => {
     autoShown.current.clear()
@@ -121,28 +133,36 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
 
   const current = useMemo(() => findKalauz(pathname), [pathname])
 
+  // `open`/`isUnseen` mirrors for the route effect below — same rationale as `setProgressRef`
+  // above (brief's documented alternative to `eslint-disable-next-line react-hooks/exhaustive-deps`):
+  // the auto-open decision is tied to the route-change MOMENT, so the effect's deps stay
+  // `[pathname, current]` and the delayed timer callback reads `openRef.current` at fire time
+  // instead of closing over the `open` from the render that scheduled it.
+  const openRef = useRef(open)
+  openRef.current = open
+  const isUnseenRef = useRef(isUnseen)
+  isUnseenRef.current = isUnseen
+
   // Route-váltás: nyitott kalauz zár (dismissed), és az új route auto-kalauza időzítve nyílik.
   useEffect(() => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null }
     setOpenId((id) => {
       if (id !== null) {
-        const prev = progress[id]
+        const map = progressRef.current
+        const prev = map[id]
         if (prev && prev.completedAt === null && prev.dismissedAtStep === null) {
-          persist({ ...progress, [id]: { ...prev, dismissedAtStep: 0 } })
+          persist({ ...map, [id]: { ...prev, dismissedAtStep: 0 } })
         }
       }
       return null
     })
     if (!current || current.tier === 'T3') return
-    if (autoShown.current.has(current.id) || !isUnseen(current.id)) return
+    if (autoShown.current.has(current.id) || !isUnseenRef.current(current.id)) return
     autoShown.current.add(current.id)
     const id = current.id
-    timer.current = setTimeout(() => { timer.current = null; open(id) }, prefersReducedMotion() ? 0 : AUTO_DELAY_MS)
+    timer.current = setTimeout(() => { timer.current = null; openRef.current(id) }, prefersReducedMotion() ? 0 : AUTO_DELAY_MS)
     return () => { if (timer.current) { clearTimeout(timer.current); timer.current = null } }
-    // A `progress`/`open`/`isUnseen` szándékosan nincs a függőségek között: a döntés a
-    // route-váltás PILLANATÁHOZ kötött, egy közbeni seen-frissítés nem indíthat új időzítőt.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, current])
+  }, [pathname, current, persist])
 
   const value = useMemo<TutorialContextValue>(
     () => ({ current, openId, open, close, isUnseen, resetAll }),
