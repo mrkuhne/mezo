@@ -126,12 +126,18 @@ export function frequencyOf(frames: DayFrame[], group: string): number {
 }
 
 /**
- * A template/run predates the wizard v2 band model when it was never stamped with the
- * current goal preset, OR its phase curve carries no closing Deload week (an older/custom
- * curve shape the band math was not written against). Either flag alone is enough — the
- * band language (current → ceiling · tier) only applies cleanly to plans generated the
- * current way, so a legacy plan gets a visible note instead of silently mislabeled bands.
+ * A template/run predates the wizard v2 band model when it was EXPLICITLY stamped with a
+ * goal preset other than the current one, OR its phase curve carries no closing Deload week
+ * (an older/custom curve shape the band math was not written against). Either flag alone is
+ * enough — the band language (current → ceiling · tier) only applies cleanly to plans
+ * generated the current way, so a legacy plan gets a visible note instead of silently
+ * mislabeled bands.
+ *
+ * An ABSENT goalPreset (null/undefined) is NOT itself legacy — plenty of pre-wizard-v2 mock
+ * fixtures simply never had the field populated, and a Deload-terminated curve is already
+ * strong evidence the plan was generated the current way. Only a preset that is PRESENT and
+ * WRONG disqualifies a plan on that axis.
  */
 export function isLegacyPlan(plan: { goalPreset?: string | null; phaseCurve: MesoPhase[] }): boolean {
-  return plan.goalPreset !== 'hypertrophy' || !plan.phaseCurve.includes('Deload')
+  return (plan.goalPreset != null && plan.goalPreset !== 'hypertrophy') || !plan.phaseCurve.includes('Deload')
 }

@@ -73,21 +73,22 @@ function toMuscleArcs(volume: MesocycleReportResponse['volume']): MuscleVolumeAr
   }))
 }
 
-interface PeakBandRow { muscle: string; label: string; start: number; peak: number; ceiling: number }
+interface PeakBandRow { muscle: string; label: string; start: number | null; peak: number; ceiling: number }
 
 /**
  * The band language's frozen close-time read, per muscle: where W1 started, the loudest
  * planned week the run actually reached, and the arc's ceiling (MRV). Sorted by ceiling desc
  * — the same convention `runBands` uses on the live page — so Emphasize's MRV-bound muscles
  * lead. A muscle with no logged weeks at all cannot happen (a frozen arc always carries at
- * least W1), but the empty-array guard keeps `Math.max` from returning `-Infinity`.
+ * least W1), but the empty-array guard keeps `Math.max` from returning `-Infinity`. `start`
+ * stays `null` (never a fabricated 0) when the arc genuinely has no W1 row to read.
  */
 function peakBands(arcs: MuscleVolumeArc[]): PeakBandRow[] {
   return arcs
     .map((m) => ({
       muscle: m.muscle,
       label: BUDGET_GROUP_LABELS[m.muscle] ?? m.muscle,
-      start: m.weeks[0]?.planned ?? 0,
+      start: m.weeks[0]?.planned ?? null,
       peak: m.weeks.length > 0 ? Math.max(...m.weeks.map((w) => w.planned)) : 0,
       ceiling: m.mrv,
     }))
@@ -343,7 +344,7 @@ export function MesoReportPage() {
                       <span className="chip">{r.label}</span>
                       <span style={{ flex: 1 }} />
                       <span className="label-mono" style={{ fontSize: 12, fontWeight: 700 }}>
-                        {`${fmt(r.start)} → ${fmt(r.peak)} / ${fmt(r.ceiling)}`}
+                        {`${dash(r.start)} → ${fmt(r.peak)} / ${fmt(r.ceiling)}`}
                       </span>
                     </div>
                     <div style={{ height: 9, borderRadius: 5, background: 'var(--surface-1)', overflow: 'hidden', marginTop: 5 }}>

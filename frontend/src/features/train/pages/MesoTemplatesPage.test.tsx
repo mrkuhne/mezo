@@ -48,15 +48,16 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
 
   test('the fixture templates carry the band-vocabulary chips (mezo-d20.15 Task 5)', () => {
     setup()
-    // Neither mock fixture template was stamped with the wizard v2 goalPreset — both read
-    // as legacy (régi modell), predating the current band model.
-    expect(screen.getAllByText('régi modell')).toHaveLength(2)
-    expect(screen.getAllByText('indításkor az új modellre konvertálódik')).toHaveLength(2)
+    // b20f0000 (Upper/Lower Power) carries a PRESENT, wrong goalPreset ('strength') — legacy.
+    // a10e0000 (Hypertrophy 04) has no goalPreset at all (ABSENT) but its curve closes on
+    // Deload — an absent preset alone is not legacy, so it must NOT get the chip/note.
+    expect(screen.getAllByText('régi modell')).toHaveLength(1)
+    expect(screen.getAllByText('indításkor az új modellre konvertálódik')).toHaveLength(1)
     // Upper/Lower Power (b20f0000): 4 training days, Emphasize on back
     expect(screen.getByText('4 nap · Upper / Lower')).toBeInTheDocument()
     expect(screen.getByText('★ Hát')).toBeInTheDocument()
     expect(screen.getByText('4 + 1 deload')).toBeInTheDocument()
-    // Hypertrophy 04 · Tavasz (a10e0000): 5 training days, no priorities set
+    // Hypertrophy 04 · Tavasz (a10e0000): 5 training days, no priorities set, current model
     expect(screen.getByText('5 nap · Upper / Lower / Push / Pull / Legs')).toBeInTheDocument()
     expect(screen.getByText('5 + 1 deload')).toBeInTheDocument()
   })

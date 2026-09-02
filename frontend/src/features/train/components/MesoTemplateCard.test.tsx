@@ -55,7 +55,15 @@ describe('MesoTemplateCard chips (mezo-d20.15 Task 5)', () => {
     expect(screen.getByText('5 + 1 deload')).toBeInTheDocument()
   })
 
-  it('flags a legacy template (no hypertrophy goalPreset) with a muted chip and the conversion note', () => {
+  it('does NOT flag a template with an ABSENT goalPreset as legacy when its curve closes on Deload', () => {
+    // Plenty of pre-wizard-v2 mock fixtures simply never had goalPreset populated — an
+    // absent preset alone must not read as legacy, only a PRESENT-and-wrong one does.
+    setup(template({ goalPreset: undefined, phaseCurve: ['MEV', 'MAV', 'MRV', 'Deload'] }))
+    expect(screen.queryByText('régi modell')).toBeNull()
+    expect(screen.queryByText('indításkor az új modellre konvertálódik')).toBeNull()
+  })
+
+  it('flags a legacy template with a PRESENT, wrong goalPreset — muted chip + conversion note', () => {
     setup(template({ goalPreset: 'strength' }))
     expect(screen.getByText('régi modell')).toBeInTheDocument()
     expect(screen.getByText('indításkor az új modellre konvertálódik')).toBeInTheDocument()

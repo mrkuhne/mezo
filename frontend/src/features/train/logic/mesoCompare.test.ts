@@ -14,7 +14,8 @@ import type {
   MesoContext,
   MesoStrengthDelta,
 } from '@/data/train/trainApi'
-import type { Mesocycle, MesoVolumeArc } from '@/data/types'
+import type { Mesocycle, MesoPhase, MesoVolumeArc } from '@/data/types'
+import { isLegacyPlan } from '@/features/train/logic/mesoPlan'
 
 // --- tiny builders: only the fields the three helpers read are meaningful here ---
 
@@ -298,11 +299,40 @@ describe('focusDiff', () => {
     expect(focusDiff(run({ musclePriorities: {} })).chips).toEqual([])
   })
 
-  it('flags a run as legacy when goalPreset is not hypertrophy, or the phase curve has no Deload', () => {
+  it('flags a run as legacy when goalPreset is PRESENT and wrong, or the phase curve has no Deload', () => {
     expect(focusDiff(run({ goalPreset: 'strength' })).legacy).toBe(true)
-    expect(focusDiff(run({ goalPreset: null })).legacy).toBe(true)
     expect(focusDiff(run({ phaseCurve: ['MEV', 'MAV', 'MRV'] })).legacy).toBe(true)
     expect(focusDiff(run()).legacy).toBe(false)
+  })
+
+  it('does NOT flag a run legacy for an ABSENT goalPreset alone (only present-and-wrong disqualifies)', () => {
+    expect(focusDiff(run({ goalPreset: null })).legacy).toBe(false)
+    expect(focusDiff(run({ goalPreset: undefined })).legacy).toBe(false)
+  })
+})
+
+describe('isLegacyPlan', () => {
+  const plan = (over: Partial<{ goalPreset?: string | null; phaseCurve: MesoPhase[] }> = {}) => ({
+    goalPreset: undefined as string | null | undefined,
+    phaseCurve: ['MEV', 'MAV', 'MRV', 'Deload'] as MesoPhase[],
+    ...over,
+  })
+
+  it('is NOT legacy: absent goalPreset + a Deload-terminated curve', () => {
+    expect(isLegacyPlan(plan({ goalPreset: undefined }))).toBe(false)
+    expect(isLegacyPlan(plan({ goalPreset: null }))).toBe(false)
+  })
+
+  it('is NOT legacy: the current hypertrophy preset + a Deload-terminated curve', () => {
+    expect(isLegacyPlan(plan({ goalPreset: 'hypertrophy' }))).toBe(false)
+  })
+
+  it('IS legacy: a present, wrong preset even with a Deload-terminated curve', () => {
+    expect(isLegacyPlan(plan({ goalPreset: 'strength' }))).toBe(true)
+  })
+
+  it('IS legacy: an absent preset with a curve that never closes on Deload', () => {
+    expect(isLegacyPlan(plan({ goalPreset: undefined, phaseCurve: ['MEV', 'MAV', 'MRV'] }))).toBe(true)
   })
 })
 
