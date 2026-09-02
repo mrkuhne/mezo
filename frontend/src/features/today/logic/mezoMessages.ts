@@ -10,6 +10,7 @@
 // jönnek. Pure: no React, no hooks, no side effects.
 // ============================================================
 import type { Briefing, BriefingRef, FeedMessage, FeedMessageKind } from '@/data/types'
+import type { ClayIconName } from '@/shared/ui/clay'
 
 export interface MezoMessageItem {
   /** Stabil a napon belül: a feed KINDJE (`morning`/`sleep`/…) vagy a nudge/demo kulcsa —
@@ -32,6 +33,10 @@ export interface MezoMessageItem {
   /** Tab-partíció kulcs (mezo-ho9k): 'eletjel' = Életjel-figyelő nudge — a NapMezoPage
    *  Életjelek tabjára tartozik. Hiánya = companion-üzenet (Üzenetek tab). */
   source?: 'eletjel'
+  /** mezo-z4h4: a küszöb-nudge kártya domain clay ikonja (a nudge-ot kiváltó `NeedKey`
+   *  ikonja, `VITAL_TILE`-ból, `EletjelPage.tsx`) — csak nudge-elemeken van, felváltja a
+   *  kártya fején az emojit/daypart-spotot. Feed-soroknak nincs. */
+  icon?: ClayIconName
 }
 
 /** A briefing eyebrow-ja hordozhat egy `HH:mm`-et (pl. „Mezo · reggeli briefing · 06:30"). */

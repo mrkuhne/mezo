@@ -1,12 +1,10 @@
-import { useState } from 'react'
 import { Markdown } from '@/shared/lib/markdown'
-import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
+import { ClaySpot } from '@/shared/ui/clay'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RecalledMemoriesRow } from '@/features/insights/components/RecalledMemoriesRow'
 import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
-import { chatRefDisplay } from '@/features/insights/logic/chatRefs'
-import { refDomain } from '@/features/insights/logic/toolDomains'
-import type { ChatMessage as ChatMessageT, ChatRef } from '@/data/types'
+import { RefChips } from '@/features/insights/components/RefChips'
+import type { ChatMessage as ChatMessageT } from '@/data/types'
 import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
 
 /** The card's slice of the page-level `useFeedback` handle (mezo-b3pp.15). Absent when the
@@ -70,7 +68,7 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
         )}
         {/* length, not truthiness: an empty array is truthy, and the filter above can now turn a
             non-empty refs list into an empty one — without this the eyebrow would render alone. */}
-        {visibleRefs.length > 0 && <RefsFooter refs={visibleRefs} />}
+        {visibleRefs.length > 0 && <RefChips refs={visibleRefs} eyebrow="Amire épült · L3" />}
       </div>
       {/* W3.1b: the answer's ambient-recall provenance, collapsed (mezo-b3pp.28). */}
       {m.recalled && <RecalledMemoriesRow items={m.recalled} />}
@@ -80,65 +78,6 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
           different answers — advisory since the row derives from the verdict, not load-bearing. */}
       {feedback && (
         <FeedbackChips value={feedback.value} onVote={feedback.onVote} label="a válaszról" />
-      )}
-    </div>
-  )
-}
-
-/** mezo-vdf4: >3 refs group by kind into wash chips (`Alvás ×3`) that expand one group
- *  at a time; ≤3 render as full chips immediately. Full chips keep the mzc-refch/mzc-refk
- *  classes — the pre-existing tests (and the human-label contract, gap 7) key off them. */
-function RefsFooter({ refs }: { refs: ChatRef[] }) {
-  const [openKind, setOpenKind] = useState<string | null>(null)
-  const grouped = refs.length > 3
-  const kinds = grouped
-    ? [...new Map(refs.map((r) => [r.kind, r] as const)).keys()]
-    : []
-  const fullChips = (list: ChatRef[]) =>
-    list.map((r, i) => {
-      const d = chatRefDisplay(r)
-      const dm = refDomain(r.kind)
-      return (
-        <span key={i} className={`mzc-refch dm-${dm.wash}`}>
-          <span className="mzc-refic"><ClayIcon name={dm.icon} size={11} /></span>
-          <b className="mzc-refk">{d.kind}</b>
-          {d.label}
-        </span>
-      )
-    })
-  return (
-    <div className="mzc-reffoot">
-      <span className="mzc-refeb">Amire épült · L3</span>
-      {grouped ? (
-        <>
-          <div className="mzc-refrow">
-            {kinds.map((kind) => {
-              const dm = refDomain(kind)
-              const count = refs.filter((r) => r.kind === kind).length
-              const open = openKind === kind
-              return (
-                <button
-                  key={kind}
-                  type="button"
-                  className={`mzc-refg dm-${dm.wash}${open ? ' on' : ''}`}
-                  aria-expanded={open}
-                  onClick={() => setOpenKind(open ? null : kind)}
-                >
-                  <span className="mzc-refic"><ClayIcon name={dm.icon} size={11} /></span>
-                  {chatRefDisplay({ kind, id: '' }).kind}
-                  <span className="mzc-refn">×{count}</span>
-                </button>
-              )
-            })}
-          </div>
-          {openKind && (
-            <div className="mzc-refrow mzc-refdates">
-              {fullChips(refs.filter((r) => r.kind === openKind))}
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="mzc-refrow">{fullChips(refs)}</div>
       )}
     </div>
   )

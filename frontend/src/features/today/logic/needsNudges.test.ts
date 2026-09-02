@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { deriveNudges, NUDGE_COPY, toNudgeMessage } from '@/features/today/logic/needsNudges'
-import { NEED_META, type NeedBand, type NeedKey, type NeedState } from '@/features/today/logic/needs'
+import { NEED_ICON, NEED_META, type NeedBand, type NeedKey, type NeedState } from '@/features/today/logic/needs'
 import type { NudgeSeenEntry } from '@/features/today/logic/nudgeSeen'
 
 const d = (s: string) => new Date(s)
@@ -106,7 +106,7 @@ describe('deriveNudges', () => {
 })
 
 describe('toNudgeMessage', () => {
-  test('a NUDGE_COPY-t szó szerint viszi, HH:mm időbélyeggel, Életjel-figyelő metával', () => {
+  test('a NUDGE_COPY-t szó szerint viszi, HH:mm időbélyeggel, Életjel-figyelő metával, a need clay ikonjával', () => {
     const msg = toNudgeMessage({ key: 'hidratacio', at: '2026-08-17T15:07:00' })
     expect(msg).toEqual({
       id: 'nudge-hidratacio-2026-08-17T15:07:00',
@@ -116,6 +116,7 @@ describe('toNudgeMessage', () => {
       refs: [],
       meta: 'Életjel-figyelő',
       source: 'eletjel',
+      icon: NEED_ICON.hidratacio,
     })
   })
 
@@ -125,11 +126,15 @@ describe('toNudgeMessage', () => {
     expect(toNudgeMessage({ key: 'hidratacio', at: '2026-08-17T15:07:00' }).artifactId).toBeUndefined()
   })
 
-  test('minden NeedKey-hez van copy, és mind emoji-val kezdődik', () => {
+  test('minden NeedKey-hez van copy (emoji nélkül) és a saját clay ikonja (mezo-z4h4)', () => {
     const keys: NeedKey[] = ['energia', 'hidratacio', 'pihenes', 'mozgas', 'lelek', 'rend']
     for (const k of keys) {
       expect(NUDGE_COPY[k].length).toBeGreaterThan(0)
-      expect(toNudgeMessage({ key: k, at: '2026-08-17T10:00:00' }).paragraphs).toEqual([NUDGE_COPY[k]])
+      // Emoji stripped — the leading glyph is now a rendered ClayIcon, not text (mezo-z4h4).
+      expect(NUDGE_COPY[k]).not.toMatch(/^\p{Extended_Pictographic}/u)
+      const msg = toNudgeMessage({ key: k, at: '2026-08-17T10:00:00' })
+      expect(msg.paragraphs).toEqual([NUDGE_COPY[k]])
+      expect(msg.icon).toBe(NEED_ICON[k])
     }
   })
 

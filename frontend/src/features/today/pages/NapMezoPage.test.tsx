@@ -36,8 +36,11 @@ vi.mock('@/features/today/logic/useNeeds', () => ({
 }))
 // A fixed wall clock: `deriveNudges` is quiet at night and in the first hour after
 // waking, so an unpinned clock would make the nudge test flake by time of day.
+// Held in a mutable box (mezo-z4h4) so one test can move the clock into the quiet
+// window (a red ring that `deriveNudges` suppresses) without unpinning the rest.
+const tickMock = vi.hoisted(() => ({ now: new Date('2026-05-22T13:42:00') }))
 vi.mock('@/features/today/logic/useMinuteTick', () => ({
-  useMinuteTick: () => new Date('2026-05-22T13:42:00'),
+  useMinuteTick: () => tickMock.now,
 }))
 
 const morningMsg: FeedMessage = {
@@ -52,11 +55,26 @@ const sleepMsg: FeedMessage = {
   refs: [],
   generatedAt: '2026-05-22T07:12:00',
 }
+// mezo-z4h4: 4+ refs across two kinds — proves the chat-style grouped chips (human kind label,
+// domain icon, one group open at a time) replace the raw `[FuelDay]` RefTag rendering. The
+// labels are bare ISO dates, the honest-label fallback chatRefDisplay must humanise.
+const refsMsg: FeedMessage = {
+  id: 'fm-3', kind: 'evening', eyebrow: 'Napi összegzés',
+  body: [{ type: 'p', text: 'Sok forrásra épült ez a nap.' }],
+  refs: [
+    { kind: 'FuelDay', label: '2026-08-25' },
+    { kind: 'FuelDay', label: '2026-08-26' },
+    { kind: 'Practice', label: '2026-08-27' },
+    { kind: 'Practice', label: '2026-09-02' },
+  ],
+  generatedAt: '2026-05-22T20:00:00',
+}
 
 beforeEach(() => {
   feedMock.useCompanionFeed.mockReturnValue([])
   voteMock.vote.mockClear()
   needsMock.states = []
+  tickMock.now = new Date('2026-05-22T13:42:00')
   localStorage.clear()
 })
 
@@ -152,6 +170,62 @@ test('egyetlen üzenet nem kap összecsukott sort', async () => {
   expect(screen.queryByRole('button', { name: /07:05.*Reggeli briefing/ })).toBeNull()
 })
 
+// ── Chat-mintájú ref-chipek (mezo-z4h4): a "mit nézett meg Mezo" rész a chat-oldal
+// domain-ikonos, emberi címkés, csoportosított chipjeit kapja a nyers `[FuelDay]` szöveg
+// helyett.
+test('a ref-chipek a chat-mintát követik: csoportosított, emberi címkés, nem nyers [Kind] szöveg', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([refsMsg])
+  renderPage()
+  expect(await screen.findByText('Sok forrásra épült ez a nap.')).toBeInTheDocument()
+  expect(screen.getByText('Amire épült')).toBeInTheDocument()
+  expect(screen.queryByText(/\[FuelDay\]/)).toBeNull()
+  expect(screen.queryByText(/\[Practice\]/)).toBeNull()
+  const fuelGroup = screen.getByRole('button', { name: /Fuel nap.*×2/ })
+  expect(fuelGroup).toHaveAttribute('aria-expanded', 'false')
+  expect(screen.getByRole('button', { name: /Gyakorlat.*×2/ })).toBeInTheDocument()
+  await userEvent.click(fuelGroup)
+  expect(await screen.findByText('aug. 25.')).toBeInTheDocument()
+  expect(screen.getByText('aug. 26.')).toBeInTheDocument()
+})
+
+// ── Visszacsukható régebbi üzenet (mezo-z4h4): a korábbi `expand`-only halmaz miatt egy
+// felhasználó által kinyitott régebbi kártyát soha nem lehetett visszacsukni.
+test('egy felhasználó által kinyitott régebbi kártya az összecsukás gombbal visszacsukható', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
+  renderPage()
+  const row = await screen.findByRole('button', { name: /07:05.*Reggeli briefing/ })
+  await userEvent.click(row)
+  expect(await screen.findByText(/W3-csúcs/)).toBeInTheDocument()
+  const msg = screen.getByText('07:05 · Reggeli briefing').closest('.nap-mzmsg') as HTMLElement
+  const collapseBtn = within(msg).getByRole('button', { name: 'Összecsukás' })
+  expect(collapseBtn).toHaveAttribute('aria-expanded', 'true')
+  await userEvent.click(collapseBtn)
+  expect(screen.queryByText(/W3-csúcs/, { selector: '.txt' })).toBeNull()
+  expect(await screen.findByRole('button', { name: /07:05.*Reggeli briefing/ })).toBeInTheDocument()
+})
+
+test('a legújabb üzenetnek nincs összecsukás gombja', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
+  renderPage()
+  const sleepCard = (await screen.findByText('07:12 · Alvás-reakció')).closest('.nap-mzmsg') as HTMLElement
+  expect(within(sleepCard).queryByRole('button', { name: 'Összecsukás' })).toBeNull()
+})
+
+test('a deeplink célkártyának nincs összecsukás gombja, akkor sem, ha nem a legújabb', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={[`/nap/uzenetek?n=fm-1&d=${localDateString()}`]}>
+        <MezoThreadProvider>
+          <Routes><Route path="/nap/uzenetek" element={<NapMezoPage />} /></Routes>
+        </MezoThreadProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  const card = (await screen.findByText('07:05 · Reggeli briefing')).closest('.nap-mzmsg') as HTMLElement
+  expect(within(card).queryByRole('button', { name: 'Összecsukás' })).toBeNull()
+})
+
 test('a persisted feed message carries the feedback chips and votes with its artifactId', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   renderPage()
@@ -211,6 +285,18 @@ test('?tab=eletjelek induláskor az Életjelek tabot nyitja', async () => {
   expect(screen.getByRole('tab', { name: /Életjelek/ })).toHaveAttribute('aria-selected', 'true')
 })
 
+test('mezo-z4h4: a nudge card head shows the need\'s clay icon instead of a daypart spot, and the collapsed row previews the same icon', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
+  expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
+  // hidratacio → i-viz (NEED_ICON, needs.ts), the same clay icon EletjelPage's VITAL_TILE uses.
+  expect(document.querySelector('.nap-mzmsg use[href="#i-viz"]')).not.toBeNull()
+  // Copy no longer starts with the 💧 emoji — the icon replaces it.
+  expect(document.querySelector('.nap-mzmsg .txt')?.textContent).not.toMatch(/💧/)
+})
+
 test('a healthy ring set adds nothing to the thread', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   needsMock.states = [{ key: 'hidratacio', pct: 82, band: 'green' }]
@@ -231,7 +317,12 @@ test('az Életjelek tab a 6 gyűrű státusz-sávját mutatja, riasztás nélkü
   await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
   expect(await screen.findByText('Víz')).toBeInTheDocument() // hidratacio eyebrow (EletjelPage tile-nyelv)
   expect(screen.getByText('82%')).toBeInTheDocument()
-  expect(screen.getByText(/Minden gyűrű rendben/)).toBeInTheDocument()
+  const okLine = screen.getByText(/Minden gyűrű rendben/)
+  expect(okLine).toBeInTheDocument()
+  // mezo-z4h4: emoji→icon pass — the trailing ✓ glyph is now the Icon component, not a
+  // literal character in the text content.
+  expect(okLine.textContent).not.toMatch(/✓/)
+  expect(okLine.querySelector('svg polyline[points="4,12 10,18 20,6"]')).not.toBeNull()
   expect(document.querySelectorAll('.nap-ejcell')).toHaveLength(6)
 })
 
@@ -243,6 +334,40 @@ test('piros gyűrű cellája warn jelölést kap, és a nudge-kártya alatta ál
   expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
   expect(document.querySelector('.nap-ejcell.warn')).not.toBeNull()
   expect(screen.queryByText(/Minden gyűrű rendben/)).toBeNull()
+  // A nudge-kártya megvan a szálban — az őszinte figyelmeztető sor SEM kell mellé
+  // (mezo-z4h4): a kártya már elmondja, a sor csak a kártya-nélküli esetre való.
+  expect(screen.queryByText(/figyelmet kér/)).toBeNull()
+})
+
+// mezo-z4h4: a bug ("Minden gyűrű rendben" miközben mind a hat gyűrű 0%-on áll) abból jött,
+// hogy az üres sor a NUDGE-LISTA hosszát nézte, nem a gyűrűk sávját — `deriveNudges` pedig
+// elnyeli a friss nudge-ot az éjszakai/ébredés utáni csendes ablakban. A csendes ablakra
+// állított óra pontosan ezt az esetet szimulálja: piros gyűrű, de a szálban NINCS nudge-kártya.
+test('csendes ablakban elnyelt nudge esetén (piros gyűrű, nudge-kártya nélkül) őszinte figyelmeztető sor jön a "minden rendben" helyett', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  tickMock.now = new Date('2026-05-22T03:00:00') // mélyéjszaka — deriveNudges csendes ablaka
+  renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
+  expect(document.querySelector('.nap-ejcell.warn')).not.toBeNull()
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(0) // nincs nudge-kártya a szálban
+  expect(screen.queryByText(/Minden gyűrű rendben/)).toBeNull()
+  expect(screen.getByText('Egy gyűrű figyelmet kér — a részletekért koppints a sávra.')).toBeInTheDocument()
+  expect(document.querySelector('.nap-ejok.warn')).not.toBeNull()
+})
+
+test('csendes ablakban több elnyelt piros/kritikus gyűrű esetén a figyelmeztető sor többes számot használ helyesen', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([])
+  needsMock.states = [
+    { key: 'hidratacio', pct: 12, band: 'red' },
+    { key: 'energia', pct: 5, band: 'critical' },
+    { key: 'pihenes', pct: 80, band: 'green' },
+  ]
+  tickMock.now = new Date('2026-05-22T03:00:00')
+  renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(0)
+  expect(screen.getByText('2 gyűrű figyelmet kér — a részletekért koppints a sávra.')).toBeInTheDocument()
 })
 
 test('a státusz-sáv a teljes életjel-oldalra visz', async () => {

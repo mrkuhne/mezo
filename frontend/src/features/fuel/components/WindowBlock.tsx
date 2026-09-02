@@ -58,8 +58,17 @@ function useFilled(): boolean {
 
 function MacroRing({ ring, filled }: { ring: TileRingVM; filled: boolean }) {
   const frac = Math.max(0, Math.min(1, ring.pct / 100))
+  // A logged window's P/C/F rings read as the meal's own build ("az étel 30%-a"), a planned
+  // window's — and a done tile's Rost ring — still as the day's keret (mezo-tjua).
+  const meal = ring.basis === 'meal'
   return (
-    <span className="fh-wring" role="img" aria-label={`${ring.label} ${ring.grams} g, a napi cél ${ring.pct} százaléka`}>
+    <span
+      className="fh-wring"
+      role="img"
+      aria-label={meal
+        ? `${ring.label} ${ring.grams} g, az étel ${ring.pct} százaléka`
+        : `${ring.label} ${ring.grams} g, a napi cél ${ring.pct} százaléka`}
+    >
       <span className="fh-wring-w">
         <svg width={RING} height={RING} viewBox={`0 0 ${RING} ${RING}`} aria-hidden="true">
           <circle className="fh-wring-t" cx={RING / 2} cy={RING / 2} r={RING_R} strokeWidth={RING_STROKE} />
@@ -69,7 +78,7 @@ function MacroRing({ ring, filled }: { ring: TileRingVM; filled: boolean }) {
         <i aria-hidden="true">{ring.letter}</i>
       </span>
       <b>{ring.grams}<em> g</em></b>
-      <small>{ring.pct}% napi</small>
+      <small>{ring.pct}%{meal ? '' : ' napi'}</small>
     </span>
   )
 }

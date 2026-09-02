@@ -12,17 +12,17 @@
 // (`isQuiet`), hogy a companion sose zavarjon alvás közben vagy közvetlenül ébredéskor.
 // Spec: .superpowers/sdd/2026-08-17-needs-rings/task-5-brief.md
 // ============================================================
-import type { NeedKey, NeedState } from '@/features/today/logic/needs'
+import { NEED_ICON, type NeedKey, type NeedState } from '@/features/today/logic/needs'
 import type { MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import type { NudgeSeenEntry } from '@/features/today/logic/nudgeSeen'
 
 export const NUDGE_COPY: Record<NeedKey, string> = {
-  energia: '🍽️ Ideje enni valamit — az utolsó étkezésed régen volt, az Energia-ringed leapadt.',
-  hidratacio: '💧 Ma még alig ittál — egy pohár víz máris feltölti a Hidratáció-ringet.',
-  pihenes: '😴 A tegnapi éjszaka kevés volt — ma este érdemes korábban zárni.',
-  mozgas: '💪 Két napja nem mozdultál nagyot — egy edzés vagy séta újra feltölt.',
-  lelek: '💗 Rég néztél magadra — egy gyors check-in feltölti a Lélek-ringet.',
-  rend: '⚡ A láncaid ma még üresek — egy-két pipa visszahozza a Rendet.',
+  energia: 'Ideje enni valamit — az utolsó étkezésed régen volt, az Energia-ringed leapadt.',
+  hidratacio: 'Ma még alig ittál — egy pohár víz máris feltölti a Hidratáció-ringet.',
+  pihenes: 'A tegnapi éjszaka kevés volt — ma este érdemes korábban zárni.',
+  mozgas: 'Két napja nem mozdultál nagyot — egy edzés vagy séta újra feltölt.',
+  lelek: 'Rég néztél magadra — egy gyors check-in feltölti a Lélek-ringet.',
+  rend: 'A láncaid ma még üresek — egy-két pipa visszahozza a Rendet.',
 }
 
 export interface NudgeEntry {
@@ -102,5 +102,8 @@ export function toNudgeMessage(n: { key: NeedKey; at: string }): MezoMessageItem
     refs: [],
     meta: 'Életjel-figyelő',
     source: 'eletjel',
+    // mezo-z4h4: ugyanaz a NeedKey → clay ikon szótár, mint az Életjel oldal tile-jain
+    // (VITAL_TILE, EletjelPage.tsx is `NEED_ICON`-t olvassa) — EGY forrás az igazságnak.
+    icon: NEED_ICON[n.key],
   }
 }

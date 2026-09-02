@@ -405,8 +405,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
     dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, formatImpact.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts,
-    keretHero.ts, matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts,
-    resolveDayType.ts, scoreTone.ts, validateSlotPlan.ts
+    keretHero.ts, macroSplit.ts, matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, projectStackDay.ts,
+    recipeRole.ts, resolveDayType.ts, scoreTone.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
@@ -525,7 +525,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx,
     MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
     PatternDecisionCard.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternScatter.tsx, PatternStrengthChart.tsx,
-    ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, SimilarDayCard.tsx, TokenColumns.tsx,
+    ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx, SimilarDayCard.tsx, TokenColumns.tsx,
     ToolWorkStrip.tsx
   - **logic:** chatRefs.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts, factCopy.ts, findings.ts,
     humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternHistory.ts, quickQuestions.ts,
