@@ -105,12 +105,27 @@
     display: grid; place-items: center; padding: 0 4px;
     box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.6);
   }
-  .avatar-ring {
-    width: 34px; height: 34px; border-radius: 50%; flex: none;
-    background: conic-gradient(#FF6B4A 68%, rgba(43, 33, 24, 0.1) 0);
-    display: grid; place-items: center;
+  /* profil = az Orb-gömb, karika nélkül (mezo-ij9m) */
+  .orbbtn { width: 34px; height: 34px; border: none; background: none; padding: 0; display: grid; place-items: center; cursor: pointer; flex: none; }
+  .orbbtn svg { filter: drop-shadow(0 4px 6px rgba(216, 72, 31, 0.28)); }
+  /* napszak-váltó popover (a Nap oldal fejléce) */
+  .dpwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .dpmenu {
+    position: absolute; right: 0; top: 40px; z-index: 7;
+    display: flex; gap: 2px; padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.95); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    border-radius: 999px; backdrop-filter: blur(10px);
+    box-shadow: 0 14px 28px -12px rgba(43, 33, 24, 0.35);
+    opacity: 0; transform: translateY(-6px) scale(0.92); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
   }
-  .avatar-ring .in { width: 27px; height: 27px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center; }
+  .dpwrap.open .dpmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .dpmenu button { width: 40px; height: 32px; border: none; background: none; font-family: inherit; border-radius: 999px; display: grid; place-items: center; cursor: pointer; position: relative; }
+  .dpmenu button svg { filter: grayscale(1) brightness(1.04) opacity(0.45); }
+  .dpmenu button.on { background: rgba(255, 107, 74, 0.1); }
+  .dpmenu button.on svg { filter: none; }
+  /* fejléc-demó (C): a kijelölt gomb arany gyűrűt kap */
+  .roundbtn.sel, .orbbtn.sel { box-shadow: 0 0 0 3px #C9962E, 0 0 0 7px rgba(201, 150, 46, 0.25); border-radius: 50%; }
 
   /* fuel hub content */
   .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
@@ -219,7 +234,9 @@
   .kz-dot.on { width: 18px; background: #A84A26; }
   .kz-dot.seen { background: rgba(168, 74, 38, 0.45); }
   .kz-foot { display: flex; align-items: center; gap: 8px; }
-  .kz-foot .cta { margin-left: auto; padding: 8px 18px; }
+  .kz-foot .cta { padding: 8px 18px; }
+  .kz-foot .back { margin-left: auto; padding: 7px 12px 7px 9px; }
+  .kz-foot .back[disabled] { opacity: 0.35; cursor: default; }
   /* peek: a sheet lehúzódik egy sávvá, hogy a spotlight látsszon */
   .kz-sheet.peek { transform: translateY(calc(100% - 64px)); }
   .kz-sheet .kz-peekbar { display: none; align-items: center; gap: 9px; height: 44px; }
@@ -272,7 +289,14 @@
   .wl-voice { font-size: 12.5px; font-weight: 300; line-height: 1.5; text-align: center; margin: 8px auto 0; max-width: 30ch; }
   .wl-voice b { font-weight: 600; }
   .wl-foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
-  .wl-foot .cta { margin-left: auto; padding: 9px 20px; }
+  .wl-foot .cta { padding: 9px 20px; }
+  .wl-foot .back { margin-left: auto; padding: 8px 12px 8px 9px; }
+  .wl-foot .back[disabled] { opacity: 0.35; cursor: default; }
+  .arc .st .sub { font-size: 8.5px; font-weight: 500; color: #A2958A; text-align: center; max-width: 64px; line-height: 1.3; }
+  .wl-fab { width: 54px; height: 54px; border-radius: 50%; margin: 0 auto; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    display: grid; place-items: center; font-size: 26px; font-weight: 300; box-shadow: 0 12px 24px -6px rgba(255, 91, 54, 0.65); animation: fabglow 3.2s ease-in-out infinite; }
+  .wl-ladder { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .wl-ladder span { font-size: 9px; font-weight: 600; color: #6E6257; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.12); border-radius: 999px; padding: 3px 9px; }
   .wl-dots { display: flex; justify-content: center; gap: 5px; margin-top: 14px; }
   /* a napi ív: három clay spot egy íven */
   .arc { display: flex; align-items: flex-end; justify-content: center; gap: 14px; }
@@ -295,7 +319,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .rise, .play .rise { opacity: 1; transform: none; animation: none; }
-    .kz-art .orb, .page-hero .art .orb, .wl-art .orb, .floatfab, .qpulse, .tile.spot-on::after { animation: none; }
+    .kz-art .orb, .page-hero .art .orb, .wl-art .orb, .floatfab, .wl-fab, .qpulse, .tile.spot-on::after { animation: none; }
+    .dpmenu { transition: none; }
     .kz-sheet, .kz-back, .page, .kz-card, .kz-dot, .mtab { transition: none; }
   }
 </style>

@@ -105,12 +105,27 @@
     display: grid; place-items: center; padding: 0 4px;
     box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.6);
   }
-  .avatar-ring {
-    width: 34px; height: 34px; border-radius: 50%; flex: none;
-    background: conic-gradient(#FF6B4A 68%, rgba(43, 33, 24, 0.1) 0);
-    display: grid; place-items: center;
+  /* profil = az Orb-gömb, karika nélkül (mezo-ij9m) */
+  .orbbtn { width: 34px; height: 34px; border: none; background: none; padding: 0; display: grid; place-items: center; cursor: pointer; flex: none; }
+  .orbbtn svg { filter: drop-shadow(0 4px 6px rgba(216, 72, 31, 0.28)); }
+  /* napszak-váltó popover (a Nap oldal fejléce) */
+  .dpwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .dpmenu {
+    position: absolute; right: 0; top: 40px; z-index: 7;
+    display: flex; gap: 2px; padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.95); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    border-radius: 999px; backdrop-filter: blur(10px);
+    box-shadow: 0 14px 28px -12px rgba(43, 33, 24, 0.35);
+    opacity: 0; transform: translateY(-6px) scale(0.92); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
   }
-  .avatar-ring .in { width: 27px; height: 27px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center; }
+  .dpwrap.open .dpmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .dpmenu button { width: 40px; height: 32px; border: none; background: none; font-family: inherit; border-radius: 999px; display: grid; place-items: center; cursor: pointer; position: relative; }
+  .dpmenu button svg { filter: grayscale(1) brightness(1.04) opacity(0.45); }
+  .dpmenu button.on { background: rgba(255, 107, 74, 0.1); }
+  .dpmenu button.on svg { filter: none; }
+  /* fejléc-demó (C): a kijelölt gomb arany gyűrűt kap */
+  .roundbtn.sel, .orbbtn.sel { box-shadow: 0 0 0 3px #C9962E, 0 0 0 7px rgba(201, 150, 46, 0.25); border-radius: 50%; }
 
   /* fuel hub content */
   .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
@@ -219,7 +234,9 @@
   .kz-dot.on { width: 18px; background: #A84A26; }
   .kz-dot.seen { background: rgba(168, 74, 38, 0.45); }
   .kz-foot { display: flex; align-items: center; gap: 8px; }
-  .kz-foot .cta { margin-left: auto; padding: 8px 18px; }
+  .kz-foot .cta { padding: 8px 18px; }
+  .kz-foot .back { margin-left: auto; padding: 7px 12px 7px 9px; }
+  .kz-foot .back[disabled] { opacity: 0.35; cursor: default; }
   /* peek: a sheet lehúzódik egy sávvá, hogy a spotlight látsszon */
   .kz-sheet.peek { transform: translateY(calc(100% - 64px)); }
   .kz-sheet .kz-peekbar { display: none; align-items: center; gap: 9px; height: 44px; }
@@ -272,7 +289,14 @@
   .wl-voice { font-size: 12.5px; font-weight: 300; line-height: 1.5; text-align: center; margin: 8px auto 0; max-width: 30ch; }
   .wl-voice b { font-weight: 600; }
   .wl-foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
-  .wl-foot .cta { margin-left: auto; padding: 9px 20px; }
+  .wl-foot .cta { padding: 9px 20px; }
+  .wl-foot .back { margin-left: auto; padding: 8px 12px 8px 9px; }
+  .wl-foot .back[disabled] { opacity: 0.35; cursor: default; }
+  .arc .st .sub { font-size: 8.5px; font-weight: 500; color: #A2958A; text-align: center; max-width: 64px; line-height: 1.3; }
+  .wl-fab { width: 54px; height: 54px; border-radius: 50%; margin: 0 auto; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    display: grid; place-items: center; font-size: 26px; font-weight: 300; box-shadow: 0 12px 24px -6px rgba(255, 91, 54, 0.65); animation: fabglow 3.2s ease-in-out infinite; }
+  .wl-ladder { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .wl-ladder span { font-size: 9px; font-weight: 600; color: #6E6257; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.12); border-radius: 999px; padding: 3px 9px; }
   .wl-dots { display: flex; justify-content: center; gap: 5px; margin-top: 14px; }
   /* a napi ív: három clay spot egy íven */
   .arc { display: flex; align-items: flex-end; justify-content: center; gap: 14px; }
@@ -295,7 +319,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .rise, .play .rise { opacity: 1; transform: none; animation: none; }
-    .kz-art .orb, .page-hero .art .orb, .wl-art .orb, .floatfab, .qpulse, .tile.spot-on::after { animation: none; }
+    .kz-art .orb, .page-hero .art .orb, .wl-art .orb, .floatfab, .wl-fab, .qpulse, .tile.spot-on::after { animation: none; }
+    .dpmenu { transition: none; }
     .kz-sheet, .kz-back, .page, .kz-card, .kz-dot, .mtab { transition: none; }
   }
 </style>
@@ -964,8 +989,8 @@
   <h1>Mezo-kalauz</h1>
   <p class="lede">Minden oldalnak van egy <strong>kalauza</strong>: első belépéskor magától megjelenik, utána a fejléc
   <strong>?</strong> gombja alatt bármikor visszanézhető. Mindegyik ugyanazt az öt kérdést válaszolja, ugyanabban a
-  sorrendben — <strong>Mezo, az Orb meséli</strong>, többes szám első személyben. A három telefon három
-  formát próbál ki ugyanarra a tartalomra (a Fuel hub kalauza, laikus olvasónak).</p>
+  sorrendben — <strong>Mezo, az Orb meséli</strong>, többes szám első személyben. <strong>Döntés (2. kör):</strong> a
+  lapozó sheet (A) minden kalauz nyelve, az első indítás (C) a teljes képernyős párja; a kalauz-oldal (B) referenciaként marad.</p>
 
   <div class="stage">
 
@@ -975,11 +1000,12 @@
         <div class="isl"></div>
         <div class="p-status"><span>12:10</span><span>ᯤ ▮▮▮</span></div>
         <div class="p-body">
-          <div class="mrow">
-            <div class="grow"><div class="p-eyebrow">Szerda · szept 2</div></div>
+          <div class="mrow" style="gap:6px;">
+            <div class="grow"><div class="p-eyebrow">Sze · szept 2</div></div>
             <button class="roundbtn q" id="qA" aria-label="Kalauz ehhez az oldalhoz">?<span class="most"></span></button>
+            <button class="roundbtn" aria-label="Mezo üzenetei"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-level"/></svg><span class="badge">3</span></button>
             <button class="roundbtn" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg><span class="badge">2</span></button>
-            <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+            <button class="orbbtn" aria-label="Profil"><svg width="34" height="34" viewBox="0 0 100 100"><use href="#s-orb"/></svg></button>
           </div>
 
           <div class="float3d hero rise" style="--d:0ms;">
@@ -1046,7 +1072,7 @@
           <div class="sh-grab"></div>
           <div class="kz-peekbar">
             <svg width="30" height="30" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb-figyel"/></svg>
-            <div class="txt">Ez a <b>Logolás</b> csempe — innen indul minden étkezés.</div>
+            <div class="txt">Ez a <b>Logolás</b> csempe — innen indul minden étkezés. <span class="mut">Koppints bárhova.</span></div>
             <button class="ghost" id="peekBackA">Vissza</button>
           </div>
           <div class="kz-top">
@@ -1115,24 +1141,166 @@
           <div class="kz-dots" id="dotsA"></div>
           <div class="kz-foot">
             <button class="ghost link" id="skipA">Kihagyom</button>
+            <button class="ghost back" id="prevA" aria-label="Előző kártya">‹ Vissza</button>
             <button class="cta" id="nextA">Tovább</button>
           </div>
         </div>
       </div></div>
-      <div class="cap"><b>A · Lapozó sheet</b>Az oldal marad látható a háttérben, öt rövid kártya, egy-egy kérdés. A „Mutasd meg" a valós csempét emeli ki. <span class="verdict rec">Ajánlott · minden kalauzhoz</span></div>
+      <div class="cap"><b>A · Lapozó sheet</b>Az oldal marad látható a háttérben, öt rövid kártya, egy-egy kérdés; ‹ Vissza / Tovább lapoz. A „Mutasd meg" a valós csempét emeli ki — bárhova koppintva visszajön a sheet. <span class="verdict rec">Döntve · minden kalauz nyelve</span></div>
     </div>
 
-    <!-- ============================ B) KALAUZ-OLDAL ============================ -->
+    <!-- ============================ C) ELSŐ INDÍTÁS ============================ -->
+    <div class="phonecol">
+      <div class="phone"><div class="screen" id="scrC">
+        <div class="isl"></div>
+        <div class="p-status" style="z-index:15;"><span>9:02</span><span>ᯤ ▮▮▮</span></div>
+
+        <div class="welcome" id="welcome">
+          <!-- 1 -->
+          <div class="wl-step on">
+            <div class="wl-art"><svg class="orb" width="150" height="150" viewBox="0 0 100 100"><use href="#s-orb"/></svg></div>
+            <div class="wl-eyebrow">Első indítás · 1 / 6</div>
+            <div class="wl-title">Szia, Mezo vagyok.</div>
+            <div class="wl-voice">Nem edző vagyok, és nem számláló. <b>Társ</b>, aki veled csinálja végig a napot — és közben megtanul téged.</div>
+          </div>
+          <!-- 2 -->
+          <div class="wl-step">
+            <div class="wl-art">
+              <div class="arc">
+                <div class="st"><svg width="58" height="58" viewBox="0 0 100 100"><use href="#s-reggel"/></svg>Reggel<div class="sub">rutin · mérleg · Mezo üzenete</div></div>
+                <div class="st"><svg width="70" height="70" viewBox="0 0 100 100"><use href="#s-energia"/></svg>Nap<div class="sub">logolás · edzés · check-in</div></div>
+                <div class="st"><svg width="58" height="58" viewBox="0 0 100 100"><use href="#s-este"/></svg>Este<div class="sub">rutin · Napzárás</div></div>
+              </div>
+            </div>
+            <div class="wl-eyebrow">Első indítás · 2 / 6</div>
+            <div class="wl-title">Egy nap, három szakasz.</div>
+            <div class="wl-voice">Reggel <b>indítunk</b>, napközben <b>logolunk és edzünk</b>, este <b>lezárjuk</b> a napot. A Nap fül mindig azt mutatja, ami most a dolgunk.</div>
+          </div>
+          <!-- 3 -->
+          <div class="wl-step">
+            <div class="wl-art" style="display:grid;align-content:center;justify-items:stretch;gap:12px;">
+              <div class="tabbar demo-tabbar" id="tabDemoC">
+                <div class="mtab off lit" data-k="nap"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+                <div class="mtab off" data-k="edzes"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+                <div class="mtab off" data-k="fuel"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+                <div class="mtab off" data-k="mezo"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+                <div class="mtab off" data-k="en"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-polc"/></svg>Én</div>
+              </div>
+              <div class="float3d" style="padding:10px 12px;text-align:center;min-height:74px;">
+                <div class="kz-q" id="tabNameC">Nap</div>
+                <div class="kz-voice" id="tabTxtC" style="margin-top:3px;">A mai nap gerince: rutin, üzenetek, küldetések, Életjel — mindig az, ami most a dolgunk.</div>
+              </div>
+              <div class="mut" style="font-size:9.5px;text-align:center;">Koppints a fülekre.</div>
+            </div>
+            <div class="wl-eyebrow">Első indítás · 3 / 6</div>
+            <div class="wl-title">Öt hely, ahol minden megvan.</div>
+          </div>
+          <!-- 4 -->
+          <div class="wl-step">
+            <div class="wl-art" style="display:grid;align-content:center;justify-items:stretch;gap:14px;">
+              <div class="wl-fab" aria-hidden="true">+</div>
+              <div class="wl-ladder"><span>fotó</span><span>egy mondat</span><span>hang</span><span>egy koppintás</span></div>
+            </div>
+            <div class="wl-eyebrow">Első indítás · 4 / 6</div>
+            <div class="wl-title">Logolni bárhonnan, tíz másodperc.</div>
+            <div class="wl-voice">A <b>+</b> gomb minden oldalon ott van: étkezés, víz, súly, alvás, check-in. Fotó, egy mondat vagy hang is elég — a többit Mezo kitalálja.</div>
+          </div>
+          <!-- 5 -->
+          <div class="wl-step">
+            <div class="wl-art" style="display:grid;align-content:center;justify-items:stretch;gap:10px;">
+              <div class="demo-head" style="overflow:visible;">
+                <div class="mrow" style="gap:6px;" id="headDemoC">
+                  <div class="grow"><div class="p-eyebrow">Sze · szept 2</div></div>
+                  <button class="roundbtn q" data-h="q" aria-label="Kalauz">?</button>
+                  <div class="dpwrap open" id="dpDemoC">
+                    <button class="roundbtn sel" data-h="dp" aria-label="Napszak váltása"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-nap"/></svg><span class="most" style="display:block;"></span></button>
+                    <div class="dpmenu" role="menu">
+                      <button aria-label="Reggel"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-hajnal"/></svg></button>
+                      <button class="on" aria-label="Nap"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-nap"/></svg></button>
+                      <button aria-label="Este"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-alvas"/></svg></button>
+                    </div>
+                  </div>
+                  <button class="roundbtn" data-h="msg" aria-label="Mezo üzenetei"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-level"/></svg><span class="badge">3</span></button>
+                  <button class="roundbtn" data-h="bell" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg><span class="badge">2</span></button>
+                  <button class="orbbtn" data-h="orb" aria-label="Profil"><svg width="34" height="34" viewBox="0 0 100 100"><use href="#s-orb"/></svg></button>
+                </div>
+              </div>
+              <div class="float3d" style="padding:10px 12px;text-align:center;min-height:74px;margin-top:34px;">
+                <div class="kz-q" id="headNameC">Napszak-váltó</div>
+                <div class="kz-voice" id="headTxtC" style="margin-top:3px;">Csak a Nap oldalon: Reggel · Nap · Este között lapozol. Arany pont jelzi, ha nem a mostanit nézed.</div>
+              </div>
+              <div class="mut" style="font-size:9.5px;text-align:center;">Koppints a fejléc gombjaira.</div>
+            </div>
+            <div class="wl-eyebrow">Első indítás · 5 / 6</div>
+            <div class="wl-title">A fejléc — mindenhol ugyanaz.</div>
+          </div>
+          <!-- 6 -->
+          <div class="wl-step">
+            <div class="wl-art" style="display:grid;align-content:center;justify-items:stretch;gap:10px;">
+              <div class="demo-head">
+                <div class="mrow" style="gap:6px;">
+                  <div class="grow"><div class="p-eyebrow">Sze · szept 2</div></div>
+                  <button class="roundbtn q qpulse" aria-label="Kalauz">?</button>
+                  <button class="roundbtn" aria-label="Mezo üzenetei"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-level"/></svg></button>
+                  <button class="roundbtn" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg></button>
+                  <button class="orbbtn" aria-label="Profil"><svg width="34" height="34" viewBox="0 0 100 100"><use href="#s-orb"/></svg></button>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:center;"><svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb-figyel"/></svg></div>
+            </div>
+            <div class="wl-eyebrow">Első indítás · 6 / 6</div>
+            <div class="wl-title">Ha bármikor elakadsz.</div>
+            <div class="wl-voice">Minden oldalnak van <b>kalauza</b>. Először magától felugrik, utána a <b>?</b> alatt bármikor visszanézheted.</div>
+          </div>
+
+          <div class="wl-dots" id="dotsC"></div>
+          <div class="wl-foot">
+            <button class="ghost link" id="skipC">Kihagyom</button>
+            <button class="ghost back" id="prevC" aria-label="Előző">‹ Vissza</button>
+            <button class="cta" id="nextC">Tovább</button>
+          </div>
+        </div>
+
+        <!-- alatta: a Nap hub jelzésértékű háttere -->
+        <div class="p-body" style="padding-top:12px;">
+          <div class="mrow" style="gap:6px;">
+            <div class="grow"><div class="p-eyebrow">Sze · szept 2</div></div>
+            <button class="roundbtn q" aria-label="Kalauz">?</button>
+            <button class="roundbtn" aria-label="Napszak váltása"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-nap"/></svg></button>
+            <button class="roundbtn" aria-label="Mezo üzenetei"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-level"/></svg></button>
+            <button class="roundbtn" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg></button>
+            <button class="orbbtn" aria-label="Profil"><svg width="34" height="34" viewBox="0 0 100 100"><use href="#s-orb"/></svg></button>
+          </div>
+          <div class="float3d" style="padding:14px;display:grid;place-items:center;gap:6px;">
+            <svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb-unnepel"/></svg>
+            <div class="kz-title" style="text-align:center;">Induljunk.</div>
+            <div class="kz-voice" style="text-align:center;">A Nap fül kalauza egy pillanat múlva jön — az első igazi oldal.</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="mtab on"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-polc"/></svg>Én</div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="cap"><b>C · Első indítás</b>Egyszeri, teljes képernyős bemutatkozás (T0), hat lépés: ki Mezo, a napi ív, az öt fül, a + gomb, a fejléc (napszak-váltóval, koppintható), és maga a „?". <span class="verdict t0">Döntve · T0 · egyszer</span></div>
+    </div>
+
+    <!-- ============================ B) KALAUZ-OLDAL (referencia) ============================ -->
     <div class="phonecol">
       <div class="phone"><div class="screen" id="scrB">
         <div class="isl"></div>
         <div class="p-status"><span>12:10</span><span>ᯤ ▮▮▮</span></div>
         <div class="p-body">
-          <div class="mrow">
-            <div class="grow"><div class="p-eyebrow">Szerda · szept 2</div></div>
+          <div class="mrow" style="gap:6px;">
+            <div class="grow"><div class="p-eyebrow">Sze · szept 2</div></div>
             <button class="roundbtn q" id="qB" aria-label="Kalauz ehhez az oldalhoz">?<span class="most"></span></button>
+            <button class="roundbtn" aria-label="Mezo üzenetei"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-level"/></svg><span class="badge">3</span></button>
             <button class="roundbtn" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg><span class="badge">2</span></button>
-            <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+            <button class="orbbtn" aria-label="Profil"><svg width="34" height="34" viewBox="0 0 100 100"><use href="#s-orb"/></svg></button>
           </div>
           <div class="float3d hero">
             <div class="mrow">
@@ -1159,7 +1327,6 @@
         </div>
         <div class="homebar"></div>
 
-        <!-- a becsúszó kalauz-oldal -->
         <div class="page open" id="pageB">
           <div class="page-head">
             <button class="backbtn" id="backB">‹ Fuel</button>
@@ -1208,110 +1375,25 @@
           </div>
         </div>
       </div></div>
-      <div class="cap"><b>B · Kalauz-oldal</b>Huawei-minta: a „?" saját, jobbról becsúszó oldalt nyit, minden kérdés egymás alatt, görgetve. Egyben olvasható, de eltakarja az oldalt, amiről szól. <span class="verdict alt">Alternatíva</span></div>
-    </div>
-
-    <!-- ============================ C) ELSŐ INDÍTÁS ============================ -->
-    <div class="phonecol">
-      <div class="phone"><div class="screen" id="scrC">
-        <div class="isl"></div>
-        <div class="p-status" style="z-index:15;"><span>9:02</span><span>ᯤ ▮▮▮</span></div>
-
-        <div class="welcome" id="welcome">
-          <!-- 1 -->
-          <div class="wl-step on">
-            <div class="wl-art"><svg class="orb" width="150" height="150" viewBox="0 0 100 100"><use href="#s-orb"/></svg></div>
-            <div class="wl-eyebrow">Első indítás · 1 / 4</div>
-            <div class="wl-title">Szia, Mezo vagyok.</div>
-            <div class="wl-voice">Nem edző vagyok, és nem számláló. <b>Társ</b>, aki veled csinálja végig a napot — és közben megtanul téged.</div>
-          </div>
-          <!-- 2 -->
-          <div class="wl-step">
-            <div class="wl-art">
-              <div class="arc">
-                <div class="st"><svg width="58" height="58" viewBox="0 0 100 100"><use href="#s-reggel"/></svg>Reggel</div>
-                <div class="st"><svg width="70" height="70" viewBox="0 0 100 100"><use href="#s-energia"/></svg>Nap</div>
-                <div class="st"><svg width="58" height="58" viewBox="0 0 100 100"><use href="#s-este"/></svg>Este</div>
-              </div>
-            </div>
-            <div class="wl-eyebrow">Első indítás · 2 / 4</div>
-            <div class="wl-title">Egy nap, három szakasz.</div>
-            <div class="wl-voice">Reggel indítunk, napközben logolunk, este <b>lezárjuk</b>. Az app mindig azt mutatja, ami most a dolgunk.</div>
-          </div>
-          <!-- 3 -->
-          <div class="wl-step">
-            <div class="wl-art" style="display:grid;align-content:center;justify-items:stretch;gap:12px;">
-              <div class="tabbar demo-tabbar" id="tabDemoC">
-                <div class="mtab off lit" data-k="nap"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
-                <div class="mtab off" data-k="edzes"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
-                <div class="mtab off" data-k="fuel"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
-                <div class="mtab off" data-k="mezo"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
-                <div class="mtab off" data-k="en"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-polc"/></svg>Én</div>
-              </div>
-              <div class="float3d" style="padding:10px 12px;text-align:center;">
-                <div class="kz-q" id="tabNameC">Nap</div>
-                <div class="kz-voice" id="tabTxtC" style="margin-top:3px;">A mai nap gerince: mi a dolgunk most.</div>
-              </div>
-              <div class="mut" style="font-size:9.5px;text-align:center;">Koppints a fülekre.</div>
-            </div>
-            <div class="wl-eyebrow">Első indítás · 3 / 4</div>
-            <div class="wl-title">Öt hely, ahol minden megvan.</div>
-          </div>
-          <!-- 4 -->
-          <div class="wl-step">
-            <div class="wl-art" style="display:grid;align-content:center;justify-items:stretch;gap:10px;">
-              <div class="demo-head">
-                <div class="mrow">
-                  <div class="grow"><div class="p-eyebrow">Szerda · szept 2</div></div>
-                  <button class="roundbtn q qpulse" aria-label="Kalauz">?</button>
-                  <button class="roundbtn" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg></button>
-                  <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
-                </div>
-              </div>
-              <div style="display:flex;justify-content:center;"><svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb-figyel"/></svg></div>
-            </div>
-            <div class="wl-eyebrow">Első indítás · 4 / 4</div>
-            <div class="wl-title">Ha bármikor elakadsz.</div>
-            <div class="wl-voice">Minden oldalnak van <b>kalauza</b>. Először magától felugrik, utána a <b>?</b> alatt bármikor visszanézheted.</div>
-          </div>
-
-          <div class="wl-dots" id="dotsC"></div>
-          <div class="wl-foot">
-            <button class="ghost link" id="skipC">Kihagyom</button>
-            <button class="cta" id="nextC">Tovább</button>
-          </div>
-        </div>
-
-        <!-- alatta: a Nap hub jelzésértékű háttere -->
-        <div class="p-body" style="padding-top:12px;">
-          <div class="mrow"><div class="grow"><div class="p-eyebrow">Szerda · szept 2</div></div><button class="roundbtn q" aria-label="Kalauz">?</button><div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div></div>
-          <div class="float3d" style="padding:14px;display:grid;place-items:center;gap:6px;">
-            <svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb-unnepel"/></svg>
-            <div class="kz-title" style="text-align:center;">Induljunk.</div>
-            <div class="kz-voice" style="text-align:center;">A Nap fül kalauza egy pillanat múlva jön — az első igazi oldal.</div>
-          </div>
-        </div>
-        <div class="tabbar">
-          <div class="mtab on"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
-          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
-          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
-          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
-          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-polc"/></svg>Én</div>
-        </div>
-        <div class="homebar"></div>
-      </div></div>
-      <div class="cap"><b>C · Első indítás</b>Egyszeri, teljes képernyős bemutatkozás (T0): ki Mezo, a napi ív, az öt fül, és maga a „?" gomb. Ugyanaz a hang és kártya-anatómia, mint a sheetben. <span class="verdict t0">T0 · egyszer</span></div>
+      <div class="cap"><b>B · Kalauz-oldal</b>Huawei-minta: jobbról becsúszó saját oldal, minden kérdés egymás alatt. Egyben olvasható, de eltakarja az oldalt, amiről szól. <span class="verdict alt">Elvetett alternatíva · referencia</span></div>
     </div>
 
     <!-- ============================ ASIDE ============================ -->
     <aside>
       <div>
-        <h2>Az ajánlás</h2>
+        <h2>A döntés (2. kör)</h2>
         <ul>
-          <li><strong>A (sheet) minden kalauznak.</strong> Az oldal látszik mögötte, így a magyarázat és a felület egyszerre van szem előtt — a coach-mark láncok mobilon ezért buknak el (NN/G: 20 mp után elfelejtik). Öt rövid kártya jobban megjegyezhető, mint egy görgetett szöveg.</li>
-          <li><strong>B akkor jó, ha egyben kell.</strong> A „?" hosszan nyomva vagy a sheet utolsó kártyáján egy „Bővebben ›" nyithatná — de alapértelmezésnek eltakarja azt, amiről beszél.</li>
-          <li><strong>C csak egyszer</strong>, az első indításkor, a multi-user regisztráció után. Ugyanaz a nyelv, teljes képernyőn, mert még nincs oldal, amire mutasson.</li>
-          <li><strong>Spotlight csak a „Hogyan" kártyán</strong>, gombra: a sheet sávvá húzódik, a csempe arany gyűrűt kap. Nem lánc, egy elem.</li>
+          <li><strong>A (sheet) minden kalauznak.</strong> Az oldal látszik mögötte, így a magyarázat és a felület egyszerre van szem előtt — a coach-mark láncok mobilon ezért buknak el (NN/G: 20 mp után elfelejtik). <strong>‹ Vissza / Tovább</strong> lapoz, a pöttyök is koppinthatók.</li>
+          <li><strong>„Mutasd meg" = egy elem, gombra.</strong> A sheet sávvá húzódik, a csempe arany gyűrűt kap; <strong>bárhova koppintva a sheet visszajön</strong> — a kalauz nem záródik be véletlenül.</li>
+          <li><strong>C egyszer</strong>, az első indításkor, a regisztráció után: hat lépés, két koppintható demó (fülek, fejléc). Ugyanaz a hang és anatómia, teljes képernyőn, mert még nincs oldal, amire mutasson.</li>
+          <li><strong>B elvetve</strong> alapértelmezésnek — eltakarja azt, amiről beszél. Referenciaként marad a családban.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>A fejléc — ahogy ma él</h2>
+        <ul>
+          <li>dátum · <strong>?</strong> · napszak-váltó · Mezo-üzenetek (boríték) · harang · <strong>Orb-gömb</strong> (profil, karika nélkül — <code>mezo-ij9m</code>)</li>
+          <li>A <strong>?</strong> a gombsor <strong>bal szélén</strong>, minden oldalon ugyanott — a napszak-váltó jelenléte nem tolja el.</li>
         </ul>
       </div>
       <div>
@@ -1366,6 +1448,7 @@
   const dotsA = document.getElementById('dotsA');
   const stepA = document.getElementById('stepA');
   const nextA = document.getElementById('nextA');
+  const prevA = document.getElementById('prevA');
   const tileLogA = document.getElementById('tileLogA');
   let iA = 0, seenA = new Set([0]);
   cardsA.forEach((_, k) => {
@@ -1380,22 +1463,26 @@
     [...dotsA.children].forEach((d, j) => { d.classList.toggle('on', j === k); d.classList.toggle('seen', j !== k && seenA.has(j)); });
     stepA.textContent = (k + 1) + ' / ' + cardsA.length;
     nextA.textContent = k === cardsA.length - 1 ? 'Értem, kezdjük' : 'Tovább';
+    prevA.disabled = k === 0;
     document.getElementById('skipA').style.visibility = k === cardsA.length - 1 ? 'hidden' : 'visible';
   }
   function openA() { sheetA.classList.add('open'); backA.classList.add('open'); goA(0); }
   function closeA() { sheetA.classList.remove('open', 'peek'); backA.classList.remove('open'); tileLogA.classList.remove('spot-on'); }
+  function unpeekA() { sheetA.classList.remove('peek'); tileLogA.classList.remove('spot-on'); }
   nextA.addEventListener('click', () => iA < cardsA.length - 1 ? goA(iA + 1) : closeA());
+  prevA.addEventListener('click', () => { if (iA > 0) goA(iA - 1); });
   document.getElementById('skipA').addEventListener('click', closeA);
   document.getElementById('closeA').addEventListener('click', closeA);
-  backA.addEventListener('click', closeA);
+  // a hátlap: peek közben BÁRHOVA koppintva a sheet jön vissza — nem záródik be a kalauz
+  backA.addEventListener('click', () => sheetA.classList.contains('peek') ? unpeekA() : closeA());
   document.getElementById('qA').addEventListener('click', openA);
   document.getElementById('showA').addEventListener('click', () => { sheetA.classList.add('peek'); tileLogA.classList.add('spot-on'); });
-  document.getElementById('peekBackA').addEventListener('click', () => { sheetA.classList.remove('peek'); tileLogA.classList.remove('spot-on'); });
-  tileLogA.addEventListener('click', () => { if (sheetA.classList.contains('peek')) { sheetA.classList.remove('peek'); tileLogA.classList.remove('spot-on'); } });
+  document.getElementById('peekBackA').addEventListener('click', unpeekA);
+  tileLogA.addEventListener('click', () => { if (sheetA.classList.contains('peek')) unpeekA(); });
   goA(0);
   setTimeout(openA, rm ? 0 : 700);
 
-  /* ---------- B) kalauz-oldal ---------- */
+  /* ---------- B) kalauz-oldal (referencia) ---------- */
   const pageB = document.getElementById('pageB');
   const closeB = () => pageB.classList.remove('open');
   document.getElementById('backB').addEventListener('click', closeB);
@@ -1407,26 +1494,29 @@
   const stepsC = [...document.querySelectorAll('#welcome .wl-step')];
   const dotsC = document.getElementById('dotsC');
   const nextC = document.getElementById('nextC');
+  const prevC = document.getElementById('prevC');
   const welcome = document.getElementById('welcome');
   let iC = 0;
-  stepsC.forEach((_, k) => { const d = document.createElement('span'); d.className = 'kz-dot'; dotsC.appendChild(d); });
+  stepsC.forEach(() => { const d = document.createElement('span'); d.className = 'kz-dot'; dotsC.appendChild(d); });
   function goC(k) {
     stepsC.forEach((s, j) => s.classList.toggle('on', j === k));
     [...dotsC.children].forEach((d, j) => { d.classList.toggle('on', j === k); d.classList.toggle('seen', j < k); });
     iC = k;
     nextC.textContent = k === stepsC.length - 1 ? 'Induljunk' : 'Tovább';
+    prevC.disabled = k === 0;
   }
   function closeC() { welcome.style.display = 'none'; }
   function openC() { welcome.style.display = 'flex'; goC(0); }
   nextC.addEventListener('click', () => iC < stepsC.length - 1 ? goC(iC + 1) : closeC());
+  prevC.addEventListener('click', () => { if (iC > 0) goC(iC - 1); });
   document.getElementById('skipC').addEventListener('click', closeC);
-  document.querySelectorAll('#scrC .roundbtn.q').forEach(b => b.addEventListener('click', () => { if (welcome.style.display === 'none') openC(); }));
+  document.querySelectorAll('#scrC > .p-body .roundbtn.q').forEach(b => b.addEventListener('click', () => { if (welcome.style.display === 'none') openC(); }));
   const TABS = {
-    nap: ['Nap', 'A mai nap gerince: mi a dolgunk most.'],
-    edzes: ['Edzés', 'Edzés, sport, futás — terv és napló egy helyen.'],
-    fuel: ['Fuel', 'Étkezés, napi keret, kamra, receptek.'],
-    mezo: ['Mezo', 'A társ: chat, minták, amit rólad megtanult.'],
-    en: ['Én', 'Te: cél, súly, alvás, emberek, karakter.'],
+    nap: ['Nap', 'A mai nap gerince: rutin, üzenetek, küldetések, Életjel — mindig az, ami most a dolgunk.'],
+    edzes: ['Edzés', 'Edzés, sport, futás: a heti terv, az aktív edzés, a gyakorlatok és a medálok.'],
+    fuel: ['Fuel', 'Étkezés és napi keret, kamra, receptek, a stack és a gyógyszer.'],
+    mezo: ['Mezo', 'A társ: a chat, a minták, amiket rólad észrevesz, és amit rólad megtanult.'],
+    en: ['Én', 'Te: cél, súly, alvás, emberek, karakter, beállítások.'],
   };
   document.querySelectorAll('#tabDemoC .mtab').forEach(t => t.addEventListener('click', () => {
     document.querySelectorAll('#tabDemoC .mtab').forEach(x => x.classList.remove('lit'));
@@ -1434,6 +1524,22 @@
     const [n, x] = TABS[t.dataset.k];
     document.getElementById('tabNameC').textContent = n;
     document.getElementById('tabTxtC').textContent = x;
+  }));
+  const HEAD = {
+    q: ['Kalauz', 'Ez a gomb nyitja az adott oldal kalauzát — a következő lapon mesélek róla.'],
+    dp: ['Napszak-váltó', 'Csak a Nap oldalon: Reggel · Nap · Este között lapozol. Arany pont jelzi, ha nem a mostanit nézed.'],
+    msg: ['Mezo üzenetei', 'A napi üzeneteim: reggeli indítás, déli emlékeztető, esti lezárás. A szám az olvasatlan.'],
+    bell: ['Értesítések', 'Emlékeztetők, új minták, medálok — egy helyen, időrendben.'],
+    orb: ['Az Orb', 'Ez én vagyok — és egyben a profilod bejárata, az Én fül.'],
+  };
+  const dpDemoC = document.getElementById('dpDemoC');
+  document.querySelectorAll('#headDemoC [data-h]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('#headDemoC [data-h]').forEach(x => x.classList.remove('sel'));
+    b.classList.add('sel');
+    dpDemoC.classList.toggle('open', b.dataset.h === 'dp');
+    const [n, x] = HEAD[b.dataset.h];
+    document.getElementById('headNameC').textContent = n;
+    document.getElementById('headTxtC').textContent = x;
   }));
   goC(0);
 })();
