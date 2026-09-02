@@ -58,6 +58,8 @@ mezo:
     owner-email: ${MEZO_OWNER_EMAIL:owner@mezo.local}
     owner-password: ${MEZO_OWNER_PASSWORD:owner}
     owner-name: ${MEZO_OWNER_NAME:Owner}
+    # mezo-5h9: refuse to boot with dev-default owner password / JWT secret. true in k8s.
+    strict: ${MEZO_AUTH_STRICT:false}
   cors:
     # Browser origins allowed to call the API. The Vite dev server (:5180) is the default;
     # add the deployed frontend origin per environment. Server-to-server callers send no Origin
