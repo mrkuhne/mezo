@@ -32,8 +32,10 @@ const EVENING: HabitChainInfo = {
 }
 
 const SUGGESTIONS: HabitSuggestion[] = [
-  { title: 'Esti telefon-lezárás', why: 'Gyorsabb elalvás.', anchorCopy: 'wind-down előtt', skillKey: 'recovery', xp: 10, chainKey: 'EVENING' },
-  { title: 'Reggeli nyújtás', why: 'Élénkebb test.', anchorCopy: 'ébredés után', skillKey: 'mindset', xp: 5, chainKey: 'MORNING' },
+  { title: 'Esti telefon-lezárás', why: 'Gyorsabb elalvás.', anchorCopy: 'wind-down előtt', skillKey: 'recovery', xp: 10, chainKey: 'EVENING',
+    framework: null, cue: null, craving: null, reward: null, celebration: null },
+  { title: 'Reggeli nyújtás', why: 'Élénkebb test.', anchorCopy: 'ébredés után', skillKey: 'mindset', xp: 5, chainKey: 'MORNING',
+    framework: null, cue: null, craving: null, reward: null, celebration: null },
 ]
 
 beforeEach(() => {

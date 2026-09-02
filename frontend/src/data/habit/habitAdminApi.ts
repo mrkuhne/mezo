@@ -1,6 +1,6 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { HabitCatalog, HabitChainInfo, HabitDaypart, HabitDefInfo, HabitSuggestion } from '@/data/types'
+import type { HabitCatalog, HabitChainInfo, HabitDaypart, HabitDefInfo, HabitFramework, HabitSuggestion } from '@/data/types'
 
 type CatalogWire = components['schemas']['HabitCatalogResponse']
 type ChainWire = components['schemas']['HabitChainAdmin']
@@ -28,6 +28,13 @@ export interface HabitDefCreateInput {
   xp: number
   linkUrl?: string | null
   position?: number
+  framework?: HabitFramework | null
+  anchorHabitKey?: string | null
+  cue?: string | null
+  craving?: string | null
+  reward?: string | null
+  celebration?: string | null
+  identity?: string | null
 }
 export interface HabitDefUpdateInput {
   title?: string
@@ -38,6 +45,13 @@ export interface HabitDefUpdateInput {
   xp?: number
   linkUrl?: string | null
   isActive?: boolean
+  framework?: HabitFramework | null
+  anchorHabitKey?: string | null
+  cue?: string | null
+  craving?: string | null
+  reward?: string | null
+  celebration?: string | null
+  identity?: string | null
 }
 export interface HabitSuggestInput { chainKey?: string; hint?: string }
 
@@ -55,6 +69,13 @@ const toDefInfo = (w: DefWire): HabitDefInfo => ({
   xp: w.xp,
   linkUrl: w.linkUrl ?? null,
   isActive: w.isActive,
+  framework: w.framework ?? null,
+  anchorHabitKey: w.anchorHabitKey ?? null,
+  cue: w.cue ?? null,
+  craving: w.craving ?? null,
+  reward: w.reward ?? null,
+  celebration: w.celebration ?? null,
+  identity: w.identity ?? null,
 })
 
 const toSuggestion = (w: SuggestionWire): HabitSuggestion => ({
@@ -64,6 +85,11 @@ const toSuggestion = (w: SuggestionWire): HabitSuggestion => ({
   skillKey: w.skillKey,
   xp: w.xp,
   chainKey: w.chainKey,
+  framework: w.framework ?? null,
+  cue: w.cue ?? null,
+  craving: w.craving ?? null,
+  reward: w.reward ?? null,
+  celebration: w.celebration ?? null,
 })
 
 const toChainInfo = (w: ChainWire): HabitChainInfo => ({

@@ -27,6 +27,7 @@ function def(habitKey: string, chainKey: string, position: number): HabitChainIn
   return {
     id: `def-${habitKey}`, habitKey, chainKey, position, title: habitKey, why: null, anchorCopy: null,
     mode: 'MANUAL', metric: 'manual', skillKey: 'mindset', xp: 5, linkUrl: null, isActive: true,
+    framework: null, anchorHabitKey: null, cue: null, craving: null, reward: null, celebration: null, identity: null,
   }
 }
 

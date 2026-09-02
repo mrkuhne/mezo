@@ -321,7 +321,8 @@ describe('useHabitCatalog / useHabitCatalogActions (real mode)', () => {
     })
     expect(posted).toEqual({ chainKey: 'EVENING', hint: 'olvasás' })
     expect(suggestions).toEqual([
-      { title: 'Napi 10 perc olvasás', why: 'Esti lezárás olvasással.', anchorCopy: 'wind-down alatt', skillKey: 'learning', xp: 5, chainKey: 'EVENING' },
+      { title: 'Napi 10 perc olvasás', why: 'Esti lezárás olvasással.', anchorCopy: 'wind-down alatt', skillKey: 'learning', xp: 5, chainKey: 'EVENING',
+        framework: null, cue: null, craving: null, reward: null, celebration: null },
     ])
     expect(result.current.unavailable).toBe(false)
   })

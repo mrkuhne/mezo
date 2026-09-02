@@ -265,6 +265,13 @@ function mockCreateDef(qc: ReturnType<typeof useQueryClient>, input: HabitDefCre
       xp: input.xp,
       linkUrl: input.linkUrl ?? null,
       isActive: true,
+      framework: input.framework ?? null,
+      anchorHabitKey: input.anchorHabitKey ?? null,
+      cue: input.cue ?? null,
+      craving: input.craving ?? null,
+      reward: input.reward ?? null,
+      celebration: input.celebration ?? null,
+      identity: input.identity ?? null,
     }
     return {
       chains: base.chains.map((c) => (c.chainKey === input.chainKey ? { ...c, defs: [...c.defs, def] } : c)),

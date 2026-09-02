@@ -32,6 +32,7 @@ const EDIT_DEF: HabitDefInfo = {
   id: 'def-1', habitKey: 'custom_abc12345', chainKey: 'MORNING', position: 3, title: 'Nyújtás',
   why: 'Miért fontos', anchorCopy: 'kávé után', mode: 'DERIVED', metric: 'training_done_today',
   skillKey: 'recovery', xp: 10, linkUrl: 'https://example.com', isActive: true,
+  framework: null, anchorHabitKey: null, cue: null, craving: null, reward: null, celebration: null, identity: null,
 }
 
 beforeEach(() => {
