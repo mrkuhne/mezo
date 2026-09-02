@@ -91,6 +91,11 @@ describe('GrowthRutinPage', () => {
     // status-only rows on a past day — no strength percentage
     expect(container.querySelectorAll('.gr-chain-pct')).toHaveLength(0)
     expect(screen.queryByRole('button', { name: /szerkesztés/i })).not.toBeInTheDocument()
+    // `bed_on_time` is `status: 'missed'` in the shared fixture — its sr-only status must read
+    // "kimaradt" (day is closed history), never "nyitott" (which would imply it's still open).
+    const missedRow = [...container.querySelectorAll('.gr-chainrow')].find((el) => el.textContent?.includes('Időben ágyban'))
+    expect(missedRow?.querySelector('.sr-only')?.textContent).toBe('kimaradt')
+    expect(missedRow?.querySelector('.sr-only')?.textContent).not.toBe('nyitott')
   })
 
   test('past day with a zero chain shows the soft note (never "megszakadt")', async () => {

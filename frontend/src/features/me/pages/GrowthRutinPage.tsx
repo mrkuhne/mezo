@@ -23,6 +23,7 @@ import { cn } from '@/shared/lib/cn'
 const DAYS = 30
 const DAYPART_ICON: Record<HabitDaypart, ClayIconName> = { MORNING: 'i-hajnal', DAY: 'i-nap', EVENING: 'i-alvas' }
 const DAYPART_WASH: Record<HabitDaypart, 'amber' | '' | 'lav'> = { MORNING: 'amber', DAY: '', EVENING: 'lav' }
+const STATUS_SR: Record<HabitItem['status'], string> = { done: 'kész', missed: 'kimaradt', pending: 'nyitott' }
 
 function Cells({ id, count, evening, delayMs }: { id: string; count: number; evening?: boolean; delayMs: number }) {
   return (
@@ -77,7 +78,7 @@ export function GrowthRutinPage() {
           return (
             <div key={h.key} className={cn('gr-chainrow', h.status === 'done' && 'done', h.status !== 'done' && !isToday && 'skip')}>
               <span className="gr-ck" aria-hidden="true">✓</span>
-              <span className="sr-only">{h.status === 'done' ? 'kész' : 'nyitott'}</span>
+              <span className="sr-only">{STATUS_SR[h.status]}</span>
               <span className="tx">{h.title}</span>
               {showStrength && pct != null && <span className="gr-chain-pct">{pct}%</span>}
             </div>
