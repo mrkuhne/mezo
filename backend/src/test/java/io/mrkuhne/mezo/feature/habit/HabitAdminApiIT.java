@@ -163,4 +163,82 @@ class HabitAdminApiIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
         assertHasRequestError(err, "HABIT_CHAIN_UNKNOWN");
     }
+
+    @Test
+    void testCreateDef_shouldRejectFogg_whenCelebrationMissing() {
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorCopy("kitöltöttem a reggeli kávét").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_FRAMEWORK_INCOMPLETE");
+    }
+
+    @Test
+    void testCreateDef_shouldRejectClear_whenCravingMissing() {
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.CLEAR)
+                .cue("7:10-kor a konyhában").reward("a pipa maga").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_FRAMEWORK_INCOMPLETE");
+    }
+
+    @Test
+    void testCreateDef_shouldRejectFrameworkFields_whenNoFramework() {
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_FRAMEWORK_FIELDS_ORPHAN");
+    }
+
+    @Test
+    void testCreateDef_shouldRejectUnknownAnchorKey() {
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey("custom_nemletezik").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_ANCHOR_INVALID");
+    }
+
+    @Test
+    void testCreateDef_shouldStoreFoggRecipe_withAnchorHabitKey() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey("morning_sunlight").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(created.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+        assertThat(created.getAnchorHabitKey()).isEqualTo("morning_sunlight");
+        assertThat(created.getCelebration()).isEqualTo("ökölrázás");
+        assertThat(created.getCue()).isNull();
+    }
+
+    @Test
+    void testUpdateDef_shouldRejectSelfAnchor() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey("morning_sunlight").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        String err = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().anchorHabitKey(created.getHabitKey()).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_ANCHOR_INVALID");
+    }
 }

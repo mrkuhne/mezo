@@ -48,6 +48,7 @@ public class HabitAdminService {
     private final HabitChainRepository chainRepository;
     private final HabitDefRepository defRepository;
     private final HabitMapper mapper;
+    private final HabitFrameworkValidator frameworkValidator;
 
     @Transactional
     public HabitCatalogResponse catalog(UUID userId) {
@@ -160,6 +161,15 @@ public class HabitAdminService {
         def.setSkillKey(request.getSkillKey());
         def.setXp(request.getXp());
         def.setLinkUrl(request.getLinkUrl());
+        def.setFramework(request.getFramework() != null ? request.getFramework().getValue() : null);
+        def.setAnchorHabitKey(request.getAnchorHabitKey());
+        def.setCue(request.getCue());
+        def.setCraving(request.getCraving());
+        def.setReward(request.getReward());
+        def.setCelebration(request.getCelebration());
+        def.setIdentity(request.getIdentity());
+        frameworkValidator.clearForeignFields(def);
+        frameworkValidator.validate(def);
         HabitDefEntity saved = defRepository.save(def);
         return mapper.toDefAdmin(saved, chain.getChainKey());
     }
@@ -201,6 +211,29 @@ public class HabitAdminService {
         if (request.getIsActive() != null) {
             def.setActive(request.getIsActive());
         }
+        if (request.getFramework() != null) {
+            def.setFramework(request.getFramework().getValue());
+        }
+        if (request.getAnchorHabitKey() != null) {
+            def.setAnchorHabitKey(request.getAnchorHabitKey());
+        }
+        if (request.getCue() != null) {
+            def.setCue(request.getCue());
+        }
+        if (request.getCraving() != null) {
+            def.setCraving(request.getCraving());
+        }
+        if (request.getReward() != null) {
+            def.setReward(request.getReward());
+        }
+        if (request.getCelebration() != null) {
+            def.setCelebration(request.getCelebration());
+        }
+        if (request.getIdentity() != null) {
+            def.setIdentity(request.getIdentity());
+        }
+        frameworkValidator.clearForeignFields(def);
+        frameworkValidator.validate(def);
         HabitDefEntity saved = defRepository.save(def);
         return mapper.toDefAdmin(saved, chainKeyOf(saved.getChainId()));
     }
