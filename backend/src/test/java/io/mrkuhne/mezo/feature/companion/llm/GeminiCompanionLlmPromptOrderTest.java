@@ -104,6 +104,7 @@ class GeminiCompanionLlmPromptOrderTest {
                 new Patterns("0 40 2 * * *", 60, 8, 7, 100, List.of(minimalPatternPair())),
                 new Hypotheses("0 0 3 * * SUN", 3, 0.75, 0.50),
                 new HabitSuggest(5),
+                new CompanionProperties.LifegoalPropose(5),
                 new Transcription(5_242_880, List.of("audio/wav")),
                 new AmbientRecall(true, 30, 1200, true,
                         new AmbientRecall.Group(2, 0.55, 90),

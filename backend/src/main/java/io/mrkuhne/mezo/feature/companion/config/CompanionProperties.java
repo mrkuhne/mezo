@@ -33,6 +33,7 @@ public record CompanionProperties(
     @NotNull @Valid Patterns patterns,
     @NotNull @Valid Hypotheses hypotheses,
     @NotNull @Valid HabitSuggest habitSuggest,
+    @NotNull @Valid LifegoalPropose lifegoalPropose,
     @NotNull @Valid Transcription transcription,
     @NotNull @Valid AmbientRecall ambientRecall,
     @NotNull @Valid Graph graph,
@@ -239,6 +240,9 @@ public record CompanionProperties(
          *  sanitize step is a defensive bounds check, not a count clamp). */
         @Min(1) @Max(20) int maxSuggestions
     ) {}
+
+    /** AI life-goal proposer (mezo-iizd) — cap on pillars the adapter asks the model for / returns. */
+    public record LifegoalPropose(@Min(1) @Max(10) int maxPillars) {}
 
     /** Chat voice input (mezo-at8x.4) — the caps on an uploaded voice note. */
     public record Transcription(

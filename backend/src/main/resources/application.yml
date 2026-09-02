@@ -1098,6 +1098,9 @@ mezo:
       # how many suggestions the Task 2 adapter asks the model for / returns (HabitAiService's
       # own sanitize step is a defensive bounds check, not a count clamp).
       max-suggestions: 5
+    lifegoal-propose:
+      # AI life-goal proposer (mezo-iizd) — smart-model, propose-only; max pillars per proposal.
+      max-pillars: 5
     transcription:
       # Chat voice input (mezo-at8x.4) — kept under the 6 MB container multipart cap so the
       # SERVICE check in TranscriptionService is the effective, message-bearing limit.
