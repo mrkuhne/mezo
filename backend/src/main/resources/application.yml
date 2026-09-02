@@ -290,6 +290,12 @@ mezo:
     # Off ⇒ nincs detektáló listener; a kézi people CRUD + chip-log felület változatlanul él.
     people:
       enabled: true
+    # Életcél-rendszer (mezo-iizd) — off ⇒ the /api/life-goals surface 404s and no lifegoal beans exist.
+    lifegoal:
+      enabled: true
+    # AI pillar proposal (propose-only): off ⇒ POST /api/life-goals/propose answers from the rule template.
+    lifegoal-ai-propose:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -1383,6 +1389,9 @@ mezo:
     green-threshold: 60
     per-ring-xp: 5
     all-green-bonus-xp: 30
+  # Binds feature/lifegoal/config/LifeGoalProperties (mezo-iizd) — pillar cap per goal.
+  lifegoal:
+    max-pillars: 5
   # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
   # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.
   # The dummy default keeps the context bootable with the notification feature switched off.
