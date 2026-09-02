@@ -71,6 +71,23 @@ class AuthMeIT extends ApiIntegrationTest {
         assertHasRequestError(body, "AUTH_LOGIN_INVALID_CREDENTIALS");
     }
 
+    /**
+     * Review finding 2: same 72-BYTE BCrypt limit as registration, on the {@code newPassword}
+     * field this time — 40 Hungarian accented characters (80 UTF-8 bytes) is contract-valid
+     * ({@code maxLength: 72} CHARACTERS) but must be rejected as 400, not blow up the encoder.
+     */
+    @Test
+    void testChangePassword_shouldReturn400_whenNewPasswordExceeds72Bytes() {
+        HttpHeaders headers = registerFresh("pw3@test.local");
+        String oversizedPassword = "á".repeat(40); // 40 chars (<= 72), 80 UTF-8 bytes (> 72)
+        String body = postForBody("/api/auth/change-password",
+            new ChangePasswordRequest("titkos-jelszo-1", oversizedPassword),
+            headers, HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "newPassword", "VALIDATION_INVALID_VALUE");
+        postForBody("/api/auth/login", new LoginRequest("pw3@test.local", "titkos-jelszo-1"),
+            null, HttpStatus.OK, TokenResponse.class);
+    }
+
     @Test
     void testCompleteOnboarding_shouldFlipOnboarded_whenCalled() {
         HttpHeaders headers = registerFresh("ob@test.local");

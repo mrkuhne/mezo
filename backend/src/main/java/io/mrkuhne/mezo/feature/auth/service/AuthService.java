@@ -9,10 +9,12 @@ import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -56,12 +58,24 @@ public class AuthService {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("AUTH_EMAIL_TAKEN").build(), HttpStatus.CONFLICT);
         }
+        assertBcryptSafe(req.getPassword(), "password");
         AppUserEntity user = new AppUserEntity();
         user.setEmail(email);
         user.setName(req.getName().trim());
         user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         user.setRole(AppUserEntity.UserRole.USER);
-        user = appUserRepository.save(user);
+        try {
+            // saveAndFlush (not save): forces the uq_app_user_email constraint to fire HERE, inside
+            // this try, rather than being deferred to end-of-transaction flush where it would
+            // escape this catch and surface as an unmapped 500 (see GlobalExceptionHandler).
+            user = appUserRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException e) {
+            // The cheap existsByEmail pre-check above is the common path; this catches the race
+            // where a second registration with the same email committed between the pre-check and
+            // this insert (uq_app_user_email fires at the DB level).
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("AUTH_EMAIL_TAKEN").build(), HttpStatus.CONFLICT);
+        }
         inviteService.consume(req.getInviteCode(), user.getId());
         return issueToken(user);
     }
@@ -88,6 +102,7 @@ public class AuthService {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("AUTH_LOGIN_INVALID_CREDENTIALS").build(), HttpStatus.UNAUTHORIZED);
         }
+        assertBcryptSafe(req.getNewPassword(), "newPassword");
         current.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         current.setMustChangePassword(false);
         appUserRepository.save(current);
@@ -125,5 +140,21 @@ public class AuthService {
 
     private static String normalizeEmail(String email) {
         return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * BCrypt (Spring Security's {@code BCryptPasswordEncoder}) throws {@code IllegalArgumentException}
+     * for a password over 72 BYTES — it does not truncate. The contract's {@code maxLength: 72} on
+     * both {@code RegisterRequest.password} and {@code ChangePasswordRequest.newPassword} is in
+     * CHARACTERS, so a 72-character password containing multi-byte UTF-8 (plausible for this
+     * Hungarian app) is contract-valid but would blow past the BCrypt limit and — absent this check
+     * — surface as an unmapped 500 (GlobalExceptionHandler has no IllegalArgumentException handler).
+     * Reject it as an ordinary 400 FIELD validation error instead, before it ever reaches the encoder.
+     */
+    private static void assertBcryptSafe(String password, String fieldName) {
+        if (password != null && password.getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.field("VALIDATION_INVALID_VALUE", fieldName).build(), HttpStatus.BAD_REQUEST);
+        }
     }
 }

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.auth;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import java.time.Instant;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -23,13 +24,21 @@ public class OwnerSeedData implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (appUserRepository.existsByEmail(ownerProperties.ownerEmail())) return;
+        // AuthService.login/register normalise email to trimmed-lowercase before lookup; seed the
+        // owner the same way so an uppercase MEZO_OWNER_EMAIL never locks the owner out (mezo-qw37.1
+        // review finding 4).
+        String email = normalizeEmail(ownerProperties.ownerEmail());
+        if (appUserRepository.existsByEmail(email)) return;
         AppUserEntity owner = new AppUserEntity();
-        owner.setEmail(ownerProperties.ownerEmail());
+        owner.setEmail(email);
         owner.setName(ownerProperties.ownerName());
         owner.setPasswordHash(passwordEncoder.encode(ownerProperties.ownerPassword()));
         owner.setRole(AppUserEntity.UserRole.OWNER);
         owner.setOnboardedAt(Instant.now());
         appUserRepository.save(owner);
+    }
+
+    private static String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 }

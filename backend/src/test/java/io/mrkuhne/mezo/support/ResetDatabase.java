@@ -46,8 +46,10 @@ public class ResetDatabase {
                 + "goal_plan_link, goal, biometric_profile, "
                 + "character_run, character_portrait_revision, character_conference, character_observation, character_claim, character_dimension, "
                 + "mention, person CASCADE").executeUpdate();
-        // Master data (demodata owner) survives; everything else goes.
-        entityManager.createNativeQuery("DELETE FROM app_user WHERE email <> :ownerEmail")
+        // Master data (demodata owner) survives; everything else goes. Case-insensitive: AuthService
+        // normalises every login/register email to lowercase, so this must match the same way (see
+        // mezo-qw37.1 review finding 4 — a mixed-case configured owner email must still be preserved).
+        entityManager.createNativeQuery("DELETE FROM app_user WHERE lower(email) <> lower(:ownerEmail)")
             .setParameter("ownerEmail", ownerProperties.ownerEmail())
             .executeUpdate();
         // User-authored catalog rows go; master content (created_by null) survives for the loader.

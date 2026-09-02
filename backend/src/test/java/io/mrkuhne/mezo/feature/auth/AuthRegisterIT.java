@@ -106,6 +106,47 @@ class AuthRegisterIT extends ApiIntegrationTest {
         assertHasFieldError(body, "password", "VALIDATION_INVALID_VALUE");
     }
 
+    /**
+     * Review finding 1: the cheap {@code existsByEmail} pre-check catches the common case of a
+     * taken email up front — proving the mapping stays 409 AUTH_EMAIL_TAKEN (not a raw 500) even
+     * when the row backing that pre-check was inserted directly, bypassing any earlier request.
+     * The DB-constraint race itself (two inserts racing past the pre-check) is proven at the
+     * service level in {@code AuthServiceTest.testRegister_shouldReturn409_whenSaveRacesPastPreCheck}
+     * — deterministic without needing real concurrent threads.
+     */
+    @Test
+    void testRegister_shouldReturn409_whenEmailRowInsertedDirectly() {
+        InviteEntity invite = inviteService.create(ownerId(), null, null);
+        AppUserEntity taken = new AppUserEntity();
+        taken.setEmail("direct@test.local");
+        taken.setName("Direct");
+        taken.setPasswordHash("irrelevant-hash");
+        appUserRepository.saveAndFlush(taken);
+
+        String body = postForBody("/api/auth/register", req(invite.getCode(), "direct@test.local"),
+            null, HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(body, "AUTH_EMAIL_TAKEN");
+        assertThat(inviteRepository.findById(invite.getId()).orElseThrow().isUsed()).isFalse();
+    }
+
+    /**
+     * Review finding 2: BCrypt (Spring Security's {@code BCryptPasswordEncoder}) throws on a
+     * password over 72 BYTES rather than truncating. The contract's {@code maxLength: 72} on
+     * {@code RegisterRequest.password} is in CHARACTERS, so 40 Hungarian accented characters (80
+     * UTF-8 bytes) is contract-valid — passes bean validation — but must still be rejected as a
+     * clean 400 field error before it reaches the encoder, not a 500.
+     */
+    @Test
+    void testRegister_shouldReturn400_whenPasswordExceeds72Bytes() {
+        InviteEntity invite = inviteService.create(ownerId(), null, null);
+        String oversizedPassword = "á".repeat(40); // 40 chars (<= 72), 80 UTF-8 bytes (> 72)
+        String body = postForBody("/api/auth/register",
+            new RegisterRequest(invite.getCode(), "bytes@test.local", oversizedPassword, "Teszt"),
+            null, HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "password", "VALIDATION_INVALID_VALUE");
+        assertThat(appUserRepository.existsByEmail("bytes@test.local")).isFalse();
+    }
+
     @Test
     void testLogin_shouldReturn403_whenAccountDisabled() {
         InviteEntity invite = inviteService.create(ownerId(), null, null);
