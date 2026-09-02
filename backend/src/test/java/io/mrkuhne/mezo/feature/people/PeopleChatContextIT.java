@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.people;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
 import io.mrkuhne.mezo.api.dto.PersonResponse;
@@ -17,6 +18,7 @@ import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -90,7 +92,11 @@ class PeopleChatContextIT extends AbstractIntegrationTest {
 
         assertThat(ctx).hasSize(1);
         assertThat(ctx.getFirst().mentionsThisWeek()).isEqualTo(2);
-        assertThat(ctx.getFirst().lastMentionAt()).isEqualTo(now.minus(Duration.ofDays(1)).truncatedTo(java.time.temporal.ChronoUnit.MICROS));
+        // Precízió-független: a @Transactional teszt a first-level cache-ből kapja vissza az
+        // entitást, tehát a beírt óra-precíziót (Linuxon nano, macOS-en mikro) őrzi — a lényeg,
+        // hogy a LEGFRISSEBB nem törölt említés ideje jöjjön vissza, ne az órák felbontása.
+        assertThat(ctx.getFirst().lastMentionAt())
+            .isCloseTo(now.minus(Duration.ofDays(1)), within(1, ChronoUnit.MILLIS));
     }
 
     @Test
