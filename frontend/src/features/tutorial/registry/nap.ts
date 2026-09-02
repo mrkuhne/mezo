@@ -32,7 +32,7 @@ export const NAP_KALAUZ: KalauzEntry[] = [
       {
         kind: 'hogyan', spot: 'i-checkin', orb: 's-orb-figyel', anchor: 'nap-hero',
         title: 'Fentről lefelé.',
-        voice: 'A felső csempe mindig a soron következő dolgot mutatja — alatta a küldetések, a rutin és a check-in várnak egy koppintásra.',
+        voice: 'A felső csempe mindig a soron következő dolgot mutatja — alatta a küldetések és a check-in várnak egy koppintásra.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
