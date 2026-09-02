@@ -109,8 +109,9 @@ test('szótár: minden fogalom-kártya egy FOGALMAK-bejegyzést hordoz, és ninc
     expect(c.def).toBe(FOGALMAK[key!].def)
     used.add(key!)
   }
-  // S2a-4 (YAGNI): a szótár csak azt tartalmazza, amit valaki hivatkoz.
-  expect([...Object.keys(FOGALMAK)].filter((k) => !used.has(k))).toEqual([])
+  // Az árva-kulcs kaput (S2a-4, YAGNI) a Task 5 vezeti be — ebben az állapotban a szótár
+  // öt kulcsából még csak a `makro` hivatkozott, a többit a nap/train/mezo/me kalauz hozza.
+  expect(used.size).toBeGreaterThan(0)
 })
 
 test('szótár: a definíciók lintelve vannak', () => {
@@ -216,25 +217,11 @@ A `:14-20` kártya:
 - [ ] **Step 5: Futtasd — zöld**
 
 Run: `cd frontend && VITE_USE_MOCK=true pnpm vitest run src/features/tutorial/registry/registry.test.ts`
-Expected: PASS, 5 teszt. A „nincs árva kulcs" asszert azért zöld, mert egyelőre **csak** a
-`makro` van a szótárban… **nem** — a szótárban öt kulcs van, négy árva. **Ez a lépés
-szándékosan bukik.**
+Expected: PASS, 5 teszt. A `makro` kulcs a `fuel` fogalom-kártyáján keresztül hivatkozott;
+a másik négy kulcs egyelőre hivatkozatlan, és ez rendben van — az árva-kulcs kaput a Task 5
+vezeti be, amikor mind az öt hivatkozója megvan.
 
-Ha bukik `expect([...]).toEqual([])` a `["napszak","mezociklus","minta","szint"]` listával,
-az a helyes köztes állapot: a 3–5. Task hozza a hivatkozókat. **Kommenteld ki ideiglenesen
-az árva-kulcs asszertet** ezzel a sorral, és a 6. Taskban vedd vissza:
-
-```ts
-  // TASK-5-BEN VISSZAVENNI: a kulcsokat a nap/train/mezo/me kalauz hivatkozza majd.
-  // expect([...Object.keys(FOGALMAK)].filter((k) => !used.has(k))).toEqual([])
-```
-
-- [ ] **Step 6: Futtasd újra — most zöld**
-
-Run: `cd frontend && VITE_USE_MOCK=true pnpm vitest run src/features/tutorial/registry/registry.test.ts`
-Expected: PASS.
-
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add frontend/src/features/tutorial/registry/
@@ -967,8 +954,9 @@ export const KALAUZ_REGISTRY: KalauzEntry[] = [
 ]
 ```
 
-`registry.test.ts` — a Task 1-ben kikommentelt sort állítsd vissza (a `// TASK-5-BEN
-VISSZAVENNI` kommenttel együtt töröld a kommentelést):
+`registry.test.ts` — a Task 1-ben ideiglenesen `expect(used.size).toBeGreaterThan(0)`-t álló
+sort cseréld le a végleges kapura. Mostantól mind az öt kulcsnak van hivatkozója, tehát a
+kapu betartatja az S2a-4 YAGNI-döntést: aki új kulcsot vesz fel hivatkozó nélkül, elbukik rajta.
 
 ```ts
   // S2a-4 (YAGNI): a szótár csak azt tartalmazza, amit valaki hivatkoz.
@@ -1184,10 +1172,11 @@ Step 3–4; §10 (nyitott kérdések) → Task 7 Step 5 az epic-kommentben átad
 bemásolható kódot tartalmaz, a `mezo.ts` és a `me.ts` teljes tartalma ki van írva, nem
 hivatkozik a `nap.ts`-re.
 
-**Egy ismert, szándékos köztes állapot.** A Task 1 Step 5–6 kikommentelteti az árva-kulcs
-asszertet, mert a szótár öt kulcsa közül négyet csak a Task 3–5 hivatkoz; a Task 5 Step 7
-visszaveszi. Ez a plan egyetlen helye, ahol egy Task nem hagy teljesen zöld kaput maga
-után — a lépés ezt kimondja, és a visszavétel konkrét Taskhoz/lépéshez van kötve.
+**Minden Task zöld kaput hagy maga után.** Az árva-kulcs kapu
+(`Object.keys(FOGALMAK).filter(nem hivatkozott) === []`) nem a Task 1-ben születik és nem lesz
+ideiglenesen kikommentelve: a Task 1 egy gyengébb, de igaz asszertet ír
+(`used.size > 0`), és a Task 5 Step 7 cseréli le a véglegesre, amikor mind az öt kulcsnak
+van hivatkozója. Így egyetlen commit sem tartalmaz letiltott tesztet.
 
 **Típus-konzisztencia.** `FogalomKey` / `Fogalom` / `FOGALMAK` / `fogalom()` a Task 1-ben
 definiálva, a Task 3–5 pontosan ezeket a neveket használja. `buildAllSeenProgress()` /
