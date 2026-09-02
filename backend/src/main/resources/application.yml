@@ -172,6 +172,10 @@ mezo:
     # additionally needs the companion switch (CompanionLlm port).
     meso-review:
       enabled: true
+    # Meso plan generator AI half (mesocycle wizard redesign) — Gemini exercise pick inside the
+    # deterministic frames; needs the companion switch too. Off -> deterministic filler, llmUsed=false.
+    meso-plan-ai:
+      enabled: true
     # Fuel P6 pantry import — gates the OpenFoodFacts lookup/import endpoints (off -> 404);
     # the import feed + suggestions in GET /api/pantry stay on regardless.
     pantry-import:
@@ -1480,6 +1484,18 @@ mezo:
       1: [ { pct: 0.70, reps: 4 } ]
       2: [ { pct: 0.50, reps: 8 }, { pct: 0.75, reps: 3 } ]
       3: [ { pct: 0.50, reps: 8 }, { pct: 0.70, reps: 4 }, { pct: 0.90, reps: 2 } ]
+  # Hypertrophy plan generator frames (POST /api/train/meso-plans/generate).
+  meso-plan:
+    session-cap: 8
+    min-frequency: 2
+    max-exercises-per-group-per-day: 2
+    compound-rep-min: 8
+    compound-rep-max: 10
+    isolation-rep-min: 12
+    isolation-rep-max: 15
+    target-rir: 1
+    compound-warmup: 2
+    isolation-warmup: 1
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
     step: 2                 # sets added per productive week
