@@ -24,6 +24,7 @@ public record TimingProperties(
     @NotNull @DecimalMin("0.0") @DecimalMax("1.0") Double beta,   // 0.25  — RFC 6298 1/4
     @NotNull @Positive Double outlierK,            // 4 — gate width in deviations
     @NotNull @Min(1) Integer minSamples,           // 3 — gate stays open below this
+    @NotNull @Positive Double minDeviationSeconds, // 20 — RFC 6298 granularity floor for the gate
     @NotNull @Positive Double seedSetCycleCompound,  // 180 — 150s rest + ~8 reps x 3.5s
     @NotNull @Positive Double seedSetCycleIsolation, // 125 — 90s rest + ~10 reps x 3.5s
     @NotNull @Positive Double seedTransition,        // 240 — rest + 90s changeover + first set

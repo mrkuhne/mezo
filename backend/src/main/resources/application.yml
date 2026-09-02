@@ -1537,6 +1537,10 @@ mezo:
       beta: 0.25
       outlier-k: 4
       min-samples: 3
+      # RFC 6298 granularity floor (RTO = SRTT + max(G, K*RTTVAR)): without it, a very consistent
+      # user's deviation converges toward 0 and the outlier gate rejects every future observation,
+      # freezing the estimate permanently and silently once min-samples is reached (mezo-dzbm).
+      min-deviation-seconds: 20
       seed-set-cycle-compound: 180
       seed-set-cycle-isolation: 125
       seed-transition: 240

@@ -120,7 +120,8 @@ public class TimingProfileService {
             new EwmaEstimator.Estimate(row.getValueNum(), row.getDeviationNum(), row.getSamples());
         EwmaEstimator.Estimate updated = EwmaEstimator.update(
             current, observation.seconds(),
-            properties.alpha(), properties.beta(), properties.outlierK(), properties.minSamples());
+            properties.alpha(), properties.beta(), properties.outlierK(), properties.minSamples(),
+            properties.minDeviationSeconds());
         row.setValueNum(updated.value());
         row.setDeviationNum(updated.deviation());
         row.setSamples(updated.samples());
