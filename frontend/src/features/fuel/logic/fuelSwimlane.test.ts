@@ -216,9 +216,13 @@ describe('asPastDayLane', () => {
 
 test('a done window with fiberG gets a 4th Rost ring against FIBER_TARGET_G; without it, three', () => {
   const withFiber = buildWindowLane({ slots: [slot({ state: 'done', mealId: 'm1' })], budget, meals: [meal({ fiberG: 9 })] })
+  // A done tile's P/C/F rings read the MEAL's own energy split (mezo-tjua) — 36 g P (144 kcal),
+  // 48 g C (192 kcal), 9 g F (81 kcal) = 417 kcal → 35/46/19, summing to 100. Rost is not part of
+  // the split, so it stays a share of FIBER_TARGET_G.
   expect(withFiber.tiles[0].rings.map(r => [r.key, r.grams, r.pct])).toEqual([
-    ['p', 36, 20], ['c', 48, 20], ['f', 9, 13], ['r', 9, Math.round((9 / FIBER_TARGET_G) * 100)],
+    ['p', 36, 35], ['c', 48, 46], ['f', 9, 19], ['r', 9, Math.round((9 / FIBER_TARGET_G) * 100)],
   ])
+  expect(withFiber.tiles[0].rings.map(r => r.basis)).toEqual(['meal', 'meal', 'meal', 'day'])
   expect(withFiber.tiles[0].rings[3]).toMatchObject({ letter: 'R', label: 'Rost', color: 'var(--macro-fiber)' })
   const noFiber = buildWindowLane({ slots: [slot({ state: 'done', mealId: 'm1' })], budget, meals: [meal({ fiberG: null })] })
   expect(noFiber.tiles[0].rings).toHaveLength(3)
@@ -236,4 +240,32 @@ test('context: a done tile reads the scored Szerep row; unscored / planned → n
   expect(buildWindowLane({ slots: [slot({ state: 'done', mealId: 'm1' })], budget, meals: [scored] }).tiles[0].context).toBe('post')
   expect(buildWindowLane({ slots: [slot({ state: 'done', mealId: 'm1' })], budget, meals: [meal()] }).tiles[0].context).toBeNull()
   expect(buildWindowLane({ slots: [slot({ state: 'now' })], budget, meals: [] }).tiles[0].context).toBeNull()
+})
+
+// ── Makró-felépítés a logolt ablakon (mezo-tjua) ─────────────────────────────
+describe('a done tile P/C/F rings are the meal\'s own energy split, a planned window\'s are the day\'s keret', () => {
+  test('a planned window keeps the day-basis rings', () => {
+    const { tiles } = buildWindowLane({ slots: [slot({ state: 'now' })], budget, meals: [] })
+    // 30 g P / 180 g target, 40 / 240, 10 / 72 — unchanged share-of-target reading.
+    expect(tiles[0].rings.map(r => [r.key, r.pct, r.basis])).toEqual([
+      ['p', 17, 'day'], ['c', 17, 'day'], ['f', 14, 'day'],
+    ])
+  })
+
+  test('a done window re-bases onto the meal — the three percents sum to 100, the grams do not move', () => {
+    const { tiles } = buildWindowLane({ slots: [slot({ state: 'done', mealId: 'm1' })], budget, meals: [meal()] })
+    const rings = tiles[0].rings
+    expect(rings.map(r => r.grams)).toEqual([36, 48, 9])
+    expect(rings.map(r => r.basis)).toEqual(['meal', 'meal', 'meal'])
+    expect(rings.reduce((sum, r) => sum + r.pct, 0)).toBe(100)
+  })
+
+  test('a done meal with no macro energy at all keeps the day-basis rings rather than a fabricated split', () => {
+    const { tiles } = buildWindowLane({
+      slots: [slot({ state: 'done', mealId: 'm1', p: undefined, c: undefined, f: undefined })],
+      budget,
+      meals: [meal({ p: 0, c: 0, f: 0 })],
+    })
+    expect(tiles[0].rings.map(r => [r.pct, r.basis])).toEqual([[0, 'day'], [0, 'day'], [0, 'day']])
+  })
 })
