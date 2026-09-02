@@ -90,12 +90,11 @@ test('Sablonok stays reachable on its own route', async () => {
 })
 
 test('the mesocycle planner is a full-screen flow without the sub-nav', () => {
-  // the 5-step wizard is retired (wizard v2, mezo-d20.14) — MesocyclePlannerPage is a
-  // placeholder until Task 5 lands the new 3-step wizard; this route-level check just
-  // pins the sub-nav-free full-screen shell.
+  // wizard v2 (mezo-d20.14): three steps, the first one asking when + why.
   const { container } = renderApp('/train/mesocycles/new')
   expect(container.querySelector('.np-pills')).toBeNull()
-  expect(screen.getByText('A varázsló új verziója készül.')).toBeInTheDocument()
+  expect(screen.getByText('Mikor edzel — és miért?')).toBeInTheDocument()
+  expect(screen.getByText('01 / 03 · Mikor és miért')).toBeInTheDocument()
 })
 
 test('the mesocycle builder is a full-screen flow without the sub-nav', () => {
