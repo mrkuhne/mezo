@@ -37,6 +37,7 @@ class TdeeBootstrapServiceTest {
             new GoalEngineProperties.Volume(8, 6),
             new GoalEngineProperties.Strength(-5.0),
             new GoalEngineProperties.Ewma(10),
+            new GoalEngineProperties.Diet(0.275, 0.20, 0.40, 0.22, 0.5),
             0,
             300));
 
