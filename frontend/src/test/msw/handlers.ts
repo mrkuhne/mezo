@@ -175,6 +175,15 @@ const mesoReportFixture = {
 
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
+  http.post(`${API_BASE}/api/auth/register`, () => HttpResponse.json({ token: 'test-token' })),
+  http.get(`${API_BASE}/api/auth/me`, () =>
+    HttpResponse.json({
+      id: '00000000-0000-0000-0000-000000000001', email: 'owner@mezo.local', name: 'Owner',
+      role: 'OWNER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest',
+    }),
+  ),
+  http.post(`${API_BASE}/api/auth/change-password`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API_BASE}/api/auth/onboarding-complete`, () => new HttpResponse(null, { status: 204 })),
 
   http.get(`${API_BASE}/api/biometrics/weight`, () =>
     HttpResponse.json([{ id: 'w1', date: '2026-06-01', value: 82.5, note: null }]),
