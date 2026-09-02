@@ -8,16 +8,6 @@
   .wstep.on { display: block; }
   .wfoot { display: flex; gap: 8px; margin-top: 12px; }
 
-  /* preset cards */
-  .preset {
-    border: 1px solid rgba(43, 33, 24, 0.08); border-left-width: 4px; border-radius: 14px;
-    padding: 10px 12px; background: #FFFFFF; cursor: pointer; margin-bottom: 8px;
-    box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.3);
-  }
-  .preset.on { border-color: #FF6B4A; background: linear-gradient(150deg, #FFF3EC, #FFFFFF); }
-  .preset .desc { display: none; font-size: 9px; font-weight: 300; color: #6E6257; margin-top: 5px; }
-  .preset.on .desc { display: block; }
-
   .segtab { display: flex; gap: 4px; flex-wrap: wrap; }
   .segtab button {
     flex: 1; min-width: 34px; border: 1px solid rgba(43, 33, 24, 0.12); background: #fff;
@@ -28,16 +18,90 @@
 
   .fld { margin-bottom: 10px; }
   .fld label { display: block; font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; margin-bottom: 5px; }
-  .fld input[type=text] {
+  .fld input[type=text], .fld textarea {
     width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 10px;
-    padding: 8px 11px; font-family: inherit; font-size: 11px; background: #fff;
+    padding: 8px 11px; font-family: inherit; font-size: 11px; background: #fff; resize: none;
   }
 
-  /* phase editor */
-  .phaseed { display: flex; gap: 6px; align-items: flex-end; height: 84px; padding: 4px 2px 0; }
-  .phaseed .pw { flex: 1; display: grid; gap: 3px; justify-items: center; align-content: end; cursor: pointer; }
-  .phaseed .pw b { width: 100%; border-radius: 6px 6px 3px 3px; }
-  .phaseed .pw span { font-size: 6.5px; font-weight: 700; color: #A2958A; text-align: center; }
+  /* napszám-csempék */
+  .dcgrid { display: flex; gap: 6px; }
+  .dct {
+    flex: 1; border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 14px; background: #fff;
+    padding: 10px 0 8px; text-align: center; cursor: pointer; font-family: inherit;
+    box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.3);
+  }
+  .dct b { display: block; font-size: 17px; font-weight: 200; font-variant-numeric: tabular-nums; }
+  .dct small { font-size: 7px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #A2958A; }
+  .dct.on { border-color: #FF6B4A; background: linear-gradient(150deg, #FFF3EC, #FFFFFF); }
+  .dct.on b { color: #A84A26; font-weight: 400; }
+
+  /* nap-picker — 7 kerek chip, hétvége is */
+  .daypick { display: flex; gap: 5px; justify-content: space-between; }
+  .daypick button {
+    width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(43, 33, 24, 0.14);
+    background: #fff; font-family: inherit; font-size: 9.5px; font-weight: 700; color: #6E6257; cursor: pointer; padding: 0;
+  }
+  .daypick button.on { border-color: #FF6B4A; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; box-shadow: 0 6px 12px -5px rgba(255, 91, 54, 0.6); }
+
+  /* nap-mozaik a Program-lépésben — csempe → saját oldal */
+  .daymosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dtile {
+    border-radius: 15px; padding: 9px 11px; cursor: pointer;
+    background: linear-gradient(150deg, #FFE7DC, #FFF7F2);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .dtile:active { transform: scale(0.96); }
+  .dtile.warnb { background: linear-gradient(150deg, #FBEBCB, #FFFCF3); }
+  .dtile .dl { font-size: 15px; font-weight: 700; }
+  .dtile .tt { font-size: 8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #A84A26; }
+  .dtile .sets { font-size: 9px; color: #6E6257; margin-top: 3px; }
+  .dtile .mchips { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 5px; }
+  .dtile .mchips span { font-size: 7.5px; font-weight: 700; border-radius: 999px; padding: 2px 7px; background: rgba(255, 255, 255, 0.75); color: #6E6257; }
+  .dtile.sage { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .dtile.sage .tt { color: #4E6B42; }
+  .dtile.rose { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); }
+  .dtile.rose .tt { color: #8E3F6F; }
+  .dtile.gold { background: linear-gradient(150deg, #FDF0DA, #FFFCF5); }
+  .dtile.gold .tt { color: #A8801F; }
+  .dtile .dhead { display: flex; align-items: flex-start; gap: 6px; }
+  .dtile .dhead .dl { font-size: 18px; line-height: 1; }
+  .dtile .dhead .tt { display: block; margin-top: 2px; }
+  .dtile .st { font-size: 7.5px; font-weight: 700; border-radius: 999px; padding: 2px 7px; flex: none; }
+  .dtile .st.done { background: rgba(110, 139, 94, 0.16); color: #4E6B42; }
+  .dtile .st.now { background: rgba(255, 107, 74, 0.14); color: #A84A26; }
+  .dtile .dcells { display: flex; gap: 4px; margin-top: 7px; }
+  .dtile .dcells div { flex: 1; text-align: center; padding: 4px 2px; border-radius: 9px; background: rgba(255, 255, 255, 0.7); }
+  .dtile .dcells b { display: block; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dtile .dcells small { font-size: 7px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #A2958A; }
+  .dtile .mlist { margin-top: 7px; display: grid; gap: 4px; }
+  .dtile .ml { display: grid; grid-template-columns: 38px 1fr 14px; align-items: center; gap: 5px; font-size: 8.5px; font-weight: 700; }
+  .dtile .ml .bar { height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); overflow: hidden; }
+  .dtile .ml .bar div { height: 100%; border-radius: 3px; }
+  .dtile .ml .n { text-align: right; font-variant-numeric: tabular-nums; color: #6E6257; }
+  .dtile .rdot2 { width: 6px; height: 6px; border-radius: 50%; background: #C4634B; flex: none; }
+
+  /* wizard szekció-kártyák (01 lépés) */
+  .stepcard {
+    border-radius: 17px; padding: 11px 13px; margin-bottom: 9px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .stepcard.coralw { background: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
+  .stepcard.lavw { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .stepcard.goldw { background: linear-gradient(150deg, #FDF0DA, #FFFCF5); box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .stepcard textarea {
+    width: 100%; border: 1px solid rgba(93, 79, 160, 0.2); border-radius: 12px;
+    padding: 9px 11px; font-family: inherit; font-size: 11px; background: rgba(255, 255, 255, 0.85); resize: none;
+  }
+  .stepcard .dct { background: rgba(255, 255, 255, 0.85); }
+  .stepcard .daypick button { background: rgba(255, 255, 255, 0.85); }
+  .stepcard .daypick button.on { background: linear-gradient(135deg, #FF7A55, #FF5B36); }
+  .dct b, .daypick button { transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .dct:active, .daypick button:active { transform: scale(0.9); }
+  .dtile.today { border: 1px solid #FF6B4A; }
+  .dtile .todaychip { font-size: 7.5px; font-weight: 700; color: #A84A26; background: rgba(255, 107, 74, 0.12); border-radius: 999px; padding: 2px 7px; flex: none; }
 
   .aicard {
     border-radius: 14px; padding: 9px 11px; margin-top: 10px;
@@ -47,16 +111,26 @@
   .aicard .t { font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #B04524; margin-bottom: 3px; }
   .aicard .x { font-size: 9.5px; font-weight: 300; }
 
-  .splitcard { border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 12px; padding: 9px 11px; background: #fff; cursor: pointer; margin-bottom: 7px; }
-  .splitcard.on { border-color: #FF6B4A; background: linear-gradient(150deg, #FFF3EC, #FFFFFF); }
-  .star { font-size: 8.5px; font-weight: 700; color: #A8801F; }
-
   .tierrow { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
   .tierrow + .tierrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
   .mpill { font-size: 9.5px; font-weight: 700; border-radius: 999px; padding: 3px 10px; flex: none; width: 76px; text-align: center; }
   .tierrow .segtab { flex: 1; }
   .tierrow .segtab button { font-size: 8.5px; padding: 5px 0; }
   .tierrow .segtab button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* generálás-várakozó */
+  .genwait { display: none; text-align: center; padding: 42px 0 30px; }
+  .genwait.on { display: block; }
+  .genwait .orb {
+    width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 12px;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36);
+    box-shadow: 0 14px 30px -8px rgba(255, 91, 54, 0.6);
+    animation: genpulse 1.2s ease-in-out infinite;
+  }
+  @keyframes genpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  .genwait .gt { font-size: 11px; font-weight: 700; }
+  .genwait .gs { font-size: 9px; color: #6E6257; margin-top: 3px; }
+  .genbody.hide { display: none; }
 
   /* editor */
   .daytabs { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
@@ -69,19 +143,18 @@
   .daytabs button small { font-size: 7.5px; font-weight: 600; color: #A2958A; }
   .daytabs button.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
   .daytabs button.offd { opacity: 0.55; }
+  .daytabs button .rdot { position: absolute; top: 3px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #C4634B; }
   .edhero {
     border-radius: 16px; padding: 10px 12px; margin-top: 8px;
     background: linear-gradient(140deg, #FFE7DC, #FFFFFF 75%);
     border: 0.5px solid rgba(43, 33, 24, 0.06);
     box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
+  .edhero.warn { background: linear-gradient(140deg, #FBEBCB, #FFFFFF 75%); }
   .bpill { font-size: 9px; font-weight: 700; border-radius: 999px; padding: 4px 10px; }
   .bpill.okp { background: rgba(110, 139, 94, 0.14); color: #4E6B42; }
   .bpill.nearp { background: rgba(201, 150, 46, 0.16); color: #A8801F; }
   .bpill.underp { border: 1.5px dashed rgba(43, 33, 24, 0.25); color: #A2958A; background: transparent; }
-  .ztrack { position: relative; height: 12px; border-radius: 6px; background: rgba(43, 33, 24, 0.07); overflow: hidden; margin-top: 6px; }
-  .ztrack .zone { position: absolute; top: 0; bottom: 0; background: rgba(143, 175, 126, 0.25); }
-  .ztrack .fillz { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: linear-gradient(90deg, #FF9A78, #E05535); }
   .exrow { border: 0.5px solid rgba(43, 33, 24, 0.08); border-left: 5px solid #E05535; border-radius: 13px; background: #fff; margin-bottom: 8px; overflow: hidden; }
   .exhead { display: flex; align-items: center; gap: 8px; padding: 9px 11px; cursor: pointer; }
   .exhead .nm2 { font-size: 11.5px; font-weight: 700; }
@@ -105,7 +178,83 @@
   .findet summary { font-size: 9.5px; font-weight: 700; color: #6E6257; cursor: pointer; padding: 8px 0 2px; list-style: none; }
   .exdel { font-size: 9px; font-weight: 600; color: #A84A26; background: none; border: none; font-family: inherit; cursor: pointer; padding: 6px 0 0; }
 
-  /* volume provenance bar */
+  /* nap-oldal — izom-washed gyakorlat-csempék */
+  .page.p-sage { background: linear-gradient(180deg, #DDEBD3 0%, #FDFAF4 36%); }
+  .mgroup { margin-top: 10px; }
+  .mghead { display: flex; align-items: center; gap: 8px; padding: 0 2px 6px; }
+  .mghead .mgbar { flex: 1; height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.07); overflow: hidden; }
+  .mghead .mgbar div { height: 100%; border-radius: 3px; }
+  .mghead .mgn { font-size: 9px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .extile {
+    border-radius: 15px; margin-bottom: 7px; overflow: hidden;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .extile .exhead { gap: 9px; padding: 9px 11px; }
+  .exico { width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); display: grid; place-items: center; flex: none; box-shadow: 0 4px 10px -6px rgba(43, 33, 24, 0.35); }
+  .extile .nm2 { font-size: 11.5px; font-weight: 700; }
+  .extile .sub { font-size: 8.5px; color: #6E6257; }
+  .extile .chev { color: #A2958A; font-size: 12px; flex: none; transition: transform 0.2s ease; }
+  .extile.open .chev { transform: rotate(180deg); }
+  .extile .exbody { background: rgba(255, 255, 255, 0.55); padding: 9px 11px 11px; border-top: 0.5px solid rgba(43, 33, 24, 0.06); }
+  .exacts { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+  .exacts button { font-family: inherit; font-size: 9px; font-weight: 600; border-radius: 999px; padding: 4px 10px; border: 1px solid rgba(43, 33, 24, 0.14); background: rgba(255, 255, 255, 0.8); color: #6E6257; cursor: pointer; }
+  .exacts button.del { color: #A84A26; }
+  .goalnote { font-size: 8.5px; color: #A8801F; font-weight: 600; }
+  .daycells { display: flex; gap: 6px; }
+  .daycells .statcell b { font-size: 14px; }
+  .daycells .statcell small { font-weight: 700; }
+
+  /* Heti vizsgálat — izom-csempék sparkkal */
+  .mband .nums, .wnums { white-space: nowrap; }
+  .wtile {
+    border-radius: 17px; padding: 10px 11px; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .wtile:active { transform: scale(0.96); }
+  .mosaic > .wtile { min-width: 0; overflow: hidden; }
+  .wtile .mpill { width: auto; padding: 3px 8px; font-size: 9px; }
+  .wtile .tchip { font-size: 7px; padding: 2px 6px; }
+  .wtile .vcap span:nth-child(2) { display: none; }
+  .wnums { font-size: 20px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .wnums .arr { font-size: 13px; opacity: 0.6; margin: 0 2px; }
+  .wnums small { font-size: 9px; font-weight: 600; color: #6E6257; margin-left: 4px; }
+  .wtile .vb { height: 9px; margin-top: 5px; }
+  .wtile .vcap { font-size: 6.5px; }
+  .wspark { display: flex; gap: 2px; align-items: flex-end; height: 22px; margin-top: 7px; }
+  .wspark b { flex: 1; border-radius: 2px 2px 1px 1px; transform: scaleY(0); transform-origin: bottom; }
+  .play .wspark b { animation: growy 0.45s ease-out forwards; animation-delay: var(--d); }
+  @keyframes growy { to { transform: scaleY(1); } }
+  .wspark b.fut { opacity: 0.32; }
+  .wspark b.dl { background: repeating-linear-gradient(135deg, #E5C46B 0 3px, #F3E3B5 3px 6px) !important; }
+  .wstat { font-size: 8.5px; font-weight: 700; margin-top: 5px; }
+  .wmini { display: flex; gap: 3px; align-items: flex-end; height: 26px; margin: 6px 0 2px; }
+  .wmini b { flex: 1; border-radius: 3px 3px 1px 1px; transform: scaleY(0); transform-origin: bottom; }
+  .play .wmini b { animation: growy 0.45s ease-out forwards; animation-delay: var(--d); }
+  @media (prefers-reduced-motion: reduce) { .wspark b, .play .wspark b, .wmini b, .play .wmini b { transform: none; animation: none; } }
+
+  /* levezetés — lépcsős idővonal */
+  .dsteps { position: relative; margin-top: 6px; }
+  .dstep { display: flex; gap: 9px; padding: 6px 0 10px; position: relative; }
+  .dstep + .dstep::before { content: ''; position: absolute; left: 10px; top: -8px; height: 10px; width: 1.5px; background: rgba(43, 33, 24, 0.12); }
+  .dnum { width: 21px; height: 21px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 8.5px; font-weight: 700; color: #fff; box-shadow: 0 4px 10px -5px rgba(43, 33, 24, 0.5); }
+  .dstep .dt { font-size: 8.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6E6257; margin-top: 3px; }
+  .dcells { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+  .dcell { min-width: 44px; text-align: center; padding: 5px 6px; border-radius: 10px; background: rgba(43, 33, 24, 0.045); }
+  .dcell b { display: block; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dcell small { font-size: 7.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #A2958A; }
+  .dcell.hot { background: rgba(201, 150, 46, 0.16); }
+  .dcell.hot b { color: #A8801F; }
+  .dcell.hot small { color: #A8801F; }
+  .dadj { display: flex; align-items: center; gap: 7px; padding: 5px 0; }
+  .dadj + .dadj { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .dadj .ico { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; flex: none; background: rgba(255, 255, 255, 0.85); }
+  .dadj .tx { font-size: 9.5px; flex: 1; min-width: 0; }
+  .dadj .eff { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2px 7px; flex: none; }
+
+  /* volume band bar (MV → MEV → MAV → MRV) */
   .vbwrap { border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 14px; background: #fff; padding: 10px 12px; margin-bottom: 9px; box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.28); cursor: pointer; }
   .vb { position: relative; height: 16px; border-radius: 8px; overflow: hidden; margin-top: 7px; }
   .vb .z1 { position: absolute; inset: 0; background: rgba(255, 107, 74, 0.1); }
@@ -113,6 +262,7 @@
   .vb .z3 { position: absolute; top: 0; bottom: 0; background: rgba(255, 107, 74, 0.38); }
   .vb .hl { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(43, 33, 24, 0.25); }
   .vb .mk { position: absolute; top: -2px; bottom: -2px; width: 4px; border-radius: 2px; background: #C9962E; box-shadow: 0 0 8px rgba(201, 150, 46, 0.8); }
+  .vb .mk.dim { background: #A2958A; box-shadow: none; opacity: 0.7; }
   .vcap { display: flex; justify-content: space-between; font-size: 7.5px; font-weight: 700; color: #A2958A; margin-top: 4px; }
   .vbody { display: none; margin-top: 9px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); padding-top: 9px; }
   .vbwrap.open .vbody { display: block; }
@@ -123,15 +273,36 @@
   .livedot { width: 8px; height: 8px; border-radius: 50%; background: #6E8B5E; animation: livep 2.4s ease-in-out infinite; flex: none; }
   @keyframes livep { 0%, 100% { box-shadow: 0 0 0 0 rgba(110, 139, 94, 0.4); } 50% { box-shadow: 0 0 0 5px rgba(110, 139, 94, 0); } }
 
+  /* hét-pöttysor (rámpa idővonal) */
+  .wdots { display: flex; gap: 5px; align-items: center; margin-top: 8px; }
+  .wdots i {
+    flex: 1; height: 8px; border-radius: 4px; background: rgba(43, 33, 24, 0.1);
+    position: relative; transform: scaleX(0); transform-origin: left;
+  }
+  .play .wdots i { animation: segf 0.4s ease-out forwards; animation-delay: var(--d); }
+  .wdots i.done { background: #8FAF7E; }
+  .wdots i.now { background: linear-gradient(90deg, #FFD979, #C9962E); }
+  .play .wdots i.now { animation: segf 0.4s ease-out forwards, nowpulse 2.6s ease-in-out 1.4s infinite; }
+  .wdots i.dl { background: repeating-linear-gradient(135deg, #E5C46B 0 4px, #F3E3B5 4px 8px); }
+  .phchip { font-size: 8.5px; font-weight: 700; border-radius: 999px; padding: 3px 10px; flex: none; background: rgba(201, 150, 46, 0.16); color: #A8801F; }
+
+  /* izom-státusz sor a hubon és a program-lépésben */
+  .mband { padding: 6px 0; }
+  .mband + .mband { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .mband .nums { font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mband .tchip { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2px 8px; flex: none; }
+  .tchip.emph { background: rgba(224, 85, 53, 0.14); color: #A84A26; }
+  .tchip.grow { background: rgba(110, 139, 94, 0.14); color: #4E6B42; }
+  .tchip.maint { border: 1px dashed rgba(43, 33, 24, 0.25); color: #8B7E6F; background: transparent; }
+  .stepchip { font-size: 8px; font-weight: 700; color: #4E6B42; flex: none; }
+
   /* hub cards */
   .runcard { border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 15px; background: #fff; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
   .runcard.tpl { border-style: dashed; box-shadow: none; }
-  .minicurve { display: flex; gap: 3px; align-items: flex-end; height: 30px; margin-top: 7px; }
-  .minicurve b { flex: 1; border-radius: 3px 3px 2px 2px; }
   .chips2 { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .tplchip { font-size: 8.5px; font-weight: 700; border-radius: 999px; padding: 3px 9px; background: rgba(43, 33, 24, 0.05); color: #6E6257; }
+  .tplchip.star { background: rgba(224, 85, 53, 0.12); color: #A84A26; }
 
-  .edhero.warn { background: linear-gradient(140deg, #FBEBCB, #FFFFFF 75%); }
-  .daytabs button .rdot { position: absolute; top: 3px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: #C4634B; }
   .dbrow { padding: 6px 0; }
   .dbrow + .dbrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
   .dbbar { height: 8px; border-radius: 4px; background: rgba(43, 33, 24, 0.07); overflow: hidden; margin-top: 4px; }
@@ -140,6 +311,13 @@
 
   details.colcard summary { list-style: none; cursor: pointer; }
   details.colcard summary::-webkit-details-marker { display: none; }
+
+  /* riport ív-sávok */
+  .arcbars { display: flex; gap: 4px; align-items: flex-end; height: 56px; }
+  .arcbars b { flex: 1; border-radius: 4px 4px 2px 2px; background: linear-gradient(180deg, #FF9A78, #E05535); }
+  .arclbl { display: flex; gap: 4px; margin-top: 4px; }
+  .arclbl span { flex: 1; text-align: center; font-size: 6.5px; font-weight: 700; color: #A2958A; }
+  .quoteb { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 10.5px; border-left: 2px solid #FF6B4A; padding-left: 10px; color: #6E6257; }
 
   .bsheet-back {
     position: absolute; inset: 0; z-index: 11; border-radius: 42px;
@@ -171,13 +349,17 @@
   .fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #6E6257; cursor: pointer; font-family: inherit; }
   .fchip.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
   .chiprow { display: flex; gap: 6px; flex-wrap: wrap; }
-  .arcbars.solid b { opacity: 1; }
   .selmark { display: none; font-size: 13px; flex: none; color: #A2958A; }
   .selmode .selmark { display: block; }
   .runcard.sel { border: 1.5px solid #FF6B4A; }
   .runcard.sel .selmark { color: #A84A26; }
 
-  @media (prefers-reduced-motion: reduce) { .livedot { animation: none; } .bsheet, .bsheet-back { transition: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .livedot { animation: none; }
+    .bsheet, .bsheet-back { transition: none; }
+    .wdots i, .play .wdots i { transform: scaleX(1); animation: none; }
+    .genwait .orb { animation: none; }
+  }
   /* B-döntés: 5 tab + lebegő logolás-FAB */
   .tabbar.five { padding: 8px 10px; }
   .floatfab { position: absolute; right: 14px; bottom: 88px; width: 50px; height: 50px; border-radius: 50%;
@@ -188,12 +370,13 @@
 </style>
 
 <div class="wrap">
-  <p class="eyebrow">Mezo · oldalépítés · Edzés / Mezociklus mélymerülés</p>
+  <p class="eyebrow">Mezo · oldalépítés · Edzés / Mezociklus mélymerülés · 2. kör</p>
   <h1>Mezociklus</h1>
-  <p class="lede">A teljes mezociklus-funkcionalitás az új nyelven: <strong>hub</strong> (aktív futam,
-  történet, sablonok) → <strong>Volumen</strong> (MEV/MAV/MRV provenance) → <strong>5 lépéses
-  AI-wizard</strong> (tappolható fázis-görbe, fókusz-tierek, program-editor) → <strong>riport</strong>.
-  A wizard végigjátszható, a fázis-sávok cikleznek, az Emphasize-plafon él.</p>
+  <p class="lede">Az egy-modelles újratervezés: <strong>egyetlen Hypertrophy blokk</strong>, tökéletesre
+  csiszolva. A wizard 5 lépésből <strong>3 lesz</strong> (Mikor és miért → Fókusz → Program), a split és a
+  fázisgörbe a napszámból + a MEV/MAV/MRV modellből <strong>magától áll össze</strong>, a gyakorlatokat a
+  szabadszöveges célod alapján Gemini választja a determinisztikus keretekbe. A „szet-büdzsé %" megszűnt —
+  minden izom <strong>jelenlegi → plafon</strong> sávot mutat, és az Emphasize végre a legtöbbet kapja.</p>
 
   <div class="stage">
     <div class="phone"><div class="screen" id="scr">
@@ -208,37 +391,43 @@
         </div>
 
         <div class="dp-panel on" id="panel">
-          <!-- AKTÍV FUTAM HERO -->
-          <div class="float3d hero rise" style="--d:0ms;background:linear-gradient(140deg,#FFE7DC,#FFFFFF 70%);">
+          <!-- AKTÍV FUTAM HERO — kompakt, koppintva a run-oldalra visz -->
+          <div class="float3d hero rise" style="--d:0ms;background:linear-gradient(140deg,#FFE7DC,#FFFFFF 70%);cursor:pointer;" data-page="page-run" role="button" tabindex="0" aria-label="Aktív mezociklus megnyitása">
             <div class="mrow">
               <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-meso"/></svg>
               <div class="grow">
-                <div class="p-eyebrow" style="color:#A84A26;">Aktív · Week 3/5</div>
-                <span class="big" style="font-size:22px;">Hipertrófia blokk</span>
+                <div class="p-eyebrow" style="color:#A84A26;">Aktív · 3/6 hét</div>
+                <span class="big" style="font-size:22px;">Hypertrophy · Ősz</span>
               </div>
+              <span class="phchip">Rámpa</span>
+              <span class="mut" style="font-size:14px;">›</span>
             </div>
-            <div class="minicurve">
-              <b style="height:34%;background:#B9D3A8;"></b>
-              <b style="height:34%;background:#B9D3A8;"></b>
-              <b style="height:62%;background:linear-gradient(180deg,#FFD979,#C9962E);box-shadow:0 0 8px rgba(201,150,46,.5);"></b>
-              <b style="height:62%;background:#FF9A78;"></b>
-              <b style="height:100%;background:#E05535;"></b>
-              <b style="height:20%;background:#E5C46B;"></b>
+            <div class="wdots">
+              <i class="done" style="--d:100ms;"></i>
+              <i class="done" style="--d:160ms;"></i>
+              <i class="now" style="--d:220ms;"></i>
+              <i style="--d:280ms;"></i>
+              <i style="--d:340ms;"></i>
+              <i class="dl" style="--d:400ms;"></i>
             </div>
-            <div class="mrow" style="margin-top:4px;">
-              <span class="mut grow" style="font-size:8.5px;">MEV · MEV · <b style="color:#A8801F;">MAV · most</b> · MAV · MRV · Deload</span>
-              <span class="mut" style="font-size:8.5px;">Vége · okt 2</span>
+            <div class="mrow" style="margin-top:3px;">
+              <span class="mut grow" style="font-size:8.5px;">W3 · a csúcs a W5 · utána deload</span>
+              <span class="mut" style="font-size:8.5px;">Ma · Sze · Lower</span>
             </div>
-            <div class="chips2">
-              <button class="ghost" style="color:#A84A26;" id="openclose">Meso lezárása</button>
+            <div class="chips2" style="margin-top:7px;">
+              <span class="tplchip star">Hát 16→22 ▲</span>
+              <span class="tplchip star">Váll 14→22 ▲</span>
+              <span class="tplchip">Mell 10 · tart</span>
+              <span class="tplchip">Comb 12→14 ▲</span>
+              <span class="tplchip">Farizom 6</span>
             </div>
           </div>
 
           <div class="mosaic">
-            <div class="tile t-train rise" style="--d:80ms;" data-page="page-vol" role="button" tabindex="0" aria-label="Volumen">
-              <div class="p-eyebrow" style="color:#A84A26;">Volumen</div>
+            <div class="tile t-train rise" style="--d:80ms;" data-page="page-week" role="button" tabindex="0" aria-label="Heti vizsgálat">
+              <div class="p-eyebrow" style="color:#A84A26;">Heti vizsgálat</div>
               <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-meso"/></svg></div>
-              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">W3 · élő rendszer</div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">W3 · 58 szett</div>
             </div>
             <div class="tile t-vital rise" style="--d:120ms;" data-page="page-hist" role="button" tabindex="0" aria-label="Történet">
               <div class="p-eyebrow">Történet</div>
@@ -253,11 +442,89 @@
             <div class="tile t-kreed rise" style="--d:200ms;" data-page="page-wizard" role="button" tabindex="0" aria-label="Új blokk tervezése">
               <div class="p-eyebrow" style="color:#A84A26;">Új blokk</div>
               <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg></div>
-              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">AI-tervezővel ›</div>
+              <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;">3 lépés · AI ›</div>
             </div>
           </div>
         </div>
 
+      </div>
+
+      <!-- ============ AKTÍV RUN — státusz-first, szerkesztés egy szinttel lejjebb ============ -->
+      <div class="page p-coral" id="page-run">
+        <div class="page-head"><button class="backbtn" data-back="page-run">‹ Mezociklus</button></div>
+        <div class="page-hero" style="padding-bottom:8px;">
+          <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-meso"/></svg>
+          <div class="nm">Hypertrophy · Ősz</div>
+          <div class="sb">Aktív · 3/6 hét · Rámpa · vége okt 12</div>
+        </div>
+        <div class="page-body">
+          <div class="vcard rise" style="--d:30ms;padding:10px 12px;">
+            <div class="mrow"><div class="p-eyebrow grow">A blokk íve</div><span class="phchip">Rámpa</span></div>
+            <div class="wdots">
+              <i class="done" style="--d:80ms;"></i>
+              <i class="done" style="--d:140ms;"></i>
+              <i class="now" style="--d:200ms;"></i>
+              <i style="--d:260ms;"></i>
+              <i style="--d:320ms;"></i>
+              <i class="dl" style="--d:380ms;"></i>
+            </div>
+            <div class="mrow" style="margin-top:3px;"><span class="mut grow" style="font-size:8.5px;">W1 · W2 · <b style="color:#A8801F;">W3 · most</b> · W4 · W5 csúcs · deload</span></div>
+          </div>
+          <div class="coach rise" style="--d:60ms;margin-top:0;margin-bottom:9px;"><span class="dot"></span><span>A mell a múlt héten grindelt (RIR-rés), ezért most tartjuk a 10 szettet — a rámpa folytatódik, amint visszaáll a tempó.</span></div>
+          <div class="mosaic" style="margin-bottom:4px;">
+            <div class="tile t-train rise" style="--d:90ms;min-height:0;" data-page="page-week" role="button" tabindex="0" aria-label="Heti vizsgálat">
+              <div class="mrow"><div class="p-eyebrow grow" style="color:#A84A26;">Heti vizsgálat</div><span class="mut" style="font-size:11px;">›</span></div>
+              <div class="wmini" id="runmini"></div>
+              <div class="mut" style="font-size:9px;font-weight:600;" id="runminitxt">58 szett · 3 rámpázik</div>
+            </div>
+            <div class="tile t-stack rise" style="--d:120ms;min-height:0;cursor:default;">
+              <div class="mrow"><div class="p-eyebrow grow" style="color:#4E6B42;">Hétfőn jön</div><span class="livedot"></span></div>
+              <div class="chips2" style="margin-top:6px;gap:4px;">
+                <span class="tplchip" style="background:rgba(110,139,94,0.14);color:#4E6B42;">Hát +2</span>
+                <span class="tplchip" style="background:rgba(110,139,94,0.14);color:#4E6B42;">Váll +2</span>
+                <span class="tplchip" style="background:rgba(110,139,94,0.14);color:#4E6B42;">Comb +2</span>
+                <span class="tplchip">Mell tart</span>
+              </div>
+              <div class="mut" style="font-size:8.5px;margin-top:6px;">a heti görgetés hajnalban fut</div>
+            </div>
+          </div>
+          <div class="p-eyebrow rise" style="--d:120ms;padding:6px 2px 5px;">A heted · koppints egy napra a szerkesztéshez</div>
+          <div class="daymosaic rise" style="--d:150ms;" id="runmosaic"></div>
+          <div class="chips2 rise" style="--d:230ms;margin-top:10px;">
+            <button class="ghost" style="color:#A84A26;" id="openclose">Meso lezárása</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ HETI VIZSGÁLAT ============ -->
+      <div class="page p-coral" id="page-week">
+        <div class="page-head"><button class="backbtn" data-back="page-week">‹ A blokkod</button></div>
+        <div class="page-hero">
+          <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-meso"/></svg>
+          <div class="bignum" id="wkbig">58</div>
+          <div class="nm">Heti vizsgálat · 3. hét</div>
+          <div class="sb" id="wksub">szett ezen a héten · +8 a múlt héthez képest</div>
+        </div>
+        <div class="page-body">
+          <div class="statstrip rise" style="--d:30ms;margin-bottom:10px;" id="wkstats"></div>
+          <div class="livebanner rise" style="--d:60ms;">
+            <span class="livedot"></span>
+            <div class="grow">
+              <div style="font-size:10px;font-weight:700;color:#4E6B42;">Élő rendszer · a következő görgetés hétfő hajnal</div>
+              <div class="mut" style="font-size:8.5px;">Hát +2 · Váll +2 · Comb +2 · Mell tart (grind) · Farizom MV-n</div>
+            </div>
+          </div>
+          <div class="mosaic" id="weekmosaic"></div>
+          <div class="coach rise" style="--d:420ms;margin-top:9px;"><span class="dot"></span><span>A hát és a váll a csúcshéten (W5) 20 szettig jut — a plafon 22, de a session-cap miatt itt megállunk. A mell grindje elmúlt, jövő héten újra +2.</span></div>
+          <p class="habnote">Koppints egy izomra a részletekért: sáv, blokk-ív, melyik napon és gyakorlatban dolgozik, levezetés (baseline → fókusz-sáv → rád szabva → eredő), előző blokk. Piros itt sincs: a tartás is döntés, nem hiba.</p>
+        </div>
+      </div>
+
+      <!-- ============ IZOM-RÉSZLET (a Heti vizsgálatból) ============ -->
+      <div class="page" id="page-muscle">
+        <div class="page-head"><button class="backbtn" data-back="page-muscle">‹ Heti vizsgálat</button></div>
+        <div class="page-hero" id="mhero"></div>
+        <div class="page-body" id="mbody"></div>
       </div>
 
       <!-- ============ TÖRTÉNET ============ -->
@@ -278,8 +545,8 @@
               <span class="selmark">○</span>
               <div class="grow">
                 <div class="p-eyebrow">Lezárva · jún 28</div>
-                <div style="font-size:12.5px;font-weight:700;">Erő blokk</div>
-                <div class="mut" style="font-size:9px;">7 hét · adherencia 92%</div>
+                <div style="font-size:12.5px;font-weight:700;">Hypertrophy · Nyár</div>
+                <div class="mut" style="font-size:9px;">6 hét · adherencia 92% · fókusz: Hát + Váll</div>
               </div>
               <span class="bpill okp">riport</span>
             </div>
@@ -290,15 +557,15 @@
               <span class="selmark">○</span>
               <div class="grow">
                 <div class="p-eyebrow">Lezárva · ápr 18</div>
-                <div style="font-size:12.5px;font-weight:700;">Alap hipertrófia</div>
-                <div class="mut" style="font-size:9px;">6 hét · adherencia 88%</div>
+                <div style="font-size:12.5px;font-weight:700;">Erő blokk <span class="tplchip" style="font-size:7.5px;">régi modell</span></div>
+                <div class="mut" style="font-size:9px;">7 hét · adherencia 88% · olvasható múlt</div>
               </div>
               <span class="mut" style="font-size:9px;">nincs riport</span>
             </div>
           </div>
           <div class="mut" style="font-size:9px;display:none;" id="cmphint">Válassz két lezárt futamot (0/2).</div>
           <button class="cta" id="opencmp" style="display:none;width:100%;padding:8px 0;" data-page="page-compare">Összevetés megnyitása</button>
-          <p class="habnote">Futam-kártya → riport. Összevetés módban a kártya kijelölhető (max 2), a footer-akciók félreállnak.</p>
+          <p class="habnote">A régi típus-címkék (Erő, Sport…) sima szöveggé váltak — a múlt olvasható marad, de új blokk már csak az egy Hypertrophy modellel indul.</p>
         </div>
       </div>
 
@@ -315,9 +582,15 @@
             <div class="mrow">
               <div class="grow">
                 <div class="p-eyebrow">Sablon · 3× futtatva</div>
-                <div style="font-size:12.5px;font-weight:700;">Hipertrófia · 5 hetes</div>
-                <div class="mut" style="font-size:9px;">Pull / Push / Legs · RP · 5×/hét</div>
+                <div style="font-size:12.5px;font-weight:700;">Hypertrophy · 6 hetes</div>
               </div>
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-edzes"/></svg>
+            </div>
+            <div class="chips2" style="margin-top:6px;">
+              <span class="tplchip">4 nap · Upper / Lower</span>
+              <span class="tplchip star">★ Hát</span>
+              <span class="tplchip star">★ Váll</span>
+              <span class="tplchip">5 + 1 deload</span>
             </div>
             <div class="chips2">
               <button class="cta open-start" style="padding:4px 12px;font-size:9.5px;">Indítás</button>
@@ -329,215 +602,103 @@
           <div class="runcard tpl rise" style="--d:100ms;">
             <div class="mrow">
               <div class="grow">
-                <div class="p-eyebrow">Sablon · 1× futtatva</div>
-                <div style="font-size:12.5px;font-weight:700;">Erő · 4 hetes</div>
-                <div class="mut" style="font-size:9px;">Upper / Lower · Linear · 4×/hét</div>
+                <div class="p-eyebrow">Sablon · 1× futtatva · régi modell</div>
+                <div style="font-size:12.5px;font-weight:700;">Shoulder &amp; Back Mezo #1</div>
               </div>
+              <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-suly"/></svg>
+            </div>
+            <div class="chips2" style="margin-top:6px;">
+              <span class="tplchip">5 nap · PPL-variáns</span>
+              <span class="tplchip" style="border:1px dashed rgba(43,33,24,0.25);background:transparent;">indításkor az új modellre konvertálódik</span>
             </div>
             <div class="chips2">
               <button class="cta open-start" style="padding:4px 12px;font-size:9.5px;">Indítás</button>
               <button class="ghost" style="padding:4px 10px;font-size:9.5px;">Szerkesztés</button>
             </div>
           </div>
-          <button class="ghost rise" style="--d:160ms;width:100%;padding:10px 0;border:1.5px dashed rgba(255,107,74,0.5);background:transparent;color:#A84A26;" data-page="page-wizard">＋ Új sablon tervezése</button>
-          <p class="habnote">A sablon időtlen recept — az indítás lepecsételi futammá, így a későbbi sablon-szerkesztés sosem hamisítja meg a történetet.</p>
+          <button class="ghost rise" style="--d:160ms;width:100%;padding:10px 0;border:1.5px dashed rgba(255,107,74,0.5);background:transparent;color:#A84A26;" data-page="page-wizard">＋ Új blokk tervezése</button>
+          <p class="habnote">A sablon időtlen recept — az indítás lepecsételi futammá. Régi sablon indításakor a MEV/MAV/MRV sávok az új modell szerint seedelődnek.</p>
         </div>
       </div>
 
-      <!-- ============ VOLUMEN (provenance) ============ -->
-      <div class="page p-coral" id="page-vol">
-        <div class="page-head"><button class="backbtn" data-back="page-vol">‹ Mezociklus</button></div>
-        <div class="page-hero">
-          <svg width="48" height="48" viewBox="0 0 100 100"><use href="#i-meso"/></svg>
-          <div class="bignum">W3</div>
-          <div class="nm">Volumen · élő rendszer</div>
-        </div>
-        <div class="page-body">
-          <div class="livebanner rise" style="--d:40ms;">
-            <span class="livedot"></span>
-            <div class="grow">
-              <div style="font-size:10px;font-weight:700;color:#4E6B42;">Élő rendszer · 4 napja frissítve</div>
-              <div class="mut" style="font-size:8.5px;">Következő recompute: hétfő hajnal · Hát: +2 szett · Mell: tartás</div>
-            </div>
-          </div>
-          <div class="qcard rise" style="--d:100ms;">
-            <div style="font-size:11px;font-weight:700;">Honnan jönnek a számok?</div>
-            <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:2px;">RP-baseline-ról indulnak (intermediate), majd rád szabjuk: niggle, minta, korábbi meso-retro. Tappolj egy izomcsoportra a levezetésért.</div>
-          </div>
-
-          <div class="vbwrap rise" style="--d:160ms;" id="vb-back" role="button" tabindex="0">
-            <div class="mrow">
-              <span class="mpill" style="background:rgba(224,85,53,0.12);color:#A84A26;">Hát</span>
-              <span class="mut grow" style="font-size:9px;">Emphasize · plafon MRV</span>
-              <span style="font-size:11px;font-weight:700;">14 szett · most</span>
-            </div>
-            <div class="vb">
-              <span class="z1" style="left:0;right:0;"></span>
-              <span class="z2" style="left:45%;width:28%;"></span>
-              <span class="z3" style="left:73%;width:27%;"></span>
-              <span class="hl" style="left:45%;"></span><span class="hl" style="left:73%;"></span>
-              <span class="mk" style="left:62%;"></span>
-            </div>
-            <div class="vcap"><span>0</span><span>MEV 10</span><span>MAV 16</span><span>MRV 22</span></div>
-            <div class="vbody">
-              <div class="stg">01 · Baseline</div>
-              <div class="mut" style="font-size:9.5px;">RP guidelines · intermediate — MEV 10 · MAV 16 · MRV 22</div>
-              <div class="stg">02 · Daniel-személyre szabás</div>
-              <div class="mut" style="font-size:9.5px;">✨ Minta: húzó napokon jó a recovery → MAV +1 &nbsp;·&nbsp; ⚠ Váll-niggle: evezés-variánsok előnyben</div>
-              <div class="stg">03 · Eredő · most</div>
-              <div class="mut" style="font-size:9.5px;">MEV 10 · MAV 17 · MRV 22 — jelenleg 14 szett, produktív hét után <b style="color:#4E6B42;">+2 szett</b> jön</div>
-              <div class="mrow" style="margin-top:7px;">
-                <span class="mut grow" style="font-size:8.5px;">Confidence 65%</span>
-                <button class="ghost" style="padding:3px 10px;font-size:8.5px;">🔧 Felülír</button>
-              </div>
-              <div class="confbar"><div style="width:65%;"></div></div>
-            </div>
-          </div>
-
-          <div class="vbwrap rise" style="--d:220ms;">
-            <div class="mrow">
-              <span class="mpill" style="background:rgba(196,111,160,0.14);color:#8E3F6F;">Mell</span>
-              <span class="mut grow" style="font-size:9px;">Grow · plafon MAV</span>
-              <span style="font-size:11px;font-weight:700;">10 szett · most</span>
-            </div>
-            <div class="vb">
-              <span class="z1" style="left:0;right:0;"></span>
-              <span class="z2" style="left:40%;width:30%;"></span>
-              <span class="z3" style="left:70%;width:30%;"></span>
-              <span class="hl" style="left:40%;"></span><span class="hl" style="left:70%;"></span>
-              <span class="mk" style="left:50%;"></span>
-            </div>
-            <div class="vcap"><span>0</span><span>MEV 8</span><span>MAV 14</span><span>MRV 20</span></div>
-          </div>
-
-          <div class="aicard rise" style="--d:280ms;">
-            <div class="t">✨ Mezo · javaslat</div>
-            <div class="x">A hát-hangsúly jól halad — a W4 csúcshéten 16 szett jön. A láb Grow-tempóban marad; ha a röpi-terhelés csökken, érdemes lehet Emphasize-re váltani a következő blokkban.</div>
-          </div>
-          <p class="habnote">A módosítás a következő heti görgetésnél lép életbe. A baseline sosem íródik felül — csak igazítások rétegződnek rá.</p>
-        </div>
-      </div>
-
-      <!-- ============ WIZARD ============ -->
+      <!-- ============ WIZARD · 3 LÉPÉS ============ -->
       <div class="page p-gold" id="page-wizard">
         <div class="page-head">
-          <button class="backbtn" data-back="page-wizard">‹ Mesociklusok</button>
+          <button class="backbtn" data-back="page-wizard">‹ Mezociklus</button>
           <div class="grow"></div>
-          <span class="stepct" id="stepct">01 / 05 · Cél</span>
+          <span class="stepct" id="stepct">01 / 03 · Mikor és miért</span>
         </div>
-        <div style="padding:4px 14px 0;"><div class="wprog" id="wprog"><b class="f"></b><b></b><b></b><b></b><b></b></div></div>
+        <div style="padding:4px 14px 0;"><div class="wprog" id="wprog"><b class="f"></b><b></b><b></b></div></div>
         <div class="page-body" id="wbody">
 
-          <!-- STEP 0 · CÉL -->
+          <!-- STEP 0 · MIKOR ÉS MIÉRT — szekció-kártyák, rise stagger -->
           <div class="wstep on" data-step="0">
-            <div class="nm" style="font-size:15px;font-weight:700;padding:6px 0 2px;">Mit szeretnénk építeni?</div>
-            <p class="mut" style="font-size:9.5px;margin-bottom:10px;">Most az a fontos, mit akarunk a következő blokkban. A többit kitaláljuk együtt.</p>
-            <div class="preset on" data-preset="hypertrophy" style="border-left-color:#E05535;">
-              <div class="mrow">
-                <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-edzes"/></svg>
-                <div class="grow"><div style="font-size:11.5px;font-weight:700;">Hypertrophy</div><div class="mut" style="font-size:9px;">Izomtömeg építés</div></div>
-                <span class="mut" style="font-size:9px;font-variant-numeric:tabular-nums;">6 hét</span>
+            <div class="nm" style="font-size:15px;font-weight:700;padding:6px 0 2px;">Mikor edzel — és miért?</div>
+            <p class="mut" style="font-size:9.5px;margin-bottom:10px;">Csak ennyit kérdezünk — a többit a modell és Mezo rakja össze.</p>
+
+            <div class="stepcard coralw rise" style="--d:40ms;">
+              <div class="mrow" style="margin-bottom:8px;">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-edzes"/></svg>
+                <div class="p-eyebrow grow" style="color:#A84A26;">Edzésnapok</div>
+                <span class="mut" style="font-size:9px;font-weight:700;" id="daycnt">4/4</span>
               </div>
-              <div class="desc">Volumen-driven · MAV/MRV progresszió · klasszikus RP hypertrophy blokk</div>
+              <div class="dcgrid" id="dcgrid">
+                <button class="dct" data-n="2"><b>2</b><small>full body</small></button>
+                <button class="dct" data-n="3"><b>3</b><small>full body</small></button>
+                <button class="dct on" data-n="4"><b>4</b><small>upper/lower</small></button>
+                <button class="dct" data-n="5"><b>5</b><small>U/L + PPL</small></button>
+                <button class="dct" data-n="6"><b>6</b><small>PPL ×2</small></button>
+              </div>
+              <div class="daypick" id="daypick" style="margin-top:9px;">
+                <button data-d="H" class="on">H</button>
+                <button data-d="K">K</button>
+                <button data-d="Sze" class="on">Sze</button>
+                <button data-d="Cs">Cs</button>
+                <button data-d="P" class="on">P</button>
+                <button data-d="Szo" class="on">Szo</button>
+                <button data-d="V">V</button>
+              </div>
+              <div class="coach" style="margin-top:9px;"><span class="dot"></span><span id="splitline">4 nap → Upper / Lower · minden izom 2×/hét</span></div>
             </div>
-            <div class="preset" data-preset="strength" style="border-left-color:#5D4FA0;">
-              <div class="mrow">
-                <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-suly"/></svg>
-                <div class="grow"><div style="font-size:11.5px;font-weight:700;">Strength</div><div class="mut" style="font-size:9px;">1RM növelés</div></div>
-                <span class="mut" style="font-size:9px;">7 hét</span>
+
+            <div class="stepcard lavw rise" style="--d:110ms;">
+              <div class="mrow" style="margin-bottom:8px;">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-mezo"/></svg>
+                <div class="p-eyebrow grow" style="color:#5D4FA0;">A célod · opcionális</div>
               </div>
-              <div class="desc">Intenzitás-driven · 3-6 reps · alacsonyabb volumen · hosszabb pihenő</div>
+              <textarea rows="3" id="goaltext" placeholder="pl. röplabda szezon mellett, a vállam kímélve — de a hát és a váll nagyon jöhet"></textarea>
+              <div class="mut" style="font-size:8.5px;margin-top:6px;">Üresen is teljes program készül — a szöveg a gyakorlatválasztást és a napok hangolását befolyásolja.</div>
             </div>
-            <div class="preset" data-preset="sport" style="border-left-color:#8E3F6F;">
-              <div class="mrow">
-                <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#i-sport"/></svg>
-                <div class="grow"><div style="font-size:11.5px;font-weight:700;">Sport-specific</div><div class="mut" style="font-size:9px;">Volleyball-driven blokk</div></div>
-                <span class="mut" style="font-size:9px;">5 hét</span>
+
+            <div class="stepcard goldw rise" style="--d:180ms;">
+              <div class="mrow" style="margin-bottom:8px;">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#s-hajtas"/></svg>
+                <div class="p-eyebrow grow" style="color:#A8801F;">Ami magától megy</div>
               </div>
-              <div class="desc">Vertikális teljesítmény · vállstabilitás · plyo-integráció</div>
-            </div>
-            <div class="preset" data-preset="recovery" style="border-left-color:#4E6B42;">
-              <div class="mrow">
-                <svg width="26" height="26" viewBox="0 0 100 100" style="flex:none;"><use href="#s-piheno"/></svg>
-                <div class="grow"><div style="font-size:11.5px;font-weight:700;">Recovery</div><div class="mut" style="font-size:9px;">Niggle után · újraépítés</div></div>
-                <span class="mut" style="font-size:9px;">4 hét</span>
+              <div class="statstrip">
+                <div class="statcell"><b>5 + 1</b><small>rámpa + deload hét</small></div>
+                <div class="statcell"><b>+2</b><small>szett / hét / izom</small></div>
+                <div class="statcell"><b>~8</b><small>szett-plafon / edzés</small></div>
               </div>
-              <div class="desc">Isoláció-fokú · alacsony fatigue · niggle-aware substitúció</div>
+              <div class="mut" style="font-size:8.5px;margin-top:7px;">A Programban bármit átírhatsz — de e nélkül is kész, működő blokkot kapsz.</div>
             </div>
           </div>
 
-          <!-- STEP 1 · HOSSZ + FÁZISOK -->
+          <!-- STEP 1 · FÓKUSZ -->
           <div class="wstep" data-step="1">
-            <div class="nm" style="font-size:15px;font-weight:700;padding:6px 0 8px;">Mennyi időnk van?</div>
-            <div class="fld"><label>Mesociklus neve</label><input type="text" value="Hypertrophy · Ősz"></div>
-            <div class="fld">
-              <label>Hossz · <span id="weeksval" style="color:#A84A26;">6 hét</span></label>
-              <div class="segtab" id="weekseg">
-                <button>3</button><button>4</button><button>5</button><button class="on">6</button><button>7</button><button>8</button>
-              </div>
-            </div>
-            <div class="fld">
-              <div class="mrow" style="margin-bottom:4px;">
-                <label class="grow" style="margin:0;">Fázis görbe · tappold a hetet</label>
-                <button class="warmchip" id="phasereset">✨ Mezo reset</button>
-              </div>
-              <div class="vcard" style="padding:8px 10px;margin-bottom:0;">
-                <div class="phaseed" id="phaseed"></div>
-              </div>
-            </div>
-            <div class="aicard">
-              <div class="t">✨ Mezo javasolja</div>
-              <div class="x">6 hét a klasszikus RP block: 2 MEV ramp-up → 2 MAV progresszió → 1 MRV csúcs → 1 deload. A korábbi Hypertrophy 03-ban ezt 8/10-re értékeltük.</div>
-            </div>
-          </div>
-
-          <!-- STEP 2 · SPLIT + NAPOK -->
-          <div class="wstep" data-step="2">
-            <div class="nm" style="font-size:15px;font-weight:700;padding:6px 0 2px;">Hogyan osszuk be?</div>
-            <p class="mut" style="font-size:9.5px;margin-bottom:8px;">5×/hét a heti volleyball + gym mintád.</p>
-            <div class="splitcard on">
-              <div class="mrow">
-                <div class="grow"><div style="font-size:11px;font-weight:700;">Pull / Push / Legs</div><div class="mut" style="font-size:9px;">4/5/6×/hét</div></div>
-              </div>
-              <div class="star">★ Mezo ajánlja Hypertrophy-hez</div>
-            </div>
-            <div class="splitcard">
-              <div style="font-size:11px;font-weight:700;">Upper / Lower</div><div class="mut" style="font-size:9px;">3/4×/hét</div>
-            </div>
-            <div class="splitcard">
-              <div style="font-size:11px;font-weight:700;">Upper / Lower / Sport</div><div class="mut" style="font-size:9px;">4/5×/hét</div>
-            </div>
-            <div class="fld" style="margin-top:10px;">
-              <label>Edzések száma · hetente</label>
-              <div class="segtab"><button>3×</button><button>4×</button><button class="on">5×</button><button>6×</button></div>
-            </div>
-            <div class="fld">
-              <label>Melyik napokon? · <span style="color:#A84A26;">5/5</span></label>
-              <div class="segtab">
-                <button class="on">H</button><button class="on">K</button><button class="on">Sze</button><button>Cs</button><button class="on">P</button><button class="on">Szo</button><button>V</button>
-              </div>
-            </div>
-            <div class="aicard">
-              <div class="t">✨ Gyakorlatok · automatikusan</div>
-              <div class="x">A STIM/fatigue rangsor + niggle-aware substitúció + a korábbi mesók kedvencei alapján kitöltjük. Az 5. lépésben átnézzük, és bármit cserélhetsz.</div>
-            </div>
-          </div>
-
-          <!-- STEP 3 · FÓKUSZ -->
-          <div class="wstep" data-step="3">
             <div class="nm" style="font-size:15px;font-weight:700;padding:6px 0 2px;">Mire gyúr ez a blokk?</div>
-            <p class="mut" style="font-size:9.5px;margin-bottom:8px;">Válassz 1–2 hangsúlyt — a többi magától nő, a Maintain szinten tart.</p>
+            <p class="mut" style="font-size:9.5px;margin-bottom:8px;">Válassz max 2 hangsúlyt — az kapja a legtöbb szettet, és az nő a legmesszebb.</p>
             <div class="vcard" style="padding:4px 12px;">
               <div class="tierrow" data-group="back">
                 <span class="mpill" style="background:rgba(224,85,53,0.12);color:#A84A26;">Hát</span>
                 <div class="segtab"><button class="te on">Emphasize</button><button class="tg">Grow</button><button class="tm">Maintain</button></div>
               </div>
-              <div class="tierrow" data-group="chest">
-                <span class="mpill" style="background:rgba(196,111,160,0.14);color:#8E3F6F;">Mell</span>
-                <div class="segtab"><button class="te">Emphasize</button><button class="tg on">Grow</button><button class="tm">Maintain</button></div>
-              </div>
               <div class="tierrow" data-group="shoulder">
                 <span class="mpill" style="background:rgba(201,150,46,0.16);color:#A8801F;">Váll</span>
+                <div class="segtab"><button class="te on">Emphasize</button><button class="tg">Grow</button><button class="tm">Maintain</button></div>
+              </div>
+              <div class="tierrow" data-group="chest">
+                <span class="mpill" style="background:rgba(196,111,160,0.14);color:#8E3F6F;">Mell</span>
                 <div class="segtab"><button class="te">Emphasize</button><button class="tg on">Grow</button><button class="tm">Maintain</button></div>
               </div>
               <div class="tierrow" data-group="quad">
@@ -549,156 +710,68 @@
                 <div class="segtab"><button class="te">Emphasize</button><button class="tg">Grow</button><button class="tm on">Maintain</button></div>
               </div>
             </div>
+            <div class="statstrip" style="margin-top:10px;">
+              <div class="statcell"><b id="w1total">56</b><small>szett · 1. hét</small></div>
+              <div class="statcell"><b id="pktotal">78</b><small>szett · csúcshét</small></div>
+            </div>
             <div class="aicard">
-              <div class="t">✨ Tier-szemantika</div>
-              <div class="x">Emphasize → MRV-ig ramppel · Grow → MAV-plafon · Maintain → MEV-en tart. Max 2 Emphasize — a plafon a többi sor gombját tiltja, nem rejti.</div>
+              <div class="t">✨ A sávok</div>
+              <div class="x">Emphasize → MEV+2-ről indul, MRV-ig rámpázik · Grow → MEV-ről MAV-ig · Maintain → MV-n tart, nem rámpázik. A tier most tényleg a szetszámot vezérli — nem csak egy címke.</div>
             </div>
           </div>
 
-          <!-- STEP 4 · PROGRAM -->
-          <div class="wstep" data-step="4">
+          <!-- STEP 2 · PROGRAM -->
+          <div class="wstep" data-step="2">
+            <div class="genwait" id="genwait">
+              <div class="orb"></div>
+              <div class="gt">Mezo összerakja a blokkod…</div>
+              <div class="gs">determinisztikus váz + a célod szerinti gyakorlatok</div>
+            </div>
+            <div class="genbody" id="genbody">
             <div class="edhero" style="margin-top:4px;">
-              <div class="p-eyebrow" style="color:#A84A26;">A te blokkod · AI-generated</div>
-              <div style="font-size:16px;font-weight:700;">Hypertrophy · Ősz</div>
-              <div class="statstrip" style="margin-top:8px;">
-                <div class="statcell"><b>6</b><small>hét</small></div>
-                <div class="statcell"><b>5×</b><small>napok</small></div>
-                <div class="statcell"><b>24</b><small>gyakorlat</small></div>
-                <div class="statcell"><b>78</b><small>szett</small></div>
-              </div>
-            </div>
-            <div class="aicard" style="margin-top:8px;">
-              <div class="t">✨ Mezo · ezt raktam össze</div>
-              <div class="x">STIM/fatigue rangsor + jobb váll niggle + a hypertrophy-hoz illő set/rep séma. Bármit kicserélhetsz, rendezhetsz, hozzáadhatsz.</div>
-            </div>
-
-            <div class="daytabs" style="margin-top:10px;" id="daytabs">
-              <button class="on">H<small>Pull</small></button>
-              <button>K<small>Push</small><span class="rdot"></span></button>
-              <button>Sze<small>Legs</small></button>
-              <button class="offd">Cs<small>—</small></button>
-              <button>P<small>Pull</small></button>
-              <button>Szo<small>Push</small><span class="rdot"></span></button>
-              <button class="offd">V<small>—</small></button>
-            </div>
-            <div class="edhero" id="edhero2">
               <div class="mrow">
-                <div class="grow">
-                  <div class="p-eyebrow" id="edday">Pull nap</div>
-                  <span class="big" style="font-size:26px;" id="edsets">14</span> <span class="mut" style="font-size:9px;" id="edmins">szett ma · ~62 perc</span>
+                <div class="p-eyebrow grow" style="color:#A84A26;">A te blokkod</div>
+                <button class="ghost" style="padding:3px 10px;font-size:8.5px;" id="regen">↺ Újragenerálás</button>
+              </div>
+              <input type="text" value="Hypertrophy · Ősz" style="width:100%;border:none;background:transparent;font-family:inherit;font-size:16px;font-weight:700;padding:2px 0;color:inherit;">
+              <div class="statstrip" style="margin-top:6px;">
+                <div class="statcell"><b id="stweeks">6</b><small>hét</small></div>
+                <div class="statcell"><b id="stdays">4×</b><small>nap/hét</small></div>
+                <div class="statcell"><b id="stw1">56</b><small>szett · W1</small></div>
+                <div class="statcell"><b id="stpk">78</b><small>szett · csúcs</small></div>
+              </div>
+              <div class="coach" style="margin-top:7px;"><span class="dot"></span><span id="rationale">A röpi mellé váll-kímélő húzó-variánsok, a hát + váll hangsúly a két Upper napra oszlik, a láb robbanékonyság-barát.</span></div>
+              <details style="margin-top:6px;">
+                <summary style="list-style:none;cursor:pointer;font-size:8.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#A2958A;">Hossz · <span id="weeksval" style="color:#A84A26;">6 hét = 5 rámpa + 1 deload</span> ▾</summary>
+                <div class="segtab" id="weekseg" style="margin-top:6px;">
+                  <button>4</button><button>5</button><button class="on">6</button><button>7</button><button>8</button>
                 </div>
-                <span class="bpill okp" id="edpill">✓ kereten belül</span>
-              </div>
-              <div class="mut" style="font-size:8.5px;margin-top:4px;">Heti terhelés: 78 szett · 5 edzésnap</div>
+              </details>
             </div>
 
-            <div class="vcard" style="padding:10px 12px;">
-              <div class="p-eyebrow" style="margin-bottom:2px;">Ma · izmonként</div>
-              <div id="daybreak"></div>
-            </div>
+            <div class="p-eyebrow" style="padding:8px 2px 5px;">A heted · koppints egy napra a gyakorlatokért</div>
+            <div class="daymosaic" id="daymosaic"></div>
 
-            <div class="vcard" style="padding:10px 12px;">
-              <div class="p-eyebrow" style="margin-bottom:6px;">Heti szet-büdzsé</div>
-              <div class="mrow" style="flex-wrap:wrap;gap:5px;">
-                <span class="bpill okp">Hát · Emphasize · 84%</span>
-                <span class="bpill nearp">Bicepsz 92%</span>
-                <span class="bpill okp">Mell 61%</span>
-                <span class="bpill underp">↓ Vádli 38%</span>
-                <span class="bpill" style="background:rgba(43,33,24,0.06);color:#6E6257;">Trapéz · 3 szett</span>
-              </div>
-              <div class="mrow" style="margin-top:9px;">
-                <span class="mut grow" style="font-size:9px;font-weight:700;">Hát</span>
-                <span class="mut" style="font-size:8.5px;">13/16 szett (81%) · 8🔥+5🌿</span>
-              </div>
-              <div class="ztrack"><span class="zone" style="left:58%;right:0;"></span><span class="fillz" style="width:81%;"></span></div>
-              <div style="font-size:8.5px;color:#4E6B42;font-weight:600;margin-top:4px;">✓ optimális zónában</div>
-              <div style="font-size:8.5px;color:#A84A26;font-weight:600;margin-top:8px;">⚠ Mell: 12 szett egy edzésen (K) — 11 fölött nincs kimutatható plusz, oszd el két napra!</div>
-              <div style="font-size:8.5px;color:#8B7E6F;margin-top:4px;">↓ Vádli: 4 szett — a minimum-hatásos mennyiség (MEV ≈ 6) alatt. Ennyi inkább szinten tart; +2 szett már növekedést hozna (pl. Sze).</div>
-              <div class="habnote" style="margin-top:8px;">Csak a fő izom szettjei számítanak — a szinergista munka nem. A % a tier-célhoz mér (Maintain → MEV · Grow → MAV · Emphasize → MRV).</div>
+            <div class="vcard" style="padding:10px 12px;margin-top:9px;">
+              <div class="p-eyebrow" style="margin-bottom:4px;">Heti szetek · izmonként</div>
+              <div id="bandlist"></div>
+              <div class="habnote" style="margin-top:6px;">1. hét → plafon. Az Emphasize izmok kapják a legtöbbet — a sáv mutatja, honnan hová tart a blokk.</div>
             </div>
 
             <details class="vcard colcard" style="padding:10px 12px;">
               <summary class="mrow">
-                <span class="p-eyebrow grow">Csúcshét · időbecslés</span>
-                <span class="bpill nearp">1 nap</span>
+                <span class="p-eyebrow grow">Csúcshét · terhelés-ellenőrzés</span>
+                <span class="bpill nearp" id="pkpill">1 észrevétel</span>
               </summary>
-              <div class="mut" style="font-size:9.5px;margin-top:8px;">Szo: csúcshéten ~96 perc — vegyél el, vagy tedd át. A produktív sáv 45–90 perc: 20 perc túl rövid az érdemi ingerhez, 3 óra már kontraproduktív.</div>
+              <div class="mut" style="font-size:9.5px;margin-top:8px;" id="pknote">Csúcshéten a Hát 11 szett/edzés fölé menne — a modell ezért a W5-ben 3 húzó-blokkra osztja (a Szo Upper kap egy rövid hát-modult). Nem kell tenned semmit.</div>
             </details>
 
-            <details class="vcard colcard" style="padding:10px 12px;">
-              <summary class="mrow">
-                <span class="p-eyebrow grow">Struktúra</span>
-                <span class="bpill nearp">1 észrevétel</span>
-              </summary>
-              <div style="font-size:10px;font-weight:700;margin-top:8px;">Rep-zóna egyhangúság · Hát</div>
-              <div class="mut" style="font-size:9px;margin-top:2px;">A hát-szettek 85%-a a 8–10 zónában van. Az arany arány ~25% nehéz (5–10) · 50% közepes (10–20) · 25% könnyű (20–30 rep) — vegyíts a hiányzó zónákból.</div>
-            </details>
-
-            <div class="exrow open">
-              <div class="exhead" data-ex>
-                <div class="grow">
-                  <div class="nm2">Döntött evezés</div>
-                  <div class="mut" style="font-size:8.5px;">Hát · compound</div>
-                </div>
-                <span class="stychip fire" id="stychip">🔥 4×8–10</span>
-                <span class="ud"><button data-mv="-1" aria-label="Döntött evezés feljebb">▲</button><button data-mv="1" aria-label="Döntött evezés lejjebb">▼</button></span>
-                <span class="mut" style="font-size:11px;">▾</span>
-              </div>
-              <div class="exbody">
-                <div class="fvtoggle">
-                  <button class="fire on" data-fv="fire">🔥 Failure</button>
-                  <button class="leaf" data-fv="leaf">🌿 Volume</button>
-                </div>
-                <div class="stepgrid">
-                  <div class="stepbox"><div class="lbl2">Munkaszett</div>
-                    <div class="steprow"><button class="sbtn" data-st="sets" data-d="-1">−</button><span class="sval" id="v-sets">4</span><button class="sbtn" data-st="sets" data-d="1">＋</button></div>
-                  </div>
-                  <div class="stepbox"><div class="lbl2">Rep tartomány</div>
-                    <div class="steprow"><button class="sbtn" data-st="rep" data-d="-1">−</button><span class="sval" id="v-rep">8–10</span><button class="sbtn" data-st="rep" data-d="1">＋</button></div>
-                  </div>
-                  <div class="stepbox"><div class="lbl2">Kiinduló kg</div>
-                    <div class="steprow"><button class="sbtn" data-st="kg" data-d="-1">−</button><span class="sval" id="v-kg">auto</span><button class="sbtn" data-st="kg" data-d="1">＋</button></div>
-                  </div>
-                  <div class="stepbox"><div class="lbl2">Bemelegítő</div>
-                    <div class="steprow"><button class="sbtn" data-st="wu" data-d="-1">−</button><span class="sval" id="v-wu">1</span><button class="sbtn" data-st="wu" data-d="1">＋</button></div>
-                    <button class="warmchip" id="wusuggest">↺ javaslat: 2</button>
-                  </div>
-                </div>
-                <label class="chk"><input type="checkbox" checked> Számít a volumenbe</label>
-                <details class="findet">
-                  <summary>Finomhangolás ▾</summary>
-                  <div class="mut" style="font-size:9px;padding:4px 0;">RIR 1 · Rep min 8 · Rep max 10 — nyers steppelés itt.</div>
-                </details>
-                <button class="exdel">✕ Döntött evezés törlése</button>
-              </div>
-            </div>
-            <div class="exrow">
-              <div class="exhead" data-ex>
-                <div class="grow"><div class="nm2">Húzódzkodás</div><div class="mut" style="font-size:8.5px;">Hát · compound</div></div>
-                <span class="stychip fire">🔥 4×8–10</span>
-                <span class="ud"><button data-mv="-1" aria-label="Húzódzkodás feljebb">▲</button><button data-mv="1" aria-label="Húzódzkodás lejjebb">▼</button></span>
-                <span class="mut" style="font-size:11px;">▾</span>
-              </div>
-              <div class="exbody"><div class="mut" style="font-size:9.5px;padding:4px 0 8px;">Ugyanez az anatómia — egyszerre egy sor van nyitva.</div></div>
-            </div>
-            <div class="exrow" style="border-left-color:#C9962E;">
-              <div class="exhead" data-ex>
-                <div class="grow">
-                  <div class="nm2">Face pull</div>
-                  <div class="mut" style="font-size:8.5px;">Váll · isolation</div>
-                  <div style="font-size:8.5px;color:#A8801F;">⚠ váll-niggle: kímélő variáns választva</div>
-                </div>
-                <span class="stychip leaf">🌿 3×10–12</span>
-                <span class="ud"><button data-mv="-1" aria-label="Face pull feljebb">▲</button><button data-mv="1" aria-label="Face pull lejjebb">▼</button></span>
-                <span class="mut" style="font-size:11px;">▾</span>
-              </div>
-              <div class="exbody"><div class="mut" style="font-size:9.5px;padding:4px 0 8px;">A generátor niggle-aware cserét jelzett.</div></div>
-            </div>
-            <button class="ghost" id="addex" style="width:100%;padding:9px 0;border:1.5px dashed rgba(255,107,74,0.5);background:transparent;color:#A84A26;">＋ Gyakorlat hozzáadása</button>
+            
 
             <div class="wfoot">
-              <button class="cta" style="flex:1;padding:9px 0;" data-back="page-wizard">✓ Mentés + indítás · aug 27</button>
+              <button class="cta" style="flex:1;padding:9px 0;" data-back="page-wizard">✓ Mentés + indítás · szept 1</button>
               <button class="ghost" data-back="page-wizard">Mentés sablonként</button>
+            </div>
             </div>
           </div>
 
@@ -709,51 +782,100 @@
         </div>
       </div>
 
+      <!-- ============ NAP-OLDAL (Programból és a futó blokkból) ============ -->
+      <div class="page" id="page-day">
+        <div class="page-head"><button class="backbtn" data-back="page-day" id="daybackbtn">‹ Program</button></div>
+        <div class="page-hero" id="dayhero"></div>
+        <div class="page-body" id="daybody"></div>
+      </div>
+
       <!-- ============ RIPORT ============ -->
       <div class="page p-gold" id="page-report">
         <div class="page-head"><button class="backbtn" data-back="page-report">‹ Mezociklus</button></div>
         <div class="page-hero">
           <svg width="48" height="48" viewBox="0 0 100 100"><use href="#s-medal"/></svg>
           <div class="bignum">92%</div>
-          <div class="nm">Erő blokk · riport</div>
-          <div class="sb">Lezárva · jún 28 · 7 hét</div>
+          <div class="nm">Hypertrophy · Nyár · riport</div>
+          <div class="sb">Lezárva · jún 28 · 6 hét</div>
         </div>
         <div class="page-body">
           <div class="statstrip rise" style="--d:40ms;margin-bottom:10px;">
-            <div class="statcell"><b>26/28</b><small>edzés</small></div>
-            <div class="statcell"><b>7/7</b><small>hét</small></div>
+            <div class="statcell"><b>22/24</b><small>edzés</small></div>
+            <div class="statcell"><b>6/6</b><small>hét</small></div>
             <div class="statcell"><b>92%</b><small>teljesítés</small></div>
+          </div>
+          <div class="qcard rise" style="--d:70ms;">
+            <div class="p-eyebrow" style="margin-bottom:4px;">Ezt akartad</div>
+            <div class="quoteb">„röplabda szezon mellett, a vállam kímélve — a hát és a váll jöhet"</div>
+            <div class="mut" style="font-size:9px;margin-top:6px;">— és ez lett: a hát elérte a 20 szettet, váll-panasz nélkül zárult a blokk.</div>
           </div>
           <div class="vcard rise" style="--d:100ms;padding:10px 12px;">
             <div class="p-eyebrow" style="padding-bottom:2px;">Heti szettek · a blokk íve</div>
-            <div class="mut" style="font-size:9px;padding-bottom:6px;">Hetente hány munkaszett ment le — felfutás, csúcs, deload.</div>
-            <div class="chiprow" style="padding-bottom:6px;"><span class="fchip on">Mind</span><span class="fchip">Hát</span><span class="fchip">Mell</span><span class="fchip">Comb</span></div>
-            <div class="arcbars solid"><b style="height:40%;"></b><b style="height:55%;"></b><b style="height:70%;"></b><b style="height:85%;"></b><b style="height:95%;"></b><b style="height:88%;"></b><b style="height:35%;background:linear-gradient(180deg,#FFD979,#C9962E);"></b></div>
-            <div class="arclbl"><span>W1</span><span>W2</span><span>W3</span><span>W4</span><span>W5 · csúcs</span><span>W6</span><span>deload</span></div>
+            <div class="mut" style="font-size:9px;padding-bottom:6px;">Felfutás → csúcs (W5) → deload. Az utolsó sáv fél-volumen.</div>
+            <div class="arcbars solid"><b style="height:46%;"></b><b style="height:58%;"></b><b style="height:72%;"></b><b style="height:86%;"></b><b style="height:100%;"></b><b style="height:38%;background:linear-gradient(180deg,#FFD979,#C9962E);"></b></div>
+            <div class="arclbl"><span>W1</span><span>W2</span><span>W3</span><span>W4</span><span>W5 · csúcs</span><span>deload</span></div>
+          </div>
+          <div class="p-eyebrow" style="padding:4px 2px 6px;">Izmonként · indulás → elért csúcs / plafon</div>
+          <div class="vcard rise" style="--d:140ms;padding:8px 12px;">
+            <div class="mband">
+              <div class="mrow">
+                <span class="mpill" style="background:rgba(224,85,53,0.12);color:#A84A26;">Hát</span>
+                <span class="tchip emph">Emphasize</span>
+                <span class="grow"></span>
+                <span class="nums">12 → 20 / 22</span>
+              </div>
+              <div class="dbbar"><div style="width:91%;"></div></div>
+            </div>
+            <div class="mband">
+              <div class="mrow">
+                <span class="mpill" style="background:rgba(201,150,46,0.16);color:#A8801F;">Váll</span>
+                <span class="tchip emph">Emphasize</span>
+                <span class="grow"></span>
+                <span class="nums">10 → 18 / 22</span>
+              </div>
+              <div class="dbbar"><div style="width:82%;"></div></div>
+            </div>
+            <div class="mband">
+              <div class="mrow">
+                <span class="mpill" style="background:rgba(196,111,160,0.14);color:#8E3F6F;">Mell</span>
+                <span class="tchip grow">Grow</span>
+                <span class="grow"></span>
+                <span class="nums">8 → 14 / 14</span>
+              </div>
+              <div class="dbbar"><div style="width:100%;"></div></div>
+            </div>
+            <div class="mband">
+              <div class="mrow">
+                <span class="mpill" style="background:rgba(93,79,160,0.14);color:#5D4FA0;">Farizom</span>
+                <span class="tchip maint">Maintain</span>
+                <span class="grow"></span>
+                <span class="nums">6 · tartva</span>
+              </div>
+            </div>
           </div>
           <div class="p-eyebrow" style="padding:4px 2px 6px;">Erő · 3 gyakorlat</div>
-          <div class="vcard rise" style="--d:160ms;">
-            <div class="vrow">
-              <span class="mpill" style="background:rgba(110,139,94,0.16);color:#4E6B42;width:56px;">Comb</span>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Guggolás</div><div class="mut" style="font-size:9px;">W1 → W7 · 120 → 141 kg · 5 rep</div></div>
-              <span class="bpill okp">+21 kg</span><span class="bpill okp">+14%</span>
-            </div>
-            <div class="vrow">
-              <span class="mpill" style="background:rgba(196,111,160,0.14);color:#8E3F6F;width:56px;">Mell</span>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Fekvenyomás</div><div class="mut" style="font-size:9px;">W1 → W7 · 90 → 100 kg · 5 rep</div></div>
-              <span class="bpill okp">+10 kg</span><span class="bpill okp">+9%</span>
-            </div>
+          <div class="vcard rise" style="--d:180ms;">
             <div class="vrow">
               <span class="mpill" style="background:rgba(224,85,53,0.12);color:#A84A26;width:56px;">Hát</span>
-              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Döntött evezés</div><div class="mut" style="font-size:9px;">W2 → W7 · 84 → 91 kg · 6 rep</div></div>
-              <span class="bpill okp">+7 kg</span><span class="bpill okp">+8%</span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Döntött evezés</div><div class="mut" style="font-size:9px;">W1 → W6 · 84 → 94 kg · 8 rep</div></div>
+              <span class="bpill okp">+10 kg</span><span class="bpill okp">+12%</span>
+            </div>
+            <div class="vrow">
+              <span class="mpill" style="background:rgba(201,150,46,0.16);color:#A8801F;width:56px;">Váll</span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Arnold press</div><div class="mut" style="font-size:9px;">W1 → W6 · 22 → 26 kg · 10 rep</div></div>
+              <span class="bpill okp">+4 kg</span><span class="bpill okp">+18%</span>
+            </div>
+            <div class="vrow">
+              <span class="mpill" style="background:rgba(110,139,94,0.16);color:#4E6B42;width:56px;">Comb</span>
+              <div class="grow"><div style="font-size:11.5px;font-weight:600;">Guggolás</div><div class="mut" style="font-size:9px;">W1 → W6 · 120 → 130 kg · 8 rep</div></div>
+              <span class="bpill okp">+10 kg</span><span class="bpill okp">+8%</span>
             </div>
           </div>
-          <div class="p-eyebrow" style="padding:4px 2px 6px;">Rekordok · 4 medál</div>
+          <div class="p-eyebrow" style="padding:4px 2px 6px;">Rekordok · 3 medál</div>
           <div class="qcard rise" style="--d:220ms;background:linear-gradient(150deg,#FDF0DA,#FFFCF5);">
             <div class="mrow" style="gap:9px;">
               <svg width="28" height="28" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>
-              <div class="grow"><div style="font-size:11px;font-weight:700;">Guggolás e1RM · 164 kg</div><div class="mut" style="font-size:9px;">jún 24 · a blokk csúcsa</div></div>
+              <div class="grow"><div style="font-size:11px;font-weight:700;">Döntött evezés e1RM · 118 kg</div><div class="mut" style="font-size:9px;">jún 24 · a blokk csúcsa</div></div>
             </div>
           </div>
           <div class="p-eyebrow" style="padding:4px 2px 6px;">Életmód-kontextus</div>
@@ -763,8 +885,8 @@
             <span class="bpill" style="background:rgba(196,111,160,0.14);color:#8E3F6F;">10× röpi</span>
           </div>
           <div class="aicard rise" style="--d:300ms;margin-top:0;margin-bottom:10px;">
-            <div class="t" style="font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#B04524;margin-bottom:3px;">✨ AI értékelés</div>
-            <div class="mut" style="font-size:9.5px;font-weight:300;">Erős blokk volt: az alsótest vitte a fejlődést (+14% guggolás e1RM), miközben az alvásod stabilan 7 óra felett maradt. A W5 grind-hét után okos volt a korai deload — legközelebb a felsőtest volumene bírna el +2 szettet.</div>
+            <div class="t">✨ AI értékelés</div>
+            <div class="mut" style="font-size:9.5px;font-weight:300;">Erős blokk: a hát vitte a fejlődést (+12% e1RM a rámpa alatt), és a váll is panasz nélkül bírta az Emphasize-t. A W4-es mell-grind után okos volt a tartás — legközelebb a mell MAV-ját érdemes 13-ról indítani.</div>
             <div class="mrow" style="margin-top:7px;">
               <span class="mut grow" style="font-size:8.5px;">Generálva · jún 28</span>
               <button class="ghost" style="padding:3px 10px;font-size:8.5px;">Újragenerálás</button>
@@ -787,40 +909,43 @@
         </div>
         <div class="page-body">
           <div class="statstrip rise" style="--d:40ms;margin-bottom:10px;">
-            <div class="statcell"><b>A</b><small>Erő blokk · 7 hét</small></div>
-            <div class="statcell"><b>B</b><small>Alap hipertrófia · 6 hét</small></div>
+            <div class="statcell"><b>A</b><small>Hypertrophy · Nyár · 6 hét</small></div>
+            <div class="statcell"><b>B</b><small>Erő blokk · 7 hét</small></div>
           </div>
-          <div class="p-eyebrow" style="padding:0 2px 6px;">Adherencia</div>
-          <div class="statstrip rise" style="--d:80ms;margin-bottom:10px;">
-            <div class="statcell"><b>92%</b><small>A · 26/28 edzés</small></div>
-            <div class="statcell"><b>88%</b><small>B · 21/24 edzés</small></div>
+          <div class="p-eyebrow" style="padding:0 2px 6px;">Fókusz-különbség</div>
+          <div class="vcard rise" style="--d:70ms;padding:8px 10px;">
+            <div class="mrow" style="padding:3px 0;">
+              <span class="mut" style="font-size:8.5px;width:14px;">A</span>
+              <span class="tchip emph">Hát ★</span><span class="tchip emph">Váll ★</span><span class="tchip grow">Mell</span><span class="tchip grow">Comb</span><span class="tchip maint">Farizom</span>
+            </div>
+            <div class="mrow" style="padding:3px 0;border-top:0.5px solid rgba(43,33,24,0.08);">
+              <span class="mut" style="font-size:8.5px;width:14px;">B</span>
+              <span class="tchip grow">Comb ★</span><span class="tchip grow">Mell</span><span class="tchip maint">régi modell · címke</span>
+            </div>
           </div>
-          <div class="p-eyebrow" style="padding:0 2px 6px;">Volumen · szet/hét · Hát</div>
-          <div class="vcard rise" style="--d:120ms;padding:8px 10px;">
+          <div class="p-eyebrow" style="padding:0 2px 6px;">Csúcs-volumen · szet/hét</div>
+          <div class="vcard rise" style="--d:100ms;padding:8px 10px;">
             <table class="cmp-table">
-              <tr><th>Hét</th><th>A terv</th><th>A tény</th><th>B terv</th><th>B tény</th></tr>
-              <tr><td>W1</td><td>10</td><td>10</td><td>10</td><td>9</td></tr>
-              <tr><td>W2</td><td>12</td><td>12</td><td>12</td><td>12</td></tr>
-              <tr><td>W3</td><td>14</td><td>13</td><td>14</td><td>14</td></tr>
-              <tr><td>W4</td><td>16</td><td>16</td><td>16</td><td>–</td></tr>
-              <tr><td>W5</td><td>16</td><td>15</td><td>12</td><td>11</td></tr>
-              <tr><td>W6</td><td>18</td><td>18</td><td>8</td><td>8</td></tr>
-              <tr><td>W7</td><td>9</td><td>9</td><td>–</td><td>–</td></tr>
+              <tr><th>Izom</th><th>A csúcs</th><th>A plafon</th><th>B csúcs</th></tr>
+              <tr><td style="text-align:left;">Hát</td><td><b>20</b></td><td>22</td><td>14</td></tr>
+              <tr><td style="text-align:left;">Váll</td><td><b>18</b></td><td>22</td><td>10</td></tr>
+              <tr><td style="text-align:left;">Mell</td><td>14</td><td>14</td><td>12</td></tr>
+              <tr><td style="text-align:left;">Comb</td><td>12</td><td>14</td><td><b>16</b></td></tr>
             </table>
           </div>
           <div class="p-eyebrow" style="padding:4px 2px 6px;">Közös gyakorlatok · 2</div>
           <div class="qcard rise" style="--d:160ms;">
             <div style="font-size:11.5px;font-weight:700;">Guggolás <span class="mut" style="font-size:9px;font-weight:400;">· Comb</span></div>
             <div class="mrow" style="margin-top:5px;">
-              <div class="grow"><div class="mut" style="font-size:8.5px;">A</div><div style="font-size:10.5px;font-weight:700;color:#4E6B42;">+21 kg · +14% e1RM</div></div>
-              <div class="grow"><div class="mut" style="font-size:8.5px;">B</div><div class="mut" style="font-size:10.5px;">+11 kg · +8% e1RM</div></div>
+              <div class="grow"><div class="mut" style="font-size:8.5px;">A</div><div class="mut" style="font-size:10.5px;">+10 kg · +8% e1RM</div></div>
+              <div class="grow"><div class="mut" style="font-size:8.5px;">B</div><div style="font-size:10.5px;font-weight:700;color:#4E6B42;">+21 kg · +14% e1RM</div></div>
             </div>
           </div>
           <div class="qcard rise" style="--d:200ms;">
-            <div style="font-size:11.5px;font-weight:700;">Fekvenyomás <span class="mut" style="font-size:9px;font-weight:400;">· Mell</span></div>
+            <div style="font-size:11.5px;font-weight:700;">Döntött evezés <span class="mut" style="font-size:9px;font-weight:400;">· Hát</span></div>
             <div class="mrow" style="margin-top:5px;">
-              <div class="grow"><div class="mut" style="font-size:8.5px;">A</div><div style="font-size:10.5px;font-weight:700;color:#4E6B42;">+10 kg · +9% e1RM</div></div>
-              <div class="grow"><div class="mut" style="font-size:8.5px;">B</div><div class="mut" style="font-size:10.5px;">+6 kg · +5% e1RM</div></div>
+              <div class="grow"><div class="mut" style="font-size:8.5px;">A</div><div style="font-size:10.5px;font-weight:700;color:#4E6B42;">+10 kg · +12% e1RM</div></div>
+              <div class="grow"><div class="mut" style="font-size:8.5px;">B</div><div class="mut" style="font-size:10.5px;">+7 kg · +8% e1RM</div></div>
             </div>
           </div>
           <div class="p-eyebrow" style="padding:4px 2px 6px;">Kontextus-átlagok</div>
@@ -836,7 +961,7 @@
           <div class="chips2 rise" style="--d:280ms;">
             <button class="ghost" data-page="page-report">A riport megnyitása ›</button>
           </div>
-          <p class="habnote">A gyengébb oldal sosem piros — két lezárt blokkot hasonlítunk, nem ítélkezünk. Null sosem nulla: a nem mért hét „–".</p>
+          <p class="habnote">A gyengébb oldal sosem piros — két lezárt blokkot hasonlítunk, nem ítélkezünk. Null sosem nulla: a nem mért érték „–". A régi modell futama a saját címkéivel, olvashatóan jelenik meg.</p>
         </div>
       </div>
 
@@ -845,7 +970,7 @@
       <div class="bsheet" id="startsheet">
         <div class="p-eyebrow">Mesociklus · indítás</div>
         <div style="font-size:14px;font-weight:700;margin:2px 0 10px;">Mikor kezdjük?</div>
-        <div class="fld"><label>Kezdés</label><input type="text" value="2026. aug 27."></div>
+        <div class="fld"><label>Kezdés</label><input type="text" value="2026. szept 1."></div>
         <div class="fld">
           <label>Állapot</label>
           <div class="segtab" id="startstate"><button class="on">Aktív</button><button>Tervezett</button></div>
@@ -861,7 +986,7 @@
       <div class="bsheet" id="closesheet">
         <div class="p-eyebrow">Mesociklus · zárás</div>
         <div style="font-size:14px;font-weight:700;margin:2px 0 6px;">Futam lezárása</div>
-        <div class="mut" style="font-size:9.5px;margin-bottom:10px;">A Hipertrófia blokk futam lezárul — a riport a zárás pillanatának állapotát rögzíti.</div>
+        <div class="mut" style="font-size:9.5px;margin-bottom:10px;">A Hypertrophy · Ősz futam lezárul — a riport a zárás pillanatának állapotát rögzíti.</div>
         <div class="fld"><label>Saját értékelés</label><textarea rows="3" placeholder="Hogy sikerült a blokk? (opcionális)"></textarea></div>
         <div class="wfoot">
           <button class="ghost" data-sheet-close="close">Mégse</button>
@@ -874,13 +999,13 @@
         <div class="mrow" style="margin-bottom:8px;">
           <div class="grow">
             <div style="font-size:12px;font-weight:700;">Gyakorlat hozzáadása</div>
-            <div class="mut" style="font-size:9px;">H · Pull nap</div>
+            <div class="mut" style="font-size:9px;" id="pickday">H · Upper nap</div>
           </div>
           <button class="ghost" id="pickdone" style="padding:5px 12px;">Kész</button>
         </div>
         <input type="text" id="picksearch" placeholder="Keresés · pl. row, curl, press" style="margin-bottom:4px;">
         <div id="picklist"></div>
-        <p class="habnote">Multi-add: a lap nyitva marad a választások közt. Az új gyakorlat a cél sémájával érkezik (compound 🔥 4×8–10 · isolation 🌿 3×10–12), kibontva.</p>
+        <p class="habnote">Multi-add: a lap nyitva marad a választások közt. Az új gyakorlat a keret sémájával érkezik (compound 🔥 4×8–10 · isolation 🌿 3×12–15), kibontva.</p>
       </div>
 
       <div class="floatfab" role="button" tabindex="0" aria-label="Gyors logolás"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
@@ -896,34 +1021,33 @@
 
     <aside>
       <div>
-        <h2>Mit fed le</h2>
+        <h2>Mi változott ebben a körben</h2>
         <ul>
-          <li><strong>Hub</strong> — aktív futam hero mini fázis-görbével és „most"-jelzéssel, Történet (riport/nincs riport, Újrafuttatás, Sablonná, Összevetés), Sablonok (Indítás/Szerkesztés/Duplikálás/Törlés), „+ Új sablon tervezése".</li>
-          <li><strong>Volumen</strong> — élő-rendszer banner (következő recompute + változások), és a <strong>provenance-sáv</strong>: MEV/MAV/MRV zónák, izzó „most"-marker, koppintva a 01 Baseline → 02 Daniel-személyre szabás → 03 Eredő levezetés + Confidence.</li>
-          <li><strong>Wizard</strong> — mind az 5 lépés él: cél-presetek (leírás a kiválasztotton), hossz-segtab + <strong>tappolható fázis-görbe</strong> (MEV→MAV→MRV→Deload ciklus, ✨ Mezo reset), split ★-ajánlással + nap-chipek, <strong>Fókusz-tierek működő Emphasize-plafonnal (max 2)</strong>, és a Program-lépés: összegző hero, nap-tabok, szet-büdzsé pillek + ZoneTrack, gyakorlat-akkordeon Failure/Volume toggle-lal és stepper-ráccsal (kg: auto ↔ 20 ↔ +2,5).</li>
-          <li><strong>Riport</strong> — adherencia, zárás-ív, erő-delták (+kg / +% e1RM pillek), medálok, kontextus-pillek (null = kihagyva), AI-értékelés Újragenerálással.</li>
+          <li><strong>Egy modell</strong> — a 6 mezociklus-típus és a 6 split-preset törölve; egyetlen Hypertrophy blokk maradt, a MEV/MAV/MRV motorra építve (ami a backendben már él).</li>
+          <li><strong>Wizard: 5 → 3 lépés</strong> — <em>Mikor és miért</em> (napszám-csempék, 7 napos picker hétvégével, szabadszöveges cél), <em>Fókusz</em> (tier-picker élő W1/csúcs összesítővel), <em>Program</em> (generálás + szerkesztés + indítás). A fázisgörbe-szerkesztő és a splitválasztó megszűnt — a napszámból derivált: 2–3 full body · 4 U/L · 5 U/L/P/P/L · 6 PPL×2.</li>
+          <li><strong>Program-lépés: egy képernyő, nem tekercs</strong> — a Heti-kör „csempésítés" receptje: kompakt hero (név + 4 stat + rationale-buborék + lenyíló hossz), alatta <em>nap-mozaik</em> (2 oszlop, szett/perc/izom-chipek, ⚠ pötty session-cap sértésnél); egy nap csempéje <em>saját oldalra</em> visz (napi bontás + gyakorlat-akkordeon + picker). A heti sávok és a csúcshét-kártya a hub-szinten maradnak.</li>
+          <li><strong>A tier végre vezérel</strong> — Emphasize: MEV+2 → MRV · Grow: MEV → MAV · Maintain: MV-n tart. A „szet-büdzsé %" pillek helyett minden felületen <strong>jelenlegi → plafon sáv</strong>: az Emphasize izmoké a legnagyobb szám, nem a legkisebb.</li>
+          <li><strong>Hibrid generálás</strong> — determinisztikus váz (split, szet-keretek, rámpa, deload) + Gemini a gyakorlatválasztásban a célszöveg szerint; a Program-lépés mutatja a rationale-t és az ↺ Újragenerálást. Gemini-hiba esetén determinisztikus fallback, a wizard sosem akad el.</li>
+          <li><strong>Aktív run — saját oldal</strong> — a hub hero kompakt lett (ív + izom-chipek) és koppintva a run-oldalra visz: blokk-ív, a VolumeDecider mondata, izmonkénti <em>most → plafon</em> sávok, a hét napjai mozaikban („ma" jelöléssel, a kész napok ✓) → egy nap csempéje a szerkesztő nap-oldalra visz (napi bontás + gyakorlat-akkordeon + picker), Meso lezárása. <em>Mezocikluson belül nincs Fókusz-váltás</em> — a tier a következő blokk wizardjában dől el.</li>
+          <li><strong>Volumen → beolvadt az izom-részletoldalba</strong> — a külön Volumen oldal megszűnt (a hub csempéje Heti vizsgálat lett, a run-oldalon a helyére a „Hétfőn jön" info-csempe került). A Heti vizsgálat izom-csempéje egy izom-washed részletoldalra visz, ahol <em>minden</em> ott van, ami a Volumenben volt, és több: 4 stat-cella (most · plafon · e héten · gyakoriság), a sáv MV/MEV/MAV/MRV-vel (múlt hét halvány, most izzó), a blokk íve W1→deload spark, a Mezo döntése mondatban, <em>ezen a héten hol dolgozik</em> (napok + gyakorlatok szettel), a 4 lépéses levezetés (Baseline → Fókusz-sáv → Rád szabva → Eredő) confidence-szel és Felülírral, és az előző blokk indulás → csúcs / plafon sávja.</li>
+          <li><strong>Heti vizsgálat — saját oldal a run-ról</strong> — a run-oldalon a heti szetek kártya helyett két csempe (Heti vizsgálat animált mini-oszlopokkal · Volumen); a Heti vizsgálat oldal: hero (heti szett + delta), 4 stat-cella, élő-rendszer sáv, majd izmonként <em>washed csempék</em>: <span style="white-space:nowrap;">most → plafon</span> nagy számmal (nem tördel), MEV/MAV/MRV-sáv múlt heti halvány + mostani izzó jelölővel, W1–W6 mini-spark (a mostani hét arany, a deload csíkos), státusz-sor (▲ +2 · tartás · MV-n). Koppintva a Volumen-levezetés nyílik.</li>
+          <li><strong>Nap-oldal — felpimpelve</strong> — a nap típusa szerint washed oldal (Upper coral · Lower zsálya · Push rózsa), hero a nap betűjével, izmonkénti színes mini-cellák, majd <em>izomcsoportonként</em> rendezett gyakorlat-csempék (izom-wash + clay ikon-korong + séma-chip); a lista a nap típusából generálódik (Lower napon láb-gyakorlatok, nem evezés). Az első csempe nyitva: Failure/Volume + stepper-rács; a ▲▼ / Csere / Törlés a kibontott testbe költözött, a fejléc nem zsúfolt.</li>
+          <li><strong>01 · Mikor és miért — szekció-kártyák</strong> — három washed kártya clay ikonnal és rise staggerrel: <em>Edzésnapok</em> (coral: napszám-csempék + 7 napos picker + a derivált split Mezo-buborékban), <em>A célod</em> (lavender: szabadszöveg), <em>Ami magától megy</em> (gold: 5+1 hét · +2 szett/hét · ~8 plafon mini-cellákban).</li>
+          <li><strong>Hub hero: státusz-first</strong> — hét-pöttysor deload-horgonnyal, fázis-chip (Rámpa/Csúcs/Deload), izmonkénti sávok ▲+2 chipekkel, és a VolumeDecider döntése magyar mondatban („a mell grindelt → tartjuk").</li>
+          <li><strong>Riport + Összevetés az új nyelven</strong> — a riport idézi a célszöveget („ezt akartad — ez lett") és izmonként mutatja az indulás → csúcs / plafon ívet; a compare tengelye a fókusz-különbség + csúcs-volumen lett.</li>
         </ul>
       </div>
       <div>
-        <h2>Az új körben pótolva</h2>
+        <h2>Ami maradt</h2>
         <ul>
-          <li><strong>Ma · izmonként</strong> — napváltásra frissül; a Push napokon (K, Szo — piros pötty a tabon) a Mell 12 szettje átüti a 11-es session-plafont: a hero amberre vált „⚠ 1 jelzés"-sel, a sáv terrakotta, és jön a „vigyél át szettet (pl. Szo)" tanács.</li>
-          <li><strong>Csúcshét + Struktúra kártyák</strong> — lenyithatók, sosem pirosak, sosem blokkolnak.</li>
-          <li><strong>Gyakorlat-picker</strong> — élő kereséssel, multi-add: a lap nyitva marad, „Hozzáadva ✓" flash, az új sor a cél sémájával kerül a listába, azonnal rendezhető.</li>
-          <li><strong>▲▼ átrendezés</strong> minden gyakorlat-soron (az a11y-fallback, ami a valós appban a drag mellett él).</li>
-          <li><strong>Indítás-sheet</strong> (Kezdés + Aktív/Tervezett a hintekkel) és <strong>Zárás-sheet</strong> (Saját értékelés) — a ✓ Lezárás tényleg a riportra visz, ahogy élesben.</li>
-          <li><strong>Összevetés</strong> — a toggle kiválasztó-módba teszi a Történetet (✓/○, max 2), két kijelöltnél nyílik az A/B oldal: adherencia, volumen-tábla („–" a nem mért hétre), közös gyakorlatok (az erősebb oldal zsálya, sosem piros), kontextus-átlagok.</li>
-        </ul>
-      </div>
-      <div>
-        <h2>Ami maradt (nem UI-döntés)</h2>
-        <ul>
-          <li>Nap-átnevezés — csak Custom splitnél él, a PPL-demóban nincs ilyen nap.</li>
-          <li>Valódi drag (▲▼ helyett) és az izom-pill váltó az Összevetés táblán.</li>
+          <li><strong>Volumen provenance</strong> — a 01 Baseline → 02 Fókusz-sáv → 03 Eredő levezetés, most már a sáv-szemantikával (múlt heti halvány jelölő + mostani izzó).</li>
+          <li><strong>Program-editor anatómia</strong> — nap-tabok, napi izom-bontás session-cap sávokkal (~8), gyakorlat-akkordeon stepper-ráccsal, multi-add picker, ▲▼ átrendezés.</li>
+          <li><strong>Template-first</strong> — a mentés sablont ír, az indítás pecsétel; régi sablon indításkor konvertálódik, a régi futamok címkéi sima szövegként olvashatók.</li>
         </ul>
       </div>
       <p class="note">Az elvek végig élnek: tanácsadó kártya sosem piros és sosem blokkol mentést;
-      a baseline sosem íródik felül; null sosem nulla.</p>
+      a baseline sosem íródik felül; null sosem nulla — és a tier mostantól tényleg azt csinálja,
+      amit ígér.</p>
     </aside>
   </div>
 </div>
@@ -958,9 +1082,86 @@
     el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(e); });
   });
 
-  /* --- wizard lépések --- */
-  var STEPS = ['Cél', 'Hossz + fázisok', 'Split + napok', 'Fókusz', 'Program'];
-  var wstep = 0;
+  /* ==================== A MODELL ==================== */
+  /* landmark-tábla (RP intermediate) + tier-sávok */
+  var GROUPS = [
+    { key: 'back',     name: 'Hát',     pill: 'background:rgba(224,85,53,0.12);color:#A84A26;',  mev: 10, mav: 16, mrv: 22, mv: 6, tier: 'E' },
+    { key: 'shoulder', name: 'Váll',    pill: 'background:rgba(201,150,46,0.16);color:#A8801F;', mev: 8,  mav: 16, mrv: 22, mv: 6, tier: 'E' },
+    { key: 'chest',    name: 'Mell',    pill: 'background:rgba(196,111,160,0.14);color:#8E3F6F;', mev: 8, mav: 14, mrv: 20, mv: 6, tier: 'G' },
+    { key: 'quad',     name: 'Comb',    pill: 'background:rgba(110,139,94,0.16);color:#4E6B42;', mev: 8,  mav: 14, mrv: 20, mv: 6, tier: 'G' },
+    { key: 'glute',    name: 'Farizom', pill: 'background:rgba(93,79,160,0.14);color:#5D4FA0;',  mev: 4,  mav: 10, mrv: 16, mv: 6, tier: 'M' }
+  ];
+  function w1Of(g) { return g.tier === 'E' ? g.mev + 2 : g.tier === 'G' ? g.mev : g.mv; }
+  function capOf(g) { return g.tier === 'E' ? g.mrv : g.tier === 'G' ? g.mav : g.mv; }
+  function tchipOf(t) {
+    return t === 'E' ? '<span class="tchip emph">Emphasize</span>'
+      : t === 'G' ? '<span class="tchip grow">Grow</span>'
+      : '<span class="tchip maint">Maintain</span>';
+  }
+
+  /* napszám → split-derivált naptípusok */
+  var SPLITMAP = {
+    2: { line: '2 nap → Full body · minden izom 2×/hét', days: ['Full', 'Full'] },
+    3: { line: '3 nap → Full body · minden izom 2–3×/hét', days: ['Full', 'Full', 'Full'] },
+    4: { line: '4 nap → Upper / Lower · minden izom 2×/hét', days: ['Upper', 'Lower', 'Upper', 'Lower'] },
+    5: { line: '5 nap → Upper / Lower / Push / Pull / Legs', days: ['Upper', 'Lower', 'Push', 'Pull', 'Legs'] },
+    6: { line: '6 nap → Push / Pull / Legs ×2', days: ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs'] }
+  };
+  var DTYPE = {
+    Full:  ['back', 'shoulder', 'chest', 'quad', 'glute'],
+    Upper: ['back', 'shoulder', 'chest'],
+    Lower: ['quad', 'glute'],
+    Push:  ['chest', 'shoulder'],
+    Pull:  ['back'],
+    Legs:  ['quad', 'glute']
+  };
+  var RECOMMEND = {
+    2: ['H', 'Cs'], 3: ['H', 'Sze', 'P'], 4: ['H', 'Sze', 'P', 'Szo'],
+    5: ['H', 'K', 'Sze', 'P', 'Szo'], 6: ['H', 'K', 'Sze', 'P', 'Szo', 'V']
+  };
+  var ALLDAYS = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
+  var dayCount = 4;
+  var selectedDays = RECOMMEND[4].slice();
+
+  /* ==================== STEP 0 · Mikor és miért ==================== */
+  var dcgrid = document.getElementById('dcgrid');
+  var daypick = document.getElementById('daypick');
+  function renderDayPick() {
+    daypick.querySelectorAll('button').forEach(function (b) {
+      b.classList.toggle('on', selectedDays.indexOf(b.getAttribute('data-d')) > -1);
+    });
+    document.getElementById('daycnt').textContent = selectedDays.length + '/' + dayCount;
+    var m = SPLITMAP[Math.min(6, Math.max(2, selectedDays.length))];
+    document.getElementById('splitline').textContent = m ? m.line : '';
+  }
+  dcgrid.querySelectorAll('.dct').forEach(function (b) {
+    b.addEventListener('click', function () {
+      dcgrid.querySelectorAll('.dct').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      dayCount = parseInt(b.getAttribute('data-n'), 10);
+      selectedDays = RECOMMEND[dayCount].slice();
+      renderDayPick();
+    });
+  });
+  daypick.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var d = b.getAttribute('data-d');
+      var i = selectedDays.indexOf(d);
+      if (i > -1) selectedDays.splice(i, 1);
+      else selectedDays.push(d);
+      selectedDays.sort(function (a, x) { return ALLDAYS.indexOf(a) - ALLDAYS.indexOf(x); });
+      dayCount = Math.min(6, Math.max(2, selectedDays.length));
+      dcgrid.querySelectorAll('.dct').forEach(function (x) {
+        x.classList.toggle('on', parseInt(x.getAttribute('data-n'), 10) === selectedDays.length);
+      });
+      renderDayPick();
+    });
+  });
+  renderDayPick();
+
+  /* ==================== wizard lépések ==================== */
+  var STEPS = ['Mikor és miért', 'Fókusz', 'Program'];
+  var wstep = 0, generatedOnce = false;
   var wprog = document.getElementById('wprog');
   function showStep(n) {
     wstep = n;
@@ -968,116 +1169,460 @@
       s.classList.toggle('on', parseInt(s.getAttribute('data-step'), 10) === n);
     });
     wprog.querySelectorAll('b').forEach(function (b, i) { b.classList.toggle('f', i <= n); });
-    document.getElementById('stepct').textContent = '0' + (n + 1) + ' / 05 · ' + STEPS[n];
-    document.getElementById('wprev').style.display = (n >= 1 && n <= 3) ? '' : 'none';
-    document.getElementById('navfoot').style.display = n === 4 ? 'none' : '';
+    document.getElementById('stepct').textContent = '0' + (n + 1) + ' / 03 · ' + STEPS[n];
+    document.getElementById('wprev').style.display = n === 1 ? '' : 'none';
+    document.getElementById('navfoot').style.display = n === 2 ? 'none' : '';
     document.getElementById('wbody').scrollTop = 0;
+    if (n === 1) refreshTotals();
+    if (n === 2 && !generatedOnce) { generatedOnce = true; runGenerate(); }
+    else if (n === 2) refreshProgram();
   }
-  document.getElementById('wnext').addEventListener('click', function () { if (wstep < 4) showStep(wstep + 1); });
+  document.getElementById('wnext').addEventListener('click', function () { if (wstep < 2) showStep(wstep + 1); });
   document.getElementById('wprev').addEventListener('click', function () { if (wstep > 0) showStep(wstep - 1); });
   wprog.querySelectorAll('b').forEach(function (b, i) {
     b.addEventListener('click', function () { if (i < wstep) showStep(i); });
   });
 
-  /* presetek */
-  document.querySelectorAll('.preset').forEach(function (p) {
-    p.addEventListener('click', function () {
-      document.querySelectorAll('.preset').forEach(function (x) { x.classList.remove('on'); });
-      p.classList.add('on');
-    });
-  });
-
-  /* fázis-görbe editor */
-  var PHASES = ['MEV', 'MAV', 'MRV', 'Deload'];
-  var PSTYLE = { MEV: ['#B9D3A8', 26], MAV: ['#FF9A78', 46], MRV: ['#E05535', 64], Deload: ['#E5C46B', 14] };
-  var TEMPLATE = ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'];
-  var curve = TEMPLATE.slice();
-  function renderCurve() {
-    var host = document.getElementById('phaseed');
-    host.innerHTML = curve.map(function (ph, i) {
-      var st = PSTYLE[ph];
-      return '<div class="pw" data-i="' + i + '" role="button" tabindex="0" aria-label="W' + (i + 1) + ' · ' + ph + ' · fázis váltás">' +
-        '<b style="height:' + st[1] + 'px;background:' + st[0] + ';"></b>' +
-        '<span>W' + (i + 1) + '<br>' + ph + '</span></div>';
-    }).join('');
-    host.querySelectorAll('.pw').forEach(function (w) {
-      w.addEventListener('click', function () {
-        var i = parseInt(w.getAttribute('data-i'), 10);
-        curve[i] = PHASES[(PHASES.indexOf(curve[i]) + 1) % 4];
-        renderCurve();
-      });
-    });
-  }
-  document.getElementById('phasereset').addEventListener('click', function () { curve = TEMPLATE.slice(); renderCurve(); });
-  renderCurve();
-
-  /* hossz segtab (vizuális) */
-  document.getElementById('weekseg').querySelectorAll('button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.getElementById('weekseg').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on');
-      document.getElementById('weeksval').textContent = b.textContent + ' hét';
-    });
-  });
-
-  /* fókusz-tierek — Emphasize-plafon: max 2 */
+  /* ==================== STEP 1 · Fókusz ==================== */
   function refreshCap() {
     var emph = document.querySelectorAll('.tierrow .te.on').length;
     document.querySelectorAll('.tierrow .te').forEach(function (b) {
       b.disabled = emph >= 2 && !b.classList.contains('on');
     });
   }
+  function refreshTotals() {
+    var w1 = 0, pk = 0;
+    GROUPS.forEach(function (g) { w1 += w1Of(g); pk += capOf(g); });
+    document.getElementById('w1total').textContent = w1;
+    document.getElementById('pktotal').textContent = pk;
+    var sw1 = document.getElementById('stw1'), spk = document.getElementById('stpk');
+    if (sw1) sw1.textContent = w1;
+    if (spk) spk.textContent = pk;
+  }
   document.querySelectorAll('.tierrow').forEach(function (row) {
+    var g = GROUPS.filter(function (x) { return x.key === row.getAttribute('data-group'); })[0];
     row.querySelectorAll('button').forEach(function (b) {
       b.addEventListener('click', function () {
         if (b.disabled) return;
         row.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
         b.classList.add('on');
+        if (g) g.tier = b.classList.contains('te') ? 'E' : b.classList.contains('tg') ? 'G' : 'M';
         refreshCap();
+        refreshTotals();
       });
     });
   });
   refreshCap();
+  refreshTotals();
 
-  /* nap-tabok + napi bontás (session cap 11) */
-  var DAYS = {
-    H: { label: 'Pull nap', sets: 14, mins: 62, groups: [['Hát', 8], ['Bicepsz', 4], ['Váll', 2]], warn: null },
-    K: { label: 'Push nap', sets: 15, mins: 68, groups: [['Mell', 12], ['Tricepsz', 3]], warn: 'Szo' },
-    Sze: { label: 'Legs nap', sets: 16, mins: 74, groups: [['Comb', 9], ['Farizom', 4], ['Vádli', 3]], warn: null },
-    P: { label: 'Pull nap', sets: 14, mins: 62, groups: [['Hát', 8], ['Bicepsz', 4], ['Váll', 2]], warn: null },
-    Szo: { label: 'Push nap', sets: 15, mins: 68, groups: [['Mell', 12], ['Tricepsz', 3]], warn: 'K' }
-  };
-  function renderDay(key) {
-    var d = DAYS[key];
-    document.getElementById('edday').textContent = d.label;
-    document.getElementById('edsets').textContent = d.sets;
-    document.getElementById('edmins').textContent = 'szett ma · ~' + d.mins + ' perc';
-    var pill = document.getElementById('edpill');
-    var hero = document.getElementById('edhero2');
-    if (d.warn) {
-      pill.className = 'bpill nearp'; pill.textContent = '⚠ 1 jelzés';
-      hero.classList.add('warn');
-    } else {
-      pill.className = 'bpill okp'; pill.textContent = '✓ kereten belül';
-      hero.classList.remove('warn');
-    }
-    document.getElementById('daybreak').innerHTML = d.groups.map(function (g) {
-      var over = g[1] > 11;
-      var w = Math.min(100, Math.round(g[1] / 11 * 100));
-      return '<div class="dbrow"><div class="mrow"><span class="grow" style="font-size:10.5px;font-weight:600;' + (over ? 'color:#A84A26;' : '') + '">' + g[0] + '</span><span class="mut" style="font-size:8.5px;">' + g[1] + ' szett</span></div>' +
-        '<div class="dbbar"><div class="' + (over ? 'overc' : '') + '" style="width:' + w + '%;"></div></div>' +
-        (over ? '<div style="font-size:8.5px;color:#A84A26;font-weight:600;margin-top:3px;">⚠ ' + g[0] + ': ma ' + g[1] + ' szett — 11 fölött nincs kimutatható plusz. Vigyél át szettet egy másik napra (pl. ' + d.warn + ')!</div>' : '');
-    }).join('');
+  /* ==================== STEP 2 · Program ==================== */
+  var RATIONALES = [
+    'A röpi mellé a váll-kímélő húzó-variánsokat vettem be (evezés-család a nyomott vállból), a hát + váll hangsúly a két Upper napra oszlik, a láb marad robbanékonyság-barát. Bármit cserélhetsz.',
+    'Második kör: több kábeles variáns került be (egyenletesebb váll-terhelés), és a hát-modul súlypontja a hét elejére csúszott, hogy a hétvégi röpi előtt maradjon frissesség.'
+  ];
+  var rIdx = 0;
+  function runGenerate() {
+    var wait = document.getElementById('genwait');
+    var body = document.getElementById('genbody');
+    wait.classList.add('on');
+    body.classList.add('hide');
+    window.setTimeout(function () {
+      wait.classList.remove('on');
+      body.classList.remove('hide');
+      refreshProgram();
+    }, reduced ? 0 : 1000);
   }
-  document.getElementById('daytabs').querySelectorAll('button').forEach(function (b) {
+  document.getElementById('regen').addEventListener('click', function () {
+    rIdx = (rIdx + 1) % RATIONALES.length;
+    document.getElementById('rationale').textContent = RATIONALES[rIdx];
+    runGenerate();
+  });
+
+  /* hossz segtab */
+  document.getElementById('weekseg').querySelectorAll('button').forEach(function (b) {
     b.addEventListener('click', function () {
-      if (b.classList.contains('offd')) return;
-      document.getElementById('daytabs').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+      document.getElementById('weekseg').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
       b.classList.add('on');
-      renderDay(b.childNodes[0].textContent);
+      var w = parseInt(b.textContent, 10);
+      document.getElementById('weeksval').textContent = w + ' hét = ' + (w - 1) + ' rámpa + 1 deload';
+      document.getElementById('stweeks').textContent = w;
     });
   });
-  renderDay('H');
+
+  /* program: nap-mozaik (csempe → saját oldal) + napi bontás */
+  var SESSION_CAP = 8;
+  var activeDayIdx = 0;
+  function dayTypesNow() {
+    var m = SPLITMAP[Math.min(6, Math.max(2, selectedDays.length))];
+    return m ? m.days : SPLITMAP[4].days;
+  }
+  function freqOf(key) {
+    var n = 0;
+    dayTypesNow().forEach(function (t) { if (DTYPE[t].indexOf(key) > -1) n++; });
+    return Math.max(1, n);
+  }
+  /* a futó blokk W3-as állapota: +2/hét a plafonig, a mell grind miatt tart */
+  function runSetsOf(g) {
+    if (g.tier === 'M') return g.mv;
+    if (g.key === 'chest') return Math.min(w1Of(g) + 2, capOf(g));
+    return Math.min(w1Of(g) + 4, capOf(g));
+  }
+  function dayStats(i, setsFn) {
+    setsFn = setsFn || w1Of;
+    var type = dayTypesNow()[i];
+    var groups = DTYPE[type].map(function (k) {
+      var g = GROUPS.filter(function (x) { return x.key === k; })[0];
+      return [g, Math.ceil(setsFn(g) / freqOf(k))];
+    });
+    var total = groups.reduce(function (s, p) { return s + p[1]; }, 0);
+    var over = groups.some(function (p) { return p[1] > SESSION_CAP; });
+    return { type: type, groups: groups, total: total, over: over };
+  }
+  /* nap-oldal — izom-wash, ikon, csoportosított gyakorlat-csempék */
+  var WASH = {
+    back:     ['#FFE7DC', '#FFF7F2', '#A84A26', '#i-suly'],
+    shoulder: ['#FDF0DA', '#FFFCF5', '#A8801F', '#i-edzes'],
+    chest:    ['#FAE3ED', '#FEF8FB', '#8E3F6F', '#i-edzes'],
+    quad:     ['#E9F1E2', '#F7FBF3', '#4E6B42', '#i-sport'],
+    glute:    ['#EBE6F8', '#F9F6FE', '#5D4FA0', '#i-sport']
+  };
+  var EXBANK = {
+    back:     [['Döntött evezés', 'compound'], ['Húzódzkodás', 'compound']],
+    shoulder: [['Oldalemelés kábelen', 'isolation', '✨ a célod miatt: váll-kímélő variáns'], ['Arnold press', 'compound']],
+    chest:    [['Fekvenyomás', 'compound'], ['Kábeles keresztezés', 'isolation']],
+    quad:     [['Guggolás', 'compound'], ['Lábtolás', 'compound']],
+    glute:    [['Csípőtolás', 'compound', '✨ robbanékonyság-barát — a röpi miatt']]
+  };
+  var TYPEWASH = { Upper: 'p-coral', Lower: 'p-sage', Push: 'p-rose', Pull: 'p-coral', Legs: 'p-sage', Full: 'p-gold' };
+  function schemeChip(type, sets) {
+    return type === 'compound'
+      ? '<span class="stychip fire">🔥 ' + sets + '×8–10</span>'
+      : '<span class="stychip leaf">🌿 ' + sets + '×12–15</span>';
+  }
+  function exTile(g, ex, sets, interactive) {
+    var w = WASH[g.key];
+    var body = interactive
+      ? '<div class="fvtoggle"><button class="fire on" data-fv="fire">🔥 Failure</button><button class="leaf" data-fv="leaf">🌿 Volume</button></div>' +
+        '<div class="stepgrid">' +
+        '<div class="stepbox"><div class="lbl2">Munkaszett</div><div class="steprow"><button class="sbtn" data-st="sets" data-d="-1">−</button><span class="sval" id="v-sets">' + sets + '</span><button class="sbtn" data-st="sets" data-d="1">＋</button></div></div>' +
+        '<div class="stepbox"><div class="lbl2">Rep tartomány</div><div class="steprow"><button class="sbtn" data-st="rep" data-d="-1">−</button><span class="sval" id="v-rep">8–10</span><button class="sbtn" data-st="rep" data-d="1">＋</button></div></div>' +
+        '<div class="stepbox"><div class="lbl2">Kiinduló kg</div><div class="steprow"><button class="sbtn" data-st="kg" data-d="-1">−</button><span class="sval" id="v-kg">auto</span><button class="sbtn" data-st="kg" data-d="1">＋</button></div></div>' +
+        '<div class="stepbox"><div class="lbl2">Bemelegítő</div><div class="steprow"><button class="sbtn" data-st="wu" data-d="-1">−</button><span class="sval" id="v-wu">1</span><button class="sbtn" data-st="wu" data-d="1">＋</button></div><button class="warmchip" id="wusuggest">↺ javaslat: 2</button></div>' +
+        '</div>'
+      : '<div class="stepgrid">' +
+        '<div class="stepbox"><div class="lbl2">Munkaszett</div><div class="sval" style="margin-top:3px;">' + sets + '</div></div>' +
+        '<div class="stepbox"><div class="lbl2">Rep · RIR</div><div class="sval" style="margin-top:3px;">' + (ex[1] === 'compound' ? '8–10 · 1' : '12–15 · 1') + '</div></div>' +
+        '</div><div class="mut" style="font-size:8.5px;margin-top:6px;">Ugyanaz az anatómia: a stepper-rács koppintásra nyílik, mint az első csempén.</div>';
+    return '<div class="exrow extile" style="background:linear-gradient(150deg,' + w[0] + ',' + w[1] + ');">' +
+      '<div class="exhead" data-ex>' +
+      '<div class="exico"><svg width="19" height="19" viewBox="0 0 100 100"><use href="' + w[3] + '"/></svg></div>' +
+      '<div class="grow"><div class="nm2">' + ex[0] + '</div><div class="sub">' + g.name + ' · ' + ex[1] + '</div>' + (ex[2] ? '<div class="goalnote">' + ex[2] + '</div>' : '') + '</div>' +
+      schemeChip(ex[1], sets) + '<span class="chev">▾</span></div>' +
+      '<div class="exbody">' + body +
+      '<div class="exacts"><button data-mv="-1">▲ feljebb</button><button data-mv="1">▼ lejjebb</button><button>↔ Csere</button><button class="del">✕ Törlés</button></div>' +
+      '</div></div>';
+  }
+  function renderDayPage(mode) {
+    var run = mode === 'run';
+    var d = dayStats(activeDayIdx, run ? runSetsOf : w1Of);
+    var day = selectedDays[activeDayIdx];
+    var pg = document.getElementById('page-day');
+    ['p-coral', 'p-sage', 'p-rose', 'p-gold', 'p-lav'].forEach(function (c) { pg.classList.remove(c); });
+    pg.classList.add(TYPEWASH[d.type] || 'p-coral');
+    document.getElementById('daybackbtn').textContent = run ? '‹ A blokkod' : '‹ Program';
+    document.getElementById('dayhero').innerHTML =
+      '<svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>' +
+      '<div class="bignum" style="font-size:34px;">' + day + '</div>' +
+      '<div class="nm">' + d.type + ' nap</div>' +
+      '<div class="sb">' + d.total + ' szett · ~' + Math.round(d.total * 4.4) + ' perc · ' + (run ? '3. hét · a szerkesztés a következő edzéstől él' : '1. hét · a terv') + '</div>';
+    var cells = '<div class="daycells rise" style="--d:30ms;margin-bottom:6px;">' + d.groups.map(function (p) {
+      var g = p[0], w = WASH[g.key], o = p[1] > SESSION_CAP;
+      return '<div class="statcell" style="background:linear-gradient(150deg,' + w[0] + ',' + w[1] + ');' + (o ? 'border:1.5px dashed #C4634B;' : '') + '"><b style="color:' + w[2] + ';">' + p[1] + '</b><small style="color:' + w[2] + ';">' + g.name + '</small></div>';
+    }).join('') + '</div>';
+    var warn = d.over ? '<div class="coach rise" style="--d:60ms;margin:0 0 6px;"><span class="dot"></span><span>Van izom, ami ~' + SESSION_CAP + ' szett fölé menne ma — a modell átosztja egy másik napra, neked nem kell tenned semmit.</span></div>' : '';
+    var first = true, delay = 90;
+    var groups = d.groups.map(function (p) {
+      var g = p[0], sets = p[1], w = WASH[g.key];
+      var bank = EXBANK[g.key];
+      var base = Math.floor(sets / bank.length), rem = sets - base * bank.length;
+      var tiles = bank.map(function (ex, i) {
+        var n = base + (i < rem ? 1 : 0);
+        var html = exTile(g, ex, n, first);
+        first = false;
+        return html;
+      }).join('');
+      delay += 50;
+      return '<div class="mgroup rise" style="--d:' + delay + 'ms;">' +
+        '<div class="mghead"><span class="mpill" style="' + g.pill + '">' + g.name + '</span>' +
+        '<div class="mgbar"><div style="width:' + Math.min(100, Math.round(sets / SESSION_CAP * 100)) + '%;background:' + w[2] + ';"></div></div>' +
+        '<span class="mgn">' + sets + ' szett · ' + bank.length + ' gyakorlat</span></div>' + tiles + '</div>';
+    }).join('');
+    document.getElementById('daybody').innerHTML = cells + warn + groups +
+      '<button class="ghost rise" id="addex" style="--d:' + (delay + 60) + 'ms;width:100%;padding:9px 0;margin-top:6px;border:1.5px dashed rgba(255,107,74,0.5);background:transparent;color:#A84A26;">＋ Gyakorlat hozzáadása</button>';
+    var rows = document.querySelectorAll('#daybody .exrow');
+    rows.forEach(bindExRow);
+    if (rows[0]) rows[0].classList.add('open');
+    ST.sets = d.groups[0] ? Math.ceil(d.groups[0][1] / EXBANK[d.groups[0][0].key].length) : 4;
+    bindSteppers();
+    document.getElementById('addex').addEventListener('click', function () { openSheet('pick'); });
+    var pd = document.getElementById('pickday');
+    if (pd) pd.textContent = day + ' · ' + d.type + ' nap';
+  }
+  var TYPECLS = { Upper: '', Pull: '', Lower: 'sage', Legs: 'sage', Push: 'rose', Full: 'gold' };
+  function dayTileHtml(day, d, attr, status) {
+    var rows = d.groups.map(function (p) {
+      var g = p[0], w = WASH[g.key], o = p[1] > SESSION_CAP;
+      return '<div class="ml"><span style="color:' + w[2] + ';">' + g.name + '</span><span class="bar"><div style="width:' + Math.min(100, Math.round(p[1] / SESSION_CAP * 100)) + '%;background:' + (o ? '#C4634B' : w[2]) + ';"></div></span><span class="n">' + p[1] + '</span></div>';
+    }).join('');
+    return '<div class="dtile ' + (TYPECLS[d.type] || '') + (d.over ? ' warnb' : '') + (status === 'now' ? ' today' : '') + '" ' + attr + ' role="button" tabindex="0" aria-label="' + day + ' · ' + d.type + ' nap">' +
+      '<div class="dhead"><div class="grow"><span class="dl">' + day + '</span><span class="tt">' + d.type + ' nap</span></div>' +
+      (status === 'now' ? '<span class="st now">ma</span>' : status === 'done' ? '<span class="st done">✓ kész</span>' : '') +
+      (d.over ? '<span class="rdot2" style="margin-top:4px;"></span>' : '') + '<span class="mut" style="font-size:11px;">›</span></div>' +
+      '<div class="dcells"><div><b>' + d.total + '</b><small>szett</small></div><div><b>~' + Math.round(d.total * 4.4) + '</b><small>perc</small></div></div>' +
+      '<div class="mlist">' + rows + '</div></div>';
+  }
+  function refreshProgram() {
+    document.getElementById('stdays').textContent = selectedDays.length + '×';
+    if (activeDayIdx >= selectedDays.length) activeDayIdx = 0;
+    var mos = document.getElementById('daymosaic');
+    mos.innerHTML = selectedDays.map(function (day, i) {
+      return dayTileHtml(day, dayStats(i), 'data-di="' + i + '"', null);
+    }).join('');
+    mos.querySelectorAll('.dtile').forEach(function (t) {
+      function go(e) {
+        e.stopPropagation();
+        activeDayIdx = parseInt(t.getAttribute('data-di'), 10);
+        renderDayPage();
+        openPage('page-day');
+      }
+      t.addEventListener('click', go);
+      t.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(e); });
+    });
+    /* heti sávok — Emphasize legfelül */
+    var sorted = GROUPS.slice().sort(function (a, b) { return capOf(b) - capOf(a); });
+    document.getElementById('bandlist').innerHTML = sorted.map(function (g) {
+      var s = w1Of(g), c = capOf(g);
+      var pct = Math.round(s / c * 100);
+      var stat = g.tier === 'M' ? '' : '<span class="stepchip">▲ +2 / hét</span>';
+      var nums = g.tier === 'M' ? s + ' szett · tart' : s + ' → ' + c;
+      return '<div class="mband"><div class="mrow">' +
+        '<span class="mpill" style="' + g.pill + '">' + g.name + '</span>' + tchipOf(g.tier) +
+        '<span class="grow"></span>' + stat + '<span class="nums">' + nums + '</span></div>' +
+        (g.tier === 'M' ? '' : '<div class="dbbar"><div style="width:' + pct + '%;"></div></div>') +
+        '</div>';
+    }).join('');
+    /* csúcshét-ellenőrzés */
+    var pkIssues = GROUPS.filter(function (g) { return Math.ceil(capOf(g) / freqOf(g.key)) > SESSION_CAP; });
+    var pkpill = document.getElementById('pkpill');
+    var pknote = document.getElementById('pknote');
+    if (pkIssues.length) {
+      pkpill.textContent = pkIssues.length + ' észrevétel';
+      pkpill.className = 'bpill nearp';
+      pknote.textContent = 'Csúcshéten a ' + pkIssues.map(function (g) { return g.name; }).join(' + ') +
+        ' átlépné a ~' + SESSION_CAP + ' szett/edzés plafont — a modell egy plusz modullal teríti szét. Nem kell tenned semmit.';
+    } else {
+      pkpill.textContent = '✓ rendben';
+      pkpill.className = 'bpill okp';
+      pknote.textContent = 'A csúcshét minden izomnál a session-plafon alatt marad.';
+    }
+  }
+
+  /* ==================== HETI VIZSGÁLAT ==================== */
+  function weekSeries(g) {
+    var out = [], cap = capOf(g);
+    for (var k = 1; k <= 5; k++) {
+      var v = g.tier === 'M' ? g.mv : Math.min(w1Of(g) + 2 * (k - 1), cap);
+      if (g.key === 'chest' && k >= 3) v = Math.min(v, 10 + 2 * (k - 3));
+      out.push(v);
+    }
+    out.push(Math.round(out[4] / 2));
+    return out;
+  }
+  function renderWeek() {
+    var NOW = 3, total = 0, prev = 0, ramp = 0, hold = 0, tw = 0, e = 0, c = 0, d = 0, w = 0;
+    var sorted = GROUPS.slice().sort(function (a, b) { return capOf(b) - capOf(a); });
+    var tiles = sorted.map(function (g, idx) {
+      var ser = weekSeries(g), cur = ser[NOW - 1], pv = ser[NOW - 2], cap = capOf(g), wsh = WASH[g.key];
+      total += cur; prev += pv;
+      var stat, statColor;
+      if (g.tier === 'M') { stat = 'MV-n tart · nem rámpázik'; statColor = '#8B7E6F'; hold++; }
+      else if (g.key === 'chest') { stat = '= tartás · grind a múlt héten'; statColor = '#A8801F'; hold++; }
+      else if (cur >= cap) { stat = 'plafonon'; statColor = '#A8801F'; hold++; }
+      else { stat = '▲ +2 e héten · ' + (cap - cur) + ' a plafonig'; statColor = '#4E6B42'; ramp++; }
+      var max = g.mrv;
+      var pct = function (v) { return Math.round(v / max * 100); };
+      var spark = ser.map(function (v, k) {
+        var cls = k === NOW - 1 ? '' : k < NOW - 1 ? '' : 'fut';
+        var bg = k === NOW - 1 ? 'linear-gradient(180deg,#FFD979,#C9962E)' : wsh[2];
+        return '<b class="' + (k === 5 ? 'dl' : cls) + '" style="--d:' + (200 + idx * 70 + k * 40) + 'ms;height:' + Math.max(12, Math.round(v / max * 100)) + '%;background:' + bg + ';"></b>';
+      }).join('');
+      var band = g.tier === 'M'
+        ? '<div class="mut" style="font-size:8px;margin-top:5px;">MV ' + g.mv + ' · nincs sáv, szinten tartás</div>'
+        : '<div class="vb"><span class="z1" style="left:0;right:0;"></span><span class="z2" style="left:' + pct(g.mev) + '%;width:' + (pct(g.mav) - pct(g.mev)) + '%;"></span><span class="z3" style="left:' + pct(g.mav) + '%;width:' + (100 - pct(g.mav)) + '%;"></span>' +
+          '<span class="hl" style="left:' + pct(g.mev) + '%;"></span><span class="hl" style="left:' + pct(g.mav) + '%;"></span>' +
+          '<span class="mk dim" style="left:' + pct(pv) + '%;"></span><span class="mk" style="left:' + pct(cur) + '%;"></span></div>' +
+          '<div class="vcap"><span>MEV ' + g.mev + '</span><span>MAV ' + g.mav + '</span><span>MRV ' + g.mrv + '</span></div>';
+      return '<div class="wtile rise" style="--d:' + (90 + idx * 60) + 'ms;background:linear-gradient(150deg,' + wsh[0] + ',' + wsh[1] + ');" data-mk="' + g.key + '" role="button" tabindex="0" aria-label="' + g.name + ' részletek">' +
+        '<div class="mrow"><span class="mpill" style="' + g.pill + '">' + g.name + '</span><span class="grow"></span>' + tchipOf(g.tier) + '</div>' +
+        '<div class="wnums" style="color:' + wsh[2] + ';">' + cur + (g.tier === 'M' ? '<small>szett</small>' : '<span class="arr">→</span>' + cap + '<small>plafon</small>') + '</div>' +
+        band + '<div class="wspark">' + spark + '</div>' +
+        '<div class="wstat" style="color:' + statColor + ';">' + stat + '</div></div>';
+    }).join('');
+    var wm = document.getElementById('weekmosaic');
+    wm.innerHTML = tiles;
+    wm.querySelectorAll('[data-mk]').forEach(function (el) {
+      el.addEventListener('click', function (e) { e.stopPropagation(); renderMuscle(el.getAttribute('data-mk')); openPage('page-muscle'); });
+    });
+    document.getElementById('wkbig').textContent = total;
+    document.getElementById('wksub').textContent = 'szett ezen a héten · ' + (total - prev >= 0 ? '+' : '') + (total - prev) + ' a múlt héthez képest';
+    document.getElementById('wkstats').innerHTML =
+      '<div class="statcell"><b>' + total + '</b><small>szett · W3</small></div>' +
+      '<div class="statcell"><b>+' + (total - prev) + '</b><small>vs. W2</small></div>' +
+      '<div class="statcell"><b>' + ramp + '</b><small>rámpázik</small></div>' +
+      '<div class="statcell"><b>' + hold + '</b><small>tart</small></div>';
+    document.getElementById('runmini').innerHTML = sorted.map(function (g, idx) {
+      var cur = weekSeries(g)[NOW - 1];
+      return '<b style="--d:' + (300 + idx * 60) + 'ms;height:' + Math.max(15, Math.round(cur / 22 * 100)) + '%;background:' + WASH[g.key][2] + ';"></b>';
+    }).join('');
+    document.getElementById('runminitxt').textContent = total + ' szett · ' + ramp + ' rámpázik · ' + hold + ' tart';
+  }
+
+  /* ==================== IZOM-RÉSZLET oldal ==================== */
+  var PERSONAL = {
+    back: ['✨ Minta: húzó napokon jó a recovery → MAV +1', '⚠ Váll-niggle: evezés-variánsok előnyben'],
+    shoulder: ['⚠ Váll-niggle: nyomás helyett kábeles emelések', '✨ Célszöveg: „a váll jöhet" → Emphasize javasolva'],
+    chest: ['✨ Minta: W2 grind után tartás vált be (Nyár blokk)'],
+    quad: ['✨ Röpi-szezon: robbanékonyság-barát variánsok'],
+    glute: []
+  };
+  var LASTBLOCK = { back: [12, 20, 22], shoulder: [10, 18, 22], chest: [8, 14, 14], quad: [8, 12, 14], glute: [6, 6, 6] };
+  function renderMuscle(key) {
+    var g = GROUPS.filter(function (x) { return x.key === key; })[0];
+    var wsh = WASH[key], ser = weekSeries(g), NOW = 3, cur = ser[NOW - 1], pv = ser[NOW - 2], cap = capOf(g), max = g.mrv;
+    var pct = function (v) { return Math.round(v / max * 100); };
+    var pg = document.getElementById('page-muscle');
+    ['p-coral', 'p-sage', 'p-rose', 'p-gold', 'p-lav'].forEach(function (c) { pg.classList.remove(c); });
+    pg.classList.add({ back: 'p-coral', shoulder: 'p-gold', chest: 'p-rose', quad: 'p-sage', glute: 'p-lav' }[key]);
+    var hold = g.tier === 'M' || key === 'chest' || cur >= cap;
+    var next = g.tier === 'M' ? g.mv : (key === 'chest' ? 12 : Math.min(cur + 2, cap));
+    document.getElementById('mhero').innerHTML =
+      '<span class="mpill" style="' + g.pill + 'font-size:11px;padding:4px 14px;">' + g.name + '</span>' +
+      '<div class="bignum" style="color:' + wsh[2] + ';">' + cur + (g.tier === 'M' ? '' : ' <span style="font-size:18px;opacity:.6;">→</span> ' + cap) + '</div>' +
+      '<div class="nm">' + (g.tier === 'E' ? 'Emphasize' : g.tier === 'G' ? 'Grow' : 'Maintain') + ' · ' + (g.tier === 'M' ? 'MV-n tart' : 'MEV' + (g.tier === 'E' ? '+2' : '') + ' → ' + (g.tier === 'E' ? 'MRV' : 'MAV')) + '</div>' +
+      '<div class="sb">3. hét · ' + freqOf(key) + '×/hét · ' + (hold ? 'most tartás' : '+2 e héten') + '</div>';
+    /* heti ív + napok + gyakorlatok */
+    var days = selectedDays.map(function (d, i) {
+      var st = dayStats(i, runSetsOf);
+      var hit = st.groups.filter(function (p) { return p[0].key === key; })[0];
+      return hit ? { day: d, type: st.type, sets: hit[1] } : null;
+    }).filter(Boolean);
+    var exs = EXBANK[key];
+    var dayRows = days.map(function (d) {
+      var base = Math.floor(d.sets / exs.length), rem = d.sets - base * exs.length;
+      var chips = exs.map(function (ex, i) { return '<span class="tplchip">' + ex[0] + ' ' + (base + (i < rem ? 1 : 0)) + '×</span>'; }).join('');
+      return '<div class="vrow" style="align-items:flex-start;"><span class="mpill" style="background:rgba(255,255,255,.8);color:' + wsh[2] + ';width:52px;">' + d.day + '</span><div class="grow"><div style="font-size:10.5px;font-weight:700;">' + d.type + ' nap · ' + d.sets + ' szett</div><div class="chips2" style="margin-top:4px;gap:4px;">' + chips + '</div></div></div>';
+    }).join('');
+    var spark = ser.map(function (v, k) {
+      var bg = k === NOW - 1 ? 'linear-gradient(180deg,#FFD979,#C9962E)' : wsh[2];
+      return '<b class="' + (k === 5 ? 'dl' : k >= NOW ? 'fut' : '') + '" style="--d:' + (200 + k * 50) + 'ms;height:' + Math.max(12, pct(v)) + '%;background:' + bg + ';"></b>';
+    }).join('');
+    var lb = LASTBLOCK[key];
+    var pers = PERSONAL[key];
+    document.getElementById('mbody').innerHTML =
+      '<div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">' +
+        '<div class="statcell"><b>' + cur + '</b><small>szett · most</small></div>' +
+        '<div class="statcell"><b>' + (g.tier === 'M' ? '—' : cap) + '</b><small>plafon</small></div>' +
+        '<div class="statcell"><b>' + (g.tier === 'M' ? '=' : (hold ? '=' : '+2')) + '</b><small>e héten</small></div>' +
+        '<div class="statcell"><b>' + freqOf(key) + '×</b><small>/ hét</small></div>' +
+      '</div>' +
+      (g.tier === 'M' ? '' :
+      '<div class="vcard rise" style="--d:60ms;padding:10px 12px;">' +
+        '<div class="mrow"><div class="p-eyebrow grow">A sáv · hol tartasz</div><span class="mut" style="font-size:8.5px;">halvány = múlt hét · izzó = most</span></div>' +
+        '<div class="vb" style="height:14px;"><span class="z1" style="left:0;right:0;"></span><span class="z2" style="left:' + pct(g.mev) + '%;width:' + (pct(g.mav) - pct(g.mev)) + '%;"></span><span class="z3" style="left:' + pct(g.mav) + '%;width:' + (100 - pct(g.mav)) + '%;"></span>' +
+        '<span class="hl" style="left:' + pct(g.mev) + '%;"></span><span class="hl" style="left:' + pct(g.mav) + '%;"></span><span class="mk dim" style="left:' + pct(pv) + '%;"></span><span class="mk" style="left:' + pct(cur) + '%;"></span></div>' +
+        '<div class="vcap"><span>MV ' + g.mv + '</span><span>MEV ' + g.mev + '</span><span>MAV ' + g.mav + '</span><span>MRV ' + g.mrv + '</span></div>' +
+      '</div>') +
+      '<div class="vcard rise" style="--d:90ms;padding:10px 12px;">' +
+        '<div class="mrow"><div class="p-eyebrow grow">A blokk íve · W1 → deload</div><span class="mut" style="font-size:8.5px;">' + ser.slice(0, 5).join(' · ') + ' · ' + ser[5] + '</span></div>' +
+        '<div class="wspark" style="height:40px;">' + spark + '</div>' +
+        '<div class="arclbl"><span>W1</span><span>W2</span><span>W3 · most</span><span>W4</span><span>W5 · csúcs</span><span>deload</span></div>' +
+      '</div>' +
+      '<div class="coach rise" style="--d:120ms;margin:0 0 10px;"><span class="dot"></span><span>' +
+        (g.tier === 'M' ? 'Maintain: ' + g.mv + ' szett tartja, amit felépítettél — nem rámpázik, a deloadon sem csökken.'
+        : key === 'chest' ? 'A múlt héten grindeltél (RIR-rés a tervhez képest), ezért most tartjuk a ' + cur + '-et. Ha e héten visszaáll a tempó, hétfőn +2 → ' + next + '.'
+        : hold ? 'Plafonon vagy — innen már a csúcshét és a deload jön.'
+        : 'Produktív hét volt, hétfőn +2 → ' + next + ' szett. A plafon ' + cap + ', a csúcshéten ' + ser[4] + '-ig jutsz.') +
+      '</span></div>' +
+      '<div class="vcard rise" style="--d:150ms;padding:4px 12px;">' +
+        '<div class="p-eyebrow" style="padding:8px 0 2px;">Ezen a héten · hol dolgozik</div>' + dayRows +
+      '</div>' +
+      '<div class="vcard rise" style="--d:180ms;padding:10px 12px;">' +
+        '<div class="mrow"><div class="p-eyebrow grow">Honnan a sáv · levezetés</div><span class="mut" style="font-size:8.5px;">4 réteg, egymásra</span></div>' +
+        '<div class="dsteps">' +
+        /* 01 */
+        '<div class="dstep"><span class="dnum" style="background:#A2958A;">1</span><div class="grow"><div class="dt">Baseline · RP tábla</div>' +
+          '<div class="dcells"><div class="dcell"><b>' + g.mv + '</b><small>MV</small></div><div class="dcell"><b>' + g.mev + '</b><small>MEV</small></div><div class="dcell"><b>' + g.mav + '</b><small>MAV</small></div><div class="dcell"><b>' + g.mrv + '</b><small>MRV</small></div></div></div></div>' +
+        /* 02 */
+        '<div class="dstep"><span class="dnum" style="background:' + wsh[2] + ';">2</span><div class="grow"><div class="dt">Fókusz-sáv · ' + (g.tier === 'E' ? 'Emphasize' : g.tier === 'G' ? 'Grow' : 'Maintain') + '</div>' +
+          (g.tier === 'M'
+            ? '<div class="dcells"><div class="dcell"><b>' + g.mv + '</b><small>tart</small></div><div class="dcell"><b>0</b><small>/ hét</small></div></div>'
+            : '<div class="dcells"><div class="dcell"><b>' + w1Of(g) + '</b><small>indul</small></div><div class="dcell"><b>' + cap + '</b><small>plafon</small></div><div class="dcell"><b>+2</b><small>/ hét</small></div></div>') +
+          '</div></div>' +
+        /* 03 */
+        '<div class="dstep"><span class="dnum" style="background:#6C5FA3;">3</span><div class="grow"><div class="dt">Rád szabva</div>' +
+          (pers.length ? pers.map(function (t) {
+            var isWarn = t.indexOf('⚠') === 0;
+            var eff = t.indexOf('MAV +1') > -1 ? '<span class="eff" style="background:rgba(110,139,94,0.16);color:#4E6B42;">MAV +1</span>'
+              : isWarn ? '<span class="eff" style="background:rgba(201,150,46,0.16);color:#A8801F;">variáns</span>'
+              : '<span class="eff" style="background:rgba(108,95,163,0.14);color:#5D4FA0;">tier</span>';
+            return '<div class="dadj"><span class="ico">' + (isWarn ? '⚠' : '✨') + '</span><span class="tx">' + t.replace(/^[✨⚠]\s*/, '').replace(/ → MAV \+1$/, '') + '</span>' + eff + '</div>';
+          }).join('') : '<div class="mut" style="font-size:9px;margin-top:4px;">nincs igazítás — a baseline érvényes</div>') +
+          '</div></div>' +
+        /* 04 */
+        '<div class="dstep" style="padding-bottom:4px;"><span class="dnum" style="background:linear-gradient(135deg,#FFD979,#C9962E);">4</span><div class="grow"><div class="dt">Eredő · a blokkban</div>' +
+          '<div class="dcells">' + ser.slice(0, NOW).map(function (v, k) { return '<div class="dcell' + (k === NOW - 1 ? ' hot' : '') + '"><b>' + v + '</b><small>W' + (k + 1) + (k === NOW - 1 ? ' · most' : '') + '</small></div>'; }).join('') +
+          '<div class="dcell" style="background:rgba(110,139,94,0.14);"><b style="color:#4E6B42;">' + (hold ? '=' : '+2') + '</b><small style="color:#4E6B42;">hétfőn</small></div></div>' +
+          '</div></div>' +
+        '</div>' +
+        '<div class="mrow" style="margin-top:6px;"><span class="mut grow" style="font-size:8.5px;">Mennyire biztos a sáv · 65%</span><button class="ghost" style="padding:3px 10px;font-size:8.5px;">🔧 Felülír</button></div>' +
+        '<div class="confbar"><div style="width:65%;"></div></div>' +
+      '</div>' +
+      '<div class="vcard rise" style="--d:210ms;padding:10px 12px;">' +
+        '<div class="mrow"><div class="p-eyebrow grow">Előző blokk · Hypertrophy · Nyár</div><span class="mut" style="font-size:8.5px;">indulás → csúcs / plafon</span></div>' +
+        '<div class="mband"><div class="mrow"><span class="nums">' + lb[0] + ' → ' + lb[1] + ' / ' + lb[2] + '</span><span class="grow"></span><span class="mut" style="font-size:8.5px;">' + (lb[1] >= lb[2] ? 'elérte a plafont' : (lb[2] - lb[1]) + ' maradt a plafonig') + '</span></div><div class="dbbar"><div style="width:' + Math.round(lb[1] / lb[2] * 100) + '%;background:' + wsh[2] + ';"></div></div></div>' +
+      '</div>' +
+      '<p class="habnote">A baseline sosem íródik felül — a Felülír csak egy újabb réteg rá. Piros itt sincs: a tartás döntés, nem hiba.</p>';
+  }
+
+  /* ==================== AKTÍV RUN oldal ==================== */
+  function bandRow(g, cur, cap, stepTxt) {
+    var pct = Math.round(cur / cap * 100);
+    var nums = g.tier === 'M' ? cur + ' szett · tart' : cur + ' → ' + cap;
+    return '<div class="mband"><div class="mrow">' +
+      '<span class="mpill" style="' + g.pill + '">' + g.name + '</span>' + tchipOf(g.tier) +
+      '<span class="grow"></span>' + (stepTxt || '') + '<span class="nums">' + nums + '</span></div>' +
+      (g.tier === 'M' ? '' : '<div class="dbbar"><div style="width:' + pct + '%;"></div></div>') +
+      '</div>';
+  }
+  function renderRun() {
+    renderWeek();
+    var mos = document.getElementById('runmosaic');
+    var TODAY = 1; /* Sze */
+    mos.innerHTML = selectedDays.map(function (day, i) {
+      return dayTileHtml(day, dayStats(i, runSetsOf), 'data-ri="' + i + '"', i === TODAY ? 'now' : i < TODAY ? 'done' : null);
+    }).join('');
+    mos.querySelectorAll('.dtile').forEach(function (t) {
+      function go(e) {
+        e.stopPropagation();
+        activeDayIdx = parseInt(t.getAttribute('data-ri'), 10);
+        renderDayPage('run');
+        openPage('page-day');
+      }
+      t.addEventListener('click', go);
+      t.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(e); });
+    });
+  }
+  renderRun();
 
   /* akkordeon — egyszerre egy nyitva + ▲▼ átrendezés */
   function bindExRow(row) {
@@ -1100,51 +1645,50 @@
       });
     });
   }
-  document.querySelectorAll('.exrow').forEach(bindExRow);
-
-  /* Failure / Volume toggle */
-  document.querySelectorAll('[data-fv]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.querySelectorAll('[data-fv]').forEach(function (x) { x.classList.remove('on'); });
-      b.classList.add('on');
-      var chip = document.getElementById('stychip');
-      if (b.getAttribute('data-fv') === 'fire') {
-        chip.className = 'stychip fire'; chip.textContent = '🔥 ' + ST.sets + '×' + ST.repMin + '–' + ST.repMax;
-      } else {
-        chip.className = 'stychip leaf'; chip.textContent = '🌿 ' + ST.sets + '×' + ST.repMin + '–' + ST.repMax;
-      }
-    });
-  });
-
-  /* stepperek */
+  /* stepperek + Failure/Volume — a nap-oldal renderelése után kötjük */
   var ST = { sets: 4, repMin: 8, repMax: 10, kg: null, wu: 1 };
   function renderSt() {
-    document.getElementById('v-sets').textContent = ST.sets;
-    document.getElementById('v-rep').textContent = ST.repMin + '–' + ST.repMax;
-    document.getElementById('v-kg').textContent = ST.kg === null ? 'auto' : (String(ST.kg).replace('.', ',') + ' kg');
-    document.getElementById('v-wu').textContent = ST.wu;
-    var chip = document.getElementById('stychip');
+    var el = function (id) { return document.getElementById(id); };
+    if (!el('v-sets')) return;
+    el('v-sets').textContent = ST.sets;
+    el('v-rep').textContent = ST.repMin + '–' + ST.repMax;
+    el('v-kg').textContent = ST.kg === null ? 'auto' : (String(ST.kg).replace('.', ',') + ' kg');
+    el('v-wu').textContent = ST.wu;
+    var chip = el('v-sets').closest('.exrow').querySelector('.stychip');
     chip.textContent = (chip.className.indexOf('fire') > -1 ? '🔥 ' : '🌿 ') + ST.sets + '×' + ST.repMin + '–' + ST.repMax;
-    document.getElementById('wusuggest').style.display = ST.wu === 2 ? 'none' : '';
+    el('wusuggest').style.display = ST.wu === 2 ? 'none' : '';
   }
-  document.querySelectorAll('[data-st]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var d = parseInt(b.getAttribute('data-d'), 10);
-      var k = b.getAttribute('data-st');
-      if (k === 'sets') ST.sets = Math.min(10, Math.max(1, ST.sets + d));
-      if (k === 'wu') ST.wu = Math.min(10, Math.max(0, ST.wu + d));
-      if (k === 'rep') {
-        if (ST.repMin + d >= 1 && ST.repMax + d <= 100) { ST.repMin += d; ST.repMax += d; }
-      }
-      if (k === 'kg') {
-        if (ST.kg === null && d > 0) ST.kg = 20;
-        else if (ST.kg !== null) { ST.kg += d * 2.5; if (ST.kg < 20) ST.kg = null; }
-      }
-      renderSt();
+  function bindSteppers() {
+    var root = document.getElementById('daybody');
+    root.querySelectorAll('[data-fv]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        root.querySelectorAll('[data-fv]').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        var chip = b.closest('.exrow').querySelector('.stychip');
+        chip.className = 'stychip ' + (b.getAttribute('data-fv') === 'fire' ? 'fire' : 'leaf');
+        renderSt();
+      });
     });
-  });
-  document.getElementById('wusuggest').addEventListener('click', function () { ST.wu = 2; renderSt(); });
-  renderSt();
+    root.querySelectorAll('[data-st]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var d = parseInt(b.getAttribute('data-d'), 10);
+        var k = b.getAttribute('data-st');
+        if (k === 'sets') ST.sets = Math.min(10, Math.max(1, ST.sets + d));
+        if (k === 'wu') ST.wu = Math.min(10, Math.max(0, ST.wu + d));
+        if (k === 'rep') {
+          if (ST.repMin + d >= 1 && ST.repMax + d <= 100) { ST.repMin += d; ST.repMax += d; }
+        }
+        if (k === 'kg') {
+          if (ST.kg === null && d > 0) ST.kg = 20;
+          else if (ST.kg !== null) { ST.kg += d * 2.5; if (ST.kg < 20) ST.kg = null; }
+        }
+        renderSt();
+      });
+    });
+    var ws = document.getElementById('wusuggest');
+    if (ws) ws.addEventListener('click', function () { ST.wu = 2; renderSt(); });
+    renderSt();
+  }
 
   /* sheetek — indítás / zárás / gyakorlat-picker */
   var SHEETS = { start: ['startback', 'startsheet'], close: ['closeback', 'closesheet'], pick: ['pickback', 'picksheet'] };
@@ -1192,16 +1736,10 @@
   ];
   var addedCount = 0;
   function addExercise(name, muscle, type) {
-    var chip = type === 'compound'
-      ? '<span class="stychip fire">🔥 4×8–10</span>'
-      : '<span class="stychip leaf">🌿 3×10–12</span>';
+    var g = GROUPS.filter(function (x) { return x.name === muscle; })[0] || GROUPS[0];
     var row = document.createElement('div');
-    row.className = 'exrow';
-    row.innerHTML = '<div class="exhead" data-ex><div class="grow"><div class="nm2">' + name + '</div>' +
-      '<div class="mut" style="font-size:8.5px;">' + muscle + ' · ' + type + '</div></div>' + chip +
-      '<span class="ud"><button data-mv="-1" aria-label="' + name + ' feljebb">▲</button><button data-mv="1" aria-label="' + name + ' lejjebb">▼</button></span>' +
-      '<span class="mut" style="font-size:11px;">▾</span></div>' +
-      '<div class="exbody"><div class="mut" style="font-size:9.5px;padding:4px 0 8px;">A cél sémájával érkezett — a stepper-rács ugyanaz, mint fent.</div></div>';
+    row.innerHTML = exTile(g, [name, type], type === 'compound' ? 3 : 3, false);
+    row = row.firstChild;
     var addBtn = document.getElementById('addex');
     addBtn.parentNode.insertBefore(row, addBtn);
     bindExRow(row);
@@ -1225,7 +1763,6 @@
       });
     });
   }
-  document.getElementById('addex').addEventListener('click', function () { openSheet('pick'); });
   document.getElementById('pickdone').addEventListener('click', function () { closeSheet('pick'); });
   document.getElementById('picksearch').addEventListener('input', function () { renderPicks(this.value.toLowerCase()); });
   renderPicks('');
@@ -1269,11 +1806,5 @@
     });
   });
 
-  /* volumen provenance expand */
-  var vb = document.getElementById('vb-back');
-  vb.addEventListener('click', function (e) {
-    if (e.target.closest('.ghost')) return;
-    vb.classList.toggle('open');
-  });
 })();
 </script>
