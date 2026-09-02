@@ -127,6 +127,18 @@ integration (D3).
 pillar fails catalog validation, the service falls through to `LifeGoalTemplateProposer` — a
 deterministic, dimension-keyed rule-based proposal. **The response is never empty** (spec §7).
 
+**The propose response must be a LEGAL create request.** The wizard feeds it into
+`POST /api/life-goals` verbatim, so anything the model over-produces would answer 200 on propose
+and then 400 on save, dead-ending the wizard. `LifeGoalProposeLlmAdapter` therefore clamps
+`pillars` to `maxPillars` and BOTH `plans` and `obstacles` to 5 (`LifeGoalUpsertRequest`'s
+`maxItems`), and truncates the model's strings to the schema maxima (`label` 80, `ha`/`akkor`
+240, obstacle 300); `LifeGoalProposeService.toResponse` re-checks each proposed `kind` against
+its catalog entry's allowed `kinds()` — the same check `LifeGoalPillarService.validate` applies
+on save — and drops a pillar that would fail it. A plan's `triggerSource` is whitelisted to
+`sport_session_logged` / `checkin_energy_lte` / `ritual_missed`; anything else **nulls the
+trigger but keeps the plan**, so the UI falls through to its honest "nincs hozzá jel" label
+instead of promising „Mezo figyeli (<source>)" for a trigger nothing will ever evaluate.
+
 ## 4. Data model & API
 
 Three tables (`db/changelog/1.0.0/script/…life_goal…sql`), all `OwnedEntity` (soft-deleted,
@@ -214,8 +226,8 @@ hand-written types, mirroring the contract), `lifegoalMock.ts` (`MOCK_LIFE_GOALS
 ```ts
 import { useLifeGoals, useLifeGoal, useLifeGoalMutations, useLifeGoalPropose, useSignalCatalog } from '@/data/hooks'
 
-const { goals, isPending } = useLifeGoals()               // LifeGoalResponse[]
-const { goal } = useLifeGoal(id)                            // one goal or null, derived from the list
+const { goals, isPending, isError, refetch } = useLifeGoals()          // LifeGoalResponse[]
+const { goal, isPending, isError, refetch, goalCount } = useLifeGoal(id) // one goal or null, derived from the list
 const { create, update, changeStatus, replacePillars, remove, pending } = useLifeGoalMutations()
 const { entries } = useSignalCatalog()                       // the 28-entry catalog
 const { propose, pending: proposing } = useLifeGoalPropose() // AI/template draft
@@ -226,6 +238,24 @@ All hooks are dual-mode (`isMockMode()`), never reach into `lifegoalApi.ts` or
 nothing renders while `useLifeGoals()`/`useLifeGoal()` is pending. `useLifeGoal(id)` derives
 from the same `['lifeGoals']` query the hub reads, so there is no second network round trip on
 navigating hub → detail.
+
+**Both pages render the full loading/empty/error triad, never two of the three.** `isPending`
+returns a `ScreenSkeleton` (the hub used to print a fabricated "0 aktív · 0 parkol" during the
+real-mode loading window), and `isError` with an empty list renders a terminal `GhostState` +
+"Újra" retry — a failed fetch must never read as "you have no goals" / "no such goal".
+`useLifeGoal` also exposes `goalCount` for exactly that distinction: a resolved-but-absent id is
+the only real not-found. Because `useLifeGoal` derives from the LIST query and
+`invalidateQueries` does **not** refetch an inactive query, `create`'s real arm writes the
+created goal into the `['lifeGoals']` cache before returning — without it the wizard's
+navigation to `/me/goals/{id}` flashed "Nincs ilyen cél.".
+
+**A pillar added from `PillarCatalogSheet` goes through `features/me/logic/pillarFromCatalog.ts`**
+(both the Cél-oldal `＋ Pillér` flow and the wizard's step 3 use it, so the two cannot drift).
+It picks the kind by preference order — the first of `average`/`baseline`/`habit`/`target`/
+`linked` the entry allows, NOT `kinds[0]` — and attaches a real default rule for each
+parameterisable kind (habit: `gte`/`threshold 1`/`5× per week`). `kinds[0]` sent `rule: {}` for
+the 13 of 28 entries whose first kind is `habit`, which `PillarCard` rendered as a literal `?`
+and slice 2's scorer could not score.
 
 ## 7. How to extend it
 
@@ -258,12 +288,18 @@ pure-mock branch that never touches `lifegoalApi.ts`.
 - `LifeGoalPillarApiIT` — `PUT /pillars` catalog/skill/kind/cap validation.
 - `LifeGoalProposeIT` — AI-branch (`[fake-lifegoal-propose:{…}]` sentinel), malformed-JSON
   degrade, and the template fallback when the port is absent.
-- `LifeGoalSeedDataIT` — the `demofixtures` seed, `@ActiveProfiles({"test", "demodata",
-  "demofixtures"})` (see the `AbstractIntegrationTest` gotcha in §9).
+- `LifeGoalSeedDataIT` — the `demofixtures` seed, `@ActiveProfiles({"demodata",
+  "demofixtures"})` (see the `AbstractIntegrationTest` gotcha in §9): row counts, the four
+  titles/statuses/`createdBy`, `activatedAt` on the three active goals, and every seeded pillar
+  run through `SignalCatalog.find` + its entry's allowed `kinds` (D4's closed-catalog guarantee).
 
 **Frontend**: `CelokPage.test.tsx`, `CelPage.test.tsx`, `CelWizardPage.test.tsx` (page-level,
-both test modes), `data/lifegoal/lifegoalHooks.test.tsx` (hook-level: mock-cache patching +
-real-mode invalidation). Run both `pnpm test` (real, MSW-backed) and
+both test modes — each also covers its real-mode loading/error state), `logic/pillarFromCatalog.test.ts`
+(every catalog entry yields an allowed kind + a populated rule), `data/lifegoal/lifegoalHooks.test.tsx`
+(hook-level: mock-cache patching, the real-mode create cache-seed, `isError`/`refetch`). All five
+life-goal write endpoints have MSW handlers resolving the goal by id (`test/msw/handlers.ts`) —
+`setup.ts` runs MSW with `onUnhandledRequest: 'bypass'`, so a missing handler would let a
+real-mode write escape to the network and pass silently. Run both `pnpm test` (real, MSW-backed) and
 `VITE_USE_MOCK=true pnpm test` (mock) — see [`_platform-data-layer.md`](_platform-data-layer.md)
 §8 for the dual-mode test convention. The two structural CSS guards in
 `shared/ui/mozaik/prototypeCssStructure.test.ts` / `mozaikCssTokens.test.ts` also cover the
@@ -289,18 +325,19 @@ real-mode invalidation). Run both `pnpm test` (real, MSW-backed) and
   inside the adapter's `whyText`-carrying context, not the title.
 - **`AbstractIntegrationTest` does not activate the `demodata` owner profile** — only
   `ApiIntegrationTest` does. A seed-data IT (`LifeGoalSeedDataIT`) that extends
-  `AbstractIntegrationTest` directly must add `@ActiveProfiles({"test", "demodata",
+  `AbstractIntegrationTest` directly must add `@ActiveProfiles({"demodata",
   "demofixtures"})` itself, or the owner the seed keys off of never exists.
 - **Two frontend CSS guard tests constrain `styles/prototype.css`** and this slice's `lg-*`
   rules live inside the region they police: `mozaikCssTokens.test.ts` forbids raw light-surface
   hex codes inside the Mozaik region (tokens only) and `prototypeCssStructure.test.ts`/the
   Mozaik-section scan assumes the **Today** section is the last one in the file — new rules for
   this feature must land before it, not after.
-- **Mock/real divergence:** the mock `changeStatus` arm
-  (`frontend/src/data/lifegoal/lifegoalHooks.ts`) sets `activatedAt` on activation but never
-  sets `closedAt` on `done`/`archived`, while the backend does. **No UI may read `closedAt`**
-  until the mock is brought into parity — nothing does today, but the next feature to touch this
-  page should check before adding a "closed on …" line.
+- **Mock/real parity, `closedAt`:** the mock `changeStatus` arm
+  (`frontend/src/data/lifegoal/lifegoalHooks.ts`) now stamps `closedAt` on `done`/`archived`
+  alongside `activatedAt` on activation, matching the backend — the earlier divergence (and the
+  "no UI may read `closedAt`" embargo it forced) is resolved. Note `done → archived` still
+  OVERWRITES `closedAt` on both sides; a completed-goals surface (slice 3) must not present it
+  as the completion date without fixing that first.
 - **ADR still owed:** `docs/decisions/0034-measurable-life-goals.md` (spec §7) — NOT written by
   this task. It must record that the life-goal system overrides the old PRD's IDENT-5/D38
   prohibition ("PERMA is never a widget", "never a UI progress bar") specifically for this

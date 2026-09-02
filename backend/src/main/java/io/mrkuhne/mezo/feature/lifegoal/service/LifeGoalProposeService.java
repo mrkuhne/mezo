@@ -56,15 +56,21 @@ public class LifeGoalProposeService {
 
     private LifeGoalProposeResponse toResponse(Proposal p, String source) {
         List<LifeGoalPillarInput> pillars = p.pillars().stream()
-            .flatMap(x -> catalog.byId(x.catalogId()).stream().map(e -> LifeGoalPillarInput.builder()
-                .label(x.label()).skillKey(x.skillKey()).kind(PillarKind.fromValue(x.kind()))
-                .weight(x.weight() < 1 ? 1 : Math.min(3, x.weight()))
-                .active(true).source(mapper.toSourceDto(e.source()))
-                .rule(PillarRule.builder().threshold(x.threshold())
-                    .comparator(x.comparator() == null ? null : PillarRule.ComparatorEnum.fromValue(x.comparator()))
-                    .daysPerWeek(x.daysPerWeek()).windowDays(windowDaysFor(x.kind()))
-                    .minDataDays("baseline".equals(x.kind()) ? 14 : null).startValue(x.startValue()).targetValue(x.targetValue()).build())
-                .build()))
+            // The catalog's per-entry `kinds()` whitelist is exactly what LifeGoalPillarService.validate
+            // applies on save, so a pillar this response emits with a kind the entry does not allow
+            // (e.g. kind=linked on sleep_duration) would answer 200 here and then 400 the wizard's
+            // create. Re-check it here so an unsavable pillar never reaches the client at all.
+            .flatMap(x -> catalog.byId(x.catalogId()).stream()
+                .filter(e -> e.kinds().contains(x.kind()))
+                .map(e -> LifeGoalPillarInput.builder()
+                    .label(x.label()).skillKey(x.skillKey()).kind(PillarKind.fromValue(x.kind()))
+                    .weight(x.weight() < 1 ? 1 : Math.min(3, x.weight()))
+                    .active(true).source(mapper.toSourceDto(e.source()))
+                    .rule(PillarRule.builder().threshold(x.threshold())
+                        .comparator(x.comparator() == null ? null : PillarRule.ComparatorEnum.fromValue(x.comparator()))
+                        .daysPerWeek(x.daysPerWeek()).windowDays(windowDaysFor(x.kind()))
+                        .minDataDays("baseline".equals(x.kind()) ? 14 : null).startValue(x.startValue()).targetValue(x.targetValue()).build())
+                    .build()))
             .toList();
         return LifeGoalProposeResponse.builder()
             .dimension(LifeGoalDimension.fromValue(p.dimension()))

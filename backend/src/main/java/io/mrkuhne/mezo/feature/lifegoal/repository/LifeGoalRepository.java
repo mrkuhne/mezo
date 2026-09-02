@@ -9,5 +9,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface LifeGoalRepository extends JpaRepository<LifeGoalEntity, UUID> {
     Optional<LifeGoalEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
     List<LifeGoalEntity> findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(UUID createdBy);
-    List<LifeGoalEntity> findByCreatedByAndStatusAndDeletedFalse(UUID createdBy, String status);
 }

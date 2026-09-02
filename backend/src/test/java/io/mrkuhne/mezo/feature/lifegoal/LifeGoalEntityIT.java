@@ -46,6 +46,26 @@ class LifeGoalEntityIT extends AbstractIntegrationTest {
         assertThat(goalRepository.findByIdAndCreatedByAndDeletedFalse(g.getId(), ownerId())).isPresent();
     }
 
+    // The ownership invariant of the WHOLE slice: LifeGoalService.requireOwned reads through
+    // findByIdAndCreatedByAndDeletedFalse, and LifeGoalApiIT only probes it with a random
+    // nonexistent uuid — which a regression to plain findById would still answer 404 for. This
+    // proves the createdBy predicate itself: a REAL, existing row owned by someone else is
+    // invisible to the owner (missing and foreign are indistinguishable, both 404).
+    @Test
+    void testFindByIdAndCreatedBy_shouldBeEmpty_whenGoalBelongsToAnotherUser() {
+        UUID otherId = databasePopulator.populateUser("other-owner@test.local");
+        LifeGoalEntity foreign = populator.goal(otherId, "active");
+        populator.sleepPillar(foreign);
+
+        // Sanity: the row really exists and IS visible to its own owner.
+        assertThat(goalRepository.findById(foreign.getId())).isPresent();
+        assertThat(goalRepository.findByIdAndCreatedByAndDeletedFalse(foreign.getId(), otherId)).isPresent();
+
+        assertThat(goalRepository.findByIdAndCreatedByAndDeletedFalse(foreign.getId(), ownerId())).isEmpty();
+        assertThat(goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(ownerId()))
+            .noneSatisfy(g -> assertThat(g.getId()).isEqualTo(foreign.getId()));
+    }
+
     @Test
     void testSave_shouldRejectUnknownDimension_whenCheckViolated() {
         LifeGoalEntity g = new LifeGoalEntity();

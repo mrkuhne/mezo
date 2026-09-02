@@ -9,9 +9,9 @@ import { KIND_LABEL } from '@/features/me/logic/lifegoalLabels'
 function ruleLine(p: LifeGoalPillarResponse): string {
   const r = p.rule ?? {}
   switch (p.kind) {
-    case 'habit': return `${r.daysPerWeek ?? '?'}× / hét`
-    case 'average': return `${r.windowDays ?? 7} nap átlag · ${r.comparator === 'lte' ? '≤' : '≥'} ${r.threshold ?? '?'}`
-    case 'target': return `${r.startValue ?? '?'} → ${r.targetValue ?? '?'} · ${r.targetDate ?? 'nincs határidő'}`
+    case 'habit': return `${r.daysPerWeek ?? '—'}× / hét`
+    case 'average': return `${r.windowDays ?? 7} nap átlag · ${r.comparator === 'lte' ? '≤' : '≥'} ${r.threshold ?? '—'}`
+    case 'target': return `${r.startValue ?? '—'} → ${r.targetValue ?? '—'} · ${r.targetDate ?? 'nincs határidő'}`
     case 'baseline': return `saját ${r.windowDays ?? 28} napos medián`
     case 'linked': return 'súlycél · ütem'
     default: return ''

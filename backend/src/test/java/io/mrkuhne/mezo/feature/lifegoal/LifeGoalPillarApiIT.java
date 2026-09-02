@@ -36,7 +36,9 @@ class LifeGoalPillarApiIT extends ApiIntegrationTest {
     @Test
     void testListLifeGoalSignals_shouldReturnCatalog_whenCalled() {
         SignalCatalogResponse res = getForBody("/api/life-goals/signals", ownerAuthHeaders(), HttpStatus.OK, SignalCatalogResponse.class);
-        assertThat(res.getEntries()).hasSizeGreaterThanOrEqualTo(25);
+        // EXACTLY 28 — the catalog is closed (spec D4); a `>= 25` floor would let three entries
+        // silently vanish, and every seeded/proposed pillar is validated against these rows.
+        assertThat(res.getEntries()).hasSize(28);
         assertThat(res.getEntries()).anySatisfy(e -> {
             assertThat(e.getLabel()).isEqualTo("Alváshossz");
             assertThat(e.getKinds()).contains(PillarKind.AVERAGE);

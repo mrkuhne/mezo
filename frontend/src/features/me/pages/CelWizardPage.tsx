@@ -7,6 +7,7 @@ import { useLifeGoalMutations, useLifeGoalPropose } from '@/data/hooks'
 import type { IfThenPlan, LifeGoalDimension, LifeGoalFrame, LifeGoalPillarInput, LifeGoalProposeResponse, SignalCatalogEntry } from '@/data/lifegoal/lifegoalApi'
 import { DIMENSIONS, DIMENSION_ORDER, KIND_LABEL } from '@/features/me/logic/lifegoalLabels'
 import { PillarCatalogSheet } from '@/features/me/sheets/PillarCatalogSheet'
+import { pillarFromCatalog } from '@/features/me/logic/pillarFromCatalog'
 
 // Five-step goal-creation wizard (Task 11, mezo-iizd.1, prototype celok.html #page-wiz):
 // Cél → Keret → Pillérek → Ha–akkor → Összegzés (D8/D9). Step 1→2 fires `propose` ONCE
@@ -34,6 +35,10 @@ export function CelWizardPage() {
   const { create, changeStatus, pending: saving } = useLifeGoalMutations()
   const [step, setStep] = useState(0)
   const [catalogOpen, setCatalogOpen] = useState(false)
+  // A rejected `propose` used to leave `d.source` null forever: the step-2 spinner ran for good
+  // and „Tovább" stayed disabled, stranding the wizard. This flag swaps the spinner for a
+  // terminal error card whose retry re-runs `goToFrame` (house loading/empty/error triad).
+  const [proposeFailed, setProposeFailed] = useState(false)
   const [d, setD] = useState<WizardDraft>({
     title: '', whyText: '', targetDate: '', dimension: 'health', frame: 'unset', useReframe: false,
     pillars: [], obstacle: '', obstacles: [], plans: [], source: null,
@@ -44,12 +49,19 @@ export function CelWizardPage() {
   const goToFrame = async () => {
     setStep(1)
     if (d.source) return
-    const res: LifeGoalProposeResponse = await propose({ title: d.title, whyText: d.whyText || undefined, targetDate: d.targetDate || undefined })
-    patch({
-      dimension: res.dimension, secondaryDimension: res.secondaryDimension, frame: res.frame, frameNote: res.frameNote, reframedWhy: res.reframedWhy,
-      pillars: res.pillars.map((p) => ({ ...p, on: true })), obstacles: res.obstacles, obstacle: res.obstacles[0] ?? '',
-      plans: res.ifThenPlans.map((p) => ({ ...p, own: false })), source: res.source,
-    })
+    setProposeFailed(false)
+    try {
+      const res: LifeGoalProposeResponse = await propose({ title: d.title, whyText: d.whyText || undefined, targetDate: d.targetDate || undefined })
+      patch({
+        dimension: res.dimension, secondaryDimension: res.secondaryDimension, frame: res.frame, frameNote: res.frameNote, reframedWhy: res.reframedWhy,
+        pillars: res.pillars.map((p) => ({ ...p, on: true })), obstacles: res.obstacles, obstacle: res.obstacles[0] ?? '',
+        plans: res.ifThenPlans.map((p) => ({ ...p, own: false })), source: res.source,
+      })
+    } catch {
+      // The global mutation-cache toast (QueryProvider) already reports the failure; this only
+      // needs to unstick the step so the user can retry instead of watching a dead spinner.
+      setProposeFailed(true)
+    }
   }
 
   const activePillars = d.pillars.filter((p) => p.on).map(({ on: _on, ...rest }) => rest)
@@ -65,8 +77,7 @@ export function CelWizardPage() {
   }
 
   const addFromCatalog = (e: SignalCatalogEntry) => {
-    patch({ pillars: [...d.pillars, { label: e.label, skillKey: e.defaultSkillKey ?? 'mindset', kind: e.kinds[0], weight: 1, active: true, source: e.source,
-      rule: e.kinds[0] === 'average' ? { windowDays: 7, comparator: 'gte' } : e.kinds[0] === 'baseline' ? { windowDays: 28, minDataDays: 14 } : {}, on: true }] })
+    patch({ pillars: [...d.pillars, { ...pillarFromCatalog(e), on: true }] })
     setCatalogOpen(false)
   }
 
@@ -96,7 +107,13 @@ export function CelWizardPage() {
                 <input id="lg-date" className="lg-fin" type="date" value={d.targetDate} onChange={(e) => patch({ targetDate: e.target.value })} /></div>
             </>)}
 
-            {step === 1 && (proposing || !d.source ? <div className="lg-aiwait">Mezo olvassa a célt…</div> : (<>
+            {step === 1 && (proposeFailed ? (
+              <div className="lg-fcard">
+                <span className="lg-flabel">Nem sikerült</span>
+                <div style={{ fontSize: 12.5, fontWeight: 300 }}>Mezo most nem tudta elolvasni a célt.</div>
+                <button type="button" className="cta-primary" style={{ marginTop: 10 }} onClick={() => void goToFrame()}>Újra</button>
+              </div>
+            ) : proposing || !d.source ? <div className="lg-aiwait">Mezo olvassa a célt…</div> : (<>
               <div className="lg-fcard"><span className="lg-flabel">Mezo olvasata</span><div style={{ fontSize: 12.5, fontWeight: 300 }}>{d.frameNote}</div></div>
               {d.frame === 'extrinsic' && d.reframedWhy && (
                 <div className={`lg-frame ${d.useReframe ? 'ok' : ''}`}>

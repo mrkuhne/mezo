@@ -107,7 +107,7 @@ export function EnHubPage() {
       : [{ label: 'kg / hét', value: rate !== 0 ? huSigned(rate) : '—', tone: 'sage' }]
     goalCard = (
       <button type="button" className="enh-goalcard rise" style={{ '--d': '70ms' } as React.CSSProperties}
-        aria-label="Hosszú cél" onClick={() => navigate('/me/goals')}>
+        aria-label="Hosszú cél" onClick={() => navigate('/me/goals/weight')}>
         <div className="enh-goalhead">
           <span className="mz-eyebrow">🎯 {goalHeadline}</span>
           <span className="enh-stch">{total !== 0 ? `${Math.round(p)}% a célig` : 'tartás'}</span>
@@ -129,11 +129,11 @@ export function EnHubPage() {
       </button>
     )
   } else if (!goalPending) {
-    // No active goal — no fabricated track. The door to /me/goals stays open, which is
+    // No active goal — no fabricated track. The door to /me/goals/weight stays open, which is
     // where the real ghost state + the „＋ Új cél" planner CTA live.
     goalCard = (
       <button type="button" className="enh-newgoal rise" style={{ '--d': '70ms' } as React.CSSProperties}
-        onClick={() => navigate('/me/goals')}>
+        onClick={() => navigate('/me/goals/weight')}>
         ＋ Új cél
       </button>
     )

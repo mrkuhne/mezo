@@ -34,4 +34,34 @@ describe('useLifeGoals (real mode)', () => {
     expect(result.current.goals).toEqual([])
     await waitFor(() => expect(result.current.goals).toHaveLength(1))
   })
+
+  // mezo-iizd.1 final review, item 2: `create` used to only call `invalidateQueries`, which does
+  // NOT refetch an inactive query — so the wizard's navigation to /me/goals/{id} landed on a list
+  // that still lacked the new id and `useLifeGoal` rendered "Nincs ilyen cél.". The created goal
+  // must be in the list cache the moment the mutation resolves, BEFORE any refetch.
+  test('create seeds the list cache with the created goal', async () => {
+    const created = { ...MOCK_LIFE_GOALS[0], id: 'lg-brand-new', title: 'Frissen mentett' }
+    server.use(
+      // The list read is deliberately never resolved: the only way the new goal can appear is
+      // the explicit setQueryData in `create`'s real arm.
+      http.get(`${API_BASE}/api/life-goals`, () => new Promise(() => {})),
+      http.post(`${API_BASE}/api/life-goals`, () => HttpResponse.json(created, { status: 201 })),
+    )
+    const wrapper = makeHookWrapper()
+    const { result } = renderHook(() => ({ q: useLifeGoals(), m: useLifeGoalMutations() }), { wrapper })
+    act(() => result.current.m.create({ title: 'Frissen mentett', dimension: 'health', startDate: '2026-09-01' }))
+    await waitFor(() => expect(result.current.q.goals.map((g) => g.id)).toContain('lg-brand-new'))
+  })
+
+  // mezo-iizd.1 final review, item 3: a failed list read must be distinguishable from an empty one.
+  test('exposes isError and a working refetch when the list read fails', async () => {
+    let calls = 0
+    server.use(http.get(`${API_BASE}/api/life-goals`, () => { calls += 1; return new HttpResponse(null, { status: 500 }) }))
+    const { result } = renderHook(() => useLifeGoals(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(result.current.goals).toEqual([])
+    const before = calls
+    await act(async () => { await result.current.refetch() })
+    expect(calls).toBeGreaterThan(before)
+  })
 })

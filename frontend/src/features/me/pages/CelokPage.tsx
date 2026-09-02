@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ClayIcon } from '@/shared/ui/clay'
+import { GhostState } from '@/shared/ui/GhostState'
+import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { MozaikPage, PageHead, PageBody, Mosaic } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useLifeGoals, useLifeGoalMutations } from '@/data/hooks'
@@ -9,14 +11,33 @@ import { PermahRing } from '@/features/me/components/PermahRing'
 import { LifeGoalTile } from '@/features/me/components/LifeGoalTile'
 
 // Célok hub (mezo-iizd.1, prototype celok.html #panel): hero ring + companion line, the PERMAH
-// chip band, one tile per active goal, the parked list, and the "Jelek" row (slice 2 page).
+// chip band, one tile per active goal and the parked list.
 export function CelokPage() {
   const navigate = useNavigate()
-  const { goals, isPending } = useLifeGoals()
+  const { goals, isPending, isError, refetch } = useLifeGoals()
   const { changeStatus } = useLifeGoalMutations()
   const active = goals.filter((g) => g.status === 'active')
   const parked = goals.filter((g) => g.status === 'parked' || g.status === 'draft')
   const counts = Object.fromEntries(DIMENSION_ORDER.map((d) => [d, active.filter((g) => g.dimension === d).length])) as Record<LifeGoalDimension, number>
+
+  // Real mode's unresolved window yields an honest empty list (useDualQuery's `realEmpty`), so
+  // rendering the page body then printed a fabricated "0 aktív · 0 parkol" + an empty PERMAH ring
+  // before any data arrived. The whole screen is a skeleton until the list resolves (CelPage idiom).
+  if (isPending) return <ScreenSkeleton />
+
+  // A genuinely failed fetch and "no goals yet" both surface as an empty `goals` array — without
+  // `isError` the 500 rendered the same inviting empty state, the conflation the house error
+  // standard forbids (JournalPage.tsx:193 idiom). Stale-but-present goals fall through to the list.
+  if (isError && goals.length === 0) {
+    return (
+      <MozaikPage tone="sage">
+        <PageHead onBack={() => navigate('/me')} label="‹ Én" />
+        <PageBody>
+          <GhostState message="Nem sikerült betölteni a célokat." ctaLabel="Újra" onCta={refetch} />
+        </PageBody>
+      </MozaikPage>
+    )
+  }
 
   return (
     <MozaikPage tone="sage">
@@ -29,16 +50,14 @@ export function CelokPage() {
             <span style={{ fontSize: 22, fontWeight: 700 }}>Célok</span>
             <div className="mz-eyebrow">{active.length} aktív · {parked.length} parkol</div>
           </div>
-          {!isPending && (
-            <div className="lg-hero rise" style={{ '--d': '40ms', marginBottom: 12 } as React.CSSProperties}>
-              <PermahRing counts={counts} total={active.length} />
-              <div style={{ flex: 1, fontSize: 13.5, fontWeight: 300 }}>
-                {active.length === 0
-                  ? <>Még nincs aktív célod. <strong>Egy cél, két-három pillér</strong> — a többit a naplód hozza.</>
-                  : <>A pillérek a meglévő naplódból számolnak. <strong>Az irány-nyíl a 2. szelettel jön</strong> — addig a célok és pilléreik itt élnek.</>}
-              </div>
+          <div className="lg-hero rise" style={{ '--d': '40ms', marginBottom: 12 } as React.CSSProperties}>
+            <PermahRing counts={counts} total={active.length} />
+            <div style={{ flex: 1, fontSize: 13.5, fontWeight: 300 }}>
+              {active.length === 0
+                ? <>Még nincs aktív célod. <strong>Egy cél, két-három pillér</strong> — a többit a naplód hozza.</>
+                : <>A pillérek a meglévő naplódból számolnak. <strong>Az irány-nyíl a 2. szelettel jön</strong> — addig a célok és pilléreik itt élnek.</>}
             </div>
-          )}
+          </div>
           <div className="lg-dimband rise" style={{ '--d': '90ms', marginBottom: 12 } as React.CSSProperties} aria-label="Életterületek">
             {DIMENSION_ORDER.map((d) => (
               <span key={d} className={`lg-dimchip ${DIMENSIONS[d].cls} ${counts[d] ? '' : 'empty'}`}>

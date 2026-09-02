@@ -175,6 +175,29 @@ const mesoReportFixture = {
   },
 }
 
+// ── Life-goal write helpers (mezo-iizd.1) ────────────────────────────────────────────────
+// The five write endpoints all answer with a full LifeGoalResponse built off the seeded goal,
+// so a real-mode test of a write path asserts against the SAME shape the backend echoes
+// (LifeGoalService.create/update + LifeGoalPillarService.replace) instead of escaping to the
+// network under setup.ts's `onUnhandledRequest: 'bypass'`.
+const MSW_NOW = '2026-09-01T08:00:00Z'
+
+/** Resolve a seeded goal by id — the handlers 404 on an unknown id, as the backend does. */
+function findLifeGoal(id: string) {
+  return MOCK_LIFE_GOALS.find((g) => g.id === id) ?? null
+}
+
+/** Fill in the server-assigned pillar ids/positions the backend stamps on every write. */
+function lifeGoalEcho(g: Record<string, unknown>) {
+  const pillars = (g.pillars as Record<string, unknown>[] | undefined) ?? []
+  return {
+    ...g,
+    frame: g.frame ?? 'unset',
+    ifThenPlans: g.ifThenPlans ?? [],
+    pillars: pillars.map((p, i) => ({ ...p, id: (p.id as string) ?? `lg-p-${i}`, position: i, weight: p.weight ?? 1, active: p.active ?? true })),
+  }
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
 
@@ -1493,16 +1516,47 @@ export const handlers = [
   // Life goals (mezo-iizd.1) — default fixtures mirroring the mock seed so real-mode component
   // tests that render these hooks without a per-test server.use() get the same four goals.
   http.get(`${API_BASE}/api/life-goals`, () => HttpResponse.json(MOCK_LIFE_GOALS)),
+  // NOTE: the static `signals` / `propose` paths MUST stay ahead of the `:id` handlers below —
+  // MSW resolves in registration order and `/signals` also matches `/api/life-goals/:id`.
   http.get(`${API_BASE}/api/life-goals/signals`, () => HttpResponse.json({ entries: MOCK_SIGNAL_CATALOG })),
   http.post(`${API_BASE}/api/life-goals/propose`, async ({ request }) =>
     HttpResponse.json(mockPropose((await request.json()) as LifeGoalProposeRequest))),
-  http.post(`${API_BASE}/api/life-goals`, async ({ request }) =>
-    HttpResponse.json(
-      { ...(await request.json() as object), id: 'lg-new', status: 'draft', frame: 'unset', ifThenPlans: [], pillars: [] },
-      { status: 201 },
-    )),
-  http.post(`${API_BASE}/api/life-goals/:id/status`, async ({ request }) => {
+  // The create handler ECHOES the submitted frame/pillars/ifThenPlans (assigning ids/positions)
+  // exactly as LifeGoalService.create does — it used to hard-override all three to empty after
+  // spreading the body, so a real-mode wizard test saw a goal the backend would never return.
+  http.post(`${API_BASE}/api/life-goals`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json(lifeGoalEcho({ ...body, id: 'lg-new', status: 'draft' }), { status: 201 })
+  }),
+  http.get(`${API_BASE}/api/life-goals/:id`, ({ params }) => {
+    const g = findLifeGoal(params.id as string)
+    return g != null ? HttpResponse.json(g) : new HttpResponse(null, { status: 404 })
+  }),
+  http.put(`${API_BASE}/api/life-goals/:id`, async ({ params, request }) => {
+    const g = findLifeGoal(params.id as string)
+    if (g == null) return new HttpResponse(null, { status: 404 })
+    const body = (await request.json()) as Record<string, unknown>
+    // PUT /{id} does NOT touch status or pillars (their own endpoints own them) — LifeGoalService.update.
+    return HttpResponse.json(lifeGoalEcho({ ...g, ...body, status: g.status, pillars: g.pillars }))
+  }),
+  http.put(`${API_BASE}/api/life-goals/:id/pillars`, async ({ params, request }) => {
+    const g = findLifeGoal(params.id as string)
+    if (g == null) return new HttpResponse(null, { status: 404 })
+    const body = (await request.json()) as { pillars?: unknown[] }
+    return HttpResponse.json(lifeGoalEcho({ ...g, pillars: body.pillars ?? [] }))
+  }),
+  http.delete(`${API_BASE}/api/life-goals/:id`, ({ params }) =>
+    findLifeGoal(params.id as string) != null ? new HttpResponse(null, { status: 204 }) : new HttpResponse(null, { status: 404 })),
+  http.post(`${API_BASE}/api/life-goals/:id/status`, async ({ params, request }) => {
+    const g = findLifeGoal(params.id as string)
+    if (g == null) return new HttpResponse(null, { status: 404 })
     const body = (await request.json()) as { status: string }
-    return HttpResponse.json({ ...MOCK_LIFE_GOALS[0], status: body.status })
+    const closing = body.status === 'done' || body.status === 'archived'
+    return HttpResponse.json({
+      ...g,
+      status: body.status,
+      activatedAt: body.status === 'active' ? (g.activatedAt ?? MSW_NOW) : g.activatedAt,
+      closedAt: closing ? MSW_NOW : g.closedAt,
+    })
   }),
 ]

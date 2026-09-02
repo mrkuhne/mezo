@@ -25,8 +25,11 @@ export function useLifeGoals() {
 }
 
 export function useLifeGoal(id: string | undefined) {
-  const { goals, isPending } = useLifeGoals()
-  return { goal: id ? goals.find((g) => g.id === id) ?? null : null, isPending }
+  const { goals, isPending, isError, refetch } = useLifeGoals()
+  // `isError`/`refetch` are threaded out so the detail page can tell "the fetch failed" from
+  // "there is no such goal" — a failed list read must never render as a not-found (house error
+  // standard: the loading/empty/error triad is three distinct states, never two).
+  return { goal: id ? goals.find((g) => g.id === id) ?? null : null, isPending, isError, refetch, goalCount: goals.length }
 }
 
 export function useSignalCatalog() {
@@ -59,7 +62,13 @@ export function useLifeGoalMutations() {
         }
         patch((l) => [g, ...l]); return g
       }
-      return lifegoalApi.create(req)
+      const g = await lifegoalApi.create(req)
+      // `useLifeGoal` derives the detail page from THIS list query, and `invalidateQueries` does
+      // not refetch an inactive query — so the wizard's navigation to /me/goals/{id} would land
+      // on a stale list without the new id and flash "Nincs ilyen cél.". Seed the created goal
+      // into the cache before `onSuccess`'s invalidate reconciles it with the server.
+      qc.setQueryData<LifeGoalResponse[]>(LIFE_GOALS_KEY, (cur) => [g, ...(cur ?? [])])
+      return g
     },
     onSuccess: invalidate,
   })
@@ -67,7 +76,8 @@ export function useLifeGoalMutations() {
     mutationFn: async (v: { id: string; status: LifeGoalStatus }) => {
       if (mock) {
         patch((l) => l.map((g) => (g.id === v.id ? { ...g, status: v.status,
-          activatedAt: v.status === 'active' ? (g.activatedAt ?? new Date().toISOString()) : g.activatedAt } : g)))
+          activatedAt: v.status === 'active' ? (g.activatedAt ?? new Date().toISOString()) : g.activatedAt,
+          closedAt: v.status === 'done' || v.status === 'archived' ? new Date().toISOString() : g.closedAt } : g)))
         return
       }
       await lifegoalApi.changeStatus(v.id, v.status)

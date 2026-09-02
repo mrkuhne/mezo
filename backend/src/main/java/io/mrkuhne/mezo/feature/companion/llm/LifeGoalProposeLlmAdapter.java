@@ -41,6 +41,14 @@ public class LifeGoalProposeLlmAdapter implements LifeGoalProposePort {
     static final Set<String> DIMENSIONS =
         Set.of("positive_emotion", "engagement", "relationships", "meaning", "accomplishment", "health");
     static final Set<String> KINDS = Set.of("habit", "average", "target", "baseline", "linked");
+    /** The only trigger sources anything downstream can evaluate — see the system prompt's rule 4. */
+    static final Set<String> TRIGGER_SOURCES = Set.of("sport_session_logged", "checkin_energy_lte", "ritual_missed");
+
+    // LifeGoalUpsertRequest / IfThenPlan / LifeGoalPillarInput schema maxima (api/feature/lifegoal).
+    private static final int MAX_ITEMS = 5;
+    private static final int MAX_LABEL = 80;
+    private static final int MAX_PLAN_TEXT = 240;
+    private static final int MAX_OBSTACLE = 300;
 
     private static final String SYSTEM_PROMPT = PROPOSE_MARKER + """
             . Daniel életcél-tervezője vagy. Kapsz egy célt és egy „miért”-et. Feladatod:
@@ -106,10 +114,41 @@ public class LifeGoalProposeLlmAdapter implements LifeGoalProposePort {
             .filter(x -> x.skillKey() != null && skillKeys.contains(x.skillKey()))
             .filter(x -> x.label() != null && !x.label().isBlank())
             .limit(properties.lifegoalPropose().maxPillars())
+            .map(x -> new PillarProposal(x.catalogId(), truncate(x.label(), MAX_LABEL), x.kind(), x.skillKey(),
+                x.weight(), x.threshold(), x.comparator(), x.daysPerWeek(), x.startValue(), x.targetValue()))
+            .toList();
+        // The propose response feeds the create request VERBATIM, so anything the LLM over-produces
+        // here would 400 on save (LifeGoalUpsertRequest carries maxItems: 5 on both lists and
+        // maxLength on every string) and dead-end the wizard. Clamp/truncate to the schema maxima.
+        List<String> obstacles = (p.obstacles() == null ? List.<String>of() : p.obstacles()).stream()
+            .filter(Objects::nonNull)
+            .limit(MAX_ITEMS)
+            .map(o -> truncate(o, MAX_OBSTACLE))
+            .toList();
+        List<PlanProposal> plans = (p.plans() == null ? List.<PlanProposal>of() : p.plans()).stream()
+            .filter(Objects::nonNull)
+            .limit(MAX_ITEMS)
+            // An un-whitelisted triggerSource nulls the TRIGGER but KEEPS the plan: nothing in this
+            // slice (or slice 2's evaluator) can act on an unknown source, and the UI would have
+            // rendered the raw string as „Mezo figyeli (<source>)" — a fabricated capability claim.
+            // With a null trigger it falls through to the honest „nincs hozzá jel" label instead.
+            .map(LifeGoalProposeLlmAdapter::sanitizePlan)
             .toList();
         return Optional.of(new Proposal(p.dimension(),
             p.secondaryDimension() != null && DIMENSIONS.contains(p.secondaryDimension()) ? p.secondaryDimension() : null,
             "extrinsic".equals(p.frame()) ? "extrinsic" : "intrinsic", p.frameNote(), p.reframedWhy(), pillars,
-            p.obstacles() == null ? List.of() : p.obstacles(), p.plans() == null ? List.of() : p.plans()));
+            obstacles, plans));
+    }
+
+    private static String truncate(String s, int max) {
+        return s == null || s.length() <= max ? s : s.substring(0, max);
+    }
+
+    /** Truncates the plan text to the schema maxima and drops a trigger nothing can evaluate. */
+    private static PlanProposal sanitizePlan(PlanProposal pl) {
+        // Set.of(...).contains(null) throws — guard the null source explicitly.
+        boolean known = pl.triggerSource() != null && TRIGGER_SOURCES.contains(pl.triggerSource());
+        return new PlanProposal(truncate(pl.ha(), MAX_PLAN_TEXT), truncate(pl.akkor(), MAX_PLAN_TEXT),
+            known ? pl.triggerSource() : null, known ? pl.triggerCondition() : null, known ? pl.delayHours() : null);
     }
 }

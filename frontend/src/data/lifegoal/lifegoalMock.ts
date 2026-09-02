@@ -161,13 +161,13 @@ function dimensionOf(t: string): string {
 }
 
 function proposalAvg(id: string, label: string, skillKey: string, threshold: number): LifeGoalPillarInput {
-  return { label, skillKey, kind: 'average', weight: 1, active: true, source: signalSource(id), rule: { threshold, comparator: 'gte' } }
+  return { label, skillKey, kind: 'average', weight: 1, active: true, source: signalSource(id), rule: { threshold, comparator: 'gte', windowDays: 7 } }
 }
 function proposalHabit(id: string, label: string, skillKey: string, daysPerWeek: number): LifeGoalPillarInput {
   return { label, skillKey, kind: 'habit', weight: 1, active: true, source: signalSource(id), rule: { daysPerWeek } }
 }
 function proposalBase(id: string, label: string, skillKey: string): LifeGoalPillarInput {
-  return { label, skillKey, kind: 'baseline', weight: 1, active: true, source: signalSource(id) }
+  return { label, skillKey, kind: 'baseline', weight: 1, active: true, source: signalSource(id), rule: { windowDays: 28, minDataDays: 14 } }
 }
 // Signal ids used by the template proposer, mapped to their catalog source — mirrors the
 // SignalCatalog#id lookups the Java proposer's PillarProposal ids are validated against.

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
+import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useLifeGoal, useLifeGoalMutations } from '@/data/hooks'
@@ -8,6 +9,7 @@ import type { LifeGoalPillarInput, SignalCatalogEntry } from '@/data/lifegoal/li
 import { DIMENSIONS, STATUS_LABEL } from '@/features/me/logic/lifegoalLabels'
 import { PillarCard } from '@/features/me/components/PillarCard'
 import { PillarCatalogSheet } from '@/features/me/sheets/PillarCatalogSheet'
+import { pillarFromCatalog } from '@/features/me/logic/pillarFromCatalog'
 import { huMonthDay } from '@/shared/lib/dates'
 
 const MAX_PILLARS = 5
@@ -20,11 +22,25 @@ const MAX_PILLARS = 5
 export function CelPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { goal, isPending } = useLifeGoal(id)
+  const { goal, isPending, isError, refetch, goalCount } = useLifeGoal(id)
   const { changeStatus, replacePillars, pending } = useLifeGoalMutations()
   const [catalogOpen, setCatalogOpen] = useState(false)
 
   if (isPending) return <ScreenSkeleton />
+  // A failed list read leaves `goal` null exactly like a genuinely unknown id — printing
+  // "Nincs ilyen cél." for a 500 is the loading/empty/error conflation the house error standard
+  // forbids (JournalPage.tsx:193 idiom). Only a resolved-but-absent id is a real not-found;
+  // a failed fetch with nothing cached gets a terminal error + retry instead.
+  if (isError && goalCount === 0) {
+    return (
+      <MozaikPage tone="sage">
+        <PageHead onBack={() => navigate('/me/goals')} label="‹ Célok" />
+        <PageBody>
+          <GhostState message="Nem sikerült betölteni a célt." ctaLabel="Újra" onCta={refetch} />
+        </PageBody>
+      </MozaikPage>
+    )
+  }
   if (!goal) {
     return (
       <MozaikPage tone="sage">
@@ -45,15 +61,7 @@ export function CelPage() {
   const addPillar = (e: SignalCatalogEntry) => {
     const next: LifeGoalPillarInput[] = [
       ...goal.pillars.map(({ id: _id, position: _p, ...rest }) => rest),
-      {
-        label: e.label,
-        skillKey: e.defaultSkillKey ?? 'mindset',
-        kind: e.kinds[0],
-        weight: 1,
-        active: true,
-        source: e.source,
-        rule: e.kinds[0] === 'average' ? { windowDays: 7, comparator: 'gte' } : e.kinds[0] === 'baseline' ? { windowDays: 28, minDataDays: 14 } : {},
-      },
+      pillarFromCatalog(e),
     ]
     replacePillars(goal.id, next)
     setCatalogOpen(false)
