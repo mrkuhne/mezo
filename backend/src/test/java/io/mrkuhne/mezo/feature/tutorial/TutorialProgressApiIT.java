@@ -5,19 +5,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.SetTutorialProgressRequest;
 import io.mrkuhne.mezo.api.dto.TutorialProgressEntry;
 import io.mrkuhne.mezo.api.dto.TutorialProgressResponse;
+import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /** HTTP round-trips through the generated {@code TutorialProgressApi} contract (mezo-gb1s.1). */
 class TutorialProgressApiIT extends ApiIntegrationTest {
 
     private static final OffsetDateTime T0 = OffsetDateTime.of(2026, 9, 2, 12, 0, 0, 0, ZoneOffset.UTC);
+
+    @Autowired private AppUserRepository appUserRepository;
+    @Autowired private OwnerProperties ownerProperties;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     private static TutorialProgressEntry seen(int version) {
         return TutorialProgressEntry.builder().version(version).seenAt(T0).build();
@@ -86,5 +94,37 @@ class TutorialProgressApiIT extends ApiIntegrationTest {
     @Test
     void testTutorialProgressEndpoints_shouldReturn401_whenNoToken() {
         getForBody("/api/tutorial/progress", null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testSetTutorialProgress_shouldReturnEmptyMap_whenProgressIsEmpty() {
+        TutorialProgressResponse r = putForBody("/api/tutorial/progress",
+            SetTutorialProgressRequest.builder().progress(Map.of()).build(),
+            ownerAuthHeaders(), HttpStatus.OK, TutorialProgressResponse.class);
+
+        assertThat(r.getProgress()).isEmpty();
+    }
+
+    @Test
+    void testGetTutorialProgress_shouldSkipCorruptEntry_whenSeenAtIsNotParseable() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // Create the live row through the real API first (server-side createdBy, etc.).
+        putForBody("/api/tutorial/progress",
+            SetTutorialProgressRequest.builder().progress(Map.of("fuel", seen(1), "nap", seen(1))).build(),
+            auth, HttpStatus.OK, TutorialProgressResponse.class);
+
+        // A manual DB edit / future writer bug: "fuel" gets a non-ISO seenAt directly in the jsonb.
+        java.util.UUID ownerId = appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+        jdbcTemplate.update(
+            "update tutorial_progress set progress = "
+                + "'{\"fuel\":{\"version\":1,\"seenAt\":\"nem-datum\"},"
+                + "\"nap\":{\"version\":1,\"seenAt\":\"2026-09-02T12:00:00Z\"}}'::jsonb "
+                + "where created_by = ? and is_deleted = false",
+            ownerId);
+
+        TutorialProgressResponse read =
+            getForBody("/api/tutorial/progress", auth, HttpStatus.OK, TutorialProgressResponse.class);
+
+        assertThat(read.getProgress()).containsOnlyKeys("nap");
     }
 }

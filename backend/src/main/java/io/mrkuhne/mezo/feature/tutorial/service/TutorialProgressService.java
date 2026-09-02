@@ -8,14 +8,18 @@ import io.mrkuhne.mezo.feature.tutorial.entity.TutorialProgressEntryJson;
 import io.mrkuhne.mezo.feature.tutorial.repository.TutorialProgressRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.TUTORIAL_SWITCH, havingValue = "true")
@@ -23,11 +27,20 @@ public class TutorialProgressService {
 
     private final TutorialProgressRepository repository;
 
-    /** Empty-map ghost when nothing was ever seen — never 404. */
+    /**
+     * Empty-map ghost when nothing was ever seen — never 404. The jsonb map is free-form (the
+     * backend stores, never validates guide keys/values), so a corrupt entry (manual DB edit, a
+     * future writer bug, a partial migration) is skipped rather than failing the whole read.
+     */
     public TutorialProgressResponse getProgress(UUID userId) {
         Map<String, TutorialProgressEntry> out = new LinkedHashMap<>();
         repository.findByCreatedByAndDeletedFalse(userId)
-            .ifPresent(e -> e.getProgress().forEach((k, v) -> out.put(k, toDto(v))));
+            .ifPresent(e -> e.getProgress().forEach((k, v) -> {
+                TutorialProgressEntry dto = toDtoOrNull(k, v);
+                if (dto != null) {
+                    out.put(k, dto);
+                }
+            }));
         return TutorialProgressResponse.builder().progress(out).build();
     }
 
@@ -61,12 +74,22 @@ public class TutorialProgressService {
             d.getDismissedAtStep());
     }
 
-    private static TutorialProgressEntry toDto(TutorialProgressEntryJson j) {
-        return TutorialProgressEntry.builder()
-            .version(j.getVersion())
-            .seenAt(OffsetDateTime.parse(j.getSeenAt()))
-            .completedAt(j.getCompletedAt() == null ? null : OffsetDateTime.parse(j.getCompletedAt()))
-            .dismissedAtStep(j.getDismissedAtStep())
-            .build();
+    /** Returns {@code null} (and logs) for a corrupt entry instead of throwing — see {@link #getProgress}. */
+    private static TutorialProgressEntry toDtoOrNull(String guideId, TutorialProgressEntryJson j) {
+        if (!StringUtils.hasText(j.getSeenAt())) {
+            log.warn("Skipping corrupt tutorial progress entry for guide '{}': blank seenAt", guideId);
+            return null;
+        }
+        try {
+            return TutorialProgressEntry.builder()
+                .version(j.getVersion())
+                .seenAt(OffsetDateTime.parse(j.getSeenAt()))
+                .completedAt(j.getCompletedAt() == null ? null : OffsetDateTime.parse(j.getCompletedAt()))
+                .dismissedAtStep(j.getDismissedAtStep())
+                .build();
+        } catch (DateTimeParseException e) {
+            log.warn("Skipping corrupt tutorial progress entry for guide '{}': {}", guideId, e.getMessage());
+            return null;
+        }
     }
 }
