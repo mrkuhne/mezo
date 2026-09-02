@@ -98,13 +98,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API* · read next: [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-08-18, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
-  - **entities→tables:** `AppUserEntity`→`app_user`, `UserProfileEntity`→`user_profiles`
-  - **repositories:** `AppUserRepository`, `UserProfileRepository`
+  - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
+  - **repositories:** `AppUserRepository`, `InviteRepository`
   - **services:** `AuthService`
   - **controllers→contract:** `AuthController`→`AuthApi`
   - **other:** `OwnerProperties`, `OwnerSeedData`
-- **Contract** `api/feature/auth/auth.yml` — 1 operation
-  - **endpoints:** POST /api/auth/login
+- **Contract** `api/feature/auth/auth.yml` — 5 operations
+  - **endpoints:** POST /api/auth/login · POST /api/auth/register · GET /api/auth/me · POST /api/auth/change-password ·
+    POST /api/auth/onboarding-complete
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/auth` — 2 IT + 0 unit
   - **ITs:** `AuthControllerIT`, `OwnerSeedDataIT`
 
@@ -655,7 +656,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
   - **repositories:** `MealItemRepository`, `MealRepository`, `WaterLogRepository`
   - **services:** `FuelDayService`, `MealAiDraftService`, `MealAiDraftValidator`, `MealCoachLlm`, `MealCoachPrompt`,
-    `MealCoachService`, `MealCoachStore`, `MealDraftLlm`, `MealService`, `WaterLogService`
+    `MealCoachService`, `MealCoachStore`, `MealDraftLlm`, `MealService`, `PantryNameIndex`, `WaterLogService`
   - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
@@ -664,7 +665,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 19 IT + 3 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 19 IT + 4 unit
   - **ITs:** `FuelDayServiceIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`,
     `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`,
     `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`, `MealOverridesScoringIT`,
@@ -1151,22 +1152,23 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`,
   `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
   `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
-- **`ResetDatabase` TRUNCATE list** — 91 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 92 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
     `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
     `companion_message`, `daily_intention`, `daily_quest`, `daily_summary`, `decision_entry`, `diagnosis`, `exercise`,
     `exercise_feedback`, `exercise_set`, `experiment`, `feedback_rollup`, `fuel_settings`, `gamification_profile`,
     `goal`, `goal_plan_link`, `gratitude_entry`, `gym_schedule_slot`, `habit_chain`, `habit_day`, `habit_def`,
-    `intention_creed`, `intention_focus`, `journal_entry`, `knowledge_edge`, `knowledge_fact`, `knowledge_node`,
-    `learned_fact`, `level_up_event`, `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`, `medication`,
-    `medication_dose`, `memoir`, `memory_embedding`, `mention`, `meso_template`, `mesocycle`, `mesocycle_report`,
-    `message_feedback`, `muscle_group_volume_log`, `needs_day`, `notification_pref`, `notification_schedule`,
-    `owned_title`, `pantry_import`, `pantry_item`, `pattern`, `pattern_event`, `period_summary`, `perk_unlock`,
-    `person`, `prediction`, `protocol`, `protocol_item`, `push_log`, `push_subscription`, `recipe`,
-    `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`, `skill_progress`, `sleep_goal`, `sleep_log`,
-    `sport_event`, `sport_schedule_slot`, `sport_session`, `supplement_intake`, `water_log`, `weekly_review`,
-    `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_session`
+    `intention_creed`, `intention_focus`, `invite`, `journal_entry`, `knowledge_edge`, `knowledge_fact`,
+    `knowledge_node`, `learned_fact`, `level_up_event`, `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`,
+    `medication`, `medication_dose`, `memoir`, `memory_embedding`, `mention`, `meso_template`, `mesocycle`,
+    `mesocycle_report`, `message_feedback`, `muscle_group_volume_log`, `needs_day`, `notification_pref`,
+    `notification_schedule`, `owned_title`, `pantry_import`, `pantry_item`, `pattern`, `pattern_event`,
+    `period_summary`, `perk_unlock`, `person`, `prediction`, `protocol`, `protocol_item`, `push_log`,
+    `push_subscription`, `recipe`, `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`,
+    `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`, `sport_schedule_slot`, `sport_session`,
+    `supplement_intake`, `water_log`, `weekly_review`, `weekly_score`, `weekly_suggestion`, `weight_log`,
+    `workout_session`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts
