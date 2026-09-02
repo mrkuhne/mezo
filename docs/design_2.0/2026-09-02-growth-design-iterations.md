@@ -64,11 +64,14 @@ implementation and is folded in here for completeness. All five/six are PR-descr
 real contract can't honestly back yet," resolved the ADR 0010 way (honest state over a fabricated
 number) rather than by inventing backend surface.
 
-1. **`PageHero` nincs-alcím szabály.** The Skillek/Rutin/Napló/Kitüntetések hero `sb` subtitle
-   line from the prototype (e.g. `három sáv · 8 LIFE · 12 atlétikus · 13 izom`) has nowhere to
-   go on the real `PageHero`, which carries no subtitle slot by design (every other Mozaik
-   sub-page follows the same rule). The line moved into a `StatStrip` under the hero (Skillek)
-   or into the `PageBody principle` line (Rutin/Napló/Kitüntetések) instead of being dropped.
+1. **`PageHero` "no subtitle theater" recipe.** `PageHero` DOES accept a `sub?: string` prop
+   (`.mz-hero-sb`, used by ~14 other sub-pages for a short one-line caption) — this is a design
+   choice, not an API limitation. The shared subpage-hero recipe (design-2.0 implementation
+   spec §3 / handoff §10) is "title, then icon + big number in one row, no subtitle theater":
+   the Skillek/Rutin/Napló/Kitüntetések hero `sb` line from the prototype (e.g. `három sáv · 8
+   LIFE · 12 atlétikus · 13 izom`) is a multi-clause stat string, not a short caption, so it
+   doesn't fit `sub`'s intended use. It moved into a `StatStrip` under the hero (Skillek) or
+   into the `PageBody principle` line (Rutin/Napló/Kitüntetések) instead of being dropped.
 2. **Rutin: a 30 cella egy SZÁMLÁLÓT mutat, nem naptári rácsot; a mérföldkő-pill + villanás
    elmarad.** `HabitSummary` carries only `perfectMorningDays30`/`perfectEveningDays30` (scalar
    counts), no daily bitset — so `GrowthRutinPage`'s two `.gr-covtile` strips fill left-to-right
@@ -109,8 +112,12 @@ record:
   egy domináns „ma" állapotot mutat, nem statikus pontszámot. **Átvéve** a hero három sávja + a
   Ma-csík formájában; a kisállat/energia-mechanika **elvetve** (Mezo-hang, ADR 0010).
 - **Duolingo mérföldkő-animáció** (blog.duolingo.com/streak-milestone-design-animation): a
-  napi pipa csendes, a nagy ünneplés csak mérföldkőnél. **Átvéve**: a Rutin csempe `flash`-e
-  7/30 napnál, a streak-sáv; naponta ismétlődő ünneplés **elvetve**.
+  napi pipa csendes, a nagy ünneplés csak mérföldkőnél. **Átvéve a prototípusban** — a Rutin
+  csempe `flash`-e 7/30 napnál, a streak-sáv — **az implementációban `mezo-11nm`-ig
+  elhalasztva** (§3 flag 2: a `HabitSummary` ma nem hordoz napi bitet, tehát a "7/30
+  egybefüggő tökéletes nap" tényt nem tudjuk becsületesen kiszámolni; a mérföldkő-pill + a
+  villanás a napi-bit + `perfectStreak` mező megérkezésével jön, prototípus-hű formában);
+  naponta ismétlődő ünneplés **elvetve**.
 - **Smashing Magazine, streak-UX (2026/02)**: lánc-rács + számláló, kegyelmi mechanika,
   veszteség-lágyító szöveg („kimaradt — folytatódik"). **Átvéve** a 30 cellás rács és a
   Rutin-copy; „streak mindenre" **elvetve** (a Napló idővonal, nem streak).
