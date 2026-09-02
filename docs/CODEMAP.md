@@ -149,7 +149,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-01, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-02, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -160,24 +160,27 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterObservationRepository`, `CharacterPortraitRevisionRepository`, `CharacterRunRepository`
   - **services:** `CharacterBootstrapService`, `CharacterConferenceJob`, `CharacterConferenceService`,
     `CharacterConfidenceWords`, `CharacterCoreCatalog`, `CharacterExpertCatalog`, `CharacterFeedbackService`,
-    `CharacterHistoryReads`, `CharacterMonthlyJob`, `CharacterMonthlyService`, `CharacterObservationJob`,
-    `CharacterObservationService`, `CharacterPromptAssembler`, `CharacterRunLog`, `CharacterService`,
-    `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`, `ExpertEvidence`,
+    `CharacterHistoryReads`, `CharacterMetaReads`, `CharacterMonthlyJob`, `CharacterMonthlyService`,
+    `CharacterObservationJob`, `CharacterObservationService`, `CharacterPromptAssembler`, `CharacterRunLog`,
+    `CharacterService`, `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`, `ExpertEvidence`,
     `KonziliumProposalRound`, `KonziliumVerdictRound`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterProperties`
-  - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CheckinGapDetector`, `CheckinLatencyDetector`,
-    `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`, `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`,
-    `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`, `DecisionProfileDetector`,
-    `DecisionReviewBacklogDetector`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
-    `GratitudeFocusDetector`, `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`,
-    `JournalSilenceDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
-    `MedCycleCovarianceDetector`, `MesoAdherenceDetector`, `NeedsDomainImbalanceDetector`, `NiggleMapDetector`,
-    `NightActivityDetector`, `ObservationDimensionKeysEnvelope`, `ObservationSignalsEnvelope`,
+  - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `ChatToolDomains`, `ChatTopicShiftDetector`,
+    `CheckinGapDetector`, `CheckinLatencyDetector`, `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`,
+    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`,
+    `ConferenceTranscriptEnvelope`, `DecisionProfileDetector`, `DecisionReviewBacklogDetector`, `DetectorGates`,
+    `DetectorInput`, `DetectorRegistry`, `DetectorSignal`, `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`,
+    `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
+    `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
+    `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
+    `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `ObservationDimensionKeysEnvelope`,
+    `ObservationSignalsEnvelope`, `PeopleMoodLinkDetector`, `PredictionCalibrationDetector`,
     `ProgressionAdherenceDetector`, `PromiseVsDeliveryDetector`, `ProteinTrainingMismatchDetector`,
-    `RestartPatternDetector`, `RetroLoggingRatioDetector`, `RirCalibrationDetector`, `RunDetectorKeysEnvelope`,
-    `RunExpertKeysEnvelope`, `SelfCalibrationDetector`, `SleepPerformanceChainDetector`, `SportInterferenceDetector`,
-    `StackSkipPatternDetector`, `StreakBreakResponseDetector`, `TrailingWindow`, `UnderLoggingDetector`
+    `QuestCompletionCalibrationDetector`, `RestartPatternDetector`, `RetroLoggingRatioDetector`,
+    `RirCalibrationDetector`, `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`, `SelfCalibrationDetector`,
+    `SleepPerformanceChainDetector`, `SportInterferenceDetector`, `StackSkipPatternDetector`,
+    `StreakBreakResponseDetector`, `TrailingWindow`, `UnderLoggingDetector`, `WeekendGapDetector`
 - **Contract** `api/feature/character/character.yml` — 10 operations
   - **endpoints:** GET /api/character · GET /api/character/dimension/{key} · GET /api/character/experts ·
     GET /api/character/feed · POST /api/character/bootstrap · GET /api/character/conference ·
@@ -192,22 +195,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** ClaimTile.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx,
     TranscriptTurn.tsx
   - **root:** character.css, dossierState.ts, expertColors.ts, feedDayLabel.ts, inventory.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 21 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 22 IT + 5 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterConferenceJobIT`, `CharacterConferenceServiceIT`, `CharacterFeedbackIT`, `CharacterHistoryReadsIT`,
-    `CharacterMonthlyServiceIT`, `CharacterObservationJobIT`, `CharacterObservationServiceIT`,
+    `CharacterMetaReadsIT`, `CharacterMonthlyServiceIT`, `CharacterObservationJobIT`, `CharacterObservationServiceIT`,
     `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`,
     `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
     `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`
-  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `CheckInPopulator`, `DailySummaryPopulator`,
-    `DatabasePopulator`, `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LlmLogPopulator`,
-    `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `PantryItemPopulator`, `PatternPopulator`,
-    `ProtocolPopulator`, `RunningPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`,
-    `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`
+  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`, `CheckInPopulator`,
+    `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `GraphPopulator`, `JournalPopulator`,
+    `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`,
+    `MedicationPopulator`, `MentionPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
+    `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `QuestPopulator`, `RunningPopulator`,
+    `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
+    `WeeklyReviewPopulator`
 
 ### companion
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-01, shipped) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-02, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-01, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-01, mixed)
@@ -393,13 +398,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MedicationCycleBar.tsx,
     MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx,
     RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
-    RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx,
-    StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
+    RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx,
+    StackDayArc.tsx, StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
     WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
-    dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts, keretHero.ts,
-    matchMealsToStack.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts, resolveDayType.ts,
-    validateSlotPlan.ts
+    dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, formatImpact.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts,
+    keretHero.ts, matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts,
+    resolveDayType.ts, scoreTone.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
