@@ -383,7 +383,7 @@ describe('Új cél hard gate (incomplete biometric profile)', () => {
     expect(await screen.findByText('A motor ebből számol')).toBeInTheDocument()
     // save the (default-complete) profile → now complete → continue to the wizard.
     await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/new'))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/weight/new'))
   })
 })
 
@@ -400,7 +400,7 @@ describe('Új cél hard gate (complete biometric profile)', () => {
     )
     render(<GoalsPage />, { wrapper: Wrapper })
     await userEvent.click(await screen.findByRole('button', { name: /Új cél/ }))
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/new'))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/weight/new'))
     expect(screen.queryByText(/Előbb: a/)).not.toBeInTheDocument()
   })
 
@@ -410,7 +410,7 @@ describe('Új cél hard gate (complete biometric profile)', () => {
     render(<GoalsPage />, { wrapper: Wrapper })
     // header chip (mock mode renders the active-goal hero with the chip).
     await userEvent.click(screen.getByRole('button', { name: /Új cél/ }))
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/new'))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/weight/new'))
     expect(screen.queryByText(/Előbb: a/)).not.toBeInTheDocument()
   })
 })

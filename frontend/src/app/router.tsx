@@ -280,6 +280,13 @@ export const routes: RouteObject[] = [
       { path: 'me/week/tanulsagok', element: <WeekLessonsPage /> },
       { path: 'me/week/felfedezesek', element: <WeekDiscoveriesPage /> },
       { path: 'me/goals', element: <GoalsPage /> },
+      // Weight goal moves under /me/goals/weight (mezo-iizd.1, Task 8) — /me/goals itself
+      // becomes the Célok (life-goals) hub in Task 9, and Task 10 adds `me/goals/:id`; these
+      // static children stay registered ahead of that future dynamic sibling per the
+      // `me/people/*` precedent above (React Router ranks static over dynamic regardless of
+      // source order, but the ordering stays explicit here too).
+      { path: 'me/goals/weight', element: <GoalsPage /> },
+      { path: 'me/goals/weight/new', element: <GoalPlannerPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },
       // Emberek S3 hub (mezo-06o0.2): static children BEFORE `me/people/:id` (Task 3's "A
@@ -304,7 +311,6 @@ export const routes: RouteObject[] = [
       // Beállítások oldal (hub-tile-reorg): az Én hub Beállítások csempéjének célja —
       // Téma helyben + az Értesítések-kapcsolók és az AI-napló ajtajai.
       { path: 'me/beallitasok', element: <BeallitasokPage /> },
-      { path: 'me/goals/new', element: <GoalPlannerPage /> },
       // Full-screen routine editor (mezo-n5e9.2) — same sibling idiom (no Me sub-nav chrome).
       { path: 'me/routines/edit', element: <RoutineEditorPage /> },
       // Full-screen night surface (train/session idiom) — no Me sub-nav chrome.

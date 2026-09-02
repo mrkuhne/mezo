@@ -2,8 +2,8 @@
 // Mezo · RoutineEditorPage — "/me/routines/edit" full-screen editor for the habit catalog
 // (mezo-n5e9.2): every chain as a card (daypart + title + active toggle + edit), its defs as a
 // SortableList (drag or ▲▼ to reorder — MesoEditor.tsx:195-207 idiom), a per-chain "+ Új habit"
-// row, and a bottom "+ Új rutin" CTA. Sibling of `me/goals/new` (full-screen, no Me sub-nav
-// chrome) — entered from RoutinesTab's "Szerkesztés" button (today view only).
+// row, and a bottom "+ Új rutin" CTA. Sibling of `me/goals/weight/new` (full-screen, no Me
+// sub-nav chrome) — entered from RoutinesTab's "Szerkesztés" button (today view only).
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
