@@ -4499,6 +4499,10 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none;
   display: grid; place-items: center; cursor: pointer; }
 
+/* Mezo-kalauz „?" (mezo-gb1s.1) — Fraunces-dőlt kérdőjel, coral; nyitva coral wash. */
+.nap-q .nap-q-glyph { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 19px; font-weight: 500; color: var(--primary-deep); line-height: 1; }
+.nap-q.is-open { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
+
 /* ── Mezo-kalauz (mezo-gb1s.1) — the page-guide sheet; prototype docs/design_2.0/prototypes/kalauz.html ×1.18 ── */
 .kalauz-sheet { padding: 4px 16px 16px; border-radius: 30px 30px 0 0; }
 .kalauz-sheet.is-peek { animation: none; transform: translateY(calc(100% - 76px)); transition: transform 0.32s cubic-bezier(0.25, 0.8, 0.35, 1); }
