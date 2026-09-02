@@ -219,7 +219,7 @@ export function NapHubPage() {
     return (
       <div className="nap-hub">
         <EntranceGroup className="mz-panel-stack">
-          <div className="mz-tile nap-hero nap-anch-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+          <div className="mz-tile nap-hero nap-anch-hero rise" data-kalauz-anchor="nap-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
             <div className="nap-hero-row">
               <ClaySpot name="s-piheno" size={52} />
               <div>
@@ -271,7 +271,7 @@ export function NapHubPage() {
       <EntranceGroup replayKey={face} className="mz-panel-stack">
         {face === 'reggel' && (
           <>
-            <div className="mz-tile mz-w-lav nap-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+            <div className="mz-tile mz-w-lav nap-hero rise" data-kalauz-anchor="nap-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
               <div className="nap-hero-row">
                 <ClaySpot name="s-este" size={52} />
                 <div>
@@ -320,7 +320,7 @@ export function NapHubPage() {
 
         {face === 'nap' && (
           <>
-            <div className="mz-tile mz-w-sage nap-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+            <div className="mz-tile mz-w-sage nap-hero rise" data-kalauz-anchor="nap-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
               <span className="mz-eyebrow nap-sage">Keret · ma</span>
               <div className="nap-hero-line">
                 <span className="nap-big">{kcalCount}</span>
@@ -384,7 +384,7 @@ export function NapHubPage() {
 
         {face === 'este' && (
           <>
-            <div className="mz-tile nap-hero nap-dusk rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+            <div className="mz-tile nap-hero nap-dusk rise" data-kalauz-anchor="nap-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
               <div className="nap-hero-row">
                 <ClaySpot name="s-napzaras" size={58} />
                 <div>

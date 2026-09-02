@@ -1,0 +1,34 @@
+// A „Mutasd meg a képernyőn" gomb CSAK akkor renderel, ha az anchor épp a DOM-ban van
+// (KalauzSheet.tsx:64) — némán degradál. Ez a teszt fogja el, ha egy hős-variánsról
+// lemarad az attribútum: arc-variánsonként külön renderel.
+import { render } from '@testing-library/react'
+import { RouterProvider, createMemoryRouter } from 'react-router-dom'
+import { routes } from '@/app/router'
+import { ThemeProvider } from '@/app/ThemeProvider'
+import { QueryWrapper } from '@/test/queryWrapper'
+import { seedAllKalauzSeen } from '@/test/kalauz'
+
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  localStorage.clear()
+  seedAllKalauzSeen()
+})
+afterEach(() => vi.unstubAllEnvs())
+
+const renderAt = (path: string) => {
+  const router = createMemoryRouter(routes, { initialEntries: [path] })
+  return render(
+    <QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>,
+  )
+}
+
+const hasAnchor = (name: string) => document.querySelector(`[data-kalauz-anchor="${name}"]`)
+
+// A `?dp=` CSAK a /nap-on jelent napszak-választást (useDayFace.ts:20-27), a `?day=rough`
+// pedig az anchor-mód (NapHubPage.tsx:216). Mind a négy felület saját JSX-node.
+test.each(['/nap?dp=reggel', '/nap?dp=nap', '/nap?dp=este', '/nap?day=rough'])(
+  '%s — a nap-hero anchor jelen van', (path) => {
+    renderAt(path)
+    expect(hasAnchor('nap-hero')).not.toBeNull()
+  },
+)
