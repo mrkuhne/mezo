@@ -405,8 +405,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
     dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, formatImpact.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts,
-    keretHero.ts, matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts,
-    resolveDayType.ts, scoreTone.ts, validateSlotPlan.ts
+    keretHero.ts, macroSplit.ts, matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, projectStackDay.ts,
+    recipeRole.ts, resolveDayType.ts, scoreTone.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
@@ -475,8 +475,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/habit`
   - **entities→tables:** `HabitChainEntity`→`habit_chain`, `HabitDayEntity`→`habit_day`, `HabitDefEntity`→`habit_def`
   - **repositories:** `HabitChainRepository`, `HabitDayRepository`, `HabitDefRepository`
-  - **services:** `HabitAdminService`, `HabitAiService`, `HabitCatalogService`, `HabitEvaluator`, `HabitJob`,
-    `HabitService`, `HabitSuggestPort`, `HabitTargets`
+  - **services:** `HabitAdminService`, `HabitAiService`, `HabitCatalogService`, `HabitEvaluator`,
+    `HabitFrameworkValidator`, `HabitJob`, `HabitService`, `HabitSuggestPort`, `HabitTargets`
   - **controllers→contract:** `HabitController`→`HabitApi`
   - **mappers:** `HabitMapper`
   - **config:** `HabitProperties`
