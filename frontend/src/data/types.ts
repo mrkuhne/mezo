@@ -57,6 +57,14 @@ export interface FuelSettings {
   mealsPerDay: number
   caffeineCutoff: string
 }
+/** Mezo-kalauz seen-store (mezo-gb1s): one record per guide id, the whole map is the per-user singleton. */
+export interface TutorialProgressEntry {
+  version: number
+  seenAt: string
+  completedAt: string | null
+  dismissedAtStep: number | null
+}
+export type TutorialProgress = Record<string, TutorialProgressEntry>
 /** Meal-slot templates (mezo-7102) — per-day-type anchor plan the planner replays onto a real day. */
 export type SlotTemplateDayType = 'rest' | 'training_am' | 'training_pm'
 export type SlotAnchor =

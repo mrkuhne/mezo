@@ -1134,6 +1134,21 @@ export const handlers = [
   http.put(`${API_BASE}/api/fuel/settings`, async ({ request }) =>
     HttpResponse.json(await request.json())),
 
+  // Mezo-kalauz seen-store (mezo-gb1s.1) — empty ghost; PUT replaces, DELETE clears. In-memory so a
+  // test's PUT is visible to its next GET; `server.resetHandlers()` between tests restores this closure's
+  // initial state only if the module is re-evaluated — so tests that care start with an explicit PUT.
+  ...(() => {
+    let progress: Record<string, unknown> = {}
+    return [
+      http.get(`${API_BASE}/api/tutorial/progress`, () => HttpResponse.json({ progress })),
+      http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+        progress = ((await request.json()) as { progress: Record<string, unknown> }).progress
+        return HttpResponse.json({ progress })
+      }),
+      http.delete(`${API_BASE}/api/tutorial/progress`, () => { progress = {}; return new HttpResponse(null, { status: 204 }) }),
+    ]
+  })(),
+
   // Fuel meal-slot templates (mezo-7102) — honest-empty default list; PUT echoes the
   // saved body under the path dayType, DELETE is a plain 204. Tests override with server.use().
   http.get(`${API_BASE}/api/fuel/slot-templates`, () => HttpResponse.json({ templates: [] })),
