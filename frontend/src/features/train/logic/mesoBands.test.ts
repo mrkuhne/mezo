@@ -1,0 +1,38 @@
+import { describe, expect, it } from 'vitest'
+import { deciderSentence, nextRolloverChips, phaseChip, runBands, weekDots } from './mesoBands'
+import type { Mesocycle } from '@/data/types'
+
+const src = { baseline: { name: 'RP', mev: 10, mav: 16, mrv: 22 }, adjustments: [], confidence: 0.5, rationale: '', userOverride: null } as never
+const meso = {
+  id: 'm1', status: 'active', title: 'T', shortTitle: 'T', goal: '', startDate: '2026-09-01', endDate: '2026-10-12', weeks: 6, currentWeek: 3,
+  split: 'Upper / Lower · 4×/hét', style: 'RP · 6 hét', phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+  musclePriorities: { back: 'emphasize', calf: 'maintain' },
+  volumePerMuscle: {
+    back: { mev: 10, mav: 16, mrv: 22, current: 16, source: src },
+    chest: { mev: 8, mav: 14, mrv: 20, current: 10, source: src },
+    calf: { mev: 6, mav: 10, mrv: 16, current: 6, source: src },
+  },
+  // Real backend vocabulary (VolumeDecider.Lever + VolumeProgressionService.reasonFor):
+  // HOLD lever's fixed reason string is "tartás" — the mock fixture (data/train/train.ts)
+  // uses richer narrative reasons, but the live API mirrors reasonFor()'s 4 fixed strings.
+  volumeRecompute: { lastRun: '', nextRun: '', trigger: '', changes: [{ muscle: 'chest', change: 'tart (10)', reason: 'tartás' }] },
+} as unknown as Mesocycle
+
+describe('mesoBands', () => {
+  it('derives current → ceiling per group with tier and step', () => {
+    const rows = runBands(meso)
+    expect(rows[0]).toMatchObject({ group: 'back', current: 16, ceiling: 22, tier: 'emphasize', step: 'up' })
+    expect(rows.find((r) => r.group === 'chest')).toMatchObject({ current: 10, ceiling: 14, tier: 'grow' })
+    expect(rows.find((r) => r.group === 'calf')).toMatchObject({ current: 6, ceiling: 6, tier: 'maintain', step: 'hold' })
+  })
+  it('phase chip and week dots follow the curve and the current week', () => {
+    expect(phaseChip(meso)).toBe('Rámpa')
+    expect(phaseChip({ ...meso, currentWeek: 5 } as Mesocycle)).toBe('Csúcs')
+    expect(weekDots(meso).map((d) => d.state)).toEqual(['done', 'done', 'now', 'future', 'future', 'future'])
+    expect(weekDots(meso)[5].deload).toBe(true)
+  })
+  it('turns the recompute change into a Hungarian sentence and the next-rollover chips', () => {
+    expect(deciderSentence(meso)).toContain('Mell')
+    expect(nextRolloverChips(meso)).toEqual(expect.arrayContaining([{ label: 'Hát', text: 'Hát +2', tone: 'sage' }, { label: 'Vádli', text: 'Vádli tart', tone: 'mut' }]))
+  })
+})
