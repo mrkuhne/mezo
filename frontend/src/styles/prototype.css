@@ -8378,3 +8378,6 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   background: linear-gradient(90deg, color-mix(in srgb, var(--primary-soft) 55%, transparent), transparent);
   border-radius: 12px;
 }
+/* A paused chain stays VISIBLE and merely dims — the toggle that un-pauses it lives on this
+   card, so hiding it would strand the chain (`.is-inert` is otherwise scoped to .card/.row). */
+.gr-chain.is-inert { opacity: 0.55; }
