@@ -15,6 +15,8 @@ import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.MedalListResponse;
 import io.mrkuhne.mezo.api.dto.MesoDay;
+import io.mrkuhne.mezo.api.dto.MesoPlanGenerateRequest;
+import io.mrkuhne.mezo.api.dto.MesoPlanGenerateResponse;
 import io.mrkuhne.mezo.api.dto.MesoRerunResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
@@ -134,6 +136,12 @@ public class TrainController implements TrainApi {
     @Override
     public List<MesoTemplateResponse> listMesoTemplates() {
         return mesoTemplateService.list(currentUserId.get());
+    }
+
+    // TODO(mezo-d20.7.9): temporary stub so the module compiles ahead of the real implementation (Task 7).
+    @Override
+    public MesoPlanGenerateResponse generateMesoPlan(MesoPlanGenerateRequest mesoPlanGenerateRequest) {
+        throw new UnsupportedOperationException("Task 7");
     }
 
     @Override
