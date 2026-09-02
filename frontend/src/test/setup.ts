@@ -50,4 +50,18 @@ afterEach(() => {
     /* ignore */
   }
 })
+// Mezo-kalauz seen-store (mezo-gb1s.1): a localStorage tesztek között NEM ürül, egy persistált
+// "látva" jel a következő teszt auto-felugrását némítaná — a kalauz-kulcsokat célzottan töröljük.
+afterEach(() => {
+  try {
+    const doomed: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith('mezo.kalauz.')) doomed.push(k)
+    }
+    doomed.forEach((k) => localStorage.removeItem(k))
+  } catch {
+    /* ignore */
+  }
+})
 afterAll(() => server.close())
