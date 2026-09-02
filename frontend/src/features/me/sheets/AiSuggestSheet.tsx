@@ -1,11 +1,14 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Chip } from '@/shared/ui/Chip'
-import { useHabitAiSuggest, useHabitCatalog, useHabitCatalogActions } from '@/data/hooks'
+import { useHabitAiSuggest, useHabitCatalog } from '@/data/hooks'
 import type { HabitSuggestion } from '@/data/types'
 
 const HINT_MAX = 200
+// Shared with RoutineWizardPage, which claims the value once on mount and deletes it.
+const SUGGESTION_KEY = 'mezo.routineWizard.suggestion'
 
 const ROW: React.CSSProperties = { padding: '9px 12px', background: 'var(--surface-2)' }
 const LABEL: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }
@@ -13,19 +16,20 @@ const TEXT_INPUT: React.CSSProperties = { width: '100%', background: 'transparen
 
 /**
  * AI habit suggestion sheet (routine editor, mezo-n5e9.3): an optional "Szándék" hint →
- * `useHabitAiSuggest().suggest()` → per-card accept (creates the def via `createDef` — MANUAL,
- * server forces `metric: 'manual'`) or dismiss (removes the card, no server call). Cards live in
- * local state (`cards`), not the query cache — a fresh suggestion run always replaces the set.
- * `unavailable` (the suggester off — 503/404) shows the ChatPage degraded-card style instead of
- * the form; an empty (but resolved) result shows a quiet ghost instead of implying a failure.
+ * `useHabitAiSuggest().suggest()` → per-card accept or dismiss (removes the card, no server
+ * call). Cards live in local state (`cards`), not the query cache — a fresh suggestion run
+ * always replaces the set. `unavailable` (the suggester off — 503/404) shows the ChatPage
+ * degraded-card style instead of the form; an empty (but resolved) result shows a quiet ghost
+ * instead of implying a failure.
+ *
+ * Accepting no longer WRITES a definition (mezo-3zue.4): it hands the proposal to the recipe
+ * wizard, which is where a habit gains a framework and where the user's "Vállalom" tick is the
+ * human pass ADR 0019's propose-only rule requires. The sheet is therefore write-free.
  */
 export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClose: () => void }) {
+  const navigate = useNavigate()
   const { suggest, pending: suggestPending, unavailable } = useHabitAiSuggest()
   const { catalog } = useHabitCatalog()
-  // `pending` here gates the per-card accept/dismiss buttons (createDef's own in-flight state),
-  // distinct from `suggestPending` above (the "Javasolj" fetch) — HabitEditSheet/ChainEditSheet's
-  // same `useHabitCatalogActions().pending` disabled-gate precedent, renamed to avoid the clash.
-  const { createDef, pending: actionPending } = useHabitCatalogActions()
   const [hint, setHint] = useState('')
   const [cards, setCards] = useState<HabitSuggestion[] | null>(null)
 
@@ -41,16 +45,18 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
       .catch(() => {})
   }
 
-  const accept = (s: HabitSuggestion) => {
-    createDef({
-      chainKey: s.chainKey, title: s.title, why: s.why, anchorCopy: s.anchorCopy,
-      mode: 'MANUAL', skillKey: s.skillKey, xp: s.xp,
-    })
-      .then(() => setCards((prev) => prev?.filter((c) => c !== s) ?? prev))
-      // A genuine failure (e.g. a stale chainKey → 400 HABIT_DEF_UNKNOWN_CHAIN) already surfaces
-      // via the global mutation-error toast (QueryProvider's MutationCache.onError) — swallow it
-      // here so it doesn't also become an unhandled rejection; the card stays for a retry.
-      .catch(() => {})
+  // The suggestion travels in sessionStorage, not the query string: five prose fields (cím,
+  // jelzés, vágy, jutalom, ünneplés) would make an unreadable URL. The chain still rides in the
+  // URL so the wizard opens on the right lánc even if the store is unavailable — a storage
+  // failure degrades to an empty wizard, it never blocks the navigation.
+  const accept = (s: HabitSuggestion, close: () => void) => {
+    try {
+      sessionStorage.setItem(SUGGESTION_KEY, JSON.stringify(s))
+    } catch {
+      // private mode / quota / a disabled store — the wizard simply opens unseeded
+    }
+    close()
+    navigate(`/me/rutin/uj?chain=${encodeURIComponent(s.chainKey)}`)
   }
 
   const dismiss = (s: HabitSuggestion) => {
@@ -122,18 +128,16 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
                     <button
                       type="button"
                       className="chip"
-                      disabled={actionPending}
-                      onClick={() => accept(s)}
-                      style={{ fontSize: 11, padding: '6px 12px', background: 'var(--wash-lav)', borderColor: 'var(--lav-deep)', color: 'var(--lav-deep)', opacity: actionPending ? 0.5 : 1 }}
+                      onClick={() => accept(s, close)}
+                      style={{ fontSize: 11, padding: '6px 12px', background: 'var(--wash-lav)', borderColor: 'var(--lav-deep)', color: 'var(--lav-deep)' }}
                     >
-                      Elfogadom
+                      Megnyitom a varázslóban
                     </button>
                     <button
                       type="button"
                       className="chip"
-                      disabled={actionPending}
                       onClick={() => dismiss(s)}
-                      style={{ fontSize: 11, padding: '6px 12px', opacity: actionPending ? 0.5 : 1 }}
+                      style={{ fontSize: 11, padding: '6px 12px' }}
                     >
                       Elvetem
                     </button>

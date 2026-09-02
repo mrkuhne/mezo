@@ -12,7 +12,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useHabitCatalog, useHabitCatalogActions } from '@/data/hooks'
-import type { HabitFramework } from '@/data/types'
+import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
+import type { HabitFramework, HabitSuggestion } from '@/data/types'
 import { habitAnchorOptions } from '@/features/me/logic/habitAnchors'
 import { routineSentenceParts, recipeFromDef, titlePlaceholder, type RoutineRecipe } from '@/features/me/logic/routineSentence'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
@@ -39,6 +40,27 @@ const CUES = ['reggel · konyha', 'este · hálószoba', 'edzés előtt · ölt�
 const XP_MIN = 5
 const XP_MAX = 15
 const XP_STEP = 5
+
+// An accepted AI suggestion travels here through sessionStorage, not the query string: five
+// prose fields (jelzés, vágy, jutalom, ünneplés, cím) would make an unreadable URL, and the
+// suggestion is a one-shot hand-off, not a bookmarkable address (ADR 0019 — the suggester only
+// PROPOSES; the wizard's own four steps and the "Vállalom" tick are the human pass).
+const SUGGESTION_KEY = 'mezo.routineWizard.suggestion'
+
+/** Reads the hand-off ONCE and removes it in the same breath, so a reload cannot resurrect a
+ *  stale proposal; a storage failure (private mode, quota, a disabled store) yields null rather
+ *  than breaking the page. */
+function takeSuggestion(): HabitSuggestion | null {
+  try {
+    const raw = sessionStorage.getItem(SUGGESTION_KEY)
+    sessionStorage.removeItem(SUGGESTION_KEY)
+    return raw ? (JSON.parse(raw) as HabitSuggestion) : null
+  } catch {
+    return null
+  }
+}
+
+const clampXp = (xp: number) => Math.min(XP_MAX, Math.max(XP_MIN, xp))
 
 const NOTE_DEFAULT = 'Egy futtatás = egy szokás. A lánc a stack; a következő recept horgonya ez a szokás lehet.'
 const NOTE_LAST = 'Mentés = egy sor a láncban. A pipa holnaptól a Nap tabon, az erő-csík itt.'
@@ -83,26 +105,39 @@ export function RoutineWizardPage() {
   const [params] = useSearchParams()
   const prefillKey = params.get('prefill')
   const { catalog, isPending } = useHabitCatalog()
-  const { createDef, pending } = useHabitCatalogActions()
+  const { createDef, updateDef, pending } = useHabitCatalogActions()
+
+  // The accepted AI suggestion, claimed once on mount. It only ever seeds INITIAL values: where
+  // `?prefill` also has something to say, prefill wins (below) — a user who arrived through
+  // "Keret váltása" is editing one specific habit, not accepting a proposal.
+  const [suggestion] = useState(takeSuggestion)
 
   const [step, setStep] = useState(1)
-  const [framework, setFramework] = useState<HabitFramework | null>(null)
-  const [anchorLabel, setAnchorLabel] = useState('')
+  const [framework, setFramework] = useState<HabitFramework | null>(suggestion?.framework ?? null)
+  const [anchorLabel, setAnchorLabel] = useState(suggestion?.anchorCopy ?? '')
   const [anchorHabitKey, setAnchorHabitKey] = useState<string | null>(null)
-  const [title, setTitle] = useState('')
-  const [chainKey, setChainKey] = useState(() => params.get('chain') ?? 'MORNING')
-  const [skillKey, setSkillKey] = useState('mindset')
-  const [xp, setXp] = useState(10)
-  const [cue, setCue] = useState('')
-  const [craving, setCraving] = useState('')
+  const [title, setTitle] = useState(suggestion?.title ?? '')
+  const [chainKey, setChainKey] = useState(() => params.get('chain') ?? suggestion?.chainKey ?? 'MORNING')
+  const [skillKey, setSkillKey] = useState(
+    () => (LIFE_SKILLS.some((s) => s.key === suggestion?.skillKey) ? suggestion!.skillKey : 'mindset'),
+  )
+  const [xp, setXp] = useState(() => (suggestion != null ? clampXp(suggestion.xp) : 10))
+  const [cue, setCue] = useState(suggestion?.cue ?? '')
+  const [craving, setCraving] = useState(suggestion?.craving ?? '')
+  // A suggestion never carries an identity — that clause is the user's own sentence about who
+  // they are becoming, and nothing else may put words in it.
   const [identity, setIdentity] = useState('')
-  const [celebration, setCelebration] = useState('')
-  const [reward, setReward] = useState('a pipa maga')
+  const [celebration, setCelebration] = useState(suggestion?.celebration ?? '')
+  const [reward, setReward] = useState(suggestion?.reward ?? 'a pipa maga')
   const [committed, setCommitted] = useState(false)
 
   // ?prefill=<habitKey> re-opens an existing definition in the wizard ("keret váltása" on the
   // habit page, mezo-3zue.5). The catalog may still be loading on first render, so the seed
   // runs in an effect and exactly once — a re-render must never stomp the user's edits.
+  const allDefs = (catalog?.chains ?? []).flatMap((c) => c.defs)
+  // An unknown key falls back to CREATE rather than erroring: the catalog may simply not have
+  // resolved (or the def was deleted in another tab) and the wizard's own guards still apply.
+  const prefillDef = prefillKey == null ? undefined : allDefs.find((d) => d.habitKey === prefillKey)
   const seeded = useRef(false)
   useEffect(() => {
     if (seeded.current || prefillKey == null || catalog == null) return
@@ -148,22 +183,45 @@ export function RoutineWizardPage() {
     || (step === 3 && title.trim() !== '' && (framework === 'FOGG' || craving.trim() !== ''))
     || (step === 4 && (framework === 'FOGG' ? celebration.trim() !== '' : reward.trim() !== '') && committed)
 
+  // The framework's OWN fields, identical on both save paths. A FOGG recipe sends EITHER
+  // anchorHabitKey OR anchorCopy (never both — the backend rejects that), plus the celebration;
+  // a CLEAR recipe sends cue/craving/reward and no anchor field at all. The backend clears the
+  // fields the chosen framework does not own, so a conversion needs nothing more than this.
+  const frameworkFields = () => (framework === 'FOGG'
+    ? {
+        ...(anchorHabitKey != null ? { anchorHabitKey } : { anchorCopy: anchorLabel.trim() }),
+        celebration: celebration.trim(),
+      }
+    : {
+        cue: cue.trim(), craving: craving.trim(), reward: reward.trim(),
+        // "Omit an emptied optional key" (HabitPage's contract-honest rule): the real PATCH
+        // ignores a JSON null and rejects nothing for an absent key, so an untouched identity
+        // is left out entirely rather than sent as ''.
+        ...(identity.trim() ? { identity: identity.trim() } : {}),
+      })
+
   const save = () => {
     if (framework === null) return
+    const done = (habitKey: string | undefined) =>
+      navigate(habitKey != null ? `/me/rutin?new=${encodeURIComponent(habitKey)}` : '/me/rutin')
+
+    // Re-framing CONVERTS the definition it was opened with — it must never mint a second one.
+    // "Keret váltása" on the habit page promises exactly this, and a create here would silently
+    // duplicate the habit. `updateDef` accepts no `mode` and no `skillKey`, so both are omitted;
+    // `chainKey` goes only when the user actually moved the habit, because the backend reads a
+    // bare chainKey as a MOVE and appends the def to the end of that chain (HabitPage's guard).
+    if (prefillDef != null) {
+      const patch: HabitDefUpdateInput = {
+        title: title.trim(), xp: clampXp(xp), framework, ...frameworkFields(),
+      }
+      if (chainKey !== prefillDef.chainKey) patch.chainKey = chainKey
+      updateDef(prefillDef.id, patch).then(() => done(prefillDef.habitKey))
+      return
+    }
+
     createDef({
-      chainKey, title: title.trim(), mode: 'MANUAL', skillKey, xp, framework,
-      ...(framework === 'FOGG'
-        ? {
-            ...(anchorHabitKey != null
-              ? { anchorHabitKey }
-              : { anchorCopy: anchorLabel.trim() }),
-            celebration: celebration.trim(),
-          }
-        : {
-            cue: cue.trim(), craving: craving.trim(), reward: reward.trim(),
-            ...(identity.trim() ? { identity: identity.trim() } : {}),
-          }),
-    }).then(() => navigate('/me/rutin'))
+      chainKey, title: title.trim(), mode: 'MANUAL', skillKey, xp, framework, ...frameworkFields(),
+    }).then((def) => done(def?.habitKey))
   }
 
   // Switching the framework on step 1 drops the commitment tick: it is a promise about the

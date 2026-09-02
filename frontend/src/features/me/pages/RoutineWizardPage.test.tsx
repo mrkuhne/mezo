@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoutineWizardPage } from '@/features/me/pages/RoutineWizardPage'
 import type { HabitChainInfo } from '@/data/types'
 
-const { useHabitCatalog, useHabitCatalogActions, createDef, navigate } = vi.hoisted(() => ({
+const { useHabitCatalog, useHabitCatalogActions, createDef, updateDef, navigate } = vi.hoisted(() => ({
   useHabitCatalog: vi.fn(), useHabitCatalogActions: vi.fn(),
-  createDef: vi.fn((_input: Record<string, unknown>) => Promise.resolve()), navigate: vi.fn(),
+  createDef: vi.fn((_input: Record<string, unknown>) => Promise.resolve()),
+  updateDef: vi.fn((_id: string, _input: Record<string, unknown>) => Promise.resolve()),
+  navigate: vi.fn(),
 }))
 vi.mock('@/data/hooks', () => ({
   useHabitCatalog: () => useHabitCatalog(),
@@ -37,9 +39,12 @@ const MORNING: HabitChainInfo = {
 
 beforeEach(() => {
   useHabitCatalog.mockReturnValue({ catalog: { chains: [MORNING] }, isPending: false, isError: false, refetch: vi.fn() })
-  useHabitCatalogActions.mockReturnValue({ createDef, pending: false })
+  useHabitCatalogActions.mockReturnValue({ createDef, updateDef, pending: false })
   createDef.mockClear()
+  createDef.mockImplementation(() => Promise.resolve())
+  updateDef.mockClear()
   navigate.mockClear()
+  sessionStorage.clear()
 })
 
 const renderWizard = (path = '/me/rutin/uj') =>
@@ -207,6 +212,117 @@ describe('RoutineWizardPage', () => {
     expect(next()).toBeDisabled()
     fireEvent.change(screen.getByLabelText('Vágy'), { target: { value: 'tisztább a fejem' } })
     expect(next()).toBeEnabled()
+  })
+
+  // --- A · re-framing CONVERTS the definition it was opened with (mezo-3zue.4) -------------
+  it('converts the prefilled def instead of duplicating it, and keeps the FOGG/CLEAR shape honest', async () => {
+    // `intent` is a CLEAR def; switching it to FOGG must PATCH d2, never create a second habit.
+    renderWizard('/me/rutin/uj?prefill=intent')
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Horgony'), { target: { value: 'letettem a fogkefét' } })
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'ökölrázás' }))
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    expect(createDef).not.toHaveBeenCalled()
+    // EXACT: `updateDef` accepts no mode/skillKey, a bare chainKey would be read as a MOVE (the
+    // chain is unchanged here, so it must be absent), and the CLEAR fields are left for the
+    // backend to clear — sending them alongside a FOGG anchor is what the validator rejects.
+    expect(updateDef).toHaveBeenCalledWith('d2', {
+      title: 'Napi szándék leírása', xp: 10, framework: 'FOGG',
+      anchorCopy: 'letettem a fogkefét', celebration: 'ökölrázás',
+    })
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin?new=intent'))
+  })
+
+  it('sends chainKey on the convert path ONLY when the habit actually moved chain', () => {
+    renderWizard('/me/rutin/uj?prefill=intent&chain=MORNING')
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    expect(updateDef.mock.calls[0][1]).not.toHaveProperty('chainKey')
+  })
+
+  // --- B · an accepted AI suggestion seeds the wizard, and prefill outranks it ---------------
+  it('seeds from the stashed AI suggestion and consumes it so a reload cannot resurrect it', () => {
+    sessionStorage.setItem('mezo.routineWizard.suggestion', JSON.stringify({
+      title: 'Esti telefon-lezárás', why: 'Gyorsabb elalvás.', anchorCopy: 'wind-down előtt',
+      skillKey: 'recovery', xp: 10, chainKey: 'MORNING', framework: 'FOGG',
+      cue: null, craving: null, reward: null, celebration: 'egy elégedett bólintás',
+    }))
+    renderWizard('/me/rutin/uj?chain=MORNING')
+
+    expect(sessionStorage.getItem('mezo.routineWizard.suggestion')).toBeNull()
+    expect(screen.getByRole('button', { name: /Szokás-láncolás/ })).toHaveClass('on')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Horgony')).toHaveValue('wind-down előtt')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Pici tett')).toHaveValue('Esti telefon-lezárás')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Ünneplés')).toHaveValue('egy elégedett bólintás')
+  })
+
+  it('lets ?prefill win over a stashed suggestion for every field both could fill', () => {
+    sessionStorage.setItem('mezo.routineWizard.suggestion', JSON.stringify({
+      title: 'Esti telefon-lezárás', why: 'x', anchorCopy: 'wind-down előtt',
+      skillKey: 'recovery', xp: 5, chainKey: 'EVENING', framework: 'FOGG',
+      cue: 'este a nappaliban', craving: 'nyugodtabb elalvás', reward: 'egy fejezet',
+      celebration: 'bólintás',
+    }))
+    renderWizard('/me/rutin/uj?prefill=intent')
+
+    // The def is CLEAR; the suggestion proposed FOGG. The user came here to re-frame ONE habit.
+    expect(screen.getByRole('button', { name: /Négy törvény/ })).toHaveClass('on')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Jelzés')).toHaveValue('7:10-kor a konyhaasztalnál')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Válasz')).toHaveValue('Napi szándék leírása')
+  })
+
+  it('a malformed stash never breaks the page — the wizard just opens empty', () => {
+    sessionStorage.setItem('mezo.routineWizard.suggestion', '{nem json')
+    renderWizard()
+    expect(next()).toBeDisabled()
+    expect(sessionStorage.getItem('mezo.routineWizard.suggestion')).toBeNull()
+  })
+
+  it('falls back to CREATE when ?prefill names a habitKey the catalog does not have', () => {
+    renderWizard('/me/rutin/uj?prefill=nincs-ilyen')
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Horgony'), { target: { value: 'letettem a fogkefét' } })
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Pici tett'), { target: { value: 'leírok egy mondatot' } })
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'ökölrázás' }))
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    expect(updateDef).not.toHaveBeenCalled()
+    expect(createDef).toHaveBeenCalledTimes(1)
+  })
+
+  // --- C · the hub highlights the row the wizard just made ----------------------------------
+  it('returns to the hub with ?new=<habitKey> of the created def', async () => {
+    createDef.mockImplementation(() => Promise.resolve({ habitKey: 'custom_ab12' } as never))
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Horgony'), { target: { value: 'letettem a fogkefét' } })
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Pici tett'), { target: { value: 'leírok egy mondatot' } })
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'ökölrázás' }))
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin?new=custom_ab12'))
   })
 
   it('warns softly when the Fogg behaviour looks too big, without blocking', () => {
