@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.repository;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -32,4 +33,8 @@ public interface LearnedFactRepository extends JpaRepository<LearnedFactEntity, 
 
     /** Memória-obszervatórium (mezo-al1i) — az L2 kártya függő-jelölt száma. */
     long countByCreatedByAndUserDecisionIsNullAndDeletedFalse(UUID createdBy);
+
+    /** Karakter round-4 read layer (CharacterMetaReads): window read, bounded above for catch-up honesty. */
+    List<LearnedFactEntity> findByCreatedByAndUserDecisionIsNotNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedFalse(
+            UUID createdBy, Instant from, Instant toExclusive);
 }

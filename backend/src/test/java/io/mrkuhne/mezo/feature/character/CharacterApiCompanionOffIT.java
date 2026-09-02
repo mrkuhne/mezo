@@ -61,7 +61,7 @@ class CharacterApiCompanionOffIT extends ApiIntegrationTest {
         CharacterOverviewResponse overview = getForBody(
                 "/api/character", ownerAuthHeaders(), HttpStatus.OK, CharacterOverviewResponse.class);
 
-        assertThat(overview.getDimensions()).hasSize(7);
+        assertThat(overview.getDimensions()).hasSize(8);
     }
 
     @Test

@@ -136,4 +136,23 @@ class CharacterObservationServiceIT extends ApiIntegrationTest {
         assertThat(r.getSalience()).isEqualTo((short) 5); // clamped 9 -> 5
         assertThat(r.getDimensionKeys().keys()).containsExactly("mental"); // "nonsense" filtered out
     }
+
+    @Test
+    void selfAuditDimensionKey_isKnown_andSurvivesValidation() {
+        UUID owner = owner();
+        PantryItemEntity pantryItem = pantryItemPopulator.createFood(owner, "Csirkemell", null);
+        for (int i = 0; i < WINDOW_DAYS; i++) {
+            mealPopulator.createPantryMeal(owner, pantryItem, DAY.minusDays(i));
+        }
+        String sentinel = "[fake-char-obs:[{\"text\":\"Önvizsgálati jel.\",\"salience\":3,"
+                + "\"dimensionKeys\":[\"self-audit\"]}]]";
+        journalPopulator.createEntry(owner, DAY, sentinel, "quickinput");
+
+        observationService.generateForDay(owner, DAY);
+
+        CharacterObservationEntity row = observationRepository
+                .findByCreatedByOrderByDayDescCreatedAtDesc(owner, org.springframework.data.domain.Pageable.unpaged())
+                .stream().filter(o -> o.getText().equals("Önvizsgálati jel.")).findFirst().orElseThrow();
+        assertThat(row.getDimensionKeys().keys()).containsExactly("self-audit");
+    }
 }

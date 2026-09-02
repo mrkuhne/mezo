@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.repository;
 
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -32,4 +33,8 @@ public interface ExperimentRepository extends JpaRepository<ExperimentEntity, UU
     /** Prior-experiment context for the diagnosis gather — what was already tried, and how it went. */
     List<ExperimentEntity> findByCreatedByAndSourceAndDeletedFalseOrderByGeneratedAtDesc(
             UUID createdBy, String source);
+
+    /** Karakter round-4 read layer (CharacterMetaReads): window read, bounded above for catch-up honesty. */
+    List<ExperimentEntity> findByCreatedByAndGeneratedAtGreaterThanEqualAndGeneratedAtLessThanAndDeletedFalse(
+            UUID createdBy, Instant from, Instant toExclusive);
 }

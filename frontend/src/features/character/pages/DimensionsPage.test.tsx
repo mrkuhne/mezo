@@ -25,7 +25,7 @@ beforeEach(() => {
 })
 
 describe('DimensionsPage', () => {
-  test('renders all 8 dimension tiles (7 CORE + 1 CHAPTER)', () => {
+  test('renders all 9 dimension tiles (7 CORE + 1 META + 1 CHAPTER)', () => {
     render(<DimensionsPage />)
     expect(screen.getAllByRole('button', { name: MOCK_OVERVIEW.dimensions[0].title }).length).toBeGreaterThan(0)
     MOCK_OVERVIEW.dimensions.forEach((d) => {
@@ -37,6 +37,14 @@ describe('DimensionsPage', () => {
     const { container } = render(<DimensionsPage />)
     const chapterTile = screen.getByRole('button', { name: 'Munka-stressz ciklus' })
     expect(chapterTile).toHaveClass('chapter')
+    expect(container.querySelectorAll('.kr-dimtile.chapter')).toHaveLength(1)
+  })
+
+  test('the META dimension gets the solid meta styling, not the dashed chapter one', () => {
+    const { container } = render(<DimensionsPage />)
+    const metaTile = screen.getByRole('button', { name: 'A társ önvizsgálata' })
+    expect(metaTile).toHaveClass('meta')
+    expect(metaTile).not.toHaveClass('chapter')
     expect(container.querySelectorAll('.kr-dimtile.chapter')).toHaveLength(1)
   })
 

@@ -104,6 +104,9 @@
   background: repeating-linear-gradient(135deg, var(--wash), var(--wash) 10px, rgba(255,255,255,0.5) 10px, rgba(255,255,255,0.5) 20px);
   border: 1.2px dashed var(--dc);
 }
+/* META (round 4): the companion's self-audit — solid hairline in the Szkeptikus ink, never the
+   dashed CHAPTER treatment: it is fixed and seeded, not an AI-opened chapter. */
+.kr-dimtile.meta { border: 1.2px solid var(--dc); background: var(--surface-card); }
 .kr-dimtile .kr-dhd { display: flex; align-items: center; gap: 6px; }
 .kr-dimtile .kr-disc { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 8px -3px var(--dc); }
 .kr-dimtile .kr-miniring { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center; background: conic-gradient(var(--dc) calc(var(--mv) * 1%), rgba(43,33,24,0.08) 0); }

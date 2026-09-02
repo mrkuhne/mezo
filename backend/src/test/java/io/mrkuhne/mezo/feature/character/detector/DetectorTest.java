@@ -38,7 +38,7 @@ class DetectorTest {
     static DetectorInput.TrendWindow emptyTrend() {
         return new DetectorInput.TrendWindow(List.of(), List.of(), List.of(), List.of(),
                 null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(),
-                List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
     }
 
     /** Full-control builder for the round-2 detectors: only the trend window varies. */
@@ -89,6 +89,9 @@ class DetectorTest {
         private List<DetectorInput.CheckinSlotPoint> slots = List.of();
         private List<java.time.LocalDateTime> chat = List.of();
         private List<DetectorInput.LogLatencyPoint> latencies = List.of();
+        private List<DetectorInput.MentionPoint> mentions = List.of();
+        private List<DetectorInput.ChatToolCallPoint> toolCalls = List.of();
+        private DetectorInput.MetaWindow meta = DetectorInput.MetaWindow.empty();
 
         TrendBuilder runs(List<DetectorInput.RunPoint> v) { this.runs = v; return this; }
         TrendBuilder gym(List<DetectorInput.GymDay> v) { this.gym = v; return this; }
@@ -105,10 +108,14 @@ class DetectorTest {
         TrendBuilder slots(List<DetectorInput.CheckinSlotPoint> v) { this.slots = v; return this; }
         TrendBuilder chat(List<java.time.LocalDateTime> v) { this.chat = v; return this; }
         TrendBuilder latencies(List<DetectorInput.LogLatencyPoint> v) { this.latencies = v; return this; }
+        TrendBuilder mentions(List<DetectorInput.MentionPoint> v) { this.mentions = v; return this; }
+        TrendBuilder toolCalls(List<DetectorInput.ChatToolCallPoint> v) { this.toolCalls = v; return this; }
+        TrendBuilder meta(DetectorInput.MetaWindow v) { this.meta = v; return this; }
 
         DetectorInput.TrendWindow build() {
             return new DetectorInput.TrendWindow(runs, gym, meals, water, stack, checkins, med,
-                    sleep, intentions, decisions, gratitudes, needs, slots, chat, latencies);
+                    sleep, intentions, decisions, gratitudes, needs, slots, chat, latencies,
+                    mentions, toolCalls, meta);
         }
     }
 
@@ -557,7 +564,7 @@ class DetectorTest {
         // Scenario 1: DAY run at 40s -> band flips KOZOMBOS -> JAVUL -> fires "javul"
         List<DetectorInput.RunPoint> withFlip = new java.util.ArrayList<>(olderWeeks);
         withFlip.add(new DetectorInput.RunPoint(DAY, null, 40, null));
-        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+        DetectorInput.TrendWindow flipTrend = new DetectorInput.TrendWindow(withFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
         List<DetectorSignal> fired = d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), withFlip, List.of(), null, flipTrend));
         assertThat(fired).singleElement().satisfies(s -> {
@@ -567,7 +574,7 @@ class DetectorTest {
         });
 
         // Scenario 2: DAY run removed entirely -> no new run data -> empty regardless of band
-        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+        DetectorInput.TrendWindow noDayTrend = new DetectorInput.TrendWindow(olderWeeks, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), olderWeeks, List.of(), null, noDayTrend))).isEmpty();
 
@@ -575,7 +582,7 @@ class DetectorTest {
         // suppresses even though new run data exists
         List<DetectorInput.RunPoint> noFlip = new java.util.ArrayList<>(olderWeeks);
         noFlip.add(new DetectorInput.RunPoint(DAY, null, 108, null));
-        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+        DetectorInput.TrendWindow noFlipTrend = new DetectorInput.TrendWindow(noFlip, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), noFlip, List.of(), null, noFlipTrend))).isEmpty();
     }
@@ -588,7 +595,7 @@ class DetectorTest {
                 new DetectorInput.RunPoint(DAY, null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(7), null, 100, null),
                 new DetectorInput.RunPoint(DAY.minusDays(14), null, 100, null));
-        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+        DetectorInput.TrendWindow trend = new DetectorInput.TrendWindow(runs, List.of(), List.of(), List.of(), null, List.of(), null, List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(), List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(d.detect(input(Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), runs, List.of(), null, trend))).isEmpty();
     }
@@ -597,8 +604,8 @@ class DetectorTest {
     void sleepChain_firesOnRepeatedPoorSleepDecline() {
         SleepPerformanceChainDetector d = new SleepPerformanceChainDetector();
         List<DetectorInput.SleepPoint> sleep = List.of(
-                new DetectorInput.SleepPoint(DAY.minusDays(3), 3, null, null),
-                new DetectorInput.SleepPoint(DAY, 3, null, null));
+                new DetectorInput.SleepPoint(DAY.minusDays(3), 3, null, null, null, null),
+                new DetectorInput.SleepPoint(DAY, 3, null, null, null, null));
         List<DetectorInput.RunPoint> runs = List.of(
                 new DetectorInput.RunPoint(DAY.minusDays(3), 9, null, null),
                 new DetectorInput.RunPoint(DAY, 9, null, null));
@@ -616,8 +623,8 @@ class DetectorTest {
     void sleepChain_quietWithGoodSleep() {
         SleepPerformanceChainDetector d = new SleepPerformanceChainDetector();
         List<DetectorInput.SleepPoint> sleep = List.of(
-                new DetectorInput.SleepPoint(DAY.minusDays(3), 8, null, null),
-                new DetectorInput.SleepPoint(DAY, 8, null, null));
+                new DetectorInput.SleepPoint(DAY.minusDays(3), 8, null, null, null, null),
+                new DetectorInput.SleepPoint(DAY, 8, null, null, null, null));
         List<DetectorInput.RunPoint> runs = List.of(
                 new DetectorInput.RunPoint(DAY.minusDays(3), 9, null, null),
                 new DetectorInput.RunPoint(DAY, 9, null, null));
@@ -664,7 +671,8 @@ class DetectorTest {
                         new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
                         null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
                 List.of(), null, List.of(), null,
-                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(),
+                List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(DetectorGates.newMealData(trendInput(todayMeal))).isTrue();
 
         DetectorInput.TrendWindow yesterdayMeal = new DetectorInput.TrendWindow(
@@ -673,7 +681,8 @@ class DetectorTest {
                         new BigDecimal("150"), new BigDecimal("200"), new BigDecimal("60"),
                         null, null, new BigDecimal("3100"), new BigDecimal("220"), List.of())),
                 List.of(), null, List.of(), null,
-                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of());
+                List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of(), List.of(),
+                List.of(), List.of(), DetectorInput.MetaWindow.empty());
         assertThat(DetectorGates.newMealData(trendInput(yesterdayMeal))).isFalse();
     }
 
@@ -901,7 +910,7 @@ class DetectorTest {
                             new BigDecimal("600"), null))));
             // SleepPoint dated D = the night leading INTO D, so day D's night is dated D+1
             sleep.add(new DetectorInput.SleepPoint(date.plusDays(1),
-                    late ? 4 : 8, new BigDecimal(late ? "5.5" : "8.0"), 1));
+                    late ? 4 : 8, new BigDecimal(late ? "5.5" : "8.0"), 1, null, null));
         }
         DetectorInput in = new DetectorInput(DAY, Set.of(), Map.of(), List.of(), Map.of(),
                 List.of(), List.of(), List.of(), sleep, null,
@@ -1047,7 +1056,7 @@ class DetectorTest {
     }
 
     private static DetectorInput.SleepPoint sleep(LocalDate d, int quality) {
-        return new DetectorInput.SleepPoint(d, quality, new BigDecimal("7.0"), 1);
+        return new DetectorInput.SleepPoint(d, quality, new BigDecimal("7.0"), 1, null, null);
     }
 
     private static DetectorInput.IntentionDayPoint intention(LocalDate d, int foci, String reflection) {
@@ -1518,5 +1527,524 @@ class DetectorTest {
                 new NeedsDomainImbalanceDetector());
 
         assertThat(detectors).extracting(CharacterDetector::key).doesNotHaveDuplicates().hasSize(12);
+    }
+
+    private static DetectorInput.MentionPoint mention(LocalDate d, String contextLabel) {
+        return new DetectorInput.MentionPoint(d, UUID.fromString("00000000-0000-0000-0000-000000000001"), contextLabel, false);
+    }
+
+    private static DetectorInput.SleepPoint sleepClock(LocalDate d, String bed, String wake) {
+        return new DetectorInput.SleepPoint(d, 7, new BigDecimal("7.5"), 1,
+                java.time.LocalTime.parse(bed), java.time.LocalTime.parse(wake));
+    }
+
+    private static DetectorInput.CheckinDayPoint mentalOnly(LocalDate d, String mental) {
+        return new DetectorInput.CheckinDayPoint(d, 1, null, null, null, new BigDecimal(mental));
+    }
+
+    // ── people-mood-link ────────────────────────────────────────────────────────
+
+    @Test
+    void peopleMoodLink_firesWhenMentionDaysRunHigher_firstTimeThePairedFloorIsMet() {
+        // 7 mention days (incl. DAY) at mental 8 + 7 other days at mental 5 → paired = 14 as of DAY
+        // (gate met, Δ = +3,0 → "magasabb", tier "gyenge" since |M| = 7); as of DAY-1 paired = 13 → null.
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        for (int i = 0; i < 14; i++) {
+            LocalDate d = DAY.minusDays(i);
+            boolean mentionDay = i % 2 == 0;           // i=0 is DAY → a mention day
+            if (mentionDay) {
+                mentions.add(mention(d, "munka"));
+            }
+            checkins.add(mentalOnly(d, mentionDay ? "8" : "5"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).checkins(checkins).build());
+
+        List<DetectorSignal> fired = new PeopleMoodLinkDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("people-mood-link");
+            assertThat(s.expertKey()).isEqualTo("antropologus");
+            assertThat(s.summary()).contains("7 olyan napján").contains("8,0").contains("7 ilyen, említés nélküli napon")
+                    .contains("5,0").contains("magasabb").contains("gyenge").contains("nem irány");
+            assertThat(s.salience()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void peopleMoodLink_silentBelowTheOnePointDelta() {
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        for (int i = 0; i < 14; i++) {
+            LocalDate d = DAY.minusDays(i);
+            if (i % 2 == 0) {
+                mentions.add(mention(d, null));
+            }
+            checkins.add(mentalOnly(d, i % 2 == 0 ? "6" : "5.5"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).checkins(checkins).build());
+
+        assertThat(new PeopleMoodLinkDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void peopleMoodLink_silentWhenTheBandIsUnchangedSinceYesterday() {
+        // nothing on DAY: both evaluations see the same 16 paired days → same band → no signal
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        for (int i = 1; i <= 16; i++) {
+            LocalDate d = DAY.minusDays(i);
+            if (i % 2 == 0) {
+                mentions.add(mention(d, "munka"));
+            }
+            checkins.add(mentalOnly(d, i % 2 == 0 ? "8" : "5"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).checkins(checkins).build());
+
+        assertThat(new PeopleMoodLinkDetector().detect(in)).isEmpty();
+    }
+
+    // ── mention-context-shift ───────────────────────────────────────────────────
+
+    @Test
+    void mentionContextShift_firesWhenADominantContextFirstAppears() {
+        // 6 labelled mentions, all on DAY: munka×3, csalad×2, konfliktus×1 → dominant munka (50%),
+        // konfliktus share 17% → "jelen". As of DAY-1: 0 labelled → null.
+        List<DetectorInput.MentionPoint> mentions = List.of(
+                mention(DAY, "munka"), mention(DAY, "munka"), mention(DAY, "munka"),
+                mention(DAY, "csalad"), mention(DAY, "csalad"), mention(DAY, "konfliktus"),
+                mention(DAY, null));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).build());
+
+        List<DetectorSignal> fired = new MentionContextShiftDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("mention-context-shift");
+            assertThat(s.expertKey()).isEqualTo("antropologus");
+            assertThat(s.summary()).contains("6 címkézett").contains("munka").contains("50%")
+                    .contains("17%").contains("jelen").contains("még kevés volt").contains("1 említés még címkézetlen")
+                    .contains("éjszakai osztályozója");
+            assertThat(s.salience()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void mentionContextShift_firesWithSalience4WhenTheKonfliktusBandRisesToMagas() {
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        for (int i = 1; i <= 4; i++) {
+            mentions.add(mention(DAY.minusDays(i), "munka"));
+        }
+        mentions.add(mention(DAY.minusDays(5), "csalad"));
+        mentions.add(mention(DAY.minusDays(6), "csalad"));          // as of DAY-1: munka|nincs (0% konfliktus)
+        for (int i = 0; i < 3; i++) {
+            mentions.add(mention(DAY, "konfliktus"));               // as of DAY: 3/9 = 33% → magas
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).build());
+
+        List<DetectorSignal> fired = new MentionContextShiftDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.summary()).contains("33%").contains("magas").contains("korábban munka/nincs");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void mentionContextShift_silentWhenUnchanged() {
+        List<DetectorInput.MentionPoint> mentions = new ArrayList<>();
+        for (int i = 1; i <= 8; i++) {
+            mentions.add(mention(DAY.minusDays(i), i <= 5 ? "edzes" : "baratok"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().mentions(mentions).build());
+
+        assertThat(new MentionContextShiftDetector().detect(in)).isEmpty();
+    }
+
+    // ── weekend-gap ─────────────────────────────────────────────────────────────
+
+    @Test
+    void weekendGap_midsleepMinutes_handlesMidnightCrossing() {
+        assertThat(WeekendGapDetector.midsleepMinutes(java.time.LocalTime.of(0, 30), java.time.LocalTime.of(8, 30)))
+                .isEqualTo(270);   // 04:30
+        assertThat(WeekendGapDetector.midsleepMinutes(java.time.LocalTime.of(23, 30), java.time.LocalTime.of(7, 30)))
+                .isEqualTo(210);   // 03:30
+    }
+
+    @Test
+    void weekendGap_firesWhenTheJetlagBandBecomesComputable() {
+        // DAY = 2026-08-27 (Thursday). Work nights: 14 weekday dates before DAY + DAY itself = 15
+        // (as of DAY-1 only 14 → "keves"; as of DAY → computable). Free nights: 6 (three weekends).
+        // Work midsleep 23:00→07:00 = 03:00 = 180; free 01:00→10:00 = 05:30 = 330; Δ = +150 → "jelentos".
+        List<DetectorInput.SleepPoint> sleep = new ArrayList<>();
+        for (LocalDate d : List.of(LocalDate.of(2026, 8, 26), LocalDate.of(2026, 8, 25), LocalDate.of(2026, 8, 24),
+                LocalDate.of(2026, 8, 21), LocalDate.of(2026, 8, 20), LocalDate.of(2026, 8, 19), LocalDate.of(2026, 8, 18),
+                LocalDate.of(2026, 8, 17), LocalDate.of(2026, 8, 14), LocalDate.of(2026, 8, 13), LocalDate.of(2026, 8, 12),
+                LocalDate.of(2026, 8, 11), LocalDate.of(2026, 8, 10), LocalDate.of(2026, 8, 7), DAY)) {
+            sleep.add(sleepClock(d, "23:00", "07:00"));
+        }
+        for (LocalDate d : List.of(LocalDate.of(2026, 8, 22), LocalDate.of(2026, 8, 23), LocalDate.of(2026, 8, 15),
+                LocalDate.of(2026, 8, 16), LocalDate.of(2026, 8, 8), LocalDate.of(2026, 8, 9))) {
+            sleep.add(sleepClock(d, "01:00", "10:00"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().sleep(sleep).build());
+
+        List<DetectorSignal> fired = new WeekendGapDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("weekend-gap");
+            assertThat(s.expertKey()).isEqualTo("antropologus");
+            assertThat(s.summary()).contains("150 perccel később").contains("jelentős social jetlag")
+                    .contains("6 szabad- és 15 munkaéjszakából").contains("nincs érdemi rés")
+                    .contains("Hétvége itt szombat–vasárnap");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void weekendGap_firesWhenTheLoggingGapCrossesTheQuarterLine() {
+        // 49-day window as of DAY (2026-08-27): Jul 10 .. Aug 27 → 35 weekdays, 14 weekend days.
+        // Check-ins on every weekday except Aug 24 (34/35 = 97%) and on 10 of 14 weekend days
+        // (skip Aug 15, 16, 22, 23 → 71%) → gap 26% ≥ 25% → "res". As of DAY-1 the window is
+        // Jul 9 .. Aug 26: Jul 9 unlogged too → 33/35 = 94% − 71% = 23% → "nincs-res". Change → fires.
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        Set<LocalDate> skip = Set.of(LocalDate.of(2026, 8, 24), LocalDate.of(2026, 8, 15), LocalDate.of(2026, 8, 16),
+                LocalDate.of(2026, 8, 22), LocalDate.of(2026, 8, 23));
+        for (LocalDate d = LocalDate.of(2026, 7, 10); !d.isAfter(DAY); d = d.plusDays(1)) {
+            if (!skip.contains(d)) {
+                checkins.add(mentalOnly(d, "6"));
+            }
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(checkins).build());
+
+        List<DetectorSignal> fired = new WeekendGapDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.summary()).contains("még kevés az alvásnapló")
+                    .contains("hétvégén a napok 71%-án").contains("hétköznap 97%-án").contains("hétvégi rés");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void weekendGap_silentWhenNothingChanged() {
+        List<DetectorInput.CheckinDayPoint> checkins = new ArrayList<>();
+        for (int i = 1; i <= 20; i++) {
+            checkins.add(mentalOnly(DAY.minusDays(i), "6"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().checkins(checkins).build());
+
+        assertThat(new WeekendGapDetector().detect(in)).isEmpty();
+    }
+
+    private static DetectorInput.ChatToolCallPoint toolCall(LocalDate d, String conv, String tool, String title) {
+        return new DetectorInput.ChatToolCallPoint(d, UUID.nameUUIDFromBytes(conv.getBytes()), tool, title);
+    }
+
+    @Test
+    void chatToolDomains_mapsBakedArgsAndUnknownsHonestly() {
+        assertThat(ChatToolDomains.domainOf("get_recovery(days=7)")).isEqualTo("alvas");
+        assertThat(ChatToolDomains.domainOf("get_training_log")).isEqualTo("edzes");
+        assertThat(ChatToolDomains.domainOf("compare_periods")).isEqualTo("mintak");
+        assertThat(ChatToolDomains.domainOf("get_medication")).isEqualTo("gyogyszer");
+        assertThat(ChatToolDomains.domainOf("something_new")).isNull();
+        assertThat(ChatToolDomains.hu("cel")).isEqualTo("cél és growth");
+    }
+
+    @Test
+    void chatTopicShift_firesWhenADominantDomainFirstAppears_withTwoTitlesAsEvidence() {
+        List<DetectorInput.ChatToolCallPoint> calls = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            calls.add(toolCall(DAY, i < 4 ? "c1" : "c2", "get_training_log(days=14)",
+                    i < 4 ? "Hogy ment a heti edzés?" : "Mit mutat a mellnyomás rekordom?"));
+        }
+        for (int i = 0; i < 3; i++) {
+            calls.add(toolCall(DAY, "c3", "get_fuel_log", "Ettem eleget fehérjét?"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().toolCalls(calls).build());
+
+        List<DetectorSignal> fired = new ChatTopicShiftDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("chat-topic-shift");
+            assertThat(s.expertKey()).isEqualTo("pszichologus");
+            assertThat(s.summary()).contains("70%").contains("edzés").contains("7 eszközhívás")
+                    .contains("nem volt kirajzolódó fő téma").contains("„Hogy ment a heti edzés?”")
+                    .contains("„Mit mutat a mellnyomás rekordom?”").doesNotContain("fehérjét");
+            assertThat(s.salience()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void chatTopicShift_silentBelowTheDominantShare_andBelowTenCalls() {
+        List<DetectorInput.ChatToolCallPoint> spread = new ArrayList<>();
+        String[] tools = {"get_training_log", "get_training_log", "get_training_log",
+                "get_fuel_log", "get_fuel_log", "get_fuel_log", "get_recovery", "get_recovery", "get_goal", "get_goal"};
+        for (String t : tools) {
+            spread.add(toolCall(DAY, "c", t, "t"));    // best share 3/10 = 30% < 40%
+        }
+        assertThat(new ChatTopicShiftDetector().detect(trendOnly(DAY, new TrendBuilder().toolCalls(spread).build())))
+                .isEmpty();
+
+        List<DetectorInput.ChatToolCallPoint> few = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            few.add(toolCall(DAY, "c", "get_training_log", "t"));
+        }
+        assertThat(new ChatTopicShiftDetector().detect(trendOnly(DAY, new TrendBuilder().toolCalls(few).build())))
+                .isEmpty();
+    }
+
+    @Test
+    void chatTopicShift_evidencePicksTheTwoMostRecentConversationsDeterministically() {
+        List<DetectorInput.ChatToolCallPoint> calls = new ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            calls.add(toolCall(DAY.minusDays(2), "old", "get_recovery", "Régi alvás-kérdés"));
+            calls.add(toolCall(DAY.minusDays(1), "mid", "get_recovery", "Középső alvás-kérdés"));
+            calls.add(toolCall(DAY, "new", "get_recovery", "Friss alvás-kérdés"));
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().toolCalls(calls).build());
+
+        // as of DAY-1: 8 calls (< 10) → null; as of DAY: 12 → alvas 100% → fires
+        List<DetectorSignal> fired = new ChatTopicShiftDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> assertThat(s.summary())
+                .contains("„Friss alvás-kérdés”, „Középső alvás-kérdés”").doesNotContain("Régi"));
+    }
+
+    private static DetectorInput.MetaWindow meta(List<DetectorInput.TriageDecisionPoint> t,
+            List<DetectorInput.PredictionPoint> p, List<DetectorInput.QuestPoint> q,
+            List<DetectorInput.ProposalOutcomePoint> o) {
+        return new DetectorInput.MetaWindow(t, p, q, o);
+    }
+
+    private static DetectorInput.TriageDecisionPoint triage(LocalDate d, String category, String decision, boolean refined) {
+        return new DetectorInput.TriageDecisionPoint(d, "fact", category, decision, refined);
+    }
+
+    private static DetectorInput.PredictionPoint prediction(LocalDate validTo, String status, String confidence) {
+        return new DetectorInput.PredictionPoint(validTo.minusDays(6), validTo, status,
+                confidence == null ? null : new BigDecimal(confidence), "sleep_avg");
+    }
+
+    private static DetectorInput.QuestPoint quest(LocalDate d, String slot, String status) {
+        return new DetectorInput.QuestPoint(d, slot, status);
+    }
+
+    private static DetectorInput.ProposalOutcomePoint outcome(LocalDate d, String kind, String status, Boolean good) {
+        return new DetectorInput.ProposalOutcomePoint(d, kind, status, good);
+    }
+
+    // ── knowledge-rejection-pattern ─────────────────────────────────────────────
+
+    @Test
+    void knowledgeRejection_firesOnTheRejectingBand_namingTheDominantCategory() {
+        List<DetectorInput.TriageDecisionPoint> t = List.of(
+                triage(DAY, "life", "kept", true),
+                triage(DAY, "fuel", "rejected", false), triage(DAY, "fuel", "rejected", false),
+                triage(DAY, "fuel", "rejected", false), triage(DAY, "fuel", "rejected", false),
+                triage(DAY, "life", "rejected", false));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(t, List.of(), List.of(), List.of())).build());
+
+        List<DetectorSignal> fired = new KnowledgeRejectionPatternDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("knowledge-rejection-pattern");
+            assertThat(s.expertKey()).isEqualTo("szkeptikus");
+            assertThat(s.summary()).contains("6 javaslatomról született döntés").contains("1 maradt meg (1 finomítva)")
+                    .contains("5 esett ki").contains("17%").contains("főleg fuel")
+                    .contains("nem a te tulajdonságodról").contains("keletkezési napjával közelítem");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void knowledgeRejection_silentBelowFiveDecisions() {
+        List<DetectorInput.TriageDecisionPoint> t = List.of(
+                triage(DAY, "fuel", "rejected", false), triage(DAY, "fuel", "rejected", false),
+                triage(DAY, "fuel", "rejected", false), triage(DAY, "fuel", "rejected", false));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(t, List.of(), List.of(), List.of())).build());
+
+        assertThat(new KnowledgeRejectionPatternDetector().detect(in)).isEmpty();
+    }
+
+    @Test
+    void knowledgeRejection_firesOnABandShift_fromMegtartoToVegyes() {
+        List<DetectorInput.TriageDecisionPoint> t = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            t.add(triage(DAY.minusDays(i), "train", "kept", false));        // as of DAY-1: 5/5 → megtarto|-
+        }
+        t.add(triage(DAY, "fuel", "rejected", false));
+        t.add(triage(DAY, "fuel", "rejected", false));
+        t.add(triage(DAY, "fuel", "rejected", false));
+        t.add(triage(DAY, "life", "rejected", false));                       // as of DAY: 5/9 = 56% → vegyes|fuel
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(t, List.of(), List.of(), List.of())).build());
+
+        List<DetectorSignal> fired = new KnowledgeRejectionPatternDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.summary()).contains("9 javaslatomról született döntés").contains("56%").contains("főleg fuel");
+            assertThat(s.salience()).isEqualTo(3);
+        });
+    }
+
+    // ── prediction-calibration ──────────────────────────────────────────────────
+
+    @Test
+    void predictionCalibration_firesOverconfident() {
+        // validTo = DAY-1: closed as of DAY (validTo < DAY), still open as of DAY-1 → null → fires.
+        List<DetectorInput.PredictionPoint> p = List.of(
+                prediction(DAY.minusDays(1), "validated", "0.80"), prediction(DAY.minusDays(1), "validated", "0.80"),
+                prediction(DAY.minusDays(1), "missed", "0.80"), prediction(DAY.minusDays(1), "missed", "0.80"),
+                prediction(DAY.minusDays(1), "missed", "0.80"),
+                prediction(DAY.minusDays(1), "pending", "0.80"), prediction(DAY.minusDays(1), "pending", null));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), p, List.of(), List.of())).build());
+
+        List<DetectorSignal> fired = new PredictionCalibrationDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("prediction-calibration");
+            assertThat(s.expertKey()).isEqualTo("szkeptikus");
+            assertThat(s.summary()).contains("5 predikcióm zárult").contains("2 talált, 3 nem (40%)")
+                    .contains("80% magabiztosságot").contains("túlbiztos voltam")
+                    .contains("2 további lejárt adat nélkül").contains("érvényesség vége utáni nap");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void predictionCalibration_reportsMissingConfidenceHonestly() {
+        List<DetectorInput.PredictionPoint> p = List.of(
+                prediction(DAY.minusDays(1), "validated", null), prediction(DAY.minusDays(1), "validated", "0.60"),
+                prediction(DAY.minusDays(1), "missed", null), prediction(DAY.minusDays(1), "missed", null));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), p, List.of(), List.of())).build());
+
+        List<DetectorSignal> fired = new PredictionCalibrationDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.summary()).contains("4 predikcióm zárult").contains("(50%)")
+                    .contains("nem mondtam magabiztosságot").contains("kalibrációt nem tudok mérni");
+            assertThat(s.salience()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void predictionCalibration_silentBelowFourResolved_andWhileStillOpen() {
+        List<DetectorInput.PredictionPoint> few = List.of(
+                prediction(DAY.minusDays(1), "validated", "0.8"), prediction(DAY.minusDays(1), "missed", "0.8"),
+                prediction(DAY.minusDays(1), "missed", "0.8"));
+        assertThat(new PredictionCalibrationDetector().detect(
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), few, List.of(), List.of())).build()))).isEmpty();
+
+        List<DetectorInput.PredictionPoint> open = List.of(
+                prediction(DAY, "validated", "0.8"), prediction(DAY, "validated", "0.8"),
+                prediction(DAY, "missed", "0.8"), prediction(DAY, "missed", "0.8"));
+        assertThat(new PredictionCalibrationDetector().detect(
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), open, List.of(), List.of())).build()))).isEmpty();
+    }
+
+    // ── quest-completion-calibration ────────────────────────────────────────────
+
+    @Test
+    void questCalibration_firesWhenASlotLandsLow() {
+        List<DetectorInput.QuestPoint> q = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            q.add(quest(DAY.minusDays(1), "GROWTH", i < 2 ? "completed" : "expired"));   // 2/6 = 33% → alacsony
+        }
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), q, List.of())).build());
+
+        List<DetectorSignal> fired = new QuestCompletionCalibrationDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("quest-completion-calibration");
+            assertThat(s.expertKey()).isEqualTo("szkeptikus");
+            assertThat(s.summary()).contains("BODY: kevés quest (0)").contains("FUELBIO: kevés quest (0)")
+                    .contains("GROWTH 2/6 (33%)").contains("GROWTH slotban a nehézség-kalibrációm túllőtt")
+                    .contains("85% / 50%").contains("szövegét nem olvasom");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void questCalibration_todayAndRerolledAreExcluded_thinSlotsStaySilent() {
+        List<DetectorInput.QuestPoint> today = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            today.add(quest(DAY, "GROWTH", "expired"));
+        }
+        assertThat(new QuestCompletionCalibrationDetector().detect(
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), today, List.of())).build()))).isEmpty();
+
+        List<DetectorInput.QuestPoint> rerolled = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            rerolled.add(quest(DAY.minusDays(1), "BODY", i < 2 ? "completed" : i < 4 ? "expired" : "rerolled"));  // n = 4 → kevés
+        }
+        assertThat(new QuestCompletionCalibrationDetector().detect(
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), rerolled, List.of())).build()))).isEmpty();
+    }
+
+    @Test
+    void questCalibration_bandShiftFires_highBandWorded() {
+        List<DetectorInput.QuestPoint> q = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            q.add(quest(DAY.minusDays(i + 1), "BODY", "completed"));        // as of DAY-1: 5/5 → magas
+        }
+        q.add(quest(DAY.minusDays(1), "BODY", "expired"));                   // as of DAY: 5/6 = 83% → közép
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), q, List.of())).build());
+
+        List<DetectorSignal> fired = new QuestCompletionCalibrationDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.summary()).contains("BODY 5/6 (83%)").doesNotContain("túllőtt");
+            assertThat(s.salience()).isEqualTo(3);
+        });
+    }
+
+    // ── experiment-outcome-ledger ───────────────────────────────────────────────
+
+    @Test
+    void experimentLedger_firesWeak() {
+        List<DetectorInput.ProposalOutcomePoint> o = List.of(
+                outcome(DAY, "challenge", "hit", true), outcome(DAY, "challenge", "miss", false),
+                outcome(DAY, "challenge", "miss", false), outcome(DAY, "experiment", "completed", null));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), List.of(), o)).build());
+
+        List<DetectorSignal> fired = new ExperimentOutcomeLedgerDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.detectorKey()).isEqualTo("experiment-outcome-ledger");
+            assertThat(s.expertKey()).isEqualTo("szkeptikus");
+            assertThat(s.summary()).contains("4 lezárt javaslatomból (1 kísérlet, 3 kihívás) 1 járt jó kimenettel")
+                    .contains("1 eldönthetetlen").contains("0 javaslatom el sem indult")
+                    .contains("nem a te vállalkozó kedved");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void experimentLedger_firesOnADismissedMajority_evenWhenJudgedIsThin() {
+        List<DetectorInput.ProposalOutcomePoint> o = List.of(
+                outcome(DAY, "experiment", "dismissed", null), outcome(DAY, "experiment", "dismissed", null),
+                outcome(DAY, "experiment", "dismissed", null), outcome(DAY, "experiment", "completed", true));
+        DetectorInput in = trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), List.of(), o)).build());
+
+        List<DetectorSignal> fired = new ExperimentOutcomeLedgerDetector().detect(in);
+
+        assertThat(fired).singleElement().satisfies(s -> {
+            assertThat(s.summary()).contains("1 javaslatom zárult").contains("1 jó kimenettel")
+                    .contains("még kevés az ítélethez").contains("3 javaslatom el sem indult");
+            assertThat(s.salience()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    void experimentLedger_silentWhenThin_andWhenUnchanged() {
+        List<DetectorInput.ProposalOutcomePoint> thin = List.of(
+                outcome(DAY, "challenge", "hit", true), outcome(DAY, "challenge", "miss", false));
+        assertThat(new ExperimentOutcomeLedgerDetector().detect(
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), List.of(), thin)).build()))).isEmpty();
+
+        List<DetectorInput.ProposalOutcomePoint> old = List.of(
+                outcome(DAY.minusDays(3), "challenge", "hit", true), outcome(DAY.minusDays(3), "challenge", "hit", true),
+                outcome(DAY.minusDays(3), "challenge", "miss", false));
+        assertThat(new ExperimentOutcomeLedgerDetector().detect(
+                trendOnly(DAY, new TrendBuilder().meta(meta(List.of(), List.of(), List.of(), old)).build()))).isEmpty();
     }
 }
