@@ -7,6 +7,7 @@ import { QuickLogFab } from '@/app/QuickLogFab'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
+import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { ClaySprites } from '@/shared/ui/clay'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
@@ -42,21 +43,26 @@ export function AppLayout() {
       <PhoneFrame anchor={anchor}>
         <ToastProvider>
           <LevelUpProvider>
-            {/* A mezo-szál EGY példánya a fejlécnek és az /nap/uzenetek oldalnak (mezo-atry):
-                a fejléc az Outlet ELŐTTI testvér, tehát a két fogyasztó csak közös
-                ősként osztozhat a szálon — így az olvasatlan-vízjel is közös. */}
-            <MezoThreadProvider>
-              <ScreenContent>
-                {/* A fejléc a shellé, nem az oldalaké (mezo-atry): egy példány, minden
-                    oldalon ugyanaz. A scrollerben ÜL, tehát a tartalommal együtt görög. */}
-                {!hideChrome && <AppHeader />}
-                {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
-                    (TabBar) stays usable and navigating away (resetKey) recovers. */}
-                <ErrorBoundary resetKey={location.pathname}>
-                  <Outlet />
-                </ErrorBoundary>
-              </ScreenContent>
-            </MezoThreadProvider>
+            {/* Mezo-kalauz motor (mezo-gb1s.1): egy példány, route-váltásra dönt, a sheetet ide
+                portálja (.phone-screen). A fejléc „?" gombja és a Beállítások ugyanezt a
+                contextet hívja. */}
+            <TutorialProvider>
+              {/* A mezo-szál EGY példánya a fejlécnek és az /nap/uzenetek oldalnak (mezo-atry):
+                  a fejléc az Outlet ELŐTTI testvér, tehát a két fogyasztó csak közös
+                  ősként osztozhat a szálon — így az olvasatlan-vízjel is közös. */}
+              <MezoThreadProvider>
+                <ScreenContent>
+                  {/* A fejléc a shellé, nem az oldalaké (mezo-atry): egy példány, minden
+                      oldalon ugyanaz. A scrollerben ÜL, tehát a tartalommal együtt görög. */}
+                  {!hideChrome && <AppHeader />}
+                  {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
+                      (TabBar) stays usable and navigating away (resetKey) recovers. */}
+                  <ErrorBoundary resetKey={location.pathname}>
+                    <Outlet />
+                  </ErrorBoundary>
+                </ScreenContent>
+              </MezoThreadProvider>
+            </TutorialProvider>
             {!hideChrome && <TabBar />}
             {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
                 every tab, absent on the chrome-free full-screen flows. */}
