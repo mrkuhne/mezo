@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { server } from '@/test/msw/server'
+import { resetTutorialProgressState } from '@/test/msw/handlers'
 
 // Node 25 ships an experimental native `localStorage` global that lacks the
 // Web Storage methods (getItem/setItem/clear). It shadows jsdom's Storage, so
@@ -36,6 +37,10 @@ if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
 // existing suite is unaffected.
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
 afterEach(() => server.resetHandlers())
+// `server.resetHandlers()` only re-registers the handler list — it doesn't clear module-level
+// in-memory state a handler closes over (e.g. the tutorial-progress seen-store), so that state
+// needs its own explicit reset or a PUT in one test leaks into the next test's GET.
+afterEach(() => resetTutorialProgressState())
 // Sticky in-view tabs (useStickyTab) persist to sessionStorage; clear it between
 // tests so a remembered segment never leaks into the next test's default.
 afterEach(() => {

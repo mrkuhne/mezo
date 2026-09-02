@@ -17,6 +17,17 @@ test('üres ghost-tal indul, és a PUT után a mentett map jön vissza', async (
   await waitFor(() => expect(result.current.q.progress).toEqual({ fuel: ENTRY }))
 })
 
+test('a fenti PUT nem szivárog át — friss render üres ghost-ot lát (MSW state reset tesztek közt)', async () => {
+  if (isMockMode()) return // mock módban a QueryClient (nem az MSW state) hordozza az állapotot
+  // Szándékosan nincs itt sem PUT, sem DELETE: az előző teszt PUT-olt egy nem-üres map-et; ha az
+  // `afterEach(() => resetTutorialProgressState())` (src/test/setup.ts) nem futna le, ez a GET a
+  // maradék { fuel: ENTRY } state-et látná `server.resetHandlers()` ellenére is (ami csak a
+  // handler-listát regisztrálja újra, a modul-szintű `tutorialProgressState`-et nem törli).
+  const { result } = renderHook(() => useTutorialProgress(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.isPending).toBe(false))
+  expect(result.current.progress).toEqual({})
+})
+
 test('reset után újra üres', async () => {
   const wrapper = makeHookWrapper()
   const { result } = renderHook(() => ({ q: useTutorialProgress(), a: useTutorialProgressActions() }), { wrapper })
