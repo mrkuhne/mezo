@@ -1,5 +1,5 @@
-import { act, render, screen } from '@testing-library/react'
-import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
+import { act, render, renderHook, screen } from '@testing-library/react'
+import { EntranceGroup, useCountUp, useContinuingCountUp } from '@/shared/ui/mozaik/motion'
 
 // Motion kit (mezo-d20.1.4): one-shot entrance choreography + count-up.
 // Reduced-motion is CSS-guarded for the choreography; the count-up hook
@@ -52,4 +52,11 @@ test('useCountUp jumps straight to the target under prefers-reduced-motion', () 
   stubReducedMotion(true)
   render(<CountUpProbe target={420} />)
   expect(Number(screen.getByRole('status').textContent)).toBe(420)
+})
+
+test('useContinuingCountUp shows the target instantly under jsdom and follows target changes', () => {
+  const { result, rerender } = renderHook(({ t }) => useContinuingCountUp(t), { initialProps: { t: 18420 } })
+  expect(result.current).toBe(18420)
+  rerender({ t: 18435 })
+  expect(result.current).toBe(18435)
 })
