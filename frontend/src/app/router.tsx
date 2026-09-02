@@ -59,6 +59,7 @@ import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthHubPage } from '@/features/me/pages/GrowthHubPage'
 import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
 import { GrowthRutinPage } from '@/features/me/pages/GrowthRutinPage'
+import { GrowthNaploPage } from '@/features/me/pages/GrowthNaploPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
 import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
 import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
@@ -270,6 +271,7 @@ export const routes: RouteObject[] = [
       { path: 'me/growth', element: <GrowthHubPage /> },
       { path: 'me/growth/skillek', element: <GrowthSkillsPage /> },
       { path: 'me/growth/rutin', element: <GrowthRutinPage /> },
+      { path: 'me/growth/naplo', element: <GrowthNaploPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
       // WeekPage. Its four view tiles open full-screen siblings, NOT child routes: the
