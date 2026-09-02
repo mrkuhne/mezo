@@ -47,6 +47,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
 | [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [needs](features/needs.md), [ritual](features/ritual.md), [today](features/today.md) |
 | [train](#train) | ✓ | 1 | ✓ | ✓ | [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
+| [tutorial](#tutorial) | ✓ | 1 | ✓ | ✓ | [tutorial](features/tutorial.md) |
 
 ## Features
 
@@ -474,8 +475,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/habit`
   - **entities→tables:** `HabitChainEntity`→`habit_chain`, `HabitDayEntity`→`habit_day`, `HabitDefEntity`→`habit_def`
   - **repositories:** `HabitChainRepository`, `HabitDayRepository`, `HabitDefRepository`
-  - **services:** `HabitAdminService`, `HabitAiService`, `HabitCatalogService`, `HabitEvaluator`, `HabitJob`,
-    `HabitService`, `HabitSuggestPort`, `HabitTargets`
+  - **services:** `HabitAdminService`, `HabitAiService`, `HabitCatalogService`, `HabitEvaluator`,
+    `HabitFrameworkValidator`, `HabitJob`, `HabitService`, `HabitSuggestPort`, `HabitTargets`
   - **controllers→contract:** `HabitController`→`HabitApi`
   - **mappers:** `HabitMapper`
   - **config:** `HabitProperties`
@@ -799,7 +800,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
-  - **repositories:** `MentionRepository`, `PersonRepository`
+  - **repositories:** `MentionRepository`, `MentionSignal`, `PersonRepository`
   - **services:** `MentionDetectionListener`, `MentionDetectionService`, `PeopleService`, `PersonAffectTrend`,
     `PersonAffectTrendCalculator`, `PersonChatContext`, `PersonDeletedEvent`, `PersonSavedEvent`,
     `ReflectionMentionListener`
@@ -810,9 +811,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/people · POST /api/people · PUT /api/people/{personId} · DELETE /api/people/{personId} ·
     POST /api/people/{personId}/mentions · DELETE /api/people/{personId}/mentions/{mentionId} ·
     POST /api/people/{personId}/decision
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 7 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 8 IT + 1 unit
   - **ITs:** `MentionDetectionListenerIT`, `MentionDetectionServiceIT`, `MentionDetectionSwitchOffIT`,
-    `PeopleChatContextIT`, `PeopleContractIT`, `PeopleMezoNoteIT`, `PeopleServiceIT`
+    `MentionSignalProjectionIT`, `PeopleChatContextIT`, `PeopleContractIT`, `PeopleMezoNoteIT`, `PeopleServiceIT`
   - **populators:** `CompanionMessagePopulator`, `MentionPopulator`, `PersonPopulator`, `UserPopulator`
 
 ### proactive
@@ -1067,14 +1068,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/train/running-blocks/{id}/activate · POST /api/train/running-blocks/{id}/close ·
     GET /api/train/run-sessions · POST /api/train/run-sessions
 - **FE data** `frontend/src/data/train`
-  - **hooks (via `@/data/hooks`):** `useChallengeActions`, `useChallenges`, `useCustomWorkoutActions`,
-    `useCustomWorkouts`, `useMedals`, `useMesoReport`, `useMesoTemplates`, `useMesocycleVolumeArc`, `useOpenWorkout`,
-    `useRunning`, `useTemplateDayChain`, `useTrain`, `useWeekMuscleLog`, `useWeekWorkouts`, `useWorkoutDetail`,
-    `useWorkoutNote`
+  - **hooks (via `@/data/hooks`):** `MesoPlanProposal`, `useChallengeActions`, `useChallenges`,
+    `useCustomWorkoutActions`, `useCustomWorkouts`, `useMedals`, `useMesoPlanGenerate`, `useMesoReport`,
+    `useMesoTemplates`, `useMesocycleVolumeArc`, `useOpenWorkout`, `useRunning`, `useTemplateDayChain`, `useTrain`,
+    `useWeekMuscleLog`, `useWeekWorkouts`, `useWorkoutDetail`, `useWorkoutNote`
   - **modules:** challengeApi.ts, challengeHooks.ts, customWorkoutHooks.ts, medalApi.ts, medalEvaluator.ts,
-    medalHooks.ts, medalMock.ts, medalTypes.ts, mesoArcHooks.ts, mesoReportHooks.ts, mesoTemplateHooks.ts, running.ts,
-    runningAgenda.ts, runningApi.ts, runningDraft.ts, runningHooks.ts, train.ts, trainApi.ts, trainHooks.ts,
-    weekMuscleLogHooks.ts, workoutDetailHooks.ts, workoutNoteHooks.ts
+    medalHooks.ts, medalMock.ts, medalTypes.ts, mesoArcHooks.ts, mesoPlanHooks.ts, mesoPlanMock.ts, mesoReportHooks.ts,
+    mesoTemplateHooks.ts, running.ts, runningAgenda.ts, runningApi.ts, runningDraft.ts, runningHooks.ts, train.ts,
+    trainApi.ts, trainHooks.ts, weekMuscleLogHooks.ts, workoutDetailHooks.ts, workoutNoteHooks.ts
 - **FE ui** `frontend/src/features/train`
   - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, EdzesHubPage.tsx, ExercisesPage.tsx,
     ExercisesSkeleton.tsx, GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoOverviewPage.tsx, MesoReportPage.tsx,
@@ -1092,17 +1093,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     ExerciseImage.tsx, ExerciseRecipeRow.tsx, ExerciseReview.tsx, FinalStat.tsx, LoadTiles.tsx, MedalChip.tsx,
     MedalToast.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoOverview.tsx, MesoTemplateCard.tsx,
     MesoVolume.tsx, MetaStat.tsx, MiniBar.tsx, MiniStat.tsx, MorningTrainingCard.tsx, MuscleArcSwitch.tsx,
-    MusclePriorityPicker.tsx, PeakFitCard.tsx, PhaseCurveBars.tsx, PlannedMesoCard.tsx, PlannerExerciseRow.tsx,
-    PrepExerciseTile.tsx, ProgressionBanner.tsx, RestTimerBar.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx,
-    RunWeekEditor.tsx, RunWeekStrip.tsx, SetBudgetCard.tsx, SetStepper.tsx, SportSessionCard.tsx, SportStat.tsx,
-    StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx, VolumeArcChart.tsx, VolumeBar.tsx, WeekZoneCard.tsx,
-    WeekdayGrid.tsx, WeeklyDayRow.tsx, WorkoutSummary.tsx, ZoneMiniGrid.tsx, ZoneTrack.tsx
+    MusclePriorityPicker.tsx, PeakFitCard.tsx, PhaseCurveBars.tsx, PlannedMesoCard.tsx, PrepExerciseTile.tsx,
+    ProgressionBanner.tsx, RestTimerBar.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx,
+    RunWeekStrip.tsx, SetStepper.tsx, SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx, TodaySessionCard.tsx,
+    VideoDemo.tsx, VolumeArcChart.tsx, VolumeBar.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx,
+    WeeklyDayRow.tsx, WorkoutSummary.tsx, ZoneMiniGrid.tsx, ZoneTrack.tsx
   - **logic:** agenda.ts, challengeOutcome.ts, dayStripItems.ts, exerciseDefaults.ts, growthForecast.ts,
-    gymDayTarget.ts, medalLabels.ts, mesoCompare.ts, mesoDays.ts, morningWindow.ts, muscleColors.ts, muscleFilters.ts,
-    musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts, planner.ts, prepBriefing.ts, programFit.ts,
+    gymDayTarget.ts, medalLabels.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoPlan.ts, morningWindow.ts,
+    muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts, prepBriefing.ts,
     restTimer.ts, runToTemplate.ts, sessionLength.ts, sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts,
     structureLint.ts, summaryStats.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts,
-    weekZone.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
+    weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
+  - **root:** DayTile.tsx, ProgramDayView.tsx, StepFocus.tsx, StepProgram.tsx, StepWhen.tsx, dayTiles.ts,
+    wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 65 IT + 8 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
@@ -1123,6 +1126,26 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **populators:** `DatabasePopulator`, `MesoTemplatePopulator`, `RunningPopulator`, `SleepLogPopulator`,
     `TrainPopulator`, `UserPopulator`
 
+### tutorial
+
+*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-09-02, mixed)
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/tutorial`
+  - **entities→tables:** `TutorialProgressEntity`→`tutorial_progress`
+  - **repositories:** `TutorialProgressRepository`
+  - **services:** `TutorialProgressService`
+  - **controllers→contract:** `TutorialProgressController`→`TutorialProgressApi`
+  - **other:** `TutorialProgressEntryJson`
+- **Contract** `api/feature/tutorial/tutorial-progress.yml` — 3 operations
+  - **endpoints:** GET /api/tutorial/progress · PUT /api/tutorial/progress · DELETE /api/tutorial/progress
+- **FE data** `frontend/src/data/tutorial`
+  - **hooks (via `@/data/hooks`):** `TUTORIAL_PROGRESS_GHOST`, `useTutorialProgress`, `useTutorialProgressActions`
+  - **modules:** tutorialProgressApi.ts, tutorialProgressHooks.ts
+- **FE ui** `frontend/src/features/tutorial`
+  - **root:** TutorialProvider.tsx, fuel.ts, index.ts, types.ts
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/tutorial` — 2 IT + 0 unit
+  - **ITs:** `TutorialProgressApiIT`, `TutorialProgressSwitchOffApiIT`
+
 ## Cross-cutting
 
 ### techcore — `backend/src/main/java/io/mrkuhne/mezo/techcore`
@@ -1139,13 +1162,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **hooks:** useBackNav.ts, useReducedMotion.ts, useStickyTab.ts
 - **lib:** audio.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, markdown.tsx, pct.ts, resizeImage.ts,
-  safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts
+  safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts
 - **ui:** AdherenceBar.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx, DatePicker.tsx, DayNavigator.tsx,
   Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx, Island.tsx, ItemCard.tsx, ItemRow.tsx,
   NumberInput.tsx, PageTitle.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx, Sheet.tsx,
   Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx, Toggle.tsx,
   ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx,
-  mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
+  kalauz/KalauzSheet.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 
@@ -1163,7 +1186,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`,
   `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
   `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
-- **`ResetDatabase` TRUNCATE list** — 91 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 92 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
     `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
@@ -1177,8 +1200,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `owned_title`, `pantry_import`, `pantry_item`, `pattern`, `pattern_event`, `period_summary`, `perk_unlock`,
     `person`, `prediction`, `protocol`, `protocol_item`, `push_log`, `push_subscription`, `recipe`,
     `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`, `skill_progress`, `sleep_goal`, `sleep_log`,
-    `sport_event`, `sport_schedule_slot`, `sport_session`, `supplement_intake`, `water_log`, `weekly_review`,
-    `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_session`
+    `sport_event`, `sport_schedule_slot`, `sport_session`, `supplement_intake`, `tutorial_progress`, `water_log`,
+    `weekly_review`, `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_session`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts
