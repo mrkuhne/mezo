@@ -30,6 +30,12 @@ public enum PriorityTier {
         return switch (this) { case EMPHASIZE -> mrv; case GROW -> mav; case MAINTAIN -> mev; };
     }
 
+    /** Week-1 start of the ramp (mesocycle wizard redesign): EMPHASIZE begins two sets above MEV
+     *  (never above MRV), GROW and MAINTAIN begin at MEV. Pairs with {@link #ceiling}. */
+    public int weekOneStart(int mev, int mav, int mrv) {
+        return this == EMPHASIZE ? Math.min(mev + 2, mrv) : mev;
+    }
+
     /**
      * Validates + normalizes a muscle-priority map for storage (mezo-ltk0, tier-review
      * follow-up 2): map KEYS are FE-owned (coarse muscle-group names, same as the goalPreset

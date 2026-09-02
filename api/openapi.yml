@@ -665,6 +665,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/meso-plans/generate:
+    post:
+      tags:
+        - Train
+      operationId: generateMesoPlan
+      summary: >-
+        Generate a hypertrophy mesocycle proposal (deterministic skeleton +
+        optional LLM exercise pick); returns a
+        MesoTemplateUpsertRequest-compatible template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoPlanGenerateRequest'
+      responses:
+        '200':
+          description: >-
+            Generated proposal — not persisted; save it via POST
+            /api/train/meso-templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoPlanGenerateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/meso-templates:
     get:
       tags:
@@ -9179,6 +9215,62 @@ components:
           description: >-
             Demo still (end position); alternated with imageStartUrl to convey
             the movement
+    MesoPlanGenerateRequest:
+      type: object
+      required:
+        - daysOfWeek
+        - weeks
+      properties:
+        daysOfWeek:
+          type: array
+          minItems: 2
+          maxItems: 6
+          uniqueItems: true
+          description: 'Training days, FE day tokens; any weekday incl. weekend'
+          items:
+            type: string
+            pattern: ^(Hét|Kedd|Sze|Csü|Pén|Szo|Vas)$
+        weeks:
+          type: integer
+          minimum: 4
+          maximum: 8
+          description: Total length incl. the terminal deload week
+        priorities:
+          type: object
+          nullable: true
+          description: >-
+            Sparse per-muscle tier map over the 9 coarse groups (chest, back,
+            shoulder, biceps, triceps, quad, ham, glute, calf); absent = grow
+          additionalProperties:
+            type: string
+            pattern: ^(emphasize|grow|maintain)$
+        goalText:
+          type: string
+          nullable: true
+          maxLength: 400
+          description: >-
+            Free-text goal steering exercise choice (e.g. "röplabda mellett,
+            vállra figyelve")
+    MesoPlanGenerateResponse:
+      type: object
+      required:
+        - template
+        - rationale
+        - llmUsed
+      properties:
+        template:
+          $ref: '#/components/schemas/MesoTemplateUpsertRequest'
+        rationale:
+          type: string
+          description: >-
+            One Hungarian sentence on what was chosen and why (LLM or
+            deterministic)
+        llmUsed:
+          type: boolean
+          description: >-
+            false when the LLM port was absent, failed, or its answer changed
+            nothing (no accepted pick) — the deterministic filler produced the
+            plan
     MesoTemplateUpsertRequest:
       type: object
       required:

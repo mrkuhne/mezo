@@ -1,0 +1,622 @@
+<meta charset="utf-8">
+<title>Logolás 2.1 prototípus</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200..800&family=Geist+Mono:wght@500;700&display=swap">
+<style>
+/* ───────── Mezo DS tokens (Exist Zen · Pulse dark) ───────── */
+:root{
+  --page:#FBF6EF; --card:#FFFFFF; --elev:#FFFFFF; --recess:rgba(43,33,24,.06);
+  --ink:#2B2118; --ink-2:#5F5346; --ink-3:#8A7A6A; --ink-4:#A5978A; --line:rgba(43,33,24,.10);
+  --coral:#FF6B4A; --coral-ink:#A84A26; --coral-wash:rgba(255,107,74,.10);
+  --sage:#7FA48A; --sage-ink:#2D4D2A; --sage-wash:rgba(127,164,138,.16);
+  --amber:#FFB347; --amber-ink:#8A6918; --amber-wash:rgba(255,179,71,.16);
+  --lav:#9B8FC4; --lav-ink:#4E4477; --lav-wash:rgba(155,143,196,.16);
+  --sky:#6FA7D8; --rose:#E27A8B;
+  --mp:#E26B67; --mc:#D49245; --mf:#C4A020; --mr:#6BA24A; --mw:#6FA7D8;
+  --hero-wash:linear-gradient(180deg, rgba(255,107,74,.16), rgba(251,246,239,0) 78%); --halo-sage:radial-gradient(ellipse at 50% 30%, rgba(154,184,143,.30) 0%, rgba(244,208,111,.10) 30%, rgba(251,246,239,0) 60%);
+  --shadow:0 10px 30px rgba(43,33,24,.08);
+  --hole:#FFFFFF;
+  --ff:'Geist',-apple-system,system-ui,sans-serif;
+  --mono:'Geist Mono',ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --page:#191614; --card:#221E1B; --elev:#2A2521; --recess:rgba(245,239,230,.06);
+    --ink:#F5EFE6; --ink-2:#C9BEB0; --ink-3:#8F8478; --ink-4:#6B6259; --line:rgba(245,239,230,.09);
+    --coral-ink:#FF8A6E; --coral-wash:rgba(255,107,74,.14);
+    --sage-ink:#A9C7B0; --sage-wash:rgba(127,164,138,.14);
+    --amber-ink:#F2D094; --amber-wash:rgba(255,179,71,.13);
+    --lav-ink:#C4BBE6; --lav-wash:rgba(155,143,196,.14);
+    --hero-wash:linear-gradient(180deg, rgba(255,107,74,.20), rgba(25,22,20,0) 80%); --halo-sage:radial-gradient(ellipse at 50% 30%, rgba(127,164,138,.22) 0%, rgba(212,168,83,.06) 30%, rgba(25,22,20,0) 60%);
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+    --hole:#221E1B;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#191614; --card:#221E1B; --elev:#2A2521; --recess:rgba(245,239,230,.06);
+  --ink:#F5EFE6; --ink-2:#C9BEB0; --ink-3:#8F8478; --ink-4:#6B6259; --line:rgba(245,239,230,.09);
+  --coral-ink:#FF8A6E; --coral-wash:rgba(255,107,74,.14);
+  --sage-ink:#A9C7B0; --sage-wash:rgba(127,164,138,.14);
+  --amber-ink:#F2D094; --amber-wash:rgba(255,179,71,.13);
+  --lav-ink:#C4BBE6; --lav-wash:rgba(155,143,196,.14);
+  --hero-wash:linear-gradient(180deg, rgba(255,107,74,.20), rgba(25,22,20,0) 80%); --halo-sage:radial-gradient(ellipse at 50% 30%, rgba(127,164,138,.22) 0%, rgba(212,168,83,.06) 30%, rgba(25,22,20,0) 60%);
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --hole:#221E1B;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:var(--ff);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--coral);outline-offset:2px;border-radius:12px}
+b{font-weight:700}
+.tn{font-variant-numeric:tabular-nums}
+
+/* ───────── Stage: phone + notes ───────── */
+.stage{display:grid;grid-template-columns:minmax(0,1fr);gap:32px;max-width:1040px;margin:0 auto;padding:28px 16px 56px;justify-items:center}
+@media (min-width:900px){.stage{grid-template-columns:400px minmax(0,1fr);align-items:start;justify-items:stretch}}
+.phone{position:relative;width:390px;max-width:100%;height:844px;border-radius:44px;background:var(--page);box-shadow:0 0 0 10px #111,0 0 0 12px #333,0 30px 70px rgba(0,0,0,.35);overflow:hidden;isolation:isolate}
+.phone-scroll{position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.phone-scroll::-webkit-scrollbar{display:none}
+
+/* status bar */
+.sb{display:flex;align-items:center;justify-content:space-between;padding:22px 24px 8px;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.sb .orbs{display:flex;gap:8px}
+.sb .orbs i{width:30px;height:30px;border-radius:50%;background:var(--elev);display:grid;place-items:center;font-size:13px;font-style:normal}
+.sb .orbs i.me{background:radial-gradient(circle at 35% 30%,#FF9F82,#E05535 70%)}
+
+/* ───────── Hero ───────── */
+.hero{background:var(--hero-wash);padding:8px 16px 0;display:grid;justify-items:center;gap:4px;text-align:center}
+.back{justify-self:start;padding:8px 14px;border-radius:999px;background:var(--elev);font-weight:700;font-size:15px;box-shadow:var(--shadow)}
+.daysw{display:flex;align-items:center;gap:10px;margin-top:6px}
+.daysw button{width:38px;height:38px;border-radius:50%;background:var(--elev);font-size:17px;color:var(--ink-2)}
+.daysw button:disabled{opacity:.3}
+.daysw .lbl{background:var(--elev);border-radius:999px;padding:8px 26px;line-height:1.2}
+.daysw .lbl b{display:block;font-size:14px}
+.daysw .lbl small{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.eyebrow{font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--coral-ink);margin:8px 0 2px}
+.bigrow{display:flex;align-items:baseline;gap:10px}
+.bignum{font-weight:200;font-size:60px;letter-spacing:-.03em;line-height:1}
+.goal{font-size:14px;color:var(--ink-2)}
+.hero .sub{font-size:13px;color:var(--ink-2)}
+
+/* ───────── Keret-hero — a Fuel oldal .khero családja, változatlanul ───────── */
+.khero{background:var(--halo-sage);padding:6px 18px 12px;text-align:center}
+.khero-n{font-size:46px;font-weight:200;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
+.khero-u{font-size:18px;font-weight:300;color:var(--ink-4);margin-left:5px}
+.khero-of{font-size:11.5px;color:var(--ink-2);font-weight:500;margin-top:5px}
+.khero-of b{color:var(--sage-ink);font-weight:700}
+.khero-dayseg{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:10px auto 0;position:relative;background:var(--recess);max-width:280px}
+.khero-seg{display:block;height:100%;background:var(--sage)}
+.khero-seg-alt{background:var(--sage-ink)}
+.khero-mark{position:absolute;top:-2px;bottom:-2px;width:2px;background:#D4A853;border-radius:1px;box-shadow:0 0 0 2px rgba(212,168,83,.25)}
+.khero-chips{display:flex;gap:6px;margin-top:10px;justify-content:center;flex-wrap:wrap}
+.khero-chip{font-size:10.5px;font-weight:600;color:var(--ink-2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 11px;white-space:nowrap}
+.khero-chip b{font-weight:800;color:var(--ink)}
+.khero-chip-goal b{color:var(--sage-ink)}
+.khero-rings{display:flex;justify-content:center;gap:9px;margin-top:14px}
+.khero-ring{text-align:center;border:none;background:none;padding:0}
+.khero-ring svg{transform:rotate(-90deg);display:block}
+.khero-ring-track{stroke:var(--recess);fill:none}
+.khero-ring-fill{fill:none;stroke-linecap:round;stroke-dasharray:150.8;stroke-dashoffset:150.8;transition:stroke-dashoffset 2s cubic-bezier(.2,.8,.2,1)}
+.khero-ringwrap{position:relative;width:58px;height:58px;margin:0 auto}
+.khero-pctv{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+.khero-pctv em{font-style:normal;font-size:8px;font-weight:600;color:var(--ink-4);margin-left:1px}
+.khero-lb{font-size:8px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-top:5px}
+.khero-gv{font-size:10px;font-weight:700;margin-top:1px;color:var(--ink)}
+.khero-gv em{font-style:normal;font-weight:500;color:var(--ink-4)}
+
+/* ───────── Meal blocks ───────── */
+.list{display:grid;gap:10px;padding:12px 14px 120px}
+.blk{border-radius:24px;background:var(--card);box-shadow:var(--shadow);border:1px solid var(--line);padding:13px 14px 14px}
+.blk.done{background:linear-gradient(150deg,color-mix(in srgb,var(--sage) 16%,var(--card)),color-mix(in srgb,var(--sage) 5%,var(--page)))}
+.blk.now{border:1.5px solid var(--coral);box-shadow:0 10px 30px rgba(255,107,74,.22)}
+.blk.future{opacity:.85}
+.top{display:flex;align-items:center;gap:8px}
+.top time{font-size:12px;font-weight:800;color:var(--ink-2)}
+.top .wl{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);flex:1}
+.stamp{font-size:9.5px;font-weight:800;letter-spacing:.1em;padding:4px 10px;border-radius:999px}
+.stamp.done{background:var(--sage-wash);color:var(--sage-ink)}
+.stamp.now{background:var(--coral);color:#fff}
+.ctx{display:inline-flex;align-items:center;gap:5px;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+.ctx.std{background:var(--recess);color:var(--ink-2)}
+.ctx.pre{background:var(--amber-wash);color:var(--amber-ink)}
+.ctx.post{background:var(--lav-wash);color:var(--lav-ink)}
+.ctx i{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.main{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:center;margin-top:10px}
+.main.plan{grid-template-columns:52px 1fr auto;align-items:start}
+.main.plan .kcal b{font-size:22px}
+.main.plan .kcal small{display:block;margin:3px 0 0}
+.srow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.ico{width:52px;height:52px;border-radius:16px;background:var(--elev);display:grid;place-items:center;font-size:26px;box-shadow:inset 0 0 0 1px var(--line)}
+.name{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.name.ghost{color:var(--ink-3);font-weight:500}
+.meta{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px;color:var(--ink-2)}
+.kcal{text-align:right;line-height:1}
+.kcal b{font-size:24px;font-weight:700;letter-spacing:-.03em}
+.kcal small{display:inline;margin-left:4px;font-size:8px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);margin-top:3px}
+
+/* AI score — big, tappable, nudging */
+.aisc{display:inline-flex;align-items:center;gap:7px;padding:4px 11px 4px 5px;border-radius:999px;background:var(--elev);box-shadow:0 4px 14px rgba(0,0,0,.12),inset 0 0 0 1px var(--line);color:var(--ink);transform-origin:40% 50%}
+.aisc .r{position:relative;width:30px;height:30px}
+.aisc svg{width:30px;height:30px;transform:rotate(-90deg)}
+.aisc .tr{stroke:var(--recess);fill:none;stroke-width:3.5}
+.aisc .fl{fill:none;stroke-width:3.5;stroke-linecap:round;stroke-dasharray:88;stroke-dashoffset:88;transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1)}
+.aisc .sp{position:absolute;inset:0;display:grid;place-items:center;font-size:10px}
+.aisc .n{font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.aisc .t{display:grid;line-height:1.1}
+.aisc .t small{font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.aisc .chev{font-size:16px;color:var(--ink-3);margin-left:-2px}
+.aisc.hi{--sc:var(--sage)} .aisc.hi .t small{color:var(--sage-ink)}
+.aisc.md{--sc:var(--amber)} .aisc.md .t small{color:var(--amber-ink)}
+.aisc.lo{--sc:var(--coral)} .aisc.lo .t small{color:var(--coral-ink)}
+.aisc .fl{stroke:var(--sc)}
+@keyframes nudge{0%,14%,100%{transform:rotate(0) scale(1)}3%{transform:rotate(-5deg) scale(1.05)}6%{transform:rotate(5deg) scale(1.06)}9%{transform:rotate(-3deg) scale(1.04)}12%{transform:rotate(2deg) scale(1.02)}}
+@keyframes halo{0%,14%,100%{box-shadow:0 4px 14px rgba(0,0,0,.12),inset 0 0 0 1px var(--line)}6%{box-shadow:0 4px 18px color-mix(in srgb,var(--sc) 45%,transparent),inset 0 0 0 1.5px var(--sc)}}
+.aisc.live{animation:nudge 2.6s ease-in-out infinite,halo 2.6s ease-in-out infinite}
+.aisc:nth-of-type(1){animation-delay:.3s}
+.aisc:active{transform:scale(.96);animation:none}
+.aisc.pend{color:var(--ink-3);font-size:12px;font-weight:700;padding:9px 14px}
+
+/* macro row — 4 large rings incl. rost */
+.mrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.m{display:grid;justify-items:center;gap:2px}
+.m .rw{position:relative;width:44px;height:44px}
+.m svg{width:44px;height:44px;transform:rotate(-90deg)}
+.m .tr{stroke:var(--recess);fill:none;stroke-width:4.5}
+.m .fl{fill:none;stroke-width:4.5;stroke-linecap:round;stroke-dasharray:113;stroke-dashoffset:113;transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)}
+.m .l{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--ink-2)}
+.m .g{font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1;margin-top:2px}
+.m .g em{font-style:normal;font-size:9px;font-weight:600;color:var(--ink-3)}
+.m .p{font-size:8.5px;color:var(--ink-3);font-weight:600}
+.m.P{--c:var(--mp)} .m.C{--c:var(--mc)} .m.F{--c:var(--mf)} .m.R{--c:var(--mr)}
+.m .fl{stroke:var(--c)}
+
+.ctas{display:flex;gap:8px;margin-top:12px}
+.cta{flex:1;padding:12px 0;border-radius:16px;font-weight:800;font-size:13.5px;text-align:center}
+.cta.pri{background:linear-gradient(135deg,#FF7A55,#FF5B36);color:#fff;box-shadow:0 8px 20px rgba(255,91,54,.35)}
+.cta.gh{flex:.55;background:var(--recess);color:var(--ink-2)}
+
+/* ───────── Score sheet ───────── */
+.scrim{position:absolute;inset:0;background:rgba(10,8,6,.55);opacity:0;pointer-events:none;transition:opacity .25s;z-index:5}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:92%;border-radius:30px 30px 0 0;background:var(--page);transform:translateY(102%);transition:transform .4s cubic-bezier(.2,.8,.2,1);z-index:6;display:flex;flex-direction:column;box-shadow:0 -10px 40px rgba(0,0,0,.35)}
+.phone.open .scrim{opacity:1;pointer-events:auto}
+.phone.open .sheet{transform:none}
+.sheet .grab{width:38px;height:5px;border-radius:999px;background:var(--ink-4);margin:10px auto 0;opacity:.6}
+.sheet .sc{overflow-y:auto;padding:8px 16px 28px;scrollbar-width:none}
+.sheet .sc::-webkit-scrollbar{display:none}
+.sh-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sh-head .eb{font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--coral-ink)}
+.sh-head h2{margin:4px 0 0;font-size:18px;font-weight:700;letter-spacing:-.01em;line-height:1.2;text-wrap:balance}
+.sh-head .close{width:34px;height:34px;border-radius:50%;background:var(--elev);font-size:15px;flex:none;display:grid;place-items:center}
+.sh-sub{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:11px;color:var(--ink-3)}
+
+.shero{margin-top:14px;border-radius:24px;padding:16px;background:linear-gradient(150deg,color-mix(in srgb,var(--sc) 18%,var(--card)),color-mix(in srgb,var(--sc) 4%,var(--page)));border:1px solid var(--line);display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center}
+.shero .big{position:relative;width:112px;height:112px}
+.shero svg{width:112px;height:112px;transform:rotate(-90deg)}
+.shero .tr{stroke:var(--recess);fill:none;stroke-width:8}
+.shero .fl{fill:none;stroke-width:8;stroke-linecap:round;stroke:var(--sc);stroke-dasharray:314;stroke-dashoffset:314;transition:stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)}
+.shero .num{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1}
+.shero .num b{font-size:40px;font-weight:200;letter-spacing:-.04em}
+.shero .num small{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-top:4px}
+.shero .verdict{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.shero .verdict em{font-style:normal;color:var(--ink-3);font-weight:500;font-size:12px;display:block;margin-top:2px}
+.shero .facts{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.shero .facts span{font-size:10.5px;font-weight:700;padding:4px 8px;border-radius:999px;background:var(--elev);color:var(--ink-2)}
+.shero .facts span i{font-style:normal;color:var(--ink-3);font-weight:600;margin-right:3px}
+.conf{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.conf .bar{flex:1;max-width:90px;height:4px;border-radius:999px;background:var(--recess);overflow:hidden}
+.conf .bar i{display:block;height:100%;width:86%;background:var(--sc);border-radius:999px}
+
+.olv{margin-top:12px;border-radius:20px;padding:14px;background:var(--coral-wash);border:1px solid color-mix(in srgb,var(--coral) 25%,transparent)}
+.olv .eb{font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--coral-ink);display:flex;gap:6px;align-items:center}
+.olv p{margin:8px 0 0;font-size:14px;line-height:1.5;color:var(--ink)}
+.olv p b{color:var(--ink)}
+
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:20px 2px 8px}
+.sec .eb{font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3)}
+.sec .eb.w{color:var(--amber-ink)}
+.sec .eb.sm{font-weight:700;letter-spacing:.06em;text-transform:none;font-size:10.5px}
+
+/* contribution ledger */
+.ledger{border-radius:20px;background:var(--card);border:1px solid var(--line);padding:14px}
+.ledger .stack{display:flex;height:16px;border-radius:999px;overflow:hidden;gap:2px}
+.ledger .stack span{position:relative;background:var(--recess);height:100%;display:block}
+.ledger .stack span i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--c);border-radius:0 3px 3px 0;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.ledger .sum{display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--ink-3)}
+.ledger .sum b{color:var(--ink)}
+.dims{display:grid;gap:8px;margin-top:8px}
+.dim{border-radius:20px;background:var(--card);border:1px solid var(--line);padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;text-align:left;width:100%;color:var(--ink)}
+.dim .sc2{position:relative;width:52px;height:52px}
+.dim svg{width:52px;height:52px;transform:rotate(-90deg)}
+.dim .tr{stroke:var(--recess);fill:none;stroke-width:5}
+.dim .fl{fill:none;stroke-width:5;stroke-linecap:round;stroke:var(--c);stroke-dasharray:138;stroke-dashoffset:138;transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1)}
+.dim .sc2 b{position:absolute;inset:0;display:grid;place-items:center;font-size:16px;font-weight:700;letter-spacing:-.02em}
+.dim .lb{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:6px}
+.dim .lb i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.dim .w{font-size:10.5px;color:var(--ink-3);margin-top:2px}
+.dim .w b{color:var(--ink-2);font-weight:700}
+.dim .one{font-size:12px;color:var(--ink-2);margin-top:5px;line-height:1.35}
+.dim .arr{font-size:16px;color:var(--ink-3);transition:transform .25s}
+.dim[aria-expanded="true"] .arr{transform:rotate(90deg)}
+.dimx{display:none;padding:0 14px 14px;margin-top:-6px;border-radius:0 0 20px 20px;background:var(--card);border:1px solid var(--line);border-top:0}
+.dimx.show{display:block}
+.dimx p{margin:8px 0 0;font-size:13px;line-height:1.5;color:var(--ink)}
+.dimx .pm{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.dimx .pm div{border-radius:14px;padding:9px 10px;font-size:11.5px;line-height:1.4}
+.dimx .pm .plus{background:var(--sage-wash);color:var(--sage-ink)}
+.dimx .pm .minus{background:var(--amber-wash);color:var(--amber-ink)}
+.dimx .pm b{display:block;font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}
+.dimx .rows{margin-top:10px;display:grid;gap:5px}
+.dimx .rows div{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.dimx .rows div:last-child{border:0}
+.dimx .rows span:first-child{color:var(--ink-3)}
+.dimx .rows span:last-child{font-weight:700}
+.dimx .mb{margin-top:10px;display:grid;gap:6px}
+.dimx .mb div{display:grid;grid-template-columns:44px 1fr 62px;align-items:center;gap:8px;font-size:11px}
+.dimx .mb i{display:block;height:8px;border-radius:999px;background:var(--recess);position:relative;overflow:hidden}
+.dimx .mb i::after{content:"";position:absolute;inset:0;width:var(--v);background:var(--c);border-radius:999px}
+.dimx .mb i::before{content:"";position:absolute;top:-2px;bottom:-2px;left:var(--t);width:2px;background:var(--ink-2);z-index:1}
+.dimx .mb span:first-child{font-weight:800;color:var(--c)}
+.dimx .mb span:last-child{text-align:right;color:var(--ink-2);font-weight:600}
+
+.improve{display:grid;gap:8px}
+.imp{border-radius:18px;background:var(--card);border:1px solid var(--line);padding:12px 12px 12px 14px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.imp p{margin:0;font-size:13px;line-height:1.45}
+.imp p b{color:var(--ink)}
+.imp .gain{font-size:15px;font-weight:700;color:var(--sage-ink);white-space:nowrap;padding:6px 10px;border-radius:12px;background:var(--sage-wash);letter-spacing:-.02em}
+.imp .gain small{display:block;font-size:8px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;opacity:.8}
+.tools{display:flex;flex-wrap:wrap;gap:6px}
+.tools span{font-family:var(--mono);font-size:10px;font-weight:500;padding:5px 9px;border-radius:10px;background:var(--recess);color:var(--ink-2)}
+.tools span::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;background:var(--sky)}
+.tools span.c::before{background:var(--lav)}
+
+/* ───────── Notes column ───────── */
+.notes{max-width:560px}
+.notes h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:0 0 4px;text-wrap:balance}
+.notes .lead{color:var(--ink-2);margin:0 0 20px;font-size:15px}
+.notes h3{font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--coral-ink);margin:22px 0 8px}
+.notes ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.notes li{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:11px 13px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-size:13.5px;line-height:1.45}
+.notes li .k{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--sage-ink);background:var(--sage-wash);padding:3px 7px;border-radius:999px;height:fit-content;white-space:nowrap;margin-top:2px}
+.notes li b{font-weight:700}
+.notes .tog{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.notes .tog button{padding:9px 14px;border-radius:999px;background:var(--elev);border:1px solid var(--line);font-weight:700;font-size:12.5px}
+.notes .tog button[aria-pressed="true"]{background:var(--coral);color:#fff;border-color:transparent}
+
+@media (prefers-reduced-motion:reduce){
+  .aisc.live{animation:none}
+  .khero-ring-fill,.m .fl,.aisc .fl,.shero .fl,.dim .fl,.ledger .stack span i,.dstrip .bar i{transition:none}
+  .sheet{transition:none}
+}
+</style>
+
+<div class="stage">
+<div class="phone" id="phone">
+  <div class="phone-scroll" id="scroll">
+    <div class="sb"><span>Kedd · szep 1</span><span class="orbs"><i>🌙</i><i>✉️</i><i>🔔</i><i class="me"></i></span></div>
+
+    <div class="hero">
+      <button class="back" aria-label="Vissza a Fuel oldalra">‹ Fuel</button>
+      <div class="daysw">
+        <button aria-label="Előző nap">‹</button>
+        <span class="lbl"><b>szep 1.</b><small>kedd · ma</small></span>
+        <button aria-label="Következő nap" disabled>›</button>
+      </div>
+      <div class="eyebrow">Logolás</div>
+    </div>
+
+    <!-- Keret-hero — a Fuel oldal hero blokkja egy az egyben -->
+    <section class="khero" aria-label="Napi keret">
+      <div class="khero-n" aria-label="1 114 kcal ma"><span id="kcalnum">0</span><span class="khero-u">kcal ma</span></div>
+      <div class="khero-of">4/6 ablak kész · <b>1 081</b> kcal még belefér</div>
+      <div class="khero-dayseg">
+        <i class="khero-seg" style="width:18%"></i><i class="khero-seg khero-seg-alt" style="width:2%"></i><i class="khero-seg" style="width:7%"></i><i class="khero-seg khero-seg-alt" style="width:9%"></i><i class="khero-seg" style="width:15%"></i>
+        <span class="khero-mark" style="left:74%"></span>
+      </div>
+      <div class="khero-chips">
+        <button class="khero-chip">Alap <b>2 253</b></button>
+        <button class="khero-chip">Mozgás <b>+1 247</b></button>
+        <button class="khero-chip khero-chip-goal">Cél <b>−850</b></button>
+      </div>
+      <div class="khero-rings">
+        <div class="khero-ring" role="progressbar" aria-label="Fehérje 66 g / 216 g" aria-valuenow="31" aria-valuemin="0" aria-valuemax="100">
+          <div class="khero-ringwrap"><svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true"><circle class="khero-ring-track" cx="29" cy="29" r="24" stroke-width="5"/><circle class="khero-ring-fill" cx="29" cy="29" r="24" stroke="var(--mp)" stroke-width="5" data-pct="31"/></svg><span class="khero-pctv" aria-hidden="true">31<em>%</em></span></div>
+          <div class="khero-lb" style="color:var(--mp)">Fehérje</div>
+          <div class="khero-gv">66 g <em>/ 216 g</em></div>
+        </div>
+        <div class="khero-ring" role="progressbar" aria-label="Szénhidrát 108 g / 296 g" aria-valuenow="36" aria-valuemin="0" aria-valuemax="100">
+          <div class="khero-ringwrap"><svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true"><circle class="khero-ring-track" cx="29" cy="29" r="24" stroke-width="5"/><circle class="khero-ring-fill" cx="29" cy="29" r="24" stroke="var(--mc)" stroke-width="5" data-pct="36"/></svg><span class="khero-pctv" aria-hidden="true">36<em>%</em></span></div>
+          <div class="khero-lb" style="color:var(--mc)">Szénhidrát</div>
+          <div class="khero-gv">108 g <em>/ 296 g</em></div>
+        </div>
+        <div class="khero-ring" role="progressbar" aria-label="Zsír 50 g / 67 g" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
+          <div class="khero-ringwrap"><svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true"><circle class="khero-ring-track" cx="29" cy="29" r="24" stroke-width="5"/><circle class="khero-ring-fill" cx="29" cy="29" r="24" stroke="var(--mf)" stroke-width="5" data-pct="75"/></svg><span class="khero-pctv" aria-hidden="true">75<em>%</em></span></div>
+          <div class="khero-lb" style="color:var(--mf)">Zsír</div>
+          <div class="khero-gv">50 g <em>/ 67 g</em></div>
+        </div>
+        <div class="khero-ring" role="progressbar" aria-label="Rost 17 g / 30 g" aria-valuenow="57" aria-valuemin="0" aria-valuemax="100">
+          <div class="khero-ringwrap"><svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true"><circle class="khero-ring-track" cx="29" cy="29" r="24" stroke-width="5"/><circle class="khero-ring-fill" cx="29" cy="29" r="24" stroke="var(--mr)" stroke-width="5" data-pct="57"/></svg><span class="khero-pctv" aria-hidden="true">57<em>%</em></span></div>
+          <div class="khero-lb" style="color:var(--mr)">Rost</div>
+          <div class="khero-gv">17 g <em>/ 30 g</em></div>
+        </div>
+        <button class="khero-ring khero-ring-water" aria-label="Víz logolása · 0 a 4 literből">
+          <div class="khero-ringwrap"><svg width="58" height="58" viewBox="0 0 58 58" aria-hidden="true"><circle class="khero-ring-track" cx="29" cy="29" r="24" stroke-width="5"/><circle class="khero-ring-fill" cx="29" cy="29" r="24" stroke="var(--mw)" stroke-width="5" data-pct="0"/></svg><span class="khero-pctv" aria-hidden="true">0<em>%</em></span></div>
+          <div class="khero-lb" style="color:var(--mw)">Víz</div>
+          <div class="khero-gv">0 <em>/ 4 l</em></div>
+        </button>
+      </div>
+    </section>
+
+    <div class="list">
+
+      <!-- REGGELI · done · standard -->
+      <article class="blk done">
+        <div class="top"><time>11:15</time><span class="wl">Reggeli</span><span class="ctx std"><i></i>Standard</span><span class="stamp done">Kész ✓</span></div>
+        <div class="main">
+          <div class="ico">🍳</div>
+          <div>
+            <div class="name">Tojás, kovászos bajor rozsos kenyér, avokádó</div>
+          </div>
+        </div>
+        <div class="srow">
+          <button class="aisc md live" data-sheet="reggeli" aria-label="AI score 69, közepes · részletek">
+                <span class="r"><svg viewBox="0 0 34 34"><circle class="tr" cx="17" cy="17" r="14"/><circle class="fl" cx="17" cy="17" r="14" data-pct="69"/></svg><span class="sp">✨</span></span>
+                <span class="t"><span class="n tn">69</span><small>közepes</small></span>
+                <span class="chev">›</span>
+              </button>
+          <div class="kcal"><b class="tn">576</b><small>kcal</small></div>
+        </div>
+        <div class="mrow">
+          <div class="m P"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="19"/></svg><span class="l">P</span></div><div class="g tn">42<em> g</em></div><div class="p">19% napi</div></div>
+          <div class="m C"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="8"/></svg><span class="l">C</span></div><div class="g tn">24<em> g</em></div><div class="p">8% napi</div></div>
+          <div class="m F"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="48"/></svg><span class="l">F</span></div><div class="g tn">32<em> g</em></div><div class="p">48% napi</div></div>
+          <div class="m R"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="20"/></svg><span class="l">R</span></div><div class="g tn">6<em> g</em></div><div class="p">20% napi</div></div>
+        </div>
+      </article>
+
+      <!-- TÍZÓRAI · done · pre-workout -->
+      <article class="blk done">
+        <div class="top"><time>17:01</time><span class="wl">Tízórai</span><span class="ctx pre"><i></i>Pre-workout</span><span class="stamp done">Kész ✓</span></div>
+        <div class="main">
+          <div class="ico">🍑</div>
+          <div>
+            <div class="name">Őszibarack</div>
+          </div>
+        </div>
+        <div class="srow">
+          <button class="aisc md live" data-sheet="tizorai" aria-label="AI score 62, közepes · részletek">
+                <span class="r"><svg viewBox="0 0 34 34"><circle class="tr" cx="17" cy="17" r="14"/><circle class="fl" cx="17" cy="17" r="14" data-pct="62"/></svg><span class="sp">✨</span></span>
+                <span class="t"><span class="n tn">62</span><small>közepes</small></span>
+                <span class="chev">›</span>
+              </button>
+          <div class="kcal"><b class="tn">59</b><small>kcal</small></div>
+        </div>
+        <div class="mrow">
+          <div class="m P"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="1"/></svg><span class="l">P</span></div><div class="g tn">1<em> g</em></div><div class="p">0% napi</div></div>
+          <div class="m C"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="5"/></svg><span class="l">C</span></div><div class="g tn">14<em> g</em></div><div class="p">5% napi</div></div>
+          <div class="m F"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="0"/></svg><span class="l">F</span></div><div class="g tn">0<em> g</em></div><div class="p">0% napi</div></div>
+          <div class="m R"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="7"/></svg><span class="l">R</span></div><div class="g tn">2<em> g</em></div><div class="p">7% napi</div></div>
+        </div>
+      </article>
+
+      <!-- EBÉD · done · post-workout -->
+      <article class="blk done">
+        <div class="top"><time>17:01</time><span class="wl">Ebéd</span><span class="ctx post"><i></i>Post-workout</span><span class="stamp done">Kész ✓</span></div>
+        <div class="main">
+          <div class="ico">🍨</div>
+          <div>
+            <div class="name">Anjuna pop fagyi</div>
+          </div>
+        </div>
+        <div class="srow">
+          <button class="aisc lo live" data-sheet="ebed" aria-label="AI score 31, gyenge · részletek">
+                <span class="r"><svg viewBox="0 0 34 34"><circle class="tr" cx="17" cy="17" r="14"/><circle class="fl" cx="17" cy="17" r="14" data-pct="31"/></svg><span class="sp">✨</span></span>
+                <span class="t"><span class="n tn">31</span><small>gyenge</small></span>
+                <span class="chev">›</span>
+              </button>
+          <div class="kcal"><b class="tn">200</b><small>kcal</small></div>
+        </div>
+        <div class="mrow">
+          <div class="m P"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="2"/></svg><span class="l">P</span></div><div class="g tn">4<em> g</em></div><div class="p">2% napi</div></div>
+          <div class="m C"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="9"/></svg><span class="l">C</span></div><div class="g tn">28<em> g</em></div><div class="p">9% napi</div></div>
+          <div class="m F"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="12"/></svg><span class="l">F</span></div><div class="g tn">8<em> g</em></div><div class="p">12% napi</div></div>
+          <div class="m R"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="3"/></svg><span class="l">R</span></div><div class="g tn">1<em> g</em></div><div class="p">3% napi</div></div>
+        </div>
+      </article>
+
+      <!-- UZSONNA · done · standard · high score -->
+      <article class="blk done">
+        <div class="top"><time>17:40</time><span class="wl">Uzsonna</span><span class="ctx std"><i></i>Standard</span><span class="stamp done">Kész ✓</span></div>
+        <div class="main">
+          <div class="ico">🥣</div>
+          <div>
+            <div class="name">Görög joghurt, zabpehely, dió, málna</div>
+          </div>
+        </div>
+        <div class="srow">
+          <button class="aisc hi live" data-sheet="uzsonna" aria-label="AI score 88, jó · részletek">
+                <span class="r"><svg viewBox="0 0 34 34"><circle class="tr" cx="17" cy="17" r="14"/><circle class="fl" cx="17" cy="17" r="14" data-pct="88"/></svg><span class="sp">✨</span></span>
+                <span class="t"><span class="n tn">88</span><small>jó</small></span>
+                <span class="chev">›</span>
+              </button>
+          <div class="kcal"><b class="tn">279</b><small>kcal</small></div>
+        </div>
+        <div class="mrow">
+          <div class="m P"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="9"/></svg><span class="l">P</span></div><div class="g tn">19<em> g</em></div><div class="p">9% napi</div></div>
+          <div class="m C"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="14"/></svg><span class="l">C</span></div><div class="g tn">42<em> g</em></div><div class="p">14% napi</div></div>
+          <div class="m F"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="15"/></svg><span class="l">F</span></div><div class="g tn">10<em> g</em></div><div class="p">15% napi</div></div>
+          <div class="m R"><div class="rw"><svg viewBox="0 0 44 44"><circle class="tr" cx="22" cy="22" r="18"/><circle class="fl" cx="22" cy="22" r="18" data-pct="27"/></svg><span class="l">R</span></div><div class="g tn">8<em> g</em></div><div class="p">27% napi</div></div>
+        </div>
+      </article>
+
+      <!-- VACSORA · now -->
+      <article class="blk now">
+        <div class="top"><time>19:30</time><span class="wl">Vacsora</span><span class="stamp now">Most</span></div>
+        <div class="main plan">
+          <div class="ico">🐟</div>
+          <div>
+            <div class="name">Lazac, quinoa, párolt brokkoli</div>
+            <div class="meta">a tervből · <span style="color:var(--mf);font-weight:700">zsír-figyelő:</span> 17 g még belefér</div>
+          </div>
+          <div class="kcal"><b class="tn">610</b><small>kcal terv</small></div>
+        </div>
+        <div class="ctas"><button class="cta pri">Logold</button><button class="cta gh">✨ AI</button></div>
+      </article>
+
+      <!-- ESTI · future -->
+      <article class="blk future">
+        <div class="top"><time>21:30</time><span class="wl">Esti</span></div>
+        <div class="main plan">
+          <div class="ico">🥛</div>
+          <div><div class="name ghost">Kazein-shake vagy túró</div><div class="meta">a tervből</div></div>
+          <div class="kcal"><b class="tn">240</b><small>kcal terv</small></div>
+        </div>
+        <div class="ctas"><button class="cta gh" style="flex:1">Logold</button><button class="cta gh">✨ AI</button></div>
+      </article>
+
+    </div>
+  </div>
+
+  <!-- ───────── AI score sheet ───────── -->
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-title" style="--sc:var(--amber)">
+    <div class="grab"></div>
+    <div class="sc" id="sheetbody"></div>
+  </div>
+</div>
+
+<aside class="notes">
+  <h1>Logolás 2.1 — makrók és AI score újratervezve</h1>
+  <p class="lead">Interaktív prototípus. Koppints bármelyik ✨ score-ra a phone-ban, a breakdown alulról nyílik. A jobb oldali jegyzet a döntéseket sorolja.</p>
+
+  <div class="tog">
+    <button id="tg-live" aria-pressed="true">Score rezgetés be</button>
+    <button id="tg-theme">Világos / sötét</button>
+    <button id="tg-replay">Animációk újra</button>
+  </div>
+
+  <h3>Mi változott a mostani oldalhoz képest</h3>
+  <ul>
+    <li><span class="k">Napi</span><span><b>A Fuel oldal Keret-hero blokkja egy az egyben átjött</b> — a KeretHero komponens és a .khero CSS-család változatlanul: kcal-szám, nap-sáv, Alap / Mozgás / Cél chipek, öt gyűrű. Alá csak a „4/6 ablak kész” sor került.</span></li>
+    <li><span class="k">Kártya</span><span><b>A logolt étel gyűrűi 22 → 44 px-esek, negyedikként a rost is ott van.</b> A gramm szám 15 px félkövér, alatta a napi cél százaléka — így egy pillantással látszik, mennyit vitt be az étel a napból.</span></li>
+    <li><span class="k">Score</span><span><b>Az AI score önálló pill lett:</b> 30 px gyűrű + 19 px szám + szöveges ítélet (jó / közepes / gyenge) + chevron. 2,6 mp-enként rövid bólintás és színes halo villan rajta — a mozgás jelzi, hogy tappolható. Reduced-motion alatt kikapcsol.</span></li>
+    <li><span class="k">Kontextus</span><span><b>Standard / Pre-workout / Post-workout chip a fejlécsorban,</b> a KÉSZ stamp mellett. Színkód: szürke = standard, borostyán = pre, levendula = post — a Stack-zónák meglévő színeivel.</span></li>
+    <li><span class="k">Kcal</span><span><b>AI score és kcal egy sorban</b> a név alatt: balra a score pill, jobbra a 24 px-es kcal. A terv-ablakoknál a kcal a név mellett marad.</span></li>
+  </ul>
+
+  <h3>AI breakdown — az új sheet</h3>
+  <ul>
+    <li><span class="k">Hero</span><span><b>112 px score-gyűrű, a dimenzió tónusa színezi a hátteret.</b> Mellette az ítélet egy mondatban, alatta makró-tények chipként és a konfidencia-csík.</span></li>
+    <li><span class="k">Olvasat</span><span><b>Mezo olvasata 14 px szövegben, a kulcs számok félkövérrel</b> — eddig 12,5 px volt, egybefolyó markdown.</span></li>
+    <li><span class="k">Ledger</span><span><b>Új: hozzájárulás-csík.</b> Egy szegmentált sáv, ahol minden dimenzió szélessége a súlya, a kitöltése a pontja — így látszik, hogy a 69 pont miből áll össze, és hol a legnagyobb üres hely.</span></li>
+    <li><span class="k">Dimenzió</span><span><b>Összecsukott dimenzió-kártyák:</b> gyűrű + pont, súly és pont-hozzájárulás, egysoros ítélet. Koppintásra nyílik a részlet: „mi húzta fel / mi húzta le” pár, majd a mérési sorok vagy makró-sávok.</span></li>
+    <li><span class="k">Jobb</span><span><b>„Lehetne jobb” tételek külön kártyák,</b> jobbra a nyereség zöld dobozban (+5 pont) — nem 9 px-es monospace címke.</span></li>
+    <li><span class="k">Eszköz</span><span><b>A „Hogyan számoltam” eszköz-lista kikerült a sheetből</b> — a részletekhez nem kell.</span></li>
+  </ul>
+
+  <h3>Nyitott kérdések a következő körre</h3>
+  <ul>
+    <li><span class="k">?</span><span>A napi makró sáv görgetéskor össze-csukódjon egy 1-soros csíkká (sticky), vagy maradjon a hero része? A prototípus nem sticky.</span></li>
+    <li><span class="k">?</span><span>A kontextus (pre / post) a MealComposer-ben legyen választható, vagy az edzés-időpontból deriváljuk automatikusan, és csak felülírható legyen?</span></li>
+  </ul>
+</aside>
+</div>
+
+<script>
+(function(){
+  var phone=document.getElementById('phone'), sheet=document.getElementById('sheet'), body=document.getElementById('sheetbody'), scrim=document.getElementById('scrim');
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ── data ── */
+  var D={
+    reggeli:{score:69,tone:'md',word:'Közepes',color:'var(--amber)',title:'Tojás, kovászos bajor rozsos kenyér, avokádó',slot:'Reggeli · 11:15',ctx:'std',ctxLabel:'Standard',kcal:576,p:42,c:24,f:32,r:6,conf:86,
+      summary:'Fehérjében erős kezdés — a tojás és az avokádó <b>42 g</b>-ot hoz. A zsír viszont már reggel <b>32 g</b>, a napi 67 g-os keret fele. A kovászos rozs jó választás: NOVA 3, lassú felszívódás. A 11:15-ös időzítés a délutáni edzéshez képest kicsit zsírosabb az ideálisnál.',
+      dims:[
+        {id:'macro',label:'Makró-illeszkedés',w:35,s:64,color:'var(--mp)',one:'Fehérje rendben, szénhidrát kevés, zsír a keret fele.',detail:'A reggeli az egyetlen ablak, ahol a nap fehérjéjének ötöde bejött. A szénhidrát 24 g viszont messze van a 60 g-os reggeli céltól, és a zsír 32 g-ja az ablak-keret duplája.',plus:'42 g fehérje · a napi cél 19%-a egy étkezésből',minus:'32 g zsír · az ablak-keret 200%-a',bars:[['P',42,60],['C',24,60],['F',32,16]]},
+        {id:'micro',label:'Mikro-sűrűség',w:25,s:78,color:'var(--sage)',one:'B12, kolin és K-vitamin erős, magnézium gyenge.',detail:'A tojás kolin- és B12-forrás, az avokádó K-vitamint és káliumot ad. Magnéziumból csak 48 mg jött — a napi 400 mg-ból ez 12%.',plus:'Kolin 290 mg · B12 1,2 µg · K 42 µg',minus:'Mg 48 mg · heti Mg-státusz 41%',rows:[['Kolin','290 mg · 53%'],['B12','1,2 µg · 50%'],['K-vitamin','42 µg · 35%'],['Magnézium','48 mg · 12%']]},
+        {id:'nova',label:'Feldolgozottság',w:20,s:82,color:'var(--lav)',one:'Tojás és avokádó NOVA 1, a kovászos kenyér NOVA 3.',detail:'Nincs ultra-feldolgozott (NOVA 4) összetevő. A kovászos bajor rozs kézműves NOVA 3 — a fermentálás miatt kedvezőbb glikémiás válasz.',plus:'0 db NOVA 4 · 2 db NOVA 1',minus:'Kenyér NOVA 3 · só 1,1 g',rows:[['Tojás (2 db)','NOVA 1'],['Avokádó (½)','NOVA 1'],['Kovászos rozs (80 g)','NOVA 3']]},
+        {id:'ctx',label:'Időzítés · kontextus',w:20,s:52,color:'var(--sky)',one:'11:15 késői reggeli, 3,5 órával a Push Day előtt — a zsír lassít.',detail:'Standard ablakként naplózva, de a 14:45-ös Push Day előtt 3,5 órával a 32 g zsír lassítja a gyomorürülést. Reggeli 09:00 előtt vagy fele annyi avokádó javítana.',plus:'Fehérje-front az edzés-nap elején',minus:'Késői ablak · magas zsír edzés előtt',rows:[['Ablak','Reggeli · 11:15'],['Következő edzés','Push Day · 14:45'],['Távolság','3 h 30 p'],['Naplózva mint','Standard']]}
+      ],
+      improve:[['−½ avokádó, +1 tojásfehérje → zsír <b>32 → 24 g</b>, fehérje +4 g',5],['+1 kk lenmag a kenyérre → rost <b>6 → 9 g</b>, Mg +40 mg',2],['Reggeli <b>09:00 előtt</b> → időzítés-pont 52 → 70',4]],
+      tools:[['r','lookupNutrients(items=3)'],['c','classifyNOVA(items=3)'],['c','evaluateMacroFit(meal, day_targets)'],['r','get_weekly_micro_status(Mg, B12)'],['c','checkMezoContext(time=11:15, training=push_day)']]},
+    tizorai:{score:62,tone:'md',word:'Közepes',color:'var(--amber)',title:'Őszibarack',slot:'Tízórai · 17:01',ctx:'pre',ctxLabel:'Pre-workout',kcal:59,p:1,c:14,f:0,r:2,conf:91,
+      summary:'Pre-workout ablakban egy őszibarack <b>14 g</b> gyors szénhidrátot ad, zsír nélkül — ez jó irány. A mennyiség viszont kevés: edzés előtt 30–40 g szénhidrát a cél, és a fehérje teljesen hiányzik.',
+      dims:[
+        {id:'macro',label:'Makró-illeszkedés',w:35,s:48,color:'var(--mp)',one:'Gyors szénhidrát jó, de fele a pre-workout célnak, fehérje nulla.',detail:'A pre-workout ablak 35 g szénhidrátot és 20 g fehérjét kér. A barack 14 g / 1 g.',plus:'0 g zsír · gyors felszívódás',minus:'C 14/35 g · P 1/20 g',bars:[['P',1,20],['C',14,35],['F',0,5]]},
+        {id:'micro',label:'Mikro-sűrűség',w:25,s:70,color:'var(--sage)',one:'C-vitamin és kálium, kis kalóriából.',detail:'Egy közepes barack a napi C-vitamin 17%-át és 285 mg káliumot ad — az edzés előtti elektrolithoz jó.',plus:'C-vit 10 mg · K 285 mg',minus:'Mg és B-vitaminok elhanyagolhatók',rows:[['C-vitamin','10 mg · 17%'],['Kálium','285 mg · 8%'],['Magnézium','14 mg · 4%']]},
+        {id:'nova',label:'Feldolgozottság',w:20,s:100,color:'var(--lav)',one:'Egész gyümölcs, NOVA 1.',detail:'Feldolgozatlan, teljes értékű összetevő.',plus:'NOVA 1 · 0 adalék',minus:'—',rows:[['Őszibarack (150 g)','NOVA 1']]},
+        {id:'ctx',label:'Időzítés · kontextus',w:20,s:38,color:'var(--sky)',one:'Edzés 17:30 — 30 perccel előtte kevés az energia.',detail:'A pre-workout jelölés helyes, de 30 perccel a Push Day előtt 59 kcal nem tart ki a 60 perces edzésen. Egy banán vagy zabkeksz mellé oldaná.',plus:'Helyes ablak-jelölés · gyors szénhidrát',minus:'59 kcal · 60 perces edzésre kevés',rows:[['Ablak','Tízórai · 17:01'],['Edzés','Push Day · 17:30'],['Távolság','29 p'],['Naplózva mint','Pre-workout']]}
+      ],
+      improve:[['+1 banán → szénhidrát <b>14 → 41 g</b>, pre-workout cél teljesül',9],['+150 g görög joghurt → fehérje <b>1 → 16 g</b>',6]],
+      tools:[['r','lookupNutrients(items=1)'],['c','classifyNOVA(items=1)'],['c','evaluatePreWorkoutFit(meal, workout=17:30)'],['r','get_workout_plan(today)']]},
+    ebed:{score:31,tone:'lo',word:'Gyenge',color:'var(--coral)',title:'Anjuna pop fagyi',slot:'Ebéd · 17:01',ctx:'post',ctxLabel:'Post-workout',kcal:200,p:4,c:28,f:8,r:1,conf:79,
+      summary:'Post-workout ablakban a fagyi <b>28 g</b> cukra visszatölti a glikogént, de a <b>4 g</b> fehérje messze van a 30–40 g-os regenerációs céltól. NOVA 4 termék — a napi UPF-keret 60%-a egy tételből. Nem büntetés, csak számoljunk vele: a vacsora fehérjével hozza vissza.',
+      dims:[
+        {id:'macro',label:'Makró-illeszkedés',w:35,s:26,color:'var(--mp)',one:'Fehérje 4 g a 35 g-os post-workout célból.',detail:'A post-workout ablak fehérje-vezérelt: 35 g fehérje, 45 g szénhidrát. A fagyi 4 g / 28 g / 8 g.',plus:'28 g szénhidrát · glikogén-visszatöltés indul',minus:'P 4/35 g · zsír 8 g gyors ablakban',bars:[['P',4,35],['C',28,45],['F',8,10]]},
+        {id:'micro',label:'Mikro-sűrűség',w:25,s:22,color:'var(--sage)',one:'Kalcium van, minden más elhanyagolható.',detail:'A tejalap 90 mg kalciumot ad, egyéb mikro-tápanyag nem mérhető mennyiségben.',plus:'Kalcium 90 mg',minus:'Rost 1 g · vitaminok ~0',rows:[['Kalcium','90 mg · 9%'],['Rost','1 g · 3%'],['Hozzáadott cukor','22 g']]},
+        {id:'nova',label:'Feldolgozottság',w:20,s:20,color:'var(--lav)',one:'NOVA 4 — emulgeátor, aroma, glükózszirup.',detail:'Ultra-feldolgozott: glükóz-fruktóz szirup, mono- és digliceridek, aroma. A heti UPF-keret 3-ból ez a 2.',plus:'Adag-kontrollált (1 db, 200 kcal)',minus:'NOVA 4 · heti UPF 2/3',rows:[['Anjuna pop (1 db)','NOVA 4'],['Heti UPF-keret','2 / 3']]},
+        {id:'ctx',label:'Időzítés · kontextus',w:20,s:62,color:'var(--sky)',one:'Edzés utáni 30 percen belül — az ablak jó, a tartalom nem.',detail:'A post-workout jelölés helyes: 17:01, 25 perccel a Push Day vége után. A gyors cukor ilyenkor a legkevésbé káros — ezért kap 62-t a kontextus.',plus:'Anabolikus ablakon belül · gyors szénhidrát',minus:'Fehérje-forrás hiányzik az ablakból',rows:[['Ablak','Ebéd · 17:01'],['Edzés vége','Push Day · 16:36'],['Távolság','25 p'],['Naplózva mint','Post-workout']]}
+      ],
+      improve:[['Mellé 1 adag whey → fehérje <b>4 → 29 g</b>, score 31 → 58',27],['Csere: skyr + fagyasztott málna → NOVA 1, <b>P 20 g</b>',34]],
+      tools:[['r','lookupNutrients(items=1)'],['c','classifyNOVA(items=1)'],['c','evaluatePostWorkoutFit(meal, workout_end=16:36)'],['r','get_weekly_upf_budget()']]},
+    uzsonna:{score:88,tone:'hi',word:'Jó',color:'var(--sage)',title:'Görög joghurt, zabpehely, dió, málna',slot:'Uzsonna · 17:40',ctx:'std',ctxLabel:'Standard',kcal:279,p:19,c:42,f:10,r:8,conf:88,
+      summary:'Ez a nap legjobb tétele: <b>19 g</b> fehérje, <b>8 g</b> rost és omega-3 a dióból, minden összetevő NOVA 1. Egyedül a zsír-keret miatt figyelj — a nap 75%-án áll, a vacsora legyen sovány.',
+      dims:[
+        {id:'macro',label:'Makró-illeszkedés',w:35,s:86,color:'var(--mp)',one:'Fehérje és rost a cél fölött, zsír pont keretben.',detail:'Az uzsonna-ablak 15 g fehérjét és 35 g szénhidrátot kér — a tál 19 / 42 / 10.',plus:'P 19 g · rost 8 g · alacsony GI zab',minus:'Zsír 10 g — a napi keret így 75%-on',bars:[['P',19,15],['C',42,35],['F',10,10]]},
+        {id:'micro',label:'Mikro-sűrűség',w:25,s:90,color:'var(--sage)',one:'Omega-3, kalcium, mangán, C-vitamin.',detail:'A dió 2,5 g ALA-t ad, a joghurt 180 mg kalciumot, a málna C-vitamint és polifenolt.',plus:'ALA 2,5 g · Ca 180 mg · C 16 mg',minus:'—',rows:[['Omega-3 (ALA)','2,5 g · 100%'],['Kalcium','180 mg · 18%'],['C-vitamin','16 mg · 27%'],['Mangán','1,1 mg · 48%']]},
+        {id:'nova',label:'Feldolgozottság',w:20,s:100,color:'var(--lav)',one:'Négy összetevő, mind NOVA 1.',detail:'Natúr görög joghurt, teljes zab, dió, friss málna.',plus:'4/4 NOVA 1',minus:'—',rows:[['Görög joghurt 150 g','NOVA 1'],['Zabpehely 40 g','NOVA 1'],['Dió 15 g','NOVA 1'],['Málna 80 g','NOVA 1']]},
+        {id:'ctx',label:'Időzítés · kontextus',w:20,s:80,color:'var(--sky)',one:'Edzés után 1 órával, a vacsora előtt 2-vel — jó ritmus.',detail:'A lassú szénhidrát és a kazein a vacsoráig kitart. Standard ablak, a post-workout fehérje-hiányt részben pótolja.',plus:'Pótolja az ebéd fehérje-hiányát',minus:'Vacsora előtt 1 h 50 p — ne csússzon',rows:[['Ablak','Uzsonna · 17:40'],['Vacsora','19:30'],['Naplózva mint','Standard']]}
+      ],
+      improve:[['Dió → 10 g, +50 g málna → zsír <b>10 → 7 g</b>, rost +2 g',2]],
+      tools:[['r','lookupNutrients(items=4)'],['c','classifyNOVA(items=4)'],['c','evaluateMacroFit(meal, day_targets)'],['c','checkMezoContext(time=17:40, next=vacsora)']]}
+  };
+
+  function ringSvg(cls,r,pct,size){var c=2*Math.PI*r;return '<svg viewBox="0 0 '+size+' '+size+'"><circle class="tr" cx="'+size/2+'" cy="'+size/2+'" r="'+r+'"/><circle class="fl" cx="'+size/2+'" cy="'+size/2+'" r="'+r+'" data-pct="'+pct+'" style="stroke-dasharray:'+c.toFixed(1)+';stroke-dashoffset:'+c.toFixed(1)+'"/></svg>';}
+
+  function render(k){
+    var m=D[k],h='';
+    var total=m.dims.reduce(function(a,d){return a+d.w*d.s/100},0);
+    h+='<div class="sh-head"><div><div class="eb">AI score · részletek</div><h2 id="sh-title">'+m.title+'</h2><div class="sh-sub"><span>'+m.slot+'</span><span>·</span><span class="ctx '+m.ctx+'"><i></i>'+m.ctxLabel+'</span></div></div><button class="close" id="close" aria-label="Bezárás">✕</button></div>';
+    h+='<div class="shero"><div class="big">'+ringSvg('',50,m.score,112)+'<div class="num"><b class="tn">'+m.score+'</b><small>/ 100</small></div></div><div><div class="verdict">'+m.word+'<em>'+(m.tone==='hi'?'tartsd ezt a mintát':m.tone==='md'?'két apró csere, és 80 fölé megy':'a következő ablak hozza vissza')+'</em></div><div class="facts tn"><span><i>kcal</i>'+m.kcal+'</span><span><i>P</i>'+m.p+' g</span><span><i>C</i>'+m.c+' g</span><span><i>F</i>'+m.f+' g</span><span><i>Rost</i>'+m.r+' g</span></div><div class="conf">Konfidencia <span class="bar"><i style="width:'+m.conf+'%"></i></span><span style="color:var(--ink-2)">'+m.conf+'%</span></div></div></div>';
+    h+='<div class="olv"><div class="eb">✨ Mezo · olvasat</div><p>'+m.summary+'</p></div>';
+    h+='<div class="sec"><span class="eb">Miből áll össze a '+m.score+'</span><span class="eb sm">'+m.dims.length+' dimenzió · súlyozva</span></div>';
+    h+='<div class="ledger"><div class="stack">'+m.dims.map(function(d){return '<span style="flex:'+d.w+';--c:'+d.color+'"><i data-w="'+d.s+'"></i></span>'}).join('')+'</div><div class="sum"><span>'+m.dims.map(function(d){return '<span style="color:'+d.color+';font-weight:800">'+d.w+'%</span>'}).join(' · ')+'</span><span>Σ <b class="tn">'+total.toFixed(1)+'</b> / 100</span></div></div>';
+    h+='<div class="dims">'+m.dims.map(function(d,i){var contrib=(d.w*d.s/100).toFixed(1);
+      var body='';
+      if(d.bars){body+='<div class="mb">'+d.bars.map(function(b){var v=Math.min(100,b[1]/b[2]*100);var cc=b[0]==='P'?'var(--mp)':b[0]==='C'?'var(--mc)':'var(--mf)';return '<div style="--c:'+cc+'"><span>'+b[0]+'</span><i style="--v:'+Math.min(100,v/2)+'%;--t:50%"></i><span class="tn">'+b[1]+' / '+b[2]+' g</span></div>'}).join('')+'</div><div style="font-size:10px;color:var(--ink-3);margin-top:6px">A függőleges vonal az ablak-cél; a sáv a duplájáig fut.</div>';}
+      if(d.rows){body+='<div class="rows">'+d.rows.map(function(r){return '<div><span>'+r[0]+'</span><span class="tn">'+r[1]+'</span></div>'}).join('')+'</div>';}
+      return '<button class="dim" style="--c:'+d.color+'" aria-expanded="false" aria-controls="dx'+i+'"><span class="sc2">'+ringSvg('',22,d.s,52)+'<b class="tn">'+d.s+'</b></span><span><span class="lb"><i></i>'+d.label+'</span><span class="w" style="display:block">súly <b>'+d.w+'%</b> → <b class="tn">'+contrib+'</b> pont</span><span class="one" style="display:block">'+d.one+'</span></span><span class="arr">›</span></button><div class="dimx" id="dx'+i+'"><p>'+d.detail+'</p><div class="pm"><div class="plus"><b>Felhúzta</b>'+d.plus+'</div><div class="minus"><b>Lehúzta</b>'+d.minus+'</div></div>'+body+'</div>';
+    }).join('')+'</div>';
+    h+='<div class="sec"><span class="eb w">Lehetne jobb</span><span class="eb sm">'+m.improve.length+' javaslat</span></div><div class="improve">'+m.improve.map(function(it){return '<div class="imp"><p>'+it[0]+'</p><span class="gain tn">+'+it[1]+'<small>pont</small></span></div>'}).join('')+'</div>';
+    body.innerHTML=h;
+    sheet.style.setProperty('--sc',m.color);
+    body.scrollTop=0;
+    phone.classList.add('open');
+    document.getElementById('close').addEventListener('click',close);
+    requestAnimationFrame(function(){requestAnimationFrame(function(){fill(body)})});
+    body.querySelectorAll('.dim').forEach(function(b){b.addEventListener('click',function(){var x=document.getElementById(b.getAttribute('aria-controls'));var o=b.getAttribute('aria-expanded')==='true';b.setAttribute('aria-expanded',!o);x.classList.toggle('show',!o);})});
+  }
+  function close(){phone.classList.remove('open')}
+  scrim.addEventListener('click',close);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close()});
+  document.querySelectorAll('[data-sheet]').forEach(function(b){b.addEventListener('click',function(){render(b.dataset.sheet)})});
+
+  /* ── fills ── */
+  function fill(root){
+    root.querySelectorAll('circle[data-pct]').forEach(function(c){var r=+c.getAttribute('r'),C=2*Math.PI*r,p=Math.max(0,Math.min(100,+c.dataset.pct));c.style.strokeDasharray=C.toFixed(1);c.style.strokeDashoffset=(C-C*p/100).toFixed(1);});
+    root.querySelectorAll('[data-w]').forEach(function(i){i.style.width=i.dataset.w+'%'});
+  }
+  function reset(root){root.querySelectorAll('circle[data-pct]').forEach(function(c){var C=2*Math.PI*(+c.getAttribute('r'));c.style.strokeDashoffset=C.toFixed(1)});root.querySelectorAll('[data-w]').forEach(function(i){i.style.width='0'});}
+  function countUp(el,to,ms){if(reduce){el.textContent=to.toLocaleString('hu-HU');return}var s=null;function t(n){if(s===null)s=n;var p=Math.min(1,(n-s)/ms),e=1-Math.pow(1-p,3);el.textContent=Math.round(to*e).toLocaleString('hu-HU');if(p<1)requestAnimationFrame(t)}requestAnimationFrame(t)}
+  function play(){reset(phone);countUp(document.getElementById('kcalnum'),1114,1600);requestAnimationFrame(function(){requestAnimationFrame(function(){fill(phone)})})}
+  play();
+
+  /* ── notes controls ── */
+  var tgl=document.getElementById('tg-live');tgl.addEventListener('click',function(){var on=tgl.getAttribute('aria-pressed')!=='true';tgl.setAttribute('aria-pressed',on);document.querySelectorAll('.aisc').forEach(function(a){a.classList.toggle('live',on)});tgl.textContent=on?'Score rezgetés be':'Score rezgetés ki'});
+  document.getElementById('tg-theme').addEventListener('click',function(){var r=document.documentElement,cur=r.getAttribute('data-theme');var dark=cur?cur==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;r.setAttribute('data-theme',dark?'light':'dark')});
+  document.getElementById('tg-replay').addEventListener('click',play);
+})();
+</script>

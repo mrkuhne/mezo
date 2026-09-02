@@ -378,6 +378,11 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SLOT_PLAN_SENTINEL =
             Pattern.compile("\\[fake-slot-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Meso plan generator (wizard redesign): greedy `[fake-meso-plan:{json}]` planted in goalText;
+     *  default = a valid empty-days answer so the frames stay deterministic and llmUsed is true. */
+    public static final Pattern MESO_PLAN_SENTINEL =
+            Pattern.compile("\\[fake-meso-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
+
     /** Scripted habit suggestions (mezo-n5e9.3): {@code [fake-habit-suggest:[…]]} planted via the
      *  request's {@code hint} (the ONLY unvalidated-echo channel left into the adapter's context —
      *  {@code chainKey} is now checked against the user's real chain keys before being echoed at
@@ -642,6 +647,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1)
                     : "[{\"title\":\"Fake szokás\",\"why\":\"FAKE-INDOK\",\"anchorCopy\":\"teszt után\","
                             + "\"skillKey\":\"mindset\",\"xp\":10,\"chainKey\":\"MORNING\"}]";
+        }
+        if (systemPrompt.startsWith(MesoPlanLlmAdapter.MARKER)) {
+            Matcher m = MESO_PLAN_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : "{\"rationale\":\"FAKE-INDOK\",\"days\":[]}";
         }
         if (systemPrompt.startsWith(MesoReviewGenerator.MESO_REVIEW_MARKER)) {
             if (userMessage.contains(MESO_REVIEW_ECHO)) {

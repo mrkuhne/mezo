@@ -46,6 +46,18 @@ class PriorityTierTest {
         assertThat(ceiling).isEqualTo(8);
     }
 
+    @Test
+    void weekOneStart_shouldBeMevPlusTwoCappedAtMrv_whenEmphasize() {
+        assertThat(PriorityTier.EMPHASIZE.weekOneStart(10, 16, 22)).isEqualTo(12);
+        assertThat(PriorityTier.EMPHASIZE.weekOneStart(21, 21, 22)).isEqualTo(22);
+    }
+
+    @Test
+    void weekOneStart_shouldBeMev_whenGrowOrMaintain() {
+        assertThat(PriorityTier.GROW.weekOneStart(10, 16, 22)).isEqualTo(10);
+        assertThat(PriorityTier.MAINTAIN.weekOneStart(10, 16, 22)).isEqualTo(10);
+    }
+
     // === normalize() (mezo-ltk0, tier-review follow-up 2) ==========================
 
     @Test void normalizeNullMap_returnsEmptyMap() {

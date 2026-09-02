@@ -186,7 +186,7 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
         train.save(hang);
         train.createExercise(owner, day.getId(), "Fekvenyomás", "chest-mid", "compound");
 
-        volumeProgressionService.seedBaselines(owner, meso.getId());
+        volumeProgressionService.seedBaselines(owner, meso.getId(), null);
 
         assertThat(rows(owner, meso.getId()))
             .extracting(MuscleGroupVolumeLogEntity::getMuscle)
@@ -204,7 +204,7 @@ class VolumeBaselineSeedIT extends AbstractIntegrationTest {
         train.createExercise(owner, day.getId(), "Pull-Up", "back-wide", "compound");
         train.createExercise(owner, day.getId(), "Fekvenyomás", "chest-mid", "compound");
 
-        volumeProgressionService.seedBaselines(owner, meso.getId());
+        volumeProgressionService.seedBaselines(owner, meso.getId(), null);
 
         assertThat(rows(owner, meso.getId()))
             .extracting(MuscleGroupVolumeLogEntity::getMuscle)
