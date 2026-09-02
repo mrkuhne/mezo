@@ -291,17 +291,33 @@ export function NapMezoPage() {
             </button>
           </EntranceGroup>
         )}
-        {tab === 'eletjelek' && (
-          <EntranceGroup>
-            {!needs.isPending && <EletjelStrip states={needs.states} onOpen={() => navigate('/nap/eletjel')} />}
-            {eletjelek.map((m, i) => renderCard(m, i))}
-            {!needs.isPending && eletjelek.length === 0 && (
-              <p className="nap-ejok rise" style={{ '--d': '100ms' } as React.CSSProperties}>
-                Minden gyűrű rendben — ma nincs teendő. ✓
-              </p>
-            )}
-          </EntranceGroup>
-        )}
+        {tab === 'eletjelek' && (() => {
+          // mezo-z4h4: no nudge CARDS does not mean the rings are fine — `deriveNudges`
+          // swallows a fresh nudge during the quiet window (night + the first hour after
+          // waking) and once a ring has already nudged today. The empty-state line must read
+          // the rings' own BANDS, not the (possibly-suppressed) nudge list, or it cheerfully
+          // claims "minden rendben" while the strip above shows red/critical cells.
+          const attention = needs.states.filter((s) => s.band === 'red' || s.band === 'critical')
+          return (
+            <EntranceGroup>
+              {!needs.isPending && <EletjelStrip states={needs.states} onOpen={() => navigate('/nap/eletjel')} />}
+              {eletjelek.map((m, i) => renderCard(m, i))}
+              {!needs.isPending && eletjelek.length === 0 && attention.length === 0 && (
+                <p className="nap-ejok rise" style={{ '--d': '100ms' } as React.CSSProperties}>
+                  Minden gyűrű rendben — ma nincs teendő. <Icon name="check" size={12} />
+                </p>
+              )}
+              {!needs.isPending && eletjelek.length === 0 && attention.length > 0 && (
+                <p className="nap-ejok warn rise" style={{ '--d': '100ms' } as React.CSSProperties}>
+                  {attention.length === 1
+                    ? 'Egy gyűrű figyelmet kér'
+                    : `${attention.length} gyűrű figyelmet kér`}
+                  {' '}— a részletekért koppints a sávra.
+                </p>
+              )}
+            </EntranceGroup>
+          )
+        })()}
       </PageBody>
     </MozaikPage>
   )

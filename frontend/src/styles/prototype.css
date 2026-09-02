@@ -4719,6 +4719,11 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
 .nap-ejcell .pct { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .nap-ejcell.warn { border-color: color-mix(in srgb, var(--coral-deep) 55%, transparent); }
 .nap-ejok { font-size: 12px; font-weight: 600; color: var(--sage-deep); text-align: center; margin: 4px 0 10px; }
+.nap-ejok svg { vertical-align: -2px; margin-left: 2px; }
+/* Honest-states variant (mezo-z4h4): no nudge CARD in the thread does not mean the rings are
+   fine (deriveNudges swallows fresh nudges in the quiet window / after a same-day repeat) — the
+   coral/alert tone mirrors .nap-ejcell.warn rather than the reassuring sage-deep above. */
+.nap-ejok.warn { color: var(--coral-deep); }
 /* ── Összecsukott régebbi üzenet-sor (mezo-ho9k) ── */
 .nap-mzrow { width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px;
   text-align: left; min-height: 44px; margin-bottom: 8px; padding: 10px 14px; cursor: pointer;

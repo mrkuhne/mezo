@@ -36,8 +36,11 @@ vi.mock('@/features/today/logic/useNeeds', () => ({
 }))
 // A fixed wall clock: `deriveNudges` is quiet at night and in the first hour after
 // waking, so an unpinned clock would make the nudge test flake by time of day.
+// Held in a mutable box (mezo-z4h4) so one test can move the clock into the quiet
+// window (a red ring that `deriveNudges` suppresses) without unpinning the rest.
+const tickMock = vi.hoisted(() => ({ now: new Date('2026-05-22T13:42:00') }))
 vi.mock('@/features/today/logic/useMinuteTick', () => ({
-  useMinuteTick: () => new Date('2026-05-22T13:42:00'),
+  useMinuteTick: () => tickMock.now,
 }))
 
 const morningMsg: FeedMessage = {
@@ -71,6 +74,7 @@ beforeEach(() => {
   feedMock.useCompanionFeed.mockReturnValue([])
   voteMock.vote.mockClear()
   needsMock.states = []
+  tickMock.now = new Date('2026-05-22T13:42:00')
   localStorage.clear()
 })
 
@@ -313,7 +317,12 @@ test('az Életjelek tab a 6 gyűrű státusz-sávját mutatja, riasztás nélkü
   await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
   expect(await screen.findByText('Víz')).toBeInTheDocument() // hidratacio eyebrow (EletjelPage tile-nyelv)
   expect(screen.getByText('82%')).toBeInTheDocument()
-  expect(screen.getByText(/Minden gyűrű rendben/)).toBeInTheDocument()
+  const okLine = screen.getByText(/Minden gyűrű rendben/)
+  expect(okLine).toBeInTheDocument()
+  // mezo-z4h4: emoji→icon pass — the trailing ✓ glyph is now the Icon component, not a
+  // literal character in the text content.
+  expect(okLine.textContent).not.toMatch(/✓/)
+  expect(okLine.querySelector('svg polyline[points="4,12 10,18 20,6"]')).not.toBeNull()
   expect(document.querySelectorAll('.nap-ejcell')).toHaveLength(6)
 })
 
@@ -325,6 +334,40 @@ test('piros gyűrű cellája warn jelölést kap, és a nudge-kártya alatta ál
   expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
   expect(document.querySelector('.nap-ejcell.warn')).not.toBeNull()
   expect(screen.queryByText(/Minden gyűrű rendben/)).toBeNull()
+  // A nudge-kártya megvan a szálban — az őszinte figyelmeztető sor SEM kell mellé
+  // (mezo-z4h4): a kártya már elmondja, a sor csak a kártya-nélküli esetre való.
+  expect(screen.queryByText(/figyelmet kér/)).toBeNull()
+})
+
+// mezo-z4h4: a bug ("Minden gyűrű rendben" miközben mind a hat gyűrű 0%-on áll) abból jött,
+// hogy az üres sor a NUDGE-LISTA hosszát nézte, nem a gyűrűk sávját — `deriveNudges` pedig
+// elnyeli a friss nudge-ot az éjszakai/ébredés utáni csendes ablakban. A csendes ablakra
+// állított óra pontosan ezt az esetet szimulálja: piros gyűrű, de a szálban NINCS nudge-kártya.
+test('csendes ablakban elnyelt nudge esetén (piros gyűrű, nudge-kártya nélkül) őszinte figyelmeztető sor jön a "minden rendben" helyett', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  tickMock.now = new Date('2026-05-22T03:00:00') // mélyéjszaka — deriveNudges csendes ablaka
+  renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
+  expect(document.querySelector('.nap-ejcell.warn')).not.toBeNull()
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(0) // nincs nudge-kártya a szálban
+  expect(screen.queryByText(/Minden gyűrű rendben/)).toBeNull()
+  expect(screen.getByText('Egy gyűrű figyelmet kér — a részletekért koppints a sávra.')).toBeInTheDocument()
+  expect(document.querySelector('.nap-ejok.warn')).not.toBeNull()
+})
+
+test('csendes ablakban több elnyelt piros/kritikus gyűrű esetén a figyelmeztető sor többes számot használ helyesen', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([])
+  needsMock.states = [
+    { key: 'hidratacio', pct: 12, band: 'red' },
+    { key: 'energia', pct: 5, band: 'critical' },
+    { key: 'pihenes', pct: 80, band: 'green' },
+  ]
+  tickMock.now = new Date('2026-05-22T03:00:00')
+  renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(0)
+  expect(screen.getByText('2 gyűrű figyelmet kér — a részletekért koppints a sávra.')).toBeInTheDocument()
 })
 
 test('a státusz-sáv a teljes életjel-oldalra visz', async () => {
