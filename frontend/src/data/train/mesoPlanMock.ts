@@ -28,9 +28,11 @@ function pick(group: string, sets: number, library: ExerciseLibraryItem[], rotat
     const e = pool[(offset + i) % pool.length]
     const compound = e.type === 'compound'
     return {
-      name: e.name, muscle: e.muscle, catalogId: e.catalogId ?? e.id,
+      name: e.name, muscle: e.muscle,
+      // Mock library items lack a real catalog uuid; fall back to the library row id (mock-mode only — never persisted).
+      catalogId: e.catalogId ?? e.id,
       warmupSets: compound ? 2 : 1, workingSets: base + (i < rem ? 1 : 0),
-      repMin: compound ? 8 : 10, repMax: compound ? 10 : 15, targetRIR: 1,
+      repMin: compound ? 8 : 12, repMax: compound ? 10 : 15, targetRIR: 1,
       type: e.type, countsTowardVolume: true,
     }
   })
@@ -38,7 +40,7 @@ function pick(group: string, sets: number, library: ExerciseLibraryItem[], rotat
 
 export function mockMesoPlan(input: MesoPlanGenerateRequest, library: ExerciseLibraryItem[]): MesoPlanGenerateResponse {
   const priorities = Object.fromEntries(Object.entries(input.priorities ?? {}).filter(([, t]) => t !== 'grow')) as Record<string, 'emphasize' | 'maintain'>
-  const frames = dayFrames(input.daysOfWeek, priorities as never)
+  const frames = dayFrames(input.daysOfWeek, priorities)
   const occurrence = new Map<string, number>()
   const days: MesoDayInput[] = frames.map((f) => {
     if (f.type === 'Rest') return { day: f.day, type: 'Rest', muscle: '', note: 'Pihenőnap', exercises: [] }
