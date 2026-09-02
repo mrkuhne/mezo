@@ -7758,7 +7758,14 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 @keyframes lg-dotpop { to { transform: scale(1); } }
 .lg-wk7 .lbl { font-size: 8.5px; font-weight: 700; color: #A2958A; margin-left: auto; }
 .lg-parkrow { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border-radius: 17px; width: 100%; text-align: left;
-  background: rgba(255,255,255,0.55); border: 0.5px dashed rgba(43,33,24,0.18); font-family: inherit; cursor: pointer; }
+  background: rgba(255,255,255,0.55); border: 0.5px dashed rgba(43,33,24,0.18); }
+/* Two real, focusable buttons live inside the row (mezo-iizd.1 review fix): a nested
+   interactive element inside a <button> is both invalid HTML and keyboard-unreachable, so
+   the row itself is a plain (non-interactive) div and `.lg-parkrow-nav` + `.act` are its
+   two sibling <button>s. `.lg-parkrow-nav` reproduces the icon+text row the old single
+   button's first two children had; `button { background:none;border:none;cursor:pointer;
+   font-family:inherit;color:inherit; }` (line 788) already resets both. */
+.lg-parkrow-nav { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 0; text-align: left; }
 .lg-parkrow .nm { font-size: 12px; font-weight: 600; color: #6E6257; }
 .lg-parkrow .sb { font-size: 9.5px; color: #A2958A; }
 .lg-parkrow .act { margin-left: auto; font-size: 10px; font-weight: 700; color: #A84A26; border: 1px solid rgba(43,33,24,0.14); background: #fff; border-radius: 999px; padding: 4px 11px; flex: none; }

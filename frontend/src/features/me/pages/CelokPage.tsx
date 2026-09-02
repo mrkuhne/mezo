@@ -56,12 +56,13 @@ export function CelokPage() {
             </button>
           </Mosaic>
           {parked.map((g, i) => (
-            <button key={g.id} type="button" className="lg-parkrow rise" style={{ '--d': `${300 + i * 40}ms`, marginTop: 10 } as React.CSSProperties}
-              onClick={() => navigate(`/me/goals/${g.id}`)} aria-label={`${g.title} · parkol`}>
-              <ClayIcon name={DIMENSIONS[g.dimension].icon} size={22} />
-              <div style={{ flex: 1 }}><div className="nm">{g.title}</div><div className="sb">{g.status === 'draft' ? 'tervezett' : 'parkol'} · {DIMENSIONS[g.dimension].label}</div></div>
-              <span className="act" role="button" onClick={(e) => { e.stopPropagation(); changeStatus(g.id, 'active') }}>Vissza</span>
-            </button>
+            <div key={g.id} className="lg-parkrow rise" style={{ '--d': `${300 + i * 40}ms`, marginTop: 10 } as React.CSSProperties}>
+              <button type="button" className="lg-parkrow-nav" onClick={() => navigate(`/me/goals/${g.id}`)} aria-label={`${g.title} · parkol`}>
+                <ClayIcon name={DIMENSIONS[g.dimension].icon} size={22} />
+                <div style={{ flex: 1 }}><div className="nm">{g.title}</div><div className="sb">{g.status === 'draft' ? 'tervezett' : 'parkol'} · {DIMENSIONS[g.dimension].label}</div></div>
+              </button>
+              <button type="button" className="act" onClick={() => changeStatus(g.id, 'active')} aria-label={`${g.title} · vissza aktívra`}>Vissza</button>
+            </div>
           ))}
         </EntranceGroup>
       </PageBody>

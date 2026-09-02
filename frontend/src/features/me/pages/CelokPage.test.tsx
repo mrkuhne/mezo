@@ -29,8 +29,21 @@ test('tile tap opens the goal page; ＋ Új cél opens the wizard', () => {
   expect(screen.getByText('GOAL PAGE')).toBeInTheDocument()
 })
 
-test('Vissza on a parked goal re-activates it', async () => {
+test('the parked row exposes two distinct focusable buttons — navigate and Vissza', () => {
   renderHub()
-  fireEvent.click(screen.getByText('Vissza'))
+  const navBtn = screen.getByRole('button', { name: 'Spanyol B2 · parkol' })
+  const visszaBtn = screen.getByRole('button', { name: 'Spanyol B2 · vissza aktívra' })
+  expect(navBtn).not.toBe(visszaBtn)
+  expect(navBtn.tagName).toBe('BUTTON')
+  expect(visszaBtn.tagName).toBe('BUTTON')
+  // neither button is nested inside the other — both are real, independently focusable controls
+  expect(navBtn.contains(visszaBtn)).toBe(false)
+  expect(visszaBtn.contains(navBtn)).toBe(false)
+})
+
+test('Vissza on a parked goal re-activates it without navigating', async () => {
+  renderHub()
+  fireEvent.click(screen.getByRole('button', { name: 'Spanyol B2 · vissza aktívra' }))
   await waitFor(() => expect(screen.getByRole('img', { name: '4 aktív cél' })).toBeInTheDocument())
+  expect(screen.queryByText('GOAL PAGE')).not.toBeInTheDocument()
 })
