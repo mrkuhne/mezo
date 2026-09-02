@@ -6028,6 +6028,16 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .tud-help:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
 .mz-tile-wide { grid-column: 1 / -1; }
 
+/* The wide tile's ROW form (mezo-3zue): spot left, eyebrow + datum centre, chevron right —
+   the Mezo hub's Diagnózis tile in tile-primitive form, so the Én mosaic keeps its 3x2 pairing. */
+.mz-tile-row { flex-direction: row; align-items: center; gap: 13px; min-height: 0; padding: 13px 15px; text-align: left; }
+.mz-tile-row .mz-spotwrap { flex: none; padding: 0; }
+.mz-tile-row .mz-tile-top { flex: none; }
+.mz-tile-row .mz-tile-body { flex: 1; min-width: 0; }
+.mz-tile-row .mz-tile-line { text-align: left; margin-top: 3px; font-size: 15px; font-weight: 700; }
+.mz-tile-row .mz-tile-line small { font-size: 11px; font-weight: 300; color: var(--text-tertiary); margin-left: 6px; }
+.mz-tile-row .mz-chev { flex: none; font-size: 16px; }
+
 .tud-summary { border-radius: 20px; padding: 14px 15px;
   background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow-lav); }
 .tud-summary-link { display: block; margin-top: 10px; font-size: 11px; font-weight: 700;

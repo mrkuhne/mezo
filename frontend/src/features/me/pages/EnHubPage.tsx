@@ -27,7 +27,7 @@ import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
   useBiometricProfile, useDecisions, useGamification, useGoal,
-  useGratitudeEntries, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
+  useGratitudeEntries, useHabitDay, useHabitSummary, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
 } from '@/data/hooks'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
@@ -176,6 +176,30 @@ export function EnHubPage() {
       ? `${topPerson.name} ${topPerson.mentionsThisWeek}× · e héten`
       : `${people.length} kapcsolat`
 
+  const { habits: todayHabits } = useHabitDay(todayIso)
+  const { data: habitSummary } = useHabitSummary()
+  const strengthOf = (keys: string[]) => {
+    const values = habitSummary.habits
+      .filter((h) => keys.includes(h.key) && h.strengthPct != null)
+      .map((h) => h.strengthPct as number)
+    return values.length > 0 ? Math.round(values.reduce((s, v) => s + v, 0) / values.length) : null
+  }
+  const morningPct = strengthOf(todayHabits.filter((h) => h.chain === 'MORNING').map((h) => h.key))
+  const eveningPct = strengthOf(todayHabits.filter((h) => h.chain === 'EVENING').map((h) => h.key))
+  const doneToday = todayHabits.filter((h) => h.status === 'done').length
+  // No habits at all → no line. A fabricated "0 / 0" would read as a real standing.
+  const rutinLine = todayHabits.length === 0 ? undefined : (
+    <>
+      {doneToday} / {todayHabits.length} ma
+      {(morningPct != null || eveningPct != null) && (
+        <small>
+          {[morningPct != null ? `reggel ${morningPct}%` : null,
+            eveningPct != null ? `este ${eveningPct}%` : null].filter(Boolean).join(' · ')}
+        </small>
+      )}
+    </>
+  )
+
   return (
     <div className="enh-hub">
       <EntranceGroup className="mz-panel-stack">
@@ -233,6 +257,8 @@ export function EnHubPage() {
             line={emberekLine} onClick={() => navigate('/me/people')} aria-label="Emberek" />
           <Tile wash="sage" icon="i-beallitas" eyebrow="Beállítások" delayMs={330} className="enh-eb-sage"
             line={`téma: ${THEME_LABEL[themeMode]}`} onClick={() => navigate('/me/beallitasok')} aria-label="Beállítások" />
+          <Tile wide wash="gold" icon="i-rend" iconSize={34} eyebrow="Rutin" delayMs={370}
+            line={rutinLine} onClick={() => navigate('/me/rutin')} aria-label="Rutin" />
         </Mosaic>
       </EntranceGroup>
 
