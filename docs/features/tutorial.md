@@ -175,9 +175,16 @@ Adding a guide to an existing route:
 3. If a `hogyan` card wants a spotlight, add `data-kalauz-anchor="<name>"` to the target DOM
    element on the real page — the spotlight button only renders when the anchor is present, so a
    missing anchor degrades gracefully rather than pointing at nothing.
-4. Run the **hang-lint** test (`frontend/src/features/tutorial/registry/registry.test.ts`) — it
+4. A `fogalom` card never has its `term`/`def` typed by hand: it spreads
+   `...fogalom('<key>')` from `frontend/src/features/tutorial/registry/fogalmak.ts` at
+   registry-construction time. A new concept lands in `fogalmak.ts` first (with a source
+   comment pointing at where the term is authoritative), then the card references it by key —
+   this keeps the `KalauzCard` type and `shared/ui/kalauz` domain-free.
+5. Run the **hang-lint** test (`frontend/src/features/tutorial/registry/registry.test.ts`) — it
    enforces no forbidden words (`kell|muszáj|hiba|elbukik|rossz`), ≤2 sentences per card, ≤25 words
-   per `fogalom` definition, unique ids, every route matching a real router route, `version ≥ 1`.
+   per `fogalom` definition, unique ids, every route matching a real router route, `version ≥ 1`,
+   plus a glossary lint (every `fogalom` card resolves to a `FOGALMAK` entry, no orphan keys) and
+   a chip-route lint (every `kapcsolat` link target is a real route).
 
 A new guide needs **no backend change** — the `jsonb` map is free-form on the server; the guide id
 is only meaningful to the frontend registry. Bump `version` on an existing entry (never rename
@@ -233,18 +240,33 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - **Open question #2 (spec §13)**: `tutorialSeen.ts`'s localStorage key (`mezo.kalauz.v1`) carries
   no user-id prefix. Fine while the app is single-owner; the multi-user slice must prefix it (or
   two users on one device/browser will share "seen" state).
-- **Deferred to later `mezo-gb1s` slices**: T0 first-launch welcome flow (S2), any guide beyond
-  `fuel` (S2: first launch + hubs), a shared `fogalmak.ts` concept dictionary (deliberately not
-  built yet — YAGNI until a second `fogalom` term appears), the chrome-free-page mini-"?" (S3, tied
-  to the active-workout guide).
+- **Deferred to later `mezo-gb1s` slices**: T0 first-launch welcome flow (S2b), the
+  chrome-free-page mini-"?" (S3, tied to the active-workout guide).
+- **Anchors are per-face/per-variant JSX nodes, not a single element**: `nap-hero` sits on all
+  four `.nap-hero` nodes in `NapHubPage.tsx` (one per daypart face) and `train-hero` sits on all
+  six `.eh-hero` variants in `EdzesHubPage.tsx` — a new face/variant on `/nap` or `/train` must
+  carry the anchor too, or the spotlight silently degrades to "no anchor" on that face.
+- **Shell tests must seed every guide, not just seen-render one**: any shell test that mounts
+  `AppLayout` on a route with a registry hit needs `seedAllKalauzSeen()` (from
+  `frontend/src/test/kalauz.ts`) in its `beforeEach`, or the 600 ms auto-open can fire mid-test —
+  seeding a single guide by hand is no longer enough now that five guides exist.
 
 ## 10. Key files
 
 **Frontend — engine & UI**
 - `frontend/src/features/tutorial/TutorialProvider.tsx` — the motor: registry lookup, auto-open
   timing, session-guard, write-order, merge.
-- `frontend/src/features/tutorial/registry/` — `types.ts` (`KalauzEntry`/`KalauzCard`), `fuel.ts`
-  (the one shipped guide), `index.ts` (`KALAUZ_REGISTRY`, `findKalauz`, `getKalauz`).
+- `frontend/src/features/tutorial/registry/` — `types.ts` (`KalauzEntry`/`KalauzCard`), `index.ts`
+  (`KALAUZ_REGISTRY`, `findKalauz`, `getKalauz`).
+- `frontend/src/features/tutorial/registry/fogalmak.ts` — canonical Hungarian glossary
+  (`FOGALMAK`, `fogalom(key)`), consumed via `...fogalom('<key>')` spread by any `fogalom` card.
+- `frontend/src/features/tutorial/registry/fuel.ts` — the Fuel hub guide (`fuel`).
+- `frontend/src/features/tutorial/registry/nap.ts` — the Nap hub guide (`nap`), anchor `nap-hero`.
+- `frontend/src/features/tutorial/registry/train.ts` — the Edzés hub guide (`train`), anchor
+  `train-hero`.
+- `frontend/src/features/tutorial/registry/mezo.ts` — the Mezo hub guide (`mezo`), anchor
+  `mezo-chat`.
+- `frontend/src/features/tutorial/registry/me.ts` — the Én hub guide (`me`), anchor `me-idhero`.
 - `frontend/src/shared/ui/kalauz/KalauzSheet.tsx` — the five-card sheet, spotlight peek.
 - `frontend/src/shared/ui/Sheet.tsx` — gained `onBackdropClick`/`backdropClassName` for peek.
 - `frontend/src/shared/lib/tutorialSeen.ts` — localStorage mirror + `mergeProgress`.
@@ -269,6 +291,9 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - `api/feature/tutorial/tutorial-progress.yml`
 
 **Tests**
+- `frontend/src/test/kalauz.ts` — `buildAllSeenProgress()` (pure data, Node-safe; also consumed
+  by `frontend/tests/visual/visual.spec.ts`'s init script) and `seedAllKalauzSeen()` (writes the
+  localStorage mirror; used by shell tests' `beforeEach`).
 - `frontend/src/features/tutorial/TutorialProvider.test.tsx`,
   `frontend/src/features/tutorial/registry/registry.test.ts`,
   `frontend/src/shared/ui/kalauz/KalauzSheet.test.tsx`,
