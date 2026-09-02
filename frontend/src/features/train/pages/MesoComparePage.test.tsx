@@ -52,22 +52,30 @@ describe('MesoComparePage (mock mode · the two fixture reports)', () => {
     expect(within(adh).getByText('19/24 edzés')).toBeInTheDocument()
   })
 
-  it('aligns the volume weeks per muscle behind a muscle pill switch', async () => {
-    const user = userEvent.setup()
+  it('tables each muscle\'s peak planned week against A\'s own MRV ceiling, "–" where a side never trained it', () => {
     renderAt(BOTH)
-    const vol = screen.getByTestId('meso-compare-volume')
+    const peak = screen.getByTestId('meso-compare-peak-volume')
+    const rowFor = (label: string) => within(peak).getByText(label).closest('tr') as HTMLElement
 
-    // chest is on both sides: W1 planned 6 (rec-03) vs 8 (hyp-03)
-    const rows = within(vol).getAllByTestId('compare-week-row')
-    expect(rows).toHaveLength(8) // the union W1..W8 — hyp-03 only ran 6
-    expect(within(rows[0]).getAllByRole('cell').map((c) => c.textContent)).toEqual(['W1', '6', '6', '8', '8'])
-    // past hyp-03's end the b side is "–", never 0 (W8 is rec-03's deload: 8 planned / 8 actual)
-    expect(within(rows[7]).getAllByRole('cell').map((c) => c.textContent)).toEqual(['W8', '8', '8', '–', '–'])
+    // chest: both runs trained it — A's own peak/ceiling next to B's peak
+    const chestCells = within(rowFor('Mell')).getAllByRole('cell').map((c) => c.textContent)
+    expect(chestCells[0]).toBe('Mell')
+    expect(chestCells[1]).not.toBe('–') // A's peak planned week
+    expect(chestCells[2]).not.toBe('–') // A's own MRV ceiling
+    expect(chestCells[3]).not.toBe('–') // B's peak planned week
 
-    // biceps exists ONLY in rec-03's arc — the union still offers it, with an empty b side
-    await user.click(within(vol).getByRole('button', { name: 'Bicep' }))
-    const bicepRows = within(vol).getAllByTestId('compare-week-row')
-    expect(within(bicepRows[0]).getAllByRole('cell').map((c) => c.textContent)).toEqual(['W1', '6', '6', '–', '–'])
+    // biceps exists ONLY in rec-03's (A's) arc — B's cell is an honest dash, never a 0
+    const bicepCells = within(rowFor('Bicepsz')).getAllByRole('cell').map((c) => c.textContent)
+    expect(bicepCells[3]).toBe('–')
+  })
+
+  it('shows each run\'s non-Grow focus tiers, Emphasize starred, a legacy run flagged', () => {
+    renderAt(BOTH)
+    const focus = screen.getByTestId('meso-compare-focus')
+    const rows = within(focus).getAllByTestId('focus-row')
+    // Both mock fixture runs predate the wizard v2 goalPreset stamp — both read as legacy.
+    expect(within(rows[0]).getByTestId('focus-legacy-chip')).toHaveTextContent('régi modell · címke')
+    expect(within(rows[1]).getByTestId('focus-legacy-chip')).toHaveTextContent('régi modell · címke')
   })
 
   it('lists ONLY the shared exercises, loudest first, and highlights the better side', () => {
