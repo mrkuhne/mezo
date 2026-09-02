@@ -102,7 +102,7 @@ test('the mesocycle planner is a full-screen flow without the sub-nav', () => {
 test('the mesocycle builder is a full-screen flow without the sub-nav', () => {
   const { container } = renderApp('/train/mesocycles/meso-hyp-04')
   expect(container.querySelector('.np-pills')).toBeNull()
-  expect(
-    screen.getByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' }),
-  ).toBeInTheDocument()
+  // Mesocycle pages v2 (mezo-d20.15): the run page speaks Mozaik — its name sits in the
+  // PageHero, not in an <h1> (no Mozaik subpage carries one).
+  expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
 })

@@ -12,9 +12,11 @@ import { activeMeso, MUSCLE_LABELS } from '@/data/train/train'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-function renderBuilder() {
+// The run page is status-first since mezo-d20.15 — its Volumen tab is gone and the
+// volume face lives on its own route (MesoOverviewPage).
+function renderVolume() {
   const router = createMemoryRouter(routes, {
-    initialEntries: [`/train/mesocycles/${activeMeso.id}`],
+    initialEntries: [`/train/mesocycles/${activeMeso.id}/overview`],
   })
   return render(
     <QueryWrapper>
@@ -26,8 +28,7 @@ function renderBuilder() {
 }
 
 test('Volumen view shows the recompute banner and per-muscle VolumeBars', async () => {
-  renderBuilder()
-  await userEvent.click(screen.getByRole('button', { name: 'Volumen' }))
+  renderVolume()
 
   // Live recompute banner.
   expect(screen.getByText('Élő rendszer · 4 nappal ezelőtt frissítve')).toBeInTheDocument()
@@ -40,8 +41,7 @@ test('Volumen view shows the recompute banner and per-muscle VolumeBars', async 
 })
 
 test('expanding the recompute banner reveals the audit log', async () => {
-  renderBuilder()
-  await userEvent.click(screen.getByRole('button', { name: 'Volumen' }))
+  renderVolume()
 
   await userEvent.click(screen.getByRole('button', { name: /Recompute napló/ }))
   expect(screen.getByText(`Utolsó futás · ${activeMeso.volumeRecompute!.lastRun}`)).toBeInTheDocument()

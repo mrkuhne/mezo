@@ -4414,6 +4414,9 @@ button.mz-tile:active { transform: scale(0.96); }
 }
 .mz-statcell b { font-size: 15px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
 .mz-statcell small { font-size: 10px; color: var(--mz-ink-soft); }
+/* over its cap — the prototype's dashed cell: a flag the model will act on, not an alarm */
+.mz-statcell-over { border: 1px dashed var(--mz-cell-gold-ink); background: var(--mz-cell-gold-bg); }
+.mz-statcell-over small { color: var(--mz-cell-gold-ink); }
 
 /* tinted mini-cells — the .mcells recipe */
 .mz-mcells { display: flex; gap: 6px; }
@@ -8153,6 +8156,22 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 /* lépés-lábléc — egy elsődleges CTA, mellette a csendes társa */
 .mz-wfoot { display: flex; gap: 9px; margin-top: 14px; }
 .mz-wfoot > :first-child { flex: 1; }
+
+/* ---- aktív futam oldala (#page-run, mezo-d20.15) ----
+   A blokk íve kártya alsó sora, a „Heti vizsgálat" csempe mini sáv-fürtje
+   (a prototípus .wmini-je ×1.18) és a „Hétfőn jön" csempe előrejelző chipjei. */
+.mz-arcline { margin-top: 4px; font-size: 10px; font-weight: 600; color: var(--mz-ink-mut); }
+.mz-arcline b { color: var(--mz-cell-gold-ink); }
+.mz-wmini { display: flex; gap: 4px; align-items: flex-end; height: 31px; margin: 7px 0 3px; }
+.mz-wmini b { flex: 1; border-radius: 4px 4px 1px 1px; min-height: 4px;
+  transform: scaleY(0); transform-origin: bottom; }
+.mz-play .mz-wmini b { animation: mz-growy 0.45s ease-out forwards; animation-delay: var(--d); }
+@keyframes mz-growy { to { transform: scaleY(1); } }
+.mz-rollchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.mz-tile-note { font-size: 10px; color: var(--mz-ink-mut); margin-top: 7px; }
+@media (prefers-reduced-motion: reduce) {
+  .mz-wmini b, .mz-play .mz-wmini b { transform: scaleY(1); animation: none; }
+}
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
