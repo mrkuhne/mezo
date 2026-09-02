@@ -92,6 +92,32 @@ describe('usePantry (mock mode)', () => {
     expect(result.current.pantry.ingredients.some(i => i.id === target.id)).toBe(false)
   })
 
+  it('importItem derives source from the draft, not a hardcoded openfoodfacts (mezo-ymt4)', async () => {
+    // The OFF search-lookup mode was removed from the FE — a photo-confirmed draft must land
+    // with source 'photo', never the old hardcoded 'openfoodfacts' (which would mis-badge it).
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ pantry: usePantry(), actions: usePantryActions() }),
+      { wrapper: Wrapper },
+    )
+    const NEW_NAME = 'Fotós import teszt tétel'
+    const before = result.current.pantry.ingredients.length
+
+    await act(async () => {
+      await result.current.actions.importItem({
+        name: NEW_NAME, per: 100, unit: 'g', kcal: 120, category: 'dairy', origin: 'photo',
+      })
+    })
+
+    await waitFor(() => {
+      expect(result.current.pantry.ingredients.length).toBe(before + 1)
+    })
+    const added = result.current.pantry.ingredients.find(i => i.name === NEW_NAME)
+    expect(added?.source).toBe('photo')
+    expect(added?.source).not.toBe('openfoodfacts')
+    expect(result.current.pantry.imports[0].source).toBe('photo')
+  })
+
   it('scrapeItem resolves the canned MOCK_SCRAPE_DRAFT after the demo delay (mezo-8vum)', async () => {
     // Mock mode: no backend — the URL-scrape action serves the canned draft after a demo delay.
     const { Wrapper } = sharedWrapper()

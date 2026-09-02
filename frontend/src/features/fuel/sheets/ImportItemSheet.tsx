@@ -7,8 +7,7 @@
 //                   → photoExtract reads a draft off the label → the shared Link-mode preview →
 //                   confirm carries an `origin: 'photo'` provenance marker (no URL).
 // All modes end in usePantryActions().importItem and close; Link/Fotó saves pass the draft's
-// provenance (source/sourceUrl/confidence/price) through saveDraft. Barcode-scanner/mic chips
-// stay inert (P8+).
+// provenance (source/sourceUrl/confidence/price) through saveDraft.
 // ============================================================
 import { useState, type ChangeEvent } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'

@@ -77,7 +77,7 @@ function fromSuggestion(s: PantrySuggestionResponse): PantrySuggestion {
 
 function fromScrapeResult(r: PantryScrapeResult): PantryScrapeDraft {
   // Structurally identical to the draft (nova 1..4, source is the shared PantrySource
-  // enum, category widens to string) — same structural cast fromLookupResult uses.
+  // enum, category widens to string) — plain structural cast, no field-by-field mapping needed.
   return r as unknown as PantryScrapeDraft
 }
 
