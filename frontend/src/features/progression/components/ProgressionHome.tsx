@@ -88,12 +88,10 @@ function TitleRow({ t, coins, canMutate, onBuy, onEquip }: {
 }) {
   return (
     <div className={cn('gr-titrow', !t.owned && 'lock')}>
-      <div>
-        <span className="nm">{t.name}</span>
-        <span className="sub">
-          {t.kind === 'LADDER' ? `LV ${t.unlockLevel}` : <><ClayIcon name="i-erme" size={11} /> {t.priceCoins}</>}
-        </span>
-      </div>
+      <span className="nm">{t.name}</span>
+      <span className="sub">
+        {t.kind === 'LADDER' ? `LV ${t.unlockLevel}` : <><ClayIcon name="i-erme" size={11} /> {t.priceCoins}</>}
+      </span>
       {t.equipped ? (
         <span className="gr-titact worn">Viselve</span>
       ) : t.owned ? (
