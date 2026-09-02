@@ -6,6 +6,8 @@ import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import { addDays } from '@/shared/lib/dates'
 import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
+import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose } from '@/data/lifegoal/lifegoalMock'
+import type { LifeGoalProposeRequest } from '@/data/lifegoal/lifegoalApi'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -1486,5 +1488,21 @@ export const handlers = [
   http.get(`${API_BASE}/api/character/run/:id`, ({ params }) => {
     const detail = MOCK_RUN_DETAIL[params.id as string]
     return detail != null ? HttpResponse.json(detail) : new HttpResponse(null, { status: 404 })
+  }),
+
+  // Life goals (mezo-iizd.1) — default fixtures mirroring the mock seed so real-mode component
+  // tests that render these hooks without a per-test server.use() get the same four goals.
+  http.get(`${API_BASE}/api/life-goals`, () => HttpResponse.json(MOCK_LIFE_GOALS)),
+  http.get(`${API_BASE}/api/life-goals/signals`, () => HttpResponse.json({ entries: MOCK_SIGNAL_CATALOG })),
+  http.post(`${API_BASE}/api/life-goals/propose`, async ({ request }) =>
+    HttpResponse.json(mockPropose((await request.json()) as LifeGoalProposeRequest))),
+  http.post(`${API_BASE}/api/life-goals`, async ({ request }) =>
+    HttpResponse.json(
+      { ...(await request.json() as object), id: 'lg-new', status: 'draft', frame: 'unset', ifThenPlans: [], pillars: [] },
+      { status: 201 },
+    )),
+  http.post(`${API_BASE}/api/life-goals/:id/status`, async ({ request }) => {
+    const body = (await request.json()) as { status: string }
+    return HttpResponse.json({ ...MOCK_LIFE_GOALS[0], status: body.status })
   }),
 ]

@@ -1,0 +1,117 @@
+// ============================================================
+// Mezo · lifegoalHooks — dual-mode reads + mutations for life goals (mezo-iizd.1).
+// Mock mode keeps an in-memory list in the QueryClient cache so the wizard/status flows work
+// without a backend; real mode invalidates ['lifeGoals'] after every write.
+// ============================================================
+import { useCallback } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { isMockMode } from '@/data/_client/mode'
+import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
+import {
+  lifegoalApi, type LifeGoalPillarInput, type LifeGoalProposeRequest, type LifeGoalProposeResponse,
+  type LifeGoalResponse, type LifeGoalStatus, type LifeGoalUpsertRequest, type SignalCatalogEntry,
+} from '@/data/lifegoal/lifegoalApi'
+import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose } from '@/data/lifegoal/lifegoalMock'
+
+export const LIFE_GOALS_KEY = ['lifeGoals'] as const
+export const SIGNAL_CATALOG_KEY = ['lifeGoalSignals'] as const
+
+export function useLifeGoals() {
+  const q = useDualQuery<LifeGoalResponse[]>({
+    queryKey: LIFE_GOALS_KEY, mockData: MOCK_LIFE_GOALS, realFetch: lifegoalApi.list, realEmpty: [],
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+  })
+  return { goals: q.data, isPending: q.isPending, isError: q.isError, refetch: q.refetch }
+}
+
+export function useLifeGoal(id: string | undefined) {
+  const { goals, isPending } = useLifeGoals()
+  return { goal: id ? goals.find((g) => g.id === id) ?? null : null, isPending }
+}
+
+export function useSignalCatalog() {
+  const q = useDualQuery<SignalCatalogEntry[]>({
+    queryKey: SIGNAL_CATALOG_KEY, mockData: MOCK_SIGNAL_CATALOG,
+    realFetch: async () => (await lifegoalApi.signals()).entries, realEmpty: [],
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+  })
+  return { entries: q.data, isPending: q.isPending }
+}
+
+function mockId() { return `lg-${Math.random().toString(36).slice(2, 8)}` }
+
+export function useLifeGoalMutations() {
+  const qc = useQueryClient()
+  const mock = isMockMode()
+  const patch = (fn: (list: LifeGoalResponse[]) => LifeGoalResponse[]) =>
+    qc.setQueryData<LifeGoalResponse[]>(LIFE_GOALS_KEY, (cur) => fn(cur ?? MOCK_LIFE_GOALS))
+  const invalidate = () => { if (!mock) void qc.invalidateQueries({ queryKey: LIFE_GOALS_KEY }) }
+
+  const create = useMutation({
+    mutationFn: async (req: LifeGoalUpsertRequest): Promise<LifeGoalResponse> => {
+      if (mock) {
+        const g: LifeGoalResponse = {
+          id: mockId(), title: req.title, whyText: req.whyText, frame: req.frame ?? 'unset',
+          dimension: req.dimension, secondaryDimension: req.secondaryDimension, status: 'draft',
+          startDate: req.startDate, targetDate: req.targetDate, obstacleText: req.obstacleText,
+          ifThenPlans: req.ifThenPlans ?? [],
+          pillars: (req.pillars ?? []).map((p, i) => ({ ...p, id: mockId(), position: i, weight: p.weight ?? 1, active: p.active ?? true })),
+        }
+        patch((l) => [g, ...l]); return g
+      }
+      return lifegoalApi.create(req)
+    },
+    onSuccess: invalidate,
+  })
+  const changeStatus = useMutation({
+    mutationFn: async (v: { id: string; status: LifeGoalStatus }) => {
+      if (mock) {
+        patch((l) => l.map((g) => (g.id === v.id ? { ...g, status: v.status,
+          activatedAt: v.status === 'active' ? (g.activatedAt ?? new Date().toISOString()) : g.activatedAt } : g)))
+        return
+      }
+      await lifegoalApi.changeStatus(v.id, v.status)
+    },
+    onSuccess: invalidate,
+  })
+  const update = useMutation({
+    mutationFn: async (v: { id: string; req: LifeGoalUpsertRequest }) => {
+      if (mock) { patch((l) => l.map((g) => (g.id === v.id ? { ...g, ...v.req, ifThenPlans: v.req.ifThenPlans ?? [], pillars: g.pillars } : g))); return }
+      await lifegoalApi.update(v.id, v.req)
+    },
+    onSuccess: invalidate,
+  })
+  const replacePillars = useMutation({
+    mutationFn: async (v: { id: string; pillars: LifeGoalPillarInput[] }) => {
+      if (mock) {
+        patch((l) => l.map((g) => (g.id === v.id ? { ...g, pillars: v.pillars.map((p, i) => ({ ...p, id: mockId(), position: i, weight: p.weight ?? 1, active: p.active ?? true })) } : g)))
+        return
+      }
+      await lifegoalApi.replacePillars(v.id, v.pillars)
+    },
+    onSuccess: invalidate,
+  })
+  const remove = useMutation({
+    mutationFn: async (id: string) => { if (mock) { patch((l) => l.filter((g) => g.id !== id)); return } await lifegoalApi.remove(id) },
+    onSuccess: invalidate,
+  })
+
+  return {
+    create: useCallback((req: LifeGoalUpsertRequest, opts?: { onSuccess?: (g: LifeGoalResponse) => void }) =>
+      create.mutate(req, { onSuccess: opts?.onSuccess }), [create]),
+    update: useCallback((id: string, req: LifeGoalUpsertRequest) => update.mutate({ id, req }), [update]),
+    changeStatus: useCallback((id: string, status: LifeGoalStatus) => changeStatus.mutate({ id, status }), [changeStatus]),
+    replacePillars: useCallback((id: string, pillars: LifeGoalPillarInput[]) => replacePillars.mutate({ id, pillars }), [replacePillars]),
+    remove: useCallback((id: string) => remove.mutate(id), [remove]),
+    pending: create.isPending || update.isPending || changeStatus.isPending || replacePillars.isPending || remove.isPending,
+  }
+}
+
+export function useLifeGoalPropose() {
+  const mock = isMockMode()
+  const m = useMutation({
+    mutationFn: async (req: LifeGoalProposeRequest): Promise<LifeGoalProposeResponse> =>
+      mock ? new Promise((r) => setTimeout(() => r(mockPropose(req)), 600)) : lifegoalApi.propose(req),
+  })
+  return { propose: useCallback((req: LifeGoalProposeRequest) => m.mutateAsync(req), [m]), pending: m.isPending }
+}
