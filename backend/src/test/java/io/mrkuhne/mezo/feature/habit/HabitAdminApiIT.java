@@ -241,4 +241,56 @@ class HabitAdminApiIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
         assertHasRequestError(err, "HABIT_ANCHOR_INVALID");
     }
+
+    @Test
+    void testDeleteDef_shouldReleaseDependentAnchors_intoFreeTextCopy() {
+        catalog();
+        HabitDefAdmin anchor = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Reggeli fény")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        HabitDefAdmin stacked = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey(anchor.getHabitKey()).celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        deleteAndExpect("/api/habit/def/" + anchor.getId(), ownerAuthHeaders(), HttpStatus.NO_CONTENT);
+
+        HabitDefAdmin after = findDef(catalog(), stacked.getId());
+        assertThat(after.getAnchorHabitKey()).isNull();
+        assertThat(after.getAnchorCopy()).isEqualTo("kész a Reggeli fény");
+        assertThat(after.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+    }
+
+    @Test
+    void testDeactivateDef_shouldReleaseDependentAnchors() {
+        catalog();
+        HabitDefAdmin anchor = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Reggeli fény")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        HabitDefAdmin stacked = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey(anchor.getHabitKey()).celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        patchForBody("/api/habit/def/" + anchor.getId(),
+            HabitDefUpdateRequest.builder().isActive(false).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin after = findDef(catalog(), stacked.getId());
+        assertThat(after.getAnchorHabitKey()).isNull();
+        assertThat(after.getAnchorCopy()).isEqualTo("kész a Reggeli fény");
+    }
+
+    private static HabitDefAdmin findDef(HabitCatalogResponse cat, UUID defId) {
+        return cat.getChains().stream()
+            .flatMap(chain -> chain.getDefs().stream())
+            .filter(d -> d.getId().equals(defId))
+            .findFirst().orElseThrow();
+    }
 }

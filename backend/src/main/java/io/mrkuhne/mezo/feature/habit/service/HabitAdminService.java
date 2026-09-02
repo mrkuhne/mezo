@@ -210,6 +210,9 @@ public class HabitAdminService {
         }
         if (request.getIsActive() != null) {
             def.setActive(request.getIsActive());
+            if (Boolean.FALSE.equals(request.getIsActive())) {
+                releaseAnchors(userId, def);
+            }
         }
         if (request.getFramework() != null) {
             def.setFramework(request.getFramework().getValue());
@@ -241,7 +244,26 @@ public class HabitAdminService {
     @Transactional
     public void deleteDef(UUID userId, UUID id) {
         catalogService.ensureCatalog(userId);
-        defRepository.delete(requireDef(userId, id)); // @SQLDelete soft-deletes
+        HabitDefEntity def = requireDef(userId, id);
+        releaseAnchors(userId, def);
+        defRepository.delete(def); // @SQLDelete soft-deletes
+    }
+
+    /**
+     * A stacked recipe must survive its anchor disappearing (mezo-3zue.2): the sentence
+     * "Miután [anchor], …" is the user's own words, so instead of nulling the whole recipe we
+     * demote the reference to free text and drop the key. Runs inside the caller's transaction.
+     */
+    private void releaseAnchors(UUID userId, HabitDefEntity anchor) {
+        List<HabitDefEntity> dependents =
+            defRepository.findByCreatedByAndAnchorHabitKeyAndDeletedFalse(userId, anchor.getHabitKey());
+        for (HabitDefEntity dependent : dependents) {
+            if (dependent.getAnchorCopy() == null || dependent.getAnchorCopy().isBlank()) {
+                dependent.setAnchorCopy("kész a " + anchor.getTitle());
+            }
+            dependent.setAnchorHabitKey(null);
+            defRepository.save(dependent);
+        }
     }
 
     private String resolveMetric(String mode, String requestedMetric) {
