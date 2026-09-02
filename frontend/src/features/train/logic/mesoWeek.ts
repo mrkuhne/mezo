@@ -8,7 +8,7 @@
 // per-day muscle-group joins so a day's set count is counted exactly once.
 // ============================================================
 import type { Mesocycle, MesoVolumeArc, MuscleTier } from '@/data/types'
-import { grindHeldGroups, nextStep, runBands } from '@/features/train/logic/mesoBands'
+import { grindHeldGroups, runBands } from '@/features/train/logic/mesoBands'
 import { BUDGET_GROUP_LABELS, budgetGroup, countsForVolume, daySessionBreakdown } from '@/features/train/logic/setBudget'
 
 export interface WeekSummary {
@@ -89,9 +89,11 @@ export function muscleTiles(arc: MesoVolumeArc, meso: Mesocycle): MuscleWeekTile
         status = '= tartás · grind a múlt héten'
         statusTone = 'gold'
       } else {
-        // The band's own current may lag the arc's planned for this week — clamp against the
-        // value the tile actually shows, so the headroom and the step never contradict.
-        step = Math.max(0, Math.min(nextStep(band), band.ceiling - current))
+        // Clamp against the value the TILE shows, not `band.current`. The live volume log can
+        // sit ahead of the arc's planned week (the mock's back: log 16, W3 planned 14), which
+        // makes `nextStep(band)` read 'cap' → 0 while the tile still has real headroom — and
+        // the status then contradicted itself: „▲ +0 e héten · 2 a plafonig".
+        step = Math.min(2, band.ceiling - current)
         status = `▲ +${step} e héten · ${band.ceiling - current} a plafonig`
         statusTone = 'sage'
       }

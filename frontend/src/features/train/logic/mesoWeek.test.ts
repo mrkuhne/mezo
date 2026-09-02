@@ -113,6 +113,21 @@ describe('muscleTiles', () => {
     expect(nextRolloverChips(meso).find((c) => c.label === 'Mell')).toEqual({ label: 'Mell', text: 'Mell tart', tone: 'mut' })
   })
 
+  // The bug the meso-week golden caught: the tile read „▲ +0 e héten · 2 a plafonig".
+  it('the step follows the TILE current, not a volume log that runs ahead of the arc week', () => {
+    const ahead = {
+      ...meso,
+      volumeRecompute: undefined,
+      // log says 16 (the block's ceiling for chest here), the arc's W3 planned is 14
+      volumePerMuscle: { ...meso.volumePerMuscle, chest: { mev: 8, mav: 16, mrv: 20, current: 16, source: src } },
+    } as unknown as Mesocycle
+    const tile = muscleTiles(arc, ahead).find((t) => t.group === 'chest')!
+    expect(tile.current).toBe(14)
+    expect(tile.ceiling).toBe(16)
+    expect(tile.step).toBe(2)
+    expect(tile.status).toBe('▲ +2 e héten · 2 a plafonig')
+  })
+
   it('the ramp step is clamped to the headroom — no +2 promised over the plafon', () => {
     const nearCap = {
       ...meso,
