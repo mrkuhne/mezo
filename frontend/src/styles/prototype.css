@@ -8316,3 +8316,23 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   .wsh-ing.diff::after { animation: none; opacity: 0.5; }
   .wsh-kbar i { transition: none; }
 }
+
+/* Rutin hub — framework badge + strength bar + new-recipe highlight (mezo-3zue.3),
+   docs/design_2.0/prototypes/src/rutin-epito-head.html .fw/.strength/.hrow.new ×1.18. */
+.rt-hrow { cursor: pointer; }
+.rt-fw {
+  font-size: 8px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px;
+  padding: 2px 7px; flex: none; text-transform: uppercase; font-variant-numeric: tabular-nums;
+}
+.rt-fw-fogg { color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); }
+.rt-fw-clear { color: var(--mz-cell-lav-ink); background: var(--mz-cell-lav-bg); }
+.rt-fw-none { color: var(--mz-ink-mut); background: var(--surface-recess); }
+.rt-strength {
+  flex: 1; max-width: 64px; height: 5px; border-radius: 2px; background: var(--mz-line-soft); overflow: hidden;
+}
+.rt-strength div { height: 100%; border-radius: 2px; background: var(--mz-strength); transition: width 0.6s cubic-bezier(0.22, 0.9, 0.32, 1); }
+.gr-chainrow.done .rt-strength div { background: var(--gradient-sage); }
+.rt-row-new {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary-soft) 55%, transparent), transparent);
+  border-radius: 12px;
+}

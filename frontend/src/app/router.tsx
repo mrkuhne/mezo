@@ -58,7 +58,7 @@ import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthHubPage } from '@/features/me/pages/GrowthHubPage'
 import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
-import { GrowthRutinPage } from '@/features/me/pages/GrowthRutinPage'
+import { RutinHubPage } from '@/features/me/pages/RutinHubPage'
 import { GrowthNaploPage } from '@/features/me/pages/GrowthNaploPage'
 import { GrowthAwardsPage } from '@/features/me/pages/GrowthAwardsPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
@@ -68,7 +68,6 @@ import { WeekDaysPage } from '@/features/me/pages/WeekDaysPage'
 import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
 import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
 import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
-import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
@@ -271,9 +270,15 @@ export const routes: RouteObject[] = [
       // Growth hub (mezo-rmi0.1) — hero + Ma strip + 2×2 mosaic; the four sub-pages are flat siblings below (added per task).
       { path: 'me/growth', element: <GrowthHubPage /> },
       { path: 'me/growth/skillek', element: <GrowthSkillsPage /> },
-      { path: 'me/growth/rutin', element: <GrowthRutinPage /> },
       { path: 'me/growth/naplo', element: <GrowthNaploPage /> },
       { path: 'me/growth/kituntetesek', element: <GrowthAwardsPage /> },
+      // Rutin home (mezo-3zue): the routine surface's own page under Én, reached from the Én
+      // hub's full-width Rutin tile. It absorbed /me/growth/rutin (mezo-rmi0.1) and the
+      // /me/routines/edit editor — build and edit here, tick on /nap/rutin.
+      { path: 'me/rutin', element: <RutinHubPage /> },
+      // Both former homes keep working as redirects.
+      { path: 'me/growth/rutin', element: <Navigate to="/me/rutin" replace /> },
+      { path: 'me/routines/edit', element: <Navigate to="/me/rutin" replace /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
       // WeekPage. Its four view tiles open full-screen siblings, NOT child routes: the
@@ -314,8 +319,6 @@ export const routes: RouteObject[] = [
       // Téma helyben + az Értesítések-kapcsolók és az AI-napló ajtajai.
       { path: 'me/beallitasok', element: <BeallitasokPage /> },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },
-      // Full-screen routine editor (mezo-n5e9.2) — same sibling idiom (no Me sub-nav chrome).
-      { path: 'me/routines/edit', element: <RoutineEditorPage /> },
       // Full-screen night surface (train/session idiom) — no Me sub-nav chrome.
       { path: 'me/sleep/night', element: <NightPage /> },
       // Full-screen AI audit log browser (mezo-uakh) — no Me sub-nav chrome.
