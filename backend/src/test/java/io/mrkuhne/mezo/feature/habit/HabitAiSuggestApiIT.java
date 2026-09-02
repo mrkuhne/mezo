@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.HabitSuggestRequest;
 import io.mrkuhne.mezo.api.dto.HabitSuggestResponse;
+import io.mrkuhne.mezo.api.dto.HabitSuggestion;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.habit.service.HabitCatalogService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -119,6 +120,27 @@ class HabitAiSuggestApiIT extends ApiIntegrationTest {
 
         assertThat(response.getSuggestions()).hasSize(1);
         assertThat(response.getSuggestions().getFirst().getTitle()).isEqualTo("J");
+    }
+
+    /** mezo-3zue.2: a suggestion may propose a full FOGG recipe (framework + celebration) — the
+     *  five new optional contract fields must survive the round trip from the model's JSON
+     *  through {@code HabitSuggestPort.Suggestion} into the {@code HabitSuggestion} DTO. */
+    @Test
+    void testSuggest_shouldCarryFrameworkFields_whenModelReturnsThem() {
+        HttpHeaders auth = ownerAuthHeaders();
+        String sentinel = "[fake-habit-suggest:["
+                + "{\"title\":\"Napi szándék\",\"skillKey\":\"mindset\",\"xp\":10,\"chainKey\":\"MORNING\","
+                + "\"framework\":\"FOGG\",\"celebration\":\"ökölrázás\"}"
+                + "]]";
+        HabitSuggestRequest request = HabitSuggestRequest.builder().hint(sentinel).build();
+
+        HabitSuggestResponse response = postForBody(
+                "/api/habit/ai/suggest", request, auth, HttpStatus.OK, HabitSuggestResponse.class);
+
+        assertThat(response.getSuggestions()).hasSize(1);
+        HabitSuggestion suggestion = response.getSuggestions().getFirst();
+        assertThat(suggestion.getFramework()).isEqualTo(HabitSuggestion.FrameworkEnum.FOGG);
+        assertThat(suggestion.getCelebration()).isEqualTo("ökölrázás");
     }
 
     @Test

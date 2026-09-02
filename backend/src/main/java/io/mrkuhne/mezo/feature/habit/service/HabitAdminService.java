@@ -48,6 +48,7 @@ public class HabitAdminService {
     private final HabitChainRepository chainRepository;
     private final HabitDefRepository defRepository;
     private final HabitMapper mapper;
+    private final HabitFrameworkValidator frameworkValidator;
 
     @Transactional
     public HabitCatalogResponse catalog(UUID userId) {
@@ -160,6 +161,15 @@ public class HabitAdminService {
         def.setSkillKey(request.getSkillKey());
         def.setXp(request.getXp());
         def.setLinkUrl(request.getLinkUrl());
+        def.setFramework(request.getFramework() != null ? request.getFramework().getValue() : null);
+        def.setAnchorHabitKey(request.getAnchorHabitKey());
+        def.setCue(request.getCue());
+        def.setCraving(request.getCraving());
+        def.setReward(request.getReward());
+        def.setCelebration(request.getCelebration());
+        def.setIdentity(request.getIdentity());
+        frameworkValidator.clearForeignFields(def);
+        frameworkValidator.validate(def);
         HabitDefEntity saved = defRepository.save(def);
         return mapper.toDefAdmin(saved, chain.getChainKey());
     }
@@ -200,7 +210,33 @@ public class HabitAdminService {
         }
         if (request.getIsActive() != null) {
             def.setActive(request.getIsActive());
+            if (Boolean.FALSE.equals(request.getIsActive())) {
+                releaseAnchors(userId, def);
+            }
         }
+        if (request.getFramework() != null) {
+            def.setFramework(request.getFramework().getValue());
+        }
+        if (request.getAnchorHabitKey() != null) {
+            def.setAnchorHabitKey(request.getAnchorHabitKey());
+        }
+        if (request.getCue() != null) {
+            def.setCue(request.getCue());
+        }
+        if (request.getCraving() != null) {
+            def.setCraving(request.getCraving());
+        }
+        if (request.getReward() != null) {
+            def.setReward(request.getReward());
+        }
+        if (request.getCelebration() != null) {
+            def.setCelebration(request.getCelebration());
+        }
+        if (request.getIdentity() != null) {
+            def.setIdentity(request.getIdentity());
+        }
+        frameworkValidator.clearForeignFields(def);
+        frameworkValidator.validate(def);
         HabitDefEntity saved = defRepository.save(def);
         return mapper.toDefAdmin(saved, chainKeyOf(saved.getChainId()));
     }
@@ -208,7 +244,26 @@ public class HabitAdminService {
     @Transactional
     public void deleteDef(UUID userId, UUID id) {
         catalogService.ensureCatalog(userId);
-        defRepository.delete(requireDef(userId, id)); // @SQLDelete soft-deletes
+        HabitDefEntity def = requireDef(userId, id);
+        releaseAnchors(userId, def);
+        defRepository.delete(def); // @SQLDelete soft-deletes
+    }
+
+    /**
+     * A stacked recipe must survive its anchor disappearing (mezo-3zue.2): the sentence
+     * "Miután [anchor], …" is the user's own words, so instead of nulling the whole recipe we
+     * demote the reference to free text and drop the key. Runs inside the caller's transaction.
+     */
+    private void releaseAnchors(UUID userId, HabitDefEntity anchor) {
+        List<HabitDefEntity> dependents =
+            defRepository.findByCreatedByAndAnchorHabitKeyAndDeletedFalse(userId, anchor.getHabitKey());
+        for (HabitDefEntity dependent : dependents) {
+            if (dependent.getAnchorCopy() == null || dependent.getAnchorCopy().isBlank()) {
+                dependent.setAnchorCopy("kész a " + anchor.getTitle());
+            }
+            dependent.setAnchorHabitKey(null);
+            defRepository.save(dependent);
+        }
     }
 
     private String resolveMetric(String mode, String requestedMetric) {

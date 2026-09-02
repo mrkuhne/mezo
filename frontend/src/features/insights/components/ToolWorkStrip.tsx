@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ClayIcon } from '@/shared/ui/clay'
+import { Icon } from '@/shared/ui/Icon'
 import { parseToolName, toolDomain } from '@/features/insights/logic/toolDomains'
 import type { Tool } from '@/shared/ui/ToolChip'
 
@@ -39,7 +40,9 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
         </span>
         <span className="mzc-wlbl">{live ? 'Utánanéz…' : 'Utánanézett'}</span>
         <span className="mzc-wsub">{tools.length} forrás</span>
-        <span className="mzc-wchev" aria-hidden>{open ? '⌃' : '⌄'}</span>
+        <span className="mzc-wchev" aria-hidden>
+          <Icon name={open ? 'chevron-up' : 'chevron-down'} size={10} color="var(--text-tertiary)" />
+        </span>
       </button>
       {open && (
         <div className="mzc-wpanel">
@@ -56,7 +59,7 @@ export function ToolWorkStrip({ tools, live }: { tools: Tool[]; live?: boolean }
                   <span className="mzc-wnm">{d.label}</span>
                   {params && <span className="mzc-wprm">{params}</span>}
                 </span>
-                <span className="mzc-wst">{running ? <><i /> fut</> : '✓'}</span>
+                <span className="mzc-wst">{running ? <><i /> fut</> : <Icon name="check" size={12} />}</span>
               </div>
             )
           })}

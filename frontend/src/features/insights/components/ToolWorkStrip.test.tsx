@@ -16,13 +16,14 @@ describe('ToolWorkStrip', () => {
     expect(screen.queryByText('Súlynapló')).not.toBeInTheDocument()
   })
 
-  it('expands to human-labeled rows with raw args and a done tick', () => {
-    render(<ToolWorkStrip tools={TOOLS} />)
+  it('expands to human-labeled rows with raw args and a done-tick icon', () => {
+    const { container } = render(<ToolWorkStrip tools={TOOLS} />)
     fireEvent.click(screen.getByRole('button', { name: /Utánanézett/ }))
     expect(screen.getByRole('button', { name: /Utánanézett/ })).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByText('Súlynapló')).toBeInTheDocument()
     expect(screen.getByText('days=7, scope=sleep')).toBeInTheDocument()
-    expect(screen.getAllByText('✓')).toHaveLength(3)
+    expect(container.querySelectorAll('.mzc-wst svg')).toHaveLength(3)
+    expect(container.textContent).not.toMatch(/✓/)
   })
 
   it('unknown tool name falls back to the raw name', () => {
@@ -32,11 +33,17 @@ describe('ToolWorkStrip', () => {
   })
 
   it('live mode: the working label, and the LAST source runs while earlier ones are done', () => {
-    render(<ToolWorkStrip tools={TOOLS} live />)
+    const { container } = render(<ToolWorkStrip tools={TOOLS} live />)
     const strip = screen.getByRole('button', { name: /Utánanéz…/ })
     fireEvent.click(strip)
-    expect(screen.getAllByText('✓')).toHaveLength(2)
+    expect(container.querySelectorAll('.mzc-wst svg')).toHaveLength(2)
     expect(screen.getByText('fut')).toBeInTheDocument()
+  })
+
+  it('the collapse chevron renders as an icon, not a typographic glyph', () => {
+    const { container } = render(<ToolWorkStrip tools={TOOLS} />)
+    expect(container.querySelector('.mzc-wchev svg')).toBeTruthy()
+    expect(container.querySelector('.mzc-wchev')?.textContent).not.toMatch(/[⌃⌄]/)
   })
 
   it('a baked wire name shows the parsed label and params subline when args is absent', () => {

@@ -43,7 +43,7 @@ describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
     const files = readdirSync(DIR).filter((f) => f.endsWith('.tsx') && !f.endsWith('.test.tsx'))
     expect(files.sort()).toEqual([
       'ActivityLogCard.tsx', 'DailyQuestList.tsx', 'DailyQuestsCard.tsx',
-      'DailyQuestsSheet.tsx', 'MezoMessagesSheet.tsx',
+      'DailyQuestsSheet.tsx', 'EletjelStrip.tsx', 'MezoMessagesSheet.tsx',
     ])
   })
 })

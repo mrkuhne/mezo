@@ -77,8 +77,25 @@ public class HabitAiService {
             dto.setSkillKey(s.skillKey());
             dto.setXp(s.xp());
             dto.setChainKey(s.chainKey());
+            dto.setFramework(toFrameworkEnum(s.framework()));
+            dto.setCue(s.cue());
+            dto.setCraving(s.craving());
+            dto.setReward(s.reward());
+            dto.setCelebration(s.celebration());
             result.add(dto);
         }
         return result;
+    }
+
+    /**
+     * Defensive mapping to the contract enum (propose-only, ADR 0019 — never trust the model's
+     * string verbatim): an unknown/hallucinated value degrades to {@code null} rather than a 5xx,
+     * same tone as the rest of this method's filtering.
+     */
+    private static HabitSuggestion.FrameworkEnum toFrameworkEnum(String framework) {
+        if (framework == null || framework.isBlank()) {
+            return null;
+        }
+        return HabitSuggestion.FrameworkEnum.fromValue(framework);
     }
 }
