@@ -60,10 +60,11 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   deterministic composition of the OTHER features' reads (profile + weight trend, active goal +
   prescription current-week segment + day-planner, active meso + schedules + last-7d digest,
   account level/coins/streak + top skills + weekly XP rollup, today's quest count + habit chains +
-  creed/foci/reflection + napzárás state, FuelDay rollup + protocol + intakes, cycleDay/phase, last
-  sleep + latest check-in), rendered as eight Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT
-  (pillanatkép — {dátum}):` and inserted into the `ChatService` system prompt **between the static
-  voice and the history transcript**.
+  creed/foci/reflection + napzárás state, the active people circle (`[Emberek]`, **mezo-x6oa**,
+  chat variant only), FuelDay rollup + protocol + intakes, cycleDay/phase, last sleep + latest
+  check-in), rendered as nine Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT (pillanatkép —
+  {dátum}):` and inserted into the `ChatService` system prompt **between the static voice and the
+  history transcript**.
   Missing data renders as explicit `nincs adat`, never invented; no LLM anywhere in the path.
 
 **V0.4 (`mezo-fnnq.4`) shipped streaming + the real FE:**
@@ -2213,6 +2214,40 @@ lives in [me.md §5.4](me.md); this section is the companion-side mechanics.
   onto the existing `GraphPromotionServiceIT`; `PersonGraphEdgeAdapter` has its own
   `PersonGraphEdgeAdapterIT`; FE coverage is `PersonDetailPage.test.tsx` in both modes.
 
+### Emberek a chat pillanatképben (✅ `mezo-x6oa`)
+
+Spec: [`2026-09-02-emberek-chat-snapshot-design.md`](../superpowers/specs/2026-09-02-emberek-chat-snapshot-design.md).
+Until this slice the companion chat knew nothing of the user's people — names only leaked in
+opportunistically through the `[Összefüggések]` graph block, for graph-promoted persons, with no
+weekly direction. Now every CHAT turn's snapshot carries an **`[Emberek]`** block:
+
+- **`PeopleService.chatContext(userId, today)`** (`feature/people/service`, read-only) — flat
+  `PersonChatContext(name, relationshipHu, mentionsThisWeek, lastMentionAt, direction,
+  directionReason)` rows for ACTIVE persons only (candidate/archived never), newest mention
+  first, unmentioned last by name, no limit. The weekly count and the direction come from the
+  SAME private helper the bootstrap uses, so the chat and the Emberek hub can never disagree.
+- **`PeopleSnapshotBlock`** (`feature/companion/service`, COMPANION_SWITCH) renders it:
+  header `[Emberek] (aktív kör, utolsó említés szerint, max N)`, one line per person
+  `<név> — <kapcsolat> · <k× e héten | e héten nem került szóba> · <felfelé (indok) | lefelé
+  (indok) | indok>`, capped at `snapshot.people-max-persons`. `PEOPLE_SWITCH` is independent of
+  the companion switch, so the `PeopleService` is read through `ObjectProvider` (the
+  `HabitService` precedent) — absent bean, empty circle or any `RuntimeException` all render
+  `[Emberek] nincs adat`. IDENT-3, precisely: a NON-DB `RuntimeException` degrades gracefully and
+  the turn continues; a `DataAccessException` from `chatContext` (its own `@Transactional
+  (readOnly = true)` joins `prepareTurn`'s transaction) leaves the Hibernate session
+  rollback-only regardless of this catch, so the turn still dies at commit — the same hazard
+  `MemoryEmbeddingAnnQuery` exists to work around. `people-max-persons = 0` omits the block
+  entirely. Raw quotes, `knownFacts`, `notes` never ride.
+- **Chat variant only:** `ContextSnapshotAssembler.render` inserts it after `[Napi gyakorlat]`;
+  `renderWithoutBiometrics` (the morning message) deliberately does not — that would be the
+  companion bringing people up unprompted.
+- **Grounding rule** in `ChatService.SYSTEM_PROMPT` (`[Mit szabad állítani]`): the model may
+  recognise a mentioned name and refer to the relationship and this week's direction, must not
+  invent anything else about a third party, and must not raise people on its own.
+- No new port, no new slice edge: `companion → people` already existed (`ChatMentionListener`).
+- Tests: `PeopleChatContextIT`, `PeopleSnapshotBlockTest`, `ContextSnapshotAssemblerIT`
+  (+2: block present in `render`, absent in `renderWithoutBiometrics`), `CompanionPropertiesIT`.
+
 ### Backend tables (W3.2 consolidation ladder, ✅ `mezo-b3pp.13`)
 
 Migration `202608231400_mezo-b3pp.13_create_period_summary.sql` (in `1.0.0_master.yml`) — the
@@ -2921,6 +2956,8 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   user's own sentence loses exactly the numbers, hedges and specifics that make it worth carrying,
   and asserts an interpretation of their state the app was never told. The contract lets a note be
   1000 chars and the snapshot rides EVERY turn, so this clip is load-bearing, not cosmetic.
+- `mezo.companion.snapshot.people-max-persons` = **12** (`@Min(0) @Max(30)`) — how many ACTIVE
+  people the `[Emberek]` chat-snapshot block lists (newest mention first). `0` omits the block.
 - `mezo.companion.tools.max-calls-per-turn` = **15** (`@Min(1) @Max(20)`, raised from 6 at
   mezo-xixu alongside the 8→15 tool expansion) — recorded tool calls per
   turn; past it every tool soft-fails with honest in-band text (V0.5).
