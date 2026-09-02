@@ -68,7 +68,7 @@ public class LifeGoalService {
         g.setStatus("draft");
         apply(g, req);
         LifeGoalEntity saved = goalRepository.saveAndFlush(g);
-        List<LifeGoalPillarEntity> pillars = pillarService.replace(saved, req.getPillars());
+        List<LifeGoalPillarEntity> pillars = pillarService.replace(userId, saved, req.getPillars());
         return mapper.toResponse(saved, pillars);
     }
 
@@ -104,7 +104,7 @@ public class LifeGoalService {
     @Transactional
     public LifeGoalResponse replacePillars(UUID userId, UUID id, List<LifeGoalPillarInput> inputs) {
         LifeGoalEntity g = requireOwned(userId, id);
-        return mapper.toResponse(g, pillarService.replace(g, inputs));
+        return mapper.toResponse(g, pillarService.replace(userId, g, inputs));
     }
 
     private void apply(LifeGoalEntity g, LifeGoalUpsertRequest req) {
