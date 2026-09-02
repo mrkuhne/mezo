@@ -32,3 +32,12 @@ test.each(['/nap?dp=reggel', '/nap?dp=nap', '/nap?dp=este', '/nap?day=rough'])(
     expect(hasAnchor('nap-hero')).not.toBeNull()
   },
 )
+
+// A /train hőse hat SZÁMÍTOTT variáns (EdzesHubPage.tsx:109,129,163,185,215,235), egyszer
+// renderelve (:302). Mock-módban a mai nap edzés-variánst ad; a többi variánst a
+// registry-lint nem látja, ezért az attribútum mind a hatra kikerül — a code review
+// feladata, hogy egyik se maradjon le.
+test('/train — a train-hero anchor jelen van', () => {
+  renderAt('/train')
+  expect(hasAnchor('train-hero')).not.toBeNull()
+})
