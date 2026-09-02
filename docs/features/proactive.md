@@ -127,9 +127,9 @@ this redesign and remain as shipped.
     `FuelDay`/`Medication` — deliberately **no** `WeightTrend`/`Sleep` candidate. Gate: empty
     `daily_summary` window (`feed.past-days`) ⇒ no row.
   - **`generateSleepReaction`** — fired ONLY by a fresh sleep log's `SleepLogSavedEvent` — never by
-    a cron (mezo-qn3z; see `CompanionMessageJob`). Gate: the user's latest sleep log must be dated `>= today - 1` (a
-    backfilled/old log never triggers). Ref candidates: `Sleep`/`Goal`/`Workout`. Uses the FULL
-    `render` (sleep IS the topic here).
+    a cron (mezo-qn3z; see `CompanionMessageJob`). Gate: the user's latest sleep log must be dated
+    `>= today - 1` (a backfilled/old log never triggers). Ref candidates: `Sleep`/`Goal`/`Workout`.
+    Uses the FULL `render` (sleep IS the topic here).
   - **`generateWeightReaction`** — fired by a fresh weigh-in. Gate: the latest weight log must be
     dated exactly `today`. Ref candidates: `WeightTrend`/`Goal`/`FuelDay`; the payload carries BOTH
     the raw measurement and the `WeightTrendService` EWMA trend, explicitly labelled `mérés` (the
@@ -151,10 +151,10 @@ this redesign and remain as shipped.
   sleep reaction is deliberately left out (mezo-qn3z), because at 05:45 tonight's sleep is not
   logged yet and it would narrate yesterday's as tonight's — the "cron előtt logolt alvás" case is
   already covered by the `AFTER_COMMIT` listener at the moment of logging; `runMidday`/`runEvening`
-  (12:30/20:30) generate the window kinds. Gated on the usual dual switch **plus** a THIRD, `FEED_JOB_SWITCH =
-  mezo.techcore.cron.feed-job.enabled` (replaces the old `briefing-job`/`heartbeat-job` switches —
-  now ONE switch for all three crons). Today-only, no backfill, idempotent, per-user failures
-  isolated.
+  (12:30/20:30) generate the window kinds. Gated on the usual dual switch **plus** a THIRD,
+  `FEED_JOB_SWITCH = mezo.techcore.cron.feed-job.enabled` (replaces the old
+  `briefing-job`/`heartbeat-job` switches — now ONE switch for all three crons). Today-only, no
+  backfill, idempotent, per-user failures isolated.
 - **`CompanionMessageEventListener`** (`service/CompanionMessageEventListener.java`) — the NEW
   trigger the old briefing/heartbeat model never had: `SleepLogService.log`/`WeightLogService.log`
   each publish a `SleepLogSavedEvent`/`WeightLogSavedEvent` (`ApplicationEventPublisher`, right
@@ -830,6 +830,9 @@ since the trigger event lives in a different feature package.
   today = LocalDate.now()
   for each appUserRepository.findAll():
      try  companionMessageGenerator.generateMorning(user.id, today)   (TODAY only — no backfill)
+     catch → log.warn + continue                                      (per-user isolation)
+     try  companionMessageGenerator.generatePeopleObservation(user.id, today)   (Emberek S6,
+          mezo-06o0.8 — deliberately only here, not the lazy ensureTodayCronKinds path)
      catch → log.warn + continue                                      (per-user isolation)
      ── no sleep-reaction call here (mezo-qn3z): at 05:45 tonight's sleep isn't logged yet, so the
         generator's >= today-1 freshness gate would pick up YESTERDAY's row and narrate it as

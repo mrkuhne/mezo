@@ -15,11 +15,14 @@ import org.springframework.stereotype.Component;
  * Companion-feed crons (spec §3): dawn morning generation + the midday nudge + evening closing
  * windows (the PredictionJob multi-methods-one-switch idiom). The sleep reaction is DELIBERATELY
  * not fired here (mezo-qn3z): it is an event-kind, born only from {@code SleepLogSavedEvent} via
- * {@link CompanionMessageEventListener}. At 05:45 tonight's sleep is not logged yet, so the
- * generator's {@code >= today - 1} freshness gate would pick up YESTERDAY's row and the prompt
- * ("Daniel most rögzítette a ma éjszakai alvását") would narrate it as last night — plus a
- * "Mezo · alvás" push at dawn about a night the user already knows. A missed reaction is honest;
- * a wrong one is not. Deliberately TODAY only, no backfill — the lazy GET covers a missed run.
+ * {@link CompanionMessageEventListener}. Usually at 05:45 tonight's sleep is not logged yet, so
+ * the generator's {@code >= today - 1} freshness gate would pick up YESTERDAY's row and the
+ * prompt ("Daniel most rögzítette a ma éjszakai alvását") would narrate it as last night — plus
+ * a "Mezo · alvás" push at dawn about a night the user already knows. In the rare case it IS
+ * already logged (e.g. a 05:30 "cron előtt logolt alvás" log), the AFTER_COMMIT listener has
+ * already created the row, making the cron call a harmless no-op — so the call is either useless
+ * or wrong, and is not made here. Deliberately TODAY only, no backfill — the lazy GET covers a
+ * missed run.
  * Idempotent (generate returns an existing row untouched); per-user failures are isolated so one
  * bad user never kills the run.
  */
