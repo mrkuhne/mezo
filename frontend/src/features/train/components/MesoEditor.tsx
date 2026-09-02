@@ -1,18 +1,19 @@
 // ============================================================
 // Mezo · MesoEditor — unified day-tabbed meso day editor (mezo-7rdg, spec
 // 2026-08-01-set-budget-unified-editor). Drop-in replacement for
-// MesoDayTabsEditor that composes MesoEditorHero + SetBudgetCard +
+// MesoDayTabsEditor that composes MesoEditorHero + WeeklyBandsCard +
 // ExerciseAccordionRow: same day-tab strip / active-day seeding / off-day
 // card / add-button (ported from MesoDayTabsEditor.tsx), plus a red
 // session-cap warning dot per tab, single-expand accordion rows with
 // auto-expand-on-add, and optional inline day-rename for custom splits
 // (capability parity with PlannerDaySection's onRename).
 //
-// Hero warningCount is WEEK-level: (budgets at level 'over') + ALL
-// session-cap breaches across the week — the hero is the week-truth
-// surface; per-day locality is what the red tab dots are for.
+// Hero warningCount is WEEK-level: ALL session-cap breaches across the week
+// (the weekly-band % overage alarm retired with SetBudgetCard, mezo-d20.14)
+// — the hero is the week-truth surface; per-day locality is what the red
+// tab dots are for.
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GymExercise, MesoDay, MusclePriorities } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 import { SortableList } from '@/shared/ui/SortableList'
@@ -20,14 +21,15 @@ import { DayBreakdownCard } from '@/features/train/components/DayBreakdownCard'
 import { ExerciseAccordionRow } from '@/features/train/components/ExerciseAccordionRow'
 import { MesoEditorHero } from '@/features/train/components/MesoEditorHero'
 import { PeakFitCard } from '@/features/train/components/PeakFitCard'
-import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 import { StructureLintCard } from '@/features/train/components/StructureLintCard'
-import { budgetGroup, countsForVolume, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
+import { WeeklyBandsCard } from '@/features/train/components/WeeklyBandsCard'
+import { budgetGroup, countsForVolume, daySessionBreakdown, leastLoadedDayFor, sessionCapWarnings } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { peakWeekFit } from '@/features/train/logic/peakWeekFit'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { structureLint } from '@/features/train/logic/structureLint'
 import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
+import { weeklyBands } from '@/features/train/logic/weeklyBands'
 
 interface MesoEditorProps {
   days: MesoDay[]
@@ -37,11 +39,11 @@ interface MesoEditorProps {
   onReorder: (dayKey: string, ids: string[]) => void
   /** Renames the active day (custom splits, capability parity with PlannerDaySection). */
   onRenameDay?: (dayKey: string, name: string) => void
-  /** Per-coarse-muscle tier map (mezo-3m5m, spec GD4) — threaded into muscleBudgets,
+  /** Per-coarse-muscle tier map (mezo-3m5m, spec GD4) — threaded into weeklyBands,
    *  structureLint and peakWeekFit. Absent/null -> every group defaults to Grow. */
   priorities?: MusclePriorities | null
   /** Explicit per-mesocycle landmark override (AD5) — wins over the static GROUP_LANDMARKS
-   *  default in muscleBudgets and peakWeekFit. */
+   *  default in weeklyBands and peakWeekFit. */
   volumePerMuscle?: Record<string, { mev: number; mav: number; mrv: number }> | null
 }
 
@@ -63,16 +65,18 @@ export function MesoEditor({
 
   const day = days.find((d) => d.day === activeDay) ?? days[0]
 
-  const budgets = muscleBudgets(days, priorities, volumePerMuscle)
+  const bands = useMemo(
+    () => weeklyBands(days, priorities ?? null, volumePerMuscle ?? undefined),
+    [days, priorities, volumePerMuscle],
+  )
   const capWarnings = sessionCapWarnings(days)
   const lintFindings = structureLint(days, priorities)
   const peakFit = peakWeekFit(days, priorities, volumePerMuscle)
   const warningDays = new Set(capWarnings.map((w) => w.day))
-  const overBudgets = budgets.filter((b) => b.level === 'over')
-  const warningCount = overBudgets.length + capWarnings.length
+  const warningCount = capWarnings.length
 
   // Active-day-level breakdown (Task 1's daySessionBreakdown) — locality
-  // companion to the week-level SetBudgetCard below it; both stay visible.
+  // companion to the week-level WeeklyBandsCard below it; both stay visible.
   const dayRows = daySessionBreakdown(day)
   const dayOverRows = dayRows.filter((r) => r.over)
   const dayWarnings = dayOverRows.map((r) => ({
@@ -197,7 +201,7 @@ export function MesoEditor({
 
       <DayBreakdownCard rows={dayRows} warnings={dayWarnings} />
 
-      <SetBudgetCard budgets={budgets} capWarnings={capWarnings} defaultOpen={warningCount > 0} />
+      <WeeklyBandsCard rows={bands} note="1. hét → plafon. Az Emphasize izmok kapják a legtöbbet." />
 
       <PeakFitCard fits={peakFit} />
 

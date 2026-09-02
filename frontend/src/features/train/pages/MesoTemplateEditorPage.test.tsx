@@ -54,7 +54,7 @@ describe('MesoTemplateEditorPage (mock mode)', () => {
     // the shared editor: day tabs + its weekly set-budget card
     expect(screen.getByRole('button', { name: /Hét/ })).toBeInTheDocument()
     expect(screen.getByText('Upper A')).toBeInTheDocument()
-    expect(screen.getByText(/Heti szet-büdzsé/)).toBeInTheDocument()
+    expect(screen.getByText(/Heti szetek · izmonként/)).toBeInTheDocument()
   })
 
   it('shows an honest not-found line for an unknown template', () => {

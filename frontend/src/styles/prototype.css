@@ -4926,6 +4926,27 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
 .mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
 
+/* ===== WeeklyBandsCard (wizard redesign, mezo-d20.14) — current → ceiling per
+   muscle, no percentages. Reuses existing --mz-cell-, --mz-ink- and --mz-cellbg
+   tokens; the hairline literal mirrors .nck-row / .nr-row above (no --mz-line
+   token exists). */
+.mz-card { background: var(--surface-1); border: 1px solid var(--card-border); border-radius: var(--r-2xl); filter: var(--card-elevation); padding: 16px; }
+.mz-bands { display: grid; gap: 2px; }
+.mz-band { padding: 7px 0; }
+.mz-band + .mz-band { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.mz-band-row { display: flex; align-items: center; gap: 8px; }
+.mz-pill { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.mz-grow { flex: 1; }
+.mz-band-nums { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mz-band-bar { height: 9px; border-radius: 5px; background: var(--mz-cellbg); overflow: hidden; margin-top: 5px; }
+.mz-band-bar > div { height: 100%; border-radius: 5px; }
+.mz-tchip { font-size: 9px; font-weight: 700; border-radius: 999px; padding: 2px 9px; }
+.mz-tchip-emphasize { background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }
+.mz-tchip-grow { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.mz-tchip-maintain { border: 1px dashed var(--mz-ink-mut); color: var(--mz-ink-mut); }
+.mz-stepchip { font-size: 9.5px; font-weight: 700; color: var(--mz-cell-sage-ink); }
+.mz-habnote { font-size: 10px; color: var(--mz-ink-mut); margin-top: 10px; line-height: 1.4; }
+
 /* ===== mezo-vdf4: munkacsík — a tool-hívások egyetlen emberi sora ===== */
 /* Domain wash + deep text pairs — shared by the work panel and the grouped refs. */
 .dm-sky   { --dmw: var(--mz-wash-sky);   --dmtx: var(--mzc-tx-sky); }

@@ -40,9 +40,11 @@ test('Gyakorlatok view shows the hero, the set-budget card and the current day c
   await renderExercisesView()
   expect(screen.getByText(/szett ma/)).toBeInTheDocument()
   expect(screen.getByText(/Heti terhelés:/)).toBeInTheDocument()
-  expect(screen.getByText('Heti szet-büdzsé')).toBeInTheDocument()
-  // current day (Csü · Pull) is the default active tab → its content shows
-  expect(screen.getByRole('button', { name: 'Csü · Pull' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('Heti szetek · izmonként')).toBeInTheDocument()
+  // current day (Csü · Pull) is the default active tab → its content shows. The mock
+  // active meso's Csü day now also breaks the tightened 8-set session cap (mezo-d20.14),
+  // so its aria-label carries the "· terhelés-jelzés" tab-dot suffix too — match by prefix.
+  expect(screen.getByRole('button', { name: /^Csü · Pull/ })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
 })
 
@@ -237,9 +239,9 @@ test('changing a Fókusz tier fires the muscle-priorities PUT with the new spars
   expect(puts[0].id).toBe(MESO_ID)
   expect(puts[0].musclePriorities).toEqual({ back: 'emphasize' })
 
-  // MesoEditor received the map once the invalidated query refetches — the SetBudgetCard's
-  // collapsed pill names the new tier for the 'back' group.
-  await waitFor(() => expect(screen.getByText(/Hát · Emphasize/)).toBeInTheDocument())
+  // MesoEditor received the map once the invalidated query refetches — the WeeklyBandsCard's
+  // band row names the new tier for the 'back' group (wizard v2, mezo-d20.14).
+  await waitFor(() => expect(screen.getByRole('group', { name: 'Hát · Emphasize' })).toBeInTheDocument())
 })
 
 test('two rapid Fókusz picks on different groups both persist, no clobber, aria-pressed flips immediately (mezo-3m5m final review, fix 2)', async () => {

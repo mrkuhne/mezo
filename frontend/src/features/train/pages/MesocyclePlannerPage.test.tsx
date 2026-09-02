@@ -455,8 +455,8 @@ test('Program step: budget card + accordion recipe editing, edits survive the 3�
   // save buttons live here immediately — no extra Tovább needed
   expect(screen.getByRole('button', { name: /Mentés sablonként/i })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Mentés \+ indítás/i })).toBeInTheDocument()
-  // the unified editor's weekly set-budget card renders on this step
-  expect(screen.getByText(/Heti szet-büdzsé/)).toBeInTheDocument()
+  // the unified editor's weekly bands card renders on this step (wizard v2, mezo-d20.14)
+  expect(screen.getByText(/Heti szetek · izmonként/)).toBeInTheDocument()
   // a day tab is preselected; expand the first exercise row to reach its
   // steppers, then bump Munkaszett and watch the day-level set total change.
   const heroSets = () => screen.getByText('szett ma').parentElement?.textContent

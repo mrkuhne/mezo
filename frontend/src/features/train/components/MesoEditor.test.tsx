@@ -42,9 +42,9 @@ describe('MesoEditor', () => {
     expect(onAddClick).toHaveBeenCalledWith('H')
   })
 
-  it('renders the active day breakdown card (H chest 12/11) and highlights its over rows', () => {
+  it('renders the active day breakdown card (H chest 12/8) and highlights its over rows', () => {
     render(<MesoEditor days={days} {...props} />)
-    expect(screen.getByText(/12 \/ 11/)).toBeInTheDocument()
+    expect(screen.getByText(/12 \/ 8/)).toBeInTheDocument()
     const rowA = screen.getByRole('button', { name: /Gyak a · szerkesztés/ }).closest('.card')
     const rowB = screen.getByRole('button', { name: /Gyak b · szerkesztés/ }).closest('.card')
     expect(rowA).toHaveAttribute('data-over', 'true')
@@ -69,10 +69,10 @@ describe('MesoEditor', () => {
     expect(rowX).not.toHaveAttribute('data-over') // exempt exercise — never flagged, even in an over group
   })
 
-  it('switching to day Cs shows its own breakdown (13/11), the suggestDay clause, and highlights the over exercise', () => {
+  it('switching to day Cs shows its own breakdown (13/8), the suggestDay clause, and highlights the over exercise', () => {
     render(<MesoEditor days={days} {...props} />)
     fireEvent.click(screen.getByRole('button', { name: /^Cs ·/ }))
-    expect(screen.getByText(/13 \/ 11/)).toBeInTheDocument()
+    expect(screen.getByText(/13 \/ 8/)).toBeInTheDocument()
     expect(screen.getByText(/\(pl\. H\)/)).toBeInTheDocument()
     const rowC = screen.getByRole('button', { name: /Gyak c · szerkesztés/ }).closest('.card')
     expect(rowC).toHaveAttribute('data-over', 'true')
@@ -81,7 +81,10 @@ describe('MesoEditor', () => {
   it('off day (K) renders no breakdown card', () => {
     render(<MesoEditor days={days} {...props} />)
     fireEvent.click(screen.getByRole('button', { name: /^K ·/ }))
-    expect(screen.queryByText(/izmonként/)).not.toBeInTheDocument()
+    // "Ma · izmonként" is DayBreakdownCard's own eyebrow — scoped so it doesn't collide
+    // with the week-level WeeklyBandsCard's "Heti szetek · izmonként", which stays
+    // mounted regardless of the active day.
+    expect(screen.queryByText(/Ma · izmonként/)).not.toBeInTheDocument()
   })
 
   it('adding a new exercise applies its suggested warmup count once (add-path override)', () => {

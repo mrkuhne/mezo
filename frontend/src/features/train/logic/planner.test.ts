@@ -326,6 +326,14 @@ allowMev('biceps', 'Pull / Push / Legs', [4], ALL_GOAL_IDS)
 // only slot (Hip Thrust, 4 sets) — 4 < GROUP_MEV.glute 6 — same arithmetic as the WD FB[3]
 // glute entry, now also true on the template path.
 allowMev('glute', 'Full body', [3], ALL_GOAL_IDS)
+// mezo-d20.14 (wizard v2 redesign): SESSION_MUSCLE_CAP tightened 11→8. Back trains only on
+// the single weekly Pull day at PPL@4d (see the frequency|back entry above), so the cap now
+// bounds its WEEKLY total too — fitVolume's topping loop can only add a set while
+// daySetsForGroup+1 <= 8, so it stalls at 8 or 9, both < GROUP_MEV.back 10. cut-prep's lower
+// -RIR seed starts one set higher than recovery/erohipertrofia's, landing on 9 vs 8 (measured
+// actual output: cut-prep back:9, recovery back:8, erohipertrofia back:8 — hypertrophy/
+// strength/sport's own baseline seeds already clear 10 before the cap is ever consulted).
+allowMev('back', 'Pull / Push / Legs', [4], ['cut-prep', 'recovery', 'erohipertrofia'])
 
 // Combos whose template floor structure cannot reach the soft ceiling — each entry must carry
 // a derivation comment. Key: `${goalId}|${splitLabel}|${days}|${group}`. Empty after this
@@ -523,6 +531,11 @@ wdAllowMev('biceps', 'Láb+Plyo / Felső', [4], ALL_GOAL_IDS)
 // (see the no-weekdays calf entry above) — 1 isolation slot (Standing Calf Raise) x cap 3 = 3 <
 // GROUP_MEV.calf 4, on both day counts.
 wdAllowMev('calf', 'Pull / Push / Legs', [4, 5], ALL_GOAL_IDS)
+// mezo-d20.14 (wizard v2 redesign): PPL@4d's weekdays path is byte-identical to the
+// no-weekdays template path at this day count (see the frequency|back WD entry above) —
+// same SESSION_MUSCLE_CAP 11→8 back-topping stall as the no-weekdays back entry above
+// (measured: cut-prep back:9, recovery back:8, erohipertrofia back:8, all < MEV 10).
+wdAllowMev('back', 'Pull / Push / Legs', [4], ['cut-prep', 'recovery', 'erohipertrofia'])
 
 describe('generator invariants (mezo-oyhy.6)', () => {
   for (const goal of GOAL_PRESETS) {
