@@ -17,6 +17,7 @@ import { useParams } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { GhostState } from '@/shared/ui/GhostState'
+import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip, type PageTone } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MesoExercises } from '@/features/train/components/MesoExercises'
@@ -24,16 +25,34 @@ import { dayTileData } from '@/features/train/wizard/dayTiles'
 
 const TONE: Record<string, PageTone> = { coral: 'coral', sage: 'sage', rose: 'rose', gold: 'gold' }
 
+/** Same shape as the sibling week/muscle pages' skeletons — real mode has no block until the
+ *  list query lands, and a ghost („nincs a blokkban") shown in that window would call every
+ *  valid deep link a dead one for a beat. */
+function DaySkeleton() {
+  return (
+    <div role="status" aria-label="Betöltés…" style={{ padding: '12px 24px' }}>
+      <Skeleton width={90} height={12} />
+      <Skeleton width={130} height={40} style={{ marginTop: 10 }} />
+      <div className="col gap-sm mt-lg">
+        {Array.from({ length: 3 }, (_, i) => <Skeleton key={i} variant="card" height={92} />)}
+      </div>
+    </div>
+  )
+}
+
 export function MesoDayPage() {
   const { id, day: dayParam } = useParams<{ id: string; day: string }>()
   const goBack = useBackNav(`/train/mesocycles/${id}`)
-  const { mesocycles } = useTrain()
+  const { mesocycles, workoutPending } = useTrain()
 
   const meso = mesocycles.find((m) => m.id === id)
   const day = meso?.days?.find((d) => d.day === dayParam)
 
-  // The block may still be loading (real mode) — but a resolved block WITHOUT this day is
-  // a dead link, and says so instead of rendering an empty editor.
+  // Real mode: the block list is still in flight — wait, do not accuse the link.
+  if (workoutPending) return <DaySkeleton />
+
+  // A RESOLVED block without this day is a dead link, and says so instead of rendering an
+  // empty editor.
   if (!meso || !day) {
     return (
       <MozaikPage tone="coral">
