@@ -40,7 +40,7 @@ Driving design spec: [`docs/superpowers/specs/2026-09-02-lifegoal-system-design.
 (binding decisions D1–D10, prior art, the three-slice plan). Implementation plan:
 [`docs/superpowers/plans/2026-09-02-lifegoal-slice-1-alapok.md`](../superpowers/plans/2026-09-02-lifegoal-slice-1-alapok.md).
 Approved prototype (visual truth): [`docs/design_2.0/prototypes/celok.html`](../design_2.0/prototypes/celok.html).
-**No ADR yet** — see §9.
+ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.md) — see §9.
 
 **Status per layer, slice 1:**
 - **Backend:** ✅ real — three tables (`life_goal`, `life_goal_pillar`, `life_goal_pillar_day` —
@@ -308,7 +308,7 @@ real-mode write escape to the network and pass silently. Run both `pnpm test` (r
 ## 9. Decisions, gotchas & deferred
 
 - **D1–D10** (spec §1) are the ten binding decisions behind every shape in this doc: D1
-  (measurable/visible goals, overriding the old PRD's PERMA-widget prohibition — pending ADR,
+  (measurable/visible goals, overriding the old PRD's PERMA-widget prohibition — ADR 0034,
   below), D2 (PERMAH + skill hybrid), D3 (existing signals only, no new logging, no GitHub/
   external import), D4 (AI proposes from a closed catalog, user approves), D5 (`/me/goals` +
   `/me/goals/weight` split, this slice), D6 (nightly job + stored daily rows — slice 2), **D7
@@ -338,12 +338,13 @@ real-mode write escape to the network and pass silently. Run both `pnpm test` (r
   "no UI may read `closedAt`" embargo it forced) is resolved. Note `done → archived` still
   OVERWRITES `closedAt` on both sides; a completed-goals surface (slice 3) must not present it
   as the completion date without fixing that first.
-- **ADR still owed:** `docs/decisions/0034-measurable-life-goals.md` (spec §7) — NOT written by
-  this task. It must record that the life-goal system overrides the old PRD's IDENT-5/D38
-  prohibition ("PERMA is never a widget", "never a UI progress bar") specifically for this
-  feature, with D1's rationale (Harkin et al. 2016) and the guardrails that survive the
-  override (no loss/streak-punish mechanics, `↘` is never rendered in an alarming color,
-  `no_data` is never treated as `miss`).
+- **ADR:** [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.md) —
+  records that this feature overrides the old PRD's IDENT-5 / anti-pattern D38 prohibition
+  ("PERMA is never a widget", identity-goal progress is "never a UI progress bar") with D1's
+  rationale (Harkin et al. 2016 on recorded, visible progress monitoring; the SDT framing
+  nudge), and fixes the guardrails that survive the override (no loss mechanics, a declining
+  trend is never red, `no_data` is never a miss, minimum-data gates before any trend, XP as
+  feedback and never a penalty).
 - **Deferred to slice 2** (spec §5, §9): `LifeGoalScorer` (daily hit/partial/miss/no_data +
   weighted goal score + 7-vs-21-day arrow with a 5-data-day gate), the `SignalSource` port (six
   implementations), `LifeGoalEvalJob` (nightly, 3-day re-write for late logging, idempotent),
