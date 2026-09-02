@@ -21,7 +21,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [auth](#auth) | ✓ | 1 | · | · | [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
 | [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md) |
-| [companion](#companion) | ✓ | 4 | · | · | [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [me](features/me.md) |
+| [companion](#companion) | ✓ | 4 | · | · | [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md) |
 | [feedback](#feedback) | · | · | ✓ | · | [insights](features/insights.md) |
 | [fuel](#fuel) | ✓ | 2 | ✓ | ✓ | [fuel](features/fuel.md), [_platform-api-backend](features/_platform-api-backend.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [gamification](#gamification) | ✓ | 1 | ✓ | · | [growth](features/growth.md), [_platform-data-layer](features/_platform-data-layer.md) |
@@ -30,9 +30,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [insights](#insights) | · | · | ✓ | ✓ | [companion](features/companion.md), [insights](features/insights.md) |
 | [intention](#intention) | ✓ | 1 | ✓ | · | [intention](features/intention.md) |
 | [journal](#journal) | ✓ | 1 | ✓ | · | [journal](features/journal.md) |
-| [lifegoal](#lifegoal) | ✓ | 1 | · | · | · |
+| [lifegoal](#lifegoal) | ✓ | 1 | ✓ | · | [lifegoal](features/lifegoal.md) |
 | [llmlog](#llmlog) | ✓ | 1 | · | · | [companion](features/companion.md) |
-| [me](#me) | · | · | ✓ | ✓ | [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [me](features/me.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
+| [me](#me) | · | · | ✓ | ✓ | [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
 | [meal](#meal) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · | · | · |
 | [needs](#needs) | ✓ | 1 | ✓ | · | [needs](features/needs.md) |
@@ -111,7 +111,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-01, mixed) ·
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-03, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-08-31, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
@@ -211,7 +211,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-01, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-01, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-01, mixed)
+  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-03, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `profile`, `quarterly`, `tools`
@@ -437,8 +438,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### goal
 
-*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-08-15, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-01, mixed)
+*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-03, done) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-03, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -580,7 +581,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### lifegoal
 
-*BE + API* · read next: **none — no HOW doc exists for this feature yet**
+*BE + API + FE-data* · read next: [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal`
   - **sub-features:** `catalog`
@@ -598,6 +599,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/life-goals · POST /api/life-goals · GET /api/life-goals/signals ·
     POST /api/life-goals/propose · GET /api/life-goals/{id} · PUT /api/life-goals/{id} · DELETE /api/life-goals/{id} ·
     POST /api/life-goals/{id}/status · PUT /api/life-goals/{id}/pillars
+- **FE data** `frontend/src/data/lifegoal`
+  - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalPropose`, `useLifeGoals`,
+    `useSignalCatalog`
+  - **modules:** lifegoalApi.ts, lifegoalHooks.ts, lifegoalMock.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 5 IT + 0 unit
   - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalPillarApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`
   - **populators:** `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`
@@ -635,7 +640,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-08-29, done) ·
   [docs/features/habit.md](features/habit.md) (updated 2026-08-29, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-01, mixed) ·
+  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-03, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-08-31, mixed)
 
@@ -649,29 +655,32 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     peopleApi.ts, peopleHooks.ts, sleep.ts, sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts,
     weekLessonsHooks.ts, weeklyReviewApi.ts, weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
-  - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, EnHubPage.tsx, GoalPlannerPage.tsx,
-    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx,
-    NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx,
-    PeoplePage.tsx, PersonDetailPage.tsx, RoutineEditorPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx,
-    WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
+  - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, CelPage.tsx, CelWizardPage.tsx,
+    CelokPage.tsx, EnHubPage.tsx, GoalPlannerPage.tsx, GoalsPage.tsx, GoalsSkeleton.tsx, GrowthPage.tsx,
+    JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx,
+    PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx,
+    RoutineEditorPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx,
+    WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
     DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx,
-    PersonLogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, WeightLogSheet.tsx
+    PersonLogSheet.tsx, PillarCatalogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx,
+    WeightLogSheet.tsx
   - **components:** AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
     AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx, AiUsageHero.tsx, BadgesCard.tsx, DayNavTiles.tsx,
     DetailStat.tsx, FieldRow.tsx, GoalGate.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalTimeline.tsx,
-    GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthJournalCard.tsx, MentionRow.tsx, NightArcCard.tsx,
-    NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx,
-    PerksCard.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PushInstallGate.tsx,
-    RemDurationCard.tsx, RoutinesTab.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx,
-    SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx,
-    WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx,
-    WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
+    GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthJournalCard.tsx, LifeGoalTile.tsx, MentionRow.tsx,
+    NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx,
+    NotificationPreviewHeader.tsx, PerksCard.tsx, PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx,
+    PhaseReferenceRow.tsx, PillarCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx, RoutinesTab.tsx,
+    SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx,
+    TimePicker.tsx, WeekDayCard.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx,
+    WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx,
+    WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, gratitudeStreak.ts,
-    growthJournal.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, llmCallFormat.ts,
-    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
-    scoreBand.ts, sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts,
-    weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
+    growthJournal.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts,
+    llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts,
+    peopleVisuals.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts,
+    useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
 
 ### meal
 
@@ -813,7 +822,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-01, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-03, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
@@ -1027,7 +1036,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### train
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-08-15, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-03, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-08-31, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done)
 
@@ -1206,5 +1215,5 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `lifegoal`, `medication`, `quickinput`, `recipe`
+- **Features with no `docs/features/` doc:** `medication`, `quickinput`, `recipe`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

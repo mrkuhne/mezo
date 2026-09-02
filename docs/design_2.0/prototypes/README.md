@@ -591,3 +591,14 @@ are usable without a build step).
   + a Mezo observation band. Sheets: Log (ki · tónus · kontextus · jegyzet) and Új személy
   (name + alias chips for the name-matcher + relationship). All-clay iconography, no emoji.
   Backend vision it mocks: spec `docs/superpowers/specs/2026-08-31-emberek-section-design.md`.
+- **celok** — the Célok (life goals) hub + goal detail + five-step creation wizard, spec
+  `docs/superpowers/specs/2026-09-02-lifegoal-system-design.md`. **Slice 1 implemented**
+  (`mezo-iizd.1`, real backend `docs/features/lifegoal.md`): the PERMAH-ring hero, dimension
+  chips, per-goal tiles, the pillar-card detail page, and the wizard's five steps (Cél · Keret ·
+  Pillérek · Ha–akkor · Összegzés) all ship against a real `life_goal`/`life_goal_pillar`
+  backend and a closed 28-entry signal catalog, in both FE modes. **Not yet implemented** (the
+  prototype's remaining surface, slices 2–3): the scored ↗/→/↘ arrows and % readouts anywhere
+  on the hub/detail/tiles (every numeric slot renders an honest `—` in the real build), the
+  "Jelek" signals page, the Nap "Célok · ma" tile, the Heti goals card, the Growth skill-row
+  chip, and the companion `[Célok]` prompt block — all scorer/job output the prototype narrates
+  but the real engine has not yet computed.
