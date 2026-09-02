@@ -51,7 +51,7 @@ export function GrowthSkillsPage() {
           </div>
           {life.length > 0 && (
             <SkillBandCard delayMs={60} wash="lav" chipTone="lav" eyebrow="LIFE" chip={`${life.length} skill · ${huInt(s.lifeXp)} XP`}
-              rows={toRows(life, (k) => { const m = lifeMeta(k); return m ? <ClayIcon name={m.clayIcon} size={16} /> : '✨' }, (k) => lifeMeta(k)?.name ?? k)}
+              rows={toRows(life, (k, n) => { const m = lifeMeta(k); return m ? <ClayIcon name={m.clayIcon} size={16} /> : initials(n) }, (k) => lifeMeta(k)?.name ?? k)}
               footer={typeof savings === 'number' && savings > 0 ? <>Megtakarítás (30 nap) · <b>{huInt(savings)} Ft</b></> : undefined} />
           )}
           {athletic.length > 0 && (

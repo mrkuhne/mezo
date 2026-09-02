@@ -12,9 +12,11 @@ test('renders the preview rows (4) with Lv plaques and animated meters; the rest
   expect(container.querySelectorAll('.gr-skl.more')).toHaveLength(2)
   expect(screen.getByText('Lv 9')).toBeInTheDocument()
   expect(container.querySelector('.gr-skl .gr-tbar i')?.getAttribute('style')).toContain('--w: 35%')
+  expect(screen.getByRole('button', { name: 'Mind a 6 ▸' })).toHaveAttribute('aria-expanded', 'false')
   await userEvent.click(screen.getByRole('button', { name: 'Mind a 6 ▸' }))
   expect(container.querySelector('.gr-band')?.classList.contains('expanded')).toBe(true)
   expect(screen.getByRole('button', { name: 'Kevesebb ▴' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Kevesebb ▴' })).toHaveAttribute('aria-expanded', 'true')
 })
 
 test('the perk hint appears only one level before a milestone', () => {

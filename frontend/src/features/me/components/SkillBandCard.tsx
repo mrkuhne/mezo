@@ -39,7 +39,7 @@ export function SkillBandCard({ eyebrow, chip, chipTone, rows, footer, wash, del
         )
       })}
       {rows.length > previewRows && (
-        <button type="button" className="gr-expand" onClick={() => setExpanded((e) => !e)}>
+        <button type="button" className="gr-expand" aria-expanded={expanded} onClick={() => setExpanded((e) => !e)}>
           {expanded ? 'Kevesebb ▴' : `Mind a ${rows.length} ▸`}
         </button>
       )}
