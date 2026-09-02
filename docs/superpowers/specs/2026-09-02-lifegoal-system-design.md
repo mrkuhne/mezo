@@ -112,7 +112,7 @@ Kontrakt `api/feature/lifegoal/lifegoal.yml`: `GET/POST /api/life-goals`, `GET/P
 - **`POST /propose`** → `LifeGoalProposeLlmAdapter` (a `HabitSuggestLlmAdapter` mintája): bemenet cél + miért + a jel-katalógus + skill-lista; kimenet dimenzió (+ másodlagos), `frame`, 3–5 pillér (forrás + szabály + skill + súly), akadály-jelöltek, 1–3 ha–akkor trigger-javaslattal. Backend validál: ismeretlen forrás/skill/metrika eldobva. LLM kikapcsolva/hiba → szabály-alapú sablon dimenzió szerint.
 - **Companion**: `ContextSnapshotAssembler` `[Célok]` blokk a `LifeGoalSource` porton (aktív célok, heti nyilak, leggyengébb pillér, ma élő ha–akkor); chat-tool `get_life_goals`; a heti visszatekintés promptja megkapja a számolt nyilakat és **magyarázza, nem számolja**.
 - **Tudásgráf**: aktív életcél → `GOAL` node (`GraphPromotionService` mintája, `source_kind = life_goal`); **előfeltétel `mezo-06o0.5` javítása** (user-archived jelző), különben a parkolt célok éjjel visszakapcsolnak.
-- **ADR** `docs/decisions/00xx-measurable-life-goals.md`: felülírja IDENT-5 "PERMA soha nem widget" és D38 "nem UI progress bar" tilalmat a célrendszerre; indoklás D1; megtartott korlátok felsorolva; D7 (nincs cap) rögzítve.
+- **ADR** `docs/decisions/0034-measurable-life-goals.md`: felülírja IDENT-5 "PERMA soha nem widget" és D38 "nem UI progress bar" tilalmat a célrendszerre; indoklás D1; megtartott korlátok felsorolva; D7 (nincs cap) rögzítve.
 
 ## 8. Tesztelés
 
