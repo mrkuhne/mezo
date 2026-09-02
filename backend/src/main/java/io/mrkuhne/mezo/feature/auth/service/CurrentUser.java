@@ -22,6 +22,13 @@ import org.springframework.web.context.request.RequestContextHolder;
  * a DISABLED account is rejected — the JWT itself stays valid for 30 days, so this per-request
  * check is the revocation mechanism (spec M1). The loaded entity is cached as a request
  * attribute; on non-request threads (cron) no caching happens.
+ *
+ * <p><b>Usage contract:</b> call {@link #get()} / {@link #id()} from the controller layer only —
+ * as a method argument, or at the very top of the handler before any service call — never from
+ * inside an already-open {@code @Transactional} method (in particular a read-only one). {@link
+ * #load(UUID)} issues a bulk {@code UPDATE} to stamp {@code last_seen_at}; nesting that write
+ * inside a transaction Spring opened as {@code readOnly = true} can fail at the JDBC/database
+ * level. Nothing in the type system enforces this — it is a caller discipline, not a guarantee.
  */
 @Component
 @RequiredArgsConstructor
@@ -73,6 +80,8 @@ public class CurrentUser {
         }
         Instant now = Instant.now();
         if (user.getLastSeenAt() == null || user.getLastSeenAt().plus(LAST_SEEN_STAMP_INTERVAL).isBefore(now)) {
+            // @implNote: bulk UPDATE — see the class-level usage contract. Must not run inside a
+            // transaction the caller already opened (esp. readOnly = true).
             appUserRepository.touchLastSeen(user.getId(), now);
             user.setLastSeenAt(now);
         }
