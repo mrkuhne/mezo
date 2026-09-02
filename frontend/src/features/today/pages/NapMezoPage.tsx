@@ -9,6 +9,11 @@
 // A szál felépítése (feed + cimkézett demo-briefing + Életjel-nudge-ok) és az
 // olvasottság-vízjel a shell `MezoThreadProvider`-ébe költözött (mezo-atry) — ez az
 // oldal és a fejléc badge-e ugyanazt az EGY szálat olvassa, így nem tudnak szétcsúszni.
+// Üzenetek | Életjelek tab-szétválasztás (mezo-ho9k): a szál ÉRINTETLEN, csak a
+// megjelenítés bomlik két panelre a `?tab=` URL-en keresztül —
+// `partitionMezoThread`/`MezoMessageItem.source === 'eletjel'` a kulcs (mezoMessages.ts).
+// Régebbi Üzenetek-kártyák alapból összecsukva (`.nap-mzrow`), belépéskori
+// olvasatlan-pillanatkép tab-pöttyökhöz, a `?n=` deeplink mindig az Üzenetek tabra kényszerít.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'

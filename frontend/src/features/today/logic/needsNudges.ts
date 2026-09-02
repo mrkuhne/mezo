@@ -3,8 +3,10 @@
 // Task 5). Pure, no I/O: a ring-állapotokból (`NeedState[]`) és a nap eddig megjelent
 // nudge-jaiból (`logic/nudgeSeen.ts`) vezeti le a nap TELJES nudge-listáját — a már
 // megjelentek `fresh: false`-szal áthaladnak, az újonnan piros/kritikusba fordult ringek
-// `fresh: true`-val csatlakoznak. A hívó (`TodayPage`) a friss elemeket egyszer elmenti
-// (`markNudgeShown`) és a szál VÉGÉRE fűzi (`mezoMessages.ts`'s `nudges` paramétere).
+// `fresh: true`-val csatlakoznak. A hívó a shell `MezoThreadProvider`-je (mezo-atry) — a
+// friss elemeket egyszer elmenti (`markNudgeShown`) és a szál VÉGÉRE fűzi (`mezoMessages.ts`'s
+// `nudges` paramétere); `NapMezoPage` a szál `source: 'eletjel'` elemeit az Életjelek tabra
+// bontja (mezo-ho9k).
 // Egy ring naponta legfeljebb egyszer nudge-ol — ez a "shown" halmazból esik ki, nem
 // külön szabályból. Éjszaka (alvás-ablak) és ébredés utáni első órában nincs új nudge
 // (`isQuiet`), hogy a companion sose zavarjon alvás közben vagy közvetlenül ébredéskor.

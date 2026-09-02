@@ -1002,7 +1002,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     NapRutinPage.tsx
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, IntentionSheet.tsx, ReflectSheet.tsx
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
-    MezoMessagesSheet.tsx
+    EletjelStrip.tsx, MezoMessagesSheet.tsx
   - **logic:** dayArc.ts, dayFace.ts, habitAction.ts, habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, needs.ts,
     needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useDayFace.ts, useMinuteTick.ts,
     useNeeds.ts, windDown.ts
