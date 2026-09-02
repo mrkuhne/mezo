@@ -45,7 +45,7 @@ Per-muscle weekly sets from the existing `mezo.volume.baselines`:
 |---|---|---|---|
 | Emphasize (max 2 muscles) | MEV + 2 | MRV | ramp hard |
 | Grow (default) | MEV | MAV | normal growth |
-| Maintain | MV (~6 sets) | MEV | hold, no ramp |
+| Maintain | MEV | MEV | hold, no ramp (MV is not a landmark in this codebase — refined during planning) |
 
 Weekly progression: +2 sets (existing `step: 2`) toward the ceiling, RIR-based HOLD on
 grinding (existing `grind-rir-gap`), terminal **deload week at half volume** (existing
