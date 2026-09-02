@@ -22,6 +22,7 @@ export function GrowthHero({ totalXp, level, disciplinePct, consistencyWeeks }: 
   const shown = useContinuingCountUp(totalXp)
   const levelPct = level && level.xpForNext > 0 ? Math.min(100, Math.round((level.xpInLevel / level.xpForNext) * 100)) : 0
   const filled = Math.min(WEEK_DOTS, Math.max(0, consistencyWeeks))
+  const disc = disciplinePct == null ? null : Math.max(0, Math.min(100, Math.round(disciplinePct)))
   return (
     <div className="gr-hero rise" style={{ '--d': '0ms' } as CSSProperties}>
       <div className="gr-hero-ttl">Growth</div>
@@ -40,11 +41,11 @@ export function GrowthHero({ totalXp, level, disciplinePct, consistencyWeeks }: 
             <span className="gr-trait-val">{huInt(level.xpInLevel)} <small>/ {huInt(level.xpForNext)}</small></span>
           </div>
         )}
-        {disciplinePct != null && (
+        {disc != null && (
           <div className="gr-trait">
             <span className="gr-trait-lb">Fegyelem</span>
-            <div className="gr-tbar"><i className="lav" style={{ '--w': `${Math.min(100, disciplinePct)}%`, '--d': '330ms' } as CSSProperties} /></div>
-            <span className="gr-trait-val">{disciplinePct}%</span>
+            <div className="gr-tbar"><i className="lav" style={{ '--w': `${disc}%`, '--d': '330ms' } as CSSProperties} /></div>
+            <span className="gr-trait-val">{disc}%</span>
           </div>
         )}
         <div className="gr-trait">

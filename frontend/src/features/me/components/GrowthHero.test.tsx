@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { GrowthHero } from '@/features/me/components/GrowthHero'
 
@@ -30,4 +30,14 @@ test('0 weeks: eight empty dots and "0 hét"', () => {
   const { container } = render(<GrowthHero {...base} consistencyWeeks={0} />)
   expect(container.querySelectorAll('.gr-wdots i.on')).toHaveLength(0)
   expect(screen.getByText('0')).toBeInTheDocument()
+})
+
+test('disciplinePct is clamped to 0-100 for both the bar and the text', () => {
+  const { container: negative } = render(<GrowthHero {...base} disciplinePct={-5} />)
+  expect(negative.querySelector('.gr-tbar i.lav')?.getAttribute('style')).toContain('--w: 0%')
+  expect(within(negative).getByText('0%')).toBeInTheDocument()
+
+  const { container: over } = render(<GrowthHero {...base} disciplinePct={150} />)
+  expect(over.querySelector('.gr-tbar i.lav')?.getAttribute('style')).toContain('--w: 100%')
+  expect(within(over).getByText('100%')).toBeInTheDocument()
 })
