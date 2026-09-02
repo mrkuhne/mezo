@@ -312,7 +312,7 @@ Add to `backend/src/test/java/io/mrkuhne/mezo/feature/habit/HabitAdminApiIT.java
                 .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
                 .anchorCopy("kitöltöttem a reggeli kávét").build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
-        assertHasRequestError(err, "HABIT_FRAMEWORK_INCOMPLETE");
+        assertHasRequestError(err, "HABIT_FRAMEWORK_FOGG_INCOMPLETE");
     }
 
     @Test
@@ -324,7 +324,7 @@ Add to `backend/src/test/java/io/mrkuhne/mezo/feature/habit/HabitAdminApiIT.java
                 .framework(HabitDefCreateRequest.FrameworkEnum.CLEAR)
                 .cue("7:10-kor a konyhában").reward("a pipa maga").build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
-        assertHasRequestError(err, "HABIT_FRAMEWORK_INCOMPLETE");
+        assertHasRequestError(err, "HABIT_FRAMEWORK_CLEAR_INCOMPLETE");
     }
 
     @Test
@@ -442,13 +442,13 @@ public class HabitFrameworkValidator {
         if (HabitDefEntity.FRAMEWORK_FOGG.equals(framework)) {
             boolean hasAnchor = isSet(draft.getAnchorHabitKey()) || isSet(draft.getAnchorCopy());
             if (!hasAnchor || !isSet(draft.getCelebration())) {
-                throw badRequest("HABIT_FRAMEWORK_INCOMPLETE");
+                throw badRequest("HABIT_FRAMEWORK_FOGG_INCOMPLETE");
             }
             validateAnchorReference(draft);
             return;
         }
         if (!isSet(draft.getCue()) || !isSet(draft.getCraving()) || !isSet(draft.getReward())) {
-            throw badRequest("HABIT_FRAMEWORK_INCOMPLETE");
+            throw badRequest("HABIT_FRAMEWORK_CLEAR_INCOMPLETE");
         }
     }
 

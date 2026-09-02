@@ -173,7 +173,7 @@ class HabitAdminApiIT extends ApiIntegrationTest {
                 .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
                 .anchorCopy("kitöltöttem a reggeli kávét").build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
-        assertHasRequestError(err, "HABIT_FRAMEWORK_INCOMPLETE");
+        assertHasRequestError(err, "HABIT_FRAMEWORK_FOGG_INCOMPLETE");
     }
 
     @Test
@@ -185,7 +185,7 @@ class HabitAdminApiIT extends ApiIntegrationTest {
                 .framework(HabitDefCreateRequest.FrameworkEnum.CLEAR)
                 .cue("7:10-kor a konyhában").reward("a pipa maga").build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
-        assertHasRequestError(err, "HABIT_FRAMEWORK_INCOMPLETE");
+        assertHasRequestError(err, "HABIT_FRAMEWORK_CLEAR_INCOMPLETE");
     }
 
     @Test
@@ -285,6 +285,71 @@ class HabitAdminApiIT extends ApiIntegrationTest {
         HabitDefAdmin after = findDef(catalog(), stacked.getId());
         assertThat(after.getAnchorHabitKey()).isNull();
         assertThat(after.getAnchorCopy()).isEqualTo("kész a Reggeli fény");
+    }
+
+    @Test
+    void testUpdateDef_shouldReframeClearToFogg_clearingClearFields() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.CLEAR)
+                .cue("7:10-kor a konyhában").craving("tisztább fejjel indul a nap")
+                .reward("a pipa maga").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().framework(HabitDefUpdateRequest.FrameworkEnum.FOGG)
+                .anchorCopy("kitöltöttem a reggeli kávét").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        assertThat(updated.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+        assertThat(updated.getCelebration()).isEqualTo("ökölrázás");
+        assertThat(updated.getCue()).isNull();
+        assertThat(updated.getCraving()).isNull();
+        assertThat(updated.getReward()).isNull();
+        assertThat(updated.getIdentity()).isNull();
+    }
+
+    @Test
+    void testUpdateDef_shouldReframeFoggToClear_clearingFoggFields() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey("morning_sunlight").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().framework(HabitDefUpdateRequest.FrameworkEnum.CLEAR)
+                .cue("7:10-kor a konyhában").craving("tisztább fejjel indul a nap")
+                .reward("a pipa maga").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        assertThat(updated.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.CLEAR);
+        assertThat(updated.getAnchorHabitKey()).isNull();
+        assertThat(updated.getCelebration()).isNull();
+        assertThat(updated.getCue()).isEqualTo("7:10-kor a konyhában");
+        assertThat(updated.getCraving()).isEqualTo("tisztább fejjel indul a nap");
+        assertThat(updated.getReward()).isEqualTo("a pipa maga");
+    }
+
+    @Test
+    void testUpdateDef_shouldRejectReframeToFogg_whenIncomplete() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.CLEAR)
+                .cue("7:10-kor a konyhában").craving("tisztább fejjel indul a nap")
+                .reward("a pipa maga").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        String err = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().framework(HabitDefUpdateRequest.FrameworkEnum.FOGG).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_FRAMEWORK_FOGG_INCOMPLETE");
     }
 
     private static HabitDefAdmin findDef(HabitCatalogResponse cat, UUID defId) {

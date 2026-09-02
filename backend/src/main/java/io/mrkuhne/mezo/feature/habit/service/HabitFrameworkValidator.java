@@ -37,13 +37,13 @@ public class HabitFrameworkValidator {
         if (HabitDefEntity.FRAMEWORK_FOGG.equals(framework)) {
             boolean hasAnchor = isSet(draft.getAnchorHabitKey()) || isSet(draft.getAnchorCopy());
             if (!hasAnchor || !isSet(draft.getCelebration())) {
-                throw badRequest("HABIT_FRAMEWORK_INCOMPLETE");
+                throw badRequest("HABIT_FRAMEWORK_FOGG_INCOMPLETE");
             }
             validateAnchorReference(draft);
             return;
         }
         if (!isSet(draft.getCue()) || !isSet(draft.getCraving()) || !isSet(draft.getReward())) {
-            throw badRequest("HABIT_FRAMEWORK_INCOMPLETE");
+            throw badRequest("HABIT_FRAMEWORK_CLEAR_INCOMPLETE");
         }
     }
 
