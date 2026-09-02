@@ -14,6 +14,26 @@ public interface MentionRepository extends JpaRepository<MentionEntity, UUID> {
 
     List<MentionEntity> findAllByCreatedByAndDeletedFalseOrderByTsDesc(UUID createdBy);
 
+    /** mezo-cc6x: a hangulat-számítás bemenete PROJEKCIÓKÉNT — a chat-pillanatkép minden
+     *  beszélgetési körben újraolvassa, és a négy használt mezőn kívül semmit nem néz meg.
+     *  {@code ts} szerint csökkenő, ahogy a hívók feltételezik (a lista első eleme a legfrissebb).
+     *  A {@code deleted = false} szűrő öv-és-nadrágtartó a {@code @SQLRestriction} mellett, a ház
+     *  szokása szerint.
+     *
+     *  <p>Szándékosan NINCS időablak: a hangulat-ív a nyolc legutóbbi olyan hetet tartja meg,
+     *  amelyikben volt adat — hézagos történetnél ez a nyolc olvasat tetszőlegesen régre nyúlhat,
+     *  egy ablak tehát olvasatokat vágna le és az irányt is átbillenthetné; a {@code lastMentionAt}
+     *  pedig mindenkori maximum, amin a chat-blokk rendezése áll, és egy ablakkal egy régen
+     *  említett személy tévesen „sosem említett"-ként csúszna a lista végére. */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.people.repository.MentionSignal(
+            m.personId, m.ts, m.tone, m.intensity)
+        from MentionEntity m
+        where m.createdBy = :userId and m.deleted = false
+        order by m.ts desc
+        """)
+    List<MentionSignal> findSignals(@Param("userId") UUID userId);
+
     /** Ownership gate for the mention itself; person-scope for the 404 is checked by the caller. */
     Optional<MentionEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 

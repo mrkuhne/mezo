@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.mapper.PeopleMapper;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
+import io.mrkuhne.mezo.feature.people.repository.MentionSignal;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -68,6 +69,11 @@ public class PeopleService {
             .collect(Collectors.toMap(PersonEntity::getId, PersonEntity::getName));
         Map<UUID, List<MentionEntity>> byPerson = mentions.stream()
             .collect(Collectors.groupingBy(MentionEntity::getPersonId));
+        // A weekStats/affect-ív bemenete csak a négy jel-mező — a már betöltött entitásokat
+        // képezzük le egyszer, NE fusson hozzá új lekérdezés (mezo-cc6x).
+        Map<UUID, List<MentionSignal>> signalsByPerson = mentions.stream()
+            .collect(Collectors.groupingBy(MentionEntity::getPersonId,
+                Collectors.mapping(PeopleService::toSignal, Collectors.toList())));
         Instant weekAgo = Instant.now().minus(WEEK);
         Map<UUID, List<PersonGraphEdgeSource.Edge>> edgesByPerson = graphEdgeSource
             .getIfAvailable(() -> u -> Map.of())
@@ -76,7 +82,8 @@ public class PeopleService {
         List<PersonResponse> personResponses = persons.stream()
             .map(p -> {
                 List<MentionEntity> own = byPerson.getOrDefault(p.getId(), List.of());
-                WeekStats stats = weekStats(own, weekAgo, LocalDate.now());
+                List<MentionSignal> ownSignals = signalsByPerson.getOrDefault(p.getId(), List.of());
+                WeekStats stats = weekStats(ownSignals, weekAgo, LocalDate.now());
                 PersonResponse response = mapper.toPersonResponse(p, own.size(), stats.mentionsThisWeek(),
                     stats.lastMentionAt());
                 response.setGraphEdges(edgesByPerson.getOrDefault(p.getId(), List.of()).stream()
@@ -108,10 +115,14 @@ public class PeopleService {
     /** A bootstrap és a chat-kontextus KÖZÖS heti számítása — a két hely sosem térhet el. */
     private record WeekStats(int mentionsThisWeek, Instant lastMentionAt, PersonAffectTrend trend) {}
 
-    private WeekStats weekStats(List<MentionEntity> ownTsDesc, Instant weekAgo, LocalDate today) {
-        int thisWeek = (int) ownTsDesc.stream().filter(m -> !m.getTs().isBefore(weekAgo)).count();
-        Instant lastAt = ownTsDesc.isEmpty() ? null : ownTsDesc.getFirst().getTs(); // list is ts-desc
+    private WeekStats weekStats(List<MentionSignal> ownTsDesc, Instant weekAgo, LocalDate today) {
+        int thisWeek = (int) ownTsDesc.stream().filter(m -> !m.ts().isBefore(weekAgo)).count();
+        Instant lastAt = ownTsDesc.isEmpty() ? null : ownTsDesc.getFirst().ts(); // list is ts-desc
         return new WeekStats(thisWeek, lastAt, affectTrendCalculator.calculate(ownTsDesc, today));
+    }
+
+    private static MentionSignal toSignal(MentionEntity m) {
+        return new MentionSignal(m.getPersonId(), m.getTs(), m.getTone(), m.getIntensity());
     }
 
     /**
@@ -128,9 +139,8 @@ public class PeopleService {
         if (persons.isEmpty()) {
             return List.of();
         }
-        Map<UUID, List<MentionEntity>> byPerson = mentionRepository
-            .findAllByCreatedByAndDeletedFalseOrderByTsDesc(userId).stream()
-            .collect(Collectors.groupingBy(MentionEntity::getPersonId));
+        Map<UUID, List<MentionSignal>> byPerson = mentionRepository.findSignals(userId).stream()
+            .collect(Collectors.groupingBy(MentionSignal::personId));
         Instant weekAgo = Instant.now().minus(WEEK);
         return persons.stream()
             .filter(p -> STATUS_ACTIVE.equals(p.getStatus()))

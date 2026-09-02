@@ -57,6 +57,14 @@ export interface FuelSettings {
   mealsPerDay: number
   caffeineCutoff: string
 }
+/** Mezo-kalauz seen-store (mezo-gb1s): one record per guide id, the whole map is the per-user singleton. */
+export interface TutorialProgressEntry {
+  version: number
+  seenAt: string
+  completedAt: string | null
+  dismissedAtStep: number | null
+}
+export type TutorialProgress = Record<string, TutorialProgressEntry>
 /** Meal-slot templates (mezo-7102) — per-day-type anchor plan the planner replays onto a real day. */
 export type SlotTemplateDayType = 'rest' | 'training_am' | 'training_pm'
 export type SlotAnchor =
@@ -1288,13 +1296,6 @@ export interface ExerciseLibraryItem {
   imageEndUrl?: string | null
   editable?: boolean  // true for user-authored catalog rows (created_by == current user)
 }
-
-export interface GoalPreset {
-  id: string; label: string; sub: string; description: string
-  defaultWeeks: number; split: string; days: number; style: string
-  phaseTemplate: MesoPhase[]; color: string; icon: IconName
-}
-export interface SplitOption { label: string; days: number[]; best: string | null }
 
 // ── Daily quests (gamified growth E1, mezo-df7q) ─────────────────────────────
 export type QuestSlot = 'BODY' | 'FUELBIO' | 'GROWTH'

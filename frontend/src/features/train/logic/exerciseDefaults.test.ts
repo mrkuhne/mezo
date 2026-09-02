@@ -20,11 +20,6 @@ describe('libraryToGymExercise', () => {
     expect([ex.workingSets, ex.repMin, ex.repMax, ex.targetRIR]).toEqual([4, 8, 10, 1])
   })
 
-  test('erohipertrofia scheme fills an isolation as 2×8-10 RIR0', () => {
-    const ex = libraryToGymExercise(iso, 'erohipertrofia')
-    expect([ex.workingSets, ex.repMin, ex.repMax, ex.targetRIR]).toEqual([2, 8, 10, 0])
-  })
-
   test('no preset falls back to the hypertrophy scheme', () => {
     expect(libraryToGymExercise(iso, null).workingSets).toBe(3)
   })

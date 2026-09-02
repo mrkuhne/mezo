@@ -255,4 +255,7 @@ public class FeaturesConfiguration {
     /** Emberek szekció (mezo-06o0) — az automata mention-detektálás rétege. Off ⇒ egyetlen
      *  detektáló listener-bean sem létezik; a kézi /api/people felület ettől függetlenül él. */
     public static final String PEOPLE_SWITCH = "mezo.feature.people.enabled";
+
+    /** Mezo-kalauz seen-store (mezo-gb1s.1). */
+    public static final String TUTORIAL_SWITCH = "mezo.feature.tutorial.enabled";
 }

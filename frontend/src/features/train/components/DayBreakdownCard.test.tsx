@@ -10,7 +10,7 @@ const plyoOnly: DayGroupRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad
 describe('DayBreakdownCard', () => {
   it('renders an over-cap row with the ⚠ mark', () => {
     render(<DayBreakdownCard rows={[over]} warnings={[]} />)
-    expect(screen.getByText(/12 \/ 11/)).toBeInTheDocument()
+    expect(screen.getByText(/12 \/ 8/)).toBeInTheDocument()
     expect(screen.getByText(/⚠/)).toBeInTheDocument()
   })
 
@@ -19,22 +19,22 @@ describe('DayBreakdownCard', () => {
     expect(screen.getByText('4 kiegészítő')).toBeInTheDocument()
   })
 
-  it('renders an ok row as "n / 11" without the warning mark', () => {
+  it('renders an ok row as "n / 8" without the warning mark', () => {
     render(<DayBreakdownCard rows={[ok]} warnings={[]} />)
-    expect(screen.getByText('8 / 11')).toBeInTheDocument()
+    expect(screen.getByText('8 / 8')).toBeInTheDocument()
   })
 
   it('includes the suggestDay clause when given', () => {
     const { container } = render(<DayBreakdownCard rows={[over]} warnings={[{ label: 'Váll', sets: 12, suggestDay: 'Sze' }]} />)
     expect(screen.getByText(/Váll: ma 12 szett/)).toBeInTheDocument()
-    expect(container.textContent).toMatch(/Váll: ma 12 szett — 11 fölött nincs kimutatható plusz\./)
+    expect(container.textContent).toMatch(/Váll: ma 12 szett — 8 fölött nincs kimutatható plusz\./)
     expect(container.textContent).toMatch(/\(pl\. Sze\)/)
   })
 
   it('omits the suggestDay clause when null', () => {
     const { container } = render(<DayBreakdownCard rows={[over]} warnings={[{ label: 'Váll', sets: 12, suggestDay: null }]} />)
     expect(screen.getByText(/Váll: ma 12 szett/)).toBeInTheDocument()
-    expect(container.textContent).toMatch(/Váll: ma 12 szett — 11 fölött nincs kimutatható plusz\./)
+    expect(container.textContent).toMatch(/Váll: ma 12 szett — 8 fölött nincs kimutatható plusz\./)
     expect(container.textContent).not.toMatch(/pl\./)
   })
 

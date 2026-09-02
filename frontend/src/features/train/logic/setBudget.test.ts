@@ -25,7 +25,7 @@ describe('setStyle', () => {
 
 // budgetOf/setStyle/FAILURE_WEEKLY_CAP/VOLUME_WEEKLY_CAP/GROUP_MEV are the ORIGINAL fatigue-cap
 // model — muscleBudgets below no longer uses it (reframed against tier targets, mezo-3m5m), but
-// programFit.ts and weekZone.ts still call these directly, so they stay and stay tested here.
+// weekZone.ts still calls these directly, so they stay and stay tested here.
 describe('budgetOf', () => {
   it('caps: 12 failure sets or 20 volume sets exactly fill the fatigue budget', () => {
     expect(budgetOf(12, 0)).toBeCloseTo(1)
@@ -127,11 +127,11 @@ describe('muscleBudgets — tier target math (mezo-3m5m, GD5)', () => {
 })
 
 describe('sessionCapWarnings', () => {
-  it('warns strictly above 11 working sets per group per day', () => {
-    const ok = [day('H', 'shoulder', [ex('shoulder-side', 6, 2), ex('shoulder-front', 5, 2)])]  // 11
-    const bad = [day('H', 'shoulder', [ex('shoulder-side', 6, 2), ex('shoulder-front', 6, 2)])] // 12
+  it('warns strictly above 8 working sets per group per day (cap tightened 11→8, mezo-d20.14)', () => {
+    const ok = [day('H', 'shoulder', [ex('shoulder-side', 4, 2), ex('shoulder-front', 4, 2)])]  // 8
+    const bad = [day('H', 'shoulder', [ex('shoulder-side', 4, 2), ex('shoulder-front', 5, 2)])] // 9
     expect(sessionCapWarnings(ok)).toHaveLength(0)
-    expect(sessionCapWarnings(bad)).toEqual([{ day: 'H', group: 'shoulder', label: 'Váll', sets: 12 }])
+    expect(sessionCapWarnings(bad)).toEqual([{ day: 'H', group: 'shoulder', label: 'Váll', sets: 9 }])
   })
 })
 
@@ -144,7 +144,9 @@ describe('plyo exclusion (mezo-0znc)', () => {
     expect(rows[0].level).toBe('ok')
   })
   it('session cap ignores plyo sets', () => {
-    const days = [day('H', 'quad', [ex('quad', 9, 0), plyoEx('quad', 10)])]
+    // 6 real sets stay under the 8 cap; the 10 plyo sets would blow well past it if
+    // wrongly counted (6+10=16 > 8), so this only passes if plyo is truly excluded.
+    const days = [day('H', 'quad', [ex('quad', 6, 0), plyoEx('quad', 10)])]
     expect(sessionCapWarnings(days)).toHaveLength(0)
   })
   it('plyo-only group emits no budget row', () => {

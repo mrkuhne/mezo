@@ -2,9 +2,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { AppHeader } from '@/app/AppHeader'
+import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { writeLocalProgress } from '@/shared/lib/tutorialSeen'
 
 // A fejléc a shellben él, tehát MINDKÉT módú CI-futásban ugyanazt kell mutatnia —
 // ezért a mock mód kényszerítve van (ugyanaz a minta, mint a hubHeaders.test.tsx-ben).
@@ -19,6 +21,9 @@ import { QueryWrapper } from '@/test/queryWrapper'
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   localStorage.clear()
+  // A Fuel hub kalauza (mezo-gb1s.1) 600 ms után magától felugrana — a fejléc-tesztek a
+  // fejlécet nézik, ezért látottnak seedeljük; a „?" gomb saját tesztje explicit nyit.
+  writeLocalProgress({ fuel: { version: 1, seenAt: '2026-08-30T10:00:00.000Z', completedAt: null, dismissedAtStep: null } })
   vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.setSystemTime(new Date(2026, 7, 30, 13, 0, 0)) // 13:00 → nowFace === 'nap' (mockSleepGoal)
 })
@@ -39,30 +44,46 @@ const renderAt = (path: string, children?: React.ReactNode) =>
   render(
     <QueryWrapper>
       <MemoryRouter initialEntries={[path]}>
-        <MezoThreadProvider>
-          <AppHeader />
-          {children}
-          <LocationProbe />
-        </MezoThreadProvider>
+        <TutorialProvider>
+          <MezoThreadProvider>
+            <AppHeader />
+            {children}
+            <LocationProbe />
+          </MezoThreadProvider>
+        </TutorialProvider>
       </MemoryRouter>
     </QueryWrapper>,
   )
 
 const dpItem = (name: string) => screen.getByRole('menuitemradio', { name })
 
-test('a fejléc mind a négy kontrollt viseli, ebben a sorrendben', async () => {
+test('a fejléc a kalauzos /fuel oldalon öt kontrollt visel, elöl a Kalauzzal', async () => {
   const { container } = renderAt('/fuel')
-  expect(await screen.findByRole('button', { name: 'Napszak váltása' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /^Mezo üzenetei/ })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /^Értesítések/ })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Profil' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Kalauz ehhez az oldalhoz' })).toBeInTheDocument()
+  const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
+  expect(labels[0]).toBe('Kalauz ehhez az oldalhoz')
+  expect(labels[1]).toBe('Napszak váltása')
+  expect(labels[2]).toMatch(/^Mezo üzenetei/)
+  expect(labels[3]).toMatch(/^Értesítések/)
+  expect(labels[4]).toBe('Profil')
+})
 
-  const labels = [...container.querySelectorAll('.nap-head button')]
-    .map((b) => b.getAttribute('aria-label'))
+test('kalauz nélküli oldalon nincs „?" gomb — a négy kontroll a régi sorrendben', async () => {
+  const { container } = renderAt('/mezo')
+  await screen.findByRole('button', { name: 'Napszak váltása' })
+  expect(screen.queryByRole('button', { name: 'Kalauz ehhez az oldalhoz' })).toBeNull()
+  const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
   expect(labels[0]).toBe('Napszak váltása')
-  expect(labels[1]).toMatch(/^Mezo üzenetei/)
-  expect(labels[2]).toMatch(/^Értesítések/)
   expect(labels[3]).toBe('Profil')
+})
+
+test('a „?" megnyitja az oldal kalauzát, és nyitva az is-open osztályt viseli', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/fuel')
+  const q = await screen.findByRole('button', { name: 'Kalauz ehhez az oldalhoz' })
+  await user.click(q)
+  expect(screen.getByRole('dialog', { name: 'Kalauz · Fuel' })).toBeInTheDocument()
+  expect(q).toHaveClass('is-open')
 })
 
 test('a napszakváltó a /fuel oldalról a valóstól eltérő napszakra dp paraméterrel dob', async () => {

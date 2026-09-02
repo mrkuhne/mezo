@@ -2,7 +2,7 @@
 // Mezo · AppHeader — az app EGYETLEN felső fejléce (mezo-atry). Korábban mind az öt
 // tab-gyökér külön bemásolta a `.nap-head` receptet, eltérő tartalommal; itt egy helyen
 // él, és az AppLayout mountolja minden oldalra. Sorrend fixen:
-//   dátum-eyebrow · napszakváltó · Mezo-üzenetek · értesítések · profil orb
+//   dátum-eyebrow · [kalauz ?] · napszakváltó · Mezo-üzenetek · értesítések · profil orb
 // A napszak-választás állapota az URL-ben marad (`/nap?dp=`) — nincs globális state, és a
 // meglévő deep-linkek változatlanul működnek. A választó BÁRHONNAN a Nap oldalra navigál.
 //
@@ -20,6 +20,7 @@ import { useNotificationFeed } from '@/data/notification/feedHooks'
 import { DAY_FACES, FACE_LABEL, type DayFace } from '@/features/today/logic/dayFace'
 import { useDayFace } from '@/features/today/logic/useDayFace'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
+import { useTutorial } from '@/features/tutorial/TutorialProvider'
 
 const FACE_ICON: Record<DayFace, 'i-hajnal' | 'i-nap' | 'i-alvas'> = {
   reggel: 'i-hajnal', nap: 'i-nap', este: 'i-alvas',
@@ -38,6 +39,8 @@ export function AppHeader() {
   const { items: notifications } = useNotificationFeed()
   const unreadNtf = notifications.filter((n) => n.readAt === null).length
   const { unread: unreadMsgs } = useMezoThread()
+  const kalauz = useTutorial()
+  const qUnseenDot = kalauz.current !== null && kalauz.current.tier === 'T3' && kalauz.isUnseen(kalauz.current.id)
 
   const [dpOpen, setDpOpen] = useState(false)
   const [ntfOpen, setNtfOpen] = useState(false)
@@ -79,6 +82,18 @@ export function AppHeader() {
       <div className="nap-head-grow">
         <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
       </div>
+
+      {/* Mezo-kalauz (mezo-gb1s.1): az oldal kalauza — csak ott, ahol van (honest state).
+          A gombsor BAL szélén, minden oldalon ugyanott; arany pont = T3 oldal még nem látott
+          kalauzzal (T1/T2 magától felugrik, ott a pont fölösleges). */}
+      {kalauz.current && (
+        <button type="button" className={cn('nap-roundbtn', 'nap-q', kalauz.openId === kalauz.current.id && 'is-open')}
+          aria-label="Kalauz ehhez az oldalhoz" aria-haspopup="dialog"
+          onClick={() => { setDpOpen(false); setNtfOpen(false); kalauz.open(kalauz.current!.id) }}>
+          <span className="nap-q-glyph" aria-hidden="true">?</span>
+          {qUnseenDot && <span className="nap-offnow" aria-hidden="true" />}
+        </button>
+      )}
 
       <div className="nap-dpwrap">
         <button type="button" className="nap-roundbtn" aria-label="Napszak váltása"

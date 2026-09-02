@@ -9,6 +9,10 @@ interface SheetProps {
   onClose: () => void
   className?: string
   labelledBy?: string
+  /** Peek-mód (Mezo-kalauz): a hátlap koppintása NEM zár, hanem ezt hívja. Alapesetben zár. */
+  onBackdropClick?: () => void
+  /** Extra osztály a hátlapra (pl. a kalauz átlátszóvá teszi spotlight alatt). */
+  backdropClassName?: string
 }
 
 // How far (px) or how fast (px/ms) a downward drag must reach to dismiss.
@@ -16,7 +20,7 @@ const CLOSE_DISTANCE = 120
 const CLOSE_VELOCITY = 0.5
 const EXIT_MS = 300
 
-export function Sheet({ children, onClose, className, labelledBy }: SheetProps) {
+export function Sheet({ children, onClose, className, labelledBy, onBackdropClick, backdropClassName }: SheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const backdropRef = useRef<HTMLDivElement>(null)
   const drag = useRef({ active: false, startY: 0, startT: 0, dy: 0, height: 0 })
@@ -131,7 +135,8 @@ export function Sheet({ children, onClose, className, labelledBy }: SheetProps) 
 
   return createPortal(
     <>
-      <div ref={backdropRef} className="sheet-backdrop" onClick={requestClose} aria-hidden="true" />
+      <div ref={backdropRef} className={cn('sheet-backdrop', backdropClassName)}
+        onClick={onBackdropClick ?? requestClose} aria-hidden="true" />
       <div ref={sheetRef} className={cn('sheet', className)} role="dialog" aria-modal="true" aria-labelledby={labelledBy}>
         <div
           className="sheet-handle-zone"
