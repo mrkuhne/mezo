@@ -41,6 +41,18 @@ describe('useDailyQuests (real mode)', () => {
     expect(result.current.levelUps).toEqual([])
     expect(result.current.mode).toBe('live')
   })
+
+  test('reports isPending true before the response resolves and false after', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/quest/day/${DATE}`, () =>
+        HttpResponse.json({ date: DATE, quests: [questWire()], levelUps: [], rerollsLeft: 1 }),
+      ),
+    )
+    const { result } = renderHook(() => useDailyQuests(DATE), { wrapper: makeHookWrapper() })
+    expect(result.current.isPending).toBe(true)
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.quests).toHaveLength(1)
+  })
 })
 
 describe('useQuestActions (real mode)', () => {

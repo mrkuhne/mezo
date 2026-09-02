@@ -61,7 +61,8 @@ const SCREENS: Array<[string, string, string?]> = [
   // tab (the progression's new home — streak card + titles section) and the AI-call detail.
   ['me-goal-wizard', '/me/goals/new'],
   ['me-rutinok', '/me/routines/edit'],
-  ['me-growth-awards', '/me/growth?tab=awards'],
+  ['me-growth', '/me/growth'],
+  ['me-growth-awards', '/me/growth/kituntetesek'],
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
   ['insights-mintak', '/insights'],
   ['insights-memoar', '/insights/memoir'],
@@ -94,7 +95,13 @@ for (const theme of ['light', 'dark'] as const) {
     for (const [name, path, frozen] of SCREENS) {
       test(name, async ({ page }) => {
         await page.clock.setFixedTime(new Date(frozen ?? DEFAULT_FROZEN))
-        await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+        await page.addInitScript((t) => {
+          localStorage.setItem('mezo-theme', t)
+          // Mezo-kalauz (mezo-gb1s.1): a first-visit sheet minden goldenbe beleugrana — látottnak seedeljük.
+          localStorage.setItem('mezo.kalauz.v1', JSON.stringify({
+            fuel: { version: 1, seenAt: '2026-05-21T13:00:00.000Z', completedAt: null, dismissedAtStep: null },
+          }))
+        }, theme)
         await page.goto(path)
         await page.waitForLoadState('networkidle')
         await page.evaluate(() => document.fonts.ready)

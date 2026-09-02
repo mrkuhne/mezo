@@ -47,12 +47,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
 | [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [needs](features/needs.md), [ritual](features/ritual.md), [today](features/today.md) |
 | [train](#train) | ✓ | 1 | ✓ | ✓ | [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
+| [tutorial](#tutorial) | ✓ | 1 | ✓ | ✓ | [tutorial](features/tutorial.md) |
 
 ## Features
 
 ### activity
 
-*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-08-29, done)
+*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/activity`
   - **entities→tables:** `ActivityLogEntity`→`activity_log`
@@ -111,7 +112,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### biometrics
 
 *BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-02, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-08-31, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-02, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -415,7 +416,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### gamification
 
-*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-08-29, done) ·
+*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-02, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/gamification`
@@ -612,7 +613,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### me
 
-*FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-08-29, done) ·
+*FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-02, done) ·
   [docs/features/habit.md](features/habit.md) (updated 2026-09-02, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-02, mixed) ·
@@ -630,7 +631,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     weekLessonsHooks.ts, weeklyReviewApi.ts, weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
   - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, EnHubPage.tsx, GoalPlannerPage.tsx,
-    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx,
+    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx,
+    GrowthRutinPage.tsx, GrowthSkillsPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx,
     NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx,
     PeoplePage.tsx, PersonDetailPage.tsx, RoutineEditorPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx,
     WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
@@ -640,18 +642,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
     AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx, AiUsageHero.tsx, BadgesCard.tsx, DayNavTiles.tsx,
     DetailStat.tsx, FieldRow.tsx, GoalGate.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalTimeline.tsx,
-    GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthJournalCard.tsx, MentionRow.tsx, NightArcCard.tsx,
-    NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx,
-    PerksCard.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PushInstallGate.tsx,
-    RemDurationCard.tsx, RoutinesTab.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx,
-    SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx,
-    WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx,
-    WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
+    GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx, GrowthJournalCard.tsx, MaStrip.tsx, MentionRow.tsx,
+    NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx,
+    NotificationPreviewHeader.tsx, PerksCard.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx,
+    PhaseReferenceRow.tsx, PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx,
+    SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx,
+    WeekDayTile.tsx, WeekDiscoveries.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx,
+    WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
+    WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, gratitudeStreak.ts,
-    growthJournal.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, llmCallFormat.ts,
-    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
-    scoreBand.ts, sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts,
-    weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
+    growthJournal.ts, growthStats.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts,
+    llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts,
+    peopleVisuals.ts, perkMilestones.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts,
+    sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
 
 ### meal
 
@@ -876,7 +879,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### progression
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-08-29, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/progression`
   - **sub-features:** `activity`, `gym`, `habit`, `needs`, `quest`, `run`, `sport`
@@ -894,8 +897,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/progression/profile · GET /api/progression/growth-week/{date} ·
     GET /api/progression/achievements
 - **FE data** `frontend/src/data/progression`
-  - **hooks (via `@/data/hooks`):** `useAchievements`, `useProgressionProfile`
-  - **modules:** achievementsMock.ts, progressionApi.ts, progressionHooks.ts, progressionMock.ts
+  - **hooks (via `@/data/hooks`):** `useAchievements`, `useGrowthWeek`, `useProgressionProfile`
+  - **modules:** achievementsMock.ts, growthWeekMock.ts, progressionApi.ts, progressionHooks.ts, progressionMock.ts
 - **FE ui** `frontend/src/features/progression`
   - **components:** ProgressionHome.tsx
   - **logic:** levelUpMeta.ts, rewardToast.ts
@@ -910,7 +913,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### quest
 
-*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-08-29, done)
+*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/quest`
   - **entities→tables:** `DailyQuestEntity`→`daily_quest`
@@ -989,7 +992,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/intention.md](features/intention.md) (updated 2026-08-30, done) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-08-30, done) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-08-30, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-08-31, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-02, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useCheckins`, `useCompanionFeed`, `useFuelPreview`,
@@ -1121,6 +1124,26 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **populators:** `DatabasePopulator`, `MesoTemplatePopulator`, `RunningPopulator`, `SleepLogPopulator`,
     `TrainPopulator`, `UserPopulator`
 
+### tutorial
+
+*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-09-02, mixed)
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/tutorial`
+  - **entities→tables:** `TutorialProgressEntity`→`tutorial_progress`
+  - **repositories:** `TutorialProgressRepository`
+  - **services:** `TutorialProgressService`
+  - **controllers→contract:** `TutorialProgressController`→`TutorialProgressApi`
+  - **other:** `TutorialProgressEntryJson`
+- **Contract** `api/feature/tutorial/tutorial-progress.yml` — 3 operations
+  - **endpoints:** GET /api/tutorial/progress · PUT /api/tutorial/progress · DELETE /api/tutorial/progress
+- **FE data** `frontend/src/data/tutorial`
+  - **hooks (via `@/data/hooks`):** `TUTORIAL_PROGRESS_GHOST`, `useTutorialProgress`, `useTutorialProgressActions`
+  - **modules:** tutorialProgressApi.ts, tutorialProgressHooks.ts
+- **FE ui** `frontend/src/features/tutorial`
+  - **root:** TutorialProvider.tsx, fuel.ts, index.ts, types.ts
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/tutorial` — 2 IT + 0 unit
+  - **ITs:** `TutorialProgressApiIT`, `TutorialProgressSwitchOffApiIT`
+
 ## Cross-cutting
 
 ### techcore — `backend/src/main/java/io/mrkuhne/mezo/techcore`
@@ -1137,13 +1160,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **hooks:** useBackNav.ts, useReducedMotion.ts, useStickyTab.ts
 - **lib:** audio.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, markdown.tsx, pct.ts, resizeImage.ts,
-  safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts
+  safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts
 - **ui:** AdherenceBar.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx, DatePicker.tsx, DayNavigator.tsx,
   Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx, Island.tsx, ItemCard.tsx, ItemRow.tsx,
   NumberInput.tsx, PageTitle.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx, Sheet.tsx,
   Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx, Toggle.tsx,
   ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx,
-  mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
+  kalauz/KalauzSheet.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 
@@ -1161,7 +1184,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`,
   `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
   `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
-- **`ResetDatabase` TRUNCATE list** — 91 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 92 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
     `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
@@ -1175,8 +1198,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `owned_title`, `pantry_import`, `pantry_item`, `pattern`, `pattern_event`, `period_summary`, `perk_unlock`,
     `person`, `prediction`, `protocol`, `protocol_item`, `push_log`, `push_subscription`, `recipe`,
     `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`, `skill_progress`, `sleep_goal`, `sleep_log`,
-    `sport_event`, `sport_schedule_slot`, `sport_session`, `supplement_intake`, `water_log`, `weekly_review`,
-    `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_session`
+    `sport_event`, `sport_schedule_slot`, `sport_session`, `supplement_intake`, `tutorial_progress`, `water_log`,
+    `weekly_review`, `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_session`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts

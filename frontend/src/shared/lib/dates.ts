@@ -67,6 +67,14 @@ export function huMonthDayDow(iso: string): string {
   return `${huMonthDay(iso)} · ${HU_DOW[new Date(y, m - 1, d).getDay()]}`
 }
 
+/** ISO Monday (YYYY-MM-DD) of the week containing `iso` — Sunday belongs to the PREVIOUS week. */
+export function mondayOf(iso: string): string {
+  const d = new Date(iso + 'T00:00:00')
+  const dow = d.getDay() // 0 = Sunday
+  const back = dow === 0 ? 6 : dow - 1
+  return addDays(iso, -back)
+}
+
 /**
  * The 1-based week (containing today) of a dated block, clamped to [1, weeks] — week 1 before the
  * start date. Mirrors the backend's `RunningService.clampWeek`/`TrainService.clampWeek` so mock mode

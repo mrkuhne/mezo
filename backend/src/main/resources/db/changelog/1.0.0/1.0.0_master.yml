@@ -944,3 +944,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609021100_mezo-3zue.2_habit_def_framework.sql
+  - changeSet:
+      id: "1.0.0:202609021400_mezo-gb1s.1_create_tutorial_progress"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021400_mezo-gb1s.1_create_tutorial_progress.sql

@@ -173,6 +173,14 @@ const mesoReportFixture = {
   },
 }
 
+// Mezo-kalauz seen-store (mezo-gb1s.1) in-memory state — module-level so the GET/PUT/DELETE
+// handlers below share it across a whole test file; `resetTutorialProgressState` is called from
+// `src/test/setup.ts`'s afterEach so one test's PUT can't leak into the next.
+let tutorialProgressState: Record<string, unknown> = {}
+export function resetTutorialProgressState(): void {
+  tutorialProgressState = {}
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
 
@@ -504,6 +512,10 @@ export const handlers = [
       ],
       perks: [],
     })),
+  // Growth week rollup (mezo-rmi0.1) — honest zeros are a valid contract answer.
+  http.get(`${API_BASE}/api/progression/growth-week/:date`, ({ params }) =>
+    HttpResponse.json({ weekStart: params.date, questCompleted: 0, questClosed: 0, lifeXp: 0, activities: 0, savingsHuf: 0 }),
+  ),
 
   // ── Activity log (E2, mezo-jzca). Defaults: empty day; create echoes a confident AI verdict.
   http.get(`${API_BASE}/api/activity/day/:date`, () => HttpResponse.json([])),
@@ -1098,8 +1110,7 @@ export const handlers = [
   // override with server.use() when they need a populated stash or feed.
   http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [], imports: [], suggestions: [] })),
 
-  // Pantry import (P6, mezo-bka) — OFF lookup proxy + confirmed-draft import.
-  http.get(`${API_BASE}/api/pantry-import/lookup`, () => HttpResponse.json({ results: [] })),
+  // Pantry import (P6, mezo-bka) — confirmed-draft import.
   // URL scrape (P8, mezo-8vum) — honest-empty default; tests override with server.use().
   http.post(`${API_BASE}/api/pantry-import/scrape`, () => HttpResponse.json({ result: null })),
   // Photo import (mezo-d8tr) — honest-empty default; tests override with server.use().
@@ -1133,6 +1144,17 @@ export const handlers = [
     HttpResponse.json({ mealsPerDay: 4, caffeineCutoff: '14:00' })),
   http.put(`${API_BASE}/api/fuel/settings`, async ({ request }) =>
     HttpResponse.json(await request.json())),
+
+  // Mezo-kalauz seen-store (mezo-gb1s.1) — empty ghost; PUT replaces, DELETE clears. In-memory (module-
+  // level, not closure-local) so a test's PUT is visible to its next GET; `server.resetHandlers()` does
+  // NOT reset this state (it only re-registers handlers), so `src/test/setup.ts` also calls
+  // `resetTutorialProgressState()` in its own `afterEach` to stop one test's PUT leaking into the next.
+  http.get(`${API_BASE}/api/tutorial/progress`, () => HttpResponse.json({ progress: tutorialProgressState })),
+  http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+    tutorialProgressState = ((await request.json()) as { progress: Record<string, unknown> }).progress
+    return HttpResponse.json({ progress: tutorialProgressState })
+  }),
+  http.delete(`${API_BASE}/api/tutorial/progress`, () => { tutorialProgressState = {}; return new HttpResponse(null, { status: 204 }) }),
 
   // Fuel meal-slot templates (mezo-7102) — honest-empty default list; PUT echoes the
   // saved body under the path dayType, DELETE is a plain 204. Tests override with server.use().

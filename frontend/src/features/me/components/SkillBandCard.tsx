@@ -1,67 +1,48 @@
-import type { ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import { perkHint } from '@/features/me/logic/perkMilestones'
 import { clampPct } from '@/shared/lib/pct'
 import { cn } from '@/shared/lib/cn'
 
-export interface SkillRowVM {
-  key: string
-  icon: ReactNode
-  name: string
-  level: number
-  progressPct: number
-  xp: number
-}
-
+export interface SkillRowVM { key: string; icon: ReactNode; name: string; level: number; progressPct: number; xp: number }
 export type SkillBandWash = 'lav' | 'sage' | 'amber'
-
-// Normalise hu-HU's NBSP / narrow-NBSP thousands separators to a plain space.
-const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
+const BAR: Record<SkillBandWash, string> = { lav: 'lav', sage: 'sage', amber: 'gold' }
 
 /**
- * One skill band (LIFE / Atlétikus / Izom) as a full meter-row list — Growth page Skillek tab.
- * Mozaik reface (mezo-d20.6.5): the card itself wears the prototype's washed `.predtile`
- * skin (`gr-band`, one tint per band); per-skill rows keep the shared `.skl` row idiom
- * introduced for GrowthSummaryCard's top-3 preview (Task 4) verbatim — name + `.bar i`
- * width driven by `progressPct` (already self-animating, prefers-reduced-motion guarded)
- * + `.lv` level readout — plus one SkillBandCard-local extension: a right-aligned per-row
- * cumulative-XP readout after `.lv` ("no functionality lost" rule; the shared
- * `.skl`/`.bar`/`.lv` classes are untouched, so GrowthSummaryCard's top-3 preview on
- * Profil keeps its original three-slot shape).
+ * One skill band (LIFE / Atlétikus / Izom) — Growth Skillek page (mezo-rmi0.1, prototype
+ * growth-tab.html `band()`): washed card, eyebrow + tinted chip, rows sorted by the caller
+ * (level desc, XP desc) as icon cell · name · animated meter · optional `→ perk Lv n` hint one
+ * level before a milestone · `Lv n` plaque. The first `previewRows` show; the rest sit behind
+ * `Mind a {n} ▸` (card-local `expanded`). No XP readout per row — the chip carries the band XP.
  */
-export function SkillBandCard({ eyebrow, chip, rows, footer, wash = 'lav', delayMs }: {
-  eyebrow: string
-  chip: string
-  rows: SkillRowVM[]
-  footer?: ReactNode
-  wash?: SkillBandWash
-  /** entrance stagger — the prototype's `.predtile.rise` `--d` on the Skillek tab
-   *  (mezo-d20.11); the `.mz-play` wrapper is the page's job. */
-  delayMs?: number
+export function SkillBandCard({ eyebrow, chip, chipTone, rows, footer, wash, delayMs, previewRows = 4 }: {
+  eyebrow: string; chip: string; chipTone: 'ok' | 'warn' | 'lav'; rows: SkillRowVM[]
+  footer?: ReactNode; wash: SkillBandWash; delayMs?: number; previewRows?: number
 }) {
+  const [expanded, setExpanded] = useState(false)
+  const d = delayMs ?? 0
   return (
-    <div className={cn('gr-band', wash, 'rise')}
-      style={delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined}>
+    <div className={cn('gr-band', wash, 'rise', expanded && 'expanded')} style={{ '--d': `${d}ms` } as CSSProperties}>
       <div className="gr-band-top">
         <span className="mz-eyebrow">{eyebrow}</span>
-        <span className="gr-band-chip">{chip}</span>
+        <span className={cn('gr-band-chip', chipTone)}>{chip}</span>
       </div>
-      <div>
-        {rows.map((r, i) => {
-          const pct = clampPct(r.progressPct)
-          return (
-            <div key={r.key} className="skl" style={{ '--d': `${350 + i * 60}ms` } as React.CSSProperties}>
-              <span className="k">
-                <span aria-hidden="true" style={{ display: 'inline-flex', verticalAlign: '-2px', marginRight: 4 }}>{r.icon}</span>
-                <span>{r.name}</span>
-              </span>
-              <div className="bar">
-                <i style={{ width: `${pct}%` }} />
-              </div>
-              <span className="lv">Lv {r.level}</span>
-              <span style={{ width: 44, textAlign: 'right', fontSize: 10, fontWeight: 700, color: 'var(--mz-ink-mut)', fontVariantNumeric: 'tabular-nums' }}>{fmt(r.xp)}</span>
-            </div>
-          )
-        })}
-      </div>
+      {rows.map((r, i) => {
+        const hint = perkHint(r.level)
+        return (
+          <div key={r.key} className={cn('gr-skl', i >= previewRows && 'more')}>
+            <span className="gr-skl-ic" aria-hidden="true">{r.icon}</span>
+            <span className="gr-skl-nm">{r.name}</span>
+            <div className="gr-tbar"><i className={BAR[wash]} style={{ '--w': `${clampPct(r.progressPct)}%`, '--d': `${d + 260 + i * 55}ms` } as CSSProperties} /></div>
+            {hint != null && <span className="gr-skl-perk">→ perk Lv {hint}</span>}
+            <span className="gr-skl-lv">Lv {r.level}</span>
+          </div>
+        )
+      })}
+      {rows.length > previewRows && (
+        <button type="button" className="gr-expand" aria-expanded={expanded} onClick={() => setExpanded((e) => !e)}>
+          {expanded ? 'Kevesebb ▴' : `Mind a ${rows.length} ▸`}
+        </button>
+      )}
       {footer && <div className="gr-band-foot">{footer}</div>}
     </div>
   )

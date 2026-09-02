@@ -1,5 +1,5 @@
-import { expect, test } from 'vitest'
-import { currentWeekOf, localDateString, nowOffsetIso, offsetIso } from '@/shared/lib/dates'
+import { describe, expect, test } from 'vitest'
+import { currentWeekOf, localDateString, mondayOf, nowOffsetIso, offsetIso } from '@/shared/lib/dates'
 
 // ISO date for `n` calendar days ago (negative = in the future), in local time.
 function isoDaysAgo(n: number): string {
@@ -35,4 +35,10 @@ test('offsetIso: preserves date+time and appends a numeric ±hh:mm offset', () =
 test('nowOffsetIso: is offset-bearing (±hh:mm), to the minute, in local wall-clock', () => {
   // `new Date('...T08:30:00')` (no zone) parses as LOCAL time, so the wall-clock stays 08:30.
   expect(nowOffsetIso(new Date('2026-07-02T08:30:00'))).toMatch(/^2026-07-02T08:30:00[+-]\d{2}:\d{2}$/)
+})
+
+describe('mondayOf', () => {
+  test('a Wednesday maps to its Monday', () => { expect(mondayOf('2026-09-02')).toBe('2026-08-31') })
+  test('a Monday maps to itself', () => { expect(mondayOf('2026-08-31')).toBe('2026-08-31') })
+  test('a Sunday maps to the PREVIOUS Monday (ISO week)', () => { expect(mondayOf('2026-09-06')).toBe('2026-08-31') })
 })

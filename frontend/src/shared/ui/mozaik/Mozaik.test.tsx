@@ -94,6 +94,12 @@ test('MozaikPage scaffold: tone gradient + back chip + hero + body', async () =>
   expect(onBack).toHaveBeenCalled()
 })
 
+test('PageHero renders a clay SPOT in the hero row when `spot` is given (mezo-rmi0.1)', () => {
+  const { container } = render(<PageHero spot="s-hajtas" big={33} name="skill" />)
+  expect(container.querySelector('.mz-hero-row use')?.getAttribute('href')).toBe('#s-hajtas')
+  expect(container.querySelector('.mz-bignum')?.textContent).toBe('33')
+})
+
 test('CollapsibleStrip: closed header carries the summary; toggling flips aria-expanded and reveals the body', async () => {
   render(
     <CollapsibleStrip eyebrow="Szettek" summary="2/6 ✓ · 1 234 kg">

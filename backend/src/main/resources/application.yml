@@ -257,6 +257,9 @@ mezo:
     # Fuel planner settings (mezo-53su): eating cadence + caffeine cutoff singleton.
     fuel-settings:
       enabled: true
+    # Mezo-kalauz seen-store (mezo-gb1s.1): per-user guide-progress singleton.
+    tutorial:
+      enabled: true
     # Stack placement LLM fallback (mezo-vx9v) — zone suggestion for supplements the rule
     # table does not know; needs the companion switch too (CompanionLlm bean), otherwise
     # placement degrades to the deterministic 'fallback' zone.

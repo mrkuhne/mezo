@@ -3,12 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { pantryApi, type PantryData } from '@/data/fuel/pantryApi'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
-import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, pantryLookupFixture, MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
-import { pantrySources } from '@/data/pantrySources'
+import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
+import { pantrySources, type PantrySourceKey } from '@/data/pantrySources'
 import { supplementsStash } from '@/data/fuel/fuel'
 import { PANTRY_KEY, RECIPES_KEY, RECIPE_BREAKDOWN_KEY } from '@/data/fuel/queryKeys'
 import { movesRecipeScores, recipesUsingPantryItem, type ScoredPantryFacts } from '@/data/fuel/pantryImpact'
-import type { Ingredient, Recipe, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryLookupItem, PantryScrapeDraft } from '@/data/types'
+import type { Ingredient, Recipe, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryScrapeDraft } from '@/data/types'
 
 // P6 (mezo-bka): imports + suggestions ride the same PantryResponse — one query, no extra key.
 const mockData: PantryData = {
@@ -125,16 +125,7 @@ export function usePantryActions() {
   const updateItem = useCallback((id: string, input: PantryItemInput) => update.mutate({ id, input }), [update])
   const deleteItem = useCallback((id: string) => remove.mutate(id), [remove])
   const importItem = useCallback((input: PantryImportInput) => importMut.mutateAsync(input), [importMut])
-  // OFF lookup is a plain read (no cache — results are ephemeral search hits);
-  // mock mode serves the canned fixture after a demo delay.
-  const lookupItems = useCallback(
-    (q: string): Promise<PantryLookupItem[]> =>
-      mock
-        ? new Promise(resolve => setTimeout(() => resolve(pantryLookupFixture), 700))
-        : pantryApi.lookup(q),
-    [mock],
-  )
-  // URL scrape (P8, mezo-8vum) — like lookupItems, an ephemeral read (no cache);
+  // URL scrape (P8, mezo-8vum) — an ephemeral read (no cache);
   // mock mode serves the canned draft after a demo delay.
   const scrapeItem = useCallback(
     (url: string): Promise<PantryScrapeDraft | null> =>
@@ -151,18 +142,29 @@ export function usePantryActions() {
         : pantryApi.photoExtract(photo, photo2),
     [mock],
   )
-  return { addItem, updateItem, deleteItem, importItem, lookupItems, scrapeItem, photoExtract }
+  return { addItem, updateItem, deleteItem, importItem, scrapeItem, photoExtract }
 }
 
 // --- mock-mode cache mutators: keep the offline app interactive ---
 type PantryCache = PantryData
 
+// Mirrors the real backend's source derivation (PantryImportService.importItem): a photo-confirmed
+// draft carries the origin marker -> 'photo'; a Link-mode draft carries the scrape sourceUrl -> the
+// backend maps the URL host to a source, defaulting to 'web' for an unrecognised host (mirrored here
+// with the generic 'web', since the mock has no host table to consult); the OFF-lookup mode that used
+// to fall through to 'openfoodfacts' was retired from the FE (mezo-ymt4, 2026-09-02) — no live FE path
+// leaves both origin and sourceUrl empty, so 'manual' below is an unreached, honest-default fallback.
+function sourceFor(input: PantryImportInput): PantrySourceKey {
+  return input.origin === 'photo' ? 'photo' : input.sourceUrl ? 'web' : 'manual'
+}
+
 /** Mock import: append the draft as a food ingredient + prepend an imports-feed row. */
 function mockImport(qc: ReturnType<typeof useQueryClient>, input: PantryImportInput) {
   qc.setQueryData<PantryCache>(PANTRY_KEY, prev => {
     const base = prev ?? mockData
+    const source = sourceFor(input)
     const ing: Ingredient = {
-      id: crypto.randomUUID(), name: input.name, brand: input.brand ?? '', source: 'openfoodfacts',
+      id: crypto.randomUUID(), name: input.name, brand: input.brand ?? '', source,
       category: input.category ?? 'other', per: input.per, unit: input.unit,
       macros: { kcal: input.kcal ?? 0, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 },
       price: 0, priceUnit: '', pkg: '',
@@ -172,7 +174,7 @@ function mockImport(qc: ReturnType<typeof useQueryClient>, input: PantryImportIn
       stock: null, lastUsed: '—', usedInRecipes: 0,
     }
     const feed: PantryImport = {
-      id: crypto.randomUUID(), source: 'openfoodfacts', when: 'ma',
+      id: crypto.randomUUID(), source, when: 'ma',
       items: 1, status: 'synced', ofWhat: input.name,
     }
     return { ...base, ingredients: [...base.ingredients, ing], imports: [feed, ...base.imports] }
