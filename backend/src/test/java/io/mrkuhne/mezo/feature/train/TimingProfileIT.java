@@ -1,8 +1,13 @@
 package io.mrkuhne.mezo.feature.train;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -11,6 +16,7 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutTimingProfileRepository;
 import io.mrkuhne.mezo.feature.train.service.EwmaEstimator;
 import io.mrkuhne.mezo.feature.train.service.TimingObservationExtractor;
+import io.mrkuhne.mezo.feature.train.service.TimingProfileListener;
 import io.mrkuhne.mezo.feature.train.service.TimingProfileService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -22,12 +28,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Learned workout-timing profile (mezo-dzbm, spec 2026-09-02 slice 2): {@code
  * TimingProfileService.learnFrom} folds a finished session's intervals into a per-user, per-
- * component EWMA, hooked into {@code WorkoutService.finishWorkout} right after the medal replay.
+ * component EWMA. {@code WorkoutService.finishWorkout} publishes {@code WorkoutFinishedEvent}
+ * unconditionally; {@code TimingProfileListener} consumes it AFTER_COMMIT + {@code @Async} (the
+ * {@code FactExtractionListener} idiom) and calls {@code learnFrom} — so every assertion that
+ * depends on the listener having run uses {@code Awaitility}, exactly like this repo's other
+ * AFTER_COMMIT listener tests (see {@code TurnEmbeddingListenerIT}). This class is deliberately
+ * NOT {@code @Transactional}: an AFTER_COMMIT synchronization only fires on a REAL commit, so a
+ * test wrapped in its own (rolled-back) transaction would never see the event fire at all — each
+ * test's direct {@code workoutService.finishWorkout(...)} / {@code learnFrom(...)} call commits
+ * for real, and {@code AbstractIntegrationTest}'s {@code ResetDatabase} (not rollback) cleans up
+ * between tests.
  */
 class TimingProfileIT extends AbstractIntegrationTest {
 
@@ -63,10 +79,15 @@ class TimingProfileIT extends AbstractIntegrationTest {
 
         workoutService.finishWorkout(user, instance.getId(), null);
 
+        // learnFrom now runs AFTER_COMMIT on its own (async) thread — await it, don't assert
+        // immediately (matches TurnEmbeddingListenerIT's shape for the same reason).
+        await().atMost(10, SECONDS).untilAsserted(() -> {
+            List<WorkoutTimingProfileEntity> rows = profileRepository.findByCreatedBy(user);
+            assertThat(rows).extracting(WorkoutTimingProfileEntity::getComponent)
+                .containsExactlyInAnyOrder(
+                    TimingObservationExtractor.LEAD_IN, TimingObservationExtractor.SET_CYCLE_COMPOUND);
+        });
         List<WorkoutTimingProfileEntity> rows = profileRepository.findByCreatedBy(user);
-        assertThat(rows).extracting(WorkoutTimingProfileEntity::getComponent)
-            .containsExactlyInAnyOrder(
-                TimingObservationExtractor.LEAD_IN, TimingObservationExtractor.SET_CYCLE_COMPOUND);
         WorkoutTimingProfileEntity setCycle = rows.stream()
             .filter(r -> TimingObservationExtractor.SET_CYCLE_COMPOUND.equals(r.getComponent()))
             .findFirst().orElseThrow();
@@ -94,6 +115,9 @@ class TimingProfileIT extends AbstractIntegrationTest {
 
         workoutService.finishWorkout(user, instance.getId(), null);
 
+        await().atMost(10, SECONDS).untilAsserted(() ->
+            assertThat(profileRepository.findByCreatedByAndComponent(
+                user, TimingObservationExtractor.SET_CYCLE_COMPOUND)).isPresent());
         WorkoutTimingProfileEntity row = profileRepository
             .findByCreatedByAndComponent(user, TimingObservationExtractor.SET_CYCLE_COMPOUND)
             .orElseThrow();
@@ -115,6 +139,7 @@ class TimingProfileIT extends AbstractIntegrationTest {
         train.createLoggedSet(user, exercise.getId(), instance.getId(), 0, "60.0", 8, 1, t0);
         train.createLoggedSet(user, exercise.getId(), instance.getId(), 1, "60.0", 8, 1, t0.plusSeconds(100));
 
+        // Direct call, not through finishWorkout/the event — synchronous, no await needed.
         timingProfileService.learnFrom(user, instance.getId());
 
         assertThat(profileRepository.findByCreatedBy(user)).isEmpty();
@@ -137,6 +162,7 @@ class TimingProfileIT extends AbstractIntegrationTest {
         train.createLoggedSet(user, exercise.getId(), instance.getId(), 3, "60.0", 8, 1, t0.plusSeconds(900));
         train.createLoggedSet(user, exercise.getId(), instance.getId(), 4, "60.0", 8, 1, t0.plusSeconds(1000));
 
+        // Direct call, not through finishWorkout/the event — synchronous, no await needed.
         timingProfileService.learnFrom(user, instance.getId());
 
         assertThat(profileRepository.findByCreatedBy(user)).isEmpty();
@@ -162,35 +188,29 @@ class TimingProfileIT extends AbstractIntegrationTest {
     }
 
     /**
-     * {@code learnFrom} carries plain method-level {@code @Transactional} (REQUIRED), joining
-     * {@code finishWorkout}'s already-open transaction — exactly as mandated (no NESTED, no
-     * {@code PlatformTransactionManager} side effects). That shape has a real consequence, proven
-     * here rather than assumed: Spring marks a PARTICIPATING transaction rollback-only the instant
-     * any unchecked exception escapes a {@code @Transactional}-proxied method joined to it —
-     * regardless of whether the failure ever touched the database — and a caller's {@code
-     * try/catch} around the call cannot undo that flag (confirmed by temporarily forcing a
-     * throw at the very top of {@code learnFrom}, before any repository access: finishWorkout
-     * still surfaced {@code UnexpectedRollbackException} to ITS caller). A genuine Postgres-level
-     * failure compounds this: once a statement aborts the physical transaction, nothing on that
-     * connection — not even the eventual COMMIT — can succeed without a SAVEPOINT, which is
-     * precisely the NESTED-propagation machinery this task removes as an unacceptable app-wide
-     * side effect (it flips {@code nestedTransactionAllowed} on the shared, autoconfigured
-     * {@code JpaTransactionManager} for every other call site too).
+     * Proves the ACTUAL guarantee the AFTER_COMMIT hand-off buys: {@code finishWorkout} commits
+     * and returns the finished workout regardless of what profile learning does, because by the
+     * time {@code TimingProfileListener} runs, {@code finishWorkout}'s transaction is already
+     * gone — there is no shared transaction left for a failure in the listener to poison.
      *
-     * <p>So under the mandated shape, "derived and decorative, must not roll back the real write"
-     * (the pattern the medal derivation above demonstrates) only holds for failures that stay
-     * OUTSIDE any {@code @Transactional} proxy boundary — a plain bug in in-memory logic, exactly
-     * like {@code MedalService.forSession}, which carries no {@code @Transactional} of its own.
-     * {@code learnFrom} cannot offer that same guarantee for a genuine DATA-INTEGRITY failure
-     * without reintroducing NESTED. What it CAN and does guarantee instead — proven below with a
-     * real, unmocked constraint collision, not a contrived in-memory throw — is that the failure
-     * takes down ONLY this attempt, atomically: finishWorkout's completion write is never
-     * partially applied, the session is left exactly as it was, and the caller gets a clear
-     * signal (an exception) rather than silently-lost data. That is the correct outcome for an
-     * actual data-integrity bug — the same as any other constraint violation elsewhere in the app.
+     * <p>Real, unmocked fault injection, unchanged from the earlier (rejected) design: a
+     * SOFT-DELETED leftover {@code workout_timing_profile} row already occupies the
+     * {@code (createdBy, component)} slot. {@code @SQLRestriction(is_deleted = false)} hides it
+     * from {@code findByCreatedByAndComponent}, so {@code apply()} tries to INSERT a fresh row
+     * and collides with {@code uq_workout_timing_profile_owner_component} (not a partial index —
+     * it does not exempt soft-deleted rows), throwing inside the listener's OWN (REQUIRES_NEW)
+     * transaction, long after {@code finishWorkout} has committed.
+     *
+     * <p>A bare "still zero profile rows" assertion right after the call would be vacuous — it
+     * passes identically whether the listener ran and failed, or simply hasn't fired yet (this
+     * repo's own {@code GraphFactOptOutEventIT} calls out exactly this trap). So this test
+     * attaches a {@code ListAppender} (the {@code WebPushClientIT} log-capture idiom, no mocks)
+     * to {@code TimingProfileListener}'s logger and awaits its catch-and-log warning, keyed on
+     * this session's id, before asserting the negative — proof the listener genuinely ran and
+     * failed, not that it hasn't run yet.
      */
     @Test
-    void testFinishWorkout_shouldRollBackAtomically_whenProfileLearningHitsADataIntegrityFailure() {
+    void testFinishWorkout_shouldStillComplete_whenProfileLearningThrows() {
         UUID user = databasePopulator.populateUser("timing-profile-throws@test.local");
         WorkoutSessionEntity tmpl = template(user);
         ExerciseEntity exercise = train.createExercise(user, tmpl.getId(), "Row", 0);
@@ -200,12 +220,6 @@ class TimingProfileIT extends AbstractIntegrationTest {
         train.save(instance);
         train.createLoggedSet(user, exercise.getId(), instance.getId(), 0, "60.0", 8, 1, t0);
         train.createLoggedSet(user, exercise.getId(), instance.getId(), 1, "60.0", 8, 1, t0.plusSeconds(100));
-        // Corrupt input state, honestly, no mocks: a SOFT-DELETED leftover row already occupies
-        // the (createdBy, component) slot. @SQLRestriction(is_deleted = false) hides it from
-        // findByCreatedByAndComponent, so apply() sees no row and tries to INSERT a fresh one —
-        // but uq_workout_timing_profile_owner_component is NOT a partial index (it does not
-        // exempt soft-deleted rows), so that insert collides and throws
-        // DataIntegrityViolationException when learnFrom's transaction flushes.
         WorkoutTimingProfileEntity leftover = new WorkoutTimingProfileEntity();
         leftover.setCreatedBy(user);
         leftover.setComponent(TimingObservationExtractor.SET_CYCLE_COMPOUND);
@@ -215,17 +229,28 @@ class TimingProfileIT extends AbstractIntegrationTest {
         leftover.setDeleted(true);
         profileRepository.saveAndFlush(leftover);
 
-        // The constraint collision poisons finishWorkout's own (joined) transaction — see the
-        // javadoc above for why a joined @Transactional callee makes that unavoidable without
-        // NESTED. finishWorkout's try/catch still runs (it logs the warning) but cannot stop the
-        // eventual commit from failing, so the whole call surfaces the failure to ITS caller.
-        assertThatThrownBy(() -> workoutService.finishWorkout(user, instance.getId(), null))
-            .isInstanceOf(org.springframework.transaction.UnexpectedRollbackException.class);
+        Logger logger = (Logger) LoggerFactory.getLogger(TimingProfileListener.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            WorkoutInstanceResponse finished = workoutService.finishWorkout(user, instance.getId(), null);
 
-        // Atomicity, not silent partial writes: the finish attempt left NO trace — status and
-        // finishedAt are exactly as they were before the call, not half-completed.
-        WorkoutSessionEntity reloaded = workoutSessionRepository.findById(instance.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo("active");
-        assertThat(reloaded.getFinishedAt()).isNull();
+            // The completion write is unaffected — it committed before the listener ever ran.
+            assertThat(finished.getFinishedAt()).isNotNull();
+            WorkoutSessionEntity reloaded = workoutSessionRepository.findById(instance.getId()).orElseThrow();
+            assertThat(reloaded.getStatus()).isEqualTo("completed");
+            assertThat(reloaded.getFinishedAt()).isNotNull();
+
+            // Non-vacuous: wait for PROOF the listener ran and failed for THIS session, not just
+            // that no rows exist yet.
+            await().atMost(10, SECONDS).untilAsserted(() ->
+                assertThat(appender.list.stream().map(ILoggingEvent::getFormattedMessage))
+                    .anyMatch(message -> message.contains(instance.getId().toString())));
+
+            assertThat(profileRepository.findByCreatedBy(user)).isEmpty();
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 }

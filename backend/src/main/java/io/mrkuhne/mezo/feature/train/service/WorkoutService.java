@@ -15,7 +15,6 @@ import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.ClosingBlockGate;
 import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
-import io.mrkuhne.mezo.feature.train.TimingProfileGate;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import io.mrkuhne.mezo.feature.train.config.TimingProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
@@ -55,6 +54,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -115,14 +115,16 @@ public class WorkoutService {
     // Actual-duration measurement (mezo-1jm8): gap/lead-in caps consumed when finishWorkout
     // derives activeSeconds from the session's logged set timestamps.
     private final TimingProperties timingProperties;
-    // Learned workout-timing profile (mezo-dzbm): a SEPARATE bean (mirrors
-    // workoutAutoCloseService/closingBlockService), called after the medal try/catch below.
-    // TimingProfileService.learnFrom carries plain method-level @Transactional (REQUIRED), so it
-    // joins THIS method's already-open transaction and sees the finishedAt write above. The gate
-    // bean exists ONLY when mezo.feature.timing-profile.enabled=true (mirrors
-    // hypertrophyGate/closingBlockGate).
-    private final ObjectProvider<TimingProfileGate> timingProfileGate;
-    private final TimingProfileService timingProfileService;
+    // Learned workout-timing profile (mezo-dzbm): finishWorkout publishes WorkoutFinishedEvent
+    // (below) instead of calling TimingProfileService directly — a REQUIRED-joined call cannot
+    // survive a failure inside it without poisoning THIS transaction (proven, not assumed: Spring
+    // marks a participating transaction rollback-only on any exception from a joined
+    // @Transactional callee, DB-touching or not), so the failure-isolation this feature needs has
+    // to come from running AFTER this transaction commits, not from a try/catch inside it. See
+    // TimingProfileListener (AFTER_COMMIT + @Async, the ChatTurnCompleted/FactExtractionListener
+    // idiom) — gated on the switch there, not here (mirrors ChatService, which publishes
+    // ChatTurnCompleted unconditionally too).
+    private final ApplicationEventPublisher eventPublisher;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -817,16 +819,14 @@ public class WorkoutService {
                 instance.getId(), e);
             base.setMedals(List.of());
         }
-        // Learning is derived and decorative, exactly like the medals above: the completion write
-        // must not roll back because the profile update blew up. Gated — off ⇒ nothing is learned.
-        if (timingProfileGate.getIfAvailable() != null) {
-            try {
-                timingProfileService.learnFrom(createdBy, instance.getId());
-            } catch (RuntimeException e) {
-                log.warn("Timing-profile learning failed for session {} — finishing anyway",
-                    instance.getId(), e);
-            }
-        }
+        // Learned workout-timing profile (mezo-dzbm): published unconditionally, exactly like
+        // ChatService publishes ChatTurnCompleted — the gate lives on the LISTENER
+        // (@ConditionalOnProperty on TimingProfileListener), not on the publish call. Consumed
+        // AFTER_COMMIT, so profile learning only ever runs once this completion write has
+        // actually landed, and — because it then runs on its own thread, after commit — nothing
+        // it does or throws can roll this write back. A rolled-back test transaction never fires
+        // it, by design (mirrors ChatTurnCompleted).
+        eventPublisher.publishEvent(new WorkoutFinishedEvent(createdBy, instance.getId()));
         return base;
     }
 

@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutTimingProfileRepository;
+import io.mrkuhne.mezo.feature.train.service.TimingProfileListener;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -15,13 +16,18 @@ import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.TestPropertySource;
 
 /**
  * Learned workout-timing profile switch OFF (mezo-dzbm): with
  * {@code mezo.feature.timing-profile.enabled=false} the {@code TimingProfileGate} bean is absent,
- * so finishWorkout must complete without ever writing a profile row. Separate class because a
- * @ConditionalOnProperty bean's presence is fixed per Spring context.
+ * so {@code TimingProfileListener} (@{@code ConditionalOnBean(TimingProfileGate.class)}) is also
+ * absent, and {@code WorkoutFinishedEvent} has no consumer at all — finishWorkout completes and
+ * its publish is a no-op, with no profile row ever written (not merely "not yet" — there is no
+ * listener to eventually run, so no await is needed here, unlike the positive-path tests in
+ * {@code TimingProfileIT}). Separate class because a @ConditionalOnProperty/@ConditionalOnBean
+ * bean's presence is fixed per Spring context.
  */
 @TestPropertySource(properties = "mezo.feature.timing-profile.enabled=false")
 class TimingProfileSwitchOffIT extends AbstractIntegrationTest {
@@ -30,9 +36,16 @@ class TimingProfileSwitchOffIT extends AbstractIntegrationTest {
     @Autowired private WorkoutTimingProfileRepository profileRepository;
     @Autowired private TrainPopulator train;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private ApplicationContext context;
 
     private static String todayLabel() {
         return WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+    }
+
+    /** Mirrors {@code ChatExtractionSwitchOffIT}: assert the bean is gone, not just its effect. */
+    @Test
+    void testListener_shouldNotExist_whenTimingProfileDisabled() {
+        assertThat(context.getBeanProvider(TimingProfileListener.class).getIfAvailable()).isNull();
     }
 
     @Test
