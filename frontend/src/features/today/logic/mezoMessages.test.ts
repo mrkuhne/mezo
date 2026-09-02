@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { buildMezoMessages, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
+import { buildMezoMessages, partitionMezoThread, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import type { Briefing, FeedMessage } from '@/data/types'
 
 const demoBriefing: Briefing = {
@@ -144,5 +144,30 @@ describe('buildMezoMessages', () => {
   test('üres nudges tömb → nem told be semmit', () => {
     const msgs = buildMezoMessages({ feed: [midday], demoBriefing: null, nudges: [] })
     expect(msgs.map((m) => m.id)).toEqual(['midday'])
+  })
+})
+
+describe('partitionMezoThread (mezo-ho9k)', () => {
+  const feedItem: MezoMessageItem = {
+    id: 'morning', artifactId: 'fm-1', kind: 'morning', eyebrow: 'Reggeli briefing',
+    time: '07:05', paragraphs: ['szöveg'], refs: [], meta: null,
+  }
+  const nudgeItem: MezoMessageItem = {
+    id: 'nudge-hidratacio-2026-05-22T12:00:00.000Z', eyebrow: 'Életjel', time: '12:00',
+    paragraphs: ['💧'], refs: [], meta: 'Életjel-figyelő', source: 'eletjel',
+  }
+
+  test('a source: eletjel elemek az eletjelek partícióba kerülnek, a többi az uzenetek-be', () => {
+    const { uzenetek, eletjelek } = partitionMezoThread([feedItem, nudgeItem])
+    expect(uzenetek).toEqual([feedItem])
+    expect(eletjelek).toEqual([nudgeItem])
+  })
+
+  test('sorrendtartó mindkét partíción belül', () => {
+    const n2 = { ...nudgeItem, id: 'nudge-mozgas-x' }
+    const f2 = { ...feedItem, id: 'sleep' }
+    const { uzenetek, eletjelek } = partitionMezoThread([feedItem, nudgeItem, f2, n2])
+    expect(uzenetek.map((m) => m.id)).toEqual(['morning', 'sleep'])
+    expect(eletjelek.map((m) => m.id)).toEqual([nudgeItem.id, 'nudge-mozgas-x'])
   })
 })

@@ -29,6 +29,9 @@ export interface MezoMessageItem {
   paragraphs: string[]
   refs: BriefingRef[]
   meta: string | null
+  /** Tab-partíció kulcs (mezo-ho9k): 'eletjel' = Életjel-figyelő nudge — a NapMezoPage
+   *  Életjelek tabjára tartozik. Hiánya = companion-üzenet (Üzenetek tab). */
+  source?: 'eletjel'
 }
 
 /** A briefing eyebrow-ja hordozhat egy `HH:mm`-et (pl. „Mezo · reggeli briefing · 06:30"). */
@@ -77,4 +80,16 @@ export function buildMezoMessages({ feed, demoBriefing, nudges }: {
   }
   if (nudges && nudges.length > 0) out.push(...nudges)
   return out
+}
+
+/** A NapMezoPage két tabjának partíciója (mezo-ho9k). Pure, sorrendtartó — a szál
+ *  maga (sorrend, tartalom) érintetlen: ez CSAK megjelenítési bontás. */
+export function partitionMezoThread(messages: MezoMessageItem[]): {
+  uzenetek: MezoMessageItem[]
+  eletjelek: MezoMessageItem[]
+} {
+  return {
+    uzenetek: messages.filter((m) => m.source !== 'eletjel'),
+    eletjelek: messages.filter((m) => m.source === 'eletjel'),
+  }
 }

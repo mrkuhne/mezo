@@ -4689,6 +4689,38 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
   font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
   box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55);
 }
+/* ── Üzenetek | Életjelek tab-váltó (mezo-ho9k) — a mem-seg pill-idióma a nap
+      oldalon: 44pt gombok, aktív = gradient CTA. ── */
+.nap-mzseg { display: flex; gap: 5px; border-radius: 999px; padding: 4px; margin-bottom: 12px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.nap-mzseg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.nap-mzseg button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+/* Tab-pöttyök (mezo-ho9k): belépéskori olvasatlan-pillanatkép, session-lokális. */
+.nap-mzdot { width: 6px; height: 6px; border-radius: 50%; background: var(--gradient-cta); flex: none; }
+/* ── Életjelek tab: státusz-sáv + rendben-sor (mezo-ho9k) ── */
+.nap-ejstrip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; width: 100%;
+  box-sizing: border-box; margin-bottom: 12px; padding: 0; border: none; background: none;
+  font-family: inherit; cursor: pointer; color: var(--text-primary); }
+.nap-ejcell { display: grid; justify-items: center; gap: 4px; padding: 9px 2px 7px; min-height: 44px;
+  background: var(--surface-card); border-radius: 13px; border: 0.5px solid rgba(43, 33, 24, 0.06); }
+.nap-ejcell .eb { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.nap-ejcell .pct { font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.nap-ejcell.warn { border-color: color-mix(in srgb, var(--coral-deep) 55%, transparent); }
+.nap-ejok { font-size: 12px; font-weight: 600; color: var(--sage-deep); text-align: center; margin: 4px 0 10px; }
+/* ── Összecsukott régebbi üzenet-sor (mezo-ho9k) ── */
+.nap-mzrow { width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px;
+  text-align: left; min-height: 44px; margin-bottom: 8px; padding: 10px 14px; cursor: pointer;
+  background: var(--surface-card); border-radius: 15px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  box-shadow: 0 10px 22px -17px rgba(43, 33, 24, 0.3); font-family: inherit; color: var(--text-primary); }
+.nap-mzrow .t { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: #A8801F; flex: none; }
+.nap-mzrow .pv { flex: 1; min-width: 0; font-size: 12px; font-weight: 300; color: var(--mz-ink-mut);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nap-mzrow .mt { flex: none; font-size: 10px; color: var(--mz-ink-mut); white-space: nowrap; }
+.nap-mzrow .chev { color: var(--mz-ink-mut); font-size: 12px; flex: none; }
 /* ── Nap · Napi küldetések page (mezo-d20.2.4) — prototype nap-body #page-quest,
       values ×1.18 (330→390px frame). The reroll/CTA chips keep the prototype's slim
       pill face but grow to the 44pt touch floor. ── */
