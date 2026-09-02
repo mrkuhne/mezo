@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoutineWizardPage } from '@/features/me/pages/RoutineWizardPage'
@@ -6,7 +6,7 @@ import type { HabitChainInfo } from '@/data/types'
 
 const { useHabitCatalog, useHabitCatalogActions, createDef, navigate } = vi.hoisted(() => ({
   useHabitCatalog: vi.fn(), useHabitCatalogActions: vi.fn(),
-  createDef: vi.fn(() => Promise.resolve()), navigate: vi.fn(),
+  createDef: vi.fn((_input: Record<string, unknown>) => Promise.resolve()), navigate: vi.fn(),
 }))
 vi.mock('@/data/hooks', () => ({
   useHabitCatalog: () => useHabitCatalog(),
@@ -26,6 +26,12 @@ const MORNING: HabitChainInfo = {
     why: null, anchorCopy: null, mode: 'MANUAL', metric: 'manual', skillKey: 'mindset',
     xp: 5, linkUrl: null, isActive: true, framework: null, anchorHabitKey: null,
     cue: null, craving: null, reward: null, celebration: null, identity: null,
+  }, {
+    id: 'd2', habitKey: 'intent', chainKey: 'MORNING', position: 2, title: 'Napi szándék leírása',
+    why: null, anchorCopy: null, mode: 'MANUAL', metric: 'manual', skillKey: 'mindfulness',
+    xp: 10, linkUrl: null, isActive: true, framework: 'CLEAR', anchorHabitKey: null,
+    cue: '7:10-kor a konyhaasztalnál', craving: 'tisztább fejjel indul a nap',
+    reward: 'a pipa maga', celebration: null, identity: 'figyel a saját gondolataira',
   }],
 }
 
@@ -36,7 +42,8 @@ beforeEach(() => {
   navigate.mockClear()
 })
 
-const renderWizard = () => render(<MemoryRouter><RoutineWizardPage /></MemoryRouter>)
+const renderWizard = (path = '/me/rutin/uj') =>
+  render(<MemoryRouter initialEntries={[path]}><RoutineWizardPage /></MemoryRouter>)
 const next = () => screen.getByRole('button', { name: /Tovább|Mentés/ })
 
 describe('RoutineWizardPage', () => {
@@ -65,10 +72,98 @@ describe('RoutineWizardPage', () => {
     expect(next()).toBeEnabled()
     fireEvent.click(next())
 
-    expect(createDef).toHaveBeenCalledWith(expect.objectContaining({
+    // EXACT, not objectContaining: the backend rejects a FOGG recipe that carries BOTH
+    // anchorHabitKey and anchorCopy, and objectContaining would happily pass that payload.
+    expect(createDef).toHaveBeenCalledWith({
       chainKey: 'MORNING', title: 'leírok egy mondatot', mode: 'MANUAL',
+      skillKey: 'mindset', xp: 10,
       framework: 'FOGG', anchorHabitKey: 'sun', celebration: 'ökölrázás',
-    }))
+    })
+    expect(createDef).toHaveBeenCalledWith(expect.not.objectContaining({ anchorCopy: expect.anything() }))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin'))
+  })
+
+  it('sends a free-text Fogg anchor as anchorCopy, never alongside anchorHabitKey', async () => {
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Horgony'), { target: { value: 'letettem a fogkefét' } })
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Pici tett'), { target: { value: 'leírok egy mondatot' } })
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'ökölrázás' }))
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    expect(createDef).toHaveBeenCalledWith({
+      chainKey: 'MORNING', title: 'leírok egy mondatot', mode: 'MANUAL',
+      skillKey: 'mindset', xp: 10,
+      framework: 'FOGG', anchorCopy: 'letettem a fogkefét', celebration: 'ökölrázás',
+    })
+  })
+
+  it('saves a Clear recipe with no anchor fields and no blank identity', async () => {
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Négy törvény/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Jelzés'), { target: { value: '7:10-kor a konyhában' } })
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Válasz'), { target: { value: 'leírom a szándékot' } })
+    fireEvent.change(screen.getByLabelText('Vágy'), { target: { value: 'tisztább a fejem' } })
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    // Backend rules: a CLEAR recipe must carry NO anchor fields, and an untouched identity is
+    // omitted outright rather than sent as ''.
+    expect(createDef).toHaveBeenCalledWith({
+      chainKey: 'MORNING', title: 'leírom a szándékot', mode: 'MANUAL',
+      skillKey: 'mindset', xp: 10, framework: 'CLEAR',
+      cue: '7:10-kor a konyhában', craving: 'tisztább a fejem', reward: 'a pipa maga',
+    })
+    const payload = createDef.mock.calls[0][0]
+    expect(payload).not.toHaveProperty('anchorHabitKey')
+    expect(payload).not.toHaveProperty('anchorCopy')
+    expect(payload).not.toHaveProperty('identity')
+  })
+
+  it('seeds the form from ?prefill', () => {
+    renderWizard('/me/rutin/uj?prefill=intent')
+    expect(screen.getByRole('button', { name: /Négy törvény/ })).toHaveClass('on')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Jelzés')).toHaveValue('7:10-kor a konyhaasztalnál')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Válasz')).toHaveValue('Napi szándék leírása')
+    expect(screen.getByLabelText('Vágy')).toHaveValue('tisztább fejjel indul a nap')
+    expect(screen.getByLabelText('Identitás')).toHaveValue('figyel a saját gondolataira')
+    expect(screen.getByRole('button', { name: 'Reggeli rutin' })).toHaveClass('on')
+  })
+
+  it('drops the commitment tick when the framework changes', () => {
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'kész a Reggeli fény' }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Pici tett'), { target: { value: 'leírok egy mondatot' } })
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'ökölrázás' }))
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    expect(next()).toBeEnabled()
+
+    // back to step 1 and switch frameworks — the tick was a promise about the Fogg sentence
+    for (let i = 0; i < 3; i++) fireEvent.click(screen.getByRole('button', { name: '← Vissza' }))
+    fireEvent.click(screen.getByRole('button', { name: /Négy törvény/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Jelzés'), { target: { value: '7:10-kor a konyhában' } })
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Válasz'), { target: { value: 'leírom a szándékot' } })
+    fireEvent.change(screen.getByLabelText('Vágy'), { target: { value: 'tisztább a fejem' } })
+    fireEvent.click(next())
+    // reward defaults to "a pipa maga", so ONLY a carried-over tick could unlock this step
+    expect(next()).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    expect(next()).toBeEnabled()
   })
 
   it('requires craving on the Clear branch before leaving step 3', () => {

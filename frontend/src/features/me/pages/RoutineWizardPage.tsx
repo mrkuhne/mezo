@@ -166,6 +166,18 @@ export function RoutineWizardPage() {
     }).then(() => navigate('/me/rutin'))
   }
 
+  // Switching the framework on step 1 invalidates two slots that belong to the OTHER branch:
+  // the commitment tick (it is a promise about the recipe you just read, not a setting — a
+  // tick carried over from the Fogg pass would unlock Clear's save on a sentence the user
+  // never saw) and the resolved anchor key (Clear sends no anchor at all, and a stale
+  // anchorHabitKey would come back if the user switched twice).
+  const pickFramework = (next: HabitFramework) => {
+    if (next === framework) return
+    setFramework(next)
+    setCommitted(false)
+    setAnchorHabitKey(null)
+  }
+
   const onNext = () => {
     if (!canProceed) return
     if (isLast) save()
@@ -188,8 +200,14 @@ export function RoutineWizardPage() {
           <div className="rt-wsub rise" style={rise(40)}>{stepSub}</div>
 
           {step > 1 && (
-            <div className={cn('rt-sentence', framework === 'CLEAR' && 'is-clear')} data-testid="recipe-sentence">
-              <span className="rt-sentence-lb">{framework === 'FOGG' ? '⚓ Szokás-láncolás' : '◈ Négy törvény'}</span>
+            <div
+              className={cn('rt-sentence', framework === 'CLEAR' && 'is-clear', isLast && 'is-big')}
+              data-testid="recipe-sentence"
+            >
+              <span className="rt-sentence-lb">
+                {framework === 'FOGG' ? '⚓ Szokás-láncolás' : '◈ Négy törvény'}
+                <span className="rt-sentence-lb-sub">· épül, ahogy töltöd</span>
+              </span>
               <p className="rt-sentence-tx">
                 {routineSentenceParts(recipe).map((part, i) => (
                   part.slot === undefined
@@ -207,7 +225,7 @@ export function RoutineWizardPage() {
                 type="button"
                 className={cn('rt-fwcard is-fogg rise', framework === 'FOGG' && 'on')}
                 style={rise(80)}
-                onClick={() => setFramework('FOGG')}
+                onClick={() => pickFramework('FOGG')}
               >
                 <span className="rt-fwsgn" aria-hidden="true">⚓</span>
                 <span className="rt-fwbody">
@@ -221,7 +239,7 @@ export function RoutineWizardPage() {
                 type="button"
                 className={cn('rt-fwcard is-clear rise', framework === 'CLEAR' && 'on')}
                 style={rise(120)}
-                onClick={() => setFramework('CLEAR')}
+                onClick={() => pickFramework('CLEAR')}
               >
                 <span className="rt-fwsgn" aria-hidden="true">◈</span>
                 <span className="rt-fwbody">
@@ -291,7 +309,9 @@ export function RoutineWizardPage() {
           {step === 3 && (
             <>
               <FieldCard delayMs={80}>
-                <span className="rt-flabel">Én … · {titlePlaceholder(framework)}</span>
+                {/* The prototype's `titleLb`: the Clear branch names the slot "válasz", not the
+                    sentence module's shorter "tett" — the label teaches the law, the sentence reads. */}
+                <span className="rt-flabel">Én … · {framework === 'CLEAR' ? 'válasz' : titlePlaceholder(framework)}</span>
                 <input
                   className="rt-fin"
                   aria-label={framework === 'CLEAR' ? 'Válasz' : 'Pici tett'}
