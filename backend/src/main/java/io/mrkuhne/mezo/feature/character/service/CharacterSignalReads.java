@@ -146,7 +146,7 @@ public class CharacterSignalReads {
      * Round 4 (mezo-1gim.15): {@code gatherChatToolCalls} lazily navigates {@code AiMessageEntity
      * .getConversation()} for the title preview, which needs an open Hibernate session across the
      * whole method — normally guaranteed because the production caller ({@code
-     * CharacterObservationService.run}) is itself {@code @Transactional}, but not when this method
+     * CharacterObservationService.generateForDay}) is itself {@code @Transactional}, but not when this method
      * is invoked directly (e.g. {@code CharacterSignalReadsIT}). Read-only self-transaction closes
      * that gap without changing behaviour for the already-transactional caller (it simply joins).
      */

@@ -102,10 +102,10 @@ export const DETECTORS: DetectorEntry[] = [
   { key: 'mention-context-shift', who: 'antropologus', line: 'Milyen kontextusban kerülnek elő az emberek (a rendszer éjszakai címkéi), és nő-e a konfliktus-részarány.' },
   { key: 'weekend-gap', who: 'antropologus', line: 'Hétvégi alvásközép-eltolás (Roenneberg social jetlag, 1 h / 2 h sávok) és hétvégi logolás-rés. Hétvége = szombat–vasárnap.' },
   { key: 'chat-topic-shift', who: 'pszichologus', line: 'Melyik domén körül forognak a beszélgetéseid a társsal — a lekért eszközökből, a szöveg olvasása nélkül.' },
-  { key: 'knowledge-rejection-pattern', who: 'szkeptikus', line: 'A javasolt tények és minták mekkora részét tartottad meg — a rendszer találati aránya, nem a te tulajdonságod. ÉRZÉKENY.' },
+  { key: 'knowledge-rejection-pattern', who: 'szkeptikus', line: 'A javasolt tények és minták mekkora része maradt meg — a rendszer találati aránya, nem a te tulajdonságod. ÉRZÉKENY.' },
   { key: 'prediction-calibration', who: 'szkeptikus', line: 'A zárult predikciók találati aránya a kimondott magabiztossághoz képest: túlbiztos, alulbiztos vagy kalibrált volt a társ.' },
   { key: 'quest-completion-calibration', who: 'szkeptikus', line: 'Slotonkénti quest-teljesítés a motor saját sávjaihoz (85% / 50%) képest — a nehézség-kalibráció, a szöveg soha.' },
-  { key: 'experiment-outcome-ledger', who: 'szkeptikus', line: 'Hány javasolt kísérlet és kihívás zárult jó kimenettel, és hányat vetettél el indulás előtt.' },
+  { key: 'experiment-outcome-ledger', who: 'szkeptikus', line: 'Hány javasolt kísérlet és kihívás zárult jó kimenettel, és hány nem indult el (elvetve indulás előtt).' },
 ]
 
 const PRINCIPLE = 'A kód csak észlel — az értelmezés mindig az adott szakértő LLM-hívása. '

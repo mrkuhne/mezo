@@ -39,7 +39,7 @@ public class ChatTopicShiftDetector implements CharacterDetector {
         if (today == null || today.domain().equals(yesterday == null ? "" : yesterday.domain())) {
             return List.of();
         }
-        StringBuilder sb = new StringBuilder("Az elmúlt 4 hétben a társsal folytatott beszélgetéseid ")
+        StringBuilder sb = new StringBuilder("Az elmúlt 4 hétben a társsal folytatott beszélgetéseid eszközhívásainak ")
                 .append(TrailingWindow.pct(today.share())).append("%-a a(z) ").append(ChatToolDomains.hu(today.domain()))
                 .append(" körül forgott (").append(today.calls()).append(" eszközhívás a ").append(today.total())
                 .append("-ból); korábban ")

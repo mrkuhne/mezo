@@ -1565,7 +1565,7 @@ class DetectorTest {
         assertThat(fired).singleElement().satisfies(s -> {
             assertThat(s.detectorKey()).isEqualTo("people-mood-link");
             assertThat(s.expertKey()).isEqualTo("antropologus");
-            assertThat(s.summary()).contains("7 napján").contains("8,0").contains("7 említés nélküli napon")
+            assertThat(s.summary()).contains("7 olyan napján").contains("8,0").contains("7 ilyen, említés nélküli napon")
                     .contains("5,0").contains("magasabb").contains("gyenge").contains("nem irány");
             assertThat(s.salience()).isEqualTo(3);
         });
@@ -1719,7 +1719,7 @@ class DetectorTest {
         List<DetectorSignal> fired = new WeekendGapDetector().detect(in);
 
         assertThat(fired).singleElement().satisfies(s -> {
-            assertThat(s.summary()).contains("még kevés a hétvégi alvásnapló")
+            assertThat(s.summary()).contains("még kevés az alvásnapló")
                     .contains("hétvégén a napok 71%-án").contains("hétköznap 97%-án").contains("hétvégi rés");
             assertThat(s.salience()).isEqualTo(4);
         });

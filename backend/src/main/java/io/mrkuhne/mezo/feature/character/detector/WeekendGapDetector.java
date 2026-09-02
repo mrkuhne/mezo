@@ -48,9 +48,9 @@ public class WeekendGapDetector implements CharacterDetector {
         }
         String sleepPart;
         if ("keves".equals(today.jetlagBand())) {
-            sleepPart = "Az alvásközép-eltoláshoz még kevés a hétvégi alvásnapló (" + today.freeNights()
-                    + " szabad-éjszaka; legalább " + MIN_FREE_NIGHTS + " szabad és " + MIN_WORK_NIGHTS
-                    + " munkaéjszaka kell).";
+            sleepPart = "Az alvásközép-eltoláshoz még kevés az alvásnapló (" + today.freeNights()
+                    + " szabad- és " + today.workNights() + " munkaéjszaka; legalább " + MIN_FREE_NIGHTS
+                    + " szabad és " + MIN_WORK_NIGHTS + " munkaéjszaka kell).";
         } else {
             String bandHu = switch (today.jetlagBand()) {
                 case "jelentos" -> "jelentős";

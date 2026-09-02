@@ -620,7 +620,7 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       code: '9 javaslatomról született döntés: 6 maradt meg (2 finomítva), 3 esett ki — 67%, a kiesők főleg fuel',
       refs: [],
       who: 'szkeptikus',
-      obs: 'A javasolt tényeim kétharmadát megtartottad; ami kiesett, az a fuel kategóriából jött — ez az én találati arányom, nem a te tulajdonságod.',
+      obs: 'A javasolt tényeim kétharmada megmaradt; ami kiesett, az a fuel kategóriából jött — ez az én találati arányom, nem a te tulajdonságod.',
     },
   ],
   20: [

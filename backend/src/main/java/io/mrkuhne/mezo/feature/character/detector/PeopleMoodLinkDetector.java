@@ -45,9 +45,10 @@ public class PeopleMoodLinkDetector implements CharacterDetector {
         if (today == null || today.band().equals(yesterday == null ? "" : yesterday.band())) {
             return List.of();
         }
-        String summary = "Az elmúlt 6 hét " + today.mentionDays() + " napján, amikor embert említettél, a mentális "
-                + "check-in átlaga " + TrailingWindow.hu(today.mentionMean(), 1) + " volt, a " + today.otherDays()
-                + " említés nélküli napon " + TrailingWindow.hu(today.otherMean(), 1) + " — " + today.band()
+        String summary = "Az elmúlt 6 hét " + today.mentionDays() + " olyan napján, amikor embert említettél és "
+                + "check-int is írtál, a mentális check-in átlaga " + TrailingWindow.hu(today.mentionMean(), 1)
+                + " volt, a " + today.otherDays() + " ilyen, említés nélküli napon "
+                + TrailingWindow.hu(today.otherMean(), 1) + " — " + today.band()
                 + " együttjárás, " + today.tier() + " bizonyossággal (" + today.mentionDays()
                 + " nap). Együttjárás, nem irány; embert nem nevez.";
         return List.of(new DetectorSignal(key(), "antropologus", summary, "erős".equals(today.tier()) ? 4 : 3));
