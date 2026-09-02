@@ -19,8 +19,9 @@ const TEXT_INPUT: React.CSSProperties = { width: '100%', background: 'transparen
 
 /**
  * Habit-def create/edit sheet (routine editor, mezo-n5e9.2). The skill picker's options come
- * from `useProgressionProfile().life` (the Growth Skillek tab's own source — GrowthPage.tsx)
- * rather than the static `LIFE_SKILLS` list directly, falling back to it only when the profile
+ * from `useProgressionProfile().life` (the Growth Skillek tab's own source — GrowthSkillsPage.tsx,
+ * one of the Growth hub's sibling pages) rather than the static `LIFE_SKILLS` list directly,
+ * falling back to it only when the profile
  * hasn't resolved yet (ghost profile, `life: []`) so the picker is never stranded empty.
  *
  * CREATE offers the mode toggle + (when DERIVED) the metric select; EDIT shows mode/metric AND

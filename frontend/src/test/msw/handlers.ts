@@ -504,6 +504,10 @@ export const handlers = [
       ],
       perks: [],
     })),
+  // Growth week rollup (mezo-rmi0.1) — honest zeros are a valid contract answer.
+  http.get(`${API_BASE}/api/progression/growth-week/:date`, ({ params }) =>
+    HttpResponse.json({ weekStart: params.date, questCompleted: 0, questClosed: 0, lifeXp: 0, activities: 0, savingsHuf: 0 }),
+  ),
 
   // ── Activity log (E2, mezo-jzca). Defaults: empty day; create echoes a confident AI verdict.
   http.get(`${API_BASE}/api/activity/day/:date`, () => HttpResponse.json([])),
