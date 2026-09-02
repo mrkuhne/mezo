@@ -243,7 +243,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoryRecallService`, `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`,
     `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`, `PatternConfirmedEvent`,
     `PatternDetectionJob`, `PatternDetectionService`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`,
-    `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`,
+    `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`,
     `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`,
     `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`,
     `QuarterlyReviewService`, `Quarters`, `SeasonSuggestion`, `TranscriptionService`, `WeekContextRenderer`,
@@ -290,7 +290,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/companion/graph/edge/count
 - **Contract** `api/feature/me-week/me-week.yml` — 2 operations
   - **endpoints:** GET /api/me/week/{start} · GET /api/me/week/{start}/trend
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 139 IT + 17 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 140 IT + 18 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`,
     `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`,
@@ -303,31 +303,32 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionPatternPairDetailApiIT`, `CompanionPropertiesIT`, `CompanionRealWiringIT`, `CompanionStreamApiIT`,
     `CompanionSwitchOffIT`, `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`,
     `ConsolidationJobIT`, `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
-    `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`, `DailySummaryServiceIT`,
-    `DayScoreServiceIT`, `FactCandidateServiceIT`, `FactExtractionServiceIT`, `FakeEmbeddingAdapterIT`,
-    `FeedbackLearningJobSwitchOffIT`, `FeedbackLearningPropertiesIT`, `FeedbackLearningServiceIT`,
-    `FeedbackRollupPersistenceIT`, `FlagEvaluationListenerIT`, `FlagEvaluatorMomentumRecoveryIT`,
-    `FlagEvaluatorStressSleepIT`, `FlagPropertiesIT`, `FlagServiceIT`, `FlagSweepJobSwitchOffIT`, `GraphApiIT`,
-    `GraphCandidateApiIT`, `GraphEntityPersistenceIT`, `GraphFactOptOutEventIT`, `GraphFactOptOutIT`,
-    `GraphMaintenanceJobSwitchOffIT`, `GraphMaintenanceServiceIT`, `GraphPromotionEventIT`, `GraphPromotionPersonIT`,
-    `GraphPromotionServiceIT`, `GraphPromotionServiceReconcileIsolationIT`, `GraphPromotionSwitchOffIT`,
-    `GraphPromptAssemblerIT`, `GraphPromptAssemblerRefsCapIT`, `GraphRetractionEventIT`, `GraphRetractionIT`,
-    `GraphSeedSelectionCapIT`, `GraphSeedSelectionIT`, `GraphSeedSelectionRankingIT`, `GraphServiceIT`,
-    `GraphSwitchOffIT`, `GraphTraversalQueryIT`, `HypothesisGatherContextIT`, `HypothesisJobSwitchOffIT`,
-    `HypothesisPipelineServiceIT`, `KnowledgeFactServiceIT`, `LearnedFactPersistenceIT`,
-    `LifeEventExtractionServiceIT`, `MeWeekControllerIT`, `MeWeekServiceFuelFetchCountIT`, `MeWeekTrendIT`,
-    `MemoryEmbeddingAnnQueryIT`, `MemoryEmbeddingRepositoryIT`, `MemoryEmbeddingWriterIT`, `MemoryRecallServiceIT`,
-    `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`, `MessageFeedbackPersistenceIT`, `MetricSeriesDerivedIT`,
-    `MetricSeriesExpansionIT`, `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`,
-    `NoteEmbeddingSwitchOffIT`, `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`,
-    `NoteVectorLifecycleIT`, `PatternDetectionJobSwitchOffIT`, `PatternDetectionServiceIT`,
-    `PeriodSummaryPersistenceIT`, `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`, `PersonGraphEdgeAdapterIT`,
-    `ProfileAssemblerIT`, `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`,
-    `ProfilePromptAssemblerFailureIT`, `ProfilePromptAssemblerIT`, `ProfilePropertiesIT`, `ProfileSourceFindersIT`,
-    `PromptMemoryAssemblerIT`, `PromptMemoryAssemblerShadowIT`, `PromptMemoryAssemblerSwitchOffIT`,
-    `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`, `QuarterlyReviewJobProfileSwitchOffIT`,
-    `QuarterlyReviewJobSwitchOffIT`, `QuarterlyReviewPayloadIT`, `QuarterlyReviewServiceIT`, `SleepLogDetailRenderIT`,
-    `ToolSelectionEvalIT`, `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
+    `ContextSnapshotAssemblerPeopleOffIT`, `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`,
+    `DailySummaryServiceIT`, `DayScoreServiceIT`, `FactCandidateServiceIT`, `FactExtractionServiceIT`,
+    `FakeEmbeddingAdapterIT`, `FeedbackLearningJobSwitchOffIT`, `FeedbackLearningPropertiesIT`,
+    `FeedbackLearningServiceIT`, `FeedbackRollupPersistenceIT`, `FlagEvaluationListenerIT`,
+    `FlagEvaluatorMomentumRecoveryIT`, `FlagEvaluatorStressSleepIT`, `FlagPropertiesIT`, `FlagServiceIT`,
+    `FlagSweepJobSwitchOffIT`, `GraphApiIT`, `GraphCandidateApiIT`, `GraphEntityPersistenceIT`,
+    `GraphFactOptOutEventIT`, `GraphFactOptOutIT`, `GraphMaintenanceJobSwitchOffIT`, `GraphMaintenanceServiceIT`,
+    `GraphPromotionEventIT`, `GraphPromotionPersonIT`, `GraphPromotionServiceIT`,
+    `GraphPromotionServiceReconcileIsolationIT`, `GraphPromotionSwitchOffIT`, `GraphPromptAssemblerIT`,
+    `GraphPromptAssemblerRefsCapIT`, `GraphRetractionEventIT`, `GraphRetractionIT`, `GraphSeedSelectionCapIT`,
+    `GraphSeedSelectionIT`, `GraphSeedSelectionRankingIT`, `GraphServiceIT`, `GraphSwitchOffIT`,
+    `GraphTraversalQueryIT`, `HypothesisGatherContextIT`, `HypothesisJobSwitchOffIT`, `HypothesisPipelineServiceIT`,
+    `KnowledgeFactServiceIT`, `LearnedFactPersistenceIT`, `LifeEventExtractionServiceIT`, `MeWeekControllerIT`,
+    `MeWeekServiceFuelFetchCountIT`, `MeWeekTrendIT`, `MemoryEmbeddingAnnQueryIT`, `MemoryEmbeddingRepositoryIT`,
+    `MemoryEmbeddingWriterIT`, `MemoryRecallServiceIT`, `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`,
+    `MessageFeedbackPersistenceIT`, `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`, `MetricSeriesServiceIT`,
+    `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`, `NoteEmbeddingWriterIT`,
+    `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`, `PatternDetectionJobSwitchOffIT`,
+    `PatternDetectionServiceIT`, `PeriodSummaryPersistenceIT`, `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`,
+    `PersonGraphEdgeAdapterIT`, `ProfileAssemblerIT`, `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`,
+    `ProfileAssemblerWindowHeaderIT`, `ProfilePromptAssemblerFailureIT`, `ProfilePromptAssemblerIT`,
+    `ProfilePropertiesIT`, `ProfileSourceFindersIT`, `PromptMemoryAssemblerIT`, `PromptMemoryAssemblerShadowIT`,
+    `PromptMemoryAssemblerSwitchOffIT`, `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`,
+    `QuarterlyReviewJobProfileSwitchOffIT`, `QuarterlyReviewJobSwitchOffIT`, `QuarterlyReviewPayloadIT`,
+    `QuarterlyReviewServiceIT`, `SleepLogDetailRenderIT`, `ToolSelectionEvalIT`, `TurnEmbeddingListenerIT`,
+    `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
   - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `BiometricProfilePopulator`,
     `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`, `FeedbackPopulator`,
     `FlagLogPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`, `GraphPopulator`,
@@ -800,7 +801,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
   - **repositories:** `MentionRepository`, `PersonRepository`
   - **services:** `MentionDetectionListener`, `MentionDetectionService`, `PeopleService`, `PersonAffectTrend`,
-    `PersonAffectTrendCalculator`, `PersonDeletedEvent`, `PersonSavedEvent`, `ReflectionMentionListener`
+    `PersonAffectTrendCalculator`, `PersonChatContext`, `PersonDeletedEvent`, `PersonSavedEvent`,
+    `ReflectionMentionListener`
   - **controllers→contract:** `PeopleController`→`PeopleApi`
   - **mappers:** `PeopleMapper`
   - **other:** `MentionSeedData`, `PeopleMezoNoteSource`, `PeopleSeedData`, `PersonGraphEdgeSource`
@@ -808,9 +810,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/people · POST /api/people · PUT /api/people/{personId} · DELETE /api/people/{personId} ·
     POST /api/people/{personId}/mentions · DELETE /api/people/{personId}/mentions/{mentionId} ·
     POST /api/people/{personId}/decision
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 6 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/people` — 7 IT + 1 unit
   - **ITs:** `MentionDetectionListenerIT`, `MentionDetectionServiceIT`, `MentionDetectionSwitchOffIT`,
-    `PeopleContractIT`, `PeopleMezoNoteIT`, `PeopleServiceIT`
+    `PeopleChatContextIT`, `PeopleContractIT`, `PeopleMezoNoteIT`, `PeopleServiceIT`
   - **populators:** `CompanionMessagePopulator`, `MentionPopulator`, `PersonPopulator`, `UserPopulator`
 
 ### proactive
