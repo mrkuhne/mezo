@@ -38,6 +38,7 @@ import { KamraItemDetailPage } from '@/features/fuel/pages/KamraItemDetailPage'
 import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
 import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
 import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
+import { RecipeWorkshopPage } from '@/features/fuel/pages/RecipeWorkshopPage'
 import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
 import { MezoHubPage } from '@/features/insights/pages/MezoHubPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
@@ -73,7 +74,6 @@ import { PeopleKorPage } from '@/features/me/pages/PeopleKorPage'
 import { PeopleEmlitesekPage } from '@/features/me/pages/PeopleEmlitesekPage'
 import { PeopleHetiPage } from '@/features/me/pages/PeopleHetiPage'
 import { PersonDetailPage } from '@/features/me/pages/PersonDetailPage'
-import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
@@ -98,6 +98,16 @@ import { DetektorokPage } from '@/features/character/pages/DetektorokPage'
 function LegacyPathRedirect({ prefix, to }: { prefix: string; to: string }) {
   const location = useLocation()
   return <Navigate to={location.pathname.replace(prefix, to) + location.search} replace />
+}
+
+/** `/me/knowledge` — the old standalone Tudásgráf page (mezo-ms9a: merged into the
+ *  unified Tudástár) — redirects to that page's Kategóriák view. A `?kind=` deep link
+ *  (old page's tile-drill) is forwarded as `&kind=` so bookmarks/notifications still
+ *  land in the same category. */
+function MeKnowledgeRedirect() {
+  const [params] = useSearchParams()
+  const kind = params.get('kind')
+  return <Navigate to={`/mezo/knowledge?view=kategoriak${kind ? `&kind=${kind}` : ''}`} replace />
 }
 
 /** `/train` is the Edzés hub — except for the Heti drill-in, which still speaks
@@ -186,6 +196,8 @@ export const routes: RouteObject[] = [
       { path: 'fuel/naplo', element: <FuelNaploPage /> },
       // `new` is listed before `:id` for clarity (React Router ranks static over dynamic).
       { path: 'fuel/recipes/new', element: <RecipeEditorPage /> },
+      // Receptműhely (mezo-92pb) — static, so it must precede `:id`; `?recipeId=` seeds it.
+      { path: 'fuel/recipes/muhely', element: <RecipeWorkshopPage /> },
       { path: 'fuel/recipes', element: <FuelRecipesPage /> },
       { path: 'fuel/recipes/:id', element: <RecipeDetailPage /> },
       { path: 'fuel/recipes/:id/edit', element: <RecipeEditorPage /> },
@@ -284,7 +296,7 @@ export const routes: RouteObject[] = [
       // above (React Router ranks static over dynamic regardless of source order, but
       // the ordering stays explicit here per the WeekHub/`me/week/napok/:date` precedent).
       { path: 'me/people/:id', element: <PersonDetailPage /> },
-      { path: 'me/knowledge', element: <KnowledgePage /> },
+      { path: 'me/knowledge', element: <MeKnowledgeRedirect /> },
       // mezo-nol0: a főnevet a FEED viszi (ide vezet a fejléc dropdown „Összes értesítés ›"
       // lábléce), a kapcsolók alá költöztek.
       { path: 'me/ertesitesek', element: <NotificationFeedPage /> },

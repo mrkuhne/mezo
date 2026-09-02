@@ -307,6 +307,15 @@ export function RecipeDetailPage() {
           <button className="cta-primary rise" onClick={() => setLogOpen(true)} style={{ '--d': '160ms', margin: '12px 0 9px', width: '100%' } as React.CSSProperties}>
             <Icon name="plus" size={14} /> Mai étkezéshez
           </button>
+          {/* Receptműhely (mezo-92pb) — iterate on THIS recipe: the workshop seeds its draft
+              from it (?recipeId) and saves back as an update, not a second copy. */}
+          <button
+            className="cta-ghost rise"
+            onClick={() => navigate(`/fuel/recipes/muhely?recipeId=${recipe.id}`)}
+            style={{ '--d': '175ms', width: '100%', marginBottom: 9 } as React.CSSProperties}
+          >
+            ✨ Iterálás a Műhelyben
+          </button>
           <div className="row gap-sm rise" style={{ '--d': '190ms' } as React.CSSProperties}>
             <button className="cta-ghost" onClick={toggleStar} style={{ flex: 1 }}>
               <Icon name="bookmark" size={12} /> {recipe.starred ? 'Csillag le' : 'Csillag'}

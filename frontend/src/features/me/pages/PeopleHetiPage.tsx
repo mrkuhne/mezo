@@ -22,15 +22,17 @@
 // entirely; no quiet person omits "Csendben maradt" entirely — same idiom every other S3
 // page in this slice already uses.
 //
-// `whyLine` below is S3's own DETERMINISTIC stand-in for the "why" line under each
-// direction card (majority tone among that person's own week mentions) — S4 replaces this
-// with real LLM prose once the memory/insight pipeline can generate it.
+// Emberek S6 (mezo-06o0.8): the direction card now reads the server's own
+// `person.direction`/`person.directionReason` — computed from the real toned mentions by
+// `PersonAffectTrendCalculator`, the single source of truth the backend and this page now
+// share. S3's local `whyLine` (a deterministic majority-tone stand-in for the "why" line,
+// explicitly temporary per its own comment) is retired along with it.
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { usePeople } from '@/data/hooks'
-import { toneMix, directionFor, quietPeople, weekMoment, trendHeights, weekWindow, type Direction } from '@/features/me/logic/peopleDerive'
+import { toneMix, quietPeople, weekMoment, trendHeights, weekWindow } from '@/features/me/logic/peopleDerive'
 import { TONE_META, SRC_META } from '@/features/me/logic/peopleVisuals'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import type { Mention, PersonEntry } from '@/data/types'
@@ -38,6 +40,7 @@ import type { Mention, PersonEntry } from '@/data/types'
 // 16px prototype spark height × 1.18 frame scale ≈ 19px — same idiom as PersonCard/kor.
 const SPARK_MAX_PX = 19
 
+type Direction = PersonEntry['direction']
 const DIR_ARROW: Record<Direction, string> = { down: '↘', up: '↗', flat: '→' }
 const DIR_COLOR: Record<Direction, string> = {
   down: 'var(--ppl-tone-nehez)',
@@ -46,26 +49,13 @@ const DIR_COLOR: Record<Direction, string> = {
 }
 const DIR_WEIGHT: Record<Direction, number> = { down: 0, up: 1, flat: 2 }
 
-/** S3's deterministic "why" line — majority tone among this PERSON's own week mentions.
- *  Neither positive nor negative holding a strict majority (a tie, a mixed/neutral lead,
- *  or no toned week mention at all) reads honestly as "változó hetek" rather than guessing. */
-function whyLine(personWeekMentions: Mention[]): string {
-  const toned = personWeekMentions.filter((m) => m.tone)
-  if (toned.length === 0) return 'változó hetek'
-  const negative = toned.filter((m) => m.tone === 'negative').length
-  const positive = toned.filter((m) => m.tone === 'positive').length
-  if (negative > toned.length / 2) return 'többször nehéz tónus'
-  if (positive > toned.length / 2) return 'sok jó pillanat'
-  return 'változó hetek'
-}
-
 function DirCard({ person, weekMentions, onTap, delayMs }: {
   person: PersonEntry
   weekMentions: Mention[]
   onTap: () => void
   delayMs: number
 }) {
-  const direction = directionFor(person.affectTrend)
+  const direction = person.direction
   const own = weekMentions.filter((m) => m.person_id === person.id)
   const style = { '--d': `${delayMs}ms` } as CSSProperties
 
@@ -83,7 +73,7 @@ function DirCard({ person, weekMentions, onTap, delayMs }: {
           ))}
         </div>
       )}
-      <div className="ppl-why2">{whyLine(own)}</div>
+      {person.directionReason && <div className="ppl-why2">{person.directionReason}</div>}
       <span className="ppl-wk">{person.mentionsThisWeek}× E HÉTEN</span>
     </button>
   )
@@ -104,7 +94,7 @@ export function PeopleHetiPage() {
 
   const directed = people
     .filter((p) => p.mentionsThisWeek > 0)
-    .map((p) => ({ person: p, direction: directionFor(p.affectTrend) }))
+    .map((p) => ({ person: p, direction: p.direction }))
     .sort((a, b) => DIR_WEIGHT[a.direction] - DIR_WEIGHT[b.direction])
 
   const quiet = quietPeople(people)

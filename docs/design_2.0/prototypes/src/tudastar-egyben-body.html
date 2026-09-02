@@ -1,0 +1,474 @@
+<style>
+  /* ---- lap-tónusok (mezo-body idióma) ---- */
+  .page.p-sage { background: linear-gradient(180deg, #E4EEDD 0%, #FDFAF4 36%); }
+  .screen { background: linear-gradient(180deg, #E4EEDD 0%, #FDFAF4 34%); }
+
+  /* ---- Tudástár-lokális elemek (mezo-body #page-tudas készletéből) ---- */
+  .decrow { display: flex; gap: 6px; margin-top: 9px; }
+  .decrow .cta, .decrow .ghost { flex: 1; padding: 7px 0; text-align: center; font-size: 9px; }
+  .decrow .ghost.no { color: #A8462E; }
+  .sfield { display: flex; align-items: center; gap: 7px; background: #fff; border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 999px; padding: 7px 12px; margin-bottom: 9px; box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05); }
+  .sfield input { border: none; outline: none; background: none; font-family: inherit; font-size: 10.5px; color: #2B2118; width: 100%; padding: 0; }
+  .sfield input::placeholder { color: #A2958A; }
+  .chiprow { display: flex; gap: 5px; margin-bottom: 4px; overflow-x: auto; scrollbar-width: none; padding-bottom: 3px; }
+  .chiprow::-webkit-scrollbar { display: none; }
+  .fchip { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9.5px; font-weight: 600; color: #6E6257; cursor: pointer; font-family: inherit; flex: none; }
+  .fchip.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; }
+  .lsec { display: flex; align-items: center; gap: 6px; padding: 10px 2px 6px; }
+  .lsec .cnt { margin-left: auto; font-size: 9px; font-weight: 700; color: #A2958A; font-variant-numeric: tabular-nums; }
+  .foot9 { font-size: 8.5px; color: #A2958A; font-weight: 300; padding: 6px 2px 0; }
+  .facttile { display: flex; gap: 9px; align-items: flex-start; border-radius: 16px; padding: 10px 11px; margin-bottom: 8px;
+    background: var(--fw, #fff); border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 12px 22px -14px var(--fg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.75); }
+  .facttile .fic { width: 30px; height: 30px; border-radius: 11px; display: grid; place-items: center; flex: none;
+    background: rgba(255, 255, 255, 0.75); box-shadow: 0 2px 5px rgba(43, 33, 24, 0.08); }
+  .facttile .tx { font-size: 10px; line-height: 1.45; }
+  .facttile .sb { font-size: 7.5px; color: #6E6257; margin-top: 2px; }
+  .facttile.off { background: rgba(255, 255, 255, 0.6); box-shadow: none; border: 1.2px dashed rgba(43, 33, 24, 0.16); }
+  .facttile.off .tx { color: #6E6257; }
+  .tgl { width: 30px; height: 18px; border-radius: 999px; flex: none; border: none; cursor: pointer; position: relative;
+    background: rgba(43, 33, 24, 0.14); transition: background 0.2s ease; }
+  .tgl::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(43, 33, 24, 0.3); transition: left 0.2s ease; }
+  .tgl.on { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .tgl.on::after { left: 14px; }
+  .candc { border: 1px solid #C9962E; border-radius: 16px; background: #fff; padding: 10px 12px 11px; margin-bottom: 10px;
+    box-shadow: 0 18px 30px -14px rgba(201, 150, 46, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .candc.done { border-color: rgba(110, 139, 94, 0.5); background: linear-gradient(150deg, #EFF3EA, #FBFDF9); }
+  .predtile { border-radius: 18px; padding: 11px 13px; margin-bottom: 10px; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    background: #fff; box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .predtile.rose { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.3), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .predtile .pic { width: 32px; height: 32px; border-radius: 11px; display: grid; place-items: center; flex: none;
+    background: rgba(255, 255, 255, 0.8); box-shadow: 0 2px 5px rgba(43, 33, 24, 0.08); }
+  .pgact { border: 1px solid rgba(43, 33, 24, 0.16); background: #fff; font-family: inherit; border-radius: 999px;
+    padding: 4px 12px; font-size: 8.5px; font-weight: 600; color: #A84A26; cursor: pointer; flex: none; }
+
+  /* ---- ÚJ az egyesített laphoz ---- */
+  /* alap-nézet: nem slide-in .page, hanem a képernyő törzse maga */
+  .base { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-top: 24px; }
+  .helpchip { margin-left: auto; width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255, 255, 255, 0.7); color: #6E6257; font-size: 12px; font-weight: 700; font-family: "Fraunces", Georgia, serif;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3); }
+  /* szekció-csempék: a hub .tile idiómája, tudás-színekre hangolva */
+  .t-tenyek { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); box-shadow: 0 14px 26px -14px rgba(110, 139, 94, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-kateg { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .tile.wide2 { grid-column: 1 / 3; min-height: 0; flex-direction: row; align-items: center; gap: 10px;
+    background: linear-gradient(150deg, #FAE3ED, #FEF8FB); box-shadow: 0 14px 26px -14px rgba(142, 63, 111, 0.3), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .tile .bignum2 { font-weight: 200; font-size: 24px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  /* kategória-rács a Kategóriák drill-oldalon (KindTileGrid megfelelője) */
+  .kgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .ktile { border-radius: 16px; padding: 9px 11px; min-height: 72px; display: flex; flex-direction: column; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--kw, #fff);
+    box-shadow: 0 12px 22px -14px var(--kg, rgba(43, 33, 24, 0.3)), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); position: relative; }
+  .ktile:active { transform: scale(0.96); }
+  .ktile.empty { opacity: 0.45; cursor: default; }
+  .ktile .kcnt { position: absolute; top: 8px; right: 10px; font-size: 10px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .ktile .kline { font-size: 8.5px; font-weight: 300; margin-top: auto; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* kompakt node-sor (KindNodeList megfelelője) */
+  .krow { display: flex; align-items: center; gap: 9px; background: #fff; border-radius: 14px; padding: 9px 11px; margin-bottom: 7px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); cursor: pointer;
+    box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+  .krow .nm { font-size: 10.5px; font-weight: 600; }
+  .krow .ec { margin-left: auto; font-size: 8px; color: #A2958A; font-variant-numeric: tabular-nums; flex: none; }
+  .krow .chev { color: #A2958A; font-size: 11px; flex: none; }
+  .edge { font-size: 9.5px; font-weight: 300; padding: 7px 2px; line-height: 1.45; }
+  .edge + .edge { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .edge b { font-weight: 600; }
+  .edge .st { font-size: 7.5px; font-weight: 700; color: #5D4FA0; margin-left: 5px; }
+  /* hogyan-oldal Q&A */
+  .qa { background: #fff; border-radius: 16px; padding: 11px 12px; margin-bottom: 8px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 22px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .qa b { font-size: 10.5px; }
+  .qa p { font-size: 9.5px; font-weight: 300; color: #6E6257; margin-top: 3px; line-height: 1.5; }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">Mezo · Design 2.0 · prototípus</div>
+  <h1>Tudástár egyben</h1>
+  <p class="lede">A <strong>Tudástár</strong> (tények, prompt-vödrök, jóváhagyás-inbox) és a <strong>Tudásgráf</strong>
+  (kategóriák, kapcsolatok, profil) egyetlen oldalként — Huawei-minta: a döntést kérő inbox azonnal látszik,
+  minden más <strong>csempe mögül nyílik</strong>. A hosszú magyarázó a hero „?" gombja mögé költözik.</p>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="screen" id="panel">
+        <div class="isl"></div>
+        <div class="p-status"><span>13:30</span><span>ᯤ ▮▮▮</span></div>
+
+        <!-- ============ ALAP: az egyesített Tudástár ============ -->
+        <div class="base">
+          <div class="page-head" style="padding-top:0;">
+            <button class="backbtn">‹ Mezo</button>
+            <button class="helpchip" data-page="page-hogyan" aria-label="Hogyan működik?">?</button>
+          </div>
+          <div class="page-hero">
+            <div class="nm">Tudástár</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="54" height="54" viewBox="0 0 100 100"><use href="#i-tudas"/></svg>
+              <div class="bignum" id="heroBig">15</div>
+            </div>
+            <div class="sb">tény rólad · <b>10 megy a chatbe</b> · 13 kapcsolat</div>
+          </div>
+          <div class="page-body">
+
+            <!-- jóváhagyás-inbox: az egyetlen blokk, ami döntést kér — nem kerül csempe mögé -->
+            <div class="lsec rise" style="--d:0ms;padding-top:2px;"><span class="p-eyebrow" style="color:#A8801F;">Jóváhagyásra vár</span><span class="cnt" id="inboxCnt">2</span></div>
+            <div class="candc rise" style="--d:30ms;" id="cand1">
+              <div class="mrow" style="gap:7px;">
+                <svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb-figyel"/></svg>
+                <span class="p-eyebrow" style="color:#A8801F;">Tény-jelölt</span>
+              </div>
+              <div style="font-size:10.5px;line-height:1.45;margin-top:5px;">„A délutáni kávé után nehezebben alszol el — 22:30 után már kerülöd."</div>
+              <div style="font-size:8px;color:#A2958A;margin-top:3px;">a máj 19-i beszélgetésből tanulnám</div>
+              <div class="decrow">
+                <button class="cta" data-accept="cand1" data-done="Bekerült a tudásba — a tények közt találod.">Elfogad</button>
+                <button class="ghost">Pontosít</button>
+                <button class="ghost no" data-dismiss="cand1">Elvet</button>
+              </div>
+            </div>
+            <div class="candc rise" style="--d:60ms;" id="cand2">
+              <div class="mrow" style="gap:7px;">
+                <svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#i-nap"/></svg>
+                <span class="p-eyebrow" style="color:#A8801F;">Életesemény-jelölt · máj 18</span>
+              </div>
+              <div style="font-size:10.5px;font-weight:700;margin-top:5px;">Új munkahely első hete</div>
+              <div style="font-size:9.5px;font-weight:300;line-height:1.45;margin-top:2px;">Sűrű hét volt: korai kelések, kevesebb edzés, este kimerültél.</div>
+              <div style="font-size:8px;color:#A2958A;margin-top:3px;">a napod szövegeiből szűrtem ki</div>
+              <div class="decrow">
+                <button class="cta" data-accept="cand2" data-done="Bekerült a gráfba · 2 kapcsolattal — a Kategóriák → Életesemények alatt.">Elfogad</button>
+                <button class="ghost no" data-dismiss="cand2">Elvet</button>
+              </div>
+              <div class="foot9" style="padding-bottom:0;">Elfogad → bekerül a gráfba 2 kapcsolattal · Elvet → eldobom.</div>
+            </div>
+
+            <!-- szekció-mozaik: minden referencia-tartalom egy koppintással -->
+            <div class="mosaic rise" style="--d:100ms;">
+              <div class="tile t-tenyek" data-page="page-tenyek" role="button" tabindex="0" aria-label="Tények">
+                <div class="p-eyebrow" style="color:#4E6B42;">Tények</div>
+                <div class="mrow" style="gap:8px;margin-top:4px;">
+                  <svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-polc"/></svg>
+                  <span class="bignum2" id="tenyTileBig">15</span>
+                </div>
+                <div class="tile-line mut">10 a chatben · 4 vár · 1 kikapcsolva</div>
+              </div>
+              <div class="tile t-kateg" data-page="page-kategoriak" role="button" tabindex="0" aria-label="Kategóriák">
+                <div class="p-eyebrow" style="color:#5D4FA0;">Kategóriák</div>
+                <div class="mrow" style="gap:8px;margin-top:4px;">
+                  <svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-retegek"/></svg>
+                  <span class="bignum2">6</span>
+                </div>
+                <div class="tile-line mut" id="kategTileLine">minták · célok · életesemények · 13 él</div>
+              </div>
+              <div class="tile wide2" data-page="page-profil" role="button" tabindex="0" aria-label="Profil">
+                <svg width="30" height="30" viewBox="0 0 100 100" style="flex:none;"><use href="#i-checkin"/></svg>
+                <div class="grow">
+                  <div class="p-eyebrow" style="color:#8E3F6F;">Így beszélj velem</div>
+                  <div class="tile-line mut">rövid reggeli üzenet · adatvezérelt · heti frissítés</div>
+                </div>
+                <span class="chev" style="color:#A2958A;font-size:12px;">›</span>
+              </div>
+            </div>
+
+            <div class="foot9 rise" style="--d:140ms;">Archiválás után a következő heti összegzésig nem kerül a beszélgetésbe.</div>
+          </div>
+          <div class="homebar"></div>
+        </div>
+
+        <!-- ============ TÉNYEK (drill) ============ -->
+        <div class="page p-sage" id="page-tenyek">
+          <div class="page-head"><button class="backbtn" data-back="page-tenyek">‹ Tudástár</button></div>
+          <div class="page-hero">
+            <div class="nm">Tények</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-polc"/></svg>
+              <div class="bignum" style="font-size:34px;">15</div>
+            </div>
+            <div class="sb">a 10 legerősebb bekapcsolt tény megy a chatbe</div>
+          </div>
+          <div class="page-body">
+            <div class="sfield rise" style="--d:0ms;"><span style="color:#A2958A;">⌕</span><input type="text" placeholder="Keresés · pl. alvás, kávé, váll" aria-label="Keresés"></div>
+            <div class="chiprow rise" style="--d:30ms;">
+              <button class="fchip on">Mind</button><button class="fchip">Edzés</button><button class="fchip">Étkezés</button><button class="fchip">Egészség</button><button class="fchip">Élet</button>
+            </div>
+            <div class="lsec rise" style="--d:60ms;"><span class="p-eyebrow" style="color:#4E6B42;">Most ezeket kapja meg a társ</span><span class="cnt">10</span></div>
+            <div class="rise" style="--d:90ms;">
+              <div class="facttile" style="--fw:linear-gradient(150deg,#FFE7DC,#FFF7F2);--fg:rgba(216,72,31,0.3);">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-edzes"/></svg></span>
+                <div class="grow"><div class="tx">Vállból a ferde nyomás fájdalmas — helyette gépi nyomást használunk.</div><div class="sb">edzés · 24× megerősítve · chatből</div></div>
+                <button class="tgl on" aria-label="Bekapcsolva"></button>
+              </div>
+              <div class="facttile" style="--fw:linear-gradient(150deg,#FFF1D6,#FFFAF0);--fg:rgba(181,126,20,0.35);">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-injekcio"/></svg></span>
+                <div class="grow"><div class="tx">A D3-fázis 3. napján megugrik az étvágyad — ilyenkor előre tervezünk.</div><div class="sb">egészség · 18× megerősítve · mintából</div></div>
+                <button class="tgl on" aria-label="Bekapcsolva"></button>
+              </div>
+              <div class="facttile" style="--fw:linear-gradient(150deg,#FFE7DC,#FFF7F2);--fg:rgba(216,72,31,0.3);">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-hajnal"/></svg></span>
+                <div class="grow"><div class="tx">Reggel edzel a legszívesebben — a délutáni edzés gyakran csúszik.</div><div class="sb">edzés · 15× megerősítve · chatből</div></div>
+                <button class="tgl on" aria-label="Bekapcsolva"></button>
+              </div>
+            </div>
+            <div class="foot9 rise" style="--d:110ms;padding:0 2px 10px;">A 10 legerősebb bekapcsolt tény, plusz a frissen megerősített minták.</div>
+            <div class="lsec rise" style="--d:130ms;"><span class="p-eyebrow">Bekapcsolva, de most kimarad</span><span class="cnt">4</span></div>
+            <div class="rise" style="--d:150ms;">
+              <div class="facttile" style="--fw:linear-gradient(150deg,#DFEDF5,#F5FAFD);--fg:rgba(78,143,184,0.3);">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-nap"/></svg></span>
+                <div class="grow"><div class="tx">Hétvégén később kelsz — a reggeli ablak eltolódik.</div><div class="sb">élet · 4× megerősítve</div></div>
+                <button class="tgl on" aria-label="Bekapcsolva"></button>
+              </div>
+            </div>
+            <div class="foot9 rise" style="--d:170ms;padding:0 2px 10px;">Ha megerősödnek, maguktól bekerülnek a chatbe.</div>
+            <div class="lsec rise" style="--d:190ms;"><span class="p-eyebrow" style="color:#A2958A;">Kikapcsolva</span><span class="cnt">1</span></div>
+            <div class="rise" style="--d:210ms;">
+              <div class="facttile off">
+                <span class="fic"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-futas"/></svg></span>
+                <div class="grow"><div class="tx">A futás után estig nem vagy éhes.</div><div class="sb">étkezés · 6× megerősítve</div></div>
+                <button class="tgl" aria-label="Kikapcsolva"></button>
+              </div>
+            </div>
+            <div class="foot9 rise" style="--d:230ms;padding:0 2px;">Megőrzöm őket, de a társ nem használja.</div>
+          </div>
+        </div>
+
+        <!-- ============ KATEGÓRIÁK (drill) ============ -->
+        <div class="page p-lav" id="page-kategoriak">
+          <div class="page-head"><button class="backbtn" data-back="page-kategoriak">‹ Tudástár</button></div>
+          <div class="page-hero">
+            <div class="nm">Kategóriák</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-retegek"/></svg>
+              <div class="bignum" style="font-size:34px;">6</div>
+            </div>
+            <div class="sb">ahogy a tudásod összefügg · 13 kapcsolat</div>
+          </div>
+          <div class="page-body">
+            <div class="kgrid rise" style="--d:0ms;">
+              <div class="ktile" style="--kw:linear-gradient(150deg,#E9F1E2,#F7FBF3);--kg:rgba(110,139,94,0.4);" data-page="page-kind-mintak" role="button" tabindex="0" aria-label="Minták">
+                <div class="p-eyebrow" style="color:#4E6B42;">Minták</div><span class="kcnt">2</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-minta"/></svg>
+                <div class="kline mut">Késői evés rontja az alvást</div>
+              </div>
+              <div class="ktile" style="--kw:linear-gradient(150deg,#FAE3ED,#FEF8FB);--kg:rgba(142,63,111,0.3);">
+                <div class="p-eyebrow" style="color:#8E3F6F;">Preferenciák</div><span class="kcnt">1</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-checkin"/></svg>
+                <div class="kline mut">Gépi nyomás a ferde helyett</div>
+              </div>
+              <div class="ktile" style="--kw:linear-gradient(150deg,#EBE6F8,#F9F6FE);--kg:rgba(93,79,160,0.35);">
+                <div class="p-eyebrow" style="color:#5D4FA0;">Célok</div><span class="kcnt">1</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-cel"/></svg>
+                <div class="kline mut">Csúcsforma minden életterületen</div>
+              </div>
+              <div class="ktile" style="--kw:linear-gradient(150deg,#FFF1D6,#FFFAF0);--kg:rgba(181,126,20,0.35);">
+                <div class="p-eyebrow" style="color:#A8801F;">Életesemények</div><span class="kcnt" id="lifeCnt">2</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-nap"/></svg>
+                <div class="kline mut">Nyári szabadság · júl 14–21</div>
+              </div>
+              <div class="ktile" style="--kw:linear-gradient(150deg,#FDF0DA,#FFFCF5);--kg:rgba(201,150,46,0.4);">
+                <div class="p-eyebrow" style="color:#A8801F;">Szezonok</div><span class="kcnt">1</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-hold"/></svg>
+                <div class="kline mut">Nyári alapozás · 2026 Q3</div>
+              </div>
+              <div class="ktile empty" style="--kw:#fff;">
+                <div class="p-eyebrow">Belátások</div><span class="kcnt">0</span>
+                <svg width="26" height="26" viewBox="0 0 100 100" style="margin-top:5px;"><use href="#i-kristaly"/></svg>
+                <div class="kline mut">még üres</div>
+              </div>
+            </div>
+            <div class="foot9 rise" style="--d:60ms;">Egy kategória a benne lévő tudás-elemeket és a kapcsolataikat mutatja.</div>
+          </div>
+        </div>
+
+        <!-- ============ MINTÁK kind-lista (drill 2) ============ -->
+        <div class="page p-lav" id="page-kind-mintak">
+          <div class="page-head"><button class="backbtn" data-back="page-kind-mintak">‹ Kategóriák</button></div>
+          <div class="page-hero">
+            <div class="nm" style="color:#4E6B42;">Minták</div>
+            <div class="sb">2 elem · kapcsolataikkal</div>
+          </div>
+          <div class="page-body">
+            <div class="krow rise" style="--d:0ms;" data-page="page-node" role="button" tabindex="0" aria-label="Késői evés rontja az alvást">
+              <svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#i-minta"/></svg>
+              <span class="nm">Késői evés rontja az alvást</span>
+              <span class="ec">2 kapcsolat</span><span class="chev">›</span>
+            </div>
+            <div class="krow rise" style="--d:30ms;">
+              <svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#i-futas"/></svg>
+              <span class="nm">Futás-napokon jobban alszol</span>
+              <span class="ec">1 kapcsolat</span><span class="chev">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ NODE-RÉSZLET (drill 3) ============ -->
+        <div class="page p-lav" id="page-node">
+          <div class="page-head"><button class="backbtn" data-back="page-node">‹ Minták</button></div>
+          <div class="page-hero">
+            <div class="p-eyebrow" style="color:#4E6B42;">Minták</div>
+            <div class="mrow" style="justify-content:center;gap:9px;margin-top:2px;">
+              <svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-minta"/></svg>
+              <div class="nm">Késői evés rontja az alvást</div>
+            </div>
+          </div>
+          <div class="page-body">
+            <div class="predtile rise" style="--d:0ms;">
+              <div style="font-size:10px;font-weight:300;line-height:1.5;">A 21:30 utáni vacsora éjszakáin átlagosan 40 perccel kevesebb a mélyalvásod — 6 hét adata alapján.</div>
+            </div>
+            <div class="lsec rise" style="--d:40ms;"><span class="p-eyebrow" style="color:#5D4FA0;">Kapcsolatok</span><span class="cnt">2</span></div>
+            <div class="predtile rise" style="--d:70ms;">
+              <div class="edge">Késői evés → <b>kiváltja</b> → Rossz alvás<span class="st">erős</span></div>
+              <div class="edge">Alvás-cél 7,5 h → <b>sérül tőle</b><span class="st">közepes</span></div>
+            </div>
+            <button class="pgact rise" style="--d:100ms;width:100%;padding:8px 0;" data-arch>Archivál</button>
+            <div class="foot9 rise" style="--d:120ms;">Archiválás után a következő heti összegzésig nem kerül a beszélgetésbe.</div>
+          </div>
+        </div>
+
+        <!-- ============ PROFIL (drill) ============ -->
+        <div class="page p-rose" id="page-profil">
+          <div class="page-head"><button class="backbtn" data-back="page-profil">‹ Tudástár</button></div>
+          <div class="page-hero">
+            <div class="nm">Így beszélj velem</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-checkin"/></svg>
+            </div>
+            <div class="sb">a társ heti olvasata arról, hogyan érdemes veled beszélnie</div>
+          </div>
+          <div class="page-body">
+            <div class="predtile rose rise" style="--d:0ms;" id="profCard">
+              <div class="mrow" style="gap:8px;">
+                <div class="grow"><b style="font-size:10.5px;">Rólad tanultam</b><div style="font-size:8px;color:#6E6257;margin-top:1px;">frissítve hétfőn 03:45 · a heted szövegeiből</div></div>
+                <button class="pgact" data-arch>Archivál</button>
+              </div>
+              <div style="font-size:10px;font-weight:300;line-height:1.55;margin-top:7px;">A rövid, konkrét reggeli üzenet válik be nálad; a hosszabb elemzést délben olvasod el, a bőséges tipplistát pedig rendre elutasítod.</div>
+            </div>
+            <div class="qa rise" style="--d:50ms;">
+              <b>Mire megy ez?</b>
+              <p>Ez a bekezdés minden beszélgetés elé odakerül, hogy a társ a te ritmusodban szólaljon meg. Az Archiválás a „felejtsd el, amit rólam gondolsz" kar: a blokk kiürül, és a következő heti futás építi újra.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ HOGYAN MŰKÖDIK (drill, a mai explainer helye) ============ -->
+        <div class="page p-gold" id="page-hogyan">
+          <div class="page-head"><button class="backbtn" data-back="page-hogyan">‹ Tudástár</button></div>
+          <div class="page-hero">
+            <div class="nm">Hogyan működik?</div>
+            <div class="sb">a tudástár szabályai — egyszer elolvasod, aztán nem áll az utadba</div>
+          </div>
+          <div class="page-body">
+            <div class="qa rise" style="--d:0ms;"><b>Mi az a tény?</b><p>Egy rólad szóló mondat, amit a társ megjegyzett — beszélgetésből, megerősített mintából, vagy kézzel vetted fel.</p></div>
+            <div class="qa rise" style="--d:30ms;"><b>Mit csinál a kapcsoló?</b><p>Bekapcsolva a tény versenyben van a beszélgetés elejéért. Kikapcsolva a társ soha nem látja.</p></div>
+            <div class="qa rise" style="--d:60ms;"><b>Miért marad ki néhány?</b><p>Csak a 10 legerősebb bekapcsolt tény fér be. A frissen megerősített minta-tények 3 napig soron kívül bekerülnek.</p></div>
+            <div class="qa rise" style="--d:90ms;"><b>Mi vár jóváhagyásra?</b><p>A társ javaslatai — tények és életesemények. Amíg nem döntesz, semmi nem történik velük.</p></div>
+            <div class="qa rise" style="--d:120ms;"><b>Mik a kategóriák?</b><p>Ugyanennek a tudásnak a térképe: minták, célok, életesemények és a köztük lévő kapcsolatok.</p></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Mi vonódik egybe</h2>
+        <ul>
+          <li><strong>Egy cím, egy oldal</strong> — a /mezo/knowledge marad; a /me/knowledge Tudásgráf-oldal megszűnik (átirányít). A hub-ajtó a Mezo „Tudástár" csempéje.</li>
+          <li><strong>Inbox fent, nulla koppintás</strong> — a tény- és életesemény-jelöltek az egyetlen döntést kérő blokk; elfogadás után a kártya helyben vált megerősítéssé, és nem kell másik oldalra átugrani az eredményért.</li>
+          <li><strong>Három szekció-csempe</strong> — Tények (a mai vödrök + kereső), Kategóriák (a mai KindTileGrid → lista → részletlap lánc), „Így beszélj velem" (a volt „Profil", átnevezve, magyarázattal).</li>
+          <li><strong>A magyarázó a „?" mögé költözik</strong> — a mai, alapból nyitott 5-blokkos panel a scroll fő oka volt.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Megőrzött szerződések</h2>
+        <ul>
+          <li><strong>mezo-0ap9 szellemében</strong> — tény-lista továbbra is pontosan egy van (a Tények drillben); a kategória-nézet sosem listáz tényeket.</li>
+          <li><strong>Őszinte számok</strong> — a hero „10 megy a chatbe" a teljes listán számolt vödrökből jön; szűrő nem írja át.</li>
+          <li><strong>Archiválás-lábjegyzet</strong> — minden archiváló felületen ugyanaz a mondat.</li>
+        </ul>
+      </div>
+      <div class="note">Nyitott kérdés: a lap tónusa sage maradt (Tudástár-örökség), a Kategóriák drill lav
+      (gráf-örökség) — ha zavaró a váltás, az egész lánc mehet sage-re. A Belátások üres csempéje
+      szándékosan bent marad, halványan: a rács nem rendeződik át, amikor megjön az első elem.</div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var panel = document.getElementById('panel');
+  void panel.offsetWidth;
+  panel.classList.add('play');
+
+  function openPage(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open');
+    pg.classList.remove('play');
+    var body = pg.querySelector('.page-body');
+    if (body) body.scrollTop = 0;
+    void pg.offsetWidth;
+    pg.classList.add('play');
+  }
+  function closePage(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); });
+  });
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    function go() { openPage(el.getAttribute('data-page')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+  });
+
+  /* kapcsolók */
+  document.querySelectorAll('.tgl').forEach(function (t) {
+    t.addEventListener('click', function () { t.classList.toggle('on'); });
+  });
+  /* szűrő-chipek (vizuális) */
+  document.querySelectorAll('.chiprow').forEach(function (row) {
+    row.querySelectorAll('.fchip').forEach(function (c) {
+      c.addEventListener('click', function () {
+        row.querySelectorAll('.fchip').forEach(function (x) { x.classList.remove('on'); });
+        c.classList.add('on');
+      });
+    });
+  });
+
+  /* inbox: elfogad → helyben megerősítés; elvet → eltűnik; számláló frissül */
+  var inboxCnt = 2;
+  function bumpInbox() {
+    inboxCnt -= 1;
+    document.getElementById('inboxCnt').textContent = inboxCnt;
+  }
+  document.querySelectorAll('[data-accept]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var card = document.getElementById(b.getAttribute('data-accept'));
+      card.classList.add('done');
+      card.innerHTML = '<div class="mrow" style="gap:7px;"><span style="font-size:13px;">✓</span>' +
+        '<div style="font-size:10px;font-weight:300;line-height:1.45;">' + b.getAttribute('data-done') + '</div></div>';
+      bumpInbox();
+      if (b.getAttribute('data-accept') === 'cand2') {
+        document.getElementById('lifeCnt').textContent = '3';
+      } else {
+        document.getElementById('heroBig').textContent = '16';
+        document.getElementById('tenyTileBig').textContent = '16';
+      }
+    });
+  });
+  document.querySelectorAll('[data-dismiss]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var card = document.getElementById(b.getAttribute('data-dismiss'));
+      card.style.display = 'none';
+      bumpInbox();
+    });
+  });
+
+  /* archiválás */
+  document.querySelectorAll('[data-arch]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      b.textContent = 'Archiválva ✓';
+      b.style.color = '#4E6B42';
+      var card = b.closest('.predtile');
+      if (card) card.style.opacity = '0.55';
+    });
+  });
+})();
+</script>

@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -104,6 +105,18 @@ class PeopleContractIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.CREATED, MentionResponse.class);
 
         assertThat(created.getContextLabel()).isEqualTo(MentionResponse.ContextLabelEnum.KOZOS_PROGRAM);
+    }
+
+    @Test
+    void testGetPeopleBootstrap_shouldReturnEmptyGraphEdges_notNull_whenNoGraph() {
+        // Task 5 (mezo-06o0.4): a required `graphEdges` mező sosem hiányozhat a wire-ról — gráf
+        // nélküli/tétlen tesztprofilban ez üres tömb, nem null.
+        UUID owner = ownerId();
+        personPopulator.createPerson(owner, "Nóra", "friend", "positive");
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+
+        assertThat(res.getPersons().getFirst().getGraphEdges()).isNotNull().isEmpty();
     }
 
     @Test
@@ -316,5 +329,27 @@ class PeopleContractIT extends ApiIntegrationTest {
         postForBody("/api/people/" + UUID.randomUUID() + "/decision",
             new PersonDecisionRequest("accept"),
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+    }
+
+    @Test
+    void testGetPeopleBootstrap_shouldComputeAffectTrend_fromTonedMentionsAcrossWeeks() {
+        // Emberek S6 (mezo-06o0.8): a hangulat-ív a bootstrapben valós tónusozott
+        // említésekből számítódik, nem a sosem-írt person.affect_trend oszlopból.
+        UUID owner = ownerId();
+        PersonEntity petra = personPopulator.createPerson(owner, "Petra", "partner", "positive");
+        Instant now = Instant.now();
+        // 3 hét biztosan másik ISO-hétre esik, mint "most" — nincs szükség naptár-pinnelésre.
+        mentionPopulator.createMention(owner, petra.getId(), now.minus(Duration.ofDays(21)), "negative");
+        mentionPopulator.createMention(owner, petra.getId(), now, "positive");
+
+        PeopleResponse res = getForBody("/api/people", ownerAuthHeaders(), HttpStatus.OK, PeopleResponse.class);
+
+        PersonResponse person = res.getPersons().getFirst();
+        assertThat(person.getAffectTrend()).hasSize(2);
+        assertThat(person.getAffectTrendStart())
+            .isEqualTo(java.time.LocalDate.ofInstant(now.minus(Duration.ofDays(21)), java.time.ZoneOffset.UTC)
+                .with(java.time.DayOfWeek.MONDAY));
+        // 2 heti olvasat < MIN_READINGS_FOR_DIRECTION (3) — determinisztikusan flat.
+        assertThat(person.getDirection()).isEqualTo(PersonResponse.DirectionEnum.FLAT);
     }
 }

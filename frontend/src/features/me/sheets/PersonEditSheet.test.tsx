@@ -28,8 +28,12 @@ const PERSON: PersonEntry = {
   contactCadenceLabel: 'heti',
   notes: 'régi barát',
   affectTrend: [],
+  affectTrendStart: null,
+  direction: 'flat',
+  directionReason: null,
   knownFacts: [],
   ties: [],
+  graphEdges: [],
 }
 
 it('gyűjti az aliasokat és menti az új személyt', () => {

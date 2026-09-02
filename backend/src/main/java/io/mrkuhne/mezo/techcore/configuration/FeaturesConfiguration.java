@@ -73,6 +73,11 @@ public class FeaturesConfiguration {
      *  needs COMPANION_SWITCH (the port adapter lives there). */
     public static final String RECIPE_AI_SCORE_SWITCH = "mezo.feature.recipe-ai-score.enabled";
 
+    /** Receptműhely AI turn endpoint (mezo-92pb) — off: POST /api/recipe/workshop/turn is gone
+     *  (controller bean absent); LLM availability additionally needs COMPANION_SWITCH
+     *  (the RecipeWorkshopLlm adapter lives there). */
+    public static final String RECIPE_WORKSHOP_SWITCH = "mezo.feature.recipe-workshop.enabled";
+
     /** Meal coach verdicts (mezo-mr4n): gates ONLY the LLM prose over a logged meal's score — the
      *  deterministic score and its breakdown stay on regardless. Verdicts additionally need
      *  COMPANION_SWITCH (the MealCoachLlm adapter lives there). */

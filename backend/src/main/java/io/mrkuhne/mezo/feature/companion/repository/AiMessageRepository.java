@@ -24,6 +24,11 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
     List<AiMessageEntity> findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(
             UUID createdBy, String role, Instant since);
 
+    /** Karakter round-3 read layer: the owner's own chat timestamps in a window, upper-bounded so a
+     *  catch-up run for a past day cannot see later activity. */
+    List<AiMessageEntity> findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+            UUID createdBy, String role, Instant from, Instant toExclusive);
+
     /**
      * V2.2 turn-embedding catch-up: the user half of a turn = the closest not-later user row
      * (≤, not < — the two rows of a turn can share a flush timestamp; role disambiguates).

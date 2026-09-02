@@ -373,7 +373,8 @@ export const MOCK_PHOTO_DRAFT: PantryScrapeDraft = {
 }
 
 // === Mock AI meal draft (Fuel P8, mezo-78rn) — what the demo AiLogSheet "parses" from text/photo ===
-// One pantry-matched line (references a REAL Kamra seed so the badge + tap-through resolve) + one
+// One name-matched pantry line (references a REAL Kamra seed so the badge + tap-through resolve;
+// needsReview=true is the realistic shape of a deterministic name match, mezo-qrks) + one
 // low-confidence estimate line (needsReview → the review-chip path). `_aiSeed` is the first food seed.
 const _aiSeed = ingredients[0]
 export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
@@ -385,7 +386,7 @@ export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
       source: 'pantry', pantryItemId: _aiSeed.id, recipeId: null, name: _aiSeed.name,
       amount: 60, unit: _aiSeed.unit, per: _aiSeed.per, basisUnit: _aiSeed.unit,
       kcal: _aiSeed.macros.kcal, proteinG: _aiSeed.macros.p, carbsG: _aiSeed.macros.c, fatG: _aiSeed.macros.f,
-      nova: _aiSeed.nova, confidence: 1, needsReview: false,
+      nova: _aiSeed.nova, confidence: 1, needsReview: true,
     },
     {
       source: 'estimate', pantryItemId: null, recipeId: null, name: 'Csirkés wrap',

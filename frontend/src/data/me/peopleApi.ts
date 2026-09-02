@@ -70,8 +70,12 @@ export function toPersonEntry(p: PersonResponse): PersonEntry {
     contactCadenceLabel: p.contactCadenceLabel ?? '',
     notes: p.notes ?? '',
     affectTrend: p.affectTrend,
+    affectTrendStart: p.affectTrendStart ?? null,
+    direction: p.direction,
+    directionReason: p.directionReason ?? null,
     knownFacts: p.knownFacts,
     ties: p.ties,
+    graphEdges: p.graphEdges,
   }
 }
 

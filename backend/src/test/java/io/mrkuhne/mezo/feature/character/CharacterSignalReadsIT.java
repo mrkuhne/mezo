@@ -3,13 +3,32 @@ package io.mrkuhne.mezo.feature.character;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
+import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
+import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.character.detector.DetectorInput;
 import io.mrkuhne.mezo.feature.character.service.CharacterSignalReads;
+import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.intention.entity.DailyIntentionEntity;
+import io.mrkuhne.mezo.feature.intention.entity.IntentionFocusEntity;
+import io.mrkuhne.mezo.feature.intention.repository.DailyIntentionRepository;
+import io.mrkuhne.mezo.feature.intention.repository.IntentionFocusRepository;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionContextEnvelope;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
+import io.mrkuhne.mezo.feature.journal.entity.GratitudeEntryEntity;
+import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
+import io.mrkuhne.mezo.feature.journal.repository.GratitudeEntryRepository;
+import io.mrkuhne.mezo.feature.needs.entity.NeedsDayEntity;
+import io.mrkuhne.mezo.feature.needs.repository.NeedsDayRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
@@ -22,11 +41,17 @@ import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
@@ -53,9 +78,145 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
     @Autowired private PantryItemPopulator pantryPopulator;
     @Autowired private ProtocolPopulator fuelPopulator;
     @Autowired private SupplementIntakePopulator supplementIntakePopulator;
+    @Autowired private IntentionFocusRepository intentionFocusRepository;
+    @Autowired private DailyIntentionRepository dailyIntentionRepository;
+    @Autowired private DecisionEntryRepository decisionEntryRepository;
+    @Autowired private NeedsDayRepository needsDayRepository;
+    @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private CheckInRepository checkInRepository;
+    @Autowired private SleepLogRepository sleepLogRepository;
+    @Autowired private GratitudeEntryRepository gratitudeEntryRepository;
+    @Autowired private AiConversationPopulator aiConversationPopulator;
+    @Autowired private AiMessagePopulator aiMessagePopulator;
+
+    /** Owner shared by the round-3 read-layer tests below, which reference {@code owner} bare
+     *  (no local shadow) — the other tests in this file keep their own {@code UUID owner = owner();}
+     *  local convention, which simply shadows this field. */
+    private UUID owner;
+
+    @BeforeEach
+    void setUpSharedOwner() {
+        owner = owner();
+    }
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
+    }
+
+    /** {@code @CreationTimestamp} stamps {@code created_at} at real wall-clock "now" on insert, so
+     *  it is backdated to {@code date} afterwards via a plain JDBC update — the {@code saveDecision}
+     *  precedent above. Needed since the round-3 review fix (minor) added the same catch-up upper
+     *  bound to {@code gatherIntentionDays} that {@code gatherDecisions}/{@code gatherGratitudes}
+     *  already had. */
+    private IntentionFocusEntity saveFocus(LocalDate date, String text) {
+        IntentionFocusEntity e = new IntentionFocusEntity();
+        e.setCreatedBy(owner);
+        e.setFocusDate(date);
+        e.setText(text);
+        IntentionFocusEntity saved = intentionFocusRepository.saveAndFlush(e);
+        jdbcTemplate.update("update intention_focus set created_at = ? where id = ?",
+                Timestamp.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return intentionFocusRepository.findById(saved.getId()).orElseThrow();
+    }
+
+    private DailyIntentionEntity saveReflection(LocalDate date, String reflection) {
+        DailyIntentionEntity e = new DailyIntentionEntity();
+        e.setCreatedBy(owner);
+        e.setIntentionDate(date);
+        e.setReflection(reflection);
+        DailyIntentionEntity saved = dailyIntentionRepository.saveAndFlush(e);
+        jdbcTemplate.update("update daily_intention set created_at = ? where id = ?",
+                Timestamp.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return dailyIntentionRepository.findById(saved.getId()).orElseThrow();
+    }
+
+    /** {@code @CreationTimestamp} stamps {@code created_at} at real wall-clock "now" on insert,
+     *  which is AFTER every fixed {@code day} these tests use — so {@code writtenOn} is backdated
+     *  to {@code decidedOn} afterwards via a plain JDBC update (the {@code LlmLogPopulator.logAt}
+     *  precedent), avoiding the self-invocation trap a {@code @Transactional} helper on this
+     *  non-transactional {@link ApiIntegrationTest} would hit. */
+    private DecisionEntryEntity saveDecision(LocalDate decidedOn, LocalDate reviewDue, String text) {
+        DecisionEntryEntity e = new DecisionEntryEntity();
+        e.setCreatedBy(owner);
+        e.setDecidedOn(decidedOn);
+        e.setDecisionText(text);
+        e.setContextSnapshot(new DecisionContextEnvelope(null, java.time.Instant.now()));
+        e.setReviewDue(reviewDue);
+        DecisionEntryEntity saved = decisionEntryRepository.saveAndFlush(e);
+        jdbcTemplate.update("update decision_entry set created_at = ? where id = ?",
+                Timestamp.from(decidedOn.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return decisionEntryRepository.findById(saved.getId()).orElseThrow();
+    }
+
+    private NeedsDayEntity saveNeedsDay(LocalDate date, int energia, int hidratacio, int pihenes,
+            int mozgas, int lelek, int rend, int greenCount, boolean allGreen, int streakDays) {
+        NeedsDayEntity e = new NeedsDayEntity();
+        e.setCreatedBy(owner);
+        e.setNeedsDate(date);
+        e.setEnergia(energia);
+        e.setHidratacio(hidratacio);
+        e.setPihenes(pihenes);
+        e.setMozgas(mozgas);
+        e.setLelek(lelek);
+        e.setRend(rend);
+        e.setGreenCount(greenCount);
+        e.setAllGreen(allGreen);
+        e.setStreakDays(streakDays);
+        // Backdated like saveFocus/saveReflection above — gatherNeeds picked up the same
+        // catch-up upper bound in the round-3 review fix (minor).
+        NeedsDayEntity saved = needsDayRepository.saveAndFlush(e);
+        jdbcTemplate.update("update needs_day set created_at = ? where id = ?",
+                Timestamp.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return needsDayRepository.findById(saved.getId()).orElseThrow();
+    }
+
+    private CheckInEntity saveCheckIn(LocalDate date, String slotTime, Integer energy, Integer stress,
+            Integer body, Integer mental, String note) {
+        return checkInPopulator.createCheckIn(owner, date, slotTime, energy, stress, body, mental, note);
+    }
+
+    /** {@code @CreationTimestamp} stamps {@code created_at} at real wall-clock "now" on insert,
+     *  which is AFTER every fixed {@code day} these tests use — so {@code createdAt} is backdated
+     *  to {@code date} afterwards via a plain JDBC update (the {@code saveDecision} precedent). */
+    private SleepLogEntity saveSleep(LocalDate date, Integer quality, BigDecimal durationH,
+            Integer awakenings) {
+        SleepLogEntity e = new SleepLogEntity();
+        e.setCreatedBy(owner);
+        e.setDate(date);
+        e.setQuality(quality);
+        e.setDurationH(durationH);
+        e.setAwakenings(awakenings);
+        SleepLogEntity saved = sleepLogRepository.saveAndFlush(e);
+        jdbcTemplate.update("update sleep_log set created_at = ? where id = ?",
+                Timestamp.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return sleepLogRepository.findById(saved.getId()).orElseThrow();
+    }
+
+    /** Same real-wall-clock-{@code createdAt} problem as {@link #saveSleep}; backdated identically. */
+    private GratitudeEntryEntity saveGratitude(LocalDate date, String text, String lifeArea) {
+        GratitudeEntryEntity e = new GratitudeEntryEntity();
+        e.setCreatedBy(owner);
+        e.setOccurredOn(date);
+        e.setText(text);
+        e.setLifeArea(lifeArea);
+        GratitudeEntryEntity saved = gratitudeEntryRepository.saveAndFlush(e);
+        jdbcTemplate.update("update gratitude_entry set created_at = ? where id = ?",
+                Timestamp.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()), saved.getId());
+        return gratitudeEntryRepository.findById(saved.getId()).orElseThrow();
+    }
+
+    /** {@code @CreationTimestamp} stamps {@code created_at} at real wall-clock "now" on insert, so
+     *  it is backdated to {@code at} afterwards via a plain JDBC update — the {@code saveDecision}
+     *  precedent above. */
+    private void saveUserMessage(LocalDateTime at) {
+        AiConversationEntity conversation = aiConversationPopulator.conversation(owner);
+        AiMessageEntity message = aiMessagePopulator.message(conversation, "user", "teszt üzenet");
+        jdbcTemplate.update("update ai_message set created_at = ? where id = ?",
+                Timestamp.from(at.atZone(ZoneId.systemDefault()).toInstant()), message.getId());
+    }
+
+    private static LocalDate localDateOf(Instant at) {
+        return at.atZone(ZoneId.systemDefault()).toLocalDate();
     }
 
     @Test
@@ -277,5 +438,152 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
             assertThat(d.date()).isEqualTo(DAY);
             assertThat(d.takenPantryItemIds()).containsExactly(creatine.getId());
         });
+    }
+
+    @Test
+    void gather_shouldPairFocusCountWithReflection_andKeepUnclosedDaysWithNullReflection() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveFocus(day.minusDays(1), "reggeli fókusz");
+        saveFocus(day.minusDays(1), "második fókusz");
+        saveReflection(day.minusDays(1), DailyIntentionEntity.REFLECTION_PARTIAL);
+        saveFocus(day, "csak fókusz, lezárás nélkül");
+
+        List<DetectorInput.IntentionDayPoint> days = signalReads.gather(owner, day).trend().intentionDays();
+
+        assertThat(days).hasSize(2);
+        assertThat(days.get(0).focusCount()).isEqualTo(2);
+        assertThat(days.get(0).reflection()).isEqualTo(DailyIntentionEntity.REFLECTION_PARTIAL);
+        assertThat(days.get(1).focusCount()).isEqualTo(1);
+        assertThat(days.get(1).reflection()).isNull();
+    }
+
+    @Test
+    void gather_shouldDropAFocusDayWrittenAfterTheObservedDay() {
+        // Minor round-3 review fix: gatherIntentionDays didn't apply the same catch-up upper
+        // bound gatherDecisions/gatherGratitudes already do.
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        IntentionFocusEntity late = saveFocus(day.minusDays(1), "később írt fókusz");
+        jdbcTemplate.update("update intention_focus set created_at = ? where id = ?",
+                Timestamp.from(day.plusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant()),
+                late.getId());
+
+        List<DetectorInput.IntentionDayPoint> days = signalReads.gather(owner, day).trend().intentionDays();
+
+        assertThat(days).isEmpty();
+    }
+
+    @Test
+    void gather_shouldDropANeedsDayWrittenAfterTheObservedDay() {
+        // Minor round-3 review fix: gatherNeeds didn't apply the same catch-up upper bound.
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        NeedsDayEntity late = saveNeedsDay(day.minusDays(1), 80, 80, 80, 80, 80, 80, 6, true, 3);
+        jdbcTemplate.update("update needs_day set created_at = ? where id = ?",
+                Timestamp.from(day.plusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant()),
+                late.getId());
+
+        assertThat(signalReads.gather(owner, day).trend().needs()).isNull();
+    }
+
+    @Test
+    void gather_shouldTreatAReviewAfterTheObservedDay_asStillUnreviewed() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        DecisionEntryEntity e = saveDecision(day.minusDays(10), day.minusDays(3), "döntés szövege");
+        e.setReviewedAt(day.plusDays(2).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        e.setOutcomeRating((short) 5);
+        decisionEntryRepository.save(e);
+
+        DetectorInput.DecisionPoint p = signalReads.gather(owner, day).trend().decisions().getFirst();
+
+        assertThat(p.reviewedOn()).isNull();
+        assertThat(p.outcomeRating()).isNull();
+    }
+
+    @Test
+    void gather_shouldReturnNullNeedsContext_whenNoDayWasEverClosed() {
+        assertThat(signalReads.gather(owner, LocalDate.of(2026, 5, 20)).trend().needs()).isNull();
+    }
+
+    @Test
+    void gather_shouldCarryTheConfiguredGreenThreshold_andThePerDayStreakSnapshot() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveNeedsDay(day.minusDays(1), 80, 80, 80, 80, 80, 80, 6, true, 4);
+        saveNeedsDay(day, 80, 30, 80, 80, 80, 80, 5, false, 0);
+
+        DetectorInput.NeedsContext ctx = signalReads.gather(owner, day).trend().needs();
+
+        assertThat(ctx.greenThreshold()).isEqualTo(60);
+        assertThat(ctx.days()).extracting(DetectorInput.NeedsDayPoint::streakDays)
+                .containsExactly(4, 0);
+    }
+
+    @Test
+    void gather_shouldTruncateDecisionEvidence_andNeverExceedTheEvidenceBudget() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveDecision(day.minusDays(2), day.plusDays(5), "x".repeat(400));
+
+        String preview = signalReads.gather(owner, day).trend().decisions().getFirst().textPreview();
+
+        assertThat(preview).hasSizeLessThanOrEqualTo(121).endsWith("…");
+    }
+
+    @Test
+    void gather_shouldUseCreatedAtNotSavedAt_forTheCheckinWriteTime() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        CheckInEntity c = saveCheckIn(day, "07:00", 6, 4, 6, 6, null);
+        c.setSavedAt(day.plusDays(3).atTime(18, 0).atZone(ZoneId.systemDefault()).toInstant());
+        checkInRepository.save(c);
+
+        DetectorInput.CheckinSlotPoint p = signalReads.gather(owner, day).trend().checkinSlots().getFirst();
+
+        assertThat(p.writtenAt().toLocalDate()).isEqualTo(localDateOf(c.getCreatedAt()));
+        assertThat(p.slotTime()).isEqualTo("07:00");
+    }
+
+    @Test
+    void gather_shouldTagLatenciesByGenre_andDropRecordsWrittenAfterTheObservedDay() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveSleep(day.minusDays(1), 7, new BigDecimal("7.5"), 1);
+        saveGratitude(day.minusDays(1), "hála", "connection");
+        // written genuinely AFTER `day` — must be dropped, unlike the two same-day rows above.
+        GratitudeEntryEntity late = saveGratitude(day.minusDays(2), "később írt hála", "connection");
+        jdbcTemplate.update("update gratitude_entry set created_at = ? where id = ?",
+                Timestamp.from(day.plusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant()),
+                late.getId());
+
+        List<DetectorInput.LogLatencyPoint> pts = signalReads.gather(owner, day).trend().logLatencies();
+
+        assertThat(pts).extracting(DetectorInput.LogLatencyPoint::genre)
+                .containsOnly("esemeny", "reflexio");
+        assertThat(pts).allSatisfy(p -> assertThat(p.writtenDate()).isBeforeOrEqualTo(day));
+        // the late-written row's about-date must NOT surface — proves the writtenOn > day guard bites
+        assertThat(pts).noneMatch(p -> p.aboutDate().equals(day.minusDays(2)));
+    }
+
+    @Test
+    void gather_shouldBoundChatTimesAboveByTheObservedDay() {
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveUserMessage(day.atTime(23, 30));
+        saveUserMessage(day.plusDays(1).atTime(1, 0));
+
+        assertThat(signalReads.gather(owner, day).trend().userChatTimes())
+                .allSatisfy(t -> assertThat(t.toLocalDate()).isBeforeOrEqualTo(day));
+    }
+
+    @Test
+    void gather_shouldReadLogLatenciesAndChatTimesOverTheFullEightWeekTrendWindow() {
+        // I4 (round-3 review fix): both reads used to be bounded below at day-13 (the 14-day
+        // detector window), one day too short for detectors that evaluate that window BOTH as of
+        // `day` and as of `day-1` (TrailingWindow's own javadoc). 20 days ago is well outside a
+        // 14-day window but well inside the 8-week (56-day) trend window every sibling read uses.
+        LocalDate day = LocalDate.of(2026, 5, 20);
+        saveSleep(day.minusDays(20), 7, new BigDecimal("7.5"), 1);
+        saveUserMessage(day.minusDays(20).atTime(23, 30));
+
+        DetectorInput input = signalReads.gather(owner, day);
+
+        assertThat(input.trend().logLatencies())
+                .anyMatch(p -> p.aboutDate().equals(day.minusDays(20)));
+        assertThat(input.trend().userChatTimes())
+                .anyMatch(t -> t.toLocalDate().equals(day.minusDays(20)));
     }
 }

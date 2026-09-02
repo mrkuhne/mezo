@@ -11,11 +11,15 @@ import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.MentionPopulator;
+import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +48,8 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private CompanionMessagePopulator companionMessagePopulator;
     @Autowired private GoalPopulator goalPopulator;
+    @Autowired private PersonPopulator personPopulator;
+    @Autowired private MentionPopulator mentionPopulator;
 
     @Test
     void testGenerateMorning_shouldPersistEnvelope_whenNarrativeWindowHasSummaries() {
@@ -274,5 +280,54 @@ class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
         assertThat(message.getContent().refs())
                 .extracting("kind", "label")
                 .containsExactly(tuple("Goal", "Nyári cut"));
+    }
+
+    @Test
+    void generatePeopleObservation_shouldPersistMessage_fromTheWeeksPeopleData() {
+        UUID user = userPopulator.createUser("people-gen@test.local").getId();
+        var person = personPopulator.createPerson(user, "Zita");
+        // two tone-scored mentions THIS week (DAY's own Monday-anchored week) — the data gate needs
+        // at least one, and the trend calculator needs a tone+ts pair to read a direction from.
+        // The payload is code-aggregated (name/count/direction/reason), not a raw mention echo, so
+        // there is no sentinel-planting channel here — the un-scripted people branch already answers
+        // valid minimal JSON (FakeCompanionLlm's default for PEOPLE_MARKER_MIRROR).
+        mentionPopulator.createMention(user, person.getId(),
+                DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), "positive");
+        mentionPopulator.createMention(user, person.getId(),
+                DAY.atStartOfDay(ZoneOffset.UTC).toInstant().plusSeconds(3600), "positive");
+
+        CompanionMessageEntity message = companionMessageGenerator.generatePeopleObservation(user, DAY);
+
+        assertThat(message).isNotNull();
+        assertThat(message.getKind()).isEqualTo(CompanionMessageEntity.KIND_PEOPLE);
+        assertThat(message.getContent().eyebrow()).isNotBlank();
+        assertThat(message.getContent().body()).isNotEmpty();
+        assertThat(message.getGeneratedAt()).isNotNull();
+    }
+
+    @Test
+    void generatePeopleObservation_shouldReturnNull_whenNoMentionThisWeek() {
+        UUID user = userPopulator.createUser("people-empty@test.local").getId();
+        var person = personPopulator.createPerson(user, "Zita");
+        // a mention exists, but it is two weeks OLD — outside DAY's own Monday-anchored window.
+        mentionPopulator.createMention(user, person.getId(),
+                DAY.minusWeeks(2).atStartOfDay(ZoneOffset.UTC).toInstant(), "positive");
+
+        assertThat(companionMessageGenerator.generatePeopleObservation(user, DAY)).isNull();
+        assertThat(companionMessageRepository.count()).isZero();
+    }
+
+    @Test
+    void generatePeopleObservation_shouldBeIdempotent() {
+        UUID user = userPopulator.createUser("people-idem@test.local").getId();
+        var person = personPopulator.createPerson(user, "Zita");
+        mentionPopulator.createMention(user, person.getId(),
+                DAY.atStartOfDay(ZoneOffset.UTC).toInstant(), "negative");
+
+        CompanionMessageEntity first = companionMessageGenerator.generatePeopleObservation(user, DAY);
+        CompanionMessageEntity second = companionMessageGenerator.generatePeopleObservation(user, DAY);
+
+        assertThat(second.getId()).isEqualTo(first.getId());
+        assertThat(companionMessageRepository.count()).isEqualTo(1);
     }
 }

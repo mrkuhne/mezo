@@ -16,10 +16,15 @@
 // last five `reads` rows above, and its eight detectors are wired into
 // `DetektorokPage.tsx`'s catalog. Round 2 ("Fuel & ciklus") landed the same way: its four items
 // are gone from `rounds`, its six data sources are now the last six `reads` rows above, and its
-// seven detectors are wired into `DetektorokPage.tsx`'s catalog, bringing it to 20. Do not treat
-// this module as authoritative for "what is actually wired today" — `DetektorokPage.tsx` (the
-// 20 real, `DetectorRegistry`-discovered detectors) and the backend detector catalog are that
-// runtime truth; this file is the plan, not the state of the world.
+// seven detectors are wired into `DetektorokPage.tsx`'s catalog, bringing it to 20. Round 3
+// ("Psziché & viselkedés-meta") landed the same way too: its eight items are gone from `rounds`
+// (plus the `n: 4` round's `Életjel-gyűrűk` row, pulled forward here via
+// `needs-domain-imbalance` before its own round landed), its seven data sources are now the
+// last seven `reads` rows above, and its twelve detectors are wired into `DetektorokPage.tsx`'s
+// catalog, bringing it to 32. Do not treat this module as authoritative for "what is actually
+// wired today" — `DetektorokPage.tsx` (the 32 real, `DetectorRegistry`-discovered detectors)
+// and the backend detector catalog are that runtime truth; this file is the plan, not the state
+// of the world.
 // ============================================================
 
 export interface InventoryRead {
@@ -65,26 +70,20 @@ export const INVENTORY_READS: InventoryRead[] = [
   { w: 'Kiegészítő-stack (aktív protokoll + bevitelek)', chips: ['8 hét', 'aktív protokoll'] },
   { w: 'Check-in skálák (energia, stressz, testi, mentális)', chips: ['8 hét'] },
   { w: 'Gyógyszerciklus (ciklusnap, fázis)', chips: ['8 hét', 'aktív gyógyszer'] },
+  { w: 'Napi fókusz + napzárás (kreed-hurok)', chips: ['8 hét'] },
+  { w: 'Döntésnapló (kimenet-értékelés, visszanézési határidő)', chips: ['teljes előzmény'] },
+  { w: 'Hála-bejegyzések (életterület-címke)', chips: ['8 hét'] },
+  { w: 'Életjel-napok (hat terület, streak-pillanatkép)', chips: ['8 hét'] },
+  { w: 'Check-in sorok (idősáv, első írás ideje, jegyzet)', chips: ['8 hét'] },
+  { w: 'Naplózási latencia (a nap vs. mikor íródott)', chips: ['8 hét', '11 forrás'] },
+  { w: 'Chat-időbélyegek (saját üzenetek)', chips: ['8 hét'] },
 ]
 
-/** Tervezett (prototype's `INVENTORY.rounds`) — the remaining two MINDENT-be rounds, verbatim
- *  (round 1, "Edzés & test", and round 2, "Fuel & ciklus", landed for real via mezo-1gim.15 —
- *  see `INVENTORY_READS` above and `DetektorokPage.tsx`'s 20-detector catalog). */
+/** Tervezett (prototype's `INVENTORY.rounds`) — the remaining MINDENT-be round, verbatim
+ *  (round 1, "Edzés & test", round 2, "Fuel & ciklus", and round 3, "Psziché & viselkedés-meta",
+ *  all landed for real via mezo-1gim.15 — see `INVENTORY_READS` above and
+ *  `DetektorokPage.tsx`'s 32-detector catalog). */
 export const INVENTORY_ROUNDS: InventoryRound[] = [
-  {
-    n: 3,
-    title: 'Psziché & viselkedés-meta',
-    items: [
-      { t: 'Check-in jegyzetek', det: ['self-calibration'], sensitive: true },
-      { t: 'Kreed/fókusz × Napzárás', det: ['promise-vs-delivery'] },
-      { t: 'Döntésnapló kimenetek', det: ['decision-profile'] },
-      { t: 'Hála-témák' },
-      { t: 'Streak-törés/visszatérés', det: ['resilience', 'all-or-nothing', 'restart-pattern'] },
-      { t: 'Logolási latencia', det: ['retro-logging-ratio'] },
-      { t: 'Éjszakai app-aktivitás', det: ['night-activity'] },
-      { t: 'Check-in reakcióidő', det: ['checkin-latency'] },
-    ],
-  },
   {
     n: 4,
     title: 'Kapcsolatok & AI-meta',
@@ -94,7 +93,6 @@ export const INVENTORY_ROUNDS: InventoryRound[] = [
       { t: 'Szezonalitás' },
       { t: 'Chat-témák eltolódása', det: ['chat-topic-shift'] },
       { t: 'Tudástár-triázs döntések', det: ['knowledge-rejection-pattern'], sensitive: true },
-      { t: 'Életjel-gyűrűk' },
       { t: 'Quest-szövegek' },
       { t: 'Memoár + predikció' },
     ],

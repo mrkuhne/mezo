@@ -36,8 +36,12 @@ const PERSON: PersonEntry = {
   contactCadenceLabel: 'Heti',
   notes: '',
   affectTrend: [],
+  affectTrendStart: null,
+  direction: 'flat',
+  directionReason: null,
   knownFacts: [],
   ties: [],
+  graphEdges: [],
 }
 
 test('tone-less mention renders no ppl-tw-* wash', () => {

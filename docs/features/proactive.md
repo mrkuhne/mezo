@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-08-31
+updated: 2026-09-01
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -28,11 +28,14 @@ related: [companion, today, insights, train, me, _platform-api-backend, _platfor
 > [`specs/2026-08-15-companion-feed-design.md`](../superpowers/specs/2026-08-15-companion-feed-design.md)).**
 > The old `briefing` + `heartbeat_note` tables and their generators/jobs/read-path staleness
 > machinery are GONE (dropped, no data migration — the disposable generated rows were never worth
-> preserving). One new table, `companion_message`, holds **six kinds**: `morning` (dawn cron, the
+> preserving). One new table, `companion_message`, holds **seven kinds**: `morning` (dawn cron, the
 > briefing's successor — sleep/weight-free by construction, spec §3), `sleep` (fired by a sleep-log
 > event), `weight` (fired by a weight-log event), `midday`/`evening` (the heartbeat's two window
-> crons, ported near-verbatim), and — since W5.2 (`mezo-b3pp.19`, 2026-08-25) — `intervention`, the
-> only NON-LLM kind (config-text card, flag-raise event-fired; §3/§4 below). A `CompanionMessageGenerator` with one method per kind, a
+> crons, ported near-verbatim), `intervention` (since W5.2, `mezo-b3pp.19`, 2026-08-25 — the
+> only NON-LLM kind: config-text card, flag-raise event-fired; §3/§4 below), and — since
+> **Emberek S6** (`mezo-06o0.8`, 2026-09-01) — `people` (fired by the dawn cron alongside
+> `morning`, gated on this week's mentions existing; §3.x below) — the Emberek section's weekly
+> human-circle observation, aggregated per person, never raw quotes. A `CompanionMessageGenerator` with one method per kind, a
 > `CompanionMessageJob` (3 crons: dawn/midday/evening) + a `CompanionMessageEventListener`
 > (`@Async` `AFTER_COMMIT` on the sleep/weight log services' own events), and a unified
 > `GET /api/proactive/feed?date=` (lazy miss-recovery for the cron kinds, `200 []` honest empty —
@@ -67,7 +70,7 @@ related: [companion, today, insights, train, me, _platform-api-backend, _platfor
 > `ExperimentOutcomeService` (reusing the shared `MetricWindowEvaluator`), and a two-cron
 > `ExperimentJob` — the Insights **Experiments tab un-ghosts** (the LAST `PHASE3_TAB_IDS` ghost).
 >
-> **Status: backend 🟢 companion feed (morning/sleep/weight/midday/evening) + 🟢 W1 + 🟢 W2 + 🟢 P1
+> **Status: backend 🟢 companion feed (morning/sleep/weight/midday/evening/people) + 🟢 W1 + 🟢 W2 + 🟢 P1
 > + 🟢 P2 + 🟢 HBWI · FE 🟢 Today MezoChip thread real (`useCompanionFeed`) + 🟢 W1 (Weekly card
 > real, inert buttons hidden in live) + 🟢 W2 (Memoir tab real, demo extras mock-only) + 🟢 P1
 > (Predictions tab real, un-ghosted) + 🟢 P2 (Experiments tab real) + 🟢 HBWI (Train challenge
@@ -266,6 +269,24 @@ this redesign and remain as shipped.
   raw ISO dates. The fake's `MEMOIR_SENTINEL` went GREEDY (nested `anchors` objects) and its
   default answer speaks the v2 shape; load-bearing prompt lines are pinned by
   `MemoirPromptTest`, the widened gather by `MemoirGeneratorIT`.
+  **The week's workout closing notes (`mezo-d20.13`,
+  [spec](../superpowers/specs/2026-09-01-edzes-jegyzet-kontextus-design.md))** are the newest
+  gather section — `AMIT AZ EDZÉSEK UTÁN ÍRT (a saját szavai, szó szerint)`, one line per
+  completed instance in `[weekStart, weekStart+6]` carrying a non-blank `closingNote`
+  (`WorkoutSessionRepository.findDoneInstancesBetween`, the same cycle-safe `proactive → train`
+  read the week PRs use). They go in **verbatim**: a session is fully describable in numbers, but
+  how it FELT exists only in the user's own sentence and is unrecoverable from the data, so
+  summarizing it first would strip the numbers, hedges and specifics that are the entire reason it
+  is carried — and would make the app assert an interpretation of the user's state it was never
+  told. Long notes are **truncated** (`WORKOUT_NOTE_CLIP` 400 per note, `WORKOUT_NOTES_TOTAL_CLIP`
+  1200 for the section): a per-entry cap as well as a total, because with only a total one long
+  note crowds the rest of the week out entirely. Each note is also a **`WorkoutNote` anchor
+  candidate**, so a chapter that leans on one stays traceable in the `Miből íródott` row —
+  unattributed echo of a person's own words reads as surveillance, a visible trail reads as
+  attention. Custom (saját) workouts are **in** scope: only the custom TEMPLATE row has a null
+  `templateSessionId`, its started instance carries one like any other. Reads `closingNote`, never
+  `note` (the template day's plan note, a different row of the same table). The FE chip label
+  lives in `toolDomains.ts` / `chatRefs.ts` (`Edzés-jegyzet`).
 - **A Sunday-evening cron** — `MemoirJob` `@Scheduled` on `mezo.proactive.memoir.cron`
   (**`0 0 19 * * SUN`** — Sunday 19:00 server zone, the old PRD journey 5.8) pre-generates the memoir
   for the week **ENDING that Sunday** (its Monday = `previousOrSame(MONDAY)` of "now"). At 19:00 the
@@ -1149,9 +1170,11 @@ changeset, not an edit) + `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql
   (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE CASCADE`, `is_deleted boolean not
   null default false`, `created_at timestamptz not null default now()`, `message_date date not null`
   (the day it is FOR — not when generated), `kind varchar(16) not null` (CHECK
-  `morning|sleep|weight|midday|evening|intervention` — the sixth value is W5.2's, migration
-  `202608241500_mezo-b3pp.19_companion_message_intervention_kind.sql`, a CK-swap-only widening; see
-  the W5.2 subsection below), `content jsonb not null` (the typed envelope, the old
+  `morning|sleep|weight|midday|evening|intervention|people` — the sixth value, `intervention`, is
+  W5.2's, migration `202608241500_mezo-b3pp.19_companion_message_intervention_kind.sql`, a
+  CK-swap-only widening; the seventh, `people`, is **Emberek S6**'s (`mezo-06o0.8`), another
+  CK-swap-only widening — see the W5.2 subsection below and §3.x for `people`), `content jsonb not
+  null` (the typed envelope, the old
   `BriefingContentEnvelope` idiom renamed `CompanionMessageEnvelope`), `generated_at timestamptz not
   null`. Uniqueness is a **partial unique index**
   `uq_companion_message_created_by_date_kind … where is_deleted = false` (one LIVE message per
@@ -1213,8 +1236,8 @@ changeset, not an edit) + `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql
 
 `CompanionMessageEntity` (`entity/CompanionMessageEntity.java`, replaces `BriefingEntity` +
 `HeartbeatNoteEntity`) `extends OwnedEntity`, UUID `@GeneratedValue` id, soft-deleted; `messageDate`/
-`kind` (the `KIND_MORNING`/`KIND_SLEEP`/`KIND_WEIGHT`/`KIND_MIDDAY`/`KIND_EVENING`/`KIND_INTERVENTION`
-— the last is W5.2's — constants) +
+`kind` (the `KIND_MORNING`/`KIND_SLEEP`/`KIND_WEIGHT`/`KIND_MIDDAY`/`KIND_EVENING`/`KIND_INTERVENTION`/`KIND_PEOPLE`
+— `KIND_INTERVENTION` is W5.2's, `KIND_PEOPLE` is Emberek S6's (`mezo-06o0.8`) — constants) +
 `generatedAt`, and `content` maps as a typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto
 `CompanionMessageEnvelope` (`entity/CompanionMessageEnvelope.java`, renamed from
 `BriefingContentEnvelope`) — a record `{String eyebrow, List<String> body, List<Ref> refs,
@@ -1291,10 +1314,13 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 
 Schemas: `FeedMessageResponse{id, date, kind, eyebrow, body[], refs[], generatedAt}` (replaces
 `BriefingResponse` + `HeartbeatNoteResponse`) + `FeedRef{kind, label}` — **no `confidence`, no
-`tone`** on the wire (§9 gotcha c, unchanged). `kind` is the **6-value** companion-feed enum
-(`morning|sleep|weight|midday|evening|intervention` — the sixth, W5.2 bd `mezo-b3pp.19`, added
-2026-08-25); `refs[].kind` is the FE `RefTag` vocabulary
-(`WeightTrend|Goal|Workout|FuelDay|Medication|Sleep|Memory`) — always `[]` for the `midday`/
+`tone`** on the wire (§9 gotcha c, unchanged). `kind` is the **7-value** companion-feed enum
+(`morning|sleep|weight|midday|evening|intervention|people` — the sixth, `intervention`, W5.2 bd
+`mezo-b3pp.19`, added 2026-08-25; the seventh, `people`, Emberek S6 bd `mezo-06o0.8`, added
+2026-09-01 — the FE `FeedMessageKind` union carries the same string); `refs[].kind` is the FE
+`RefTag` vocabulary — extended with `Person` for the `people` kind's `Ref("Person", name)`
+candidates (§3.x below) — `WeightTrend|Goal|Workout|FuelDay|Medication|Sleep|Memory|Person` —
+always `[]` for the `midday`/
 `evening`/`intervention` kinds (the retired heartbeat generator carried no refs either; config text
 has no refs to select). **`interventionKey` itself never reaches the wire** — the FE branches on
 `kind === 'intervention'` alone ([companion.md](companion.md) §10); the key only matters
@@ -1693,6 +1719,69 @@ could honestly inform, and a memoir belongs to exactly one week, so "cited in N 
 is structurally 0-or-1 and carries no information. The refs are recorded so a later loop has data to
 work with.
 
+### 5.13 Proactive → People, the `people` companion-message kind (✅ Emberek S6, `mezo-06o0.8` — fourth port inversion)
+
+The Emberek section's weekly human-circle observation is a `companion_message` row like any other
+kind (§4 above widened the CHECK from six values to seven), generated by
+`CompanionMessageGenerator.generatePeopleObservation(userId, date)` — same
+gather → ONE `CompanionLlm.complete` call → defensive-parse → bounds-checked ref-resolution →
+`saveAndFlush` idiom every kind in this doc uses, on the SAME Monday-anchored UTC week the
+`feature/people` `PersonAffectTrendCalculator` uses (this generator reuses that calculator
+directly, so the week boundaries and the affect/direction math can never drift apart between the
+companion message and `PersonDetailPage`'s own arc).
+
+- **What the model sees — aggregates, never raw quotes.** The gather step reads this week's
+  mentions, groups them per active person, and builds one line per mentioned person: name,
+  `relationshipHu`, this week's mention count, `direction` (`up`/`down`/`flat`, Hungarian label),
+  and `directionReason` — all off `PersonAffectTrendCalculator`, the exact same values
+  `PersonResponse` carries. A person with zero mentions this week is folded into a single
+  "CSENDBEN MARADT: A, B, C" line instead of one row each. The payload is this aggregated weekly
+  shape only; individual mention excerpts never reach the prompt (unlike the weekly-review
+  citation path in §3 above, which DOES quote mention excerpts into its own, separate, once-a-week
+  narrative — the two payloads are built independently and never share text).
+- **The data gate: no mention this week ⇒ no LLM call, no row.** `generatePeopleObservation`
+  returns `null` before ever calling the LLM when this week's mention window is empty for the
+  user, or when every mentioned person happens to be a non-active candidate (mentions exist but
+  none belong to an active person — an honest gap, not a fabricated image). This is the same
+  "empty window ⇒ no row" discipline every other kind in this doc follows.
+- **Idempotent on `(created_by, message_date, kind)`**, the same partial-unique-index discipline
+  as every other kind — a second same-day call (e.g. a retried cron tick) returns the existing row
+  rather than double-generating.
+- **Ref candidates are `Ref("Person", name)`** for every active person considered (mentioned or
+  silent) — the `Person` `RefTag` this slice added to the FE vocabulary (§4 above).
+- **Trigger: the dawn cron only, deliberately NOT the feed's lazy miss-recovery.** `CompanionMessageJob.runMorning`
+  calls `generatePeopleObservation` right after the morning message, in its OWN try/catch (a
+  people-generation failure must never take down the morning message or any other cron work for
+  that user). `ProactiveFeedService.ensureTodayCronKinds` — the `GET /api/proactive/feed` miss-recovery
+  that lazily backfills `morning`/`midday`/`evening` when a cron tick was missed — was **deliberately
+  left without a `people` branch**: unlike the other cron kinds, adding it there would mean a plain
+  `GET /api/people` (via the Mezo band, which reads the SAME feed row through the port below) could
+  itself trigger a fresh LLM call on a cache miss, turning an idempotent read into a billable side
+  effect. The consequence, accepted on purpose: if the 05:45 cron tick is missed for a user, that
+  user's `people` message for the day simply never generates (unlike `morning`, which the feed read
+  still lazily recovers) — `PeopleService.derivedMezoNote`'s deterministic fallback (see
+  [me.md](me.md)) covers exactly this gap, so the Mezo band is never empty even when the cron
+  missed.
+- **The `people` kind also surfaces in the Napi Mezo thread — intentional, not a leak.** `getFeed`
+  is kind-agnostic (`findByCreatedByAndMessageDateOrderByGeneratedAtAsc` — every live kind for the
+  day, in generation order); it was never taught to filter `people` out, and it should not be —
+  Daniel seeing "someone's mood turned" alongside his morning/midday/evening notes in one place is
+  the intended reading experience, not an accident of a shared table.
+- **The port: `PeopleMezoNoteSource`, owned by `feature/people`, implemented here.** `PeopleService`
+  needs today's `people` message body to fill `PeopleResponse.mezoNote`, but `feature/people` must
+  not import `feature/proactive` (the same cycle risk every prior port in this section exists to
+  avoid). `PeopleMezoNoteSource.todaysNote(userId, today)` is declared at the `people` feature
+  root; `feature/proactive/service/PeopleMezoNoteAdapter` implements it
+  (`@ConditionalOnProperty` on COMPANION ∧ PROACTIVE — with either off, the bean doesn't exist and
+  `PeopleService` falls straight to its own deterministic fallback via `ObjectProvider.getIfAvailable`),
+  reading the day's `KIND_PEOPLE` row and joining its body paragraphs into one line, `Optional.empty()`
+  when blank. This keeps the import direction `proactive → people` (this doc's package depends on
+  the `people` feature's port interface only) — the reverse, `people → proactive`, is the one this
+  inversion exists to forbid. It is a NEW slice edge (this doc's package now depends on
+  `feature/people`'s port interface), verified cycle-free by `ArchitectureTest`'s
+  `feature_slices_are_cycle_free`: `people` itself only points outward to
+  `auth`/`journal`/`ritual`/`goal`, so nothing closes a loop back through it.
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -1850,13 +1939,15 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
 - **`CompanionMessagePersistenceIT` (5)** — envelope jsonb round-trip; the partial unique index
   rejects a second LIVE row for the same (user, day, **kind**) but allows another kind the same day;
   soft-delete allows regeneration; owner-scoped finder isolation; the generation-order finder.
-- **`CompanionMessageGeneratorIT` (14)** — per kind: `generateMorning` persists when the summary
+- **`CompanionMessageGeneratorIT` (17)** — per kind: `generateMorning` persists when the summary
   window has data / returns null on an empty window / idempotent on a second call;
   `generateSleepReaction` persists when a fresh sleep log exists / returns null without one /
   idempotent / includes the `earlierMessagesBlock` when a morning message already exists;
   `generateWeightReaction` persists when today has a weigh-in / returns null without one;
   `generateWindow` persists for midday / persists for evening / returns null on a blank answer /
-  returns null on an empty summary window / idempotent.
+  returns null on an empty summary window / idempotent; **Emberek S6** (`mezo-06o0.8`) added
+  `generatePeopleObservation` persists a message built from the week's per-person aggregates /
+  returns null with no mention this week (the data gate) / idempotent on a second call.
 - **`CompanionMessageJobIT` (6)** — `runMorning` generates today's morning message for a user with
   narrative memory / is idempotent / skips a user without memory and still serves others (per-user
   isolation) / ALSO generates the sleep reaction right after morning when a fresh sleep log already
@@ -2349,8 +2440,9 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 **Backend — controller / services / mapper**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getFeed` replaces `getBriefing`+`getHeartbeat`; …+ `getPredictions` + `getExperiments`/`proposeExperiments`/`decideExperiment` + **`getChallenges`/`decideChallenge`**), JWT ownership, dual-switch-gated.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveFeedService.java` — `mezo-gst9` the unified feed read path (persisted rows in `generatedAt` order · `ensureTodayCronKinds` lazy miss-recovery for morning/midday/evening only · `200 []` = honest, never 404); replaces `ProactiveBriefingService` + `ProactiveHeartbeatService` (both DELETED).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `mezo-gst9` the spine: `generateMorning`/`generateSleepReaction`/`generateWeightReaction`/`generateWindow`, each pure-code `gather` + one `CompanionLlm.complete` + parse + ref resolution; `MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + their `*_PROMPT`s + `MORNING_CANDIDATES`/`SLEEP_CANDIDATES`/`WEIGHT_CANDIDATES` + `earlierMessagesBlock`; replaces `BriefingGenerator` + `HeartbeatGenerator` (both DELETED).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageJob.java` — `mezo-gst9` `runMorning` (05:45, also triggers `generateSleepReaction`) + `runMidday`/`runEvening` (12:30/20:30), one THIRD switch (`FEED_JOB_SWITCH`) for all three; replaces `BriefingJob` + `HeartbeatJob` (both DELETED).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `mezo-gst9` the spine: `generateMorning`/`generateSleepReaction`/`generateWeightReaction`/`generateWindow`, each pure-code `gather` + one `CompanionLlm.complete` + parse + ref resolution; `MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + their `*_PROMPT`s + `MORNING_CANDIDATES`/`SLEEP_CANDIDATES`/`WEIGHT_CANDIDATES` + `earlierMessagesBlock`; replaces `BriefingGenerator` + `HeartbeatGenerator` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added `generatePeopleObservation` + `PEOPLE_MARKER`/`PEOPLE_PROMPT` alongside them (§5.13).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageJob.java` — `mezo-gst9` `runMorning` (05:45, also triggers `generateSleepReaction`) + `runMidday`/`runEvening` (12:30/20:30), one THIRD switch (`FEED_JOB_SWITCH`) for all three; replaces `BriefingJob` + `HeartbeatJob` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added a `generatePeopleObservation` call into `runMorning`, its own try/catch (§5.13).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PeopleMezoNoteAdapter.java` — **Emberek S6** (`mezo-06o0.8`) implements `feature/people`'s `PeopleMezoNoteSource` port (§5.13): joins today's `people` message body into one line for `PeopleResponse.mezoNote`, `Optional.empty()` when blank/absent; `@ConditionalOnProperty` on COMPANION ∧ PROACTIVE.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageEventListener.java` — `mezo-gst9` NEW: `@Async` `@TransactionalEventListener(AFTER_COMMIT)` on `SleepLogSavedEvent`/`WeightLogSavedEvent`, each gated on log freshness before calling the matching `generate*Reaction`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveWeeklySuggestionService.java` — **W1** the weekly read path (ISO-Monday week · persisted row or lazy-generate; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveMemoirService.java` — **W2** the memoir read path (latest row · else lazy-generate the LAST COMPLETED week; null ⇒ 404).

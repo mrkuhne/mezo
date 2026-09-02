@@ -14,7 +14,7 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
 /** The unified companion-feed message kinds (companion-feed, mezo-gst9) — one persisted row per
  *  generation. `intervention` (W5.2, mezo-b3pp.19) is the odd one out: config-text, never LLM
  *  output — the card's body comes straight from `mezo.companion.interventions[].textHu`. */
-export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention'
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
   /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
@@ -348,6 +348,35 @@ export interface RecipeInput {
   role: RecipeRole
   ingredients: { pantryItemId: string; amount: number; unit: string; note?: string | null }[]
 }
+
+// --- Recept-műhely (AI recipe workshop, mezo-92pb) — mirrors WorkshopTurnRequest/Response ---
+/** The chat-picked nutrition goal steering the workshop's suggestions; also selects the save role. */
+export type WorkshopGoal = 'high_protein' | 'pre_workout' | 'post_workout' | 'before_bed' | 'breakfast'
+/** One draft ingredient line — a resolved pantry ref (macros come from the live pantry row, never
+ *  carried on the wire) or a free-form AI/user estimate (`est` = totals for THIS line's current
+ *  amount, not a per-basis rate). Mirrors WorkshopDraftLine. */
+export interface WorkshopLine {
+  source: 'pantry' | 'estimate'
+  refId: string | null
+  name: string
+  amount: number
+  unit: string
+  est?: { kcal: number; p: number; c: number; f: number }
+}
+/** The AI-authored recipe-in-progress the workshop chat edits turn by turn. Mirrors WorkshopDraft. */
+export interface WorkshopDraft {
+  name: string
+  category: RecipeCategory
+  servings: number
+  steps: string[]
+  lines: WorkshopLine[]
+}
+/** One workshop turn's result — the assistant's reply text + the updated draft. Mirrors WorkshopTurnResponse. */
+export interface WorkshopTurn {
+  reply: string
+  draft: WorkshopDraft
+}
+
 export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }
 export interface PantrySuggestion { name: string; source: PantrySourceKey; price: string; reason: string }
 
@@ -552,6 +581,12 @@ export type MentionSource = 'voice' | 'camera' | 'chip' | 'text' | 'chat'
 export type MentionContext =
   | 'munka' | 'csalad' | 'baratok' | 'edzes'
   | 'konfliktus' | 'kozos_program' | 'segitseg' | 'egyeb'
+export interface PersonGraphEdge {
+  nodeKind: string
+  title: string
+  relationHu: string
+  strength: string
+}
 export interface PersonEntry {
   id: string
   name: string
@@ -569,8 +604,13 @@ export interface PersonEntry {
   contactCadenceLabel: string
   notes: string
   affectTrend: number[]
+  /** A hangulat-ív első olvasatának hete (ISO dátum), vagy null, ha nincs olvasat. */
+  affectTrendStart: string | null
+  direction: 'up' | 'down' | 'flat'
+  directionReason: string | null
   knownFacts: string[]
   ties: string[]
+  graphEdges: PersonGraphEdge[]
 }
 export interface Mention {
   id: string
@@ -711,7 +751,15 @@ export interface KnowledgeFact {
   createdAt: string
 }
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
-export interface FactCandidate { id: string; text: string; category: FactCategory }
+export interface FactCandidate {
+  id: string
+  text: string
+  category: FactCategory
+  /** FE-only in this slice (mezo-ms9a): the existing fact id this candidate contradicts, or
+   *  `null` when it doesn't conflict with anything. Real mode always maps to `null` — the wire
+   *  doesn't carry this yet. */
+  conflictsWithFactId: string | null
+}
 export type FactDecision = 'accept' | 'reject' | 'refine'
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
 
@@ -733,7 +781,7 @@ export interface LifeEventCandidate {
 
 export type LifeEventDecision = 'accept' | 'reject'
 
-export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT'
+export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT' | 'PERSON'
 
 /** W2.6 (mezo-b3pp.11): one active knowledge-graph node for the Tudástár "Kapcsolatok" section —
  *  `topEdges` are pre-rendered Hungarian lines from the backend `GraphEdgeLineRenderer`, the same
@@ -748,6 +796,8 @@ export interface KnowledgeGraphNode {
   /** W4.3 (mezo-b3pp.17): `'profile'` marks the singleton pragmatic-profile node, which the
    *  Tudástár renders in its own section instead of the kind groups. */
   sourceKind: string | null
+  /** ISO date-time (mezo-ms9a): `useKnowledgeGraphNodes()` sorts DESC by this. */
+  updatedAt: string
 }
 
 // --- Insights (AI-memory surface) ---

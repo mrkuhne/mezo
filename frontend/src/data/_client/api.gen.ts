@@ -1126,6 +1126,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipe/workshop/turn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** One stateless Receptműhely AI turn — history + current draft in, prose reply + full updated draft out (mezo-92pb); nothing persisted */
+        post: operations["workshopTurn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fuel/day/{date}": {
         parameters: {
             query?: never;
@@ -3247,6 +3264,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/graph/edge/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count of active knowledge-graph edges for the current user (KnowledgeGraph) */
+        get: operations["countGraphEdges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/week/{start}": {
         parameters: {
             query?: never;
@@ -5112,6 +5146,40 @@ export interface components {
         RecipeListResponse: {
             recipes: components["schemas"]["RecipeResponse"][];
         };
+        WorkshopChatMessage: {
+            role: string;
+            text: string;
+        };
+        WorkshopDraftLine: {
+            source: string;
+            /** Format: uuid */
+            pantryItemId?: string | null;
+            name: string;
+            amount: number;
+            unit: string;
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+        };
+        WorkshopDraft: {
+            name: string;
+            category: string;
+            servings: number;
+            steps: string[];
+            lines: components["schemas"]["WorkshopDraftLine"][];
+        };
+        WorkshopTurnRequest: {
+            message: string;
+            goal?: string | null;
+            /** @default [] */
+            history: components["schemas"]["WorkshopChatMessage"][];
+            draft?: components["schemas"]["WorkshopDraft"] | null;
+        };
+        WorkshopTurnResponse: {
+            reply: string;
+            draft: components["schemas"]["WorkshopDraft"];
+        };
         Macros: {
             kcal: number;
             p: number;
@@ -6176,6 +6244,8 @@ export interface components {
         PeopleResponse: {
             persons: components["schemas"]["PersonResponse"][];
             mentions: components["schemas"]["MentionResponse"][];
+            /** @description Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet, ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék. Sosem üres — a sáv mindig igaz mondatot mutat. */
+            mezoNote: string;
         };
         PersonResponse: {
             /** Format: uuid */
@@ -6196,13 +6266,38 @@ export interface components {
             notes?: string;
             knownFacts: string[];
             ties: string[];
+            /** @description Heti hangulat-olvasatok 1..5 skálán, időrendben (legfeljebb 8, a legfrissebbek). Az említések tónusából és intenzitásából SZÁMÍTOTT érték — a person.affect_trend oszlopot ez a válasz nem olvassa. */
             affectTrend: number[];
+            /**
+             * Format: date
+             * @description A hangulat-ív első olvasatának hete (hétfő). Az ív csak azokat a heteket tartalmazza, ahol volt tónusozott említés, ezért az időablakot ebből kell címkézni, nem az olvasatok számából. null, ha nincs olvasat.
+             */
+            affectTrendStart?: string | null;
+            /**
+             * @description A hangulat-ív iránya az utolsó két olvasat és a korábbiak átlaga alapján.
+             * @enum {string}
+             */
+            direction: "up" | "down" | "flat";
+            /** @description Magyar, determinisztikus indoklás az irány alatt. null, ha nincs olvasat. */
+            directionReason?: string | null;
             /** @description Count of live mention rows — computed, never seeded */
             mentionCount: number;
             /** @description Mentions in the rolling last 7 days */
             mentionsThisWeek: number;
             /** Format: date-time */
             lastMentionedAt?: string;
+            /** @description A személy PERSON node-jának legerősebb gráf-élei (legfeljebb 3, súly szerint csökkenő). Üres, ha a gráf ki van kapcsolva, vagy a személynek nincs node-ja/éle. */
+            graphEdges: components["schemas"]["PersonGraphEdge"][];
+        };
+        /** @description Egy gráf-él a személy felől nézve — a másik végpont, és hogy hogyan kapcsolódik. */
+        PersonGraphEdge: {
+            /** @description A másik végpont node-fajtája (PATTERN | PREFERENCE | GOAL | LIFE_EVENT | SEASON | INSIGHT | PERSON). */
+            nodeKind: string;
+            title: string;
+            /** @description Magyar kapcsolat-ige (kiváltja | megelőzte | támogatja | ütközik vele | kapcsolódik). */
+            relationHu: string;
+            /** @description erős | közepes | gyenge */
+            strength: string;
         };
         MentionResponse: {
             /** Format: uuid */
@@ -6252,7 +6347,7 @@ export interface components {
             decision: string;
         };
         FeedRef: {
-            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
+            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person) */
             kind: string;
             label: string;
         };
@@ -6265,10 +6360,10 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, or evening LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];
@@ -7260,7 +7355,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            kind: "PATTERN" | "PREFERENCE" | "GOAL" | "LIFE_EVENT" | "SEASON" | "INSIGHT";
+            kind: "PATTERN" | "PREFERENCE" | "GOAL" | "LIFE_EVENT" | "SEASON" | "INSIGHT" | "PERSON";
             title: string;
             summary?: string | null;
             /** @enum {string} */
@@ -7281,6 +7376,13 @@ export interface components {
         };
         GraphCandidateDecisionRequest: {
             decision: string;
+            /** @description User-edited title applied on accept (edit-then-approve). */
+            refinedTitle?: string | null;
+            /** @description User-edited summary applied on accept. */
+            refinedSummary?: string | null;
+        };
+        GraphEdgeCountResponse: {
+            count: number;
         };
         MeWeekSubscores: {
             /** @description 0–100; null = no sleep data */
@@ -11347,6 +11449,66 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    workshopTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkshopTurnRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkshopTurnResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM answer unparseable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM port unavailable (companion off) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -16683,6 +16845,35 @@ export interface operations {
             };
             /** @description GRAPH_NODE_NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    countGraphEdges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active edge count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphEdgeCountResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

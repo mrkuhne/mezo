@@ -4,7 +4,7 @@
 // `now` is always a parameter — no Date.now() inside these functions.
 import { describe, expect, test } from 'vitest'
 import {
-  contextBreakdown, directionFor, hubLines, quietPeople, toneMix, trendHeights,
+  contextBreakdown, hubLines, quietPeople, toneMix, trendAxisLabels, trendHeights,
   weekMoment, weeklyRhythm, weekWindow,
 } from '@/features/me/logic/peopleDerive'
 import type { Mention, PersonEntry } from '@/data/types'
@@ -47,8 +47,12 @@ function person(over: Partial<PersonEntry> = {}): PersonEntry {
     contactCadenceLabel: '',
     notes: '',
     affectTrend: [],
+    affectTrendStart: null,
+    direction: 'flat',
+    directionReason: null,
     knownFacts: [],
     ties: [],
+    graphEdges: [],
     ...over,
   }
 }
@@ -98,16 +102,6 @@ describe('toneMix', () => {
 
   test('empty input -> []', () => {
     expect(toneMix([])).toEqual([])
-  })
-})
-
-describe('directionFor', () => {
-  test('last-2 average vs. earlier-points average, |diff| < 0.4 -> flat, <3 points -> flat', () => {
-    expect(directionFor([3, 3, 3, 4, 5])).toBe('up')
-    expect(directionFor([4, 4, 3, 2])).toBe('down')
-    expect(directionFor([3, 3, 3, 3])).toBe('flat')
-    expect(directionFor([4])).toBe('flat')
-    expect(directionFor([])).toBe('flat')
   })
 })
 
@@ -173,6 +167,20 @@ describe('trendHeights', () => {
   })
 })
 
+describe('trendAxisLabels', () => {
+  test('the two months of [affectTrendStart, now] — honest even across a gappy arc, not trend.length * 7', () => {
+    const now = new Date('2026-05-24T12:00:00')
+    // A 3-reading arc that skipped weeks (gappy) would make a `trend.length * 7 days back`
+    // estimate lie about how far the arc actually starts — the real start week rides the
+    // wire instead, so this is honest regardless of any gaps.
+    expect(trendAxisLabels('2026-03-02', now)).toEqual(['MÁR', 'MÁJ'])
+  })
+
+  test('null startISO (no reading at all) -> null, nothing to label', () => {
+    expect(trendAxisLabels(null, new Date('2026-05-24T12:00:00'))).toBeNull()
+  })
+})
+
 describe('weekWindow', () => {
   test('anchors on the NEWEST mention\'s own ts (7*24h back, inclusive) — never `Date.now()`', () => {
     const newest = mention({ ts: daysAgo(0).toISOString() })
@@ -223,10 +231,10 @@ describe('hubLines', () => {
     expect(lines.topName).toBe('Bella')
   })
 
-  test('down/up name by affectTrend direction, flagCount only for mentions inside the shared week window', () => {
-    const anna = person({ name: 'Anna', affectTrend: [3, 3, 3, 3] })
-    const bella = person({ name: 'Bella', affectTrend: [4, 4, 2, 2] })
-    const cili = person({ name: 'Cili', affectTrend: [3, 3, 3, 4, 5] })
+  test('down/up name by the server\'s own direction field, flagCount only for mentions inside the shared week window', () => {
+    const anna = person({ name: 'Anna', direction: 'flat' })
+    const bella = person({ name: 'Bella', direction: 'down' })
+    const cili = person({ name: 'Cili', direction: 'up' })
 
     const flaggedThisWeek1 = mention({ person_id: anna.id, ts: daysAgo(0).toISOString(), flagged: true })
     const flaggedThisWeek2 = mention({ person_id: anna.id, ts: daysAgo(1).toISOString(), flagged: true })

@@ -1,51 +1,121 @@
-import { useMemo, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon } from '@/shared/ui/clay'
-import { cn } from '@/shared/lib/cn'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
-import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
-import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { MozaikPage, PageHead, PageHero, PageBody, type PageTone } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
-import { useKnowledge, useKnowledgeActions, useLifeEventCandidates, useLifeEventActions } from '@/data/hooks'
-import { FACT_CATEGORIES, PROMPT_TOP_N } from '@/data/insights/knowledge'
-import { LifecycleSection } from '@/features/insights/components/LifecycleSection'
-import { KnowledgeExplainer } from '@/features/insights/components/KnowledgeExplainer'
-import { FactCandidateCard } from '@/features/insights/components/FactCandidateCard'
-import { LifeEventCandidateCard } from '@/features/insights/components/LifeEventCandidateCard'
-import { LifeEventAcceptedCard } from '@/features/insights/components/LifeEventAcceptedCard'
-import { KnowledgeFactRow } from '@/features/insights/components/KnowledgeFactRow'
-import { bucketFacts, matchesQuery, type FactBucket } from '@/features/insights/logic/factCopy'
-import { CANDIDATE_COPY } from '@/data/insights/graph'
-import type { FactCategory, KnowledgeFact, LifeEventCandidate } from '@/data/types'
+import {
+  useKnowledge, useKnowledgeActions, useLifeEventCandidates, useLifeEventActions,
+  useKnowledgeGraphNodes, useGraphEdgeCount, useKnowledgeGraphActions,
+} from '@/data/hooks'
+import { PROMPT_TOP_N } from '@/data/insights/knowledge'
+import { GRAPH_KIND_GROUPS, PROFILE_SOURCE_KIND } from '@/data/insights/graph'
+import { FactsView } from '@/features/insights/components/FactsView'
+import { KnowledgeBaseView } from '@/features/insights/components/KnowledgeBaseView'
+import { KategoriakView } from '@/features/insights/components/KategoriakView'
+import { ProfileView } from '@/features/insights/components/ProfileView'
+import { HowItWorksView } from '@/features/insights/components/HowItWorksView'
+import { NodeDetailSheet } from '@/features/insights/sheets/NodeDetailSheet'
+import { bucketFacts } from '@/features/insights/logic/factCopy'
+import type { GraphNodeKind, LifeEventCandidate } from '@/data/types'
+
+/** mezo-ms9a: the unified Tudástár's URL-driven view switch — `?view=` (+ `kind`/`fact`
+ *  later, T10). An invalid/absent `view` always reads as the base (section-mosaic) view. */
+type KnowledgeView = 'base' | 'tenyek' | 'kategoriak' | 'profil' | 'hogyan'
+const VIEWS = new Set(['tenyek', 'kategoriak', 'profil', 'hogyan'])
+const KIND_LABELS = new Map(GRAPH_KIND_GROUPS)
+
+const VIEW_TONE: Record<KnowledgeView, PageTone> = {
+  base: 'sage', tenyek: 'sage', kategoriak: 'lav', profil: 'rose', hogyan: 'gold',
+}
+const VIEW_HERO_NAME: Record<KnowledgeView, string> = {
+  base: 'Tudástár', tenyek: 'Tudástár', kategoriak: 'Kategóriák', profil: 'Így beszélj velem', hogyan: 'Hogyan működik?',
+}
 
 /** The page frame every branch renders inside — the way back must exist on all of them
- *  (ADR 0032 / fidelity audit mezo-d20.11: the Tudástár mounted no PageHead at all). */
-function TudasFrame({ big, sub, children }: { big?: ReactNode; sub?: string; children: ReactNode }) {
+ *  (ADR 0032 / fidelity audit mezo-d20.11: the Tudástár mounted no PageHead at all).
+ *  Nézet-függő lett (mezo-ms9a): tone/back-chip/hero-name a `view` szerint vált, de a
+ *  betöltés/hiba/degraded ágak minden nézeten ugyanazt a keretet kapják — base tone-nal,
+ *  „‹ Mezo" chippel, mert ezek az ágak a `view` felbontása ELŐTT térnek vissza. */
+function TudasFrame({
+  view = 'base', kind = null, big, sub, help, children,
+}: {
+  view?: KnowledgeView
+  /** Only meaningful for `view === 'kategoriak'` — a non-null kind means the page-head chip
+   *  reads `‹ Kategóriák` and clears just `kind` (mezo-ni86: one back-affordance per view, so
+   *  the kind-drill's return trip lives on the SAME chip as every other view's, not a second
+   *  one in the body). */
+  kind?: GraphNodeKind | null
+  big?: ReactNode
+  sub?: string
+  help?: boolean
+  children: ReactNode
+}) {
   const navigate = useNavigate()
+  const [, setParams] = useSearchParams()
+  const isBase = view === 'base'
+  const inKindDrill = view === 'kategoriak' && kind !== null
+  const onBack = isBase
+    ? () => navigate('/mezo')
+    : inKindDrill
+      ? () => setParams({ view: 'kategoriak' }, { replace: true })
+      : () => setParams({}, { replace: true })
+  const label = isBase ? '‹ Mezo' : inKindDrill ? '‹ Kategóriák' : '‹ Tudástár'
   return (
-    <MozaikPage tone="sage">
-      <PageHead onBack={() => navigate('/mezo')} label="‹ Mezo" />
-      <PageHero icon="i-tudas" big={big} name="Tudástár" sub={sub} />
+    <MozaikPage tone={VIEW_TONE[view]}>
+      <PageHead onBack={onBack} label={label} />
+      <PageHero icon="i-tudas" big={big} name={VIEW_HERO_NAME[view]} sub={sub}>
+        {help && (
+          <button
+            type="button"
+            className="tud-help"
+            aria-label="Hogyan működik?"
+            onClick={() => setParams({ view: 'hogyan' })}
+          >
+            ?
+          </button>
+        )}
+      </PageHero>
       <PageBody>{children}</PageBody>
     </MozaikPage>
   )
 }
 
 export function KnowledgeListPage() {
-  const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const rawView = params.get('view')
+  const requestedView: KnowledgeView = rawView && VIEWS.has(rawView) ? (rawView as KnowledgeView) : 'base'
+  const rawKind = params.get('kind')
+  const kind: GraphNodeKind | null =
+    rawKind && KIND_LABELS.has(rawKind as GraphNodeKind) ? (rawKind as GraphNodeKind) : null
+
+  // T10 (mezo-ms9a): `?fact=<id>` deep link — a WeekDiscoveries innen már küld linkeket. Az id-t
+  // EGYSZER, mountkor rögzítjük `useState`-ben: a param maga egy alábbi `useEffect`-ben eltűnik
+  // az URL-ből (one-shot highlight), de a kiemelésnek a param eltűnése UTÁN is élnie kell —
+  // ezért nem a `params`-ból olvassuk újra minden rendernél, hanem ebből az állapotból.
+  // Mount-only capture: egy in-app, ugyanerre a route-ra mutató `?fact=` navigáció (pl. egy
+  // második WeekDiscoveries-kattintás mount nélkül) NEM váltaná újra a kiemelést — jelenleg
+  // nincs ilyen producer, de ha lesz, ennek a state-nek a mountot is újra kell futtatnia.
+  const [highlightFactId] = useState<string | null>(() => params.get('fact'))
+
   const { facts, candidates, degraded, isPending, isError, refetch } = useKnowledge()
   const { toggle, decide } = useKnowledgeActions()
   const { candidates: lifeEvents } = useLifeEventCandidates()
   const { decide: decideLifeEvent } = useLifeEventActions()
-  const [query, setQuery] = useState('')
-  const [category, setCategory] = useState<FactCategory | 'all'>('all')
+  const { nodes } = useKnowledgeGraphNodes()
+  const { count: edgeCount } = useGraphEdgeCount()
+  const { archive } = useKnowledgeGraphActions()
+
   // Az elfogadott életesemény a szerver-listáról azonnal lekerül (query-invalidálás), ezért a
-  // megerősítést page-szintű state tartja életben az oldal elhagyásáig (mezo-0ap9). Mock és real
-  // módban azonos, hogy a mock-módú ellenőrzés a valós élményt mutassa.
+  // megerősítést page-szintű state tartja életben az oldal elhagyásáig (mezo-0ap9), MOST MÁR
+  // a view-váltásokon át is — ezért ez a shell-ben, nem a KnowledgeBaseView-ban lakik.
   const [acceptedEvents, setAcceptedEvents] = useState<
     { id: string; kind: LifeEventCandidate['kind']; title: string; edgeCount: number }[]
   >([])
+
+  // A kategóriák-nézet kind-láncának sheet-je (a mai `KnowledgePage` idiómája, mezo-2243/ni86):
+  // pusztán derivált state a kiválasztott node felett, nincs külön "nyitva van-e" flag — az
+  // archiválás után a node eltűnik a listából, `selected` `null`-ra esik, a sheet magától záródik.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // A már elfogadott jelölt real módban a refetch megérkezéséig még a szerver-listában van —
   // enélkül egy pillanatra a jelölt-kártya ÉS a megerősítés is látszana.
@@ -56,8 +126,45 @@ export function KnowledgeListPage() {
   const buckets = useMemo(() => bucketFacts(facts, PROMPT_TOP_N), [facts])
   // Prototype hero big number (#tudasBig) spins up. The hook stays ABOVE every early return.
   const heroCount = useCountUp(facts.length)
-  const visible = (list: KnowledgeFact[]) =>
-    list.filter((f) => (category === 'all' || f.category === category) && matchesQuery(f, query))
+
+  const profileNode = nodes.find((n) => n.sourceKind === PROFILE_SOURCE_KIND) ?? null
+  const graphNodes = nodes.filter((n) => n.sourceKind !== PROFILE_SOURCE_KIND)
+  const selectedNode = selectedId ? graphNodes.find((n) => n.id === selectedId) ?? null : null
+
+  // `?view=profil` requires a profile-node to show anything (ProfileView has no "nincs profil"
+  // state) — without one it reads as an unresolved/invalid view, same as a bad `?view=` value.
+  // T10: `?fact=` OVERRIDES the requested view entirely, but ONLY while the param is still in the
+  // URL (i.e. the very first render after a deep-link arrival) — the effect below rewrites the URL
+  // to `?view=tenyek` in the same tick, so on every render after that the normal `requestedView`
+  // read already says `tenyek` and the back chip (which clears `view`, not `fact`) works again.
+  // Reading `params.get('fact')` here (not the `highlightFactId` state) is what makes the override
+  // self-expiring instead of pinning `view` for the whole mount lifetime (review finding, mezo-ms9a).
+  const view: KnowledgeView = params.get('fact')
+    ? 'tenyek'
+    : requestedView === 'profil' && !profileNode ? 'base' : requestedView
+
+  // T10: clears `?fact=` from the URL once, right after the deep link has been consumed above —
+  // `replace: true` so it doesn't leave a back-button entry — and in the SAME rewrite bakes the
+  // forced view into `?view=tenyek` so it survives the param's removal (other params, e.g. a
+  // future `?kind=`, must still survive too). Runs once per mount by design: the highlight itself
+  // persists via `highlightFactId` state, not via the param's presence.
+  useEffect(() => {
+    if (params.get('fact')) {
+      const next = new URLSearchParams(params)
+      next.delete('fact')
+      next.set('view', 'tenyek')
+      setParams(next, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot: must fire exactly once on mount
+  }, [])
+
+  const latestGraphNode = graphNodes[0] ?? null // useKnowledgeGraphNodes() már DESC updatedAt szerint rendezve (T3)
+  const kategLine = latestGraphNode
+    ? `${latestGraphNode.title}${edgeCount !== null ? ` · ${edgeCount} él` : ''}`
+    : 'Még nincs kategorizált kapcsolat'
+  const profileLine = profileNode?.summary
+    ? `${profileNode.summary.slice(0, 40)}${profileNode.summary.length > 40 ? '…' : ''} · heti frissítés`
+    : 'Még nincs profil-összegzés · heti frissítés'
 
   // Real-mode-only cold-load window (mock mode's isPending is always false): facts=[]/degraded=false
   // read as "genuinely empty" below WITHOUT this guard — a fabricated „0 tény / 0 megy a chatbe"
@@ -78,193 +185,119 @@ export function KnowledgeListPage() {
     )
   }
 
-  if (degraded) {
+  // `degraded` (real-mode 404, companion switch off) EGYEDÜL a tény-felületet fedi le — a
+  // gráf-hookok (useLifeEventCandidates/useKnowledgeGraphNodes/useGraphEdgeCount) 404-szemantikája
+  // FÜGGETLEN a társ-kapcsolótól (l. graphHooks.ts), ezért egy régi teljes-oldalas early return
+  // itt egy MÁSIK réteg működő adatát is elnyomná. A degraded kártya csak a tény-részt fedi:
+  // a base nézeten az inbox candidate-blokkot és a Tények csempét helyettesíti (a LIFE_EVENT/
+  // SEASON csoportok és a Kategóriák/Így beszélj velem csempék változatlanul rendereinek, ha a
+  // gráf-hook adott adatot), a ?view=tenyek nézeten pedig egyedül ő látszik. A hero soha nem
+  // fabrikál „0 tény"-t degraded alatt — nagy szám/alcím nélkül marad.
+  const hasNoFacts = facts.length === 0
+  const heroBig = degraded ? undefined : heroCount
+  const heroSub = degraded
+    ? undefined
+    : `tény rólad · ${buckets.inPrompt.length} megy a chatbe${edgeCount !== null ? ` · ${edgeCount} kapcsolat` : ''}`
+
+  if (view === 'tenyek') {
     return (
-      <TudasFrame>
-        <div className="card" style={{ padding: 14 }}>
-          <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
-            A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.
-          </span>
-        </div>
+      <TudasFrame view="tenyek" big={heroBig} sub={heroSub}>
+        <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
+          {degraded ? (
+            <div className="card rise" style={{ '--d': '0ms', padding: 14 } as React.CSSProperties}>
+              <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
+                A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.
+              </span>
+            </div>
+          ) : hasNoFacts ? (
+            <div className="card rise" style={{ '--d': '0ms', padding: 14 } as React.CSSProperties}>
+              <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
+                Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni.
+              </span>
+            </div>
+          ) : (
+            <FactsView facts={facts} buckets={buckets} onToggle={toggle} highlightFactId={highlightFactId} />
+          )}
+        </EntranceGroup>
       </TudasFrame>
     )
   }
 
-  const inPrompt = visible(buckets.inPrompt)
-  const waiting = visible(buckets.waiting)
-  const off = visible(buckets.off)
-  const nothingMatches = facts.length > 0 && inPrompt.length + waiting.length + off.length === 0
-  const filterActive = query.trim() !== '' || category !== 'all'
-  const hasNoFacts = facts.length === 0
+  if (view === 'kategoriak') {
+    return (
+      <>
+        <TudasFrame view="kategoriak" kind={kind}>
+          <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
+            <KategoriakView
+              nodes={graphNodes}
+              kind={kind}
+              onOpenKind={(k) => setParams({ view: 'kategoriak', kind: k })}
+              onOpenNode={(n) => setSelectedId(n.id)}
+            />
+          </EntranceGroup>
+        </TudasFrame>
+        {selectedNode && (
+          <NodeDetailSheet
+            node={selectedNode}
+            onArchive={() => archive(selectedNode.id)}
+            onClose={() => setSelectedId(null)}
+          />
+        )}
+      </>
+    )
+  }
 
-  const rows = (list: KnowledgeFact[], bucket: FactBucket) =>
-    list.map((f) => (
-      <KnowledgeFactRow key={f.id} fact={f} bucket={bucket} onToggle={() => toggle(f.id, !f.active)} />
-    ))
+  if (view === 'profil') {
+    // `profileNode` is guaranteed non-null here — the fallback-to-base computed above already
+    // handled the missing-node case.
+    return (
+      <TudasFrame view="profil">
+        <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
+          <ProfileView node={profileNode!} onArchive={() => archive(profileNode!.id)} />
+        </EntranceGroup>
+      </TudasFrame>
+    )
+  }
 
-  const clearFilters = () => {
-    setQuery('')
-    setCategory('all')
+  if (view === 'hogyan') {
+    return (
+      <TudasFrame view="hogyan">
+        <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
+          <HowItWorksView />
+        </EntranceGroup>
+      </TudasFrame>
+    )
   }
 
   /* Mozaik re-face (mezo-d20.5.5): prototype #page-tudas hero — clay i-tudas + the big
      fact count + "tény rólad · N megy a chatbe". Same honest numbers as the old header
      (full-list buckets, never the filtered view). */
   return (
-    <TudasFrame big={heroCount} sub={`tény rólad · ${buckets.inPrompt.length} megy a chatbe`}>
-    <EntranceGroup className="col gap-md">
-      <KnowledgeExplainer />
-
-      <button type="button" className="card row" aria-label="Tudásgráf" onClick={() => navigate('/me/knowledge')}
-        style={{ justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left' }}>
-        <div className="row gap-md" style={{ alignItems: 'center' }}>
-          <ClayIcon name="i-tudas" size={28} />
-          <div className="col">
-            <span>Tudásgráf</span>
-            <span style={SECTION_LABEL}>kapcsolatok és életesemények · élő mindmap</span>
-          </div>
-        </div>
-        <span aria-hidden="true" style={{ color: 'var(--text-tertiary)' }}>›</span>
-      </button>
-
-      {candidates.length > 0 && (
-        <div className="col gap-sm rise" style={{ '--d': '0ms' } as React.CSSProperties}>
-          {/* prototype .candc: the approval inbox speaks gold, not lavender */}
-          <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-amber-ink)' }}>
-            Jóváhagyásra vár · {candidates.length}
-          </span>
-          {candidates.map((c) => (
-            <FactCandidateCard
-              key={c.id}
-              candidate={c}
-              onDecide={(decision, refinedText) => decide(c.id, decision, refinedText)}
-            />
-          ))}
-        </div>
-      )}
-
-      {(['LIFE_EVENT', 'SEASON'] as const).map((kind) => {
-        const pending = pendingLifeEvents.filter((c) => c.kind === kind)
-        const settled = acceptedEvents.filter((a) => a.kind === kind)
-        if (pending.length === 0 && settled.length === 0) return null
-        return (
-          <div key={kind} className="col gap-sm">
-            <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>
-              {/* A darabszám a MÉG DÖNTÉSRE VÁRÓ jelölteké. Enélkül a csoport utolsó elfogadása
-                  után „…jelöltek · 0" állna a megerősítő kártya fölött. */}
-              {pending.length > 0
-                ? `${CANDIDATE_COPY[kind].eyebrow} · ${pending.length}`
-                : CANDIDATE_COPY[kind].settled}
-            </span>
-            {settled.map((a) => (
-              <LifeEventAcceptedCard key={a.id} title={a.title} edgeCount={a.edgeCount} />
-            ))}
-            {pending.map((c) => (
-              <LifeEventCandidateCard
-                key={c.id}
-                candidate={c}
-                onDecide={(decision) => {
-                  if (decision === 'accept') {
-                    setAcceptedEvents((prev) => [
-                      ...prev,
-                      { id: c.id, kind: c.kind, title: c.title, edgeCount: c.proposedEdgeCount },
-                    ])
-                  }
-                  decideLifeEvent(c.id, decision)
-                }}
-              />
-            ))}
-          </div>
-        )
-      })}
-
-      {hasNoFacts ? (
-        <div className="card" style={{ padding: 14 }}>
-          <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
-            Még egy tényt sem tanultam rólad — ahogy beszélgettek, itt fognak megjelenni.
-          </span>
-        </div>
-      ) : (
-        <>
-          <div className="rise" style={{ '--d': '60ms' } as React.CSSProperties}>
-            <div className="searchfield" style={{ marginBottom: 8 }}>
-              <Icon name="search" size={16} color="var(--text-tertiary)" />
-              <input
-                aria-label="Keresés a tények között"
-                placeholder="Keresés · pl. alvás, kávé, váll"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
-              <button
-                type="button"
-                className={cn('chip tapchip', category === 'all' && 'brand')}
-                onClick={() => setCategory('all')}
-              >
-                Mind
-              </button>
-              {FACT_CATEGORIES.map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={cn('chip tapchip', category === id && 'brand')}
-                  onClick={() => setCategory(id)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {nothingMatches ? (
-            <div className="card col gap-sm" style={{ padding: 14, alignItems: 'flex-start' }}>
-              <span className="text-secondary" style={{ fontSize: 12 }}>Nincs találat a keresésre.</span>
-              <button type="button" className="chip tapchip" onClick={clearFilters}>
-                Szűrők törlése
-              </button>
-            </div>
-          ) : (
-            <div className="col gap-sm">
-              {inPrompt.length > 0 && (
-                <div className="col gap-sm rise" style={{ '--d': '110ms' } as React.CSSProperties}>
-                  <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sage-ink)' }}>
-                    Most ezeket kapja meg a társ · {inPrompt.length}
-                  </span>
-                  {rows(inPrompt, 'in-prompt')}
-                  <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5, padding: '0 4px' }}>
-                    Minden beszélgetés elején ezek a mondatok mennek elé: a {PROMPT_TOP_N} legerősebb
-                    bekapcsolt tény, plusz a frissen megerősített minták.
-                  </p>
-                </div>
-              )}
-
-              <LifecycleSection
-                title="Bekapcsolva, de most kimarad"
-                accent="var(--text-secondary)"
-                count={waiting.length}
-                defaultOpen
-                forceOpen={filterActive}
-                footNote="Ha megerősödnek, vagy egy erősebb tény kiesik, bekerülnek a chatbe."
-              >
-                {rows(waiting, 'waiting')}
-              </LifecycleSection>
-
-              <LifecycleSection
-                title="Kikapcsolva"
-                accent="var(--text-tertiary)"
-                count={off.length}
-                forceOpen={filterActive}
-                footNote="Megőrzöm őket, de a társ nem használja."
-              >
-                {rows(off, 'off')}
-              </LifecycleSection>
-            </div>
-          )}
-        </>
-      )}
-
-    </EntranceGroup>
+    <TudasFrame view="base" big={heroBig} sub={heroSub} help>
+      <EntranceGroup className="col gap-md" replayKey={`${view}:${kind ?? ''}`}>
+        <KnowledgeBaseView
+          degraded={degraded}
+          candidates={candidates}
+          onDecideCandidate={(id, decision, refinedText) => decide(id, decision, refinedText)}
+          onToggleConflict={toggle}
+          pendingLifeEvents={pendingLifeEvents}
+          acceptedEvents={acceptedEvents}
+          onAcceptLifeEvent={(c, refined) =>
+            setAcceptedEvents((prev) => [
+              ...prev,
+              { id: c.id, kind: c.kind, title: refined?.title ?? c.title, edgeCount: c.proposedEdgeCount },
+            ])
+          }
+          onDecideLifeEvent={(id, decision, refined) => decideLifeEvent(id, decision, refined)}
+          facts={facts}
+          buckets={buckets}
+          kindCount={GRAPH_KIND_GROUPS.length}
+          kategLine={kategLine}
+          profileNode={profileNode}
+          profileLine={profileLine}
+          onNavigate={(v) => setParams({ view: v })}
+        />
+      </EntranceGroup>
     </TudasFrame>
   )
 }

@@ -23,9 +23,11 @@ const WIRE_PERSON: PersonResponse = {
   knownFacts: ['ELTE doktorátus'],
   ties: [],
   affectTrend: [4, 5, 4],
+  direction: 'flat',
   mentionCount: 2,
   mentionsThisWeek: 1,
   lastMentionedAt: '2026-07-03T20:14:00Z',
+  graphEdges: [],
 }
 
 const WIRE_MENTION: MentionResponse = {
@@ -41,7 +43,11 @@ const WIRE_MENTION: MentionResponse = {
   flagged: false,
 }
 
-const BOOTSTRAP: PeopleResponse = { persons: [WIRE_PERSON], mentions: [WIRE_MENTION] }
+const BOOTSTRAP: PeopleResponse = {
+  persons: [WIRE_PERSON],
+  mentions: [WIRE_MENTION],
+  mezoNote: 'Petra volt a leggyakoribb neved ezen a héten.',
+}
 
 describe('usePeople (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))

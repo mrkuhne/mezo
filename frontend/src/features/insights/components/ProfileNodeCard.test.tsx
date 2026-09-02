@@ -10,6 +10,7 @@ const node = {
   summary: 'A rövid, konkrét reggeli üzenet válik be nálad.',
   sourceKind: 'profile',
   topEdges: [],
+  updatedAt: '2026-08-20T10:00:00.000Z',
 }
 
 describe('ProfileNodeCard', () => {

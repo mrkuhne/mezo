@@ -70,7 +70,7 @@ public class MedCycleCovarianceDetector implements CharacterDetector {
         }
         String direction = today.delta() < 0 ? "alacsonyabb" : "magasabb";
         String summary = "A gyógyszerciklus " + today.cycleDay() + ". napján a(z) " + today.label()
-                + " átlaga " + RoundTwoWindow.hu(BigDecimal.valueOf(Math.abs(today.delta())), 1)
+                + " átlaga " + TrailingWindow.hu(BigDecimal.valueOf(Math.abs(today.delta())), 1)
                 + " ponttal " + direction + " a ciklus átlagánál (" + today.bucketDays()
                 + " ilyen nap, 8 hét).";
         return List.of(new DetectorSignal(key(), "doki", summary, 3));
