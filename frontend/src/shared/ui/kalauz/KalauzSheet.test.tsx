@@ -61,6 +61,8 @@ test('„Mutasd meg" csak akkor renderel, ha az anchor a DOM-ban van; peek → b
   const dialog = screen.getByRole('dialog', { name: 'Kalauz · Fuel' })
   expect(dialog).toHaveClass('is-peek')
   expect(document.querySelector('.kalauz-spot')).not.toBeNull()
+  // regresszió-pin: a spot a .phone-screen közvetlen gyereke (portál), nem a transzformált sheet leszármazottja
+  expect(document.querySelector('.kalauz-spot')?.parentElement).toBe(document.querySelector('.phone-screen'))
   // a hátlap koppintása NEM zár — visszahozza a sheetet
   await user.click(document.querySelector('.sheet-backdrop')!)
   expect(dialog).not.toHaveClass('is-peek')

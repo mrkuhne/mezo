@@ -1,5 +1,6 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { StrictMode } from 'react'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import { TutorialProvider, useTutorial } from '@/features/tutorial/TutorialProvider'
@@ -41,6 +42,19 @@ const renderAt = (path: string) =>
     </QueryWrapper>,
   )
 
+const renderAtStrict = (path: string) =>
+  render(
+    <StrictMode>
+      <QueryWrapper>
+        <MemoryRouter initialEntries={[path]}>
+          <TutorialProvider>
+            <Routes><Route path="*" element={<Probe />} /></Routes>
+          </TutorialProvider>
+        </MemoryRouter>
+      </QueryWrapper>
+    </StrictMode>,
+  )
+
 const flush = () => act(() => { vi.advanceTimersByTime(700) })
 
 test('/fuel első belépésre a késleltetés után felugrik, és a megjelenéskor már látottnak számít', async () => {
@@ -52,6 +66,13 @@ test('/fuel első belépésre a késleltetés után felugrik, és a megjelenésk
   expect(screen.getByTestId('unseen')).toHaveTextContent('false')
   expect(readLocalProgress().fuel?.version).toBe(1)
   expect(readLocalProgress().fuel?.completedAt).toBeNull()
+})
+
+test('StrictMode alatt (mount → cleanup → re-run) is felugrik hideg oldalbetöltésre', async () => {
+  renderAtStrict('/fuel')
+  expect(screen.getByTestId('current')).toHaveTextContent('fuel')
+  flush()
+  expect(await screen.findByRole('dialog', { name: 'Kalauz · Fuel' })).toBeInTheDocument()
 })
 
 test('Kihagyom → dismissedAtStep; nem ugrik fel újra ugyanabban a sessionben, sem route-visszatérésre', async () => {

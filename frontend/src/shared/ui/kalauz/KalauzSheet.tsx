@@ -8,6 +8,7 @@
 // (hátlap, horgony, sáv) visszahozza a sheetet; a kalauz peek alatt sosem záródik.
 // ============================================================
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { ClayIcon, ClaySpot, type ClayIconName, type ClaySpotName } from '@/shared/ui/clay'
@@ -79,19 +80,23 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
   useEffect(() => { setPeek(null) }, [step])
 
   return (
-    <Sheet
-      onClose={() => onClose('skip', step)}
-      className={cn('kalauz-sheet', peek && 'is-peek')}
-      labelledBy="kalauz-title"
-      onBackdropClick={peek ? unpeek : undefined}
-      backdropClassName={peek ? 'kalauz-clear' : undefined}
-    >
+    <>
+      {peek && card.kind === 'hogyan' && createPortal(
+        <div className="kalauz-spot" style={{ top: peek.top, left: peek.left, width: peek.width, height: peek.height }} aria-hidden="true" />,
+        document.querySelector('.phone-screen') ?? document.body,
+      )}
+      <Sheet
+        onClose={() => onClose('skip', step)}
+        className={cn('kalauz-sheet', peek && 'is-peek')}
+        labelledBy="kalauz-title"
+        onBackdropClick={peek ? unpeek : undefined}
+        backdropClassName={peek ? 'kalauz-clear' : undefined}
+      >
       {(close) => (
         <>
           <span id="kalauz-title" className="sr-only">Kalauz · {label}</span>
           {peek && card.kind === 'hogyan' && (
             <>
-              <div className="kalauz-spot" style={{ top: peek.top, left: peek.left, width: peek.width, height: peek.height }} aria-hidden="true" />
               <div className="kalauz-peekbar" onClick={unpeek}>
                 <ClaySpot name="s-orb-figyel" size={34} />
                 <span className="kalauz-peektxt"><SafeMarkdown text={card.voice} /> <span className="kalauz-peekhint">Koppints bárhova.</span></span>
@@ -154,6 +159,7 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
           </div>
         </>
       )}
-    </Sheet>
+      </Sheet>
+    </>
   )
 }

@@ -158,9 +158,12 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     })
     if (!current || current.tier === 'T3') return
     if (autoShown.current.has(current.id) || !isUnseenRef.current(current.id)) return
-    autoShown.current.add(current.id)
     const id = current.id
-    timer.current = setTimeout(() => { timer.current = null; openRef.current(id) }, prefersReducedMotion() ? 0 : AUTO_DELAY_MS)
+    timer.current = setTimeout(() => {
+      timer.current = null
+      autoShown.current.add(id) // csak akkor jelöljük "megpróbáltnak", ha ténylegesen kinyílt (StrictMode dupla-futás alatt a cleanup törli a timert, de az elmaradt fut sosem foglalja el a guardot)
+      openRef.current(id)
+    }, prefersReducedMotion() ? 0 : AUTO_DELAY_MS)
     return () => { if (timer.current) { clearTimeout(timer.current); timer.current = null } }
   }, [pathname, current, persist])
 
