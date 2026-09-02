@@ -4637,6 +4637,15 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
   font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
   box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55);
 }
+/* ── Üzenetek | Életjelek tab-váltó (mezo-ho9k) — a mem-seg pill-idióma a nap
+      oldalon: 44pt gombok, aktív = gradient CTA. ── */
+.nap-mzseg { display: flex; gap: 5px; border-radius: 999px; padding: 4px; margin-bottom: 12px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.nap-mzseg button { flex: 1; border: none; background: none; border-radius: 999px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+.nap-mzseg button.on { background: var(--gradient-cta); color: #fff;
+  box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
 /* ── Nap · Napi küldetések page (mezo-d20.2.4) — prototype nap-body #page-quest,
       values ×1.18 (330→390px frame). The reroll/CTA chips keep the prototype's slim
       pill face but grow to the 44pt touch floor. ── */

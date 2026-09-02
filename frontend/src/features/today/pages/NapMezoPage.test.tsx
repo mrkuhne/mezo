@@ -130,24 +130,46 @@ test('the demo briefing card carries NO feedback chips — nothing persisted to 
   expect(within(msg).queryByRole('button', { name: /Segített/ })).toBeNull()
 })
 
-// ── Életjel küszöb-nudge-ok: the delivery path restored by the 1:1 audit (mezo-d20.11).
-// `needsNudges.ts` had had no producer since `needsNudges`'s caller (TodayPage) was deleted;
-// the thread's owner is this page, so the nudges land here — at the very END of the thread.
-test('a red Életjel ring appends its nudge to the END of the thread, and only once a day', async () => {
+// ── Tab-szétválasztás (mezo-ho9k): a nudge-ok az Életjelek tabra költöznek.
+test('alapból az Üzenetek tab aktív, a nudge nem látszik — az Életjelek tabra váltva igen', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  renderPage()
+  expect(await screen.findByText('07:05 · Reggeli briefing')).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /Üzenetek/ })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.queryByText(/alig ittál/)).toBeNull()
+  await userEvent.click(screen.getByRole('tab', { name: /Életjelek/ }))
+  expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
+  expect(screen.queryByText('07:05 · Reggeli briefing')).toBeNull()
+})
+
+test('a nudge naponta egyszer jelenik meg az Életjelek tabon (megjelenés-napló változatlan)', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
   const { unmount } = renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
   expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
-  const cards = document.querySelectorAll('.nap-mzmsg')
-  expect(cards).toHaveLength(2)
-  expect(within(cards[1] as HTMLElement).getByText('Életjel-figyelő')).toBeInTheDocument()
-
-  // second visit: the ring is STILL red, but the day's log already carries it — it must
-  // pass through exactly once, not duplicate.
   unmount()
   renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
   expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(2)
+  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+})
+
+test('?tab=eletjelek induláskor az Életjelek tabot nyitja', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/nap/uzenetek?tab=eletjelek']}>
+        <MezoThreadProvider>
+          <Routes><Route path="/nap/uzenetek" element={<NapMezoPage />} /></Routes>
+        </MezoThreadProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: /Életjelek/ })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('a healthy ring set adds nothing to the thread', async () => {

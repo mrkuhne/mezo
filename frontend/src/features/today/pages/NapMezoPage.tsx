@@ -17,9 +17,10 @@ import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { RefTag } from '@/shared/ui/RefTag'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { cn } from '@/shared/lib/cn'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { useCompanionFeed, useFeedback } from '@/data/hooks'
-import { feedToMessageItem, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
+import { feedToMessageItem, partitionMezoThread, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { localDateString } from '@/shared/lib/dates'
 
@@ -39,7 +40,7 @@ export function NapMezoPage() {
   // but the push announcing it arrives the next morning — so `d` can name YESTERDAY while the
   // user is on TODAY's thread. `d` naming today is the common case (no cross-day fetch, no
   // duplicate — the card is already in today's own thread below).
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const deepLinkId = params.get('n')
   const deepLinkDay = params.get('d')
   const today = localDateString()
@@ -72,12 +73,25 @@ export function NapMezoPage() {
   // az oldal továbbra is közvetlenül olvassa (mezo-e26w / mezo-b3pp.15).
   const { messages, markSeen } = useMezoThread()
   const feed = useCompanionFeed()
+
+  // Üzenetek | Életjelek tab-váltó (mezo-ho9k): a szál (sorrend, tartalom, a hero számláló
+  // forrása) érintetlen — ez CSAK megjelenítési bontás a `?tab=` URL-en keresztül.
+  type MezoTab = 'uzenetek' | 'eletjelek'
+  const tab: MezoTab = params.get('tab') === 'eletjelek' ? 'eletjelek' : 'uzenetek'
+  const setTab = (t: MezoTab) => {
+    const next = new URLSearchParams(params)
+    if (t === 'eletjelek') next.set('tab', 'eletjelek')
+    else next.delete('tab')
+    setParams(next, { replace: true })
+  }
+  const { uzenetek, eletjelek } = useMemo(() => partitionMezoThread(messages), [messages])
   // Prepended, not merged into the shared thread: it is what the user just tapped, and the
   // shared thread stays the shell header's unread source of truth (mezo-atry) — untouched by a
-  // deeplink that only this page consumes.
-  const displayMessages = useMemo(
-    () => (linkedItem ? [linkedItem, ...messages] : messages),
-    [linkedItem, messages],
+  // deeplink that only this page consumes. Deep-linked cards are always companion messages,
+  // never nudges, so they only ever join the Üzenetek pane.
+  const displayUzenetek = useMemo(
+    () => (linkedItem ? [linkedItem, ...uzenetek] : uzenetek),
+    [linkedItem, uzenetek],
   )
   const feedIds = useMemo(() => {
     const ids = feed.map((m) => m.id)
@@ -109,6 +123,44 @@ export function NapMezoPage() {
     if (scrollTargetId) linkedCardRef.current?.scrollIntoView({ block: 'center' })
   }, [scrollTargetId])
 
+  // Egyetlen kártya-JSX mindkét pane-nek (mezo-ho9k): a chips-ág magától sem fut az
+  // Életjelek nudge-okon, mert azoknak nincs `artifactId`-jük (mezo-kr9v szerződés).
+  const renderCard = (m: MezoMessageItem, i: number) => (
+    <div
+      key={m.id}
+      ref={m.id === scrollTargetId ? linkedCardRef : undefined}
+      className="nap-mzmsg rise"
+      style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}
+    >
+      <div className="nap-mzmsg-h">
+        <ClaySpot name={messageSpot(m)} size={35} />
+        <div className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</div>
+      </div>
+      {m.paragraphs.map((p, j) => (
+        <p key={j} className="txt"><SafeMarkdown text={p} /></p>
+      ))}
+      {m.refs.length > 0 && (
+        <div className="nap-mzmsg-refs">
+          {m.refs.map((r, j) => <RefTag key={j} kind={r.kind} label={r.label} />)}
+        </div>
+      )}
+      {m.meta && <div className="nap-mzmsg-meta">{m.meta}</div>}
+      {/* Chips CSAK perzisztált AI-artifactre (mezo-kr9v); a „Segített?" felirat a
+          W5.2 intervention-változat (mezo-b3pp.19) — a sheet szerződése változatlanul. */}
+      {m.artifactId != null && (
+        <div className="mt-sm">
+          {m.kind === 'intervention' && <div className="nap-mzmsg-meta">Segített?</div>}
+          <FeedbackChips
+            key={m.artifactId}
+            value={feedback.get(m.artifactId)}
+            onVote={(verdict, reason) => feedback.vote(m.artifactId!, verdict, reason)}
+            label={m.kind === 'intervention' ? 'a közbelépésről' : 'az üzenetről'}
+          />
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <MozaikPage tone="coral">
       <PageHead onBack={() => navigate(-1)} label="‹ Ma" />
@@ -118,51 +170,35 @@ export function NapMezoPage() {
         <ClaySpot name="s-orb" size={83} />
         <div className="mz-hero-nm">Mezo · ma</div>
         {/* Today's own message count (Finding 3) — a cross-day deeplink prepends one extra card
-            to `displayMessages` that is not part of today's thread; the label must not count it. */}
+            to the Üzenetek pane that is not part of today's thread; the label must not count it.
+            The TELJES szál (mindkét tab) számít, a tab-bontás csak megjelenítés. */}
         <div className="mz-hero-sb">{messages.length} üzenet · a napod fonala</div>
       </div>
       <PageBody>
-        <EntranceGroup>
-          {displayMessages.map((m, i) => (
-            <div
-              key={m.id}
-              ref={m.id === scrollTargetId ? linkedCardRef : undefined}
-              className="nap-mzmsg rise"
-              style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}
-            >
-              <div className="nap-mzmsg-h">
-                <ClaySpot name={messageSpot(m)} size={35} />
-                <div className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</div>
-              </div>
-              {m.paragraphs.map((p, j) => (
-                <p key={j} className="txt"><SafeMarkdown text={p} /></p>
-              ))}
-              {m.refs.length > 0 && (
-                <div className="nap-mzmsg-refs">
-                  {m.refs.map((r, j) => <RefTag key={j} kind={r.kind} label={r.label} />)}
-                </div>
-              )}
-              {m.meta && <div className="nap-mzmsg-meta">{m.meta}</div>}
-              {/* Chips CSAK perzisztált AI-artifactre (mezo-kr9v); a „Segített?" felirat a
-                  W5.2 intervention-változat (mezo-b3pp.19) — a sheet szerződése változatlanul. */}
-              {m.artifactId != null && (
-                <div className="mt-sm">
-                  {m.kind === 'intervention' && <div className="nap-mzmsg-meta">Segített?</div>}
-                  <FeedbackChips
-                    key={m.artifactId}
-                    value={feedback.get(m.artifactId)}
-                    onVote={(verdict, reason) => feedback.vote(m.artifactId!, verdict, reason)}
-                    label={m.kind === 'intervention' ? 'a közbelépésről' : 'az üzenetről'}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
-          <button type="button" className="nap-mz-cta rise" style={{ '--d': `${40 + displayMessages.length * 60}ms` } as React.CSSProperties}
-            onClick={() => navigate('/mezo/chat')}>
-            Beszélgess Mezóval ›
+        <div className="nap-mzseg" role="tablist" aria-label="Mezo tartalom">
+          <button type="button" role="tab" aria-selected={tab === 'uzenetek'}
+            className={cn(tab === 'uzenetek' && 'on')} onClick={() => setTab('uzenetek')}>
+            Üzenetek
           </button>
-        </EntranceGroup>
+          <button type="button" role="tab" aria-selected={tab === 'eletjelek'}
+            className={cn(tab === 'eletjelek' && 'on')} onClick={() => setTab('eletjelek')}>
+            Életjelek
+          </button>
+        </div>
+        {tab === 'uzenetek' && (
+          <EntranceGroup>
+            {displayUzenetek.map((m, i) => renderCard(m, i))}
+            <button type="button" className="nap-mz-cta rise" style={{ '--d': `${40 + displayUzenetek.length * 60}ms` } as React.CSSProperties}
+              onClick={() => navigate('/mezo/chat')}>
+              Beszélgess Mezóval ›
+            </button>
+          </EntranceGroup>
+        )}
+        {tab === 'eletjelek' && (
+          <EntranceGroup>
+            {eletjelek.map((m, i) => renderCard(m, i))}
+          </EntranceGroup>
+        )}
       </PageBody>
     </MozaikPage>
   )
