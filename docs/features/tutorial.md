@@ -199,9 +199,11 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   `afterEach`, and that same `setup.ts` prefix-clears every `mezo.kalauz.*` localStorage key after
   each test — a persisted "seen" mark would otherwise silently mute the next test's auto-open.
 - **Backend ITs**: `backend/src/test/java/io/mrkuhne/mezo/feature/tutorial/TutorialProgressApiIT.java`
-  (7 tests: empty-ghost GET, PUT replace + round-trip, DELETE reset, corrupt-entry skip-on-read,
-  ownership isolation) + `TutorialProgressSwitchOffApiIT.java` (the switch-off 404/absent-bean
-  path).
+  (7 tests: empty-ghost GET, PUT replace + round-trip, DELETE reset, 400 on invalid entry, 401
+  without a token, empty-map PUT, corrupt-entry skip-on-read) + `TutorialProgressSwitchOffApiIT.java`
+  (the switch-off 404/absent-bean path). Cross-user ownership isolation (spec §6) is **not**
+  covered here — the single-owner IT harness this repo has today can't stand up a second
+  authenticated user to assert against; tracked for the multi-user slice.
 - **Visual goldens**: `frontend/tests/visual/visual.spec.ts` seeds `mezo.kalauz.v1` in its init
   script so the header "?" renders deterministically seen/unseen; `fuel-{light,dark}.png` changed
   in this slice purely because of the new "?" button (baseline refresh via the

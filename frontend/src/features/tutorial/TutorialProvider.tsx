@@ -57,26 +57,45 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   // callback that reads it must see the LATEST map, never the one from the render that created
   // the callback — otherwise a delayed setTimeout (the auto-open timer) or the route-change
   // effect can `persist()` a stale snapshot and clobber a server-merge write that landed in the
-  // window between the callback being created and it actually running.
+  // window between the callback being created and it actually running. `openId` gets the same
+  // treatment: React setState updaters must stay pure (StrictMode invokes each one twice), so
+  // `close` and the route effect below read `openIdRef.current` and call `persist()` OUTSIDE any
+  // updater — the updater form would otherwise double-write localStorage and double-PUT with two
+  // different `new Date()` values racing.
   const setProgressRef = useRef(setProgress)
   setProgressRef.current = setProgress
   const progressRef = useRef(progress)
   progressRef.current = progress
+  const openIdRef = useRef(openId)
+  openIdRef.current = openId
+  // The kapcsolat-chip navigates AND animates the Sheet's close in the same click — `navigate()`
+  // schedules the route-change effect below, but the animated close's `persist()` (the actual
+  // 'done'/completedAt write) only runs once the exit animation finishes (Sheet's `onClose`,
+  // fired by `close` above). Without this flag the route effect would run FIRST (same commit),
+  // force-dismiss the still-open kalauz, and unmount <KalauzSheet>, which cancels the exit
+  // timer/rAF — so the real 'done' write never happens. Set synchronously right before `navigate`
+  // (see `onKalauzNavigate` below), consumed (and cleared) once by the route effect.
+  const navPendingCloseRef = useRef(false)
 
   // A lokális az igazság a PUT visszaérkezéséig; a szerver-állapot beolvad, a többlet visszaíródik.
+  // A `merged` számítása, az egyenlőség-ellenőrzés, a writeLocalProgress és a write-back PUT az
+  // updateren KÍVÜL fut (lásd a fenti megjegyzést) — a `setLocal(merged)` az egyetlen state-írás.
   useEffect(() => {
     if (isPending) return
-    setLocal((local) => {
-      const merged = mergeProgress(serverProgress, local)
-      // mergeProgress always builds a NEW object — bail out with the SAME reference when the
-      // content didn't actually change, or the state "change" re-renders forever (new object
-      // in, effect reruns, new object out, ...).
-      if (JSON.stringify(merged) === JSON.stringify(local)) return local
-      writeLocalProgress(merged)
-      const localOnly = Object.keys(merged).some((k) => !(k in serverProgress) || serverProgress[k].seenAt !== merged[k].seenAt)
-      if (localOnly) void setProgressRef.current(merged).catch(() => undefined)
-      return merged
-    })
+    const local = progressRef.current
+    const merged = mergeProgress(serverProgress, local)
+    // mergeProgress always builds a NEW object — bail out (no setLocal at all) when the content
+    // didn't actually change, or the state "change" re-renders forever (new object in, effect
+    // reruns, new object out, ...).
+    if (JSON.stringify(merged) === JSON.stringify(local)) return
+    writeLocalProgress(merged)
+    // Compare the WHOLE entry, not just seenAt — a failed completedAt/dismissedAtStep PUT (server
+    // still has the old entry) must also count as "local is ahead" so it gets retried here.
+    const localOnly = Object.keys(merged).some(
+      (k) => !(k in serverProgress) || JSON.stringify(serverProgress[k]) !== JSON.stringify(merged[k]),
+    )
+    if (localOnly) void setProgressRef.current(merged).catch(() => undefined)
+    setLocal(merged)
   }, [serverProgress, isPending])
 
   // No deps beyond refs — `persist` never needs to change identity, so nothing downstream that
@@ -108,8 +127,8 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, [persist])
 
   const close = useCallback((reason: KalauzCloseReason, step: number) => {
-    setOpenId((id) => {
-      if (id === null) return null
+    const id = openIdRef.current
+    if (id !== null) {
       const map = progressRef.current
       const prev = map[id]
       if (prev) {
@@ -120,9 +139,14 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
             : { ...prev, dismissedAtStep: step },
         })
       }
-      return null
-    })
+    }
+    setOpenId(null)
   }, [persist])
+
+  const onKalauzNavigate = useCallback((to: string) => {
+    navPendingCloseRef.current = true
+    navigate(to)
+  }, [navigate])
 
   const resetAll = useCallback(async () => {
     autoShown.current.clear()
@@ -146,16 +170,21 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   // Route-váltás: nyitott kalauz zár (dismissed), és az új route auto-kalauza időzítve nyílik.
   useEffect(() => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null }
-    setOpenId((id) => {
-      if (id !== null) {
+    if (navPendingCloseRef.current) {
+      // A kalauz saját navigációja indította ezt a route-váltást — a force-dismiss ágat
+      // kihagyjuk, a nyitott kalauzt a Sheet animált onClose-ja zárja a helyes reasonnel.
+      navPendingCloseRef.current = false
+    } else {
+      const openedId = openIdRef.current
+      if (openedId !== null) {
         const map = progressRef.current
-        const prev = map[id]
+        const prev = map[openedId]
         if (prev && prev.completedAt === null && prev.dismissedAtStep === null) {
-          persist({ ...map, [id]: { ...prev, dismissedAtStep: 0 } })
+          persist({ ...map, [openedId]: { ...prev, dismissedAtStep: 0 } })
         }
       }
-      return null
-    })
+      setOpenId(null)
+    }
     if (!current || current.tier === 'T3') return
     if (autoShown.current.has(current.id) || !isUnseenRef.current(current.id)) return
     const id = current.id
@@ -181,7 +210,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
           label={entry.label}
           cards={entry.cards}
           onClose={close}
-          onNavigate={(to) => navigate(to)}
+          onNavigate={onKalauzNavigate}
         />
       )}
     </TutorialContext.Provider>

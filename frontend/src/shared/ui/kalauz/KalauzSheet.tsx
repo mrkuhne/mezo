@@ -7,7 +7,7 @@
 // tiszta marad) — így a spotlight nem nyúl az oldal z-indexéhez. Bármilyen koppintás
 // (hátlap, horgony, sáv) visszahozza a sheetet; a kalauz peek alatt sosem záródik.
 // ============================================================
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/shared/lib/cn'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
@@ -63,13 +63,22 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
   const last = step === cards.length - 1
   const anchorPresent = card.kind === 'hogyan' && !!card.anchor && measureAnchor(card.anchor) !== null
 
+  // A Sheet `onClose` a KILÉPŐ animáció végén fut, jóval a kattintás után — a reason/step ekkorra
+  // már nem olvasható ki egy bezárás-pillanatbeli closure-ből. Ref-ben visszük tovább: a CTA és a
+  // kapcsolat-chip 'done'-ra állítja kattintáskor, aztán a render-prop animált `close()`-t hívja
+  // (nem közvetlenül `onClose`-t) — így a Kihagyom/✕/Escape/drag ugyanazt az animációt kapja.
+  const reasonRef = useRef<KalauzCloseReason>('skip')
+  const stepRef = useRef(step)
+  stepRef.current = step
+
   const go = useCallback((k: number) => {
     setStep(k)
     setSeen((s) => new Set(s).add(k))
   }, [])
   const unpeek = useCallback(() => setPeek(null), [])
 
-  // Peek alatt a horgony méretét újramérjük görgetésre/átméretezésre — a sáv nem takarhatja.
+  // Peek alatt a horgony méretét görgetésre NEM kell újramérni (a hátlap koppintása alatt zárolt —
+  // csak resize-ra figyelünk); átméretezésre viszont igen, mert a sáv nem takarhatja a horgonyt.
   useLayoutEffect(() => {
     if (!peek || card.kind !== 'hogyan' || !card.anchor) return
     const anchor = card.anchor
@@ -86,7 +95,7 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
         document.querySelector('.phone-screen') ?? document.body,
       )}
       <Sheet
-        onClose={() => onClose('skip', step)}
+        onClose={() => onClose(reasonRef.current, stepRef.current)}
         className={cn('kalauz-sheet', peek && 'is-peek')}
         labelledBy="kalauz-title"
         onBackdropClick={peek ? unpeek : undefined}
@@ -108,7 +117,7 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
             <div className="kalauz-top">
               <span className="mz-eyebrow">Kalauz · <b>{label}</b></span>
               <span className="mz-eyebrow kalauz-step">{step + 1} / {cards.length}</span>
-              <button type="button" className="kalauz-x" aria-label="Bezárás" onClick={close}>✕</button>
+              <button type="button" className="kalauz-x" aria-label="Bezárás" onClick={() => { reasonRef.current = 'skip'; close() }}>✕</button>
             </div>
 
             <div className="kalauz-card" key={step}>
@@ -134,7 +143,7 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
                 <div className="kalauz-chips">
                   {card.links.map((l) => (
                     <button key={l.to} type="button" className="kalauz-chip"
-                      onClick={() => { onNavigate(l.to); onClose('done', step) }}>
+                      onClick={() => { onNavigate(l.to); reasonRef.current = 'done'; close() }}>
                       <ClayIcon name={l.icon} size={19} />{l.label}
                       {l.effect && <span className="kalauz-chip-to"> · {l.effect}</span>}
                     </button>
@@ -150,10 +159,10 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
               ))}
             </div>
             <div className="kalauz-foot">
-              {!last && <button type="button" className="kalauz-ghost kalauz-link" onClick={close}>Kihagyom</button>}
+              {!last && <button type="button" className="kalauz-ghost kalauz-link" onClick={() => { reasonRef.current = 'skip'; close() }}>Kihagyom</button>}
               <button type="button" className="kalauz-ghost kalauz-back" aria-label="Előző kártya" disabled={step === 0} onClick={() => go(step - 1)}>‹ Vissza</button>
               {last
-                ? <button type="button" className="kalauz-cta" onClick={() => onClose('done', step)}>Értem, kezdjük</button>
+                ? <button type="button" className="kalauz-cta" onClick={() => { reasonRef.current = 'done'; close() }}>Értem, kezdjük</button>
                 : <button type="button" className="kalauz-cta" onClick={() => go(step + 1)}>Tovább</button>}
             </div>
           </div>

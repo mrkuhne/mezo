@@ -4531,11 +4531,11 @@ button.mz-tile:active { transform: scale(0.96); }
 .kalauz-term { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 16px; color: var(--primary-deep); }
 .kalauz-def { font-size: 13px; font-weight: 300; margin-top: 2px; color: var(--text-primary); }
 .kalauz-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
-.kalauz-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-strong); background: var(--surface-card); font-family: inherit; border-radius: 999px; padding: 6px 12px 6px 8px; font-size: 12px; font-weight: 600; color: var(--text-primary); cursor: pointer; min-height: 34px; }
+.kalauz-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-strong); background: var(--surface-card); font-family: inherit; border-radius: 999px; padding: 6px 12px 6px 8px; font-size: 12px; font-weight: 600; color: var(--text-primary); cursor: pointer; min-height: 40px; }
 .kalauz-chip-to { color: var(--mz-ink-soft); font-weight: 500; }
 .kalauz-show { margin-top: 11px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid color-mix(in srgb, var(--dv-amber) 55%, transparent); background: color-mix(in srgb, var(--dv-amber) 12%, transparent); color: var(--dv-amber-deep, var(--primary-deep)); border-radius: 999px; padding: 7px 13px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; min-height: 40px; }
-.kalauz-dots { display: flex; justify-content: center; gap: 2px; margin: 8px 0 12px; }
-.kalauz-dot { width: 28px; height: 28px; border-radius: 999px; background: none; border: none; padding: 0; cursor: pointer; position: relative; display: grid; place-items: center; }
+.kalauz-dots { display: flex; justify-content: center; gap: 0; margin: 8px 0 12px; }
+.kalauz-dot { width: 40px; height: 40px; border-radius: 999px; background: none; border: none; padding: 0; cursor: pointer; position: relative; display: grid; place-items: center; }
 .kalauz-dot::after { content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--border-strong); transition: width 0.25s ease, background 0.25s ease; }
 .kalauz-dot.on::after { width: 21px; background: var(--primary-deep); }
 .kalauz-dot.seen::after { background: color-mix(in srgb, var(--primary-deep) 45%, transparent); }

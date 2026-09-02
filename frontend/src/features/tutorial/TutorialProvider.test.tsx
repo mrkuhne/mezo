@@ -121,9 +121,12 @@ test('a kapcsolat-chip navigál, a kalauz completedAt-tal zár', async () => {
   await screen.findByRole('dialog')
   await user.click(screen.getByRole('button', { name: '5. kártya' }))
   await user.click(screen.getByRole('button', { name: /^Edzés/ }))
+  // A kapcsolat-chip most az animált close()-t hívja (a Sheet kilépő animációja után fut az
+  // onClose) — a fallback-timer (EXIT_MS + 80ms) alatt kell várni, mielőtt a state leképeződik.
+  await act(async () => { vi.advanceTimersByTime(400) })
+  await waitFor(() => expect(readLocalProgress().fuel?.completedAt).not.toBeNull())
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(screen.getByTestId('current')).toHaveTextContent('-') // /train-en vagyunk
-  expect(readLocalProgress().fuel?.completedAt).not.toBeNull()
 })
 
 test('route-váltás nyitott, érintetlen kalauzon dismissedAtStep: 0-t ír', async () => {
@@ -162,6 +165,31 @@ test('szerver-merge: a szerveren látott másik kalauz beolvad, és a csak-loká
   expect((putBody as { progress: Record<string, unknown> }).progress).toHaveProperty('nap')
   expect((putBody as { progress: Record<string, unknown> }).progress).toHaveProperty('fuel')
   expect(screen.queryByRole('dialog')).toBeNull() // /train-en nincs kalauz, és a fuel amúgy is látott
+})
+
+test('StrictMode alatt egy Kihagyom-zárás pontosan EGY PUT-ot küld (real mode)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false') // a setState-updaterek pure-sága ezt csak real módban lehet mérni: a PUT-ot a mock-mód QueryClient-je nyeli el
+  if (isMockMode()) return
+  let putCount = 0
+  server.use(
+    http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+      putCount += 1
+      const body = (await request.json()) as { progress: unknown }
+      return HttpResponse.json({ progress: body.progress })
+    }),
+  )
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAtStrict('/fuel')
+  flush()
+  await screen.findByRole('dialog', { name: 'Kalauz · Fuel' })
+  await waitFor(() => expect(putCount).toBeGreaterThanOrEqual(1)) // az open() seenAt-PUT-ja
+  putCount = 0
+  await user.click(screen.getByRole('button', { name: 'Kihagyom' }))
+  // Kihagyom → animált close(): a Sheet kilépő animációja (fallback: EXIT_MS + 80ms) után fut az
+  // onClose, ami a `close` callbacket hívja — StrictMode ezt is duplán futtatná, ha nem lenne pure.
+  await act(async () => { vi.advanceTimersByTime(400) })
+  await waitFor(() => expect(readLocalProgress().fuel?.dismissedAtStep).toBe(0))
+  expect(putCount).toBe(1)
 })
 
 test('PUT-hiba esetén a lokális írás (seenAt) marad az igazság, a sheet nem törik (real mode)', async () => {

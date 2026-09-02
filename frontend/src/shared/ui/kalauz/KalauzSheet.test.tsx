@@ -35,7 +35,7 @@ test('Tovább / Vissza / pötty lapoz; az utolsón a CTA „Értem, kezdjük" é
   expect(screen.getByText('Nem sziget.')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Kihagyom' })).toBeNull()
   await user.click(screen.getByRole('button', { name: 'Értem, kezdjük' }))
-  expect(onClose).toHaveBeenCalledWith('done', 3)
+  await waitFor(() => expect(onClose).toHaveBeenCalledWith('done', 3))
 })
 
 test('Kihagyom és Escape a lépésszámmal zár', async () => {
@@ -50,7 +50,7 @@ test('a kapcsolat-chip navigál és zár', async () => {
   await user.click(screen.getByRole('button', { name: '4. kártya' }))
   await user.click(screen.getByRole('button', { name: /Edzés/ }))
   expect(onNavigate).toHaveBeenCalledWith('/train')
-  expect(onClose).toHaveBeenCalledWith('done', 3)
+  await waitFor(() => expect(onClose).toHaveBeenCalledWith('done', 3))
 })
 
 test('„Mutasd meg" csak akkor renderel, ha az anchor a DOM-ban van; peek → bárhova koppintás visszahoz', async () => {
