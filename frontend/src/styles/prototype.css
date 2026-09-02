@@ -4498,6 +4498,53 @@ button.mz-tile:active { transform: scale(0.96); }
   font-size: 12px; font-weight: 700; color: var(--primary-deep); padding: 5px 4px 2px; text-align: left; }
 .nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none;
   display: grid; place-items: center; cursor: pointer; }
+
+/* ── Mezo-kalauz (mezo-gb1s.1) — the page-guide sheet; prototype docs/design_2.0/prototypes/kalauz.html ×1.18 ── */
+.kalauz-sheet { padding: 4px 16px 16px; border-radius: 30px 30px 0 0; }
+.kalauz-sheet.is-peek { animation: none; transform: translateY(calc(100% - 76px)); transition: transform 0.32s cubic-bezier(0.25, 0.8, 0.35, 1); }
+.sheet-backdrop.kalauz-clear { background: transparent; backdrop-filter: none; }
+.kalauz-spot { position: absolute; z-index: 200; border-radius: 22px; pointer-events: none;
+  box-shadow: 0 0 0 3px var(--dv-amber), 0 0 0 9999px rgba(29, 23, 18, 0.42); }
+.kalauz-body.is-hidden { visibility: hidden; }
+.kalauz-peekbar { position: absolute; left: 16px; right: 16px; top: 10px; height: 56px; display: flex; align-items: center; gap: 10px; }
+.kalauz-peektxt { flex: 1; font-size: 13px; font-weight: 300; color: var(--text-primary); }
+.kalauz-peekhint { color: var(--mz-ink-soft); }
+.kalauz-top { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.kalauz-step { margin-left: auto; font-variant-numeric: tabular-nums; }
+.kalauz-x { border: none; background: var(--mz-chipbg); width: 32px; height: 32px; border-radius: 50%; font-size: 14px; color: var(--mz-ink-soft); cursor: pointer; font-family: inherit; }
+.kalauz-card { min-height: 340px; padding: 4px 2px 0; animation: kalauz-in 0.32s cubic-bezier(0.22, 0.9, 0.32, 1.1) both; }
+@keyframes kalauz-in { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+.kalauz-q { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--primary-deep); }
+.kalauz-n { color: var(--mz-ink-soft); margin-right: 7px; font-variant-numeric: tabular-nums; }
+.kalauz-title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin-top: 4px; text-wrap: balance; color: var(--text-primary); }
+.kalauz-art { display: flex; align-items: flex-end; justify-content: center; gap: 8px; height: 110px; margin: 6px 0 2px; }
+.kalauz-orb { animation: kalauz-breathe 4.5s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes kalauz-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+.kalauz-spotart { filter: drop-shadow(0 10px 12px rgba(43, 33, 24, 0.18)); }
+.kalauz-voice { font-size: 16px; font-weight: 300; line-height: 1.5; margin-top: 8px; color: var(--text-primary); }
+.kalauz-voice strong, .kalauz-def strong { font-weight: 600; }
+.kalauz-fogalom { margin-top: 10px; border-radius: 15px; padding: 10px 13px 11px; background: var(--mz-wash-coral, var(--surface-card)); border: 0.5px solid color-mix(in srgb, var(--primary-deep) 22%, transparent); }
+.kalauz-term { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 16px; color: var(--primary-deep); }
+.kalauz-def { font-size: 13px; font-weight: 300; margin-top: 2px; color: var(--text-primary); }
+.kalauz-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.kalauz-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-strong); background: var(--surface-card); font-family: inherit; border-radius: 999px; padding: 6px 12px 6px 8px; font-size: 12px; font-weight: 600; color: var(--text-primary); cursor: pointer; min-height: 34px; }
+.kalauz-chip-to { color: var(--mz-ink-soft); font-weight: 500; }
+.kalauz-show { margin-top: 11px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid color-mix(in srgb, var(--dv-amber) 55%, transparent); background: color-mix(in srgb, var(--dv-amber) 12%, transparent); color: var(--dv-amber-deep, var(--primary-deep)); border-radius: 999px; padding: 7px 13px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
+.kalauz-dots { display: flex; justify-content: center; gap: 6px; margin: 8px 0 12px; }
+.kalauz-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--border-strong); border: none; padding: 0; cursor: pointer; transition: width 0.25s ease, background 0.25s ease; }
+.kalauz-dot.on { width: 21px; background: var(--primary-deep); }
+.kalauz-dot.seen { background: color-mix(in srgb, var(--primary-deep) 45%, transparent); }
+.kalauz-foot { display: flex; align-items: center; gap: 8px; }
+.kalauz-ghost { background: var(--mz-chipbg); color: var(--mz-ink-soft); border: none; font-family: inherit; border-radius: 999px; padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 40px; }
+.kalauz-ghost[disabled] { opacity: 0.35; cursor: default; }
+.kalauz-link { background: none; padding-left: 4px; }
+.kalauz-back { margin-left: auto; }
+.kalauz-cta { padding: 10px 22px; min-height: 40px; background: var(--gradient-cta); color: #fff; border: none; border-radius: 999px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 9px 19px -7px rgba(255, 91, 54, 0.55); }
+@media (prefers-reduced-motion: reduce) {
+  .kalauz-orb, .kalauz-card { animation: none; }
+  .kalauz-sheet.is-peek, .kalauz-dot { transition: none; }
+}
+
 .nap-hero { min-height: 0; cursor: default; }
 .nap-hero-row { display: flex; align-items: center; gap: 12px; }
 .nap-hero-line { display: flex; align-items: baseline; gap: 7px; }
