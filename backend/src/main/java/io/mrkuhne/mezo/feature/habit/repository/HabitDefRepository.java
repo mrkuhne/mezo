@@ -18,6 +18,8 @@ public interface HabitDefRepository extends JpaRepository<HabitDefEntity, UUID> 
 
     List<HabitDefEntity> findByChainIdAndDeletedFalse(UUID chainId);
 
+    List<HabitDefEntity> findByCreatedByAndAnchorHabitKeyAndDeletedFalse(UUID createdBy, String anchorHabitKey);
+
     /**
      * Every {@code habit_key} ever imported for a user — LIVE or soft-deleted — in ONE query:
      * {@code @SQLRestriction} only rewrites JPQL/derived queries, not native SQL, so this is the

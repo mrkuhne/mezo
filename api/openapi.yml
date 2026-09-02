@@ -5,7 +5,7 @@ info:
     Contract-first API definition for the mezo backend — the single source of
     truth for generated backend DTOs / controller interfaces and frontend types.
     See docs/references/api_contract_conventions.md.
-  version: 0.5.0
+  version: 0.6.0
 servers:
   - url: 'http://localhost:8090'
     description: Local dev backend (MEZO_PORT)
@@ -16714,6 +16714,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         isActive:
           type: boolean
     HabitCatalogResponse:
@@ -16798,6 +16828,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         position:
           type: integer
           minimum: 1
@@ -16828,6 +16888,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         isActive:
           type: boolean
     HabitReorderRequest:
@@ -16877,6 +16967,28 @@ components:
           maximum: 15
         chainKey:
           type: string
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
     HabitSuggestResponse:
       type: object
       required:

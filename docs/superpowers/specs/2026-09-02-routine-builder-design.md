@@ -140,7 +140,11 @@ existing rows keep `framework = null`.
   `craving`, `reward`, `celebration`, `identity` (all `nullable: true` strings with the column
   max lengths).
 - `HabitDefCreateRequest` and `HabitDefUpdateRequest`: the same seven optional properties
-  (update semantics unchanged: omit = keep, explicit `null` = clear where nullable).
+  (update semantics unchanged: the generated DTOs use plain nullable fields, not `JsonNullable`,
+  so an omitted key and an explicit JSON `null` are indistinguishable — both keep the current
+  value; clearing an optional field is not supported in this version, matching the existing habit
+  PATCH behaviour. A consequence: a recipe can be re-framed from one framework to the other, and
+  a legacy definition can gain a framework, but a framework cannot be removed once set).
 - `HabitSuggestion`: + optional `framework`, `celebration`, `craving`, `reward`, `cue` so the AI
   can propose a full recipe; the adapter prompt is updated in the same slice
   (`HabitSuggestLlmAdapter` lives in `feature.companion` — habit must not import it, ADR 0019).
@@ -151,8 +155,8 @@ existing rows keep `framework = null`.
 
 | Rule | Error (400 via `SystemMessage`) |
 |---|---|
-| `framework = FOGG` ⇒ (`anchorHabitKey` or `anchorCopy`) present and `celebration` present | `habit.framework.fogg.incomplete` |
-| `framework = CLEAR` ⇒ `cue`, `craving`, `reward` present (`identity` optional) | `habit.framework.clear.incomplete` |
+| `framework = FOGG` ⇒ (`anchorHabitKey` or `anchorCopy`) present and `celebration` present | `HABIT_FRAMEWORK_FOGG_INCOMPLETE` |
+| `framework = CLEAR` ⇒ `cue`, `craving`, `reward` present (`identity` optional) | `HABIT_FRAMEWORK_CLEAR_INCOMPLETE` |
 | `framework = null` ⇒ all seven framework fields null | `habit.framework.fields-without-framework` |
 | `anchorHabitKey` must reference one of the caller's own active, non-deleted defs, and not the def itself | `habit.anchor.invalid` |
 

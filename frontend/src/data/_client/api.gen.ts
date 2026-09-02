@@ -6802,6 +6802,14 @@ export interface components {
             skillKey: string;
             xp: number;
             linkUrl?: string | null;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            anchorHabitKey?: string | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
+            identity?: string | null;
             isActive: boolean;
         };
         HabitCatalogResponse: {
@@ -6831,6 +6839,14 @@ export interface components {
             skillKey: string;
             xp: number;
             linkUrl?: string | null;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            anchorHabitKey?: string | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
+            identity?: string | null;
             /** @description Defaults to end of chain */
             position?: number;
         };
@@ -6842,6 +6858,14 @@ export interface components {
             position?: number;
             xp?: number;
             linkUrl?: string | null;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            anchorHabitKey?: string | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
+            identity?: string | null;
             isActive?: boolean;
         };
         HabitReorderRequest: {
@@ -6860,6 +6884,12 @@ export interface components {
             skillKey: string;
             xp: number;
             chainKey: string;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
         };
         HabitSuggestResponse: {
             suggestions: components["schemas"]["HabitSuggestion"][];

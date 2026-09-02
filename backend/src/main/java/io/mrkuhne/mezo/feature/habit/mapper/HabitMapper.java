@@ -71,6 +71,14 @@ public class HabitMapper {
             .skillKey(def.getSkillKey())
             .xp(def.getXp())
             .linkUrl(def.getLinkUrl())
+            .framework(def.getFramework() != null
+                ? HabitDefAdmin.FrameworkEnum.fromValue(def.getFramework()) : null)
+            .anchorHabitKey(def.getAnchorHabitKey())
+            .cue(def.getCue())
+            .craving(def.getCraving())
+            .reward(def.getReward())
+            .celebration(def.getCelebration())
+            .identity(def.getIdentity())
             .isActive(def.getActive())
             .build();
     }
