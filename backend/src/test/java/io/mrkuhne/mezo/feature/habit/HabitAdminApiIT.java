@@ -352,6 +352,43 @@ class HabitAdminApiIT extends ApiIntegrationTest {
         assertHasRequestError(err, "HABIT_FRAMEWORK_FOGG_INCOMPLETE");
     }
 
+    @Test
+    void testUpdateDef_shouldUnlinkAnchor_whenBlankAnchorHabitKeySentWithCopy() {
+        // A blank anchorHabitKey is the wire signal for "unlink" — the only one a PATCH can carry,
+        // since null means "leave unchanged". It must NOT survive as stored state: the frontend's
+        // contract is "null means unlinked", so a def that comes back carrying "" would look linked
+        // and re-lock its own read-only anchor field (mezo-3zue.4 review round 2).
+        catalog();
+        HabitDefAdmin anchor = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Reggeli fény")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        HabitDefAdmin stacked = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey(anchor.getHabitKey()).celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(stacked.getAnchorHabitKey()).isEqualTo(anchor.getHabitKey());
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + stacked.getId(),
+            HabitDefUpdateRequest.builder().anchorHabitKey("")
+                .anchorCopy("letettem a fogkefét").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        // Unlinked, and still a valid FOGG recipe standing on the free-text anchor alone.
+        assertThat(updated.getAnchorHabitKey()).isNull();
+        assertThat(updated.getAnchorCopy()).isEqualTo("letettem a fogkefét");
+        assertThat(updated.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+        assertThat(updated.getCelebration()).isEqualTo("ökölrázás");
+
+        // Persisted, not merely mapped on the response: re-reading the catalog says the same.
+        HabitDefAdmin after = findDef(catalog(), stacked.getId());
+        assertThat(after.getAnchorHabitKey()).isNull();
+        assertThat(after.getAnchorCopy()).isEqualTo("letettem a fogkefét");
+        assertThat(after.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+    }
+
     private static HabitDefAdmin findDef(HabitCatalogResponse cat, UUID defId) {
         return cat.getChains().stream()
             .flatMap(chain -> chain.getDefs().stream())

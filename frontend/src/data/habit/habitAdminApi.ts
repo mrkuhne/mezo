@@ -55,6 +55,13 @@ export interface HabitDefUpdateInput {
 }
 export interface HabitSuggestInput { chainKey?: string; hint?: string }
 
+// A blank `anchorHabitKey` means "no link" everywhere in this app — `HabitPage` gates its
+// read-only anchor field on `!= null`, and `recipeFromDef` prefers a link over the copy. The
+// backend now normalizes the unlink sentinel (`""`) to null on write, so this is belt-and-braces
+// for anything already stored blank: a def that is not linked must never READ as linked.
+const anchorKeyOf = (value: string | null | undefined): string | null =>
+  value == null || value.trim() === '' ? null : value
+
 const toDefInfo = (w: DefWire): HabitDefInfo => ({
   id: w.id,
   habitKey: w.habitKey,
@@ -70,7 +77,7 @@ const toDefInfo = (w: DefWire): HabitDefInfo => ({
   linkUrl: w.linkUrl ?? null,
   isActive: w.isActive,
   framework: w.framework ?? null,
-  anchorHabitKey: w.anchorHabitKey ?? null,
+  anchorHabitKey: anchorKeyOf(w.anchorHabitKey),
   cue: w.cue ?? null,
   craving: w.craving ?? null,
   reward: w.reward ?? null,

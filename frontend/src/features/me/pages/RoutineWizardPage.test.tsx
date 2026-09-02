@@ -333,10 +333,11 @@ describe('RoutineWizardPage', () => {
 
   it('still seeds the suggestion under StrictMode, which double-invokes the state initializer', () => {
     // The app mounts in StrictMode (main.tsx), so React dev-invokes every lazy useState
-    // initializer TWICE. An initializer that also consumed the key returned the suggestion on the
-    // first call and null on the second — an accepted proposal could fail to seed in any dev or
-    // mock run, while production and a plain render() hid it. Reading is pure now; the mount
-    // effect does the consuming.
+    // initializer TWICE. Measured on React 19.2.7: both calls run, but React commits the FIRST
+    // one's result — so the old consume-inside-the-initializer version did NOT actually lose the
+    // suggestion, and this test passes against it too. It is a guard, not a reproduction: the
+    // initializer is pure now (the mount effect consumes the key), so seeding no longer rests on
+    // which invocation React happens to keep.
     sessionStorage.setItem('mezo.routineWizard.suggestion', JSON.stringify({
       title: 'Esti telefon-lezárás', why: 'x', anchorCopy: 'wind-down előtt',
       skillKey: 'recovery', xp: 10, chainKey: 'MORNING', framework: 'FOGG',

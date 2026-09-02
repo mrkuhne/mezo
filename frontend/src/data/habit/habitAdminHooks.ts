@@ -270,7 +270,7 @@ function mockCreateDef(qc: ReturnType<typeof useQueryClient>, input: HabitDefCre
     linkUrl: input.linkUrl ?? null,
     isActive: true,
     framework: input.framework ?? null,
-    anchorHabitKey: input.anchorHabitKey ?? null,
+    anchorHabitKey: input.anchorHabitKey?.trim() ? input.anchorHabitKey : null,
     cue: input.cue ?? null,
     craving: input.craving ?? null,
     reward: input.reward ?? null,
@@ -297,6 +297,12 @@ function mockUpdateDef(qc: ReturnType<typeof useQueryClient>, id: string, patch:
     Object.entries(patch).filter(([, v]) => v !== null),
   ) as HabitDefUpdateInput
   const updated: HabitDefInfo = { ...def, ...patchNoNulls }
+  // Mirrors the real arm twice over: the backend normalizes the blank unlink sentinel to null on
+  // write, and `toDefInfo` maps any blank that is already stored to null on read. Without this the
+  // mock would keep `anchorHabitKey: ''`, which `HabitPage` reads as "still linked" and locks.
+  if (updated.anchorHabitKey != null && updated.anchorHabitKey.trim() === '') {
+    updated.anchorHabitKey = null
+  }
   const targetChainKey = patch.chainKey ?? fromChain.chainKey
   if (targetChainKey === fromChain.chainKey) {
     qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, {

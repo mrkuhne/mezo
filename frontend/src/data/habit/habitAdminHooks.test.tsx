@@ -104,6 +104,34 @@ describe('useHabitCatalog / useHabitCatalogActions (mock mode)', () => {
     })
   })
 
+  it('the mock arm normalizes the blank unlink sentinel to null, exactly as the backend does (mezo-3zue.4 review)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    let created: { id: string } | undefined
+    await act(async () => {
+      created = await result.current.actions.createDef({
+        chainKey: 'MORNING', title: 'Egy oldal olvasás', mode: 'MANUAL', skillKey: 'mindset', xp: 5,
+        framework: 'FOGG', anchorHabitKey: 'morning_sunlight', celebration: 'ökölrázás',
+      })
+    })
+    const findIt = () => result.current.catalog.catalog.chains
+      .flatMap((c) => c.defs).find((d) => d.id === created!.id)!
+    await waitFor(() => expect(findIt()?.anchorHabitKey).toBe('morning_sunlight'))
+
+    // The wizard's unlink patch: blank key + the free text that replaces it.
+    await act(async () => {
+      await result.current.actions.updateDef(created!.id, {
+        anchorHabitKey: '', anchorCopy: 'letettem a fogkefét',
+      })
+    })
+    await waitFor(() => expect(findIt().anchorCopy).toBe('letettem a fogkefét'))
+    // Stored as null, not '' — otherwise HabitPage re-locks the field the unlink just freed.
+    expect(findIt().anchorHabitKey).toBeNull()
+  })
+
   it('deleteChain throws HABIT_CHAIN_SEED for a seed chain — mirrors the backend 409 guard (was: silently removed a 9-def seed chain)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(
@@ -259,6 +287,32 @@ describe('useHabitCatalog / useHabitCatalogActions (real mode)', () => {
     expect(result.current.catalog.chains).toEqual([]) // never the mock seed while unresolved
     await waitFor(() => expect(result.current.catalog.chains).toHaveLength(1))
     expect(result.current.catalog.chains[0].defs[0].habitKey).toBe('wake_on_time')
+  })
+
+  it('reads a BLANK anchorHabitKey as unlinked (null), not as a link (mezo-3zue.4 review)', async () => {
+    // '' is the PATCH's unlink sentinel; the backend normalizes it away on write, but a def stored
+    // blank before that landed must still READ as unlinked — HabitPage gates its read-only anchor
+    // field on `!= null`, so a surviving '' would lock the user out of the field they just freed.
+    server.use(http.get(`${API_BASE}/api/habit/catalog`, () => HttpResponse.json({
+      chains: [
+        {
+          id: 'c-1', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING', position: 1, isActive: true,
+          defs: [
+            {
+              id: 'd-1', habitKey: 'stack', chainKey: 'MORNING', position: 1, title: 'Egy oldal olvasás',
+              why: null, anchorCopy: 'letettem a fogkefét', mode: 'MANUAL', metric: 'manual',
+              skillKey: 'mindset', xp: 5, linkUrl: null, isActive: true,
+              framework: 'FOGG', anchorHabitKey: '', celebration: 'ökölrázás',
+            },
+          ],
+        },
+      ],
+    })))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitCatalog(), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.catalog.chains).toHaveLength(1))
+    expect(result.current.catalog.chains[0].defs[0].anchorHabitKey).toBeNull()
+    expect(result.current.catalog.chains[0].defs[0].anchorCopy).toBe('letettem a fogkefét')
   })
 
   it('surfaces isError on a failed GET, and refetch() recovers once the server responds (mezo-n5e9.2 fix wave)', async () => {
