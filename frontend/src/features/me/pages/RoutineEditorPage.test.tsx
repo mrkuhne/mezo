@@ -46,7 +46,7 @@ function renderPage() {
     <MemoryRouter initialEntries={['/me/routines/edit']}>
       <Routes>
         <Route path="/me/routines/edit" element={<RoutineEditorPage />} />
-        <Route path="/me/growth" element={<div data-testid="growth-probe" />} />
+        <Route path="/me/growth/rutin" element={<div data-testid="growth-probe" />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -76,7 +76,7 @@ describe('RoutineEditorPage', () => {
     expect(container.querySelectorAll('[data-sortable-row]')).toHaveLength(15)
   })
 
-  it('has a back chip to /me/growth (F7.4: PageHead button)', () => {
+  it('has a back chip to /me/growth/rutin (mezo-rmi0.1: PageHead button)', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
     expect(screen.getByTestId('growth-probe')).toBeInTheDocument()

@@ -444,6 +444,13 @@ mezo:
       # The workout closing note is included verbatim, truncated to this many characters
       # (mezo-d20.13). Never summarized — truncation is honestly lossy, rewriting fabricates.
       workout-note-max-chars: 180
+      # mezo-x6oa: how many active people the [Emberek] chat-snapshot block lists (newest mention
+      # first; name · relationship · this week's count · mood direction). 0 = the block is omitted
+      # entirely — note that ChatService.SYSTEM_PROMPT's "[Mit szabad állítani]" grounding
+      # paragraph still refers to [Emberek] unconditionally in that case, i.e. the prompt then
+      # names a block that is not actually rendered (deliberate: the prompt is not made
+      # conditional on this value).
+      people-max-persons: 12
     tools:
       # V0.5 tool calling — per-turn call budget + result-window clamps (spec §5 discipline)
       max-calls-per-turn: 15

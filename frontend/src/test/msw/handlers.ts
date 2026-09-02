@@ -504,6 +504,10 @@ export const handlers = [
       ],
       perks: [],
     })),
+  // Growth week rollup (mezo-rmi0.1) — honest zeros are a valid contract answer.
+  http.get(`${API_BASE}/api/progression/growth-week/:date`, ({ params }) =>
+    HttpResponse.json({ weekStart: params.date, questCompleted: 0, questClosed: 0, lifeXp: 0, activities: 0, savingsHuf: 0 }),
+  ),
 
   // ── Activity log (E2, mezo-jzca). Defaults: empty day; create echoes a confident AI verdict.
   http.get(`${API_BASE}/api/activity/day/:date`, () => HttpResponse.json([])),
@@ -1114,8 +1118,7 @@ export const handlers = [
   // override with server.use() when they need a populated stash or feed.
   http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [], imports: [], suggestions: [] })),
 
-  // Pantry import (P6, mezo-bka) — OFF lookup proxy + confirmed-draft import.
-  http.get(`${API_BASE}/api/pantry-import/lookup`, () => HttpResponse.json({ results: [] })),
+  // Pantry import (P6, mezo-bka) — confirmed-draft import.
   // URL scrape (P8, mezo-8vum) — honest-empty default; tests override with server.use().
   http.post(`${API_BASE}/api/pantry-import/scrape`, () => HttpResponse.json({ result: null })),
   // Photo import (mezo-d8tr) — honest-empty default; tests override with server.use().

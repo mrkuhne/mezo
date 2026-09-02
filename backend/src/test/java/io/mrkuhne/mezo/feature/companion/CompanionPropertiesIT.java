@@ -27,6 +27,7 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     void testSnapshotConfig_shouldBindWindowsFromYaml_whenContextStarts() {
         assertThat(properties.snapshot().digestDays()).isEqualTo(7);
         assertThat(properties.snapshot().checkinNoteMaxChars()).isEqualTo(200);
+        assertThat(properties.snapshot().peopleMaxPersons()).isEqualTo(12);
     }
 
     @Test
