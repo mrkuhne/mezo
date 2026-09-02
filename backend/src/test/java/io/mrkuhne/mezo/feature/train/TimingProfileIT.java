@@ -7,7 +7,9 @@ import static org.awaitility.Awaitility.await;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import io.mrkuhne.mezo.api.dto.TimingProfileResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
+import io.mrkuhne.mezo.feature.train.controller.TrainController;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -22,6 +24,7 @@ import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -30,6 +33,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 /**
  * Learned workout-timing profile (mezo-dzbm, spec 2026-09-02 slice 2): {@code
@@ -53,9 +59,32 @@ class TimingProfileIT extends AbstractIntegrationTest {
     @Autowired private WorkoutSessionRepository workoutSessionRepository;
     @Autowired private TrainPopulator train;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private TrainController trainController;
 
     private static String todayLabel() {
         return WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+    }
+
+    /**
+     * Calls {@code TrainController.getTimingProfile()} in-process, as {@code user}, by pushing a
+     * bare {@link Jwt} principal (subject = the user id) into {@link SecurityContextHolder} for
+     * the duration of the call — mirroring what the real {@code oauth2ResourceServer} filter chain
+     * hands to {@code CurrentUserId.get()}, without going through an actual HTTP round trip or the
+     * demodata-owner login flow this class's other tests don't use either.
+     */
+    private TimingProfileResponse getTimingProfileAs(UUID user) {
+        Jwt jwt = Jwt.withTokenValue("test-token")
+            .header("alg", "none")
+            .subject(user.toString())
+            .issuedAt(Instant.now().minusSeconds(60))
+            .expiresAt(Instant.now().plusSeconds(60))
+            .build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
+        try {
+            return trainController.getTimingProfile();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     private WorkoutSessionEntity template(UUID user) {
@@ -185,6 +214,59 @@ class TimingProfileIT extends AbstractIntegrationTest {
             .isEqualTo(new EwmaEstimator.Estimate(240.0, 120.0, 0));
         assertThat(profile.get(TimingObservationExtractor.LEAD_IN))
             .isEqualTo(new EwmaEstimator.Estimate(480.0, 240.0, 0));
+    }
+
+    @Test
+    void testGetTimingProfile_shouldReturnSeedsWithZeroSamples_whenNothingWasLearnedYet() {
+        UUID user = databasePopulator.populateUser("timing-profile-endpoint-seeds@test.local");
+
+        TimingProfileResponse response = getTimingProfileAs(user);
+
+        assertThat(response.getLeadInSeconds()).isEqualByComparingTo(BigDecimal.valueOf(480.0));
+        assertThat(response.getSetCycleCompoundSeconds()).isEqualByComparingTo(BigDecimal.valueOf(180.0));
+        assertThat(response.getSetCycleIsolationSeconds()).isEqualByComparingTo(BigDecimal.valueOf(125.0));
+        assertThat(response.getTransitionSeconds()).isEqualByComparingTo(BigDecimal.valueOf(240.0));
+        assertThat(response.getSamples().getLeadIn()).isZero();
+        assertThat(response.getSamples().getSetCycleCompound()).isZero();
+        assertThat(response.getSamples().getSetCycleIsolation()).isZero();
+        assertThat(response.getSamples().getTransition()).isZero();
+    }
+
+    @Test
+    void testGetTimingProfile_shouldReturnLearnedValues_whenTheUserHasFinishedSessions() {
+        UUID user = databasePopulator.populateUser("timing-profile-endpoint-learned@test.local");
+        WorkoutSessionEntity tmpl = template(user);
+        ExerciseEntity exercise = train.createExercise(user, tmpl.getId(), "Row", 0);
+        Instant t0 = Instant.now().minusSeconds(2000);
+        WorkoutSessionEntity instance = train.createWorkoutInstance(user, tmpl, LocalDate.now(), "active");
+        instance.setStartedAt(t0);
+        train.save(instance);
+        // Same shape as testFinishWorkout_shouldCreateProfileRows...: a 900s lead-in (the
+        // configured cap, inclusive), then two 150s set-cycles — learns LEAD_IN (1 sample) and
+        // SET_CYCLE_COMPOUND (2 samples), leaving SET_CYCLE_ISOLATION and TRANSITION at their seeds.
+        train.createLoggedSet(user, exercise.getId(), instance.getId(), 0, "60.0", 8, 1, t0.plusSeconds(900));
+        train.createLoggedSet(user, exercise.getId(), instance.getId(), 1, "60.0", 8, 1, t0.plusSeconds(1050));
+        train.createLoggedSet(user, exercise.getId(), instance.getId(), 2, "60.0", 8, 1, t0.plusSeconds(1200));
+
+        workoutService.finishWorkout(user, instance.getId(), null);
+
+        // learnFrom runs AFTER_COMMIT on its own (async) thread — await it via the repository
+        // before hitting the endpoint, exactly like this class's other listener-dependent tests.
+        await().atMost(10, SECONDS).untilAsserted(() ->
+            assertThat(profileRepository.findByCreatedBy(user)).hasSize(2));
+
+        TimingProfileResponse response = getTimingProfileAs(user);
+
+        assertThat(response.getSamples().getLeadIn()).isEqualTo(1);
+        assertThat(response.getSamples().getSetCycleCompound()).isEqualTo(2);
+        assertThat(response.getSamples().getSetCycleIsolation()).isZero();
+        assertThat(response.getSamples().getTransition()).isZero();
+        // The two learned components moved off their static seeds...
+        assertThat(response.getLeadInSeconds()).isNotEqualByComparingTo(BigDecimal.valueOf(480.0));
+        assertThat(response.getSetCycleCompoundSeconds()).isNotEqualByComparingTo(BigDecimal.valueOf(180.0));
+        // ...while the two untouched components are still exactly the config seeds.
+        assertThat(response.getSetCycleIsolationSeconds()).isEqualByComparingTo(BigDecimal.valueOf(125.0));
+        assertThat(response.getTransitionSeconds()).isEqualByComparingTo(BigDecimal.valueOf(240.0));
     }
 
     /**

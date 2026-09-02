@@ -2285,6 +2285,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/timing-profile:
+    get:
+      tags:
+        - train
+      operationId: getTimingProfile
+      summary: The caller's learned workout-timing profile
+      description: >
+        Per-component learned pacing in seconds, used to personalise the
+        session-length estimate. Always complete: any component the user has not
+        yet accumulated data for is returned at its static seed, so the client
+        never has to implement a cold-start branch.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingProfileResponse'
   /api/goals:
     get:
       tags:
@@ -11287,6 +11305,48 @@ components:
         notes:
           type: string
           nullable: true
+    TimingProfileResponse:
+      type: object
+      required:
+        - leadInSeconds
+        - setCycleCompoundSeconds
+        - setCycleIsolationSeconds
+        - transitionSeconds
+        - samples
+      properties:
+        leadInSeconds:
+          type: number
+          description: Session start to the first completed set.
+        setCycleCompoundSeconds:
+          type: number
+          description: Rest + execution for one compound set.
+        setCycleIsolationSeconds:
+          type: number
+          description: Rest + execution for one non-compound set.
+        transitionSeconds:
+          type: number
+          description: Interval spanning an exercise change.
+        samples:
+          $ref: '#/components/schemas/TimingProfileSamples'
+    TimingProfileSamples:
+      type: object
+      required:
+        - leadIn
+        - setCycleCompound
+        - setCycleIsolation
+        - transition
+      description: >-
+        Accepted observations per component. 0 means the value is still the
+        static seed.
+      properties:
+        leadIn:
+          type: integer
+        setCycleCompound:
+          type: integer
+        setCycleIsolation:
+          type: integer
+        transition:
+          type: integer
     GoalResponse:
       type: object
       required:
