@@ -39,3 +39,19 @@ test('wrong current password shows the server error', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Jelszó mentése' }))
   expect(await screen.findByRole('alert')).toHaveTextContent('Hibás e-mail vagy jelszó.')
 })
+
+test('rejects a new password under 72 characters but over 72 bytes, without ever hitting the server', async () => {
+  let requested = false
+  server.use(http.post(`${API_BASE}/api/auth/change-password`, () => {
+    requested = true
+    return new HttpResponse(null, { status: 204 })
+  }))
+  render(<QueryWrapper><ChangePasswordPage onSuccess={() => {}} onCancel={() => {}} /></QueryWrapper>)
+  await userEvent.type(screen.getByLabelText('Jelenlegi jelszó'), 'temp-12345')
+  // 'á' repeated 40x = 40 characters, 80 UTF-8 bytes — the same fixture the backend ITs use.
+  await userEvent.type(screen.getByLabelText('Új jelszó (min. 8 karakter)'), 'á'.repeat(40))
+  await userEvent.type(screen.getByLabelText('Új jelszó még egyszer'), 'á'.repeat(40))
+  await userEvent.click(screen.getByRole('button', { name: 'Jelszó mentése' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('A jelszó túl hosszú (max. 72 bájt — az ékezetes betűk többet számítanak).')
+  expect(requested).toBe(false)
+})

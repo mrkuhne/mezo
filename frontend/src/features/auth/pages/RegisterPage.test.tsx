@@ -39,3 +39,37 @@ test('back link returns to login', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Vissza a belépéshez' }))
   expect(onBack).toHaveBeenCalled()
 })
+
+test('rejects a password under 72 characters but over 72 bytes, without ever hitting the server', async () => {
+  let requested = false
+  server.use(http.post(`${API_BASE}/api/auth/register`, () => {
+    requested = true
+    return HttpResponse.json({ token: 'test-token' })
+  }))
+  render(<QueryWrapper><RegisterPage onSuccess={() => {}} onBack={() => {}} /></QueryWrapper>)
+  await userEvent.type(screen.getByLabelText('Meghívó kód'), 'MEZO-7KQ2-XN4P')
+  await userEvent.type(screen.getByLabelText('Név'), 'Béla')
+  await userEvent.type(screen.getByLabelText('E-mail'), 'bela@test.local')
+  // 'á' repeated 40x = 40 characters, 80 UTF-8 bytes — the same fixture the backend ITs use.
+  await userEvent.type(screen.getByLabelText('Jelszó (min. 8 karakter)'), 'á'.repeat(40))
+  await userEvent.click(screen.getByRole('button', { name: 'Fiók létrehozása' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('A jelszó túl hosszú (max. 72 bájt — az ékezetes betűk többet számítanak).')
+  expect(requested).toBe(false)
+})
+
+test('accepts a password at exactly 72 bytes', async () => {
+  let requested = false
+  server.use(http.post(`${API_BASE}/api/auth/register`, () => {
+    requested = true
+    return HttpResponse.json({ token: 'test-token' })
+  }))
+  const onSuccess = vi.fn()
+  render(<QueryWrapper><RegisterPage onSuccess={onSuccess} onBack={() => {}} /></QueryWrapper>)
+  await userEvent.type(screen.getByLabelText('Meghívó kód'), 'MEZO-7KQ2-XN4P')
+  await userEvent.type(screen.getByLabelText('Név'), 'Béla')
+  await userEvent.type(screen.getByLabelText('E-mail'), 'bela@test.local')
+  await userEvent.type(screen.getByLabelText('Jelszó (min. 8 karakter)'), 'a'.repeat(72))
+  await userEvent.click(screen.getByRole('button', { name: 'Fiók létrehozása' }))
+  await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+  expect(requested).toBe(true)
+})
