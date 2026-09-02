@@ -12,4 +12,7 @@ test('unearned badges carry a conic progress ring (--v = current/target %), earn
   expect(q50.querySelector('.gr-ring')?.getAttribute('style')).toContain('--v: 46')
   expect(q50.textContent).toContain('23 / 50')
   expect(screen.getByText('4 / 9 megszerezve')).toBeInTheDocument()
+  // huInt groups thousands with a regular space (1085 → "1 085"), not toLocaleString's NBSP.
+  const lifeXp = [...container.querySelectorAll('.gr-bdg')].find((b) => b.textContent?.includes('10 000 LIFE XP'))!
+  expect(lifeXp.textContent).toContain('1 085 / 10 000')
 })

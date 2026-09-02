@@ -38,7 +38,12 @@ describe('TitlesSection', () => {
     expect(within(sec).getAllByText(/^LV \d+/).length).toBeGreaterThan(0)
     expect(within(sec).getAllByText(/^LV \d+-TŐL$/).length).toBeGreaterThan(0)
     expect(within(sec).queryByText('🔒')).toBeNull()
-    fireEvent.click(within(sec).getByRole('button', { name: 'Bolt' }))
+    // Létra/Bolt are real tabs (role="tab" + aria-selected), not plain toggle buttons.
+    expect(within(sec).getByRole('tab', { name: 'Létra' })).toHaveAttribute('aria-selected', 'true')
+    expect(within(sec).getByRole('tab', { name: 'Bolt' })).toHaveAttribute('aria-selected', 'false')
+    fireEvent.click(within(sec).getByRole('tab', { name: 'Bolt' }))
+    expect(within(sec).getByRole('tab', { name: 'Bolt' })).toHaveAttribute('aria-selected', 'true')
+    expect(within(sec).getByRole('tab', { name: 'Létra' })).toHaveAttribute('aria-selected', 'false')
     // shop rows price in coins + the saver row appended
     expect(within(sec).getAllByText(/🪙 \d+/).length).toBeGreaterThan(0)
     expect(within(sec).getByText(/Streak-mentő/)).toBeInTheDocument()

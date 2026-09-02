@@ -139,10 +139,10 @@ export function TitlesSection({ delayMs }: { delayMs?: number }) {
         </div>
       )}
       <div className="gr-seg" role="tablist" style={{ marginBottom: 6 }}>
-        <button type="button" className={cn(seg === 'ladder' && 'on')} onClick={() => setSeg('ladder')}>
+        <button type="button" role="tab" aria-selected={seg === 'ladder'} className={cn(seg === 'ladder' && 'on')} onClick={() => setSeg('ladder')}>
           Létra
         </button>
-        <button type="button" className={cn(seg === 'shop' && 'on')} onClick={() => setSeg('shop')}>
+        <button type="button" role="tab" aria-selected={seg === 'shop'} className={cn(seg === 'shop' && 'on')} onClick={() => setSeg('shop')}>
           Bolt
         </button>
       </div>
