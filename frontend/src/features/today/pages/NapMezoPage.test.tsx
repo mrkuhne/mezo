@@ -281,6 +281,18 @@ test('?tab=eletjelek induláskor az Életjelek tabot nyitja', async () => {
   expect(screen.getByRole('tab', { name: /Életjelek/ })).toHaveAttribute('aria-selected', 'true')
 })
 
+test('mezo-z4h4: a nudge card head shows the need\'s clay icon instead of a daypart spot, and the collapsed row previews the same icon', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  renderPage()
+  await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
+  expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
+  // hidratacio → i-viz (NEED_ICON, needs.ts), the same clay icon EletjelPage's VITAL_TILE uses.
+  expect(document.querySelector('.nap-mzmsg use[href="#i-viz"]')).not.toBeNull()
+  // Copy no longer starts with the 💧 emoji — the icon replaces it.
+  expect(document.querySelector('.nap-mzmsg .txt')?.textContent).not.toMatch(/💧/)
+})
+
 test('a healthy ring set adds nothing to the thread', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   needsMock.states = [{ key: 'hidratacio', pct: 82, band: 'green' }]

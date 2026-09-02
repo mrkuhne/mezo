@@ -17,7 +17,8 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ClaySpot, type ClaySpotName } from '@/shared/ui/clay'
+import { ClayIcon, ClaySpot, type ClaySpotName } from '@/shared/ui/clay'
+import { Icon } from '@/shared/ui/Icon'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
@@ -201,7 +202,7 @@ export function NapMezoPage() {
       style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}
     >
       <div className="nap-mzmsg-h">
-        <ClaySpot name={messageSpot(m)} size={35} />
+        {m.icon ? <ClayIcon name={m.icon} size={35} /> : <ClaySpot name={messageSpot(m)} size={35} />}
         <div className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</div>
         {opts?.collapsible && (
           <button
@@ -211,7 +212,7 @@ export function NapMezoPage() {
             aria-expanded={true}
             onClick={() => collapse(m.id)}
           >
-            ▴
+            <Icon name="chevron-up" size={12} />
           </button>
         )}
       </div>
@@ -274,10 +275,13 @@ export function NapMezoPage() {
                 <button type="button" key={m.id} className="nap-mzrow rise"
                   style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}
                   aria-expanded="false" onClick={() => expand(m.id)}>
+                  {m.icon && <ClayIcon name={m.icon} size={16} />}
                   <span className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</span>
                   <span className="pv">{m.paragraphs[0]}</span>
                   {m.meta && <span className="mt">{m.meta}</span>}
-                  <span className="chev" aria-hidden="true">▾</span>
+                  <span className="chev" aria-hidden="true">
+                    <Icon name="chevron-down" size={12} />
+                  </span>
                 </button>
               ),
             )}
