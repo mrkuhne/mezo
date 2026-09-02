@@ -4471,6 +4471,24 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-colstrip.open .mz-chev { transform: rotate(180deg); }
 .mz-colbody { padding: 0 14px 13px; }
 
+/* ===== ActiveMesoCard hub hero (mesocycle pages v2 Task 2, mezo-d20.15) —
+   status-first: phase chip + week-dots strip + current->ceiling band chips.
+   Ported from meso-body.html's "AKTÍV FUTAM HERO" (.phchip / .wdots / .tplchip)
+   ×1.18. Reuses existing --mz-* tokens rather than declaring new ones: the
+   phase chip borrows the quest-XP amber pair (same #A8801F ink the prototype's
+   .phchip carries verbatim), the band chips borrow the sage/neutral cell
+   tokens, and the deload stripe is built from the gold cell pair instead of a
+   literal hex so it stays theme-ready. */
+.mz-phchip { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 10px; flex: none;
+  background: var(--mz-qxp-bg); color: var(--mz-qxp-ink); }
+.mz-wdots { display: flex; gap: 5px; align-items: center; margin-top: 9px; }
+.mz-wdots i { flex: 1; height: 6px; border-radius: 3px; background: var(--mz-cellbg); }
+.mz-wdots i.done { background: var(--mz-cell-sage-ink); }
+.mz-wdots i.now { background: var(--mz-strength); }
+.mz-wdots i.deload { background: repeating-linear-gradient(135deg, var(--mz-cell-gold-ink) 0 3px, var(--mz-cell-gold-bg) 3px 6px); }
+.mz-mband { font-size: 9px; font-weight: 700; border-radius: 999px; padding: 3px 9px; background: var(--mz-chipbg); color: var(--mz-ink-soft); }
+.mz-mband.up { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+
 /* ── Nap hub (mezo-d20.2.1) — header recipe + panel heroes + tile extras ── */
 .nap-hub { display: flex; flex-direction: column; gap: 13px; padding: 6px 0 8px; }
 .nap-head { display: flex; align-items: center; gap: 9px; }

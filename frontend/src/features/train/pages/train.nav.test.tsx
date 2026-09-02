@@ -47,9 +47,11 @@ test('Train opens on the Edzés hub and its tiles open the sub-pages', async () 
 
   renderApp('/train')
   await userEvent.click(await screen.findByRole('button', { name: 'Mesociklus' }))
-  // The active run's hero card — its title is shared with the template it was started
-  // from (the library's Sablonok section, mezo-meyc.1), so match the tappable card.
-  expect(await screen.findByRole('button', { name: /Hypertrophy 04 · Tavasz/ })).toBeInTheDocument()
+  // The active run's hero card — its own a11y name is the hero button's aria-label
+  // (mesocycle pages v2 Task 2, mezo-d20.15); the title (shared with the template it was
+  // started from, mezo-meyc.1) is checked as text inside it, not the accessible name.
+  const hero = await screen.findByRole('button', { name: 'Aktív mezociklus megnyitása' })
+  expect(hero).toHaveTextContent('Hypertrophy 04 · Tavasz')
 })
 
 // The Gym muscle-zone view folds into Heti in the new IA (handoff §10) — its route stays

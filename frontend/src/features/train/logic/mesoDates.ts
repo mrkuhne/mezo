@@ -4,7 +4,13 @@
 // the 5-step AI planner is gone, but addWeeks/getSeason are still consumed
 // by mesoPlan.ts / mesoPlanMock.ts for wizard-generated program dates.
 //   - addWeeks (HU month math), getSeason (Tavasz/Nyár/Ősz/Tél)
+//   - todayDayToken (mesocycle pages v2 Task 2, mezo-d20.15): today's DAY_ORDER
+//     token, matching the same (getDay()+6)%7 Monday-first math already inlined
+//     at deriveGymSchedule (data/train/trainHooks.ts) and todayIdx
+//     (data/train/runningAgenda.ts) — pulled out here as a tiny reusable helper
+//     since the hub hero (ActiveMesoCard) needed it as a standalone pure fn.
 // ============================================================
+import { DAY_ORDER } from '@/data/train/train'
 
 // --- HU month helpers (meso-planner.jsx:883-902) ---
 const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']
@@ -30,4 +36,9 @@ export function getSeason(startDate: string): string {
   if (['Jún', 'Júl', 'Aug'].includes(m)) return 'Nyár'
   if (['Szep', 'Okt', 'Nov'].includes(m)) return 'Ősz'
   return 'Tél'
+}
+
+/** Today's DAY_ORDER token ('Hét'..'Vas', Monday-first — JS's Sunday=0 rolled to index 6). */
+export function todayDayToken(date: Date = new Date()): (typeof DAY_ORDER)[number] {
+  return DAY_ORDER[(date.getDay() + 6) % 7]
 }

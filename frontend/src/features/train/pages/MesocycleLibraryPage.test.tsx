@@ -36,9 +36,38 @@ test('own header: pghead-np over + h1', () => {
   expect(screen.getByRole('heading', { level: 1, name: 'Mesociklusok' })).toBeInTheDocument()
 })
 
-test('renders the active mesocycle hero card', () => {
+// --- Status-first hub hero (mesocycle pages v2 Task 2, mezo-d20.15) ---
+// The whole card is a button carrying its OWN accessible name (aria-label overrides the
+// title text as the a11y name), so hero assertions query by that label and then look inside
+// it for the status content — pulled from mesocycles[0] in data/train/train.ts via runBands/
+// phaseChip/weekDots (logic/mesoBands.ts, Task 1), never hard-coded against the prototype's
+// illustrative copy.
+
+test('renders the active mesocycle hero card as a single button with its own a11y name', () => {
   setup()
-  expect(screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ })).toBeInTheDocument()
+  const hero = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
+  expect(hero).toBeInTheDocument()
+  expect(hero).toHaveTextContent('Hypertrophy 04 · Tavasz')
+})
+
+test('hero eyebrow reads Aktív · <currentWeek>/<weeks> hét (meso-hyp-04: week 3 of 6)', () => {
+  setup()
+  const hero = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
+  expect(hero).toHaveTextContent('Aktív · 3/6 hét')
+})
+
+test('hero carries the phase chip (meso-hyp-04 week 3 = MAV -> Rámpa)', () => {
+  setup()
+  const hero = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
+  expect(hero).toHaveTextContent('Rámpa')
+})
+
+test('hero carries a current->ceiling band chip derived from runBands (back: current 16, already at its grow-tier MAV ceiling)', () => {
+  setup()
+  const hero = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
+  // meso-hyp-04's back band: mav=16=current -> step 'cap', so the chip is the plain
+  // "Hát 16" form (no arrow) — see ActiveMesoCard's bandChipText.
+  expect(hero).toHaveTextContent('Hát 16')
 })
 
 test('renders a planned mesocycle', () => {
@@ -55,6 +84,21 @@ test('renders the new-mesocycle chip trigger in the header', () => {
   setup()
   // The header `+ Új` chip (exact name) — the only creation action left on this page.
   expect(screen.getByRole('button', { name: 'Új' })).toBeInTheDocument()
+})
+
+// --- Hub tiles: first tile is `Heti vizsgálat` (mesocycle pages v2 Task 2) ---
+
+test('the hub\'s first tile is Heti vizsgálat, with a W<currentWeek> · <set total> szett line', async () => {
+  const user = userEvent.setup()
+  setup()
+  // meso-hyp-04 week 3, set total = sum of runBands(meso).current across its 8 tracked
+  // muscle groups (14+16+12+10+10+12+10+12 = 96) — see mesoBands.test.ts for the same math.
+  const tile = screen.getByRole('button', { name: 'Heti vizsgálat' })
+  expect(tile).toHaveTextContent('W3 · 96 szett')
+  await user.click(tile)
+  // Task 4 owns the /week route — navigating there now is the router's no-match, which is
+  // fine for this slice; what matters here is the tile fires the intended destination.
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-hyp-04/week')
 })
 
 // --- Runs-only library (mezo-tlwa): the templates moved to their own `Sablonok` tab ---
@@ -232,5 +276,24 @@ describe('MesocycleLibraryPage (mock mode)', () => {
   it('renders content with no skeleton (synchronous seed)', () => {
     setup()
     expect(screen.queryByRole('status')).toBeNull()
+  })
+})
+
+// --- Hero "Ma · <nap> · <típus>" line (todayDayToken, mesoDates.ts) ---
+describe('hero "Ma" line reads today\'s day off meso.days', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    vi.useFakeTimers({ toFake: ['Date'] })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllEnvs()
+  })
+
+  it('shows Ma · <nap> · <type> for today\'s matching meso.days row (Thursday = Csü = Pull)', () => {
+    vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday
+    setup()
+    const hero = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
+    expect(hero).toHaveTextContent('Ma · Csü · Pull')
   })
 })
