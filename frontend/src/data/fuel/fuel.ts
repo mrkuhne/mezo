@@ -261,7 +261,7 @@ export const fuelDay: FuelDay = {
   meals: [
     {
       id: 'm1',
-      slot: 'Reggeli · 09:15 · post-workout',
+      slot: 'Reggeli · 09:15',
       title: 'Túrós zabkása · áfonyával',
       score: weightedScore(m1Dimensions),
       kcal: 580,
