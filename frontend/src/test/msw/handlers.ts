@@ -998,6 +998,19 @@ export const handlers = [
       ],
     }),
   ),
+  // Timing profile default (Task 12, mezo-dzbm) — the static config seeds, all `samples: 0`,
+  // matching `timingProfileMock` (train.ts) so mock and unmocked-real-mode tests agree.
+  // Every field is ALWAYS present on this endpoint (no cold-start branch); tests exercising a
+  // specific calibrated value override this with server.use().
+  http.get(`${API_BASE}/api/train/timing-profile`, () =>
+    HttpResponse.json({
+      leadInSeconds: 480,
+      setCycleCompoundSeconds: 180,
+      setCycleIsolationSeconds: 125,
+      transitionSeconds: 240,
+      samples: { leadIn: 0, setCycleCompound: 0, setCycleIsolation: 0, transition: 0 },
+    }),
+  ),
   http.post(`${API_BASE}/api/train/sport-sessions`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json(

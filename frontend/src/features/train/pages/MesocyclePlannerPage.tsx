@@ -21,7 +21,7 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrain, useMesoTemplates } from '@/data/hooks'
+import { useTrain, useMesoTemplates, useTimingProfile } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import type { ExerciseLibraryItem, GoalPreset, GymExercise, MesoPhase, MusclePriorities, SplitOption } from '@/data/types'
@@ -871,6 +871,11 @@ function Step4Program({
   onRename: (dayName: string, name: string) => void
 }) {
   const [pickerDay, setPickerDay] = useState<string | null>(null)
+  // Calibrated pacing (Task 12, mezo-dzbm) for the MesoEditor hero below — called here
+  // (before the early "still generating" return, since hooks must run unconditionally)
+  // rather than inside MesoEditor itself: components/ stay presentational, pages/ own data
+  // fetching (frontend_conventions.md).
+  const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
 
   if (!program) {
     return (
@@ -957,6 +962,8 @@ function Step4Program({
         onReorder={onReorder}
         onRenameDay={onRename}
         priorities={priorities}
+        timingProfile={timingProfile}
+        timingProfilePending={timingProfilePending}
       />
 
       {pickerDay && (

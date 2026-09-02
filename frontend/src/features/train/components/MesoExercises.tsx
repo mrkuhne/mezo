@@ -16,10 +16,20 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
 import { MusclePriorityPicker } from '@/features/train/components/MusclePriorityPicker'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
+import type { SessionTimingProfile } from '@/features/train/logic/sessionLength'
 import { seedDays } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
-export function MesoExercises({ meso }: { meso: Mesocycle }) {
+interface MesoExercisesProps {
+  meso: Mesocycle
+  /** Calibrated pacing (Task 12, mezo-dzbm), fetched by the calling page
+   *  (MesocycleBuilderPage) and threaded down to MesoEditor — this component stays
+   *  presentational, matching MesoEditor's own `timingProfile`/`timingProfilePending` props. */
+  timingProfile?: SessionTimingProfile | null
+  timingProfilePending?: boolean
+}
+
+export function MesoExercises({ meso, timingProfile, timingProfilePending }: MesoExercisesProps) {
   const { saveDayExercises, updateMusclePriorities } = useTrain()
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(meso.days ?? []))
   // Same local-authoritative idiom as `days` above: seeded once from the prop, then the
@@ -122,6 +132,8 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
           onReorder={reorderExercises}
           priorities={priorities}
           volumePerMuscle={meso.volumePerMuscle ?? undefined}
+          timingProfile={timingProfile}
+          timingProfilePending={timingProfilePending}
         />
       </div>
 

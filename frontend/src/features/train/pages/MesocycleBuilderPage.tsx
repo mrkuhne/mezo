@@ -12,7 +12,7 @@
 // ============================================================
 import { useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { useTrain } from '@/data/hooks'
+import { useTrain, useTimingProfile } from '@/data/hooks'
 import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { MesoOverview } from '@/features/train/components/MesoOverview'
@@ -34,6 +34,10 @@ export function MesocycleBuilderPage() {
   const { mesocycles, activateMesocycle, mesoMutationPending } = useTrain()
   const [view, setView] = useState<BuilderView>('overview')
   const [closing, setClosing] = useState(false)
+  // Calibrated pacing (Task 12, mezo-dzbm) for MesoExercises' MesoEditor hero — fetched here
+  // (before either early return below, since hooks must run unconditionally) and threaded
+  // down as a prop: components/ stay presentational, pages/ own data fetching.
+  const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
 
   const meso = mesocycles.find((m) => m.id === id)
   const backToLibrary = () => navigate('/train/mesocycles')
@@ -123,7 +127,9 @@ export function MesocycleBuilderPage() {
 
       {view === 'overview' && <MesoOverview meso={meso} onEditDay={() => setView('exercises')} />}
       {view === 'volume' && <MesoVolume meso={meso} />}
-      {view === 'exercises' && <MesoExercises meso={meso} />}
+      {view === 'exercises' && (
+        <MesoExercises meso={meso} timingProfile={timingProfile} timingProfilePending={timingProfilePending} />
+      )}
 
       {/* Actions */}
       <div style={{ padding: '16px 24px 32px' }}>
