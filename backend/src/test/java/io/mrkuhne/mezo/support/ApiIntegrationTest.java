@@ -4,8 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.api.dto.LoginRequest;
+import io.mrkuhne.mezo.api.dto.RegisterRequest;
 import io.mrkuhne.mezo.api.dto.TokenResponse;
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.InviteService;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
@@ -46,6 +50,8 @@ public abstract class ApiIntegrationTest extends AbstractIntegrationTest {
     @Autowired protected DatabasePopulator databasePopulator;
     @Autowired protected ObjectMapper objectMapper;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private InviteService inviteService;
+    @Autowired private AppUserRepository appUserRepository;
 
     /** Logs in as the demodata owner and returns ready-to-use Bearer headers. */
     protected HttpHeaders ownerAuthHeaders() {
@@ -55,6 +61,27 @@ public abstract class ApiIntegrationTest extends AbstractIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token.getToken());
         return headers;
+    }
+
+    /** A freshly registered non-owner account with ready-to-use Bearer headers. */
+    protected record RegisteredUser(UUID id, String email, HttpHeaders headers) {}
+
+    /**
+     * Registers a brand-new USER through the real invite + register flow (no token forging):
+     * the seeded owner mints an invite, the new account consumes it. Use this for every
+     * ownership-isolation test — it is the only sanctioned way to obtain a second principal
+     * at HTTP level.
+     */
+    protected RegisteredUser registerUser(String label) {
+        UUID ownerId = appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+        String code = inviteService.create(ownerId, label, null).getCode();
+        String email = label.toLowerCase().replaceAll("[^a-z0-9]", "") + "-" + UUID.randomUUID().toString().substring(0, 8) + "@test.local";
+        TokenResponse token = postForBody("/api/auth/register",
+            new RegisterRequest(code, email, "teszt-jelszo-1", label), null, HttpStatus.OK, TokenResponse.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token.getToken());
+        UUID id = appUserRepository.findByEmail(email).orElseThrow().getId();
+        return new RegisteredUser(id, email, headers);
     }
 
     // ==== HTTP verb helpers — expected status is ALWAYS asserted ====
