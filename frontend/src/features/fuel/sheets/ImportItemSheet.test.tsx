@@ -7,9 +7,9 @@ import { MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
 // Link/Fotó-mode override idiom (mirrors FuelMaiPage.logMeal.test): every hook the sheet pulls
 // from @/data/hooks stays real (mock mode) via the importOriginal spread; only scrapeItem /
 // photoExtract / importItem are swapped when their `hoisted` slot is set — so they're inert for
-// the OFF-search tests and the Link/Fotó happy-path tests below (which exercise the real canned
-// fixtures), and drive the needsReview / rejection / null-draft branches and the origin-marker
-// assertion that the canned fixtures can't reach on their own.
+// the Link/Fotó happy-path tests below (which exercise the real canned fixtures), and drive the
+// needsReview / rejection / null-draft branches and the origin-marker assertion that the canned
+// fixtures can't reach on their own.
 const hoisted = vi.hoisted(() => ({
   scrape: null as null | ((url: string) => Promise<PantryScrapeDraft | null>),
   photo: null as null | ((p: File, p2?: File) => Promise<PantryScrapeDraft | null>),
