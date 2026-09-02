@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Self-baselined visual goldens: 22 goto screens + the /ritual Harvest + Release and the
+ * Self-baselined visual goldens: 36 goto screens + the /ritual Harvest + Release and the
  * /train/review lane + exercise-view click-throughs, and the F7.3 Fuel deep surfaces (gyógyszer
- * empty state, recipe mosaic + score sheet, slots editor; F7.4 added the Én deep four) = 73 snapshots per platform (mezo-mzbz added the two /ritual
+ * empty state, recipe mosaic + score sheet, slots editor; F7.4 added the Én deep four) = 86 snapshots per platform (mezo-iizd.1 added me-cel-suly / me-cel-reszlet /
+ * me-goal-wizard-suly and re-pointed me-cel + me-goal-wizard at the new life-goal surfaces) (mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
  * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
  * `today` shot with one per daypart face — reggel/nap/este; mezo-p2tr swapped the retired
@@ -55,11 +56,20 @@ const SCREENS: Array<[string, string, string?]> = [
   ['fuel-recept', '/fuel/recipes/rec-1'],
   ['fuel-slots', '/fuel/slots'],
   ['me', '/me'],
+  // mezo-iizd.1: `/me/goals` is now the Célok (life-goals) hub, so `me-cel` covers THAT page
+  // and the weight goal keeps its own coverage under its new `/me/goals/weight` home — without
+  // the second entry this slice would have silently dropped the weight command centre from the
+  // visual gate. `me-cel-reszlet` is the new per-goal detail page (mock id from lifegoalMock).
   ['me-cel', '/me/goals'],
+  ['me-cel-suly', '/me/goals/weight'],
+  ['me-cel-reszlet', '/me/goals/lg-kockahas'],
   ['me-heti', '/me/week'],
   // F7.4 Én deep (mezo-d20.8.4.1): the goal wizard, the routine editor, the Growth awards
   // tab (the progression's new home — streak card + titles section) and the AI-call detail.
+  // mezo-iizd.1: `/me/goals/new` is now the five-step life-goal wizard; the two-step weight
+  // wizard moved to `/me/goals/weight/new` and keeps its shot there.
   ['me-goal-wizard', '/me/goals/new'],
+  ['me-goal-wizard-suly', '/me/goals/weight/new'],
   ['me-rutinok', '/me/routines/edit'],
   ['me-growth', '/me/growth'],
   ['me-growth-awards', '/me/growth/kituntetesek'],
