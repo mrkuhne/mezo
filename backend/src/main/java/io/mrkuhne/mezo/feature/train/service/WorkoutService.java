@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.ClosingBlockGate;
 import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
+import io.mrkuhne.mezo.feature.train.config.TimingProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -108,6 +109,9 @@ public class WorkoutService {
     // MedalService — attaches the medals a set/session just earned to the logSet/finishWorkout
     // responses. No feature gate: medals are always-on (mirrors ExerciseRecordService).
     private final MedalService medalService;
+    // Actual-duration measurement (mezo-1jm8): gap/lead-in caps consumed when finishWorkout
+    // derives activeSeconds from the session's logged set timestamps.
+    private final TimingProperties timingProperties;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -526,6 +530,9 @@ public class WorkoutService {
         instance.setOrderIndex(template.getOrderIndex());
         instance.setDate(LocalDate.now());
         instance.setStatus("active");
+        // The wall clock starts here and only here. The resume branch above returns before this
+        // point, so a mid-workout reload or an app restart can never restart the clock.
+        instance.setStartedAt(Instant.now());
         return toInstanceResponse(createdBy, workoutSessionRepository.save(instance));
     }
 
@@ -756,6 +763,27 @@ public class WorkoutService {
         String incoming = blankToNull(closingNote);
         if (incoming != null && blankToNull(instance.getClosingNote()) == null) {
             instance.setClosingNote(incoming);
+        }
+        // FILL-IF-EMPTY, exactly like the closing note above: finishing is contractually
+        // idempotent, so a retry must not move the wall clock.
+        if (instance.getFinishedAt() == null) {
+            instance.setFinishedAt(Instant.now());
+        }
+        // Timing is derived and decorative — the completion write above is the user's real data
+        // and must survive a failure here (same rationale as the medal derivation below).
+        try {
+            List<Instant> doneAt = exerciseSetRepository
+                .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId())
+                .stream()
+                .filter(s -> !s.isSkipped() && s.getDoneAt() != null)
+                .map(ExerciseSetEntity::getDoneAt)
+                .toList();
+            instance.setActiveSeconds(SessionTimingCalculator.activeSeconds(
+                instance.getStartedAt(), doneAt,
+                timingProperties.gapCapSeconds(), timingProperties.leadInCapSeconds()));
+        } catch (RuntimeException e) {
+            log.warn("Timing derivation failed for session {} — finishing the workout anyway",
+                instance.getId(), e);
         }
         WorkoutInstanceResponse base = toInstanceResponse(createdBy, instance);
         // Progression runs ONLY when the feature switch is on (gate bean present) and only here in
