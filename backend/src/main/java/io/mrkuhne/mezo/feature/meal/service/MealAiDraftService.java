@@ -18,8 +18,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -90,7 +93,9 @@ public class MealAiDraftService {
         MealDraftLlm port = requireAvailable();
         validateInput(text, photo);
 
-        String systemPrompt = buildSystemPrompt(userId);
+        List<PantryItemEntity> pantry =
+                pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(userId);
+        String systemPrompt = buildSystemPrompt(userId, pantry);
         String userMessage = text == null ? "" : text;
 
         String answer;
@@ -107,7 +112,7 @@ public class MealAiDraftService {
         }
 
         ExtractedMeal extracted = parse(answer);
-        return toResponse(userId, extracted);
+        return toResponse(userId, extracted, pantry);
     }
 
     private void validateInput(String text, MultipartFile photo) {
@@ -139,7 +144,7 @@ public class MealAiDraftService {
         }
     }
 
-    private String buildSystemPrompt(UUID userId) {
+    private String buildSystemPrompt(UUID userId, List<PantryItemEntity> pantry) {
         StringBuilder sb = new StringBuilder("""
             You extract ONE meal log from Hungarian free text and/or a food photo.
             Answer with ONE JSON object and nothing else, exactly these keys:
@@ -159,7 +164,7 @@ public class MealAiDraftService {
 
             PANTRY CATALOG (id | name | brand | serving):
             """);
-        for (PantryItemEntity p : pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(userId)) {
+        for (PantryItemEntity p : pantry) {
             sb.append(p.getId()).append(" | ").append(p.getName()).append(" | ")
               .append(p.getBrand() == null ? "-" : p.getBrand()).append(" | ")
               .append(p.getServingAmount() == null ? "100" : p.getServingAmount())
@@ -183,7 +188,11 @@ public class MealAiDraftService {
         }
     }
 
-    private MealAiDraftResponse toResponse(UUID userId, ExtractedMeal extracted) {
+    private MealAiDraftResponse toResponse(UUID userId, ExtractedMeal extracted,
+            List<PantryItemEntity> pantry) {
+        Map<UUID, PantryItemEntity> pantryById = pantry.stream()
+                .collect(Collectors.toMap(PantryItemEntity::getId, Function.identity()));
+        PantryNameIndex nameIndex = PantryNameIndex.of(pantry);
         MealAiDraftResponse res = new MealAiDraftResponse();
         res.setSlot(extracted.slot() != null && SLOTS.contains(extracted.slot()) ? extracted.slot() : "snack");
         res.setTitle(extracted.title());
@@ -195,7 +204,7 @@ public class MealAiDraftService {
                 log.warn("Meal AI draft truncated at {} items", props.maxItems());
                 break;
             }
-            MealAiDraftItem item = mapLine(userId, line);
+            MealAiDraftItem item = mapLine(userId, line, pantryById, nameIndex);
             if (item != null) {
                 items.add(item);
             }
@@ -204,18 +213,18 @@ public class MealAiDraftService {
         return res;
     }
 
-    private MealAiDraftItem mapLine(UUID userId, ExtractedLine line) {
+    private MealAiDraftItem mapLine(UUID userId, ExtractedLine line,
+            Map<UUID, PantryItemEntity> pantryById, PantryNameIndex nameIndex) {
         UUID pantryId = parseUuid(line.pantryItemId());
         UUID recipeId = parseUuid(line.recipeId());
 
         if (pantryId != null) {
-            PantryItemEntity p = pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(pantryId, userId)
-                    .orElse(null);
+            PantryItemEntity p = pantryById.get(pantryId);
             if (p != null) {
-                return pantryItem(p, line);
+                return pantryItem(p, line, false);
             }
-            log.warn("Meal AI draft: hallucinated pantry id {} demoted to estimate", pantryId);
-            return estimateItem(line, true);
+            log.warn("Meal AI draft: hallucinated pantry id {} demoted", pantryId);
+            return matchByNameOrEstimate(line, nameIndex, true);
         }
         if (recipeId != null) {
             RecipeEntity r = recipeRepository.findByIdAndCreatedByAndDeletedFalse(recipeId, userId)
@@ -223,10 +232,26 @@ public class MealAiDraftService {
             if (r != null) {
                 return recipeItem(r, line);
             }
-            log.warn("Meal AI draft: hallucinated recipe id {} demoted to estimate", recipeId);
-            return estimateItem(line, true);
+            log.warn("Meal AI draft: hallucinated recipe id {} demoted", recipeId);
+            return matchByNameOrEstimate(line, nameIndex, true);
         }
-        return estimateItem(line, false);
+        return matchByNameOrEstimate(line, nameIndex, false);
+    }
+
+    /**
+     * The net under the LLM's own catalog matching (mezo-qrks): a strict name+unit hit becomes a
+     * real pantry line with DB macros, flagged for review because the IDENTITY — not the numbers —
+     * is what stayed uncertain. Runs before the macro-completeness check on purpose: a matched line
+     * gets its macros from the row, so the LLM's missing kcal no longer has to drop it.
+     */
+    private MealAiDraftItem matchByNameOrEstimate(ExtractedLine line, PantryNameIndex nameIndex,
+            boolean demoted) {
+        PantryItemEntity matched = nameIndex.match(line.name(), line.unit()).orElse(null);
+        if (matched != null) {
+            log.info("Meal AI draft: '{}' name-matched pantry item {}", line.name(), matched.getId());
+            return pantryItem(matched, line, true);
+        }
+        return estimateItem(line, demoted);
     }
 
     private static UUID parseUuid(String raw) {
@@ -241,7 +266,7 @@ public class MealAiDraftService {
     }
 
     /** Matched pantry line: snapshot numbers from the DB row, never the LLM. */
-    private MealAiDraftItem pantryItem(PantryItemEntity p, ExtractedLine line) {
+    private MealAiDraftItem pantryItem(PantryItemEntity p, ExtractedLine line, boolean needsReview) {
         MealAiDraftItem item = new MealAiDraftItem();
         item.setSource("pantry");
         item.setPantryItemId(p.getId());
@@ -258,7 +283,7 @@ public class MealAiDraftService {
         item.setFatG(zeroSafe(p.getFatG()));
         item.setNova(p.getNova() == null ? null : p.getNova().intValue());
         item.setConfidence(BigDecimal.ONE);
-        item.setNeedsReview(false);
+        item.setNeedsReview(needsReview);
         return item;
     }
 

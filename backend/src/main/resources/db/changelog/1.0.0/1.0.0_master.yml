@@ -930,3 +930,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609011600_mezo-1gim.15_character_dimension_meta_kind.sql
+  - changeSet:
+      id: "1.0.0:202609021000_mezo-06o0.8_companion_message_people_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021000_mezo-06o0.8_companion_message_people_kind.sql

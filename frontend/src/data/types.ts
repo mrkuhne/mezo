@@ -14,7 +14,7 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
 /** The unified companion-feed message kinds (companion-feed, mezo-gst9) — one persisted row per
  *  generation. `intervention` (W5.2, mezo-b3pp.19) is the odd one out: config-text, never LLM
  *  output — the card's body comes straight from `mezo.companion.interventions[].textHu`. */
-export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention'
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
   /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
@@ -604,6 +604,10 @@ export interface PersonEntry {
   contactCadenceLabel: string
   notes: string
   affectTrend: number[]
+  /** A hangulat-ív első olvasatának hete (ISO dátum), vagy null, ha nincs olvasat. */
+  affectTrendStart: string | null
+  direction: 'up' | 'down' | 'flat'
+  directionReason: string | null
   knownFacts: string[]
   ties: string[]
   graphEdges: PersonGraphEdge[]

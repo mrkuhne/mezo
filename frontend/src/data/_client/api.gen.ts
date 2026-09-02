@@ -6244,6 +6244,8 @@ export interface components {
         PeopleResponse: {
             persons: components["schemas"]["PersonResponse"][];
             mentions: components["schemas"]["MentionResponse"][];
+            /** @description Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet, ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék. Sosem üres — a sáv mindig igaz mondatot mutat. */
+            mezoNote: string;
         };
         PersonResponse: {
             /** Format: uuid */
@@ -6264,7 +6266,20 @@ export interface components {
             notes?: string;
             knownFacts: string[];
             ties: string[];
+            /** @description Heti hangulat-olvasatok 1..5 skálán, időrendben (legfeljebb 8, a legfrissebbek). Az említések tónusából és intenzitásából SZÁMÍTOTT érték — a person.affect_trend oszlopot ez a válasz nem olvassa. */
             affectTrend: number[];
+            /**
+             * Format: date
+             * @description A hangulat-ív első olvasatának hete (hétfő). Az ív csak azokat a heteket tartalmazza, ahol volt tónusozott említés, ezért az időablakot ebből kell címkézni, nem az olvasatok számából. null, ha nincs olvasat.
+             */
+            affectTrendStart?: string | null;
+            /**
+             * @description A hangulat-ív iránya az utolsó két olvasat és a korábbiak átlaga alapján.
+             * @enum {string}
+             */
+            direction: "up" | "down" | "flat";
+            /** @description Magyar, determinisztikus indoklás az irány alatt. null, ha nincs olvasat. */
+            directionReason?: string | null;
             /** @description Count of live mention rows — computed, never seeded */
             mentionCount: number;
             /** @description Mentions in the rolling last 7 days */
@@ -6332,7 +6347,7 @@ export interface components {
             decision: string;
         };
         FeedRef: {
-            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
+            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person) */
             kind: string;
             label: string;
         };
@@ -6345,10 +6360,10 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, or evening LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];
