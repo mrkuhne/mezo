@@ -41,3 +41,16 @@ test('/train — a train-hero anchor jelen van', () => {
   renderAt('/train')
   expect(hasAnchor('train-hero')).not.toBeNull()
 })
+
+// A /mezo döntéskártyája (:174) és a /me cél-kártyája (:108) adat-feltételes, ezért NEM
+// anchor: a „Mutasd meg" gomb némán eltűnne. A chat-nyitó és az identitás-hős
+// feltétel nélkül renderel.
+test('/mezo — a mezo-chat anchor jelen van', () => {
+  renderAt('/mezo')
+  expect(hasAnchor('mezo-chat')).not.toBeNull()
+})
+
+test('/me — a me-idhero anchor jelen van', () => {
+  renderAt('/me')
+  expect(hasAnchor('me-idhero')).not.toBeNull()
+})

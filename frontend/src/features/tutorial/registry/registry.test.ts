@@ -45,9 +45,26 @@ test('szótár: minden fogalom-kártya egy FOGALMAK-bejegyzést hordoz, és ninc
     expect(c.def).toBe(FOGALMAK[key!].def)
     used.add(key!)
   }
-  // Az árva-kulcs kaput (S2a-4, YAGNI) a Task 5 vezeti be — ebben az állapotban a szótár
-  // öt kulcsából még csak a `makro` hivatkozott, a többit a nap/train/mezo/me kalauz hozza.
-  expect(used.size).toBeGreaterThan(0)
+  // S2a-4 (YAGNI): a szótár csak azt tartalmazza, amit valaki hivatkoz.
+  expect([...Object.keys(FOGALMAK)].filter((k) => !used.has(k))).toEqual([])
+})
+
+// `matchRoutes(...).not.toBeNull()` alone would never fail: a router.tsx-ben van egy
+// top-szintű `{ path: '*', element: <Navigate to="/nap" /> }` fogó-route (:326), ami
+// MINDEN nemlétező útvonalra is illeszkedik, és a lánc utolsó tagja marad `*`. Ezért a
+// tényleges kaput az adja, hogy a lánc utolsó illesztett route-jának path-je NEM `*`.
+const routeExists = (to: string) => {
+  const m = matchRoutes(routes, to)
+  return m != null && m[m.length - 1]?.route.path !== '*'
+}
+
+test('minden kapcsolat-chip létező route-ra mutat', () => {
+  for (const e of KALAUZ_REGISTRY) for (const c of e.cards) {
+    if (c.kind !== 'kapcsolat') continue
+    for (const l of c.links) {
+      expect(routeExists(l.to), `${e.id}: ${l.label} → ${l.to}`).toBe(true)
+    }
+  }
 })
 
 test('szótár: a definíciók lintelve vannak', () => {
