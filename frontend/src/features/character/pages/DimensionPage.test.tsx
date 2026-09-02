@@ -69,6 +69,13 @@ describe('DimensionPage', () => {
     expect(container.querySelector('.kr-dim-avatar.chaptermark')).toBeInTheDocument()
   })
 
+  test('a META dimension shows the Szkeptikus sub-line', () => {
+    hoisted.key = 'self-audit'
+    hoisted.dimension = MOCK_DIMENSIONS['self-audit']
+    render(<DimensionPage />)
+    expect(screen.getByText('a társ önvizsgálata · Szkeptikus')).toBeInTheDocument()
+  })
+
   test('the chat handoff navigates plainly to the chat route (no anchored-context idiom in this codebase)', async () => {
     render(<DimensionPage />)
     await userEvent.click(screen.getByText('Beszélgess erről Mezóval'))

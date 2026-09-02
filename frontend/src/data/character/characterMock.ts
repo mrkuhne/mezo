@@ -122,7 +122,8 @@ export const CHARACTER_EXPERTS: Record<string, ExpertColors> = {
 }
 
 // The 9-persona catalog for the Csapat page, in catalog order (7 experts, szkeptikus, mezo) —
-// mirrors CharacterExpertDto exactly. `dimensionKey` null for szkeptikus/mezo (not CORE owners).
+// mirrors CharacterExpertDto exactly. `dimensionKey` is 'self-audit' for szkeptikus (the META
+// dimension since round 4, mezo-1gim.15) and null for mezo (no owned dimension at all).
 const EXPERT_ORDER = [
   'doki',
   'edzo',
@@ -151,7 +152,7 @@ export const MOCK_EXPERTS: CharacterExpertDto[] = [
     role: CHARACTER_EXPERTS.szkeptikus.role,
     voiceLine: CHARACTER_EXPERTS.szkeptikus.voiceLine,
     watch: CHARACTER_EXPERTS.szkeptikus.watch,
-    dimensionKey: null,
+    dimensionKey: 'self-audit', // the META dimension since round 4
     kind: 'SKEPTIC',
   },
   {
@@ -185,14 +186,14 @@ function claim(
 interface DimSeed {
   key: string
   title: string
-  kind: 'CORE' | 'CHAPTER'
+  kind: 'CORE' | 'CHAPTER' | 'META'
   expertKey: string | null
   maturity: number
   portrait: string
   claims: CharacterClaimDto[]
 }
 
-// DIMS (prototype's `var DIMS`) — the 7 CORE dimensions + 1 CHAPTER, portraits and claims
+// DIMS (prototype's `var DIMS`) — 7 CORE + 1 META + 1 CHAPTER, portraits and claims
 // copied verbatim; confidence words -> numbers via the tiers above.
 const DIM_SEEDS: DimSeed[] = [
   {
@@ -304,6 +305,20 @@ const DIM_SEEDS: DimSeed[] = [
     ],
   },
   {
+    key: 'self-audit',
+    title: 'A társ önvizsgálata',
+    kind: 'META',
+    expertKey: 'szkeptikus',
+    maturity: 34,
+    portrait:
+      'A társ saját mérlege: mennyire volt igaza, és mit kezdtél a javaslataival. Ezek a sorok a ' +
+      'rendszerről szólnak — a Szkeptikus vezeti, hogy a társ ne ígérjen magabiztosabban, mint amit igazol.',
+    claims: [
+      claim('self-audit', 0, 'A javasolt tényeimből az elmúlt 4 hétben 9-ből 6 maradt meg (2 finomítva), 3 esett ki — ez az én találati arányom, nem a te tulajdonságod.', VALOSZINU, { proposedBy: 'szkeptikus', sensitive: true }),
+      claim('self-audit', 1, 'Az elmúlt 7 hét 7 zárult predikciójából 4 talált, miközben átlagosan 78% magabiztosságot mondtam — túlbiztos voltam.', VALOSZINU, { proposedBy: 'szkeptikus' }),
+    ],
+  },
+  {
     key: 'chapter-work',
     title: 'Munka-stressz ciklus',
     kind: 'CHAPTER',
@@ -345,7 +360,7 @@ function toDimensionResponse(d: DimSeed): CharacterDimensionResponse {
   }
 }
 
-/** Overview seed — full dossier, 7 CORE + 1 CHAPTER, all with maturity/portrait/topClaims. */
+/** Overview seed — full dossier, 7 CORE + 1 META + 1 CHAPTER, all with maturity/portrait/topClaims. */
 export const MOCK_OVERVIEW: CharacterOverviewResponse = { dimensions: DIM_SEEDS.map(toSummary) }
 
 /** The pre-bootstrap honest empty state (spec §2): CORE dimensions exist but are unread. */
@@ -517,6 +532,14 @@ interface ChainSeed {
 // its own 2-night `ALKALMI_MAX`; `gratitude-focus`'s dominant area is 5 of 8 tagged entries, at
 // its own 50% `CONCENTRATED_MIN`; `needs-domain-imbalance` names one weak domain while implying
 // at least three others green, its own `MIN_STRONG_DOMAINS` gate). Day 15 stays untouched.
+//
+// Round 4 (mezo-1gim.15, Task 8): the eight new round-4 detectors (people-mood-link,
+// mention-context-shift, weekend-gap, chat-topic-shift, knowledge-rejection-pattern,
+// prediction-calibration, quest-completion-calibration, experiment-outcome-ledger) get one chain
+// each, spread across days 13/20/24/27/30 alongside the pre-existing chains — `code` paraphrases
+// each detector's real `summary` string (see `backend/.../feature/character/detector/*Detector.
+// java`), `who` matches its real `DetectorSignal(key(), who, ...)` owner exactly. Day 15 stays
+// untouched, same as rounds 1-3.
 const CHAIN_POOL: Record<number, ChainSeed[]> = {
   13: [
     {
@@ -583,6 +606,22 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       who: 'drill',
       obs: 'A kitűzött napi fókuszaidat többnyire le is zárod, és amit vállalsz, azt teljesíted is.',
     },
+    // Round 4 (mezo-1gim.15, Task 8): people-mood-link/knowledge-rejection-pattern join day 13 —
+    // paraphrase PeopleMoodLinkDetector's and KnowledgeRejectionPatternDetector's real summaries.
+    {
+      detector: 'people-mood-link',
+      code: '9 említés-napon a mentális átlag 7,4, 12 említés nélküli napon 5,9 — magasabb együttjárás, közepes bizonyosság',
+      refs: [],
+      who: 'antropologus',
+      obs: 'Azokon a napokon, amikor ember kerül a naplóba, a mentális skála egy ponttal följebb áll — együttjárás, nem irány.',
+    },
+    {
+      detector: 'knowledge-rejection-pattern',
+      code: '9 javaslatomról született döntés: 6 maradt meg (2 finomítva), 3 esett ki — 67%, a kiesők főleg fuel',
+      refs: [],
+      who: 'szkeptikus',
+      obs: 'A javasolt tényeim kétharmadát megtartottad; ami kiesett, az a fuel kategóriából jött — ez az én találati arányom, nem a te tulajdonságod.',
+    },
   ],
   20: [
     {
@@ -616,6 +655,22 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'antropologus',
       obs: 'A hála-bejegyzéseid négy hét alatt erősen a kapcsolatok területére húznak.',
+    },
+    // Round 4 (mezo-1gim.15, Task 8): mention-context-shift/prediction-calibration join day 20 —
+    // paraphrase MentionContextShiftDetector's and PredictionCalibrationDetector's real summaries.
+    {
+      detector: 'mention-context-shift',
+      code: '8 címkézett említés: munka 50%, konfliktus 25% (jelen); korábban edzés/nincs',
+      refs: [],
+      who: 'antropologus',
+      obs: 'Az emberek most a munka felől kerülnek szóba, és megjelent a konfliktus-címke is — a címkét a rendszer adja, nem te.',
+    },
+    {
+      detector: 'prediction-calibration',
+      code: '7 zárult predikció: 4 talált (57%), átlag 78% magabiztosság — túlbiztos',
+      refs: [],
+      who: 'szkeptikus',
+      obs: 'Hét zárult predikcióból négy talált, miközben 78% magabiztosságot mondtam — túlbiztos voltam.',
     },
   ],
   24: [
@@ -683,6 +738,22 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       who: 'drill',
       obs: 'A legutóbbi megszakadás után 9 nap telt el az első újra teljes Életjel-napig.',
     },
+    // Round 4 (mezo-1gim.15, Task 8): weekend-gap/quest-completion-calibration join day 24 —
+    // paraphrase WeekendGapDetector's and QuestCompletionCalibrationDetector's real summaries.
+    {
+      detector: 'weekend-gap',
+      code: 'alvásközép hétvégén +95 perc (mérsékelt, 7 szabad / 18 munkaéjszaka); logolás hétvégén 57%, hétköznap 91% — rés',
+      refs: [],
+      who: 'antropologus',
+      obs: 'Hétvégén másfél órával később esik az alvásközéped, és a logolás is megritkul — a hét kettészakad.',
+    },
+    {
+      detector: 'quest-completion-calibration',
+      code: 'BODY 12/14 (86%), FUELBIO 9/13 (69%), GROWTH 5/15 (33%) — GROWTH túllőtt',
+      refs: [],
+      who: 'szkeptikus',
+      obs: 'A GROWTH slot kínálatát túl nehézre lőttem be — ez a motor kalibrációja, nem a te szorgalmad.',
+    },
   ],
   27: [
     {
@@ -731,6 +802,15 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'szomnologus',
       obs: 'Az elmúlt két hétből négy napon írtál éjfél és hajnali öt óra között a társnak.',
+    },
+    // Round 4 (mezo-1gim.15, Task 8): chat-topic-shift joins day 27 — paraphrases
+    // ChatTopicShiftDetector's real summary.
+    {
+      detector: 'chat-topic-shift',
+      code: 'beszélgetések 62%-a az alvás körül (13 eszközhívás a 21-ből); korábban edzés',
+      refs: [],
+      who: 'pszichologus',
+      obs: 'Az elmúlt hetekben az alvás lett a fő téma a társsal, az edzés helyett.',
     },
   ],
   30: [
@@ -813,6 +893,16 @@ const CHAIN_POOL: Record<number, ChainSeed[]> = {
       refs: [],
       who: 'pszichologus',
       obs: 'Az Életjel-területeid többsége zöld, de a lélek terület tartósan lemarad a többitől.',
+    },
+    // Round 4 (mezo-1gim.15, Task 8): experiment-outcome-ledger closes out the eight new
+    // round-4 detector chains on day 30 — paraphrases ExperimentOutcomeLedgerDetector's real
+    // summary.
+    {
+      detector: 'experiment-outcome-ledger',
+      code: '5 lezárt javaslatom (2 kísérlet, 3 kihívás): 3 jó kimenet; 1 el sem indult (elvetve indulás előtt)',
+      refs: [],
+      who: 'szkeptikus',
+      obs: 'Öt lezárt javaslatomból három vezetett jó kimenethez — a javaslataim minősége, nem a te vállalkozó kedved.',
     },
   ],
   // Fix round 1 (mezo-1gim.14): NOT a prototype-verbatim night — added so the callCount

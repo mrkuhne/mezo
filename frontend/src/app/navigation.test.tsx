@@ -135,15 +135,14 @@ test('/me/karakter/gepterem/adatforrasok is the Bekötve|Tervezett data-source i
   expect(await screen.findByText('mit olvas a rendszer ma, és mit tervez')).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem/adatforrasok/kor/:n opens one MINDENT-be round\'s mini-page (mezo-1gim.14, Task 5)', async () => {
-  // Rounds 1 ("Edzés & test"), 2 ("Fuel & ciklus"), and 3 ("Psziché & viselkedés-meta") landed
-  // for real via mezo-1gim.15 and are no longer in INVENTORY_ROUNDS — round 4
-  // ("Kapcsolatok & AI-meta") is the only round left.
+test('/me/karakter/gepterem/adatforrasok/kor/:n renders the honest not-found face now that every round has landed (mezo-1gim.15, Task 8)', async () => {
+  // Rounds 1-4 have all landed for real via mezo-1gim.15 — INVENTORY_ROUNDS is empty in
+  // production, so any :n now hits KorPage's honest not-found face instead of a real round.
   renderApp('/me/karakter/gepterem/adatforrasok/kor/4')
-  expect(await screen.findByText('4. KÖR')).toBeInTheDocument()
+  expect(await screen.findByText('Ez a kör nem található.')).toBeInTheDocument()
 })
 
-test('/me/karakter/gepterem/detektorok lists the 32 real detectors (mezo-1gim.14/.15, Tasks 5-7)', async () => {
+test('/me/karakter/gepterem/detektorok lists the 40 real detectors (mezo-1gim.14/.15, Tasks 5-8)', async () => {
   renderApp('/me/karakter/gepterem/detektorok')
   expect(await screen.findByText('a ma aktív katalógus, egy mondatban')).toBeInTheDocument()
 })
@@ -153,11 +152,19 @@ test('Adatforrások\' Tervezett segment survives a kör round-trip (fix round 1,
   // from a kör mini-page silently reset it to Bekötve. Now useStickyTab-backed
   // (character.adatforrasok.view), the same idiom Sport/Futás/Fuel-slots/Memória use for their
   // own in-view segmented controls.
-  renderApp('/me/karakter/gepterem/adatforrasok')
+  //
+  // Round 4 landed for real (mezo-1gim.15, Task 8) — INVENTORY_ROUNDS is empty in production, so
+  // there is no more clickable round tile to drive the round-trip through. The kör route (and
+  // its own AdatforrasokPage remount on the way back) still exists though — a stray/old :n now
+  // renders KorPage's honest not-found face instead of a real round, but the remount + sticky-
+  // segment coverage this test guards is unchanged, so the round-trip is driven via the router
+  // directly instead of a click on a round tile that no longer exists.
+  const router = createMemoryRouter(routes, { initialEntries: ['/me/karakter/gepterem/adatforrasok'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   await userEvent.click(await screen.findByRole('tab', { name: 'Tervezett' }))
   expect(screen.getByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
-  await userEvent.click(screen.getByText('Kapcsolatok & AI-meta'))
-  expect(await screen.findByText('4. KÖR')).toBeInTheDocument()
+  router.navigate('/me/karakter/gepterem/adatforrasok/kor/4')
+  expect(await screen.findByText('Ez a kör nem található.')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('tab', { name: 'Tervezett' })).toHaveAttribute('aria-selected', 'true')
 })

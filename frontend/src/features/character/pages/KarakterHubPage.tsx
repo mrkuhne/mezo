@@ -182,11 +182,13 @@ export function KarakterHubPage() {
     : 0
   // I3 (final review): chapters open/retire dynamically — the dimension count line is derived
   // from the live overview instead of a hardcoded "7 + 1", so it never lies once a CHAPTER
-  // opens or the last one retires.
+  // opens or the last one retires. Round 4 (mezo-1gim.15, Task 8): plus the META self-audit
+  // since round 4.
   const chapterDims = overview.dimensions.filter((d) => d.kind === 'CHAPTER')
-  const dimLine = chapterDims.length > 0
-    ? `${coreDims.length} + ${chapterDims.length} fejezet`
-    : `${coreDims.length} dimenzió`
+  const hasMeta = overview.dimensions.some((d) => d.kind === 'META')
+  const dimLine = `${coreDims.length} dimenzió`
+    + (hasMeta ? ' + önvizsgálat' : '')
+    + (chapterDims.length > 0 ? ` + ${chapterDims.length} fejezet` : '')
   const latestFeedItem = feed.find((f) => f.kind === 'OBSERVATION')
   // M10 (final review): the Feed tile's dot now encodes NEWNESS (mirrors the Konzílium tile's
   // 3-day heuristic below), not mere non-emptiness — an old, already-seen feed shouldn't keep

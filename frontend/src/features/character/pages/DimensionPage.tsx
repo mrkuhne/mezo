@@ -70,7 +70,9 @@ export function DimensionPage() {
     : undefined
   const sub = dimension.kind === 'CHAPTER'
     ? 'közös AI-fejezet · érettség'
-    : `${expertName ?? 'a csapat'} · érettség`
+    : dimension.kind === 'META'
+      ? 'a társ önvizsgálata · Szkeptikus'
+      : `${expertName ?? 'a csapat'} · érettség`
   const claims = snapshot ?? dimension.claims
 
   return (
