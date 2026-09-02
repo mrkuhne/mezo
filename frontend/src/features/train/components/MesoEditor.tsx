@@ -11,7 +11,9 @@
 // Hero warningCount is WEEK-level: ALL session-cap breaches across the week
 // (the weekly-band % overage alarm retired with SetBudgetCard, mezo-d20.14)
 // — the hero is the week-truth surface; per-day locality is what the red
-// tab dots are for.
+// tab dots are for. "Week" means the optional `weekDays` prop when given
+// (`ProgramDayView` edits ONE day but must judge it against the whole 7-day
+// program), else `days` — the two coincide wherever the editor owns the week.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GymExercise, MesoDay, MusclePriorities } from '@/data/types'
@@ -32,7 +34,17 @@ import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
 import { weeklyBands } from '@/features/train/logic/weeklyBands'
 
 interface MesoEditorProps {
+  /** The days this editor EDITS — the tab strip, the breakdown and the exercise list. */
   days: MesoDay[]
+  /**
+   * The days the WEEK-level derivations read (hero week totals, `WeeklyBandsCard`,
+   * `structureLint`, `peakWeekFit`, `sessionCapWarnings`). Defaults to `days`, which is right
+   * whenever the editor owns the whole week. The wizard's one-day page (`ProgramDayView`)
+   * passes the full 7-day program here: otherwise every week-scope rule — weekly frequency,
+   * variety, the week's set band ceilings — would judge one Monday as if it were the week
+   * (mezo-d20.14 review, I2).
+   */
+  weekDays?: MesoDay[]
   onAddClick: (dayKey: string) => void
   onRemove: (dayKey: string, exId: string) => void
   onChange: (dayKey: string, exId: string, patch: Partial<GymExercise>) => void
@@ -48,8 +60,9 @@ interface MesoEditorProps {
 }
 
 export function MesoEditor({
-  days, onAddClick, onRemove, onChange, onReorder, onRenameDay, priorities, volumePerMuscle,
+  days, weekDays, onAddClick, onRemove, onChange, onReorder, onRenameDay, priorities, volumePerMuscle,
 }: MesoEditorProps) {
+  const week = weekDays ?? days
   const [activeDay, setActiveDay] = useState<string | null>(
     () => days.find((d) => d.current)?.day ?? days.find((d) => !isOffDay(d))?.day ?? days[0]?.day ?? null,
   )
@@ -65,13 +78,14 @@ export function MesoEditor({
 
   const day = days.find((d) => d.day === activeDay) ?? days[0]
 
+  // Week-scope derivations read `week`, never `days` — see the `weekDays` prop doc.
   const bands = useMemo(
-    () => weeklyBands(days, priorities ?? null, volumePerMuscle ?? undefined),
-    [days, priorities, volumePerMuscle],
+    () => weeklyBands(week, priorities ?? null, volumePerMuscle ?? undefined),
+    [week, priorities, volumePerMuscle],
   )
-  const capWarnings = sessionCapWarnings(days)
-  const lintFindings = structureLint(days, priorities)
-  const peakFit = peakWeekFit(days, priorities, volumePerMuscle)
+  const capWarnings = sessionCapWarnings(week)
+  const lintFindings = structureLint(week, priorities)
+  const peakFit = peakWeekFit(week, priorities, volumePerMuscle)
   const warningDays = new Set(capWarnings.map((w) => w.day))
   const warningCount = capWarnings.length
 
@@ -117,8 +131,8 @@ export function MesoEditor({
   const off = isOffDay(day)
   const daySets = day.exercises.reduce((a, e) => a + e.workingSets, 0)
   const dayMinutes = estimateSessionMinutes(day.exercises)
-  const weekSets = days.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
-  const trainingDays = days.filter((d) => d.exercises.length > 0).length
+  const weekSets = week.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
+  const trainingDays = week.filter((d) => d.exercises.length > 0).length
   const showRename = Boolean(onRenameDay) && day.muscle === 'custom'
 
   return (

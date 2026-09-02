@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
@@ -10,7 +10,17 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
 
-afterEach(() => vi.unstubAllEnvs())
+// The wizard's default name is `Hypertrophy · {season}`, derived from the real clock — so the
+// whole file pins the clock to an autumn day (mezo-d20.14 review, I1). ONLY `Date` is faked:
+// Testing Library's findBy*/waitFor and MSW need real timers.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-09-02T10:00:00'))
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllEnvs()
+})
 
 // The wizard calls useTrain/useMesoTemplates/useMesoPlanGenerate — a QueryClientProvider
 // is required, and the real-mode paths need the router (they navigate on save).
@@ -124,6 +134,28 @@ test('a day tile opens its own page; an edit there arms the regenerate confirm s
   expect(screen.queryByText('Kézzel szerkesztett napjaid vannak — az újragenerálás felülírja őket.')).toBeNull()
 })
 
+// I3: changing the days/tiers after a generation used to be silent — the save then wrote the
+// NEW musclePriorities next to the OLD program. The step says so; it never auto-regenerates
+// (that would discard manual day edits).
+test('changing a tier after the generation surfaces the stale-input hint', async () => {
+  const user = userEvent.setup()
+  setup()
+  await runWizardToProgram(user)
+  await screen.findByDisplayValue('Hypertrophy · Ősz')
+  const hint = () => screen.queryByText(/A bemenetek változtak a generálás óta/)
+  expect(hint()).toBeNull()
+
+  await user.click(screen.getByRole('button', { name: '2. lépés · Fókusz' }))
+  await user.click(
+    within(screen.getByRole('group', { name: 'Hát prioritás' })).getByRole('button', { name: 'Emphasize' }),
+  )
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+
+  expect(hint()).toBeInTheDocument()
+  // the program itself is untouched — the hint is an invitation, not an auto-regeneration
+  expect(screen.getByRole('button', { name: 'Hét · Upper nap' })).toBeInTheDocument()
+})
+
 describe('real mode', () => {
   async function renderRealWizard(user: ReturnType<typeof userEvent.setup>) {
     vi.stubEnv('VITE_USE_MOCK', 'false')
@@ -208,7 +240,28 @@ describe('real mode', () => {
     expect(router.state.location.pathname).toBe('/train/mesocycles/new')
   })
 
-  test('a failed generation renders a retry state, never a blank body', async () => {
+  // I4: a failed RE-generation used to replace the whole body with the retry screen, stranding
+  // an existing (possibly hand-edited) draft.
+  test('a failed RE-generation keeps the standing program and shows an inline error strip', async () => {
+    const user = userEvent.setup()
+    await renderRealWizard(user)
+    const tiles = () => screen.getAllByRole('button', { name: /nap$/ })
+    const before = tiles().length
+    expect(before).toBeGreaterThan(0)
+
+    server.use(http.post(`${API_BASE}/api/train/meso-plans/generate`, () => new HttpResponse(null, { status: 500 })))
+    await user.click(screen.getByRole('button', { name: '↺ Újragenerálás' }))
+
+    expect(await screen.findByText('Nem sikerült az újragenerálás — a korábbi program megmaradt.')).toBeInTheDocument()
+    expect(tiles()).toHaveLength(before)
+    expect(screen.queryByText('Nem sikerült a generálás — próbáld újra.')).toBeNull()
+    // Mégse clears the strip; the program stays
+    await user.click(screen.getByRole('button', { name: 'Mégse' }))
+    expect(screen.queryByText('Nem sikerült az újragenerálás — a korábbi program megmaradt.')).toBeNull()
+    expect(tiles()).toHaveLength(before)
+  })
+
+  test('a failed FIRST generation renders a retry state, never a blank body', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     server.use(http.post(`${API_BASE}/api/train/meso-plans/generate`, () => new HttpResponse(null, { status: 500 })))
     const user = userEvent.setup()

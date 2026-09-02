@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { MesoDay } from '@/data/types'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
@@ -122,6 +122,21 @@ describe('MesoEditor', () => {
   it('renders the Struktúra lint card (mezo-oyhy.2)', () => {
     render(<MesoEditor days={days} {...props} />)
     expect(screen.getByRole('button', { name: /Struktúra/i })).toBeInTheDocument()
+  })
+
+  // mezo-d20.14 review, I2: ProgramDayView edits ONE day but must judge it against the whole
+  // week — every week-scope derivation reads `weekDays`, the day tabs/breakdown read `days`.
+  it('weekDays scopes the hero totals and the weekly bands to the week, not to the edited day', () => {
+    render(<MesoEditor days={[days[0]]} weekDays={days} {...props} />)
+    // hero: the WEEK's 25 sets (12 H + 13 Cs) and 2 training days, not Monday's 12 / 1
+    expect(screen.getByText(/25 szett/)).toBeInTheDocument()
+    expect(screen.getByText(/2 edzésnap/)).toBeInTheDocument()
+    // bands: back is on Cs only — with a Monday-only week it would not appear at all
+    const bands = screen.getByRole('group', { name: 'Heti szetek · izmonként' })
+    expect(within(bands).getByText('Hát')).toBeInTheDocument()
+    expect(within(bands).getByText(/^13 →/)).toBeInTheDocument()
+    // the tab strip still shows only the edited day
+    expect(screen.getAllByRole('button', { name: /^(H|K|Cs) ·/ })).toHaveLength(1)
   })
 
   it('does not render the peak-week fit card when nothing projects out of band (mezo-3m5m, GD6)', () => {

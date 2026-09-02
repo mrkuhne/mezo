@@ -51,8 +51,9 @@ export function MesocyclePlannerPage() {
   const runGenerate = async (from: WizardState) => {
     setFailed(false)
     setConfirming(false)
+    const input = generateInput(from)
     try {
-      dispatch({ type: 'generated', proposal: await generate(generateInput(from)) })
+      dispatch({ type: 'generated', proposal: await generate(input), input })
     } catch {
       setFailed(true)
     }
@@ -97,6 +98,7 @@ export function MesocyclePlannerPage() {
       <>
         <ProgramDayView
           day={activeDay}
+          program={state.program}
           priorities={state.priorities}
           volumePerMuscle={state.proposal?.template.volumePerMuscle ?? null}
           onBack={() => dispatch({ type: 'openDay', day: null })}
@@ -149,6 +151,7 @@ export function MesocyclePlannerPage() {
             saving={saving}
             confirming={confirming}
             onConfirmChange={setConfirming}
+            onDismissError={() => setFailed(false)}
           />
         )}
 

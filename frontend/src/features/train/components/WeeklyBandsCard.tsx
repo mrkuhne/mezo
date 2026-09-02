@@ -19,7 +19,7 @@ interface WeeklyBandsCardProps {
 export function WeeklyBandsCard({ rows, eyebrow = 'Heti szetek · izmonként', note }: WeeklyBandsCardProps) {
   if (!rows.length) return null
   return (
-    <div className="mz-card mz-bands" aria-label={eyebrow}>
+    <div className="mz-card mz-bands" role="group" aria-label={eyebrow}>
       <div className="mz-eyebrow">{eyebrow}</div>
       {rows.map((r) => {
         const fam = muscleColor(r.group)

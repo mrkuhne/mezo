@@ -22,6 +22,13 @@ export interface WizardState {
   goalText: string
   name: string
   proposal: MesoPlanProposal | null
+  /**
+   * The generator input that PRODUCED `proposal` — the only honest baseline for "did the
+   * inputs move since the generation?". Without it a post-generation day/tier change is
+   * silent, and `toUpsert` cheerfully writes the NEW musclePriorities next to the OLD
+   * program (mezo-d20.14 review, I3).
+   */
+  proposalInput: MesoPlanGenerateRequest | null
   /** Editable copy of proposal.days — the program the save writes. */
   program: MesoDay[]
   /** A manual edit landed since the last generation (regeneration would overwrite it). */
@@ -38,7 +45,7 @@ export type WizardAction =
   | { type: 'setGoalText'; text: string }
   | { type: 'setName'; name: string }
   | { type: 'step'; step: 0 | 1 | 2 }
-  | { type: 'generated'; proposal: MesoPlanProposal }
+  | { type: 'generated'; proposal: MesoPlanProposal; input: MesoPlanGenerateRequest }
   | { type: 'editProgram'; program: MesoDay[] }
   | { type: 'openDay'; day: string | null }
 
@@ -60,6 +67,7 @@ export function initialWizardState(today: string): WizardState {
     goalText: '',
     name: `Hypertrophy · ${getSeason(huMonthDay(today))}`,
     proposal: null,
+    proposalInput: null,
     program: [],
     dirty: false,
     activeDay: null,
@@ -83,7 +91,14 @@ export function wizardReducer(s: WizardState, a: WizardAction): WizardState {
     case 'step':
       return { ...s, step: a.step, activeDay: null }
     case 'generated':
-      return { ...s, proposal: a.proposal, program: a.proposal.days, dirty: false, activeDay: null }
+      return {
+        ...s,
+        proposal: a.proposal,
+        proposalInput: a.input,
+        program: a.proposal.days,
+        dirty: false,
+        activeDay: null,
+      }
     case 'editProgram':
       return { ...s, program: a.program, dirty: true }
     case 'openDay':
@@ -99,6 +114,28 @@ export function generateInput(s: WizardState): MesoPlanGenerateRequest {
     priorities: sparse(s.priorities),
     goalText: s.goalText.trim() || null,
   }
+}
+
+/** Order-independent shape of the sparse tier map, so key order can't fake a change. */
+function priorityKey(p: Record<string, string> | null | undefined): string {
+  return JSON.stringify(Object.entries(p ?? {}).sort(([a], [b]) => a.localeCompare(b)))
+}
+
+/**
+ * Have the generator's inputs moved since the proposal was made? Days, length and the sparse
+ * tier map are exactly what `generateInput` sends, so anything that changes them makes the
+ * standing program stale. Deliberately NOT auto-regenerating on true — that would throw away
+ * the user's manual day edits; the Program step just says so and leaves ↺ to the user.
+ */
+export function inputChanged(s: WizardState): boolean {
+  const prev = s.proposalInput
+  if (!prev) return false
+  const now = generateInput(s)
+  return (
+    now.daysOfWeek.join(',') !== prev.daysOfWeek.join(',')
+    || now.weeks !== prev.weeks
+    || priorityKey(now.priorities) !== priorityKey(prev.priorities)
+  )
 }
 
 /**

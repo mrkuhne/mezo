@@ -41,7 +41,7 @@ export function StepWhen({ state, dispatch }: { state: WizardState; dispatch: Di
           <ClayIcon name="i-edzes" size={28} />
           <span className="mz-eyebrow mz-eb-coral mz-grow">Edzésnapok</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--mz-ink-soft)' }}>
-            {days.length}/{days.length}
+            {days.length} nap
           </span>
         </div>
         <div className="mz-dcgrid">

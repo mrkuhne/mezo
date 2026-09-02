@@ -3,6 +3,7 @@
 // redesign). Pure. Gives the wizard its live numbers before the generator answers
 // (split line, week-1/peak totals, per-day frames for the day mosaic) and the mock-mode
 // proposal its frames. Same tables as backend/…/MesoPlanSkeleton.java — change both.
+// (`splitLine` is the one exception: FE coach copy, no backend counterpart.)
 // ============================================================
 import { DAY_ORDER } from '@/data/train/train'
 import type { MesoPhase, MusclePriorities, MuscleTier } from '@/data/types'
@@ -44,9 +45,16 @@ const dayIdx = (d: string) => DAY_ORDER.indexOf(d as (typeof DAY_ORDER)[number])
 
 export function recommendedDays(n: number): string[] { return [...RECOMMENDED[clampN(n)]] }
 
+/**
+ * FE-only coach copy (no backend twin — MesoPlanSkeleton emits no such line). The count is
+ * the CLAMPED one everywhere in the sentence, so an out-of-range pick can't advertise a split
+ * it isn't getting. The frequency is the truth of the split table, not a slogan: a full-body
+ * week hits every muscle on every training day (2 nap → 2×, 3 nap → 3×), while every 4+ day
+ * split (Upper/Lower, U/L+PPL, PPL×2) lands each group exactly twice.
+ */
 export function splitLine(days: string[]): string {
   const n = clampN(days.length)
-  return `${days.length} nap → ${SPLIT_LABELS[n]} · minden izom 2×/hét`
+  return `${n} nap → ${SPLIT_LABELS[n]} · minden izom ${n <= 3 ? n : 2}×/hét`
 }
 
 /**

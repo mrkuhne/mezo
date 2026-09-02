@@ -4,6 +4,9 @@
 // Mezo egy mondata + Hossz-sáv), nap-mozaik (csempe → saját nap-oldal), heti
 // szett-sávok, összecsukott csúcshét-strip, és a mentés-lábléc. Generálás
 // közben a pulzáló orb áll a helyén, hiba esetén újrapróbálás — sosem üres test.
+// A hiba KÉT arca: ha még nincs javaslat, egész testes újrapróbálás; ha már van,
+// a program marad, a hiba pedig egy csík a hero fölött (egy sikertelen ÚJRA-
+// generálás nem dobhatja el a kézzel szerkesztett vázlatot).
 // ============================================================
 import type { CSSProperties, Dispatch } from 'react'
 import type { MesoDay } from '@/data/types'
@@ -15,7 +18,7 @@ import { weeklyBands } from '@/features/train/logic/weeklyBands'
 import { WeeklyBandsCard } from '@/features/train/components/WeeklyBandsCard'
 import { DayTile } from '@/features/train/wizard/DayTile'
 import { dayTileData } from '@/features/train/wizard/dayTiles'
-import type { WizardAction, WizardState } from '@/features/train/wizard/wizardState'
+import { inputChanged, type WizardAction, type WizardState } from '@/features/train/wizard/wizardState'
 import { CtaGhost, CtaPrimary } from '@/shared/ui/Cta'
 import { CollapsibleStrip, Mosaic, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -36,10 +39,13 @@ interface StepProgramProps {
   /** the regenerate confirm strip is open (a manual edit would be overwritten) */
   confirming: boolean
   onConfirmChange: (open: boolean) => void
+  /** Dismisses a failed RE-generation's inline strip (the standing program stays). */
+  onDismissError: () => void
 }
 
 export function StepProgram({
   state, dispatch, generating, failed, today, onRegenerate, onSave, saving, confirming, onConfirmChange,
+  onDismissError,
 }: StepProgramProps) {
   if (generating) {
     return (
@@ -51,7 +57,10 @@ export function StepProgram({
     )
   }
 
-  if (failed || !state.proposal) {
+  // Full-screen retry ONLY when nothing was ever generated. A failed RE-generation must not
+  // swallow the standing (possibly hand-edited) draft — it gets an inline strip instead
+  // (mezo-d20.14 review, I4).
+  if (!state.proposal) {
     return (
       <div className="mz-edhero">
         <span className="mz-eyebrow mz-eb-coral">A te blokkod</span>
@@ -79,6 +88,15 @@ export function StepProgram({
 
   return (
     <EntranceGroup>
+      {failed && (
+        <div className="mz-confirm">
+          Nem sikerült az újragenerálás — a korábbi program megmaradt.
+          <div className="mz-confirm-acts">
+            <button type="button" className="mz-minighost" onClick={onRegenerate}>Újra</button>
+            <button type="button" className="mz-minighost" onClick={onDismissError}>Mégse</button>
+          </div>
+        </div>
+      )}
       <div className="mz-edhero rise" style={delay(30)}>
         <div className="mz-edhero-top">
           <span className="mz-eyebrow mz-eb-coral mz-grow">A te blokkod</span>
@@ -106,9 +124,9 @@ export function StepProgram({
             ? 'Gemini · a determinisztikus kereteken belül'
             : 'alap gyakorlat-kiosztás — újragenerálhatod'}
         </div>
-        {state.weeks !== proposal.template.weeks && (
+        {inputChanged(state) && (
           <div className="mz-coachsub">
-            A hossz változott — az ↺ Újragenerálás igazítja hozzá a fázisgörbét.
+            A bemenetek változtak a generálás óta — az újragenerálás a friss napokra/fókuszra rakja össze a programot.
           </div>
         )}
 

@@ -8,8 +8,12 @@ const LM = { mev: 10, mav: 16, mrv: 22 }
 describe('mesoPlan', () => {
   it('derives the split label from the day count', () => {
     expect(splitLine(['Hét', 'Sze', 'Pén', 'Szo'])).toBe('4 nap → Upper / Lower · minden izom 2×/hét')
+    // full body: every training day hits everything — the frequency IS the day count
     expect(splitLine(['Hét', 'Csü'])).toBe('2 nap → Full body · minden izom 2×/hét')
+    expect(splitLine(['Hét', 'Sze', 'Pén'])).toBe('3 nap → Full body · minden izom 3×/hét')
     expect(splitLine(['Hét', 'Kedd', 'Sze', 'Pén', 'Szo', 'Vas'])).toBe('6 nap → Push / Pull / Legs ×2 · minden izom 2×/hét')
+    // out-of-range picks clamp the whole sentence, label included — never a split it isn't getting
+    expect(splitLine(['Hét'])).toBe('2 nap → Full body · minden izom 2×/hét')
   })
 
   it('recommends weekend-inclusive patterns', () => {

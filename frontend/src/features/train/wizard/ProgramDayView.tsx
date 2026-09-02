@@ -4,6 +4,9 @@
 // még nem mentett vázlat végig megmarad, a ‹ Program vissza csak becsukja.
 // Anatómia: típus szerinti tónus, hero (naplevél + típus + szett/perc), izom-
 // cellák, majd a megszokott MesoEditor EGY napra + a gyakorlat-választó lap.
+// A MesoEditor csak EZT a napot szerkeszti (`days={[day]}`), de a HETET a teljes
+// programból olvassa (`weekDays={program}`) — heti sávok, lint, csúcshét-illesztés
+// és a hero heti számai különben egyetlen napot néznének egész hétnek.
 // ============================================================
 import type { GymExercise, MesoDay, MusclePriorities } from '@/data/types'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
@@ -16,6 +19,8 @@ const TONE: Record<string, PageTone> = { coral: 'coral', sage: 'sage', rose: 'ro
 
 interface ProgramDayViewProps {
   day: MesoDay
+  /** The whole 7-day program — the week the edited day is judged against (mezo-d20.14, I2). */
+  program: MesoDay[]
   priorities: MusclePriorities
   volumePerMuscle?: Record<string, { mev: number; mav: number; mrv: number }> | null
   onBack: () => void
@@ -23,7 +28,7 @@ interface ProgramDayViewProps {
   onAdd: () => void
 }
 
-export function ProgramDayView({ day, priorities, volumePerMuscle, onBack, onChange, onAdd }: ProgramDayViewProps) {
+export function ProgramDayView({ day, program, priorities, volumePerMuscle, onBack, onChange, onAdd }: ProgramDayViewProps) {
   const tile = dayTileData(day)
 
   const patch = (exercises: GymExercise[]) => onChange({ ...day, exercises, exerciseCount: exercises.length })
@@ -48,6 +53,7 @@ export function ProgramDayView({ day, priorities, volumePerMuscle, onBack, onCha
           )}
           <MesoEditor
             days={[day]}
+            weekDays={program}
             priorities={priorities}
             volumePerMuscle={volumePerMuscle}
             onAddClick={onAdd}
