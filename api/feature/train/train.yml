@@ -1672,7 +1672,7 @@ paths:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/train/timing-profile:
     get:
-      tags: [train]
+      tags: [Train]
       operationId: getTimingProfile
       summary: The caller's learned workout-timing profile
       description: >
@@ -1686,6 +1686,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TimingProfileResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     MesocycleResponse:

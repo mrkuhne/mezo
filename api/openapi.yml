@@ -2288,7 +2288,7 @@ paths:
   /api/train/timing-profile:
     get:
       tags:
-        - train
+        - Train
       operationId: getTimingProfile
       summary: The caller's learned workout-timing profile
       description: >
@@ -2303,6 +2303,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TimingProfileResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/goals:
     get:
       tags:
