@@ -645,7 +645,12 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(snapshot).contains("[Emberek] (aktív kör, utolsó említés szerint, max 12)\n"
             + "Zita — Mentee · teszt · 2× e héten · még kevés hét az irányhoz\n"
             + "Anna — Mentee · teszt · 1× e héten · még kevés hét az irányhoz");
-        assertThat(snapshot).doesNotContain("Jelölt Jenő").doesNotContain("Teszt említés.");
+        // mezo-x6oa final-review (finding E): locks the privacy boundary the spec names — none of
+        // PersonPopulator's other seeded free-text fields (notes, knownFacts, contactCadenceLabel,
+        // aliases) may ever ride along in the chat snapshot, only the flat spec-format line.
+        assertThat(snapshot).doesNotContain("Jelölt Jenő").doesNotContain("Teszt említés.")
+            .doesNotContain("Teszt személy.").doesNotContain("Teszt fact")
+            .doesNotContain("Havi 1:1").doesNotContain("Marcika");
         assertThat(snapshot.indexOf("[Emberek]")).isGreaterThan(snapshot.indexOf("[Napi gyakorlat]"))
             .isLessThan(snapshot.indexOf("[Mai üzemanyag]"));
     }
