@@ -396,13 +396,35 @@
             </div>
 
             <div class="wst" id="ws4" style="display:none;">
-              <div class="fcard"><label class="flabel">Mi fog közbejönni? · egy akadály</label><input class="fin" value="Röpi-szezon: kedd–csüt este edzés, fáradt lábak"></div>
-              <div class="qcard"><div class="p-eyebrow" style="padding-bottom:5px;">Ha–akkor · Mezo javaslata, írd át</div>
-                <div class="ifthen"><span class="ha">HA</span><span class="grow"><input class="fin" value="röpi-est után fáradt a láb → másnap reggel csak 30 p laza kocogás"></span></div>
-                <div class="ifthen"><span class="ha">HA</span><span class="grow"><input class="fin" value="esik → futópad a teremben, nem hagyom ki"></span></div>
-                <button class="addrow">＋ Még egy ha–akkor</button>
+              <div class="coach" style="margin:0 0 9px;"><span class="dot"></span><span>Írd le, mi szokott közbejönni, és mit teszel akkor. <b>Ha a helyzet bekövetkezik — én látom a naplódból —, visszaidézem a tervedet.</b> Nem jegyzet: szabály, amire figyelek.</span></div>
+
+              <div class="lsec" style="padding-top:2px;"><span class="p-eyebrow">Akadály · mit látok a naplódban</span></div>
+              <div class="chips coral" style="margin-bottom:9px;" id="obstChips">
+                <button class="on">Röpi-szezon · kedd–csüt este</button><button>Kevés alvás edzés előtt</button><button>Esős reggelek</button><button>＋ Saját</button>
               </div>
-              <p class="habnote">Akadály + „ha X, akkor Y” terv — a megvalósítási szándék az egyik legerősebb ismert célelérés-fokozó.</p>
+
+              <div class="lsec" style="padding-top:2px;"><span class="p-eyebrow">Ha–akkor tervek</span><span class="cnt">2 javaslat · 1 saját</span></div>
+
+              <div class="plan on">
+                <div class="prow"><span class="rail ha">Ha</span><textarea class="ptxt" rows="2">röpi-edzést logolsz kedden vagy csütörtökön</textarea></div>
+                <div class="prow"><span class="rail akkor">Akkor</span><textarea class="ptxt" rows="2">másnap reggel csak 30 perc laza kocogás — nem hagyod ki, csak rövidíted</textarea></div>
+                <div class="pfoot"><span class="ptrig"><svg width="12" height="12" viewBox="0 0 100 100"><use href="#i-sport"/></svg>sport-napló · másnap 07:00-kor szólok</span><span class="stch ok">Mezo javaslata</span></div>
+              </div>
+
+              <div class="plan on">
+                <div class="prow"><span class="rail ha">Ha</span><textarea class="ptxt" rows="2">a reggeli check-in energiád 4 vagy kevesebb</textarea></div>
+                <div class="prow"><span class="rail akkor">Akkor</span><textarea class="ptxt" rows="2">a futás 20 percre rövidül — a nyíl így is marad</textarea></div>
+                <div class="pfoot"><span class="ptrig"><svg width="12" height="12" viewBox="0 0 100 100"><use href="#i-checkin"/></svg>check-in · rögtön utána szólok</span><span class="stch ok">Mezo javaslata</span></div>
+              </div>
+
+              <div class="plan own">
+                <div class="prow"><span class="rail ha">Ha</span><textarea class="ptxt" rows="2">esik az eső</textarea></div>
+                <div class="prow"><span class="rail akkor">Akkor</span><textarea class="ptxt" rows="2">futópad a teremben</textarea></div>
+                <div class="pfoot"><span class="ptrig mute">nincs hozzá jelem · ezt te tartod</span><span class="stch" style="background:rgba(43,33,24,0.06);color:#6E6257;">saját</span></div>
+              </div>
+
+              <button class="addrow" data-toast="Új ha–akkor kártya">＋ Még egy ha–akkor</button>
+              <p class="habnote">„Ha X, akkor Y” — a megvalósítási szándék az egyik legerősebb ismert célelérés-fokozó. Elég 1–3.</p>
               <div class="shrow"><button class="ghost" data-wnext="3">← Vissza</button><button class="cta" data-wnext="5">Összegzés →</button></div>
             </div>
 

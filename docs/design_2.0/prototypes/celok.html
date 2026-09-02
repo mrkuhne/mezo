@@ -695,6 +695,28 @@
     .bsheet, .bsheet-back, .togg::after, .toast, .wprog i { transition: none; }
   }
 </style>
+<style>
+  /* ============ HA–AKKOR kártyák ============ */
+  .plan { border-radius: 16px; padding: 9px 10px 8px; margin-bottom: 8px; background: #fff;
+    border: 1.5px solid rgba(43, 33, 24, 0.08);
+    box-shadow: 0 12px 22px -15px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .plan.on { border-color: #8FAF7E; background: linear-gradient(140deg, #EEF4E8, #FFFFFF 62%); }
+  .plan.own { border-style: dashed; }
+  .prow { display: flex; gap: 8px; align-items: flex-start; }
+  .prow + .prow { margin-top: 5px; padding-top: 6px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .rail { flex: none; width: 40px; font-size: 7px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+    border-radius: 6px; padding: 3px 0; text-align: center; margin-top: 3px; }
+  .rail.ha { background: rgba(168, 74, 38, 0.1); color: #A84A26; }
+  .rail.akkor { background: rgba(110, 139, 94, 0.16); color: #4E6B42; }
+  .ptxt { flex: 1; min-width: 0; border: none; background: transparent; font-family: inherit; font-size: 10.5px; line-height: 1.4;
+    color: #2B2118; resize: none; padding: 2px 0; outline: none; }
+  .ptxt:focus { background: rgba(255, 255, 255, 0.7); border-radius: 6px; box-shadow: 0 0 0 2px rgba(255, 107, 74, 0.35); }
+  .pfoot { display: flex; align-items: center; gap: 6px; margin-top: 7px; padding-top: 6px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .ptrig { display: inline-flex; align-items: center; gap: 4px; font-size: 8px; font-weight: 700; color: #6E6257; }
+  .ptrig svg { flex: none; }
+  .ptrig.mute { color: #A2958A; font-weight: 600; }
+  .pfoot .stch { margin-left: auto; }
+</style>
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
@@ -1753,13 +1775,35 @@
             </div>
 
             <div class="wst" id="ws4" style="display:none;">
-              <div class="fcard"><label class="flabel">Mi fog közbejönni? · egy akadály</label><input class="fin" value="Röpi-szezon: kedd–csüt este edzés, fáradt lábak"></div>
-              <div class="qcard"><div class="p-eyebrow" style="padding-bottom:5px;">Ha–akkor · Mezo javaslata, írd át</div>
-                <div class="ifthen"><span class="ha">HA</span><span class="grow"><input class="fin" value="röpi-est után fáradt a láb → másnap reggel csak 30 p laza kocogás"></span></div>
-                <div class="ifthen"><span class="ha">HA</span><span class="grow"><input class="fin" value="esik → futópad a teremben, nem hagyom ki"></span></div>
-                <button class="addrow">＋ Még egy ha–akkor</button>
+              <div class="coach" style="margin:0 0 9px;"><span class="dot"></span><span>Írd le, mi szokott közbejönni, és mit teszel akkor. <b>Ha a helyzet bekövetkezik — én látom a naplódból —, visszaidézem a tervedet.</b> Nem jegyzet: szabály, amire figyelek.</span></div>
+
+              <div class="lsec" style="padding-top:2px;"><span class="p-eyebrow">Akadály · mit látok a naplódban</span></div>
+              <div class="chips coral" style="margin-bottom:9px;" id="obstChips">
+                <button class="on">Röpi-szezon · kedd–csüt este</button><button>Kevés alvás edzés előtt</button><button>Esős reggelek</button><button>＋ Saját</button>
               </div>
-              <p class="habnote">Akadály + „ha X, akkor Y” terv — a megvalósítási szándék az egyik legerősebb ismert célelérés-fokozó.</p>
+
+              <div class="lsec" style="padding-top:2px;"><span class="p-eyebrow">Ha–akkor tervek</span><span class="cnt">2 javaslat · 1 saját</span></div>
+
+              <div class="plan on">
+                <div class="prow"><span class="rail ha">Ha</span><textarea class="ptxt" rows="2">röpi-edzést logolsz kedden vagy csütörtökön</textarea></div>
+                <div class="prow"><span class="rail akkor">Akkor</span><textarea class="ptxt" rows="2">másnap reggel csak 30 perc laza kocogás — nem hagyod ki, csak rövidíted</textarea></div>
+                <div class="pfoot"><span class="ptrig"><svg width="12" height="12" viewBox="0 0 100 100"><use href="#i-sport"/></svg>sport-napló · másnap 07:00-kor szólok</span><span class="stch ok">Mezo javaslata</span></div>
+              </div>
+
+              <div class="plan on">
+                <div class="prow"><span class="rail ha">Ha</span><textarea class="ptxt" rows="2">a reggeli check-in energiád 4 vagy kevesebb</textarea></div>
+                <div class="prow"><span class="rail akkor">Akkor</span><textarea class="ptxt" rows="2">a futás 20 percre rövidül — a nyíl így is marad</textarea></div>
+                <div class="pfoot"><span class="ptrig"><svg width="12" height="12" viewBox="0 0 100 100"><use href="#i-checkin"/></svg>check-in · rögtön utána szólok</span><span class="stch ok">Mezo javaslata</span></div>
+              </div>
+
+              <div class="plan own">
+                <div class="prow"><span class="rail ha">Ha</span><textarea class="ptxt" rows="2">esik az eső</textarea></div>
+                <div class="prow"><span class="rail akkor">Akkor</span><textarea class="ptxt" rows="2">futópad a teremben</textarea></div>
+                <div class="pfoot"><span class="ptrig mute">nincs hozzá jelem · ezt te tartod</span><span class="stch" style="background:rgba(43,33,24,0.06);color:#6E6257;">saját</span></div>
+              </div>
+
+              <button class="addrow" data-toast="Új ha–akkor kártya">＋ Még egy ha–akkor</button>
+              <p class="habnote">„Ha X, akkor Y” — a megvalósítási szándék az egyik legerősebb ismert célelérés-fokozó. Elég 1–3.</p>
               <div class="shrow"><button class="ghost" data-wnext="3">← Vissza</button><button class="cta" data-wnext="5">Összegzés →</button></div>
             </div>
 

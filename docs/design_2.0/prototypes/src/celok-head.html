@@ -695,3 +695,25 @@
     .bsheet, .bsheet-back, .togg::after, .toast, .wprog i { transition: none; }
   }
 </style>
+<style>
+  /* ============ HA–AKKOR kártyák ============ */
+  .plan { border-radius: 16px; padding: 9px 10px 8px; margin-bottom: 8px; background: #fff;
+    border: 1.5px solid rgba(43, 33, 24, 0.08);
+    box-shadow: 0 12px 22px -15px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .plan.on { border-color: #8FAF7E; background: linear-gradient(140deg, #EEF4E8, #FFFFFF 62%); }
+  .plan.own { border-style: dashed; }
+  .prow { display: flex; gap: 8px; align-items: flex-start; }
+  .prow + .prow { margin-top: 5px; padding-top: 6px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .rail { flex: none; width: 40px; font-size: 7px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+    border-radius: 6px; padding: 3px 0; text-align: center; margin-top: 3px; }
+  .rail.ha { background: rgba(168, 74, 38, 0.1); color: #A84A26; }
+  .rail.akkor { background: rgba(110, 139, 94, 0.16); color: #4E6B42; }
+  .ptxt { flex: 1; min-width: 0; border: none; background: transparent; font-family: inherit; font-size: 10.5px; line-height: 1.4;
+    color: #2B2118; resize: none; padding: 2px 0; outline: none; }
+  .ptxt:focus { background: rgba(255, 255, 255, 0.7); border-radius: 6px; box-shadow: 0 0 0 2px rgba(255, 107, 74, 0.35); }
+  .pfoot { display: flex; align-items: center; gap: 6px; margin-top: 7px; padding-top: 6px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .ptrig { display: inline-flex; align-items: center; gap: 4px; font-size: 8px; font-weight: 700; color: #6E6257; }
+  .ptrig svg { flex: none; }
+  .ptrig.mute { color: #A2958A; font-weight: 600; }
+  .pfoot .stch { margin-left: auto; }
+</style>
