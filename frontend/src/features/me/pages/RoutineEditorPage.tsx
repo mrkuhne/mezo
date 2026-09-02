@@ -42,7 +42,7 @@ export function RoutineEditorPage() {
   return (
     // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): gold shell + eyebrow/title block.
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/me/growth')} label="‹ Growth" />
+      <PageHead onBack={() => navigate('/me/growth/rutin')} label="‹ Rutin" />
       <PageBody>
       <div style={{ padding: '2px 2px 12px' }}>
         <span className="mz-eyebrow">Growth · Rutin</span>

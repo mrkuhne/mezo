@@ -4394,6 +4394,7 @@ button.mz-tile:active { transform: scale(0.96); }
 
 .mz-tile-top { display: flex; align-items: center; }
 .mz-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.mz-mut { color: var(--mz-ink-soft); }
 .mz-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
 /* The counted sibling of .mz-dot (prototype `.badge.unread`). A number already carries the
    "there is something here" signal, so a tile renders one or the other, never both. */
