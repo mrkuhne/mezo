@@ -4,11 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.character.detector.CharacterDetector;
 import io.mrkuhne.mezo.feature.character.detector.CheckinGapDetector;
+import io.mrkuhne.mezo.feature.character.detector.ChatTopicShiftDetector;
 import io.mrkuhne.mezo.feature.character.detector.DetectorRegistry;
+import io.mrkuhne.mezo.feature.character.detector.ExperimentOutcomeLedgerDetector;
 import io.mrkuhne.mezo.feature.character.detector.JournalNoteDetector;
 import io.mrkuhne.mezo.feature.character.detector.JournalSilenceDetector;
+import io.mrkuhne.mezo.feature.character.detector.KnowledgeRejectionPatternDetector;
 import io.mrkuhne.mezo.feature.character.detector.LoggingGapDetector;
+import io.mrkuhne.mezo.feature.character.detector.MentionContextShiftDetector;
+import io.mrkuhne.mezo.feature.character.detector.PeopleMoodLinkDetector;
+import io.mrkuhne.mezo.feature.character.detector.PredictionCalibrationDetector;
+import io.mrkuhne.mezo.feature.character.detector.QuestCompletionCalibrationDetector;
 import io.mrkuhne.mezo.feature.character.detector.UnderLoggingDetector;
+import io.mrkuhne.mezo.feature.character.detector.WeekendGapDetector;
+import io.mrkuhne.mezo.feature.character.service.CharacterMetaReads;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -35,6 +44,15 @@ class CharacterApiSwitchOffIT extends ApiIntegrationTest {
         assertThat(context.getBeanProvider(JournalSilenceDetector.class).getIfAvailable()).isNull();
         assertThat(context.getBeanProvider(JournalNoteDetector.class).getIfAvailable()).isNull();
         assertThat(context.getBeanProvider(UnderLoggingDetector.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(PeopleMoodLinkDetector.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(MentionContextShiftDetector.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(WeekendGapDetector.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(ChatTopicShiftDetector.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(KnowledgeRejectionPatternDetector.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(PredictionCalibrationDetector.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(QuestCompletionCalibrationDetector.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(ExperimentOutcomeLedgerDetector.class).getIfAvailable()).isNull();
+        assertThat(context.getBeanProvider(CharacterMetaReads.class).getIfAvailable()).isNull();
         assertThat(context.getBeansOfType(CharacterDetector.class)).isEmpty();
     }
 

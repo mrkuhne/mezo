@@ -139,9 +139,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             Pattern.compile("\\[fake-char-proposals:(\\[.*])]", Pattern.DOTALL);
 
     /** Resolves KonziliumProposalRound's trailing "Alapértelmezett dimenzió: <key>" line so the
-     *  canned proposal always names a dimension the round's own validation will accept. */
+     *  canned proposal always names a dimension the round's own validation will accept.
+     *  {@code [a-z-]+} — hyphenated keys (self-audit, round 4). */
     private static final Pattern PROPOSAL_DEFAULT_DIMENSION =
-            Pattern.compile("Alapértelmezett dimenzió: ([a-z]+)");
+            Pattern.compile("Alapértelmezett dimenzió: ([a-z-]+)");
 
     /** Scripted proposal ECHO (mezo-1gim.10): {@code [fake-char-proposals-echo]} planted in an
      *  observation's TEXT returns the FULL assembled user message (JSON-escaped) as a single NEW

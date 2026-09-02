@@ -22,6 +22,7 @@ they inline come from `../assets/`.
 | `fuel-logolas.html` | — (not yet published; mezo-byo1 design source) |
 | `fuel-log-multinap.html` | — (not yet published; A /fuel/log nap-léptetője + Pótlás-hangulat + hub-csali — mezo-1j3z) |
 | `fuel-log-oldal.html` | — (not yet published; A logolás saját oldala a helyben nyíló composer helyett — /fuel/log/uj) |
+| `fuel-logolas-2.1.html` | https://claude.ai/code/artifact/f4af0e21-8293-4732-a9e2-2a2c48a3427e (Logolás 2.1 — Keret-hero a /fuel/log-on, AI score pill + kcal, rost gyűrű, kontextus chip, breakdown sheet — mezo-zeeq) |
 | `mezo-chat.html` | https://claude.ai/code/artifact/ae02e856-1e3d-4c60-aad5-842e75190538 |
 | `edzes-review.html` | https://claude.ai/code/artifact/66f5a4de-8afe-48ff-b04f-e861b3ba22ee |
 | `fuel-mely.html` | https://claude.ai/code/artifact/d5c6d770-a067-4642-baa3-9dee63613718 |

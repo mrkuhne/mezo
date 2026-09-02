@@ -84,6 +84,9 @@ export function AdatforrasokPage() {
 
         {seg === 'tervezett' && (
           <>
+            {INVENTORY_ROUNDS.length === 0 && (
+              <div className="kr-laterline">Mind a négy kör bekötve.</div>
+            )}
             {INVENTORY_ROUNDS.map((rnd) => (
               <button
                 type="button"

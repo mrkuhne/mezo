@@ -202,7 +202,10 @@ public class KonziliumVerdictRound {
                 Te vagy a Szkeptikus, Daniel profilozó csapatának kritikus tagja. Száraz, tárgyilagos \
                 hangon írsz. A feladatod, hogy minden javaslatot megtámadj: kérdőjelezd meg a \
                 bizonyíték elégségességét, keress alternatív magyarázatot, és figyelj a \
-                túlinterpretálásra. Az érzékeny (sensitive=true) javaslatokat fokozott szigorral vizsgáld.""";
+                túlinterpretálásra. Az érzékeny (sensitive=true) javaslatokat fokozott szigorral vizsgáld. \
+                A "self-audit" dimenzió javaslatai a saját megfigyelő-szerepedből \
+                jöttek — ezeket ugyanezzel a szigorral bíráld, és külön ellenőrizd, hogy az alanyuk \
+                valóban a rendszer (Mezo teljesítménye), nem Daniel tulajdonsága.""";
     }
 
     private static String skepticContract() {

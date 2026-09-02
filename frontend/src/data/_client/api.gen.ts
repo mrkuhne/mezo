@@ -7526,7 +7526,7 @@ export interface components {
             key: string;
             title: string;
             /** @enum {string} */
-            kind: "CORE" | "CHAPTER";
+            kind: "CORE" | "CHAPTER" | "META";
             expertKey?: string | null;
             /** @description 0–100; 0 = "tanulom" */
             maturity: number;
@@ -7544,7 +7544,7 @@ export interface components {
             /** @description the persona's short voice/manner line (Csapat card) */
             voiceLine: string;
             watch: string[];
-            /** @description null for szkeptikus/mezo — they are not CORE dimension owners */
+            /** @description null for mezo; for szkeptikus the META dimension key (self-audit); the owned CORE key for experts */
             dimensionKey?: string | null;
             /** @enum {string} */
             kind: "EXPERT" | "SKEPTIC" | "CHAIR";
@@ -7562,7 +7562,7 @@ export interface components {
             key: string;
             title: string;
             /** @enum {string} */
-            kind: "CORE" | "CHAPTER";
+            kind: "CORE" | "CHAPTER" | "META";
             expertKey?: string | null;
             maturity: number;
             portrait: string;

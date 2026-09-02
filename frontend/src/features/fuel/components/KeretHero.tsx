@@ -109,12 +109,15 @@ function RingBody({ ring, filled, gv, gvTarget }: { ring: RingVM; filled: boolea
   )
 }
 
-export function KeretHero({ vm, onChip, onWaterRing, durationMs = 2000 }: {
+export function KeretHero({ vm, onChip, onWaterRing, durationMs = 2000, ofLine }: {
   vm: KeretHeroVM
   onChip: (section: EnergySection) => void
   onWaterRing: () => void
   /** Count-up duration in ms — test-only override (the CountUp.tsx precedent); default 2000. */
   durationMs?: number
+  /** Optional line under the number — the /fuel/log page's "n/m ablak kész · x kcal még belefér"
+   *  (mezo-zeeq). The hub passes nothing and keeps its v3 declutter (no of-line at all). */
+  ofLine?: string
 }) {
   const reduced = useReducedMotion()
   // Hub v3 declutter (fuel iterations §2, Daniel: "nem kell az eddig x/y kalória, csak
@@ -136,6 +139,7 @@ export function KeretHero({ vm, onChip, onWaterRing, durationMs = 2000 }: {
         {fmt(displayKcal)}
         <span className="khero-u"> kcal ma</span>
       </div>
+      {ofLine && <div className="khero-of">{ofLine}</div>}
       <div className="khero-dayseg">
         {vm.segments.map((s, i) => (
           <i key={i} className={s.toneAlt ? 'khero-seg khero-seg-alt' : 'khero-seg'} style={{ width: `${s.widthPct}%` }} />

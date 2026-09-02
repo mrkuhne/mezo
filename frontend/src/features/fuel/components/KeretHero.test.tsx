@@ -225,3 +225,15 @@ describe('KeretHero — rings', () => {
     expect(waterBtn).not.toHaveTextContent('ml')
   })
 })
+
+describe('KeretHero — ofLine (the /fuel/log page, mezo-zeeq)', () => {
+  it('renders the of-line only when given', () => {
+    stubReduced()
+    const { container, rerender } = render(
+      <KeretHero vm={VM()} onChip={vi.fn()} onWaterRing={vi.fn()} ofLine="4/6 ablak kész · 1 081 kcal még belefér" />,
+    )
+    expect(container.querySelector('.khero-of')).toHaveTextContent('4/6 ablak kész · 1 081 kcal még belefér')
+    rerender(<KeretHero vm={VM()} onChip={vi.fn()} onWaterRing={vi.fn()} />)
+    expect(container.querySelector('.khero-of')).toBeNull()
+  })
+})
