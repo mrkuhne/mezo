@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.ClosingBlockGate;
 import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
+import io.mrkuhne.mezo.feature.train.TimingProfileGate;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import io.mrkuhne.mezo.feature.train.config.TimingProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
@@ -114,6 +115,14 @@ public class WorkoutService {
     // Actual-duration measurement (mezo-1jm8): gap/lead-in caps consumed when finishWorkout
     // derives activeSeconds from the session's logged set timestamps.
     private final TimingProperties timingProperties;
+    // Learned workout-timing profile (mezo-dzbm): a SEPARATE bean (mirrors
+    // workoutAutoCloseService/closingBlockService), called after the medal try/catch below.
+    // TimingProfileService.learnFrom carries plain method-level @Transactional (REQUIRED), so it
+    // joins THIS method's already-open transaction and sees the finishedAt write above. The gate
+    // bean exists ONLY when mezo.feature.timing-profile.enabled=true (mirrors
+    // hypertrophyGate/closingBlockGate).
+    private final ObjectProvider<TimingProfileGate> timingProfileGate;
+    private final TimingProfileService timingProfileService;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -807,6 +816,16 @@ public class WorkoutService {
             log.warn("Medal derivation failed for session {} — finishing the workout anyway",
                 instance.getId(), e);
             base.setMedals(List.of());
+        }
+        // Learning is derived and decorative, exactly like the medals above: the completion write
+        // must not roll back because the profile update blew up. Gated — off ⇒ nothing is learned.
+        if (timingProfileGate.getIfAvailable() != null) {
+            try {
+                timingProfileService.learnFrom(createdBy, instance.getId());
+            } catch (RuntimeException e) {
+                log.warn("Timing-profile learning failed for session {} — finishing anyway",
+                    instance.getId(), e);
+            }
         }
         return base;
     }

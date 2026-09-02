@@ -255,4 +255,9 @@ public class FeaturesConfiguration {
     /** Emberek szekció (mezo-06o0) — az automata mention-detektálás rétege. Off ⇒ egyetlen
      *  detektáló listener-bean sem létezik; a kézi /api/people felület ettől függetlenül él. */
     public static final String PEOPLE_SWITCH = "mezo.feature.people.enabled";
+
+    /** Learned workout-timing profile (mezo-dzbm) — off ⇒ no profile is ever written and
+     *  GET /api/train/timing-profile returns the static config seeds unchanged. Measurement
+     *  (slice 1) is independent and keeps running either way. */
+    public static final String TIMING_PROFILE_SWITCH = "mezo.feature.timing-profile.enabled";
 }

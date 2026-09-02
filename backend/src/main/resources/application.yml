@@ -172,6 +172,11 @@ mezo:
     # additionally needs the companion switch (CompanionLlm port).
     meso-review:
       enabled: true
+    # Learned workout-timing profile (mezo-dzbm) — off -> no profile is ever written and
+    # GET /api/train/timing-profile returns the static config seeds unchanged. Measurement
+    # (slice 1, mezo.train.timing) is independent and keeps running either way.
+    timing-profile:
+      enabled: true
     # Meso plan generator AI half (mesocycle wizard redesign) — Gemini exercise pick inside the
     # deterministic frames; needs the companion switch too. Off -> deterministic filler, llmUsed=false.
     meso-plan-ai:
