@@ -21,3 +21,9 @@ test('get survives a throwing storage (private mode) by returning the in-memory 
   expect(tokenStore.get()).toBe('mem')
   spy.mockRestore()
 })
+
+test('get reflects a token written by another tab (no stale cache)', () => {
+  tokenStore.set('a')
+  localStorage.setItem(TOKEN_KEY, 'b')
+  expect(tokenStore.get()).toBe('b')
+})

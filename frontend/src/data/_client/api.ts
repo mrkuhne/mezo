@@ -36,7 +36,10 @@ const PUBLIC_AUTH_PATHS = ['/api/auth/login', '/api/auth/register', '/api/auth/c
  * A 403 AUTH_FORBIDDEN (owner-only endpoint) is a permission problem, not a session one.
  */
 function handleAuthFailure(path: string, status: number, messages: SystemMessage[]): void {
-  if (PUBLIC_AUTH_PATHS.includes(path)) return
+  // Normalise away a query string / trailing slash so a caller passing
+  // '/api/auth/login?x=1' or '/api/auth/login/' still matches the exemption.
+  const normalizedPath = path.split('?')[0].replace(/\/$/, '')
+  if (PUBLIC_AUTH_PATHS.includes(normalizedPath)) return
   if (status === 401) { tokenStore.clear(); authEvents.emitSignedOut('expired'); return }
   if (status === 403 && messages.some((m) => m.code === 'AUTH_ACCOUNT_DISABLED')) {
     tokenStore.clear(); authEvents.emitSignedOut('disabled')
