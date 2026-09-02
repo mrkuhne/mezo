@@ -1,0 +1,1440 @@
+<meta charset="utf-8">
+<title>Mezo-kalauz</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  :root {
+    --ground: #EFE8DD; --ground-2: #E7DFD2; --card: #FFFFFF;
+    --ink: #2B2118; --ink-2: #6E6257; --accent: #A84A26;
+    --line: rgba(43, 33, 24, 0.12);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #191614; --ground-2: #211D19; --card: #262119;
+      --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+      --line: rgba(240, 233, 225, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614; --ground-2: #211D19; --card: #262119;
+    --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+    --line: rgba(240, 233, 225, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; padding: 48px 24px 64px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; text-wrap: balance; }
+  h2.sec { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 56px 0 6px; text-wrap: balance; }
+  .lede { max-width: 62ch; color: var(--ink-2); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 32px; display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start; }
+  .phonecol { display: grid; gap: 12px; justify-items: center; }
+  .phonecol .cap { font-size: 13px; color: var(--ink-2); max-width: 330px; text-align: center; }
+  .phonecol .cap b { color: var(--ink); font-weight: 700; display: block; font-size: 14px; }
+  .phonecol .cap .verdict { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .verdict.rec { background: rgba(143, 175, 126, 0.22); color: #4E6B42; }
+  .verdict.alt { background: rgba(108, 95, 163, 0.16); color: #5D4FA0; }
+  .verdict.t0 { background: rgba(201, 150, 46, 0.18); color: #A8801F; }
+  aside { max-width: 360px; display: grid; gap: 22px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+  aside ul, aside ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+  table.tiers { border-collapse: collapse; font-size: 13.5px; width: 100%; }
+  table.tiers th, table.tiers td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.tiers th { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); }
+  table.tiers td b { font-weight: 700; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .pill.auto { background: rgba(255, 107, 74, 0.14); color: #A84A26; }
+  .pill.q { background: rgba(201, 150, 46, 0.18); color: #A8801F; }
+
+  /* ============ PHONE ============ */
+  .phone {
+    width: 330px; height: 694px; flex: none;
+    background: #1D1712; border-radius: 52px; padding: 11px;
+    box-shadow: 0 30px 60px -22px rgba(29, 23, 18, 0.5);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.4;
+    color: #2B2118;
+    background: linear-gradient(180deg, #FDFAF4 0%, #F8F1E6 100%);
+  }
+  .isl { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 82px; height: 22px; border-radius: 999px; background: #1D1712; z-index: 30; }
+  .p-status { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px 2px; font-size: 11px; font-weight: 600; position: relative; z-index: 14; }
+  .p-body { flex: 1; min-height: 0; overflow: hidden; padding: 6px 14px; display: flex; flex-direction: column; gap: 9px; }
+  .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .grow { flex: 1; min-width: 0; }
+  .mrow { display: flex; align-items: center; gap: 8px; }
+  .mut { color: #6E6257; }
+  .big { font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .float3d {
+    background: #FFFFFF; border-radius: 18px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 18px 32px -16px rgba(43, 33, 24, 0.32), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .cta {
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    border-radius: 999px; padding: 7px 16px; font-size: 10.5px; font-weight: 600; flex: none;
+    box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); border: none; font-family: inherit; cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .cta:active { transform: scale(0.95); }
+  .cta:focus-visible, .ghost:focus-visible, .roundbtn:focus-visible, .backbtn:focus-visible, .kz-dot:focus-visible, .kz-chip:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 7px 12px; font-size: 10.5px; font-weight: 600; flex: none; cursor: pointer; }
+  .ghost.link { background: none; color: #A2958A; padding-left: 4px; }
+
+  /* header */
+  .roundbtn {
+    width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+    background: rgba(255, 255, 255, 0.85); font-family: inherit; cursor: pointer;
+    display: grid; place-items: center; position: relative; flex: none;
+    box-shadow: 0 8px 16px -10px rgba(43, 33, 24, 0.3);
+  }
+  .roundbtn.q { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 15px; font-weight: 500; color: #A84A26; }
+  .roundbtn > .most { position: absolute; top: 0; right: 0; width: 8px; height: 8px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px #FDFAF4; display: none; }
+  .roundbtn.new > .most { display: block; }
+  .badge {
+    position: absolute; top: -3px; right: -4px; min-width: 15px; height: 15px;
+    border-radius: 999px; background: linear-gradient(135deg, #FF7A55, #FF5B36);
+    color: #fff; font-size: 8.5px; font-weight: 700;
+    display: grid; place-items: center; padding: 0 4px;
+    box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.6);
+  }
+  .avatar-ring {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: conic-gradient(#FF6B4A 68%, rgba(43, 33, 24, 0.1) 0);
+    display: grid; place-items: center;
+  }
+  .avatar-ring .in { width: 27px; height: 27px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center; }
+
+  /* fuel hub content */
+  .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
+  .play .rise { animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  .hero { padding: 12px 13px; background: linear-gradient(140deg, #F2F7EC, #FFFFFF 70%); }
+  .hero .ring { width: 58px; height: 58px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: conic-gradient(#8FAF7E 0 62%, rgba(43, 33, 24, 0.08) 0); }
+  .hero .ring .hole { width: 44px; height: 44px; border-radius: 50%; background: #fff; display: grid; place-items: center; }
+  .mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .tile {
+    border-radius: 17px; padding: 10px 11px; min-height: 84px;
+    display: flex; flex-direction: column; position: relative;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4), box-shadow 0.25s ease; cursor: pointer;
+  }
+  .tile:active { transform: scale(0.96); }
+  .t-log { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .t-plan { background: #FFFFFF; }
+  .t-stack { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .t-recept { background: linear-gradient(150deg, #FFF1D6, #FFFAF0); }
+  .t-kamra { background: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
+  .t-gyogy { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); }
+  .spotwrap { flex: 1; display: grid; place-items: center; padding: 4px 0; }
+  .tile-more { font-size: 9.5px; font-weight: 600; text-align: center; }
+  .tile-line { font-size: 10px; font-weight: 600; text-align: center; }
+  /* spotlight state — a csempe a hátlap fölé emelkedik, arany gyűrűvel */
+  .tile.spot-on { z-index: 16; transform: scale(1.03);
+    box-shadow: 0 0 0 3px #C9962E, 0 0 0 7px rgba(201, 150, 46, 0.28), 0 18px 32px -14px rgba(43, 33, 24, 0.4); }
+  .tile.spot-on::after { content: ""; position: absolute; inset: -7px; border-radius: 22px; pointer-events: none;
+    animation: spotpulse 1.8s ease-in-out infinite; }
+  @keyframes spotpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0.35); } 50% { box-shadow: 0 0 0 6px rgba(201, 150, 46, 0); } }
+
+  /* tab bar */
+  .tabbar {
+    margin: 4px 12px 12px; padding: 8px 14px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 12px 24px -12px rgba(43, 33, 24, 0.3); position: relative; z-index: 9;
+  }
+  .mtab { text-align: center; font-size: 9.5px; font-weight: 600; color: #A2958A; display: grid; gap: 2px; justify-items: center; transition: transform 0.25s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .mtab.on { color: #A84A26; }
+  .mtab.off svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
+  .mtab.lit { transform: translateY(-4px) scale(1.12); color: #A84A26; }
+  .mtab.lit svg { filter: none; }
+  .floatfab { position: absolute; right: 14px; bottom: 88px; width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; display: grid; place-items: center; font-size: 22px; font-weight: 300;
+    cursor: pointer; z-index: 9; box-shadow: 0 12px 24px -6px rgba(255, 91, 54, 0.65); animation: fabglow 3.2s ease-in-out 1.6s infinite; }
+  @keyframes fabglow {
+    0%, 100% { box-shadow: 0 12px 24px -6px rgba(255, 91, 54, 0.65); }
+    50% { box-shadow: 0 12px 30px -3px rgba(255, 91, 54, 0.9); }
+  }
+  .homebar { width: 118px; height: 4px; border-radius: 999px; background: #2B2118; margin: 2px auto 9px; flex: none; opacity: 0.85; position: relative; z-index: 14; }
+
+  /* ============ KALAUZ — közös nyelv ============ */
+  .kz-q { font-size: 8.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #A84A26; }
+  .kz-q .n { color: #A2958A; margin-right: 6px; font-variant-numeric: tabular-nums; }
+  .kz-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; margin-top: 3px; text-wrap: balance; }
+  .kz-voice { font-size: 12px; font-weight: 300; line-height: 1.5; margin-top: 6px; color: #2B2118; }
+  .kz-voice b { font-weight: 600; }
+  .kz-art { display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 92px; margin: 4px 0 2px; }
+  .kz-art .orb { animation: orbbreathe 4.5s ease-in-out infinite; transform-origin: 50% 90%; }
+  @keyframes orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+  .kz-art .spot { filter: drop-shadow(0 10px 12px rgba(43, 33, 24, 0.18)); }
+  .kz-art.solo { justify-content: center; }
+  /* fogalom-kártya: a laikus-réteg */
+  .fogalom { margin-top: 8px; border-radius: 13px; padding: 8px 11px 9px; background: linear-gradient(150deg, #FFF6EC, #FFFDF9);
+    border: 0.5px solid rgba(168, 74, 38, 0.18); }
+  .fogalom .term { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 13px; color: #A84A26; }
+  .fogalom .def { font-size: 10.5px; font-weight: 300; margin-top: 2px; color: #2B2118; }
+  .fogalom .def b { font-weight: 600; }
+  /* kereszthatás-chipek */
+  .kz-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .kz-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff;
+    font-family: inherit; border-radius: 999px; padding: 4px 10px 4px 6px; font-size: 9.5px; font-weight: 600; color: #2B2118; cursor: pointer; }
+  .kz-chip svg { flex: none; }
+  .kz-chip .to { color: #A2958A; font-weight: 500; }
+  .kz-show { margin-top: 9px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(201, 150, 46, 0.5); background: rgba(201, 150, 46, 0.1);
+    color: #A8801F; border-radius: 999px; padding: 5px 11px; font-size: 9.5px; font-weight: 700; font-family: inherit; cursor: pointer; }
+
+  /* ============ A) LAPOZÓ SHEET ============ */
+  .kz-back { position: absolute; inset: 0; z-index: 15; border-radius: 42px; background: rgba(29, 23, 18, 0.38); opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+  .kz-back.open { opacity: 1; pointer-events: auto; }
+  .kz-sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 16;
+    background: linear-gradient(180deg, #FFFDF9 0%, #FDFAF4 100%);
+    border-radius: 26px 26px 34px 34px; padding: 8px 14px 14px;
+    transform: translateY(calc(100% + 80px)); visibility: hidden;
+    transition: transform 0.32s cubic-bezier(0.25, 0.8, 0.35, 1), visibility 0s 0.32s;
+    box-shadow: 0 -12px 44px rgba(29, 23, 18, 0.3); display: flex; flex-direction: column; }
+  .kz-sheet.open { transform: none; visibility: visible; transition: transform 0.32s cubic-bezier(0.25, 0.8, 0.35, 1); }
+  .sh-grab { width: 34px; height: 4px; border-radius: 999px; background: rgba(43, 33, 24, 0.16); margin: 2px auto 8px; flex: none; }
+  .kz-top { display: flex; align-items: center; gap: 8px; }
+  .kz-tag { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .kz-tag b { color: #4E6B42; }
+  .sh-x { margin-left: auto; border: none; background: rgba(43, 33, 24, 0.06); width: 26px; height: 26px; border-radius: 50%;
+    font-size: 12px; color: #6E6257; cursor: pointer; font-family: inherit; flex: none; }
+  .kz-track { position: relative; height: 296px; margin-top: 6px; overflow: hidden; }
+  .kz-card { position: absolute; inset: 0; padding: 2px 2px 0; opacity: 0; transform: translateX(28px); pointer-events: none;
+    transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.22, 0.9, 0.32, 1.1); }
+  .kz-card.on { opacity: 1; transform: none; pointer-events: auto; }
+  .kz-card.gone { transform: translateX(-28px); }
+  .kz-dots { display: flex; justify-content: center; gap: 5px; margin: 6px 0 10px; }
+  .kz-dot { width: 6px; height: 6px; border-radius: 999px; background: rgba(43, 33, 24, 0.16); border: none; padding: 0; cursor: pointer; transition: width 0.25s ease, background 0.25s ease; }
+  .kz-dot.on { width: 18px; background: #A84A26; }
+  .kz-dot.seen { background: rgba(168, 74, 38, 0.45); }
+  .kz-foot { display: flex; align-items: center; gap: 8px; }
+  .kz-foot .cta { margin-left: auto; padding: 8px 18px; }
+  /* peek: a sheet lehúzódik egy sávvá, hogy a spotlight látsszon */
+  .kz-sheet.peek { transform: translateY(calc(100% - 64px)); }
+  .kz-sheet .kz-peekbar { display: none; align-items: center; gap: 9px; height: 44px; }
+  .kz-sheet.peek .kz-peekbar { display: flex; }
+  .kz-sheet.peek .kz-top, .kz-sheet.peek .kz-track, .kz-sheet.peek .kz-dots, .kz-sheet.peek .kz-foot { visibility: hidden; }
+  .kz-peekbar .txt { font-size: 10.5px; font-weight: 300; flex: 1; }
+  .kz-peekbar .txt b { font-weight: 600; }
+
+  /* ============ B) KALAUZ-OLDAL ============ */
+  .page {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; padding-top: 34px;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    background: linear-gradient(180deg, #E4EEDB 0%, #FDFAF4 36%);
+  }
+  .page.open { transform: none; }
+  .page-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .backbtn {
+    border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px 6px 9px; font-size: 11px; font-weight: 600; color: #2B2118;
+    display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3);
+  }
+  .page-hero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 6px 14px 10px; }
+  .page-hero .nm { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .page-hero .sb { font-size: 10.5px; color: #6E6257; font-weight: 300; max-width: 26ch; }
+  .page-hero .art { display: flex; align-items: flex-end; gap: 4px; }
+  .page-hero .art .orb { animation: orbbreathe 4.5s ease-in-out infinite; transform-origin: 50% 90%; }
+  .page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 14px 12px; display: grid; gap: 9px; align-content: start; }
+  .page-body::-webkit-scrollbar { display: none; }
+  .kz-sec { background: #FFFFFF; border-radius: 16px; padding: 10px 12px 11px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .kz-sec .kz-title { font-size: 13px; }
+  .kz-sec .kz-voice { font-size: 11px; margin-top: 4px; }
+  .kz-sec .fogalom { margin-top: 7px; }
+  .page-foot { padding: 8px 14px 14px; display: flex; align-items: center; gap: 8px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); background: rgba(253, 250, 244, 0.92); backdrop-filter: blur(8px); }
+  .page-foot .cta { margin-left: auto; padding: 9px 20px; }
+
+  /* ============ C) ELSŐ INDÍTÁS ============ */
+  .welcome { position: absolute; inset: 0; z-index: 12; display: flex; flex-direction: column;
+    background: linear-gradient(180deg, #FEF5E8 0%, #FDFAF4 45%, #F3EEF8 100%); padding: 44px 18px 18px; }
+  .wl-step { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  .wl-step.on { display: flex; }
+  .wl-art { flex: 1; display: grid; place-items: center; min-height: 0; }
+  .wl-art .orb { animation: orbbreathe 4.5s ease-in-out infinite; transform-origin: 50% 90%; filter: drop-shadow(0 22px 22px rgba(216, 72, 31, 0.28)); }
+  .wl-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #A84A26; text-align: center; }
+  .wl-title { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; text-align: center; margin-top: 4px; text-wrap: balance; }
+  .wl-voice { font-size: 12.5px; font-weight: 300; line-height: 1.5; text-align: center; margin: 8px auto 0; max-width: 30ch; }
+  .wl-voice b { font-weight: 600; }
+  .wl-foot { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+  .wl-foot .cta { margin-left: auto; padding: 9px 20px; }
+  .wl-dots { display: flex; justify-content: center; gap: 5px; margin-top: 14px; }
+  /* a napi ív: három clay spot egy íven */
+  .arc { display: flex; align-items: flex-end; justify-content: center; gap: 14px; }
+  .arc .st { display: grid; justify-items: center; gap: 3px; font-size: 9px; font-weight: 700; color: #6E6257; }
+  .arc .st:nth-child(2) { margin-bottom: 22px; }
+  /* a demo-header a "?" gombbal */
+  .demo-head { margin: 6px 0 0; padding: 10px 12px; border-radius: 18px; background: #fff;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3); }
+  .demo-tabbar { margin: 10px 0 0; }
+  .qpulse { animation: qpulse 1.8s ease-in-out infinite; }
+  @keyframes qpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0.45); } 50% { box-shadow: 0 0 0 8px rgba(201, 150, 46, 0); } }
+
+  /* ============ "?" gomb-állapotok (aside demo) ============ */
+  .qstates { display: flex; gap: 18px; flex-wrap: wrap; }
+  .qstate { display: grid; gap: 6px; justify-items: center; font-size: 12px; color: var(--ink-2); text-align: center; max-width: 110px; }
+  .qstate .roundbtn { width: 40px; height: 40px; font-size: 17px; }
+  .settingsrow { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .settingsrow .sub { color: var(--ink-2); font-size: 12px; }
+  .settingsrow .chev { margin-left: auto; color: var(--ink-2); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .play .rise { opacity: 1; transform: none; animation: none; }
+    .kz-art .orb, .page-hero .art .orb, .wl-art .orb, .floatfab, .qpulse, .tile.spot-on::after { animation: none; }
+    .kz-sheet, .kz-back, .page, .kz-card, .kz-dot, .mtab { transition: none; }
+  }
+</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
+    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moonfull" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.45" stop-color="#B7A9E8"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-crater" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#8F81C6"/><stop offset="1" stop-color="#6D5FB0"/></radialGradient>
+    <radialGradient id="ig-harvest" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#E8B93A"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
+    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
+    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
+    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
+    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
+    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+
+    <symbol id="i-nap" viewBox="0 0 100 100">
+      <g>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="i-edzes" viewBox="0 0 100 100">
+      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
+      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
+    </symbol>
+
+    <symbol id="i-fuel" viewBox="0 0 100 100">
+      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
+      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
+      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
+      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-mezo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
+      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
+      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-polc" viewBox="0 0 100 100">
+      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
+    </symbol>
+
+    <symbol id="i-viz" viewBox="0 0 100 100">
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
+      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
+    </symbol>
+
+    <symbol id="i-alvas" viewBox="0 0 100 100">
+      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-eletjel" viewBox="0 0 100 100">
+      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
+      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
+    </symbol>
+
+    <symbol id="i-minta" viewBox="0 0 100 100">
+      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
+      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
+    </symbol>
+
+    <symbol id="i-naplo" viewBox="0 0 100 100">
+      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
+      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
+      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
+      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
+      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-cel" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
+      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
+      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
+    </symbol>
+
+    <symbol id="i-stack" viewBox="0 0 100 100">
+      <g transform="rotate(-32 50 50)">
+        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
+        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
+        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-suly" viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
+      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
+      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
+      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
+    </symbol>
+
+    <symbol id="i-sport" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
+      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
+    </symbol>
+
+    <symbol id="i-futas" viewBox="0 0 100 100">
+      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
+      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
+      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
+    </symbol>
+
+    <symbol id="i-meso" viewBox="0 0 100 100">
+      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
+      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="i-emberek" viewBox="0 0 100 100">
+      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
+      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
+      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
+      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
+      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
+    </symbol>
+
+    <symbol id="i-tudas" viewBox="0 0 100 100">
+      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
+      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
+      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
+    </symbol>
+
+    <symbol id="i-ertesites" viewBox="0 0 100 100">
+      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+    </symbol>
+
+    <symbol id="i-growth" viewBox="0 0 100 100">
+      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
+      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
+      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
+    </symbol>
+
+    <symbol id="i-erme" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
+      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
+    </symbol>
+
+    <symbol id="i-lang" viewBox="0 0 100 100">
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
+    </symbol>
+
+    <symbol id="i-beallitas" viewBox="0 0 100 100">
+      <g>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
+      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
+      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
+    </symbol>
+
+    <symbol id="i-mikrofon" viewBox="0 0 100 100">
+      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
+      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
+      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
+      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
+      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
+    </symbol>
+
+    <symbol id="i-kamra" viewBox="0 0 100 100">
+      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
+      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
+      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
+    </symbol>
+
+    <symbol id="i-recept" viewBox="0 0 100 100">
+      <g transform="rotate(-30 50 50)">
+        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
+        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
+        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
+        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-rend" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
+      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
+      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
+      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
+      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
+    </symbol>
+
+    <symbol id="i-level" viewBox="0 0 100 100">
+      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+    </symbol>
+
+    <symbol id="i-hajnal" viewBox="0 0 100 100">
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+    </symbol>
+
+    <symbol id="i-video" viewBox="0 0 100 100">
+      <rect x="12" y="22" width="76" height="56" rx="16" fill="url(#ig-drop)"/>
+      <path d="M44 38 L64 50 L44 62 Z" fill="#F4FAFD" stroke="#F4FAFD" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="27" cy="32" rx="9" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-18 27 32)"/>
+    </symbol>
+
+    <symbol id="i-idozito" viewBox="0 0 100 100">
+      <rect x="43" y="8" width="14" height="10" rx="5" fill="#5B7A4C"/>
+      <rect x="47" y="16" width="6" height="8" fill="#5B7A4C"/>
+      <rect x="68" y="16" width="12" height="7" rx="3.5" fill="#5B7A4C" transform="rotate(42 74 20)"/>
+      <circle cx="50" cy="56" r="32" fill="url(#ig-nsage)"/>
+      <circle cx="50" cy="56" r="21" fill="#F2F7EC"/>
+      <path d="M50 56 L50 42" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 56 L60 62" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 38)"/>
+    </symbol>
+
+    <symbol id="i-kihivas" viewBox="0 0 100 100">
+      <rect x="28" y="10" width="9" height="82" rx="4.5" fill="#8C7F72"/>
+      <path d="M37 14 L84 22 L66 34 L84 46 L37 54 Z" fill="url(#ig-plate)"/>
+      <ellipse cx="48" cy="23" rx="8" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-10 48 23)"/>
+      <circle cx="32.5" cy="13" r="5.5" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-checkin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
+      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
+      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
+      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
+    </symbol>
+
+    <symbol id="i-injekcio" viewBox="0 0 100 100">
+      <g transform="rotate(-38 50 50)">
+        <rect x="20" y="40" width="44" height="20" rx="7" fill="#F0E7D4"/>
+        <rect x="24" y="44" width="26" height="12" rx="5" fill="url(#ig-nlav)"/>
+        <rect x="10" y="44" width="10" height="12" rx="4" fill="url(#ig-scale)"/>
+        <rect x="2" y="47" width="9" height="6" rx="3" fill="url(#ig-scale)"/>
+        <rect x="64" y="45" width="6" height="10" rx="2" fill="url(#ig-scale)"/>
+        <path d="M70 50h20" stroke="#8C7F72" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-reggeli" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="56" rx="35" ry="26" fill="#F7F0E1"/>
+      <ellipse cx="44" cy="49" rx="10" ry="6" fill="rgba(255,255,255,0.7)" transform="rotate(-18 44 49)"/>
+      <circle cx="52" cy="56" r="13" fill="url(#ig-sun)"/>
+      <ellipse cx="48" cy="51" rx="4.5" ry="3" fill="rgba(255,255,255,0.6)"/>
+    </symbol>
+
+    <symbol id="i-ebed" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="66" rx="38" ry="13" fill="url(#ig-scale)"/>
+      <ellipse cx="50" cy="60" rx="25" ry="11" fill="url(#ig-bowl)"/>
+      <ellipse cx="42" cy="56" rx="8" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-16 42 56)"/>
+      <path d="M40 44q-3-6 0-12M52 46q-3-6 0-12M64 44q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-snack" viewBox="0 0 100 100">
+      <circle cx="50" cy="58" r="26" fill="url(#ig-p2)"/>
+      <path d="M50 33q-2-8 5-13" stroke="#9C5F33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="63" cy="27" rx="10" ry="6" fill="url(#ig-leaf)" transform="rotate(-22 63 27)"/>
+      <ellipse cx="41" cy="49" rx="8" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 41 49)"/>
+    </symbol>
+
+    <symbol id="i-vacsora" viewBox="0 0 100 100">
+      <path d="M17 52h66v5a27 27 0 0 1-27 27H44a27 27 0 0 1-27-27Z" fill="url(#ig-moon)"/>
+      <ellipse cx="50" cy="52" rx="33" ry="7.5" fill="#E6DFF9"/>
+      <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
+    </symbol>
+    <symbol id="i-muhely" viewBox="0 0 100 100">
+      <path d="M20 56h60v4a25 25 0 0 1-25 25H45a25 25 0 0 1-25-25Z" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="56" rx="30" ry="7" fill="#FFB597"/>
+      <path d="M17 60q-7 2-4 9M83 60q7 2 4 9" stroke="#B03E1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M40 46q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M67 14l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5Z" fill="url(#ig-spark)"/>
+      <path d="M50 8l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" fill="url(#ig-spark)"/>
+      <ellipse cx="35" cy="67" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 35 67)"/>
+    </symbol>
+    <symbol id="i-memoar" viewBox="0 0 100 100">
+      <path d="M50 26 Q34 16 16 22 L16 74 Q34 68 50 78 Z" fill="url(#ig-book)"/>
+      <path d="M50 26 Q66 16 84 22 L84 74 Q66 68 50 78 Z" fill="#F0E7D4"/>
+      <path d="M60 24 v22 l6 -5 6 5 V22" fill="url(#ig-flame)"/>
+      <path d="M58 38h18M58 48h18M58 58h16" stroke="#D8CCBB" stroke-width="3.5" stroke-linecap="round" opacity="0"/>
+      <ellipse cx="30" cy="32" rx="9" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-12 30 32)"/>
+    </symbol>
+    <symbol id="i-lombik" viewBox="0 0 100 100">
+      <path d="M42 14h16v22l20 34a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18l20-34Z" fill="#F0E7D4"/>
+      <path d="M35 58h30l13 12a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18Z" fill="url(#ig-nsage)"/>
+      <rect x="38" y="10" width="24" height="9" rx="4.5" fill="url(#ig-leaf)"/>
+      <circle cx="46" cy="72" r="4.5" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="58" cy="79" r="3" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="72" cy="30" r="5" fill="#9C8FD0"/>
+      <ellipse cx="42" cy="30" rx="4" ry="9" fill="rgba(255,255,255,0.5)" transform="rotate(8 42 30)"/>
+    </symbol>
+    <symbol id="i-kristaly" viewBox="0 0 100 100">
+      <path d="M28 82h44l-6 10H34Z" fill="url(#ig-wood)"/>
+      <circle cx="50" cy="48" r="33" fill="url(#ig-nlav)"/>
+      <path d="M36 56q14 10 28 0" stroke="rgba(255,255,255,0.45)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="38" cy="36" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 36)"/>
+      <path d="M80 12 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="url(#ig-spark)"/>
+    </symbol>
+    <symbol id="i-retegek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="72" rx="34" ry="13" fill="url(#ig-nsage)"/>
+      <ellipse cx="50" cy="54" rx="34" ry="13" fill="url(#ig-ngold)"/>
+      <ellipse cx="50" cy="36" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="50" cy="33" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="38" cy="28" rx="11" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-8 38 28)"/>
+    </symbol>
+    <symbol id="i-heti" viewBox="0 0 100 100">
+      <rect x="14" y="20" width="72" height="66" rx="12" fill="url(#ig-nlav)"/>
+      <rect x="14" y="20" width="72" height="16" rx="8" fill="#4A3E86"/>
+      <circle cx="32" cy="18" r="5" fill="#7E4A24"/><circle cx="68" cy="18" r="5" fill="#7E4A24"/>
+      <rect x="26" y="60" width="10" height="14" rx="4" fill="rgba(255,255,255,0.55)"/>
+      <rect x="42" y="50" width="10" height="24" rx="4" fill="rgba(255,255,255,0.8)"/>
+      <rect x="58" y="44" width="10" height="30" rx="4" fill="#FFE9A8"/>
+      <ellipse cx="36" cy="46" rx="10" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 36 46)"/>
+    </symbol>
+    <symbol id="i-hold" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="url(#ig-moonfull)"/>
+      <ellipse cx="36" cy="30" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-26 36 30)"/>
+      <circle cx="63" cy="42" r="7" fill="url(#ig-crater)" opacity="0.85"/>
+      <circle cx="44" cy="62" r="5" fill="url(#ig-crater)" opacity="0.7"/>
+      <circle cx="62" cy="66" r="3.5" fill="url(#ig-crater)" opacity="0.6"/>
+    </symbol>
+
+    <symbol id="i-termes" viewBox="0 0 100 100">
+      <path d="M50 6c5 20 12 27 32 32-20 5-27 12-32 32-5-20-12-27-32-32 20-5 27-12 32-32Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="41" cy="30" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30 41 30)"/>
+      <circle cx="81" cy="74" r="6" fill="url(#ig-harvest)"/>
+      <circle cx="18" cy="80" r="4" fill="url(#ig-harvest)" opacity="0.8"/>
+    </symbol>
+
+    <!-- ============ F7.4 · Életterület-ikonográfia (mezo-d20.8.4) ============
+         A 8 LIFE skill clay szimbóluma — a Growth-sorok, a hála-bejegyzések és a
+         Napzárás act-3 emoji-maradékának váltása. Nyelv: 100×100, közös ig-*
+         gradiensek, fehér spekuláris folt. -->
+    <radialGradient id="ig-life-eye" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.55" stop-color="#4E8FB8"/><stop offset="1" stop-color="#25577A"/></radialGradient>
+    <linearGradient id="ig-life-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8C7F72"/><stop offset="1" stop-color="#5E544A"/></linearGradient>
+    <radialGradient id="ig-life-pillow" cx="36%" cy="30%" r="90%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.5" stop-color="#B7A9E8"/><stop offset="1" stop-color="#7A6BbD"/></radialGradient>
+
+    <symbol id="i-life-tudatossag" viewBox="0 0 100 100">
+      <path d="M28 92a55 40 0 0 1 44 0c2-16-4-26-10-32H38c-6 6-12 16-10 32Z" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="38" r="17" fill="url(#ig-moonfull)"/>
+      <path d="M24 22a30 30 0 0 1 52 0" fill="none" stroke="#C9962E" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="44" cy="31" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-22 44 31)"/>
+    </symbol>
+    <symbol id="i-life-szemlelet" viewBox="0 0 100 100">
+      <path d="M8 50C20 30 36 20 50 20s30 10 42 30C80 70 64 80 50 80S20 70 8 50Z" fill="url(#ig-stone2)"/>
+      <circle cx="50" cy="50" r="19" fill="url(#ig-life-eye)"/>
+      <circle cx="50" cy="50" r="8" fill="#1D3B52"/>
+      <ellipse cx="43" cy="42" rx="6" ry="4.5" fill="rgba(255,255,255,0.7)" transform="rotate(-24 43 42)"/>
+    </symbol>
+    <symbol id="i-life-konyha" viewBox="0 0 100 100">
+      <path d="M74 42 92 24" stroke="url(#ig-wood)" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="44" cy="56" r="32" fill="url(#ig-life-pan)"/>
+      <circle cx="44" cy="56" r="24" fill="#F4E7D6"/>
+      <circle cx="40" cy="53" r="11" fill="url(#ig-sun)"/>
+      <ellipse cx="30" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 30 38)"/>
+    </symbol>
+    <symbol id="i-life-penzugyek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="74" rx="30" ry="13" fill="url(#ig-coin)"/>
+      <ellipse cx="50" cy="58" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="42" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="40" rx="20" ry="7.5" fill="none" stroke="rgba(255,240,200,0.6)" stroke-width="3"/>
+      <ellipse cx="38" cy="36" rx="8" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-12 38 36)"/>
+    </symbol>
+    <symbol id="i-life-produktivitas" viewBox="0 0 100 100">
+      <rect x="16" y="16" width="68" height="68" rx="16" fill="url(#ig-stone1)"/>
+      <path d="M32 52l14 14 24-30" fill="none" stroke="url(#ig-leaf)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="72" cy="26" r="6" fill="#C9962E"/>
+      <ellipse cx="32" cy="26" rx="9" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 26)"/>
+    </symbol>
+    <symbol id="i-life-tanulas" viewBox="0 0 100 100">
+      <path d="M50 26C40 18 28 16 14 18v56c14-2 26 0 36 8V26Z" fill="url(#ig-book)"/>
+      <path d="M50 26c10-8 22-10 36-8v56c-14-2-26 0-36 8V26Z" fill="url(#ig-shelf)"/>
+      <path d="M50 26v56" stroke="#7E4A24" stroke-width="4" stroke-linecap="round"/>
+      <path d="M60 34c8-3 14-4 20-4M60 46c8-3 14-4 20-4" stroke="rgba(120,90,50,0.4)" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="28" cy="28" rx="8" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-16 28 28)"/>
+    </symbol>
+    <symbol id="i-life-kapcsolatok" viewBox="0 0 100 100">
+      <circle cx="36" cy="50" r="22" fill="none" stroke="url(#ig-heart)" stroke-width="11"/>
+      <circle cx="64" cy="50" r="22" fill="none" stroke="url(#ig-drop)" stroke-width="11"/>
+      <path d="M50 33a22 22 0 0 1 0 34 22 22 0 0 1 0-34Z" fill="rgba(142,63,111,0.35)"/>
+      <ellipse cx="28" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-30 28 36)"/>
+    </symbol>
+    <symbol id="i-life-regeneracio" viewBox="0 0 100 100">
+      <path d="M14 46c-4 14-2 24 4 30 8 8 56 8 64 0 6-6 8-16 4-30-10-8-62-8-72 0Z" fill="url(#ig-life-pillow)"/>
+      <path d="M30 60c12 6 28 6 40 0" fill="none" stroke="rgba(93,79,160,0.45)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="74" cy="26" r="5" fill="#C9962E"/>
+      <path d="M28 22h12l-12 12h12" fill="none" stroke="#9C8FD0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="50" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-10 30 50)"/>
+    </symbol>
+  </defs>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="sg-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="sg-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="sg-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="sg-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="sg-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="sg-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="sg-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6BC9"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#463583"/></linearGradient>
+    <linearGradient id="sg-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3A79A"/><stop offset="1" stop-color="#7C7065"/></linearGradient>
+    <radialGradient id="sg-medal" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="sg-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <radialGradient id="sg-orbn" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#8A7FC0"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3A2E72"/></radialGradient>
+    <linearGradient id="sg-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <linearGradient id="sg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <radialGradient id="sg-mount" cx="40%" cy="25%" r="90%"><stop offset="0" stop-color="#C9BFE8"/><stop offset="1" stop-color="#4A3D85"/></radialGradient>
+
+    <symbol id="s-reggel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(181,126,20,0.25)"/>
+      <g>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="22" fill="url(#sg-sun)"/>
+      <ellipse cx="42" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.65)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="s-este" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(93,79,160,0.25)"/>
+      <path d="M66 71A30 30 0 1 1 55 17a25 25 0 0 0 11 54Z" fill="url(#sg-moon)"/>
+      <ellipse cx="35" cy="33" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-28 35 33)"/>
+      <circle cx="74" cy="24" r="3.5" fill="#C9962E"/>
+      <circle cx="83" cy="38" r="2" fill="rgba(201,150,46,0.6)"/>
+    </symbol>
+
+    <symbol id="s-viz" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(46,110,150,0.25)"/>
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#sg-drop)"/>
+      <ellipse cx="41" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.55)" transform="rotate(18 41 42)"/>
+    </symbol>
+
+    <symbol id="s-energia" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(196,61,20,0.25)"/>
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#sg-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#sg-flin)"/>
+    </symbol>
+
+    <symbol id="s-edzes" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="88" rx="30" ry="5.5" fill="rgba(70,53,131,0.22)"/>
+      <rect x="12" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="74" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="24" y="47" width="52" height="10" rx="5" fill="url(#sg-bar)"/>
+      <ellipse cx="17.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+      <ellipse cx="79.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+    </symbol>
+
+    <symbol id="s-medal" viewBox="0 0 100 100">
+      <path d="M36 8h12l-8 26h-14Z" fill="#D8481F"/>
+      <path d="M64 8H52l8 26h14Z" fill="#FF7A55"/>
+      <ellipse cx="50" cy="90" rx="22" ry="5" fill="rgba(169,119,15,0.28)"/>
+      <circle cx="50" cy="56" r="26" fill="url(#sg-medal)"/>
+      <circle cx="50" cy="56" r="19" fill="none" stroke="rgba(255,240,200,0.5)" stroke-width="2.5"/>
+      <path d="M50 45l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L50 61.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#8A5E07"/>
+      <path d="M49 44l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L49 60.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#FFEDB8"/>
+      <ellipse cx="41" cy="46" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 41 46)"/>
+    </symbol>
+
+    <symbol id="s-orb" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-ejszaka" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(58,46,114,0.3)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orbn)"/>
+      <ellipse cx="37" cy="32" rx="11" ry="7" fill="rgba(255,255,255,0.28)" transform="rotate(-24 37 32)"/>
+      <path d="M38 46q4 6 12 6t12-6" fill="none" stroke="rgba(230,223,249,0.7)" stroke-width="3.5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-figyel" viewBox="0 0 100 100">
+      <ellipse cx="46" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="46" cy="48" r="32" fill="url(#sg-orb)"/>
+      <ellipse cx="34" cy="33" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 34 33)"/>
+      <path d="M84 36a20 20 0 0 1 0 24" fill="none" stroke="rgba(201,150,46,0.75)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M92 28a32 32 0 0 1 0 40" fill="none" stroke="rgba(201,150,46,0.4)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-unnepel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="52" r="31" fill="url(#sg-orb)"/>
+      <ellipse cx="38" cy="38" rx="11" ry="7" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 38)"/>
+      <path d="M39 58q5 7 11 7t11-7" fill="none" stroke="rgba(255,230,210,0.8)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="20" cy="18" r="4.5" fill="#E0AC2F"/>
+      <rect x="72" y="8" width="6" height="11" rx="3" fill="#9C8FD0" transform="rotate(22 75 13)"/>
+      <circle cx="88" cy="30" r="3.5" fill="#7FA06C"/>
+      <rect x="8" y="38" width="5" height="10" rx="2.5" fill="#C46FA0" transform="rotate(-24 10 43)"/>
+      <circle cx="66" cy="6" r="3" fill="#FF7A55"/>
+    </symbol>
+
+    <symbol id="s-piheno" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M50 88C24 72 14 46 24 16c30 8 42 36 32 66q-3 4-6 6Z" fill="url(#sg-leaf)"/>
+      <path d="M44 78C38 58 40 40 48 26" fill="none" stroke="#E2EFD9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="34" cy="34" rx="7" ry="10" fill="rgba(255,255,255,0.35)" transform="rotate(20 34 34)"/>
+    </symbol>
+
+    <symbol id="s-napzaras" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="93" rx="30" ry="5" fill="rgba(93,79,160,0.28)"/>
+      <circle cx="50" cy="48" r="38" fill="url(#sg-sky)"/>
+      <circle cx="50" cy="58" r="15" fill="url(#sg-sun)"/>
+      <path d="M14 62a38 38 0 0 0 72 0q-18-10-36-10t-36 10Z" fill="#584673"/>
+      <circle cx="70" cy="24" r="2.5" fill="rgba(255,240,220,0.8)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="6" fill="rgba(255,255,255,0.35)" transform="rotate(-24 34 24)"/>
+    </symbol>
+
+    <symbol id="s-hajtas" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(78,107,66,0.22)"/>
+      <ellipse cx="50" cy="82" rx="24" ry="9" fill="#8A6B4A"/>
+      <path d="M50 80V46" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 52C32 48 22 34 24 16c18 2 28 16 26 36Z" fill="url(#sg-leaf)"/>
+      <path d="M50 64c16-4 26-16 24-32-16 2-26 16-24 32Z" fill="url(#sg-leaf)"/>
+      <ellipse cx="34" cy="28" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 34 28)"/>
+    </symbol>
+
+    <symbol id="s-hegycel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="32" ry="5.5" fill="rgba(74,61,133,0.25)"/>
+      <path d="M50 18q4 0 7 6l27 52q4 8-6 8H22q-10 0-6-8l27-52q3-6 7-6Z" fill="url(#sg-mount)"/>
+      <path d="M50 18q4 0 7 6l7 14c-6 5-10-2-14 3s-9-2-13 2l6-19q3-6 7-6Z" fill="#F1EDFB"/>
+      <rect x="48.5" y="4" width="3" height="16" rx="1.5" fill="#8C7F72"/>
+      <path d="M51.5 5h15l-4.5 5 4.5 5h-15Z" fill="#E0AC2F"/>
+      <ellipse cx="36" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(18 36 42)"/>
+    </symbol>
+  <radialGradient id="sg-orb-doki" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A8C0D0"/><stop offset="0.45" stop-color="#3E7396"/><stop offset="1" stop-color="#284B62"/></radialGradient><radialGradient id="sg-orb-edzo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8AE9D"/><stop offset="0.45" stop-color="#A84A26"/><stop offset="1" stop-color="#6D3019"/></radialGradient><radialGradient id="sg-orb-taplalkozo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AFBCAA"/><stop offset="0.45" stop-color="#4E6B42"/><stop offset="1" stop-color="#33462B"/></radialGradient><radialGradient id="sg-orb-szomnologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#B6B0D4"/><stop offset="0.45" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3C3368"/></radialGradient><radialGradient id="sg-orb-pszichologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#CCA9BE"/><stop offset="0.45" stop-color="#8E3F6F"/><stop offset="1" stop-color="#5C2948"/></radialGradient><radialGradient id="sg-orb-drill" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8C69A"/><stop offset="0.45" stop-color="#A8801F"/><stop offset="1" stop-color="#6D5314"/></radialGradient><radialGradient id="sg-orb-antropologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A1C5BC"/><stop offset="0.45" stop-color="#2E7D6B"/><stop offset="1" stop-color="#1E5146"/></radialGradient><radialGradient id="sg-orb-szkeptikus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AEA9A5"/><stop offset="0.45" stop-color="#4A4038"/><stop offset="1" stop-color="#302A24"/></radialGradient></defs>
+    <symbol id="s-orb-doki" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#3E739647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-doki)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(12 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-edzo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A84A2647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-edzo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(39 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-taplalkozo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4E6B4247"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-taplalkozo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(66 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szomnologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#5D4FA047"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szomnologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(93 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-pszichologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#8E3F6F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-pszichologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(120 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-drill" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A8801F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-drill)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(147 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-antropologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#2E7D6B47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-antropologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(174 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szkeptikus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4A403847"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szkeptikus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(201 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+</svg>
+<div class="wrap">
+  <p class="eyebrow">Mezo · béta-onboarding · tutorial-nyelv</p>
+  <h1>Mezo-kalauz</h1>
+  <p class="lede">Minden oldalnak van egy <strong>kalauza</strong>: első belépéskor magától megjelenik, utána a fejléc
+  <strong>?</strong> gombja alatt bármikor visszanézhető. Mindegyik ugyanazt az öt kérdést válaszolja, ugyanabban a
+  sorrendben — <strong>Mezo, az Orb meséli</strong>, többes szám első személyben. A három telefon három
+  formát próbál ki ugyanarra a tartalomra (a Fuel hub kalauza, laikus olvasónak).</p>
+
+  <div class="stage">
+
+    <!-- ============================ A) LAPOZÓ SHEET ============================ -->
+    <div class="phonecol">
+      <div class="phone"><div class="screen play" id="scrA">
+        <div class="isl"></div>
+        <div class="p-status"><span>12:10</span><span>ᯤ ▮▮▮</span></div>
+        <div class="p-body">
+          <div class="mrow">
+            <div class="grow"><div class="p-eyebrow">Szerda · szept 2</div></div>
+            <button class="roundbtn q" id="qA" aria-label="Kalauz ehhez az oldalhoz">?<span class="most"></span></button>
+            <button class="roundbtn" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg><span class="badge">2</span></button>
+            <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+          </div>
+
+          <div class="float3d hero rise" style="--d:0ms;">
+            <div class="mrow">
+              <div class="ring"><div class="hole"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-fuel"/></svg></div></div>
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#4E6B42;">Mai keret</div>
+                <div class="mrow" style="align-items:baseline;gap:5px;">
+                  <span class="big" style="font-size:32px;">1 460</span>
+                  <span class="mut" style="font-size:9.5px;">kcal · 2 350-ből</span>
+                </div>
+                <div class="mut" style="font-size:9.5px;">Fehérje <b style="color:#2B2118;">96 g</b> · Szénh. <b style="color:#2B2118;">140 g</b> · Zsír <b style="color:#2B2118;">48 g</b></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-log rise" id="tileLogA" style="--d:70ms;" role="button" tabindex="0" aria-label="Logolás">
+              <div class="p-eyebrow" style="color:#4E6B42;">Logolás</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-ebed"/></svg></div>
+              <div class="tile-more" style="color:#4E6B42;">Ebéd nyitva ›</div>
+            </div>
+            <div class="tile t-plan rise" style="--d:110ms;" role="button" tabindex="0" aria-label="Terv">
+              <div class="p-eyebrow">Terv</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-heti"/></svg></div>
+              <div class="tile-line">Edzésnap · +300</div>
+            </div>
+            <div class="tile t-stack rise" style="--d:150ms;" role="button" tabindex="0" aria-label="Stack">
+              <div class="p-eyebrow" style="color:#4E6B42;">Stack</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-stack"/></svg></div>
+              <div class="tile-line">2/5 bevéve</div>
+            </div>
+            <div class="tile t-recept rise" style="--d:190ms;" role="button" tabindex="0" aria-label="Receptek">
+              <div class="p-eyebrow" style="color:#A8801F;">Receptek</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-recept"/></svg></div>
+              <div class="tile-line">14 recept</div>
+            </div>
+            <div class="tile t-kamra rise" style="--d:230ms;" role="button" tabindex="0" aria-label="Kamra">
+              <div class="p-eyebrow" style="color:#B04524;">Kamra</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-kamra"/></svg></div>
+              <div class="tile-line">38 tétel</div>
+            </div>
+            <div class="tile t-gyogy rise" style="--d:270ms;" role="button" tabindex="0" aria-label="Gyógyszer">
+              <div class="p-eyebrow" style="color:#5D4FA0;">Gyógyszer</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-injekcio"/></svg></div>
+              <div class="tile-line">3. ciklusnap</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="floatfab" aria-hidden="true">+</div>
+        <div class="tabbar">
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+          <div class="mtab on"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-polc"/></svg>Én</div>
+        </div>
+        <div class="homebar"></div>
+
+        <!-- a kalauz-sheet -->
+        <div class="kz-back" id="backA"></div>
+        <div class="kz-sheet" id="sheetA" role="dialog" aria-modal="true" aria-label="Kalauz · Fuel">
+          <div class="sh-grab"></div>
+          <div class="kz-peekbar">
+            <svg width="30" height="30" viewBox="0 0 100 100" style="flex:none;"><use href="#s-orb-figyel"/></svg>
+            <div class="txt">Ez a <b>Logolás</b> csempe — innen indul minden étkezés.</div>
+            <button class="ghost" id="peekBackA">Vissza</button>
+          </div>
+          <div class="kz-top">
+            <span class="kz-tag">Kalauz · <b>Fuel</b></span>
+            <span class="kz-tag" id="stepA" style="margin-left:auto;">1 / 5</span>
+            <button class="sh-x" id="closeA" aria-label="Bezárás">✕</button>
+          </div>
+          <div class="kz-track" id="trackA">
+            <div class="kz-card on">
+              <div class="kz-q"><span class="n">1</span>Mi ez?</div>
+              <div class="kz-title">Ez a Fuel.</div>
+              <div class="kz-art">
+                <svg class="orb" width="78" height="78" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+                <svg class="spot" width="64" height="64" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>
+              </div>
+              <div class="kz-voice">Itt követjük, hogy mit eszel. Nem diéta és nem számolgatás — inkább <b>térkép</b>: mennyi energia ment be ma, és mennyi fér még.</div>
+            </div>
+            <div class="kz-card">
+              <div class="kz-q"><span class="n">2</span>Mire jó?</div>
+              <div class="kz-title">A napi keret és a makrók.</div>
+              <div class="kz-art">
+                <svg class="orb" width="60" height="60" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+                <svg class="spot" width="70" height="70" viewBox="0 0 100 100"><use href="#s-energia"/></svg>
+              </div>
+              <div class="kz-voice">A tested minden nap kap egy <b>keretet</b> — ennyi energia fér bele. A gyűrű fent mutatja, hol tartunk.</div>
+              <div class="fogalom">
+                <div class="term">makró</div>
+                <div class="def">A három „építőanyag": <b>fehérje</b> (izom), <b>szénhidrát</b> (üzemanyag), <b>zsír</b> (hormonok). A kalória ezekből adódik össze.</div>
+              </div>
+            </div>
+            <div class="kz-card">
+              <div class="kz-q"><span class="n">3</span>Hogyan használjuk?</div>
+              <div class="kz-title">Logolni egy koppintás.</div>
+              <div class="kz-art">
+                <svg class="orb" width="60" height="60" viewBox="0 0 100 100"><use href="#s-orb-figyel"/></svg>
+                <svg class="spot" width="64" height="64" viewBox="0 0 100 100"><use href="#i-reggeli"/></svg>
+                <svg class="spot" width="40" height="40" viewBox="0 0 100 100"><use href="#i-mikrofon"/></svg>
+              </div>
+              <div class="kz-voice">A <b>+</b> gombbal vagy a Logolás-csempéből. Elég egy fotó vagy egy mondat — „egy tál zabkása banánnal" — a többit Mezo kitalálja.</div>
+              <button class="kz-show" id="showA">◎ Mutasd meg a képernyőn</button>
+            </div>
+            <div class="kz-card">
+              <div class="kz-q"><span class="n">4</span>Mikor nézzük?</div>
+              <div class="kz-title">Evés után, pár másodperc.</div>
+              <div class="kz-art">
+                <svg class="orb" width="60" height="60" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+                <svg class="spot" width="66" height="66" viewBox="0 0 100 100"><use href="#i-idozito"/></svg>
+              </div>
+              <div class="kz-voice">Nem kell tökéletesnek lennie. Ha kimaradt egy étkezés, később is <b>pótoljuk</b> — a nap nem „bukik el" tőle.</div>
+            </div>
+            <div class="kz-card">
+              <div class="kz-q"><span class="n">5</span>Mivel függ össze?</div>
+              <div class="kz-title">Nem sziget.</div>
+              <div class="kz-art" style="height:64px;">
+                <svg class="orb" width="56" height="56" viewBox="0 0 100 100"><use href="#s-orb-unnepel"/></svg>
+              </div>
+              <div class="kz-voice">Edzésnapon több keret jár. A súlyod és az alvásod is innen kap adatot — és a chatben Mezo ebből tud tanácsot adni.</div>
+              <div class="kz-chips">
+                <button class="kz-chip"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés <span class="to">· edzésnap → +keret</span></button>
+                <button class="kz-chip"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-suly"/></svg>Súly</button>
+                <button class="kz-chip"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-alvas"/></svg>Alvás</button>
+                <button class="kz-chip"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo chat</button>
+              </div>
+            </div>
+          </div>
+          <div class="kz-dots" id="dotsA"></div>
+          <div class="kz-foot">
+            <button class="ghost link" id="skipA">Kihagyom</button>
+            <button class="cta" id="nextA">Tovább</button>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap"><b>A · Lapozó sheet</b>Az oldal marad látható a háttérben, öt rövid kártya, egy-egy kérdés. A „Mutasd meg" a valós csempét emeli ki. <span class="verdict rec">Ajánlott · minden kalauzhoz</span></div>
+    </div>
+
+    <!-- ============================ B) KALAUZ-OLDAL ============================ -->
+    <div class="phonecol">
+      <div class="phone"><div class="screen" id="scrB">
+        <div class="isl"></div>
+        <div class="p-status"><span>12:10</span><span>ᯤ ▮▮▮</span></div>
+        <div class="p-body">
+          <div class="mrow">
+            <div class="grow"><div class="p-eyebrow">Szerda · szept 2</div></div>
+            <button class="roundbtn q" id="qB" aria-label="Kalauz ehhez az oldalhoz">?<span class="most"></span></button>
+            <button class="roundbtn" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg><span class="badge">2</span></button>
+            <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+          </div>
+          <div class="float3d hero">
+            <div class="mrow">
+              <div class="ring"><div class="hole"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-fuel"/></svg></div></div>
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#4E6B42;">Mai keret</div>
+                <div class="mrow" style="align-items:baseline;gap:5px;"><span class="big" style="font-size:32px;">1 460</span><span class="mut" style="font-size:9.5px;">kcal · 2 350-ből</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="mosaic">
+            <div class="tile t-log"><div class="p-eyebrow" style="color:#4E6B42;">Logolás</div><div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-ebed"/></svg></div><div class="tile-more" style="color:#4E6B42;">Ebéd nyitva ›</div></div>
+            <div class="tile t-plan"><div class="p-eyebrow">Terv</div><div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-heti"/></svg></div><div class="tile-line">Edzésnap · +300</div></div>
+            <div class="tile t-stack"><div class="p-eyebrow" style="color:#4E6B42;">Stack</div><div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-stack"/></svg></div><div class="tile-line">2/5 bevéve</div></div>
+            <div class="tile t-recept"><div class="p-eyebrow" style="color:#A8801F;">Receptek</div><div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-recept"/></svg></div><div class="tile-line">14 recept</div></div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+          <div class="mtab on"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-polc"/></svg>Én</div>
+        </div>
+        <div class="homebar"></div>
+
+        <!-- a becsúszó kalauz-oldal -->
+        <div class="page open" id="pageB">
+          <div class="page-head">
+            <button class="backbtn" id="backB">‹ Fuel</button>
+            <span class="kz-tag" style="margin-left:auto;">Kalauz · <b>Fuel</b></span>
+          </div>
+          <div class="page-hero">
+            <div class="art">
+              <svg class="orb" width="72" height="72" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+              <svg width="60" height="60" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>
+            </div>
+            <div class="nm">Ez a Fuel.</div>
+            <div class="sb">Itt követjük, hogy mit eszel — térkép, nem diéta.</div>
+          </div>
+          <div class="page-body">
+            <div class="kz-sec">
+              <div class="kz-q"><span class="n">2</span>Mire jó?</div>
+              <div class="kz-title">A napi keret és a makrók.</div>
+              <div class="kz-voice">A tested minden nap kap egy <b>keretet</b> — ennyi energia fér bele. A gyűrű fent mutatja, hol tartunk.</div>
+              <div class="fogalom"><div class="term">makró</div><div class="def">A három „építőanyag": <b>fehérje</b>, <b>szénhidrát</b>, <b>zsír</b>. A kalória ezekből adódik össze.</div></div>
+            </div>
+            <div class="kz-sec">
+              <div class="kz-q"><span class="n">3</span>Hogyan használjuk?</div>
+              <div class="kz-title">Logolni egy koppintás.</div>
+              <div class="kz-voice">A <b>+</b> gombbal vagy a Logolás-csempéből. Elég egy fotó vagy egy mondat — a többit Mezo kitalálja.</div>
+            </div>
+            <div class="kz-sec">
+              <div class="kz-q"><span class="n">4</span>Mikor nézzük?</div>
+              <div class="kz-title">Evés után, pár másodperc.</div>
+              <div class="kz-voice">Ha kimaradt egy étkezés, később is <b>pótoljuk</b> — a nap nem „bukik el" tőle.</div>
+            </div>
+            <div class="kz-sec">
+              <div class="kz-q"><span class="n">5</span>Mivel függ össze?</div>
+              <div class="kz-title">Nem sziget.</div>
+              <div class="kz-voice">Edzésnapon több keret jár; a súlyod és az alvásod is innen kap adatot.</div>
+              <div class="kz-chips">
+                <button class="kz-chip"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</button>
+                <button class="kz-chip"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-suly"/></svg>Súly</button>
+                <button class="kz-chip"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-alvas"/></svg>Alvás</button>
+                <button class="kz-chip"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo chat</button>
+              </div>
+            </div>
+          </div>
+          <div class="page-foot">
+            <button class="ghost link" id="skipB">Kihagyom</button>
+            <button class="cta" id="goB">Kezdjük ›</button>
+          </div>
+        </div>
+      </div></div>
+      <div class="cap"><b>B · Kalauz-oldal</b>Huawei-minta: a „?" saját, jobbról becsúszó oldalt nyit, minden kérdés egymás alatt, görgetve. Egyben olvasható, de eltakarja az oldalt, amiről szól. <span class="verdict alt">Alternatíva</span></div>
+    </div>
+
+    <!-- ============================ C) ELSŐ INDÍTÁS ============================ -->
+    <div class="phonecol">
+      <div class="phone"><div class="screen" id="scrC">
+        <div class="isl"></div>
+        <div class="p-status" style="z-index:15;"><span>9:02</span><span>ᯤ ▮▮▮</span></div>
+
+        <div class="welcome" id="welcome">
+          <!-- 1 -->
+          <div class="wl-step on">
+            <div class="wl-art"><svg class="orb" width="150" height="150" viewBox="0 0 100 100"><use href="#s-orb"/></svg></div>
+            <div class="wl-eyebrow">Első indítás · 1 / 4</div>
+            <div class="wl-title">Szia, Mezo vagyok.</div>
+            <div class="wl-voice">Nem edző vagyok, és nem számláló. <b>Társ</b>, aki veled csinálja végig a napot — és közben megtanul téged.</div>
+          </div>
+          <!-- 2 -->
+          <div class="wl-step">
+            <div class="wl-art">
+              <div class="arc">
+                <div class="st"><svg width="58" height="58" viewBox="0 0 100 100"><use href="#s-reggel"/></svg>Reggel</div>
+                <div class="st"><svg width="70" height="70" viewBox="0 0 100 100"><use href="#s-energia"/></svg>Nap</div>
+                <div class="st"><svg width="58" height="58" viewBox="0 0 100 100"><use href="#s-este"/></svg>Este</div>
+              </div>
+            </div>
+            <div class="wl-eyebrow">Első indítás · 2 / 4</div>
+            <div class="wl-title">Egy nap, három szakasz.</div>
+            <div class="wl-voice">Reggel indítunk, napközben logolunk, este <b>lezárjuk</b>. Az app mindig azt mutatja, ami most a dolgunk.</div>
+          </div>
+          <!-- 3 -->
+          <div class="wl-step">
+            <div class="wl-art" style="display:grid;align-content:center;justify-items:stretch;gap:12px;">
+              <div class="tabbar demo-tabbar" id="tabDemoC">
+                <div class="mtab off lit" data-k="nap"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+                <div class="mtab off" data-k="edzes"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+                <div class="mtab off" data-k="fuel"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+                <div class="mtab off" data-k="mezo"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+                <div class="mtab off" data-k="en"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-polc"/></svg>Én</div>
+              </div>
+              <div class="float3d" style="padding:10px 12px;text-align:center;">
+                <div class="kz-q" id="tabNameC">Nap</div>
+                <div class="kz-voice" id="tabTxtC" style="margin-top:3px;">A mai nap gerince: mi a dolgunk most.</div>
+              </div>
+              <div class="mut" style="font-size:9.5px;text-align:center;">Koppints a fülekre.</div>
+            </div>
+            <div class="wl-eyebrow">Első indítás · 3 / 4</div>
+            <div class="wl-title">Öt hely, ahol minden megvan.</div>
+          </div>
+          <!-- 4 -->
+          <div class="wl-step">
+            <div class="wl-art" style="display:grid;align-content:center;justify-items:stretch;gap:10px;">
+              <div class="demo-head">
+                <div class="mrow">
+                  <div class="grow"><div class="p-eyebrow">Szerda · szept 2</div></div>
+                  <button class="roundbtn q qpulse" aria-label="Kalauz">?</button>
+                  <button class="roundbtn" aria-label="Értesítések"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg></button>
+                  <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:center;"><svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb-figyel"/></svg></div>
+            </div>
+            <div class="wl-eyebrow">Első indítás · 4 / 4</div>
+            <div class="wl-title">Ha bármikor elakadsz.</div>
+            <div class="wl-voice">Minden oldalnak van <b>kalauza</b>. Először magától felugrik, utána a <b>?</b> alatt bármikor visszanézheted.</div>
+          </div>
+
+          <div class="wl-dots" id="dotsC"></div>
+          <div class="wl-foot">
+            <button class="ghost link" id="skipC">Kihagyom</button>
+            <button class="cta" id="nextC">Tovább</button>
+          </div>
+        </div>
+
+        <!-- alatta: a Nap hub jelzésértékű háttere -->
+        <div class="p-body" style="padding-top:12px;">
+          <div class="mrow"><div class="grow"><div class="p-eyebrow">Szerda · szept 2</div></div><button class="roundbtn q" aria-label="Kalauz">?</button><div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div></div>
+          <div class="float3d" style="padding:14px;display:grid;place-items:center;gap:6px;">
+            <svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb-unnepel"/></svg>
+            <div class="kz-title" style="text-align:center;">Induljunk.</div>
+            <div class="kz-voice" style="text-align:center;">A Nap fül kalauza egy pillanat múlva jön — az első igazi oldal.</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="mtab on"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+          <div class="mtab off"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-polc"/></svg>Én</div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="cap"><b>C · Első indítás</b>Egyszeri, teljes képernyős bemutatkozás (T0): ki Mezo, a napi ív, az öt fül, és maga a „?" gomb. Ugyanaz a hang és kártya-anatómia, mint a sheetben. <span class="verdict t0">T0 · egyszer</span></div>
+    </div>
+
+    <!-- ============================ ASIDE ============================ -->
+    <aside>
+      <div>
+        <h2>Az ajánlás</h2>
+        <ul>
+          <li><strong>A (sheet) minden kalauznak.</strong> Az oldal látszik mögötte, így a magyarázat és a felület egyszerre van szem előtt — a coach-mark láncok mobilon ezért buknak el (NN/G: 20 mp után elfelejtik). Öt rövid kártya jobban megjegyezhető, mint egy görgetett szöveg.</li>
+          <li><strong>B akkor jó, ha egyben kell.</strong> A „?" hosszan nyomva vagy a sheet utolsó kártyáján egy „Bővebben ›" nyithatná — de alapértelmezésnek eltakarja azt, amiről beszél.</li>
+          <li><strong>C csak egyszer</strong>, az első indításkor, a multi-user regisztráció után. Ugyanaz a nyelv, teljes képernyőn, mert még nincs oldal, amire mutasson.</li>
+          <li><strong>Spotlight csak a „Hogyan" kártyán</strong>, gombra: a sheet sávvá húzódik, a csempe arany gyűrűt kap. Nem lánc, egy elem.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Az öt kérdés — minden kalauz gerince</h2>
+        <ol>
+          <li><strong>Mi ez?</strong> — egy mondat, Orb + az oldal clay-spotja</li>
+          <li><strong>Mire jó?</strong> — a cél; laikusnak itt jön a <em>fogalom</em>-doboz (makró, mezociklus, RIR…)</li>
+          <li><strong>Hogyan használjuk?</strong> — 1–2 gesztus, opcionális „Mutasd meg"</li>
+          <li><strong>Mikor nézzük?</strong> — a napi ritmusban hol a helye</li>
+          <li><strong>Mivel függ össze?</strong> — kereszthatás-chipek, koppintva odavisznek</li>
+        </ol>
+      </div>
+      <div>
+        <h2>Szintek</h2>
+        <table class="tiers">
+          <tr><th>Szint</th><th>Mi</th><th>Db</th><th>Felugrik</th></tr>
+          <tr><td><b>T0</b></td><td>Első indítás</td><td>1</td><td><span class="pill auto">egyszer</span></td></tr>
+          <tr><td><b>T1</b></td><td>Az 5 hub</td><td>5</td><td><span class="pill auto">auto</span></td></tr>
+          <tr><td><b>T2</b></td><td>Fő aloldalak</td><td>~32</td><td><span class="pill auto">auto</span></td></tr>
+          <tr><td><b>T3</b></td><td>Mély / ritka</td><td>~55</td><td><span class="pill q">csak ?</span></td></tr>
+        </table>
+      </div>
+      <div>
+        <h2>A „?" gomb</h2>
+        <div class="qstates">
+          <div class="qstate"><button class="roundbtn q">?</button>Alap — a kalauz látva</div>
+          <div class="qstate"><button class="roundbtn q new">?<span class="most"></span></button>Arany pont — T3 oldal, még nem látott kalauz</div>
+          <div class="qstate"><button class="roundbtn q" style="background:rgba(255,107,74,0.12);">?</button>Nyitva</div>
+        </div>
+      </div>
+      <div>
+        <h2>Beállítások</h2>
+        <div class="settingsrow">
+          <svg width="26" height="26" viewBox="0 0 100 100"><use href="#s-orb-figyel"/></svg>
+          <div><div>Kalauzok</div><div class="sub">Újranézés · minden kalauz visszaállítása</div></div>
+          <span class="chev">›</span>
+        </div>
+      </div>
+      <p class="note">A kalauz nem tanít meg mindent — csak annyit mond, hogy mi ez a hely és mikor érdemes ide jönni. A többit az oldal maga mutatja meg, amikor már van benne adat.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  const rm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- A) lapozó sheet ---------- */
+  const sheetA = document.getElementById('sheetA');
+  const backA = document.getElementById('backA');
+  const cardsA = [...document.querySelectorAll('#trackA .kz-card')];
+  const dotsA = document.getElementById('dotsA');
+  const stepA = document.getElementById('stepA');
+  const nextA = document.getElementById('nextA');
+  const tileLogA = document.getElementById('tileLogA');
+  let iA = 0, seenA = new Set([0]);
+  cardsA.forEach((_, k) => {
+    const d = document.createElement('button');
+    d.className = 'kz-dot'; d.setAttribute('aria-label', (k + 1) + '. kártya');
+    d.addEventListener('click', () => goA(k));
+    dotsA.appendChild(d);
+  });
+  function goA(k) {
+    cardsA.forEach((c, j) => { c.classList.toggle('on', j === k); c.classList.toggle('gone', j < k); });
+    iA = k; seenA.add(k);
+    [...dotsA.children].forEach((d, j) => { d.classList.toggle('on', j === k); d.classList.toggle('seen', j !== k && seenA.has(j)); });
+    stepA.textContent = (k + 1) + ' / ' + cardsA.length;
+    nextA.textContent = k === cardsA.length - 1 ? 'Értem, kezdjük' : 'Tovább';
+    document.getElementById('skipA').style.visibility = k === cardsA.length - 1 ? 'hidden' : 'visible';
+  }
+  function openA() { sheetA.classList.add('open'); backA.classList.add('open'); goA(0); }
+  function closeA() { sheetA.classList.remove('open', 'peek'); backA.classList.remove('open'); tileLogA.classList.remove('spot-on'); }
+  nextA.addEventListener('click', () => iA < cardsA.length - 1 ? goA(iA + 1) : closeA());
+  document.getElementById('skipA').addEventListener('click', closeA);
+  document.getElementById('closeA').addEventListener('click', closeA);
+  backA.addEventListener('click', closeA);
+  document.getElementById('qA').addEventListener('click', openA);
+  document.getElementById('showA').addEventListener('click', () => { sheetA.classList.add('peek'); tileLogA.classList.add('spot-on'); });
+  document.getElementById('peekBackA').addEventListener('click', () => { sheetA.classList.remove('peek'); tileLogA.classList.remove('spot-on'); });
+  tileLogA.addEventListener('click', () => { if (sheetA.classList.contains('peek')) { sheetA.classList.remove('peek'); tileLogA.classList.remove('spot-on'); } });
+  goA(0);
+  setTimeout(openA, rm ? 0 : 700);
+
+  /* ---------- B) kalauz-oldal ---------- */
+  const pageB = document.getElementById('pageB');
+  const closeB = () => pageB.classList.remove('open');
+  document.getElementById('backB').addEventListener('click', closeB);
+  document.getElementById('skipB').addEventListener('click', closeB);
+  document.getElementById('goB').addEventListener('click', closeB);
+  document.getElementById('qB').addEventListener('click', () => pageB.classList.add('open'));
+
+  /* ---------- C) első indítás ---------- */
+  const stepsC = [...document.querySelectorAll('#welcome .wl-step')];
+  const dotsC = document.getElementById('dotsC');
+  const nextC = document.getElementById('nextC');
+  const welcome = document.getElementById('welcome');
+  let iC = 0;
+  stepsC.forEach((_, k) => { const d = document.createElement('span'); d.className = 'kz-dot'; dotsC.appendChild(d); });
+  function goC(k) {
+    stepsC.forEach((s, j) => s.classList.toggle('on', j === k));
+    [...dotsC.children].forEach((d, j) => { d.classList.toggle('on', j === k); d.classList.toggle('seen', j < k); });
+    iC = k;
+    nextC.textContent = k === stepsC.length - 1 ? 'Induljunk' : 'Tovább';
+  }
+  function closeC() { welcome.style.display = 'none'; }
+  function openC() { welcome.style.display = 'flex'; goC(0); }
+  nextC.addEventListener('click', () => iC < stepsC.length - 1 ? goC(iC + 1) : closeC());
+  document.getElementById('skipC').addEventListener('click', closeC);
+  document.querySelectorAll('#scrC .roundbtn.q').forEach(b => b.addEventListener('click', () => { if (welcome.style.display === 'none') openC(); }));
+  const TABS = {
+    nap: ['Nap', 'A mai nap gerince: mi a dolgunk most.'],
+    edzes: ['Edzés', 'Edzés, sport, futás — terv és napló egy helyen.'],
+    fuel: ['Fuel', 'Étkezés, napi keret, kamra, receptek.'],
+    mezo: ['Mezo', 'A társ: chat, minták, amit rólad megtanult.'],
+    en: ['Én', 'Te: cél, súly, alvás, emberek, karakter.'],
+  };
+  document.querySelectorAll('#tabDemoC .mtab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('#tabDemoC .mtab').forEach(x => x.classList.remove('lit'));
+    t.classList.add('lit');
+    const [n, x] = TABS[t.dataset.k];
+    document.getElementById('tabNameC').textContent = n;
+    document.getElementById('tabTxtC').textContent = x;
+  }));
+  goC(0);
+})();
+</script>
