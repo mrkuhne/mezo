@@ -139,8 +139,11 @@ Gated by the switch `mezo.feature.tutorial.enabled`
   spotlight:
   - `fuel-log` — the Logolás hero tile wrapper, `frontend/src/features/fuel/pages/FuelMaiPage.tsx`
     (one node).
-  - `nap-hero` — all four `.nap-hero` nodes (one per daypart face) in
-    `frontend/src/features/today/pages/NapHubPage.tsx`.
+  - `nap-hero` — all four `.nap-hero` nodes in
+    `frontend/src/features/today/pages/NapHubPage.tsx`: three daypart faces (reggel/nappal/este)
+    plus the `?day=rough` anchor-mode hero. Anchor mode is a dev URL-param state (provisional,
+    `mezo-d20.11`, final form deferred to the F7 design round) and is deliberately outside the
+    scope of the guide copy — it carries the anchor only so the spotlight does not degrade there.
   - `train-hero` — all six `.eh-hero` variants in
     `frontend/src/features/train/pages/EdzesHubPage.tsx`.
   - `mezo-chat` — the composer-shaped chat opener, one node, in
@@ -247,6 +250,14 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - **Header tests are seed-order-sensitive**: any test that renders `/fuel` and asserts on the
   header's control count/order must seed the fuel guide as seen first, or the 600 ms auto-open
   timer can fire mid-test.
+- **Auto-open never fires while something is already open** (`TutorialProvider.tsx`, route effect):
+  a `kapcsolat` chip navigates *before* its sheet finishes the 300 ms exit, and under
+  `prefers-reduced-motion` the destination's auto-open delay is 0 — without the guard the
+  destination guide opened into the still-exiting sheet and got `seenAt` + `completedAt` written
+  without ever being shown. The guard is deliberately general ("is anything open?"), because the
+  S2b welcome flow needs the same seam to suppress the `/nap` auto-open. `<KalauzSheet>` is also
+  keyed on the guide id so a guide swap remounts instead of inheriting the exiting instance's
+  `step`.
 - **Open question #1 (spec §13)**: the daypart switch renders on every route in code, but the
   guide copy for `fuel`'s `kapcsolat` card follows the **design's** Nap-only framing rather than
   the code's every-route reality — a known copy/code mismatch, not a bug, left for a future content
@@ -257,7 +268,8 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - **Deferred to later `mezo-gb1s` slices**: T0 first-launch welcome flow (S2b), the
   chrome-free-page mini-"?" (S3, tied to the active-workout guide).
 - **Anchors are per-face/per-variant JSX nodes, not a single element**: `nap-hero` sits on all
-  four `.nap-hero` nodes in `NapHubPage.tsx` (one per daypart face) and `train-hero` sits on all
+  four `.nap-hero` nodes in `NapHubPage.tsx` (three daypart faces + the `?day=rough` anchor-mode
+  hero, a dev URL-param state outside the guide copy's scope) and `train-hero` sits on all
   six `.eh-hero` variants in `EdzesHubPage.tsx` — a new face/variant on `/nap` or `/train` must
   carry the anchor too, or the spotlight silently degrades to "no anchor" on that face.
 - **Shell tests must seed every guide, not just seen-render one**: any shell test that mounts

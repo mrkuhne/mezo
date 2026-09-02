@@ -38,9 +38,21 @@ test('hang-lint: nincs tiltott szó, kártyánként legfeljebb 2 mondat, fogalom
   for (const e of KALAUZ_REGISTRY) for (const c of e.cards) {
     expect(c.voice).not.toMatch(FORBIDDEN)
     expect(c.title).not.toMatch(FORBIDDEN)
-    const sentences = c.voice.split(/[.!?…]\s+(?=[A-ZÁÉÍÓÖŐÚÜŰ„])/).length
+    // A lookahead szándékosan tág: a mondat kezdődhet **félkövéren** (`*`), számjeggyel, vagy
+    // kisbetűvel is (idézet, márkanév) — a szűk „csak nagybetű" változat mellett egy 3 mondatos
+    // kártya átcsúszott volna. Unicode-flag, hogy az ékezetes kisbetűk is beleessenek.
+    const sentences = c.voice.split(/[.!?…]\s+(?=[\p{L}\d*„])/u).length
     expect(sentences).toBeLessThanOrEqual(2)
     if (c.kind === 'fogalom') expect(c.def.split(/\s+/).length).toBeLessThanOrEqual(25)
+  }
+})
+
+// A KalauzSheet a `card.orb`-ot ÉS a `card.spot`-ot is feltétel nélkül kirakja egymás mellé
+// (KalauzSheet.tsx kalauz-art): ha a kettő ugyanaz, a kártyán két azonos folt ül.
+test('art-lint: a kártya spotja nem lehet azonos az orbjával', () => {
+  for (const e of KALAUZ_REGISTRY) for (const c of e.cards) {
+    if (c.kind === 'kapcsolat') continue // ennek nincs spotja
+    expect(c.spot, `${e.id}: ${c.title}`).not.toBe(c.orb ?? 's-orb')
   }
 })
 

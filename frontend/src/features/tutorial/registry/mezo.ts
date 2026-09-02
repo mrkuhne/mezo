@@ -17,7 +17,7 @@ export const MEZO_KALAUZ: KalauzEntry[] = [
     label: 'Mezo',
     cards: [
       {
-        kind: 'intro', spot: 's-orb', orb: 's-orb',
+        kind: 'intro', spot: 'i-mezo', orb: 's-orb',
         title: 'Ez Mezo.',
         voice: 'Itt lakik a társad: amit megtanult rólad, és amit ebből gondol. Beszélgethetsz vele, vagy csak elolvashatod, mit vett észre.',
       },
@@ -28,7 +28,7 @@ export const MEZO_KALAUZ: KalauzEntry[] = [
         ...fogalom('minta'),
       },
       {
-        kind: 'hogyan', spot: 'i-mezo', orb: 's-orb-figyel', anchor: 'mezo-chat',
+        kind: 'hogyan', spot: 'i-mikrofon', orb: 's-orb-figyel', anchor: 'mezo-chat',
         title: 'Kérdezz, ahogy egy embertől.',
         voice: 'A felső sáv egy sima beszélgetés-indító: írd be, ami eszedbe jut, vagy mondd fel hangosan. Mezo ismeri a mai napodat, nem a nulláról indul.',
       },

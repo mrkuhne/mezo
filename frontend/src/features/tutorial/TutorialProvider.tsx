@@ -66,6 +66,10 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   setProgressRef.current = setProgress
   const progressRef = useRef(progress)
   progressRef.current = progress
+  // `openIdRef` a render alatt is szinkronba kerül a state-tel, de a nyitás/zárás pillanatában
+  // EAGERLY is átírjuk (open/close/force-dismiss): a route-effect és az auto-open timer még a
+  // következő render ELŐTT kérdezi meg, hogy „van-e nyitva valami" — egy elavult ref ott vagy
+  // téves némán-zárást (lásd lent), vagy téves elnyomást okozna.
   const openIdRef = useRef(openId)
   openIdRef.current = openId
   // The kapcsolat-chip navigates AND animates the Sheet's close in the same click — `navigate()`
@@ -117,6 +121,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     const e = getKalauz(id)
     if (!e) return
     if (timer.current) { clearTimeout(timer.current); timer.current = null }
+    openIdRef.current = id
     setOpenId(id)
     // Látva = megjelent. Frissebb verzió esetén új rekord, completedAt/dismissedAtStep nullázva.
     const map = progressRef.current
@@ -140,6 +145,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
         })
       }
     }
+    openIdRef.current = null
     setOpenId(null)
   }, [persist])
 
@@ -183,13 +189,25 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
           persist({ ...map, [openedId]: { ...prev, dismissedAtStep: 0 } })
         }
       }
+      // Eager ref-írás: az alábbi „már van nyitva valami" kapu ugyanebben a futásban kérdez.
+      openIdRef.current = null
       setOpenId(null)
     }
     if (!current || current.tier === 'T3') return
     if (autoShown.current.has(current.id) || !isUnseenRef.current(current.id)) return
+    // Semmi nem ugorhat fel MÁS nyitott felület alá/fölé. A `navPendingCloseRef`-ág (kapcsolat-chip)
+    // szándékosan nyitva hagyja a kalauzt a kilépő animáció végéig — reduced-motion alatt az
+    // auto-open késleltetése 0, a kilépés viszont EXIT_MS=300, így a cél kalauza a MÉG KILÉPŐ
+    // sheetbe nyílna: seenAt+completedAt íródna rá anélkül, hogy megjelent volna (a 300 ms-nál
+    // lefutó onClose az addigra átírt openIdRef-et olvassa). Általános „már van nyitva valami"
+    // kapu — a következő szelet első-indítás welcome-flow-ja ugyanezen a résen fogja elnyomni a
+    // /nap auto-open-jét. A `current` így egyszerűen nem ugrik fel ebben a navigációban; nem lesz
+    // `autoShown`, nem lesz seenAt — a következő belépésre újra esélyes.
+    if (openIdRef.current !== null) return
     const id = current.id
     timer.current = setTimeout(() => {
       timer.current = null
+      if (openIdRef.current !== null) return // időzítés közben nyílt valami (pl. a „?" gomb) — nem lépünk rá
       autoShown.current.add(id) // csak akkor jelöljük "megpróbáltnak", ha ténylegesen kinyílt (StrictMode dupla-futás alatt a cleanup törli a timert, de az elmaradt fut sosem foglalja el a guardot)
       openRef.current(id)
     }, prefersReducedMotion() ? 0 : AUTO_DELAY_MS)
@@ -207,6 +225,10 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       {children}
       {entry && (
         <KalauzSheet
+          // Kalauz-váltás = ÚJ sheet-példány, nem a régi továbbélése: enélkül a kicserélt kártyák
+          // az előző példány `step`-jét öröklik (a `cards[step]` `undefined` lehet, ha az új
+          // kalauznak kevesebb kártyája van), és egy épp kilépő sheet menet közben átváltana.
+          key={openId}
           label={entry.label}
           cards={entry.cards}
           onClose={close}

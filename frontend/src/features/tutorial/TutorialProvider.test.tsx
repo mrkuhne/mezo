@@ -15,7 +15,16 @@ beforeEach(() => {
   localStorage.clear()
   vi.useFakeTimers({ shouldAdvanceTime: true })
 })
-afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs() })
+afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); vi.unstubAllGlobals() })
+
+/** jsdom-ban nincs matchMedia — olyat teszünk be, ami `reduce`-ot mond (AUTO_DELAY_MS → 0). */
+function stubReducedMotion() {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: true, media: q, onchange: null,
+    addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
+  }))
+}
 
 function Probe() {
   const t = useTutorial()
@@ -131,6 +140,25 @@ test('a kapcsolat-chip navigál, a kalauz completedAt-tal zár', async () => {
   await waitFor(() => expect(readLocalProgress().fuel?.completedAt).not.toBeNull())
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(screen.getByTestId('current')).toHaveTextContent('-') // /me/weight-en vagyunk
+})
+
+// mezo-gb1s.3 regresszió: reduced-motion alatt az auto-open késleltetése 0, a Sheet kilépő
+// animációja viszont továbbra is 300 ms. A kapcsolat-chip előbb navigál, csak utána indítja az
+// animált close()-t — így a cél-route auto-kalauza a MÉG KILÉPŐ sheetbe nyílt bele: a cél kapott
+// seenAt-ot ÉS (a 300 ms-nál lefutó onClose-ból, ami az azóta átírt openIdRef-et olvasta)
+// completedAt-ot, anélkül hogy megjelent volna — a forrás pedig sosem kapta meg a sajátját.
+test('reduced motion + kalauzos route-ra mutató chip: a cél-kalauz nem záródik némán, a forrás kapja a completedAt-ot', async () => {
+  stubReducedMotion()
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/fuel')
+  flush()
+  await screen.findByRole('dialog', { name: 'Kalauz · Fuel' })
+  await user.click(screen.getByRole('button', { name: '5. kártya' }))
+  await user.click(screen.getByRole('button', { name: /^Edzés/ })) // → /train, aminek VAN kalauza
+  await act(async () => { vi.advanceTimersByTime(400) })
+  const p = readLocalProgress()
+  expect(p.train?.completedAt ?? null).toBeNull() // sosem jelent meg → nem lehet „végigolvasva"
+  expect(p.fuel?.completedAt).not.toBeNull() // a forrás kalauz kapja a done-t
 })
 
 test('route-váltás nyitott, érintetlen kalauzon dismissedAtStep: 0-t ír', async () => {

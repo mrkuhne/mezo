@@ -43,12 +43,28 @@ const BASE_CONTROLS = [
 ]
 
 // mezo-gb1s.1/.3: a „?" a gombsor ELEJÉN áll, de csak ott, ahol van registry-találat.
-// Az elvárás magából a registry-ből származik, hogy egy új kalauz ne törje ezt a tesztet.
-test.each(['/nap', '/train', '/fuel', '/mezo', '/me'])('a %s fejléce a kalauz-gombot + a négy alap-kontrollt viseli', (path) => {
+// Az elvárás KÉZZEL írt tábla, nem a registryből származtatott: az utóbbi akkor is zöld
+// maradna, ha egy kalauz kiesne a registryből (a teszt a kód alól kérdezné az igazságot).
+// A teljes gomblistát nézzük, nem prefixet — így egy oda nem illő extra gomb is kibukik.
+test.each([
+  ['/nap', 'nap'],
+  ['/train', 'train'],
+  ['/fuel', 'fuel'],
+  ['/mezo', 'mezo'],
+  ['/me', 'me'],
+])('a %s fejléce a kalauz-gombot (%s) + a négy alap-kontrollt viseli', (path, id) => {
+  expect(findKalauz(path)?.id).toBe(id)
   const { container } = renderAt(path)
   const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
-  const expected = findKalauz(path) !== null ? ['Kalauz ehhez az oldalhoz', ...BASE_CONTROLS] : BASE_CONTROLS
-  expect(labels.slice(0, expected.length)).toEqual(expected)
+  expect(labels).toEqual(['Kalauz ehhez az oldalhoz', ...BASE_CONTROLS])
+})
+
+// A kalauz nélküli route-on nincs „?" — a négy alap-kontroll marad.
+test('a kalauz nélküli aloldal fejlécén nincs „?" gomb', () => {
+  expect(findKalauz('/nap/rutin')).toBeNull()
+  const { container } = renderAt('/nap/rutin')
+  const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
+  expect(labels).toEqual(BASE_CONTROLS)
 })
 
 // A fejléc nem áll meg a tab-gyökereknél — az aloldalakon is ott van (D1).
