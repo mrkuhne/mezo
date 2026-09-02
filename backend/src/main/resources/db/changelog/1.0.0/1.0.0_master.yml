@@ -937,3 +937,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609021000_mezo-06o0.8_companion_message_people_kind.sql
+  - changeSet:
+      id: "1.0.0:202609021400_mezo-gb1s.1_create_tutorial_progress"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021400_mezo-gb1s.1_create_tutorial_progress.sql

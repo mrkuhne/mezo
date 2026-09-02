@@ -3,8 +3,13 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { writeLocalProgress } from '@/shared/lib/tutorialSeen'
 
-beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  localStorage.clear()
+  writeLocalProgress({ fuel: { version: 1, seenAt: '2026-08-30T10:00:00.000Z', completedAt: null, dismissedAtStep: null } })
+})
 afterEach(() => vi.unstubAllEnvs())
 
 const renderAt = (path: string) => {
@@ -28,14 +33,23 @@ test.each(['/nap', '/train', '/fuel', '/mezo', '/me'])('a %s tab-gyökéren PONT
   expect(document.querySelectorAll('.nap-head')).toHaveLength(1)
 })
 
-test.each(['/nap', '/train', '/fuel', '/mezo', '/me'])('a %s tab-gyökér fejléce mind a négy kontrollt viseli', (path) => {
+test.each(['/nap', '/train', '/mezo', '/me'])('a %s tab-gyökér fejléce a négy alap-kontrollt viseli', (path) => {
   const { container } = renderAt(path)
-  const labels = [...container.querySelectorAll('.nap-head button')]
-    .map((b) => b.getAttribute('aria-label'))
+  const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
   expect(labels[0]).toBe('Napszak váltása')
   expect(labels[1]).toMatch(/^Mezo üzenetei/)
   expect(labels[2]).toMatch(/^Értesítések/)
   expect(labels[3]).toBe('Profil')
+})
+
+// mezo-gb1s.1: a kalauzos oldalon a „?" a gombsor elején — a többi négy változatlan sorrendben utána.
+test('a /fuel fejléce elöl a Kalauz gombot viseli, utána a négy alap-kontrollt', () => {
+  const { container } = renderAt('/fuel')
+  const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
+  expect(labels[0]).toBe('Kalauz ehhez az oldalhoz')
+  expect(labels.slice(1, 5)).toEqual([
+    'Napszak váltása', expect.stringMatching(/^Mezo üzenetei/), expect.stringMatching(/^Értesítések/), 'Profil',
+  ])
 })
 
 // A fejléc nem áll meg a tab-gyökereknél — az aloldalakon is ott van (D1).

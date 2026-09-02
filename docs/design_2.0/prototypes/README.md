@@ -32,6 +32,7 @@ they inline come from `../assets/`.
 | `mezo-memoar.html` | https://claude.ai/code/artifact/95759be5-7de6-4d04-af7b-60d7862dbe50 |
 | `receptmuhely.html` | https://claude.ai/code/artifact/dc39e817-e89e-43df-b93f-53b568efed9f |
 | `tudastar-egyben.html` | https://claude.ai/code/artifact/1ddf2a14-f5ce-4d4c-b125-c843e073797e |
+| `kalauz.html` | https://claude.ai/code/artifact/aff4eff9-775c-4222-82cf-487d143479bf |
 | `growth-tab.html` | https://claude.ai/code/artifact/393bca87-9095-42dd-ac55-127162ad0412 |
 | `rutin-epito.html` | https://claude.ai/code/artifact/78c8f0f9-925f-44a9-93b4-3e9cc077e162 (Rutin-építő — széles Rutin csempe az Én hubon, /me/rutin hub erő-csíkokkal, 4 lépéses szokás-recept wizard Fogg / Clear keretre, szokás-szerkesztő — mezo-3zue) |
 
