@@ -68,3 +68,15 @@ test('week tile renders NOTHING when the endpoint is unavailable (null), savings
   expect(screen.queryByText('Ez a hét')).toBeNull()
   expect(container.querySelector('.gr-band')).toBeNull()
 })
+
+test('populated week with savingsHuf: 0 still renders the tile + its 4 cells, but no savings line', () => {
+  hooks.useGrowthWeek.mockReturnValue({
+    data: { weekStart: '2026-07-06', questCompleted: 6, questClosed: 7, lifeXp: 185, activities: 2, savingsHuf: 0 },
+    isPending: false,
+    isError: false,
+  })
+  const { container } = renderPage()
+  expect(screen.getByText('Ez a hét')).toBeInTheDocument()
+  expect(container.querySelectorAll('.mz-mcells > *')).toHaveLength(4)
+  expect(screen.queryByText(/Megtakarítás e héten/)).toBeNull()
+})
