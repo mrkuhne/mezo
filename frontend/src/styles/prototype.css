@@ -392,6 +392,12 @@
   --lg-white: #FFFFFF;
   --lg-wk7-p2: #E5C46B;
   --lg-why-bg: #FFF2EA;
+  /* Wizard (Task 11, mezo-iizd.1) — the extrinsic-frame warning wash and the
+     "on" success washes (pillar toggle · ha–akkor plan), hoisted here so the
+     mozaikCssTokens hex guard sees no raw D/E/FF hex in the wizard rules below. */
+  --lg-frame-warn: #FFF1D6;
+  --lg-frame-warn2: #FFFCF4;
+  --lg-ok-wash: #EEF4E8;
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -7796,6 +7802,37 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .lg-ifthen .ha.akkor { color: #4E6B42; background: rgba(110,139,94,0.16); }
 .lg-actrow { display: flex; gap: 8px; margin: 6px 0 10px; }
 .lg-actrow button { flex: 1; border: 1px solid rgba(43,33,24,0.14); background: #fff; border-radius: 999px; padding: 8px 0; font-size: 11px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+
+/* ===== Cél-varázsló (Task 11, mezo-iizd.1, prototype celok.html #page-wiz) =====
+   Progress rail · fcards · Keret frame-nudge · Pillérek toggle cards · Ha–akkor
+   plan editor · Összegzés summary pills. Reuses the `.lg-*` family above. */
+.lg-wprog { display: flex; gap: 5px; margin-bottom: 6px; }
+.lg-wprog i { flex: 1; height: 4px; border-radius: 2px; background: rgba(43,33,24,0.1); }
+.lg-wprog i.f { background: var(--gradient-cta); }
+.lg-fcard { background: #fff; border-radius: 16px; padding: 11px 13px 12px; margin-bottom: 9px; border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 10px 20px -14px rgba(43,33,24,0.28); }
+.lg-flabel { font-size: 8.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; margin-bottom: 5px; display: block; }
+.lg-fin { width: 100%; border: 1px solid rgba(43,33,24,0.12); border-radius: 11px; padding: 8px 11px; font-family: inherit; font-size: 13px; background: #FDFAF4; color: #2B2118; resize: none; }
+.lg-frame { border-radius: 16px; padding: 11px 13px; margin: 8px 0; background: linear-gradient(140deg, var(--lg-frame-warn), var(--lg-frame-warn2)); box-shadow: 0 12px 22px -14px rgba(181,126,20,0.45); }
+.lg-frame.ok { background: linear-gradient(140deg, var(--lg-h-dw), #FBFDF9); box-shadow: 0 12px 22px -14px rgba(110,139,94,0.45); }
+.lg-frame .lb { font-size: 11px; font-weight: 800; color: #A8801F; } .lg-frame.ok .lb { color: #4E6B42; }
+.lg-frame p { font-size: 11px; color: #6E6257; margin-top: 4px; }
+.lg-pilcard { display: flex; align-items: center; gap: 10px; border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; background: #fff; border: 1.5px solid rgba(43,33,24,0.08); box-shadow: 0 10px 20px -14px rgba(43,33,24,0.28); }
+.lg-pilcard.on { border-color: #8FAF7E; background: linear-gradient(140deg, var(--lg-ok-wash), var(--lg-white) 70%); }
+.lg-pilcard.off { opacity: 0.5; }
+.lg-pilcard b { font-size: 12.5px; display: block; } .lg-pilcard small { font-size: 10px; color: #6E6257; display: block; }
+.lg-togg { width: 38px; height: 22px; border-radius: 999px; background: rgba(43,33,24,0.14); position: relative; flex: none; border: none; padding: 0; cursor: pointer; }
+.lg-togg::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left 0.15s ease; }
+.lg-togg.on { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); } .lg-togg.on::after { left: 18px; }
+.lg-plan { border-radius: 16px; padding: 10px 11px 9px; margin-bottom: 8px; background: #fff; border: 1.5px solid rgba(43,33,24,0.08); }
+.lg-plan.on { border-color: #8FAF7E; background: linear-gradient(140deg, var(--lg-ok-wash), var(--lg-white) 62%); }
+.lg-plan.own { border-style: dashed; }
+.lg-prow { display: flex; gap: 8px; align-items: flex-start; } .lg-prow + .lg-prow { margin-top: 5px; padding-top: 6px; border-top: 0.5px solid rgba(43,33,24,0.08); }
+.lg-ptxt { flex: 1; min-width: 0; border: none; background: transparent; font-family: inherit; font-size: 12px; line-height: 1.4; color: #2B2118; resize: none; padding: 2px 0; }
+.lg-pfoot { display: flex; align-items: center; gap: 6px; margin-top: 7px; padding-top: 6px; border-top: 0.5px solid rgba(43,33,24,0.08); font-size: 9.5px; font-weight: 700; color: #6E6257; }
+.lg-addrow { width: 100%; border: 1.2px dashed rgba(43,33,24,0.2); background: none; border-radius: 12px; padding: 9px 0; font-size: 11px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; margin-top: 4px; }
+.lg-aiwait { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 15px; background: rgba(255,255,255,0.7); margin-bottom: 8px; font-size: 11px; color: #6E6257; }
+.lg-sumpil { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 6px; border-radius: 15px; background: #fff; border: 0.5px solid rgba(43,33,24,0.06); }
+.lg-sumpil b { font-size: 12px; display: block; } .lg-sumpil small { font-size: 10px; color: #6E6257; display: block; }
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)

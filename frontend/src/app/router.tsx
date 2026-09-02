@@ -68,6 +68,7 @@ import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { CelokPage } from '@/features/me/pages/CelokPage'
 import { CelPage } from '@/features/me/pages/CelPage'
+import { CelWizardPage } from '@/features/me/pages/CelWizardPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
@@ -289,10 +290,12 @@ export const routes: RouteObject[] = [
       // source order, but the ordering stays explicit here too).
       { path: 'me/goals/weight', element: <GoalsPage /> },
       { path: 'me/goals/weight/new', element: <GoalPlannerPage /> },
+      // Task 11's five-step wizard (mezo-iizd.1) — another static `me/goals/*` sibling,
+      // registered ahead of the dynamic `me/goals/:id` below per the same precedent.
+      { path: 'me/goals/new', element: <CelWizardPage /> },
       // Goal detail (Task 10, mezo-iizd.1) — registered AFTER every static `me/goals/*`
       // sibling above (React Router ranks static over dynamic regardless of source order,
-      // but the ordering stays explicit here per the `me/people/:id` precedent). Task 11's
-      // wizard adds `me/goals/new` as another static sibling ahead of this route.
+      // but the ordering stays explicit here per the `me/people/:id` precedent).
       { path: 'me/goals/:id', element: <CelPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },
