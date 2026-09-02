@@ -22,6 +22,10 @@ alter table workout_session add column active_seconds INTEGER;
 -- ignore NULL arguments instead of propagating them (unlike a plain comparison), so
 -- least(NULL, 300) evaluates to 300, not NULL — filtering first avoids crediting every session
 -- with a bogus 300s lead-in gap.
+--
+-- A session with exactly one logged set has only that first-row NULL delta, so it produces no
+-- row in gaps and the update's join finds nothing to sum: active_seconds correctly stays NULL
+-- ("unknown"), not 0 — a lone point carries no interval to derive work time from.
 with raw_deltas as (
     select workout_session_id as sid,
            done_at - lag(done_at)

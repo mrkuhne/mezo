@@ -57,6 +57,31 @@ class WorkoutTimingBackfillIT extends AbstractIntegrationTest {
 
         // 60s + min(600,300) + 90s = 450
         assertThat(loadActiveSeconds(sessionId)).isEqualTo(450);
+
+        // Idempotency: the statement only touches rows where active_seconds IS NULL, so
+        // rerunning it against an already-filled row must not change the value.
+        runBackfill();
+
+        assertThat(loadActiveSeconds(sessionId)).isEqualTo(450);
+    }
+
+    @Test
+    void testBackfill_shouldLeaveActiveSecondsNull_whenSessionHasOneLoggedSet() throws Exception {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createActiveMeso(owner);
+        WorkoutSessionEntity template = trainPopulator.createTemplateDay(owner, meso.getId(), "Hét");
+        ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        WorkoutSessionEntity instance =
+            trainPopulator.createWorkoutInstance(owner, template, java.time.LocalDate.now(), "completed");
+        UUID sessionId = instance.getId();
+
+        trainPopulator.createLoggedSet(owner, exercise.getId(), sessionId, 0, "60", 8, 1, Instant.now());
+
+        runBackfill();
+
+        // A lone set has no lag() predecessor, so it produces no delta at all (not even one
+        // that gets clipped) — active_seconds stays NULL ("unknown"), not 0.
+        assertThat(loadActiveSeconds(sessionId)).isNull();
     }
 
     @Test
