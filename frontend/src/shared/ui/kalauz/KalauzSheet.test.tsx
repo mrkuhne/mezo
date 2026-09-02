@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { KalauzSheet, type KalauzSheetCard } from '@/shared/ui/kalauz/KalauzSheet'
 
@@ -42,7 +42,7 @@ test('Kihagyom és Escape a lépésszámmal zár', async () => {
   const { user, onClose } = setup()
   await user.click(screen.getByRole('button', { name: 'Tovább' }))
   await user.click(screen.getByRole('button', { name: 'Kihagyom' }))
-  expect(onClose).toHaveBeenCalledWith('skip', 1)
+  await waitFor(() => expect(onClose).toHaveBeenCalledWith('skip', 1))
 })
 
 test('a kapcsolat-chip navigál és zár', async () => {

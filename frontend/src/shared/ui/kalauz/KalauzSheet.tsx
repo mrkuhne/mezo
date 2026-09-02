@@ -145,7 +145,7 @@ export function KalauzSheet({ label, cards, onClose, onNavigate }: KalauzSheetPr
               ))}
             </div>
             <div className="kalauz-foot">
-              {!last && <button type="button" className="kalauz-ghost kalauz-link" onClick={() => onClose('skip', step)}>Kihagyom</button>}
+              {!last && <button type="button" className="kalauz-ghost kalauz-link" onClick={close}>Kihagyom</button>}
               <button type="button" className="kalauz-ghost kalauz-back" aria-label="Előző kártya" disabled={step === 0} onClick={() => go(step - 1)}>‹ Vissza</button>
               {last
                 ? <button type="button" className="kalauz-cta" onClick={() => onClose('done', step)}>Értem, kezdjük</button>
