@@ -30,6 +30,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [insights](#insights) | · | · | ✓ | ✓ | [companion](features/companion.md), [insights](features/insights.md) |
 | [intention](#intention) | ✓ | 1 | ✓ | · | [intention](features/intention.md) |
 | [journal](#journal) | ✓ | 1 | ✓ | · | [journal](features/journal.md) |
+| [lifegoal](#lifegoal) | ✓ | 1 | · | · | · |
 | [llmlog](#llmlog) | ✓ | 1 | · | · | [companion](features/companion.md) |
 | [me](#me) | · | · | ✓ | ✓ | [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [me](features/me.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
 | [meal](#meal) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
@@ -258,13 +259,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`,
     `GeminiRoundUsage`, `GeminiRoundUsageAdvisor`, `GeminiUsageExtractor`, `GoalTools`, `GraphEdgeEvidence`,
     `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `InsightsTools`,
-    `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MedicationTools`, `MemoryEmbeddingWriter`, `MemoryTools`,
-    `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`, `PantryPhotoLlmAdapter`,
-    `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`,
-    `PracticeTools`, `ProfileMetaEnvelope`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
-    `RecordingToolCallback`, `RefsEnvelope`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `StackPlacementLlmAdapter`,
-    `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolText`,
-    `TrainTools`, `TurnVerdictCheck`, `WeekReviewSource`
+    `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`,
+    `MedicationTools`, `MemoryEmbeddingWriter`, `MemoryTools`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`,
+    `NoteMentionCatchUp`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`,
+    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PracticeTools`, `ProfileMetaEnvelope`,
+    `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`, `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`,
+    `RefsEnvelope`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `StackPlacementLlmAdapter`, `TodayActivitySource`,
+    `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolText`, `TrainTools`,
+    `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
@@ -344,7 +346,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### fuel
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-01, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-08-29, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done)
 
@@ -372,17 +374,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useFuelWeek`, `useIntakes`, `useMealActions`, `useMealCoach`, `useMealCoachFor`, `useMedication`,
     `useMedicationActions`, `usePantry`, `usePantryActions`, `useProtocol`, `useProtocolActions`, `useRecipeActions`,
     `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`, `useReplanScenarios`, `useSlotTemplateActions`,
-    `useSlotTemplateEvaluation`, `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`
+    `useSlotTemplateEvaluation`, `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`,
+    `useWorkshop`
   - **modules:** coachApi.ts, coachHooks.ts, fuel.ts, fuelApi.ts, fuelConfig.ts, fuelHooks.ts, fuelReadHooks.ts,
     fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts, fuelWeekHooks.ts, mealApi.ts, medication.ts,
     medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts, pantryHooks.ts, pantryImpact.ts, pantryPickables.ts,
     queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts, slotTemplateHooks.ts,
-    stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts
+    stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts, workshopApi.ts, workshopHooks.ts,
+    workshopMock.ts, workshopState.ts
 - **FE ui** `frontend/src/features/fuel`
   - **pages:** FuelKamraPage.tsx, FuelLogNewPage.tsx, FuelLogPage.tsx, FuelMaiPage.tsx, FuelMedicationPage.tsx,
     FuelNaploPage.tsx, FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx,
     KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
-    RecipesSkeleton.tsx
+    RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx, FuelSettingsSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
@@ -393,7 +397,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
     RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx,
     StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
-    WeeklySupplementGrid.tsx, WindowBlock.tsx
+    WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
     dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts, keretHero.ts,
     matchMealsToStack.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts, resolveDayType.ts,
@@ -574,6 +578,30 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `JournalApiIT`, `JournalEmbeddingEventIT`, `JournalEntryPersistenceIT`, `JournalSwitchOffIT`
   - **populators:** `JournalPopulator`, `UserPopulator`
 
+### lifegoal
+
+*BE + API* · read next: **none — no HOW doc exists for this feature yet**
+
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal`
+  - **sub-features:** `catalog`
+  - **entities→tables:** `LifeGoalEntity`→`life_goal`, `LifeGoalPillarDayEntity`→`life_goal_pillar_day`,
+    `LifeGoalPillarEntity`→`life_goal_pillar`
+  - **repositories:** `LifeGoalPillarDayRepository`, `LifeGoalPillarRepository`, `LifeGoalRepository`
+  - **services:** `LifeGoalPillarService`, `LifeGoalProposeService`, `LifeGoalService`, `LifeGoalSignalService`,
+    `LifeGoalTemplateProposer`
+  - **controllers→contract:** `LifeGoalController`→`LifeGoalApi`
+  - **mappers:** `LifeGoalMapper`
+  - **config:** `LifeGoalProperties`
+  - **other:** `IfThenPlanJson`, `LifeGoalSeedData`, `PillarRuleJson`, `PillarSourceJson`, `PlanTriggerJson`,
+    `SignalCatalog`, `SignalCatalogEntry`
+- **Contract** `api/feature/lifegoal/lifegoal.yml` — 9 operations
+  - **endpoints:** GET /api/life-goals · POST /api/life-goals · GET /api/life-goals/signals ·
+    POST /api/life-goals/propose · GET /api/life-goals/{id} · PUT /api/life-goals/{id} · DELETE /api/life-goals/{id} ·
+    POST /api/life-goals/{id}/status · PUT /api/life-goals/{id}/pillars
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 5 IT + 0 unit
+  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalPillarApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`
+  - **populators:** `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`
+
 ### llmlog
 
 *BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-01, mixed)
@@ -647,7 +675,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-01, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
@@ -747,7 +775,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### nutrition
 
-*BE* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done)
+*BE* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-01, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **services:** `MealRole`, `MealScoringService`
@@ -758,7 +786,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### pantry
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-08-31, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-01, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
   - **entities→tables:** `PantryImportEntity`→`pantry_import`, `PantryItemEntity`→`pantry_item`
@@ -936,15 +964,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
   - **repositories:** `RecipeIngredientRepository`, `RecipeRepository`
-  - **services:** `RecipeBreakdownLlm`, `RecipeBreakdownProseService`, `RecipeBreakdownService`, `RecipeService`
-  - **controllers→contract:** `RecipeController`→`RecipeApi`
+  - **services:** `RecipeBreakdownLlm`, `RecipeBreakdownProseService`, `RecipeBreakdownService`, `RecipeService`,
+    `RecipeWorkshopLlm`, `RecipeWorkshopService`, `RecipeWorkshopValidator`
+  - **controllers→contract:** `RecipeController`→`RecipeApi`, `RecipeWorkshopController`→`RecipeWorkshopApi`
   - **mappers:** `RecipeMapper`
-- **Contract** `api/feature/recipe/recipe.yml` — 6 operations
+  - **config:** `RecipeWorkshopProperties`
+- **Contract** `api/feature/recipe/recipe.yml` — 7 operations
   - **endpoints:** GET /api/recipe · POST /api/recipe · GET /api/recipe/{id} · PUT /api/recipe/{id} ·
-    DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 5 IT + 3 unit
+    DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown · POST /api/recipe/workshop/turn
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 8 IT + 4 unit
   - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeRepositoryIT`,
-    `RecipeServiceIT`
+    `RecipeServiceIT`, `RecipeWorkshopApiIT`, `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`
   - **populators:** `DatabasePopulator`, `PantryItemPopulator`, `RecipePopulator`
 
 ### ritual
@@ -1139,15 +1169,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `CompanionMessagePopulator`, `DailySummaryPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`,
   `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
   `GoalPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`,
-  `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LlmLogPopulator`, `MealPopulator`,
-  `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
+  `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
+  `MealPopulator`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
   `MemoryEmbeddingPopulator`, `MentionPopulator`, `MesoTemplatePopulator`, `NeedsPopulator`, `NotificationPopulator`,
   `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
   `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `QuestPopulator`,
   `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`,
   `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
   `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
-- **`ResetDatabase` TRUNCATE list** — 91 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 94 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
     `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
@@ -1155,14 +1185,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `exercise_feedback`, `exercise_set`, `experiment`, `feedback_rollup`, `fuel_settings`, `gamification_profile`,
     `goal`, `goal_plan_link`, `gratitude_entry`, `gym_schedule_slot`, `habit_chain`, `habit_day`, `habit_def`,
     `intention_creed`, `intention_focus`, `journal_entry`, `knowledge_edge`, `knowledge_fact`, `knowledge_node`,
-    `learned_fact`, `level_up_event`, `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`, `medication`,
-    `medication_dose`, `memoir`, `memory_embedding`, `mention`, `meso_template`, `mesocycle`, `mesocycle_report`,
-    `message_feedback`, `muscle_group_volume_log`, `needs_day`, `notification_pref`, `notification_schedule`,
-    `owned_title`, `pantry_import`, `pantry_item`, `pattern`, `pattern_event`, `period_summary`, `perk_unlock`,
-    `person`, `prediction`, `protocol`, `protocol_item`, `push_log`, `push_subscription`, `recipe`,
-    `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`, `skill_progress`, `sleep_goal`, `sleep_log`,
-    `sport_event`, `sport_schedule_slot`, `sport_session`, `supplement_intake`, `water_log`, `weekly_review`,
-    `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_session`
+    `learned_fact`, `level_up_event`, `life_goal`, `life_goal_pillar`, `life_goal_pillar_day`, `llm_log_history`,
+    `meal`, `meal_item`, `meal_slot_template`, `medication`, `medication_dose`, `memoir`, `memory_embedding`,
+    `mention`, `meso_template`, `mesocycle`, `mesocycle_report`, `message_feedback`, `muscle_group_volume_log`,
+    `needs_day`, `notification_pref`, `notification_schedule`, `owned_title`, `pantry_import`, `pantry_item`,
+    `pattern`, `pattern_event`, `period_summary`, `perk_unlock`, `person`, `prediction`, `protocol`, `protocol_item`,
+    `push_log`, `push_subscription`, `recipe`, `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`,
+    `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`, `sport_schedule_slot`, `sport_session`,
+    `supplement_intake`, `water_log`, `weekly_review`, `weekly_score`, `weekly_suggestion`, `weight_log`,
+    `workout_session`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts
@@ -1175,5 +1206,5 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `medication`, `quickinput`, `recipe`
+- **Features with no `docs/features/` doc:** `lifegoal`, `medication`, `quickinput`, `recipe`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).
