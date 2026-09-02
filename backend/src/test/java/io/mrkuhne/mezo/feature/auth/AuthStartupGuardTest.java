@@ -1,7 +1,8 @@
 package io.mrkuhne.mezo.feature.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
@@ -14,10 +15,15 @@ class AuthStartupGuardTest {
 
     @Test
     void testCheck_shouldThrow_whenStrictAndDefaultsActive() {
-        assertThatThrownBy(() -> AuthStartupGuard.check(props("owner", AuthStartupGuard.DEFAULT_JWT_SECRET), true))
-            .isInstanceOf(SystemRuntimeErrorException.class)
-            .hasMessageContaining("owner-password")
-            .hasMessageContaining("jwt-secret");
+        SystemRuntimeErrorException ex = catchThrowableOfType(
+            SystemRuntimeErrorException.class,
+            () -> AuthStartupGuard.check(props("owner", AuthStartupGuard.DEFAULT_JWT_SECRET), true));
+
+        assertThat(ex.getMessages()).hasSize(1);
+        assertThat(ex.getMessages().get(0).getCode()).isEqualTo("INTERNAL_ERROR");
+        assertThat(ex.getMessages().get(0).getMessage())
+            .contains("owner-password")
+            .contains("jwt-secret");
     }
 
     @Test

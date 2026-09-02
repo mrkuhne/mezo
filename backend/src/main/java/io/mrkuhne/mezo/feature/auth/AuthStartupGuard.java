@@ -36,13 +36,11 @@ public class AuthStartupGuard implements CommandLineRunner {
         if (DEFAULT_OWNER_PASSWORD.equals(props.ownerPassword())) offending.add("mezo.auth.owner-password");
         if (DEFAULT_JWT_SECRET.equals(props.jwtSecret())) offending.add("mezo.auth.jwt-secret");
         if (!offending.isEmpty()) {
-            // SystemRuntimeErrorException derives Throwable#getMessage() from the SystemMessage's
-            // *code* (see its constructor), not its .message() field, so the offending keys must
-            // live in the code for callers/tests reading ex.getMessage() to see them. This never
-            // reaches GlobalExceptionHandler's messageSource lookup (the process dies at boot,
-            // before any request handling), so an unusually detailed code here is harmless.
+            // code stays the short, stable, enum-like lookup token every other SystemMessage.error()
+            // call site uses (GlobalExceptionHandler.resolve() looks it up in messages.properties,
+            // the frontend switches on it) — the offending-keys detail lives only in .message().
             String detail = "mezo.auth.strict=true but dev defaults are active for: " + String.join(", ", offending);
-            throw new SystemRuntimeErrorException(SystemMessage.error("INTERNAL_ERROR: " + detail)
+            throw new SystemRuntimeErrorException(SystemMessage.error("INTERNAL_ERROR")
                 .message(detail)
                 .build());
         }
