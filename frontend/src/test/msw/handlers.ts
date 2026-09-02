@@ -775,6 +775,22 @@ export const handlers = [
       phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
     })
   }),
+  // Meso plan generator (wizard redesign): deterministic default so real-mode wizard tests
+  // can render a 7-day proposal without scripting; tests override per case with server.use.
+  http.post(`${API_BASE}/api/train/meso-plans/generate`, async ({ request }) => {
+    const body = (await request.json()) as { daysOfWeek: string[]; weeks: number; priorities?: Record<string, string> | null; goalText?: string | null }
+    const training = new Set(body.daysOfWeek)
+    const days = ['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'].map((day, i) => training.has(day)
+      ? { day, type: i % 2 === 0 ? 'Upper' : 'Lower', muscle: i % 2 === 0 ? 'back' : 'quad', exercises: [
+          { name: i % 2 === 0 ? 'Row' : 'Squat', muscle: i % 2 === 0 ? 'back-mid' : 'quad', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound', catalogId: 'c1f3a0e2-0000-4000-8000-000000000002' } ] }
+      : { day, type: 'Rest', muscle: '', note: 'Pihenőnap', exercises: [] })
+    return HttpResponse.json({
+      template: { title: 'Hypertrophy · Ősz', shortTitle: 'Hypertrophy', goal: 'Izomtömeg építés', goalPreset: 'hypertrophy',
+        musclePriorities: body.priorities ?? null, weeks: body.weeks, split: `Upper / Lower · ${body.daysOfWeek.length}×/hét`, style: `RP · ${body.weeks} hét`,
+        phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'], notes: body.goalText ?? null, volumePerMuscle: null, days },
+      rationale: 'MSW alap kiosztás', llmUsed: false,
+    })
+  }),
   http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) =>
     HttpResponse.json({ id: params.id }),
   ),

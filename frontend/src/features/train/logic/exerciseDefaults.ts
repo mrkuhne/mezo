@@ -1,24 +1,32 @@
 // ============================================================
 // Mezo · exerciseDefaults — library pick → planned GymExercise defaults,
-// shared by the unified MesoEditor parents (builder MesoExercises + planner
-// wizard + template editor). New exercises are filled from the goal-preset
-// SCHEMES table (mezo-dq60): compound/isolation get preset-specific
-// reps/RIR/sets, plyo always gets the fixed weightless PLYO_SCHEME and is
-// exempt from the hypertrophy volume budget (mezo-gbo7) — via type alone
-// (countsForVolume's `type !== 'plyo'` fallback), no explicit
+// shared by the unified MesoEditor parents (builder MesoExercises + wizard
+// v2 + template editor). New exercises are filled from a single hypertrophy
+// scheme (wizard redesign, mezo-d20.14 — the goal-preset SCHEMES table and
+// its multi-goal picker are retired): compound/isolation get the
+// hypertrophy reps/RIR/sets, plyo always gets the fixed weightless
+// PLYO_SCHEME and is exempt from the volume budget (mezo-gbo7) — via type
+// alone (countsForVolume's `type !== 'plyo'` fallback), no explicit
 // countsTowardVolume field, matching the generator's own plyo seed shape
 // (mezo-szsi item 6).
 // ============================================================
 import type { ExerciseLibraryItem, GymExercise, MesoDay } from '@/data/types'
-import { SCHEMES, PLYO_SCHEME } from '@/features/train/logic/planner'
 import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
+
+// Single-model scheme (wizard redesign): every new exercise is a hypertrophy
+// exercise. Copied verbatim from the retired planner.ts's SCHEMES.hypertrophy.
+const HYPERTROPHY_SCHEME = {
+  compound: { reps: '8-10', rir: 1, sets: 4 },
+  isolation: { reps: '10-12', rir: 1, sets: 3 },
+}
+const PLYO_SCHEME = { reps: 5, sets: 3 }
 
 const parseReps = (reps: string): [number, number] => {
   const [lo, hi] = reps.split('-').map(Number)
   return [lo, hi ?? lo]
 }
 
-export function libraryToGymExercise(item: ExerciseLibraryItem, preset?: string | null): GymExercise {
+export function libraryToGymExercise(item: ExerciseLibraryItem, _preset?: string | null): GymExercise {
   const base = {
     id: `${item.id}-${crypto.randomUUID()}`,
     name: item.name,
@@ -42,7 +50,7 @@ export function libraryToGymExercise(item: ExerciseLibraryItem, preset?: string 
       // gives both origins the identical shape (and the identical unchecked checkbox state).
     }
   }
-  const scheme = (SCHEMES[preset ?? 'hypertrophy'] ?? SCHEMES.hypertrophy)[item.type]
+  const scheme = HYPERTROPHY_SCHEME[item.type]
   const [repMin, repMax] = parseReps(scheme.reps)
   return {
     ...base,

@@ -4987,6 +4987,27 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
 .mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
 
+/* ===== WeeklyBandsCard (wizard redesign, mezo-d20.14) — current → ceiling per
+   muscle, no percentages. Reuses existing --mz-cell-, --mz-ink- and --mz-cellbg
+   tokens; the hairline literal mirrors .nck-row / .nr-row above (no --mz-line
+   token exists). */
+.mz-card { background: var(--surface-1); border: 1px solid var(--card-border); border-radius: var(--r-2xl); filter: var(--card-elevation); padding: 16px; }
+.mz-bands { display: grid; gap: 2px; }
+.mz-band { padding: 7px 0; }
+.mz-band + .mz-band { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+.mz-band-row { display: flex; align-items: center; gap: 8px; }
+.mz-pill { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.mz-grow { flex: 1; }
+.mz-band-nums { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mz-band-bar { height: 9px; border-radius: 5px; background: var(--mz-cellbg); overflow: hidden; margin-top: 5px; }
+.mz-band-bar > div { height: 100%; border-radius: 5px; }
+.mz-tchip { font-size: 9px; font-weight: 700; border-radius: 999px; padding: 2px 9px; }
+.mz-tchip-emphasize { background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }
+.mz-tchip-grow { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.mz-tchip-maintain { border: 1px dashed var(--mz-ink-mut); color: var(--mz-ink-mut); }
+.mz-stepchip { font-size: 9.5px; font-weight: 700; color: var(--mz-cell-sage-ink); }
+.mz-habnote { font-size: 10px; color: var(--mz-ink-mut); margin-top: 10px; line-height: 1.4; }
+
 /* ===== mezo-vdf4: munkacsík — a tool-hívások egyetlen emberi sora ===== */
 /* Domain wash + deep text pairs — shared by the work panel and the grouped refs. */
 .dm-sky   { --dmw: var(--mz-wash-sky);   --dmtx: var(--mzc-tx-sky); }
@@ -7999,6 +8020,121 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .mzj-decprose { margin-left: auto; flex: none; min-height: 44px; border: 1px solid rgba(43, 33, 24, 0.14);
   background: var(--mz-stripbg); border-radius: 999px; padding: 5px 13px; font-size: 11px; font-weight: 700;
   color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
+
+/* ── Mezociklus varázsló v2 (mezo-d20.14) — meso-body.html #page-wizard +
+      #page-day, px ×1.18. Három lépés: szekció-kártyák (01), tier-sorok (02),
+      kompakt hero + nap-mozaik (03). Minden szín meglévő --mz-* tokenből. ── */
+.mz-wprog { display: flex; gap: 5px; padding: 5px 17px 0; }
+.mz-wprog button { flex: 1; height: 5px; min-height: 5px; padding: 0; border: none; border-radius: 3px;
+  background: var(--mz-gbar-bg); cursor: pointer; }
+.mz-wprog button.on { background: var(--gradient-cta); }
+.mz-wprog button:disabled { cursor: default; }
+.mz-stepct { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--mz-ink-mut); }
+.mz-steptitle { font-size: 18px; font-weight: 700; padding: 7px 0 2px; }
+.mz-steplead { font-size: 11px; color: var(--mz-ink-mut); margin: 0 0 12px; line-height: 1.45; }
+
+/* 01 · szekció-kártyák */
+.mz-stepcard { border-radius: 20px; padding: 13px 15px; margin-bottom: 11px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-wash-white); box-shadow: var(--mz-shadow); }
+.mz-stepcard-coral { background: var(--mz-wash-coral); }
+.mz-stepcard-lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.mz-stepcard-gold { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.mz-stephead { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.mz-eb-coral { color: var(--mz-cell-coral-ink); }
+.mz-eb-lav { color: var(--mz-cell-lav-ink); }
+.mz-eb-gold { color: var(--mz-cell-gold-ink); }
+.mz-stepnote { font-size: 10px; color: var(--mz-ink-mut); margin-top: 8px; line-height: 1.45; }
+.mz-stepcard textarea { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 14px;
+  padding: 11px 13px; font-family: inherit; font-size: 13px; background: var(--mz-chipbg);
+  color: var(--text-primary); resize: none; }
+
+/* napszám-csempék + 7 kerek nap-chip */
+.mz-dcgrid { display: flex; gap: 7px; }
+.mz-dct { flex: 1; min-width: 0; border: 1px solid rgba(43, 33, 24, 0.1); border-radius: 17px;
+  background: var(--mz-chipbg); padding: 12px 0 9px; text-align: center; font-family: inherit;
+  cursor: pointer; box-shadow: 0 12px 24px -17px rgba(43, 33, 24, 0.3); }
+.mz-dct b { display: block; font-size: 20px; font-weight: 200; font-variant-numeric: tabular-nums; }
+.mz-dct small { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--mz-ink-mut); }
+.mz-dct[aria-pressed='true'] { border-color: var(--primary-base); background: var(--mz-cellbg); }
+.mz-dct[aria-pressed='true'] b { color: var(--mz-cell-coral-ink); font-weight: 400; }
+.mz-daypick { display: flex; gap: 6px; justify-content: space-between; margin-top: 11px; }
+.mz-daypick button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(43, 33, 24, 0.14);
+  background: var(--mz-chipbg); font-family: inherit; font-size: 11px; font-weight: 700;
+  color: var(--mz-ink-soft); cursor: pointer; padding: 0; }
+.mz-daypick button[aria-pressed='true'] { border-color: var(--primary-base); background: var(--gradient-cta);
+  color: #fff; box-shadow: 0 7px 14px -6px rgba(255, 91, 54, 0.6); }
+.mz-dct, .mz-daypick button { transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mz-dct:active, .mz-daypick button:active { transform: scale(0.9); }
+
+/* a kísérő egy mondata — az .eh-coach buborék a varázslóban */
+.mz-coach { display: flex; align-items: flex-start; gap: 8px; margin-top: 11px;
+  background: var(--mz-coach-bg); border-radius: 12px; padding: 8px 11px;
+  font-size: 12px; font-weight: 300; color: var(--text-primary); line-height: 1.45; }
+.mz-coach .dot { width: 17px; height: 17px; border-radius: 50%; flex: none; margin-top: 1px;
+  background: var(--gradient-cta); }
+.mz-coachsub { font-size: 10px; color: var(--mz-ink-mut); margin-top: 6px; }
+
+/* 03 · generálás-várakozó */
+.mz-genwait { text-align: center; padding: 50px 0 35px; }
+.mz-genwait-orb { width: 61px; height: 61px; border-radius: 50%; margin: 0 auto 14px;
+  background: var(--gradient-cta); box-shadow: 0 17px 35px -9px rgba(255, 91, 54, 0.6);
+  animation: mz-genpulse 1.2s ease-in-out infinite; }
+@keyframes mz-genpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+.mz-genwait b { display: block; font-size: 13px; font-weight: 700; }
+.mz-genwait small { display: block; font-size: 11px; color: var(--mz-ink-soft); margin-top: 4px; }
+@media (prefers-reduced-motion: reduce) { .mz-genwait-orb { animation: none; } }
+
+/* 03 · kompakt hero */
+.mz-edhero { border-radius: 19px; padding: 12px 14px; background: var(--mz-wash-trainhero);
+  border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }
+.mz-edhero-top { display: flex; align-items: center; gap: 9px; }
+.mz-edhero input { width: 100%; border: none; background: transparent; font-family: inherit;
+  font-size: 19px; font-weight: 700; padding: 3px 0; color: inherit; }
+.mz-minighost { flex: none; border: 1px solid rgba(43, 33, 24, 0.14); background: var(--mz-stripbg);
+  border-radius: 999px; padding: 5px 12px; font-family: inherit; font-size: 10px; font-weight: 700;
+  color: var(--mz-ink-soft); cursor: pointer; }
+.mz-confirm { margin-top: 9px; border-radius: 12px; padding: 9px 11px; background: var(--mz-cell-gold-bg);
+  color: var(--mz-cell-gold-ink); font-size: 11px; line-height: 1.45; }
+.mz-confirm-acts { display: flex; gap: 7px; margin-top: 8px; }
+
+/* 03 · nap-mozaik — csempe → saját nap-oldal */
+.mz-dtile { display: block; width: 100%; border-radius: 18px; padding: 11px 13px; text-align: left; font-family: inherit;
+  color: var(--text-primary); cursor: pointer; border: 0.5px solid rgba(43, 33, 24, 0.06);
+  background: var(--mz-wash-coral); box-shadow: 0 14px 26px -17px rgba(43, 33, 24, 0.28);
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+.mz-dtile:active { transform: scale(0.96); }
+.mz-dtile-sage { background: var(--mz-wash-sage); }
+.mz-dtile-rose { background: var(--mz-wash-rose); }
+.mz-dtile-gold { background: var(--mz-wash-gold); }
+.mz-dtile-warn { background: var(--mz-cell-gold-bg); }
+.mz-dtile-head { display: flex; align-items: flex-start; gap: 7px; }
+.mz-dtile-dl { font-size: 21px; font-weight: 700; line-height: 1; }
+.mz-dtile-tt { display: block; margin-top: 3px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--mz-cell-coral-ink); }
+.mz-dtile-sage .mz-dtile-tt { color: var(--mz-cell-sage-ink); }
+.mz-dtile-rose .mz-dtile-tt { color: var(--mz-cell-rose-ink); }
+.mz-dtile-gold .mz-dtile-tt { color: var(--mz-cell-gold-ink); }
+.mz-dtile-st { flex: none; font-size: 9px; font-weight: 700; border-radius: 999px; padding: 3px 8px;
+  background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); }
+.mz-dtile-st-done { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.mz-dtile-cells { display: flex; gap: 5px; margin-top: 8px; }
+.mz-dtile-cell { flex: 1; text-align: center; padding: 5px 2px; border-radius: 11px;
+  background: var(--mz-cellbg); }
+.mz-dtile-cells b { display: block; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mz-dtile-cells small { font-size: 8px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--mz-ink-mut); }
+.mz-dtile-mlist { margin-top: 8px; display: grid; gap: 5px; }
+.mz-dtile-ml { display: grid; grid-template-columns: 45px 1fr 17px; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 700; }
+.mz-dtile-ml .bar { display: block; height: 6px; border-radius: 4px; background: var(--mz-gbar-bg); overflow: hidden; }
+.mz-dtile-ml .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--mz-ink-soft); }
+.mz-dtile-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--error); flex: none; margin-top: 5px; }
+
+/* lépés-lábléc — egy elsődleges CTA, mellette a csendes társa */
+.mz-wfoot { display: flex; gap: 9px; margin-top: 14px; }
+.mz-wfoot > :first-child { flex: 1; }
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)

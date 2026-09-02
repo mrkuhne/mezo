@@ -1297,13 +1297,6 @@ export interface ExerciseLibraryItem {
   editable?: boolean  // true for user-authored catalog rows (created_by == current user)
 }
 
-export interface GoalPreset {
-  id: string; label: string; sub: string; description: string
-  defaultWeeks: number; split: string; days: number; style: string
-  phaseTemplate: MesoPhase[]; color: string; icon: IconName
-}
-export interface SplitOption { label: string; days: number[]; best: string | null }
-
 // ── Daily quests (gamified growth E1, mezo-df7q) ─────────────────────────────
 export type QuestSlot = 'BODY' | 'FUELBIO' | 'GROWTH'
 export type QuestStatus = 'offered' | 'completed' | 'expired' | 'rerolled'

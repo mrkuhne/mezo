@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type { MesoDay } from '@/data/types'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
@@ -42,9 +42,9 @@ describe('MesoEditor', () => {
     expect(onAddClick).toHaveBeenCalledWith('H')
   })
 
-  it('renders the active day breakdown card (H chest 12/11) and highlights its over rows', () => {
+  it('renders the active day breakdown card (H chest 12/8) and highlights its over rows', () => {
     render(<MesoEditor days={days} {...props} />)
-    expect(screen.getByText(/12 \/ 11/)).toBeInTheDocument()
+    expect(screen.getByText(/12 \/ 8/)).toBeInTheDocument()
     const rowA = screen.getByRole('button', { name: /Gyak a · szerkesztés/ }).closest('.card')
     const rowB = screen.getByRole('button', { name: /Gyak b · szerkesztés/ }).closest('.card')
     expect(rowA).toHaveAttribute('data-over', 'true')
@@ -69,10 +69,10 @@ describe('MesoEditor', () => {
     expect(rowX).not.toHaveAttribute('data-over') // exempt exercise — never flagged, even in an over group
   })
 
-  it('switching to day Cs shows its own breakdown (13/11), the suggestDay clause, and highlights the over exercise', () => {
+  it('switching to day Cs shows its own breakdown (13/8), the suggestDay clause, and highlights the over exercise', () => {
     render(<MesoEditor days={days} {...props} />)
     fireEvent.click(screen.getByRole('button', { name: /^Cs ·/ }))
-    expect(screen.getByText(/13 \/ 11/)).toBeInTheDocument()
+    expect(screen.getByText(/13 \/ 8/)).toBeInTheDocument()
     expect(screen.getByText(/\(pl\. H\)/)).toBeInTheDocument()
     const rowC = screen.getByRole('button', { name: /Gyak c · szerkesztés/ }).closest('.card')
     expect(rowC).toHaveAttribute('data-over', 'true')
@@ -81,7 +81,10 @@ describe('MesoEditor', () => {
   it('off day (K) renders no breakdown card', () => {
     render(<MesoEditor days={days} {...props} />)
     fireEvent.click(screen.getByRole('button', { name: /^K ·/ }))
-    expect(screen.queryByText(/izmonként/)).not.toBeInTheDocument()
+    // "Ma · izmonként" is DayBreakdownCard's own eyebrow — scoped so it doesn't collide
+    // with the week-level WeeklyBandsCard's "Heti szetek · izmonként", which stays
+    // mounted regardless of the active day.
+    expect(screen.queryByText(/Ma · izmonként/)).not.toBeInTheDocument()
   })
 
   it('adding a new exercise applies its suggested warmup count once (add-path override)', () => {
@@ -119,6 +122,21 @@ describe('MesoEditor', () => {
   it('renders the Struktúra lint card (mezo-oyhy.2)', () => {
     render(<MesoEditor days={days} {...props} />)
     expect(screen.getByRole('button', { name: /Struktúra/i })).toBeInTheDocument()
+  })
+
+  // mezo-d20.14 review, I2: ProgramDayView edits ONE day but must judge it against the whole
+  // week — every week-scope derivation reads `weekDays`, the day tabs/breakdown read `days`.
+  it('weekDays scopes the hero totals and the weekly bands to the week, not to the edited day', () => {
+    render(<MesoEditor days={[days[0]]} weekDays={days} {...props} />)
+    // hero: the WEEK's 25 sets (12 H + 13 Cs) and 2 training days, not Monday's 12 / 1
+    expect(screen.getByText(/25 szett/)).toBeInTheDocument()
+    expect(screen.getByText(/2 edzésnap/)).toBeInTheDocument()
+    // bands: back is on Cs only — with a Monday-only week it would not appear at all
+    const bands = screen.getByRole('group', { name: 'Heti szetek · izmonként' })
+    expect(within(bands).getByText('Hát')).toBeInTheDocument()
+    expect(within(bands).getByText(/^13 →/)).toBeInTheDocument()
+    // the tab strip still shows only the edited day
+    expect(screen.getAllByRole('button', { name: /^(H|K|Cs) ·/ })).toHaveLength(1)
   })
 
   it('does not render the peak-week fit card when nothing projects out of band (mezo-3m5m, GD6)', () => {
