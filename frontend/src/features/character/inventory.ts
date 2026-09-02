@@ -21,10 +21,13 @@
 // (plus the `n: 4` round's `Életjel-gyűrűk` row, pulled forward here via
 // `needs-domain-imbalance` before its own round landed), its seven data sources are now the
 // last seven `reads` rows above, and its twelve detectors are wired into `DetektorokPage.tsx`'s
-// catalog, bringing it to 32. Do not treat this module as authoritative for "what is actually
-// wired today" — `DetektorokPage.tsx` (the 32 real, `DetectorRegistry`-discovered detectors)
-// and the backend detector catalog are that runtime truth; this file is the plan, not the state
-// of the world.
+// catalog, bringing it to 32. Round 4 ("Kapcsolatok & AI-meta") landed the same way: its seven
+// items are gone (Szezonalitás and Memoár moved to `INVENTORY_LATER` with their reasons), its
+// seven data sources are the last seven `reads` rows, and its eight detectors bring
+// `DetektorokPage.tsx`'s catalog to 40. `rounds` is now empty. Do not treat this module as
+// authoritative for "what is actually wired today" — `DetektorokPage.tsx` (the 40 real,
+// `DetectorRegistry`-discovered detectors) and the backend detector catalog are that runtime
+// truth; this file is the plan, not the state of the world.
 // ============================================================
 
 export interface InventoryRead {
@@ -77,30 +80,24 @@ export const INVENTORY_READS: InventoryRead[] = [
   { w: 'Check-in sorok (idősáv, első írás ideje, jegyzet)', chips: ['8 hét'] },
   { w: 'Naplózási latencia (a nap vs. mikor íródott)', chips: ['8 hét', '11 forrás'] },
   { w: 'Chat-időbélyegek (saját üzenetek)', chips: ['8 hét'] },
+  { w: 'Emberek-említések (időpont, kontextus-címke)', chips: ['8 hét'] },
+  { w: 'Alvás lefekvés/ébredés (alvásközép)', chips: ['8 hét'] },
+  { w: 'Chat-eszközhívások (téma-domén, beszélgetés-cím)', chips: ['8 hét'] },
+  { w: 'Tudástár-döntések + minta-események', chips: ['8 hét'] },
+  { w: 'Predikciók (státusz, magabiztosság)', chips: ['8 hét'] },
+  { w: 'Questek (slot, státusz)', chips: ['8 hét'] },
+  { w: 'Kísérlet- és kihívás-kimenetek', chips: ['8 hét'] },
 ]
 
-/** Tervezett (prototype's `INVENTORY.rounds`) — the remaining MINDENT-be round, verbatim
- *  (round 1, "Edzés & test", round 2, "Fuel & ciklus", and round 3, "Psziché & viselkedés-meta",
- *  all landed for real via mezo-1gim.15 — see `INVENTORY_READS` above and
- *  `DetektorokPage.tsx`'s 32-detector catalog). */
-export const INVENTORY_ROUNDS: InventoryRound[] = [
-  {
-    n: 4,
-    title: 'Kapcsolatok & AI-meta',
-    items: [
-      { t: 'Emberek-említések', det: ['people-mood-link'] },
-      { t: 'Hétvége-szakadék', det: ['weekend-gap'] },
-      { t: 'Szezonalitás' },
-      { t: 'Chat-témák eltolódása', det: ['chat-topic-shift'] },
-      { t: 'Tudástár-triázs döntések', det: ['knowledge-rejection-pattern'], sensitive: true },
-      { t: 'Quest-szövegek' },
-      { t: 'Memoár + predikció' },
-    ],
-  },
-]
+/** Tervezett — EMPTY since round 4 ("Kapcsolatok & AI-meta") landed via mezo-1gim.15: every
+ *  MINDENT-be round is wired. The type stays so a future round can be planned here again;
+ *  AdatforrasokPage renders an honest "all landed" line when this is empty. */
+export const INVENTORY_ROUNDS: InventoryRound[] = []
 
 /** The "később" tail (prototype's `INVENTORY.later`) — areas beyond the four rounds. */
 export const INVENTORY_LATER: string[] = [
   'Súly-naplózási rés (WeightGapDetector — még nem létezik).',
+  'Szezonalitás — 8 hét egy éves ciklus töredéke; két év azonos naptári ablaka kell hozzá.',
+  'Memoár — nincs strukturált mezője, csak próza; szövegbányászat nélkül nem olvasható.',
   'Ami a négy kör lezárása után még felmerül.',
 ]

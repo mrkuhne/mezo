@@ -1,4 +1,5 @@
 import type { FuelMeal } from '@/data/types'
+import { toneOf } from '@/features/fuel/logic/scoreTone'
 
 // AI score chip (mezo-rrtj) — replaces SlotCard's bare `AI 74`. The score itself is deterministic
 // and arrives WITH the write (P7), so it is never "computing"; the seconds-long LLM step is the
@@ -6,12 +7,6 @@ import type { FuelMeal } from '@/data/types'
 const RING_R = 8
 const RING_C = 2 * Math.PI * RING_R
 
-type Tone = { cls: 's-hi' | 's-md' | 's-lo'; word: string }
-function toneOf(pct: number): Tone {
-  if (pct >= 80) return { cls: 's-hi', word: 'jó' }
-  if (pct >= 60) return { cls: 's-md', word: 'közepes' }
-  return { cls: 's-lo', word: 'gyenge' }
-}
 
 export function MealScoreChip({
   meal,

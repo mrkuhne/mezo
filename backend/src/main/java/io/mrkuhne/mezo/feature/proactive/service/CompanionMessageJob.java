@@ -47,6 +47,15 @@ public class CompanionMessageJob {
             } catch (Exception e) {
                 log.warn("Sleep-reaction pre-generation failed for user {} on {}", user.getId(), today, e);
             }
+            // Emberek S6 (mezo-06o0.8): SZÁNDÉKOSAN csak itt, a hajnali cronban — nem az
+            // ensureTodayCronKinds lusta miss-recovery ágában. Az a feed GET-jén futna, és egy
+            // sima GET /api/people-ből sosem szabad LLM-hívás lennie. Egy kimaradt hajnali futást
+            // a Task 3 determinisztikus tartaléka fed le a hub Mezo-sávjában.
+            try {
+                companionMessageGenerator.generatePeopleObservation(user.getId(), today);
+            } catch (Exception e) {
+                log.warn("People-observation pre-generation failed for user {} on {}", user.getId(), today, e);
+            }
         }
         log.info("Companion-feed morning run for {}: {} morning message(s) present", today, generated);
     }

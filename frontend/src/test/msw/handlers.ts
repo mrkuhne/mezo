@@ -551,7 +551,7 @@ export const handlers = [
   }),
 
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
-  http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),
+  http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [], mezoNote: '' })),
   http.post(`${API_BASE}/api/people`, async ({ request }) => {
     const req = (await request.json()) as Record<string, unknown>
     return HttpResponse.json({
@@ -571,6 +571,7 @@ export const handlers = [
       knownFacts: [],
       ties: [],
       affectTrend: [],
+      direction: 'flat',
     }, { status: 201 })
   }),
   http.put(`${API_BASE}/api/people/:id`, async ({ params, request }) => {
@@ -592,6 +593,7 @@ export const handlers = [
       knownFacts: [],
       ties: [],
       affectTrend: [],
+      direction: 'flat',
     })
   }),
   http.delete(`${API_BASE}/api/people/:id`, () => new HttpResponse(null, { status: 204 })),
@@ -602,7 +604,7 @@ export const handlers = [
       id: params.personId, name: 'Marci', initial: 'M', relationship: 'friend',
       relationshipHu: 'Ismerős', aliases: [], status: body.decision === 'accept' ? 'active' : 'candidate',
       sourceKind: 'extractor', affectBaseline: 'neutral', knownFacts: [], ties: [], affectTrend: [],
-      mentionCount: 0, mentionsThisWeek: 0,
+      direction: 'flat', mentionCount: 0, mentionsThisWeek: 0,
     })
   }),
 

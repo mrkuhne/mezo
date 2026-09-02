@@ -12,13 +12,14 @@
 //
 // Pure: no React, no ambient time, no `@/data/*` hook import — only types plus
 // the shared `toMin`/`pct` helpers (the heroWindow.ts / keretHero.ts pattern).
-// Do not rename the exports: they are imported sight-unseen by WindowLane.tsx
-// and FuelMaiPage.tsx.
+// Do not rename the exports: they are imported sight-unseen by WindowBlock.tsx,
+// FuelLogHeroTile.tsx, FuelLogPage.tsx and FuelMaiPage.tsx (WindowLane retired, mezo-byo1).
 // ============================================================
 import { pct } from '@/shared/lib/pct'
-import { toMin } from '@/data/fuel/fuelConfig'
+import { FIBER_TARGET_G, toMin } from '@/data/fuel/fuelConfig'
 import { isMealSlot } from '@/features/fuel/logic/dayZones'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
+import { mealContextOf, type MealContext } from '@/features/fuel/logic/mealContext'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
 
@@ -37,8 +38,8 @@ const SLOT_ICON: Record<MealSlot, WindowIconName> = {
 /** One mini macro ring on a window tile. `pct` is the meal's share of the DAILY
  *  target, so the three rings read as "how much of today this one meal carries". */
 export interface TileRingVM {
-  key: 'p' | 'c' | 'f'
-  /** The ring's centre glyph — P / C / F (prototype `data-l`). */
+  key: 'p' | 'c' | 'f' | 'r'
+  /** The ring's centre glyph — P / C / F / R (prototype `data-l`). */
   letter: string
   /** Full HU label for the aria description (Fehérje / Szénhidrát / Zsír). */
   label: string
@@ -75,6 +76,9 @@ export interface WindowTileVM {
   /** A done tile's score chip is only a button when the meal carries a breakdown —
    *  MealScoreSheet renders null without one, so a breakdown-less chip is a dead tap. */
   scorable: boolean
+  /** The role the meal was SCORED under (Standard / Pre / Post) — done tiles only, null when
+   *  unscored or planned (mezo-zeeq; the derivation lives in logic/mealContext.ts). */
+  context: MealContext | null
 }
 
 export interface WindowLaneVM {
@@ -136,6 +140,17 @@ export function buildWindowLane(input: {
     const c = (done ? meal?.c : undefined) ?? slot.c ?? null
     const f = (done ? meal?.f : undefined) ?? slot.f ?? null
 
+    const rings: TileRingVM[] = [
+      ringOf('p', 'P', 'Fehérje', p, budget.p, 'var(--macro-protein)'),
+      ringOf('c', 'C', 'Szénhidrát', c, budget.c, 'var(--macro-carbs)'),
+      ringOf('f', 'F', 'Zsír', f, budget.f, 'var(--macro-fat)'),
+    ]
+    // Rost only where it is real (mezo-zeeq): a done tile's logged meal carrying fiberG —
+    // FuelSlot has no fiber, so a planned window never grows a fabricated 4th ring.
+    if (done && meal?.fiberG != null) {
+      rings.push(ringOf('r', 'R', 'Rost', meal.fiberG, FIBER_TARGET_G, 'var(--macro-fiber)'))
+    }
+
     return {
       key: tileKey(slot),
       slotKey: slot.slotKey,
@@ -149,14 +164,11 @@ export function buildWindowLane(input: {
       // suggestion earns the "a tervből" meta — a budget-only window says nothing.
       fromPlan: slot.suggestedRecipeId != null,
       kcal,
-      rings: [
-        ringOf('p', 'P', 'Fehérje', p, budget.p, 'var(--macro-protein)'),
-        ringOf('c', 'C', 'Szénhidrát', c, budget.c, 'var(--macro-carbs)'),
-        ringOf('f', 'F', 'Zsír', f, budget.f, 'var(--macro-fat)'),
-      ],
+      rings,
       mealId: done ? (slot.mealId ?? null) : null,
       scorePct: done && meal?.score != null ? Math.round(meal.score * 100) : null,
       scorable: done && meal?.breakdown != null,
+      context: done && meal ? mealContextOf(meal) : null,
     }
   })
 

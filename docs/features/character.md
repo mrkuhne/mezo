@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-01
+updated: 2026-09-02
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -48,7 +48,18 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 > daily-intention/decision-journal/gratitude/Életjel/check-in/chat-timestamp domain reads, taking
 > the catalog from 20 to 32 detectors; round 3's eight inventory rows (plus the round-4 preview's
 > `Életjel-gyűrűk` row, pulled forward via `needs-domain-imbalance`) are gone the same way rounds
-> 1–2's were. Round 4 remains open. See §3/§4/§9/§10's Gépterem subsections below.** Driving spec:
+> 1–2's were. **Round 4 ("Kapcsolatok & AI-meta") ✅ shipped**: a new `META` dimension kind
+> (`self-audit`, "A társ önvizsgálata", owned by the Szkeptikus via the new
+> `CharacterExpertCatalog.SKEPTIC` record — see
+> [ADR 0034](../decisions/0034-meta-dimension-companion-self-audit.md)) plus the last eight
+> detectors — `people-mood-link`, `mention-context-shift`, `weekend-gap` (all `antropologus`),
+> `chat-topic-shift` (`pszichologus`) — claims ABOUT DANIEL — and the four szkeptikus-owned,
+> META-dimension detectors `knowledge-rejection-pattern` (ÉRZÉKENY), `prediction-calibration`,
+> `quest-completion-calibration`, `experiment-outcome-ledger` — claims ABOUT THE SYSTEM — wired
+> onto real people-mention/sleep-clock/chat-tool-call/Tudástár-decision/prediction/quest/
+> experiment/challenge domain reads, taking the catalog from 32 to **40** detectors — the
+> `MINDENT be` inventory (`INVENTORY_ROUNDS`) is now exhausted. See §3/§4/§9/§10's Gépterem
+> subsections below.** Driving spec:
 > [`docs/superpowers/specs/2026-08-27-user-character-dossier-design.md`](../superpowers/specs/2026-08-27-user-character-dossier-design.md)
 > (bd epic `mezo-1gim`); the backend slice plans (`docs/superpowers/plans/2026-08-2*-character-slice*.md`,
 > `2026-08-3*-character-slice*.md`), the FE slice plan
@@ -56,11 +67,13 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 > (`docs/superpowers/plans/2026-09-01-character-slice9-gepterem.md`), the round-1 design spec
 > (`docs/superpowers/specs/2026-08-31-character-round1-edzes-test-design.md`), the round-2
 > design spec
-> (`docs/superpowers/specs/2026-09-01-character-round2-fuel-ciklus-design.md`), and the round-3
+> (`docs/superpowers/specs/2026-09-01-character-round2-fuel-ciklus-design.md`), the round-3
 > design spec
-> (`docs/superpowers/specs/2026-09-01-character-round3-psziche-viselkedes-design.md`) are the
+> (`docs/superpowers/specs/2026-09-01-character-round3-psziche-viselkedes-design.md`), and the
+> round-4 design spec
+> (`docs/superpowers/specs/2026-09-01-character-round4-kapcsolatok-ai-meta-design.md`) are the
 > point-in-time build record. **This doc reflects the code as it stands after `mezo-1gim.15`
-> round 3's Task 7** (route/page/doc ship-prep).
+> round 4's Task 9** (docs ship-prep) — `mezo-1gim.15` is now closed.
 
 ## 1. Summary
 
@@ -74,11 +87,14 @@ opinion about the user, dimension by dimension, claim by claim.
   watches the profile being built and gives feedback (not built yet, §9); (b) the AI — a
   deterministically rendered `[Karakter]` block injected into the companion chat prompt and all
   three proactive narrative generators (memoir, prediction, weekly review).
-- **Structure**: 7 fixed CORE dimensions (seeded, never deleted) + AI-opened CHAPTER dimensions
-  (proposed by the weekly konzílium, survives the Szkeptikus, can later be retired by the
-  monthly pass).
+- **Structure**: 7 fixed CORE dimensions (seeded, never deleted) + **1 fixed META dimension**
+  (`self-audit`, "A társ önvizsgálata", owned by the Szkeptikus — claims ABOUT THE SYSTEM:
+  prediction calibration, quest calibration, fact-triage hit rate, experiment outcomes; round 4,
+  `mezo-1gim.15`) + AI-opened CHAPTER dimensions (proposed by the weekly konzílium, survives the
+  Szkeptikus, can later be retired by the monthly pass).
 - **Built by a visible AI team**: 7 named domain-expert personas + a cross-cutting Szkeptikus
-  (devil's advocate) + Mezo as Integrátor/chair. IDENT-1 is preserved — experts never message
+  (devil's advocate in the konzílium AND, since round 4, the observer/proposer of the META
+  dimension) + Mezo as Integrátor/chair. IDENT-1 is preserved — experts never message
   the user directly; the user only *reads* the team's work (feed, konzílium transcript).
 - **Unit of truth**: the **claim** — confidence, evidence refs, a status
   (`ACTIVE`/`RETIRED`), a lifecycle. Dimension portrait prose is written FROM claims, never the
@@ -99,8 +115,16 @@ round 2 ("Fuel & ciklus") landed seven more (`comfort-eating`, `macro-adherence`
 twelve more still (`self-calibration`, `promise-vs-delivery`, `decision-profile`,
 `decision-review-backlog`, `gratitude-focus`, `streak-break-response`, `restart-pattern`,
 `retro-logging-ratio`, `night-activity`, `checkin-latency`, `checkin-slot-drift`,
-`needs-domain-imbalance`), 32 of them are implemented (`mezo-1gim.15`'s remaining round and
-`mezo-1gim.12` track the rest) — but the `[Karakter]` block now reaches all four narrative
+`needs-domain-imbalance`), and round 4 ("Kapcsolatok & AI-meta") landed the last eight
+(`people-mood-link`, `mention-context-shift`, `weekend-gap`, `chat-topic-shift`,
+`knowledge-rejection-pattern`, `prediction-calibration`, `quest-completion-calibration`,
+`experiment-outcome-ledger`), **40 of them are implemented** — the `MINDENT be` inventory is
+exhausted; only the `weight-gap` variant remains (`mezo-1gim.12`). Round 4 reads seven more
+sources — people mentions (context label), sleep bedtime/wakeup clocks, the assistant's executed
+tool calls (+ conversation title as evidence), Tudástár fact decisions + pattern events,
+predictions, quests, experiment/challenge outcomes — the last four through a second read
+composer, `CharacterMetaReads`, nested into `TrendWindow.meta`. The `[Karakter]` block now
+reaches all four narrative
 surfaces (chat, memoir, prediction, weekly review) and the bootstrap evidence corpus now matches
 the spec's full source list (daily summaries, patterns, facts, weekly reviews, journal entries,
 life events). The round-1 detectors read gym/sport/run/sleep/meso domain data over the standard
@@ -129,17 +153,21 @@ tile rather than in-page accordions.
 
 - **Hub** (`/me/karakter`, `KarakterHubPage`): a 7-segment maturity ring (one arc per CORE
   dimension, expert domain color, arc length = maturity, center count-up %) above a 4-tile
-  mosaic — **Dimenziók** (avg maturity + dimension count), **Feed** (latest observation preview),
+  mosaic — **Dimenziók** (avg maturity + a dimension-count line, "7 dimenzió" + " + önvizsgálat"
+  once the META dimension exists, round 4), **Feed** (latest observation preview),
   **Csapat** (9-persona orb cluster), **Konzílium** (latest conference date, a gold dot when one
   landed in the last 3 days). A pre-bootstrap dossier (all CORE dims at maturity 0, no claims —
   `isDossierEmpty`) shows the bootstrap intro face instead of the mosaic; `POST
   /api/character/bootstrap` drives a staggered progress face, then a reveal ("A dossziéd
   elkészült") whose CTA opens the first konzílium's transcript. The switch-off/degraded state
   (overview `404`) is a quiet card, never a crash — the same tone `ChatPage` uses.
-- **Dimenziók** (`/me/karakter/dimenziok`, `DimensionsPage`): all 7 CORE + the 1 CHAPTER
-  dimension as tiles (CHAPTER gets a dashed variant); each opens its own dimension page
+- **Dimenziók** (`/me/karakter/dimenziok`, `DimensionsPage`): all 7 CORE + the 1 META (round 4) +
+  the 1 CHAPTER dimension as tiles — CHAPTER gets a dashed variant, META its own solid,
+  differently-bordered variant (`.kr-dimtile.meta`), neither confused with the plain CORE tile;
+  each opens its own dimension page
   (`/me/karakter/dimenzio/:key`, `DimensionPage`) — a tinted hero (persona orb + maturity
-  count-up), the portrait prose (only when non-empty), and every ACTIVE claim as a `ClaimTile`:
+  count-up, the `self-audit` dimension's subtitle reading "a társ önvizsgálata · Szkeptikus"), the
+  portrait prose (only when non-empty), and every ACTIVE claim as a `ClaimTile`:
   a confidence-word chip (`biztos`/`valószínű`/`figyeljük`, never a raw number), the claim text
   (an ÉRZÉKENY frame for `sensitive` claims), and the three feedback pills — **Talál** (thanks
   microcopy, disables), **Nem igaz** (a locally-retired dashed face + toast — the API serves
@@ -198,18 +226,23 @@ tile rather than in-page accordions.
     check-in skálák, gyógyszerciklus — round 2's rows are `8 hét`-chipped, reflecting the
     8-week-only series §1 describes), plus, since round 3 landed, its seven domain-read rows
     (napi fókusz+napzárás, döntésnapló, hála-bejegyzések, Életjel-napok, check-in sorok,
-    naplózási latencia, chat-időbélyegek), all real, wired reads. Tervezett is a compact index
-    into the **remaining one** MINDENT-be round mini-page (rounds 1–3 are gone from here — their
-    items are the Bekötve rows above and their detectors are in the Detektorok catalog below)
+    naplózási latencia, chat-időbélyegek), plus, since round 4 landed, its seven domain-read rows
+    (említések, alvás bedtime/wakeup, chat-eszközhívások, Tudástár-döntések + minta-események,
+    predikciók, questek, kísérlet/kihívás-kimenetek), all real, wired reads. Tervezett is now an
+    **honest empty state** — `INVENTORY_ROUNDS` is `[]` (round 4 was the last round), so the
+    segment renders one `kr-laterline` eyebrow, "Mind a négy kör bekötve." — never a
+    `kr-degraded`-styled placeholder for an empty list — followed by the unchanged "+ még N
+    terület később" tail into `INVENTORY_LATER` (now Szezonalitás and Memoár, each with its own
+    reason: an 8-week window is a fraction of an annual cycle with zero repetitions, and the
+    memoir has no structured field, only prose). The `/kor/:n` route
     (`/me/karakter/gepterem/adatforrasok/kor/:n`, `KorPage` — a path param, matching
     `DimensionsPage`'s `/dimenzio/:key` sibling idiom for discrete indexed items, deliberately
-    NOT FutasokPage's `?start=` continuous-range idiom), plus a "+ még N terület később" tail.
+    NOT FutasokPage's `?start=` continuous-range idiom) keeps its not-found branch for an
+    unknown/out-of-range `:n`, now unreachable via the emptied index but still a real guard.
     All of this content is STATIC (`frontend/src/features/character/inventory.ts`) — see that
     file's own header for why: it IS the `mezo-1gim.15` ("MINDENT be") working checklist, not a
-    live read off any backend catalog, and most of its remaining `det` (detector) keys name
-    detectors that don't exist yet (§9's "detector catalog is narrower than spec" ledger already
-    tracks this).
-  - **Detektorok** (`/me/karakter/gepterem/detektorok`, `DetektorokPage`) — the 32 REAL,
+    live read off any backend catalog.
+  - **Detektorok** (`/me/karakter/gepterem/detektorok`, `DetektorokPage`) — the 40 REAL,
     `DetectorRegistry`-discovered detectors, one line each (key, one-line semantic, owning expert
     in their domain color), closing with "A kód csak észlel — az értelmezés mindig az adott
     szakértő LLM-hívása." This is the runtime truth `inventory.ts` explicitly is NOT.
@@ -291,7 +324,9 @@ Migration: `db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_
 `202608311100_mezo-1gim.6_character_conference_bootstrap_unique.sql`.
 
 - **`character_dimension`** — `key` (unique per live user row), `title`, `kind`
-  (`CORE`/`CHAPTER`), `expert_key` (nullable for chapters), `portrait text` (default `""`),
+  (`CORE`/`CHAPTER`/`META` — the third value added by round 4's migration below,
+  [ADR 0034](../decisions/0034-meta-dimension-companion-self-audit.md)), `expert_key` (nullable
+  for chapters), `portrait text` (default `""`),
   `maturity smallint` (default 0, computed roll-up — see §3's `PortraitWriter` formula below),
   `version int`, `updated_at`.
 - **`character_claim`** — `dimension_id` FK, `text`, `confidence numeric(3,2)`, `status`
@@ -406,6 +441,15 @@ raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
   round 3) are two more new one-directional dependency edges — neither `intention` nor `needs`
   depends back on `character`, so `ArchitectureTest`'s cycle-freedom rule stays satisfied without
   a new port.
+- **People mentions and daily quests** (round 4, `mezo-1gim.15`) — read by `CharacterSignalReads`
+  via direct repository injection: `character → people` (`MentionRepository`, the mention
+  context-label/timestamp series) and `character → quest` (`DailyQuestRepository`) are two more
+  new one-directional dependency edges, same reasoning as `intention`/`needs` above. The
+  existing `character → companion` and `character → proactive` edges also widen this round: the
+  new `CharacterMetaReads` service adds `LearnedFactRepository`/`PatternEventRepository`
+  (`feature.companion`) for Tudástár triage decisions, and `PredictionRepository`/
+  `ExperimentRepository`/`ChallengeRepository` (`feature.proactive`) for the system's own
+  prediction/experiment/challenge outcomes.
 - **`feature/llmlog`** — every character LLM call is audited (feature tag `character`,
   call-kind per pipeline step), the same idiom every other AI-domain doc documents.
 
@@ -442,7 +486,7 @@ raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
 - **Add a detector**: implement `CharacterDetector` (`detector/CharacterDetector.java`,
   `String key(); List<DetectorSignal> detect(DetectorInput)`) as a `@Component` gated
   `@ConditionalOnProperty(name = FeaturesConfiguration.CHARACTER_SWITCH, havingValue = "true")`
-  (all 5 concrete detectors follow this, S7 polish — with the switch off the beans don't exist,
+  (all 40 detectors follow this, S7 polish — with the switch off the beans don't exist,
   not merely no-op, so `DetectorRegistry`'s injected `List<CharacterDetector>` is legitimately
   empty rather than short-circuited) — it is auto-discovered by `DetectorRegistry.runAll` and
   gains a free per-key kill switch too (`mezo.character.detector.<key>.enabled`, defaults
@@ -454,6 +498,8 @@ raw `0..1` decimal (`CharacterClaimDto.confidence`) for the FE to translate.
   `NumberFormat`, and when a detector's window can't distinguish "streak = window size" from
   "streak = much longer", say so honestly (`LoggingGapDetector`'s 14-day cap) instead of
   asserting a precise count.
+- **Add a system-side (AI-meta) read**: extend `CharacterMetaReads`, not `CharacterSignalReads`;
+  the detector reading it is szkeptikus-owned and its summary's subject is the system.
 - **Add/change a CORE dimension or expert persona**: `CharacterCoreCatalog` /
   `CharacterExpertCatalog` are static lists — adding a CORE dimension needs a migration to seed
   it for existing users (the S1 seed migration is the precedent) plus a catalog entry; CORE
@@ -482,7 +528,7 @@ dual-mode hook idiom) and the Mozaik component set (`frontend/src/shared/ui/moza
 
 ## 8. Testing
 
-Backend: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (26 files, listed below by
+Backend: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (27 files, listed below by
 shape). FE: `frontend/src/data/character/characterHooks.test.tsx` (dual-mode hook coverage) +
 one `.test.tsx` per page/component under `frontend/src/features/character/` — every page test
 uses the `DimensionsPage.test.tsx` hook-override idiom (stub `@/data/hooks` directly), which
@@ -512,6 +558,8 @@ Adatforrások+kör/Detektorok) were added to it.
   `CharacterObservationJobIT`, `CharacterObservationServiceIT`, `CharacterFeedbackIT`,
   `CharacterPersistenceIT` (entity round-trip + jsonb envelopes + soft-delete unique-key
   behavior).
+- **`CharacterMetaReadsIT`** (round 4, new) — all four `MetaWindow` lists (triage decisions,
+  predictions, quests, proposal outcomes), the catch-up upper bound, and an owner with no rows.
 - **Konzílium choreography**: `KonziliumProposalRoundIT`, `KonziliumVerdictRoundIT`,
   `KonziliumUserFeedbackIT`, `ClaimLifecycleIT` — all via `FakeCompanionLlm` sentinels keyed on
   a marker constant per round step (`PROPOSAL_MARKER`, `SKEPTIC_MARKER`, `INTEGRATOR_MARKER`,
@@ -521,24 +569,32 @@ Adatforrások+kör/Detektorok) were added to it.
   (whole-block-drop-on-overflow), `CharacterPromptWiringIT` (`@Nested`: `SwitchOn` covers all
   four wired surfaces — chat, memoir, prediction, weekly review; `SwitchOff` covers chat only).
 - **Unit tests (pure code, no Spring context)**: `detector/DetectorTest` (fixture-day-in/
-  signal-out for all 32 detectors, incl. the HU decimal-comma formatting, the 14-day honest
+  signal-out for all 40 detectors, incl. the HU decimal-comma formatting, the 14-day honest
   streak-cap case, the round-2 state-change gate fire/no-fire/quiet-when-no-new-data cases, the
   `hydration-consistency` band-change gate, the `comfort-eating`/`med-cycle-covariance`
   below-minimum-sample silence, the `stack-skip-pattern` rest-day-fallback exclusion, the
-  `med-cycle-covariance` stale-cycle-day exclusion, and round 3's twelve state-change-gate cases
-  incl. the seven with no new-data pre-filter — see §9's round-3 gate rule),
+  `med-cycle-covariance` stale-cycle-day exclusion, round 3's twelve state-change-gate cases
+  incl. the seven with no new-data pre-filter — see §9's round-3 gate rule — and round 4's eight
+  state-change-gate cases incl. the `weekend-gap` midnight-crossing sleep-midpoint and `kevés`
+  branches and the `chat-topic-shift` evidence-selection determinism and
+  `prediction-calibration`'s `nincs-konfidencia` branch),
   `CharacterConferenceWeekDerivationTest`, `CharacterMonthlyScheduleTest` (`isDeepReadDay` date
   pinning), `CharacterExpertCatalogTest`, `service/PortraitWriterTest`.
 
-Run focused locally: `./mvnw test -Dtest='*Character*,DetectorTest' -Dmezo.test.use-testcontainers=true`
+Run focused locally: `./mvnw test -Dtest='*Character*,DetectorTest,Konzilium*,ClaimLifecycleIT,ArchitectureTest' -Dmezo.test.use-testcontainers=true`
 (Testcontainers mode — the default fixed-DB mode races/fakes failures per house convention).
 **`DetectorTest` must be named explicitly, not assumed to match `*Character*`**: surefire's
 `-Dtest` matches the SIMPLE class name, and `DetectorTest` contains no "Character" substring — a
 bare `-Dtest='*Character*'` sweep silently skips the entire detector unit-test file (140 tests
 pass instead of 194 when it's included). Rounds 1 and 2 of `mezo-1gim.15` both ran that blind
-gate locally without noticing; round 3 caught it. Full suite is CI-gated (self-PR). A `deadlock
-detected` `ResetDatabase` TRUNCATE failure between tests is known cross-domain flakiness, not a
-character regression — bd `mezo-oou9`; rerun once before investigating.
+gate locally without noticing; round 3 caught it. **Round 4 widened the gate again**: surefire's
+`-Dtest` match is on the SIMPLE class name only, and `Konzilium*IT`/`ClaimLifecycleIT` carry no
+"Character" substring either — the round-3 gate silently skipped all four of those files too,
+which is why the command above now names `Konzilium*`, `ClaimLifecycleIT`, and
+`ArchitectureTest` explicitly rather than trusting `*Character*` to reach them. Full suite is
+CI-gated (self-PR). A `deadlock detected` `ResetDatabase` TRUNCATE failure between tests is known
+cross-domain flakiness, not a character regression — bd `mezo-oou9`; rerun once before
+investigating.
 
 ## 9. Decisions, gotchas & deferred
 
@@ -570,16 +626,22 @@ character regression — bd `mezo-oou9`; rerun once before investigating.
   and the remaining meta-behavior detectors (`retro-logging-ratio`, `checkin-latency`,
   `night-activity`) plus three more additions beyond §5: `decision-review-backlog`,
   `checkin-slot-drift` (both `drill`-owned), `gratitude-focus` (`antropologus`-owned) and
-  `needs-domain-imbalance` (`pszichologus`-owned). The remaining cross-domain group
-  (`people-mood-link`, `weekend-gap`), `chat-topic-shift`, `knowledge-rejection-pattern`, and the
-  `logging-gap` bullet's `weight` variant (no `WeightGapDetector` exists) are **not
-  implemented**. Practically: `antropologus` now receives a nightly-detector-sourced observation
-  too, via round 3's `gratitude-focus` (`edzo`, `doki`, `szomnologus`, `drill`, `taplalkozo`, and
-  `pszichologus` already did, via rounds 1–3) — the remaining un-covered experts only accumulate
-  evidence via the weekly/monthly claim rounds' own reads (now widened, see below) and
-  user-feedback routing. `mezo-1gim.15`'s remaining round and `mezo-1gim.12` track writing most
-  of the remaining detectors, but neither's description currently names the `weight`-gap
-  variant.
+  `needs-domain-imbalance` (`pszichologus`-owned) — and, from the round-4 design spec
+  (`docs/superpowers/specs/2026-09-01-character-round4-kapcsolatok-ai-meta-design.md`), the last
+  eight: the remaining cross-domain group (`people-mood-link`, `weekend-gap`, both
+  `antropologus`), plus three more additions beyond §5 — `mention-context-shift`
+  (`antropologus`), `chat-topic-shift` (`pszichologus`) — and, in the new META dimension
+  (`self-audit`, `szkeptikus`-owned, see [ADR 0034](../decisions/0034-meta-dimension-companion-self-audit.md)),
+  `knowledge-rejection-pattern` (ÉRZÉKENY — the fourth of the spec's named "cross-domain" keys,
+  its subject reworked to the system per §4.1 below), `prediction-calibration`,
+  `quest-completion-calibration`, `experiment-outcome-ledger` (three more additions beyond §5).
+  Only the `logging-gap` bullet's `weight` variant (no `WeightGapDetector` exists) is **not
+  implemented** — `mezo-1gim.15` is otherwise closed; `mezo-1gim.12` tracks the `weight-gap`
+  remainder. Practically: every expert now receives a nightly-detector-sourced observation,
+  **including the Szkeptikus** — `antropologus` via round 3's `gratitude-focus` (`edzo`, `doki`,
+  `szomnologus`, `drill`, `taplalkozo`, and `pszichologus` already did, via rounds 1–3), and the
+  Szkeptikus via round 4's four `self-audit` detectors, the first time an observer outside the
+  7 `EXPERTS` catalog produces nightly-detector-sourced observations at all.
 - **Round 3 widens the read layer with seven more sources and two more one-way dependency edges**
   (round-3 design spec, `mezo-1gim.15`). `CharacterSignalReads`/`TrendWindow` gained daily
   intentions (focus count + `reflection` enum), the decision journal (`writtenOn`/`reviewedOn`/
@@ -620,7 +682,33 @@ character regression — bd `mezo-oou9`; rerun once before investigating.
   `decision-review-backlog`, `streak-break-response`, `restart-pattern`, `retro-logging-ratio`,
   `night-activity`, `checkin-slot-drift`, `needs-domain-imbalance` — carry no new-data pre-filter
   at all and rely on their own state-change gate alone.
-- **Detector beans are switch-gated, not just no-op** (S7). Each of the 20 detectors carries
+- **Round 4 introduces the META dimension kind and the claim-subject rule, and closes the
+  pre-filter idiom entirely** (round-4 design spec §4.1–§4.3, `mezo-1gim.15`; [ADR
+  0034](../decisions/0034-meta-dimension-companion-self-audit.md)).
+  - **The subject rule**: the claim's SUBJECT decides which dimension it lands in, never the
+    data's source. `knowledge-rejection-pattern` reads Daniel's own accept/reject decisions but
+    is about the companion's suggestion quality, so it is `self-audit`/`szkeptikus`-owned;
+    `chat-topic-shift` reads the companion's own tool-call log but is about Daniel's
+    conversation habits, so it stays a CORE (`mental`) detector.
+  - **Round 4 uses no new-data pre-filter at all** — the pre-filter and the state-change gate
+    combined can swallow a transition that happened on a quiet day (state moved by window
+    ageing, gate closed; next data day both sides already equal). The five round-3 detectors
+    that still carry a pre-filter (`self-calibration`, `promise-vs-delivery`, `decision-profile`,
+    `gratitude-focus`, `checkin-latency`) inherit this flaw — tracked in a follow-up bd, see the
+    round-4 spec §9.
+  - **Three honesty proxies**, all named in the detector's own summary text: a Tudástár fact
+    decision's date is approximated by the candidate's `createdAt` (`learned_fact` has no
+    `decidedAt`); a prediction's close date is `validTo + 1`; a prediction's/an
+    experiment's/a challenge's status mutates in place with no timestamp, so a catch-up run sees
+    today's status for a past day, never the day's own.
+  - **`contextLabel` is the people classifier's output** — a structured, closed DB-CHECK set
+    written by the mentions feature's own nightly LLM classifier — never the mention `excerpt`;
+    `mention-context-shift`'s detector reads that field, not raw text. `tone`/`intensity` are
+    deliberately unused: mood is the user's own check-in scale, not a machine estimate of it.
+  - **Weekend = Saturday/Sunday in the server zone** (`weekend-gap`) — a named, accepted
+    limitation (no obligation-schedule data exists to do better), not a Roenneberg-style
+    workday/free-day split.
+- **Detector beans are switch-gated, not just no-op** (S7). Each of the 40 detectors carries
   `@ConditionalOnProperty(CHARACTER_SWITCH)` directly, so with the switch off the beans don't
   exist at all — `CharacterApiSwitchOffIT.the_detector_beans_are_absent` asserts every detector
   bean and `DetectorRegistry` itself are absent from the context, not merely quiet.
@@ -752,26 +840,29 @@ character regression — bd `mezo-oou9`; rerun once before investigating.
   be") working checklist, not a live catalog read, and most of its remaining `det` keys name
   detectors that don't exist yet (see the detector-catalog ledger above); its own header comment
   says rows are expected to move OUT of `inventory.ts` and (if fully wired) INTO
-  `DetektorokPage`'s real detector list as `mezo-1gim.15` lands each round for real — round 1
-  ("Edzés & test"), round 2 ("Fuel & ciklus"), and round 3 ("Psziché & viselkedés-meta") already
-  did this move (their eighteen combined reads are now `INVENTORY_READS` rows, their twenty-seven
-  combined detectors are now `DetektorokPage`'s catalog rows); don't treat this module as runtime
-  truth for what's left. The
+  `DetektorokPage`'s real detector list as `mezo-1gim.15` lands each round for real — all four
+  rounds — round 1 ("Edzés & test"), round 2 ("Fuel & ciklus"), round 3 ("Psziché &
+  viselkedés-meta"), and round 4 ("Kapcsolatok & AI-meta") — did this move: their twenty-five
+  combined reads are now `INVENTORY_READS` rows, their thirty-five combined detectors are now
+  `DetektorokPage`'s catalog rows, and `INVENTORY_ROUNDS` is now `[]` — don't treat this module as
+  runtime truth for what's left (there is nothing left; `INVENTORY_LATER`'s Szezonalitás/Memoár
+  tail is the honest exception, see §2). The
   Feed's ⚙ has no `runId` to key off (`CharacterFeedItem` never carried one — it's a merged
   observation+diff view, not run-scoped) — it resolves the matching run CLIENT-SIDE by the
   observation's own local calendar day against a `useCharacterRuns` window spanning the feed's
   visible items (clamped to the 62-day range cap), matching NIGHTLY rows only; when no such row
   exists the ⚙ is simply absent rather than a dead button. The kör mini-pages use a path param
   (`/kor/:n`, `DimensionsPage`'s discrete-item sibling idiom), not `?kor=` — the brief's own
-  explicit fork, decided because the (originally four, now two) rounds are discrete indexed
-  items, not a continuous steppable range like FutasokPage's week window. `DetektorokPage`'s
+  explicit fork, decided because the (originally four, now zero) rounds were discrete indexed
+  items, not a continuous steppable range like FutasokPage's week window; the route and its
+  not-found branch stay live even with an empty index. `DetektorokPage`'s
   "who" (owning expert) per detector is taken from the REAL `DetectorSignal` argument in each
   detector's source, not the design prototype's `DETECTOR_CATALOG.who` guess — two of the
   original five differ (`logging-gap` and `journal-silence` are both really `drill`-owned, not
   the prototype's
   `taplalkozo`/`pszichologus` guesses respectively); the eight round-1 additions, the seven
-  round-2 additions, and the twelve round-3 additions were all verified the same way and all
-  matched their design spec's owner column with no drift.
+  round-2 additions, the twelve round-3 additions, and round 4's eight additions were all
+  verified the same way and all matched their design spec's owner column with no drift.
 - **Companion tone guardrail** for `sensitive` claims (self-calibration,
   knowledge-rejection-pattern classes per spec §3) is a persona-prompt instruction inside the
   Szkeptikus/proposal prompts, not a separately enforced code gate — there is no automated test
@@ -805,15 +896,25 @@ character regression — bd `mezo-oou9`; rerun once before investigating.
   `DecisionProfileDetector`, `DecisionReviewBacklogDetector`, `GratitudeFocusDetector`,
   `StreakBreakResponseDetector`, `RestartPatternDetector`, `RetroLoggingRatioDetector`,
   `NightActivityDetector`, `CheckinLatencyDetector`, `CheckinSlotDriftDetector`,
-  `NeedsDomainImbalanceDetector`) + `DetectorGates` (renamed from `RoundOneGates` in round 2 —
-  the shared "new domain data since last run" gate helpers, now covering all three rounds'
-  sources; round 3 added only three methods — `newIntentionData`, `newDecisionData`,
-  `newGratitudeData` — deliberately leaving needs/chat ungated, see §9's round-3 gate rule) +
-  `TrailingWindow` (renamed from `RoundTwoWindow` in round 3 — the shared 14-day-as-of-a-date
-  windowing + HU decimal formatting helper over the 8-week series, now also carrying round 3's
-  longer windows for its episodic sources, e.g. 42 days for decisions, 28 for gratitude/restart)
-- `service/CharacterCoreCatalog.java` / `CharacterExpertCatalog.java` — the 7 CORE
-  dimensions / 7 expert personas (static catalogs)
+  `NeedsDomainImbalanceDetector`), and round 4's (`mezo-1gim.15`) 8 —
+  `PeopleMoodLinkDetector`, `MentionContextShiftDetector`, `WeekendGapDetector`,
+  `ChatTopicShiftDetector` (+ its own `ChatToolDomains` tool-name-to-domain map, the backend
+  mirror of the FE's `toolDomains.ts`), and the four szkeptikus-owned, `self-audit`-dimension
+  detectors `KnowledgeRejectionPatternDetector`, `PredictionCalibrationDetector`,
+  `QuestCompletionCalibrationDetector`, `ExperimentOutcomeLedgerDetector` — + `DetectorGates`
+  (renamed from `RoundOneGates` in round 2 — the shared "new domain data since last run" gate
+  helpers, now covering rounds 1–3's sources; round 4 adds none, see §9's round-4 no-pre-filter
+  rule) + `TrailingWindow` (renamed from `RoundTwoWindow` in round 3 — the shared
+  14-day-as-of-a-date windowing + HU decimal formatting helper over the 8-week series, now also
+  carrying round 3's longer windows for its episodic sources, e.g. 42 days for decisions, 28 for
+  gratitude/restart, plus round 4's 28/42/49-day windows)
+- `service/CharacterCoreCatalog.java` — the 7 CORE dimensions + the 1 META dimension
+  (`self-audit`, round 4) / `CharacterExpertCatalog.java` — the 7 expert personas + the
+  Szkeptikus's own `SKEPTIC` record, outside `EXPERTS` (round 4) (static catalogs)
+- `service/CharacterMetaReads.java` (round 4) — the system-side (AI-meta) read composer:
+  Tudástár triage decisions, predictions, quests, experiment/challenge outcomes → `MetaWindow`,
+  nested into `TrendWindow.meta`; a separate `@Service` from `CharacterSignalReads` (already 28
+  dependencies) because these sources describe THE SYSTEM, not the user
 - `service/CharacterRunLog.java` (S9) — the run-log writer all four pipelines call; see §3
 - `service/CharacterObservationJob.java` / `CharacterObservationService.java` — nightly pass
   (writes the NIGHTLY run row, S9)
@@ -843,7 +944,9 @@ character regression — bd `mezo-oou9`; rerun once before investigating.
 `202608311000_mezo-1gim.6_character_conference_monthly_unique.sql`,
 `202608311100_mezo-1gim.6_character_conference_bootstrap_unique.sql`,
 `202608311600_mezo-1gim.14_create_character_run.sql` (S9 — `character_run` +
-`uq_character_run_created_by_kind_day`)
+`uq_character_run_created_by_kind_day`),
+`202609011600_mezo-1gim.15_character_dimension_meta_kind.sql` (round 4 — widens
+`ck_character_dimension_kind` to `CORE|CHAPTER|META`)
 
 **Switches/crons** (`backend/src/main/resources/application.yml`):
 - `mezo.feature.character.enabled: true` — the feature switch (`CHARACTER_SWITCH`); LLM-calling
@@ -859,7 +962,8 @@ character regression — bd `mezo-oou9`; rerun once before investigating.
   `prompt.max-total-chars: 1800`, `prompt.portrait-min-maturity: 30`
 - `mezo.character.detector: {}` (per-key kill switches, all enabled by default/absence)
 
-**Tests**: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (26 files, see §8)
+**Tests**: `backend/src/test/java/io/mrkuhne/mezo/feature/character/` (27 files incl. round 4's
+`CharacterMetaReadsIT`, see §8)
 
 **Frontend — data layer** (`frontend/src/data/character/`):
 - `characterApi.ts` — the fetch client + `confidenceWord()` (the 0.75/0.5 word thresholds)
@@ -871,14 +975,17 @@ character regression — bd `mezo-oou9`; rerun once before investigating.
   `MOCK_RUN_DETAIL` — 3 seeded weeks of NIGHTLY rows incl. quiet nights + one WEEKLY/MONTHLY/
   BOOTSTRAP row each; round 1, `mezo-1gim.15`, adds one `CHAIN_POOL` chain per new detector,
   spread across days 13/24/30; round 2 adds one more per new detector, spread across days
-  13/20/24/27/30; round 3 adds one more per new detector, spread across days 13/20/24/27/30 too
-  — all derived counts, never a re-pinned literal; day 15 stays a pinned two-signal/one-expert
-  dedup fixture for `characterHooks.test.tsx` untouched by any round)
+  13/20/24/27/30; round 3 adds one more per new detector, spread across days 13/20/24/27/30 too;
+  round 4 adds one more per new detector, same day spread, plus `DIM_SEEDS`' one `META` dimension
+  entry (`self-audit`, 2 Szkeptikus claims, one ÉRZÉKENY) — all derived counts, never a
+  re-pinned literal; day 15 stays a pinned two-signal/one-expert dedup fixture for
+  `characterHooks.test.tsx` untouched by any round)
 
 **Frontend — feature package** (`frontend/src/features/character/`):
 - `pages/KarakterHubPage.tsx` — the hub (ring hero + 4-tile mosaic + bootstrap ceremony faces +
   the thin full-width Gépterem row, S9)
-- `pages/DimensionsPage.tsx` / `DimensionPage.tsx` — the 8-tile list + one dimension's claims
+- `pages/DimensionsPage.tsx` / `DimensionPage.tsx` — the 9-tile list (7 CORE + 1 META + 1
+  CHAPTER, round 4) + one dimension's claims
 - `pages/CharacterFeedPage.tsx` — the day-grouped observation feed (each observation row's ⚙
   retarget to its matching run page, S9)
 - `pages/CsapatPage.tsx` — the 9 persona cards
@@ -892,10 +999,10 @@ character regression — bd `mezo-oou9`; rerun once before investigating.
 - `pages/AdatforrasokPage.tsx` (S9) — Bekötve | Tervezett segmented control over
   `inventory.ts`'s static content
 - `pages/KorPage.tsx` (S9) — one MINDENT-be round's item list (`/kor/:n`)
-- `pages/DetektorokPage.tsx` (S9) — the 32 real detectors, one line + owning expert each
-- `inventory.ts` (S9) — the Adatforrások/Tervezett static corpus module (1 round left after
-  rounds 1–3 landed); ALSO the `mezo-1gim.15` working checklist (see its own header comment
-  and §9)
+- `pages/DetektorokPage.tsx` (S9) — the 40 real detectors, one line + owning expert each
+- `inventory.ts` (S9) — the Adatforrások/Tervezett static corpus module (`INVENTORY_ROUNDS` now
+  `[]` — round 4 was the last round); ALSO the `mezo-1gim.15` working checklist, now closed (see
+  its own header comment and §9)
 - `components/PersonaOrb.tsx` — the domain-color orb-variant sprite wrapper (`s-orb-*`)
 - `components/MaturityRing.tsx` — the 7-arc SVG ring
 - `components/ClaimTile.tsx` — one claim's confidence chip + feedback pills

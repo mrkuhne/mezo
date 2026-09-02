@@ -1,8 +1,10 @@
 // ============================================================
 // Mezo · Karakter — DimensionsPage (mezo-1gim.13, Task 4)
 // Source: docs/design_2.0/prototypes/src/karakter-body.html `#page-dims` +
-// `dimsListTiles.innerHTML` — the flat 8-tile list (7 CORE + 1 CHAPTER), CHAPTER dimensions
-// getting the dashed `.chapter` treatment (character.css `.kr-dimtile.chapter`).
+// `dimsListTiles.innerHTML` — the flat tile list (7 CORE + 1 META + 1 CHAPTER since round 4,
+// mezo-1gim.15), CHAPTER dimensions getting the dashed `.chapter` treatment (character.css
+// `.kr-dimtile.chapter`) and the META dimension getting the solid `.meta` treatment
+// (`.kr-dimtile.meta`).
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
@@ -42,11 +44,12 @@ export function DimensionsPage() {
           const color = expertColor(d.expertKey)
           const topClaim = d.topClaims[0]
           const isChapter = d.kind === 'CHAPTER'
+          const isMeta = d.kind === 'META'
           return (
             <button
               key={d.key}
               type="button"
-              className={`kr-dimtile rise${isChapter ? ' chapter' : ''}`}
+              className={`kr-dimtile rise${isChapter ? ' chapter' : isMeta ? ' meta' : ''}`}
               style={{ '--d': `${40 + i * 45}ms`, '--wash': `${color}22`, '--dc': color, '--sh': `${color}4d`, '--mv': d.maturity } as React.CSSProperties}
               onClick={() => navigate(`/me/karakter/dimenzio/${d.key}`)}
               aria-label={d.title}

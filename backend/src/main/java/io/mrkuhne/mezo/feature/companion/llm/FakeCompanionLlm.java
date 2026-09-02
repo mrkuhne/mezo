@@ -139,9 +139,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             Pattern.compile("\\[fake-char-proposals:(\\[.*])]", Pattern.DOTALL);
 
     /** Resolves KonziliumProposalRound's trailing "Alapértelmezett dimenzió: <key>" line so the
-     *  canned proposal always names a dimension the round's own validation will accept. */
+     *  canned proposal always names a dimension the round's own validation will accept.
+     *  {@code [a-z-]+} — hyphenated keys (self-audit, round 4). */
     private static final Pattern PROPOSAL_DEFAULT_DIMENSION =
-            Pattern.compile("Alapértelmezett dimenzió: ([a-z]+)");
+            Pattern.compile("Alapértelmezett dimenzió: ([a-z-]+)");
 
     /** Scripted proposal ECHO (mezo-1gim.10): {@code [fake-char-proposals-echo]} planted in an
      *  observation's TEXT returns the FULL assembled user message (JSON-escaped) as a single NEW
@@ -263,6 +264,14 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern WEIGHT_SENTINEL =
             Pattern.compile("\\[fake-feed-weight:(\\{.*?\\})]", Pattern.DOTALL);
 
+    /** Mirror of CompanionMessageGenerator.PEOPLE_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: same cycle rationale as {@link #SLEEP_MARKER_MIRROR}. */
+    public static final String PEOPLE_MARKER_MIRROR = "EMBEREK-ESZREVETEL-FELADAT";
+
+    /** Emberek S6: {@code [fake-people-obs:…]} planted in the heti összesítésbe. */
+    public static final Pattern PEOPLE_OBS_SENTINEL =
+            Pattern.compile("\\[fake-people-obs:(.*?)]", Pattern.DOTALL);
+
     /** Mirror of WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER (feature/proactive) — a
      *  LITERAL, not an import (package-cycle rule; drift fails WeeklySuggestionGeneratorIT loudly). */
     public static final String WEEKLY_MARKER_MIRROR = "HETI-TERVJAVASLAT";
@@ -368,6 +377,11 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  un-scripted happy path still resolves via the LLM branch. */
     public static final Pattern SLOT_PLAN_SENTINEL =
             Pattern.compile("\\[fake-slot-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
+
+    /** Meso plan generator (wizard redesign): greedy `[fake-meso-plan:{json}]` planted in goalText;
+     *  default = a valid empty-days answer so the frames stay deterministic and llmUsed is true. */
+    public static final Pattern MESO_PLAN_SENTINEL =
+            Pattern.compile("\\[fake-meso-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
 
     /** Scripted habit suggestions (mezo-n5e9.3): {@code [fake-habit-suggest:[…]]} planted via the
      *  request's {@code hint} (the ONLY unvalidated-echo channel left into the adapter's context —
@@ -543,6 +557,12 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1)
                     : "{\"eyebrow\":\"Fake súly\",\"body\":[\"FAKE-SULY-NARRATÍVA\"],\"refIndexes\":[]}";
         }
+        if (systemPrompt.startsWith(PEOPLE_MARKER_MIRROR)) {
+            Matcher m = PEOPLE_OBS_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Emberek\",\"body\":[\"FAKE-EMBEREK-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
         if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
             Matcher m = WEEKLY_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "FAKE-HETI-TERVJAVASLAT";
@@ -627,6 +647,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1)
                     : "[{\"title\":\"Fake szokás\",\"why\":\"FAKE-INDOK\",\"anchorCopy\":\"teszt után\","
                             + "\"skillKey\":\"mindset\",\"xp\":10,\"chainKey\":\"MORNING\"}]";
+        }
+        if (systemPrompt.startsWith(MesoPlanLlmAdapter.MARKER)) {
+            Matcher m = MESO_PLAN_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : "{\"rationale\":\"FAKE-INDOK\",\"days\":[]}";
         }
         if (systemPrompt.startsWith(MesoReviewGenerator.MESO_REVIEW_MARKER)) {
             if (userMessage.contains(MESO_REVIEW_ECHO)) {

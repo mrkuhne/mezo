@@ -26,23 +26,28 @@ import { ThemeProvider } from '@/app/ThemeProvider'
 import { routes as appRoutes } from '@/app/router'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
 import { PeopleJeloltekPage } from '@/features/me/pages/PeopleJeloltekPage'
+import { mezoNote as mezoNoteSeed } from '@/data/me/people'
 
 const NOW = new Date('2026-05-24T12:00:00')
 
-// Flattens every person's affectTrend so nobody trends down/up — exercises the honest
-// '—' fallback (statstrip down-cell) and the empty-circle Mezo-band sentence, both of
-// which the always-has-a-down-person mock seed can never reach on its own.
-const hoisted = vi.hoisted(() => ({ flattenTrends: false, empty: false, noCandidates: false }))
+// Flattens every person's `direction` so nobody trends down/up — exercises the honest
+// '—' fallback (statstrip down-cell), which the always-has-a-down-person mock seed can
+// never reach on its own. `emptyMezoNote` separately blanks `mezoNote` (real mode before
+// any data) to exercise the band's own honest "omit the whole band" empty state — the two
+// are independent knobs because `mezoNote` is a server-computed field the hub just
+// displays verbatim, not something the FE derives from `direction` any more.
+const hoisted = vi.hoisted(() => ({ flattenTrends: false, empty: false, noCandidates: false, emptyMezoNote: false }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
     usePeople: () => {
       const real = actual.usePeople()
-      if (hoisted.empty) return { ...real, people: [], mentions: [], candidates: [] }
+      if (hoisted.empty) return { ...real, people: [], mentions: [], candidates: [], mezoNote: '' }
       if (hoisted.noCandidates) return { ...real, candidates: [] }
+      if (hoisted.emptyMezoNote) return { ...real, mezoNote: '' }
       if (!hoisted.flattenTrends) return real
-      return { ...real, people: real.people.map((p) => ({ ...p, affectTrend: [3, 3, 3, 3] })) }
+      return { ...real, people: real.people.map((p) => ({ ...p, direction: 'flat' as const, directionReason: null })) }
     },
   }
 })
@@ -58,6 +63,7 @@ afterEach(() => {
   hoisted.flattenTrends = false
   hoisted.empty = false
   hoisted.noCandidates = false
+  hoisted.emptyMezoNote = false
 })
 
 /** Renders anything the whereabouts of `location.pathname`/`.search` — the catch-all target
@@ -98,7 +104,9 @@ test('statstrip: 3 cells — mentions·week, top name, down name (or em dash)', 
   expect(cells[0].querySelector('small')?.textContent).toBe('említés · hét')
   expect(cells[1].querySelector('b')?.textContent).toBe('Petra')
   expect(cells[1].querySelector('small')?.textContent).toBe('legtöbbet említett')
-  expect(cells[2].querySelector('b')?.textContent).toBe('Réka ↘')
+  // Bence is the seed's only down-trending active person (his 8-reading affectTrend,
+  // trimmed to the server's cap, genuinely trends down under the server rule).
+  expect(cells[2].querySelector('b')?.textContent).toBe('Bence ↘')
   expect(cells[2].querySelector('small')?.textContent).toBe('hangulat-lejtő')
 })
 
@@ -107,14 +115,18 @@ test('CONTRACT: the down-cell reads em dash — never a fabricated name — when
   const { container } = renderPage()
   const cells = container.querySelectorAll('.mz-statcell')
   expect(cells[2].querySelector('b')?.textContent).toBe('—')
-  // With nobody trending down, the Mezo-band falls back to the top-name sentence.
-  expect(screen.getByText(/Petra volt e héten a legtöbbet veled/)).toBeInTheDocument()
 })
 
-test('the empty-circle Mezo-band sentence renders when there is no data at all', () => {
-  hoisted.empty = true
+test('CONTRACT: the Mezo-band renders usePeople().mezoNote verbatim (mock seed), never an FE-templated sentence', () => {
   renderPage()
-  expect(screen.getByText(/Ahogy írsz, magától épül itt a kapcsolati kép\./)).toBeInTheDocument()
+  expect(screen.getByText(mezoNoteSeed)).toBeInTheDocument()
+})
+
+test('the Mezo-band is OMITTED entirely when mezoNote is empty (real mode before any data) — never an empty snippet', () => {
+  hoisted.emptyMezoNote = true
+  renderPage()
+  expect(screen.queryByText(/Mezo · észrevétel/)).toBeNull()
+  expect(document.querySelector('.ppl-hub-wide')).toBeNull()
 })
 
 test('the Jelöltek tile navigates, through the REAL app router, to the real empty-state page (one continuous flow)', async () => {
@@ -179,10 +191,9 @@ test('Említések carries the flagCount badge when > 0', () => {
   expect(tile.querySelector('.ppl-hub-badge')?.textContent).toBe('2')
 })
 
-test('Mezo-sáv renders the derived sentence and hands off to a person-anchored conversation', () => {
+test('Mezo-sáv renders mezoNote and hands off to a person-anchored conversation', () => {
   const { router } = renderPage()
-  // Réka is trending down this week ⇒ the down-branch sentence wins.
-  expect(screen.getByText(/Réka hangulata lejt az utóbbi hetekben/)).toBeInTheDocument()
+  expect(screen.getByText(mezoNoteSeed)).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: /Mezo · észrevétel/ }))
   expect(router.state.location.pathname).toBe('/mezo/chat')
   expect(router.state.location.search).toMatch(/^\?c=/)
