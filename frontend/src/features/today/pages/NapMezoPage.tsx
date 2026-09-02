@@ -80,8 +80,11 @@ export function NapMezoPage() {
   // ad. A visszajelzés-chipek viszont a nyers feed-sorok id-jeire kötnek, ezért a feedet ez
   // az oldal továbbra is közvetlenül olvassa (mezo-e26w / mezo-b3pp.15).
   // Belépéskori olvasatlan-pillanatkép (mezo-ho9k): a szál utolsó `unread` eleme az
-  // olvasatlan halmaz — partíciónként egy pötty. A markSeen effect KÉSŐBB fut (lentebb
-  // deklarált), így itt még a belépés előtti unread él. Session-lokális, nem perzisztens.
+  // olvasatlan halmaz — partíciónként egy pötty. A pillanatkép- és a markSeen-effect
+  // UGYANANNAK a rendernek a `unread` értékét zárja closure-be (a `markSeen()` hívás csak a
+  // KÖVETKEZŐ renderre módosítja a megosztott vízjelet, visszamenőleg nem) — a védelmet
+  // NEM az effect-deklarációk sorrendje adja, hanem a lenti `dots !== null` egyszeri őr.
+  // Session-lokális, nem perzisztens.
   const { messages, unread, markSeen } = useMezoThread()
   const feed = useCompanionFeed()
   const tick = useMinuteTick()
@@ -93,17 +96,29 @@ export function NapMezoPage() {
   // ?n= jelenlétekor a tab MINDIG Üzenetek — felülírja a ?tab=eletjelek-et is (mezo-ho9k):
   // a deeplink mindig egy üzenetre (vagy a b3pp.36 intervenció-push kártyájára) mutat, sosem
   // egy Életjel-nudge-ra, tehát a cél csak az Üzenetek pane-ben létezhet.
-  const tab: MezoTab = deepLinkId ? 'uzenetek' : params.get('tab') === 'eletjelek' ? 'eletjelek' : 'uzenetek'
+  // Egyszeri kényszerítés (záró review, Finding 1): a `?n=` deeplink `n`/`d` paraméterei a
+  // navigáció után is a URL-en maradnak (nincs okuk eltűnni), tehát a fenti derivációt a tab
+  // MINDEN render alkalmával Üzenetekre kényszerítené — a felhasználó soha nem tudna átváltani
+  // Életjelekre. `tabOverride` a felhasználó explicit választását tárolja; egyszer kitöltve
+  // felülírja a deeplink-kényszert is, a `?tab=` deriváció pedig csak addig számít, amíg a
+  // felhasználó még nem választott kézzel.
+  const [tabOverride, setTabOverride] = useState<MezoTab | null>(null)
+  const tab: MezoTab =
+    tabOverride ?? (deepLinkId ? 'uzenetek' : params.get('tab') === 'eletjelek' ? 'eletjelek' : 'uzenetek')
   const setTab = (t: MezoTab) => {
+    setTabOverride(t)
     const next = new URLSearchParams(params)
     if (t === 'eletjelek') next.set('tab', 'eletjelek')
     else next.delete('tab')
     setParams(next, { replace: true })
   }
   // Belépéskori olvasatlan-pillanatkép (mezo-ho9k): a szál utolsó `unread` eleme az
-  // olvasatlan halmaz — partíciónként egy pötty. Ez az effect a markSeen effect ELÉ van
-  // deklarálva (lentebb), az effect-sorrend adja a helyességet: a pillanatkép a
-  // vízjel-bélyegzés ELŐTT készül. Session-lokális, nem perzisztens.
+  // olvasatlan halmaz — partíciónként egy pötty. NEM az effect-sorrend védi ezt a
+  // pillanatképet a lenti `markSeen()`-től (mindkét effect ugyanannak a rendernek a
+  // `unread` értékét zárja closure-be, a bélyegzés csak a KÖVETKEZŐ renderre hat) — a
+  // load-bearing rész a `dots !== null` egyszeri őr alább: az akadályozza meg, hogy az
+  // effect egy KÉSŐBBI renderen újra lefusson és a már törölt `unread`-et fagyassza be.
+  // Session-lokális, nem perzisztens.
   const [dots, setDots] = useState<{ uzenetek: boolean; eletjelek: boolean } | null>(null)
   useEffect(() => {
     if (dots !== null || messages.length === 0) return
@@ -239,6 +254,7 @@ export function NapMezoPage() {
                   aria-expanded="false" onClick={() => expand(m.id)}>
                   <span className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</span>
                   <span className="pv">{m.paragraphs[0]}</span>
+                  {m.meta && <span className="mt">{m.meta}</span>}
                   <span className="chev" aria-hidden="true">▾</span>
                 </button>
               ),

@@ -161,6 +161,26 @@ test('a deeplink ?tab=eletjelek mellett is az Üzenetek tabra érkezik, a cél-k
   expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
 })
 
+// Záró review Finding 1: the ?n= force must be ONE-SHOT — once landed on Üzenetek because of
+// the deeplink, the user must still be able to tap over to Életjelek. Before the fix, `tab`
+// was derived fresh every render straight from `deepLinkId` (which never disappears from the
+// URL), so `setTab` writing `?tab=eletjelek` was immediately overridden back to 'uzenetek'.
+test('a deeplink-kényszer után az Életjelek fülre koppintva ténylegesen átvált (mezo-ho9k, záró review Finding 1)', async () => {
+  const user = userEvent.setup()
+  serveFeeds({ [TODAY]: [todayMorning] })
+  renderAt(`/nap/uzenetek?n=${todayMorning.id}&d=${TODAY}&tab=eletjelek`)
+
+  // Lands on Üzenetek despite the ?tab=eletjelek in the URL (the deeplink force).
+  expect(await screen.findByRole('tab', { name: /Üzenetek/ })).toHaveAttribute('aria-selected', 'true')
+
+  await user.click(screen.getByRole('tab', { name: /Életjelek/ }))
+
+  expect(await screen.findByRole('tab', { name: /Életjelek/ })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: /Üzenetek/ })).toHaveAttribute('aria-selected', 'false')
+  // The Üzenetek-only card is no longer rendered on the Életjelek pane.
+  expect(screen.queryByText(/Mai napod fonala/)).not.toBeInTheDocument()
+})
+
 // Finding 2: the common case is SAME-day — `n` names a row already inside today's own thread.
 // It must not be duplicated as a second card, and it must still get scrolled/highlighted.
 test('scrolls to the existing row for a same-day deeplink, without duplicating it', async () => {

@@ -4651,7 +4651,7 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
 /* ── Életjelek tab: státusz-sáv + rendben-sor (mezo-ho9k) ── */
 .nap-ejstrip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; width: 100%;
   box-sizing: border-box; margin-bottom: 12px; padding: 0; border: none; background: none;
-  font-family: inherit; cursor: pointer; }
+  font-family: inherit; cursor: pointer; color: var(--text-primary); }
 .nap-ejcell { display: grid; justify-items: center; gap: 4px; padding: 9px 2px 7px; min-height: 44px;
   background: var(--surface-card); border-radius: 13px; border: 0.5px solid rgba(43, 33, 24, 0.06); }
 .nap-ejcell .eb { font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -4667,6 +4667,7 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
   color: #A8801F; flex: none; }
 .nap-mzrow .pv { flex: 1; min-width: 0; font-size: 12px; font-weight: 300; color: var(--mz-ink-mut);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nap-mzrow .mt { flex: none; font-size: 10px; color: var(--mz-ink-mut); white-space: nowrap; }
 .nap-mzrow .chev { color: var(--mz-ink-mut); font-size: 12px; flex: none; }
 /* ── Nap · Napi küldetések page (mezo-d20.2.4) — prototype nap-body #page-quest,
       values ×1.18 (330→390px frame). The reroll/CTA chips keep the prototype's slim

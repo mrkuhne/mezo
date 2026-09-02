@@ -135,9 +135,9 @@ test('az Üzenetek karika badge-e a szál TELJES hosszát viseli, a nudge-okkal 
   // ahányat a badge számol (mezo-ho9k: a tab-váltó csak megjelenítési bontás, a szál egy).
   await user.click(btn)
   await screen.findByText('Mezo · ma')
-  const uzenetekCards = document.querySelectorAll('.nap-mzmsg').length
+  const uzenetekCards = document.querySelectorAll('.nap-mzmsg, .nap-mzrow').length
   await user.click(screen.getByRole('tab', { name: /Életjelek/ }))
-  const eletjelekCards = document.querySelectorAll('.nap-mzmsg').length
+  const eletjelekCards = document.querySelectorAll('.nap-mzmsg, .nap-mzrow').length
   expect(uzenetekCards + eletjelekCards).toBe(badge)
 })
 

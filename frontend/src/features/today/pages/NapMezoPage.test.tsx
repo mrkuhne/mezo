@@ -111,9 +111,13 @@ test('no morning message in the feed → the labelled demo briefing leads the th
   feedMock.useCompanionFeed.mockReturnValue([sleepMsg])
   renderPage()
   // sleep is the thread's last voice → full card by default; the demo briefing (leading
-  // the thread) is collapsed (mezo-ho9k) — tap its row open to reach "Demo tartalom".
+  // the thread) is collapsed (mezo-ho9k) as a one-line `.nap-mzrow`.
   expect(await screen.findByText('07:12 · Alvás-reakció')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: /Reggeli briefing/ }))
+  // Záró review Finding 2: the "Demo tartalom" honesty label must survive collapse — it is
+  // rendered inline in the collapsed row itself, not only inside the expanded card.
+  const row = screen.getByRole('button', { name: /Reggeli briefing/ })
+  expect(within(row).getByText('Demo tartalom')).toBeInTheDocument()
+  await userEvent.click(row)
   expect(await screen.findByText('Demo tartalom')).toBeInTheDocument()
   const cards = document.querySelectorAll('.nap-mzmsg')
   expect(cards).toHaveLength(2)
