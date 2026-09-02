@@ -24,7 +24,8 @@ class MesoPlanMergerTest {
         var sug = new MesoPlanLlm.Suggestion("teszt", List.of(
             new MesoPlanLlm.DayPick("Hét", List.of(new MesoPlanLlm.ExercisePick(byName("Pullover").id(), 99)))));
 
-        var merged = MesoPlanMerger.merge(s, det, sug, CATALOG, PROPS);
+        var result = MesoPlanMerger.merge(s, det, sug, CATALOG, PROPS);
+        var merged = result.days();
 
         var monBack = merged.get(0).picks().stream().filter(p -> p.candidate().group().equals("back")).toList();
         assertThat(monBack).extracting(p -> p.candidate().name()).containsExactly("Pullover");
@@ -32,6 +33,7 @@ class MesoPlanMergerTest {
         // other groups on Hét untouched (deterministic)
         assertThat(merged.get(0).picks().stream().filter(p -> p.candidate().group().equals("chest")).toList())
             .extracting(p -> p.candidate().name()).containsExactly("Bench");
+        assertThat(result.appliedPicks()).isEqualTo(1);
     }
 
     @Test
@@ -43,9 +45,10 @@ class MesoPlanMergerTest {
             new MesoPlanLlm.DayPick("Kedd", List.of(new MesoPlanLlm.ExercisePick(byName("Bench").id(), 3))),
             new MesoPlanLlm.DayPick("Sze", List.of(new MesoPlanLlm.ExercisePick(byName("Bench").id(), 3)))));
 
-        var merged = MesoPlanMerger.merge(s, det, sug, CATALOG, PROPS);
+        var result = MesoPlanMerger.merge(s, det, sug, CATALOG, PROPS);
 
-        assertThat(merged).isEqualTo(det);
+        assertThat(result.days()).isEqualTo(det);
+        assertThat(result.appliedPicks()).isEqualTo(0);
     }
 
     @Test
@@ -57,10 +60,31 @@ class MesoPlanMergerTest {
             new MesoPlanLlm.ExercisePick(byName("Pulldown").id(), 2),
             new MesoPlanLlm.ExercisePick(byName("Pullover").id(), 2)))));
 
-        var merged = MesoPlanMerger.merge(s, det, sug, CATALOG, PROPS);
+        var result = MesoPlanMerger.merge(s, det, sug, CATALOG, PROPS);
+        var merged = result.days();
 
         var monBack = merged.get(0).picks().stream().filter(p -> p.candidate().group().equals("back")).toList();
         assertThat(monBack).hasSize(2);
         assertThat(monBack).extracting(MesoPlanFiller.Pick::workingSets).containsExactly(3, 3);
+        assertThat(result.appliedPicks()).isEqualTo(1);
+    }
+
+    @Test
+    void merge_shouldCapAtOnePick_whenFrameHasFewerThanSixSets() {
+        // "Kedd" is Rest in this 4-day split, use a day/group combo with < 6 sets: chest on Hét
+        // in a plain (no priorities) build gets 4 sets (8 MEV / 2 chest days).
+        var s = MesoPlanSkeleton.build(List.of("Hét", "Sze", "Pén", "Szo"), 6, Map.of(), MesoPlanSkeletonTest.RP);
+        var det = MesoPlanFiller.fill(s, CATALOG, PROPS);
+        var sug = new MesoPlanLlm.Suggestion("x", List.of(new MesoPlanLlm.DayPick("Hét", List.of(
+            new MesoPlanLlm.ExercisePick(byName("Bench").id(), 2),
+            new MesoPlanLlm.ExercisePick(byName("Fly").id(), 2)))));
+
+        var result = MesoPlanMerger.merge(s, det, sug, CATALOG, PROPS);
+        var merged = result.days();
+
+        var monChest = merged.get(0).picks().stream().filter(p -> p.candidate().group().equals("chest")).toList();
+        assertThat(monChest).extracting(p -> p.candidate().name()).containsExactly("Bench");
+        assertThat(monChest.get(0).workingSets()).isEqualTo(4);
+        assertThat(result.appliedPicks()).isEqualTo(1);
     }
 }

@@ -14,13 +14,18 @@ public final class MesoPlanMerger {
 
     private MesoPlanMerger() {}
 
-    public static List<MesoPlanFiller.FilledDay> merge(MesoPlanSkeleton.Skeleton skeleton,
-                                                       List<MesoPlanFiller.FilledDay> deterministic,
-                                                       MesoPlanLlm.Suggestion suggestion,
-                                                       List<MesoPlanFiller.Candidate> candidates,
-                                                       MesoPlanProperties props) {
+    /** {@code appliedPicks} = number of (day, group) frames where at least one LLM pick was
+     *  accepted — the caller uses this (not the raw suggestion presence) to decide whether the
+     *  answer actually changed anything. */
+    public record MergeResult(List<MesoPlanFiller.FilledDay> days, int appliedPicks) {}
+
+    public static MergeResult merge(MesoPlanSkeleton.Skeleton skeleton,
+                                    List<MesoPlanFiller.FilledDay> deterministic,
+                                    MesoPlanLlm.Suggestion suggestion,
+                                    List<MesoPlanFiller.Candidate> candidates,
+                                    MesoPlanProperties props) {
         if (suggestion == null || suggestion.days() == null || suggestion.days().isEmpty()) {
-            return deterministic;
+            return new MergeResult(deterministic, 0);
         }
         Map<UUID, MesoPlanFiller.Candidate> byId = candidates.stream()
             .collect(Collectors.toMap(MesoPlanFiller.Candidate::id, c -> c, (a, b) -> a));
@@ -31,6 +36,7 @@ public final class MesoPlanMerger {
         }
 
         List<MesoPlanFiller.FilledDay> out = new ArrayList<>(deterministic.size());
+        int appliedPicks = 0;
         for (int i = 0; i < skeleton.days().size(); i++) {
             MesoPlanSkeleton.DayFrame frame = skeleton.days().get(i);
             MesoPlanFiller.FilledDay det = deterministic.get(i);
@@ -52,7 +58,11 @@ public final class MesoPlanMerger {
                     picks.addAll(det.picks().stream().filter(p -> p.candidate().group().equals(m.group())).toList());
                     continue;
                 }
-                int count = Math.min(chosen.size(), Math.min(props.maxExercisesPerGroupPerDay(), Math.max(1, m.sets())));
+                appliedPicks++;
+                // mirrors MesoPlanFiller.fillGroup's exercise-count rule: 2 when the frame has
+                // ≥6 sets else 1, further bounded by the tunable cap and the number of valid picks.
+                int cap = m.sets() >= 6 ? 2 : 1;
+                int count = Math.min(chosen.size(), Math.min(props.maxExercisesPerGroupPerDay(), cap));
                 int base = m.sets() / count;
                 int remainder = m.sets() % count;
                 for (int k = 0; k < count; k++) {
@@ -61,6 +71,6 @@ public final class MesoPlanMerger {
             }
             out.add(new MesoPlanFiller.FilledDay(frame.day(), frame.type(), List.copyOf(picks)));
         }
-        return List.copyOf(out);
+        return new MergeResult(List.copyOf(out), appliedPicks);
     }
 }

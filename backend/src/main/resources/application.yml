@@ -1486,8 +1486,6 @@ mezo:
       3: [ { pct: 0.50, reps: 8 }, { pct: 0.70, reps: 4 }, { pct: 0.90, reps: 2 } ]
   # Hypertrophy plan generator frames (POST /api/train/meso-plans/generate).
   meso-plan:
-    session-cap: 8
-    min-frequency: 2
     max-exercises-per-group-per-day: 2
     compound-rep-min: 8
     compound-rep-max: 10

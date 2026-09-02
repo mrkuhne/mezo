@@ -18,10 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * POST /api/train/meso-plans/generate — the single Hypertrophy model of the wizard redesign.
@@ -30,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code MesoTemplateUpsertRequest} the FE posts back to {@code createMesoTemplate} unchanged.
  * Nothing is persisted here.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MesoPlanGeneratorService {
@@ -44,7 +41,9 @@ public class MesoPlanGeneratorService {
     private final MesoPlanProperties props;
     private final ObjectProvider<MesoPlanLlm> llm;
 
-    @Transactional(readOnly = true)
+    /** No {@code @Transactional} here on purpose (mirrors {@code HabitAiService.suggest}): the
+     *  slow-tier LLM round-trip below must never hold a DB connection open for its duration. The
+     *  single repository read in {@link #candidates} is transactional on its own. */
     public MesoPlanGenerateResponse generate(UUID user, MesoPlanGenerateRequest req) {
         Map<String, String> priorities = PriorityTier.normalize(req.getPriorities());
         MesoPlanSkeleton.Skeleton skeleton = MesoPlanSkeleton.build(
@@ -58,10 +57,15 @@ public class MesoPlanGeneratorService {
         if (port != null) {
             Optional<MesoPlanLlm.Suggestion> s = port.propose(toRequest(skeleton, candidates, priorities, req.getGoalText()));
             if (s.isPresent()) {
-                days = MesoPlanMerger.merge(skeleton, days, s.get(), candidates, props);
-                llmUsed = true;
-                if (s.get().rationale() != null && !s.get().rationale().isBlank()) {
-                    rationale = s.get().rationale().strip();
+                MesoPlanMerger.MergeResult merged = MesoPlanMerger.merge(skeleton, days, s.get(), candidates, props);
+                // an answer that changed nothing (no accepted pick) is treated like no answer:
+                // keep the deterministic days AND the deterministic rationale.
+                if (merged.appliedPicks() > 0) {
+                    days = merged.days();
+                    llmUsed = true;
+                    if (s.get().rationale() != null && !s.get().rationale().isBlank()) {
+                        rationale = s.get().rationale().strip();
+                    }
                 }
             }
         }

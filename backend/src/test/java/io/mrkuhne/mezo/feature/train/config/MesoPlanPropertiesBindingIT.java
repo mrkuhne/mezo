@@ -13,8 +13,6 @@ class MesoPlanPropertiesBindingIT extends AbstractIntegrationTest {
 
     @Test
     void testBinding_shouldExposeDefaults_whenYmlLoaded() {
-        assertThat(props.sessionCap()).isEqualTo(8);
-        assertThat(props.minFrequency()).isEqualTo(2);
         assertThat(props.maxExercisesPerGroupPerDay()).isEqualTo(2);
         assertThat(props.compoundRepMin()).isEqualTo(8);
         assertThat(props.compoundRepMax()).isEqualTo(10);

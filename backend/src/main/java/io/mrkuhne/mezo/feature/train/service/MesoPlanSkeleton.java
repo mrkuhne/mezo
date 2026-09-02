@@ -95,7 +95,7 @@ public final class MesoPlanSkeleton {
             days.add(new DayFrame(day, type, List.copyOf(muscles)));
         }
         return new Skeleton(SPLIT_LABEL.get(n) + " · " + training.size() + "×/hét",
-            List.copyOf(days), weekOne, ceilings, phaseCurve(weeks));
+            List.copyOf(days), Map.copyOf(weekOne), Map.copyOf(ceilings), phaseCurve(weeks));
     }
 
     /** weeks-1 ramp weeks then a Deload: the first one or two ramp weeks sit at MEV (two once

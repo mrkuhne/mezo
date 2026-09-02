@@ -19,14 +19,16 @@ class MesoPlanGenerateAiIT extends ApiIntegrationTest {
     private static final String GENERATE = "/api/train/meso-plans/generate";
 
     @Test
-    void testGenerateMesoPlan_shouldMarkLlmUsedAndKeepFrames_whenFakeAnswersDefault() {
+    void testGenerateMesoPlan_shouldStayDeterministic_whenFakeAnswersEmptyDays() {
         org.springframework.http.HttpHeaders auth = ownerAuthHeaders();
         MesoPlanGenerateResponse res = postForBody(GENERATE, MesoPlanGenerateRequest.builder()
             .daysOfWeek(Set.of("Hét", "Sze", "Pén", "Szo")).weeks(6).priorities(Map.of("back", "emphasize")).build(),
             auth, org.springframework.http.HttpStatus.OK, MesoPlanGenerateResponse.class);
 
-        assertThat(res.getLlmUsed()).isTrue();
-        assertThat(res.getRationale()).isEqualTo("FAKE-INDOK");
+        // fake's default answer is {"rationale":"FAKE-INDOK","days":[]} — no accepted pick, so
+        // the endpoint must report the answer as unused and keep the deterministic rationale.
+        assertThat(res.getLlmUsed()).isFalse();
+        assertThat(res.getRationale()).isNotEqualTo("FAKE-INDOK");
         int backSets = res.getTemplate().getDays().stream().flatMap(d -> d.getExercises().stream())
             .filter(e -> "back".equals(io.mrkuhne.mezo.feature.train.service.MuscleGroup.of(e.getMuscle())))
             .mapToInt(GymExerciseInput::getWorkingSets).sum();

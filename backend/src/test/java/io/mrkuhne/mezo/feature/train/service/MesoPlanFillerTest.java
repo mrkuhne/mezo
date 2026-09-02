@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 class MesoPlanFillerTest {
 
-    static final MesoPlanProperties PROPS = new MesoPlanProperties(8, 2, 2, 8, 10, 12, 15, 1, 2, 1);
+    static final MesoPlanProperties PROPS = new MesoPlanProperties(2, 8, 10, 12, 15, 1, 2, 1);
     static final Map<String, VolumeProperties.Baseline> RP = MesoPlanSkeletonTest.RP;
 
     static MesoPlanFiller.Candidate c(String name, String zone, String type, double stim) {
