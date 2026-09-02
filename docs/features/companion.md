@@ -2226,6 +2226,10 @@ weekly direction. Now every CHAT turn's snapshot carries an **`[Emberek]`** bloc
   directionReason)` rows for ACTIVE persons only (candidate/archived never), newest mention
   first, unmentioned last by name, no limit. The weekly count and the direction come from the
   SAME private helper the bootstrap uses, so the chat and the Emberek hub can never disagree.
+  Since `mezo-cc6x` this reads `MentionRepository.findSignals` — a `MentionSignal(personId, ts,
+  tone, intensity)` projection, not managed `MentionEntity` rows — so every chat turn's read
+  skips the free-text `excerpt` and never adds dirty-checked entities to `prepareTurn`'s
+  read-write persistence context.
 - **`PeopleSnapshotBlock`** (`feature/companion/service`, COMPANION_SWITCH) renders it:
   header `[Emberek] (aktív kör, utolsó említés szerint, max N)`, one line per person
   `<név> — <kapcsolat> · <k× e héten | e héten nem került szóba> · <felfelé (indok) | lefelé
