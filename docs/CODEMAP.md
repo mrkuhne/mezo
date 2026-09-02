@@ -469,13 +469,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### habit
 
-*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-08-29, done)
+*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/habit`
   - **entities→tables:** `HabitChainEntity`→`habit_chain`, `HabitDayEntity`→`habit_day`, `HabitDefEntity`→`habit_def`
   - **repositories:** `HabitChainRepository`, `HabitDayRepository`, `HabitDefRepository`
-  - **services:** `HabitAdminService`, `HabitAiService`, `HabitCatalogService`, `HabitEvaluator`, `HabitJob`,
-    `HabitService`, `HabitSuggestPort`, `HabitTargets`
+  - **services:** `HabitAdminService`, `HabitAiService`, `HabitCatalogService`, `HabitEvaluator`,
+    `HabitFrameworkValidator`, `HabitJob`, `HabitService`, `HabitSuggestPort`, `HabitTargets`
   - **controllers→contract:** `HabitController`→`HabitApi`
   - **mappers:** `HabitMapper`
   - **config:** `HabitProperties`
@@ -613,7 +613,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### me
 
 *FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-08-29, done) ·
-  [docs/features/habit.md](features/habit.md) (updated 2026-08-29, done) ·
+  [docs/features/habit.md](features/habit.md) (updated 2026-09-02, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-02, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done) ·
@@ -985,7 +985,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### today
 
-*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-08-29, done) ·
+*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-02, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-08-30, done) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-08-30, done) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-08-30, done) ·
