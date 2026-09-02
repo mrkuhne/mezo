@@ -58,6 +58,7 @@ import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthHubPage } from '@/features/me/pages/GrowthHubPage'
 import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
+import { HabitPage } from '@/features/me/pages/HabitPage'
 import { RoutineWizardPage } from '@/features/me/pages/RoutineWizardPage'
 import { RutinHubPage } from '@/features/me/pages/RutinHubPage'
 import { GrowthNaploPage } from '@/features/me/pages/GrowthNaploPage'
@@ -280,6 +281,10 @@ export const routes: RouteObject[] = [
       // The 4-step recipe wizard (mezo-3zue.4). Registered BEFORE any `:param` sibling so
       // "uj" can never be swallowed as a habit key.
       { path: 'me/rutin/uj', element: <RoutineWizardPage /> },
+      // The single-recipe page (mezo-3zue.4). LAST of the `me/rutin/*` family: every static
+      // sibling is registered above it so none is swallowed as a habit key. The parameter is
+      // the habitKey (what the hub's rows link with), not the definition id.
+      { path: 'me/rutin/szokas/:habitKey', element: <HabitPage /> },
       // Both former homes keep working as redirects.
       { path: 'me/growth/rutin', element: <Navigate to="/me/rutin" replace /> },
       { path: 'me/routines/edit', element: <Navigate to="/me/rutin" replace /> },

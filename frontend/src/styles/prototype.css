@@ -8526,3 +8526,43 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .rt-wnav { display: flex; gap: 9.5px; margin-top: 12px; }
 .rt-wnav .cta-primary, .rt-wnav .cta-ghost { justify-content: center; padding: 12px 0; }
 .rt-wnav .cta-primary:disabled { opacity: 0.4; pointer-events: none; }
+
+/* ===== Szokás-oldal — /me/rutin/szokas/:habitKey (mezo-3zue.4) =====
+   docs/design_2.0/prototypes/src/rutin-epito-head.html `.fwband` / `.hist` / `.danger`,
+   ×1.18 (330 → 390px frame). The prototype's per-framework wash+shadow pair (set inline by
+   `openEdit`) becomes three modifier classes on tokens: sage for Fogg, lavender for Clear,
+   sand for the frameworkless legacy row. The form language itself is the wizard's
+   (`.rt-fcard`/`.rt-flabel`/`.rt-fin`/`.rt-chips`/`.rt-stepin`), reused verbatim. */
+.rt-fwband {
+  display: flex; gap: 10.6px; align-items: center; border-radius: 17.7px;
+  padding: 10.6px 14px; margin-bottom: 10.6px;
+}
+.rt-fwband.is-fogg { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.rt-fwband.is-clear { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.rt-fwband.is-none { background: var(--mz-wash-sand); box-shadow: var(--mz-shadow-gold); }
+.rt-fwband-sgn { font-size: 19px; line-height: 1; flex: none; }
+.rt-fwband-t { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.rt-fwband-s { font-size: 10px; color: var(--text-secondary); line-height: 1.35; }
+.rt-fwband-sw {
+  margin-left: auto; flex: none; cursor: pointer; font-family: inherit;
+  font-size: 10px; font-weight: 700; color: var(--coral-deep);
+  background: var(--surface-card); border: none; border-radius: 999px; padding: 4.7px 10.6px;
+}
+
+/* The 28-day strip visualises the summary's COUNTS (done28 / missed28) — the summary carries
+   no per-day bitset, so this is a proportion bar, and the caption under it says so. */
+.rt-hist { display: flex; gap: 3.5px; margin-top: 7px; }
+.rt-hist i { flex: 1; height: 16.5px; border-radius: 3.5px; background: var(--mz-line-soft); }
+.rt-hist i.is-done { background: var(--gradient-sage); }
+.rt-hist i.is-miss { background: var(--surface-recess); }
+
+/* Pausing is the prominent way out; deleting (.is-hard) sits below it, quieter and two-tap. */
+.rt-danger {
+  width: 100%; margin-top: 9.5px; cursor: pointer; font-family: inherit;
+  border: 1.4px dashed color-mix(in srgb, var(--coral-deep) 40%, transparent);
+  background: none; border-radius: 13px; padding: 9.5px 0;
+  font-size: 11.2px; font-weight: 700; color: var(--coral-deep);
+}
+.rt-danger.is-hard { border-color: var(--mz-line-soft); color: var(--text-tertiary); font-weight: 600; }
+.rt-danger.is-hard.is-armed { border-color: var(--error); color: var(--error); font-weight: 700; }
+.rt-danger:disabled { opacity: 0.45; cursor: default; }
