@@ -2707,6 +2707,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tutorial/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The user's guide progress; empty map ghost when nothing seen — never 404 (TutorialProgress) */
+        get: operations["getTutorialProgress"];
+        /** Replace the whole progress map (per-user singleton upsert) (TutorialProgress) */
+        put: operations["setTutorialProgress"];
+        post?: never;
+        /** Forget every seen guide (Beállítások · Kalauzok újranézése) (TutorialProgress) */
+        delete: operations["resetTutorialProgress"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ritual/day/{date}": {
         parameters: {
             query?: never;
@@ -6900,6 +6919,33 @@ export interface components {
         SetFuelSettingsRequest: {
             mealsPerDay: number;
             caffeineCutoff: string;
+        };
+        TutorialProgressEntry: {
+            /** @description The registry version of the guide that was seen — a bump re-arms the auto-show */
+            version: number;
+            /**
+             * Format: date-time
+             * @description First time the guide appeared (seen = appeared, Appcues modal rule)
+             */
+            seenAt: string;
+            /**
+             * Format: date-time
+             * @description Set on "Értem, kezdjük" (last card confirmed)
+             */
+            completedAt?: string | null;
+            /** @description Zero-based card index when Kihagyom / ✕ / Escape closed it */
+            dismissedAtStep?: number | null;
+        };
+        TutorialProgressResponse: {
+            /** @description Keyed by guide id from the frontend registry (e.g. `fuel`, `welcome`) */
+            progress: {
+                [key: string]: components["schemas"]["TutorialProgressEntry"];
+            };
+        };
+        SetTutorialProgressRequest: {
+            progress: {
+                [key: string]: components["schemas"]["TutorialProgressEntry"];
+            };
         };
         RitualWindow: {
             /**
@@ -15536,6 +15582,104 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTutorialProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The progress map (empty before the first guide is shown) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TutorialProgressResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setTutorialProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetTutorialProgressRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved progress */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TutorialProgressResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    resetTutorialProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Progress cleared; the next GET returns the empty ghost */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Missing/invalid token */
             401: {

@@ -98,6 +98,8 @@ tags:
       rides POST /api/biometrics/sleep)
   - name: FuelSettings
     description: Fuel-owned per-user planner settings (eating cadence + caffeine cutoff)
+  - name: TutorialProgress
+    description: 'Per-user "seen" store of the in-app page guides (Mezo-kalauz, mezo-gb1s)'
   - name: Gamification
     description: 'User progression system — XP, levels, coins, titles, and daily streaks'
   - name: LlmUsage
@@ -6643,6 +6645,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/tutorial/progress:
+    get:
+      tags:
+        - TutorialProgress
+      operationId: getTutorialProgress
+      summary: >-
+        The user's guide progress; empty map ghost when nothing seen — never 404
+        (TutorialProgress)
+      responses:
+        '200':
+          description: The progress map (empty before the first guide is shown)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorialProgressResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - TutorialProgress
+      operationId: setTutorialProgress
+      summary: >-
+        Replace the whole progress map (per-user singleton upsert)
+        (TutorialProgress)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTutorialProgressRequest'
+      responses:
+        '200':
+          description: Saved progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorialProgressResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - TutorialProgress
+      operationId: resetTutorialProgress
+      summary: >-
+        Forget every seen guide (Beállítások · Kalauzok újranézése)
+        (TutorialProgress)
+      responses:
+        '204':
+          description: Progress cleared; the next GET returns the empty ghost
         '401':
           description: Missing/invalid token
           content:
@@ -16951,6 +17022,53 @@ components:
         caffeineCutoff:
           type: string
           pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+    TutorialProgressEntry:
+      type: object
+      required:
+        - version
+        - seenAt
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          description: >-
+            The registry version of the guide that was seen — a bump re-arms the
+            auto-show
+        seenAt:
+          type: string
+          format: date-time
+          description: 'First time the guide appeared (seen = appeared, Appcues modal rule)'
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Set on "Értem, kezdjük" (last card confirmed)'
+        dismissedAtStep:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Zero-based card index when Kihagyom / ✕ / Escape closed it
+    TutorialProgressResponse:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TutorialProgressEntry'
+          description: >-
+            Keyed by guide id from the frontend registry (e.g. `fuel`,
+            `welcome`)
+    SetTutorialProgressRequest:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TutorialProgressEntry'
     RitualWindow:
       type: object
       required:
