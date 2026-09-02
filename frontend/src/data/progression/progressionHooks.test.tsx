@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { useAchievements, useProgressionProfile } from '@/data/hooks'
+import { useAchievements, useGrowthWeek, useProgressionProfile } from '@/data/hooks'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -50,4 +50,29 @@ test('real mode fetches achievements from /api/progression/achievements', async 
   await waitFor(() => expect(result.current.data.badges).toHaveLength(1))
   expect(result.current.data.badges[0].key).toBe('first_quest')
   expect(result.current.data.perks).toEqual([])
+})
+
+test('useGrowthWeek: mock mode seeds the fixture synchronously', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const { result } = renderHook(() => useGrowthWeek('2026-08-31'), { wrapper: makeHookWrapper() })
+  expect(result.current.data?.questCompleted).toBe(6)
+  expect(result.current.data?.savingsHuf).toBe(12000)
+})
+
+test('useGrowthWeek: real mode fetches /api/progression/growth-week/{date}', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/progression/growth-week/:date`, ({ params }) =>
+    HttpResponse.json({ weekStart: params.date, questCompleted: 2, questClosed: 3, lifeXp: 40, activities: 1, savingsHuf: 0 })))
+  const { result } = renderHook(() => useGrowthWeek('2026-08-31'), { wrapper: makeHookWrapper() })
+  expect(result.current.data).toBeNull() // honest null while unresolved, never the seed
+  await waitFor(() => expect(result.current.data?.questCompleted).toBe(2))
+  expect(result.current.data?.weekStart).toBe('2026-08-31')
+})
+
+test('useGrowthWeek: real mode 404 resolves to null (no retry storm)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/progression/growth-week/:date`, () => new HttpResponse(null, { status: 404 })))
+  const { result } = renderHook(() => useGrowthWeek('2026-08-31'), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.isPending).toBe(false))
+  expect(result.current.data).toBeNull()
 })

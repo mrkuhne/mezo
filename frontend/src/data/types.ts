@@ -388,7 +388,9 @@ export interface WorkshopTurn {
 export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }
 export interface PantrySuggestion { name: string; source: PantrySourceKey; price: string; reason: string }
 
-// One OpenFoodFacts lookup hit (Fuel P6, mezo-bka) — per-100 basis draft the user confirms.
+// Originated as one OpenFoodFacts lookup hit (Fuel P6, mezo-bka); the OFF lookup mode itself
+// was retired from the FE (`mezo-ymt4`, 2026-09-02), but this type is KEPT as the shared base
+// shape both PantryScrapeDraft and PantryImportInput extend — not dead code.
 export interface PantryLookupItem {
   name: string
   brand?: string | null

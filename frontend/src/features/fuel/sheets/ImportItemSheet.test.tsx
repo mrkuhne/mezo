@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { render, screen, act, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { PantryImportInput, PantryScrapeDraft } from '@/data/types'
 import { MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
@@ -7,9 +7,9 @@ import { MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
 // Link/Fotó-mode override idiom (mirrors FuelMaiPage.logMeal.test): every hook the sheet pulls
 // from @/data/hooks stays real (mock mode) via the importOriginal spread; only scrapeItem /
 // photoExtract / importItem are swapped when their `hoisted` slot is set — so they're inert for
-// the OFF-search tests and the Link/Fotó happy-path tests below (which exercise the real canned
-// fixtures), and drive the needsReview / rejection / null-draft branches and the origin-marker
-// assertion that the canned fixtures can't reach on their own.
+// the Link/Fotó happy-path tests below (which exercise the real canned fixtures), and drive the
+// needsReview / rejection / null-draft branches and the origin-marker assertion that the canned
+// fixtures can't reach on their own.
 const hoisted = vi.hoisted(() => ({
   scrape: null as null | ((url: string) => Promise<PantryScrapeDraft | null>),
   photo: null as null | ((p: File, p2?: File) => Promise<PantryScrapeDraft | null>),
@@ -48,64 +48,12 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-test('input phase has the search field and the inert quick-import chips', () => {
+test('a sheet alapból Fotó módban nyílik (mezo-ymt4)', () => {
   render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
-  expect(screen.getByText('Új tétel a Kamrába')).toBeInTheDocument()
-  expect(screen.getByPlaceholderText(/skyr/)).toBeInTheDocument()
-  expect(screen.getByText('HAMAROSAN · gyors-import')).toBeInTheDocument()
-  // Címke fotó chip is gone (mezo-d8tr): photo import graduated to its own Fotó mode.
-  expect(screen.queryByRole('button', { name: /Címke fotó/ })).not.toBeInTheDocument()
-  // Remaining quick-import affordances stay inert (P8+): disabled, no handler.
-  expect(screen.getByRole('button', { name: /Vonalkód-szkenner/ })).toBeDisabled()
-})
-
-test('search runs the mock OFF lookup and lands on the preview with a confirmable draft', async () => {
-  // fireEvent (not userEvent) on purpose: userEvent v14 deadlocks under fake timers.
-  vi.useFakeTimers()
-  render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
-
-  fireEvent.change(screen.getByPlaceholderText(/skyr/), { target: { value: 'joghurt' } })
-  // Exact name: the Link-mode toggle button reads 'Keresés (OFF)', so /Keresés/ is now ambiguous.
-  fireEvent.click(screen.getByRole('button', { name: 'Keresés' }))
-  expect(screen.getByText('Keresés')).toBeInTheDocument() // searching phase
-
-  await act(async () => { vi.advanceTimersByTime(800) }) // mock lookup demo delay
-  vi.useRealTimers()
-
-  // Fixture results listed; the first is pre-picked into the editable draft.
-  expect(screen.getByText('Görög joghurt 10%')).toBeInTheDocument()
-  expect(screen.getByText('Skyr natúr')).toBeInTheDocument()
-  expect(screen.getByLabelText('Tétel neve')).toHaveValue('Görög joghurt 10%')
-  expect(screen.getByLabelText('Kategória')).toBeInTheDocument()
-})
-
-test('Polcra imports the picked draft and closes the sheet', async () => {
-  vi.useFakeTimers()
-  const onClose = vi.fn()
-  render(<ImportItemSheet onClose={onClose} />, { wrapper: wrapper() })
-
-  fireEvent.change(screen.getByPlaceholderText(/skyr/), { target: { value: 'skyr' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Keresés' }))
-  await act(async () => { vi.advanceTimersByTime(800) })
-  vi.useRealTimers()
-
-  fireEvent.click(screen.getByRole('button', { name: /Polcra/ }))
-  await waitFor(() => expect(onClose).toHaveBeenCalled())
-})
-
-test('az OFF-találat visszaigazolása a telített/cukor/rost/só értéket is mutatja', async () => {
-  vi.useFakeTimers()
-  render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
-
-  fireEvent.change(screen.getByPlaceholderText(/skyr/), { target: { value: 'skyr' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Keresés' }))
-  await act(async () => { vi.advanceTimersByTime(800) })
-  vi.useRealTimers()
-
-  expect(await screen.findByText('Telített')).toBeInTheDocument()
-  expect(screen.getByText('Cukor')).toBeInTheDocument()
-  expect(screen.getByText('Rost')).toBeInTheDocument()
-  expect(screen.getByText('Só')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Fotó' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: 'Link' })).toHaveAttribute('aria-pressed', 'false')
+  expect(screen.queryByRole('button', { name: 'Keresés (OFF)' })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Címke fotó')).toBeInTheDocument()
 })
 
 // ---- Link mode (URL scrape wizard, mezo-8vum) ---------------------------------------------

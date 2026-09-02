@@ -61,7 +61,8 @@ const SCREENS: Array<[string, string, string?]> = [
   // tab (the progression's new home — streak card + titles section) and the AI-call detail.
   ['me-goal-wizard', '/me/goals/new'],
   ['me-rutinok', '/me/routines/edit'],
-  ['me-growth-awards', '/me/growth?tab=awards'],
+  ['me-growth', '/me/growth'],
+  ['me-growth-awards', '/me/growth/kituntetesek'],
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
   ['insights-mintak', '/insights'],
   ['insights-memoar', '/insights/memoir'],
