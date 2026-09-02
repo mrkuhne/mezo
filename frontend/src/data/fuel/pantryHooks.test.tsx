@@ -93,7 +93,7 @@ describe('usePantry (mock mode)', () => {
   })
 
   it('scrapeItem resolves the canned MOCK_SCRAPE_DRAFT after the demo delay (mezo-8vum)', async () => {
-    // Mock mode: no backend — the URL-scrape action serves the canned draft (mirrors lookupItems).
+    // Mock mode: no backend — the URL-scrape action serves the canned draft after a demo delay.
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
 

@@ -3,12 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { pantryApi, type PantryData } from '@/data/fuel/pantryApi'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
-import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, pantryLookupFixture, MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
+import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
 import { pantrySources } from '@/data/pantrySources'
 import { supplementsStash } from '@/data/fuel/fuel'
 import { PANTRY_KEY, RECIPES_KEY, RECIPE_BREAKDOWN_KEY } from '@/data/fuel/queryKeys'
 import { movesRecipeScores, recipesUsingPantryItem, type ScoredPantryFacts } from '@/data/fuel/pantryImpact'
-import type { Ingredient, Recipe, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryLookupItem, PantryScrapeDraft } from '@/data/types'
+import type { Ingredient, Recipe, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryScrapeDraft } from '@/data/types'
 
 // P6 (mezo-bka): imports + suggestions ride the same PantryResponse — one query, no extra key.
 const mockData: PantryData = {
@@ -125,16 +125,7 @@ export function usePantryActions() {
   const updateItem = useCallback((id: string, input: PantryItemInput) => update.mutate({ id, input }), [update])
   const deleteItem = useCallback((id: string) => remove.mutate(id), [remove])
   const importItem = useCallback((input: PantryImportInput) => importMut.mutateAsync(input), [importMut])
-  // OFF lookup is a plain read (no cache — results are ephemeral search hits);
-  // mock mode serves the canned fixture after a demo delay.
-  const lookupItems = useCallback(
-    (q: string): Promise<PantryLookupItem[]> =>
-      mock
-        ? new Promise(resolve => setTimeout(() => resolve(pantryLookupFixture), 700))
-        : pantryApi.lookup(q),
-    [mock],
-  )
-  // URL scrape (P8, mezo-8vum) — like lookupItems, an ephemeral read (no cache);
+  // URL scrape (P8, mezo-8vum) — an ephemeral read (no cache);
   // mock mode serves the canned draft after a demo delay.
   const scrapeItem = useCallback(
     (url: string): Promise<PantryScrapeDraft | null> =>
@@ -151,7 +142,7 @@ export function usePantryActions() {
         : pantryApi.photoExtract(photo, photo2),
     [mock],
   )
-  return { addItem, updateItem, deleteItem, importItem, lookupItems, scrapeItem, photoExtract }
+  return { addItem, updateItem, deleteItem, importItem, scrapeItem, photoExtract }
 }
 
 // --- mock-mode cache mutators: keep the offline app interactive ---
