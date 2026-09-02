@@ -81,9 +81,15 @@ viewportba scroll nélkül (a prototípusban 330 px-nél ~110 px tartalék marad
   küldetés egy chip; állapotok: `completed` = zsálya háttér + teli ✓ jel; `open` = semleges
   keret + üres kör; `expired` = szaggatott keret, 50% opacitás, felirat `{cím} · csendben
   lejárt`, nem gomb (`aria-disabled`). **Soha nem terracotta**, nincs visszaszámláló.
-- Nyitott chip koppintása = a mai `DailyQuestList` „Kész" akciója (`useQuestActions().complete`);
-  siker után a chip zsályára vált, a fejléc újraszámol, a hero XP tovább pörög. Kész chip
-  koppintása nem von vissza (a mai lista sem enged visszavonást — nincs új mutáció).
+- Nyitott chip koppintása (a data-réteg ellenőrzése után pontosítva — nincs explicit „kész"
+  mutáció, a DERIVED küldetés a logokból záródik magától): **`completionMode === 'ACTIVITY'`**
+  → a meglévő `ActivityLogSheet` nyílik a küldetéssel (`quest` prop, a mai `Naplózz` akció);
+  **DERIVED** → `navigate('/nap/kuldetesek')`, ahol a küldetés becsületes állapotsora
+  (`folyamatban · a logjaidból záródik magától`) és a `Csere` él. Kész / lejárt chip nem gomb.
+  Egy aktivitással zárult küldetés után a `useDailyQuests` újraolvasása (az
+  `useActivityActions` invalidálja) váltja a chipet zsályára, a fejléc újraszámol, a hero XP a
+  `progressionProfile` invalidálásából tovább pörög. A `levelUps` payload consume-once toastja
+  (a `DailyQuestsCard` mai `useEffect`-je) a csíkba költözik változatlanul.
 - A sor végén `＋ Tevékenység` chip (arany wash) → a meglévő `ActivityLogSheet` nyílik helyben;
   mentés után a tevékenység `✎ {név} · +{xp}` levendula chipként kerül a sorba (a mai
   `useActivities()` napi lista), toast nem kell (a sheet saját visszajelzése marad).
@@ -224,7 +230,8 @@ A `RoutinesTab` tartalma és hookjai (`useHabitDay`, `useHabitSummary`, `useHabi
    test-strip alá vagy elv-sorba kerülnek.
 2. Rutin: a 30 cella számlálót mutat (nem naptári rács), a mérföldkő-pill + villanás elmarad —
    a habit-summary nem hordoz napi biteket / tökéletes-sorozatot (§4, follow-up backend issue).
-3. Ma-csík kész chip nem vonható vissza (a prototípus toggle-je demó volt).
+3. Ma-csík: a prototípus chip-toggle-je demó volt — a valós chip ACTIVITY-módban a sheetet
+   nyitja, DERIVED-módban a küldetés-oldalra visz; kész chip nem vonható vissza.
 4. A prototípus lokális `toast`-jai helyett a meglévő sheet-visszajelzés.
 5. `LV {n}-TŐL` a `🔒` helyett a címeknél.
 
