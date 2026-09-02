@@ -254,11 +254,10 @@ Ne írd át a P6 történeti mondatot — egészítsd ki, hogy a doc a jelen ál
 - [ ] **Step 2: CODEMAP regenerálás**
 
 ```bash
-./scripts/generate-codemap.sh
+node scripts/gen-codemap.mjs
 ```
 
-> Ha a repo más néven futtatja a codemap-generátort, nézd meg az `AGENTS.md` §Docs mandate
-> szakaszát, és azt a parancsot futtasd. Ha a diff üres, az is rendben van — commitolni nem kell.
+Ha a diff üres, az is rendben van — commitolni nem kell.
 
 - [ ] **Step 3: Teljes FE gate — mindkét mód**
 
