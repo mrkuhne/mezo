@@ -1,8 +1,10 @@
 import { useDualQuery } from '@/data/useDualQuery'
 import { progressionApi } from '@/data/progression/progressionApi'
+import type { GrowthWeek } from '@/data/progression/progressionApi'
 import { ApiError } from '@/data/_client/api'
 import { progressionProfileMock, GHOST_PROGRESSION_PROFILE } from '@/data/progression/progressionMock'
 import { achievementsMock } from '@/data/progression/achievementsMock'
+import { growthWeekMock } from '@/data/progression/growthWeekMock'
 
 /**
  * Athletic + muscle progression profile (radar, athlete-level, streak, highlights).
@@ -43,4 +45,28 @@ export function useAchievements() {
     realEmpty: { badges: [], perks: [] },
     realStaleTime: 60_000,
   })
+}
+
+/**
+ * The Growth Napló page's "Ez a hét" tile (mezo-rmi0.1) — the first consumer of the live
+ * `GET /api/progression/growth-week/{date}` endpoint (unconsumed since mezo-p2tr).
+ * `null` = nothing to draw (unresolved, 404, or error) — the tile renders NOTHING then
+ * (handoff §2 honest states), never zeros standing in for a missing source.
+ */
+export function useGrowthWeek(weekStartIso: string): { data: GrowthWeek | null; isPending: boolean; isError: boolean } {
+  const { data, isPending, isError } = useDualQuery<GrowthWeek | null>({
+    queryKey: ['growthWeek', weekStartIso],
+    mockData: growthWeekMock,
+    realFetch: async () => {
+      try {
+        return await progressionApi.getGrowthWeek(weekStartIso)
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return null
+        throw err
+      }
+    },
+    realEmpty: null,
+    realStaleTime: 60_000,
+  })
+  return { data: isError ? null : data, isPending, isError }
 }

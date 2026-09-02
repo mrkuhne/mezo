@@ -126,10 +126,10 @@ this redesign and remain as shipped.
     [companion.md](companion.md) for the two-variant assembler). Ref candidates: `Goal`/`Workout`/
     `FuelDay`/`Medication` — deliberately **no** `WeightTrend`/`Sleep` candidate. Gate: empty
     `daily_summary` window (`feed.past-days`) ⇒ no row.
-  - **`generateSleepReaction`** — fired by a fresh sleep log (event OR the morning cron, whichever
-    comes first — see below). Gate: the user's latest sleep log must be dated `>= today - 1` (a
-    backfilled/old log never triggers). Ref candidates: `Sleep`/`Goal`/`Workout`. Uses the FULL
-    `render` (sleep IS the topic here).
+  - **`generateSleepReaction`** — fired ONLY by a fresh sleep log's `SleepLogSavedEvent` — never by
+    a cron (mezo-qn3z; see `CompanionMessageJob`). Gate: the user's latest sleep log must be dated
+    `>= today - 1` (a backfilled/old log never triggers). Ref candidates: `Sleep`/`Goal`/`Workout`.
+    Uses the FULL `render` (sleep IS the topic here).
   - **`generateWeightReaction`** — fired by a fresh weigh-in. Gate: the latest weight log must be
     dated exactly `today`. Ref candidates: `WeightTrend`/`Goal`/`FuelDay`; the payload carries BOTH
     the raw measurement and the `WeightTrendService` EWMA trend, explicitly labelled `mérés` (the
@@ -147,13 +147,14 @@ this redesign and remain as shipped.
     source (briefing) to all of them.
 - **`CompanionMessageJob`** (`service/CompanionMessageJob.java`) — the old `BriefingJob` +
   `HeartbeatJob` merged into one `@Scheduled`-methods-one-switch bean: `runMorning` (05:45,
-  `feed.morning-cron`) generates the morning message AND, right after, calls
-  `generateSleepReaction` for every user — covering the case where sleep was logged BEFORE the
-  cron fires (spec §5's "cron előtt logolt alvás"); `runMidday`/`runEvening` (12:30/20:30) generate
-  the window kinds. Gated on the usual dual switch **plus** a THIRD, `FEED_JOB_SWITCH =
-  mezo.techcore.cron.feed-job.enabled` (replaces the old `briefing-job`/`heartbeat-job` switches —
-  now ONE switch for all three crons). Today-only, no backfill, idempotent, per-user failures
-  isolated.
+  `feed.morning-cron`) generates only the morning message (+ the people-observation branch); the
+  sleep reaction is deliberately left out (mezo-qn3z), because at 05:45 tonight's sleep is not
+  logged yet and it would narrate yesterday's as tonight's — the "cron előtt logolt alvás" case is
+  already covered by the `AFTER_COMMIT` listener at the moment of logging; `runMidday`/`runEvening`
+  (12:30/20:30) generate the window kinds. Gated on the usual dual switch **plus** a THIRD,
+  `FEED_JOB_SWITCH = mezo.techcore.cron.feed-job.enabled` (replaces the old
+  `briefing-job`/`heartbeat-job` switches — now ONE switch for all three crons). Today-only, no
+  backfill, idempotent, per-user failures isolated.
 - **`CompanionMessageEventListener`** (`service/CompanionMessageEventListener.java`) — the NEW
   trigger the old briefing/heartbeat model never had: `SleepLogService.log`/`WeightLogService.log`
   each publish a `SleepLogSavedEvent`/`WeightLogSavedEvent` (`ApplicationEventPublisher`, right
@@ -658,7 +659,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 |---|---|---|
 | Backend (table + envelope + generator + unified read) | 🟢 `mezo-gst9` | `companion_message` table (5 kinds); behind BOTH `mezo.feature.companion.enabled` AND `mezo.feature.proactive.enabled`; either off ⇒ the whole HTTP surface 404s. |
 | Companion-feed generation (morning/sleep/weight/midday/evening) | 🟢 `mezo-gst9` | `CompanionMessageGenerator`, one method per kind; pure-code gather + ONE cheap-tier `CompanionLlm.complete`; morning gather uses `renderWithoutBiometrics` (no sleep/weight leak); sleep/weight gated on a FRESH log existing; midday/evening ported from the retired heartbeat; empty-window/unusable ⇒ no row. |
-| Crons (dawn + midday + evening pre-generation) | 🟢 `mezo-gst9` | `CompanionMessageJob` — `runMorning` (05:45) also triggers `generateSleepReaction` right after (covers sleep logged before the cron); `runMidday`/`runEvening` (12:30/20:30); today-only per user (NO backfill — the lazy GET is the miss-recovery); ONE third switch `feed-job.enabled` for all three (replaces the old `briefing-job`+`heartbeat-job` pair). |
+| Crons (dawn + midday + evening pre-generation) | 🟢 `mezo-gst9` | `CompanionMessageJob` — `runMorning` (05:45) generates the morning message only — the sleep reaction is event-kind (mezo-qn3z); `runMidday`/`runEvening` (12:30/20:30); today-only per user (NO backfill — the lazy GET is the miss-recovery); ONE third switch `feed-job.enabled` for all three (replaces the old `briefing-job`+`heartbeat-job` pair). |
 | Event triggers (sleep/weight log → reaction message) | 🟢 `mezo-gst9` | `CompanionMessageEventListener` — `@Async` `@TransactionalEventListener(AFTER_COMMIT)` on `SleepLogSavedEvent`/`WeightLogSavedEvent` (published by `SleepLogService`/`WeightLogService`); backfilled/old logs never trigger. **Replaces the retired sleep-triggered "regen" (`refreshIfStale`)** — see §9. |
 | Frontend (Today MezoChip thread) | 🟢 `mezo-gst9` | `useCompanionFeed()` (`['companionFeed', date]`, 60s poll real mode); `buildMezoMessages` maps the feed 1:1 to thread bubbles, prepending an honestly-labelled demo card only while no `morning` kind exists; the retired `CompanionNoteCard`/`useCompanionNote()` are gone. |
 | Weekly suggestion (table + generator + Monday cron + lazy read) | 🟢 W1 | `weekly_suggestion` table (ISO-Monday identity, partial unique); smart-tier `WeeklySuggestionGenerator` (gather = snapshot + facts + prior-week summaries + patterns → ONE `completeSmart` call, honest-null); Monday-06:00 `WeeklySuggestionJob` (three-switch, no backfill); `GET /api/proactive/weekly-suggestion` (lazy; 404 = empty prior week). |
@@ -830,9 +831,12 @@ since the trigger event lives in a different feature package.
   for each appUserRepository.findAll():
      try  companionMessageGenerator.generateMorning(user.id, today)   (TODAY only — no backfill)
      catch → log.warn + continue                                      (per-user isolation)
-     try  companionMessageGenerator.generateSleepReaction(user.id, today)   ── ALSO tried right after
-     catch → log.warn + continue                                            morning (spec §5: covers
-                                                                              sleep logged BEFORE the cron)
+     try  companionMessageGenerator.generatePeopleObservation(user.id, today)   (Emberek S6,
+          mezo-06o0.8 — deliberately only here, not the lazy ensureTodayCronKinds path)
+     catch → log.warn + continue                                      (per-user isolation)
+     ── no sleep-reaction call here (mezo-qn3z): at 05:45 tonight's sleep isn't logged yet, so the
+        generator's >= today-1 freshness gate would pick up YESTERDAY's row and narrate it as
+        tonight's; the reaction is event-kind only, see below
 
 @Scheduled(cron = "${mezo.proactive.feed.midday-cron}")   runWindow(MIDDAY)
 @Scheduled(cron = "${mezo.proactive.feed.evening-cron}")  runWindow(EVENING)
@@ -1950,9 +1954,9 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
   returns null with no mention this week (the data gate) / idempotent on a second call.
 - **`CompanionMessageJobIT` (6)** — `runMorning` generates today's morning message for a user with
   narrative memory / is idempotent / skips a user without memory and still serves others (per-user
-  isolation) / ALSO generates the sleep reaction right after morning when a fresh sleep log already
-  exists (the spec §5 "cron előtt logolt alvás" case); `runMidday`/`runEvening` each generate their
-  window kind for a user with memory.
+  isolation) / does NOT generate the sleep reaction even when a fresh sleep log already exists
+  (mezo-qn3z — event-kind only); `runMidday`/`runEvening` each generate their window kind for a
+  user with memory.
 - **`CompanionMessageJobSwitchOffIT` (2)** — `mezo.techcore.cron.feed-job.enabled=false` ⇒ no
   `CompanionMessageJob` bean (the third switch, now covering all three crons at once).
 - **`CompanionMessageEventIT` (4)** — logging fresh sleep creates the sleep-reaction message;
@@ -2441,7 +2445,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getFeed` replaces `getBriefing`+`getHeartbeat`; …+ `getPredictions` + `getExperiments`/`proposeExperiments`/`decideExperiment` + **`getChallenges`/`decideChallenge`**), JWT ownership, dual-switch-gated.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveFeedService.java` — `mezo-gst9` the unified feed read path (persisted rows in `generatedAt` order · `ensureTodayCronKinds` lazy miss-recovery for morning/midday/evening only · `200 []` = honest, never 404); replaces `ProactiveBriefingService` + `ProactiveHeartbeatService` (both DELETED).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `mezo-gst9` the spine: `generateMorning`/`generateSleepReaction`/`generateWeightReaction`/`generateWindow`, each pure-code `gather` + one `CompanionLlm.complete` + parse + ref resolution; `MORNING_MARKER`/`SLEEP_MARKER`/`WEIGHT_MARKER`/`WINDOW_MARKER` + their `*_PROMPT`s + `MORNING_CANDIDATES`/`SLEEP_CANDIDATES`/`WEIGHT_CANDIDATES` + `earlierMessagesBlock`; replaces `BriefingGenerator` + `HeartbeatGenerator` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added `generatePeopleObservation` + `PEOPLE_MARKER`/`PEOPLE_PROMPT` alongside them (§5.13).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageJob.java` — `mezo-gst9` `runMorning` (05:45, also triggers `generateSleepReaction`) + `runMidday`/`runEvening` (12:30/20:30), one THIRD switch (`FEED_JOB_SWITCH`) for all three; replaces `BriefingJob` + `HeartbeatJob` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added a `generatePeopleObservation` call into `runMorning`, its own try/catch (§5.13).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageJob.java` — `mezo-gst9` `runMorning` (05:45, morning message only — the sleep reaction is event-kind, mezo-qn3z) + `runMidday`/`runEvening` (12:30/20:30), one THIRD switch (`FEED_JOB_SWITCH`) for all three; replaces `BriefingJob` + `HeartbeatJob` (both DELETED). **Emberek S6** (`mezo-06o0.8`) added a `generatePeopleObservation` call into `runMorning`, its own try/catch (§5.13).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PeopleMezoNoteAdapter.java` — **Emberek S6** (`mezo-06o0.8`) implements `feature/people`'s `PeopleMezoNoteSource` port (§5.13): joins today's `people` message body into one line for `PeopleResponse.mezoNote`, `Optional.empty()` when blank/absent; `@ConditionalOnProperty` on COMPANION ∧ PROACTIVE.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageEventListener.java` — `mezo-gst9` NEW: `@Async` `@TransactionalEventListener(AFTER_COMMIT)` on `SleepLogSavedEvent`/`WeightLogSavedEvent`, each gated on log freshness before calling the matching `generate*Reaction`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveWeeklySuggestionService.java` — **W1** the weekly read path (ISO-Monday week · persisted row or lazy-generate; null ⇒ 404).

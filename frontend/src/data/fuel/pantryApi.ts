@@ -2,7 +2,7 @@ import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
 import type {
   Ingredient, SupplementStashItem, PantryItemInput,
-  PantryImport, PantrySuggestion, PantryLookupItem, PantryImportInput, PantryScrapeDraft,
+  PantryImport, PantrySuggestion, PantryImportInput, PantryScrapeDraft,
 } from '@/data/types'
 import type { PantrySourceKey } from '@/data/pantrySources'
 import { localDateString, huMonthDay } from '@/shared/lib/dates'
@@ -12,8 +12,6 @@ type PantryItemRequest = components['schemas']['PantryItemRequest']
 type PantryImportRequest = components['schemas']['PantryImportRequest']
 type PantryImportEntryResponse = components['schemas']['PantryImportEntryResponse']
 type PantrySuggestionResponse = components['schemas']['PantrySuggestionResponse']
-type PantryLookupResponse = components['schemas']['PantryLookupResponse']
-type PantryLookupResult = components['schemas']['PantryLookupResult']
 type PantryScrapeRequest = components['schemas']['PantryScrapeRequest']
 type PantryScrapeResponse = components['schemas']['PantryScrapeResponse']
 type PantryScrapeResult = components['schemas']['PantryScrapeResult']
@@ -77,14 +75,9 @@ function fromSuggestion(s: PantrySuggestionResponse): PantrySuggestion {
   return { name: s.name, source: s.source as PantrySourceKey, price: s.price, reason: s.reason }
 }
 
-function fromLookupResult(r: PantryLookupResult): PantryLookupItem {
-  // nova is contract-bounded 1..4 — same structural cast the list read uses.
-  return r as PantryLookupItem
-}
-
 function fromScrapeResult(r: PantryScrapeResult): PantryScrapeDraft {
   // Structurally identical to the draft (nova 1..4, source is the shared PantrySource
-  // enum, category widens to string) — same structural cast fromLookupResult uses.
+  // enum, category widens to string) — plain structural cast, no field-by-field mapping needed.
   return r as unknown as PantryScrapeDraft
 }
 
@@ -107,10 +100,7 @@ export const pantryApi = {
     apiFetch(`/api/pantry/${id}`, { method: 'PUT', body: JSON.stringify(toRequest(input)) }).then(() => undefined),
   remove: (id: string): Promise<void> =>
     apiFetch(`/api/pantry/${id}`, { method: 'DELETE' }).then(() => undefined),
-  // P6 (mezo-bka): OpenFoodFacts proxy lookup + confirmed-draft import.
-  lookup: (q: string): Promise<PantryLookupItem[]> =>
-    apiFetch<PantryLookupResponse>(`/api/pantry-import/lookup?q=${encodeURIComponent(q)}`)
-      .then(r => r.results.map(fromLookupResult)),
+  // P6 (mezo-bka): confirmed-draft import.
   importItem: (input: PantryImportInput): Promise<void> =>
     apiFetch('/api/pantry-import', { method: 'POST', body: JSON.stringify(toImportRequest(input)) })
       .then(() => undefined),

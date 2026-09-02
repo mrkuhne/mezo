@@ -1,0 +1,577 @@
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · Growth (Én tab, a progresszió otthona) · v1</p>
+  <h1>Growth oldal</h1>
+  <p class="lede">A <code>/me/growth</code> teljes újratervezése a Fuel- és Edzés-hub idiómájára: a
+  négyutas szegmens-kapcsoló helyett <strong>élő hero + Ma-csík + 2×2 mozaik</strong>, minden
+  csempe mögött saját aloldal. Minden adat a meglévő progression / quest / activity / habit /
+  gamification hookokból jön — a prototípus semmit nem talál ki, amit a contract nem hordoz.
+  <strong>ADR 0010 végig:</strong> az XP visszajelzés, nem fizetőeszköz; nincs visszaszámláló,
+  nincs kudarc-állapot, a kihagyás sosem piros.</p>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="scr">
+      <div class="isl"></div>
+      <div class="p-status"><span>13:42</span><span>ᯤ ▮▮▮</span></div>
+      <div class="p-body">
+
+        <div class="mrow">
+          <button class="backbtn" id="hubBack">‹ Én</button>
+          <div class="grow"></div>
+          <div class="dpswitch" aria-label="Értesítések">
+            <svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg>
+            <span class="badge">1</span>
+          </div>
+          <div class="avatar-ring"><div class="in"><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+        </div>
+
+        <!-- ============ HUB — hero + Ma-csík + 2×2 mozaik ============ -->
+        <div class="panel play" id="panel">
+
+          <div class="grhero rise" style="--d:0ms;">
+            <div class="ttl">Growth</div>
+            <div class="xprow">
+              <svg class="xpicon" width="46" height="46" viewBox="0 0 100 100"><use href="#i-growth"/></svg>
+              <div><span class="bignum" id="xpBig">0</span><span class="unit">XP</span></div>
+            </div>
+            <div class="traits">
+              <div class="trait">
+                <span class="lb">Szint 7</span>
+                <div class="tbar"><i class="gold" style="--w:68%;--d:250ms;"></i></div>
+                <span class="val tnum">340 <small>/ 500</small></span>
+              </div>
+              <div class="trait" id="traitDisc">
+                <span class="lb">Fegyelem</span>
+                <div class="tbar"><i class="lav" style="--w:84%;--d:330ms;"></i></div>
+                <span class="val tnum">84%</span>
+              </div>
+              <div class="trait">
+                <span class="lb">Ritmus</span>
+                <div class="wdots" id="wdots"></div>
+                <span class="val tnum">6 <small>hét</small></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mastrip rise" style="--d:90ms;">
+            <button class="mahead" id="maHead" aria-label="Küldetések · a Nap fülön">
+              <span class="p-eyebrow">Ma · <span id="maCount">2/4</span> küldetés</span>
+              <span class="xpch" id="maXp">+45 XP</span>
+              <span class="chev">›</span>
+            </button>
+            <div class="chiprail" id="chiprail"></div>
+            <div class="maempty" id="maEmpty" style="display:none;">Ma még nincs küldetés — <b>a reggeli briefinggel jön.</b> Tevékenységet közben is logolhatsz.</div>
+          </div>
+
+          <div class="mosaic">
+            <div class="tile t-skill rise" style="--d:170ms;" data-page="page-skillek" role="button" tabindex="0" aria-label="Skillek">
+              <div class="p-eyebrow">Skillek</div>
+              <div class="spotwrap"><svg width="42" height="42" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg></div>
+              <div class="line"><b>33 skill</b> · legjobb Lv 9</div>
+            </div>
+            <div class="tile t-rutin rise" style="--d:220ms;" data-page="page-rutin" role="button" tabindex="0" aria-label="Rutin">
+              <div class="p-eyebrow">Rutin</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-hajnal"/></svg></div>
+              <div class="line"><b>12</b> reggel · <b>18</b> este <span class="mut">/ 30</span></div>
+            </div>
+            <div class="tile t-naplo rise" style="--d:270ms;" data-page="page-naplo" role="button" tabindex="0" aria-label="Napló">
+              <div class="p-eyebrow">Napló</div>
+              <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-naplo"/></svg></div>
+              <div class="line"><b>18 ✓</b> · 4 ✎ <span class="mut">· 30 nap</span></div>
+            </div>
+            <div class="tile t-kit rise" style="--d:320ms;" data-page="page-kit" role="button" tabindex="0" aria-label="Kitüntetések">
+              <div class="mrow" style="align-self:stretch;"><div class="p-eyebrow">Kitüntetések</div><span class="pulsedot" title="12 napos sorozat — a 30-as mérföldkő közel"></span></div>
+              <div class="spotwrap"><svg width="44" height="44" viewBox="0 0 100 100"><use href="#s-medal"/></svg></div>
+              <div class="line"><b>5 / 9</b> jelvény · <b>12</b> napos sorozat</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ============ SKILLEK ============ -->
+        <div class="page p-lav" id="page-skillek">
+          <div class="page-head"><button class="backbtn" data-back="page-skillek">‹ Growth</button></div>
+          <div class="page-hero">
+            <div class="mrow" style="justify-content:center;gap:10px;">
+              <svg width="46" height="46" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg>
+              <div class="bignum">33</div>
+            </div>
+            <div class="nm">skill</div>
+            <div class="sb">három sáv · 8 LIFE · 12 atlétikus · 13 izom</div>
+          </div>
+          <div class="page-body">
+            <div class="statstrip rise" style="--d:0ms;">
+              <div class="statcell"><b>4,2</b><small>LIFE Lv-átlag</small></div>
+              <div class="statcell"><b>6</b><small>Atléta-szint</small></div>
+              <div class="statcell"><b>Lv 9</b><small>Izom legjobb</small></div>
+            </div>
+            <div id="bands"></div>
+            <p class="principle">A szint visszajelzés, nem jutalom — semmi nem nyílik vagy zárul tőle.
+            Az XP-idősort nem rajzoljuk: a contract nem hordoz sorozatot.</p>
+          </div>
+        </div>
+
+        <!-- ============ RUTIN ============ -->
+        <div class="page p-gold" id="page-rutin">
+          <div class="page-head"><button class="backbtn" data-back="page-rutin">‹ Growth</button><button class="pgact" id="rutinEdit">✏️ Szerkesztés</button></div>
+          <div class="page-hero">
+            <div class="mrow" style="justify-content:center;gap:10px;">
+              <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-hajnal"/></svg>
+              <div class="bignum">12</div>
+            </div>
+            <div class="nm">tökéletes reggel</div>
+            <div class="sb">az utolsó 30 napból · este 18</div>
+          </div>
+          <div class="page-body">
+            <div class="covgrid rise" style="--d:0ms;">
+              <div class="covtile" id="covMorning">
+                <div class="ch"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#s-reggel"/></svg><b>Reggel</b><span class="n">12<small> / 30</small></span></div>
+                <div class="cells" id="cellsM"></div>
+              </div>
+              <div class="covtile" id="covEvening">
+                <div class="ch"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#s-este"/></svg><b>Este</b><span class="n">18<small> / 30</small></span></div>
+                <div class="cells" id="cellsE"></div>
+                <span class="mstone" id="msEve">✦ 7 nap egyben</span>
+              </div>
+            </div>
+            <div class="daynav rise" style="--d:60ms;">
+              <button class="st" id="dPrev" aria-label="Előző nap">‹</button>
+              <div class="dl"><span id="dLbl">Ma</span><small id="dSub">kedd · szept 1</small></div>
+              <button class="st" id="dNext" aria-label="Következő nap" disabled>›</button>
+            </div>
+            <div id="chains"></div>
+            <p class="principle">Kimaradt nap nem törli a láncot — holnap folytatódik. A százalék a
+            lánc 30 napos ereje, nem ítélet.</p>
+          </div>
+        </div>
+
+        <!-- ============ NAPLÓ ============ -->
+        <div class="page p-sky" id="page-naplo">
+          <div class="page-head"><button class="backbtn" data-back="page-naplo">‹ Growth</button></div>
+          <div class="page-hero">
+            <div class="mrow" style="justify-content:center;gap:10px;">
+              <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-naplo"/></svg>
+              <div class="bignum">18</div>
+            </div>
+            <div class="nm">teljesített küldetés</div>
+            <div class="sb">30 nap · 4 tevékenység · 3 csendben lejárt</div>
+          </div>
+          <div class="page-body">
+            <div class="card sky rise" style="--d:0ms;">
+              <div class="hd"><span class="p-eyebrow" style="color:#3E7396;">Ez a hét</span><span class="stch sky">aug 31 – szept 6</span></div>
+              <div class="mcells">
+                <div class="mcell m-sage"><b>6</b><small>küldetés ✓</small></div>
+                <div class="mcell m-amber"><b>1</b><small>lejárt</small></div>
+                <div class="mcell m-lav"><b>2</b><small>tevékenység</small></div>
+                <div class="mcell m-sky"><b>+185</b><small>LIFE XP</small></div>
+              </div>
+              <div class="foot9">Megtakarítás e héten · <b>12 000 Ft</b></div>
+            </div>
+            <div id="journal"></div>
+            <div class="foot9 rise" style="--d:400ms;">Utolsó 30 nap · a teljesített küldetések és tevékenységek itt gyűlnek. A csendben lejárt küldetés nem hiba — ajánlat volt.</div>
+          </div>
+        </div>
+
+        <!-- ============ KITÜNTETÉSEK ============ -->
+        <div class="page p-sage" id="page-kit">
+          <div class="page-head"><button class="backbtn" data-back="page-kit">‹ Growth</button></div>
+          <div class="page-hero">
+            <div class="mrow" style="justify-content:center;gap:10px;">
+              <svg width="50" height="50" viewBox="0 0 100 100"><use href="#s-medal"/></svg>
+              <div class="bignum">5</div>
+            </div>
+            <div class="nm">/ 9 jelvény</div>
+            <div class="sb">sorozat · címek · jelvények · perkek</div>
+          </div>
+          <div class="page-body">
+            <div class="card streakcard rise" style="--d:0ms;">
+              <svg class="flame" width="40" height="40" viewBox="0 0 100 100"><use href="#i-lang"/></svg>
+              <div class="grow">
+                <div class="mrow"><span class="bignum2">12</span><span style="font-size:10px;font-weight:700;">napos sorozat</span></div>
+                <div class="mut" style="font-size:8.5px;margin-top:2px;">következő mérföldkő: 30 nap · +150 érme</div>
+                <div class="msbar"><i style="--w:40%;"></i><em style="left:23.3%;" title="7"></em></div>
+              </div>
+              <button class="ghost" style="font-size:8.5px;padding:5px 9px;">🧊 mentő · 1/2</button>
+            </div>
+
+            <div class="card rise" style="--d:60ms;">
+              <div class="hd">
+                <span class="p-eyebrow" style="color:#A8801F;">Címek</span>
+                <span class="mut" style="margin-left:auto;font-size:9.5px;display:inline-flex;align-items:center;gap:4px;">
+                  <svg width="14" height="14" viewBox="0 0 100 100"><use href="#i-erme"/></svg><b class="tnum" id="coins">230</b></span>
+              </div>
+              <div class="mrow" style="gap:7px;padding:4px 0 6px;">
+                <span class="mut" style="font-size:9px;">Viselt cím:</span>
+                <span style="font-size:11px;font-weight:700;color:#8A5E07;" id="wornTitle">A Következetes</span>
+              </div>
+              <div class="segtabs" id="titTabs"><button class="on" data-t="ladder">Létra</button><button data-t="shop">Bolt</button></div>
+              <div id="titLadder"></div>
+              <div id="titShop" style="display:none;"></div>
+            </div>
+
+            <div class="hd rise" style="--d:110ms;padding:4px 2px 6px;display:flex;align-items:center;"><span class="p-eyebrow" style="color:#4E6B42;">Jelvények</span><span class="stch ok">5 / 9 megszerezve</span></div>
+            <div class="bdggrid rise" style="--d:140ms;" id="bdggrid"></div>
+
+            <div class="card amber rise" style="--d:200ms;margin-top:10px;">
+              <div class="hd"><span class="p-eyebrow" style="color:#A8801F;">Perkek</span><span class="stch warn">3 feloldva</span></div>
+              <div id="perks"></div>
+              <div class="foot9">A skill-mérföldkövek (Lv 5, 10, 15…) hozzák őket — a következő: Lát Lv 10.</div>
+            </div>
+            <p class="principle">Az érme itt költhető el — címre vagy sorozat-mentőre. Semmi más nem
+            vásárolható, és semmi nem jár le.</p>
+          </div>
+        </div>
+
+        <!-- ============ TEVÉKENYSÉG SHEET ============ -->
+        <div class="sheetwrap" id="actSheet">
+          <div class="scrim" id="actScrim"></div>
+          <div class="sheet">
+            <div class="grab"></div>
+            <h3>Tevékenység</h3>
+            <div class="sub">Mit csináltál? Egy mondat elég.</div>
+            <textarea id="actText" placeholder="pl. 40 perc olvasás a fotelben"></textarea>
+            <div class="ainote"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#i-mezo"/></svg> Az AI besorolja a LIFE-skillhez — ha bizonytalan, megkérdez.</div>
+            <div class="btns"><button class="ghost" id="actCancel">Mégse</button><button class="cta" id="actSave">✓ Mentem</button></div>
+          </div>
+        </div>
+        <div class="toast" id="toast"></div>
+
+      </div>
+    </div></div>
+
+    <aside>
+      <div>
+        <h2>A brainstorm döntései</h2>
+        <ul>
+          <li><strong>IA — A irány:</strong> hero + Ma-csík + <strong>2×2 mozaik</strong>
+          (Skillek · Rutin · Napló · Kitüntetések), mindegyik saját aloldal. A hub egy képernyő,
+          scroll nélkül — a Karakter-tanulság.</li>
+          <li><strong>Hero — A:</strong> XP count-up + három címkézett sáv: <em>Szint</em>
+          (aktuális szint, <code>x / y XP</code>), <em>Fegyelem</em> (%), <em>Ritmus</em> (az
+          utolsó 8 hét pöttysora). Ha a Fegyelem <code>null</code>, a sor <strong>eltűnik</strong> —
+          nem „–”.</li>
+          <li><strong>Ma-csík — A:</strong> küldetés-chipek (kész = zsálya ✓ · nyitott = semleges
+          · csendben lejárt = szaggatott, halvány) + a sor végén <code>＋ Tevékenység</code>, ami
+          helyben nyitja a sheetet. A fejléc a <code>/nap/kuldetesek</code> oldalra visz.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Ami él a hubon</h2>
+        <ul>
+          <li><strong>Count-up:</strong> az XP 0-ról pörög fel; egy chip-koppintás vagy egy mentett
+          tevékenység után <em>az utolsó értékről folytatja</em> (KeretHero-recept).</li>
+          <li><strong>Sávok és pöttyök:</strong> egymás után töltődnek (250 / 330 / 400 ms), a
+          csempék 170→320 ms staggerrel érkeznek.</li>
+          <li><strong>Csempe-sorok a saját hookból:</strong> <code>33 skill · legjobb Lv 9</code> a
+          bandek hosszából (nem a mai hardcode 8/12/13), <code>12 reggel · 18 este / 30</code>,
+          <code>18 ✓ · 4 ✎</code>, <code>5 / 9 jelvény · 12 napos sorozat</code>. Pulzáló pötty a
+          Kitüntetéseken, amíg egy mérföldkő közel van.</li>
+          <li><strong>Küldetés-chip koppintás</strong> = a mai DailyQuestList „Kész” gombja: a chip
+          zsályára vált, a fejléc számol, az XP felpörög. Semmi nem teljesül magától.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Aloldalak</h2>
+        <ul>
+          <li><strong>Skillek (lav):</strong> stat-strip + három párhuzamos sáv-csempe (nem fa,
+          Duolingo-tanulság): clay ikon · név · <code>Lv</code> plakett · animált meter; top 4 sor,
+          <em>Mind a 8 ▸</em> kibont; a következő perk-mérföldkő előtti skill halvány
+          <code>→ perk Lv 10</code> jelet kap.</li>
+          <li><strong>Rutin (arany):</strong> két 30-cellás lánc-csempe (GitHub-rács), mérföldkő-pill
+          csak 7/30 napnál; nap-navigátor (max ma) + a két lánc sorai ◦/✓ és erő-%; a múlt nap
+          összegez — a kimaradás „holnap folytatódik”, sosem terracotta.</li>
+          <li><strong>Napló (ég):</strong> egy „Ez a hét” csempe a ma <em>fogyasztatlan</em>
+          <code>GET /api/progression/growth-week</code> végpontból (4 mini-cella + megtakarítás),
+          alatta a 30 napos napló nap-csempéi, <em>csendben lejárt</em> becsülettel.</li>
+          <li><strong>Kitüntetések (zsálya):</strong> sorozat-kártya mérföldkő-sávval + mentő; Címek
+          (Létra / Bolt, működő Felvesz / Megveszem — az érme egyetlen nyelője); jelvény-rács, ahol a
+          meg nem szerzett jelvény <strong>haladás-gyűrűt</strong> kap (Apple Fitness-minta), nem
+          tűnik el; perkek a skill-mérföldkövekkel.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Ami szándékosan nincs</h2>
+        <ul>
+          <li>Nincs piros, nincs „megszakadt”, nincs visszaszámláló, nincs loot.</li>
+          <li>Nincs XP-idősor és nincs jelvény-dátum: egyik sincs a contractban.</li>
+          <li>Nincs „Ma” csempe: a küldetéseknek a Nap fül az otthona, itt csak a mai állapot él.</li>
+        </ul>
+        <p class="note" style="margin-top:12px;">Prototípus-mérték: a képernyő 330 px, az
+        implementáció ×1.18-cal skáláz (design-2.0 impl-spec §1).</p>
+      </div>
+      <div class="democtl">
+        <button id="demoMilestone">Mérföldkő-villanás</button>
+        <button id="demoEmpty">Nincs mai küldetés</button>
+        <button id="demoDisc">Fegyelem ismeretlen</button>
+        <button id="demoReset">Alaphelyzet</button>
+        <span>Demó-állapotok: a rutin esti csempéjének 7 napos villanása · üres Ma-csík · a Fegyelem sor becsületes eltűnése.</span>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+
+  // ===== toast =====
+  var toastEl = document.getElementById('toast'), toastT;
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.classList.add('show');
+    clearTimeout(toastT); toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 1900);
+  }
+
+  // ===== oldal-navigáció =====
+  function openPage(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open'); pg.classList.remove('play');
+    var body = pg.querySelector('.page-body'); if (body) body.scrollTop = 0;
+    void pg.offsetWidth; pg.classList.add('play');
+  }
+  function closePage(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-back]').forEach(function (b) { b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); }); });
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    function go() { openPage(el.getAttribute('data-page')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  document.getElementById('hubBack').addEventListener('click', function () { toast('← /me · Én hub'); });
+  document.getElementById('rutinEdit').addEventListener('click', function () { toast('→ /me/routines/edit'); });
+
+  // ===== hero: XP count-up, az utolsó értékről folytat =====
+  var xpEl = document.getElementById('xpBig');
+  var xpShown = 0, xpTarget = 18420, xpRaf;
+  function countTo(target) {
+    xpTarget = target;
+    if (reduce) { xpShown = target; xpEl.textContent = fmt(target); return; }
+    cancelAnimationFrame(xpRaf);
+    var from = xpShown, t0 = performance.now(), dur = Math.min(900, 300 + Math.abs(target - from) * 0.04);
+    function step(now) {
+      var p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      xpShown = Math.round(from + (target - from) * e);
+      xpEl.textContent = fmt(xpShown);
+      if (p < 1) xpRaf = requestAnimationFrame(step);
+    }
+    xpRaf = requestAnimationFrame(step);
+  }
+  setTimeout(function () { countTo(18420); }, 120);
+
+  // ritmus-pöttyök: utolsó 8 hét, 6 hét ritmus ⇒ az utolsó 6 teli
+  var wd = document.getElementById('wdots');
+  for (var i = 0; i < 8; i++) {
+    var d = document.createElement('i');
+    if (i >= 2) d.className = 'on'; if (i === 7) d.className += ' now';
+    d.style.setProperty('--d', (400 + i * 45) + 'ms');
+    wd.appendChild(d);
+  }
+
+  // ===== Ma-csík =====
+  var QUESTS = [
+    { id: 'q1', t: 'Reggeli súlymérés', xp: 10, st: 'done' },
+    { id: 'q2', t: 'A mai edzés végig', xp: 35, st: 'done' },
+    { id: 'q3', t: 'Olvass 10 percet', xp: 10, st: 'open' },
+    { id: 'q4', t: 'Nyújtás', xp: 10, st: 'gone' }
+  ];
+  var ACTS = [];
+  var rail = document.getElementById('chiprail'), maCount = document.getElementById('maCount'), maXp = document.getElementById('maXp'), maEmpty = document.getElementById('maEmpty');
+  var maHidden = false;
+  function renderMa() {
+    if (maHidden) { rail.style.display = 'none'; maEmpty.style.display = 'block'; maCount.textContent = '0/0'; maXp.textContent = '+0 XP'; return; }
+    rail.style.display = 'flex'; maEmpty.style.display = 'none';
+    var done = QUESTS.filter(function (q) { return q.st === 'done'; });
+    var xp = done.reduce(function (s, q) { return s + q.xp; }, 0) + ACTS.reduce(function (s, a) { return s + a.xp; }, 0);
+    maCount.textContent = done.length + '/' + QUESTS.length; maXp.textContent = '+' + xp + ' XP';
+    rail.innerHTML = QUESTS.map(function (q) {
+      var mk = q.st === 'done' ? '✓' : q.st === 'gone' ? '' : '';
+      var title = q.st === 'gone' ? q.t + ' · csendben lejárt' : q.t;
+      return '<button class="qchip ' + q.st + '" data-q="' + q.id + '" ' + (q.st === 'gone' ? 'tabindex="-1" aria-disabled="true"' : '') + '><span class="mk">' + mk + '</span>' + title + '</button>';
+    }).join('') + ACTS.map(function (a) {
+      return '<span class="qchip act"><span class="mk">✎</span>' + a.t + ' · +' + a.xp + '</span>';
+    }).join('') + '<button class="qchip add" id="addAct">＋ Tevékenység</button>';
+    rail.querySelectorAll('[data-q]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var q = QUESTS.filter(function (x) { return x.id === b.getAttribute('data-q'); })[0];
+        if (q.st === 'gone') return;
+        q.st = q.st === 'done' ? 'open' : 'done';
+        countTo(xpTarget + (q.st === 'done' ? q.xp : -q.xp));
+        renderMa();
+        if (q.st === 'done') toast('Kész · +' + q.xp + ' XP');
+      });
+    });
+    document.getElementById('addAct').addEventListener('click', openActSheet);
+  }
+  renderMa();
+  document.getElementById('maHead').addEventListener('click', function () { toast('→ /nap/kuldetesek'); });
+
+  // tevékenység-sheet
+  var actSheet = document.getElementById('actSheet'), actText = document.getElementById('actText');
+  function openActSheet() { actSheet.classList.add('open'); setTimeout(function () { actText.focus(); }, 300); }
+  function closeActSheet() { actSheet.classList.remove('open'); actText.value = ''; }
+  document.getElementById('actScrim').addEventListener('click', closeActSheet);
+  document.getElementById('actCancel').addEventListener('click', closeActSheet);
+  document.getElementById('actSave').addEventListener('click', function () {
+    var t = actText.value.trim() || '40 perc olvasás';
+    ACTS.push({ t: t.length > 22 ? t.slice(0, 21) + '…' : t, xp: 15 });
+    closeActSheet(); renderMa(); countTo(xpTarget + 15);
+    toast('+15 XP · Tanulás');
+  });
+
+  // ===== SKILLEK =====
+  var LIFE = [['Regeneráció', 3, 70, 'i-life-regeneracio'], ['Tanulás', 3, 64, 'i-life-tanulas'], ['Pénzügyek', 2, 55, 'i-life-penzugyek'], ['Konyha', 2, 40, 'i-life-konyha'],
+    ['Produktivitás', 2, 22, 'i-life-produktivitas'], ['Kapcsolatok', 1, 45, 'i-life-kapcsolatok'], ['Szemlélet', 1, 30, 'i-life-szemlelet'], ['Tudatosság', 1, 18, 'i-life-tudatossag']];
+  var ATH = [['Robusztusság', 9, 35], ['Maximális erő', 7, 18], ['Aerob kapacitás', 5, 74], ['Erő-állóképesség', 5, 60], ['Robbanékonyság', 4, 66], ['Anaerob kapacitás', 4, 58],
+    ['Core-stabilitás', 4, 40], ['Vertikális emelkedés', 4, 12], ['Agility', 3, 60], ['Koordináció', 3, 54], ['Sprint-sebesség', 3, 52], ['Mozgékonyság', 2, 30]];
+  var MUS = [['Lát', 7, 82], ['Comb', 6, 66], ['Hát', 6, 50], ['Mell', 6, 22], ['Far', 5, 44], ['Váll', 4, 72], ['Bicepsz', 4, 60], ['Lábhajlító', 4, 30],
+    ['Core', 4, 35], ['Tricepsz', 3, 54], ['Trapéz', 3, 25], ['Hátsó váll', 2, 40], ['Vádli', 2, 20]];
+  function perkHint(lv) { var next = lv < 5 ? 5 : lv < 10 ? 10 : lv < 15 ? 15 : 20; return next - lv === 1 ? '→ perk Lv ' + next : ''; }
+  function band(wash, tc, bar, eb, chip, rows, iconOf, foot, delay) {
+    return '<div class="card ' + wash + ' rise" style="--d:' + delay + 'ms;--tc:' + tc + ';">' +
+      '<div class="hd"><span class="p-eyebrow" style="color:' + tc + ';">' + eb + '</span><span class="stch ' + (wash === 'lav' ? 'lav' : wash === 'sage' ? 'ok' : 'warn') + '">' + chip + '</span></div>' +
+      rows.map(function (r, i) {
+        var hint = perkHint(r[1]);
+        return '<div class="skl' + (i >= 4 ? ' more' : '') + '"><span class="ic">' + iconOf(r, i) + '</span><span class="nm">' + r[0] + '</span>' +
+          '<div class="tbar"><i class="' + bar + '" style="--w:' + r[2] + '%;--d:' + (delay + 260 + i * 55) + 'ms;"></i></div>' +
+          (hint ? '<span class="perk">' + hint + '</span>' : '') + '<span class="lv">Lv ' + r[1] + '</span></div>';
+      }).join('') +
+      (rows.length > 4 ? '<button class="expandbtn" data-expand><span class="moretx">Mind a ' + rows.length + ' ▸</span><span class="less">Kevesebb ▴</span></button>' : '') +
+      (foot || '') + '</div>';
+  }
+  document.getElementById('bands').innerHTML =
+    band('lav', '#5D4FA0', 'lav', 'LIFE', '8 skill · 1 085 XP', LIFE, function (r) { return '<svg width="15" height="15" viewBox="0 0 100 100"><use href="#' + r[3] + '"/></svg>'; },
+      '<div class="foot9">Megtakarítás (30 nap) · <b>50 000 Ft</b></div>', 60) +
+    band('sage', '#4E6B42', 'sage', 'Atlétikus', '12 skill · átlag 4,4', ATH, function (r) { return r[0].slice(0, 2); }, '', 120) +
+    band('amber', '#A8801F', 'gold', 'Izom', '13 izom · legjobb Lv 7', MUS, function (r) { return r[0].slice(0, 2); }, '', 180);
+  document.querySelectorAll('[data-expand]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var card = b.closest('.card'); card.classList.toggle('expanded');
+      card.classList.remove('play'); void card.offsetWidth; card.classList.add('play');
+    });
+  });
+
+  // ===== RUTIN =====
+  var MORN = [1,0,1,1,0,1,1,0,0,1, 1,0,1,1,1,0,0,1,0,0, 1,0,1,0,0,1,0,0,1,1];
+  var EVE  = [1,1,0,1,1,1,0,1,1,0, 1,1,1,0,1,1,0,1,0,1, 1,0,1,1,1,1,1,1,1,1];
+  function cells(el, arr, ev, d) {
+    el.innerHTML = arr.map(function (v, i) { return '<i class="' + (ev ? 'ev ' : '') + (v ? 'on' : '') + (i === 29 ? ' today' : '') + '" style="--d:' + d + 'ms;--i:' + i + ';"></i>'; }).join('');
+  }
+  cells(document.getElementById('cellsM'), MORN, false, 120);
+  cells(document.getElementById('cellsE'), EVE, true, 200);
+  var CHAIN_M = ['Ébredés időben', 'Reggeli napfény', '50 fekvőtámasz', 'Reggeli videó', 'Reggeli súlymérés', 'Gombakávé', 'Reggeli edzés', 'Fehérjés reggeli'];
+  var CHAIN_E = ['Koffein-cutoff', 'Konyha zárva', 'Szándékkal éltem?', 'Napzárás', 'Wind-down, képernyő le'];
+  var PCT_M = [92, 78, 71, 55, 95, 88, 60, 74], PCT_E = [84, 90, 66, 80, 72];
+  var DAYS = [
+    { lbl: 'Ma', sub: 'kedd · szept 1', m: [1,1,1,0,1,1,0,0], e: [1,0,0,0,0], live: true },
+    { lbl: 'Tegnap', sub: 'hétfő · aug 31', m: [1,1,1,1,1,1,1,1], e: [1,1,1,1,1], xp: 40 },
+    { lbl: 'Vasárnap', sub: 'aug 30', m: [0,0,0,0,0,0,0,0], e: [1,1,0,1,1], xp: 15, missed: 'Reggel' },
+    { lbl: 'Szombat', sub: 'aug 29', m: [1,0,1,1,1,1,0,1], e: [1,1,1,1,0], xp: 30 }
+  ];
+  var dayIdx = 0, chainsEl = document.getElementById('chains');
+  function chainCard(title, icon, items, state, pct, wash, tc, live, d) {
+    var done = state.reduce(function (s, v) { return s + v; }, 0);
+    var strength = Math.round(pct.reduce(function (s, v) { return s + v; }, 0) / pct.length);
+    return '<div class="card ' + wash + ' rise" style="--d:' + d + 'ms;">' +
+      '<div class="hd"><svg width="15" height="15" viewBox="0 0 100 100"><use href="#' + icon + '"/></svg><span class="p-eyebrow" style="color:' + tc + ';">' + title + '</span>' +
+      '<span class="stch ' + (wash === 'amber' ? 'warn' : 'lav') + '">' + done + ' / ' + items.length + ' · erő ' + strength + '%</span></div>' +
+      items.map(function (t, i) {
+        var cls = state[i] ? 'done' : (live ? '' : 'skip');
+        return '<div class="chainrow ' + cls + '"><span class="ck">✓</span><span class="tx">' + t + '</span><span class="pct">' + pct[i] + '%</span></div>';
+      }).join('') + '</div>';
+  }
+  function renderDay() {
+    var day = DAYS[dayIdx];
+    document.getElementById('dLbl').textContent = day.lbl; document.getElementById('dSub').textContent = day.sub;
+    document.getElementById('dPrev').disabled = dayIdx === DAYS.length - 1; document.getElementById('dNext').disabled = dayIdx === 0;
+    var html = '';
+    if (!day.live) {
+      var md = day.m.reduce(function (s, v) { return s + v; }, 0), ed = day.e.reduce(function (s, v) { return s + v; }, 0);
+      html += '<div class="card rise" style="--d:0ms;"><div class="daysum">Reggel <b>' + md + '/8</b> · Este <b>' + ed + '/5</b> · <b style="color:#4E6B42;">+' + day.xp + ' XP</b></div>' +
+        (day.missed ? '<div class="softnote">' + day.missed + ' kimaradt — a lánc másnap folytatódott. A 30 napos erő ettől nem nullázódik.</div>' : '') + '</div>';
+    }
+    html += chainCard('Reggeli rutin', 's-reggel', CHAIN_M, day.m, PCT_M, 'amber', '#A8801F', day.live, day.live ? 0 : 60) +
+      chainCard('Esti rutin', 's-este', CHAIN_E, day.e, PCT_E, 'lav', '#5D4FA0', day.live, day.live ? 70 : 130);
+    chainsEl.innerHTML = html;
+    chainsEl.classList.remove('play'); void chainsEl.offsetWidth; chainsEl.classList.add('play');
+  }
+  renderDay();
+  document.getElementById('dPrev').addEventListener('click', function () { if (dayIdx < DAYS.length - 1) { dayIdx++; renderDay(); } });
+  document.getElementById('dNext').addEventListener('click', function () { if (dayIdx > 0) { dayIdx--; renderDay(); } });
+
+  // ===== NAPLÓ =====
+  var JOURNAL = [
+    { dow: 'Ma', dt: 'szept 1', xp: 45, rows: [['✓', 'Reggeli súlymérés', 'küldetés · reggel · +10'], ['✓', 'A mai edzés végig', 'küldetés · nap · +35']] },
+    { dow: 'Tegnap', dt: 'aug 31', xp: 60, rows: [['✓', 'Esti szélcsend', 'küldetés · este · +20'], ['✎', '40 perc olvasás', 'tevékenység · Tanulás · +15'], ['✓', 'Fehérje-cél', 'küldetés — tevékenységgel teljesült · +25']] },
+    { dow: 'Vasárnap', dt: 'aug 30', xp: 20, rows: [['✓', 'Igyál meg 2,5 litert', 'küldetés · nap · +20'], ['—', 'Nyújtás', 'küldetés · csendben lejárt']] },
+    { dow: 'Szombat', dt: 'aug 29', xp: 35, rows: [['✎', 'Meal prep · 3 adag', 'tevékenység · Konyha · +15 · 4 200 Ft'], ['✓', '10 perc meditáció', 'küldetés · reggel · +20']] },
+    { dow: 'Péntek', dt: 'aug 28', xp: 10, rows: [['✓', 'Reggeli súlymérés', 'küldetés · reggel · +10'], ['—', 'Olvass 10 percet', 'küldetés · csendben lejárt']] }
+  ];
+  document.getElementById('journal').innerHTML = JOURNAL.map(function (d, i) {
+    return '<div class="rise" style="--d:' + (60 + i * 60) + 'ms;"><div class="dayhd"><span class="dow">' + d.dow + '</span><span class="dt">' + d.dt + '</span><span class="xp">+' + d.xp + ' XP</span></div>' +
+      '<div class="card" style="padding:4px 12px;">' + d.rows.map(function (r) {
+        var cls = r[0] === '✎' ? 'act' : r[0] === '—' ? 'gone' : '';
+        return '<div class="jrow ' + cls + '"><span class="k">' + r[0] + '</span><span class="tx">' + r[1] + '</span><span class="meta">' + r[2] + '</span></div>';
+      }).join('') + '</div></div>';
+  }).join('');
+
+  // ===== KITÜNTETÉSEK =====
+  var LEVEL = 7, coins = 230, worn = 'A Következetes';
+  var LADDER = [['Az Újonc', 1], ['A Lendület', 3], ['A Következetes', 5], ['A Hajnalmadár', 8], ['A Fegyelmezett', 12], ['A Vasakarat', 16], ['A Mérföldkő', 20], ['A Gépezet', 25], ['A Legenda', 30]];
+  var SHOP = [['Kezdő Kanál', 100, false], ['Csirkemell Csodája', 150, false], ['Kardió Kapitány', 240, false], ['Szénhidrát Szelídítő', 240, false], ['Protein Próféta', 400, false], ['Bicepsz Báró', 400, false], ['Gainz Nagyúr', 600, false]];
+  var coinsEl = document.getElementById('coins'), wornEl = document.getElementById('wornTitle');
+  function coinSvg() { return '<svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-erme"/></svg>'; }
+  function renderTitles() {
+    coinsEl.textContent = coins; wornEl.textContent = worn;
+    document.getElementById('titLadder').innerHTML = LADDER.map(function (t) {
+      var unlocked = LEVEL >= t[1];
+      return '<div class="titrow' + (unlocked ? '' : ' lock') + '"><span class="nm">' + t[0] + '</span><span class="sub">LV ' + t[1] + '</span>' +
+        (unlocked ? '<button class="act' + (worn === t[0] ? ' worn' : '') + '" data-wear="' + t[0] + '">' + (worn === t[0] ? 'Viselve' : 'Felvesz') + '</button>' : '<span class="lockmk">LV ' + t[1] + '-TŐL</span>') + '</div>';
+    }).join('');
+    document.getElementById('titShop').innerHTML = SHOP.map(function (t, i) {
+      var can = coins >= t[1];
+      return '<div class="titrow"><span class="nm">' + t[0] + '</span><span class="sub">' + coinSvg() + t[1] + '</span>' +
+        (t[2] ? '<button class="act' + (worn === t[0] ? ' worn' : '') + '" data-wear="' + t[0] + '">' + (worn === t[0] ? 'Viselve' : 'Felvesz') + '</button>'
+          : '<button class="act' + (can ? '' : ' dis') + '" data-buy="' + i + '">Megveszem</button>') + '</div>';
+    }).join('') + '<div class="titrow"><span class="nm">🧊 Streak-mentő</span><span class="sub">' + coinSvg() + '200 · nálad: 1/2</span><button class="act' + (coins >= 200 ? '' : ' dis') + '" data-saver>Megveszem</button></div>';
+    document.querySelectorAll('[data-wear]').forEach(function (b) { b.addEventListener('click', function () { worn = b.getAttribute('data-wear'); renderTitles(); toast('Viselt cím: ' + worn); }); });
+    document.querySelectorAll('[data-buy]').forEach(function (b) { b.addEventListener('click', function () {
+      var t = SHOP[+b.getAttribute('data-buy')]; if (coins < t[1]) { toast('Még ' + (t[1] - coins) + ' érme hiányzik'); return; }
+      coins -= t[1]; t[2] = true; renderTitles(); toast('Megvéve · ' + t[0]);
+    }); });
+    var sv = document.querySelector('[data-saver]'); if (sv) sv.addEventListener('click', function () { if (coins < 200) { toast('Még ' + (200 - coins) + ' érme hiányzik'); return; } coins -= 200; renderTitles(); toast('Streak-mentő · 2/2'); });
+  }
+  renderTitles();
+  document.getElementById('titTabs').querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById('titTabs').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on');
+      var ladder = b.getAttribute('data-t') === 'ladder';
+      document.getElementById('titLadder').style.display = ladder ? 'block' : 'none';
+      document.getElementById('titShop').style.display = ladder ? 'none' : 'block';
+    });
+  });
+  var BADGES = [['🏁', 'Első küldetés', true, 23, 1], ['📜', '10 küldetés', true, 23, 10], ['✍️', 'Első tevékenység', true, 14, 1], ['🔥', '4 hetes ritmus', true, 6, 4], ['💰', 'Első spórolás', true, 1, 1],
+    ['🎖️', '50 küldetés', false, 23, 50], ['🌈', 'Mind a 8 LIFE aktív', false, 6, 8], ['🧠', 'LIFE Lv 5', false, 3, 5], ['💎', '100k megtakarítás', false, 50000, 100000]];
+  document.getElementById('bdggrid').innerHTML = BADGES.map(function (b) {
+    var v = Math.round(b[3] / b[4] * 100);
+    return '<div class="bdg' + (b[2] ? ' done' : '') + '"><div class="ring" style="--v:' + (b[2] ? 100 : v) + ';"><span>' + b[0] + '</span></div><b>' + b[1] + '</b><small>' + (b[2] ? '✓ megvan' : fmt(b[3]) + ' / ' + fmt(b[4])) + '</small></div>';
+  }).join('');
+  var PERKS = [['Páncélzat', '10 hét töretlen — sérülésállóság nő', 'Robusztusság', 10], ['Utánégő', 'becsült csúcssebesség +4%', 'Sprint', 10], ['Vas-törzs II', 'push-volumen tűrés +6%', 'Max erő', 5]];
+  document.getElementById('perks').innerHTML = PERKS.map(function (p) {
+    return '<div class="perkrow"><span class="pi">Lv' + p[3] + '</span><div class="grow"><div class="pn">' + p[0] + '</div><div class="pe">' + p[1] + '</div></div><span class="pl">' + p[2] + '</span></div>';
+  }).join('');
+
+  // ===== demó-állapotok =====
+  document.getElementById('demoMilestone').addEventListener('click', function () {
+    openPage('page-rutin');
+    var t = document.getElementById('covEvening'); t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
+    toast('✦ 7 nap egyben — az esti lánc');
+  });
+  document.getElementById('demoEmpty').addEventListener('click', function () { maHidden = true; renderMa(); });
+  document.getElementById('demoDisc').addEventListener('click', function () { document.getElementById('traitDisc').classList.add('hidden'); toast('Fegyelem: null → a sor eltűnik'); });
+  document.getElementById('demoReset').addEventListener('click', function () {
+    maHidden = false; QUESTS[2].st = 'open'; ACTS.length = 0; renderMa();
+    document.getElementById('traitDisc').classList.remove('hidden');
+    countTo(18420);
+    document.querySelectorAll('.page.open').forEach(function (p) { p.classList.remove('open'); });
+    var panel = document.getElementById('panel'); panel.classList.remove('play'); void panel.offsetWidth; panel.classList.add('play');
+  });
+})();
+</script>
