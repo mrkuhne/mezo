@@ -74,7 +74,10 @@ export function NapMezoPage() {
   // UGYANAZT a listát látja, tehát az itt lerakott olvasottság-vízjel ott biztosan találatot
   // ad. A visszajelzés-chipek viszont a nyers feed-sorok id-jeire kötnek, ezért a feedet ez
   // az oldal továbbra is közvetlenül olvassa (mezo-e26w / mezo-b3pp.15).
-  const { messages, markSeen } = useMezoThread()
+  // Belépéskori olvasatlan-pillanatkép (mezo-ho9k): a szál utolsó `unread` eleme az
+  // olvasatlan halmaz — partíciónként egy pötty. A markSeen effect KÉSŐBB fut (lentebb
+  // deklarált), így itt még a belépés előtti unread él. Session-lokális, nem perzisztens.
+  const { messages, unread, markSeen } = useMezoThread()
   const feed = useCompanionFeed()
   const tick = useMinuteTick()
   const needs = useNeeds(tick)
@@ -89,6 +92,24 @@ export function NapMezoPage() {
     else next.delete('tab')
     setParams(next, { replace: true })
   }
+  // Belépéskori olvasatlan-pillanatkép (mezo-ho9k): a szál utolsó `unread` eleme az
+  // olvasatlan halmaz — partíciónként egy pötty. Ez az effect a markSeen effect ELÉ van
+  // deklarálva (lentebb), az effect-sorrend adja a helyességet: a pillanatkép a
+  // vízjel-bélyegzés ELŐTT készül. Session-lokális, nem perzisztens.
+  const [dots, setDots] = useState<{ uzenetek: boolean; eletjelek: boolean } | null>(null)
+  useEffect(() => {
+    if (dots !== null || messages.length === 0) return
+    const unseen = messages.slice(messages.length - unread)
+    setDots({
+      uzenetek: unseen.some((m) => m.source !== 'eletjel'),
+      eletjelek: unseen.some((m) => m.source === 'eletjel'),
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- egyszeri pillanatkép
+  }, [messages, unread, dots])
+  useEffect(() => {
+    if (dots?.[tab]) setDots((d) => (d ? { ...d, [tab]: false } : d))
+  }, [tab, dots])
+
   const { uzenetek, eletjelek } = useMemo(() => partitionMezoThread(messages), [messages])
   // Prepended, not merged into the shared thread: it is what the user just tapped, and the
   // shared thread stays the shell header's unread source of truth (mezo-atry) — untouched by a
@@ -191,10 +212,12 @@ export function NapMezoPage() {
           <button type="button" role="tab" aria-selected={tab === 'uzenetek'}
             className={cn(tab === 'uzenetek' && 'on')} onClick={() => setTab('uzenetek')}>
             Üzenetek
+            {dots?.uzenetek && tab !== 'uzenetek' && <span className="nap-mzdot" />}
           </button>
           <button type="button" role="tab" aria-selected={tab === 'eletjelek'}
             className={cn(tab === 'eletjelek' && 'on')} onClick={() => setTab('eletjelek')}>
             Életjelek
+            {dots?.eletjelek && tab !== 'eletjelek' && <span className="nap-mzdot" />}
           </button>
         </div>
         {tab === 'uzenetek' && (

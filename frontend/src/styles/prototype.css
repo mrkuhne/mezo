@@ -4646,6 +4646,8 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
   font-size: 12px; font-weight: 700; color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
 .nap-mzseg button.on { background: var(--gradient-cta); color: #fff;
   box-shadow: 0 4px 9px -2px rgba(255, 91, 54, 0.5); }
+/* Tab-pöttyök (mezo-ho9k): belépéskori olvasatlan-pillanatkép, session-lokális. */
+.nap-mzdot { width: 6px; height: 6px; border-radius: 50%; background: var(--gradient-cta); flex: none; }
 /* ── Életjelek tab: státusz-sáv + rendben-sor (mezo-ho9k) ── */
 .nap-ejstrip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; width: 100%;
   box-sizing: border-box; margin-bottom: 12px; padding: 0; border: none; background: none;

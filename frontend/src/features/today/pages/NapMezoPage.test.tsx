@@ -275,3 +275,28 @@ test('opening the thread stamps the read watermark — the hub tile’s unread c
   // that is the pinned clock above, not the wall clock.
   expect(lastSeenMessage(localDateString(new Date('2026-05-22T13:42:00')))).toBe('sleep')
 })
+
+// ── Tab-pöttyök (mezo-ho9k): belépéskori olvasatlan-pillanatkép, tab-látogatása törli.
+test('olvasatlan nudge mellett az Életjelek tabon pötty ég, és a tab meglátogatása törli', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  renderPage()
+  await screen.findByText('07:05 · Reggeli briefing')
+  const ejTab = screen.getByRole('tab', { name: /Életjelek/ })
+  expect(ejTab.querySelector('.nap-mzdot')).not.toBeNull()
+  // az aktív Üzenetek tabon nincs pötty (ott van a user)
+  expect(screen.getByRole('tab', { name: /Üzenetek/ }).querySelector('.nap-mzdot')).toBeNull()
+  await userEvent.click(ejTab)
+  expect(ejTab.querySelector('.nap-mzdot')).toBeNull()
+})
+
+test('minden olvasottnak jelölve → egyik tabon sincs pötty', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
+  const { unmount } = renderPage()
+  await screen.findByText('07:05 · Reggeli briefing') // markSeen lefutott
+  unmount()
+  renderPage()
+  await screen.findByText('07:05 · Reggeli briefing')
+  expect(document.querySelector('.nap-mzdot')).toBeNull()
+})
