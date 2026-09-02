@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-01
+updated: 2026-09-02
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -2232,8 +2232,12 @@ weekly direction. Now every CHAT turn's snapshot carries an **`[Emberek]`** bloc
   (indok) | indok>`, capped at `snapshot.people-max-persons`. `PEOPLE_SWITCH` is independent of
   the companion switch, so the `PeopleService` is read through `ObjectProvider` (the
   `HabitService` precedent) — absent bean, empty circle or any `RuntimeException` all render
-  `[Emberek] nincs adat` (IDENT-3: the block never escapes into `prepareTurn`'s transaction);
-  `people-max-persons = 0` omits the block entirely. Raw quotes, `knownFacts`, `notes` never ride.
+  `[Emberek] nincs adat`. IDENT-3, precisely: a NON-DB `RuntimeException` degrades gracefully and
+  the turn continues; a `DataAccessException` from `chatContext` (its own `@Transactional
+  (readOnly = true)` joins `prepareTurn`'s transaction) leaves the Hibernate session
+  rollback-only regardless of this catch, so the turn still dies at commit — the same hazard
+  `MemoryEmbeddingAnnQuery` exists to work around. `people-max-persons = 0` omits the block
+  entirely. Raw quotes, `knownFacts`, `notes` never ride.
 - **Chat variant only:** `ContextSnapshotAssembler.render` inserts it after `[Napi gyakorlat]`;
   `renderWithoutBiometrics` (the morning message) deliberately does not — that would be the
   companion bringing people up unprompted.
