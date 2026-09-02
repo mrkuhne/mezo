@@ -731,6 +731,22 @@
   .sumplan em { font-style: normal; color: #A2958A; font-size: 8.5px; }
   .sumrow .grow { font-size: 9.5px; font-weight: 300; }
 </style>
+<style>
+  .sig { display: flex; align-items: flex-start; gap: 9px; padding: 9px 11px; margin-bottom: 7px; border-radius: 15px; background: #fff;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 22px -15px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .sig svg { flex: none; margin-top: 1px; }
+  .sig b { font-size: 10.5px; display: block; }
+  .sig small { font-size: 8.5px; color: #6E6257; display: block; }
+  .sig.off { opacity: 0.7; background: rgba(255, 255, 255, 0.55); border-style: dashed; box-shadow: none; }
+  .sig .live, .sig .dead { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-top: 4px; }
+  .sig .live { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); box-shadow: 0 0 0 3px rgba(143, 175, 126, 0.25); animation: livepulse 2.6s ease-in-out infinite; }
+  .sig .dead { border: 1.5px dashed rgba(43, 33, 24, 0.3); }
+  @keyframes livepulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(143, 175, 126, 0.25); } 50% { box-shadow: 0 0 0 5px rgba(143, 175, 126, 0.12); } }
+  .chips.mini { margin-top: 4px; gap: 3px; }
+  .chips.mini span { font-size: 7px; font-weight: 700; color: #4E6B42; background: rgba(143, 175, 126, 0.16); border-radius: 999px; padding: 2px 7px; }
+  .sig.off .chips.mini span { color: #A2958A; background: rgba(43, 33, 24, 0.06); }
+  @media (prefers-reduced-motion: reduce) { .sig .live { animation: none; } }
+</style>
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
@@ -1496,7 +1512,12 @@
               <button class="act" id="unpark">Vissza</button>
             </div>
 
-            <div class="principle rise" style="--d:330ms;">Ami nincs naplózva, az nem nulla — az üres.</div>
+            <div class="parkrow rise" style="--d:320ms;border-style:solid;opacity:1;" data-page="page-jelek" role="button" tabindex="0" aria-label="Jelek">
+              <svg width="20" height="20" viewBox="0 0 100 100" style="flex:none;"><use href="#i-retegek"/></svg>
+              <div class="grow"><div class="nm" style="color:#2B2118;">Jelek · mit figyel a rendszer</div><div class="sb">10 forrás · 8 él · 2 alszik</div></div>
+              <span style="margin-left:auto;color:#A2958A;font-size:12px;">›</span>
+            </div>
+            <div class="principle rise" style="--d:360ms;">Ami nincs naplózva, az nem nulla — az üres.</div>
           </div>
 
         </div>
@@ -1865,6 +1886,32 @@
           </div>
         </div>
 
+        <!-- ============ JELEK ============ -->
+        <div class="page p-sage" id="page-jelek">
+          <div class="page-head"><button class="backbtn" data-back="page-jelek">‹ Célok</button></div>
+          <div class="page-hero">
+            <div class="nm">Jelek</div>
+            <div class="mrow" style="justify-content:center;gap:12px;"><svg width="50" height="50" viewBox="0 0 100 100"><use href="#i-retegek"/></svg><div class="bignum">8<span style="font-size:15px;color:#6E6257;"> / 10</span></div></div>
+            <div class="sb">forrás él · volt adata az elmúlt 7 napban</div>
+          </div>
+          <div class="page-body">
+            <div class="coach rise" style="--d:0ms;margin:0 0 9px;"><span class="dot"></span><span>Semmi újat nem kell naplóznod. Ezekből számolom a pilléreket — ami alszik, ott a pillér üres marad, nem nulla.</span></div>
+            <div class="lsec rise" style="--d:30ms;"><span class="p-eyebrow">Él</span><span class="cnt">8 forrás</span></div>
+            <div class="sig rise" style="--d:60ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-fuel"/></svg><div class="grow"><b>Étkezés-napló</b><small>7 / 7 nap · Fuel, gyorslog</small><div class="chips mini"><span>Fehérje</span><span>Kalória-sáv</span><span>Utolsó étkezés</span></div></div><i class="live"></i></div>
+            <div class="sig rise" style="--d:90ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-alvas"/></svg><div class="grow"><b>Alvás-napló</b><small>7 / 7 nap · Én → Alvás</small><div class="chips mini"><span>Alvás ≥ 7 ó</span><span>Lefekvés-szórás</span></div></div><i class="live"></i></div>
+            <div class="sig rise" style="--d:120ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-edzes"/></svg><div class="grow"><b>Edzés · futás · sport</b><small>5 / 7 nap · Edzés tab</small><div class="chips mini"><span>Edzésnapok</span><span>Gym-volumen</span><span>Terhelés-gard</span></div></div><i class="live"></i></div>
+            <div class="sig rise" style="--d:150ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-suly"/></svg><div class="grow"><b>Reggeli mérés → súlycél</b><small>6 / 7 nap · Én → Súly</small><div class="chips mini"><span>Testkompozíció · ütem</span></div></div><i class="live"></i></div>
+            <div class="sig rise" style="--d:180ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-checkin"/></svg><div class="grow"><b>Check-in</b><small>6 / 7 nap · Nap</small><div class="chips mini"><span>Energia</span><span>Hangulat · javasolt</span></div></div><i class="live"></i></div>
+            <div class="sig rise" style="--d:210ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-napzaras"/></svg><div class="grow"><b>Napzárás · rutinok</b><small>4 / 7 este · Nap</small><div class="chips mini"><span>Fegyelem</span><span>Fókuszblokk</span><span>Életjel-átlag</span></div></div><i class="live"></i></div>
+            <div class="sig rise" style="--d:240ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-mezo"/></svg><div class="grow"><b>Amit a chatben elmondasz</b><small>5 bejegyzés · activity-log, AI-osztályozva</small><div class="chips mini"><span>Fejlesztés</span><span>Tanulás</span><span>Ismerkedés</span></div></div><i class="live"></i></div>
+            <div class="sig rise" style="--d:270ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-emberek"/></svg><div class="grow"><b>Említett emberek</b><small>9 e héten · chat, napló</small><div class="chips mini"><span>Társas élet</span></div></div><i class="live"></i></div>
+            <div class="lsec rise" style="--d:300ms;"><span class="p-eyebrow">Alszik</span><span class="cnt">2 forrás</span></div>
+            <div class="sig off rise" style="--d:330ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-life-penzugyek"/></svg><div class="grow"><b>Bevétel-bejegyzés</b><small>nincs adat 14 napja · „bejött 12e Ft” a chatbe</small><div class="chips mini"><span>Bevétel</span></div></div><i class="dead"></i></div>
+            <div class="sig off rise" style="--d:360ms;"><svg width="24" height="24" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg><div class="grow"><b>Életjel élő gyűrűk</b><small>csak napzáráskor kerül a szerverre</small><div class="chips mini"><span>Egészséges életmód</span></div></div><i class="dead"></i></div>
+            <p class="principle">Nincs külső forrás — se naptár, se időjárás, se GitHub. Ami itt nincs, azt a rendszer nem tudja.</p>
+          </div>
+        </div>
+
         <!-- ============ NAP · a Célok-csempe ============ -->
         <div class="page" id="page-nap">
           <div class="page-head"><button class="backbtn" data-back="page-nap">‹ vissza a demóból</button></div>
@@ -1963,6 +2010,7 @@
         <button data-demo="page-g2" aria-pressed="false">Side hustle</button>
         <button data-demo="page-g3" aria-pressed="false">Barátnő</button>
         <button data-demo="page-wiz" aria-pressed="false">Új cél</button>
+        <button data-demo="page-jelek" aria-pressed="false">Jelek</button>
         <button data-demo="page-nap" aria-pressed="false">Nap-csempe</button>
         <button data-demo="page-heti" aria-pressed="false">Heti</button>
         <button data-demo="page-growth" aria-pressed="false">Growth</button>
@@ -1978,6 +2026,7 @@
           <li><strong>Side hustle</strong> — <em>baseline</em>-pillér (a saját 28-napos mediánodhoz mérve, a jelölő a mediánnál) és egy <strong>üres</strong> pillér: nincs bejegyzés → szaggatott pöttyök, „—”, nincs nyíl. Üres ≠ nulla.</li>
           <li><strong>Barátnő</strong> — társas említések baseline-je, Életjel-gyűrű átlag, és <strong>Mezo pillért javasol</strong> (Hangulat) a napló alapján — elfogad / most nem.</li>
           <li><strong>Új cél</strong> — öt lépés: cél + miért → <strong>Mezo olvasata</strong> (kinézet-keret felismerve, egészség-keret felajánlva, nem tiltva) → AI-pillérjavaslat a zárt katalógusból (kapcsolók, ＋ katalógus-sheet) → akadály + ha–akkor (HA/AKKOR kártyák, alattuk a jel, amiből Mezo felismeri a helyzetet) → <strong>összegzés = a leendő cél-oldal előnézete</strong>: mit mérünk miből, milyen szabályra figyel Mezo, mi történik aktiválás után. Nincs aktív-cél korlát — Mezo csak jelez, ha két cél egymást szorítja.</li>
+          <li><strong>Jelek</strong> — a hub alján egy sor nyitja: mely naplózási pontokból számol a rendszer, melyik forrás él (volt adata a héten) és melyik alszik, és melyik pilléreket táplálja. Semmi új naplózó — ez a transzparencia-oldal.</li>
           <li><strong>Nap-csempe · Heti · Growth</strong> — a három beágyazás: a Nap „Célok · ma” csempéje (x/y pillér élőben), a Heti cél-kártya (nyíl + egy mondat célonként + Mezo tanulsága egy CTA-val), a Growth skill-sorok cél-chippel.</li>
         </ul>
       </div>
@@ -2049,7 +2098,7 @@
   $('enBack').addEventListener('click', function () { toast('‹ Én hub — a demóban a Célok a gyökér'); });
 
   /* ---- demobar ---- */
-  var order = ['page-g1', 'page-g2', 'page-g3', 'page-wiz', 'page-nap', 'page-heti', 'page-growth', 'page-suly-stub'];
+  var order = ['page-jelek', 'page-g1', 'page-g2', 'page-g3', 'page-wiz', 'page-nap', 'page-heti', 'page-growth', 'page-suly-stub'];
   document.querySelectorAll('.demobar button').forEach(function (b) {
     b.addEventListener('click', function () {
       document.querySelectorAll('.demobar button').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });

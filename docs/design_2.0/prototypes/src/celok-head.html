@@ -731,3 +731,19 @@
   .sumplan em { font-style: normal; color: #A2958A; font-size: 8.5px; }
   .sumrow .grow { font-size: 9.5px; font-weight: 300; }
 </style>
+<style>
+  .sig { display: flex; align-items: flex-start; gap: 9px; padding: 9px 11px; margin-bottom: 7px; border-radius: 15px; background: #fff;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 22px -15px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .sig svg { flex: none; margin-top: 1px; }
+  .sig b { font-size: 10.5px; display: block; }
+  .sig small { font-size: 8.5px; color: #6E6257; display: block; }
+  .sig.off { opacity: 0.7; background: rgba(255, 255, 255, 0.55); border-style: dashed; box-shadow: none; }
+  .sig .live, .sig .dead { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-top: 4px; }
+  .sig .live { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); box-shadow: 0 0 0 3px rgba(143, 175, 126, 0.25); animation: livepulse 2.6s ease-in-out infinite; }
+  .sig .dead { border: 1.5px dashed rgba(43, 33, 24, 0.3); }
+  @keyframes livepulse { 0%, 100% { box-shadow: 0 0 0 3px rgba(143, 175, 126, 0.25); } 50% { box-shadow: 0 0 0 5px rgba(143, 175, 126, 0.12); } }
+  .chips.mini { margin-top: 4px; gap: 3px; }
+  .chips.mini span { font-size: 7px; font-weight: 700; color: #4E6B42; background: rgba(143, 175, 126, 0.16); border-radius: 999px; padding: 2px 7px; }
+  .sig.off .chips.mini span { color: #A2958A; background: rgba(43, 33, 24, 0.06); }
+  @media (prefers-reduced-motion: reduce) { .sig .live { animation: none; } }
+</style>
