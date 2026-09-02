@@ -25,17 +25,20 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Learns a per-user workout-timing profile from finished sessions (spec 2026-09-02, slice 2):
  * folds each session's {@link TimingObservationExtractor} intervals into an {@link
- * EwmaEstimator} per component. A SEPARATE bean, called from {@code WorkoutService.finishWorkout}
- * right after that method's own medal try/catch (mirrors {@code WorkoutAutoCloseService} /
- * {@code ClosingBlockService} being separate beans rather than same-class methods).
+ * EwmaEstimator} per component. Called ONLY from {@link TimingProfileListener}, never directly
+ * from {@code WorkoutService.finishWorkout} — the listener consumes {@link WorkoutFinishedEvent}
+ * AFTER_COMMIT, well after finishWorkout's own transaction is gone.
  *
- * <p>{@code learnFrom} is plain method-level {@code @Transactional} (default REQUIRED), joining
- * the caller's already-open transaction — the same shape as every sibling service in this
- * package. {@code finishWorkout} calls it after setting {@code finishedAt} in its own open
- * transaction, so the join sees that write. Failure isolation is handled the way this codebase
- * handles it everywhere else: the caller wraps the call in a try/catch and logs (see
- * {@code WorkoutService.finishWorkout}, same pattern as the medal derivation immediately above
- * it) — not by inventing a stronger per-call transactional guarantee.
+ * <p>{@code learnFrom} is plain method-level {@code @Transactional} (default REQUIRED). Because
+ * the listener runs on a detached {@code @Async} thread with no ambient transaction, REQUIRED
+ * opens a genuinely NEW transaction here — there is nothing to join. This is deliberate: an
+ * earlier version had {@code learnFrom} join {@code finishWorkout}'s own transaction directly,
+ * guarded by a try/catch in the caller, and that was proven unsafe — Spring marks a
+ * PARTICIPATING transaction rollback-only the instant any exception escapes a joined
+ * {@code @Transactional} callee, regardless of whether the callee touched the database, so the
+ * try/catch could not stop a profile-learning bug from taking the user's completed workout down
+ * with it. See {@link TimingProfileListener}'s javadoc for the AFTER_COMMIT + {@code @Async}
+ * design that replaced it.
  */
 @Service
 @RequiredArgsConstructor
@@ -122,10 +125,9 @@ public class TimingProfileService {
         row.setDeviationNum(updated.deviation());
         row.setSamples(updated.samples());
         row.setUpdatedAt(Instant.now());
-        // saveAndFlush, not save: this runs inside the CALLER's transaction (see class javadoc),
-        // so any DB-level failure (e.g. a constraint violation) must surface HERE, synchronously,
-        // for finishWorkout's try/catch to actually catch it — a deferred flush at outer-commit
-        // time would escape that try/catch entirely.
+        // saveAndFlush, not save: surface constraint violations inside the listener's own
+        // transaction, synchronously, right here — where TimingProfileListener's try/catch can
+        // actually catch them — rather than at a deferred flush the caller never sees.
         repository.saveAndFlush(row);
     }
 
@@ -152,11 +154,15 @@ public class TimingProfileService {
         return out;
     }
 
+    // Explicit ordered puts, not Map.of(...): Map.of randomizes iteration order per JVM, and
+    // read() wraps this in a LinkedHashMap to preserve insertion order — a future JSON endpoint
+    // (Task 11) serializing this map needs a STABLE key order across runs, not just within one.
     private Map<String, EwmaEstimator.Estimate> seeds() {
-        return Map.of(
-            TimingObservationExtractor.SET_CYCLE_COMPOUND, EwmaEstimator.seed(properties.seedSetCycleCompound()),
-            TimingObservationExtractor.SET_CYCLE_ISOLATION, EwmaEstimator.seed(properties.seedSetCycleIsolation()),
-            TimingObservationExtractor.TRANSITION, EwmaEstimator.seed(properties.seedTransition()),
-            TimingObservationExtractor.LEAD_IN, EwmaEstimator.seed(properties.seedLeadIn()));
+        Map<String, EwmaEstimator.Estimate> seeds = new LinkedHashMap<>();
+        seeds.put(TimingObservationExtractor.SET_CYCLE_COMPOUND, EwmaEstimator.seed(properties.seedSetCycleCompound()));
+        seeds.put(TimingObservationExtractor.SET_CYCLE_ISOLATION, EwmaEstimator.seed(properties.seedSetCycleIsolation()));
+        seeds.put(TimingObservationExtractor.TRANSITION, EwmaEstimator.seed(properties.seedTransition()));
+        seeds.put(TimingObservationExtractor.LEAD_IN, EwmaEstimator.seed(properties.seedLeadIn()));
+        return seeds;
     }
 }

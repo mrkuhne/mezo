@@ -1,9 +1,9 @@
 package io.mrkuhne.mezo.feature.train.service;
 
-import io.mrkuhne.mezo.feature.train.TimingProfileGate;
+import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -13,31 +13,20 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * Learned workout-timing profile (mezo-dzbm, spec 2026-09-02 slice 2) — the
  * {@code FactExtractionListener}/{@code TurnEmbeddingListener} idiom applied to
  * {@link WorkoutFinishedEvent}: AFTER_COMMIT + {@code @Async}, so profile learning runs only once
- * {@code finishWorkout}'s completion write has actually landed, on its own thread, well after
- * that transaction is gone. There is deliberately no {@code @Transactional} annotation ON THIS
- * METHOD — {@code TimingProfileService.learnFrom} already carries plain {@code @Transactional},
- * and because {@code @Async} runs it on a detached thread with no ambient transaction, that
- * REQUIRED annotation opens a genuinely NEW transaction here on its own, with the exact same
- * effect as REQUIRES_NEW (there is nothing to join). Tried adding an explicit {@code
- * @Transactional(propagation = REQUIRES_NEW)} here too, on top of that: it works (finishWorkout's
- * write still survives), but it wraps THIS method in a second, OUTER transaction whose own
- * proxy — seeing {@code learnFrom}'s inner @Transactional mark the (now-participating, from ITS
- * perspective) transaction rollback-only on the exact same DataIntegrityViolationException this
- * feature's fault-injection test throws — fails its OWN commit after the try/catch below already
- * returned normally, surfacing a second, spurious {@code UnexpectedRollbackException} via
- * Spring's {@code SimpleAsyncUncaughtExceptionHandler} (an ERROR-level log with no test or user
- * impact, confirmed by running it, but needless noise for a failure this method already caught
- * and logged at WARN). Matching the established shape exactly (no listener in this codebase
- * wraps itself in its own {@code @Transactional}) avoids that entirely: {@code learnFrom}'s own
- * transaction is then the sole, outermost one, so a failure inside it just rolls back cleanly
- * and returns the original exception straight to this catch block — nothing left to fail on
- * commit afterward.
+ * {@code finishWorkout}'s completion write has actually landed, on a separate thread, well after
+ * that transaction is gone — nothing this listener does can reach back and roll it back.
  *
- * <p>Gated here, on the listener bean — via {@code @ConditionalOnBean(TimingProfileGate.class)},
- * the same shape {@code PantryImportService} uses for {@code OffClient} — not on {@code
- * WorkoutService}'s publish call: off ⇒ {@code TimingProfileGate} does not exist ⇒ THIS bean
- * does not exist ⇒ {@link WorkoutFinishedEvent} has no listener ⇒ nothing is ever learned, with
- * zero cost to the publish call itself.
+ * <p>{@code @Async} is LOAD-BEARING, not decorative: without it, the AFTER_COMMIT callback runs
+ * synchronously on the thread that just committed, with that transaction's resources (connection,
+ * persistence context) still bound. {@code TimingProfileService.learnFrom}'s plain
+ * {@code @Transactional} (REQUIRED) would then JOIN the already-committed transaction instead of
+ * opening a fresh one, and every write inside it would be silently dropped with no exception —
+ * committed nowhere, because there is no longer an active transaction to commit. {@code @Async}
+ * detaches this onto a thread with no ambient transaction, so REQUIRED opens a genuinely new one.
+ *
+ * <p>Gated directly on the switch (matches every other listener in this codebase, e.g.
+ * {@code TurnEmbeddingListener}): off ⇒ this bean does not exist ⇒ {@link WorkoutFinishedEvent}
+ * has no listener ⇒ nothing is ever learned, with zero cost to the publish call itself.
  *
  * <p>Failures are logged and swallowed (same as every sibling listener): profile learning must
  * never surface as a user-visible error — the workout is already finished and committed by the
@@ -46,7 +35,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnBean(TimingProfileGate.class)
+@ConditionalOnProperty(name = FeaturesConfiguration.TIMING_PROFILE_SWITCH, havingValue = "true")
 public class TimingProfileListener {
 
     private final TimingProfileService timingProfileService;

@@ -198,8 +198,9 @@ class TimingProfileIT extends AbstractIntegrationTest {
      * {@code (createdBy, component)} slot. {@code @SQLRestriction(is_deleted = false)} hides it
      * from {@code findByCreatedByAndComponent}, so {@code apply()} tries to INSERT a fresh row
      * and collides with {@code uq_workout_timing_profile_owner_component} (not a partial index —
-     * it does not exempt soft-deleted rows), throwing inside the listener's OWN (REQUIRES_NEW)
-     * transaction, long after {@code finishWorkout} has committed.
+     * it does not exempt soft-deleted rows), throwing inside the listener's OWN transaction (a
+     * fresh one, opened by {@code learnFrom}'s plain {@code @Transactional} on the listener's
+     * detached {@code @Async} thread), long after {@code finishWorkout} has committed.
      *
      * <p>A bare "still zero profile rows" assertion right after the call would be vacuous — it
      * passes identically whether the listener ran and failed, or simply hasn't fired yet (this

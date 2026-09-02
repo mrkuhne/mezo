@@ -21,13 +21,13 @@ import org.springframework.test.context.TestPropertySource;
 
 /**
  * Learned workout-timing profile switch OFF (mezo-dzbm): with
- * {@code mezo.feature.timing-profile.enabled=false} the {@code TimingProfileGate} bean is absent,
- * so {@code TimingProfileListener} (@{@code ConditionalOnBean(TimingProfileGate.class)}) is also
- * absent, and {@code WorkoutFinishedEvent} has no consumer at all — finishWorkout completes and
- * its publish is a no-op, with no profile row ever written (not merely "not yet" — there is no
- * listener to eventually run, so no await is needed here, unlike the positive-path tests in
- * {@code TimingProfileIT}). Separate class because a @ConditionalOnProperty/@ConditionalOnBean
- * bean's presence is fixed per Spring context.
+ * {@code mezo.feature.timing-profile.enabled=false} {@code TimingProfileListener}'s own
+ * {@code @ConditionalOnProperty} keeps that bean from existing at all, so
+ * {@code WorkoutFinishedEvent} has no consumer — finishWorkout completes and its publish is a
+ * no-op, with no profile row ever written (not merely "not yet" — there is no listener to
+ * eventually run, so no await is needed here, unlike the positive-path tests in
+ * {@code TimingProfileIT}). Separate class because a @ConditionalOnProperty bean's presence is
+ * fixed per Spring context.
  */
 @TestPropertySource(properties = "mezo.feature.timing-profile.enabled=false")
 class TimingProfileSwitchOffIT extends AbstractIntegrationTest {
