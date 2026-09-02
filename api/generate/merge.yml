@@ -37,4 +37,5 @@ inputs:
   - inputFile: ../feature/me-week/me-week.yml
   - inputFile: ../feature/character/character.yml
   - inputFile: ../feature/diagnosis/diagnosis.yml
+  - inputFile: ../feature/lifegoal/lifegoal.yml
 output: ../openapi.yml
