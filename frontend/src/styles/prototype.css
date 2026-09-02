@@ -8552,9 +8552,12 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 /* The 28-day strip visualises the summary's COUNTS (done28 / missed28) — the summary carries
    no per-day bitset, so this is a proportion bar, and the caption under it says so. */
 .rt-hist { display: flex; gap: 3.5px; margin-top: 7px; }
+/* Three states must READ as three: an empty cell is the faintest, a missed day is visibly
+   darker than it, and a pipa is sage. The first pass had `is-miss` on --surface-recess
+   (rgba .05) over an empty --mz-line-soft (rgba .07) — the legend was inverted. */
 .rt-hist i { flex: 1; height: 16.5px; border-radius: 3.5px; background: var(--mz-line-soft); }
 .rt-hist i.is-done { background: var(--gradient-sage); }
-.rt-hist i.is-miss { background: var(--surface-recess); }
+.rt-hist i.is-miss { background: color-mix(in srgb, var(--text-primary) 20%, transparent); }
 
 /* Pausing is the prominent way out; deleting (.is-hard) sits below it, quieter and two-tap. */
 .rt-danger {
@@ -8563,6 +8566,8 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   background: none; border-radius: 13px; padding: 9.5px 0;
   font-size: 11.2px; font-weight: 700; color: var(--coral-deep);
 }
+/* A chip-linked anchor is shown, not edited (the API has no unlink) — it must LOOK inert. */
+.rt-fin.is-locked { background: var(--surface-recess); color: var(--text-secondary); cursor: default; }
 .rt-danger.is-hard { border-color: var(--mz-line-soft); color: var(--text-tertiary); font-weight: 600; }
 .rt-danger.is-hard.is-armed { border-color: var(--error); color: var(--error); font-weight: 700; }
 .rt-danger:disabled { opacity: 0.45; cursor: default; }

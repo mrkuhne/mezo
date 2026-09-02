@@ -16,14 +16,18 @@ import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useHabitCatalog, useHabitCatalogActions, useHabitSummary } from '@/data/hooks'
 import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
-import type { HabitFramework } from '@/data/types'
+import type { HabitDaypart, HabitFramework } from '@/data/types'
 import { recipeFromDef, routineSentenceParts, titlePlaceholder } from '@/features/me/logic/routineSentence'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import type { ClayIconName } from '@/shared/ui/clay'
 
 const HIST_DAYS = 28
+// The hero icon follows the OWNING CHAIN's daypart (RutinHubPage's DAYPART_ICON map) — a
+// hardcoded dawn spot lied on every evening habit.
+const DAYPART_ICON: Record<HabitDaypart, ClayIconName> = { MORNING: 'i-hajnal', DAY: 'i-nap', EVENING: 'i-alvas' }
 const XP_MIN = 5
 const XP_MAX = 15
 const XP_STEP = 5
@@ -59,12 +63,14 @@ function FieldCard({ children, delayMs }: { children: ReactNode; delayMs: number
   return <div className="rt-fcard rise" style={rise(delayMs)}>{children}</div>
 }
 
-function Field({ label, opt, value, onChange, placeholder }: {
+function Field({ label, opt, value, onChange, placeholder, readOnly, hint }: {
   label: string
   opt?: boolean
   value: string
   onChange: (v: string) => void
   placeholder?: string
+  readOnly?: boolean
+  hint?: string
 }) {
   return (
     <>
@@ -72,12 +78,14 @@ function Field({ label, opt, value, onChange, placeholder }: {
         {label}{opt && <> <span className="rt-opt">opcionális</span></>}
       </span>
       <input
-        className="rt-fin"
+        className={cn('rt-fin', readOnly && 'is-locked')}
         aria-label={label}
         value={value}
+        readOnly={readOnly}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
       />
+      {hint && <div className="rt-hint">{hint}</div>}
     </>
   )
 }
@@ -146,6 +154,7 @@ export function HabitPage() {
   const fw = FW[fwKey]
   const row = summary.habits.find((h) => h.key === def.habitKey)
   const chains = [...(catalog?.chains ?? [])].sort((a, b) => a.position - b.position)
+  const daypart = chains.find((c) => c.chainKey === def.chainKey)?.daypart ?? 'MORNING'
 
   const recipe = { framework, title, anchorLabel, celebration, cue, craving, reward, identity }
 
@@ -169,10 +178,19 @@ export function HabitPage() {
     // ignores a JSON null, so sending one after the user cleared a field silently no-ops in
     // real mode while the mock would clear it. Clearing an optional field is not supported
     // in this version — omitting keeps both arms honest.
-    const patch: HabitDefUpdateInput = { title: title.trim(), chainKey, xp }
+    //
+    // `chainKey` is sent ONLY when the user actually picked a different chain: the backend
+    // treats a non-null chainKey as a MOVE and, with no `position`, appends the definition to
+    // the end of the target chain (HabitAdminService.updateDef) — so re-sending the current
+    // chain on a typo fix would silently re-order the routine (review finding 1).
+    // `xp` is clamped here as well as in the stepper: a stored value outside 5–15 (an older
+    // def, an AI suggestion) must not be re-sent unclamped just because it was never stepped.
+    const patch: HabitDefUpdateInput = { title: title.trim(), xp: Math.min(XP_MAX, Math.max(XP_MIN, xp)) }
+    if (chainKey !== def.chainKey) patch.chainKey = chainKey
     if (framework === 'FOGG') {
-      // An untouched chip-linked anchor stays a LINK; typing over it fell back to free text
-      // when the field was seeded (recipeFromDef resolves the link to "kész a …" prose).
+      // A chip-linked anchor is READ-ONLY on this page (see the field's hint): the API has no
+      // unlink, `anchorHabitKey: null` means "keep" server-side, and `recipeFromDef` prefers the
+      // link — so an editable-looking field would have silently discarded whatever was typed.
       if (anchorHabitKey != null) patch.anchorHabitKey = anchorHabitKey
       else patch.anchorCopy = anchorLabel.trim()
       patch.celebration = celebration.trim()
@@ -202,7 +220,7 @@ export function HabitPage() {
       {/* Honesty rule: a definition with no summary row has no 28-day standing yet — show no
           number and no sub rather than a confident "0%  ·  0 pipa · 0 kihagyás". */}
       <PageHero
-        icon="i-hajnal"
+        icon={DAYPART_ICON[daypart]}
         iconSize={46}
         big={row?.strengthPct != null ? `${row.strengthPct}%` : undefined}
         name={def.title}
@@ -243,16 +261,19 @@ export function HabitPage() {
           <FieldCard delayMs={110}>
             <span className="rt-flabel">Elmúlt 28 nap</span>
             <div className="rt-hist" aria-hidden="true">
-              {Array.from({ length: HIST_DAYS }, (_, i) => (
-                <i key={i} className={cn(i < done28 && 'is-done', i >= done28 && i < done28 + missed28 && 'is-miss')} />
-              ))}
+              {Array.from({ length: HIST_DAYS }, (_, i) => {
+                const state = i < done28 ? 'done' : i < done28 + missed28 ? 'miss' : 'none'
+                return <i key={i} data-state={state} className={cn(state !== 'none' && `is-${state}`)} />
+              })}
             </div>
             <div className="rt-hint">{HIST_NOTE}</div>
           </FieldCard>
 
           <FieldCard delayMs={140}>
             {/* The title IS the behaviour slot of both frameworks — the label names it the way
-                that framework does (Clear's response is not Fogg's "pici tett"). */}
+                that framework does. The FORM says Clear's "válasz" (the law's own word) while the
+                SENTENCE blank says `titlePlaceholder('CLEAR')` = "tett": two surfaces, two names,
+                both deliberate — the wizard's step 3 label makes the same split. */}
             <Field
               label={framework === null ? 'Cím' : `Cím · ${framework === 'CLEAR' ? 'válasz' : titlePlaceholder(framework)}`}
               value={title}
@@ -263,6 +284,10 @@ export function HabitPage() {
                 <Field
                   label="Miután … · horgony"
                   value={anchorLabel}
+                  readOnly={anchorHabitKey != null}
+                  hint={anchorHabitKey != null
+                    ? 'A horgony egy másik szokásodra van kötve, ezért itt nem írható át — a leválasztást ez a verzió nem támogatja. Másik horgonyhoz nyisd meg a „Keret váltása” gombbal a varázslót.'
+                    : undefined}
                   onChange={(v) => { setAnchorLabel(v); setAnchorHabitKey(null) }}
                 />
                 <Field label="Ünneplésül … · shine" value={celebration} onChange={setCelebration} />
