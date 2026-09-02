@@ -1091,14 +1091,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     SportScheduleSheet.tsx, VideoUrlSheet.tsx
   - **components:** ActiveMesoCard.tsx, ArchivedMesoCard.tsx, ChallengeCard.tsx, ChallengeGenerationLoader.tsx,
     CompactStepper.tsx, CrossLoadRow.tsx, DayBreakdownCard.tsx, DayStrip.tsx, DerivationSteps.tsx, DoneBar.tsx,
-    ExerciseAccordionRow.tsx, ExerciseImage.tsx, ExerciseRecipeRow.tsx, ExerciseReview.tsx, FinalStat.tsx,
-    LoadTiles.tsx, MedalChip.tsx, MedalToast.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx,
-    MesoTemplateCard.tsx, MetaStat.tsx, MiniBar.tsx, MiniStat.tsx, MorningTrainingCard.tsx, MuscleArcSwitch.tsx,
-    MusclePriorityPicker.tsx, PeakFitCard.tsx, PhaseCurveBars.tsx, PlannedMesoCard.tsx, PrepExerciseTile.tsx,
-    ProgressionBanner.tsx, RestTimerBar.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx,
-    RunWeekStrip.tsx, SetStepper.tsx, SportSessionCard.tsx, SportStat.tsx, StructureLintCard.tsx, TodaySessionCard.tsx,
-    VideoDemo.tsx, VolumeArcChart.tsx, VolumeBand.tsx, VolumeBar.tsx, WeekZoneCard.tsx, WeekdayGrid.tsx,
-    WeeklyBandsCard.tsx, WeeklyDayRow.tsx, WorkoutSummary.tsx, ZoneMiniGrid.tsx, ZoneTrack.tsx
+    ExerciseAccordionRow.tsx, ExerciseImage.tsx, ExerciseRecipeRow.tsx, ExerciseReview.tsx, LoadTiles.tsx,
+    MedalChip.tsx, MedalToast.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoTemplateCard.tsx,
+    MiniBar.tsx, MiniStat.tsx, MorningTrainingCard.tsx, MuscleArcSwitch.tsx, MusclePriorityPicker.tsx, PeakFitCard.tsx,
+    PlannedMesoCard.tsx, PrepExerciseTile.tsx, ProgressionBanner.tsx, RestTimerBar.tsx, RunCrossLoadCard.tsx,
+    RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx, SetStepper.tsx, SportSessionCard.tsx, SportStat.tsx,
+    StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx, VolumeArcChart.tsx, VolumeBand.tsx, WeekZoneCard.tsx,
+    WeekdayGrid.tsx, WeeklyBandsCard.tsx, WeeklyDayRow.tsx, WorkoutSummary.tsx, ZoneMiniGrid.tsx, ZoneTrack.tsx
   - **logic:** agenda.ts, challengeOutcome.ts, dayStripItems.ts, exerciseDefaults.ts, growthForecast.ts,
     gymDayTarget.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoPlan.ts, mesoWeek.ts,
     morningWindow.ts, muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts,
