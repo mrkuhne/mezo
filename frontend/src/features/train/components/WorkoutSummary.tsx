@@ -134,7 +134,12 @@ export function WorkoutSummary({
         <div className="wsum-sub">
           <b>{hu(s.volumeT)} t</b> összvolumen · <b>{s.doneEx}/{s.totalEx}</b> gyakorlat
           {durationMin && actualMin
-            ? <> · terv ~{durationMin} · tény <b>{actualMin} perc</b></>
+            // The combined string is materially longer than either half alone and can overflow
+            // a narrow phone width (measured wrap at 360px, mezo-1jm8 review fix): the <br/>
+            // forces a deliberate, fixed break between "terv" and "tény" instead of letting the
+            // browser wrap wherever the text happens to run out of room (which split "71" from
+            // "perc" — see fix report). This keeps the exact wording, just not on one line.
+            ? <> · terv ~{durationMin}<br />tény <b>{actualMin} perc</b></>
             : actualMin
               ? <> · <b>{actualMin} perc</b></>
               : durationMin ? <> · ~{durationMin} perc</> : null}
