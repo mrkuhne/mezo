@@ -33,6 +33,7 @@ they inline come from `../assets/`.
 | `receptmuhely.html` | https://claude.ai/code/artifact/dc39e817-e89e-43df-b93f-53b568efed9f |
 | `tudastar-egyben.html` | https://claude.ai/code/artifact/1ddf2a14-f5ce-4d4c-b125-c843e073797e |
 | `growth-tab.html` | https://claude.ai/code/artifact/393bca87-9095-42dd-ac55-127162ad0412 |
+| `rutin-epito.html` | https://claude.ai/code/artifact/78c8f0f9-925f-44a9-93b4-3e9cc077e162 (Rutin-építő — széles Rutin csempe az Én hubon, /me/rutin hub erő-csíkokkal, 4 lépéses szokás-recept wizard Fogg / Clear keretre, szokás-szerkesztő — mezo-3zue) |
 
 ## Workflow
 
@@ -613,3 +614,18 @@ are usable without a build step).
   Felvesz/Megveszem — the coin's only sink —, badge grid where unearned badges keep a conic
   progress ring instead of vanishing, perks). Demo controls: milestone flash, empty Ma strip,
   Fegyelem unknown, reset.
+- **rutin-epito** — Rutin-építő (mezo-3zue): the routine surface leaves the Growth segments.
+  **Én hub** with the six small tiles + a **full-width Rutin tile** (Mezo-hub Diagnózis/Karakter
+  precedent; one live datum: today done / total + morning/evening chain strength, vanishes when
+  there are no habits). **Rutin hub** (`/me/rutin`): hero (done / total + 28-day mean strength),
+  statstrip (perfect mornings / evenings / active habits), chain cards with per-habit **strength
+  bar + framework badge** (⚓ FOGG · ◈ CLEAR · – legacy), chain toggles, `＋ Új szokás-recept` +
+  `✨ AI javaslat`; rows open the habit page, no tick control (ticking stays on `/nap/rutin`).
+  **Wizard** (`/me/rutin/uj`, 4 steps, dot Stepper): framework cards (Fogg Habit Stacking /
+  Clear Four Laws) → anchor chips from existing habits + mezo events / cue chips → tiny behavior
+  (soft "too big" warning on the Fogg branch) + chain + LIFE area + XP (+ craving/identity on the
+  Clear branch) → celebration / reward chips + **Vállalom** commitment tick that gates save; a
+  **live sentence card** assembles the recipe as the blanks fill; save returns to the hub with
+  the new row highlighted. **Habit page** (`/me/rutin/szokas/:id`): framework band, the recipe
+  sentence large, 28-day history strip, framework fields, pause-without-losing-progress.
+  Backend vision it mocks: spec `docs/superpowers/specs/2026-09-02-routine-builder-design.md`.
