@@ -7,6 +7,16 @@ import { FOGALMAK, type FogalomKey } from '@/features/tutorial/registry/fogalmak
 // "rosszul") are caught too, not just the dictionary form.
 const FORBIDDEN = /\b(kell|muszáj|hib[aá]|elbuk|rossz)/i
 
+// `matchRoutes(...).not.toBeNull()` alone would never fail: a router.tsx-ben van egy
+// top-szintű `{ path: '*', element: <Navigate to="/nap" /> }` fogó-route (:326), ami
+// MINDEN nemlétező útvonalra is illeszkedik, és a lánc utolsó tagja marad `*`. Ezért a
+// tényleges kaput az adja, hogy a lánc utolsó illesztett route-jának path-je NEM `*`.
+// Mindkét route-létezést ellenőrző teszt ezt a helpert hívja, ne duplikáljuk a logikát.
+const routeExists = (to: string) => {
+  const m = matchRoutes(routes, to)
+  return m != null && m[m.length - 1]?.route.path !== '*'
+}
+
 test('a /fuel-nek van kalauza, a /fuel/log-nak (még) nincs', () => {
   expect(findKalauz('/fuel')?.id).toBe('fuel')
   expect(findKalauz('/fuel/log')).toBeNull()
@@ -17,7 +27,7 @@ test('a /fuel-nek van kalauza, a /fuel/log-nak (még) nincs', () => {
 test('minden entry route-ja létezik a routerben, az id-k egyediek', () => {
   const ids = new Set<string>()
   for (const e of KALAUZ_REGISTRY) {
-    expect(matchRoutes(routes, e.route)).not.toBeNull()
+    expect(routeExists(e.route), `${e.id}: route → ${e.route}`).toBe(true)
     expect(ids.has(e.id)).toBe(false)
     ids.add(e.id)
     expect(e.version).toBeGreaterThanOrEqual(1)
@@ -48,15 +58,6 @@ test('szótár: minden fogalom-kártya egy FOGALMAK-bejegyzést hordoz, és ninc
   // S2a-4 (YAGNI): a szótár csak azt tartalmazza, amit valaki hivatkoz.
   expect([...Object.keys(FOGALMAK)].filter((k) => !used.has(k))).toEqual([])
 })
-
-// `matchRoutes(...).not.toBeNull()` alone would never fail: a router.tsx-ben van egy
-// top-szintű `{ path: '*', element: <Navigate to="/nap" /> }` fogó-route (:326), ami
-// MINDEN nemlétező útvonalra is illeszkedik, és a lánc utolsó tagja marad `*`. Ezért a
-// tényleges kaput az adja, hogy a lánc utolsó illesztett route-jának path-je NEM `*`.
-const routeExists = (to: string) => {
-  const m = matchRoutes(routes, to)
-  return m != null && m[m.length - 1]?.route.path !== '*'
-}
 
 test('minden kapcsolat-chip létező route-ra mutat', () => {
   for (const e of KALAUZ_REGISTRY) for (const c of e.cards) {
