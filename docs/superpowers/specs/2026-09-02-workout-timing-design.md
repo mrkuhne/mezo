@@ -24,7 +24,7 @@ edzések időbecslését.
 | A becslés szerepe | **Kalibrációs réteg** a meglévő képlet felett, nem csere |
 | Hol számol | Backend, perzisztált per-user profil |
 | Időfogalom | **Két óra:** nyers `elapsed` + származtatott `active` (Strava-minta) |
-| Profil kulcsai | Komponensenként, globális szorzó fallbackkel |
+| Profil kulcsai | Megfigyelhető komponensenként (szett-ciklus / váltás / bevezető), globális szorzó fallbackkel |
 | Pihenő-timer | Változatlan — csak a becslés tanul |
 | Látható felületek | Terv/tény a `WorkoutSummary`-ban; kalibrált szám a today-kártyán és a MesoEditorban |
 | Szeletelés | Két szelet; a backfill az elsőben |
@@ -158,7 +158,17 @@ visszamenőleg csak `active` idő keletkezik — pontosan az, amit a 2. szelet h
 A migráció idempotens: csak ott ír, ahol az `active_seconds` NULL.
 
 **Konfiguráció.** `mezo.train.timing.*` egy `@Validated @ConfigurationProperties`
-recordban: `gapCapSeconds`, `leadInCapSeconds`.
+recordban. Kezdőértékek (hangolhatók, az 1. szelet után valós adaton felülvizsgálva):
+
+| kulcs | kezdőérték | mire |
+|---|---|---|
+| `gapCapSeconds` | 300 | ennél hosszabb szett-közi rés ide vágódik le |
+| `leadInCapSeconds` | 900 | a `started_at` → első szett szakasz felső korlátja |
+| `maxClippedRatio` | 0.25 | ennél több levágott rés → a session nem tanít |
+| `alpha` | 0.125 | EWMA simítás (RFC 6298 1/8) |
+| `beta` | 0.25 | eltérés-simítás (RFC 6298 1/4) |
+| `outlierK` | 4 | a kapu szélessége `k · deviation` |
+| `minSamples` | 3 | ennyi minta alatt a komponens a statikus konstansra esik vissza |
 
 **Contract.** `ExerciseSetResponse` += `doneAt`; `WorkoutDetailResponse` és
 `WorkoutTodayResponse` += `startedAt`, `finishedAt`, `activeSeconds`.
@@ -172,13 +182,23 @@ helyes. Az aktív edzés képernyője **nem változik**.
 **Entitás.** `workout_timing_profile`, felhasználónként egy sor, `OwnedEntity`
 leszármazott. Komponensenként három érték: simított érték, simított eltérés, mintaszám.
 
-| komponens | mit tanul | statikus párja |
+**Mi figyelhető meg valójában.** A `done_at` egy szett *befejezésének* pillanata, nem
+a kezdetéé. Két egymást követő bélyeg különbsége tehát **pihenő + a következő szett
+végrehajtása együtt** — a kettőt szétválasztani csak a szett kezdetének rögzítésével
+lehetne, ami új UI-t igényelne (hatókörön kívül). Ezért a profil a ténylegesen
+megfigyelhető intervallumokat tanulja:
+
+| komponens | megfigyelés forrása | statikus párja |
 |---|---|---|
-| `work_per_set` | egy munkaszett tényleges hossza | `repSeconds 3.5` × ismétlés |
-| `rest_compound` | pihenő összetett gyakorlat után | `restSecondsFor` 150s |
-| `rest_isolation` | pihenő izolációs gyakorlat után | `restSecondsFor` 90s |
-| `transition` | gyakorlatok közti átállás | `transitionSeconds 90` |
-| `global_multiplier` | tényleges aktív idő / képlettel becsült idő | — |
+| `set_cycle_compound` | két egymást követő `done_at` **ugyanazon** összetett gyakorlaton belül | `restSecondsFor` 150s + `repSeconds` × ismétlés |
+| `set_cycle_isolation` | ugyanez izolációs gyakorlaton belül | `restSecondsFor` 90s + `repSeconds` × ismétlés |
+| `transition` | `done_at` különbség **gyakorlathatáron át** (A utolsó szettje → B első szettje) | `transitionSeconds 90` + a pihenő + az első szett |
+| `lead_in` | `started_at` → az első `done_at` | `warmupBlockMinutes 8` + bemelegítő szettek |
+| `global_multiplier` | session aktív ideje / a képlettel becsült ideje | — |
+
+A becsült idő ezekből: `lead_in + Σ gyakorlatonként (szettszám × set_cycle) + Σ
+gyakorlatváltás × transition`. Ugyanaz a szerkezet, mint a mai képleté — csak a
+konstansok jönnek mérésből.
 
 **Tanulási szabály** (RFC 6298 szerkezet, komponensenként):
 
@@ -193,7 +213,8 @@ deviation ← (1 − β) · deviation + β · |érték − megfigyelés|
 minimumot **és** a megfigyelés a simított értéktől `k · deviation`-nél közelebb van.
 Különben **eldobjuk — nem vágjuk le**, mert a levágás tartósan felfelé torzítana.
 Teljes session szintjén kizárva: `finished_at IS NULL` (auto-lezárt), és az a
-session, amelyben a levágott lyukak aránya meghalad egy küszöböt.
+session, amelyben a levágott (`gapCapSeconds`-nél hosszabb) intervallumok aránya
+meghaladja a `maxClippedRatio`-t.
 
 **Cold start.** Minimum alatti mintaszámú komponens a statikus konstansát használja
 `global_multiplier`-rel szorozva. A globális szorzó egyetlen befejezett edzés után
@@ -231,7 +252,8 @@ visszafelé-kompatibilitás teszi lehetővé, hogy a hat hívóból csak kettőt
 | Éjfélen átnyúló edzés | `Instant` alapú számítás, nem `LocalDate` — nem gond |
 | Utólag szerkesztett szett | `done_at` = a rögzítés pillanata; a rendezés helyreteszi |
 | Backfillelt régi session | van `active_seconds`, nincs `started_at`/`finished_at` → tanít, tényidőt nem mutat |
-| Kihagyott gyakorlat (skip marker) | `done_at`-et kap, de a `transition` tanulásából kizárva |
+| Kihagyott gyakorlat (skip marker) | `done_at`-et kap, de sem a `set_cycle`, sem a `transition` tanulásába nem számít |
+| Extra (terven felüli) szett | normál `set_cycle` megfigyelés, semmi külön kezelés |
 
 ## Tesztelés
 
