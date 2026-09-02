@@ -242,15 +242,18 @@ export function MesoComparePage() {
                       data-testid="focus-row"
                     >
                       <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 14 }}>{side}</span>
-                      {f.chips.length === 0 && !f.legacy && (
+                      {/* No run on this side at all — „—", never „Minden izom Grow" (that
+                          would be a claim about a run we do not have). */}
+                      {f === null && <span className="text-secondary" style={{ fontSize: 12 }}>—</span>}
+                      {f !== null && f.chips.length === 0 && !f.legacy && (
                         <span className="text-secondary" style={{ fontSize: 12 }}>Minden izom Grow</span>
                       )}
-                      {f.chips.map((c) => (
-                        <span key={c.group} className="chip" style={TIER_CHIP_STYLE[c.tier as 'emphasize' | 'maintain']} data-testid="focus-chip">
+                      {f?.chips.map((c) => (
+                        <span key={c.group} className="chip" style={TIER_CHIP_STYLE[c.tier]} data-testid="focus-chip">
                           {c.tier === 'emphasize' ? `${c.label} ★` : c.label}
                         </span>
                       ))}
-                      {f.legacy && (
+                      {f?.legacy && (
                         <span className="chip" style={LEGACY_CHIP_STYLE} data-testid="focus-legacy-chip">régi modell · címke</span>
                       )}
                     </div>

@@ -322,7 +322,9 @@ export function MesoReportPage() {
             </div>
           )}
 
-          {/* Frozen volume arc — same switch as the live overview (MuscleArcSwitch) */}
+          {/* Frozen volume arc — MuscleArcSwitch, which since v2 lives ONLY here: the live
+              overview page it was shared with was retired (the running block's arc now reads
+              per muscle on MesoMusclePage). */}
           {arcs.length > 0 && (
             <>
               <div style={{ padding: '12px 0 0' }}>

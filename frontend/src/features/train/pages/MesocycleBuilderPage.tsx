@@ -11,8 +11,9 @@
 //   „A heted" day mosaic — one DayTile per training day → the day's own page
 //   „Meso lezárása" (MesoCloseSheet)
 // The three-view switcher (Áttekintés | Volumen | Gyakorlatok) is gone: Volumen
-// lives on its own route (MesoOverviewPage), and Gyakorlatok is now per-day
-// (MesoDayPage) — a run page that opens on a form was the thing v2 set out to fix.
+// lives on its own routes (MesoWeekPage → MesoMusclePage — MesoOverviewPage itself
+// was retired and now redirects), and Gyakorlatok is now per-day (MesoDayPage) —
+// a run page that opens on a form was the thing v2 set out to fix.
 // A PLANNED run keeps its „Aktiválás" CTA; an ARCHIVED one has no builder at all
 // and redirects to its frozen report (mezo-meyc.2).
 // ============================================================
@@ -25,7 +26,7 @@ import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { MozaikPage, Mosaic, PageBody, PageHead, PageHero, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { huMonthDay } from '@/shared/lib/dates'
-import { deciderSentence, nextRolloverChips, phaseChip, runBands, weekDots } from '@/features/train/logic/mesoBands'
+import { deciderSentence, nextRolloverChips, phaseChip, runBands, weekDotClass, weekDots } from '@/features/train/logic/mesoBands'
 import { todayDayToken } from '@/features/train/logic/mesoDates'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { isOffDay } from '@/features/train/logic/offDay'
@@ -36,8 +37,12 @@ import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
-/** The mini bar cluster's denominator — the highest ceiling the model plans for. */
-const BAR_CEILING = 22
+/** The mini bar cluster's denominator — THIS block's own highest ceiling, so the bars stay
+ *  comparable inside the tile whatever the plan's landmarks are (a fixed 22 flattened every
+ *  bar of a block whose loudest muscle tops out at 12). */
+function barCeiling(bands: { ceiling: number }[]): number {
+  return Math.max(...bands.map((b) => b.ceiling), 1)
+}
 
 /** Mock fixtures carry HU display dates ('Jún 12'), the API ISO ones ('2026-06-12'). */
 function huDate(value: string | undefined): string | null {
@@ -121,7 +126,7 @@ export function MesocycleBuilderPage() {
               </div>
               <div className="mz-wdots">
                 {weekDots(meso).map((d) => (
-                  <i key={d.week} className={d.deload ? 'deload' : d.state === 'future' ? undefined : d.state} />
+                  <i key={d.week} className={weekDotClass(d)} />
                 ))}
               </div>
               <div className="mz-arcline">
@@ -157,7 +162,7 @@ export function MesocycleBuilderPage() {
                         key={b.group}
                         style={{
                           ...delay(300 + i * 60),
-                          height: `${Math.max(15, Math.round((b.current / BAR_CEILING) * 100))}%`,
+                          height: `${Math.max(15, Math.round((b.current / barCeiling(bands)) * 100))}%`,
                           background: muscleColor(b.group).deep,
                         }}
                       />
@@ -171,9 +176,12 @@ export function MesocycleBuilderPage() {
                     tile deliberately has no onClick (prototype: cursor:default). */}
                 <Tile wash="sage" eyebrow="Hétfőn jön" delayMs={120}>
                   <span className="mz-rollchips">
-                    {rollover.map((c) => (
+                    {/* Five muscles, then a „+N" — the tile is a forecast at a glance, and a
+                        10-muscle block wrapped it into an unreadable chip wall. */}
+                    {rollover.slice(0, 5).map((c) => (
                       <span key={c.label} className={c.tone === 'sage' ? 'mz-mband up' : 'mz-mband'}>{c.text}</span>
                     ))}
+                    {rollover.length > 5 && <span className="mz-mband">{`+${rollover.length - 5}`}</span>}
                   </span>
                   <span className="mz-tile-note">a heti görgetés hajnalban fut</span>
                 </Tile>

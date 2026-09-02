@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { muscleTiles, previousBlock, weekSummary, whereItWorks } from './mesoWeek'
+import { muscleTiles, peakWeek, previousBlock, weekSummary, whereItWorks } from './mesoWeek'
 import type { Mesocycle, MesoVolumeArc } from '@/data/types'
+import { nextRolloverChips } from './mesoBands'
 
 const src = { baseline: { name: 'RP', mev: 10, mav: 16, mrv: 22 }, adjustments: [], confidence: 0.5 }
 
@@ -102,6 +103,49 @@ describe('muscleTiles', () => {
     }
     const capped = muscleTiles(capArc, capMeso).find((t) => t.group === 'chest')
     expect(capped).toMatchObject({ statusTone: 'gold', status: 'plafonon' })
+  })
+
+  // The regression the fix wave closed: the run page's rollover chip and the week mosaic's
+  // tile answered „mi lesz hétfőn" differently for a grind-held muscle.
+  it('a grind-held muscle reads the SAME in the tile status and in the rollover chip', () => {
+    expect(tiles.find((t) => t.group === 'chest')!.status).toBe('= tartás · grind a múlt héten')
+    expect(tiles.find((t) => t.group === 'chest')!.step).toBe(0)
+    expect(nextRolloverChips(meso).find((c) => c.label === 'Mell')).toEqual({ label: 'Mell', text: 'Mell tart', tone: 'mut' })
+  })
+
+  it('the ramp step is clamped to the headroom — no +2 promised over the plafon', () => {
+    const nearCap = {
+      ...meso,
+      volumeRecompute: undefined,
+      volumePerMuscle: { ...meso.volumePerMuscle, back: { mev: 10, mav: 16, mrv: 22, current: 21, source: src } },
+    } as unknown as Mesocycle
+    const nearCapArc: MesoVolumeArc = {
+      ...arc,
+      muscles: arc.muscles.map((m) => (m.muscle === 'back' ? { ...m, weeks: m.weeks.map((w) => (w.isCurrent ? { ...w, planned: 21 } : w)) } : m)),
+    }
+    const tile = muscleTiles(nearCapArc, nearCap).find((t) => t.group === 'back')!
+    expect(tile.step).toBe(1)
+    expect(tile.status).toBe('▲ +1 e héten · 1 a plafonig')
+  })
+})
+
+describe('peakWeek', () => {
+  const series = (planned: number[], deloadFrom: number) =>
+    planned.map((p, i) => ({ week: i + 1, planned: p, actual: null, isCurrent: false, deload: i + 1 >= deloadFrom }))
+
+  // The bug this replaced: MesoWeekPage hard-coded series[4] as „a csúcshét", which is only
+  // ever right for a 6-week block.
+  it('names the LAST non-deload week at every block length', () => {
+    expect(peakWeek(series([8, 10, 12, 6], 4))).toEqual({ index: 2, week: 3, planned: 12 })        // 4 weeks
+    expect(peakWeek(series([8, 10, 12, 14, 7], 5))).toEqual({ index: 3, week: 4, planned: 14 })    // 5 weeks
+    expect(peakWeek(series([8, 10, 12, 14, 16, 8], 6))).toEqual({ index: 4, week: 5, planned: 16 }) // 6 weeks
+    expect(peakWeek(series([8, 10, 12, 14, 16, 18, 20, 10], 8))).toEqual({ index: 6, week: 7, planned: 20 }) // 8 weeks
+  })
+
+  it('handles a trailing multi-week deload and the degenerate cases', () => {
+    expect(peakWeek(series([8, 10, 12, 6, 6], 4))).toEqual({ index: 2, week: 3, planned: 12 })
+    expect(peakWeek(series([6], 1))).toBeNull() // deload-only
+    expect(peakWeek([])).toBeNull()
   })
 })
 

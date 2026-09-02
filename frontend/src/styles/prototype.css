@@ -4492,10 +4492,14 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-phchip { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 10px; flex: none;
   background: var(--mz-qxp-bg); color: var(--mz-qxp-ink); }
 .mz-wdots { display: flex; gap: 5px; align-items: center; margin-top: 9px; }
-.mz-wdots i { flex: 1; height: 6px; border-radius: 3px; background: var(--mz-cellbg); }
+.mz-wdots i { flex: 1; height: 9px; border-radius: 5px; background: var(--mz-cellbg); }
 .mz-wdots i.done { background: var(--mz-cell-sage-ink); }
 .mz-wdots i.now { background: var(--mz-strength); }
 .mz-wdots i.deload { background: repeating-linear-gradient(135deg, var(--mz-cell-gold-ink) 0 3px, var(--mz-cell-gold-bg) 3px 6px); }
+/* A deload week that is ALSO the current one keeps its „most" marker: the stripe wins the
+   background (it is the later rule), the ring says where you stand. The classes layer
+   („now deload") rather than choosing — see mesoBands.weekDotClass. */
+.mz-wdots i.now.deload { box-shadow: inset 0 0 0 1.5px var(--mz-strength); }
 .mz-mband { font-size: 9px; font-weight: 700; border-radius: 999px; padding: 3px 9px; background: var(--mz-chipbg); color: var(--mz-ink-soft); }
 .mz-mband.up { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
 
@@ -8192,7 +8196,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); width: 100%; }
 button.mz-wtile { cursor: pointer; }
 button.mz-wtile:active { transform: scale(0.96); }
-.mz-wnums { margin-top: 6px; font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums;
+/* prototype .wnums: 20px / weight 200 — the hairline numeral is the tile's whole voice
+   (20 × 1.18 ≈ 24). */
+.mz-wnums { margin-top: 6px; font-size: 24px; font-weight: 200; font-variant-numeric: tabular-nums;
   display: flex; align-items: baseline; gap: 2px; white-space: nowrap; }
 .mz-wnums small { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--mz-ink-mut); margin-left: 3px; }

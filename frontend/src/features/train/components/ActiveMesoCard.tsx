@@ -7,15 +7,16 @@
 // current→ceiling band chips. All the run-time math (phaseChip/weekDots/
 // runBands) is Task 1's pure logic (logic/mesoBands.ts) — this component only
 // renders it. The whole card stays the `onOpen` target (opens the builder).
-// The phase-curve bars / meta-stat row this card used to carry moved out —
-// PhaseCurveBars/MetaStat are still used elsewhere (MesoOverview).
+// The phase-curve bars / meta-stat row this card used to carry are GONE: their
+// last consumer (MesoOverviewPage) was retired with v2, so PhaseCurveBars/MetaStat
+// were deleted rather than left as orphans.
 // ============================================================
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { ClayIcon } from '@/shared/ui/clay'
 import type { Mesocycle } from '@/data/types'
-import { runBands, phaseChip, weekDots } from '@/features/train/logic/mesoBands'
+import { runBands, phaseChip, weekDotClass, weekDots } from '@/features/train/logic/mesoBands'
 import { todayDayToken } from '@/features/train/logic/mesoDates'
 
 interface ActiveMesoCardProps {
@@ -38,8 +39,10 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
   const dots = weekDots(meso)
   const phase = phaseChip(meso)
   // Top 5 bands — runBands is already sorted by ceiling descending, same cutoff
-  // the prototype's chip row uses.
-  const bands = runBands(meso).slice(0, 5)
+  // the prototype's chip row uses; the rest are counted, not dropped in silence.
+  const allBands = runBands(meso)
+  const bands = allBands.slice(0, 5)
+  const hidden = allBands.length - bands.length
   const peakWeekIdx = meso.phaseCurve.indexOf('MRV')
   const todayToken = todayDayToken()
   const todayDay = meso.days?.find((d) => d.day === todayToken)
@@ -86,7 +89,7 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
 
         <div className="mz-wdots">
           {dots.map((d) => (
-            <i key={d.week} className={d.deload ? 'deload' : d.state === 'future' ? undefined : d.state} />
+            <i key={d.week} className={weekDotClass(d)} />
           ))}
         </div>
 
@@ -109,6 +112,7 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
               {bandChipText(b)}
             </span>
           ))}
+          {hidden > 0 && <span className="mz-mband">{`+${hidden}`}</span>}
         </div>
       </div>
     </button>

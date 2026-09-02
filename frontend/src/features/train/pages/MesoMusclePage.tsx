@@ -14,16 +14,10 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip, type PageTone } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { muscleTiles, previousBlock, whereItWorks } from '@/features/train/logic/mesoWeek'
-import { regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
+import { muscleTiles, peakWeek, previousBlock, whereItWorks } from '@/features/train/logic/mesoWeek'
+import { REGION_TONE, regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
 import { VolumeBand } from '@/features/train/components/VolumeBand'
 import { DerivationSteps } from '@/features/train/components/DerivationSteps'
-
-// Arc regions (coral/sky/lav/rose/sage/amber) → Mozaik page tone — amber (Core)
-// has no tone of its own, so it reads as gold (the closest neutral-warm family).
-const REGION_TONE: Record<string, PageTone> = {
-  coral: 'coral', sky: 'sky', lav: 'lav', rose: 'rose', sage: 'sage', amber: 'gold',
-}
 
 function MuscleSkeleton() {
   return (
@@ -41,18 +35,26 @@ export function MesoMusclePage() {
   const { id, muscle } = useParams<{ id: string; muscle: string }>()
   const goBack = useBackNav(`/train/mesocycles/${id}/week`)
   const { mesocycles, workoutPending } = useTrain()
-  const { arc, pending: arcPending } = useMesocycleVolumeArc(id ?? null)
+  const { arc, pending: arcPending, error: arcError } = useMesocycleVolumeArc(id ?? null)
 
   const meso = mesocycles.find((m) => m.id === id)
 
   if (workoutPending || arcPending) return <MuscleSkeleton />
 
   if (!meso || !arc) {
+    // A FAILED arc fetch is not „nincs még ív" — the first says try again, the second says
+    // wait for the first session, and telling them apart is the difference between a
+    // recoverable error and a wrong promise.
+    const message = !meso
+      ? 'Ez a mesociklus nem található.'
+      : arcError
+        ? 'Nem sikerült betölteni a heti vizsgálatot — próbáld újra.'
+        : 'A heti vizsgálat a blokk első edzése után jelenik meg.'
     return (
       <MozaikPage tone="coral">
         <PageHead onBack={goBack} label="‹ Heti vizsgálat" />
         <PageBody>
-          <GhostState message={meso ? 'A heti vizsgálat a blokk első edzése után jelenik meg.' : 'Ez a mesociklus nem található.'} />
+          <GhostState message={message} />
         </PageBody>
       </MozaikPage>
     )
@@ -72,7 +74,7 @@ export function MesoMusclePage() {
     )
   }
 
-  const tone = REGION_TONE[tile.region] ?? 'coral'
+  const tone: PageTone = REGION_TONE[tile.region as RegionKey] ?? 'coral'
   const fam = regionColor(tile.region as RegionKey)
   const rows = whereItWorks(meso, tile.group)
   const freq = rows.length
@@ -81,9 +83,10 @@ export function MesoMusclePage() {
   const hold = tile.statusTone !== 'sage'
   const weekOneValue = tile.series[0]?.planned ?? tile.mev
   const seriesToNow = tile.series.filter((s) => s.week <= arc.currentWeek)
-  // The last non-deload week in the arc — the block's own peak/csúcs week (the prototype's
-  // #page-muscle .arclbl labels this „csúcs"; deload, when present, is always the FINAL week).
-  const lastRampIdx = tile.series.reduce((last, s, i) => (s.deload ? last : i), -1)
+  // The block's own peak/csúcs week (the prototype's #page-muscle .arclbl labels this
+  // „csúcs") — shared with MesoWeekPage's coach line, so both pages call the same peak
+  // whatever the block length is.
+  const lastRampIdx = peakWeek(tile.series)?.index ?? -1
 
   return (
     <MozaikPage tone={tone}>
@@ -93,14 +96,14 @@ export function MesoMusclePage() {
           icon="i-meso"
           big={tile.tier === 'maintain' ? tile.current : `${tile.current} → ${tile.ceiling}`}
           name={`${tile.label} · ${{ emphasize: 'Emphasize', grow: 'Grow', maintain: 'Maintain' }[tile.tier]} · ${tile.tier === 'maintain' ? 'MV-n tart' : `MEV${tile.tier === 'emphasize' ? '+2' : ''} → ${tile.tier === 'emphasize' ? 'MRV' : 'MAV'}`}`}
-          sub={`${arc.currentWeek}. hét · ${freq}×/hét · ${hold ? 'most tartás' : '+2 e héten'}`}
+          sub={`${arc.currentWeek}. hét · ${freq}×/hét · ${tile.step > 0 ? `+${tile.step} e héten` : 'most tartás'}`}
         />
         <PageBody principle="A baseline sosem íródik felül — a Felülír csak egy újabb réteg rá. Piros itt sincs: a tartás döntés, nem hiba.">
           <div className="rise" style={{ marginBottom: 10 }}>
             <StatStrip>
               <StatCell value={tile.current} label="szett · most" />
               <StatCell value={tile.tier === 'maintain' ? '—' : tile.ceiling} label="plafon" />
-              <StatCell value={tile.tier === 'maintain' ? '=' : hold ? '=' : '+2'} label="e héten" />
+              <StatCell value={tile.step > 0 ? `+${tile.step}` : '='} label="e héten" />
               <StatCell value={`${freq}×`} label="/ hét" />
             </StatStrip>
           </div>
@@ -147,10 +150,10 @@ export function MesoMusclePage() {
               {tile.tier === 'maintain'
                 ? `Maintain: ${tile.mev} szett tartja, amit felépítettél — nem rámpázik, a deloadon sem csökken.`
                 : tile.status.startsWith('=')
-                  ? `A múlt héten grindeltél (RIR-rés a tervhez képest), ezért most tartjuk a ${tile.current}-et. Ha e héten visszaáll a tempó, hétfőn +2.`
+                  ? `A múlt héten grindeltél (RIR-rés a tervhez képest), ezért most tartjuk a ${tile.current}-et. Ha e héten visszaáll a tempó, hétfőn jön a következő lépcső.`
                   : hold
                     ? 'Plafonon vagy — innen már a csúcshét és a deload jön.'
-                    : `Produktív hét volt, hétfőn +2 szett. A plafon ${tile.ceiling}.`}
+                    : `Produktív hét volt, hétfőn +${tile.step} szett. A plafon ${tile.ceiling}.`}
             </span>
           </div>
 
@@ -188,7 +191,7 @@ export function MesoMusclePage() {
               ceiling={tile.ceiling}
               weekOneValue={weekOneValue}
               series={seriesToNow}
-              hold={hold}
+              step={tile.step}
             />
           </div>
 

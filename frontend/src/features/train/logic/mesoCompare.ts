@@ -248,7 +248,8 @@ export function peakVolumeRows(a: MesoVolumeArc | null, b: MesoVolumeArc | null)
     .sort((x, y) => (y.aCeiling ?? -1) - (x.aCeiling ?? -1) || (y.aPeak ?? -1) - (x.aPeak ?? -1))
 }
 
-export interface FocusChip { group: string; label: string; tier: MuscleTier }
+/** Only the tiers that earn a chip — Grow is the silent baseline and never renders one. */
+export interface FocusChip { group: string; label: string; tier: 'emphasize' | 'maintain' }
 export interface FocusDiff { legacy: boolean; chips: FocusChip[] }
 
 /**
@@ -258,12 +259,16 @@ export interface FocusDiff { legacy: boolean; chips: FocusChip[] }
  * flags a run whose plan predates the current band model (`isLegacyPlan`) — the caller adds
  * its own "régi modell" chip for that, since a legacy run's tiers are display-only, not
  * something this run's numbers were actually generated against.
+ *
+ * A missing run returns **null**, not an empty diff: „nincs ilyen futam" and „minden izom
+ * Grow" are different claims, and an empty `chips` array rendered as the latter would put a
+ * confident statement about a run we do not have on the page.
  */
-export function focusDiff(run: Mesocycle | null): FocusDiff {
-  if (!run) return { legacy: false, chips: [] }
+export function focusDiff(run: Mesocycle | null): FocusDiff | null {
+  if (!run) return null
   const order: Record<MuscleTier, number> = { emphasize: 0, maintain: 1, grow: 2 }
   const chips = Object.entries(run.musclePriorities ?? {})
-    .filter(([, tier]) => tier !== 'grow')
+    .filter((e): e is [string, 'emphasize' | 'maintain'] => e[1] !== 'grow')
     .map(([group, tier]) => ({ group, label: BUDGET_GROUP_LABELS[group] ?? group, tier }))
     .sort((x, y) => order[x.tier] - order[y.tier] || x.label.localeCompare(y.label))
   return { legacy: isLegacyPlan(run), chips }

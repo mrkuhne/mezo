@@ -36,12 +36,13 @@ export interface DerivationStepsProps {
   weekOneValue: number
   /** through the current week, in order — the LAST entry is „most". */
   series: { week: number; planned: number }[]
-  /** what the Monday rollover does next: hold ('=') or ramp ('+2'). */
-  hold: boolean
+  /** how many sets the Monday rollover adds — already clamped to the ceiling by
+   *  `nextStep`/`MuscleWeekTile.step`; 0 renders as a plain '=' hold. */
+  step: number
   onOverride?: () => void
 }
 
-export function DerivationSteps({ profile, tier, ceiling, weekOneValue, series, hold, onOverride }: DerivationStepsProps) {
+export function DerivationSteps({ profile, tier, ceiling, weekOneValue, series, step, onOverride }: DerivationStepsProps) {
   const { source } = profile
   const confidencePct = Math.round(source.confidence * 100)
 
@@ -75,7 +76,7 @@ export function DerivationSteps({ profile, tier, ceiling, weekOneValue, series, 
               <div className="mz-dcells">
                 <div className="mz-dcell"><b>{weekOneValue}</b><small>indul</small></div>
                 <div className="mz-dcell"><b>{ceiling}</b><small>plafon</small></div>
-                <div className="mz-dcell"><b>+2</b><small>/ hét</small></div>
+                <div className="mz-dcell"><b>{step > 0 ? `+${step}` : '='}</b><small>/ hét</small></div>
               </div>
             )}
           </div>
@@ -120,7 +121,7 @@ export function DerivationSteps({ profile, tier, ceiling, weekOneValue, series, 
                   <small>W{s.week}{i === series.length - 1 ? ' · most' : ''}</small>
                 </div>
               ))}
-              <div className="mz-dcell hot"><b>{hold ? '=' : '+2'}</b><small>hétfőn</small></div>
+              <div className="mz-dcell hot"><b>{step > 0 ? `+${step}` : '='}</b><small>hétfőn</small></div>
             </div>
           </div>
         </div>

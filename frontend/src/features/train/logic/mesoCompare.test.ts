@@ -278,10 +278,6 @@ describe('focusDiff', () => {
     ...over,
   })
 
-  it('is empty and non-legacy for a null run', () => {
-    expect(focusDiff(null)).toEqual({ legacy: false, chips: [] })
-  })
-
   it('drops Grow entries (the silent default) and keeps Emphasize/Maintain, Emphasize first', () => {
     const r = run({ musclePriorities: { back: 'grow', chest: 'maintain', shoulder: 'emphasize', quad: 'emphasize' } })
     expect(focusDiff(r)).toEqual({
@@ -295,19 +291,26 @@ describe('focusDiff', () => {
   })
 
   it('has no chips at all when every group is Grow (absent or empty map)', () => {
-    expect(focusDiff(run({ musclePriorities: null })).chips).toEqual([])
-    expect(focusDiff(run({ musclePriorities: {} })).chips).toEqual([])
+    expect(focusDiff(run({ musclePriorities: null }))!.chips).toEqual([])
+    expect(focusDiff(run({ musclePriorities: {} }))!.chips).toEqual([])
+  })
+
+  // „nincs ilyen futam" ≠ „minden izom Grow" — an empty diff for a MISSING run would print a
+  // confident statement about data we do not have.
+  it('returns null for a missing run — distinguishable from an all-Grow run', () => {
+    expect(focusDiff(null)).toBeNull()
+    expect(focusDiff(run({ musclePriorities: {} }))).toEqual({ legacy: false, chips: [] })
   })
 
   it('flags a run as legacy when goalPreset is PRESENT and wrong, or the phase curve has no Deload', () => {
-    expect(focusDiff(run({ goalPreset: 'strength' })).legacy).toBe(true)
-    expect(focusDiff(run({ phaseCurve: ['MEV', 'MAV', 'MRV'] })).legacy).toBe(true)
-    expect(focusDiff(run()).legacy).toBe(false)
+    expect(focusDiff(run({ goalPreset: 'strength' }))!.legacy).toBe(true)
+    expect(focusDiff(run({ phaseCurve: ['MEV', 'MAV', 'MRV'] }))!.legacy).toBe(true)
+    expect(focusDiff(run())!.legacy).toBe(false)
   })
 
   it('does NOT flag a run legacy for an ABSENT goalPreset alone (only present-and-wrong disqualifies)', () => {
-    expect(focusDiff(run({ goalPreset: null })).legacy).toBe(false)
-    expect(focusDiff(run({ goalPreset: undefined })).legacy).toBe(false)
+    expect(focusDiff(run({ goalPreset: null }))!.legacy).toBe(false)
+    expect(focusDiff(run({ goalPreset: undefined }))!.legacy).toBe(false)
   })
 })
 

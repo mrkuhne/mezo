@@ -16,17 +16,19 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, Mosaic, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { nextRolloverChips } from '@/features/train/logic/mesoBands'
-import { muscleTiles, weekSummary } from '@/features/train/logic/mesoWeek'
-import { regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
+import { muscleTiles, peakWeek, weekSummary } from '@/features/train/logic/mesoWeek'
+import { REGION_TONE, regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
 import { VolumeBand } from '@/features/train/components/VolumeBand'
 import { cn } from '@/shared/lib/cn'
 
 const TIER_LABEL = { emphasize: 'Emphasize', grow: 'Grow', maintain: 'Maintain' } as const
-// Arc regions (coral/sky/lav/rose/sage/amber) → Mozaik tone/wash — amber has no
-// tile wash of its own, so Core reads as gold (the closest neutral-warm family).
-const REGION_TONE: Record<string, 'coral' | 'sage' | 'sky' | 'gold' | 'lav' | 'rose'> = {
-  coral: 'coral', sky: 'sky', lav: 'lav', rose: 'rose', sage: 'sage', amber: 'gold',
+/** The rollover forecast reads as a sentence, so it stops at FIVE muscles and says how many
+ *  it left out — a 10-muscle block turned the banner into an unreadable wall of chips. */
+function rolloverLine(chips: { text: string }[]): string {
+  const head = chips.slice(0, 5).map((c) => c.text)
+  return chips.length > 5 ? [...head, `+${chips.length - 5}`].join(' · ') : head.join(' · ')
 }
+
 const STATUS_TONE_COLOR = { sage: 'var(--mz-cell-sage-ink)', gold: 'var(--mz-cell-gold-ink)', mut: 'var(--mz-ink-mut)' } as const
 
 function WeekSkeleton() {
@@ -46,7 +48,7 @@ export function MesoWeekPage() {
   const navigate = useNavigate()
   const goBack = useBackNav(`/train/mesocycles/${id}`)
   const { mesocycles, workoutPending } = useTrain()
-  const { arc, pending: arcPending } = useMesocycleVolumeArc(id ?? null)
+  const { arc, pending: arcPending, error: arcError, refetch: refetchArc } = useMesocycleVolumeArc(id ?? null)
 
   const meso = mesocycles.find((m) => m.id === id)
 
@@ -64,11 +66,22 @@ export function MesoWeekPage() {
   }
 
   if (!arc) {
+    // A FAILED arc fetch is not „nincs még ív": the first is recoverable and says so, the
+    // second is a promise about the first session. Rendering them identically would tell a
+    // user with a dead network to go and train.
     return (
       <MozaikPage tone="coral">
         <PageHead onBack={goBack} label="‹ A blokkod" />
         <PageBody>
-          <GhostState message="A heti vizsgálat a blokk első edzése után jelenik meg." />
+          <GhostState
+            message={
+              arcError
+                ? 'Nem sikerült betölteni a heti vizsgálatot — próbáld újra.'
+                : 'A heti vizsgálat a blokk első edzése után jelenik meg.'
+            }
+            ctaLabel={arcError ? 'Újra' : undefined}
+            onCta={arcError ? () => void refetchArc() : undefined}
+          />
         </PageBody>
       </MozaikPage>
     )
@@ -78,7 +91,9 @@ export function MesoWeekPage() {
   const summary = weekSummary(arc, tiles)
   const chips = nextRolloverChips(meso)
   const emphasized = tiles[0]
-  const peak = emphasized?.series[4]
+  // The block's own peak week — NOT a fixed series[4], which is only ever the peak of a
+  // 6-week block (5 weeks would name the deload, 7–8 would understate it).
+  const peak = emphasized ? peakWeek(emphasized.series) : null
 
   return (
     <MozaikPage tone="coral">
@@ -112,7 +127,7 @@ export function MesoWeekPage() {
               <span className="mz-livedot" aria-hidden="true" />
               <div className="mz-grow">
                 <div className="mz-livebanner-title">Élő rendszer · a következő görgetés hétfő hajnal</div>
-                <div className="mz-mut" style={{ fontSize: 9 }}>{chips.map((c) => c.text).join(' · ')}</div>
+                <div className="mz-mut" style={{ fontSize: 9 }}>{rolloverLine(chips)}</div>
               </div>
             </div>
           )}
@@ -120,7 +135,7 @@ export function MesoWeekPage() {
           <Mosaic>
             {tiles.map((t, i) => {
               const fam = regionColor(t.region as RegionKey)
-              const tone = REGION_TONE[t.region] ?? 'coral'
+              const tone = REGION_TONE[t.region as RegionKey] ?? 'coral'
               return (
                 <button
                   key={t.group}

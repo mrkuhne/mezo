@@ -8,7 +8,7 @@
 // per-day muscle-group joins so a day's set count is counted exactly once.
 // ============================================================
 import type { Mesocycle, MesoVolumeArc, MuscleTier } from '@/data/types'
-import { runBands } from '@/features/train/logic/mesoBands'
+import { grindHeldGroups, nextStep, runBands } from '@/features/train/logic/mesoBands'
 import { BUDGET_GROUP_LABELS, budgetGroup, countsForVolume, daySessionBreakdown } from '@/features/train/logic/setBudget'
 
 export interface WeekSummary {
@@ -49,15 +49,13 @@ export interface MuscleWeekTile {
   mrv: number
   prev: number | null
   series: { week: number; planned: number; actual: number | null; isCurrent: boolean; deload: boolean }[]
+  /** What Monday's rollover adds to this muscle: `nextStep` clamped to the ceiling, 0 for a
+   *  maintain tier, a capped band or a grind-hold. The tile status, the muscle page's stat
+   *  cell and its derivation timeline all read THIS, so „+2" is never promised where only
+   *  one set fits under the plafon. */
+  step: number
   status: string
   statusTone: 'sage' | 'gold' | 'mut'
-}
-
-/** Muscles whose latest recompute change is a HOLD (grind — real backend vocabulary,
- *  VolumeProgressionService.reasonFor(HOLD) === 'tartás'; see mesoBands.ts's own note on
- *  the mock fixture's richer narrative reasons falling through to the ▲ +2 default). */
-function grindHeldGroups(meso: Mesocycle): Set<string> {
-  return new Set((meso.volumeRecompute?.changes ?? []).filter((c) => c.reason === 'tartás').map((c) => c.muscle))
 }
 
 /** Joins the arc's per-muscle planned series with runBands (tier/ceiling) for the week
@@ -80,6 +78,7 @@ export function muscleTiles(arc: MesoVolumeArc, meso: Mesocycle): MuscleWeekTile
 
       let status: string
       let statusTone: MuscleWeekTile['statusTone']
+      let step = 0
       if (band.tier === 'maintain') {
         status = 'MV-n tart · nem rámpázik'
         statusTone = 'mut'
@@ -90,17 +89,31 @@ export function muscleTiles(arc: MesoVolumeArc, meso: Mesocycle): MuscleWeekTile
         status = '= tartás · grind a múlt héten'
         statusTone = 'gold'
       } else {
-        status = `▲ +2 e héten · ${band.ceiling - current} a plafonig`
+        // The band's own current may lag the arc's planned for this week — clamp against the
+        // value the tile actually shows, so the headroom and the step never contradict.
+        step = Math.max(0, Math.min(nextStep(band), band.ceiling - current))
+        status = `▲ +${step} e héten · ${band.ceiling - current} a plafonig`
         statusTone = 'sage'
       }
 
       return {
         group: m.muscle, label: BUDGET_GROUP_LABELS[m.muscle] ?? m.muscle, region: m.region, tier: band.tier,
-        current, ceiling: band.ceiling, mev: band.mev, mav: band.mav, mrv: m.mrv, prev, series, status, statusTone,
+        current, ceiling: band.ceiling, mev: band.mev, mav: band.mav, mrv: m.mrv, prev, series, step, status, statusTone,
       }
     })
     .filter((t): t is MuscleWeekTile => t !== null)
     .sort((a, b) => b.ceiling - a.ceiling)
+}
+
+/** The block's own peak („csúcs") week for a muscle: the LAST non-deload entry of the arc
+ *  series. Deload, when present, is always the final week(s), so this is the top of the ramp
+ *  whatever the block length is — a fixed `series[4]` is only ever right for a 6-week block
+ *  (5 weeks would point at the deload, 7–8 would understate the peak, 4 is undefined).
+ *  null for an all-deload / empty series. */
+export function peakWeek(series: MuscleWeekTile['series']): { index: number; week: number; planned: number } | null {
+  const index = series.reduce((last, s, i) => (s.deload ? last : i), -1)
+  const hit = index >= 0 ? series[index] : undefined
+  return hit ? { index, week: hit.week, planned: hit.planned } : null
 }
 
 export interface WeekWorkDay {

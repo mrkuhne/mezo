@@ -70,6 +70,15 @@ export function weekDots(meso: Mesocycle): WeekDot[] {
   })
 }
 
+/** The `.mz-wdots i` class list for one dot — LAYERED, not either/or: a deload week that is
+ *  also the current week keeps its `now` marker on top of the stripe (the old `deload ? … :
+ *  state` ternary silently dropped „hol tartasz" for the whole deload week). Shared by the
+ *  hub hero and the run page so the two strips never disagree. */
+export function weekDotClass(dot: WeekDot): string | undefined {
+  const parts = [dot.state !== 'future' ? dot.state : null, dot.deload ? 'deload' : null].filter(Boolean)
+  return parts.length > 0 ? parts.join(' ') : undefined
+}
+
 // Real vocabulary for VolumeChange.reason, from the backend (source of truth for the
 // live API — the FE mock fixture in data/train/train.ts still carries older, richer
 // narrative reason strings for its three seed changes; those fall through to the
@@ -102,10 +111,29 @@ export function deciderSentence(meso: Mesocycle): string | null {
   }
 }
 
+/** Muscles whose latest recompute change is a HOLD — the backend's own fixed reason string
+ *  (VolumeProgressionService.reasonFor(HOLD) === 'tartás'; see the note above on the mock
+ *  fixture's richer narrative reasons, which deliberately fall through). Single source for
+ *  BOTH the rollover forecast (`nextRolloverChips`) and the week mosaic's tile status
+ *  (mesoWeek.muscleTiles) — the two used to answer „mi lesz hétfőn" differently for a
+ *  grind-held muscle: the chip promised +2 while the tile next to it read „= tartás". */
+export function grindHeldGroups(meso: Mesocycle): Set<string> {
+  return new Set((meso.volumeRecompute?.changes ?? []).filter((c) => c.reason === 'tartás').map((c) => c.muscle))
+}
+
+/** How many sets the Monday rollover can actually add: the nominal +2, CLAMPED to what is
+ *  left under the ceiling (a band 1 set short of its plafon gets +1, not +2 — the engine
+ *  never overshoots), and 0 for anything that is not ramping. */
+export function nextStep(band: RunBand): number {
+  return band.step === 'up' ? Math.max(0, Math.min(2, band.ceiling - band.current)) : 0
+}
+
 export function nextRolloverChips(meso: Mesocycle): { label: string; text: string; tone: 'sage' | 'mut' }[] {
-  return runBands(meso).map((row) =>
-    row.step === 'up'
-      ? { label: row.label, text: `${row.label} +2`, tone: 'sage' as const }
-      : { label: row.label, text: `${row.label} tart`, tone: 'mut' as const },
-  )
+  const held = grindHeldGroups(meso)
+  return runBands(meso).map((row) => {
+    const step = held.has(row.group) ? 0 : nextStep(row)
+    return step > 0
+      ? { label: row.label, text: `${row.label} +${step}`, tone: 'sage' as const }
+      : { label: row.label, text: `${row.label} tart`, tone: 'mut' as const }
+  })
 }

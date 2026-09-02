@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deciderSentence, nextRolloverChips, phaseChip, runBands, weekDots } from './mesoBands'
+import { deciderSentence, grindHeldGroups, nextRolloverChips, nextStep, phaseChip, runBands, weekDotClass, weekDots } from './mesoBands'
 import type { Mesocycle } from '@/data/types'
 
 const src = { baseline: { name: 'RP', mev: 10, mav: 16, mrv: 22 }, adjustments: [], confidence: 0.5, rationale: '', userOverride: null } as never
@@ -33,11 +33,49 @@ describe('mesoBands', () => {
   })
   it('turns the recompute change into a Hungarian sentence and the next-rollover chips', () => {
     expect(deciderSentence(meso)).toContain('Mell')
+    // `chest` is grind-HELD (reason 'tartás'), so its chip reads `tart` — the same thing the
+    // week mosaic's own tile says. Before mezo-d20.15's fix wave the chip promised „Mell +2"
+    // next to a tile reading „= tartás".
     expect(nextRolloverChips(meso)).toEqual([
       { label: 'Hát', text: 'Hát +2', tone: 'sage' },
-      { label: 'Mell', text: 'Mell +2', tone: 'sage' },
+      { label: 'Mell', text: 'Mell tart', tone: 'mut' },
       { label: 'Vádli', text: 'Vádli tart', tone: 'mut' },
     ])
+  })
+
+  it('grindHeldGroups reads the HOLD reason only', () => {
+    expect([...grindHeldGroups(meso)]).toEqual(['chest'])
+    const ramped = { ...meso, volumeRecompute: { lastRun: '', nextRun: '', trigger: '', changes: [{ muscle: 'chest', change: '+2', reason: 'cél teljesítve, nincs grind' }] } } as unknown as Mesocycle
+    expect(grindHeldGroups(ramped).size).toBe(0)
+    expect(grindHeldGroups({ ...meso, volumeRecompute: undefined } as unknown as Mesocycle).size).toBe(0)
+  })
+
+  it('nextStep clamps the nominal +2 to the headroom under the ceiling', () => {
+    const bands = runBands(meso)
+    expect(nextStep(bands.find((b) => b.group === 'back')!)).toBe(2) // 16 → 22: room for the full step
+    expect(nextStep(bands.find((b) => b.group === 'calf')!)).toBe(0) // maintain: never ramps
+    // current === ceiling − 1 → +1, not an overshooting +2.
+    const nearCap = {
+      ...meso,
+      volumePerMuscle: { ...meso.volumePerMuscle, back: { mev: 10, mav: 16, mrv: 22, current: 21, source: src } },
+      volumeRecompute: { lastRun: '', nextRun: '', trigger: '', changes: [] },
+    } as unknown as Mesocycle
+    expect(nextStep(runBands(nearCap).find((b) => b.group === 'back')!)).toBe(1)
+    expect(nextRolloverChips(nearCap).find((c) => c.label === 'Hát')).toEqual({ label: 'Hát', text: 'Hát +1', tone: 'sage' })
+    // at the ceiling: 'cap', no step at all
+    const atCap = {
+      ...nearCap,
+      volumePerMuscle: { ...meso.volumePerMuscle, back: { mev: 10, mav: 16, mrv: 22, current: 22, source: src } },
+    } as unknown as Mesocycle
+    expect(nextStep(runBands(atCap).find((b) => b.group === 'back')!)).toBe(0)
+    expect(nextRolloverChips(atCap).find((c) => c.label === 'Hát')?.text).toBe('Hát tart')
+  })
+
+  it('week-dot classes LAYER — a deload week that is also now keeps its now marker', () => {
+    // meso-shaped 4-week block whose CURRENT week is the deload one.
+    const deloadNow = { ...meso, weeks: 4, currentWeek: 4, phaseCurve: ['MEV', 'MAV', 'MRV', 'Deload'] } as unknown as Mesocycle
+    expect(weekDots(deloadNow).map(weekDotClass)).toEqual(['done', 'done', 'done', 'now deload'])
+    expect(weekDots(meso).map(weekDotClass)).toEqual(['done', 'done', 'now', undefined, undefined, 'deload'])
   })
   it('the hold sentence never leaks undefined when the changed muscle has no volume profile', () => {
     const noProfile = {
