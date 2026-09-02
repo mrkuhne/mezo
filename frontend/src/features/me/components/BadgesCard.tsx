@@ -1,5 +1,6 @@
 import type { GrowthBadge } from '@/data/types'
 import { huInt } from '@/shared/lib/huNum'
+import { pct } from '@/shared/lib/pct'
 
 /** Badge grid (mezo-rmi0.1): earned = sage wash + full sage ring + "✓ megvan"; unearned keeps a conic
  *  progress ring (--v = current/target %) and a muted icon — reachable badges stay visible. */
@@ -13,7 +14,7 @@ export function BadgesCard({ badges }: { badges: GrowthBadge[] }) {
       </div>
       <div className="gr-bdggrid rise" style={{ '--d': '140ms' } as React.CSSProperties}>
         {badges.map((b) => {
-          const v = b.achieved ? 100 : Math.min(100, Math.round((b.current / b.target) * 100))
+          const v = b.achieved ? 100 : Math.round(pct(b.current, b.target))
           return (
             <div key={b.key} className={b.achieved ? 'gr-bdg done' : 'gr-bdg'}>
               <div className="gr-ring" style={{ '--v': v } as React.CSSProperties}><span aria-hidden="true">{b.icon}</span></div>

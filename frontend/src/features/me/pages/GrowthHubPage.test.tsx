@@ -31,9 +31,9 @@ function renderAt(path: string) {
 beforeEach(() => {
   hooks.useProgressionProfile.mockReturnValue({ data: progressionProfileMock })
   hooks.useGamification.mockReturnValue({ profile: gamificationProfileMock, isPending: false })
-  hooks.useHabitSummary.mockReturnValue({ data: mockHabitSummary })
-  hooks.useQuestHistory.mockReturnValue({ data: mockQuestHistory })
-  hooks.useActivityHistory.mockReturnValue({ data: mockActivityHistory })
+  hooks.useHabitSummary.mockReturnValue({ data: mockHabitSummary, isPending: false })
+  hooks.useQuestHistory.mockReturnValue({ data: mockQuestHistory, isPending: false })
+  hooks.useActivityHistory.mockReturnValue({ data: mockActivityHistory, isPending: false })
   hooks.useAchievements.mockReturnValue({ data: achievementsMock })
   hooks.useDailyQuests.mockReturnValue({ quests: mockQuestDay, levelUps: [], rerollsLeft: 1, mode: 'mock' })
   hooks.useQuestActions.mockReturnValue({ reroll: vi.fn(), pending: false, consumeLevelUps: vi.fn() })
@@ -59,6 +59,17 @@ test('tile lines come from the page hooks — band lengths, habit counters, jour
   const completed = mockQuestHistory.filter((q) => q.status === 'completed').length
   expect(screen.getByRole('button', { name: 'Napló' })).toHaveTextContent(`${completed} ✓ · ${mockActivityHistory.length} ✎ · 30 nap`)
   expect(screen.getByRole('button', { name: 'Kitüntetések' })).toHaveTextContent('4 / 9 jelvény · 6 napos sorozat')
+})
+
+test('cold load (real mode, unresolved): Rutin and Napló render no tile line — Skillek/Kitüntetések unaffected', () => {
+  hooks.useHabitSummary.mockReturnValue({ data: { perfectMorningDays30: 0, perfectEveningDays30: 0, habits: [] }, isPending: true })
+  hooks.useQuestHistory.mockReturnValue({ data: [], isPending: true })
+  hooks.useActivityHistory.mockReturnValue({ data: [], isPending: true })
+  renderAt('/me/growth')
+  expect(screen.getByRole('button', { name: 'Rutin' }).querySelector('.mz-tile-line')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Napló' }).querySelector('.mz-tile-line')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Skillek' }).querySelector('.mz-tile-line')).not.toBeNull()
+  expect(screen.getByRole('button', { name: 'Kitüntetések' }).querySelector('.mz-tile-line')).not.toBeNull()
 })
 
 test('tiles navigate to their sibling routes', async () => {

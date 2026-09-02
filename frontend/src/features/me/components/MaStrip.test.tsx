@@ -78,6 +78,16 @@ test('no quests today: the empty line + the ＋ Tevékenység chip', () => {
   expect(screen.getByRole('button', { name: '＋ Tevékenység' })).toBeInTheDocument()
 })
 
+test('cold load (real mode, unresolved): no 0/0, no empty-day copy, one skeleton chip', () => {
+  hooks.useDailyQuests.mockReturnValue({ quests: [], levelUps: [], rerollsLeft: 0, mode: 'live', isPending: true })
+  const { container } = renderStrip()
+  expect(screen.queryByText('0/0')).not.toBeInTheDocument()
+  expect(screen.queryByText(/Ma még nincs küldetés/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/XP$/)).not.toBeInTheDocument()
+  expect(container.querySelectorAll('.gr-chip-skel')).toHaveLength(1)
+  expect(screen.getByRole('button', { name: '＋ Tevékenység' })).toBeInTheDocument()
+})
+
 test('expired quest chip is not a button and says csendben lejárt', () => {
   hooks.useDailyQuests.mockReturnValue({
     quests: [{ ...mockQuestDay[0], id: 'qx', status: 'expired', title: 'Nyújtás' }], levelUps: [], rerollsLeft: 0, mode: 'mock',

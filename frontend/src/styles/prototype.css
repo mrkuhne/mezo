@@ -5700,6 +5700,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .gr-chip.add { background: var(--mz-wash-gold); border-color: var(--mz-cell-amber-ink); color: var(--mz-cell-amber-ink); font-weight: 700; }
 .gr-chip.act { background: var(--mz-cell-lav-bg); border-color: var(--mz-cell-lav-ink); color: var(--mz-cell-lav-ink); cursor: default; }
 .gr-chip.act .gr-chip-mk { border-color: var(--mz-cell-lav-ink); color: var(--mz-cell-lav-ink); }
+.gr-chip-skel { min-width: 120px; background: var(--mz-gbar-bg); border-color: transparent; }
 .gr-ma-empty { font-size: 11px; font-weight: 300; color: var(--mz-ink-soft); padding: 2px 2px 6px; line-height: 1.5; }
 .gr-ma-empty b { color: var(--text-primary); font-weight: 600; }
 /* hub tiles */

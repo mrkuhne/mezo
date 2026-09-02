@@ -34,12 +34,12 @@ export function GrowthHubPage() {
   const legacy = params.get('tab')
   const { data: profile } = useProgressionProfile()
   const { profile: gam } = useGamification()
-  const { data: habitSummary } = useHabitSummary()
+  const { data: habitSummary, isPending: habitPending } = useHabitSummary()
   const { data: achievements } = useAchievements()
   const today = localDateString()
   const from = addDays(today, -29)
-  const { data: quests } = useQuestHistory(from, today)
-  const { data: activities } = useActivityHistory(from, today)
+  const { data: quests, isPending: questsPending } = useQuestHistory(from, today)
+  const { data: activities, isPending: activitiesPending } = useActivityHistory(from, today)
 
   if (legacy && TAB_REDIRECT[legacy]) return <Navigate to={TAB_REDIRECT[legacy]} replace />
 
@@ -48,9 +48,13 @@ export function GrowthHubPage() {
   const level = gam === GHOST_GAMIFICATION ? null : { level: gam.level, xpInLevel: gam.xpInLevel, xpForNext: gam.xpForNext }
 
   const skillLine = stats.skillCount > 0 ? <><b>{stats.skillCount} skill</b> · legjobb Lv {stats.bestLevel}</> : undefined
-  const rutinLine = <><b>{habitSummary.perfectMorningDays30}</b> reggel · <b>{habitSummary.perfectEveningDays30}</b> este <span className="mz-mut">/ 30</span></>
+  const rutinLine = habitPending ? undefined : (
+    <><b>{habitSummary.perfectMorningDays30}</b> reggel · <b>{habitSummary.perfectEveningDays30}</b> este <span className="mz-mut">/ 30</span></>
+  )
   const completed = quests.filter((q) => q.status === 'completed').length
-  const naploLine = <><b>{completed} ✓</b> · {activities.length} ✎ <span className="mz-mut">· 30 nap</span></>
+  const naploLine = (questsPending || activitiesPending) ? undefined : (
+    <><b>{completed} ✓</b> · {activities.length} ✎ <span className="mz-mut">· 30 nap</span></>
+  )
   const done = achievements.badges.filter((b) => b.achieved).length
   const kitLine = achievements.badges.length > 0
     ? <><b>{done} / {achievements.badges.length}</b> jelvény · <b>{gam.streakDays}</b> napos sorozat</>

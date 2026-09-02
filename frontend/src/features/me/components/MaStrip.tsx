@@ -24,7 +24,7 @@ const trim = (s: string, n = 26) => (s.length > n ? s.slice(0, n - 1) + '…' : 
 export function MaStrip() {
   const navigate = useNavigate()
   const date = localDateString()
-  const { quests, levelUps } = useDailyQuests(date)
+  const { quests, levelUps, isPending } = useDailyQuests(date)
   const { consumeLevelUps } = useQuestActions(date)
   const { data: activities } = useActivities(date)
   const [sheet, setSheet] = useState<{ quest: DailyQuest | null } | null>(null)
@@ -59,18 +59,22 @@ export function MaStrip() {
   return (
     <div className="gr-ma rise" style={{ '--d': '90ms' } as CSSProperties}>
       <button type="button" className="gr-ma-head" aria-label="Küldetések · a Nap fülön" onClick={goQuests}>
-        <span className="mz-eyebrow">Ma · <span>{done.length}/{quests.length}</span> küldetés</span>
-        <span className="gr-ma-xp">+{xp} XP</span>
+        <span className="mz-eyebrow">Ma{!isPending && <> · <span>{done.length}/{quests.length}</span> küldetés</>}</span>
+        {!isPending && <span className="gr-ma-xp">+{xp} XP</span>}
         <span className="gr-ma-chev" aria-hidden="true">›</span>
       </button>
-      {quests.length === 0 && (
+      {!isPending && quests.length === 0 && (
         <div className="gr-ma-empty">Ma még nincs küldetés — <b>a reggeli briefinggel jön.</b> Tevékenységet közben is logolhatsz.</div>
       )}
       <div className="gr-chips">
-        {quests.map(questChip)}
-        {activities.map((a) => (
-          <span key={a.id} className="gr-chip act"><span className="gr-chip-mk" aria-hidden="true">✎</span>{trim(a.text, 22)}{a.xpAwarded > 0 ? ` · +${a.xpAwarded}` : ''}</span>
-        ))}
+        {isPending
+          ? <span className="gr-chip gr-chip-skel" aria-hidden="true" />
+          : <>
+              {quests.map(questChip)}
+              {activities.map((a) => (
+                <span key={a.id} className="gr-chip act"><span className="gr-chip-mk" aria-hidden="true">✎</span>{trim(a.text, 22)}{a.xpAwarded > 0 ? ` · +${a.xpAwarded}` : ''}</span>
+              ))}
+            </>}
         <button type="button" className="gr-chip add" onClick={() => setSheet({ quest: null })}>＋ Tevékenység</button>
       </div>
       {sheet && <ActivityLogSheet quest={sheet.quest ?? undefined} onClose={() => setSheet(null)} />}

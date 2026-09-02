@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0)
 type: feature-platform
 status: in-progress
-updated: 2026-08-30
+updated: 2026-09-02
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -704,7 +704,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 - `ScreenSkeleton.tsx` — generic `role="status"` page skeleton for blank-flash views (`GoalPlannerPage`, `ActiveWorkoutPage`).
 - **`SubNavDropdown.tsx` was deleted** (`mezo-d20.9.1`) together with every per-section `pages/tabs.ts` — section shells are dissolved ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md)).
 - `DatePicker.tsx` — themed, domain-free **calendar popover** for read-only date navigation (`DatePickerProps`: `value`/`onChange`/`maxDate?`/`minDate?`/`formatLabel?`). A pill trigger shows the formatted selected day; clicking opens a Monday-first HU month grid (`role="dialog"`, window-`Escape`/backdrop close — the `SubNavDropdown` popover idiom); days after `maxDate` (default today, "no future") or before `minDate` are disabled. ISO `YYYY-MM-DD` bounds are string compares. All-inline `var(--…)` styling, no CSS class. **Intended as the reusable replacement for the ad-hoc `<input type="date">` sites** (currently 5: `LogDoseSheet`, `GoalPlannerPage`, `BiometricSheet`, `SleepLogSheet`, `MesocyclePlannerPage`) — not yet migrated. It is not a literal drop-in yet: the trigger is a fixed borderless pill (only the label *text* is customizable, via `formatLabel`), whereas those sites render a bordered field — migrating them needs a `renderTrigger?` prop to let the caller own the trigger's look (tracked in the follow-up cleanup). First consumer via `DayNavigator` (`habit` Rutin tab, `mezo-mpd0`).
-- `DayNavigator.tsx` — day-stepping composite over `DatePicker` (`DayNavigatorProps`: `date`/`onChange`/`maxDate?`/`minDate?`): `‹ prev | tappable date (opens the DatePicker calendar) | next ›`; arrows step ±1 day via `addDays`, the centre label reads "Ma" on today, `next` disabled at `maxDate` (default today), `prev` at `minDate`. Read-only date navigation; consumed by the habit Rutin tab (`RoutinesTab.tsx`, `mezo-mpd0`) — see [habit.md §2](habit.md).
+- `DayNavigator.tsx` — day-stepping composite over `DatePicker` (`DayNavigatorProps`: `date`/`onChange`/`maxDate?`/`minDate?`): `‹ prev | tappable date (opens the DatePicker calendar) | next ›`; arrows step ±1 day via `addDays`, the centre label reads "Ma" on today, `next` disabled at `maxDate` (default today), `prev` at `minDate`. Read-only date navigation; consumed by the Growth Rutin sub-page (`GrowthRutinPage.tsx`, `mezo-mpd0` — the former `RoutinesTab.tsx` folded in verbatim by `mezo-rmi0.1`) — see [habit.md §2](habit.md).
 - **`NotchCard.tsx` and `LabelMono.tsx` were deleted** in the Napív vocabulary sweep (`mezo-x3x0`): cards are now raw `<div className="card">` (+ an optional `.rad-*` utility + inline `color-mix` accent), and the section-label idiom is the `.label-mono` CSS class + the `SECTION_LABEL` const (`sectionLabel.ts`).
 - `Eyebrow.tsx` / `PageTitle.tsx` / `Display.tsx` — typography.
 - `Cta.tsx` / `Chip.tsx` / `ToolChip.tsx` / `ToolChipRow.tsx` — buttons & chips.

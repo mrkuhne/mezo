@@ -16,3 +16,9 @@ test('unearned badges carry a conic progress ring (--v = current/target %), earn
   const lifeXp = [...container.querySelectorAll('.gr-bdg')].find((b) => b.textContent?.includes('10 000 LIFE XP'))!
   expect(lifeXp.textContent).toContain('1 085 / 10 000')
 })
+
+test('an unearned badge with target 0 renders --v: 0, never NaN', () => {
+  const badges = [{ ...achievementsMock.badges[0], achieved: false, current: 0, target: 0 }]
+  const { container } = render(<div className="mz-play"><BadgesCard badges={badges} /></div>)
+  expect(container.querySelector('.gr-ring')?.getAttribute('style')).toContain('--v: 0')
+})
