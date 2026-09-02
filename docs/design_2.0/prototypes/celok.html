@@ -717,6 +717,20 @@
   .ptrig.mute { color: #A2958A; font-weight: 600; }
   .pfoot .stch { margin-left: auto; }
 </style>
+<style>
+  /* ============ ÖSSZEGZÉS ============ */
+  .sumpil { display: flex; align-items: center; gap: 9px; padding: 8px 11px; margin-bottom: 6px; border-radius: 14px; background: #fff;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .sumpil svg { flex: none; }
+  .sumpil b { font-size: 10.5px; display: block; }
+  .sumpil small { font-size: 8.5px; color: #6E6257; display: block; line-height: 1.35; }
+  .sumpil small b { display: inline; font-size: 8.5px; color: #2B2118; }
+  .sumplan { display: flex; gap: 8px; align-items: flex-start; padding: 4px 2px; font-size: 9.5px; }
+  .sumplan.top { margin-top: 4px; padding-top: 7px; border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .sumplan .rail { margin-top: 0; }
+  .sumplan em { font-style: normal; color: #A2958A; font-size: 8.5px; }
+  .sumrow .grow { font-size: 9.5px; font-weight: 300; }
+</style>
 <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
@@ -1808,17 +1822,44 @@
             </div>
 
             <div class="wst" id="ws5" style="display:none;">
-              <div class="float3d" style="padding:11px 13px;margin-bottom:9px;background:linear-gradient(140deg,#E9F1E2,#FFFFFF 72%);">
-                <div class="mrow"><svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-futas"/></svg><div class="grow"><b style="font-size:12.5px;">Félmaraton tavasszal</b><div class="p-eyebrow" style="color:#4E6B42;">Egészség · Teljesítmény · máj 10-ig</div></div></div>
-                <div style="margin-top:8px;">
-                  <div class="sumrow"><span class="k">Keret</span><span>Egészség + képesség</span></div>
-                  <div class="sumrow"><span class="k">Pillérek</span><span>4 aktív · futás, hosszú futás, alvás, terhelés-gard</span></div>
-                  <div class="sumrow"><span class="k">Ha–akkor</span><span>2 terv</span></div>
-                  <div class="sumrow"><span class="k">XP</span><span>pillér-nap → endurance · recovery skill</span></div>
+              <div class="float3d d-h" style="padding:11px 13px;margin-bottom:9px;background:linear-gradient(140deg,#E9F1E2,#FFFFFF 72%);">
+                <div class="mrow" style="align-items:flex-start;">
+                  <svg width="34" height="34" viewBox="0 0 100 100" style="flex:none;"><use href="#i-futas"/></svg>
+                  <div class="grow">
+                    <b style="font-size:13px;display:block;">Félmaraton tavasszal</b>
+                    <div class="dimband" style="margin-top:4px;"><span class="dimchip d-h"><i></i>Egészség</span><span class="dimchip d-a"><i></i>Teljesítmény</span></div>
+                  </div>
+                </div>
+                <div class="q" style="font-family:'Fraunces',Georgia,serif;font-style:italic;font-size:10.5px;margin-top:8px;color:#2B2118;">„Olyan állóképesség, amivel 21 km-t végigfutok — és közben erősebb, egészségesebb leszek.”</div>
+                <div class="mcells" style="display:flex;gap:5px;margin-top:9px;">
+                  <span style="flex:1;border-radius:11px;padding:5px 2px 4px;text-align:center;background:rgba(255,255,255,0.8);color:#4E6B42;"><b style="display:block;font-size:11.5px;">máj 10.</b><small style="font-size:6px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;">határidő</small></span>
+                  <span style="flex:1;border-radius:11px;padding:5px 2px 4px;text-align:center;background:rgba(255,255,255,0.8);color:#4E6B42;"><b style="display:block;font-size:11.5px;">36 hét</b><small style="font-size:6px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;">időkeret</small></span>
+                  <span style="flex:1;border-radius:11px;padding:5px 2px 4px;text-align:center;background:rgba(255,255,255,0.8);color:#4E6B42;"><b style="display:block;font-size:11.5px;">4</b><small style="font-size:6px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;">pillér</small></span>
                 </div>
               </div>
-              <div class="framecard"><div class="lb">3 aktív célod már van</div><p>A negyediket csak úgy tudod aktiválni, ha egyet parkolsz — a kutatás szerint 3–5 fölött a célok egymást eszik. A parkolt cél nem vész el.</p></div>
-              <div class="shrow"><button class="ghost" data-toast="Mentve tervezettként">Mentés tervezettként</button><button class="cta" data-sheet="sh-cap">Aktiválás</button></div>
+
+              <div class="lsec" style="padding-top:2px;"><span class="p-eyebrow">Így mérjük · a cél-oldalad így fog kinézni</span></div>
+              <div class="sumpil"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-futas"/></svg><div class="grow"><b>Futás</b><small>hetente <b>3 futás</b> a futás-naplóból · szokás</small></div><span class="kind">3× / hét</span></div>
+              <div class="sumpil"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-cel"/></svg><div class="grow"><b>Leghosszabb futás</b><small><b>8 → 21 km</b> máj 10-ig · ütemvonal: ma 8, dec 1-re 12, márc 1-re 17</small></div><span class="kind">cél-érték</span></div>
+              <div class="sumpil"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-alvas"/></svg><div class="grow"><b>Alvás</b><small>7-napos átlag <b>legalább 7 óra</b> az alvás-naplóból</small></div><span class="kind">átlag</span></div>
+              <div class="sumpil"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-sport"/></svg><div class="grow"><b>Terhelés-gard</b><small>akut:krónikus terhelés <b>≤ 1,3</b> — a röpi + futás együtt ne szaladjon el</small></div><span class="kind">gard</span></div>
+              <div class="wk7" data-dots="nnnnnnn" style="--d:0ms;margin:6px 2px 2px;"><span class="lbl">ma még minden üres · az első nyíl 5 adat-nap után</span></div>
+
+              <div class="lsec"><span class="p-eyebrow">Amire Mezo figyel · ha–akkor</span><span class="cnt">2 szabály</span></div>
+              <div class="sumplan"><span class="rail ha">Ha</span><span class="grow">röpi-edzést logolsz kedden vagy csütörtökön</span></div>
+              <div class="sumplan"><span class="rail akkor">Akkor</span><span class="grow">másnap reggel 30 perc laza kocogás <em>· Mezo szól 07:00-kor</em></span></div>
+              <div class="sumplan top"><span class="rail ha">Ha</span><span class="grow">a reggeli check-in energiád ≤ 4</span></div>
+              <div class="sumplan"><span class="rail akkor">Akkor</span><span class="grow">a futás 20 percre rövidül <em>· Mezo a check-in után szól</em></span></div>
+
+              <div class="lsec"><span class="p-eyebrow">Aktiválás után</span></div>
+              <div class="qcard" style="padding:4px 12px;">
+                <div class="sumrow"><svg width="18" height="18" viewBox="0 0 100 100" style="flex:none;"><use href="#i-nap"/></svg><span class="grow">Holnaptól a <b>Nap „Célok · ma”</b> csempéjén számol a 4 pillér.</span></div>
+                <div class="sumrow"><svg width="18" height="18" viewBox="0 0 100 100" style="flex:none;"><use href="#i-heti"/></svg><span class="grow">Hétfőnként a <b>Heti</b> visszatekintésben nyíl + egy mondat.</span></div>
+                <div class="sumrow"><svg width="18" height="18" viewBox="0 0 100 100" style="flex:none;"><use href="#i-growth"/></svg><span class="grow">Teljesült pillér-nap → XP az <b>állóképesség</b> és <b>regeneráció</b> skillre.</span></div>
+                <div class="sumrow"><svg width="18" height="18" viewBox="0 0 100 100" style="flex:none;"><use href="#i-mezo"/></svg><span class="grow">Ez lesz a <b>4. aktív célod</b>. Mezo figyeli, ha két cél ugyanazt a pihenőt kéri (Kockahas edzés ↔ terhelés-gard), és szól.</span></div>
+              </div>
+
+              <div class="shrow"><button class="ghost" data-toast="Mentve tervezettként · bármikor aktiválod">Mentés tervezettként</button><button class="cta" data-toast="Félmaraton aktív ✓ · 4 aktív cél">Aktiválás</button></div>
               <button class="ghost" data-wnext="4" style="width:100%;margin-top:6px;">← Vissza</button>
             </div>
           </div>
@@ -1904,15 +1945,6 @@
           <div class="catgrp"><div class="p-eyebrow">Emberek · Életjel</div><div class="chips sage"><button>Társas említések</button><button>Mozgás-gyűrű</button><button>Pihenés-gyűrű</button><button>Lélek-gyűrű</button></div></div>
           <div class="shrow"><button class="ghost" data-close>Mégse</button><button class="cta" data-close data-toast="Pillér hozzáadva">Hozzáadás</button></div>
         </div>
-        <div class="bsheet" id="sh-cap">
-          <div class="sh-grab"></div>
-          <div class="sh-head"><div><div class="sh-eyebrow">3 aktív cél már van</div><div class="sh-title">Melyiket parkoljuk?</div></div><button class="sh-x" data-close>✕</button></div>
-          <div class="caprow d-h" data-cap><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-life-regeneracio"/></svg><div class="grow"><b>Kockahas</b><small>↗ 71% · 4. hét · nov 30-ig</small></div><span class="rad"></span></div>
-          <div class="caprow d-a on" data-cap><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-life-produktivitas"/></svg><div class="grow"><b>Side hustle</b><small>→ 58% · 2. hét · nincs határidő</small></div><span class="rad"></span></div>
-          <div class="caprow d-r" data-cap><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-life-kapcsolatok"/></svg><div class="grow"><b>Az utolsó barátnő</b><small>↗ 64% · 5. hét</small></div><span class="rad"></span></div>
-          <p class="habnote" style="margin-top:6px;">Mezo a leglaposabb nyilút jelöli elő — de a döntés a tiéd. A parkolt cél pillérei nem számolnak, a történet megmarad.</p>
-          <div class="shrow"><button class="ghost" data-close>Mégse</button><button class="cta" data-close data-toast="Félmaraton aktív · Side hustle parkol">Parkolom és aktiválom</button></div>
-        </div>
         <div class="bsheet" id="sh-more">
           <div class="sh-grab"></div>
           <div class="sh-head"><div><div class="sh-eyebrow">Cél · műveletek</div><div class="sh-title">Szerkesztés</div></div><button class="sh-x" data-close>✕</button></div>
@@ -1945,7 +1977,7 @@
           <li><strong>Kockahas</strong> — az öt pillér öt fajtát mutat: <em>kapcsolt</em> (a meglévő súlycél-motor ítélete), <em>átlag</em>, <em>szokás</em>, plusz egy <strong>↘ borostyán</strong> pillér a „hány hét a fordulásig” mondattal. Koppints a <strong>Hónap</strong> chipre: a pöttyök 28-napos hőtérképpé nyílnak.</li>
           <li><strong>Side hustle</strong> — <em>baseline</em>-pillér (a saját 28-napos mediánodhoz mérve, a jelölő a mediánnál) és egy <strong>üres</strong> pillér: nincs bejegyzés → szaggatott pöttyök, „—”, nincs nyíl. Üres ≠ nulla.</li>
           <li><strong>Barátnő</strong> — társas említések baseline-je, Életjel-gyűrű átlag, és <strong>Mezo pillért javasol</strong> (Hangulat) a napló alapján — elfogad / most nem.</li>
-          <li><strong>Új cél</strong> — öt lépés: cél + miért → <strong>Mezo olvasata</strong> (kinézet-keret felismerve, egészség-keret felajánlva, nem tiltva) → AI-pillérjavaslat a zárt katalógusból (kapcsolók, ＋ katalógus-sheet) → akadály + ha–akkor → összegzés; az Aktiválás a <strong>3-as kapu</strong> sheetjét nyitja: melyiket parkoljuk.</li>
+          <li><strong>Új cél</strong> — öt lépés: cél + miért → <strong>Mezo olvasata</strong> (kinézet-keret felismerve, egészség-keret felajánlva, nem tiltva) → AI-pillérjavaslat a zárt katalógusból (kapcsolók, ＋ katalógus-sheet) → akadály + ha–akkor (HA/AKKOR kártyák, alattuk a jel, amiből Mezo felismeri a helyzetet) → <strong>összegzés = a leendő cél-oldal előnézete</strong>: mit mérünk miből, milyen szabályra figyel Mezo, mi történik aktiválás után. Nincs aktív-cél korlát — Mezo csak jelez, ha két cél egymást szorítja.</li>
           <li><strong>Nap-csempe · Heti · Growth</strong> — a három beágyazás: a Nap „Célok · ma” csempéje (x/y pillér élőben), a Heti cél-kártya (nyíl + egy mondat célonként + Mezo tanulsága egy CTA-val), a Growth skill-sorok cél-chippel.</li>
         </ul>
       </div>
@@ -1955,6 +1987,7 @@
           <li>A súlycél-motor és a recept — a Kockahas „Testkompozíció” pillére csak <em>olvassa</em> az ütem-ítéletet; a Súly-idővonal külön oldalon marad.</li>
           <li>Nulla új naplózó felület: minden pillér a meglévő jelekből (MetricSeries, activity-ledger, habit, needs_day, súlycél) számol.</li>
           <li>A ↘ soha nem piros, sosem von le; a <code>no_data</code> sosem <code>miss</code>; a nyíl minimum-adat-kapu mögött van.</li>
+          <li>Nincs felső korlát az aktív célokra — a parkolás a te eszközöd, nem kényszer; a konfliktus-figyelés (két cél ugyanazt a pihenőt kéri) Mezo mondata, nem tiltás.</li>
         </ul>
       </div>
       <div>
@@ -2057,7 +2090,7 @@
   sback.addEventListener('click', closeSheets);
   document.querySelectorAll('[data-cap]').forEach(function (r) { r.addEventListener('click', function () { document.querySelectorAll('[data-cap]').forEach(function (x) { x.classList.remove('on'); }); r.classList.add('on'); }); });
   document.querySelectorAll('.togg').forEach(function (t) { t.addEventListener('click', function (e) { e.stopPropagation(); t.classList.toggle('on'); var c = t.closest('.pilcard'); if (c) { c.classList.toggle('on', t.classList.contains('on')); c.classList.toggle('off', !t.classList.contains('on')); } }); });
-  $('unpark').addEventListener('click', function () { openSheet('sh-cap'); });
+  $('unpark').addEventListener('click', function () { toast('Spanyol B2 újra aktív · 4 aktív cél'); });
 
   /* ---- toast ---- */
   var tt = $('toast'), ttimer;
