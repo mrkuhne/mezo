@@ -624,8 +624,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     weekLessonsHooks.ts, weeklyReviewApi.ts, weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
   - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, EnHubPage.tsx, GoalPlannerPage.tsx,
-    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthHubPage.tsx, GrowthSkillsPage.tsx, JournalPage.tsx, NightPage.tsx,
-    NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx,
+    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthHubPage.tsx, GrowthRutinPage.tsx, GrowthSkillsPage.tsx, JournalPage.tsx,
+    NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx,
     PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx, RoutineEditorPage.tsx,
     SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx,
     WeekLessonsPage.tsx, WeightPage.tsx
@@ -638,10 +638,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx, GrowthJournalCard.tsx, MaStrip.tsx, MentionRow.tsx,
     NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx,
     NotificationPreviewHeader.tsx, PerksCard.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx,
-    PhaseReferenceRow.tsx, PushInstallGate.tsx, RemDurationCard.tsx, RoutinesTab.tsx, SkillBandCard.tsx,
-    SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx,
-    WeekDayCard.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx,
-    WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
+    PhaseReferenceRow.tsx, PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx,
+    SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx,
+    WeekDayTile.tsx, WeekDiscoveries.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx,
+    WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
     WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, gratitudeStreak.ts,
     growthJournal.ts, growthStats.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts,
