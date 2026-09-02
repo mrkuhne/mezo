@@ -21,6 +21,7 @@ import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
 import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPage'
 import { MesoOverviewPage } from '@/features/train/pages/MesoOverviewPage'
+import { MesoDayPage } from '@/features/train/pages/MesoDayPage'
 import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
 import { MesoComparePage } from '@/features/train/pages/MesoComparePage'
 import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEditorPage'
@@ -174,6 +175,9 @@ export const routes: RouteObject[] = [
       // dynamic anyway). Full-screen sibling; the pair travels in `?a=&b=`.
       { path: 'train/mesocycles/compare', element: <MesoComparePage /> },
       { path: 'train/mesocycles/:id', element: <MesocycleBuilderPage /> },
+      // ONE day of a running block (mezo-d20.15): the run page is status-first and the
+      // editing lives here, one level down. The day token travels URL-encoded ('H%C3%A9t').
+      { path: 'train/mesocycles/:id/days/:day', element: <MesoDayPage /> },
       { path: 'train/mesocycles/:id/overview', element: <MesoOverviewPage /> },
       { path: 'train/custom/new', element: <CustomWorkoutBuilderPage /> },
       { path: 'train/custom/:id', element: <CustomWorkoutBuilderPage /> },
