@@ -150,6 +150,17 @@ test('the hero count excludes a prepended cross-day linked card', async () => {
   expect(await screen.findByText('1 üzenet · a napod fonala')).toBeInTheDocument()
 })
 
+// mezo-ho9k: ?n= must always land on the Üzenetek tab, overriding even an explicit
+// ?tab=eletjelek — and the target card renders expanded (full body), not collapsed.
+test('a deeplink ?tab=eletjelek mellett is az Üzenetek tabra érkezik, a cél-kártya kibontva (mezo-ho9k)', async () => {
+  serveFeeds({ [TODAY]: [todayMorning] })
+  renderAt(`/nap/uzenetek?n=${todayMorning.id}&d=${TODAY}&tab=eletjelek`)
+
+  expect(await screen.findByRole('tab', { name: /Üzenetek/ })).toHaveAttribute('aria-selected', 'true')
+  // a cél-kártya teljes (nem összecsukott sor): a törzse látszik
+  expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
+})
+
 // Finding 2: the common case is SAME-day — `n` names a row already inside today's own thread.
 // It must not be duplicated as a second card, and it must still get scrolled/highlighted.
 test('scrolls to the existing row for a same-day deeplink, without duplicating it', async () => {

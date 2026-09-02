@@ -85,7 +85,10 @@ export function NapMezoPage() {
   // Üzenetek | Életjelek tab-váltó (mezo-ho9k): a szál (sorrend, tartalom, a hero számláló
   // forrása) érintetlen — ez CSAK megjelenítési bontás a `?tab=` URL-en keresztül.
   type MezoTab = 'uzenetek' | 'eletjelek'
-  const tab: MezoTab = params.get('tab') === 'eletjelek' ? 'eletjelek' : 'uzenetek'
+  // ?n= jelenlétekor a tab MINDIG Üzenetek — felülírja a ?tab=eletjelek-et is (mezo-ho9k):
+  // a deeplink mindig egy üzenetre (vagy a b3pp.36 intervenció-push kártyájára) mutat, sosem
+  // egy Életjel-nudge-ra, tehát a cél csak az Üzenetek pane-ben létezhet.
+  const tab: MezoTab = deepLinkId ? 'uzenetek' : params.get('tab') === 'eletjelek' ? 'eletjelek' : 'uzenetek'
   const setTab = (t: MezoTab) => {
     const next = new URLSearchParams(params)
     if (t === 'eletjelek') next.set('tab', 'eletjelek')
