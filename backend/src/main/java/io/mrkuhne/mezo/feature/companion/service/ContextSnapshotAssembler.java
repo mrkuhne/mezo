@@ -151,11 +151,12 @@ public class ContextSnapshotAssembler {
     }
 
     /**
-     * The morning-message variant (companion-feed, spec §3): same block composition as
-     * {@link #render}, but strips weight/sleep entirely at the source — the morning message is
-     * generated BEFORE those get logged for the day, and a prompt prohibition alone is not
-     * enough (the model would still see and could still leak the numbers). Also never carries
-     * the [Emberek] block (mezo-x6oa): that would be the companion bringing people up unprompted.
+     * The morning-message variant (companion-feed, spec §3): eight blocks — the same composition
+     * as {@link #render}'s nine minus the [Emberek] circle (mezo-x6oa: that would be the
+     * companion bringing people up unprompted) — and it strips weight/sleep entirely at the
+     * source. The morning message is generated BEFORE those get logged for the day, and a prompt
+     * prohibition alone is not enough (the model would still see and could still leak the
+     * numbers).
      */
     public String renderWithoutBiometrics(UUID userId, LocalDate today) {
         return HEADER + today + "):\n"
