@@ -47,6 +47,12 @@ test('the five section eyebrows all render', () => {
   expect(screen.getByText('Előző blokk')).toBeInTheDocument()
 })
 
+test('the block-arc spark carries a per-week label row — most / csúcs / deload', () => {
+  setup('back') // W3 is current, W5 is the last ramp week (csúcs), W6 is deload
+  const labels = Array.from(document.querySelectorAll('.mz-arclbl span')).map((n) => n.textContent)
+  expect(labels).toEqual(['W1', 'W2', 'W3 · most', 'W4', 'W5 · csúcs', 'deload'])
+})
+
 test('the derivation has 4 numbered steps', () => {
   setup('back')
   const nums = document.querySelectorAll('.mz-dnum')

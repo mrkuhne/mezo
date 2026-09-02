@@ -8,8 +8,8 @@
 // per-day muscle-group joins so a day's set count is counted exactly once.
 // ============================================================
 import type { Mesocycle, MesoVolumeArc, MuscleTier } from '@/data/types'
-import { runBands, type RunBand } from '@/features/train/logic/mesoBands'
-import { BUDGET_GROUP_LABELS, budgetGroup, daySessionBreakdown } from '@/features/train/logic/setBudget'
+import { runBands } from '@/features/train/logic/mesoBands'
+import { BUDGET_GROUP_LABELS, budgetGroup, countsForVolume, daySessionBreakdown } from '@/features/train/logic/setBudget'
 
 export interface WeekSummary {
   total: number
@@ -23,13 +23,17 @@ function plannedInWeek(arc: MesoVolumeArc, week: number): number {
   return arc.muscles.reduce((sum, m) => sum + (m.weeks.find((w) => w.week === week)?.planned ?? 0), 0)
 }
 
-/** total = Σ planned of currentWeek; prev = Σ planned of currentWeek-1 (null at week 1). */
-export function weekSummary(arc: MesoVolumeArc, bands: RunBand[]): WeekSummary {
+/** total = Σ planned of currentWeek; prev = Σ planned of currentWeek-1 (null at week 1). `up`/
+ *  `hold` are counted from the TILES (not runBands) so the stat strip always agrees with what
+ *  the mosaic actually shows — a grind-held muscle (statusTone 'gold', „= tartás · grind a
+ *  múlt héten") reads as `up` under a bare RunBand.step (its band isn't at the ceiling and
+ *  isn't a maintain tier), but its tile plainly reads as a hold. */
+export function weekSummary(arc: MesoVolumeArc, tiles: MuscleWeekTile[]): WeekSummary {
   const total = plannedInWeek(arc, arc.currentWeek)
   const prev = arc.currentWeek > 1 ? plannedInWeek(arc, arc.currentWeek - 1) : null
   const delta = prev === null ? null : total - prev
-  const up = bands.filter((b) => b.step === 'up').length
-  const hold = bands.length - up
+  const up = tiles.filter((t) => t.statusTone === 'sage').length
+  const hold = tiles.length - up
   return { total, prev, delta, up, hold }
 }
 
@@ -116,7 +120,7 @@ export function whereItWorks(meso: Mesocycle, group: string): WeekWorkDay[] {
     const hit = daySessionBreakdown(d).find((r) => r.group === group)
     if (!hit) continue
     const exercises = d.exercises
-      .filter((e) => budgetGroup(e.muscle) === group)
+      .filter((e) => budgetGroup(e.muscle) === group && countsForVolume(e))
       .map((e) => ({ name: e.name, sets: e.workingSets }))
     out.push({ day: d.day, type: d.type, sets: hit.sets, exercises })
   }

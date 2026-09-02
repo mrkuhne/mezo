@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { muscleTiles, previousBlock, weekSummary, whereItWorks } from './mesoWeek'
-import { runBands } from './mesoBands'
 import type { Mesocycle, MesoVolumeArc } from '@/data/types'
 
 const src = { baseline: { name: 'RP', mev: 10, mav: 16, mrv: 22 }, adjustments: [], confidence: 0.5 }
@@ -22,10 +21,13 @@ const meso = {
   volumeRecompute: { lastRun: '', nextRun: '', trigger: '', changes: [{ muscle: 'chest', change: 'tart (14)', reason: 'tartás' }] },
   days: [
     {
-      day: 'Hét', type: 'Upper', muscle: 'back+chest', exerciseCount: 2,
+      day: 'Hét', type: 'Upper', muscle: 'back+chest', exerciseCount: 3,
       exercises: [
         { id: 'e1', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 1, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
         { id: 'e2', name: 'Bench Press', muscle: 'chest-mid', warmupSets: 1, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+        // volume-exempt (posture/plyo) back work — must count toward neither `sets` (already
+        // excluded by daySessionBreakdown) NOR the exercise chips, so the two stay in sync.
+        { id: 'e1b', name: 'Band Pull-Apart', muscle: 'back-mid', warmupSets: 0, workingSets: 2, repMin: 15, repMax: 20, targetRIR: 3, type: 'isolation', countsTowardVolume: false },
       ],
     },
     {
@@ -53,18 +55,22 @@ const arc: MesoVolumeArc = {
 
 describe('weekSummary', () => {
   it('sums this week vs. last week and derives delta', () => {
-    const s = weekSummary(arc, runBands(meso))
+    const s = weekSummary(arc, muscleTiles(arc, meso))
     expect(s.total).toBe(16 + 14 + 6)
     expect(s.prev).toBe(14 + 12 + 6)
     expect(s.delta).toBe(s.total - s.prev!)
-    expect(s.up).toBe(2) // back (emphasize) + chest (grow), both under ceiling
-    expect(s.hold).toBe(1) // calf (maintain)
+    // up/hold are counted from the TILES, so they agree with what the mosaic actually shows:
+    // back ramps (sage) → up; chest is grind-held (gold, „= tartás") and calf is maintain
+    // (mut) → both count as hold, even though chest's raw RunBand.step would read 'up'
+    // (its band isn't at the ceiling and isn't a maintain tier).
+    expect(s.up).toBe(1) // back only
+    expect(s.hold).toBe(2) // chest (grind hold) + calf (maintain)
   })
 
   it('prev is null at week 1', () => {
     const w1arc: MesoVolumeArc = { ...arc, currentWeek: 1 }
     const w1meso = { ...meso, currentWeek: 1 } as unknown as Mesocycle
-    const s = weekSummary(w1arc, runBands(w1meso))
+    const s = weekSummary(w1arc, muscleTiles(w1arc, w1meso))
     expect(s.prev).toBeNull()
     expect(s.delta).toBeNull()
   })
@@ -107,6 +113,13 @@ describe('whereItWorks', () => {
     expect(rows[0].exercises).toEqual([{ name: 'Chest Supported Row', sets: 4 }])
     expect(rows[1]).toMatchObject({ day: 'Csü', type: 'Upper', sets: 3 })
     expect(rows[1].exercises).toEqual([{ name: 'Lat Pulldown', sets: 3 }])
+  })
+
+  it('exercise chips exclude volume-exempt work, matching the header sets', () => {
+    const [heten] = whereItWorks(meso, 'back')
+    // Band Pull-Apart (countsTowardVolume: false) must not appear — it isn't in `sets` either.
+    expect(heten.exercises.map((e) => e.name)).not.toContain('Band Pull-Apart')
+    expect(heten.exercises.reduce((n, e) => n + e.sets, 0)).toBe(heten.sets)
   })
 
   it('empty for a group with no days', () => {

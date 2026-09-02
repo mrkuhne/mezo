@@ -81,6 +81,9 @@ export function MesoMusclePage() {
   const hold = tile.statusTone !== 'sage'
   const weekOneValue = tile.series[0]?.planned ?? tile.mev
   const seriesToNow = tile.series.filter((s) => s.week <= arc.currentWeek)
+  // The last non-deload week in the arc — the block's own peak/csúcs week (the prototype's
+  // #page-muscle .arclbl labels this „csúcs"; deload, when present, is always the FINAL week).
+  const lastRampIdx = tile.series.reduce((last, s, i) => (s.deload ? last : i), -1)
 
   return (
     <MozaikPage tone={tone}>
@@ -127,6 +130,13 @@ export function MesoMusclePage() {
                     background: s.isCurrent ? 'var(--mz-gold-bar)' : fam.deep,
                   }}
                 />
+              ))}
+            </div>
+            <div className="mz-arclbl">
+              {tile.series.map((s, i) => (
+                <span key={s.week}>
+                  {s.deload ? 'deload' : s.isCurrent ? `W${s.week} · most` : i === lastRampIdx ? `W${s.week} · csúcs` : `W${s.week}`}
+                </span>
               ))}
             </div>
           </div>

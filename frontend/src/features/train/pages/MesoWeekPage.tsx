@@ -15,7 +15,7 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { MozaikPage, Mosaic, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { nextRolloverChips, runBands } from '@/features/train/logic/mesoBands'
+import { nextRolloverChips } from '@/features/train/logic/mesoBands'
 import { muscleTiles, weekSummary } from '@/features/train/logic/mesoWeek'
 import { regionColor, type RegionKey } from '@/features/train/logic/muscleColors'
 import { VolumeBand } from '@/features/train/components/VolumeBand'
@@ -74,9 +74,8 @@ export function MesoWeekPage() {
     )
   }
 
-  const bands = runBands(meso)
-  const summary = weekSummary(arc, bands)
   const tiles = muscleTiles(arc, meso)
+  const summary = weekSummary(arc, tiles)
   const chips = nextRolloverChips(meso)
   const emphasized = tiles[0]
   const peak = emphasized?.series[4]
