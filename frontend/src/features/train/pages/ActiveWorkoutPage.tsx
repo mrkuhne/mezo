@@ -20,6 +20,7 @@ import { huWeekdayFull, localDateString } from '@/shared/lib/dates'
 import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
+import { actualMinutes } from '@/features/train/logic/actualDuration'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
 import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromPlan } from '@/features/train/logic/prepBriefing'
 import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
@@ -951,6 +952,17 @@ function ActiveWorkoutSession({
         challenges={summaryChallenges}
         medals={sessionMedals}
         durationMin={W.durationEst}
+        // The measured counterpart (mezo-1jm8): `open` (todaySession.openWorkout) is the one
+        // WorkoutInstanceResponse this page already holds — the /today query's in-progress
+        // instance, seeded above the phase machine. Real mode is the only mode where it is ever
+        // non-null; mock mode has no todaySession, so this stays null there (durationMin-only,
+        // unchanged). Nothing here refetches after finishAndCelebrate's POST resolves, so
+        // `open.finishedAt` never appears on this page — actualMinutes then falls back to
+        // `open.activeSeconds` (the live work-time accrued so far), or to null pre-measurement.
+        // The finished/authoritative number is what the review page (WorkoutReviewPage, which
+        // reads the persisted WorkoutDetailResponse) shows — that is the surface this feature
+        // is really for.
+        actualMin={actualMinutes(open ?? {})}
         // The draft lives on the page, not in the shell: the summary/complete phase flip
         // remounts nothing here, but the note must also survive a trip back to `active`.
         note={closing ? null : closingNote.trim() || null}

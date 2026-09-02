@@ -16,6 +16,7 @@ import { useChallenges, useMedals, useTemplateDayChain, useWorkoutDetail, useWor
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
+import { actualMinutes } from '@/features/train/logic/actualDuration'
 import { deriveSummaryStats } from '@/features/train/logic/summaryStats'
 import type { SummarySetChip } from '@/features/train/logic/summaryStats'
 import { deriveComparison } from '@/features/train/logic/workoutComparison'
@@ -122,6 +123,7 @@ export function WorkoutReviewPage() {
       challenges={challengeRows}
       medals={medals}
       durationMin={detail.durationEst ?? null}
+      actualMin={actualMinutes(detail)}
       comparison={comparison}
       prevTopByName={prevTopByName}
       footer={stepping}
