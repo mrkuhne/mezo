@@ -152,10 +152,14 @@ test('az Üzenetek karika badge-e a szál TELJES hosszát viseli, a nudge-okkal 
   expect(badge).toBeGreaterThan(1) // demo-briefing + Életjel-nudge-ok
 
   // A badge NEM a fejléc saját, rövidebb listáját számolja (ez volt a mezo-atry hiba): a
-  // szál a shell providereé, tehát pontosan annyi, ahány kártya az oldalon megjelenik.
+  // szál a shell providereé, tehát pontosan annyi kártya jelenik meg összesen a két tabon,
+  // ahányat a badge számol (mezo-ho9k: a tab-váltó csak megjelenítési bontás, a szál egy).
   await user.click(btn)
   await screen.findByText('Mezo · ma')
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(badge)
+  const uzenetekCards = document.querySelectorAll('.nap-mzmsg, .nap-mzrow').length
+  await user.click(screen.getByRole('tab', { name: /Életjelek/ }))
+  const eletjelekCards = document.querySelectorAll('.nap-mzmsg, .nap-mzrow').length
+  expect(uzenetekCards + eletjelekCards).toBe(badge)
 })
 
 test('az értesítés-karika badge-e az olvasatlan értesítések számát viseli', async () => {

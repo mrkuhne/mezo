@@ -115,6 +115,7 @@ describe('toNudgeMessage', () => {
       paragraphs: [NUDGE_COPY.hidratacio],
       refs: [],
       meta: 'Életjel-figyelő',
+      source: 'eletjel',
     })
   })
 
@@ -130,5 +131,9 @@ describe('toNudgeMessage', () => {
       expect(NUDGE_COPY[k].length).toBeGreaterThan(0)
       expect(toNudgeMessage({ key: k, at: '2026-08-17T10:00:00' }).paragraphs).toEqual([NUDGE_COPY[k]])
     }
+  })
+
+  test('toNudgeMessage stamps source: eletjel — the tab partition key (mezo-ho9k)', () => {
+    expect(toNudgeMessage({ key: 'hidratacio', at: '2026-05-22T12:00:00.000Z' }).source).toBe('eletjel')
   })
 })

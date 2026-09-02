@@ -28,7 +28,7 @@ import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 /** Prototype #page-vital tile skins, verbatim (eyebrow ink · mini-ring color ·
  *  wash · icon · aria). Labels differ from NEED_META's sheet names on purpose —
  *  the page speaks the prototype's tile language (Étel, Kapcsolat). */
-const VITAL_TILE: Record<NeedKey, {
+export const VITAL_TILE: Record<NeedKey, {
   eyebrow: string; ink: string; ring: string; wash: string; icon: ClayIconName; aria: string
 }> = {
   energia: { eyebrow: 'Étel', ink: '#4E6B42', ring: '#6E8B5E', wash: 'mz-w-sage', icon: 'i-fuel', aria: 'Étel logolása' },
