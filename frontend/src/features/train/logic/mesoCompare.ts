@@ -17,6 +17,9 @@ import type {
   MesoStrengthDelta,
   MesocycleReportResponse,
 } from '@/data/train/trainApi'
+import type { Mesocycle, MesoVolumeArc, MuscleTier } from '@/data/types'
+import { BUDGET_GROUP_LABELS } from '@/features/train/logic/setBudget'
+import { isLegacyPlan } from '@/features/train/logic/mesoPlan'
 
 /** One week of one muscle, both runs on the same row. Null = that run has no such week. */
 export interface CompareVolumeWeekRow {
@@ -203,4 +206,65 @@ export function contextDiff(
     bValue: bt ? m.pick(bt) : null,
     unit: m.unit,
   })).filter((r) => r.aValue != null || r.bValue != null)
+}
+
+export interface PeakVolumeRow {
+  group: string
+  label: string
+  aPeak: number | null
+  aCeiling: number | null
+  bPeak: number | null
+}
+
+/** The higher of a muscle's per-week PLANNED sets across the whole arc — the block's actual ceiling touch, not the static MRV. */
+function peakPlanned(arc: MesoVolumeArc['muscles'][number] | undefined): number | null {
+  if (!arc || arc.weeks.length === 0) return null
+  return Math.max(...arc.weeks.map((w) => w.planned))
+}
+
+/**
+ * The band language's "current → ceiling" collapsed to one number per side: how high each
+ * run actually climbed for a muscle, next to A's own MRV ceiling (the plafon the reader is
+ * judging A's peak against). Muscles are the union of both arcs, A's order first — same
+ * convention as `alignVolumeWeeks`. A run with no volume arc at all (`null`) contributes
+ * nothing; a muscle only one side trained leaves the other side's cells `null` (rendered as
+ * "–", never a fabricated 0).
+ */
+export function peakVolumeRows(a: MesoVolumeArc | null, b: MesoVolumeArc | null): PeakVolumeRow[] {
+  const aMuscles = a?.muscles ?? []
+  const bMuscles = b?.muscles ?? []
+  return unionBy([...aMuscles, ...bMuscles], (m) => m.muscle)
+    .map((muscle) => {
+      const am = aMuscles.find((m) => m.muscle === muscle)
+      const bm = bMuscles.find((m) => m.muscle === muscle)
+      return {
+        group: muscle,
+        label: BUDGET_GROUP_LABELS[muscle] ?? muscle,
+        aPeak: peakPlanned(am),
+        aCeiling: am ? am.mrv : null,
+        bPeak: peakPlanned(bm),
+      }
+    })
+    .sort((x, y) => (y.aCeiling ?? -1) - (x.aCeiling ?? -1) || (y.aPeak ?? -1) - (x.aPeak ?? -1))
+}
+
+export interface FocusChip { group: string; label: string; tier: MuscleTier }
+export interface FocusDiff { legacy: boolean; chips: FocusChip[] }
+
+/**
+ * One run's focus fingerprint for the compare page's chip row: only the tiers that deviate
+ * from the sparse map's default (Grow never renders a chip — it is the silent baseline every
+ * unlisted muscle already sits at), Emphasize before Maintain, then alphabetically. `legacy`
+ * flags a run whose plan predates the current band model (`isLegacyPlan`) — the caller adds
+ * its own "régi modell" chip for that, since a legacy run's tiers are display-only, not
+ * something this run's numbers were actually generated against.
+ */
+export function focusDiff(run: Mesocycle | null): FocusDiff {
+  if (!run) return { legacy: false, chips: [] }
+  const order: Record<MuscleTier, number> = { emphasize: 0, maintain: 1, grow: 2 }
+  const chips = Object.entries(run.musclePriorities ?? {})
+    .filter(([, tier]) => tier !== 'grow')
+    .map(([group, tier]) => ({ group, label: BUDGET_GROUP_LABELS[group] ?? group, tier }))
+    .sort((x, y) => order[x.tier] - order[y.tier] || x.label.localeCompare(y.label))
+  return { legacy: isLegacyPlan(run), chips }
 }

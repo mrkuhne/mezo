@@ -46,6 +46,21 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/new')
   })
 
+  test('the fixture templates carry the band-vocabulary chips (mezo-d20.15 Task 5)', () => {
+    setup()
+    // Neither mock fixture template was stamped with the wizard v2 goalPreset — both read
+    // as legacy (régi modell), predating the current band model.
+    expect(screen.getAllByText('régi modell')).toHaveLength(2)
+    expect(screen.getAllByText('indításkor az új modellre konvertálódik')).toHaveLength(2)
+    // Upper/Lower Power (b20f0000): 4 training days, Emphasize on back
+    expect(screen.getByText('4 nap · Upper / Lower')).toBeInTheDocument()
+    expect(screen.getByText('★ Hát')).toBeInTheDocument()
+    expect(screen.getByText('4 + 1 deload')).toBeInTheDocument()
+    // Hypertrophy 04 · Tavasz (a10e0000): 5 training days, no priorities set
+    expect(screen.getByText('5 nap · Upper / Lower / Push / Pull / Legs')).toBeInTheDocument()
+    expect(screen.getByText('5 + 1 deload')).toBeInTheDocument()
+  })
+
   test('every card carries the four template actions', () => {
     setup()
     expect(screen.getAllByRole('button', { name: /Szerkesztés/ })).toHaveLength(2)

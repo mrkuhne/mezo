@@ -3,6 +3,8 @@ import {
   alignVolumeWeeks,
   betterSide,
   contextDiff,
+  focusDiff,
+  peakVolumeRows,
   sharedStrengthDeltas,
   type CompareStrengthRow,
 } from '@/features/train/logic/mesoCompare'
@@ -12,6 +14,7 @@ import type {
   MesoContext,
   MesoStrengthDelta,
 } from '@/data/train/trainApi'
+import type { Mesocycle, MesoVolumeArc } from '@/data/types'
 
 // --- tiny builders: only the fields the three helpers read are meaningful here ---
 
@@ -33,6 +36,12 @@ function volume(muscles: ReturnType<typeof arc>[]): MesocycleVolumeArcResponse {
     startDate: '2026-01-01', endDate: '2026-02-01', status: 'archived',
     phaseCurve: ['MAV'], muscles,
   }
+}
+
+/** Contract → domain arc, mirroring the pages' own converters (`actual` is never optional here). */
+function domainVolume(muscles: ReturnType<typeof arc>[]): MesoVolumeArc {
+  const v = volume(muscles)
+  return { ...v, muscles: v.muscles.map((m) => ({ ...m, weeks: m.weeks.map((w) => ({ ...w, actual: w.actual ?? null })) })) }
 }
 
 function report(over: Partial<MesocycleReportResponse> = {}): MesocycleReportResponse {
@@ -229,6 +238,71 @@ describe('contextDiff', () => {
       { label: 'Alvás', aValue: 7.4, bValue: null, unit: 'h' },
     ])
     expect(contextDiff(report(), report())).toEqual([])
+  })
+})
+
+describe('peakVolumeRows', () => {
+  it('unions the muscles and reports each side\'s peak PLANNED week, A\'s own MRV ceiling', () => {
+    const a: MesoVolumeArc = domainVolume([
+      arc('chest', 20, [[1, 8, 8], [2, 12, 11], [3, 10, 9]]), // peak is W2 (12), not the last week
+      arc('back', 22, [[1, 12, 12]]),
+    ])
+    const b: MesoVolumeArc = domainVolume([
+      arc('chest', 18, [[1, 9, 9], [2, 14, 13]]),
+      arc('quad', 18, [[1, 8, 7]]),
+    ])
+
+    expect(peakVolumeRows(a, b)).toEqual([
+      { group: 'back', label: 'Hát', aPeak: 12, aCeiling: 22, bPeak: null }, // a-only: b is a dash, never 0
+      { group: 'chest', label: 'Mell', aPeak: 12, aCeiling: 20, bPeak: 14 },
+      { group: 'quad', label: 'Comb', aPeak: null, aCeiling: null, bPeak: 8 }, // b-only: a is a dash too
+    ])
+  })
+
+  it('returns an empty list when a side is null, and both empty when both are null', () => {
+    const a: MesoVolumeArc = domainVolume([arc('chest', 20, [[1, 8, 8]])])
+    expect(peakVolumeRows(a, null)).toEqual([
+      { group: 'chest', label: 'Mell', aPeak: 8, aCeiling: 20, bPeak: null },
+    ])
+    expect(peakVolumeRows(null, null)).toEqual([])
+  })
+})
+
+describe('focusDiff', () => {
+  const run = (over: Partial<Mesocycle> = {}): Mesocycle => ({
+    id: 'r', status: 'archived', title: 'x', shortTitle: 'x', goal: 'x',
+    startDate: '2026-01-01', endDate: '2026-02-01', weeks: 4, currentWeek: 4,
+    split: 'x', style: 'x', phaseCurve: ['MEV', 'MAV', 'MRV', 'Deload'],
+    goalPreset: 'hypertrophy',
+    ...over,
+  })
+
+  it('is empty and non-legacy for a null run', () => {
+    expect(focusDiff(null)).toEqual({ legacy: false, chips: [] })
+  })
+
+  it('drops Grow entries (the silent default) and keeps Emphasize/Maintain, Emphasize first', () => {
+    const r = run({ musclePriorities: { back: 'grow', chest: 'maintain', shoulder: 'emphasize', quad: 'emphasize' } })
+    expect(focusDiff(r)).toEqual({
+      legacy: false,
+      chips: [
+        { group: 'quad', label: 'Comb', tier: 'emphasize' }, // emphasize tier first, alpha within it
+        { group: 'shoulder', label: 'Váll', tier: 'emphasize' },
+        { group: 'chest', label: 'Mell', tier: 'maintain' },
+      ],
+    })
+  })
+
+  it('has no chips at all when every group is Grow (absent or empty map)', () => {
+    expect(focusDiff(run({ musclePriorities: null })).chips).toEqual([])
+    expect(focusDiff(run({ musclePriorities: {} })).chips).toEqual([])
+  })
+
+  it('flags a run as legacy when goalPreset is not hypertrophy, or the phase curve has no Deload', () => {
+    expect(focusDiff(run({ goalPreset: 'strength' })).legacy).toBe(true)
+    expect(focusDiff(run({ goalPreset: null })).legacy).toBe(true)
+    expect(focusDiff(run({ phaseCurve: ['MEV', 'MAV', 'MRV'] })).legacy).toBe(true)
+    expect(focusDiff(run()).legacy).toBe(false)
   })
 })
 
