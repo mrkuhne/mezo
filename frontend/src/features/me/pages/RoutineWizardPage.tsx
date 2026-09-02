@@ -166,16 +166,19 @@ export function RoutineWizardPage() {
     }).then(() => navigate('/me/rutin'))
   }
 
-  // Switching the framework on step 1 invalidates two slots that belong to the OTHER branch:
-  // the commitment tick (it is a promise about the recipe you just read, not a setting — a
-  // tick carried over from the Fogg pass would unlock Clear's save on a sentence the user
-  // never saw) and the resolved anchor key (Clear sends no anchor at all, and a stale
-  // anchorHabitKey would come back if the user switched twice).
+  // Switching the framework on step 1 drops the commitment tick: it is a promise about the
+  // recipe you just read, not a setting, and a tick carried over from the Fogg pass would
+  // unlock Clear's save on a sentence the user never saw.
+  //
+  // anchorHabitKey is deliberately NOT reset here. save() reads it only inside the FOGG
+  // branch, so it can never leak into a CLEAR payload; clearing it would only bite the
+  // FOGG → CLEAR → FOGG path, where anchorLabel survives (the chip still renders selected,
+  // since selection matches on the label) while the key would not — silently downgrading a
+  // real habit link to anchorCopy free text with nothing on screen to say so.
   const pickFramework = (next: HabitFramework) => {
     if (next === framework) return
     setFramework(next)
     setCommitted(false)
-    setAnchorHabitKey(null)
   }
 
   const onNext = () => {

@@ -139,6 +139,35 @@ describe('RoutineWizardPage', () => {
     expect(screen.getByRole('button', { name: 'Reggeli rutin' })).toHaveClass('on')
   })
 
+  it('keeps the anchor habit link across a Fogg → Clear → Fogg round trip', async () => {
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'kész a Reggeli fény' }))
+    fireEvent.click(screen.getByRole('button', { name: '← Vissza' }))
+
+    // Away to Clear and back. anchorLabel survives the round trip, so the chip still reads as
+    // selected — the resolved habitKey behind it must survive too, or the payload silently
+    // downgrades a real habit link to anchorCopy free text.
+    fireEvent.click(screen.getByRole('button', { name: /Négy törvény/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    expect(screen.getByRole('button', { name: 'kész a Reggeli fény' })).toHaveClass('on')
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Pici tett'), { target: { value: 'leírok egy mondatot' } })
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'ökölrázás' }))
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    expect(createDef).toHaveBeenCalledWith({
+      chainKey: 'MORNING', title: 'leírok egy mondatot', mode: 'MANUAL',
+      skillKey: 'mindset', xp: 10,
+      framework: 'FOGG', anchorHabitKey: 'sun', celebration: 'ökölrázás',
+    })
+    expect(createDef).toHaveBeenCalledWith(expect.not.objectContaining({ anchorCopy: expect.anything() }))
+  })
+
   it('drops the commitment tick when the framework changes', () => {
     renderWizard()
     fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
@@ -172,6 +201,8 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(next())
     fireEvent.change(screen.getByLabelText('Jelzés'), { target: { value: '7:10-kor a konyhában' } })
     fireEvent.click(next())
+    // The prototype's `titleLb` names the Clear slot "válasz", not the sentence module's "tett".
+    expect(screen.getByText('Én … · válasz')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Válasz'), { target: { value: 'leírom a szándékot' } })
     expect(next()).toBeDisabled()
     fireEvent.change(screen.getByLabelText('Vágy'), { target: { value: 'tisztább a fejem' } })
