@@ -106,3 +106,16 @@ test('the mesocycle builder is a full-screen flow without the sub-nav', () => {
   // PageHero, not in an <h1> (no Mozaik subpage carries one).
   expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
 })
+
+test('the retired Volumen route redirects to the Heti vizsgálat page (mezo-d20.15 Task 4)', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/train/mesocycles/meso-hyp-04/overview'] })
+  render(
+    <QueryWrapper>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </QueryWrapper>,
+  )
+  expect(await screen.findByText('Heti vizsgálat · 3. hét')).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/train/mesocycles/meso-hyp-04/week')
+})
