@@ -12,6 +12,8 @@ export type SkillRef = components['schemas']['SkillRef']
 export type AchievementsResponse = components['schemas']['AchievementsResponse']
 export type BadgeResponse = components['schemas']['BadgeResponse']
 export type PerkUnlockResponse = components['schemas']['PerkUnlockResponse']
+// Growth "Ez a hét" tile (mezo-rmi0.1).
+export type GrowthWeek = components['schemas']['GrowthWeekResponse']
 
 function toAchievements(w: AchievementsResponse): Achievements {
   return {
@@ -25,4 +27,6 @@ export const progressionApi = {
     apiFetch<ProgressionProfileResponse>('/api/progression/profile'),
   getAchievements: (): Promise<Achievements> =>
     apiFetch<AchievementsResponse>('/api/progression/achievements').then(toAchievements),
+  getGrowthWeek: (weekStartIso: string): Promise<GrowthWeek> =>
+    apiFetch<GrowthWeek>(`/api/progression/growth-week/${weekStartIso}`),
 }
