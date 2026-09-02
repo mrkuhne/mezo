@@ -642,10 +642,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx,
     WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, gratitudeStreak.ts,
-    growthJournal.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, llmCallFormat.ts,
-    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
-    scoreBand.ts, sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts,
-    weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
+    growthJournal.ts, growthStats.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts,
+    llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts,
+    peopleVisuals.ts, perkMilestones.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts,
+    sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
 
 ### meal
 
