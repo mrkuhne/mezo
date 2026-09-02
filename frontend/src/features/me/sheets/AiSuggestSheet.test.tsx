@@ -3,22 +3,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AiSuggestSheet } from '@/features/me/sheets/AiSuggestSheet'
 import type { HabitChainInfo, HabitSuggestion } from '@/data/types'
 
-const {
-  suggest, createDef, navigate, useHabitAiSuggest, useHabitCatalog, useHabitCatalogActions,
-} = vi.hoisted(() => ({
+const { suggest, navigate, useHabitAiSuggest, useHabitCatalog } = vi.hoisted(() => ({
   suggest: vi.fn(),
-  // The sheet no longer writes (mezo-3zue.4) — this stays wired up purely so the tests can
-  // assert it is NEVER called: accepting a proposal must open the wizard, not mint a habit.
-  createDef: vi.fn((_input: unknown) => Promise.resolve()),
   navigate: vi.fn(),
   useHabitAiSuggest: vi.fn(),
   useHabitCatalog: vi.fn(),
-  useHabitCatalogActions: vi.fn(),
 }))
+// `useHabitCatalogActions` is deliberately NOT provided: the sheet stopped writing in
+// mezo-3zue.4 (ADR 0019 propose-only — accepting opens the wizard, it does not mint a habit),
+// and this omission is the regression guard. Re-introducing the import here would fail the whole
+// file with "does not provide an export", which a `not.toHaveBeenCalled()` on an unreachable mock
+// never could.
 vi.mock('@/data/hooks', () => ({
   useHabitAiSuggest: () => useHabitAiSuggest(),
   useHabitCatalog: () => useHabitCatalog(),
-  useHabitCatalogActions: () => useHabitCatalogActions(),
 }))
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-router-dom')>()),
@@ -44,13 +42,11 @@ const SUGGESTIONS: HabitSuggestion[] = [
 ]
 
 beforeEach(() => {
-  suggest.mockClear(); createDef.mockClear(); navigate.mockClear()
+  suggest.mockClear(); navigate.mockClear()
   sessionStorage.clear()
   suggest.mockResolvedValue(SUGGESTIONS)
-  createDef.mockImplementation(() => Promise.resolve())
   useHabitAiSuggest.mockReturnValue({ suggest, pending: false, unavailable: false })
   useHabitCatalog.mockReturnValue({ catalog: { chains: [MORNING, EVENING] }, isPending: false, isError: false, refetch: vi.fn() })
-  useHabitCatalogActions.mockReturnValue({ createDef, pending: false })
 })
 
 describe('AiSuggestSheet', () => {
@@ -75,7 +71,7 @@ describe('AiSuggestSheet', () => {
     await waitFor(() => expect(screen.getByText('Esti telefon-lezárás')).toBeInTheDocument())
   })
 
-  it('Elfogadom stashes the suggestion and opens the wizard on the card\'s chain — it never writes a def', async () => {
+  it('Accepting stashes the suggestion and opens the wizard on the card\'s chain — it never writes a def', async () => {
     render(<AiSuggestSheet onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /javasolj/i }))
     await waitFor(() => expect(screen.getByText('Esti telefon-lezárás')).toBeInTheDocument())
@@ -83,8 +79,8 @@ describe('AiSuggestSheet', () => {
     const card = screen.getByText('Esti telefon-lezárás').closest('.card') as HTMLElement
     fireEvent.click(within(card).getByRole('button', { name: ACCEPT }))
 
-    // ADR 0019: the suggester PROPOSES. Accepting must open the wizard, never create a habit.
-    expect(createDef).not.toHaveBeenCalled()
+    // ADR 0019: the suggester PROPOSES. Accepting must open the wizard, never create a habit —
+    // the "never" half is pinned structurally by the omitted write hook in the module mock above.
     expect(JSON.parse(sessionStorage.getItem('mezo.routineWizard.suggestion') ?? 'null'))
       .toEqual(SUGGESTIONS[0])
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin/uj?chain=EVENING'))
@@ -112,7 +108,6 @@ describe('AiSuggestSheet', () => {
     const cards = screen.getAllByRole('button', { name: 'Elvetem' })
     fireEvent.click(cards[0])
 
-    expect(createDef).not.toHaveBeenCalled()
     expect(navigate).not.toHaveBeenCalled()
     expect(sessionStorage.getItem('mezo.routineWizard.suggestion')).toBeNull()
     await waitFor(() => expect(screen.queryByText('Esti telefon-lezárás')).not.toBeInTheDocument())

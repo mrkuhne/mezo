@@ -188,7 +188,7 @@ export function HabitPage() {
     const patch: HabitDefUpdateInput = { title: title.trim(), xp: Math.min(XP_MAX, Math.max(XP_MIN, xp)) }
     if (chainKey !== def.chainKey) patch.chainKey = chainKey
     if (framework === 'FOGG') {
-      // A chip-linked anchor is READ-ONLY on this page (see the field's hint): the API has no
+      // A chip-linked anchor is READ-ONLY on this page (see the field's hint): this page has no
       // unlink, `anchorHabitKey: null` means "keep" server-side, and `recipeFromDef` prefers the
       // link — so an editable-looking field would have silently discarded whatever was typed.
       if (anchorHabitKey != null) patch.anchorHabitKey = anchorHabitKey
@@ -286,7 +286,7 @@ export function HabitPage() {
                   value={anchorLabel}
                   readOnly={anchorHabitKey != null}
                   hint={anchorHabitKey != null
-                    ? 'A horgony egy másik szokásodra van kötve, ezért itt nem írható át — a leválasztást ez a verzió nem támogatja. Másik horgonyhoz nyisd meg a „Keret váltása” gombbal a varázslót.'
+                    ? 'A horgony egy másik szokásodra van kötve, ezért itt nem írható át. Másik horgonyhoz — vagy saját szöveghez — nyisd meg a „Keret váltása” gombbal a varázslót.'
                     : undefined}
                   onChange={(v) => { setAnchorLabel(v); setAnchorHabitKey(null) }}
                 />

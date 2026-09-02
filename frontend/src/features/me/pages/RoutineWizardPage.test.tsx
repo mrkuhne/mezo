@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -34,11 +35,23 @@ const MORNING: HabitChainInfo = {
     xp: 10, linkUrl: null, isActive: true, framework: 'CLEAR', anchorHabitKey: null,
     cue: '7:10-kor a konyhaasztalnál', craving: 'tisztább fejjel indul a nap',
     reward: 'a pipa maga', celebration: null, identity: 'figyel a saját gondolataira',
+  }, {
+    // A FOGG def whose anchor is a real LINK to `sun` — the only shape that can exercise
+    // unlinking (`anchorHabitKey: ''`), which is what "Keret váltása" exists to make possible.
+    id: 'd3', habitKey: 'stack', chainKey: 'MORNING', position: 3, title: 'Egy oldal olvasás',
+    why: null, anchorCopy: null, mode: 'MANUAL', metric: 'manual', skillKey: 'mindset',
+    xp: 5, linkUrl: null, isActive: true, framework: 'FOGG', anchorHabitKey: 'sun',
+    cue: null, craving: null, reward: null, celebration: 'ökölrázás', identity: null,
   }],
 }
 
+const EVENING: HabitChainInfo = {
+  id: 'c2', chainKey: 'EVENING', title: 'Esti rutin', daypart: 'EVENING',
+  position: 2, isActive: true, defs: [],
+}
+
 beforeEach(() => {
-  useHabitCatalog.mockReturnValue({ catalog: { chains: [MORNING] }, isPending: false, isError: false, refetch: vi.fn() })
+  useHabitCatalog.mockReturnValue({ catalog: { chains: [MORNING, EVENING] }, isPending: false, isError: false, refetch: vi.fn() })
   useHabitCatalogActions.mockReturnValue({ createDef, updateDef, pending: false })
   createDef.mockClear()
   createDef.mockImplementation(() => Promise.resolve())
@@ -238,7 +251,7 @@ describe('RoutineWizardPage', () => {
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin?new=intent'))
   })
 
-  it('sends chainKey on the convert path ONLY when the habit actually moved chain', () => {
+  it('omits chainKey on the convert path when the habit stayed in its chain', () => {
     renderWizard('/me/rutin/uj?prefill=intent&chain=MORNING')
     fireEvent.click(next())
     fireEvent.click(next())
@@ -246,7 +259,57 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
     fireEvent.click(next())
 
+    // A bare chainKey is a MOVE server-side: re-sending the CURRENT chain on a copy fix would
+    // silently re-order the habit to the end of its own chain.
     expect(updateDef.mock.calls[0][1]).not.toHaveProperty('chainKey')
+  })
+
+  it('sends chainKey on the convert path when the habit really moved chain', () => {
+    renderWizard('/me/rutin/uj?prefill=intent')
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'Esti rutin' }))
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    expect(updateDef.mock.calls[0][1]).toMatchObject({ chainKey: 'EVENING' })
+  })
+
+  it('unlinks a chip anchor explicitly when the user types free text over it', async () => {
+    // `stack` is anchored to the `sun` habit by KEY. Typing over that anchor must send
+    // anchorHabitKey: '' — an omission leaves the stale link (the PATCH guard is `!= null`) and
+    // `recipeFromDef` prefers the link over the copy, so the typed anchor would vanish silently.
+    // This is exactly the escape hatch HabitPage's read-only anchor field sends the user here for.
+    renderWizard('/me/rutin/uj?prefill=stack')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Horgony')).toHaveValue('kész a Reggeli fény')
+    fireEvent.change(screen.getByLabelText('Horgony'), { target: { value: 'letettem a fogkefét' } })
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    expect(updateDef).toHaveBeenCalledWith('d3', {
+      title: 'Egy oldal olvasás', xp: 5, framework: 'FOGG',
+      anchorCopy: 'letettem a fogkefét', anchorHabitKey: '', celebration: 'ökölrázás',
+    })
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin?new=stack'))
+  })
+
+  it('keeps the link — and sends no unlink — when a chip anchor is left alone', () => {
+    renderWizard('/me/rutin/uj?prefill=stack')
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+
+    expect(updateDef).toHaveBeenCalledWith('d3', {
+      title: 'Egy oldal olvasás', xp: 5, framework: 'FOGG',
+      anchorHabitKey: 'sun', celebration: 'ökölrázás',
+    })
+    expect(updateDef.mock.calls[0][1]).not.toHaveProperty('anchorCopy')
   })
 
   // --- B · an accepted AI suggestion seeds the wizard, and prefill outranks it ---------------
@@ -266,6 +329,30 @@ describe('RoutineWizardPage', () => {
     expect(screen.getByLabelText('Pici tett')).toHaveValue('Esti telefon-lezárás')
     fireEvent.click(next())
     expect(screen.getByLabelText('Ünneplés')).toHaveValue('egy elégedett bólintás')
+  })
+
+  it('still seeds the suggestion under StrictMode, which double-invokes the state initializer', () => {
+    // The app mounts in StrictMode (main.tsx), so React dev-invokes every lazy useState
+    // initializer TWICE. An initializer that also consumed the key returned the suggestion on the
+    // first call and null on the second — an accepted proposal could fail to seed in any dev or
+    // mock run, while production and a plain render() hid it. Reading is pure now; the mount
+    // effect does the consuming.
+    sessionStorage.setItem('mezo.routineWizard.suggestion', JSON.stringify({
+      title: 'Esti telefon-lezárás', why: 'x', anchorCopy: 'wind-down előtt',
+      skillKey: 'recovery', xp: 10, chainKey: 'MORNING', framework: 'FOGG',
+      cue: null, craving: null, reward: null, celebration: 'egy elégedett bólintás',
+    }))
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/me/rutin/uj?chain=MORNING']}><RoutineWizardPage /></MemoryRouter>
+      </StrictMode>,
+    )
+
+    expect(screen.getByRole('button', { name: /Szokás-láncolás/ })).toHaveClass('on')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Horgony')).toHaveValue('wind-down előtt')
+    // still consumed, so a reload cannot resurrect it
+    expect(sessionStorage.getItem('mezo.routineWizard.suggestion')).toBeNull()
   })
 
   it('lets ?prefill win over a stashed suggestion for every field both could fill', () => {
@@ -304,6 +391,8 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
     fireEvent.click(next())
 
+    // The load-bearing half is `updateDef` NOT being called: an unknown key must degrade to a
+    // create, not throw and not PATCH some other definition.
     expect(updateDef).not.toHaveBeenCalled()
     expect(createDef).toHaveBeenCalledTimes(1)
   })

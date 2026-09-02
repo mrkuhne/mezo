@@ -47,13 +47,16 @@ const XP_STEP = 5
 // PROPOSES; the wizard's own four steps and the "Vállalom" tick are the human pass).
 const SUGGESTION_KEY = 'mezo.routineWizard.suggestion'
 
-/** Reads the hand-off ONCE and removes it in the same breath, so a reload cannot resurrect a
- *  stale proposal; a storage failure (private mode, quota, a disabled store) yields null rather
- *  than breaking the page. */
-function takeSuggestion(): HabitSuggestion | null {
+/** Reads the hand-off. **Pure and repeatable on purpose** (review finding): this runs as a lazy
+ *  `useState` initializer, and StrictMode (`main.tsx`) double-invokes those in development — an
+ *  initializer that also REMOVED the key returned the suggestion on the first call and `null` on
+ *  the second, so an accepted proposal could fail to seed in any dev or mock run while production
+ *  and the test suite (neither of which mounts StrictMode) hid the bug. Consuming the key is the
+ *  mount effect's job instead, which is idempotent however many times it runs. A storage failure
+ *  (private mode, quota, a disabled store) yields null rather than breaking the page. */
+function readSuggestion(): HabitSuggestion | null {
   try {
     const raw = sessionStorage.getItem(SUGGESTION_KEY)
-    sessionStorage.removeItem(SUGGESTION_KEY)
     return raw ? (JSON.parse(raw) as HabitSuggestion) : null
   } catch {
     return null
@@ -110,7 +113,16 @@ export function RoutineWizardPage() {
   // The accepted AI suggestion, claimed once on mount. It only ever seeds INITIAL values: where
   // `?prefill` also has something to say, prefill wins (below) — a user who arrived through
   // "Keret váltása" is editing one specific habit, not accepting a proposal.
-  const [suggestion] = useState(takeSuggestion)
+  const [suggestion] = useState(readSuggestion)
+  // Consumed on mount, not in the initializer above — so a reload still cannot resurrect a stale
+  // proposal, while a double-invoked initializer cannot lose one either.
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem(SUGGESTION_KEY)
+    } catch {
+      // a disabled/throwing store — nothing to clean up, and nothing worth breaking the page for
+    }
+  }, [])
 
   const [step, setStep] = useState(1)
   const [framework, setFramework] = useState<HabitFramework | null>(suggestion?.framework ?? null)
@@ -215,12 +227,24 @@ export function RoutineWizardPage() {
         title: title.trim(), xp: clampXp(xp), framework, ...frameworkFields(),
       }
       if (chainKey !== prefillDef.chainKey) patch.chainKey = chainKey
+      // UNLINKING a chip anchor needs an explicit empty string, not an omission (review finding).
+      // The def HAD an `anchorHabitKey` and the user typed free text over it, so the patch carries
+      // only `anchorCopy` — but the PATCH's guard is `!= null`, so an omitted key KEEPS the stale
+      // link, and `recipeFromDef` prefers the link over the copy: the typed anchor would vanish
+      // without a word. Blank is safe on both sides — `HabitAdminService.updateDef` applies `""`
+      // (it is not null), and `HabitFrameworkValidator.isSet` reads blank as "no link", so the
+      // FOGG completeness check then passes on the `anchorCopy` alone. This is the escape hatch
+      // `HabitPage`'s read-only anchor field points the user at, so it has to actually work.
+      if (framework === 'FOGG' && anchorHabitKey == null && prefillDef.anchorHabitKey != null) {
+        patch.anchorHabitKey = ''
+      }
       updateDef(prefillDef.id, patch).then(() => done(prefillDef.habitKey))
       return
     }
 
     createDef({
-      chainKey, title: title.trim(), mode: 'MANUAL', skillKey, xp, framework, ...frameworkFields(),
+      chainKey, title: title.trim(), mode: 'MANUAL', skillKey, xp: clampXp(xp), framework,
+      ...frameworkFields(),
     }).then((def) => done(def?.habitKey))
   }
 
