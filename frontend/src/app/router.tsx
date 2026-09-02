@@ -57,6 +57,7 @@ import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthHubPage } from '@/features/me/pages/GrowthHubPage'
+import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
 import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
 import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
@@ -266,6 +267,7 @@ export const routes: RouteObject[] = [
       { path: 'me/karakter/gepterem/detektorok', element: <DetektorokPage /> },
       // Growth hub (mezo-rmi0.1) — hero + Ma strip + 2×2 mosaic; the four sub-pages are flat siblings below (added per task).
       { path: 'me/growth', element: <GrowthHubPage /> },
+      { path: 'me/growth/skillek', element: <GrowthSkillsPage /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
       // WeekPage. Its four view tiles open full-screen siblings, NOT child routes: the
