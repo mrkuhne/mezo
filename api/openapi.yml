@@ -9268,8 +9268,9 @@ components:
         llmUsed:
           type: boolean
           description: >-
-            false when the LLM port was absent, failed, or answered unusably —
-            the deterministic filler produced the plan
+            false when the LLM port was absent, failed, or its answer changed
+            nothing (no accepted pick) — the deterministic filler produced the
+            plan
     MesoTemplateUpsertRequest:
       type: object
       required:

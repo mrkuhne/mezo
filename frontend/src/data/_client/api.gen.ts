@@ -3939,7 +3939,7 @@ export interface components {
             template: components["schemas"]["MesoTemplateUpsertRequest"];
             /** @description One Hungarian sentence on what was chosen and why (LLM or deterministic) */
             rationale: string;
-            /** @description false when the LLM port was absent, failed, or answered unusably — the deterministic filler produced the plan */
+            /** @description false when the LLM port was absent, failed, or its answer changed nothing (no accepted pick) — the deterministic filler produced the plan */
             llmUsed: boolean;
         };
         MesoTemplateUpsertRequest: {
