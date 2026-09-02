@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
  * projekciója. A finder szemantikájának a meglévő {@code findAllByCreatedByAndDeletedFalse
  * OrderByTsDesc}-vel kell megegyeznie (sorrend, soft-delete, ownership), csak kevesebb oszlopot
  * hoz vissza.
+ *
+ * <p>A törölt sor kimaradása KÉT védelmi réteget pinnel EGYÜTT: a {@code MentionEntity}
+ * {@code @SQLRestriction("is_deleted = false")}-ját ÉS a JPQL explicit {@code m.deleted = false}
+ * predikátumát. A teszt önmagában nem bizonyítja, hogy az explicit predikátum szükséges — a
+ * {@code @SQLRestriction} egyedül is kiszűrné a törölt sort —, csak azt, hogy a kettő EGYÜTT
+ * helyesen működik. Az ownership- és a sorrend-állítások viszont önmagukban is load-bearingek.
  */
 @Transactional
 class MentionSignalProjectionIT extends AbstractIntegrationTest {
@@ -37,7 +44,11 @@ class MentionSignalProjectionIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser("owner-mentionsignal@test.hu").getId();
         UUID other = userPopulator.createUser("other-mentionsignal@test.hu").getId();
         PersonEntity anna = personPopulator.createPerson(owner, "Anna");
-        Instant now = Instant.now();
+        // TIMESTAMPTZ mikroszekundum-felbontású; a @Transactional teszt entitásai viszont a
+        // first-level cache-ből jönnek, a Java órájának natív (Linuxon nano-) felbontásával —
+        // a forrásnál csonkolva a kettő pontosan összevethető (lásd PeopleChatContextIT és
+        // CompanionMessageGenerator ugyanerre a csapdára).
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
 
         MentionEntity oldest = mentionPopulator.createMention(owner, anna.getId(),
             now.minus(Duration.ofDays(2)), "positive");
