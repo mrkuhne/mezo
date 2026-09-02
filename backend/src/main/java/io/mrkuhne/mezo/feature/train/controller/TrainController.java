@@ -50,6 +50,7 @@ import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.MedalService;
+import io.mrkuhne.mezo.feature.train.service.MesoPlanGeneratorService;
 import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.MesocycleReportService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
@@ -81,6 +82,7 @@ public class TrainController implements TrainApi {
     private final RunningService runningService;
     private final VolumeArcService volumeArcService;
     private final CurrentUserId currentUserId;
+    private final MesoPlanGeneratorService mesoPlanGeneratorService;
 
     @Override
     public List<MesocycleResponse> listMesocycles() {
@@ -138,10 +140,9 @@ public class TrainController implements TrainApi {
         return mesoTemplateService.list(currentUserId.get());
     }
 
-    // TODO(mezo-d20.7.9): temporary stub so the module compiles ahead of the real implementation (Task 7).
     @Override
     public MesoPlanGenerateResponse generateMesoPlan(MesoPlanGenerateRequest mesoPlanGenerateRequest) {
-        throw new UnsupportedOperationException("Task 7");
+        return mesoPlanGeneratorService.generate(currentUserId.get(), mesoPlanGenerateRequest);
     }
 
     @Override
