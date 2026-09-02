@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.character.detector.DetectorInput;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolEntity;
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolItemEntity;
@@ -39,6 +41,7 @@ import io.mrkuhne.mezo.feature.needs.config.NeedsProperties;
 import io.mrkuhne.mezo.feature.needs.entity.NeedsDayEntity;
 import io.mrkuhne.mezo.feature.needs.repository.NeedsDayRepository;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
+import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
@@ -80,6 +83,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The single cross-feature read composer for the detector framework (Karakter spec §5, mezo-1gim.3):
@@ -102,6 +106,7 @@ public class CharacterSignalReads {
     private static final String PHASE_DELOAD = "Deload";
     private static final int EVIDENCE_CHARS = 120;
     private static final String CHAT_ROLE_USER = "user";
+    private static final String CHAT_ROLE_ASSISTANT = "assistant";
     private static final String GENRE_EVENT = "esemeny";
     private static final String GENRE_REFLECTION = "reflexio";
 
@@ -134,7 +139,18 @@ public class CharacterSignalReads {
     private final GratitudeEntryRepository gratitudeEntryRepository;
     private final NeedsDayRepository needsDayRepository;
     private final NeedsProperties needsProperties;
+    private final MentionRepository mentionRepository;
+    private final CharacterMetaReads metaReads;
 
+    /**
+     * Round 4 (mezo-1gim.15): {@code gatherChatToolCalls} lazily navigates {@code AiMessageEntity
+     * .getConversation()} for the title preview, which needs an open Hibernate session across the
+     * whole method — normally guaranteed because the production caller ({@code
+     * CharacterObservationService.generateForDay}) is itself {@code @Transactional}, but not when this method
+     * is invoked directly (e.g. {@code CharacterSignalReadsIT}). Read-only self-transaction closes
+     * that gap without changing behaviour for the already-transactional caller (it simply joins).
+     */
+    @Transactional(readOnly = true)
     public DetectorInput gather(UUID owner, LocalDate day) {
         LocalDate windowStart = day.minusDays(WINDOW_DAYS - 1);
         LocalDate trendStart = day.minusWeeks(TREND_WEEKS).plusDays(1);
@@ -223,13 +239,55 @@ public class CharacterSignalReads {
         List<LocalDateTime> userChatTimes = gatherUserChatTimes(owner, trendStart, day);
         List<DetectorInput.LogLatencyPoint> logLatencies =
                 gatherLogLatencies(owner, trendStart, day);
+        List<DetectorInput.MentionPoint> mentions = gatherMentions(owner, trendStart, day);
+        List<DetectorInput.ChatToolCallPoint> chatToolCalls = gatherChatToolCalls(owner, trendStart, day);
 
         return new DetectorInput(day, mealDates, checkinCounts, weights, journalTexts,
                 gymDays, sportSessions, runLogs, sleepPoints, meso,
                 new DetectorInput.TrendWindow(runsEightWeeks, gymEightWeeks,
                         mealDays, waterDays, stack, checkinDays, medCycle,
                         sleepEightWeeks, intentionDays, decisions, gratitudes, needs,
-                        checkinSlots, userChatTimes, logLatencies));
+                        checkinSlots, userChatTimes, logLatencies, mentions, chatToolCalls,
+                        metaReads.gather(owner, trendStart, day)));
+    }
+
+    /** People mentions in the window, {@code ts} → local date; bounded above by the end of {@code to}. */
+    private List<DetectorInput.MentionPoint> gatherMentions(UUID owner, LocalDate from, LocalDate to) {
+        Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant toExclusive = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        return mentionRepository
+                .findByCreatedByAndTsGreaterThanEqualAndTsLessThanAndDeletedFalse(owner, fromInstant, toExclusive)
+                .stream()
+                .map(m -> new DetectorInput.MentionPoint(localDate(m.getTs()), m.getPersonId(),
+                        m.getContextLabel(), m.isFlagged()))
+                .sorted(Comparator.comparing(DetectorInput.MentionPoint::date))
+                .toList();
+    }
+
+    /** Every executed tool call on the assistant rows in the window — the deterministic topic
+     *  proxy (round-4 spec §5.4). One point per call; the conversation title rides along as
+     *  bounded evidence. Rows without tool calls contribute nothing. */
+    private List<DetectorInput.ChatToolCallPoint> gatherChatToolCalls(UUID owner, LocalDate from, LocalDate to) {
+        Instant fromInstant = from.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant toExclusive = to.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        List<DetectorInput.ChatToolCallPoint> out = new ArrayList<>();
+        for (AiMessageEntity m : aiMessageRepository
+                .findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+                        owner, CHAT_ROLE_ASSISTANT, fromInstant, toExclusive)) {
+            if (m.getToolCalls() == null || m.getToolCalls().calls() == null) {
+                continue;
+            }
+            String title = m.getConversation() == null ? null : preview(m.getConversation().getTitle());
+            UUID conversationId = m.getConversation() == null ? null : m.getConversation().getId();
+            for (ToolCallsEnvelope.ToolCall call : m.getToolCalls().calls()) {
+                if (call.name() == null || call.name().isBlank()) {
+                    continue;
+                }
+                out.add(new DetectorInput.ChatToolCallPoint(localDate(m.getCreatedAt()), conversationId,
+                        call.name(), title));
+            }
+        }
+        return out;
     }
 
     /** Per-day means of the day's logged check-in slots; a scale nobody logged stays null. */
@@ -578,7 +636,20 @@ public class CharacterSignalReads {
     }
 
     private DetectorInput.SleepPoint toSleepPoint(SleepLogEntity s) {
-        return new DetectorInput.SleepPoint(s.getDate(), s.getQuality(), s.getDurationH(), s.getAwakenings());
+        return new DetectorInput.SleepPoint(s.getDate(), s.getQuality(), s.getDurationH(), s.getAwakenings(),
+                parseClock(s.getBedtime()), parseClock(s.getWakeup()));
+    }
+
+    /** "HH:mm" → LocalTime; null (never a default) when absent or malformed. */
+    private static LocalTime parseClock(String hhmm) {
+        if (hhmm == null || hhmm.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(hhmm.strip());
+        } catch (java.time.format.DateTimeParseException e) {
+            return null;
+        }
     }
 
     /**

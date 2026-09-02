@@ -56,23 +56,29 @@ class CharacterApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void overview_firstRead_lazilySeedsTheSevenCoreDimensions_emptyPortraits() {
+    void overview_firstRead_lazilySeedsTheSevenCoreAndOneMetaDimension_emptyPortraits() {
         CharacterOverviewResponse res = getForBody("/api/character", ownerAuthHeaders(),
                 HttpStatus.OK, CharacterOverviewResponse.class);
-        assertThat(res.getDimensions()).hasSize(7);
+        assertThat(res.getDimensions()).hasSize(8);
         assertThat(res.getDimensions()).extracting(CharacterDimensionSummary::getKey)
                 .containsExactly("physical", "athletic", "nutrition", "recovery",
-                        "mental", "discipline", "life");
-        assertThat(res.getDimensions()).allSatisfy(d -> {
+                        "mental", "discipline", "life", "self-audit");
+        assertThat(res.getDimensions().subList(0, 7)).allSatisfy(d -> {
             assertThat(d.getKind()).isEqualTo(CharacterDimensionSummary.KindEnum.CORE);
             assertThat(d.getMaturity()).isZero();
             assertThat(d.getPortrait()).isEmpty();
             assertThat(d.getTopClaims()).isEmpty();
         });
-        // second read: still exactly 7 (idempotent seeding)
+        CharacterDimensionSummary meta = res.getDimensions().get(7);
+        assertThat(meta.getKind()).isEqualTo(CharacterDimensionSummary.KindEnum.META);
+        assertThat(meta.getExpertKey()).isEqualTo("szkeptikus");
+        assertThat(meta.getMaturity()).isZero();
+        assertThat(meta.getPortrait()).isEmpty();
+        assertThat(meta.getTopClaims()).isEmpty();
+        // second read: still exactly 8 (idempotent seeding)
         CharacterOverviewResponse again = getForBody("/api/character", ownerAuthHeaders(),
                 HttpStatus.OK, CharacterOverviewResponse.class);
-        assertThat(again.getDimensions()).hasSize(7);
+        assertThat(again.getDimensions()).hasSize(8);
     }
 
     @Test
@@ -155,7 +161,7 @@ class CharacterApiIT extends ApiIntegrationTest {
         });
         CharacterExpertDto szkeptikus = experts.get(7);
         assertThat(szkeptikus.getKind()).isEqualTo(CharacterExpertDto.KindEnum.SKEPTIC);
-        assertThat(szkeptikus.getDimensionKey()).isNull();
+        assertThat(szkeptikus.getDimensionKey()).isEqualTo("self-audit");
         assertThat(szkeptikus.getDisplayName()).isEqualTo("Szkeptikus");
         assertThat(szkeptikus.getVoiceLine()).isEqualTo("Száraz kontrás hang.");
         CharacterExpertDto mezo = experts.get(8);

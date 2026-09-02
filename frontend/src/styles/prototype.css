@@ -6427,19 +6427,78 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .fh-st-done { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
 .fh-st-miss { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
 
-.fh-wring { display: grid; gap: 2px; justify-items: center; flex: none; }
-.fh-wring i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
-  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-gbar-bg) 0); }
-.fh-wring i::after { content: attr(data-l); width: 15px; height: 15px; border-radius: 50%;
-  background: var(--mz-fh-ringhole); display: grid; place-items: center;
-  font-size: 7px; font-weight: 800; color: var(--mz-ink-soft); }
-.fh-wring small { font-size: 7.5px; font-weight: 700; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
+/* 44px SVG macro rings on the /fuel/log block (Logolás 2.1, mezo-zeeq; prototype
+   fuel-logolas-2.1.html `.m`) — stroke-dashoffset transition, the .khero-ring-fill recipe;
+   the letter sits in the hole, the grams under it, then the share of the DAILY target. */
+.fh-wring { display: grid; gap: 1px; justify-items: center; flex: 1; min-width: 0; }
+.fh-wring-w { position: relative; width: 44px; height: 44px; }
+.fh-wring-w svg { transform: rotate(-90deg); display: block; }
+.fh-wring-t { fill: none; stroke: var(--mz-gbar-bg); }
+:where(.fh-wring-f) { fill: none; stroke-linecap: round; transition: stroke-dashoffset 1.4s cubic-bezier(.2, .8, .2, 1); }
+.fh-wring-w i { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal;
+  font-size: 11px; font-weight: 800; color: var(--mz-ink-soft); }
+.fh-wring b { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; margin-top: 3px;
+  font-variant-numeric: tabular-nums; }
+.fh-wring b em { font-style: normal; font-size: 9px; font-weight: 600; color: var(--mz-ink-mut); }
+.fh-wring small { font-size: 8.5px; font-weight: 600; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.flog-rings.is-done { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px;
+  padding-top: 10px; border-top: 1px solid var(--border-subtle); }
+/* a planned window's 3 rings stay compact beside the kcal cell */
+.flog-data .fh-wring { flex: none; }
+.flog-data .fh-wring-w { width: 34px; height: 34px; }
+.flog-data .fh-wring-w svg { width: 34px; height: 34px; }
+.flog-data .fh-wring b { font-size: 11px; }
+.flog-data .fh-wring small { display: none; }
 
 .fh-scorech { font-size: 9px; font-weight: 800; border-radius: 999px; padding: 3px 9px; flex: none;
   font-variant-numeric: tabular-nums; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
 .fh-scorech.is-mid { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
 .fh-scorech.is-pend { background: var(--mz-chat-refch-bg); color: var(--mz-ink-mut); }
 button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-height: 44px; padding: 3px 14px; }
+.flog-srow .fh-scorech.is-pend { min-height: 36px; display: inline-flex; align-items: center; padding: 3px 14px; font-size: 11px; }
+
+/* AI score pill (Logolás 2.1, mezo-zeeq): 30px ring + 19px number + tone word + chevron. It
+   nudges every 2.6s (the fh-lt-nowpulse cadence) with a tone-coloured halo so it reads as
+   tappable — the user's explicit ask; :active and reduced motion stop it (see the .fh-*
+   reduced-motion block below). */
+.fh-aisc { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px 4px 5px; border-radius: 999px;
+  background: var(--surface-card, #fff); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), inset 0 0 0 1px var(--border-subtle);
+  color: var(--text-primary); transform-origin: 40% 50%; border: none; font-family: inherit; text-align: left; }
+.fh-aisc.is-tap { cursor: pointer; min-height: 44px; }
+.fh-aisc-r { position: relative; width: 30px; height: 30px; flex: none; }
+.fh-aisc-r svg { transform: rotate(-90deg); display: block; }
+.fh-aisc-t { fill: none; stroke: var(--mz-gbar-bg); }
+:where(.fh-aisc-f) { fill: none; stroke-linecap: round; stroke: var(--sc); transition: stroke-dashoffset 1.2s cubic-bezier(.2, .8, .2, 1); }
+.fh-aisc-r i { position: absolute; inset: 0; display: grid; place-items: center; font-style: normal; font-size: 10px; }
+.fh-aisc-t2 { display: grid; line-height: 1.1; }
+.fh-aisc-t2 b { font-size: 19px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.fh-aisc-t2 small { font-size: 8.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sc-ink); }
+.fh-aisc-chev { font-size: 16px; color: var(--mz-ink-mut); margin-left: -2px; }
+.fh-aisc.s-hi { --sc: var(--dv-sage); --sc-ink: var(--mz-cell-sage-ink); }
+.fh-aisc.s-md { --sc: var(--dv-amber); --sc-ink: var(--mz-cell-amber-ink); }
+.fh-aisc.s-lo { --sc: var(--dv-coral); --sc-ink: var(--mz-cell-coral-ink); }
+@keyframes fh-aisc-nudge {
+  0%, 14%, 100% { transform: rotate(0) scale(1); }
+  3% { transform: rotate(-5deg) scale(1.05); }
+  6% { transform: rotate(5deg) scale(1.06); }
+  9% { transform: rotate(-3deg) scale(1.04); }
+  12% { transform: rotate(2deg) scale(1.02); }
+}
+@keyframes fh-aisc-halo {
+  0%, 14%, 100% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), inset 0 0 0 1px var(--border-subtle); }
+  6% { box-shadow: 0 4px 18px color-mix(in srgb, var(--sc) 45%, transparent), inset 0 0 0 1.5px var(--sc); }
+}
+.fh-aisc.is-tap { animation: fh-aisc-nudge 2.6s ease-in-out 0.3s infinite, fh-aisc-halo 2.6s ease-in-out 0.3s infinite; }
+.fh-aisc.is-tap:active { animation: none; transform: scale(0.96); }
+
+/* Context chip — the role the meal was SCORED under: Standard / Pre-workout / Post-workout
+   (mezo-zeeq; amber = pre, lavender = post, the Stack-zone cell tones). */
+.fh-ctx { display: inline-flex; align-items: center; gap: 5px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 999px; flex: none; white-space: nowrap; }
+.fh-ctx i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.fh-ctx.is-standard { background: var(--mz-gbar-bg); color: var(--mz-ink-soft); }
+.fh-ctx.is-pre { background: var(--mz-cell-amber-bg); color: var(--mz-cell-amber-ink); }
+.fh-ctx.is-post { background: var(--mz-cell-lav-bg); color: var(--mz-cell-lav-ink); }
 
 /* ═══ Fuel-beállítások band (the .enh-band shape; a Mezo-sáv retired — mezo-04lo) ═══ */
 .fh-band { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px;
@@ -6478,6 +6537,8 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   .fh-band, .fh-logtile { transition: none; }
   .fh-band:active, .fh-logtile:active { transform: none; }
   .fh-lt-nowdot, .fh-lt-dots i.is-nw { animation: none; }
+  .fh-aisc.is-tap { animation: none; }
+  :where(.fh-wring-f), :where(.fh-aisc-f) { transition: none; }
 }
 /* ── Fuel · Stack v2 (mezo-d20.4.3) — day-arc timeline + featured KÖVETKEZŐ card + zone
    mini-mosaic. Values follow the Mozaik 2.0 recipe (mz-cell-, mz-wash- and mz-shadow- tokens
@@ -6813,7 +6874,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    eating window; the Logold CTA expands the MealComposer IN PLACE via the
    grid-rows 0fr→1fr well. State washes: done sage, now coral ring, missed
    dashed amber (never punitive red), free/empty dashed neutral. ── */
-.flog-goal { font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+/* The hub's KeretHero as the page hero (Logolás 2.1, mezo-zeeq): the page's own coral/gold
+   tone already washes the top, so the hero's halo-sage band is dropped here. */
+.flog-khero .khero { background: none; padding-top: 0; }
 /* Day stepper + Pótlás mood + the past-day closed card (mezo-1j3z) — prototype
    fuel-log-multinap.html `.daysw`/`.pastnote`/`.dayclosed`, tokens translated. */
 .flog-daysw { display: flex; align-items: center; gap: 7px; justify-content: center; margin: 2px 0 6px; }
@@ -6864,7 +6927,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 }
 .flog-txt { flex: 1; min-width: 0; }
 .flog-name {
-  font-size: 13.5px; font-weight: 700; line-height: 1.3;
+  font-size: 15px; font-weight: 700; line-height: 1.3;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .flog-name.is-ghost { color: var(--text-tertiary); font-weight: 600; }
@@ -6877,10 +6940,85 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .flog-kcal b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .flog-kcal small { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-left: 3px; }
 .flog-rings { display: flex; gap: 7px; }
+/* done card: score pill + kcal on ONE row under the name (mezo-zeeq) */
+.flog-srow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.flog-srow .flog-kcal { background: none; box-shadow: none; padding: 0; text-align: right; line-height: 1; }
+.flog-srow .flog-kcal b { font-size: 24px; letter-spacing: -0.03em; }
+.flog-srow .flog-kcal small { font-size: 8px; margin-left: 4px; }
 .flog-blk.is-missed .flog-data { opacity: 0.7; }
 .flog-ctas { display: flex; gap: 8px; margin-top: 10px; }
 .flog-ctas .cta-primary { flex: 1; padding: 8px 0; justify-content: center; }
 .flog-ctas .cta-ghost { flex: 0.6; padding: 8px 0; justify-content: center; }
+
+/* ═══ Score breakdown 2.1 (mezo-zeeq) — MealScoreSheet + RecipeScoreSheet body: tone hero,
+   contribution ledger, collapsible dimension cards, gain cards. Prototype fuel-logolas-2.1.html
+   `.shero` / `.ledger` / `.dim` / `.imp`, tokens translated. ═══ */
+.sb-sec { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 2px 8px; }
+.sb-sec-r { font-size: 10.5px; font-weight: 700; color: var(--mz-ink-mut); }
+
+.sb-ledger { border-radius: 18px; background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle); padding: 12px 14px; }
+.sb-ledger-bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 2px; }
+.sb-ledger-seg { position: relative; display: block; height: 100%; background: var(--mz-gbar-bg); }
+.sb-ledger-seg i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 3px 3px 0; display: block; }
+.sb-ledger-sum { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px;
+  color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.sb-ledger-sum b { font-weight: 800; color: var(--text-primary); }
+.sb-ledger-sum em { font-style: normal; }
+
+.sb-dim { border-radius: 18px; background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle); overflow: hidden; }
+.sb-dim-head { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; width: 100%;
+  padding: 12px 14px; border: none; background: none; font-family: inherit; text-align: left;
+  color: var(--text-primary); cursor: pointer; }
+.sb-dim-ring { position: relative; width: 52px; height: 52px; }
+.sb-dim-ring svg { transform: rotate(-90deg); display: block; }
+.sb-dim-t { fill: none; stroke: var(--mz-gbar-bg); }
+.sb-dim-f { fill: none; stroke: var(--c); stroke-linecap: round; }
+.sb-dim-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 16px; font-weight: 700;
+  letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.sb-dim-txt { display: grid; gap: 2px; min-width: 0; }
+.sb-dim-lb { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.sb-dim-lb i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
+.sb-dim-w { font-size: 10.5px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.sb-dim-w b { color: var(--mz-ink-soft); font-weight: 700; }
+.sb-dim-one { font-size: 12px; color: var(--mz-ink-soft); line-height: 1.35; margin-top: 3px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.sb-dim-arr { font-size: 16px; color: var(--mz-ink-mut); transition: transform 0.25s; }
+.sb-dim-head[aria-expanded="true"] .sb-dim-arr { transform: rotate(90deg); }
+.sb-dim-body { padding: 0 14px 14px; }
+.sb-dim-body > p { margin: 0 0 10px; font-size: 13px; line-height: 1.5; }
+
+.sb-hero { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; padding: 16px; border-radius: 22px;
+  border: 0.5px solid var(--border-subtle);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--sc) 18%, var(--surface-card)), color-mix(in srgb, var(--sc) 4%, var(--surface-page))); }
+.sb-hero.s-hi { --sc: var(--dv-sage); }
+.sb-hero.s-md { --sc: var(--dv-amber); }
+.sb-hero.s-lo { --sc: var(--dv-coral); }
+.sb-hero-ring { position: relative; width: 112px; height: 112px; }
+.sb-hero-ring svg { transform: rotate(-90deg); display: block; }
+.sb-hero-t { fill: none; stroke: var(--mz-gbar-bg); }
+.sb-hero-f { fill: none; stroke: var(--sc); stroke-linecap: round; }
+.sb-hero-n { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1; }
+.sb-hero-n b { display: block; font-size: 40px; font-weight: 200; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.sb-hero-n small { display: block; font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin-top: 4px; }
+.sb-hero-word { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; text-transform: capitalize; }
+.sb-hero-facts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.sb-hero-facts span { font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 999px;
+  background: var(--surface-card, #fff); color: var(--mz-ink-soft); }
+.sb-hero-facts i { font-style: normal; color: var(--mz-ink-mut); font-weight: 600; margin-right: 3px; }
+.sb-hero-conf { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 9.5px; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.sb-hero-conf .bar { flex: 1; max-width: 90px; height: 4px; border-radius: 999px; background: var(--mz-gbar-bg); overflow: hidden; }
+.sb-hero-conf .bar i { display: block; height: 100%; background: var(--sc); border-radius: 999px; }
+.sb-hero-conf b { color: var(--mz-ink-soft); }
+
+.sb-imp { border-radius: 16px; background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle);
+  padding: 12px 12px 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.sb-imp p { margin: 0; font-size: 13px; line-height: 1.45; }
+.sb-imp-gain { font-size: 15px; font-weight: 700; color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg);
+  padding: 6px 10px; border-radius: 12px; white-space: nowrap; letter-spacing: -0.02em; text-align: center;
+  font-variant-numeric: tabular-nums; }
+.sb-imp-gain small { display: block; font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 800; opacity: 0.8; }
 
 /* ===== /fuel/log/uj — a logolás saját oldala (mezo-bq2t) =====
    Prototype fuel-log-oldal.html `.cmp-head` / `.cmp-daychip` / `.pastnote` /

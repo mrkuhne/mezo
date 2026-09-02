@@ -41,6 +41,15 @@
 // DecisionReviewBacklog,GratitudeFocus,StreakBreakResponse,RestartPattern,RetroLoggingRatio,
 // NightActivity,CheckinLatency,CheckinSlotDrift,NeedsDomainImbalance}Detector.java`'s own
 // `DetectorSignal(key(), who, ...)` calls. The catalog is now 32 detectors.
+//
+// Round 4 (mezo-1gim.15, Task 8): the eight round-4 detectors — people-mood-link,
+// mention-context-shift, weekend-gap (all `antropologus`), chat-topic-shift (`pszichologus`),
+// knowledge-rejection-pattern, prediction-calibration, quest-completion-calibration,
+// experiment-outcome-ledger (all `szkeptikus`) — are appended below in that order, `who` verified
+// the same way against `backend/.../feature/character/detector/{PeopleMoodLink,
+// MentionContextShift,WeekendGap,ChatTopicShift,KnowledgeRejectionPattern,PredictionCalibration,
+// QuestCompletionCalibration,ExperimentOutcomeLedger}Detector.java`'s own
+// `DetectorSignal(key(), who, ...)` calls. The catalog is now 40 detectors.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
@@ -54,7 +63,7 @@ interface DetectorEntry {
   line: string
 }
 
-/** The 32 real detectors — key/who verified against the detector source (see header comment),
+/** The 40 real detectors — key/who verified against the detector source (see header comment),
  *  one-line semantics paraphrasing what each `detect()` actually checks. */
 export const DETECTORS: DetectorEntry[] = [
   { key: 'logging-gap', who: 'drill', line: 'N napja nincs étkezés logolva (2+ egymást követő nap, 14 napos honest cap) — hiányzó kaja-napló jelzés.' },
@@ -89,6 +98,14 @@ export const DETECTORS: DetectorEntry[] = [
   { key: 'checkin-latency', who: 'drill', line: 'Mennyivel a saját idősávja után készül el a check-in (a soron tárolt idősáv és az első írás között).' },
   { key: 'checkin-slot-drift', who: 'drill', line: 'Melyik korábban rendszeres check-in idősáv kopott ki az elmúlt két hétben.' },
   { key: 'needs-domain-imbalance', who: 'pszichologus', line: 'Melyik Életjel-terület marad tartósan a többi mögött — a kontraszt a jel, nem az alacsony szint önmagában.' },
+  { key: 'people-mood-link', who: 'antropologus', line: 'A mentális check-in máshol áll-e azokon a napokon, amikor embert említesz — együttjárás, nem irány, és sosem nevez embert.' },
+  { key: 'mention-context-shift', who: 'antropologus', line: 'Milyen kontextusban kerülnek elő az emberek (a rendszer éjszakai címkéi), és nő-e a konfliktus-részarány.' },
+  { key: 'weekend-gap', who: 'antropologus', line: 'Hétvégi alvásközép-eltolás (Roenneberg social jetlag, 1 h / 2 h sávok) és hétvégi logolás-rés. Hétvége = szombat–vasárnap.' },
+  { key: 'chat-topic-shift', who: 'pszichologus', line: 'Melyik domén körül forognak a beszélgetéseid a társsal — a lekért eszközökből, a szöveg olvasása nélkül.' },
+  { key: 'knowledge-rejection-pattern', who: 'szkeptikus', line: 'A javasolt tények és minták mekkora része maradt meg — a rendszer találati aránya, nem a te tulajdonságod. ÉRZÉKENY.' },
+  { key: 'prediction-calibration', who: 'szkeptikus', line: 'A zárult predikciók találati aránya a kimondott magabiztossághoz képest: túlbiztos, alulbiztos vagy kalibrált volt a társ.' },
+  { key: 'quest-completion-calibration', who: 'szkeptikus', line: 'Slotonkénti quest-teljesítés a motor saját sávjaihoz (85% / 50%) képest — a nehézség-kalibráció, a szöveg soha.' },
+  { key: 'experiment-outcome-ledger', who: 'szkeptikus', line: 'Hány javasolt kísérlet és kihívás zárult jó kimenettel, és hány nem indult el (elvetve indulás előtt).' },
 ]
 
 const PRINCIPLE = 'A kód csak észlel — az értelmezés mindig az adott szakértő LLM-hívása. '

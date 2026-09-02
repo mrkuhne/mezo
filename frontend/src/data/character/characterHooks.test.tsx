@@ -230,13 +230,14 @@ describe('mock mode', () => {
 
   // Fix round 1 (mezo-1gim.14, finding 1): CharacterMonthlyService sets observationCount to
   // activeClaims.size() (re-evaluated ACTIVE claims), never 0 — pin it non-zero and equal to the
-  // seeded active-claim base (7 CORE + 1 CHAPTER dims, 3 claims each except chapter-work's 2).
+  // seeded active-claim base (7 CORE + 1 META + 1 CHAPTER dims, 3 claims each except
+  // self-audit's and chapter-work's 2).
   test('MONTHLY run observationCount mirrors the backend: non-zero, the seeded active-claim count', async () => {
     const { result } = renderHook(() => useCharacterRuns('2026-01-01', '2026-12-31'), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     const monthly = result.current.runs.find((r) => r.kind === 'MONTHLY')!
     expect(monthly.observationCount).toBeGreaterThan(0)
-    expect(monthly.observationCount).toBe(23) // 7 CORE dims * 3 claims + 1 CHAPTER dim * 2 claims
+    expect(monthly.observationCount).toBe(25) // 7 CORE dims * 3 claims + META 2 + CHAPTER 2
   })
 
   // Fix round 1 (mezo-1gim.14, finding 2): CharacterConferenceService computes a WEEKLY row's

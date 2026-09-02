@@ -28,4 +28,5 @@ cat src/receptmuhely-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/recep
 cat src/fuel-log-oldal-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/fuel-log-oldal-body.html > fuel-log-oldal.html
 cat src/tudastar-egyben-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/tudastar-egyben-body.html > tudastar-egyben.html
 cat src/kalauz-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/kalauz-body.html > kalauz.html
-echo "OK — 23 prototype files assembled."
+cat src/rutin-epito-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/rutin-epito-body.html > rutin-epito.html
+echo "OK — 24 prototype files assembled."

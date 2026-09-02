@@ -23,8 +23,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * Renders the [Karakter] dossier block for the companion system prompt (Karakter spec §8,
- * mezo-1gim.8): CORE dimensions in {@link CharacterCoreCatalog} order, then CHAPTER dimensions by
- * {@code createdAt}, each as an optional one-line portrait digest (first sentence, flattened and
+ * mezo-1gim.8): CORE dimensions in catalog order, then the META self-audit dimension, then
+ * CHAPTER dimensions by createdAt, each as an optional one-line portrait digest (first sentence, flattened and
  * capped 160 chars, only once the dimension's maturity clears {@code portraitMinMaturity} — the
  * full prose stays a UI concern) followed by its qualifying ACTIVE claims, each flattened to one
  * line and capped so model-authored text can never forge an extra bullet or a fake dimension
@@ -49,7 +49,8 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
      *  that would otherwise never reach the chat prompt itself. */
     private static final String HEADER = "\n\n[Karakter — amit eddig megtudtam Danielről] (értelmezések,"
             + " nem tények; az ÉRZÉKENY jelöléssel ellátott állításokat tükörként vagy kérdésként"
-            + " hozd fel, sosem ítélkezve):\n";
+            + " hozd fel, sosem ítélkezve; az önvizsgálat sorai a saját találati arányomról szólnak —"
+            + " ezekhez tartsd magad, ne ígérj magabiztosabban, mint amit igazolnak):\n";
     private static final String CORE_KIND = "CORE";
     private static final String ACTIVE_STATUS = "ACTIVE";
     private static final int PORTRAIT_DIGEST_MAX_CHARS = 160;
@@ -101,11 +102,19 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
     private List<CharacterDimensionEntity> orderedDimensions(UUID userId) {
         return dimensionRepository.findByCreatedBy(userId).stream()
                 .sorted(Comparator
-                        .comparing((CharacterDimensionEntity d) -> CORE_KIND.equals(d.getKind()) ? 0 : 1)
+                        .comparing((CharacterDimensionEntity d) -> kindRank(d.getKind()))
                         .thenComparing(d -> CORE_KIND.equals(d.getKind())
                                 ? CORE_ORDER.getOrDefault(d.getKey(), Integer.MAX_VALUE) : 0)
                         .thenComparing(CharacterDimensionEntity::getCreatedAt))
                 .toList();
+    }
+
+    /** CORE (catalog order) → META (the self-audit) → CHAPTER (createdAt), round-4 spec §4.2. */
+    private static int kindRank(String kind) {
+        if (CORE_KIND.equals(kind)) {
+            return 0;
+        }
+        return CharacterCoreCatalog.KIND_META.equals(kind) ? 1 : 2;
     }
 
     /** Null when this dimension has nothing worth rendering (no digest AND no qualifying claim). */

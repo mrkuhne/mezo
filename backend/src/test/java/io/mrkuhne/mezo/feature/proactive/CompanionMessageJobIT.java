@@ -19,10 +19,8 @@ import org.springframework.test.context.ActiveProfiles;
 /**
  * Companion-feed crons (spec §3): three window methods (morning/midday/evening), one switch.
  * run*() invoked directly; NOT @Transactional so the job's own
- * transactions commit and ResetDatabase cleans up. runMorning additionally fires the sleep
- * reaction right after the morning message — its own freshness gate makes it a safe no-op when
- * sleep isn't logged yet, and a real generation when a fresh sleep log already exists (the
- * "cron előtt logolt alvás" case, spec §3).
+ * transactions commit and ResetDatabase cleans up. runMorning generates the morning message
+ * only — the sleep reaction is event-kind (mezo-qn3z), asserted absent here.
  */
 @ActiveProfiles("companion-fake")
 class CompanionMessageJobIT extends AbstractIntegrationTest {
@@ -76,7 +74,7 @@ class CompanionMessageJobIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testRunMorning_shouldAlsoGenerateSleepReaction_whenFreshSleepLogAlreadyExists() {
+    void testRunMorning_shouldNotGenerateSleepReaction_evenWhenFreshSleepLogExists() {
         UUID user = userPopulator.createUser("feedjob-sleep@test.local").getId();
         dailySummaryPopulator.summary(user, LocalDate.now().minusDays(1), "Tegnap pihenőnap volt.");
         sleepLogPopulator.createSleepLog(user, LocalDate.now(), new BigDecimal("7.5"), 4);
@@ -86,9 +84,10 @@ class CompanionMessageJobIT extends AbstractIntegrationTest {
         assertThat(companionMessageRepository.findByCreatedByAndMessageDateAndKind(
                 user, LocalDate.now(), CompanionMessageEntity.KIND_MORNING))
                 .hasValueSatisfying(m -> assertThat(m.getContent().eyebrow()).isEqualTo("Fake reggeli"));
+        // Az alvás-reakció event-kind: a hajnali cron ekkor még csak a TEGNAPI éjszakát látná,
+        // és azt narrálná mai éjszakaként (mezo-qn3z). Csak a SleepLogSavedEvent szülheti.
         assertThat(companionMessageRepository.findByCreatedByAndMessageDateAndKind(
-                user, LocalDate.now(), CompanionMessageEntity.KIND_SLEEP))
-                .hasValueSatisfying(m -> assertThat(m.getContent().eyebrow()).isEqualTo("Fake alvás"));
+                user, LocalDate.now(), CompanionMessageEntity.KIND_SLEEP)).isEmpty();
     }
 
     @Test

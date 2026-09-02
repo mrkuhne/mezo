@@ -75,15 +75,15 @@ public class CharacterService {
     private final CharacterPortraitRevisionRepository revisionRepository;
     private final CharacterRunRepository runRepository;
 
-    /** Idempotent: inserts only the CORE catalog entries missing for this owner. Called by every
-     *  read below so a first-ever GET always finds all 7 CORE rows already there. */
+    /** Idempotent: inserts only the CORE + META catalog entries missing for this owner. Called by
+     *  every read below so a first-ever GET always finds all 8 rows already there. */
     @Transactional
     public void ensureCoreDimensions(UUID owner) {
         Set<String> existingKeys = new HashSet<>();
         for (CharacterDimensionEntity dim : dimensionRepository.findByCreatedBy(owner)) {
             existingKeys.add(dim.getKey());
         }
-        for (CharacterCoreCatalog.CoreDimension core : CharacterCoreCatalog.CORE) {
+        for (CharacterCoreCatalog.CoreDimension core : CharacterCoreCatalog.SEEDED) {
             if (existingKeys.contains(core.key())) {
                 continue;
             }
@@ -91,7 +91,7 @@ public class CharacterService {
             dim.setCreatedBy(owner);
             dim.setKey(core.key());
             dim.setTitle(core.title());
-            dim.setKind("CORE");
+            dim.setKind(CharacterCoreCatalog.kindOf(core.key()));
             dim.setExpertKey(core.expertKey());
             dimensionRepository.save(dim);
         }
@@ -109,7 +109,8 @@ public class CharacterService {
      * way expert cards do (a {@code pchip}); each card only has a {@code prole} (voice/manner)
      * line and a {@code pwatch} line. {@code role} is therefore set to the persona's identity
      * where the prototype offers one and otherwise mirrors {@code voiceLine} — no text is
-     * invented, only reused verbatim.
+     * invented, only reused verbatim. The Szkeptikus entry now derives from
+     * {@link CharacterExpertCatalog#SKEPTIC} (round 4) and carries the META dimension key.
      */
     public CharacterExpertsResponse experts() {
         List<CharacterExpertDto> experts = new ArrayList<>();
@@ -124,14 +125,14 @@ public class CharacterService {
                     .kind(CharacterExpertDto.KindEnum.EXPERT)
                     .build());
         }
+        CharacterExpertCatalog.Expert skeptic = CharacterExpertCatalog.SKEPTIC;
         experts.add(CharacterExpertDto.builder()
-                .key("szkeptikus")
-                .displayName("Szkeptikus")
-                .role("Szkeptikus")
-                .voiceLine("Száraz kontrás hang.")
-                .watch(List.of("minden javaslatot megtámad, mielőtt a dossziéba kerül — gyenge "
-                        + "bizonyíték, túlzott általánosítás, egy adatpontból levont következtetés."))
-                .dimensionKey(null)
+                .key(skeptic.key())
+                .displayName(skeptic.displayName())
+                .role(skeptic.role())
+                .voiceLine(skeptic.voiceLine())
+                .watch(skeptic.watch())
+                .dimensionKey(skeptic.primaryDimensionKey())
                 .kind(CharacterExpertDto.KindEnum.SKEPTIC)
                 .build());
         experts.add(CharacterExpertDto.builder()
@@ -179,7 +180,10 @@ public class CharacterService {
                 return i;
             }
         }
-        return CharacterCoreCatalog.CORE.size();
+        if (CharacterCoreCatalog.KIND_META.equals(dim.getKind())) {
+            return CharacterCoreCatalog.CORE.size();
+        }
+        return CharacterCoreCatalog.CORE.size() + 1;
     }
 
     @Transactional

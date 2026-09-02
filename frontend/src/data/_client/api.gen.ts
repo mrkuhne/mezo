@@ -245,6 +245,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/meso-plans/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a hypertrophy mesocycle proposal (deterministic skeleton + optional LLM exercise pick); returns a MesoTemplateUpsertRequest-compatible template */
+        post: operations["generateMesoPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/meso-templates": {
         parameters: {
             query?: never;
@@ -3925,6 +3942,25 @@ export interface components {
             /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
             imageEndUrl?: string | null;
         };
+        MesoPlanGenerateRequest: {
+            /** @description Training days, FE day tokens; any weekday incl. weekend */
+            daysOfWeek: string[];
+            /** @description Total length incl. the terminal deload week */
+            weeks: number;
+            /** @description Sparse per-muscle tier map over the 9 coarse groups (chest, back, shoulder, biceps, triceps, quad, ham, glute, calf); absent = grow */
+            priorities?: {
+                [key: string]: string;
+            } | null;
+            /** @description Free-text goal steering exercise choice (e.g. "röplabda mellett, vállra figyelve") */
+            goalText?: string | null;
+        };
+        MesoPlanGenerateResponse: {
+            template: components["schemas"]["MesoTemplateUpsertRequest"];
+            /** @description One Hungarian sentence on what was chosen and why (LLM or deterministic) */
+            rationale: string;
+            /** @description false when the LLM port was absent, failed, or its answer changed nothing (no accepted pick) — the deterministic filler produced the plan */
+            llmUsed: boolean;
+        };
         MesoTemplateUpsertRequest: {
             title: string;
             shortTitle?: string | null;
@@ -7536,7 +7572,7 @@ export interface components {
             key: string;
             title: string;
             /** @enum {string} */
-            kind: "CORE" | "CHAPTER";
+            kind: "CORE" | "CHAPTER" | "META";
             expertKey?: string | null;
             /** @description 0–100; 0 = "tanulom" */
             maturity: number;
@@ -7554,7 +7590,7 @@ export interface components {
             /** @description the persona's short voice/manner line (Csapat card) */
             voiceLine: string;
             watch: string[];
-            /** @description null for szkeptikus/mezo — they are not CORE dimension owners */
+            /** @description null for mezo; for szkeptikus the META dimension key (self-audit); the owned CORE key for experts */
             dimensionKey?: string | null;
             /** @enum {string} */
             kind: "EXPERT" | "SKEPTIC" | "CHAIR";
@@ -7572,7 +7608,7 @@ export interface components {
             key: string;
             title: string;
             /** @enum {string} */
-            kind: "CORE" | "CHAPTER";
+            kind: "CORE" | "CHAPTER" | "META";
             expertKey?: string | null;
             maturity: number;
             portrait: string;
@@ -8373,6 +8409,48 @@ export interface operations {
             };
             /** @description Mesocycle not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    generateMesoPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoPlanGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Generated proposal — not persisted; save it via POST /api/train/meso-templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoPlanGenerateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

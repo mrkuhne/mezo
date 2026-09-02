@@ -12,6 +12,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { ScoreHero } from '@/features/fuel/components/ScoreHero'
 import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
+import { mealContextOf, MEAL_CONTEXT_LABEL } from '@/features/fuel/logic/mealContext'
 import { useMealCoachFor } from '@/data/hooks'
 
 export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () => void }) {
@@ -22,6 +23,8 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
   if (!b) return null
   const scorePct = (meal.score ?? 0) * 100
   const summary = verdict?.summary ?? b.summary
+  // The role the meal was SCORED under (Standard / Pre / Post) — the same chip the block wears.
+  const ctx = mealContextOf(meal)
   const breakdown = verdict?.improve?.length ? { ...b, improve: verdict.improve } : b
 
   return (
@@ -37,8 +40,11 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                     title → derived name → 'Étkezés'. Never blank. */}
                 <Display size="md">{mealDisplayName(meal) ?? 'Étkezés'}</Display>
               </div>
-              <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 4 }}>
-                {meal.slot}
+              <span className="row gap-sm" style={{ alignItems: 'center', marginTop: 4 }}>
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{meal.slot}</span>
+                {ctx && (
+                  <span className={`fh-ctx is-${ctx}`}><i aria-hidden="true" />{MEAL_CONTEXT_LABEL[ctx]}</span>
+                )}
               </span>
             </div>
             <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
@@ -77,14 +83,8 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
             </div>
           )}
 
-          {/* Section eyebrow */}
-          <div className="row" style={{ justifyContent: 'space-between', margin: '20px 0 10px' }}>
-            <Eyebrow>Súlyozott bontás</Eyebrow>
-            <Eyebrow className="text-tertiary">{b.dimensions.length} dimenzió</Eyebrow>
-          </div>
-
-          {/* Dimension cards + improve + tools — shared with the recipe Pontszám (mezo-bw3y) */}
-          <ScoreBreakdownBody breakdown={breakdown} />
+          {/* Ledger + dimension cards + improve — shared with the recipe Pontszám (mezo-bw3y) */}
+          <ScoreBreakdownBody breakdown={breakdown} scorePct={Math.round(scorePct)} />
 
           <div style={{ height: 12 }} />
         </>

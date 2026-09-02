@@ -20,11 +20,24 @@ function renderSheet(onClose = () => {}) {
   render(<MealScoreSheet meal={meal} onClose={onClose} />, { wrapper: QueryWrapper })
   return meal
 }
-test('renders the score hero, summary and 8 dimension cards', () => {
+test('renders the score hero, summary, the ledger and 8 collapsed dimension cards; no tools list (mezo-zeeq)', () => {
   const meal = renderSheet()
   expect(screen.getByText(meal.title)).toBeInTheDocument()
-  expect(screen.getByText('Súlyozott bontás')).toBeInTheDocument()
-  expect(screen.getByText('8 dimenzió')).toBeInTheDocument()
+  expect(screen.getByText(/Miből áll össze a \d+/)).toBeInTheDocument()
+  expect(screen.getByText('8 dimenzió · súlyozva')).toBeInTheDocument()
+  expect(screen.getByLabelText('Pontszám-összetétel')).toBeInTheDocument()
+  expect(screen.getAllByRole('button', { expanded: false }).length).toBeGreaterThanOrEqual(8)
+  expect(screen.queryByText('Hogyan számoltam')).not.toBeInTheDocument()
+})
+test('the hero carries the tone word and the Rost fact, the header the context chip', () => {
+  renderSheet() // mock m1: fiberG present, no Szerep row → Standard
+  expect(screen.getByText(/^(jó|közepes|gyenge)$/)).toBeInTheDocument()
+  expect(screen.getByText('Rost')).toBeInTheDocument()
+  expect(screen.getByText('Standard')).toBeInTheDocument()
+})
+test('Lehetne jobb renders the gain as pont', () => {
+  renderSheet() // mock improve impacts are "+0.04 score" / "+0.01 score"
+  expect(screen.getByText('+4')).toBeInTheDocument()
 })
 test('renders the derived name (not a blank header) for a scored meal with an empty title (mezo-u68c)', () => {
   const seed = seedScoredMeal()
