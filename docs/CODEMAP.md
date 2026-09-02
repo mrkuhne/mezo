@@ -264,7 +264,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `GeminiRoundUsage`, `GeminiRoundUsageAdvisor`, `GeminiUsageExtractor`, `GoalTools`, `GraphEdgeEvidence`,
     `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `InsightsTools`,
     `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MedicationTools`, `MemoryEmbeddingWriter`, `MemoryTools`,
-    `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`, `PantryPhotoLlmAdapter`,
+    `MesoPlanLlmAdapter`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`, `PantryPhotoLlmAdapter`,
     `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`,
     `PracticeTools`, `ProfileMetaEnvelope`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
     `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RefsEnvelope`, `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`,
@@ -399,13 +399,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MedicationCycleBar.tsx,
     MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx,
     RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
-    RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx,
-    StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
+    RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx,
+    StackDayArc.tsx, StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
     WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
-    dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts, keretHero.ts,
-    matchMealsToStack.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts, resolveDayType.ts,
-    validateSlotPlan.ts
+    dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, formatImpact.ts, fuelSwimlane.ts, heroWindow.ts, kamraItems.ts,
+    keretHero.ts, matchMealsToStack.ts, mealContext.ts, mealDisplayName.ts, projectStackDay.ts, recipeRole.ts,
+    resolveDayType.ts, scoreTone.ts, validateSlotPlan.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
     `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
@@ -1009,7 +1009,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### train
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-08-15, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-08-31, done) ·
+  [docs/features/train.md](features/train.md) (updated 2026-09-02, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
@@ -1026,27 +1026,29 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MesocycleRepository`, `MuscleGroupVolumeLogRepository`, `RunSessionLogRepository`, `RunningBlockRepository`,
     `SportEventRepository`, `SportScheduleSlotRepository`, `SportSessionRepository`, `WorkoutSessionRepository`
   - **services:** `CatalogMediaResolver`, `ClosingBlockService`, `ExerciseCatalogService`, `ExerciseHistoryResolver`,
-    `ExerciseRecordService`, `GymScheduleService`, `MedalEvaluator`, `MedalService`, `MesoTemplateDays`,
+    `ExerciseRecordService`, `GymScheduleService`, `MedalEvaluator`, `MedalService`, `MesoPlanFiller`,
+    `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`, `MesoTemplateDays`,
     `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `Prescription`, `PriorityTier`,
     `ProgressionDecider`, `RunningService`, `SetRecommendationService`, `SportService`, `TrainService`,
     `VolumeArcService`, `VolumeDecider`, `VolumeProgressionService`, `WeeklyScheduledActivityService`,
     `WorkoutAutoCloseService`, `WorkoutService`, `WorkoutWindowQueryService`
   - **controllers→contract:** `TrainController`→`TrainApi`
   - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`
-  - **config:** `ClosingBlockProperties`, `HypertrophyProperties`, `TrainProperties`, `VolumeProperties`
+  - **config:** `ClosingBlockProperties`, `HypertrophyProperties`, `MesoPlanProperties`, `TrainProperties`,
+    `VolumeProperties`
   - **events/listeners:** `MesocycleClosed`
   - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `GymSignalCalculator`,
     `HypertrophyDriveGate`, `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `ProvenanceEnvelope`,
     `RunSignalCalculator`, `RunningBlockStructure`, `RunningSeedData`, `SportSignalCalculator`, `TrainSeedData`,
     `TrainingCommitmentCalculator`, `TrainingStreakCalculator`, `VolumeBaselineJson`, `VolumeProgressionGate`,
     `VolumeRecomputeJson`
-- **Contract** `api/feature/train/train.yml` — 55 operations
+- **Contract** `api/feature/train/train.yml` — 56 operations
   - **endpoints:** GET /api/train/mesocycles · POST /api/train/mesocycles/{id}/activate ·
     POST /api/train/mesocycles/{id}/close · PUT /api/train/mesocycles/{id}/muscle-priorities ·
     GET /api/train/mesocycles/{id}/report · POST /api/train/mesocycles/{id}/report/regenerate ·
     GET /api/train/mesocycles/{id}/volume-arc · PUT /api/train/mesocycles/{id}/days/{dayId}/exercises ·
-    POST /api/train/mesocycles/{id}/rerun · GET /api/train/meso-templates · POST /api/train/meso-templates ·
-    PUT /api/train/meso-templates/{id} · DELETE /api/train/meso-templates/{id} ·
+    POST /api/train/mesocycles/{id}/rerun · POST /api/train/meso-plans/generate · GET /api/train/meso-templates ·
+    POST /api/train/meso-templates · PUT /api/train/meso-templates/{id} · DELETE /api/train/meso-templates/{id} ·
     POST /api/train/meso-templates/{id}/start · GET /api/train/custom-workouts · POST /api/train/custom-workouts ·
     PUT /api/train/custom-workouts/{id} · DELETE /api/train/custom-workouts/{id} · GET /api/train/exercises ·
     POST /api/train/exercises · PUT /api/train/exercises/{id} · DELETE /api/train/exercises/{id} ·
@@ -1099,12 +1101,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     restTimer.ts, runToTemplate.ts, sessionLength.ts, sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts,
     structureLint.ts, summaryStats.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts,
     weekZone.ts, weeklyLoad.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 61 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 65 IT + 8 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseRecordContractIT`, `ExerciseRecordServiceIT`, `ExerciseVolumeFlagIT`,
     `GoalPresetBackfillSqlIT`, `GoalPresetCarryIT`, `GymScheduleContractIT`, `GymSignalCalculatorIT`,
-    `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoReviewSwitchOffIT`, `MesoTemplateIT`,
+    `HypertrophyPropertiesIT`, `MedalApiIT`, `MesoPlanGenerateAiIT`, `MesoPlanGenerateContractIT`,
+    `MesoPlanPropertiesBindingIT`, `MesoReviewSwitchOffIT`, `MesoStartTierSeedIT`, `MesoTemplateIT`,
     `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`, `MesocycleCloseReportIT`, `MusclePrioritiesCarryIT`,
     `PrescribedSetsFoundationIT`, `ProvenanceRoundTripIT`, `RunSessionLevelUpApiIT`, `RunSignalCalculatorIT`,
     `RunningContractIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`, `SportServiceIT`,
