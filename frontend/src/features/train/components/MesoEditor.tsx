@@ -13,6 +13,7 @@
 // surface; per-day locality is what the red tab dots are for.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
+import { useTimingProfile } from '@/data/hooks'
 import type { GymExercise, MesoDay, MusclePriorities } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 import { SortableList } from '@/shared/ui/SortableList'
@@ -52,6 +53,9 @@ export function MesoEditor({
     () => days.find((d) => d.current)?.day ?? days.find((d) => !isOffDay(d))?.day ?? days[0]?.day ?? null,
   )
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  // Calibrated pacing (Task 12, mezo-dzbm): only dayMinutes below reads this — structureLint/
+  // peakWeekFit deliberately stay on the static estimate (see sessionLength.ts header).
+  const { data: timingProfile } = useTimingProfile()
   // Auto-expand baseline: seeded ONCE at mount with every exercise id across
   // ALL days (not just the active one, so tab switches never fake-trigger) —
   // nothing is expanded on mount; only ids appearing AFTER this baseline count
@@ -112,7 +116,7 @@ export function MesoEditor({
 
   const off = isOffDay(day)
   const daySets = day.exercises.reduce((a, e) => a + e.workingSets, 0)
-  const dayMinutes = estimateSessionMinutes(day.exercises)
+  const dayMinutes = estimateSessionMinutes(day.exercises, timingProfile ?? undefined)
   const weekSets = days.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
   const trainingDays = days.filter((d) => d.exercises.length > 0).length
   const showRename = Boolean(onRenameDay) && day.muscle === 'custom'
