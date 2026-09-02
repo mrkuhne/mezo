@@ -118,8 +118,14 @@ public class ContextSnapshotAssembler {
     private final ObjectProvider<HabitService> habitService;
     private final ObjectProvider<IntentionService> intentionService;
     private final ObjectProvider<RitualService> ritualService;
+    private final PeopleSnapshotBlock peopleSnapshotBlock;
     private final CompanionProperties properties;
 
+    /**
+     * The chat-turn variant — nine blocks, {@code [Emberek]} ({@link PeopleSnapshotBlock}) sitting
+     * between {@code [Napi gyakorlat]} and {@code [Mai üzemanyag]}. Chat-only: see
+     * {@link #renderWithoutBiometrics} for why the morning message never sees the circle.
+     */
     public String render(UUID userId, LocalDate today) {
         return HEADER + today + "):\n"
                 + profileBlock(userId, today, true) + '\n'
@@ -127,16 +133,29 @@ public class ContextSnapshotAssembler {
                 + trainBlock(userId, today) + '\n'
                 + growthBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
+                + peopleLine(userId, today)
                 + fuelBlock(userId, today) + '\n'
                 + medicationBlock(userId, today) + '\n'
                 + recoveryBlock(userId, today, true);
     }
 
     /**
+     * mezo-x6oa: the [Emberek] block ({@link PeopleSnapshotBlock}) — CHAT variant only. The
+     * morning message ({@link #renderWithoutBiometrics}) deliberately never sees the circle:
+     * that would be the companion bringing people up unprompted. "" when configured off, so no
+     * stray blank line is left behind.
+     */
+    private String peopleLine(UUID userId, LocalDate today) {
+        String block = peopleSnapshotBlock.render(userId, today);
+        return block.isEmpty() ? "" : block + '\n';
+    }
+
+    /**
      * The morning-message variant (companion-feed, spec §3): same block composition as
      * {@link #render}, but strips weight/sleep entirely at the source — the morning message is
      * generated BEFORE those get logged for the day, and a prompt prohibition alone is not
-     * enough (the model would still see and could still leak the numbers).
+     * enough (the model would still see and could still leak the numbers). Also never carries
+     * the [Emberek] block (mezo-x6oa): that would be the companion bringing people up unprompted.
      */
     public String renderWithoutBiometrics(UUID userId, LocalDate today) {
         return HEADER + today + "):\n"

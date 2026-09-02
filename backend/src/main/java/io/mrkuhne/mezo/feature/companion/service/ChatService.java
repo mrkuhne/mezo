@@ -85,6 +85,10 @@ public class ChatService {
             Konkrét számot, dátumot vagy múltbeli adatot viszont CSAK akkor mondj, ha a kontextusból, \
             egy eszközhívásból vagy Daniel üzenetéből származik. Adatot kitalálni akkor is tilos, ha megjelölöd.
             Ha valamit nem tudsz, mondd ki őszintén, hogy nem tudod.
+            Az [Emberek] sorai Daniel emberi köre: ha egy nevet említ, onnan tudod, ki ő (kapcsolat) \
+            és hogyan áll most (e heti említés, hangulat-irány). Ennyit mondhatsz róluk, mást nem: \
+            harmadik félről eseményt, tulajdonságot, véleményt nem találsz ki. Magadtól ne hozd szóba \
+            őket — csak ha Daniel említi, vagy a téma egyértelműen róluk szól.
 
             [Példa a hangnemre]
             Kérdés: „hogy állok a súllyal?"
