@@ -90,7 +90,9 @@ export function deciderSentence(meso: Mesocycle): string | null {
   const current = meso.volumePerMuscle?.[change.muscle]?.current
   switch (change.reason) {
     case 'tartás':
-      return `A ${label} a múlt héten grindelt (RIR-rés), ezért most tartjuk a ${current} szettet — a rámpa folytatódik, amint visszaáll a tempó.`
+      return current === undefined
+        ? `A ${label} a múlt héten grindelt (RIR-rés), ezért most tartjuk a szettszámot — a rámpa folytatódik, amint visszaáll a tempó.`
+        : `A ${label} a múlt héten grindelt (RIR-rés), ezért most tartjuk a ${current} szettet — a rámpa folytatódik, amint visszaáll a tempó.`
     case 'cél teljesítve, nincs grind':
       return `Produktív hét: a ${label} +2 szettet kap.`
     case 'deload':

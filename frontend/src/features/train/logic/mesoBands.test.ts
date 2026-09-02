@@ -33,6 +33,19 @@ describe('mesoBands', () => {
   })
   it('turns the recompute change into a Hungarian sentence and the next-rollover chips', () => {
     expect(deciderSentence(meso)).toContain('Mell')
-    expect(nextRolloverChips(meso)).toEqual(expect.arrayContaining([{ label: 'Hát', text: 'Hát +2', tone: 'sage' }, { label: 'Vádli', text: 'Vádli tart', tone: 'mut' }]))
+    expect(nextRolloverChips(meso)).toEqual([
+      { label: 'Hát', text: 'Hát +2', tone: 'sage' },
+      { label: 'Mell', text: 'Mell +2', tone: 'sage' },
+      { label: 'Vádli', text: 'Vádli tart', tone: 'mut' },
+    ])
+  })
+  it('the hold sentence never leaks undefined when the changed muscle has no volume profile', () => {
+    const noProfile = {
+      ...meso,
+      volumeRecompute: { lastRun: '', nextRun: '', trigger: '', changes: [{ muscle: 'shoulder', change: 'tart (12)', reason: 'tartás' }] },
+    } as unknown as Mesocycle
+    const sentence = deciderSentence(noProfile)
+    expect(sentence).toContain('Váll')
+    expect(sentence).not.toContain('undefined')
   })
 })
