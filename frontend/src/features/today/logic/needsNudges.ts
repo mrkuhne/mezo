@@ -99,5 +99,6 @@ export function toNudgeMessage(n: { key: NeedKey; at: string }): MezoMessageItem
     paragraphs: [NUDGE_COPY[n.key]],
     refs: [],
     meta: 'Életjel-figyelő',
+    source: 'eletjel',
   }
 }
