@@ -57,7 +57,14 @@ create index idx_pantry_catalog_kind on pantry_catalog (kind);
 --    (uq_pantry_item_created_by_catalog_id below). If a user today has two live rows with the
 --    same name+brand, this throwaway unique index fails with "could not create unique index",
 --    the changeset rolls back and the app refuses to start — resolve the duplicates by hand
---    (docs/features/pantry.md §9 has the diagnostic query) rather than let the migration pick one.
+--    (find them with the query below; docs/features/pantry.md §9 will carry the same diagnostic
+--    once Task 12 lands it) rather than let the migration pick one:
+--
+--    select created_by, lower(name), lower(coalesce(brand,'')), count(*), array_agg(id)
+--    from pantry_item
+--    where is_deleted = false
+--    group by 1,2,3
+--    having count(*) > 1;
 create unique index uq_pantry_item_split_guard
     on pantry_item (created_by, lower(name), lower(coalesce(brand, ''))) where is_deleted = false;
 drop index uq_pantry_item_split_guard;
@@ -105,7 +112,19 @@ create index idx_pantry_item_catalog_id on pantry_item (catalog_id);
 create unique index uq_pantry_item_created_by_catalog_id
     on pantry_item (created_by, catalog_id) where is_deleted = false;
 
--- 6. The definition columns leave pantry_item (their CHECKs and the kind index go first).
+-- 6. One-way safety net for the S4 definition merge: the dedupe in steps 3-4 collapses
+--    definitions across all users (earliest created_at wins), so every other user's and every
+--    soft-deleted row's divergent kcal/macros/micros/serving/source values are about to be
+--    destroyed by the column drop below with no rollback block in this repo. Snapshot them here,
+--    before the drop, while the columns still exist. May be dropped by a later cleanup changeset
+--    once the split is proven in production.
+create table pantry_item_definition_archive as
+select id, created_by, kind, name, brand, source, category, serving_amount, serving_unit,
+       kcal, protein_g, carbs_g, fat_g, fiber_g, sugar_g, salt_g, saturated_fat_g,
+       package_label, micros, nova, form, caffeine
+from pantry_item;
+
+-- 7. The definition columns leave pantry_item (their CHECKs and the kind index go first).
 drop index idx_pantry_item_created_by_kind;
 alter table pantry_item drop constraint ck_pantry_item_kind;
 alter table pantry_item drop constraint ck_pantry_item_source;
