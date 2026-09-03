@@ -17,6 +17,10 @@ export default defineConfig({
         // the self-hosted brand fonts (public/fonts/*.woff2) are precached — the app
         // then renders Geist + Fraunces offline instead of falling back to system.
         globPatterns: ['**/*.{js,wasm,css,html,ico,png,svg,woff2}'],
+        // The main JS chunk sits right at Workbox's 2 MiB default precache ceiling (mezo-8az6
+        // header-aurora tipped it a few KB over); bump the ceiling rather than code-split just
+        // to dodge a threshold — revisit if the bundle keeps growing.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         // The vendored exercise demo stills (public/exercises/*.jpg, ~15 MB, mezo-8xdl.2) must
         // NEVER enter the precache — the precache IS the install cost, and demo photos are not
         // install-critical. Belt and braces: `jpg` is absent from globPatterns above AND the

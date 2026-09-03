@@ -191,6 +191,22 @@
   --mz-deload-stripe: repeating-linear-gradient(135deg, #E5C46B 0 3px, #F3E3B5 3px 6px);
   --mz-dstep-custom: #6C5FA3; /* derivation timeline's 03 „Rád szabva" disc */
   --mz-ink-mut: #A2958A;
+  /* ── Fejléc-aurora (mezo-8az6) — napszak-tónusok. A wash a sáv teteje, a foltok
+        adják a mélységet; a réteg alja maszkkal fakul a tartalomba. Dark párjuk a
+        dark blokkban, azonos nevekkel. */
+  --mzh-wash-reggel: linear-gradient(155deg, #FFD9A8 0%, #FFE7CE 55%, #FFF3E6 100%);
+  --mzh-wash-nap:    linear-gradient(155deg, #B9DCF0 0%, #D3E9F6 55%, #EAF4FA 100%);
+  --mzh-wash-este:   linear-gradient(155deg, #D6CDF3 0%, #E4DDF7 55%, #F1EDFB 100%);
+  --mzh-blob1-reggel: #FFC078; --mzh-blob2-reggel: #FF8E6A;
+  --mzh-blob1-nap:    #7FBEE8; --mzh-blob2-nap:    #69CFBD;
+  --mzh-blob1-este:   #A392E4; --mzh-blob2-este:   #E28FBB;
+  --mzh-deco-line: rgba(43, 33, 24, 0.18);
+  --mzh-deco-fill: rgba(43, 33, 24, 0.24);
+  --mzh-glass: rgba(255, 255, 255, 0.6);
+  --mzh-glass-line: rgba(43, 33, 24, 0.08);
+  /* A kompakt fejléc doboz-magassága (4px felső padding + 40px kontrollsor). A lapokon
+     belüli sticky chrome ehhez képest tapad ki, hogy ne csússzon a shell-fejléc alá. */
+  --mzh-head-cond-h: 44px;
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
         blocks carry IDENTICAL values: the duplication keeps the Mozaik rule (a --rz-*
@@ -510,6 +526,19 @@
   --mz-stripbg: var(--surface-card);
   --mz-sheet-bg: var(--surface-1); /* F7.3 sheet-minta — dark keeps the theme surface */
   --mz-ink-mut: #8A7A6A;
+  /* ── Fejléc-aurora dark párja (mezo-8az6): mélyebb, tompított tónusok a grafit
+        vászon fölé; a foltok ugyanazok a színek, a wash viszi a sötétítést. */
+  --mzh-wash-reggel: linear-gradient(155deg, #5A4224 0%, #3E2E1C 55%, #241C14 100%);
+  --mzh-wash-nap:    linear-gradient(155deg, #1F4560 0%, #1C3242 55%, #1A2027 100%);
+  --mzh-wash-este:   linear-gradient(155deg, #3A2F63 0%, #2A2444 55%, #1E1A2A 100%);
+  --mzh-blob1-reggel: #FFC078; --mzh-blob2-reggel: #FF8E6A;
+  --mzh-blob1-nap:    #7FBEE8; --mzh-blob2-nap:    #69CFBD;
+  --mzh-blob1-este:   #A392E4; --mzh-blob2-este:   #E28FBB;
+  --mzh-deco-line: rgba(255, 255, 255, 0.2);
+  --mzh-deco-fill: rgba(255, 255, 255, 0.3);
+  --mzh-glass: rgba(24, 19, 15, 0.6);
+  --mzh-glass-line: rgba(255, 255, 255, 0.09);
+  --mzh-head-cond-h: 44px;
   --mz-ink-soft: var(--text-secondary);
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
@@ -903,13 +932,17 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    while the content scrolls under it, like native app navigation chrome. */
 .sticky-top {
   position: sticky;
-  /* top: 0 — NOT 54px: the .screen-content already offsets the scrollport below
-     the status bar via padding-top, so a non-zero top double-counts it and the
-     breadcrumb pins below the status bar, letting the header scroll over it. */
+  /* NEM 0 és NEM 54px: a .screen-content padding-topja (54px) továbbra is a fake
+     státuszsáv alá offsetel, de a shell-fejléc (mezo-8az6) mostantól maga is kitapad
+     ugyanoda — a lap chrome-ja ezért a KOMPAKT fejléc magasságával (--mzh-head-cond-h)
+     lejjebb tapad ki, hogy ne csússzon a shell-fejléc alá. Ez CSAK akkor igaz, ha van
+     shell-fejléc: a chrome nélküli oldalakon (AppLayout.tsx hideChrome) nincs mi alá
+     tapadni, ott a 0 a helyes — innen a :has() scope. */
   top: 0;
   z-index: 40;
   background: var(--canvas);
 }
+.screen-content:has(.app-head) .sticky-top { top: var(--mzh-head-cond-h); }
 
 /* Lock background scroll when a sheet/modal (or the SubNavDropdown popover, whose
    backdrop is portaled into .phone-screen the same way) is open */
@@ -1075,7 +1108,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
     padding-top: env(safe-area-inset-top);
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
-  .sticky-top { top: 0; }
+  /* A shell-fejléc valódi eszközön is kitapad (mezo-8az6), ezért a lap chrome-ja itt sem
+     tapadhat ki 0-nál — ugyanaz a kompakt fejléc-magasság, mint az alapszabályban.
+     Ugyanúgy csak fejléces oldalon: lásd az alapszabály :has() scope-ját. */
+  .screen-content:has(.app-head) .sticky-top { top: var(--mzh-head-cond-h); }
   .tab-bar {
     height: auto;
     padding-top: 8px;
@@ -4519,7 +4555,86 @@ button.mz-tile:active { transform: scale(0.96); }
    (gap: 11px). A fejléc kikerült a konténerekből, a 7px margó pedig szándékosan egységes:
    a Nap 13px-ét pontosan visszaadja, a másik négyet 11-ről 13-ra emeli — egy közös fejléc
    alatt egy közös rés jár, a 2px a megosztásért fizetett ár. */
-.app-head { padding-top: 6px; margin-bottom: 7px; }
+/* A fejléc KITAPAD (mezo-8az6): az app egyetlen görgetője a .screen-content, a fejléc
+   benne ül, így `top: 0` a helyes — a scroller padding-top: 54px-je már a fake
+   státuszsáv alá offsetel (ugyanez a logika, mint a .sticky-top-nál). Az értesítés és
+   az üzenetek így egy hosszú lista aljáról is egy koppintásra vannak. */
+.app-head {
+  position: sticky;
+  top: 0;
+  /* 46: a lapokon belüli sticky chrome (breadcrumb 40, chat-fejléc 30) FÖLÖTT, de a
+     StatusBar (50) alatt — a shell fejléce mindig a lap saját chrome-ja fölött ül. */
+  z-index: 46;
+  padding-top: 6px;
+  margin-bottom: 7px;
+  transition: padding var(--duration-normal) var(--ease-in-out),
+    margin var(--duration-normal) var(--ease-in-out);
+}
+/* Az aurora full-bleed: a .screen-content --screen-gutter paddingját negatív margóval
+   lépi át, hogy a telefon széléig érjen. A fejléc TARTALMA a gutteren belül marad. */
+.app-head-bg {
+  position: absolute;
+  top: 0;
+  left: calc(-1 * var(--screen-gutter));
+  right: calc(-1 * var(--screen-gutter));
+  height: 92px;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity var(--duration-normal) var(--ease-out);
+  /* az alja belefolyik a tartalomba — nincs éles vágás */
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+}
+.app-head-wash { position: absolute; inset: 0; }
+.app-head-bg[data-face="reggel"] .app-head-wash { background: var(--mzh-wash-reggel); }
+.app-head-bg[data-face="nap"]    .app-head-wash { background: var(--mzh-wash-nap); }
+.app-head-bg[data-face="este"]   .app-head-wash { background: var(--mzh-wash-este); }
+.app-head-blob { position: absolute; border-radius: 50%; filter: blur(30px); opacity: 0.75; }
+.app-head-blob.b1 { width: 190px; height: 190px; left: -56px; top: -84px; }
+.app-head-blob.b2 { width: 150px; height: 150px; right: -34px; top: -66px; opacity: 0.55; }
+.app-head-bg[data-face="reggel"] .b1 { background: var(--mzh-blob1-reggel); }
+.app-head-bg[data-face="reggel"] .b2 { background: var(--mzh-blob2-reggel); }
+.app-head-bg[data-face="nap"]    .b1 { background: var(--mzh-blob1-nap); }
+.app-head-bg[data-face="nap"]    .b2 { background: var(--mzh-blob2-nap); }
+.app-head-bg[data-face="este"]   .b1 { background: var(--mzh-blob1-este); }
+.app-head-bg[data-face="este"]   .b2 { background: var(--mzh-blob2-este); }
+.app-head-deco { position: absolute; inset: 0; }
+.app-head-deco svg { position: absolute; right: 0; top: 0; opacity: 0.9; }
+.app-head-arc { fill: none; stroke: var(--mzh-deco-line); stroke-width: 1.5; }
+.app-head-dfill { fill: var(--mzh-deco-fill); }
+/* A szekció-blokk a fejléc bal oldalán: spot + név, egy sorban, csonkolva. */
+.app-head-sec { display: flex; align-items: center; gap: 8px; }
+.app-head-spot { flex: none; }
+.app-head-title {
+  font-size: 19px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Kompakt üvegmód: az aurora kifakul, a helyét áttetsző, elmosott sáv veszi át.
+   A blur SZÁNDÉKOSAN csak erre az alacsony sávra kerül, nem a teljes aurorára —
+   nagy felületen a backdrop-filter gyenge telefonon képkockát ejt. */
+/* A padding-top a --mzh-head-cond-h tokenből SZÁRMAZIK, nem külön szám: 40px a
+   .nap-roundbtn kontrollsor magassága, a token a mérvadó (44px mindkét témában) — így
+   nem szakadhat el csendben a kettő egymástól. */
+.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 40px); margin-bottom: 3px; }
+.app-head.is-cond .app-head-bg { opacity: 0; }
+.app-head.is-cond::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: calc(-1 * var(--screen-gutter));
+  right: calc(-1 * var(--screen-gutter));
+  background: var(--mzh-glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 0.5px solid var(--mzh-glass-line);
+}
+/* A fejléc tartalma az aurora és az üvegsáv FÖLÖTT ül. Figyelem: ez minden fejléc-
+   gyerekből saját stacking contextet csinál, tehát a bennük lévő .nap-dpmenu/
+   .nap-ntfmenu 30-as z-indexe is EBBE a helyi kontextusba zárul, nem a globálisba.
+   Jelenleg ez nem okoz ütközést (a menük geometriailag nem lógnak ki később jövő
+   testvérek alá), de új fejléc-gyerek hozzáadásakor erre figyelni kell. */
+.app-head > *:not(.app-head-bg) { position: relative; z-index: 1; }
 .nap-head-grow { flex: 1; min-width: 0; }
 .nap-dpwrap { position: relative; }
 .nap-roundbtn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
@@ -5278,7 +5393,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
    hosszú szál aljáról a kiút ismét csak a tabbar lenne (lásd a #page-chat page-head
    korábbi sticky-jét, prototype.css régi 6865). */
 .mzc-chathead { display: flex; align-items: center; gap: 9px; padding: 2px 19px 6px;
-  position: sticky; top: 0; z-index: 30; background: var(--canvas); }
+  position: sticky; top: var(--mzh-head-cond-h); z-index: 30; background: var(--canvas); }
 .mzc-hdisc {
   width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; flex: none;
   font-family: inherit; font-size: 15px; color: var(--text-primary); padding: 0;
