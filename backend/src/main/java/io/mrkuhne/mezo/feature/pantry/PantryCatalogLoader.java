@@ -1,23 +1,19 @@
 package io.mrkuhne.mezo.feature.pantry;
 
-import io.mrkuhne.mezo.feature.auth.OwnerProperties;
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
-import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
-import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -25,27 +21,23 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 /**
- * Seeds the owner's pantry with the imported real-world catalog ({@code seed/pantry-catalog.json},
- * 146 items exported from the user's previous app) on startup. {@code @Profile("demodata")} — the
- * profile prod runs — so the catalog lands in prod for the single owner. Idempotent: only seeds when
- * the owner currently has no pantry items, so a restart never duplicates and a user who has since
- * curated their shelf is left untouched. Runs after {@link io.mrkuhne.mezo.feature.auth.OwnerSeedData}
- * (Order 0) so the owner exists.
+ * Master-content loader for the shared pantry catalog (S4, mezo-qw37.4 — the ExerciseCatalogLoader
+ * shape): runs in EVERY profile, upserts {@code seed/pantry-catalog.json} (147 definitions) into
+ * {@code pantry_catalog} by natural key with {@code created_by = NULL}. A natural-key hit is CLAIMED
+ * as master (a migrated owner row, or a user who typed the same food) and only its NULL definition
+ * fields are filled — a curated value is never overwritten. It never creates a {@code pantry_item}:
+ * a user's shelf starts empty and grows from the catalog ("Hozzáadás a közösből").
  */
 @Slf4j
 @Component
-@Profile("demodata")
-@Order(60)
+@Order(50)
 @RequiredArgsConstructor
 public class PantryCatalogLoader implements CommandLineRunner {
 
-    private final PantryItemRepository repository;
-    private final PantryCatalogRepository catalogRepository;
-    private final AppUserRepository appUserRepository;
-    private final OwnerProperties ownerProperties;
+    private final PantryCatalogRepository repository;
     private final ObjectMapper objectMapper; // SB4 Jackson 3 (tools.jackson)
 
-    /** One catalog row as authored in seed/pantry-catalog.json. */
+    /** One row as authored in seed/pantry-catalog.json. priceHuf/stockQty/stockUnit are per-user facts — read, ignored. */
     public record CatalogRow(
         String name, String kind, String source, String category,
         BigDecimal per, String unit,
@@ -61,48 +53,69 @@ public class PantryCatalogLoader implements CommandLineRunner {
         run();
     }
 
-    /** No-arg overload — used by the integration test to re-run against a clean DB. */
+    /** No-arg overload — used by the IT to re-run against a drifted DB. */
     @Transactional
     public void run() {
-        AppUserEntity owner = appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElse(null);
-        if (owner == null) {
-            return; // no owner yet (non-demodata path) — nothing to seed
-        }
-        UUID ownerId = owner.getId();
-        List<PantryItemEntity> existing = repository.findByCreatedByAndDeletedFalseOrderByNameAsc(ownerId);
-        if (!existing.isEmpty()) {
-            backfillNova(existing); // curated shelf stays untouched EXCEPT the additive nova backfill
-            return;
-        }
+        Map<String, PantryCatalogEntity> byKey = new HashMap<>();
+        repository.findAll().forEach(c -> byKey.put(naturalKey(c.getName(), c.getBrand()), c));
+        int inserted = 0;
+        int claimed = 0;
         for (CatalogRow row : readCatalog()) {
-            repository.save(toEntity(ownerId, row));
+            String key = naturalKey(row.name(), null);
+            PantryCatalogEntity hit = byKey.get(key);
+            if (hit == null) {
+                PantryCatalogEntity c = new PantryCatalogEntity();
+                c.setName(row.name());
+                fill(c, row, true);
+                byKey.put(key, repository.save(c));
+                inserted++;
+                continue;
+            }
+            if (!hit.isMaster() || hit.isDeleted()) {
+                hit.setCreatedBy(null);
+                hit.setDeleted(false);
+                claimed++;
+            }
+            fill(hit, row, false); // NULL-only backfill (the mezo-32ko nova rule, generalized)
+            repository.save(hit);
+        }
+        if (inserted > 0 || claimed > 0) {
+            log.info("pantry catalog: {} master row(s) inserted, {} claimed (mezo-qw37.4)", inserted, claimed);
         }
     }
 
+    /** {@code overwrite=true} for a new row; otherwise only NULL fields take the seed value. */
+    private static void fill(PantryCatalogEntity c, CatalogRow r, boolean overwrite) {
+        set(overwrite, c::getKind, c::setKind, r.kind());
+        set(overwrite, c::getSource, c::setSource, r.source());
+        set(overwrite, c::getCategory, c::setCategory, r.category());
+        set(overwrite, c::getServingAmount, c::setServingAmount, r.per());
+        set(overwrite, c::getServingUnit, c::setServingUnit, r.unit());
+        set(overwrite, c::getKcal, c::setKcal, r.kcal());
+        set(overwrite, c::getProteinG, c::setProteinG, r.proteinG());
+        set(overwrite, c::getCarbsG, c::setCarbsG, r.carbsG());
+        set(overwrite, c::getFatG, c::setFatG, r.fatG());
+        set(overwrite, c::getFiberG, c::setFiberG, r.fiberG());
+        set(overwrite, c::getSugarG, c::setSugarG, r.sugarG());
+        set(overwrite, c::getSaltG, c::setSaltG, r.saltG());
+        set(overwrite, c::getSaturatedFatG, c::setSaturatedFatG, r.saturatedFatG());
+        set(overwrite, c::getPackageLabel, c::setPackageLabel, r.packageLabel());
+        set(overwrite, c::getNova, c::setNova, r.nova());
+    }
+
+    private static <T> void set(boolean overwrite, Supplier<T> getter, Consumer<T> setter, T seed) {
+        if (seed == null) return;
+        if (overwrite || getter.get() == null) setter.accept(seed);
+    }
+
     /**
-     * mezo-32ko: the catalog originally shipped without NOVA classes, so live rows have
-     * {@code nova = null} and both the meal score's NOVA dimension and the low-NOVA swap
-     * suggestion degrade. Backfill is additive + idempotent: only rows whose name matches a
-     * catalog row AND whose nova is still null get the catalog value — a user who has since
-     * set/cleared nova by hand, renamed, or added items is never overwritten.
+     * Mirrors {@code uq_pantry_catalog_natural}: {@code lower(name)} + {@code lower(coalesce(brand,''))}.
+     * Uses {@link Locale#ROOT} deliberately — the default JVM locale (e.g. Turkish "i") lowercases
+     * differently and would desync this key from the DB's SQL {@code lower()}.
      */
-    private void backfillNova(List<PantryItemEntity> existing) {
-        Map<String, Short> catalogNova = new HashMap<>();
-        for (CatalogRow row : readCatalog()) {
-            if (row.nova() != null) catalogNova.put(row.name(), row.nova());
-        }
-        int updated = 0;
-        for (PantryItemEntity e : existing) {
-            Short nova = catalogNova.get(e.getCatalog().getName());
-            if (e.getCatalog().getNova() == null && nova != null) {
-                e.getCatalog().setNova(nova);
-                catalogRepository.save(e.getCatalog());
-                updated++;
-            }
-        }
-        if (updated > 0) {
-            log.info("pantry catalog nova backfill: {} row(s) updated (mezo-32ko)", updated);
-        }
+    static String naturalKey(String name, String brand) {
+        return name.strip().toLowerCase(Locale.ROOT) + "|"
+            + (brand == null ? "" : brand.strip().toLowerCase(Locale.ROOT));
     }
 
     private List<CatalogRow> readCatalog() {
@@ -112,37 +125,5 @@ public class PantryCatalogLoader implements CommandLineRunner {
         } catch (IOException e) {
             throw new IllegalStateException("seed/pantry-catalog.json is unreadable", e);
         }
-    }
-
-    private PantryItemEntity toEntity(UUID ownerId, CatalogRow r) {
-        // Inline find-or-create by natural key — Task 5 swaps this for PantryCatalogService.
-        PantryCatalogEntity catalogCandidate = new PantryCatalogEntity();
-        catalogCandidate.setKind(r.kind());
-        catalogCandidate.setName(r.name());
-        catalogCandidate.setSource(r.source());
-        catalogCandidate.setCategory(r.category());
-        catalogCandidate.setServingAmount(r.per());
-        catalogCandidate.setServingUnit(r.unit());
-        catalogCandidate.setKcal(r.kcal());
-        catalogCandidate.setProteinG(r.proteinG());
-        catalogCandidate.setCarbsG(r.carbsG());
-        catalogCandidate.setFatG(r.fatG());
-        catalogCandidate.setFiberG(r.fiberG());
-        catalogCandidate.setSugarG(r.sugarG());
-        catalogCandidate.setSaltG(r.saltG());
-        catalogCandidate.setSaturatedFatG(r.saturatedFatG());
-        catalogCandidate.setPackageLabel(r.packageLabel());
-        catalogCandidate.setNova(r.nova());
-        PantryCatalogEntity catalog = catalogRepository
-            .findByNaturalKey(catalogCandidate.getName(), catalogCandidate.getBrand())
-            .orElseGet(() -> catalogRepository.save(catalogCandidate));
-
-        PantryItemEntity e = new PantryItemEntity();
-        e.setCreatedBy(ownerId);
-        e.setCatalog(catalog);
-        e.setPriceHuf(r.priceHuf());
-        e.setStockQty(r.stockQty());
-        e.setStockUnit(r.stockUnit());
-        return e;
     }
 }
