@@ -302,3 +302,20 @@ test('the hero carries no settings entry of its own — Fuel-beállítások live
   renderView()
   expect(screen.queryByRole('button', { name: /szerkeszt/i })).toBeNull()
 })
+
+// ── diet-phase suggestion banner (slice 4, mezo-ktg8) ────────────────────────
+// Mock mode's goalSuggestions fixture always carries one open proposal, so the hub
+// should surface the slim deep-link banner above the keret-hero and point at the
+// Cél page (the WEIGHT goal lives at /me/goals/weight, not the bare /me/goals hub).
+
+test('the diet-suggestion banner shows in mock mode (one open fixture suggestion) and links to the Cél page', async () => {
+  const { container } = renderView()
+  const banner = screen.getByText('Diéta-javaslat vár a Cél oldalon').closest('a')
+  expect(banner).toBeInTheDocument()
+  expect(banner).toHaveAttribute('href', '/me/goals/weight')
+  // Renders above the keret-hero.
+  const hero = container.querySelector('.fh-hero')
+  expect(banner!.compareDocumentPosition(hero!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  await userEvent.click(banner!)
+  expect(screen.getByTestId('loc').textContent).toBe('/me/goals/weight')
+})
