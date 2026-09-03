@@ -43,4 +43,19 @@ class CompanionMessageSetupPersistenceIT extends AbstractIntegrationTest {
         assertThat(companionMessageRepository.findById(morning.getId()).orElseThrow()
             .getContent().setupKey()).isNull();
     }
+
+    /** S3 (mezo-d58h.3) widened the CHECK constraint before any check exists to raise it — this
+     *  proves the DB itself accepts {@code setup}, independent of Bean Validation and the entity's
+     *  own guards (the {@code CompanionFlagLogPersistenceIT.accepts_the_new_logging_gap_and_missed_workouts_keys}
+     *  precedent for a widened CHECK). */
+    @Test
+    void theDatabaseAcceptsTheSetupKind() {
+        UUID owner = ownerId();
+
+        companionMessagePopulator.rawInsertKind(owner, LocalDate.parse("2026-08-24"), CompanionMessageEntity.KIND_SETUP);
+
+        assertThat(companionMessageRepository.findAll())
+            .extracting(CompanionMessageEntity::getKind)
+            .contains(CompanionMessageEntity.KIND_SETUP);
+    }
 }
