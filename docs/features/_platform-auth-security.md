@@ -135,6 +135,7 @@ view → useX hook (frontend/src/data/hooks.ts) → *Api.ts client → apiFetch 
 | `onboarded_at` | `timestamptz` | null = onboarding not done; the S1 backfill sets it to `created_at` for every pre-existing (owner) row |
 | `must_change_password` | `boolean NOT NULL default false` | drives `AuthGate`'s `mustChangePassword` phase |
 | `last_seen_at` | `timestamptz` | stamped by `CurrentUser`, at most once per 5 minutes per account |
+| `tokens_valid_from` | `timestamptz` | null until the first password change; stamped to `now()` by `AuthService.changePassword`. `CurrentUser.load()` rejects a JWT whose `iat` precedes it (one-second grace for the second-vs-microsecond precision mismatch) — the password-change revocation mechanism (mezo-qw37.1 review, Finding 4) |
 | `created_at` | `timestamptz` | `@CreationTimestamp` |
 
 Entity: `…/feature/auth/entity/AppUserEntity.java` (`UserRole`/`UserStatus` enums, `isOwner()`/`isOnboarded()` helpers). Repository: `AppUserRepository` (`findByEmail`, `existsByEmail`).
@@ -332,7 +333,7 @@ cd frontend && VITE_USE_MOCK=true pnpm test     # mock mode
 - The JWT carries no role/status claim; both are re-read from the DB every request, which is what lets a disable or role change take effect immediately rather than waiting out the 30-day token expiry — but it also means every protected request pays one extra `SELECT` (mitigated by the per-request `RequestAttributes` cache, not by any cross-request cache).
 
 **Closed:**
-- **`mezo-5h9` — fail-fast on default secrets.** ✅ CLOSED (S1, `AuthStartupGuard`). `mezo.auth.strict=true` (set in the k8s Deployment) now refuses to boot on a dev-default owner password or JWT secret. The 30-day JWT expiry itself, and a proper revocation story beyond "disable the account", remain open.
+- **`mezo-5h9` — fail-fast on default secrets.** ✅ CLOSED (S1, `AuthStartupGuard`). `mezo.auth.strict=true` (set in the k8s Deployment) now refuses to boot on a dev-default owner password or JWT secret. The 30-day JWT expiry itself remains open; a second revocation lever now exists alongside "disable the account" — changing a password stamps `tokens_valid_from` and revokes every token minted before it (mezo-qw37.1 review, Finding 4) — which is what makes S3's planned owner-driven password reset an actual compromise-recovery tool.
 
 **Deferred bd issues (all OPEN):**
 - **`mezo-aus` (P3) — filter-level 401s bypass the `SystemMessage[]` envelope**, plus a custom `authenticationEntryPoint` to fix it.

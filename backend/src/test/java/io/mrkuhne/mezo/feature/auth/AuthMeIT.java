@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.auth.service.InviteService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,6 +87,51 @@ class AuthMeIT extends ApiIntegrationTest {
         assertHasFieldError(body, "newPassword", "VALIDATION_INVALID_VALUE");
         postForBody("/api/auth/login", new LoginRequest("pw3@test.local", "titkos-jelszo-1"),
             null, HttpStatus.OK, TokenResponse.class);
+    }
+
+    /**
+     * Finding 4 (mezo-qw37.1 review): a token stolen before a password change must not survive
+     * it for the rest of its 30-day life. Sleeps past {@code CurrentUser}'s one-second grace
+     * window so the stale token's real {@code iat} is unambiguously before the watermark, then
+     * sets {@code tokensValidFrom} directly (rather than via a real change-password call, which
+     * is covered by the sibling test below) — isolating this test to the rejection side of the
+     * compare. A freshly-issued token (minted AFTER that watermark) must still work.
+     */
+    @Test
+    void testProtectedCall_shouldReturn401_whenTokenIssuedBeforeTokensValidFrom() throws InterruptedException {
+        HttpHeaders staleTokenHeaders = registerFresh("revoke@test.local");
+        Thread.sleep(1100); // > CurrentUser.TOKENS_VALID_FROM_GRACE, so the compare is unambiguous
+        AppUserEntity user = appUserRepository.findByEmail("revoke@test.local").orElseThrow();
+        user.setTokensValidFrom(Instant.now());
+        appUserRepository.saveAndFlush(user);
+
+        String body = getForBody("/api/auth/me", staleTokenHeaders, HttpStatus.UNAUTHORIZED, String.class);
+        assertHasRequestError(body, "AUTH_TOKEN_MISSING");
+
+        TokenResponse fresh = postForBody("/api/auth/login", new LoginRequest("revoke@test.local", "titkos-jelszo-1"),
+            null, HttpStatus.OK, TokenResponse.class);
+        HttpHeaders freshHeaders = new HttpHeaders();
+        freshHeaders.setBearerAuth(fresh.getToken());
+        getForBody("/api/auth/me", freshHeaders, HttpStatus.OK, MeResponse.class);
+    }
+
+    /**
+     * Finding 4 (mezo-qw37.1 review), the precision-mismatch pin: the token used to PERFORM the
+     * change is the most common case a naive (grace-less) {@code iat < tokensValidFrom} compare
+     * would break — the change-password transaction can commit a fraction of a second after the
+     * token's second-granularity {@code iat}, i.e. in a LATER UTC second, which a strict compare
+     * misreads as "issued before revocation". The real HTTP round-trip below exercises exactly
+     * that window; without the grace, this test is flaky-to-always-failing depending on second
+     * boundaries. Chosen behaviour: the change-password token stays valid (frontend never needs
+     * to special-case its own change-password call).
+     */
+    @Test
+    void testChangePassword_shouldNotInvalidateTheTokenThatPerformedTheChange() {
+        HttpHeaders headers = registerFresh("selfsurvive@test.local");
+        postForBody("/api/auth/change-password", new ChangePasswordRequest("titkos-jelszo-1", "uj-jelszo-2026"),
+            headers, HttpStatus.NO_CONTENT, Void.class);
+
+        getForBody("/api/auth/me", headers, HttpStatus.OK, MeResponse.class);
     }
 
     @Test

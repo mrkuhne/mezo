@@ -105,6 +105,10 @@ public class AuthService {
         assertBcryptSafe(req.getNewPassword(), "newPassword");
         current.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         current.setMustChangePassword(false);
+        // Finding 4 (mezo-qw37.1 review): a token stolen before this change must not survive it.
+        // See CurrentUser.load()'s one-second grace note — that (not truncation here) is what
+        // keeps the token that just performed THIS very change from invalidating itself.
+        current.setTokensValidFrom(Instant.now());
         appUserRepository.save(current);
     }
 
