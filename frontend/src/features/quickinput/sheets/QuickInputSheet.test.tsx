@@ -71,7 +71,13 @@ afterEach(() => {
 })
 
 function LocationProbe() {
-  return <div data-testid="loc">{useLocation().pathname}</div>
+  const loc = useLocation()
+  return (
+    <>
+      <div data-testid="loc">{loc.pathname}</div>
+      <div data-testid="search">{loc.search}</div>
+    </>
+  )
 }
 function renderSheet(onClose = () => {}) {
   return render(
@@ -108,21 +114,29 @@ test('tiles carry clay icons via sprite use refs — no emojis', () => {
   }
 })
 
-test('the MOST head shows the current eating window and Logold navigates to Fuel', async () => {
+test('the Étkezés tile routes to the active window’s log page', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
-  expect(screen.getByText('Ebéd-ablak')).toBeInTheDocument()
-  expect(screen.getByText('MOST')).toBeInTheDocument()
-  expect(screen.getByText('Csirkés rizses tál')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: /Logold/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Étkezés/ }))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
-  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj')
+  expect(screen.getByTestId('search')).toHaveTextContent('?w=13%3A30-Eb%C3%A9d-ablak')
 })
 
-test('without a now-window the MOST head renders nothing (honest state)', () => {
+test('without a now-window the Étkezés tile routes to free-item logging', async () => {
   fuelPreviewMock.useFuelPreview.mockReturnValue({ visible: [], nextStack: undefined, plan: { slots: [] } })
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  expect(screen.getByText('ablakon kívül is')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Étkezés/ }))
+  await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj')
+  expect(screen.getByTestId('search').textContent).toBe('')
+})
+
+test('the Étkezés tile’s subline names the active window', () => {
   renderSheet()
-  expect(screen.queryByText('MOST')).not.toBeInTheDocument()
+  expect(screen.getByText('MOST · Ebéd-ablak')).toBeInTheDocument()
 })
 
 test('the Víz chips log in place — the counter updates and the sheet stays open', async () => {

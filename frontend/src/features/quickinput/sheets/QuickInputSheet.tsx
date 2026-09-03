@@ -20,6 +20,7 @@ import { QuickSleepSheet } from '@/features/quickinput/sheets/QuickSleepSheet'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { WeightLogSheet } from '@/features/me/sheets/WeightLogSheet'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
+import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import { useCheckins, useFuelPreview, useFuelDay, useWaterActions, useWeight, useToday } from '@/data/hooks'
 
 /** Which surface the sheet shows: the launcher grid, an in-place two-option picker, or a log
@@ -52,6 +53,12 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   // whose state is 'now' (slotKey present = meal/snack window, not a block slot).
   const { plan } = useFuelPreview()
   const nowWindow = plan.slots.find(s => s.slotKey !== undefined && s.state === 'now')
+  // A dinamikus Étkezés csempe: a hely, az ikon és a címke FIX — csak az alszöveg és a cél
+  // változik (CHI 2008, Gajos: az adaptáció akkor nem dezorientál, ha leíró és nem jósló).
+  // Az ablak azonosítója a swimlane exportált `tileKey`-e, a `/fuel/log/uj?w=` másik végének
+  // szerződése; ismeretlen/hiányzó kulcs ott a becsületes „Ablakon kívül" ág.
+  const foodTarget = nowWindow ? `/fuel/log/uj?w=${encodeURIComponent(tileKey(nowWindow))}` : '/fuel/log/uj'
+  const foodSub = nowWindow ? `MOST · ${nowWindow.label}` : 'ablakon kívül is'
   const { fuel } = useFuelDay()
   const { logWater } = useWaterActions()
   const { weightLog, logWeight } = useWeight()
@@ -113,24 +120,18 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
               <h2 id="quicklog-title">Gyors logolás</h2>
               <p className="quicklog-sub">bármikor, két koppintás</p>
 
-              {nowWindow && (
-                <button
-                  type="button"
-                  className="quicklog-most np-press"
-                  onClick={() => { close(); navigate('/fuel') }}
-                  aria-label={`Logold — ${nowWindow.label}`}
-                >
-                  <ClayIcon name="i-ebed" size={30} />
-                  <span className="quicklog-most-text">
-                    <span className="quicklog-most-row">
-                      <b>{nowWindow.label}</b>
-                      <span className="quicklog-most-stamp">MOST</span>
-                    </span>
-                    {nowWindow.mealName && <span className="quicklog-most-meal">{nowWindow.mealName}</span>}
-                  </span>
-                  <span className="quicklog-most-cta">Logold ›</span>
-                </button>
-              )}
+              <button
+                type="button"
+                className="quicklog-chat np-press"
+                onClick={() => { close(); navigate('/mezo/chat') }}
+              >
+                <ClayIcon name="i-mezo" size={26} />
+                <span className="quicklog-chat-text">
+                  <span className="quicklog-chat-label">Mondd el Mezónak</span>
+                  <span className="quicklog-chat-hint">kérdezz, mesélj — vagy logolj szóban</span>
+                </span>
+                <Icon name="chevron-right" size={18} />
+              </button>
 
               <div className="quicklog-water">
                 <div className="quicklog-water-head">
@@ -148,8 +149,8 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
               </div>
 
               <div className="quicklog-grid">
-                <Tile icon="i-fuel" label="Étkezés" tone="coral" sub="ablakon kívül is"
-                  onClick={() => { close(); navigate('/fuel') }} />
+                <Tile icon="i-fuel" label="Étkezés" tone="coral" sub={foodSub}
+                  onClick={() => { close(); navigate(foodTarget) }} />
                 <Tile icon="i-edzes" label="Edzés" tone="coral" sub={trainSub} subDone={workoutDone}
                   onClick={() => { close(); navigate('/train') }} />
                 <Tile icon="i-stack" label="Stack" tone="gold"
@@ -167,19 +168,6 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
                 <Tile icon="i-alvas" label="Alvás" tone="lav" onClick={() => setPhase('sleep')} />
                 <Tile icon="i-naplo" label="Napló" tone="sage" sub="3 mód" onClick={() => setPhase('naplo-pick')} />
               </div>
-
-              <button
-                type="button"
-                className="quicklog-chat np-press"
-                onClick={() => { close(); navigate('/mezo/chat') }}
-              >
-                <ClayIcon name="i-mezo" size={26} />
-                <span className="quicklog-chat-text">
-                  <span className="quicklog-chat-label">Mondd el Mezónak</span>
-                  <span className="quicklog-chat-hint">kérdezz, mesélj — vagy logolj szóban</span>
-                </span>
-                <Icon name="chevron-right" size={18} />
-              </button>
             </>
           )}
         </div>
