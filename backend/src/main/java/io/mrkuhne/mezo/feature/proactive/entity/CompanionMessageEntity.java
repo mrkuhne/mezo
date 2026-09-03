@@ -41,6 +41,11 @@ public class CompanionMessageEntity extends OwnedEntity {
     /** Emberek S6 (mezo-06o0.8): napi megfigyelés az emberi körről — az Emberek hub
      *  Mezo-sávja ezt mutatja, és a Napi Mezo szálban is megjelenik. */
     public static final String KIND_PEOPLE = "people";
+    /** Setup card (S3, bd mezo-d58h.3, spec 2026-09-03 §4 setup table): the user's CONFIGURATION
+     *  contradicts what coaching needs (no sleep goal; a sleep plan that cannot fit the evening
+     *  schedule). Config text, never LLM-generated; the envelope carries {@code setupKey} so the
+     *  weekly re-emit cooldown can be keyed per check. */
+    public static final String KIND_SETUP = "setup";
 
     @Id
     @GeneratedValue
