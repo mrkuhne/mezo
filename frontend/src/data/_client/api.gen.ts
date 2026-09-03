@@ -884,6 +884,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/timing-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The caller's learned workout-timing profile
+         * @description Per-component learned pacing in seconds, used to personalise the session-length estimate. Always complete: any component the user has not yet accumulated data for is returned at its static seed, so the client never has to implement a cold-start branch.
+         */
+        get: operations["getTimingProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals": {
         parameters: {
             query?: never;
@@ -4454,6 +4474,18 @@ export interface components {
             levelUp?: components["schemas"]["LevelUpResult"];
             /** @description Medals earned across the session, including SESSION_VOLUME */
             medals?: components["schemas"]["Medal"][];
+            /**
+             * Format: date-time
+             * @description Wall-clock start of the instance. Absent on rows created before mezo-1jm8.
+             */
+            startedAt?: string;
+            /**
+             * Format: date-time
+             * @description Wall-clock finish. ABSENT on an auto-closed (abandoned) session even though its status is 'completed' — that pair is exactly "the timing here is not trustworthy".
+             */
+            finishedAt?: string;
+            /** @description Derived work time: consecutive set-completion intervals, each clipped at the gap cap. Absent when nothing was logged. */
+            activeSeconds?: number;
         };
         WorkoutSummaryResponse: {
             /** Format: uuid */
@@ -4491,6 +4523,18 @@ export interface components {
             durationEst?: number;
             /** @description The workout-level closing note, absent when none was written (mezo-d20.8.2.2). */
             note?: string | null;
+            /**
+             * Format: date-time
+             * @description Wall-clock start of the instance. Absent on rows created before mezo-1jm8.
+             */
+            startedAt?: string;
+            /**
+             * Format: date-time
+             * @description Wall-clock finish. ABSENT on an auto-closed (abandoned) session even though its status is 'completed' — that pair is exactly "the timing here is not trustworthy".
+             */
+            finishedAt?: string;
+            /** @description Derived work time: consecutive set-completion intervals, each clipped at the gap cap. Absent when nothing was logged. */
+            activeSeconds?: number;
             exercises: components["schemas"]["WorkoutDetailExercise"][];
         };
         WorkoutDetailExercise: {
@@ -4569,6 +4613,11 @@ export interface components {
             kind?: "warmup" | "working";
             /** @description Medals this set earned (empty when none) */
             medals?: components["schemas"]["Medal"][];
+            /**
+             * Format: date-time
+             * @description When the set was completed. Already persisted since mezo-n5q; exposed by mezo-1jm8.
+             */
+            doneAt?: string;
         };
         WorkoutStartRequest: {
             /** Format: uuid */
@@ -4824,6 +4873,24 @@ export interface components {
             sprintLandmark?: string | null;
             durationMin?: number | null;
             notes?: string | null;
+        };
+        TimingProfileResponse: {
+            /** @description Session start to the first completed set. */
+            leadInSeconds: number;
+            /** @description Rest + execution for one compound set. */
+            setCycleCompoundSeconds: number;
+            /** @description Rest + execution for one non-compound set. */
+            setCycleIsolationSeconds: number;
+            /** @description Interval spanning an exercise change. */
+            transitionSeconds: number;
+            samples: components["schemas"]["TimingProfileSamples"];
+        };
+        /** @description Accepted observations per component. 0 means the value is still the static seed. */
+        TimingProfileSamples: {
+            leadIn: number;
+            setCycleCompound: number;
+            setCycleIsolation: number;
+            transition: number;
         };
         GoalResponse: {
             /** Format: uuid */
@@ -10713,6 +10780,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTimingProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimingProfileResponse"];
                 };
             };
             /** @description Missing/invalid token */

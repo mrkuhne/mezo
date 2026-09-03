@@ -184,6 +184,11 @@ mezo:
     # additionally needs the companion switch (CompanionLlm port).
     meso-review:
       enabled: true
+    # Learned workout-timing profile (mezo-dzbm) — off -> no profile is ever written and
+    # GET /api/train/timing-profile returns the static config seeds unchanged. Measurement
+    # (slice 1, mezo.train.timing) is independent and keeps running either way.
+    timing-profile:
+      enabled: true
     # Meso plan generator AI half (mesocycle wizard redesign) — Gemini exercise pick inside the
     # deterministic frames; needs the companion switch too. Off -> deterministic filler, llmUsed=false.
     meso-plan-ai:
@@ -1553,6 +1558,24 @@ mezo:
       sport: 4.5
       run: 9.5
       default-kind: 5.0
+    # Workout-timing tuning (mezo-1jm8) — measurement clips + profile-learner seeds.
+    # Binds onto TimingProperties.
+    timing:
+      gap-cap-seconds: 300
+      lead-in-cap-seconds: 900
+      max-clipped-ratio: 0.25
+      alpha: 0.125
+      beta: 0.25
+      outlier-k: 4
+      min-samples: 3
+      # RFC 6298 granularity floor (RTO = SRTT + max(G, K*RTTVAR)): without it, a very consistent
+      # user's deviation converges toward 0 and the outlier gate rejects every future observation,
+      # freezing the estimate permanently and silently once min-samples is reached (mezo-dzbm).
+      min-deviation-seconds: 20
+      seed-set-cycle-compound: 180
+      seed-set-cycle-isolation: 125
+      seed-transition: 240
+      seed-lead-in: 480
   # Fix zárás — closing exercises ensured on every gym day of the active meso; slug references
   # master exercise-catalog rows (content/exercise-catalog.json). Dead-hang reps are SECONDS
   # (plyo type -> weightless, reps-only logging on the FE).

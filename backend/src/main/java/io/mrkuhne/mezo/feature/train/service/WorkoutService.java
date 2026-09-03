@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.ClosingBlockGate;
 import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
 import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
+import io.mrkuhne.mezo.feature.train.config.TimingProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -40,6 +41,8 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -51,6 +54,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -108,6 +112,19 @@ public class WorkoutService {
     // MedalService — attaches the medals a set/session just earned to the logSet/finishWorkout
     // responses. No feature gate: medals are always-on (mirrors ExerciseRecordService).
     private final MedalService medalService;
+    // Actual-duration measurement (mezo-1jm8): gap/lead-in caps consumed when finishWorkout
+    // derives activeSeconds from the session's logged set timestamps.
+    private final TimingProperties timingProperties;
+    // Learned workout-timing profile (mezo-dzbm): finishWorkout publishes WorkoutFinishedEvent
+    // (below) instead of calling TimingProfileService directly — a REQUIRED-joined call cannot
+    // survive a failure inside it without poisoning THIS transaction (proven, not assumed: Spring
+    // marks a participating transaction rollback-only on any exception from a joined
+    // @Transactional callee, DB-touching or not), so the failure-isolation this feature needs has
+    // to come from running AFTER this transaction commits, not from a try/catch inside it. See
+    // TimingProfileListener (AFTER_COMMIT + @Async, the ChatTurnCompleted/FactExtractionListener
+    // idiom) — gated on the switch there, not here (mirrors ChatService, which publishes
+    // ChatTurnCompleted unconditionally too).
+    private final ApplicationEventPublisher eventPublisher;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -342,6 +359,9 @@ public class WorkoutService {
             .dayLabel(instance.getDayLabel())
             .durationEst(instance.getDurationEst())
             .note(instance.getClosingNote())
+            .startedAt(toOffsetDateTime(instance.getStartedAt()))
+            .finishedAt(toOffsetDateTime(instance.getFinishedAt()))
+            .activeSeconds(instance.getActiveSeconds())
             .exercises(exercises.stream().map(e -> {
                 List<ExerciseSetEntity> all = setsByExercise.getOrDefault(e.getId(), List.of());
                 return WorkoutDetailExercise.builder()
@@ -526,6 +546,9 @@ public class WorkoutService {
         instance.setOrderIndex(template.getOrderIndex());
         instance.setDate(LocalDate.now());
         instance.setStatus("active");
+        // The wall clock starts here and only here. The resume branch above returns before this
+        // point, so a mid-workout reload or an app restart can never restart the clock.
+        instance.setStartedAt(Instant.now());
         return toInstanceResponse(createdBy, workoutSessionRepository.save(instance));
     }
 
@@ -747,7 +770,8 @@ public class WorkoutService {
     @Transactional
     public WorkoutInstanceResponse finishWorkout(UUID createdBy, UUID workoutId, String closingNote) {
         WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
-        if ("active".equals(instance.getStatus())) {
+        boolean isRealTransition = "active".equals(instance.getStatus());
+        if (isRealTransition) {
             instance.setStatus("completed"); // dirty-checked, flushed at commit
         }
         // FILL-IF-EMPTY, like closeMesocycle's self-eval: finishing is contractually idempotent, so
@@ -756,6 +780,27 @@ public class WorkoutService {
         String incoming = blankToNull(closingNote);
         if (incoming != null && blankToNull(instance.getClosingNote()) == null) {
             instance.setClosingNote(incoming);
+        }
+        // FILL-IF-EMPTY, exactly like the closing note above: finishing is contractually
+        // idempotent, so a retry must not move the wall clock.
+        if (instance.getFinishedAt() == null) {
+            instance.setFinishedAt(Instant.now());
+        }
+        // Timing is derived and decorative — the completion write above is the user's real data
+        // and must survive a failure here (same rationale as the medal derivation below).
+        try {
+            List<Instant> doneAt = exerciseSetRepository
+                .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId())
+                .stream()
+                .filter(s -> !s.isSkipped() && s.getDoneAt() != null)
+                .map(ExerciseSetEntity::getDoneAt)
+                .toList();
+            instance.setActiveSeconds(SessionTimingCalculator.activeSeconds(
+                instance.getStartedAt(), doneAt,
+                timingProperties.gapCapSeconds(), timingProperties.leadInCapSeconds()));
+        } catch (RuntimeException e) {
+            log.warn("Timing derivation failed for session {} — finishing the workout anyway",
+                instance.getId(), e);
         }
         WorkoutInstanceResponse base = toInstanceResponse(createdBy, instance);
         // Progression runs ONLY when the feature switch is on (gate bean present) and only here in
@@ -774,6 +819,20 @@ public class WorkoutService {
             log.warn("Medal derivation failed for session {} — finishing the workout anyway",
                 instance.getId(), e);
             base.setMedals(List.of());
+        }
+        // Learned workout-timing profile (mezo-dzbm): published only on the REAL active->completed
+        // transition, gated on isRealTransition above — finishWorkout is deliberately idempotent
+        // (a bodyless retry after a failed one re-enters this method with the instance already
+        // completed, see the fill-if-empty comments above), and learnFrom has no already-learned
+        // marker of its own, so an unconditional publish would fold the same session's intervals
+        // into the EWMA twice on every retry, silently over-weighting it. The switch gate itself
+        // lives on the LISTENER (@ConditionalOnProperty on TimingProfileListener), not on this
+        // publish call. Consumed AFTER_COMMIT, so profile learning only ever runs once this
+        // completion write has actually landed, and — because it then runs on its own thread,
+        // after commit — nothing it does or throws can roll this write back. A rolled-back test
+        // transaction never fires it, by design (mirrors ChatTurnCompleted).
+        if (isRealTransition) {
+            eventPublisher.publishEvent(new WorkoutFinishedEvent(createdBy, instance.getId()));
         }
         return base;
     }
@@ -794,7 +853,15 @@ public class WorkoutService {
             .sets(exerciseSetRepository
                 .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId())
                 .stream().map(mapper::toSetResponse).toList())
+            .startedAt(toOffsetDateTime(instance.getStartedAt()))
+            .finishedAt(toOffsetDateTime(instance.getFinishedAt()))
+            .activeSeconds(instance.getActiveSeconds())
             .build();
+    }
+
+    /** {@code format: date-time} contract fields generate as {@link OffsetDateTime}; entities store {@link Instant}. */
+    private static OffsetDateTime toOffsetDateTime(Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */
