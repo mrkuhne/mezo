@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.lifegoal.config;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -27,4 +28,11 @@ public record LifeGoalProperties(
      * never a penalty: a miss subtracts nothing (ADR 0034). A `robustness`-keyed pillar grants
      * nothing at all — the progression tail recomputes that row to an absolute streak target.
      */
-    @Min(1) @Max(100) int xpPerHit) {}
+    @Min(1) @Max(100) int xpPerHit,
+
+    /**
+     * Nightly evaluation schedule (Spring cron), default 00:20 — after the habit close (00:10) so
+     * the day's habit metrics are already honest. The job bean itself is gated by
+     * {@code mezo.techcore.cron.life-goal-eval-job.enabled}.
+     */
+    @NotBlank String evalCron) {}
