@@ -17,10 +17,6 @@ export default defineConfig({
         // the self-hosted brand fonts (public/fonts/*.woff2) are precached — the app
         // then renders Geist + Fraunces offline instead of falling back to system.
         globPatterns: ['**/*.{js,wasm,css,html,ico,png,svg,woff2}'],
-        // The main JS chunk sits right at Workbox's 2 MiB default precache ceiling (mezo-8az6
-        // header-aurora tipped it a few KB over); bump the ceiling rather than code-split just
-        // to dodge a threshold — revisit if the bundle keeps growing.
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         // The vendored exercise demo stills (public/exercises/*.jpg, ~15 MB, mezo-8xdl.2) must
         // NEVER enter the precache — the precache IS the install cost, and demo photos are not
         // install-critical. Belt and braces: `jpg` is absent from globPatterns above AND the
@@ -43,9 +39,10 @@ export default defineConfig({
         // intact (switching to injectManifest would mean owning the whole worker for two
         // event listeners) — bd mezo-h4wp.6.1.
         importScripts: ['push-sw.js'],
-        // Entry chunk outgrew the 2 MiB default precache limit (bd mezo-xkz6). Raised to
-        // 3 MiB as an immediate unblock; proper follow-up is route-level code splitting
-        // (manualChunks) to bring the entry chunk back under the default limit.
+        // Entry chunk outgrew the 2 MiB default precache limit (bd mezo-xkz6; the header-aurora
+        // work, mezo-8az6, tipped it further). Raised to 3 MiB as an immediate unblock; proper
+        // follow-up is route-level code splitting (manualChunks / mezo-9fcm) to bring the entry
+        // chunk back under the default limit.
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
       manifest: {
