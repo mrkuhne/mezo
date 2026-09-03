@@ -1313,13 +1313,78 @@ committed raise into a `companion_message` feed card. See the W5.2 subsection be
 back the `/me/week` "Heti" tab ([me.md](me.md)) and its chat handoff — neither is the weekly-review
 NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md)):
 
-- **`DayScoreService`** (`service/DayScoreService.java`) — a deterministic, LLM-free per-day score:
-  four `[0,100]`-or-`null` subscores (sleep/fuel/checkin/activity, `null` = "tanulom" — no data that
-  day) folded into an overall day score = the rounded mean of the present subscores, itself `null`
-  below a `<2`-present honesty gate. Constants (`MeWeekProperties`, `mezo.companion.me-week.*`) —
-  `sleep-target-h` (8.0), `kcal-band` (0.25), `xp-baseline` (150). **Sleep quality and check-in
-  energy normalize as `(v-1)/9`** (1–10 dials on the FE sheets, verified against `SleepLogSheet`/
-  `CheckInSheet` — NOT the 1–5 span an early spec draft assumed).
+- **The 6-dimension day evaluation (`mezo-jcpt.4`, plan 2/2).** There is **exactly ONE day math in
+  the codebase** — it lives in `DayEvaluationEngine` — replacing the legacy 4-subscore formula
+  described in older revisions of this doc (the `sleepSubscore`/`fuelSubscore`/`checkinSubscore`/
+  `activitySubscore` methods are **deleted**; `MeWeekProperties`, the legacy formula's config
+  record, is retired with them — the day target it once held is `DayEvaluationProperties`'s own
+  `sleepTargetH` now).
+  - **`DayEvaluationEngine`** (`service/DayEvaluationEngine.java`) — a PURE function
+    (`DayInputs -> DayEvaluation`, no repository access, the `MealScoringService` house style) over
+    **six dimensions**: `nutrition` (.30) · `quality` (.15) · `training` (.20) · `sleep` (.15) ·
+    `logging` (.10) · `rhythm` (.10) (config, `DayEvaluationProperties`, sums 1.0, startup-validated
+    via `Weights.isNormalized`). Each dimension reports `status ∈ {DONE, IN_PROGRESS, NO_DATA}`.
+    **Honesty rules (binding):**
+    - A `NO_DATA`/`IN_PROGRESS` dimension drops out with weight 0; every surviving `DONE`
+      dimension's reported `weight` is the config weight **renormalized** so the `DONE` set sums to
+      1.0 — the per-dimension weight and the day's `base` are folded from the SAME renormalized
+      list, so they can never drift apart.
+    - `base` (the overall score) is the rounded weighted sum of the `DONE` dimensions, and is
+      `null` when fewer than 2 dimensions **that actually measured THIS day** are `DONE`, or when
+      the day is not yet `closed` (`date < today`, v1 day closure) — an open/future day gets
+      per-dimension progress only, never an overall number. `rhythm` is **excluded from that
+      count**: it is *extrinsic*, the mean of OTHER days' bases, and knows nothing about this one.
+      It still carries its weight in the weighted sum once the gate IS open. Without that
+      exclusion the gate could be opened by two dimensions that never looked at the day: `logging`
+      (always `DONE` on a closed day, an honest 0 for an untouched one) plus `rhythm` (`DONE` from
+      ≥3 prior days), which reported `round(0.5×0 + 0.5×rhythmMean)` — roughly *half the user's
+      running average* — for a day they never touched, and pushed the state from `empty` to
+      `scored` so the page rendered a full score ring and spent an LLM call narrating nothing.
+    - A **rest day** (`plannedWorkouts` null/0) makes `training` `NO_DATA` ("Pihenőnap · nem
+      számít") rather than a penalty — resting must never cost points.
+    - `logging` is the one dimension with **no missing-target escape hatch**: water-logged and
+      check-in count are never "unknown" (false/0 IS the measurement), so on a closed day it is
+      always `DONE` and a genuinely untouched day scores an honest **0** rather than degrading —
+      the opposite of nutrition/quality, whose components drop out and renormalize when the
+      underlying DATA (not the target) is missing.
+    - `sleep` is the one dimension that does **not** wait for `closed` — it finalizes as soon as
+      it's logged, even on an open day (the "A+ lifecycle": each dimension closes on its own
+      natural trigger). Formula: `0.7 × min(1, sleepH / sleepTargetH) + 0.3 × (quality-1)/9` when a
+      1–10 quality dial was logged, else the duration ratio alone — bit-for-bit the legacy
+      `sleepSubscore` formula, carried over verbatim.
+    - Meal timeliness (inside `logging`) uses a **circular clock distance**
+      (`min(|Δ|, 1440-|Δ|)` minutes) between `eatenAt` and `loggedAt`, both bare `LocalTime`s with
+      no date: a meal eaten 23:30 and logged 00:10 reads as **40 minutes** late, not 23 hours — the
+      near reading is overwhelmingly the real one, and the rare failure mode (forgiving a meal
+      genuinely a day late) is far less punishing than the linear one's (zeroing an
+      otherwise-perfect day over a midnight crossing).
+    - Nutrition's carb/fat component follows the SAME one-level-down policy: a missing **target**
+      is "we never set an expectation" → full credit; missing **data** against a real target drops
+      the component out and kcal/protein renormalize over their combined 0.8 share.
+  - **`DayScoreService`** (`service/DayScoreService.java`) — the day-score READ path: resolves a
+    `DayInputs` carrier from every owning feature (fuel rollup, `WorkoutWindowQueryService`,
+    `MetricSeriesService` sleep series, meal `created_at` for logging timeliness, water/check-in
+    repositories) and hands it to the engine. Holds **no formula** of its own any more.
+    - **Rhythm without recursion.** `rhythm` averages the mean of the PRIOR `rhythmWindowDays`
+      days' **base scores computed WITHOUT their own rhythm dimension** ("rhythm-free bases") —
+      never today's own base, which would let it eat itself, and never the FULL (rhythm-included)
+      base of a prior day either, which would compound. Every day of the extended window
+      `[from - rhythmWindowDays, to]` is loaded and evaluated ONCE with an empty prior list; those
+      rhythm-free bases are what the in-range days' `rhythm` dimension averages — linear cost, at
+      most two pure engine calls per day, never a fan-out. **This means a prior day's rhythm-free
+      base can legitimately differ from the `base` score displayed FOR that same day** (which
+      includes ITS OWN rhythm dimension) — the two numbers measure different things and are not a
+      bug if they disagree.
+    - `public DayInputs inputsFor(UUID userId, LocalDate date)` exposes one day's fully-resolved
+      inputs (priors included) for the day-evaluation read path, without loading a whole week.
+  - **Legacy wire mapping (binding, `DaySubscores`).** The weekly trend (`WeeklyScoreService`'s
+    persisted per-domain averages, `me-week`'s `MeWeekSubscores`) still reads the OLD four-field
+    shape — deliberately NOT changed by this slice — now populated as projections of the closest
+    successor dimension: `sleep ← sleep`, `fuel ← nutrition`, `checkin ← logging`,
+    `activity ← training`. A degraded (`NO_DATA`/`IN_PROGRESS`) dimension projects to `null`, the
+    same "tanulom" signal the legacy subscores carried. `DaySubscores.score` is `DayEvaluation
+    .base()`. The day page itself does not read this shape — it consumes the full `DayEvaluation`
+    through `GET /api/me/day/{date}/evaluation` (§4).
 - **`MeWeekService`** (`service/MeWeekService.java`) — assembles `GET /api/me/week/{start}`
   (`MeWeekController`, one ISO-Monday week, live for the current in-progress week): per-day
   fuel/sleep/weight/check-in/workout/XP values + `DayScoreService` scores + weekly aggregates
@@ -1328,6 +1393,49 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   (proactive) and this doc's own `[Heti adatok]` block below render through this exact method, so
   the generated weekly narrative and the chat's live week context can never describe a day
   differently. Full formula/contract detail: [me.md §4](me.md).
+- **`DayReviewService`** (`service/DayReviewService.java`) — assembles
+  `GET /api/me/day/{date}/evaluation` (`MeWeekController`, §4): the deterministic evaluation ALWAYS,
+  plus — lazily, for a **closed and scored** day only — a cached LLM prose layer over it. **The
+  deterministic answer is the answer**: every LLM failure (switch off, provider throw/timeout,
+  unparseable answer) degrades to the full evaluation with an EMPTY narrative and NO persisted row
+  — never a 5xx, never a cached lie (the `MealCoachService` contract, one day-shaped level up).
+  - **Server-side day state** — a five-way mirror of the frontend's four `weekDay.ts` states plus
+    `in_progress`: `future` (date after today) → `in_progress` (today, still gathering) →
+    `scored` (closed, `base != null`) → `thin`/`empty` (closed, `base == null`: `thin` if anything
+    was logged that day, `empty` if nothing was). Prose is generated ONLY in the `scored` state.
+  - **Cache, not truth.** `day_review` (migration `202609031300_mezo-jcpt.4_create_day_review.sql`,
+    the `weekly_score` shape — soft-delete-aware partial unique index on `(created_by, date)`) holds
+    one live row per user+day, keyed by `inputsHash` — `sha256` over each dimension's
+    `id|score|status` **and its `facts` (label/value pairs, in emission order)** (fixed engine
+    order) plus `base`. The facts are in the key because they are shown to the model and the
+    narrative typically quotes them: scores are integers 0..100, so a retroactive log can move a
+    fact (carbs 312 g → 280 g) without moving the rounded score, and a score-only key would keep
+    serving prose quoting the old number. A hash match serves the stored envelope with
+    ZERO LLM calls; a mismatch or missing row costs exactly ONE call, parsed, clamped and upserted.
+    The unscored context signals (below) are deliberately OUTSIDE the hash — they are re-read fresh
+    on every call and never fold into a cached sentence's correctness. `DayReviewJson` is the typed
+    `jsonb` envelope (`entity/DayReviewJson.java`, the `MealBreakdownJson` precedent):
+    `narrative[]`, `dimensionNotes{dim-id: note}`, `highlights[]` (`kind: key|pattern|win`, capped
+    at 3), `adjustment {delta, reason}` and a point-in-time snapshot of `context` (read-back only —
+    the API response always re-derives context fresh, never from this snapshot).
+  - **Context signals** — UNSCORED facts computed DETERMINISTICALLY from their real sources and
+    handed to the model so it never invents them: the day's `CHECKIN_ENERGY` mean, the weight
+    trend's EWMA weekly rate (`WeightTrendService`), and the consecutive under-target-sleep streak
+    ending at that date (breaks on any day with no sleep log — unknown is not "under"). A signal
+    with no measurement is simply absent, never a fabricated neutral value; a failure reading them
+    costs the signals, not the page (`signalsOrNone`).
+  - **AI correction, clamped and discardable.** The model may propose `adjustment {delta, reason}`;
+    `delta` is clamped to **[−5, +5]** and an adjustment with no reason is **discarded entirely**
+    (never defaulted) — an unexplained nudge is exactly what the honesty rules forbid.
+    `score = base == null ? null : clamp(base + delta, 0, 100)`, with `base` always reported
+    separately — the correction is a visible chip on the day page, never silently folded into the
+    headline number.
+  - **`DAY_REVIEW_SWITCH`** (`mezo.feature.day-review.enabled`, default **true**) gates ONLY the
+    prose: `DayReviewLlmAdapter` (`llm/DayReviewLlmAdapter.java`, bridging the cheap
+    `CompanionLlm` tier, ADR 0008) additionally needs `COMPANION_SWITCH` (the two-switch array
+    `@ConditionalOnProperty` idiom). With either off, `DayReviewLlm`'s `ObjectProvider` is empty and
+    the endpoint still answers 200 with every dimension and an empty narrative — the score itself
+    is never gated by either switch.
 - **Anchored conversations.** `ai_conversation` carries two nullable columns, `context_kind`
   (`week`|`day`) and `context_date` — a plain conversation leaves both null.
   `CreateConversationRequest.context {kind, date}` (contract-optional) sets them at creation
@@ -3369,6 +3477,32 @@ never silently undone four times a year, and an archived *Rólad tanultam* node 
 `QuarterlyPropertiesIT` pins all four shipped defaults; `QuarterlyReviewJobProfileSwitchOffIT`
 pins the asymmetry.
 
+### Config keys (`mezo.companion.day-evaluation.*` — `DayEvaluationProperties`, `@Validated`)
+
+`mezo-jcpt.4` — a feature-scoped `@ConfigurationProperties(prefix =
+"mezo.companion.day-evaluation")` record (the `QuarterlyProperties`/`FlagProperties` precedent,
+NOT another `CompanionProperties` nested component), picked up by `@ConfigurationPropertiesScan`.
+`DayEvaluationEngine`/`DayScoreService`/`DayReviewService` are the only readers.
+
+| key | default | meaning |
+|---|---|---|
+| `weights.{nutrition,quality,training,sleep,logging,rhythm}` | `.30/.15/.20/.15/.10/.10` | dimension weights — `@AssertTrue` startup-validates the six sum to `1.0` (±1e-6) |
+| `nutrition.kcal-under-band` / `kcal-over-band` | `0.10` / `0.05` | asymmetric kcal tolerance around the target (wider under, narrower over — cut-asymmetry) |
+| `nutrition.kcal-slope` | `3.0` | linear falloff rate outside the kcal band |
+| `nutrition.protein-under-band` / `protein-slope` | `0.05` / `2.5` | protein deficit band + falloff; a protein SURPLUS is forgiven (fitness policy) |
+| `nutrition.carb-fat-band` / `carb-fat-slope` | `0.15` / `1.5` | symmetric carb+fat tolerance + falloff |
+| `workout-day-kcal-widen` | `150` (kcal) | widens the kcal-fit upper target on a workout day |
+| `sleep-target-h` | `7.5` | the day evaluation's ONLY sleep target (the legacy `MeWeekProperties.sleepTargetH` — `8.0` — is retired with that record) |
+| `rhythm-window-days` | `7` | how many prior days the `rhythm` dimension (and its rhythm-free-base recompute, above) looks back |
+| `rhythm-min-days` | `3` | minimum prior days with a base score before `rhythm` reports `DONE` rather than `NO_DATA` |
+| `log-timely-min` | `120` (minutes) | a meal counts "logged in time" within this many minutes of `eatenAt` (circular clock distance) |
+
+`DayEvaluationPropertiesTest` pins the startup validation (weights summing, band ranges);
+`DayEvaluationEngineTest` pins the formula per dimension.
+
+Prose gate: `mezo.feature.day-review.enabled` (`DAY_REVIEW_SWITCH`) = **true** by default — see the
+`DayReviewService`/`DayReviewLlmAdapter` writeup above for what it gates and does not.
+
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
 
 - Feature switch `mezo.feature.llm-log.enabled` (`FeaturesConfiguration.LLM_LOG_SWITCH`) = **false**
@@ -3965,11 +4099,27 @@ Backend integration-first (compose Postgres up: `cd backend && docker compose up
 `./mvnw clean test` (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky). The LLM in
 tests is **always** `FakeCompanionLlm` — network never touched.
 
+**Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
+`feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
+per honesty rule, per dimension (asymmetric kcal bands, protein surplus forgiven/deficit counted,
+workout-day kcal widen, missing-data-vs-missing-target degrade paths, weight renormalization
+summing to 1.0, the rest-day-is-neutral rule, the circular meal-timeliness clock distance, the
+rhythm mean-of-priors gate). `feature/companion/config/DayEvaluationPropertiesTest.java` pins the
+startup weight-sum validation. `feature/companion/service/DayScoreServiceIT.java`
+(`fullDayEvaluatesEveryDimensionAndProjectsTheLegacySubscores`) pins the input-loading map AND the
+legacy `DaySubscores` projection end to end against real repositories; `emptyDayYieldsNullEverything`
+pins the honest-null floor. `feature/companion/service/DayReviewServiceTest.java` pins the prose
+cache (`inputsHash` hit serves with zero LLM calls, a hash mismatch regenerates, delta clamping
+both directions, a reason-less adjustment discarded, highlight-kind normalization, and every
+degrade path — a throwing port, an unparseable answer — still serving the deterministic evaluation
+with an empty narrative). `feature/companion/controller/DayEvaluationApiIT.java` covers the full
+`GET /api/me/day/{date}/evaluation` response per state (scored/in_progress/future), the
+`DAY_REVIEW_SWITCH` bean presence, and 401; `DayEvaluationSwitchOffApiIT` pins the switch-off
+degrade at the HTTP layer. `feature/companion/DayReviewRepositoryIT.java` pins the partial unique
+index (soft-delete-aware) on `day_review (created_by, date)`.
+
 **Weekly review data layer + anchored conversations (`mezo-p2tr`).**
-`feature/companion/service/DayScoreServiceIT.java` pins the day-score formula per subscore
-(fully-logged day → 100/100/100/100 → overall 100; sleep-only day → the other three null and the
-overall score null under the `<2` gate; zero-kcal day → `fuel()==0`, not null) and the verified
-1–10 (not 1–5) normalization. `feature/companion/controller/MeWeekControllerIT.java` covers the
+`feature/companion/controller/MeWeekControllerIT.java` covers the
 7-day response shape, the `ME_WEEK_START_NOT_MONDAY` 400, and the weekly-aggregate math.
 `AnchoredConversationIT` covers `CreateConversationRequest.context` persisting `context_kind`/
 `context_date`, the server-generated opening turn landing as an assistant-only row (never a user
@@ -5310,8 +5460,21 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/quarterly/{QuarterlyPropertiesIT,QuarterlyReviewServiceIT,QuarterlyReviewJobIT,QuarterlyReviewJobSwitchOffIT,service/QuartersTest}.java` + extended `profile/service/ProfileAssemblerIT` + extended `tools/MemoryToolsRenderIT` — §8.
 - **FE side** (documented in [`insights.md` §2.4/§10](insights.md)): `frontend/src/data/insights/graph.ts` (`CANDIDATE_COPY`, `formatCandidateDate`, the `lifeEventCandidateSeed` SEASON entry) + `frontend/src/features/insights/components/LifeEventCandidateCard.tsx` (kind-aware date/provenance) + `frontend/src/features/insights/pages/KnowledgeListPage.tsx` (per-kind grouping) — no new endpoint, no new FE data hook.
 
+**Backend — daily evaluation (`mezo-jcpt.4`, plan 2/2 — §3/§4/§8)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/DayEvaluationProperties.java` — the 6-dimension engine's config (`mezo.companion.day-evaluation.*`): weights, nutrition bands, `sleepTargetH`, rhythm window, `logTimelyMin`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayEvaluationEngine.java` — THE day math: `DayInputs -> DayEvaluation`, pure, no repository access, all six dimensions + the renormalization/honesty rules.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayScoreService.java` — resolves `DayInputs` per day from every owning feature; `rhythmFreeInputs`/`rhythmFreeBases`/`withPriors` (the rhythm-without-recursion mechanism); `toSubscores` (the legacy `DaySubscores` projection); `inputsFor(userId, date[, today])` (the day-evaluation read path's single-day entry point; the 3-arg overload takes the caller's already-resolved `today` so a request crossing midnight cannot see two different clocks).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewService.java` — assembles `GET /api/me/day/{date}/evaluation`: state, context signals, the lazy hash-cached prose, the clamped AI adjustment.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewLlm.java` (port) + `llm/DayReviewLlmAdapter.java` (the two-switch-gated adapter, `DAY_REVIEW_SWITCH` + `COMPANION_SWITCH`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{DayReviewEntity,DayReviewJson}.java` + `repository/DayReviewRepository.java` — the `day_review` cache row + its typed jsonb envelope.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `DAY_REVIEW_SWITCH` (`mezo.feature.day-review.enabled`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609031300_mezo-jcpt.4_create_day_review.sql` (the table) + `202609031200_mezo-jcpt.4_weekly_score_cache_invalidation.sql` (the one-off `weekly_score` purge).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/WeeklyScoreRepository.java` — `latestScoreInputWrittenAt` widened to probe `water_log` (§4 accepted-limitation note on the training schedule tables' exclusion).
+- **`config/MeWeekProperties.java` is now DEAD** — the legacy formula it configured is deleted (§3); no code reads it any more (`DayScoreService`'s javadoc flags this explicitly). Left in place, not deleted, by this documentation-only slice.
+- Tests: `feature/companion/service/{DayEvaluationEngineTest,DayScoreServiceIT,DayReviewServiceTest}.java`, `feature/companion/config/DayEvaluationPropertiesTest.java`, `feature/companion/controller/{DayEvaluationApiIT,DayEvaluationSwitchOffApiIT}.java`, `feature/companion/DayReviewRepositoryIT.java`, `support/populator/DayReviewPopulator.java` — §8.
+- **FE side** — `frontend/src/data/me/{dayEvaluation.ts,dayEvaluationApi.ts,dayEvaluationHooks.ts}` (dual-mode read + 4 named mock fixtures) + `frontend/src/features/me/pages/WeekDayPage.tsx` + `frontend/src/features/me/components/week/{DayDimensionTile,DayReviewCard}.tsx` + `frontend/src/features/me/logic/weekDay.ts` (`DAY_DIMENSIONS`/`doneDimensionCount`) — documented in [me.md](me.md) (the day page section).
+
 **Backend — weekly review data layer + anchored conversations (`mezo-p2tr` — §3/§4/§8)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayScoreService.java` + `config/MeWeekProperties.java` (`mezo.companion.me-week.*`) — the deterministic per-day score formula.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MeWeekService.java` + `controller/MeWeekController.java` — `GET /api/me/week/{start}` and the shared `renderDayLine` formatter.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/WeekContextRenderer.java` — the `[Heti adatok]` anchored-conversation prompt block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/WeekReviewSource.java` — the port `feature/proactive`'s `WeekReviewSourceAdapter` implements (keeps the dependency proactive → companion, never the reverse).

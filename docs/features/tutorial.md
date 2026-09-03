@@ -20,9 +20,10 @@ related: [today, train, insights, me, fuel, _platform-design-system, _platform-d
 > tier and reachable any time from the header "?" button, plus a first-launch welcome pager on
 > `/nap`. **Status: mixed — backend ✅ done (`tutorial_progress` singleton, 3 endpoints), FE ✅ done
 > for the motor (`TutorialProvider`, `KalauzSheet`, registry, header "?") and the `T0` welcome flow
-> (`KalauzWelcome`, `registry/welcome.ts`), content 🔶 five T1 guides shipped (`nap`, `train`,
-> `fuel`, `mezo`, `me` — all five tab roots, all version 1) plus the shared `fogalmak.ts` glossary
-> and the four-step welcome; any `T2`/`T3` guide beyond the shipped set is still unbuilt.**
+> (`KalauzWelcome`, `registry/welcome.ts`), content 🔶 five T1 hub guides (`nap`, `train`,
+> `fuel`, `mezo`, `me` — all version 1) plus the S3a batch of **fourteen T2 guides** for the Nap
+> and Edzés sub-pages (mezo-gb1s.5), the shared `fogalmak.ts` glossary and the four-step welcome;
+> the Fuel/Mezo/Én T2 batches (S3b–d) and every T3 guide are still unbuilt.**
 
 ## 1. Summary
 
@@ -45,8 +46,12 @@ runs the same dual-mode data-layer contract every other backed hook does.
 
 Guide **tiers** (`KalauzTier`): `T1`/`T2` auto-open once per route-visit-and-not-yet-seen (after
 the page's entrance choreography settles); `T3` never auto-opens — it is reachable only via the
-header "?", which then carries the `.nap-offnow` amber dot while unseen. Any `T2`/`T3` guide beyond
-the five shipped tab-root guides is still **out of scope**.
+header "?", which then carries the `.nap-offnow` amber dot while unseen. **S3a (`mezo-gb1s.5`)
+shipped the first T2 batch**: all five Nap sub-pages (`/nap/uzenetek|rutin|kuldetesek|checkin|eletjel`)
+and all nine Edzés sub-pages (`/train/mai|week|sport|futas|exercises|medals|mesocycles|session`,
+`/train/review/:workoutId` — the registry's first parameterised route), each with a
+`data-kalauz-anchor` spotlight target where the page has an always-rendered one. The Fuel/Mezo/Én
+T2 batches (S3b–d) and the T3 single-card layer are still **out of scope**.
 
 **S2b (`mezo-gb1s.4`) added `T0`**: a one-time, four-step first-launch **welcome pager**
 (`frontend/src/shared/ui/kalauz/KalauzWelcome.tsx`), shown once on `/nap` before any per-route
@@ -338,15 +343,26 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   S2b welcome flow needs the same seam to suppress the `/nap` auto-open. `<KalauzSheet>` is also
   keyed on the guide id so a guide swap remounts instead of inheriting the exiting instance's
   `step`.
-- **Open question #1 (spec §13)**: the daypart switch renders on every route in code, but the
-  guide copy for `fuel`'s `kapcsolat` card follows the **design's** Nap-only framing rather than
-  the code's every-route reality — a known copy/code mismatch, not a bug, left for a future content
-  pass to reconcile.
+- **Spec §13.1 resolved (S3a, mezo-gb1s.5): the daypart switch stays on every route** — the code
+  is the design now, not the handoff's Nap-only wish. Rationale: since the unified shell header
+  (`mezo-atry`) the switch is not a Nap-state display but a **navigation affordance** — from any
+  route it jumps to `/nap` at the chosen daypart (`AppHeader.tsx pickFace`), the misleading-state
+  risk is already neutralised (`.nap-offnow` is `onNap`-scoped, elsewhere the REAL daypart shows),
+  and D10 anchored the "?" to the row's left edge precisely so the switch's presence costs nothing.
+  Removing it would add conditional chrome to the one-header contract for no user gain. No guide
+  copy asserts Nap-only-ness, so nothing needed rewording; the welcome dropped its header step in
+  S2b partly because of this question, and that stays dropped.
 - **Open question #2 (spec §13)**: `tutorialSeen.ts`'s localStorage key (`mezo.kalauz.v1`) carries
   no user-id prefix. Fine while the app is single-owner; the multi-user slice must prefix it (or
   two users on one device/browser will share "seen" state).
-- **Deferred to a later `mezo-gb1s` slice**: the chrome-free-page mini-"?" (S3, tied to the
-  active-workout guide). `T0` shipped in S2b — see §2.
+- **The chrome-free-page mini-"?" shipped in S3a** (D11): `/train/session` is on `AppLayout`'s
+  `hideChrome` list, so the header "?" does not exist there — the prep-phase breadcrumb row in
+  `ActiveWorkoutPage.tsx` renders its own `.nap-roundbtn.nap-q` (same recipe, same
+  `aria-label`) that re-opens the `train-session` guide. Auto-open still covers the first visit:
+  entering `/train/session` lands in the `prep` phase unless a workout is already open
+  (`initialPhase = open ? 'active' : 'prep'`), so in practice the first-ever visit — the only
+  auto-open — happens over the mission briefing, which is what D11 asked for. The active/summary
+  phases deliberately render no "?": the guide does not reach over live logging.
 - **Spec/shipped drift, carried forward from earlier slices — noted here, not fixed**: the spec's
   architecture diagram (§5) writes the localStorage key as `mezo.kalauz.<userId>`, but the shipped
   key is the unprefixed `mezo.kalauz.v1` (open question #2 above already covers this as a known
@@ -358,11 +374,17 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   four `.nap-hero` nodes in `NapHubPage.tsx` (three daypart faces + the `?day=rough` anchor-mode
   hero, a dev URL-param state outside the guide copy's scope) and `train-hero` sits on all
   six `.eh-hero` variants in `EdzesHubPage.tsx` — a new face/variant on `/nap` or `/train` must
-  carry the anchor too, or the spotlight silently degrades to "no anchor" on that face.
+  carry the anchor too, or the spotlight silently degrades to "no anchor" on that face. The S3a
+  anchors follow the same idiom where a page varies: `checkin-sor` sits on all three row-state
+  variants (done/hot/dim) of the first check-in row, `rutin-lista` on the first habit group in
+  either daypart order, and `mai-napsav` travels through `DayStrip`'s optional `kalauzAnchor`
+  prop (only `/train/mai` passes it — the hub's own anchor stays `train-hero`). Two S3a guides
+  are deliberately anchor-less: `/nap/kuldetesek` (quest cards are data-conditional, an empty
+  day is real) and `/train/review/:workoutId` (the whole page is data-gated).
 - **Shell tests must seed every guide, not just seen-render one**: any shell test that mounts
   `AppLayout` on a route with a registry hit needs `seedAllKalauzSeen()` (from
   `frontend/src/test/kalauz.ts`) in its `beforeEach`, or the 600 ms auto-open can fire mid-test —
-  seeding a single guide by hand is no longer enough now that five guides exist.
+  seeding a single guide by hand is no longer enough now that nineteen guides exist.
 
 ## 10. Key files
 

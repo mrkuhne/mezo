@@ -83,6 +83,12 @@ public class FeaturesConfiguration {
      *  COMPANION_SWITCH (the MealCoachLlm adapter lives there). */
     public static final String MEAL_COACH_SWITCH = "mezo.feature.meal-coach.enabled";
 
+    /** Day-review prose (mezo-jcpt.4): gates ONLY the LLM narrative over a closed day's
+     *  deterministic 6-dimension evaluation — the evaluation itself stays on regardless. The prose
+     *  additionally needs COMPANION_SWITCH (the DayReviewLlm adapter lives there). Off ⇒ the day
+     *  evaluation endpoint still answers 200 with every dimension and an EMPTY narrative. */
+    public static final String DAY_REVIEW_SWITCH = "mezo.feature.day-review.enabled";
+
     /** Proactive layer (mezo-h4wp) — companion-feed + weekly prose + predictions.
      *  Every proactive bean conditions on BOTH this AND COMPANION_SWITCH (the generators call the
      *  CompanionLlm port, whose beans only exist when the companion is on). */
@@ -222,6 +228,10 @@ public class FeaturesConfiguration {
 
     /** Életcél-rendszer (bd mezo-iizd) — off ⇒ /api/life-goals 404s, no lifegoal beans. */
     public static final String LIFEGOAL_SWITCH = "mezo.feature.lifegoal.enabled";
+
+    /** Nightly life-goal evaluation cron (mezo-iizd.6) — schedule: mezo.lifegoal.eval-cron;
+     *  off ⇒ the LifeGoalEvalJob bean does not exist (manual POST /{id}/evaluate stays on). */
+    public static final String LIFE_GOAL_EVAL_JOB_SWITCH = "mezo.techcore.cron.life-goal-eval-job.enabled";
 
     /** AI pillar proposal for life goals (propose-only, ADR 0019) — off ⇒ the template proposer answers. */
     public static final String LIFEGOAL_AI_PROPOSE_SWITCH = "mezo.feature.lifegoal-ai-propose.enabled";

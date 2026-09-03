@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
@@ -103,7 +104,11 @@ class MeWeekTrendIT extends ApiIntegrationTest {
 
         MealEntity meal = new MealEntity();
         meal.setCreatedBy(owner);
-        meal.setLoggedAt(date.atStartOfDay(ZoneOffset.UTC).toInstant().plusSeconds(3600));
+        // Eaten at today's wall-clock time-of-day so the row's Hibernate-stamped created_at (when
+        // it was WRITTEN — no test can choose it) lands inside the logging dimension's 120-minute
+        // timeliness band: the fixture is "logged as it was eaten", the normal case.
+        meal.setLoggedAt(date.atTime(LocalTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MINUTES))
+            .toInstant(ZoneOffset.UTC));
         meal.setMealDate(date);
         meal.setSlot("lunch");
         meal.setTitle("Trend fixture");
@@ -135,15 +140,22 @@ class MeWeekTrendIT extends ApiIntegrationTest {
         seedDenseDay(owner, week);
         seedDenseDay(owner, week.plusDays(1));
 
+        // Two identical dense days at 89 each (the 6-dimension engine's reading of this fixture —
+        // see MeWeekControllerIT for the arithmetic), so the week rolls up to 89.
         Integer liveScore = week(week).getWeekly().getScore();
-        assertThat(liveScore).isEqualTo(100);
+        assertThat(liveScore).isEqualTo(89);
 
         // Write-through: the week read itself persisted the score.
         WeeklyScoreEntity persisted = weeklyScorePopulator.find(owner, week).orElseThrow();
-        assertThat(persisted.getScore()).isEqualTo(100);
+        assertThat(persisted.getScore()).isEqualTo(89);
         assertThat(persisted.getSleepAvg()).isEqualByComparingTo("100.00");
-        assertThat(persisted.getFuelAvg()).isEqualByComparingTo("100.00");
-        assertThat(persisted.getCheckinAvg()).isEqualByComparingTo("100.00");
+        assertThat(persisted.getFuelAvg()).isEqualByComparingTo("80.00");
+        // checkin←logging is the one legacy field whose ABSENCE semantics changed with the engine
+        // (mezo-jcpt.4): the old check-in subscore was null on a day with no check-in, whereas the
+        // logging dimension treats "nothing logged" as a real, measured 0 — a process dimension
+        // that refused to score an untouched day would be exactly the free pass it exists to catch.
+        // So the week averages 80, 80 and five honest 0s: 160/7 = 22.86.
+        assertThat(persisted.getCheckinAvg()).isEqualByComparingTo("22.86");
         assertThat(persisted.getActivityAvg()).isEqualByComparingTo("100.00");
         assertThat(persisted.getComputedAt()).isNotNull();
 
@@ -167,7 +179,7 @@ class MeWeekTrendIT extends ApiIntegrationTest {
 
         MeWeekTrendResponse before = trend(week, 1);
         assertThat(before.getPoints()).hasSize(1);
-        assertThat(before.getPoints().get(0).getScore()).isEqualTo(100);
+        assertThat(before.getPoints().get(0).getScore()).isEqualTo(89);
         Instant firstComputedAt = weeklyScorePopulator.find(owner, week).orElseThrow().getComputedAt();
 
         // A log written AFTER the score was computed, into a day of that same past week.
@@ -175,7 +187,7 @@ class MeWeekTrendIT extends ApiIntegrationTest {
 
         MeWeekTrendResponse after = trend(week, 1);
         assertThat(after.getPoints()).hasSize(1);
-        assertThat(after.getPoints().get(0).getScore()).isLessThan(100);
+        assertThat(after.getPoints().get(0).getScore()).isLessThan(89);
         assertThat(weeklyScorePopulator.find(owner, week).orElseThrow().getComputedAt())
                 .isAfterOrEqualTo(firstComputedAt);
         // and the cache now agrees with the live computation

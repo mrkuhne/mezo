@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import {
-  dayNoteFor, dayState, dayVerdict, fmtSleep, hu1, huDowFull, huDowShort, huInt,
-  isEmptyDay, isInWeek, isValidIsoDate, mondayOf, ringLearningLabels, subscoreCount,
-  summariseDays, tileScoreLabel,
+  DAY_DIMENSIONS, dayNoteFor, dayState, dayVerdict, doneDimensionCount, fmtSleep, hu1, huDowFull,
+  huDowShort, huInt, isEmptyDay, isInWeek, isValidIsoDate, mondayOf, ringLearningLabels,
+  SUBSCORES, subscoreCount, summariseDays, tileScoreLabel,
 } from '@/features/me/logic/weekDay'
 import type { MeWeekDay } from '@/data/me/meWeek'
 
@@ -133,6 +133,30 @@ describe(':date route param', () => {
     expect(isInWeek('2026-05-24', '2026-05-18')).toBe(true)
     expect(isInWeek('2026-05-25', '2026-05-18')).toBe(false)
     expect(isInWeek('2026-05-17', '2026-05-18')).toBe(false)
+  })
+})
+
+describe('weekly SUBSCORES — the mosaic stays on FOUR bars (out of scope this task)', () => {
+  test('the four sleep/fuel/checkin/activity keys are untouched', () => {
+    expect(SUBSCORES.map((s) => s.key)).toEqual(['sleep', 'fuel', 'checkin', 'activity'])
+  })
+})
+
+describe('DAY_DIMENSIONS — the six day-page dimensions (mezo-jcpt.4)', () => {
+  test('lists all six dimension keys in the config-weight order, each with a HU label + bar class', () => {
+    expect(DAY_DIMENSIONS.map((d) => d.key))
+      .toEqual(['nutrition', 'quality', 'training', 'sleep', 'logging', 'rhythm'])
+    expect(DAY_DIMENSIONS.map((d) => d.label))
+      .toEqual(['tápanyag', 'minőség', 'edzés', 'alvás', 'logolás', 'ritmus'])
+    for (const d of DAY_DIMENSIONS) expect(d.barClass).toBe(`is-${d.key}`)
+  })
+
+  test('doneDimensionCount counts only DONE dimensions, never NO_DATA/IN_PROGRESS', () => {
+    const dims = [
+      { status: 'DONE' }, { status: 'DONE' }, { status: 'IN_PROGRESS' }, { status: 'NO_DATA' },
+    ]
+    expect(doneDimensionCount(dims)).toBe(2)
+    expect(doneDimensionCount([])).toBe(0)
   })
 })
 

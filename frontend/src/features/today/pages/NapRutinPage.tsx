@@ -141,7 +141,7 @@ export function NapRutinPage() {
             </StatStrip>
           )}
           {groups.map((g, gi) => (
-            <div key={g.face} className="rise" style={{ '--d': `${100 + gi * 60}ms` } as React.CSSProperties}>
+            <div key={g.face} className="rise" data-kalauz-anchor={gi === 0 ? 'rutin-lista' : undefined} style={{ '--d': `${100 + gi * 60}ms` } as React.CSSProperties}>
               {gi > 0 && (
                 <div className="nr-group">
                   <span className="mz-eyebrow">{FACE_TITLE[g.face]}</span>

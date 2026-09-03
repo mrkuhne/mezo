@@ -122,7 +122,11 @@ describe('FuelSettingsSheet — real-mode cold-open prefill', () => {
     // After the server value lands: prefill re-syncs and Save enables.
     await waitFor(() => expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('6'))
     expect(screen.getByLabelText('Koffein-cutoff')).toHaveValue('12:00')
-    expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
+    // A `busy` a diet-settings GET-re IS vár (dietPending, mezo-ktg8 óta) — az a kérés a
+    // default MSW-handlerről jön, és CI alatt később érhet be, mint a késleltetett fuel-GET.
+    // A szinkron assert itt kétszer bukott el a mezo-gb1s.5 PR CI-jén; a második teszt
+    // ugyanezt eleve waitFor-ral várja.
+    await waitFor(() => expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled())
   })
 
   test('a user edit made before the value lands survives the re-sync', async () => {

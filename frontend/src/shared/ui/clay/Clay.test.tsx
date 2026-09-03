@@ -8,10 +8,22 @@ import { ClayIcon, ClaySpot, ClaySprites } from '@/shared/ui/clay'
 // 8 i-life-* life-area symbols joined for the F7.4 iconography round (mezo-d20.8.4.1).
 // i-muhely joined for the Receptműhely page (mezo-92pb).
 
-test('ClaySprites mounts all 54 icon symbols and 22 spot symbols', () => {
+test('ClaySprites mounts all 54 icon symbols and 24 spot symbols', () => {
   render(<ClaySprites />)
   expect(document.querySelectorAll('symbol[id^="i-"]')).toHaveLength(54)
-  expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(22)
+  expect(document.querySelectorAll('symbol[id^="s-"]')).toHaveLength(24)
+})
+
+// mezo-8az6: a fejléc szekció-spotjaihoz a Fuel és az Én darabja hiányzott a készletből.
+test('a két új szekció-spot a sprite-ban van, a clay recept szerint', () => {
+  render(<ClaySprites />)
+  for (const id of ['s-fuel', 's-en']) {
+    const sym = document.querySelector(`#${id}`)
+    expect(sym, `${id} hiányzik`).not.toBeNull()
+    expect(sym!.getAttribute('viewBox')).toBe('0 0 100 100')
+    // minden spot alján tompított árnyék-ellipszis ül
+    expect(sym!.querySelector('ellipse')).not.toBeNull()
+  }
 })
 
 test('sprite gradients are copied verbatim — the orb ramp keeps its exact stops', () => {

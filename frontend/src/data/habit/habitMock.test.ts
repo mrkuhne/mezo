@@ -31,4 +31,24 @@ describe('mock habit seed — keret-invariánsok', () => {
       expect(celebrated.length, `${chainKey} ünnepléses pipálható sor`).toBeGreaterThan(0)
     }
   })
+
+  test('minden CLEAR def teljes, és egyetlen FOGG-mezőt sem hordoz', () => {
+    // clearForeignFields CLEAR-ága: anchorHabitKey + anchorCopy + celebration mind null.
+    // Az anchorCopy azért megy vele, mert a Nap felületen ki VAN rajzolva — egy megtartott
+    // „miután …" hamis jelzést hagyna egy Clear recept alatt.
+    const clear = defs.filter((d) => d.framework === 'CLEAR')
+    expect(clear.length).toBeGreaterThan(0)
+    for (const d of clear) {
+      expect(Boolean(d.cue && d.craving && d.reward), `${d.habitKey} teljes CLEAR recept`).toBe(true)
+      expect([d.anchorHabitKey, d.anchorCopy, d.celebration], `${d.habitKey} idegen FOGG-mező`)
+        .toEqual([null, null, null])
+    }
+  })
+
+  test('egyetlen FOGG def sem hordoz CLEAR-mezőt', () => {
+    for (const d of defs.filter((d) => d.framework === 'FOGG')) {
+      expect([d.cue, d.craving, d.reward, d.identity], `${d.habitKey} idegen CLEAR-mező`)
+        .toEqual([null, null, null, null])
+    }
+  })
 })

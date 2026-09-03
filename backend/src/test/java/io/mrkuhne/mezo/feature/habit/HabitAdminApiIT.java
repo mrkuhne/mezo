@@ -11,15 +11,21 @@ import io.mrkuhne.mezo.api.dto.HabitDefAdmin;
 import io.mrkuhne.mezo.api.dto.HabitDefCreateRequest;
 import io.mrkuhne.mezo.api.dto.HabitDefUpdateRequest;
 import io.mrkuhne.mezo.api.dto.HabitReorderRequest;
+import io.mrkuhne.mezo.feature.habit.service.HabitAdminService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
 class HabitAdminApiIT extends ApiIntegrationTest {
+
+    @Autowired private UserPopulator userPopulator;
+    @Autowired private HabitAdminService habitAdminService;
 
     private HabitCatalogResponse catalog() {
         return getForBody("/api/habit/catalog", ownerAuthHeaders(), HttpStatus.OK, HabitCatalogResponse.class);
@@ -207,6 +213,31 @@ class HabitAdminApiIT extends ApiIntegrationTest {
                 .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
                 .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
                 .anchorHabitKey("custom_nemletezik").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_ANCHOR_INVALID");
+    }
+
+    @Test
+    void testCreateDef_shouldRejectAnchor_whenDefBelongsToAnotherUser() {
+        // A horgony-feloldás a def SAJÁT tulajdonosának körén belül keres
+        // (findByCreatedByAndHabitKeyAndDeletedFalse) — eddig csak az ismeretlen-kulcs eset
+        // volt fedve, ami akkor is átmenne, ha a lekérés user-scope nélkül futna. Ezért a
+        // horgony egy KIZÁRÓLAG a másik felhasználónál létező custom_ kulcs: a seed kulcsok
+        // (morning_sunlight stb.) a tulajdonosnak is megvannak, azokra a saját defjére
+        // oldódna fel (mezo-3zue.7). Idióma: JournalApiIT#testUpdateJournalEntry_shouldReturn404_whenNotOwnEntry.
+        UUID otherUser = userPopulator.createUser().getId();
+        String foreignKey = habitAdminService.createDef(otherUser,
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Az ő szokása")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10).build())
+            .getHabitKey();
+        assertThat(foreignKey).startsWith("custom_");
+
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey(foreignKey).celebration("ökölrázás").build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
         assertHasRequestError(err, "HABIT_ANCHOR_INVALID");
     }

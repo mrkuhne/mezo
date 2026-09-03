@@ -41,10 +41,10 @@ function Probe() {
       <button onClick={() => navigate('/train')}>train</button>
       <button onClick={() => navigate('/fuel')}>fuel</button>
       <button onClick={() => navigate('/nap')}>nap</button>
-      {/* /nap/rutin: T2 subpage, ebben a szeletben nincs saját kalauz-bejegyzése — a
-          „kalauz nélküli route" fixture-je (Task 2 ugyanezt a route-ot választotta
-          az AppHeader.test.tsx-ben, ugyanezért). */}
-      <button onClick={() => navigate('/nap/rutin')}>elsewhere</button>
+      {/* /me/sleep/night: az éjszakai mód D11 szerint SOSEM kap kalauzt (rituális
+          felület) — az S3a óta (mezo-gb1s.5, a /nap/rutin is kalauzt kapott) ez a
+          „kalauz nélküli route" tartós fixture-je, az AppHeader.test.tsx-szel közösen. */}
+      <button onClick={() => navigate('/me/sleep/night')}>elsewhere</button>
     </div>
   )
 }
@@ -126,7 +126,7 @@ test('regi verzió látva → az új verzió újra felugrik', async () => {
 })
 
 test('kalauz nélküli route-on nincs felugrás és current null', () => {
-  renderAt('/nap/rutin')
+  renderAt('/me/sleep/night')
   flush()
   expect(screen.getByTestId('current')).toHaveTextContent('-')
   expect(screen.queryByRole('dialog')).toBeNull()
@@ -193,7 +193,7 @@ test('szerver-merge: a szerveren látott másik kalauz beolvad, és a csak-loká
     }),
   )
   writeLocalProgress({ fuel: { version: 1, seenAt: '2026-09-01T10:00:00.000Z', completedAt: null, dismissedAtStep: null } })
-  renderAt('/nap/rutin')
+  renderAt('/me/sleep/night')
   flush()
   await waitFor(() => {
     const p = readLocalProgress()
@@ -203,7 +203,7 @@ test('szerver-merge: a szerveren látott másik kalauz beolvad, és a csak-loká
   await waitFor(() => expect(putBody).not.toBeNull())
   expect((putBody as { progress: Record<string, unknown> }).progress).toHaveProperty('nap')
   expect((putBody as { progress: Record<string, unknown> }).progress).toHaveProperty('fuel')
-  expect(screen.queryByRole('dialog')).toBeNull() // /nap/rutin-on nincs kalauz, és a fuel amúgy is látott
+  expect(screen.queryByRole('dialog')).toBeNull() // az éjszakai módnak nincs kalauza (D11), és a fuel amúgy is látott
 })
 
 test('StrictMode alatt egy Kihagyom-zárás pontosan EGY PUT-ot küld (real mode)', async () => {
@@ -407,7 +407,7 @@ test('resetAll: a repülő DELETE alatt a /nap-ra váltás is a RESET UTÁNI ál
       return new HttpResponse(null, { status: 204 })
     }),
   )
-  renderAt('/nap/rutin') // kalauz nélküli route, mint a Beállítások — innen indul a reset
+  renderAt('/me/sleep/night') // kalauz nélküli route, mint a Beállítások — innen indul a reset
   await waitFor(() => expect(readLocalProgress().welcome).toBeDefined())
   let resetPromise: Promise<void> = Promise.resolve()
   await act(async () => {

@@ -60,6 +60,7 @@ public class LifeGoalProgressService {
     private static final double DOT_HIT = 0.66;
     private static final double DOT_PARTIAL = 0.33;
     private static final int SCALE = 3;
+    private static final String STATUS_ACTIVE = "active";
 
     private final LifeGoalService lifeGoalService;
     private final LifeGoalRepository goalRepository;
@@ -67,6 +68,7 @@ public class LifeGoalProgressService {
     private final LifeGoalPillarDayRepository pillarDayRepository;
     private final List<SignalSource> sources;
     private final SignalCatalog signalCatalog;
+    private final LifeGoalXpService xpService;
 
     /** Tárolt sorok győznek; hiányzó nap olvasáskor számolódik (NEM íródik). from > to → 400. */
     @Transactional(readOnly = true)
@@ -84,19 +86,41 @@ public class LifeGoalProgressService {
     @Transactional
     public LifeGoalProgressResponse evaluate(UUID userId, UUID goalId) {
         LifeGoalEntity goal = lifeGoalService.requireOwned(userId, goalId);
+        evaluateDays(userId, goal);
         LocalDate today = LocalDate.now();
-        List<LifeGoalPillarEntity> activePillars = activePillars(goalId);
+        return buildProgress(userId, goal, activePillars(goal.getId()),
+            today.minusDays(PROGRESS_WINDOW_DAYS - 1), today);
+    }
+
+    /**
+     * The writer half, response-free (mezo-iizd.6): upserts the last 3 closed days of every active
+     * pillar and grants pillar-hit XP. Ownership is the caller's business — the nightly job iterates
+     * its own users' goals, the HTTP path goes through {@link #evaluate}. A non-{@code active} goal
+     * (draft/parked/done/archived) writes no rows and awards no XP — this is the single status
+     * guard both writers share, so the manual {@code POST /{id}/evaluate} path and
+     * {@link LifeGoalEvalJob} can never disagree on what "evaluable" means.
+     */
+    @Transactional
+    public void evaluateDays(UUID userId, LifeGoalEntity goal) {
+        if (!STATUS_ACTIVE.equals(goal.getStatus())) {
+            return;
+        }
+        LocalDate today = LocalDate.now();
+        // Newest-first (yesterday, -2, -3): a backfill pass (late logging flipping an older day)
+        // must not visit that day last and re-fire the gamification streak roll out of order —
+        // GamificationAccountAdapter.onXpAwarded rolls the streak on every award, so award order
+        // must track calendar order, most recent closed day first.
         List<LocalDate> closedDays = List.of(today.minusDays(1), today.minusDays(2), today.minusDays(3));
         LocalDate latestClosed = today.minusDays(1);
         LocalDate wideFrom = latestClosed.minusDays(PROGRESS_WINDOW_DAYS);
-        for (LifeGoalPillarEntity pillar : activePillars) {
+        for (LifeGoalPillarEntity pillar : activePillars(goal.getId())) {
             SignalWindow window = windowFor(userId, pillar, wideFrom, latestClosed);
             for (LocalDate day : closedDays) {
                 PillarDayScore score = LifeGoalScorer.scoreDay(pillar.getKind(), pillar.getRule(), day, window);
                 upsertPillarDay(pillar, day, score);
+                xpService.awardIfHit(pillar, day, score.status());
             }
         }
-        return buildProgress(userId, goal, activePillars, today.minusDays(PROGRESS_WINDOW_DAYS - 1), today);
     }
 
     /** Aktív célonként: nyíl + 7 napi cél-pont-pötty + mai pillér-számláló. */
