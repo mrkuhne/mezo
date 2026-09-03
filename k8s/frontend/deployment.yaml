@@ -18,7 +18,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: frontend
-          image: ghcr.io/mrkuhne/mezo-frontend:2.138.0
+          image: ghcr.io/mrkuhne/mezo-frontend:2.139.0
           ports:
             - containerPort: 80
           readinessProbe:
