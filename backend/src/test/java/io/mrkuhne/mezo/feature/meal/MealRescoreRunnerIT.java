@@ -39,6 +39,7 @@ class MealRescoreRunnerIT extends AbstractIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private MealService mealService;
+    @Autowired private MealRescoreRunner runner;
     @Autowired private jakarta.persistence.EntityManager entityManager;
 
     private static final LocalDate DAY = LocalDate.of(2026, 6, 10);
@@ -89,5 +90,42 @@ class MealRescoreRunnerIT extends AbstractIntegrationTest {
         assertThat(healed.tagline()).isNull();
         assertThat(healed.improve()).isEmpty();
         assertThat(healed.dimensions()).allSatisfy(d -> assertThat(d.note()).isNull());
+    }
+
+    @Test
+    void run_shouldHealTheStaleMealAndLeaveTheCurrentOneUntouched() {
+        UUID owner = owner();
+        PantryItemEntity item = pantryItemPopulator.createFoodWithNutrients(owner, "csirkemell");
+        MealEntity stale = mealPopulator.createStaleScoredMeal(owner, item, DAY, "régi", NOON);
+        MealEntity current = mealPopulator.createCurrentScoredMeal(owner, item, DAY, "friss", NOON);
+        MealBreakdownJson currentBefore = current.getBreakdown();
+
+        int healed = runner.run();
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(healed).isGreaterThanOrEqualTo(1);
+        assertThat(mealRepository.findById(stale.getId()).orElseThrow().getBreakdown().formulaVersion())
+            .isEqualTo(MealScoringService.FORMULA_VERSION);
+        // A már aktuális envelope-hoz a runner NEM nyúlhat — enélkül az assert vak lenne egy
+        // „mindent újrapontozok" implementációra.
+        MealBreakdownJson currentAfter =
+            mealRepository.findById(current.getId()).orElseThrow().getBreakdown();
+        assertThat(currentAfter.value()).isEqualByComparingTo(currentBefore.value());
+        assertThat(currentAfter.dimensions()).hasSameSizeAs(currentBefore.dimensions());
+        assertThat(currentAfter.tagline()).isEqualTo(currentBefore.tagline());
+    }
+
+    @Test
+    void run_shouldBeANoOpOnTheSecondPass() {
+        UUID owner = owner();
+        PantryItemEntity item = pantryItemPopulator.createFoodWithNutrients(owner, "csirkemell");
+        mealPopulator.createStaleScoredMeal(owner, item, DAY, "régi", NOON);
+
+        runner.run();
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(runner.run()).isZero();
     }
 }
