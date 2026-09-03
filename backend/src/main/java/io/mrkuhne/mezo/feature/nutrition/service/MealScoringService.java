@@ -82,13 +82,13 @@ public class MealScoringService {
      * ONE helper for both the logged-meal and the recipe-template surface, so the two can never
      * drift apart (mezo-uavr).
      */
-    private Rubric rubricFor(MealRole role) {
+    private Rubric rubricFor(MealRole role, DailyTargets base) {
         if (role == MealRole.PRE_WORKOUT || role == MealRole.POST_WORKOUT) {
             MealScoringProperties.RoleRubric r =
                 role == MealRole.PRE_WORKOUT ? props.roles().pre() : props.roles().post();
             return new Rubric(r.p(), r.c(), r.f(), r.who(), r.nova());
         }
-        return new Rubric(targets.p(), targets.c(), targets.f(), props.who(), props.nova());
+        return new Rubric(base.p(), base.c(), base.f(), props.who(), props.nova());
     }
 
     /** Backward-compatible entry: scores with no training context (STANDARD rubric). */
@@ -96,11 +96,18 @@ public class MealScoringService {
         return scoreMeal(slot, lines, localTime, MealRole.STANDARD);
     }
 
+    /** Config-fallback entry: scores against the static mezo.nutrition targets. */
+    public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime,
+                                       MealRole role) {
+        return scoreMeal(slot, lines, localTime, role, DailyTargets.fromConfig(targets));
+    }
+
     /**
-     * Scores a logged meal under a training {@link MealRole} (mezo-ta8p). STANDARD uses the base
-     * rubric (byte-for-byte the v0 score); PRE/POST_WORKOUT swap in the role's macro targets, WHO
-     * sugar limit, and NOVA class scores for the three role-sensitive dimensions — fast carbs are
-     * fuel, not a penalty. {@code localTime} is the request's offset-local wall-clock time.
+     * Scores against the RESOLVED day targets (mezo-3g5w): the goal's prescription segment when
+     * one covers the meal's date, else the config fallback — the caller resolves, the scorer
+     * stays pure. The role rubric (PRE/POST absolute macro bundles) is unaffected; {@code base}
+     * replaces every former {@code mezo.nutrition} read: the STANDARD macro targets and all
+     * day-share denominators (kcalShareOfDay, slot kcal budgets, slot protein references).
      *
      * <p>Confidence is weight-RENORMALIZED over the live dimensions (÷ the live weight sum,
      * consistent with {@code value}) — a degraded dimension carries weight 0 and drops out of
@@ -109,10 +116,10 @@ public class MealScoringService {
      * dimensions we could actually score", not "of the full weight budget").
      */
     public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime,
-                                       MealRole role) {
+                                       MealRole role, DailyTargets base) {
         double kcal = sum(lines, ScoredLine::kcal);
 
-        Rubric rubric = rubricFor(role);
+        Rubric rubric = rubricFor(role, base);
         int tp = rubric.p();
         int tc = rubric.c();
         int tf = rubric.f();
@@ -120,9 +127,9 @@ public class MealScoringService {
         MealScoringProperties.NovaGroupScores nova = rubric.nova();
 
         List<Dim> dims = List.of(
-            macroDim(lines, kcal, tp, tc, tf), microDim(lines, kcal), whoDim(lines, kcal, who),
+            macroDim(lines, kcal, tp, tc, tf, base), microDim(lines, kcal, base), whoDim(lines, kcal, who, base),
             fatQualityDim(lines, kcal), novaDim(lines, kcal, nova), plantDiversityDim(lines, kcal),
-            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role));
+            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base));
 
         double weightSum = dims.stream().mapToDouble(d -> d.effectiveWeight).sum();
         double value = weightSum == 0 ? 0
@@ -132,7 +139,7 @@ public class MealScoringService {
 
         return new MealBreakdownJson(round2(value), round2(confidence), null, null,
             dims.stream().map(Dim::toJson).toList(), List.of(),
-            tools(slot, lines, dims, localTime));
+            tools(slot, lines, dims, localTime, base));
     }
 
     /**
@@ -187,13 +194,14 @@ public class MealScoringService {
         if (kcal <= 0) {
             return null;
         }
-        Rubric rubric = rubricFor(role);
+        DailyTargets base = DailyTargets.fromConfig(targets);
+        Rubric rubric = rubricFor(role, base);
         List<Dim> live = List.of(
-            macroDim(perServingLines, kcal, rubric.p(), rubric.c(), rubric.f()),
-            microDim(perServingLines, kcal), whoDim(perServingLines, kcal, rubric.who()),
+            macroDim(perServingLines, kcal, rubric.p(), rubric.c(), rubric.f(), base),
+            microDim(perServingLines, kcal, base), whoDim(perServingLines, kcal, rubric.who(), base),
             fatQualityDim(perServingLines, kcal),
             novaDim(perServingLines, kcal, rubric.nova()), plantDiversityDim(perServingLines, kcal),
-            energyDensityDim(perServingLines, kcal), portionDim(slot, kcal));
+            energyDensityDim(perServingLines, kcal), portionDim(slot, kcal, base));
         double weightSum = live.stream().mapToDouble(d -> d.effectiveWeight).sum();
         if (weightSum == 0) {
             return null;
@@ -208,7 +216,7 @@ public class MealScoringService {
 
         List<ToolRow> tools = new ArrayList<>();
         tools.add(new ToolRow("read", "recipe.line_snapshots(n=" + perServingLines.size() + ")"));
-        tools.add(new ToolRow("compute", "macroFit(mezo.nutrition)"));
+        tools.add(new ToolRow("compute", "macroFit(config)"));
         tools.add(new ToolRow("compute", "guidelineFit(who, fat_quality)"));
         tools.add(new ToolRow("compute", "templateFit(weights_renormalized)"));
 
@@ -250,7 +258,8 @@ public class MealScoringService {
 
     // --- Macro (.30): kcal-share fit vs the mezo.nutrition targets -----------------------------
 
-    private Dim macroDim(List<ScoredLine> lines, double kcal, int targetP, int targetC, int targetF) {
+    private Dim macroDim(List<ScoredLine> lines, double kcal, int targetP, int targetC, int targetF,
+                        DailyTargets base) {
         double p = sum(lines, ScoredLine::p);
         double c = sum(lines, ScoredLine::c);
         double f = sum(lines, ScoredLine::f);
@@ -272,7 +281,7 @@ public class MealScoringService {
             ? (sp - tp) * props.macroProteinSurplusPenalty() : tp - sp;
         double deviation = (proteinDeviation + Math.abs(sc - tc) + Math.abs(sf - tf)) / 2;
         double score = Math.max(0, 1 - deviation * props.macroDeviationSlope());
-        double kcalShare = kcal / targets.kcal();
+        double kcalShare = kcal / base.kcal();
 
         MacroDetail detail = new MacroDetail(
             round0(sp * 100), round0(sc * 100), round0(sf * 100),
@@ -288,7 +297,7 @@ public class MealScoringService {
 
     // --- Micro (.10): fiber target (sugar/salt/satFat redistributed to who/fat-quality) ---------
 
-    private Dim microDim(List<ScoredLine> lines, double kcal) {
+    private Dim microDim(List<ScoredLine> lines, double kcal, DailyTargets base) {
         double coveredKcal = lines.stream().filter(ScoredLine::hasMicroFacts)
             .mapToDouble(l -> dbl(l.kcal())).sum();
         double coverage = kcal > 0 ? coveredKcal / kcal : 0;
@@ -296,7 +305,7 @@ public class MealScoringService {
             return Dim.degraded("micro", "Rost & mikro", props.weights().micro(),
                 "Nincs rost-adat a tételekhez.");
         }
-        double kcalShare = kcal / targets.kcal();
+        double kcalShare = kcal / base.kcal();
         double fiber = sum(lines, ScoredLine::fiberG);
         double fiberRatio = fiber / (props.micro().fiberG() * kcalShare);
         double score = Math.min(1, fiberRatio);
@@ -310,7 +319,8 @@ public class MealScoringService {
 
     // --- WHO (.14): free-sugar energy-share + salt allotment (mezo-7797) -----------------------
 
-    private Dim whoDim(List<ScoredLine> lines, double kcal, MealScoringProperties.WhoRefs who) {
+    private Dim whoDim(List<ScoredLine> lines, double kcal, MealScoringProperties.WhoRefs who,
+                      DailyTargets base) {
         double coveredKcal = lines.stream().filter(ScoredLine::hasMicroFacts)
             .mapToDouble(l -> dbl(l.kcal())).sum();
         double coverage = kcal > 0 ? coveredKcal / kcal : 0;
@@ -322,13 +332,13 @@ public class MealScoringService {
         double salt = sum(lines, ScoredLine::saltG);
         double sugarShare = sugar * 4 / kcal;
         double sugarRatio = sugarShare / who.sugarEnergyShareLimit();
-        double saltRatio = salt / (who.saltLimitG() * (kcal / targets.kcal()));
+        double saltRatio = salt / (who.saltLimitG() * (kcal / base.kcal()));
         double score = (limitSub(sugarRatio) + limitSub(saltRatio)) / 2;
         List<ContextRow> rows = List.of(
             new ContextRow("Cukor", String.format("%.0f E%% / %.0f E%% limit", sugarShare * 100,
                 who.sugarEnergyShareLimit() * 100)),
             new ContextRow("Só", String.format("%s / %s keret", grams(salt),
-                grams(who.saltLimitG() * (kcal / targets.kcal())))));
+                grams(who.saltLimitG() * (kcal / base.kcal())))));
         String text = String.format("Cukor az energia %.0f%%-a (WHO ≤%.0f%%) · só a keret %d%%-án.",
             sugarShare * 100, who.sugarEnergyShareLimit() * 100, pct(saltRatio));
         return new Dim("who", "Ajánlások · WHO", props.weights().who(), score, coverage, text,
@@ -411,9 +421,9 @@ public class MealScoringService {
 
     // --- Portion (.12, template only): per-serving kcal vs the slot budget ----------------------
 
-    private Dim portionDim(String slot, double kcal) {
+    private Dim portionDim(String slot, double kcal, DailyTargets base) {
         double share = slot == null ? props.portion().defaultShare() : props.slotShares().of(slot);
-        double budget = targets.kcal() * share;
+        double budget = base.kcal() * share;
         double rel = kcal / budget;
         double deviation = Math.max(0, Math.abs(rel - 1) - props.slotShareTolerance());
         double score = Math.max(0, 1 - deviation);
@@ -477,13 +487,13 @@ public class MealScoringService {
     // --- Context (.20): deterministic slot/timing fit -------------------------------------------
 
     private Dim contextDim(String slot, List<ScoredLine> lines, double kcal, LocalTime localTime,
-                           MealRole role) {
+                           MealRole role, DailyTargets base) {
         double slotShare = props.slotShares().of(slot);
         double timingSub = timingSub(slot, localTime);
-        double rel = kcal / (targets.kcal() * slotShare);
+        double rel = kcal / (base.kcal() * slotShare);
         double shareDev = Math.max(0, Math.abs(rel - 1) - props.slotShareTolerance());
         double shareSub = Math.max(0, 1 - shareDev);
-        double proteinRef = targets.p() * slotShare;
+        double proteinRef = base.p() * slotShare;
         double protein = sum(lines, ScoredLine::p);
         double proteinSub = Math.min(1, protein / proteinRef);
 
@@ -495,7 +505,7 @@ public class MealScoringService {
         rows.add(new ContextRow("Időzítés", String.format("%s · %s", localTime, timingSub >= 1
             ? slotLabel(slot) + " ablakban" : "a " + slotLabel(slot) + " ablakon kívül")));
         rows.add(new ContextRow("Slot-arány", String.format("%d%% vs ~%d%% cél",
-            (int) Math.round(kcal / targets.kcal() * 100), (int) Math.round(slotShare * 100))));
+            (int) Math.round(kcal / base.kcal() * 100), (int) Math.round(slotShare * 100))));
         rows.add(new ContextRow("Fehérje", String.format("%d g / %d g slot-cél",
             Math.round(protein), Math.round(proteinRef))));
         String text = String.format("Időzítés %.0f%% · kcal-keret %.0f%% · fehérje %.0f%%.",
@@ -540,7 +550,8 @@ public class MealScoringService {
     // --- Provenance ------------------------------------------------------------------------------
 
     /** Honest deterministic tool transparency — what the scorer actually read/computed. */
-    private List<ToolRow> tools(String slot, List<ScoredLine> lines, List<Dim> dims, LocalTime t) {
+    private List<ToolRow> tools(String slot, List<ScoredLine> lines, List<Dim> dims, LocalTime t,
+                                DailyTargets base) {
         long factLines = lines.stream().filter(ScoredLine::hasMicroFacts).count();
         double microCoverage = dims.stream().filter(d -> d.id().equals("micro")).findFirst()
             .map(Dim::coverage).orElse(0.0);
@@ -552,7 +563,7 @@ public class MealScoringService {
             tools.add(new ToolRow("read",
                 "pantry.nutrition_facts(" + factLines + "/" + lines.size() + " tétel)"));
         }
-        tools.add(new ToolRow("compute", "macroFit(mezo.nutrition)"));
+        tools.add(new ToolRow("compute", "macroFit(" + base.source() + ")"));
         tools.add(new ToolRow("compute", "guidelineFit(who, fat_quality)"));
         if (novaCoverage > 0) {
             tools.add(new ToolRow("compute", "novaDistribution(kcal_weighted)"));

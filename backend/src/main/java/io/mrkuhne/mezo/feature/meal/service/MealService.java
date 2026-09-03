@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealItemRepository;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
@@ -167,6 +168,11 @@ public class MealService {
      * {@code score} + {@code breakdown} atomically. There is now exactly ONE route to those four
      * numbers: the write-time freeze. NOVA is likewise frozen; only {@code category} (plant
      * diversity) is still read live off the pantry row.
+     *
+     * <p>The rubric's macro targets are the goal-aware {@link DailyTargets} (mezo-3g5w): the
+     * active goal's prescribed day when one covers {@code meal.mealDate}, else the config
+     * fallback — the SAME resolution the FuelDay MacroHero reads, so the score and the hero never
+     * judge the day against different numbers.
      */
     private void applyScore(UUID userId, MealEntity meal, OffsetDateTime loggedAt) {
         List<ScoredLine> lines = meal.getItems().stream()
@@ -178,8 +184,9 @@ public class MealService {
             .toList();
         MealRole role = MealScoringService.classifyRole(loggedAt.toLocalTime(), windows,
             scoringProperties.preLeadMin(), scoringProperties.postTrailMin());
+        DailyTargets base = fuelDayService.dailyTargets(userId, meal.getMealDate());
         MealBreakdownJson breakdown =
-            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role);
+            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role, base);
         meal.setBreakdown(breakdown);
         meal.setScore(breakdown.value());
     }

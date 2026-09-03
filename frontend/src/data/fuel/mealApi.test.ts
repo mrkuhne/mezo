@@ -87,7 +87,7 @@ describe('fromResponse', () => {
               context: [{ label: 'Időzítés', value: '07:30 · reggeli ablakban' }],
             },
           ],
-          improve: [], tools: [{ type: 'compute', name: 'macroFit(mezo.nutrition)' }],
+          improve: [], tools: [{ type: 'compute', name: 'macroFit(config)' }],
         },
       },
     }
@@ -105,7 +105,7 @@ describe('fromResponse', () => {
     const nova = meal.breakdown!.dimensions[1]
     expect(nova).toMatchObject({ id: 'nova', color: 'var(--cat-tendency)' })
     expect(nova.id === 'nova' && nova.nova.items[1].warning).toBe(true)
-    expect(meal.breakdown!.tools[0]).toEqual({ type: 'compute', name: 'macroFit(mezo.nutrition)' })
+    expect(meal.breakdown!.tools[0]).toEqual({ type: 'compute', name: 'macroFit(config)' })
   })
 })
 
