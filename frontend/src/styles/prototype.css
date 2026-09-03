@@ -2078,7 +2078,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .quicklog { padding: 4px 6px 10px; }
 .quicklog h2 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
 .quicklog-sub { font-size: 14px; color: var(--text-secondary); font-weight: 400; margin-top: 2px; }
-/* 8 tiles in a 3-wide rhythm; flex (not grid) so a short last row centres itself (mezo-967c) */
+/* 9 tiles in a 3-wide rhythm; flex (not grid) so a short last row centres itself (mezo-967c) */
 .quicklog-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-3); margin-top: var(--sp-3); }
 .quicklog-tile {
   flex: 0 0 calc((100% - 2 * var(--sp-3)) / 3);
@@ -2086,37 +2086,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   border: 1px solid var(--divider); background: var(--surface-page); cursor: pointer;
   display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: inherit;
 }
-.quicklog-emoji { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-recess); display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 6px; }
-/* ── quick-log v2 (mezo-d20.1.6): MOST head + in-place water + live sublines ── */
+/* ── quick-log v2 (mezo-7lst): lapos 3×3 rács, élő sublinekkal ── */
 .quicklog-sub-line { font-size: 11px; color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
 .quicklog-sub-line.done { color: var(--success-deep); font-weight: 700; }
-.quicklog-most {
-  width: 100%; margin-top: var(--sp-3); padding: 11px 13px;
-  display: flex; align-items: center; gap: 11px; text-align: left; font-family: inherit; cursor: pointer;
-  border: 1px solid #FF6B4A; border-radius: 20px; background: var(--mz-wash-white);
-  box-shadow: var(--mz-shadow-most);
-}
-.quicklog-most-text { flex: 1; min-width: 0; display: grid; gap: 1px; }
-.quicklog-most-row { display: flex; align-items: center; gap: 7px; }
-.quicklog-most-row b { font-size: 14px; color: var(--text-primary); }
-.quicklog-most-stamp { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; color: #fff;
-  background: var(--gradient-cta); border-radius: 999px; padding: 2px 8px; }
-.quicklog-most-meal { font-size: 12px; color: var(--mz-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.quicklog-most-cta { font-size: 13px; font-weight: 700; color: var(--primary-deep); flex: none; }
-.quicklog-water {
-  margin-top: var(--sp-3); padding: 11px 13px; border-radius: 20px;
-  background: var(--mz-wash-sky); border: 0.5px solid rgba(43, 33, 24, 0.06);
-  box-shadow: var(--mz-shadow-sky);
-}
-.quicklog-water-head { display: flex; align-items: center; gap: 8px; }
-.quicklog-water-count { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.quicklog-water-chips { display: flex; gap: 8px; margin-top: 9px; }
-.quicklog-chip {
-  flex: 1; border: none; font-family: inherit; cursor: pointer;
-  border-radius: 999px; padding: 8px 0; font-size: 13px; font-weight: 700;
-  color: var(--mz-cell-sky-ink); background: var(--mz-cellbg);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 6px 12px -8px rgba(43, 33, 24, 0.3);
-}
 .quicklog-tile.tone-sky { background: var(--mz-wash-sky); border-color: transparent; }
 .quicklog-tile.tone-lav { background: var(--mz-wash-lav); border-color: transparent; }
 .quicklog-tile.tone-sage { background: var(--mz-wash-sage); border-color: transparent; }

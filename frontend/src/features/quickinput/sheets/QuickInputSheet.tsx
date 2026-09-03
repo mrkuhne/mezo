@@ -1,13 +1,15 @@
 // ============================================================
-// Mezo · QuickInputSheet v2 — the Design 2.0 quick-log launcher (mezo-d20.1.6)
-// Behind the floating coral FAB on every tab. Anatomy (en-tab prototype):
-//   · MOST head — the current eating window with the plan meal + Logold
-//     (echoes the Fuel swimlane); renders NOTHING without a now-window.
-//   · Flat 8-tile clay grid with live sublines (mezo-7lst); Víz/Súly open their
-//     amount pickers in place (WaterLogSheet / WeightLogSheet), Alvás/Napló/
-//     Check-in swap in place (mezo-967c), the rest navigate. A log stays two
-//     taps from anywhere.
-//   · The Mezo row at the bottom keeps chat as a logging path.
+// Mezo · QuickInputSheet — a Design 2.0 quick-log launcher (mezo-7lst)
+// A floating coral FAB mögött, minden tabon. Anatómia:
+//   · Chat sor legfelül — a Mezónak mondott logolás a felfedezendő út,
+//     ezért kap vizuális elsőbbséget (a rutin-logolás a rács alsó
+//     kétharmadában marad, hüvelykujj-közelben).
+//   · 9 egyenrangú csempe 3×3-ban, élő sublinekkal.
+//   · Étkezés DINAMIKUS: aktív ablakkal a `/fuel/log/uj?w=<tileKey>` logolóba
+//     visz, ablak nélkül a szabad tétel ágra. A hely/ikon/címke fix — csak az
+//     alszöveg és a cél változik.
+//   · Víz / Sport / Súly / Alvás / Napló / Check-in helyben cserélik a sheetet
+//     (phase-csere, sosem Sheet a Sheetben); a többi navigál.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -21,7 +23,7 @@ import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { WeightLogSheet } from '@/features/me/sheets/WeightLogSheet'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
-import { SPORT_LABELS, sportOf } from '@/features/train/logic/sportKinds'
+import { SPORT_LABELS, sportOf, type SportKind } from '@/features/train/logic/sportKinds'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { localDateString } from '@/shared/lib/dates'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
@@ -75,7 +77,7 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   // OrderByDateDesc; mock: a log a lista elejére fűz), így egy sima `.find()`
   // a mai nap UTOLSÓNAK logolt sessionjét adja — reverse NÉLKÜL.
   const todaysSport = (sport.sessions ?? []).find(s => s.isoDate === localDateString())
-  const sportSub = todaysSport ? `${SPORT_LABELS[sportOf(todaysSport)]} · ${HU.format(todaysSport.duration)}p` : undefined
+  const sportSub = todaysSport ? `${SPORT_LABELS[sportOf({ sport: todaysSport.sport as SportKind })]} · ${HU.format(todaysSport.duration)}p` : undefined
 
   const { checkins, saveCheckIn } = useCheckins()
   // Pinned at click time (see the tile below), NOT recomputed here — see mezo-967c finding 1.
