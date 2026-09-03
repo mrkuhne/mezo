@@ -41,3 +41,10 @@ test('a tabbar-lépés az öt VALÓDI fület hordozza, a valódi ikonokkal', () 
   expect(step.tabs.map((t) => t.icon)).toEqual(['i-nap', 'i-edzes', 'i-fuel', 'i-mezo', 'i-emberek'])
   expect(step.tabs.map((t) => t.label)).toEqual(['Nap', 'Edzés', 'Fuel', 'Mezo', 'Én'])
 })
+
+test('versionOf: a welcome verziója a registryn kívülről is megszólal', async () => {
+  const { versionOf } = await import('@/features/tutorial/registry')
+  expect(versionOf('welcome')).toBe(WELCOME_VERSION)
+  expect(versionOf('fuel')).toBe(1)
+  expect(versionOf('nincs-ilyen')).toBeNull()
+})

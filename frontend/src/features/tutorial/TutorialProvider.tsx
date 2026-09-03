@@ -16,7 +16,7 @@ import { useTutorialProgress, useTutorialProgressActions } from '@/data/hooks'
 import type { TutorialProgress } from '@/data/types'
 import { mergeProgress, readLocalProgress, writeLocalProgress } from '@/shared/lib/tutorialSeen'
 import { KalauzSheet, type KalauzCloseReason } from '@/shared/ui/kalauz/KalauzSheet'
-import { findKalauz, getKalauz, type KalauzEntry } from '@/features/tutorial/registry'
+import { findKalauz, getKalauz, versionOf, type KalauzEntry } from '@/features/tutorial/registry'
 
 export const AUTO_DELAY_MS = 600
 
@@ -111,10 +111,12 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const isUnseen = useCallback((id: string) => {
-    const e = getKalauz(id)
-    if (!e) return false
+    // `versionOf`, nem `getKalauz`: a T0 welcome a registryn kívül él, de a seen-állapota
+    // ugyanebben a mapben — enélkül `isUnseen('welcome')` mindig false lenne.
+    const version = versionOf(id)
+    if (version === null) return false
     const p = progressRef.current[id]
-    return !p || p.version < e.version
+    return !p || p.version < version
   }, [])
 
   const open = useCallback((id: string) => {
