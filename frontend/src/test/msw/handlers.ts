@@ -4,6 +4,7 @@ import { initialChat, cannedReply } from '@/data/insights/chat'
 import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge'
 import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
+import { ADMIN_INVITES_MOCK, ADMIN_USERS_MOCK } from '@/data/admin/adminMock'
 import { addDays } from '@/shared/lib/dates'
 import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
 
@@ -237,6 +238,17 @@ export const handlers = [
       month: { callCount: 240, costUsd: 0.95, currency: 'USD' },
     }),
   ),
+  // Beta admin (mezo-qw37.3) — populated defaults mirroring the mock seed; tests override with
+  // server.use() to capture payloads. The 403 USER path is a backend concern (AdminInviteIT).
+  http.get(`${API_BASE}/api/admin/invites`, () => HttpResponse.json(ADMIN_INVITES_MOCK)),
+  http.post(`${API_BASE}/api/admin/invites`, async ({ request }) => {
+    const body = (await request.json()) as { label: string | null }
+    return HttpResponse.json({ ...ADMIN_INVITES_MOCK[0], id: 'msw-invite', code: 'MEZO-MSWX-TEST', label: body.label })
+  }),
+  http.delete(`${API_BASE}/api/admin/invites/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.get(`${API_BASE}/api/admin/users`, () => HttpResponse.json(ADMIN_USERS_MOCK)),
+  http.post(`${API_BASE}/api/admin/users/:id/reset-password`, () => HttpResponse.json({ temporaryPassword: 'MswTempPw2026' })),
+  http.post(`${API_BASE}/api/admin/users/:id/status`, () => new HttpResponse(null, { status: 204 })),
   // Gamification profile (mezo-huzd) — populated default (never a 404 in the contract;
   // the backend answers ghost-shaped zeros before any activity, not an HTTP error).
   // Tests override with server.use() for specific field-mapping/mutation assertions.

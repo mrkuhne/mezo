@@ -54,6 +54,7 @@ export { useSlotTemplates, useSlotTemplateActions, useSlotTemplateEvaluation } f
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from '@/data/me/goalHooks'
 export { useBiometricProfile, useBiometricActions } from '@/data/me/biometricHooks'
 export { useLlmUsageSummary, useLlmUsageBreakdown, useLlmCalls, useLlmCall } from '@/data/me/llmUsageHooks'
+export { useAdminInvites, useAdminUsers, useAdminActions } from '@/data/admin/adminHooks'
 export { useProgressionProfile, useAchievements, useGrowthWeek } from '@/data/progression/progressionHooks'
 export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
 export { useHabitDay, useHabitActions, useHabitSummary } from '@/data/habit/habitHooks'
