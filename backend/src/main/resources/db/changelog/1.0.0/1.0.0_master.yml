@@ -945,9 +945,23 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609021100_mezo-3zue.2_habit_def_framework.sql
   - changeSet:
+      id: "1.0.0:202609021200_mezo-qw37.1_multi_user_accounts"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021200_mezo-qw37.1_multi_user_accounts.sql
+  - changeSet:
       id: "1.0.0:202609021400_mezo-gb1s.1_create_tutorial_progress"
       author: daniel.kuhne
       changes:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609021400_mezo-gb1s.1_create_tutorial_progress.sql
+  - changeSet:
+      id: "1.0.0:202609030042_mezo-qw37.1_app_user_tokens_valid_from"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609030042_mezo-qw37.1_app_user_tokens_valid_from.sql

@@ -106,7 +106,7 @@ Tip: steps 1–3 can be rehearsed locally on **k3d/minikube** with zero VPS cost
 | k3s | `v1.35.5+k3s1` (Traefik ingress + local-path storage bundled) |
 | Public URL | `https://46.225.112.172.sslip.io/` (Let's Encrypt via cert-manager) |
 | Images | `ghcr.io/mrkuhne/mezo-backend:0.0.1`, `ghcr.io/mrkuhne/mezo-frontend:0.0.1` (private; pulled with `ghcr-pull` secret) |
-| Owner login | `owner@mezo.local` / `owner` (demodata seed; baked into the frontend build) |
+| Owner login | `owner@mezo.local` / `MEZO_OWNER_PASSWORD` (demodata seed; entered through the app's own login screen — no longer baked into the frontend build, since `mezo-qw37` S1) |
 | Backend timezone | `TZ=Europe/Budapest` on the backend Deployment env (`k8s/backend/deployment.yaml:34`) — pins the JVM default zone so business-date columns (`level_up_event.occurred_on`, gamification streak/coin rollover) and every `@Scheduled` cron run on Budapest wall-clock, not the eclipse-temurin UTC default. Without it, a 00:00–02:00 log lands on the previous business date (mezo-k0t2) and the crons fire 1–2 h off their intended local time. Matches `k8s/postgres/backup-cronjob.yaml`'s `timeZone`. **Now also load-bearing for push-notification timing** ([`_platform-notifications.md`](../features/_platform-notifications.md) §8) — mezo has no per-user `Profile.timezone`, so the (not-yet-built, N2) per-minute notification dispatcher will resolve every anchor (gym start, sleep wind-down, Napzárás window, check-ins) off this same server zone; changing or unsetting `TZ` would silently shift every notification's send time, not just date bucketing. |
 | Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed). Planned: `GEMINI_API_KEY` joins `mezo-app` + the backend Deployment env when the Phase-3 companion first deploys (ADR 0008) — until then the backend boots on its dummy-key default. **Same pattern for push notifications:** `VAPID_PUBLIC`/`VAPID_PRIVATE` (the Web Push VAPID keypair — [`_platform-notifications.md`](../features/_platform-notifications.md), [ADR 0014](../decisions/0014-own-webpush-implementation.md)) join the existing `mezo-app` SealedSecret + the backend Deployment env once a real keypair is generated; until then the backend boots on `application.yml`'s `dummy-vapid-public`/`dummy-vapid-private` defaults, which now **fail loudly** on the first real send (`VapidSigner.decodePrivateKey` rejects a malformed scalar) rather than silently minting a well-formed-but-useless token. **DONE 2026-07-29** (`mezo-7kr3`): a real P-256 pair is sealed into `mezo-app` and wired into the backend env; the public half is also the `VITE_VAPID_PUBLIC` repo variable (see the gotcha below). |
 
@@ -120,7 +120,7 @@ Build/push images (arm64 Mac → amd64 server):
 cd backend && ./mvnw -B clean package -DskipTests
 docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-backend:<tag> backend --push
 # frontend
-cd frontend && VITE_USE_MOCK=false VITE_API_URL= VITE_OWNER_EMAIL=owner@mezo.local VITE_OWNER_PASSWORD=owner pnpm build
+cd frontend && VITE_USE_MOCK=false VITE_API_URL= pnpm build
 docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-frontend:<tag> frontend --push
 ```
 
@@ -168,8 +168,9 @@ for the build-out steps.
    `backend` or `api` → BE). Tree hashes are used rather than `git diff base..HEAD`, which proved
    unreliable under `actions/checkout`'s merge-commit checkout — it silently reported the backend
    as unchanged on the first run and skipped its deploy (fixed in mezo-7n5).
-2. **`build-frontend`** (only if FE changed) — `pnpm build` (owner creds baked in) → docker
-   build/push `ghcr.io/mrkuhne/mezo-frontend:<ver>`. No test step (mezo-oa3).
+2. **`build-frontend`** (only if FE changed) — `pnpm build` (no owner creds baked in since
+   `mezo-qw37` S1 — login happens at runtime) → docker build/push
+   `ghcr.io/mrkuhne/mezo-frontend:<ver>`. No test step (mezo-oa3).
 3. **`build-backend`** (only if BE changed) — `./mvnw -B clean package -DskipTests` (no
    Testcontainers/Docker needed since tests are skipped) → docker build/push
    `ghcr.io/mrkuhne/mezo-backend:<ver>`.
@@ -199,8 +200,10 @@ existing `ghcr-pull` secret (unchanged).
 **One-time bootstrap (manual, already done):**
 - Repo **Settings → Actions → Workflow permissions → "Read and write permissions"** (so the
   commit-back + tag push are allowed).
-- Repo **Variables** `VITE_OWNER_EMAIL` / `VITE_OWNER_PASSWORD` — the demo-owner creds baked into
-  the frontend build (demo values, not real secrets).
+- Repo **Variables** `VITE_OWNER_EMAIL` / `VITE_OWNER_PASSWORD` — **OBSOLETE since `mezo-qw37` S1**:
+  the frontend no longer reads them at build time (login happens at runtime through the app's own
+  login screen). Nothing in CI or the build references them anymore; remove them from
+  **Settings → Secrets and variables → Actions → Variables** the next time someone is in there.
 - **GHCR package → Actions access** for each private package (`mezo-frontend`, `mezo-backend`):
   package **Settings → "Manage Actions access" → Add Repository → `mrkuhne/mezo` → Write**. The
   packages were first created by hand with a PAT, so they are not auto-linked to the repo; without

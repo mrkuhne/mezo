@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.train.TrainSeedData;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -33,5 +34,14 @@ class OwnerSeedDataIT extends AbstractIntegrationTest {
     @Test
     void testDemodataProfile_shouldNotRegisterTrainSeed_whenFixturesProfileAbsent() {
         assertThat(applicationContext.getBeanProvider(TrainSeedData.class).getIfAvailable()).isNull();
+    }
+
+    @Test
+    void testSeed_shouldMarkOwnerRoleAndOnboarded_whenSeeded() {
+        AppUserEntity owner = appUserRepository.findByEmail("owner@mezo.local").orElseThrow();
+        assertThat(owner.getRole()).isEqualTo(AppUserEntity.UserRole.OWNER);
+        assertThat(owner.getStatus()).isEqualTo(AppUserEntity.UserStatus.ACTIVE);
+        assertThat(owner.getOnboardedAt()).isNotNull();
+        assertThat(owner.getTimezone()).isEqualTo("Europe/Budapest");
     }
 }

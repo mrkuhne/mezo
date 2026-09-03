@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-08-27
+updated: 2026-09-02
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -112,8 +112,8 @@ React view (features/**/*.tsx)
   when the failure is an `ApiError`) through `shared/lib/toastBus` → the `ToastProvider` host in
   `AppLayout`. Every failed mutation is surfaced; per-mutation `onError` handlers still run on top
   for richer handling. Mock-mode mutations no-op successfully, so mock never toasts errors.
-- In **real mode** the provider gates rendering on `bootstrapOwnerToken()` (`frontend/src/data/_client/auth.ts`): POSTs `VITE_OWNER_EMAIL`/`VITE_OWNER_PASSWORD` to `/api/auth/login`, then `setToken(token)` so `apiFetch` injects the Bearer header. `ready` starts `false` and renders `null` until the token lands — *or* until login fails, in which case it renders anyway so the app degrades gracefully. In **mock mode** `ready` starts `true` and no login is attempted.
-- `setToken` stores the JWT in a **module-level `let token`** in `data/_client/api.ts:19` (not `localStorage`) — there is no login UI; ownership is single-user.
+- In **real mode** rendering is gated by `AuthGate` (`frontend/src/app/auth/AuthGate.tsx`, mounted inside `QueryProvider`), not by the provider itself: it checks a persisted token against `GET /api/auth/me` and only renders `{children}` once the account resolves to `ready` — otherwise it renders `LoginPage`/`RegisterPage`/`ChangePasswordPage`/a retry screen instead. In **mock mode** `AuthGate` short-circuits straight to `ready`; no login is attempted. See [`_platform-auth-security.md`](_platform-auth-security.md) §2/§3 for the full boot state machine.
+- `setToken` stores the JWT via `tokenStore` (`data/_client/tokenStore.ts`) in **`localStorage`** (key `mezo.auth.token`) — multi-user accounts now exist (`mezo-qw37`), so a real login/register UI persists the token across reloads and across tabs.
 
 ### The dual-mode pattern (the load-bearing recipe)
 
@@ -211,7 +211,7 @@ The FE↔BE boundary types are **generated, never hand-written** (see `docs/refe
 - `auth` (`data/_client/auth.ts`): `POST /api/auth/login` → `TokenResponse`.
 - `notificationApi` (`data/notification/notificationApi.ts`): `POST/DELETE /api/notification/subscription` (register/unregister, N1) + `POST /api/notification/test` (dev-only fixed test push, N1) + `GET/PUT /api/notification/pref` (N2) + `PUT /api/notification/schedule` (N3). Types `PushSubscriptionRequest`/`PushTestResponse`/`NotificationPref*`/`NotificationSchedule*`. Consumed by `usePushSubscription`/`useNotificationPrefs`/`useScheduleSnapshotWriter` (§2) — no dual-mode branch on the client itself, each hook owns that. See [`_platform-notifications.md`](_platform-notifications.md).
 
-Backend entities/conventions for the wired domains follow `docs/references/*.md`: UUID PKs (`gen_random_uuid()`), soft delete (`@SQLDelete`/`@SQLRestriction`), single-user ownership (`created_by` from the security principal, app-level filtering), typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)`, Liquibase changesets `{YYYYMMDDHHMM}_{bd-id}_{desc}.sql`, seed data in Java `@Profile("demodata")`. The per-feature design specs hold the table-level detail; see `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` and `2026-06-14-train-running-slice-design.md`.
+Backend entities/conventions for the wired domains follow `docs/references/*.md`: UUID PKs (`gen_random_uuid()`), soft delete (`@SQLDelete`/`@SQLRestriction`), ownership (`created_by` from the security principal, app-level filtering), typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)`, Liquibase changesets `{YYYYMMDDHHMM}_{bd-id}_{desc}.sql`, seed data in Java `@Profile("demodata")`. The per-feature design specs hold the table-level detail; see `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` and `2026-06-14-train-running-slice-design.md`.
 
 ### Domain↔contract type seam (a documented gotcha)
 
@@ -235,7 +235,7 @@ This layer is the hub; every feature is a spoke. Concrete, bidirectional seams:
 - **Train ↔ Train sub-views**: `useTrain` feeds `GymPage`, `SportPage`, `TrainTodayPage`, `MesocycleLibraryPage`, `ExercisesPage`, `ActiveWorkoutPage`; `useRunning` feeds `RunningPage`; `WorkoutReviewPage` consumes `useWorkoutDetail`. The `todaySession` field (`{ templateSessionId, openWorkout }`) lets a mid-workout reload resume from the open instance (`trainHooks.ts:361`); **since `mezo-cd8s` `useTrain` also returns `completedTodayWorkout`** (today's `completed` instance, real-mode only) for the Kész/Megnézem hero + the `/train/session` review redirect, and two new hooks live in `data/train/workoutDetailHooks.ts` — `useWorkoutDetail(id)` (`GET /api/train/workouts/{id}`, mock static fixture) + `useWeekWorkouts()` (this week's `listWorkouts` date→instance-id map) — both re-exported from the `hooks.ts` barrel.
 - **Train → Today**: `useTrain().workout` derives the Today workout card; `gymSchedule`/`sport.schedule` derive the weekly rows. The gym schedule is *derived client-side* by `deriveGymSchedule(meso, slots)` (`trainHooks.ts:67`), joining the active meso's template gym days (WHAT) with the standalone weekly gym-time slots (WHEN — the new `['train','gymSchedule']` query, persists across mesocycles, edited via `saveGymSchedule`). Only per-day gym `duration` stays out of scope.
 - **Cross-feature mock fixtures**: `data/today/today.ts` re-exports `volleyballSessions`, `fuelToday`; `useFuelWeek` pulls `volleyball: volleyballSessions` from `today.ts` (`data/fuel/fuelReadHooks.ts`) — mock-only cross-references between domains that the real backend will eventually own.
-- **Auth seam**: `QueryProvider` → `bootstrapOwnerToken` → `setToken` → `apiFetch` Bearer header. Every real-mode request depends on this completing first; the provider blocks render until then. **Contract:** `TokenResponse.token` → module-level `token` in `data/_client/api.ts`.
+- **Auth seam**: `AuthGate` → `authApi.login`/`register`/`me` → `tokenStore.set` → `apiFetch`/`apiSse` Bearer header. Every real-mode request depends on a resolved session first; `AuthGate` blocks render of `{children}` until then. **Contract:** `TokenResponse.token` → `tokenStore` (`localStorage`) in `data/_client/tokenStore.ts`. See [`_platform-auth-security.md`](_platform-auth-security.md).
 - **MSW ↔ `API_BASE` seam**: tests import `API_BASE` from `data/_client/api.ts` (re-exported via `test/msw/handlers.ts`) so handler URLs always match the real client target.
 
 ## 7. How to extend it
@@ -282,7 +282,7 @@ pnpm build                      # tsc -b && vite build
 - **Code default = mock, configured default = real**: `mode.ts` reads `VITE_USE_MOCK !== 'false'` so a *missing* env var never breaks the visual baselines or dev. **But** `frontend/.env.example` ships `VITE_USE_MOCK=false`, and `CLAUDE.md` says dev runs REAL by default (backend on `:8090`). The code default and the configured default diverge — the example env makes real mode the working default; mock is the deliberate fallback for the visual baselines/demos.
 - **Gotcha — synchronous `initialData` parity**: mock mode must use `initialData` (not just `queryFn`) so the first render is synchronous and matches Phase-1 `useState`; otherwise the visual baselines/component tests would catch a loading frame.
 - **Gotcha — domain vs contract type drift**: `sleepApi` `as SleepEntry[]` papers over nullability (open bd issue to normalize). New hooks should prefer the Running idiom (generated types as the view model) to avoid this entirely.
-- **Gotcha — token in module scope**: the JWT lives in a `let` in `data/_client/api.ts`, lost on reload; `QueryProvider` re-bootstraps on every mount. No refresh/expiry handling (single-user, fine for now).
+- **Gotcha — no token refresh**: the JWT is persisted (`tokenStore`, `localStorage`) and survives reload, but there is still no refresh/rotation flow — a 30-day-old token simply 401s and `AuthGate` drops back to the login screen. See [`_platform-auth-security.md`](_platform-auth-security.md).
 - **Gotcha — `useCheckins` real-mode write has no rollback of the optimistic layer**: a failed save toasts (global mutation cache) + `console.error`s but the slot stays optimistically "done" until the next `['checkins', date]` refetch reconciles it.
 - **Gotcha — a mock-only cross-domain side-effect helper (`mezo-k7rn`)**: `gamificationStore.awardGamificationEvent(qc, event)` breaks the usual "one hook owns its cache" rule by design — it is imported and called directly (not via `useMutation`) from ten unrelated domains' mock-mode `onSuccess` handlers (weight/sleep/checkin/medication/meal/train-gym/train-sport/running/activity/habit-check) to patch the shared `['gamification']` cache and fire a toast. This is intentional (a single account-wide XP/coin/streak ledger has to be touched from everywhere something gets logged), but it means `['gamification']` invalidation is **not** visible from `gamificationHooks.ts` alone — grep call sites (or see [growth.md](growth.md)) before assuming a domain's mock mutation has no side effects beyond its own cache. **Real mode has its own, separate mechanism now** (`mezo-huzd`): the backend's `AccountProgressPort`, fired server-side off the shared XP-award tail — see [growth.md](growth.md) "Account progression".
 - **Gotcha — `usePushSubscription` is the one dual-mode hook that is deliberately NOT `useDualQuery`** (N1, `mezo-h4wp.6.1`): every other dual-mode read in this doc follows the `useDualQuery`/`realEmpty` recipe above because the server is the source of truth; push subscription state is not — the **browser** (`PushManager.getSubscription()`) is, so there is no server query to wrap. **Confirmed by N2/N3** (`mezo-h4wp.6.2`/`.6.3`, shipped): `useNotificationPrefs` (server-owned `notification_pref`) IS an ordinary `useDualQuery`, and `useScheduleSnapshotWriter` (the FE-owned `notification_schedule` write) is a write-only, no-query-key hook — neither needed the browser-source-of-truth exception `usePushSubscription` does. See [`_platform-notifications.md`](_platform-notifications.md) §6.
@@ -306,7 +306,7 @@ pnpm build                      # tsc -b && vite build
 - `frontend/src/data/notification/{notificationApi,notificationMock,notificationHooks,notificationPrefHooks,notificationScheduleWriter}.ts` — **`usePushSubscription`** (N1; the one dual-mode hook that is NOT `useDualQuery` — see §9) + **`useNotificationPrefs`** (N2; an ordinary `useDualQuery`) + **`useScheduleSnapshotWriter`** (N3; write-only, no query key), all re-exported from `hooks.ts`. Full protocol/status in [`_platform-notifications.md`](_platform-notifications.md).
 - `frontend/src/data/_client/mode.ts` — `isMockMode()`, the per-call mode switch.
 - `frontend/src/data/_client/api.ts` — `apiFetch`, `API_BASE`, `setToken`, `ApiError`, `SystemMessage`.
-- `frontend/src/data/_client/auth.ts` — `bootstrapOwnerToken` (silent owner login).
+- `frontend/src/data/_client/tokenStore.ts` — persisted (`localStorage`) bearer token store. `frontend/src/app/auth/AuthGate.tsx` — the boot state machine (login/register/change-password/app).
 - `frontend/src/data/me/biometricsApi.ts` / `trainApi.ts` / `runningApi.ts` / `goalApi.ts` / `goalLinkApi.ts` (G3) / `biometricProfileApi.ts` / `pantryApi.ts` (Fuel slice C) — typed REST clients over `apiFetch`.
 - `frontend/src/data/_client/api.gen.ts` — generated contract types (openapi-typescript; do not edit).
 - `frontend/src/shared/lib/dates.ts` — ISO→Hungarian display formatting used by Train mappers.
@@ -317,7 +317,7 @@ pnpm build                      # tsc -b && vite build
 - `frontend/src/test/setup.ts` — storage shim + MSW lifecycle.
 - `frontend/src/test/msw/handlers.ts` / `server.ts` — MSW handlers (keyed off `API_BASE`).
 - `frontend/src/data/types.ts` — FE domain types (`WeightEntry`, `SleepEntry`, `Mesocycle`, …) DTOs map to.
-- `frontend/.env.example` — `VITE_API_URL`, `VITE_OWNER_EMAIL/PASSWORD`, `VITE_USE_MOCK`.
+- `frontend/.env.example` — `VITE_API_URL`, `VITE_USE_MOCK`, `VITE_VAPID_PUBLIC` (no owner creds — see [`_platform-auth-security.md`](_platform-auth-security.md)).
 
 **Related docs (link, don't duplicate):** `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (the foundational decision — §1 invariant, §3 FE integration, §5 slice map); `docs/superpowers/specs/2026-06-14-train-running-slice-design.md` (cleanest hook-wiring reference); `docs/references/api_contract_conventions.md` (contract-first FE↔BE type flow); `docs/references/error_handling.md` (the `SystemMessage` contract `apiFetch` mirrors); `docs/milestones/roadmap.md` (Phase-2 slice status — Slices C/D/E remaining); [`_platform-notifications.md`](_platform-notifications.md) (the `usePushSubscription` browser-is-source-of-truth exception, N1).
 
