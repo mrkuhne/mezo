@@ -28,6 +28,7 @@ class MealScoringServiceTest {
         new MealScoringProperties.NovaGroupScores(1.0, 0.85, 0.55, 0.20),
         2.0,
         0.0,
+        0.25,
         new MealScoringProperties.MicroRefs(38),
         new MealScoringProperties.WhoRefs(0.10, 5),
         new MealScoringProperties.FatQualityRefs(0.10, 0.33),
@@ -113,30 +114,64 @@ class MealScoringServiceTest {
     }
 
     @Test
+    void macroDim_tinySnack_ratioDeviationIsScaledByKcalSignificance() {
+        // ~100 kcal, all-fat snack (P0/C0/F11g) vs the fixture's 3100/220/380/95 targets:
+        // kcalShare = 99/3100 ≈ 0.0319 → significance = min(1, 0.0319/0.25) ≈ 0.1277.
+        // targetMacroKcal = 220*4+380*4+95*9 = 3255 → tp≈0.2704, tc≈0.4670, tf≈0.2627.
+        // sp=0, sc=0, sf=1.0 → deviation = (tp−0 + tc + |1−tf|)/2 ≈ (0.2704+0.4670+0.7373)/2 ≈ 0.7373
+        // score = 1 − 0.7373·2.0·0.1277 ≈ 0.81 (mezo-jcpt.1; pre-fix this saturated to 0, since
+        // deviation·slope alone ≈ 1.47 already exceeds 1 with no significance discount).
+        var lines = List.of(line("Vaj", 99, 0, 0, 11, 4, 0, 0, 0, 0));
+        var dim = dimension(service.scoreMeal("snack", lines, LocalTime.of(16, 0)), "macro");
+        assertThat(dim.score().doubleValue()).isCloseTo(0.81, within(0.005));
+    }
+
+    @Test
+    void macroDim_mainMealSignificanceCapsAtOne() {
+        // 900-kcal lunch: kcalShare = 900/3100 ≈ 0.290 > 0.25 ref-share → significance capped at
+        // 1.0, reproducing the pre-fix (undiscounted) formula. macroKcal = 20·4+150·4+20·9 = 860 →
+        // sp=80/860≈0.0930, sc=600/860≈0.6977, sf=180/860≈0.2093 vs tp≈0.2704/tc≈0.4670/tf≈0.2627.
+        // Protein is a DEFICIT (sp<tp) → counts in full: deviation = (tp−sp + |sc−tc| + |sf−tf|)/2
+        //   = (0.1773 + 0.2307 + 0.0534)/2 ≈ 0.2307
+        // score = 1 − 0.2307·2.0·1.0 ≈ 0.5386 (mezo-jcpt.1) — the distorted ratio still punishes a
+        // main meal at full weight, unlike the tiny snack above.
+        var lines = List.of(line("Ebéd", 900, 20, 150, 20, 1, 0, 0, 0, 0));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.of(13, 0)), "macro");
+        assertThat(dim.score().doubleValue()).isCloseTo(0.54, within(0.005));
+    }
+
+    @Test
     void testScoreMeal_shouldNotPenalizeProteinOvershoot_whenSurplusPenaltyZero() {
         // 60p/40c/10f on 490 macro-kcal → shares 49/33/18% vs targets ~27/47/26%: protein +22pp
         // is FORGIVEN (fitness-app policy, mezo-8ms6); only the carb (−14pp) and fat (−8pp)
-        // deficits count → deviation (0.1404+0.0790)/2 → score 1 − 2·0.1097 = 0.78 (symmetric: 0.56)
+        // deficits count → deviation (0.1404+0.0790)/2 → 0.1097 (undiscounted score 1−2·0.1097=0.78,
+        // symmetric: 0.56). Since mezo-jcpt.1 this 620-kcal line is below the 25%-of-3100 ref-share:
+        // kcalShare 620/3100=0.2 → significance min(1, 0.2/0.25)=0.8 → score 1 − 2·0.1097·0.8 = 0.82.
         var lines = List.of(line("Csirkés tál", 620, 60, 40, 10, 1, 5.0, 8.0, 0.5, 3.0));
         var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "macro");
-        assertThat(dim.score()).isEqualByComparingTo("0.78");
+        assertThat(dim.score()).isEqualByComparingTo("0.82");
     }
 
     @Test
     void testScoreMeal_shouldStillPenalizeProteinDeficit_whenSurplusPenaltyZero() {
         // 20p/100c/15f on 615 macro-kcal → shares 13/65/22%: the protein DEFICIT (−14pp) and the
-        // carb surplus (+18pp) count in full → deviation 0.1834 → score 1 − 2·0.1834 = 0.63
+        // carb surplus (+18pp) count in full → deviation 0.1834 (undiscounted score 1−2·0.1834=0.63).
+        // Since mezo-jcpt.1 this 620-kcal line is below the 25%-of-3100 ref-share: kcalShare
+        // 620/3100=0.2 → significance min(1, 0.2/0.25)=0.8 → score 1 − 2·0.1834·0.8 = 0.71.
         var lines = List.of(line("Tésztás tál", 620, 20, 100, 15, 1, 5.0, 8.0, 0.5, 3.0));
         var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "macro");
-        assertThat(dim.score()).isEqualByComparingTo("0.63");
+        assertThat(dim.score()).isEqualByComparingTo("0.71");
     }
 
     @Test
     void testScoreMeal_shouldReproduceSymmetricPenalty_whenSurplusPenaltyOne() {
         // surplus-penalty 1.0 must reproduce the old total-variation score for the SAME
-        // protein-heavy line as the forgiveness test: (0.2194+0.1404+0.0790)/2 → 0.56
+        // protein-heavy line as the forgiveness test: (0.2194+0.1404+0.0790)/2 → 0.2194
+        // (undiscounted score 1−2·0.2194=0.56). Since mezo-jcpt.1 this 620-kcal line is below the
+        // 25%-of-3100 ref-share: significance min(1, (620/3100)/0.25)=0.8 → 1 − 2·0.2194·0.8 = 0.65.
         MealScoringProperties symmetric = new MealScoringProperties(
-            props.weights(), props.nova(), props.macroDeviationSlope(), 1.0, props.micro(),
+            props.weights(), props.nova(), props.macroDeviationSlope(), 1.0,
+            props.macroSignificanceRefShare(), props.micro(),
             props.who(), props.fatQuality(), props.plantDiversity(), props.energyDensity(),
             props.portion(), props.slotShares(), props.slotWindows(), props.slotShareTolerance(),
             props.preLeadMin(), props.postTrailMin(), props.roles());
@@ -144,7 +179,7 @@ class MealScoringServiceTest {
 
         var lines = List.of(line("Csirkés tál", 620, 60, 40, 10, 1, 5.0, 8.0, 0.5, 3.0));
         var dim = dimension(symmetricService.scoreMeal("lunch", lines, LocalTime.NOON), "macro");
-        assertThat(dim.score()).isEqualByComparingTo("0.56");
+        assertThat(dim.score()).isEqualByComparingTo("0.65");
     }
 
     @Test
