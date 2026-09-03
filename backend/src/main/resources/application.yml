@@ -1165,6 +1165,28 @@ mezo:
       sleep-target-h: 8.0
       kcal-band: 0.25
       xp-baseline: 150
+    # Daily evaluation (mezo-jcpt.4) — the 6-dimension day-score engine's tuning knobs.
+    day-evaluation:
+      weights:
+        nutrition: 0.30
+        quality: 0.15
+        training: 0.20
+        sleep: 0.15
+        logging: 0.10
+        rhythm: 0.10
+      nutrition:
+        kcal-under-band: 0.10
+        kcal-over-band: 0.05
+        kcal-slope: 3.0
+        protein-under-band: 0.05
+        protein-slope: 2.5
+        carb-fat-band: 0.15
+        carb-fat-slope: 1.5
+      workout-day-kcal-widen: 150
+      sleep-target-h: 7.5
+      rhythm-window-days: 7
+      rhythm-min-days: 3
+      log-timely-min: 120
   # Karakter S2 nightly expert observation pass (mezo-1gim.3, spec §5/§6) — the 7-expert team
   # writes observations onto the CORE dimensions; the job switch lives under mezo.techcore.cron.
   character:
