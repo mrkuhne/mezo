@@ -93,7 +93,7 @@ test('useSuggestionActions (real mode) dismiss hits the dismiss endpoint and inv
 
 test('useGoalSuggestions (mock mode) returns the static fixture synchronously', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
-  const { result } = renderHook(() => useGoalSuggestions(mockGoalSuggestions[0] ? 'goal-cut-2026' : null), {
+  const { result } = renderHook(() => useGoalSuggestions('goal-cut-2026'), {
     wrapper: makeHookWrapper(),
   })
   expect(result.current.suggestions).toEqual(mockGoalSuggestions)
