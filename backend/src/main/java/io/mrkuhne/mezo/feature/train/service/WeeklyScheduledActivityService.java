@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -62,6 +64,18 @@ public class WeeklyScheduledActivityService {
             weekly = weekly.add(blockKcal(KIND_SPORT, s.getDurationMin(), weightKg));
         }
         return weekly.divide(BigDecimal.valueOf(DAYS_PER_WEEK), SCALE, RoundingMode.HALF_UP);
+    }
+
+    /** Distinct scheduled training weekdays (0=Mon..6=Sun): gym ∪ sport recurring slots. Running is
+     *  goal-linked/per-segment, so the projection unions its days itself (slice 3 day-type split). */
+    @Transactional(readOnly = true)
+    public Set<Integer> scheduledTrainingDayOfWeeks(UUID userId) {
+        Set<Integer> days = new TreeSet<>();
+        gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId)
+            .forEach(g -> days.add(g.getDayOfWeek()));
+        sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId)
+            .forEach(s -> days.add(s.getDayOfWeek()));
+        return days;
     }
 
     /** One running kind × sessionsPerWeek ÷ 7 (kcal/day). The projection weights this per segment. */
