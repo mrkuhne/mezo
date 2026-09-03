@@ -80,8 +80,8 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
     private GoalPrescriptionJson twoSegmentPrescription() {
         return new GoalPrescriptionJson(null, "formula",
             List.of(
-                new GoalPrescriptionJson.Segment(1, 2, "bevezető", 2300, 170, null, null, null, null, null, null, null),
-                new GoalPrescriptionJson.Segment(3, 6, "vágás", 2100, 180, null, null, null, null, null, null, null)),
+                new GoalPrescriptionJson.Segment(1, 2, "bevezető", 2300, 170, null, null, null, null, null, null, null, null, null),
+                new GoalPrescriptionJson.Segment(3, 6, "vágás", 2100, 180, null, null, null, null, null, null, null, null, null)),
             null, null);
     }
 
@@ -200,7 +200,7 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         // week 1 segment: 2600 kcal / 190 g protein — deliberately != the 3100/220 config
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
             List.of(new GoalPrescriptionJson.Segment(1, 12, "week1-12", 2600, 190,
-                null, null, null, null, null, null, null)),
+                null, null, null, null, null, null, null, null, null)),
             null, null);
         goalPopulator.createGoalFull(goalOwner, today.minusDays(3), today.plusWeeks(11),
             prescription, 4, "06:00", "22:00");
@@ -217,7 +217,7 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
     private GoalPrescriptionJson prescriptionWithMacros(int carbsG, int fatG) {
         return new GoalPrescriptionJson(null, "formula",
             List.of(new GoalPrescriptionJson.Segment(1, 12, "week1-12", 2600, 190, carbsG, fatG,
-                null, null, null, null, null)),
+                null, null, null, null, null, null, null)),
             null, null);
     }
 
@@ -311,7 +311,7 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
             List.of(new GoalPrescriptionJson.Segment(1, 6, "Alap", 2400, 180, 240, 70,
-                new BigDecimal("8.0"), List.of(), null, -300, "seed")),
+                new BigDecimal("8.0"), List.of(), null, -300, null, null, "seed")),
             null, null);
         goalPopulator.createGoalFull(goalOwner, today.minusDays(3), today.plusWeeks(5),
             prescription, 4, "06:30", "22:30");

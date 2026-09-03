@@ -193,9 +193,9 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
             List.of(
                 new GoalPrescriptionJson.Segment(1, 2, "bevezető", 2300, 170, null, null,
-                    new BigDecimal("7.5"), List.of(5, 6), null, null, null),
+                    new BigDecimal("7.5"), List.of(5, 6), null, null, null, null, null),
                 new GoalPrescriptionJson.Segment(3, 6, "vágás", 2100, 180, null, null,
-                    new BigDecimal("7.5"), List.of(5, 6), null, null, null)),
+                    new BigDecimal("7.5"), List.of(5, 6), null, null, null, null, null)),
             null, null);
         // started 2 weeks + 1 day ago → day 15 → week 3 → the second segment
         goalPopulator.createGoalFull(owner, today.minusWeeks(2).minusDays(1), today.plusWeeks(6),
