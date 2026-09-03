@@ -1,9 +1,9 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -25,20 +25,20 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class ChallengeJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final ChallengeOutcomeEvaluator outcomeEvaluator;
 
     @Scheduled(cron = "${mezo.proactive.challenge.outcome-cron}")
     public void runOutcome() {
         LocalDate today = LocalDate.now();
-        int resolved = 0;
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        AtomicInteger resolved = new AtomicInteger();
+        userFanOut.forEachActiveUser("Challenge outcome", user -> {
             try {
-                resolved += outcomeEvaluator.evaluateDue(user.getId(), today);
+                resolved.addAndGet(outcomeEvaluator.evaluateDue(user.getId(), today));
             } catch (Exception e) {
                 log.warn("Challenge outcome eval failed for user {} on {}", user.getId(), today, e);
             }
-        }
-        log.info("Challenge outcome run for {}: {} challenge(s) resolved", today, resolved);
+        });
+        log.info("Challenge outcome run for {}: {} challenge(s) resolved", today, resolved.get());
     }
 }

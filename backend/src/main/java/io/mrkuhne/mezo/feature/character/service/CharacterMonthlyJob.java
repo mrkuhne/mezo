@@ -1,10 +1,10 @@
 package io.mrkuhne.mezo.feature.character.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class CharacterMonthlyJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final CharacterMonthlyService monthlyService;
 
     @Scheduled(cron = "${mezo.character.monthly.cron}")
@@ -47,17 +47,17 @@ public class CharacterMonthlyJob {
             return;
         }
         LocalDate monthStart = today.withDayOfMonth(1);
-        int held = 0;
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        AtomicInteger held = new AtomicInteger();
+        userFanOut.forEachActiveUser("Character monthly", user -> {
             try {
                 if (monthlyService.run(user.getId(), monthStart) != null) {
-                    held++;
+                    held.incrementAndGet();
                 }
             } catch (Exception e) {
                 log.warn("Character monthly run failed for user {} month {}", user.getId(), monthStart, e);
             }
-        }
-        log.info("Character monthly run for month {}: {} konzílium(s) held", monthStart, held);
+        });
+        log.info("Character monthly run for month {}: {} konzílium(s) held", monthStart, held.get());
     }
 
     /**

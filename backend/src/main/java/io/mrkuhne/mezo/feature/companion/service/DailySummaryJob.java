@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.embedding.MemoryEmbeddingWriter;
 import io.mrkuhne.mezo.feature.companion.embedding.NoteEmbeddingCatchUp;
@@ -42,7 +41,7 @@ import java.util.UUID;
         havingValue = "true")
 public class DailySummaryJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final DailySummaryService dailySummaryService;
     private final MemoryEmbeddingWriter memoryEmbeddingWriter;
     private final CompanionProperties properties;
@@ -53,7 +52,7 @@ public class DailySummaryJob {
     public void run() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         LocalDate from = yesterday.minusDays(properties.summary().catchUpDays() - 1L);
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Daily summary", user -> {
             int generated = 0;
             for (LocalDate date = from; !date.isAfter(yesterday); date = date.plusDays(1)) {
                 try {
@@ -107,6 +106,6 @@ public class DailySummaryJob {
             });
             log.info("Daily-summary run for user {}: {} day(s) processed, {} note(s) embedded in window {}..{}",
                     user.getId(), generated, notes, from, yesterday);
-        }
+        });
     }
 }

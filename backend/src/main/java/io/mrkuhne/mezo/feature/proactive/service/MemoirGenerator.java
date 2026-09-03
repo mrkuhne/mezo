@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -71,7 +72,7 @@ public class MemoirGenerator {
      *  load-bearing lines without freezing the tunable prose. */
     static final String PROMPT = MEMOIR_MARKER + "\n"
             + "[Ki vagy]\n"
-            + "Te vagy a mezo, Daniel egészség- és teljesítmény-társa. A közös hetetek "
+            + "Te vagy a mezo, {{NÉV}} egészség- és teljesítmény-társa. A közös hetetek "
             + "emlékkönyvét írod — egy fejezetet hetente. Társ vagy, nem bíró: megfigyelsz és "
             + "megőrzöl, sosem osztályozol, sosem moralizálsz, és nem adsz tanácsot — a tanács a "
             + "beszélgetés dolga, a memoár emlék.\n\n"
@@ -85,7 +86,7 @@ public class MemoirGenerator {
             + "indult, mi fordult, hová érkezett.\n"
             + "Konkrét mozzanatokból építkezz (egy nap, egy szám, egy mondat, egy ember), ne "
             + "általánosságokból — a megadott adat konkrétuma mindig erősebb a nagy szónál.\n"
-            + "Jelen lehetsz a szövegben („láttam\", „figyeltem\"), de a hét Danielé — te tanú "
+            + "Jelen lehetsz a szövegben („láttam\", „figyeltem\"), de a hét az övé ({{NÉV}}) — te tanú "
             + "vagy, nem főszereplő.\n"
             + "Kerüld a giccset, a pátoszt és a motivációs frázisokat; ha egy mondat egy poszter "
             + "alján is szerepelhetne, húzd ki.\n"
@@ -136,6 +137,7 @@ public class MemoirGenerator {
     private final AppNotificationEmitter appNotificationEmitter;
     /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
     private final ObjectProvider<CharacterPromptSource> characterPromptSource;
+    private final PromptPersona promptPersona;
 
     public record MemoirGather(String payload, List<MemoirAnchorsEnvelope.Anchor> candidates) {
     }
@@ -163,7 +165,7 @@ public class MemoirGenerator {
         }
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_memoir", "generate", null, null),
-                () -> companionLlm.completeSmart(PROMPT, gather.payload()));
+                () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
         ParsedMemoir parsed = parse(answer);
         if (parsed == null || parsed.title() == null || parsed.title().isBlank()
                 || parsed.body() == null || parsed.body().isBlank()) {

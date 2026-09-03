@@ -206,9 +206,14 @@ public class MemoryObservatoryService {
     /**
      * Az Audit nézet LLM-rollupja (ADR 0014 v1 fölött). Kikapcsolt audit-lognál a query le sem fut:
      * enabled=false + üres sorok — a FE őszinte „audit kikapcsolva" állapotot mutat (spec §4).
+     *
+     * <p>Per-user szűrt (mezo-qw37.7): minden felhasználó csak a SAJÁT hívásait látja, a
+     * {@code created_by IS NULL} sorok (S6 előtti cron-forgalom, stream-írások) senkihez sem
+     * tartoznak, ezért kimaradnak. A telepítés-szintű, minden accountot átfogó nézetet a
+     * {@code /api/llm-usage/*} OWNER-only felület adja (mezo-qw37.3).
      */
     @Transactional(readOnly = true)
-    public MemoryLlmUsageResponse llmUsage(Integer days) {
+    public MemoryLlmUsageResponse llmUsage(UUID userId, Integer days) {
         if (!llmUsageService.auditEnabled()) {
             return MemoryLlmUsageResponse.builder()
                     .enabled(false)
@@ -222,7 +227,7 @@ public class MemoryObservatoryService {
         long inputTokens = 0;
         long outputTokens = 0;
         BigDecimal cost = null;
-        for (LlmDailyAggregate row : llmUsageService.perDay(days != null ? days : 30)) {
+        for (LlmDailyAggregate row : llmUsageService.perDay(userId, days != null ? days : 30)) {
             perDay.add(MemoryLlmUsageDay.builder()
                     .date(row.getDay())
                     .calls(row.getCalls())

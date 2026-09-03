@@ -1,5 +1,5 @@
 import { act, render, renderHook, screen } from '@testing-library/react'
-import { EntranceGroup, useCountUp, useContinuingCountUp } from '@/shared/ui/mozaik/motion'
+import { EntranceGroup, useCountUp, useContinuingCountUp, useCountUpOnChange } from '@/shared/ui/mozaik/motion'
 
 // Motion kit (mezo-d20.1.4): one-shot entrance choreography + count-up.
 // Reduced-motion is CSS-guarded for the choreography; the count-up hook
@@ -112,5 +112,41 @@ describe('useContinuingCountUp animated path (skip=false: real browser UA, motio
 
     unmount()
     expect(cafSpy).toHaveBeenCalled()
+  })
+})
+
+describe('useCountUpOnChange — a CSS transition tükre: mountoláskor a helyén ül, csak a VÁLTOZÁST animálja (mezo-apwd)', () => {
+  beforeEach(() => { stubReducedMotion(false); vi.useFakeTimers() })
+  afterEach(() => vi.useRealTimers())
+
+  test('mountoláskor azonnal a célértéket mutatja (nem 0-ról indul, mint a useCountUp)', () => {
+    const { result } = renderHook(() => useCountUpOnChange(93, 380))
+    expect(result.current).toBe(93)
+  })
+
+  test('célérték-váltáskor a régiről az újra fut, és 380 ms alatt beér', () => {
+    const { result, rerender } = renderHook(
+      ({ t }) => useCountUpOnChange(t, 380),
+      { initialProps: { t: 93 } },
+    )
+    rerender({ t: 100 })
+    // Ez a hibajelenség, amiért a szelet létezik: a szám AZONNAL a 100-ra ugrott,
+    // míg a .nr-str csík 380 ms-ig csúszott az új szélességre.
+    expect(result.current).toBe(93)
+    act(() => { vi.advanceTimersByTime(190) })
+    expect(result.current).toBeGreaterThan(93)
+    expect(result.current).toBeLessThan(100)
+    act(() => { vi.advanceTimersByTime(200) })
+    expect(result.current).toBe(100)
+  })
+
+  test('prefers-reduced-motion alatt a váltás azonnali (a CSS-oldali transition: none párja)', () => {
+    stubReducedMotion(true)
+    const { result, rerender } = renderHook(
+      ({ t }) => useCountUpOnChange(t, 380),
+      { initialProps: { t: 93 } },
+    )
+    rerender({ t: 100 })
+    expect(result.current).toBe(100)
   })
 })

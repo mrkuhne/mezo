@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
@@ -17,6 +19,7 @@ import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +47,25 @@ class ChatServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private KnowledgeFactPopulator factPopulator;
+    @Autowired private UserPopulator userPopulator;
 
     private SendMessageRequest request(String content) {
         return SendMessageRequest.builder().content(content).build();
+    }
+
+    @Test
+    void testSendMessage_shouldAddressTheUserByName_whenSystemPromptIsAssembled() {
+        AppUserEntity user = userPopulator.createUser("named-chat@test.local");
+        user.setName("Anna");
+        userPopulator.save(user);
+        UUID userId = user.getId();
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+        String systemBlock = answer.getContent();
+
+        assertThat(systemBlock).contains("Te vagy a mezo, Anna személyes egészség- és teljesítmény-társa.");
+        assertThat(systemBlock).doesNotContain("Daniel").doesNotContain(PromptPersona.NAME_TOKEN);
     }
 
     private AiMessageEntity lastAssistantRow(UUID conversationId, UUID userId) {
@@ -284,7 +303,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
 
         String history = answer.getContent()
                 .substring(answer.getContent().indexOf("history=["), answer.getContent().indexOf("] user=["));
-        assertThat(history).contains("Daniel: korábbi kérdés").doesNotContain("Mezo: ");
+        assertThat(history).contains("Felhasználó: korábbi kérdés").doesNotContain("Mezo: ");
     }
 
     @Test
@@ -297,10 +316,10 @@ class ChatServiceIT extends AbstractIntegrationTest {
         MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("és most?"));
 
         assertThat(answer.getContent()).contains("Eddigi beszélgetés");
-        assertThat(answer.getContent()).contains("Daniel: korábbi kérdés");
+        assertThat(answer.getContent()).contains("Felhasználó: korábbi kérdés");
         assertThat(answer.getContent()).contains("Mezo: korábbi válasz");
         // The current message is the user param, not part of the rendered history block.
-        assertThat(answer.getContent()).doesNotContain("Daniel: és most?");
+        assertThat(answer.getContent()).doesNotContain("Felhasználó: és most?");
         assertThat(answer.getContent()).contains("user=[és most?]");
     }
 
@@ -371,12 +390,12 @@ class ChatServiceIT extends AbstractIntegrationTest {
 
         // Ez a teszt bukik el, ha valaki visszacsempészi a transcriptet a system promptba.
         assertThat(systemBlock).doesNotContain("Eddigi beszélgetés");
-        assertThat(systemBlock).doesNotContain("Daniel: korábbi kérdés");
+        assertThat(systemBlock).doesNotContain("Felhasználó: korábbi kérdés");
         assertThat(systemBlock).doesNotContain("Mezo: korábbi válasz");
-        assertThat(historyBlock).contains("Daniel: korábbi kérdés");
+        assertThat(historyBlock).contains("Felhasználó: korábbi kérdés");
         assertThat(historyBlock).contains("Mezo: korábbi válasz");
         // Az aktuális üzenet a user-paraméter, nem a history része.
-        assertThat(historyBlock).doesNotContain("Daniel: és most?");
+        assertThat(historyBlock).doesNotContain("Felhasználó: és most?");
         assertThat(echoed).contains("user=[és most?]");
     }
 
@@ -407,10 +426,11 @@ class ChatServiceIT extends AbstractIntegrationTest {
 
         String echoed = answer.getContent();
         String systemBlock = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
+        String toneReminder = ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-tone-tail@test.local");
         // A recency-pozíció a lényeg: az emlékeztető a futásidejű adatblokkok UTÁN áll.
-        assertThat(systemBlock.indexOf(ChatService.TONE_REMINDER))
+        assertThat(systemBlock.indexOf(toneReminder))
                 .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
-        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+        assertThat(systemBlock).endsWith(toneReminder);
     }
 
     /**

@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.WorkshopChatMessage;
 import io.mrkuhne.mezo.api.dto.WorkshopDraft;
 import io.mrkuhne.mezo.api.dto.WorkshopTurnRequest;
 import io.mrkuhne.mezo.api.dto.WorkshopTurnResponse;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
@@ -124,7 +125,7 @@ public class RecipeWorkshopService {
         if (from < history.size()) {
             sb.append("KORÁBBI BESZÉLGETÉS:\n");
             for (WorkshopChatMessage m : history.subList(from, history.size())) {
-                sb.append("user".equals(m.getRole()) ? "Daniel: " : "Műhely: ").append(m.getText()).append('\n');
+                sb.append("user".equals(m.getRole()) ? PromptPersona.USER_TURN_LABEL : "Műhely: ").append(m.getText()).append('\n');
             }
         }
         if (req.getDraft() != null) {

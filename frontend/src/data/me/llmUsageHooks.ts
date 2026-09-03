@@ -31,14 +31,21 @@ export const LLM_USAGE_EMPTY: LlmUsageSummaryResponse = {
  * the backend's LLM audit log, feeding the Profil `AiUsageCard`. Dual-mode read:
  * the seeded demo numbers in mock mode, `GET /api/llm-usage/summary` in real mode,
  * `LLM_USAGE_EMPTY` (not the seed) while unresolved. Read-only — no write path.
+ *
+ * `options.enabled` (mezo-qw37.6): the backend endpoint is OWNER-only
+ * (`LlmUsageController.requireOwner()`), so a non-owner caller (`BeallitasokPage`) must
+ * pass `enabled: isOwner` to skip the request entirely instead of eating a guaranteed 403.
+ * Mock mode ignores this and always serves the seed. Omitted ⇒ `true` (unchanged for every
+ * existing owner-only caller, e.g. the Profil card).
  */
-export function useLlmUsageSummary() {
+export function useLlmUsageSummary(options?: { enabled?: boolean }) {
   return useDualQuery({
     queryKey: ['llmUsageSummary'],
     mockData: LLM_USAGE_MOCK,
     realFetch: () => llmUsageApi.getSummary(),
     realEmpty: LLM_USAGE_EMPTY,
     realStaleTime: 60_000,
+    enabled: options?.enabled,
   })
 }
 

@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
@@ -69,10 +70,10 @@ public class CompanionMessageGenerator {
     public static final String MORNING_MARKER = "REGGELI-ELIGAZITAS-FELADAT";
 
     private static final String MORNING_PROMPT = MORNING_MARKER + "\n"
-            + "Írj rövid magyar reggeli eligazítást Danielnek a mai napra, kizárólag a megadott "
+            + "Írj rövid magyar reggeli eligazítást {{NÉV}} számára a mai napra, kizárólag a megadott "
             + "tényadatokból. Ez a nap ELSŐ üzenete, még az alvás és a testsúly rögzítése ELŐTT "
             + "készül: (1) az éjszakai alvásról és a testsúlyról/súlytrendről NE írj — azokról "
-            + "külön üzenet szól majd, amint Daniel rögzítette őket; (2) fókusz: a mai terv "
+            + "külön üzenet szól majd, amint {{NÉV}} rögzítette őket; (2) fókusz: a mai terv "
             + "(edzés, kalóriakeret, gyógyszer) és a hét trendje; (3) zárd 2-3 konkrét, apró "
             + "fókuszponttal; (4) számot vagy adatot kitalálni tilos; (5) gyógyszer adagolására "
             + "vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
@@ -92,7 +93,7 @@ public class CompanionMessageGenerator {
     public static final String SLEEP_MARKER = "ALVAS-REAKCIO-FELADAT";
 
     private static final String SLEEP_PROMPT = SLEEP_MARKER + "\n"
-            + "Daniel most rögzítette a ma éjszakai alvását. Írj rövid magyar reakciót "
+            + "{{NÉV}} most rögzítette a ma éjszakai alvását. Írj rövid magyar reakciót "
             + "társ-szemszögből, kizárólag a megadott tényadatokból: (1) értékeld a MOST RÖGZÍTETT "
             + "ALVÁS blokk adatait (időtartam, minőség) a cél és a szokásos mintázat tükrében; "
             + "(2) mondd ki, mit jelent ez a mai napra (edzés, fókusz, energia); (3) ha volt már "
@@ -105,7 +106,7 @@ public class CompanionMessageGenerator {
     public static final String WEIGHT_MARKER = "SULY-REAKCIO-FELADAT";
 
     private static final String WEIGHT_PROMPT = WEIGHT_MARKER + "\n"
-            + "Daniel most mérte meg a testsúlyát. Írj rövid magyar reakciót társ-szemszögből, "
+            + "{{NÉV}} most mérte meg a testsúlyát. Írj rövid magyar reakciót társ-szemszögből, "
             + "kizárólag a megadott tényadatokból: (1) a MOST RÖGZÍTETT MÉRÉS a kiindulópont — a "
             + "trendérték (EWMA) simított szám, a kettőt ne keverd össze, és a mérést nevezd "
             + "mérésnek, a trendet trendnek; (2) helyezd a mérést a heti trend és a cél "
@@ -131,7 +132,7 @@ public class CompanionMessageGenerator {
     public static final String WINDOW_MARKER = "NAPKOZBENI-JEGYZET-FELADAT";
 
     private static final String WINDOW_PROMPT = WINDOW_MARKER + "\n"
-            + "Írj magyar napközbeni jegyzetet Danielnek társ-szemszögből, 2-4 rövid bekezdésben, "
+            + "Írj magyar napközbeni jegyzetet {{NÉV}} számára társ-szemszögből, 2-4 rövid bekezdésben, "
             + "kizárólag a megadott tényadatokból és a te eszközeidből (tool-hívások) származó "
             + "adatokból. Az ABLAK blokk mondja meg a jegyzet fajtáját: "
             + "- déli (nudge): (1) a nap EDDIGI állapota konkrét számokkal (ami már MEGTÖRTÉNT: "
@@ -157,13 +158,13 @@ public class CompanionMessageGenerator {
     public static final String PEOPLE_MARKER = "EMBEREK-ESZREVETEL-FELADAT";
 
     private static final String PEOPLE_PROMPT = PEOPLE_MARKER + "\n"
-            + "Írj EGYETLEN rövid magyar mondatot Danielnek társ-szemszögből az emberi köréről, "
+            + "Írj EGYETLEN rövid magyar mondatot {{NÉV}} számára társ-szemszögből az emberi köréről, "
             + "kizárólag a megadott heti összesítésből. "
             + "Szabályok: "
             + "- Pontosan egy mondat, legfeljebb 22 szó, sima folyószöveg. "
             + "- Csak azt állítsd, amit az összesítés kimond; nevet, számot kitalálni tilos. "
             + "- Ha valakinél lefelé fordult a hangulat vagy elhallgatott, azt emeld ki — "
-            + "  ez a mondat arra való, hogy Daniel észrevegye, kire érdemes ránéznie. "
+            + "  ez a mondat arra való, hogy {{NÉV}} észrevegye, kire érdemes ránéznie. "
             + "- Ne adj utasítást és ne moralizálj; egy megfigyelés, nem feladat. "
             + "Válaszolj KIZÁRÓLAG szigorú JSON-nal, markdown nélkül, pontosan ebben a formában: "
             + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"a mondat\"], "
@@ -187,6 +188,7 @@ public class CompanionMessageGenerator {
     private final PersonRepository personRepository;
     private final MentionRepository mentionRepository;
     private final PersonAffectTrendCalculator affectTrendCalculator;
+    private final PromptPersona promptPersona;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -229,7 +231,7 @@ public class CompanionMessageGenerator {
 
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", "morning", null, null),
-                () -> companionLlm.complete(MORNING_PROMPT, payload.toString()));
+                () -> companionLlm.complete(promptPersona.render(userId, MORNING_PROMPT), payload.toString()));
         ParsedMessage parsed = parse(answer, CompanionMessageEntity.KIND_MORNING);
         if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
                 || parsed.body() == null || parsed.body().isEmpty()) {
@@ -279,7 +281,7 @@ public class CompanionMessageGenerator {
 
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", "sleep", null, null),
-                () -> companionLlm.complete(SLEEP_PROMPT, payload.toString()));
+                () -> companionLlm.complete(promptPersona.render(userId, SLEEP_PROMPT), payload.toString()));
         ParsedMessage parsed = parse(answer, CompanionMessageEntity.KIND_SLEEP);
         if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
                 || parsed.body() == null || parsed.body().isEmpty()) {
@@ -332,7 +334,7 @@ public class CompanionMessageGenerator {
 
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", "weight", null, null),
-                () -> companionLlm.complete(WEIGHT_PROMPT, payload.toString()));
+                () -> companionLlm.complete(promptPersona.render(userId, WEIGHT_PROMPT), payload.toString()));
         ParsedMessage parsed = parse(answer, CompanionMessageEntity.KIND_WEIGHT);
         if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
                 || parsed.body() == null || parsed.body().isEmpty()) {
@@ -386,7 +388,7 @@ public class CompanionMessageGenerator {
         ToolCallAudit audit = toolRegistry.newTurnAudit();
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", kind, null, null),
-                () -> companionLlm.complete(WINDOW_PROMPT, payload,
+                () -> companionLlm.complete(promptPersona.render(userId, WINDOW_PROMPT), payload,
                         toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         if (answer == null || answer.isBlank()) {
             log.warn("Unusable {} answer for {} on {} — no row persisted", kind, userId, date);
@@ -477,7 +479,7 @@ public class CompanionMessageGenerator {
 
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_feed", "people", null, null),
-                () -> companionLlm.complete(PEOPLE_PROMPT, payload.toString()));
+                () -> companionLlm.complete(promptPersona.render(userId, PEOPLE_PROMPT), payload.toString()));
         ParsedMessage parsed = parse(answer, CompanionMessageEntity.KIND_PEOPLE);
         if (parsed == null || parsed.eyebrow() == null || parsed.eyebrow().isBlank()
                 || parsed.body() == null || parsed.body().isEmpty()) {

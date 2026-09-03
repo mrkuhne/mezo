@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.quarterly.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
@@ -75,7 +76,7 @@ public class QuarterlyReviewService {
     private static final String SYSTEM_PROMPT = SEASON_MARKER + """
 
 
-        Te Daniel személyes társának a negyedéves olvasata vagy. Bemenet: a most lezárult
+        Te {{NÉV}} személyes társának a negyedéves olvasata vagy. Bemenet: a most lezárult
         negyedév havi összefoglalói, az azt megelőző negyedévé, és az AI-felületek
         visszajelzés-statisztikái. Feladat: megnevezni, MILYEN SZEZON volt ez a negyedév —
         egy-egy visszatérő ív, ami a hónapokon átnyúlik, és amit az előző negyedévhez képest
@@ -88,7 +89,7 @@ public class QuarterlyReviewService {
 
         - Legfeljebb %d szezont javasolj; ha a negyedév nem áll össze ilyenné, a válasz: []
         - Csak a megadott szövegekre támaszkodj, semmit ne találj ki
-        - Ne szólítsd meg Danielt, és ne adj javaslatot a jövőre
+        - Ne szólítsd meg őt, és ne adj javaslatot a jövőre
         """;
 
     private final CompanionLlm companionLlm;
@@ -99,6 +100,7 @@ public class QuarterlyReviewService {
     private final QuarterlyProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
+    private final PromptPersona promptPersona;
     // Self-injected proxy (ObjectProvider defers resolution, so this is safe despite the apparent
     // circularity) — see the class javadoc for why persistCandidates is invoked through this
     // proxy instead of `this`.
@@ -121,7 +123,7 @@ public class QuarterlyReviewService {
         List<PeriodSummaryEntity> previous = monthRungs(userId, Quarters.previous(quarterStart));
         List<SeasonSuggestion> suggestions;
         try {
-            String prompt = SYSTEM_PROMPT.formatted(properties.maxCandidates());
+            String prompt = promptPersona.render(userId, SYSTEM_PROMPT.formatted(properties.maxCandidates()));
             String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_quarterly", "season_candidates", "quarter", null),
                 () -> companionLlm.completeSmart(prompt, buildUserMessage(userId, quarterStart, current, previous)));

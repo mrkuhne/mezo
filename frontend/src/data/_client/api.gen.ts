@@ -3511,6 +3511,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/day/{date}/evaluation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The day's 6-dimension evaluation + (for a closed day, lazily) the Mezo prose */
+        get: operations["getDayEvaluation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character": {
         parameters: {
             query?: never;
@@ -8183,6 +8200,47 @@ export interface components {
             start: string;
             days: components["schemas"]["MeWeekDay"][];
             weekly: components["schemas"]["MeWeekAggregates"];
+        };
+        DayDimension: {
+            /** @description nutrition|quality|training|sleep|logging|rhythm */
+            id: string;
+            label: string;
+            /** @description renormalized weight; 0 when NO_DATA */
+            weight: number;
+            score?: number | null;
+            /** @description DONE|IN_PROGRESS|NO_DATA */
+            status: string;
+            facts?: {
+                label: string;
+                value: string;
+            }[];
+            /** @description 1-2 sentences from Mezo (closed day only) */
+            note?: string | null;
+        };
+        DayEvaluationResponse: {
+            /** Format: date */
+            date: string;
+            /** @description scored|in_progress|thin|empty|future */
+            state: string;
+            /** @description base + adjustment.delta, clamped 0..100 */
+            score?: number | null;
+            base?: number | null;
+            adjustment?: {
+                delta: number;
+                reason: string;
+            } | null;
+            /** @description empty when there is no prose */
+            narrative?: string[];
+            highlights?: {
+                /** @description key|pattern|win */
+                kind: string;
+                label: string;
+            }[];
+            context?: {
+                label: string;
+                value: string;
+            }[];
+            dimensions: components["schemas"]["DayDimension"][];
         };
         CharacterClaimDto: {
             /** Format: uuid */
@@ -18483,6 +18541,47 @@ export interface operations {
                 };
             };
             /** @description start is not an ISO Monday, or weeks is out of range */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getDayEvaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The day to evaluate (400 when not a valid calendar date) */
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day's dimensions + (when closed and scoreable) the overall score */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DayEvaluationResponse"];
+                };
+            };
+            /** @description date is not a valid calendar date */
             400: {
                 headers: {
                     [name: string]: unknown;
