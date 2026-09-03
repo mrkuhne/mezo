@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.recipe;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.WorkshopDraft;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.recipe.config.RecipeWorkshopProperties;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeWorkshopValidator;
@@ -20,10 +21,12 @@ class RecipeWorkshopValidatorTest {
             new RecipeWorkshopValidator(new RecipeWorkshopProperties(30, 20, 20));
 
     private static PantryItemEntity pantry(UUID id, String name) {
+        PantryCatalogEntity c = new PantryCatalogEntity();
+        c.setName(name);
+        c.setServingUnit("g");
         PantryItemEntity p = new PantryItemEntity();
         p.setId(id);
-        p.setName(name);
-        p.setServingUnit("g");
+        p.setCatalog(c);
         return p;
     }
 
@@ -60,7 +63,7 @@ class RecipeWorkshopValidatorTest {
     void testSanitize_shouldDefaultBlankPantryServingUnit_toGrams() {
         UUID id = UUID.randomUUID();
         PantryItemEntity blankUnit = pantry(id, "Zabpehely");
-        blankUnit.setServingUnit("   ");
+        blankUnit.getCatalog().setServingUnit("   ");
         RawDraft raw = new RawDraft("Zabkása", "breakfast", 1, List.of(),
                 List.of(new RawLine(id.toString(), "zab", BigDecimal.valueOf(50), "g",
                         null, null, null, null)));

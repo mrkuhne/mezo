@@ -73,8 +73,9 @@ public class RecipeWorkshopValidator {
                 WorkshopDraftLine out = base(line);
                 out.setSource("pantry");
                 out.setPantryItemId(p.getId());
-                out.setName(p.getName());                       // DB name, never the LLM's
-                out.setUnit(p.getServingUnit() == null || p.getServingUnit().isBlank() ? "g" : p.getServingUnit());
+                out.setName(p.getCatalog().getName());          // DB name, never the LLM's
+                out.setUnit(p.getCatalog().getServingUnit() == null || p.getCatalog().getServingUnit().isBlank()
+                    ? "g" : p.getCatalog().getServingUnit());
                 return out;                                     // macros stay null: FE computes
             }
             log.warn("Workshop draft: hallucinated pantry id {} demoted to estimate", pantryId);

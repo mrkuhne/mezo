@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -45,6 +46,9 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
 
     @Autowired
     private PantryItemRepository pantryItemRepository;
+
+    @Autowired
+    private PantryCatalogRepository pantryCatalogRepository;
 
     /** Creates a per-100g food via the API (owned by the authenticated owner) and returns its id. */
     private UUID createFood(HttpHeaders auth, String name, String kcal) {
@@ -146,9 +150,9 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         UUID recipe = createRecipe(auth, "Túrós tál", food);
 
         // the pantry row drifts AFTER the line froze its snapshot: 3.2 g -> 90 g fiber per 100 g
-        var row = pantryItemRepository.findById(food).orElseThrow();
-        row.setFiberG(new BigDecimal("90"));
-        pantryItemRepository.saveAndFlush(row);
+        var row = pantryItemRepository.findWithCatalogById(food).orElseThrow();
+        row.getCatalog().setFiberG(new BigDecimal("90"));
+        pantryCatalogRepository.saveAndFlush(row.getCatalog());
 
         RecipeBreakdownResponse body = getBreakdown(auth, recipe);
 

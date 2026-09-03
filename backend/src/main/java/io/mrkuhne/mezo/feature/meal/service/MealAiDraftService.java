@@ -165,10 +165,11 @@ public class MealAiDraftService {
             PANTRY CATALOG (id | name | brand | serving):
             """);
         for (PantryItemEntity p : pantry) {
-            sb.append(p.getId()).append(" | ").append(p.getName()).append(" | ")
-              .append(p.getBrand() == null ? "-" : p.getBrand()).append(" | ")
-              .append(p.getServingAmount() == null ? "100" : p.getServingAmount())
-              .append(' ').append(p.getServingUnit() == null ? "g" : p.getServingUnit()).append('\n');
+            var c = p.getCatalog();
+            sb.append(p.getId()).append(" | ").append(c.getName()).append(" | ")
+              .append(c.getBrand() == null ? "-" : c.getBrand()).append(" | ")
+              .append(c.getServingAmount() == null ? "100" : c.getServingAmount())
+              .append(' ').append(c.getServingUnit() == null ? "g" : c.getServingUnit()).append('\n');
         }
         sb.append("\nRECIPES (id | name):\n");
         for (RecipeEntity r : recipeRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId)) {
@@ -267,21 +268,22 @@ public class MealAiDraftService {
 
     /** Matched pantry line: snapshot numbers from the DB row, never the LLM. */
     private MealAiDraftItem pantryItem(PantryItemEntity p, ExtractedLine line, boolean needsReview) {
+        var c = p.getCatalog();
         MealAiDraftItem item = new MealAiDraftItem();
         item.setSource("pantry");
         item.setPantryItemId(p.getId());
-        item.setName(p.getName());
-        BigDecimal per = p.getServingAmount() == null ? BigDecimal.ONE : p.getServingAmount();
-        String basisUnit = p.getServingUnit() == null ? "unit" : p.getServingUnit();
+        item.setName(c.getName());
+        BigDecimal per = c.getServingAmount() == null ? BigDecimal.ONE : c.getServingAmount();
+        String basisUnit = c.getServingUnit() == null ? "unit" : c.getServingUnit();
         item.setPer(per);
         item.setBasisUnit(basisUnit);
         item.setAmount(positiveOr(line.amount(), per));
         item.setUnit(basisUnit);
-        item.setKcal(zeroSafe(p.getKcal()));
-        item.setProteinG(zeroSafe(p.getProteinG()));
-        item.setCarbsG(zeroSafe(p.getCarbsG()));
-        item.setFatG(zeroSafe(p.getFatG()));
-        item.setNova(p.getNova() == null ? null : p.getNova().intValue());
+        item.setKcal(zeroSafe(c.getKcal()));
+        item.setProteinG(zeroSafe(c.getProteinG()));
+        item.setCarbsG(zeroSafe(c.getCarbsG()));
+        item.setFatG(zeroSafe(c.getFatG()));
+        item.setNova(c.getNova() == null ? null : c.getNova().intValue());
         item.setConfidence(BigDecimal.ONE);
         item.setNeedsReview(needsReview);
         return item;

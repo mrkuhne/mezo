@@ -6,7 +6,9 @@ import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.fuel.repository.ProtocolRepository;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -42,6 +44,7 @@ public class ProtocolSeedData implements CommandLineRunner {
     private final AppUserRepository appUserRepository;
     private final OwnerProperties ownerProperties;
     private final PantryItemRepository pantryItemRepository;
+    private final PantryCatalogRepository pantryCatalogRepository;
     private final ProtocolRepository protocolRepository;
     private final ProtocolService protocolService;
 
@@ -59,8 +62,8 @@ public class ProtocolSeedData implements CommandLineRunner {
             return; // no owner yet (non-demodata path) — nothing to seed
         }
         UUID ownerId = owner.getId();
-        UUID tastyDose = ensureItem(ownerId, tastyDose(ownerId));
-        UUID originPwo = ensureItem(ownerId, originPwo(ownerId));
+        UUID tastyDose = ensureItem(ownerId, tastyDoseCatalog(), tastyDoseState());
+        UUID originPwo = ensureItem(ownerId, originPwoCatalog(), originPwoState());
         if (protocolRepository.findByCreatedByAndStatusAndDeletedFalse(ownerId, "active").isEmpty()) {
             protocolService.addItem(ownerId, new ProtocolItemCreateRequest().pantryItemId(tastyDose));
             protocolService.addItem(ownerId, new ProtocolItemCreateRequest().pantryItemId(originPwo));
@@ -68,56 +71,74 @@ public class ProtocolSeedData implements CommandLineRunner {
         }
     }
 
-    /** By-name idempotency: an item whose NAME the owner still has (however its stock/notes are
-     *  edited) is never re-seeded — a renamed item would be seeded again as a new row. */
-    private UUID ensureItem(UUID ownerId, PantryItemEntity candidate) {
+    /** By-name idempotency: an item whose catalog NAME the owner still has (however its
+     *  stock/notes are edited) is never re-seeded — a renamed item would be seeded again as a new
+     *  row. The catalog row itself is found-or-created by natural key (name+brand) so re-running
+     *  the seed never duplicates the shared definition. Task 6 swaps this inline find-or-create for
+     *  {@code PantryCatalogService}. */
+    private UUID ensureItem(UUID ownerId, PantryCatalogEntity catalogCandidate, PantryItemEntity stateTemplate) {
         return pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(ownerId).stream()
-            .filter(p -> candidate.getName().equals(p.getName()))
+            .filter(p -> catalogCandidate.getName().equals(p.getCatalog().getName()))
             .findFirst()
             .map(PantryItemEntity::getId)
-            .orElseGet(() -> pantryItemRepository.save(candidate).getId());
+            .orElseGet(() -> {
+                PantryCatalogEntity catalog = pantryCatalogRepository
+                    .findByNaturalKey(catalogCandidate.getName(), catalogCandidate.getBrand())
+                    .orElseGet(() -> pantryCatalogRepository.save(catalogCandidate));
+                stateTemplate.setCreatedBy(ownerId);
+                stateTemplate.setCatalog(catalog);
+                return pantryItemRepository.save(stateTemplate).getId();
+            });
     }
 
-    private PantryItemEntity tastyDose(UUID ownerId) {
+    private PantryCatalogEntity tastyDoseCatalog() {
+        PantryCatalogEntity c = new PantryCatalogEntity();
+        c.setKind("stim");
+        c.setName(TASTY_DOSE_NAME);
+        c.setBrand("Tasty Dose");
+        c.setSource("manual");
+        c.setCategory("supplement"); // valid ck_pantry_catalog_category member — caffeine semantics live in kind+caffeine flag
+        c.setForm("por · 1 púpozott mérőkanál · 200 ml forró vízbe");
+        c.setCaffeine(true);
+        c.setServingAmount(new BigDecimal("8"));
+        c.setServingUnit("g");
+        return c;
+    }
+
+    private PantryItemEntity tastyDoseState() {
         PantryItemEntity e = new PantryItemEntity();
-        e.setCreatedBy(ownerId);
-        e.setKind("stim");
-        e.setName(TASTY_DOSE_NAME);
-        e.setBrand("Tasty Dose");
-        e.setSource("manual");
-        e.setCategory("supplement"); // valid ck_pantry_item_category member — caffeine semantics live in kind+caffeine flag
         e.setDose("8 g");
-        e.setForm("por · 1 púpozott mérőkanál · 200 ml forró vízbe");
         e.setStockQty(new BigDecimal("30"));
         e.setStockUnit("adag");
         e.setProtocol("Reggel, súlymérés után · 100 mg koffein/adag (guarana) · 14:00 cutoff");
         e.setTiming("morning");
-        e.setCaffeine(true);
-        e.setServingAmount(new BigDecimal("8"));
-        e.setServingUnit("g");
         e.setNotes("Gomba-blend/adag: Tremella 504 mg · Lion's Mane 400 mg · Shiitake 250 mg · "
             + "Maitake 200 mg · Samsoniella 200 mg · Reishi 100 mg · Cordyceps 48 mg; "
             + "ashwagandha 160 mg · L-tirozin 150 mg · rhodiola 100 mg · magnézium 60 mg");
         return e;
     }
 
-    private PantryItemEntity originPwo(UUID ownerId) {
+    private PantryCatalogEntity originPwoCatalog() {
+        PantryCatalogEntity c = new PantryCatalogEntity();
+        c.setKind("stim");
+        c.setName(ORIGIN_PWO_NAME);
+        c.setBrand("Origin");
+        c.setSource("manual");
+        c.setCategory("supplement"); // valid ck_pantry_catalog_category member — caffeine semantics live in kind+caffeine flag
+        c.setForm("por · 1 napi adag · kékmálna");
+        c.setCaffeine(true);
+        c.setServingAmount(new BigDecimal("20"));
+        c.setServingUnit("g");
+        return c;
+    }
+
+    private PantryItemEntity originPwoState() {
         PantryItemEntity e = new PantryItemEntity();
-        e.setCreatedBy(ownerId);
-        e.setKind("stim");
-        e.setName(ORIGIN_PWO_NAME);
-        e.setBrand("Origin");
-        e.setSource("manual");
-        e.setCategory("supplement"); // valid ck_pantry_item_category member — caffeine semantics live in kind+caffeine flag
         e.setDose("20 g");
-        e.setForm("por · 1 napi adag · kékmálna");
         e.setStockQty(new BigDecimal("25")); // estimated, not from the label — correctable in the Kamra
         e.setStockUnit("adag");
         e.setProtocol("Pre-workout T-30min · 300 mg koffein/adag · 14:00 előtt");
         e.setTiming("pre-workout");
-        e.setCaffeine(true);
-        e.setServingAmount(new BigDecimal("20"));
-        e.setServingUnit("g");
         e.setNotes("20 g adagonként: L-citrullin-DL-malát 8 g · AAKG 4 g · béta-alanin 3,5 g · L-teanin 250 mg");
         return e;
     }

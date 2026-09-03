@@ -110,10 +110,11 @@ public class RecipeWorkshopService {
         }
         sb.append("\nKAMRA KATALÓGUS (id | név | márka | alap):\n");
         for (PantryItemEntity p : pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(userId)) {
-            sb.append(p.getId()).append(" | ").append(p.getName()).append(" | ")
-              .append(p.getBrand() == null ? "-" : p.getBrand()).append(" | ")
-              .append(p.getServingAmount() == null ? "100" : p.getServingAmount())
-              .append(' ').append(p.getServingUnit() == null ? "g" : p.getServingUnit()).append('\n');
+            var c = p.getCatalog();
+            sb.append(p.getId()).append(" | ").append(c.getName()).append(" | ")
+              .append(c.getBrand() == null ? "-" : c.getBrand()).append(" | ")
+              .append(c.getServingAmount() == null ? "100" : c.getServingAmount())
+              .append(' ').append(c.getServingUnit() == null ? "g" : c.getServingUnit()).append('\n');
         }
         return sb.toString();
     }

@@ -37,8 +37,8 @@ public class PantrySuggestionService {
 
     public List<PantrySuggestionResponse> suggest(List<PantryItemEntity> items) {
         Map<String, List<PantryItemEntity>> byCategory = items.stream()
-            .filter(e -> "food".equals(e.getKind()) && e.getCategory() != null)
-            .collect(Collectors.groupingBy(PantryItemEntity::getCategory, TreeMap::new, Collectors.toList()));
+            .filter(e -> "food".equals(e.getCatalog().getKind()) && e.getCatalog().getCategory() != null)
+            .collect(Collectors.groupingBy(e -> e.getCatalog().getCategory(), TreeMap::new, Collectors.toList()));
 
         List<PantrySuggestionResponse> out = new ArrayList<>();
         Set<String> suggestedNames = new LinkedHashSet<>();
@@ -63,28 +63,28 @@ public class PantrySuggestionService {
             if (BigDecimal.valueOf(cheap.getPriceHuf()).compareTo(threshold) > 0) continue;
             int savedPct = 100 - BigDecimal.valueOf(cheap.getPriceHuf() * 100L)
                 .divide(BigDecimal.valueOf(dear.getPriceHuf()), 0, RoundingMode.HALF_UP).intValue();
-            add(out, seen, cheap, "Olcsóbb, mint a(z) " + dear.getName() + " (−" + savedPct + "%)");
+            add(out, seen, cheap, "Olcsóbb, mint a(z) " + dear.getCatalog().getName() + " (−" + savedPct + "%)");
         }
     }
 
     private void lowNovaSwap(List<PantryItemEntity> group,
                              List<PantrySuggestionResponse> out, Set<String> seen) {
-        List<PantryItemEntity> withNova = group.stream().filter(e -> e.getNova() != null).toList();
-        PantryItemEntity high = withNova.stream().filter(e -> e.getNova() >= 3)
-            .max(Comparator.comparing(PantryItemEntity::getNova)).orElse(null);
-        PantryItemEntity low = withNova.stream().filter(e -> e.getNova() <= 2)
-            .min(Comparator.comparing(PantryItemEntity::getNova)).orElse(null);
+        List<PantryItemEntity> withNova = group.stream().filter(e -> e.getCatalog().getNova() != null).toList();
+        PantryItemEntity high = withNova.stream().filter(e -> e.getCatalog().getNova() >= 3)
+            .max(Comparator.comparing(e -> e.getCatalog().getNova())).orElse(null);
+        PantryItemEntity low = withNova.stream().filter(e -> e.getCatalog().getNova() <= 2)
+            .min(Comparator.comparing(e -> e.getCatalog().getNova())).orElse(null);
         if (high == null || low == null) return;
-        add(out, seen, low, "NOVA " + high.getNova() + " → NOVA " + low.getNova()
-            + " csere a(z) " + high.getName() + " helyett");
+        add(out, seen, low, "NOVA " + high.getCatalog().getNova() + " → NOVA " + low.getCatalog().getNova()
+            + " csere a(z) " + high.getCatalog().getName() + " helyett");
     }
 
     private void add(List<PantrySuggestionResponse> out, Set<String> seen,
                      PantryItemEntity item, String reason) {
-        if (!seen.add(item.getName())) return;
+        if (!seen.add(item.getCatalog().getName())) return;
         out.add(PantrySuggestionResponse.builder()
-            .name(item.getName())
-            .source(PantrySource.fromValue(item.getSource()))
+            .name(item.getCatalog().getName())
+            .source(PantrySource.fromValue(item.getCatalog().getSource()))
             .price(formatPrice(item))
             .reason(reason)
             .build());

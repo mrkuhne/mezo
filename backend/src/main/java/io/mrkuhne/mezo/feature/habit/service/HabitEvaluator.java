@@ -153,7 +153,7 @@ public class HabitEvaluator {
             .findByCreatedByAndTakenDateAndDeletedFalseOrderByTakenAtAsc(userId, date).stream()
             .filter(i -> pantryItemRepository
                 .findByIdAndCreatedByAndDeletedFalse(i.getPantryItemId(), userId)
-                .map(p -> "stim".equals(p.getKind())).orElse(false))
+                .map(p -> "stim".equals(p.getCatalog().getKind())).orElse(false))
             .map(i -> localTime(i.getTakenAt()))
             .toList();
     }

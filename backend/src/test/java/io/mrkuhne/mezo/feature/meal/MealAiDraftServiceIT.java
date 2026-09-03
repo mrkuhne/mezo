@@ -72,7 +72,7 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
         assertThat(matched.getSource()).isEqualTo("pantry");
         assertThat(matched.getPantryItemId()).isEqualTo(pantry.getId());
         // macros come from the DB row, NOT the LLM numbers above (kcal 220 vs the row's 110):
-        assertThat(matched.getKcal()).isEqualByComparingTo(pantry.getKcal());
+        assertThat(matched.getKcal()).isEqualByComparingTo(pantry.getCatalog().getKcal());
         assertThat(matched.getConfidence()).isEqualByComparingTo("1.0");
         assertThat(matched.getNeedsReview()).isFalse();
 
@@ -187,8 +187,8 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
         MealAiDraftItem line = res.getItems().getFirst();
         assertThat(line.getSource()).isEqualTo("pantry");
         assertThat(line.getPantryItemId()).isEqualTo(pantry.getId());
-        assertThat(line.getName()).isEqualTo(pantry.getName());          // DB name, not the LLM's casing
-        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getKcal()); // DB macros, not the LLM's 220
+        assertThat(line.getName()).isEqualTo(pantry.getCatalog().getName());          // DB name, not the LLM's casing
+        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getCatalog().getKcal()); // DB macros, not the LLM's 220
         assertThat(line.getAmount()).isEqualByComparingTo("60");           // the draft's own portion
         assertThat(line.getBasisUnit()).isEqualTo("g");
         assertThat(line.getNeedsReview()).isTrue();                        // identity is the uncertain part
@@ -231,7 +231,7 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
         MealAiDraftItem line = res.getItems().getFirst();
         assertThat(line.getSource()).isEqualTo("pantry"); // demoted, then rescued by the name index
         assertThat(line.getPantryItemId()).isEqualTo(pantry.getId());
-        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getKcal());
+        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getCatalog().getKcal());
         assertThat(line.getNeedsReview()).isTrue();
     }
 }

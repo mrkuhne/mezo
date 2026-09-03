@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryResponse;
 import io.mrkuhne.mezo.feature.pantry.config.PantryImportProperties;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.mapper.PantryMapper;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryImportRepository;
@@ -37,9 +38,9 @@ public class PantryService {
     public PantryResponse getPantry(UUID userId) {
         List<PantryItemEntity> items = repository.findByCreatedByAndDeletedFalseOrderByNameAsc(userId);
         return PantryResponse.builder()
-            .ingredients(items.stream().filter(e -> "food".equals(e.getKind()))
+            .ingredients(items.stream().filter(e -> "food".equals(e.getCatalog().getKind()))
                 .map(mapper::toIngredientResponse).toList())
-            .stash(items.stream().filter(e -> !"food".equals(e.getKind()))
+            .stash(items.stream().filter(e -> !"food".equals(e.getCatalog().getKind()))
                 .map(mapper::toSupplementResponse).toList())
             .imports(importRepository
                 .findByCreatedByAndDeletedFalseOrderByImportedAtDesc(userId, Limit.of(importProperties.feedSize()))
@@ -53,8 +54,9 @@ public class PantryService {
         validatePerKind(req);
         PantryItemEntity e = new PantryItemEntity();
         e.setCreatedBy(userId); // server-side ownership — never from the client
+        e.setCatalog(new PantryCatalogEntity()); // Task 6 replaces this with PantryCatalogService find-or-create
         mapper.applyRequest(e, req);
-        if (e.getSource() == null) e.setSource("manual");
+        if (e.getCatalog().getSource() == null) e.getCatalog().setSource("manual");
         return mapper.toItemResponse(repository.save(e));
     }
 

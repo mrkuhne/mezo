@@ -38,7 +38,7 @@ public class IntakeService {
             .findByIdAndCreatedByAndDeletedFalse(request.getPantryItemId(), userId)
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
-        if (KIND_FOOD.equals(item.getKind())) {
+        if (KIND_FOOD.equals(item.getCatalog().getKind())) {
             throw new SystemRuntimeErrorException(
                 SystemMessage.field("VALIDATION_INVALID_VALUE", "pantryItemId").build(),
                 HttpStatus.BAD_REQUEST);

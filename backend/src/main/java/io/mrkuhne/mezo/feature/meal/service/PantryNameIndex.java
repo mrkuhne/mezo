@@ -58,7 +58,7 @@ public final class PantryNameIndex {
             // stash) - matching a supplement/stim/med row here would return a source=pantry
             // line the frontend can't resolve, desyncing the displayed totals (0 kcal, falls
             // back to a missing ingredient) from what MealService actually snapshots on save.
-            if (!"food".equals(item.getKind())) {
+            if (!"food".equals(item.getCatalog().getKind())) {
                 continue;
             }
             for (String key : keysOf(item)) {
@@ -79,15 +79,15 @@ public final class PantryNameIndex {
             return Optional.empty();
         }
         PantryItemEntity hit = byKey.get(key);
-        if (hit == null || !unitsAgree(unit, hit.getServingUnit())) {
+        if (hit == null || !unitsAgree(unit, hit.getCatalog().getServingUnit())) {
             return Optional.empty();
         }
         return Optional.of(hit);
     }
 
     private static Set<String> keysOf(PantryItemEntity item) {
-        String name = item.getName() == null ? "" : item.getName();
-        String brand = item.getBrand() == null ? "" : item.getBrand().trim();
+        String name = item.getCatalog().getName() == null ? "" : item.getCatalog().getName();
+        String brand = item.getCatalog().getBrand() == null ? "" : item.getCatalog().getBrand().trim();
         String stripped = PACK_SIZE.matcher(name).replaceFirst("");
         Set<String> keys = new LinkedHashSet<>();
         keys.add(normalize(name));

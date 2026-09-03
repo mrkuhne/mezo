@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.PantrySource;
 import io.mrkuhne.mezo.api.dto.PantryStock;
 import io.mrkuhne.mezo.api.dto.SupplementStashResponse;
 import io.mrkuhne.mezo.feature.pantry.entity.MicroFact;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryImportEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import java.math.BigDecimal;
@@ -30,36 +31,37 @@ public interface PantryMapper {
     Logger LOG = LoggerFactory.getLogger(PantryMapper.class);
 
     default void applyRequest(PantryItemEntity e, PantryItemRequest r) {
-        e.setKind(r.getKind() == null ? null : r.getKind().getValue());
-        e.setName(r.getName());
-        e.setBrand(r.getBrand());
-        if (r.getSource() != null) e.setSource(r.getSource().getValue());
-        e.setCategory(r.getCategory() == null ? null : r.getCategory().getValue());
+        PantryCatalogEntity c = e.getCatalog();
+        c.setKind(r.getKind() == null ? null : r.getKind().getValue());
+        c.setName(r.getName());
+        c.setBrand(r.getBrand());
+        if (r.getSource() != null) c.setSource(r.getSource().getValue());
+        c.setCategory(r.getCategory() == null ? null : r.getCategory().getValue());
         e.setNotes(r.getNotes());
-        e.setServingAmount(r.getPer());
-        e.setServingUnit(r.getUnit());
-        e.setKcal(r.getKcal());
-        e.setProteinG(r.getProteinG());
-        e.setCarbsG(r.getCarbsG());
-        e.setFatG(r.getFatG());
-        e.setFiberG(r.getFiberG());
-        e.setSugarG(r.getSugarG());
-        e.setSaltG(r.getSaltG());
-        e.setSaturatedFatG(r.getSaturatedFatG());
+        c.setServingAmount(r.getPer());
+        c.setServingUnit(r.getUnit());
+        c.setKcal(r.getKcal());
+        c.setProteinG(r.getProteinG());
+        c.setCarbsG(r.getCarbsG());
+        c.setFatG(r.getFatG());
+        c.setFiberG(r.getFiberG());
+        c.setSugarG(r.getSugarG());
+        c.setSaltG(r.getSaltG());
+        c.setSaturatedFatG(r.getSaturatedFatG());
         e.setPriceHuf(r.getPrice());
         e.setPriceUnit(r.getPriceUnit());
-        e.setPackageLabel(r.getPkg());
-        e.setMicros(r.getMicros() == null ? null
+        c.setPackageLabel(r.getPkg());
+        c.setMicros(r.getMicros() == null ? null
             : r.getMicros().stream().map(m -> new MicroFact(m.getName(), m.getPct())).toList());
-        e.setNova(r.getNova() == null ? null : r.getNova().shortValue());
+        c.setNova(r.getNova() == null ? null : r.getNova().shortValue());
         e.setStockQty(r.getStockQty());
         e.setStockUnit(r.getStockUnit());
         e.setStockExpires(r.getStockExpires());
         e.setDose(r.getDose());
-        e.setForm(r.getForm());
+        c.setForm(r.getForm());
         e.setProtocol(r.getProtocol());
         e.setTiming(r.getTiming());
-        e.setCaffeine(r.getCaffeine());
+        c.setCaffeine(r.getCaffeine());
     }
 
     /**
@@ -72,36 +74,37 @@ public interface PantryMapper {
      * {@code kind} and {@code name} are required and always sent, so a rename/retype still applies.
      */
     default void applyRequestPartial(PantryItemEntity e, PantryItemRequest r) {
-        if (r.getKind() != null) e.setKind(r.getKind().getValue());
-        if (r.getName() != null) e.setName(r.getName());
-        setIfPresent(r.getBrand(), e::setBrand);
-        if (r.getSource() != null) e.setSource(r.getSource().getValue());
-        if (r.getCategory() != null) e.setCategory(r.getCategory().getValue());
+        PantryCatalogEntity c = e.getCatalog();
+        if (r.getKind() != null) c.setKind(r.getKind().getValue());
+        if (r.getName() != null) c.setName(r.getName());
+        setIfPresent(r.getBrand(), c::setBrand);
+        if (r.getSource() != null) c.setSource(r.getSource().getValue());
+        if (r.getCategory() != null) c.setCategory(r.getCategory().getValue());
         setIfPresent(r.getNotes(), e::setNotes);
-        setIfPresent(r.getPer(), e::setServingAmount);
-        setIfPresent(r.getUnit(), e::setServingUnit);
-        setIfPresent(r.getKcal(), e::setKcal);
-        setIfPresent(r.getProteinG(), e::setProteinG);
-        setIfPresent(r.getCarbsG(), e::setCarbsG);
-        setIfPresent(r.getFatG(), e::setFatG);
-        setIfPresent(r.getFiberG(), e::setFiberG);
-        setIfPresent(r.getSugarG(), e::setSugarG);
-        setIfPresent(r.getSaltG(), e::setSaltG);
-        setIfPresent(r.getSaturatedFatG(), e::setSaturatedFatG);
+        setIfPresent(r.getPer(), c::setServingAmount);
+        setIfPresent(r.getUnit(), c::setServingUnit);
+        setIfPresent(r.getKcal(), c::setKcal);
+        setIfPresent(r.getProteinG(), c::setProteinG);
+        setIfPresent(r.getCarbsG(), c::setCarbsG);
+        setIfPresent(r.getFatG(), c::setFatG);
+        setIfPresent(r.getFiberG(), c::setFiberG);
+        setIfPresent(r.getSugarG(), c::setSugarG);
+        setIfPresent(r.getSaltG(), c::setSaltG);
+        setIfPresent(r.getSaturatedFatG(), c::setSaturatedFatG);
         setIfPresent(r.getPrice(), e::setPriceHuf);
         setIfPresent(r.getPriceUnit(), e::setPriceUnit);
-        setIfPresent(r.getPkg(), e::setPackageLabel);
-        if (r.getMicros() != null) e.setMicros(
+        setIfPresent(r.getPkg(), c::setPackageLabel);
+        if (r.getMicros() != null) c.setMicros(
             r.getMicros().stream().map(m -> new MicroFact(m.getName(), m.getPct())).toList());
-        if (r.getNova() != null) e.setNova(r.getNova().shortValue());
+        if (r.getNova() != null) c.setNova(r.getNova().shortValue());
         setIfPresent(r.getStockQty(), e::setStockQty);
         setIfPresent(r.getStockUnit(), e::setStockUnit);
         setIfPresent(r.getStockExpires(), e::setStockExpires);
         setIfPresent(r.getDose(), e::setDose);
-        setIfPresent(r.getForm(), e::setForm);
+        setIfPresent(r.getForm(), c::setForm);
         setIfPresent(r.getProtocol(), e::setProtocol);
         setIfPresent(r.getTiming(), e::setTiming);
-        setIfPresent(r.getCaffeine(), e::setCaffeine);
+        setIfPresent(r.getCaffeine(), c::setCaffeine);
     }
 
     private static <T> void setIfPresent(T value, java.util.function.Consumer<T> setter) {
@@ -109,29 +112,30 @@ public interface PantryMapper {
     }
 
     default IngredientResponse toIngredientResponse(PantryItemEntity e) {
+        PantryCatalogEntity c = e.getCatalog();
         return IngredientResponse.builder()
             .id(e.getId())
-            .name(e.getName())
-            .brand(e.getBrand() == null ? "" : e.getBrand())
-            .source(toIngredientSource(e.getSource()))
-            .category(e.getCategory() == null ? "" : e.getCategory())
-            .per(e.getServingAmount())
-            .unit(e.getServingUnit())
+            .name(c.getName())
+            .brand(c.getBrand() == null ? "" : c.getBrand())
+            .source(toIngredientSource(c.getSource()))
+            .category(c.getCategory() == null ? "" : c.getCategory())
+            .per(c.getServingAmount())
+            .unit(c.getServingUnit())
             .macros(PantryMacros.builder()
-                .kcal(nz(e.getKcal())).p(nz(e.getProteinG())).c(nz(e.getCarbsG())).f(nz(e.getFatG())).build())
+                .kcal(nz(c.getKcal())).p(nz(c.getProteinG())).c(nz(c.getCarbsG())).f(nz(c.getFatG())).build())
             .price(e.getPriceHuf() == null ? BigDecimal.ZERO : BigDecimal.valueOf(e.getPriceHuf()))
             .priceUnit(e.getPriceUnit() == null ? "" : e.getPriceUnit())
-            .pkg(e.getPackageLabel() == null ? "" : e.getPackageLabel())
-            .micros(e.getMicros() == null ? List.of()
-                : e.getMicros().stream().map(m -> PantryMicro.builder().name(m.name()).pct(m.pct()).build()).toList())
+            .pkg(c.getPackageLabel() == null ? "" : c.getPackageLabel())
+            .micros(c.getMicros() == null ? List.of()
+                : c.getMicros().stream().map(m -> PantryMicro.builder().name(m.name()).pct(m.pct()).build()).toList())
             // Honest null since mezo-32ko — the old `null -> 1` default dressed unclassified
             // items up as NOVA 1 on the Kamra UI while the score engine honestly degraded.
-            .nova(e.getNova() == null ? null : e.getNova().intValue())
+            .nova(c.getNova() == null ? null : c.getNova().intValue())
             .stock(toStock(e))
-            .fiberG(e.getFiberG())
-            .sugarG(e.getSugarG())
-            .saltG(e.getSaltG())
-            .saturatedFatG(e.getSaturatedFatG())
+            .fiberG(c.getFiberG())
+            .sugarG(c.getSugarG())
+            .saltG(c.getSaltG())
+            .saturatedFatG(c.getSaturatedFatG())
             .lastUsed("—")          // derived from logging — out of scope this slice
             .usedInRecipes(0)        // derived from recipes — out of scope this slice
             .build();
@@ -149,49 +153,51 @@ public interface PantryMapper {
     }
 
     default SupplementStashResponse toSupplementResponse(PantryItemEntity e) {
+        PantryCatalogEntity c = e.getCatalog();
         return SupplementStashResponse.builder()
             .id(e.getId())
-            .name(e.getName())
-            .brand(e.getBrand() == null ? "" : e.getBrand())
-            .type(SupplementStashResponse.TypeEnum.fromValue(typeFromKind(e.getKind())))
-            .category(e.getCategory() == null ? "" : e.getCategory())
+            .name(c.getName())
+            .brand(c.getBrand() == null ? "" : c.getBrand())
+            .type(SupplementStashResponse.TypeEnum.fromValue(typeFromKind(c.getKind())))
+            .category(c.getCategory() == null ? "" : c.getCategory())
             .dose(e.getDose() == null ? "" : e.getDose())
-            .form(e.getForm() == null ? "" : e.getForm())
+            .form(c.getForm() == null ? "" : c.getForm())
             .stock(e.getStockQty())
             .stockUnit(e.getStockUnit())
             .protocol(e.getProtocol() == null ? "" : e.getProtocol())
             .timing(e.getTiming() == null ? "" : e.getTiming())
             .taken(e.isTaken())
-            .caffeine(e.getCaffeine())
+            .caffeine(c.getCaffeine())
             // Nutrition + commerce (mezo-1za9): supplements carry macros/nutrients/price to the UI
             // too. macros stays null for pure dose/protocol items (kcal unset) so the detail view
             // hides the Makrók block; nz() zero-fills a partial macro row when kcal is present.
-            .source(e.getSource() == null ? null : toStashSource(e.getSource()))
-            .per(e.getServingAmount())
-            .unit(e.getServingUnit())
-            .macros(e.getKcal() == null ? null : PantryMacros.builder()
-                .kcal(nz(e.getKcal())).p(nz(e.getProteinG())).c(nz(e.getCarbsG())).f(nz(e.getFatG())).build())
+            .source(c.getSource() == null ? null : toStashSource(c.getSource()))
+            .per(c.getServingAmount())
+            .unit(c.getServingUnit())
+            .macros(c.getKcal() == null ? null : PantryMacros.builder()
+                .kcal(nz(c.getKcal())).p(nz(c.getProteinG())).c(nz(c.getCarbsG())).f(nz(c.getFatG())).build())
             .price(e.getPriceHuf() == null ? null : BigDecimal.valueOf(e.getPriceHuf()))
             .priceUnit(e.getPriceUnit())
-            .pkg(e.getPackageLabel())
-            .micros(e.getMicros() == null ? null
-                : e.getMicros().stream().map(m -> PantryMicro.builder().name(m.name()).pct(m.pct()).build()).toList())
-            .nova(e.getNova() == null ? null : e.getNova().intValue())
-            .fiberG(e.getFiberG())
-            .sugarG(e.getSugarG())
-            .saltG(e.getSaltG())
-            .saturatedFatG(e.getSaturatedFatG())
+            .pkg(c.getPackageLabel())
+            .micros(c.getMicros() == null ? null
+                : c.getMicros().stream().map(m -> PantryMicro.builder().name(m.name()).pct(m.pct()).build()).toList())
+            .nova(c.getNova() == null ? null : c.getNova().intValue())
+            .fiberG(c.getFiberG())
+            .sugarG(c.getSugarG())
+            .saltG(c.getSaltG())
+            .saturatedFatG(c.getSaturatedFatG())
             .build();
     }
 
     default PantryItemResponse toItemResponse(PantryItemEntity e) {
+        PantryCatalogEntity c = e.getCatalog();
         return PantryItemResponse.builder()
             .id(e.getId())
-            .kind(PantryItemResponse.KindEnum.fromValue(e.getKind()))
-            .name(e.getName())
-            .brand(e.getBrand())
-            .source(e.getSource())
-            .category(e.getCategory())
+            .kind(PantryItemResponse.KindEnum.fromValue(c.getKind()))
+            .name(c.getName())
+            .brand(c.getBrand())
+            .source(c.getSource())
+            .category(c.getCategory())
             .build();
     }
 

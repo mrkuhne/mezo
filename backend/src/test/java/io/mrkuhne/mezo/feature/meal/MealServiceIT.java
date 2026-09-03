@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.meal.entity.MealProvenanceJson;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -39,6 +40,7 @@ class MealServiceIT extends AbstractIntegrationTest {
     @Autowired private PantryItemPopulator pantryPopulator;
     @Autowired private RecipePopulator recipePopulator;
     @Autowired private PantryItemRepository pantryItemRepository;
+    @Autowired private PantryCatalogRepository pantryCatalogRepository;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private io.mrkuhne.mezo.feature.meal.repository.MealItemRepository mealItemRepository;
 
@@ -167,8 +169,8 @@ class MealServiceIT extends AbstractIntegrationTest {
         RecipeEntity r = recipePopulator.createRecipe(owner, source.getId());
 
         // the pantry row drifts AFTER the recipe froze its snapshot: 0.4 g -> 40 g salt per 100 g
-        source.setSaltG(new BigDecimal("40"));
-        pantryItemRepository.saveAndFlush(source);
+        source.getCatalog().setSaltG(new BigDecimal("40"));
+        pantryCatalogRepository.saveAndFlush(source.getCatalog());
 
         MealResponse meal = service.create(owner, req("lunch", recipeItem(r.getId(), "1")));
 

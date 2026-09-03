@@ -158,7 +158,7 @@ class DayEvaluationApiIT extends ApiIntegrationTest {
         line.setPantryItemId(item.getId());
         line.setAmount(BigDecimal.ONE);
         line.setUnit("g");
-        line.setSnapshotName(item.getName());
+        line.setSnapshotName(item.getCatalog().getName());
         line.setSnapshotPer(BigDecimal.ONE);
         line.setSnapshotBasisUnit("g");
         line.setSnapshotKcal(BigDecimal.valueOf(targets.getKcal().doubleValue()));

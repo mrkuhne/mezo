@@ -5,9 +5,11 @@ import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryLookupResponse;
 import io.mrkuhne.mezo.api.dto.PantryLookupResult;
 import io.mrkuhne.mezo.feature.pantry.config.PantryScrapeProperties;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryImportEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.mapper.PantryMapper;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryImportRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -39,6 +41,7 @@ public class PantryImportService {
 
     private final OffClient offClient;
     private final PantryItemRepository itemRepository;
+    private final PantryCatalogRepository catalogRepository;
     private final PantryImportRepository importRepository;
     private final PantryMapper mapper;
     /**
@@ -80,32 +83,39 @@ public class PantryImportService {
             ? PantryScrapeService.sourceFor(req.getSourceUrl())
             : "photo".equals(req.getOrigin()) ? SOURCE_PHOTO : SOURCE_OPENFOODFACTS;
 
+        // Inline find-or-create by natural key — Task 7 swaps this for PantryCatalogService.
+        PantryCatalogEntity catalogCandidate = new PantryCatalogEntity();
+        catalogCandidate.setKind("food");
+        catalogCandidate.setSource(source);
+        catalogCandidate.setName(req.getName());
+        catalogCandidate.setBrand(req.getBrand());
+        catalogCandidate.setCategory(req.getCategory() == null ? null : req.getCategory().getValue());
+        catalogCandidate.setServingAmount(req.getPer());
+        catalogCandidate.setServingUnit(req.getUnit());
+        catalogCandidate.setKcal(req.getKcal());
+        catalogCandidate.setProteinG(req.getProteinG());
+        catalogCandidate.setCarbsG(req.getCarbsG());
+        catalogCandidate.setFatG(req.getFatG());
+        catalogCandidate.setFiberG(req.getFiberG());
+        catalogCandidate.setSugarG(req.getSugarG());
+        catalogCandidate.setSaltG(req.getSaltG());
+        catalogCandidate.setSaturatedFatG(req.getSaturatedFatG());
+        catalogCandidate.setNova(req.getNova() == null ? null : req.getNova().shortValue());
+        PantryCatalogEntity catalog = catalogRepository
+            .findByNaturalKey(catalogCandidate.getName(), catalogCandidate.getBrand())
+            .orElseGet(() -> catalogRepository.save(catalogCandidate));
+
         PantryItemEntity item = new PantryItemEntity();
         item.setCreatedBy(userId); // server-side ownership — never from the client
-        item.setKind("food");
-        item.setSource(source);
-        item.setName(req.getName());
-        item.setBrand(req.getBrand());
-        item.setCategory(req.getCategory() == null ? null : req.getCategory().getValue());
-        item.setServingAmount(req.getPer());
-        item.setServingUnit(req.getUnit());
-        item.setKcal(req.getKcal());
-        item.setProteinG(req.getProteinG());
-        item.setCarbsG(req.getCarbsG());
-        item.setFatG(req.getFatG());
-        item.setFiberG(req.getFiberG());
-        item.setSugarG(req.getSugarG());
-        item.setSaltG(req.getSaltG());
-        item.setSaturatedFatG(req.getSaturatedFatG());
+        item.setCatalog(catalog);
         item.setPriceHuf(req.getPriceHuf());
         item.setPriceUnit(req.getPriceUnit());
-        item.setNova(req.getNova() == null ? null : req.getNova().shortValue());
         item = itemRepository.save(item);
 
         PantryImportEntity feed = new PantryImportEntity();
         feed.setCreatedBy(userId);
         feed.setSource(source);
-        feed.setItemName(item.getName());
+        feed.setItemName(item.getCatalog().getName());
         feed.setItemCount(1);
         feed.setStatus(isManualReview(req.getConfidence()) ? "manual-review" : "synced");
         feed.setBarcode(req.getBarcode());
