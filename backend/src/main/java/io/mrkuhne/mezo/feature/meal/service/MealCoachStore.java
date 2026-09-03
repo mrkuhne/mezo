@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -65,15 +66,36 @@ class MealCoachStore {
      */
     @Transactional
     Optional<LoadedMeal> writeProse(UUID userId, UUID mealId, String summary, String tagline,
-        List<MealBreakdownJson.ImproveRow> improve) {
+        List<MealBreakdownJson.ImproveRow> improve, Map<String, String> dimensionNotes) {
         return mealRepository.findByIdAndCreatedByAndDeletedFalse(mealId, userId)
             .filter(meal -> meal.getBreakdown() != null)
             .map(meal -> {
                 MealBreakdownJson det = meal.getBreakdown();
                 meal.setBreakdown(new MealBreakdownJson(det.value(), det.confidence(), summary,
-                    tagline, det.dimensions(), improve, det.tools()));
+                    tagline, mergeDimensionNotes(det.dimensions(), dimensionNotes), improve,
+                    det.tools()));
                 return toLoaded(mealRepository.saveAndFlush(meal));
             });
+    }
+
+    /**
+     * Writes each note into the dimension carrying its id; ids the envelope doesn't have are
+     * dropped silently. Every other field of the dimension is copied verbatim (mirrors {@link
+     * #writeProse}'s "coach never moves a number" contract).
+     */
+    static List<MealBreakdownJson.Dimension> mergeDimensionNotes(
+        List<MealBreakdownJson.Dimension> dimensions, Map<String, String> notes) {
+        if (dimensions == null) {
+            return dimensions;
+        }
+        return dimensions.stream()
+            .map(d -> notes != null && notes.containsKey(d.id()) ? withNote(d, notes.get(d.id())) : d)
+            .toList();
+    }
+
+    private static MealBreakdownJson.Dimension withNote(MealBreakdownJson.Dimension d, String note) {
+        return new MealBreakdownJson.Dimension(d.id(), d.label(), d.weight(), d.score(), d.detail(),
+            d.macro(), d.micros(), d.nova(), d.context(), note);
     }
 
     private static LoadedMeal toLoaded(MealEntity meal) {
