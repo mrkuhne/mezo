@@ -6,7 +6,7 @@ import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { writeLocalProgress } from '@/shared/lib/tutorialSeen'
+import { seedAllKalauzSeen } from '@/test/kalauz'
 
 // A fejléc a shellben él, tehát MINDKÉT módú CI-futásban ugyanazt kell mutatnia —
 // ezért a mock mód kényszerítve van (ugyanaz a minta, mint a hubHeaders.test.tsx-ben).
@@ -23,7 +23,7 @@ beforeEach(() => {
   localStorage.clear()
   // A Fuel hub kalauza (mezo-gb1s.1) 600 ms után magától felugrana — a fejléc-tesztek a
   // fejlécet nézik, ezért látottnak seedeljük; a „?" gomb saját tesztje explicit nyit.
-  writeLocalProgress({ fuel: { version: 1, seenAt: '2026-08-30T10:00:00.000Z', completedAt: null, dismissedAtStep: null } })
+  seedAllKalauzSeen()
   vi.useFakeTimers({ shouldAdvanceTime: true })
   vi.setSystemTime(new Date(2026, 7, 30, 13, 0, 0)) // 13:00 → nowFace === 'nap' (mockSleepGoal)
 })
@@ -68,8 +68,9 @@ test('a fejléc a kalauzos /fuel oldalon öt kontrollt visel, elöl a Kalauzzal'
   expect(labels[4]).toBe('Profil')
 })
 
+// mezo-gb1s.3: a /mezo már kalauzos, az ellenpélda egy T2 aloldal, aminek még nincs bejegyzése.
 test('kalauz nélküli oldalon nincs „?" gomb — a négy kontroll a régi sorrendben', async () => {
-  const { container } = renderAt('/mezo')
+  const { container } = renderAt('/nap/rutin')
   await screen.findByRole('button', { name: 'Napszak váltása' })
   expect(screen.queryByRole('button', { name: 'Kalauz ehhez az oldalhoz' })).toBeNull()
   const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))

@@ -15,7 +15,16 @@ beforeEach(() => {
   localStorage.clear()
   vi.useFakeTimers({ shouldAdvanceTime: true })
 })
-afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs() })
+afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs(); vi.unstubAllGlobals() })
+
+/** jsdom-ban nincs matchMedia — olyat teszünk be, ami `reduce`-ot mond (AUTO_DELAY_MS → 0). */
+function stubReducedMotion() {
+  vi.stubGlobal('matchMedia', (q: string) => ({
+    matches: true, media: q, onchange: null,
+    addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
+  }))
+}
 
 function Probe() {
   const t = useTutorial()
@@ -27,6 +36,10 @@ function Probe() {
       <button onClick={() => t.open('fuel')}>nyisd</button>
       <button onClick={() => navigate('/train')}>train</button>
       <button onClick={() => navigate('/fuel')}>fuel</button>
+      {/* /nap/rutin: T2 subpage, ebben a szeletben nincs saját kalauz-bejegyzése — a
+          „kalauz nélküli route" fixture-je (Task 2 ugyanezt a route-ot választotta
+          az AppHeader.test.tsx-ben, ugyanezért). */}
+      <button onClick={() => navigate('/nap/rutin')}>elsewhere</button>
     </div>
   )
 }
@@ -108,7 +121,7 @@ test('regi verzió látva → az új verzió újra felugrik', async () => {
 })
 
 test('kalauz nélküli route-on nincs felugrás és current null', () => {
-  renderAt('/train')
+  renderAt('/nap/rutin')
   flush()
   expect(screen.getByTestId('current')).toHaveTextContent('-')
   expect(screen.queryByRole('dialog')).toBeNull()
@@ -120,13 +133,32 @@ test('a kapcsolat-chip navigál, a kalauz completedAt-tal zár', async () => {
   flush()
   await screen.findByRole('dialog')
   await user.click(screen.getByRole('button', { name: '5. kártya' }))
-  await user.click(screen.getByRole('button', { name: /^Edzés/ }))
+  await user.click(screen.getByRole('button', { name: /^Súly/ }))
   // A kapcsolat-chip most az animált close()-t hívja (a Sheet kilépő animációja után fut az
   // onClose) — a fallback-timer (EXIT_MS + 80ms) alatt kell várni, mielőtt a state leképeződik.
   await act(async () => { vi.advanceTimersByTime(400) })
   await waitFor(() => expect(readLocalProgress().fuel?.completedAt).not.toBeNull())
   expect(screen.queryByRole('dialog')).toBeNull()
-  expect(screen.getByTestId('current')).toHaveTextContent('-') // /train-en vagyunk
+  expect(screen.getByTestId('current')).toHaveTextContent('-') // /me/weight-en vagyunk
+})
+
+// mezo-gb1s.3 regresszió: reduced-motion alatt az auto-open késleltetése 0, a Sheet kilépő
+// animációja viszont továbbra is 300 ms. A kapcsolat-chip előbb navigál, csak utána indítja az
+// animált close()-t — így a cél-route auto-kalauza a MÉG KILÉPŐ sheetbe nyílt bele: a cél kapott
+// seenAt-ot ÉS (a 300 ms-nál lefutó onClose-ból, ami az azóta átírt openIdRef-et olvasta)
+// completedAt-ot, anélkül hogy megjelent volna — a forrás pedig sosem kapta meg a sajátját.
+test('reduced motion + kalauzos route-ra mutató chip: a cél-kalauz nem záródik némán, a forrás kapja a completedAt-ot', async () => {
+  stubReducedMotion()
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/fuel')
+  flush()
+  await screen.findByRole('dialog', { name: 'Kalauz · Fuel' })
+  await user.click(screen.getByRole('button', { name: '5. kártya' }))
+  await user.click(screen.getByRole('button', { name: /^Edzés/ })) // → /train, aminek VAN kalauza
+  await act(async () => { vi.advanceTimersByTime(400) })
+  const p = readLocalProgress()
+  expect(p.train?.completedAt ?? null).toBeNull() // sosem jelent meg → nem lehet „végigolvasva"
+  expect(p.fuel?.completedAt).not.toBeNull() // a forrás kalauz kapja a done-t
 })
 
 test('route-váltás nyitott, érintetlen kalauzon dismissedAtStep: 0-t ír', async () => {
@@ -134,7 +166,9 @@ test('route-váltás nyitott, érintetlen kalauzon dismissedAtStep: 0-t ír', as
   flush()
   await screen.findByRole('dialog')
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-  await user.click(screen.getByRole('button', { name: 'train' }))
+  // Kalauz nélküli route-ra megyünk (nem /train-re — annak Task 4 óta van saját
+  // kalauza), hogy az assert ne csak a nyitás 700ms-es késleltetése miatt legyen zöld.
+  await user.click(screen.getByRole('button', { name: 'elsewhere' }))
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(readLocalProgress().fuel?.dismissedAtStep).toBe(0)
   expect(readLocalProgress().fuel?.completedAt).toBeNull()
@@ -154,7 +188,7 @@ test('szerver-merge: a szerveren látott másik kalauz beolvad, és a csak-loká
     }),
   )
   writeLocalProgress({ fuel: { version: 1, seenAt: '2026-09-01T10:00:00.000Z', completedAt: null, dismissedAtStep: null } })
-  renderAt('/train')
+  renderAt('/nap/rutin')
   flush()
   await waitFor(() => {
     const p = readLocalProgress()
@@ -164,7 +198,7 @@ test('szerver-merge: a szerveren látott másik kalauz beolvad, és a csak-loká
   await waitFor(() => expect(putBody).not.toBeNull())
   expect((putBody as { progress: Record<string, unknown> }).progress).toHaveProperty('nap')
   expect((putBody as { progress: Record<string, unknown> }).progress).toHaveProperty('fuel')
-  expect(screen.queryByRole('dialog')).toBeNull() // /train-en nincs kalauz, és a fuel amúgy is látott
+  expect(screen.queryByRole('dialog')).toBeNull() // /nap/rutin-on nincs kalauz, és a fuel amúgy is látott
 })
 
 test('StrictMode alatt egy Kihagyom-zárás pontosan EGY PUT-ot küld (real mode)', async () => {

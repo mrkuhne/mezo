@@ -1146,7 +1146,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### tutorial
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-09-02, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-09-03, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/tutorial`
   - **entities→tables:** `TutorialProgressEntity`→`tutorial_progress`
@@ -1160,7 +1160,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `TUTORIAL_PROGRESS_GHOST`, `useTutorialProgress`, `useTutorialProgressActions`
   - **modules:** tutorialProgressApi.ts, tutorialProgressHooks.ts
 - **FE ui** `frontend/src/features/tutorial`
-  - **root:** TutorialProvider.tsx, fuel.ts, index.ts, types.ts
+  - **root:** TutorialProvider.tsx, fogalmak.ts, fuel.ts, index.ts, me.ts, mezo.ts, nap.ts, train.ts, types.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/tutorial` — 2 IT + 0 unit
   - **ITs:** `TutorialProgressApiIT`, `TutorialProgressSwitchOffApiIT`
 

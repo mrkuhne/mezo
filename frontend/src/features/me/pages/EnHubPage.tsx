@@ -204,7 +204,7 @@ export function EnHubPage() {
     <div className="enh-hub">
       <EntranceGroup className="mz-panel-stack">
         {/* ===== identity hero ===== */}
-        <div className="enh-idhero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+        <div className="enh-idhero rise" data-kalauz-anchor="me-idhero" style={{ '--d': '0ms' } as React.CSSProperties}>
           <div className="enh-idring" style={{ '--xp': xpPct } as React.CSSProperties}
             role="img" aria-label={`Szint ${gam.level} — ${xpPct}% a következő szintig`}>
             <i aria-hidden="true">{initial}</i>
