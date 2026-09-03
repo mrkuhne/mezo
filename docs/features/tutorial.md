@@ -87,7 +87,7 @@ pager, not a bottom sheet) and its registry entry
   `WELCOME_VERSION = 1`, four steps: `napszak` (the three daypart faces), `tabbar` (all five tabs),
   `log` (the real `QuickInputSheet` tile grid + "Mondd el Mezónak" row), `sugo` (a pointer to the
   header "?"). It is deliberately **outside `KALAUZ_REGISTRY`** — a `/nap`-routed entry there would
-  silently collide with the `nap` guide under `findKalauz`'s first-match rule, and the four steps
+  collide with the `nap` guide (identical pattern, which the registry route-lint rejects), and the four steps
   are tappable demos `KalauzCard`'s five kinds can't express. Its seen-key still lands in the same
   `tutorial_progress` map (the backend is key-agnostic), so this needs **no backend/contract
   change** — `versionOf(id)` (`registry/index.ts`) special-cases `WELCOME_ID` so `isUnseen('welcome')`
@@ -253,7 +253,14 @@ Adding a guide to an existing route:
 
 1. Add (or extend) a registry file under `frontend/src/features/tutorial/registry/` (see `fuel.ts`
    for the shape) exporting a `KalauzEntry[]`.
-2. Wire it into `KALAUZ_REGISTRY` in `frontend/src/features/tutorial/registry/index.ts`.
+2. Wire it into `KALAUZ_REGISTRY` in `frontend/src/features/tutorial/registry/index.ts`. **Array
+   order carries no meaning**: `findKalauz` delegates to `resolveKalauz`, which runs react-router's
+   own `matchRoutes` ranking over the entry patterns, so the literal sibling always beats the
+   parameterised one (`/me/people/heti` over `/me/people/:id`) exactly as the router picked the
+   page. Two guards in `registry.test.ts` keep that true: no two entries may share a route pattern,
+   and no overlapping pair may be *rank-tied* (a tie is where the array order would silently
+   decide — e.g. `/me/:a/heti` vs `/me/people/:b`, both scoring 10+3+10). A tie is reported as
+   `a (route) ⇄ b (route) — <witness pathname>`; fix it by making one pattern more specific.
 3. If a `hogyan` card wants a spotlight, add `data-kalauz-anchor="<name>"` to the target DOM
    element on the real page — the spotlight button only renders when the anchor is present, so a
    missing anchor degrades gracefully rather than pointing at nothing.
@@ -363,7 +370,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - `frontend/src/features/tutorial/TutorialProvider.tsx` — the motor: registry lookup, auto-open
   timing, session-guard, write-order, merge.
 - `frontend/src/features/tutorial/registry/` — `types.ts` (`KalauzEntry`/`KalauzCard`), `index.ts`
-  (`KALAUZ_REGISTRY`, `findKalauz`, `getKalauz`, `versionOf`).
+  (`KALAUZ_REGISTRY`, `resolveKalauz`, `findKalauz`, `getKalauz`, `versionOf`).
 - `frontend/src/features/tutorial/registry/fogalmak.ts` — canonical Hungarian glossary
   (`FOGALMAK`, `fogalom(key)`), consumed via `...fogalom('<key>')` spread by any `fogalom` card.
 - `frontend/src/features/tutorial/registry/fuel.ts` — the Fuel hub guide (`fuel`).

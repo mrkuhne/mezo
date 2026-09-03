@@ -1,8 +1,8 @@
 // ============================================================
 // Mezo · WELCOME — a T0 első indítás négy lépése (mezo-gb1s.4, S2b spec §3).
 // A KALAUZ_REGISTRY-n KÍVÜL él, két okból: (1) a lépések koppintható demók, amiket a
-// KalauzCard öt típusa nem tud kifejezni; (2) egy `/nap` route-ú bejegyzést a findKalauz
-// first-match szabálya (index.ts) némán szembeállítana a `nap` kalauzzal. A seen-kulcs
+// KalauzCard öt típusa nem tud kifejezni; (2) egy `/nap` route-ú bejegyzés a `nap` kalauzzal
+// ütközne — azonos minta, amit a registry sorrend-lintje (registry.test.ts) el is utasít. A seen-kulcs
 // viszont ugyanabba a tutorial_progress map-be megy — a backend kulcs-agnosztikus, tehát
 // nincs contract- vagy migráció-változás.
 //
