@@ -25,16 +25,12 @@
 
 **Files:** none (process).
 
-- [ ] **Step 1: Create the driving bd issue**
+- [ ] **Step 1: Claim the driving bd issue**
+
+The issue already exists: **`mezo-d58h.1`** (child of epic `mezo-d58h`). `<BD-ID>` in every commit below means `mezo-d58h.1`.
 
 ```bash
-bd create "Proactive coaching S1: flag-rule spine refactor + SHOULDER_STRAIN / WEIGHT_TREND_PCT_WK / COMBINED_LOAD_MIN metrics" -t feature -p 1 --json
-```
-
-Note the returned id (referred to as `<BD-ID>` in every commit below). Then claim it:
-
-```bash
-bd update <BD-ID> --claim
+bd update mezo-d58h.1 --claim
 ```
 
 - [ ] **Step 2: Create the feature branch**
