@@ -2,6 +2,7 @@ import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
 import type { GoalResponse, FeasibilityPreviewResponse } from '@/data/me/goalApi'
 import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
 import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from '@/data/types'
+import { localDateString } from '@/shared/lib/dates'
 
 export const goal: Goal = {
   id: 'goal-cut-2026',
@@ -154,6 +155,8 @@ export const weightLog: WeightEntry[] = [
   { date: '2026-05-20', value: 78.9 },
   { date: '2026-05-21', value: 78.8 },
   { date: '2026-05-22', value: 78.6 },
+  // mezo-idz2: mai súly, hogy a DayOrb súly-jele mock módban is jelen legyen.
+  { date: localDateString(), value: 78.4 },
 ]
 
 export const weightTrends: WeightTrends = {

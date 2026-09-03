@@ -27,13 +27,16 @@ test('useGoal returns the active cut goal + linked mesocycles', () => {
 
 test('useWeight returns the log + trends', async () => {
   const { result } = renderHook(() => useWeight(), { wrapper: QueryWrapper })
-  await waitFor(() => expect(result.current.weightLog.length).toBe(15))
+  // mezo-idz2 appended a date-relative today row to weightLog (DayOrb mock parity) — 15 → 16.
+  await waitFor(() => expect(result.current.weightLog.length).toBe(16))
   expect(result.current.weightTrends.last7d.weeklyRate).toBe(-0.5)
 })
 
 test('useSleep returns the log and last night', async () => {
   const { result } = renderHook(() => useSleep(), { wrapper: QueryWrapper })
-  await waitFor(() => expect(result.current.sleepLog.length).toBe(14))
-  // The last seed night became the canonical screenshot night in mezo-fk9a (00:42→09:03, 7.5 h).
-  expect(result.current.lastNight.duration).toBe(7.5)
+  // mezo-idz2 appended a date-relative today row to sleepLog (DayOrb mock parity) — 14 → 15.
+  await waitFor(() => expect(result.current.sleepLog.length).toBe(15))
+  // The last seed night is now the mezo-idz2 today row (23:20→06:30, 7.1 h), which
+  // supersedes the previous canonical screenshot night (mezo-fk9a, 00:42→09:03, 7.5 h).
+  expect(result.current.lastNight.duration).toBe(7.1)
 })

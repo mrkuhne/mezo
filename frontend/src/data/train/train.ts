@@ -4,6 +4,7 @@ import type {
   MesoTemplate, MuscleTier, MusclePriorities,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
+import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
 // The 21 live per-exercise tokens (mezo-wu1s head/zone-specific taxonomy) PLUS the coarse
@@ -1046,6 +1047,8 @@ export const sport: Sport = {
     },
   },
   sessions: [
+    // mezo-idz2: dátum-relatív mai session — a DayOrb sport-jele mock módban is jelen van.
+    { id: 'vb-today', sport: 'volleyball', date: huMonthDayDow(localDateString()), isoDate: localDateString(), time: '18:00', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.6, shoulderStrain: 5, jumpCount: 33, notes: null },
     { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
     { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
     { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },

@@ -1,4 +1,5 @@
 import type { SleepEntry } from '@/data/types'
+import { localDateString } from '@/shared/lib/dates'
 
 export const sleepLog: SleepEntry[] = [
   { date: '2026-05-09', bedtime: '23:15', wakeup: '06:45', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 130, notes: null },
@@ -15,4 +16,8 @@ export const sleepLog: SleepEntry[] = [
   { date: '2026-05-20', bedtime: '23:00', wakeup: '06:30', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 140, notes: null },
   { date: '2026-05-21', bedtime: '23:25', wakeup: '06:45', duration: 7.3, quality: 7, awakenings: 1, mealToSleep: 110, notes: null },
   { date: '2026-05-22', bedtime: '00:42', wakeup: '09:03', duration: 7.5, quality: 9, awakenings: 1, mealToSleep: 125, notes: 'Tegnap stabil', inBedMin: 501, awakeMin: 52, lightMin: 206, remMin: 144, deepMin: 100, sourceQualityPct: 95, source: 'screenshot', hypnogram: { bucketMin: 15, stages: 'ALDDLRRLDDLLRRRLDDLLRRLALDDLRRLRRR' } },
+  // mezo-idz2: a DayOrb (és minden mai-napra néző fogyasztó) mock módban is lásson
+  // tegnap éjszakát. Dátum-relatív, hogy ne avuljon el — a fenti sorok szándékosan
+  // fix dátumúak, mert a hét/hónap nézetek görbéi rájuk épülnek.
+  { date: localDateString(), bedtime: '23:20', wakeup: '06:30', duration: 7.1, quality: 7, awakenings: 1, mealToSleep: 120, notes: null },
 ]

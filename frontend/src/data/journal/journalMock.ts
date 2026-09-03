@@ -1,8 +1,17 @@
 import type { JournalNote } from '@/data/journal/journalTypes'
+import { localDateString } from '@/shared/lib/dates'
 
 /** Mock seed: 5 free-prose Hungarian entries spanning two months (2026-07 + 2026-08), newest
  * first — so Task 7's month-grouping visibly renders two group headers in mock mode. */
 export const mockJournalNotes: JournalNote[] = [
+  {
+    id: 'jn-today',
+    // mezo-idz2: dátum-relatív mai bejegyzés — a DayOrb napló-jele mock módban is jelen van.
+    occurredOn: localDateString(),
+    text: 'Ma jólesett a délutáni séta — utána sokkal tisztább fejjel ültem vissza dolgozni.',
+    source: 'quickinput',
+    createdAt: `${localDateString()}T18:40:00Z`,
+  },
   {
     id: 'jn5',
     occurredOn: '2026-08-15',
