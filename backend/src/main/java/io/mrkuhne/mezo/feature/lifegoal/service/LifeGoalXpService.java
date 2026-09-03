@@ -44,7 +44,7 @@ public class LifeGoalXpService {
 
     /** Grants XP for one evaluated pillar-day; a no-op for every non-hit status. */
     public void awardIfHit(LifeGoalPillarEntity pillar, LocalDate day, String status) {
-        if (!STATUS_HIT.equals(status) || properties.xpPerHit() <= 0) {
+        if (!STATUS_HIT.equals(status)) {
             return;
         }
         if (ProgressionTaxonomy.ROBUSTNESS.equals(pillar.getSkillKey())) {

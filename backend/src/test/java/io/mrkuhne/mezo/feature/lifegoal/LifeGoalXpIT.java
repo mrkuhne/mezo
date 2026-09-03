@@ -9,8 +9,11 @@ import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalPillarEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarRuleJson;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarSourceJson;
+import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalPillarDayRepository;
+import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalPillarRepository;
 import io.mrkuhne.mezo.feature.lifegoal.service.LifeGoalProgressService;
 import io.mrkuhne.mezo.feature.lifegoal.service.LifeGoalXpService;
+import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
 import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -37,6 +40,8 @@ class LifeGoalXpIT extends AbstractIntegrationTest {
     @Autowired private ActivityLogRepository activityLogRepository;
     @Autowired private LevelUpEventRepository levelUpEventRepository;
     @Autowired private SkillProgressRepository skillProgressRepository;
+    @Autowired private LifeGoalPillarRepository pillarRepository;
+    @Autowired private LifeGoalPillarDayRepository pillarDayRepository;
 
     private final LocalDate today = LocalDate.now();
 
@@ -100,5 +105,40 @@ class LifeGoalXpIT extends AbstractIntegrationTest {
         progressService.evaluate(owner, goal.getId());
 
         assertThat(skillProgressRepository.findByCreatedByAndSkillKey(owner, "recovery")).isEmpty();
+    }
+
+    @Test
+    void testEvaluate_shouldAwardNothing_whenTheDayIsAMiss() {
+        UUID owner = userPopulator.createUser("lifegoal-xp-miss@test.hu").getId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        LifeGoalPillarEntity pillar = focusPillar(goal);
+        activity(owner, today.minusDays(1), 5); // below the 30-minute threshold -> miss
+
+        progressService.evaluate(owner, goal.getId());
+
+        assertThat(pillarDayRepository.findByPillarIdAndDayAndDeletedFalse(pillar.getId(), today.minusDays(1)))
+            .hasValueSatisfying(r -> assertThat(r.getStatus()).isEqualTo("miss"));
+        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(owner, "recovery")).isEmpty();
+        assertThat(levelUpEventRepository.findByCreatedByAndSourceTypeAndSourceRefId(
+            owner, "LIFE_GOAL", LifeGoalXpService.refIdFor(pillar.getId(), today.minusDays(1)))).isEmpty();
+    }
+
+    @Test
+    void testEvaluate_shouldAwardNothing_whenThePillarIsRobustnessKeyed() {
+        UUID owner = userPopulator.createUser("lifegoal-xp-robustness@test.hu").getId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        LifeGoalPillarEntity pillar = focusPillar(goal);
+        pillar.setSkillKey(ProgressionTaxonomy.ROBUSTNESS);
+        pillarRepository.saveAndFlush(pillar);
+        activity(owner, today.minusDays(1), 40); // hit, but robustness never awards
+
+        progressService.evaluate(owner, goal.getId());
+
+        assertThat(pillarDayRepository.findByPillarIdAndDayAndDeletedFalse(pillar.getId(), today.minusDays(1)))
+            .hasValueSatisfying(r -> assertThat(r.getStatus()).isEqualTo("hit"));
+        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(owner, ProgressionTaxonomy.ROBUSTNESS))
+            .isEmpty();
+        assertThat(levelUpEventRepository.findByCreatedByAndSourceTypeAndSourceRefId(
+            owner, "LIFE_GOAL", LifeGoalXpService.refIdFor(pillar.getId(), today.minusDays(1)))).isEmpty();
     }
 }
