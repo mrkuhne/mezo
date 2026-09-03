@@ -459,6 +459,39 @@ class DayEvaluationEngineTest {
         assertThat(logging.score()).isEqualTo(75);
     }
 
+    /**
+     * Review round 1, Important 4: {@link MealLogFact} carries wall-clock {@link LocalTime}s with
+     * no date, so a dinner eaten 23:30 and logged 00:10 — an entirely ordinary pattern — used to
+     * read as 1160 minutes late and zero the meal component. Timeliness is now the CIRCULAR
+     * distance {@code min(|delta|, 1440 - |delta|)} = 40 minutes, comfortably inside the 120-minute
+     * band.
+     */
+    @Test
+    void logging_aMealLoggedJustAfterMidnightIsTimelyNotADayLate() {
+        List<MealLogFact> meals = List.of(
+            new MealLogFact("dinner", LocalTime.of(0, 10), LocalTime.of(23, 30), null, null, 700));
+        DayEvaluation e = engine.evaluate(
+            closedDay(b -> b.meals(meals).waterLogged(true).checkinCount(4)));
+        DayDimension logging = dim(e, "logging");
+        assertThat(logging.status()).isEqualTo("DONE");
+        // mealPart 1.0 -> 0.5*1.0 + 0.2*1.0 + 0.3*1.0 = 1.0 -> 100
+        assertThat(logging.score()).isEqualTo(100);
+    }
+
+    /** The other side of the circular reading: half a day apart is the FARTHEST two times of day
+     *  can be, so a breakfast written up in the evening is still late — the wrap must not quietly
+     *  forgive everything. */
+    @Test
+    void logging_aHalfDayLateLogIsStillLate() {
+        List<MealLogFact> meals = List.of(
+            new MealLogFact("breakfast", LocalTime.of(20, 0), LocalTime.of(8, 0), null, null, 500));
+        DayEvaluation e = engine.evaluate(
+            closedDay(b -> b.meals(meals).waterLogged(true).checkinCount(4)));
+        DayDimension logging = dim(e, "logging");
+        // mealPart 0.0 -> 0.2*1.0 + 0.3*1.0 = 0.5 -> 50
+        assertThat(logging.score()).isEqualTo(50);
+    }
+
     @Test
     void logging_noMealsLogged_mealPartDropsOutAndRenormalizes() {
         // 0 meal -> a meal-rész (0.5) kiesik, a maradék két rész arányosan skálázódik: 0.2/0.5=0.4,

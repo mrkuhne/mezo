@@ -143,11 +143,15 @@ public class WeeklyScoreService {
      * recompute and re-cache. Returns null when the week genuinely has no score.
      *
      * <p>The cheap path first: when the week's window holds no score-relevant log at all, the
-     * week provably has no score and nothing is computed. That shortcut is exact, not a guess —
-     * of the four subscores, sleep needs a {@code sleep_log}, fuel needs a {@code meal},
-     * check-in needs a {@code check_in} and activity needs a workout/sport/run/XP row; with none
-     * of them present no day can reach the 2-subscore gate, so the week's score is null by
-     * construction.
+     * week provably has no score and nothing is computed. That shortcut stays exact under the
+     * 6-dimension engine (mezo-jcpt.4): with no log in the window, nutrition and quality have no
+     * meal, training has no session, sleep has no {@code sleep_log} and rhythm has no prior base,
+     * so every dimension degrades except {@code logging} — which is DONE with an honest 0 (it
+     * measures effort, and no effort is a real measurement). That is ONE done dimension, one short
+     * of the engine's 2-dimension gate, so every day's base is null and the week's score is null by
+     * construction. See {@link WeeklyScoreRepository#latestScoreInputWrittenAt} for exactly which
+     * tables the probe covers — notably NOT the training schedule tables, so a schedule edit alone
+     * does not invalidate a cached week.
      */
     private WeeklyScoreEntity resolve(UUID userId, LocalDate weekStart, WeeklyScoreEntity cached) {
         LocalDate weekEnd = weekStart.plusDays(6);
@@ -194,9 +198,12 @@ public class WeeklyScoreService {
                 .build();
     }
 
-    /** The single definition of "the week's score": the {@code <2}-present honesty gate on the
-     *  overall score (the {@code DayScoreService.overallScore} rule applied a second time, at week
-     *  level), and a plain mean for each subscore average (null when the week has none). */
+    /** The single definition of "the week's score": the {@code <2}-present honesty gate applied a
+     *  second time, at week level — the same rule {@code DayEvaluationEngine} applies to a day's
+     *  dimensions, here over the days' base scores — and a plain mean for each of the four legacy
+     *  per-domain averages (null when the week has none). Those four are the engine's dimensions
+     *  under their wire names: sleep←sleep, fuel←nutrition, checkin←logging, activity←training
+     *  (mezo-jcpt.4; the mapping table lives in {@code DayScoreService}'s class javadoc). */
     static WeekAverages aggregate(List<DayScoreService.DayScore> dayScores) {
         if (dayScores == null || dayScores.isEmpty()) {
             return WeekAverages.EMPTY;

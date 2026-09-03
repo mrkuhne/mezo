@@ -196,6 +196,11 @@ public class DayScoreService {
             boolean loggedFuel = !fuelDay.getMeals().isEmpty();
             MacroSet consumed = fuelDay.getConsumed();
             MacroSet targets = fuelDay.getTargets();
+            // KNOWN AMPLIFICATION (review round 1, Important 3 — filed, deliberately not fixed
+            // here): windowsFor is a per-DATE query costing ~5 statements, so a week read pays it
+            // 14 times (7 rendered days + the 7 rhythm-window priors). The fix is a ranged
+            // windowsFor(userId, from, to) in the train feature — a cross-feature change that does
+            // not belong in this slice. Correct and bounded meanwhile, just chatty.
             List<Window> windows = workoutWindowQueryService.windowsFor(userId, day);
             int planned = windows.size();
             int done = (int) windows.stream().filter(Window::done).count();

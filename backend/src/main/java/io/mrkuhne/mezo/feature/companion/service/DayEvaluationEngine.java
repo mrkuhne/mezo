@@ -72,6 +72,8 @@ public class DayEvaluationEngine {
     /** Canonical check-in slots per day (brief's literal {@code checkinCount/4}, not config-driven
      *  -- matches {@code DayScoreService.CANONICAL_CHECKIN_SLOTS}, the legacy path's same constant). */
     private static final double CHECKIN_SLOTS = 4.0;
+    /** The clock wraps: see {@link #clockDistanceMin}. */
+    private static final long MINUTES_PER_DAY = 1440;
 
     /** A dimension before weight renormalisation — carries the raw config weight. */
     private record RawDim(String id, String label, double configWeight, Integer score,
@@ -374,9 +376,24 @@ public class DayEvaluationEngine {
             return null;
         }
         long onTime = withTiming.stream()
-            .filter(m -> Math.abs(Duration.between(m.eatenAt(), m.loggedAt()).toMinutes()) <= logTimelyMin)
+            .filter(m -> clockDistanceMin(m.eatenAt(), m.loggedAt()) <= logTimelyMin)
             .count();
         return (double) onTime / withTiming.size();
+    }
+
+    /**
+     * Distance between two times of day AROUND THE CLOCK: {@code min(|delta|, 1440 - |delta|)}
+     * minutes (review round 1, Important 4). Both fields are wall-clock {@link LocalTime}s with no
+     * date, so the raw signed difference reads a dinner eaten 23:30 and logged 00:10 -- an ordinary
+     * pattern -- as 1160 minutes late, zeroing the meal component of an otherwise perfectly logged
+     * day. Without dates the two readings ("23 hours late" vs "40 minutes across midnight") are
+     * genuinely indistinguishable; the near one is overwhelmingly the real case, and the failure
+     * mode of the circular reading (forgiving a meal logged almost exactly a day late) is far
+     * rarer and far less punishing than the failure mode of the linear one.
+     */
+    private static long clockDistanceMin(LocalTime eatenAt, LocalTime loggedAt) {
+        long delta = Math.abs(Duration.between(eatenAt, loggedAt).toMinutes());
+        return Math.min(delta, MINUTES_PER_DAY - delta);
     }
 
     private static List<DimFact> loggingFacts(DayInputs in, Double mealPart) {
