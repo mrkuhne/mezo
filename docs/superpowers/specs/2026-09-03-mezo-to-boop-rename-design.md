@@ -192,8 +192,31 @@ Megjelenített név és transzkript-címke:
 `Replan · Mezo`, a `TabBar` felirata (`label: 'Mezo'` → `'Boop'`, az
 `id: 'mezo'` és `icon: 'i-mezo'` változatlan).
 
+**Push-értesítés címek.** Az `AnchorResolver.java` nyolc helyen állít elő
+`"Mezo · …"` alakú címet (`észrevétel`, `reggeli eligazítás`, `napzárás`,
+`alvás`, `testsúly`, `heti elemzés`, `a heted története`, plusz egy csupasz
+`"Mezo"`), és az `InterventionService.EYEBROW` konstans értéke ugyanilyen.
+Ezek a címek az `app_notification.title` oszlopba **perzisztálódnak**, és
+push-ként már ki is mentek. A régi sorok „Mezo ·" címmel maradnak, az újak
+„Boop ·" címmel születnek: **nincs adatmigráció**, mert a régi értesítés akkor
+tényleg azt mondta. Az értesítés-lista egy ideig kevert címeket mutat, és ez
+így igaz.
+
 **Alkalmazás-azonosság:** `frontend/index.html` `<title>`,
 `frontend/vite.config.ts` `manifest.name` / `manifest.short_name`.
+
+**OpenAPI leírások:** az `api/openapi.yml` öt `description`/`summary` mezője
+említi a nevet. Ezek a generált `frontend/src/data/_client/api.gen.ts`-be is
+átfolynak, ezért a klienst újra kell generálni (`pnpm generate:api`) —
+kézi szerkesztés esetén a CI contract-drift ellenőrzése bukik. A `RecipeMezoFit`
+sémanév és a `mezoFit` mező **nem** itt változik: az backend DTO-t is érint,
+ezért az S2/S3 közös szerződés-változása.
+
+**Egy mondat, amit nem cserélünk, hanem törlünk.** A
+`features/tutorial/registry/fogalmak.ts:31` a *mezociklus* fogalmát így zárja:
+„A Mezo innen kapta a nevét." Ez a rename után **nem igaz** — Boop neve nem a
+mezociklusból jön. A mondat törlendő; a definíció önmagában megáll. Ez az
+egyetlen pont a szeletben, ahol a rename tartalmi döntést kíván.
 
 **Ellenőrzés:** FE tesztek mindkét módban (mock és valós), companion ITek
 (`ContextSnapshotAssemblerIT`, `CompanionToolsRenderIT`, karakter-ITek).
