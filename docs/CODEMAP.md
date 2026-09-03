@@ -477,10 +477,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sub-features:** `engine`
   - **entities→tables:** `GoalEntity`→`goal`, `GoalPlanLinkEntity`→`goal_plan_link`
   - **repositories:** `GoalPlanLinkRepository`, `GoalRepository`
-  - **services:** `DietPreferences`, `DietPreferencesPort`, `GoalDeletedEvent`, `GoalEngineService`,
-    `GoalEvaluationService`, `GoalFeasibilityService`, `GoalPlanLinkService`, `GoalProjectionService`,
-    `GoalSavedEvent`, `GoalService`, `GoalTimelineService`, `GuardEvaluationService`, `TdeeBootstrapService`,
-    `TrainGoalRecomputeAdapter`
+  - **services:** `DayTypeShiftCalculator`, `DietPreferences`, `DietPreferencesPort`, `GoalDeletedEvent`,
+    `GoalEngineService`, `GoalEvaluationService`, `GoalFeasibilityService`, `GoalPlanLinkService`,
+    `GoalProjectionService`, `GoalSavedEvent`, `GoalService`, `GoalTimelineService`, `GuardEvaluationService`,
+    `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
   - **controllers→contract:** `GoalController`→`GoalApi`
   - **mappers:** `GoalMapper`, `GoalPlanLinkMapper`
   - **other:** `GoalEngineProperties`, `GoalPrescriptionJson`, `GoalReevaluateRunner`, `GoalSeedData`,
@@ -490,7 +490,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PUT /api/goals/{id} · DELETE /api/goals/{id} · POST /api/goals/{id}/activate · POST /api/goals/{id}/archive ·
     GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate · POST /api/goals/{id}/plans ·
     DELETE /api/goals/{id}/plans/{linkId}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 12 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 12 IT + 2 unit
   - **ITs:** `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`,
     `GoalFeasibilityServiceIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`,
     `GoalServiceIT`, `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
@@ -617,27 +617,32 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data* · read next: [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal`
-  - **sub-features:** `catalog`
+  - **sub-features:** `catalog`, `engine`
   - **entities→tables:** `LifeGoalEntity`→`life_goal`, `LifeGoalPillarDayEntity`→`life_goal_pillar_day`,
     `LifeGoalPillarEntity`→`life_goal_pillar`
   - **repositories:** `LifeGoalPillarDayRepository`, `LifeGoalPillarRepository`, `LifeGoalRepository`
-  - **services:** `LifeGoalPillarService`, `LifeGoalProposeService`, `LifeGoalService`, `LifeGoalSignalService`,
-    `LifeGoalTemplateProposer`
+  - **services:** `LifeGoalPillarService`, `LifeGoalProgressService`, `LifeGoalProposeService`, `LifeGoalService`,
+    `LifeGoalSignalService`, `LifeGoalTemplateProposer`
   - **controllers→contract:** `LifeGoalController`→`LifeGoalApi`
   - **mappers:** `LifeGoalMapper`
   - **config:** `LifeGoalProperties`
-  - **other:** `IfThenPlanJson`, `LifeGoalSeedData`, `PillarRuleJson`, `PillarSourceJson`, `PlanTriggerJson`,
-    `SignalCatalog`, `SignalCatalogEntry`
-- **Contract** `api/feature/lifegoal/lifegoal.yml` — 9 operations
+  - **other:** `ActivitySignalSource`, `IfThenPlanJson`, `LifeGoalScorer`, `LifeGoalSeedData`, `MetricSignalSource`,
+    `NeedsRingSignalSource`, `PillarDayScore`, `PillarRuleJson`, `PillarSourceJson`, `PlanTriggerJson`,
+    `SignalCatalog`, `SignalCatalogEntry`, `SignalSource`, `SignalWindow`, `SocialMentionsSignalSource`,
+    `WeightGoalSignalSource`
+- **Contract** `api/feature/lifegoal/lifegoal.yml` — 12 operations
   - **endpoints:** GET /api/life-goals · POST /api/life-goals · GET /api/life-goals/signals ·
     POST /api/life-goals/propose · GET /api/life-goals/{id} · PUT /api/life-goals/{id} · DELETE /api/life-goals/{id} ·
-    POST /api/life-goals/{id}/status · PUT /api/life-goals/{id}/pillars
+    POST /api/life-goals/{id}/status · PUT /api/life-goals/{id}/pillars · GET /api/life-goals/today ·
+    GET /api/life-goals/{id}/progress · POST /api/life-goals/{id}/evaluate
 - **FE data** `frontend/src/data/lifegoal`
-  - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalPropose`, `useLifeGoals`,
-    `useSignalCatalog`
+  - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalProgress`, `useLifeGoalPropose`,
+    `useLifeGoalToday`, `useLifeGoals`, `useSignalCatalog`
   - **modules:** lifegoalApi.ts, lifegoalHooks.ts, lifegoalMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 5 IT + 0 unit
-  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalPillarApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 10 IT + 1 unit
+  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalEvaluateApiIT`, `LifeGoalPillarApiIT`,
+    `LifeGoalProgressApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`, `LifeGoalTodayApiIT`, `SignalSourceIT`,
+    `WeightGoalSignalSourceIT`
   - **populators:** `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`
 
 ### llmlog
@@ -736,12 +741,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 19 IT + 4 unit
-  - **ITs:** `FuelDayServiceIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`,
-    `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`,
-    `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`, `MealOverridesScoringIT`,
-    `MealOverridesServiceIT`, `MealRepositoryIT`, `MealServiceIT`, `NutritionTargetsPropertiesIT`,
-    `RecipeLogsServiceIT`, `WaterLogApiIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 20 IT + 4 unit
+  - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`,
+    `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`,
+    `MealCoachServiceIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`,
+    `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealRepositoryIT`, `MealServiceIT`,
+    `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
   - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryItemPopulator`, `RecipePopulator`,
     `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
 
@@ -833,8 +838,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **other:** `MealBreakdownJson`
 - **Contract** `api/feature/diet-settings/diet-settings.yml` — 2 operations
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 2 IT + 1 unit
-  - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 1 unit
+  - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`
 
 ### pantry
@@ -1074,9 +1079,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, IntentionSheet.tsx, ReflectSheet.tsx
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
     EletjelStrip.tsx, MezoMessagesSheet.tsx
-  - **logic:** dayArc.ts, dayFace.ts, habitAction.ts, habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, needs.ts,
-    needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useDayFace.ts, useMinuteTick.ts,
-    useNeeds.ts, windDown.ts
+  - **logic:** dayArc.ts, dayFace.ts, habitAction.ts, habitCelebration.ts, habitClayIcon.ts, itemIcon.ts,
+    mezoMessages.ts, needs.ts, needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts,
+    useDayFace.ts, useMinuteTick.ts, useNeeds.ts, windDown.ts
   - **root:** MezoThreadProvider.tsx
 
 ### train
@@ -1143,8 +1148,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/train`
   - **hooks (via `@/data/hooks`):** `MesoPlanProposal`, `useChallengeActions`, `useChallenges`,
     `useCustomWorkoutActions`, `useCustomWorkouts`, `useMedals`, `useMesoPlanGenerate`, `useMesoReport`,
-    `useMesoTemplates`, `useMesocycleVolumeArc`, `useOpenWorkout`, `useRunning`, `useTemplateDayChain`,
-    `useTimingProfile`, `useTrain`, `useWeekMuscleLog`, `useWeekWorkouts`, `useWorkoutDetail`, `useWorkoutNote`
+    `useMesoTemplates`, `useMesocycleVolumeArc`, `useOpenWorkout`, `useQuickLogSport`, `useRunning`,
+    `useTemplateDayChain`, `useTimingProfile`, `useTrain`, `useWeekMuscleLog`, `useWeekWorkouts`, `useWorkoutDetail`,
+    `useWorkoutNote`
   - **modules:** challengeApi.ts, challengeHooks.ts, customWorkoutHooks.ts, medalApi.ts, medalEvaluator.ts,
     medalHooks.ts, medalMock.ts, medalTypes.ts, mesoArcHooks.ts, mesoPlanHooks.ts, mesoPlanMock.ts, mesoReportHooks.ts,
     mesoTemplateHooks.ts, running.ts, runningAgenda.ts, runningApi.ts, runningDraft.ts, runningHooks.ts,
@@ -1181,7 +1187,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, ProgramDayView.tsx, StepFocus.tsx, StepProgram.tsx, StepWhen.tsx, dayTiles.ts,
     wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 70 IT + 11 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 71 IT + 11 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseRecordContractIT`, `ExerciseRecordServiceIT`, `ExerciseVolumeFlagIT`,
@@ -1195,10 +1201,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`, `VolumeArcContractIT`,
     `VolumeArcVolumeFlagIT`, `VolumeBaselineSeedIT`, `VolumeBaselineSeedSwitchOffIT`, `VolumeEffectiveSetsIT`,
     `VolumeEffectiveSetsSwitchOffIT`, `VolumeProgressionServiceIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`,
-    `WarmupExclusionIT`, `WeeklyScheduledActivityServiceIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`,
-    `WorkoutContractIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`, `WorkoutFinishLevelUpApiIT`,
-    `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`,
-    `WorkoutTimingIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutWindowQueryServiceIT`
+    `WarmupExclusionIT`, `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`,
+    `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`, `WorkoutDetailContractIT`,
+    `WorkoutDoneSemanticsIT`, `WorkoutFinishLevelUpApiIT`, `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`,
+    `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`, `WorkoutTimingIT`, `WorkoutTodayPrescriptionIT`,
+    `WorkoutTodayProgressionIT`, `WorkoutWindowQueryServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MesoTemplatePopulator`,
     `RunningPopulator`, `SleepLogPopulator`, `TrainPopulator`, `UserPopulator`, `WeightLogPopulator`
 
@@ -1218,7 +1225,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `TUTORIAL_PROGRESS_GHOST`, `useTutorialProgress`, `useTutorialProgressActions`
   - **modules:** tutorialProgressApi.ts, tutorialProgressHooks.ts
 - **FE ui** `frontend/src/features/tutorial`
-  - **root:** TutorialProvider.tsx, fogalmak.ts, fuel.ts, index.ts, me.ts, mezo.ts, nap.ts, train.ts, types.ts
+  - **root:** TutorialProvider.tsx, fogalmak.ts, fuel.ts, index.ts, lint.ts, me.ts, mezo.ts, nap.ts, train.ts,
+    types.ts, welcome.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/tutorial` — 2 IT + 0 unit
   - **ITs:** `TutorialProgressApiIT`, `TutorialProgressSwitchOffApiIT`
 
@@ -1244,7 +1252,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   NumberInput.tsx, PageTitle.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx, Sheet.tsx,
   Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx, Toggle.tsx,
   ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx,
-  kalauz/KalauzSheet.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
+  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 
