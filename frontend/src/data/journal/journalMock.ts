@@ -1,8 +1,12 @@
 import type { JournalNote } from '@/data/journal/journalTypes'
+import { localDateString } from '@/shared/lib/dates'
 
-/** Mock seed: 5 free-prose Hungarian entries spanning two months (2026-07 + 2026-08), newest
- * first — so Task 7's month-grouping visibly renders two group headers in mock mode. */
-export const mockJournalNotes: JournalNote[] = [
+/** Mock seed: 5 fixed free-prose Hungarian entries spanning two months (2026-07 + 2026-08)
+ * — so Task 7's month-grouping visibly renders two group headers in mock mode — plus one
+ * date-relative "today" entry (jn-today, mezo-idz2) appended below when the date doesn't
+ * already collide with a fixed row; it forms its own (floating) third month group whenever
+ * the suite runs outside July/August. */
+const mockJournalNotesFixed: JournalNote[] = [
   {
     id: 'jn5',
     occurredOn: '2026-08-15',
@@ -39,3 +43,21 @@ export const mockJournalNotes: JournalNote[] = [
     createdAt: '2026-07-08T07:50:00Z',
   },
 ]
+
+// mezo-idz2: dátum-relatív mai bejegyzés — a DayOrb napló-jele mock módban is jelen van.
+// Egy befagyasztott órájú vizuális futásban a „ma" egybeeshet egy meglévő fix sorral,
+// ezért a beszúrás idempotens: csak akkor adjuk hozzá, ha erre a napra még nincs sor,
+// majd a csökkenő („newest first") dátumsorrendet a beszúrás helyétől függetlenül
+// explicit rendezéssel biztosítjuk.
+const todayIsoJournal = localDateString()
+export const mockJournalNotes: JournalNote[] = (
+  mockJournalNotesFixed.some((n) => n.occurredOn === todayIsoJournal)
+    ? mockJournalNotesFixed
+    : [...mockJournalNotesFixed, {
+        id: 'jn-today',
+        occurredOn: todayIsoJournal,
+        text: 'Ma jólesett a délutáni séta — utána sokkal tisztább fejjel ültem vissza dolgozni.',
+        source: 'quickinput' as const,
+        createdAt: `${todayIsoJournal}T18:40:00Z`,
+      }]
+).sort((a, b) => b.occurredOn.localeCompare(a.occurredOn))

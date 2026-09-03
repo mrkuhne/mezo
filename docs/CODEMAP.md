@@ -1093,9 +1093,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, IntentionSheet.tsx, ReflectSheet.tsx
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
     EletjelStrip.tsx, MezoMessagesSheet.tsx
-  - **logic:** dayArc.ts, dayFace.ts, habitAction.ts, habitCelebration.ts, habitClayIcon.ts, itemIcon.ts,
-    mezoMessages.ts, needs.ts, needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts,
-    useDayFace.ts, useMinuteTick.ts, useNeeds.ts, windDown.ts
+  - **logic:** dayArc.ts, dayFace.ts, dayOrbFill.ts, habitAction.ts, habitCelebration.ts, habitClayIcon.ts,
+    itemIcon.ts, mezoMessages.ts, needs.ts, needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts,
+    todayItems.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useNeeds.ts, windDown.ts
   - **root:** MezoThreadProvider.tsx
 
 ### train
@@ -1262,10 +1262,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **lib:** audio.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, markdown.tsx, pct.ts, resizeImage.ts,
   safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts, userScope.ts
 - **ui:** AdherenceBar.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx, DatePicker.tsx, DayNavigator.tsx,
-  Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx, Island.tsx, ItemCard.tsx, ItemRow.tsx,
-  NumberInput.tsx, PageTitle.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx, Sheet.tsx,
-  Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx, Toggle.tsx,
-  ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx,
+  DayOrb.tsx, Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx, Island.tsx, ItemCard.tsx,
+  ItemRow.tsx, NumberInput.tsx, PageTitle.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx,
+  Sheet.tsx, Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx,
+  Toggle.tsx, ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx,
   kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`

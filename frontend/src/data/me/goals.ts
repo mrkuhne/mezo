@@ -2,6 +2,7 @@ import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
 import type { GoalResponse, FeasibilityPreviewResponse, GoalSuggestionResponse } from '@/data/me/goalApi'
 import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
 import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from '@/data/types'
+import { localDateString } from '@/shared/lib/dates'
 
 export const goal: Goal = {
   id: 'goal-cut-2026',
@@ -160,7 +161,7 @@ export const feasibilityPreview: FeasibilityPreviewResponse = {
   verdict: 'feasible',
 }
 
-export const weightLog: WeightEntry[] = [
+const weightLogFixed: WeightEntry[] = [
   { date: '2026-04-22', value: 81.4, note: 'Goal start · mély deficit indul' },
   { date: '2026-04-25', value: 81.0 },
   { date: '2026-04-28', value: 80.8 },
@@ -177,6 +178,17 @@ export const weightLog: WeightEntry[] = [
   { date: '2026-05-21', value: 78.8 },
   { date: '2026-05-22', value: 78.6 },
 ]
+
+// mezo-idz2: mai súly, hogy a DayOrb súly-jele mock módban is jelen legyen. Egy
+// befagyasztott órájú vizuális futásban a „ma" egybeeshet egy meglévő fix sorral, ezért
+// a beszúrás idempotens: csak akkor adjuk hozzá, ha erre a napra még nincs sor, majd a
+// növekvő dátumsorrendet a beszúrás helyétől függetlenül explicit rendezéssel biztosítjuk.
+const todayIsoWeight = localDateString()
+export const weightLog: WeightEntry[] = (
+  weightLogFixed.some((w) => w.date === todayIsoWeight)
+    ? weightLogFixed
+    : [...weightLogFixed, { date: todayIsoWeight, value: 78.4 }]
+).sort((a, b) => a.date.localeCompare(b.date))
 
 export const weightTrends: WeightTrends = {
   last7d: { avg: 78.96, weeklyRate: -0.5 },
