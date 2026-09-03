@@ -31,7 +31,11 @@ export function completeMockDerivedHabit(qc: QueryClient, date: string, habitKey
   qc.setQueryData<HabitDay>(key(date), {
     ...day,
     habits: day.habits.map((h) =>
-      h.key === habitKey ? { ...h, status: 'done', doneAt: new Date().toISOString() } : h),
+      h.key === habitKey
+        // a csík valódi értéket animál itt is, ugyanúgy mint a MANUAL patchMock ágon
+        // (mezo-3zue.5) — máskülönben egy DERIVED sor csíkja mock módban befagy.
+        ? { ...h, status: 'done', doneAt: new Date().toISOString(), strengthPct: bumpStrength(habitKey, h.strengthPct) }
+        : h),
   })
   return true
 }
@@ -55,6 +59,41 @@ export function useHabitDay(date: string): HabitDayView {
   return { ...data, mode: mock ? 'mock' : 'live' }
 }
 
+/**
+ * A backend erő-képletének mock tükre (HabitService.strengthByKey: done / (done + missed) a
+ * 28 napos ablakon). A ma-kész nap hozzáadása a sor SAJÁT arányához: a megjelenített
+ * százalékot arányként véve `round((p * C / 100 + 1) * 100 / (C + 1))`, ahol C a lezárt napok
+ * száma. Kicsi, monoton, 100 felé konvergál — nem talál ki új számformát (mezo-3zue.5).
+ *
+ * `null` marad `null`: a szerver is null-t ad `minSample` alatt.
+ */
+function bumpStrength(habitKey: string, pct: number | null | undefined): number | null {
+  if (pct == null) return null
+  const s = mockHabitSummary.habits.find((h) => h.key === habitKey)
+  const closed = s ? s.done28 + s.missed28 : 0
+  if (closed <= 0) return pct
+  return Math.round(((pct * closed) / 100 + 1) * (100 / (closed + 1)))
+}
+
+/**
+ * `bumpStrength` ARITMETIKAI INVERZE — egy kész nap eltávolítása az arányból — nem a statikus
+ * seed-értékre visszaállítás. Egy MÁR `status: 'done'`-nak seedelt sor (pl. `morning_sunlight`,
+ * 64%) seed-értéke MAGÁBAN FOGLALJA a kész napot, tehát a visszavonásnak arról az értékről kell
+ * csökkennie, nem a seedbe visszaugrania — különben egy ilyen sor visszapipálása sosem térne
+ * vissza a seed-értékre (mezo-3zue.5, F5). `bumpStrength(pct, C) = round((pct·C/100 + 1)·100/(C+1))`
+ * inverze: `pct = (y·(C+1) - 100) / C`, kerekítve és 0..100-ra szorítva. Kerekítés mellett is
+ * kör-stabil (lásd `habitHooks.test.tsx`): pipa → visszavonás → pipa ugyanoda ér vissza, akár
+ * pending-, akár done-seedelt sorról indul.
+ */
+function unbumpStrength(habitKey: string, pct: number | null | undefined): number | null {
+  if (pct == null) return null
+  const s = mockHabitSummary.habits.find((h) => h.key === habitKey)
+  const closed = s ? s.done28 + s.missed28 : 0
+  if (closed <= 0) return pct
+  const raw = (pct * (closed + 1) - 100) / closed
+  return Math.min(100, Math.max(0, Math.round(raw)))
+}
+
 export function useHabitActions(date: string) {
   const qc = useQueryClient()
   const mock = isMockMode()
@@ -65,7 +104,15 @@ export function useHabitActions(date: string) {
         ...d,
         habits: d.habits.map((h) =>
           h.key === habitKey
-            ? { ...h, status, doneAt: status === 'done' ? new Date().toISOString() : null }
+            ? {
+                ...h,
+                status,
+                doneAt: status === 'done' ? new Date().toISOString() : null,
+                // a csík valódi értéket animál, mock módban is (mezo-3zue.5)
+                strengthPct: status === 'done'
+                  ? bumpStrength(habitKey, h.strengthPct)
+                  : unbumpStrength(habitKey, h.strengthPct),
+              }
             : h),
       })
   }
