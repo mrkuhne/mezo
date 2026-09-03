@@ -22,6 +22,13 @@ import org.springframework.beans.factory.annotation.Autowired;
  * median bedtime push past the required lights-out (derived from the earliest MORNING obligation)
  * by more than the configured tolerance, and stays silent when the plan honestly fits or when
  * there is nothing to compare against (spec §7 — never estimate).
+ *
+ * <p><b>Day-pairing correction (S3 whole-branch review, same bd id):</b> the sport half pairs
+ * each evening with the morning that ACTUALLY follows it — weekday {@code (D + 1) mod 7} — not
+ * with the earliest morning anywhere in the week. Weekday numbering is 0=Monday..6=Sunday on both
+ * {@code gym_schedule_slot.dayOfWeek} and {@code sport_schedule_slot.dayOfWeek}. The bedtime half
+ * stays day-agnostic on purpose (a habitual bedtime happens every night, so it is judged against
+ * the week's tightest morning) — see {@link PlanFeasibilityCalculator}'s class javadoc.
  */
 class PlanFeasibilityIT extends AbstractIntegrationTest {
 
@@ -36,12 +43,18 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
     void testRunFor_shouldEmitTheFeasibilityCard_whenEveningSportEndsTooLateForTheMorningSlot() {
         UUID owner = userPopulator.createUser().getId();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);   // 8h target (the goal's own wake)
-        trainPopulator.createGymSlot(owner, 0, "07:00");            // Monday 07:00 = morning obligation
-        // required lights-out = 07:00 − 45' wake buffer − 8h target = 22:15 the evening before.
-        trainPopulator.createScheduleSlot(owner, 2, "20:00", 120, "training"); // ends 22:00, +30' = 22:30
-        // 22:30 − 22:15 = 15' — inside the 45' tolerance, so this slot alone must NOT fire.
-        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // ends 23:00, +30' = 23:30
-        // 23:30 − 22:15 = 75' > 45' ⇒ infeasible, and the Friday slot is what binds.
+        trainPopulator.createGymSlot(owner, 1, "07:00");            // Tuesday 07:00 — pairs with Monday's sport slot
+        trainPopulator.createGymSlot(owner, 4, "07:00");            // Friday 07:00 — pairs with Thursday's sport slot
+        // Each real gym morning gives required lights-out = 07:00 − 45' wake buffer − 8h target =
+        // 22:15 the evening before — day-paired, so only the evening immediately preceding a given
+        // morning is compared against it.
+        trainPopulator.createScheduleSlot(owner, 0, "20:00", 120, "training"); // Mon ends 22:00, +30' = 22:30
+        // Monday's following day is Tuesday (a real gym morning): 22:30 − 22:15 = 15' — inside the
+        // 45' tolerance, so this slot alone must NOT fire.
+        trainPopulator.createScheduleSlot(owner, 3, "21:00", 120, "training"); // Thu ends 23:00, +30' = 23:30
+        // Thursday's following day is Friday (a real gym morning): 23:30 − 22:15 = 75' > 45' ⇒
+        // infeasible, and THIS slot is what binds — a genuine day-paired misfit, not a comparison
+        // across unrelated days.
 
         Optional<CompanionMessageEntity> card = setupCheckService.runFor(owner);
 
@@ -54,17 +67,22 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
     void testRunFor_shouldStaySilent_whenTheScheduleFitsInsideTheTolerance() {
         UUID owner = userPopulator.createUser().getId();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
-        trainPopulator.createGymSlot(owner, 0, "07:00");
-        trainPopulator.createScheduleSlot(owner, 2, "19:00", 90, "training"); // ends 20:30, +30' = 21:00
-        // 21:00 is BEFORE the 22:15 required lights-out ⇒ feasible, no card.
+        trainPopulator.createGymSlot(owner, 0, "07:00"); // Monday — keeps the global gate open
+        trainPopulator.createScheduleSlot(owner, 2, "19:00", 90, "training"); // Wed ends 20:30, +30' = 21:00
+        // Wednesday's following day (Thursday) has no gym slot of its own, so the WAKE-anchored
+        // goal's own wake time (06:00) is the obligation there instead — a wake anchor is a daily
+        // commitment, so it applies to every following morning: required lights-out =
+        // 06:00 − 45' − 8h = 21:15. 21:00 is BEFORE that ⇒ feasible, no card.
 
         assertThat(setupCheckService.runFor(owner)).isEmpty();
     }
 
     @Test
     void testRunFor_shouldStaySilent_whenThereIsNoMorningObligationAndTheGoalIsBedAnchored() {
-        // No morning gym slot and a BED-anchored goal ⇒ nothing to be early FOR. Inventing an
-        // obligation here would be exactly the estimate spec §7 forbids.
+        // No morning gym slot ANYWHERE in the week and a BED-anchored goal ⇒ nothing to be early
+        // FOR at all — the global gate (day-agnostic by design, see the calculator's class
+        // javadoc) never opens. Inventing an obligation here would be exactly the estimate spec
+        // §7 forbids.
         UUID owner = userPopulator.createUser().getId();
         sleepGoalPopulator.goal(owner, 480, "BED", "23:00", 15);
         trainPopulator.createScheduleSlot(owner, 2, "20:30", 120, "training");
@@ -73,28 +91,54 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testRunFor_shouldStaySilent_whenTheObligationExistsButNeitherHalfHasAnythingToSay() {
-        // A morning obligation resolves (WAKE goal + gym slot), so requiredLightsOut is real — but
-        // there is ZERO sport schedule and ZERO logged bedtimes to compare it against. This is a
-        // different silence than "we compared and it fit": there is nothing to compare AT ALL. A
-        // regression that treated an empty sport list as "ends at midnight" (0) instead of
-        // OptionalInt.empty() would turn this into a spurious card — this test guards that.
+    void testRunFor_shouldStaySilent_whenTheSportSlotsFollowingDayHasNoMorningObligation_andTheGoalIsBedAnchored() {
+        // The bug this correction fixes: the OLD code would have measured this Wednesday evening
+        // against Monday's 07:00 gym slot — a comparison across unrelated days that asserted a
+        // conflict which does not exist. With day-pairing, Wednesday's sport slot is paired with
+        // THURSDAY's morning, which has no gym slot of its own; the goal is BED-anchored, so
+        // there is no WAKE fallback to invent an obligation from. The slot is skipped — nothing
+        // follows it, so it cannot make the plan infeasible — and with no other sport slot and no
+        // logged bedtimes, the check has nothing left to say.
         UUID owner = userPopulator.createUser().getId();
-        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
-        trainPopulator.createGymSlot(owner, 0, "07:00");
+        sleepGoalPopulator.goal(owner, 480, "BED", "23:00", 15);
+        trainPopulator.createGymSlot(owner, 0, "07:00"); // Monday only — keeps the global gate open
+        trainPopulator.createScheduleSlot(owner, 2, "20:30", 120, "training"); // Wed; Thu (its +1) has no obligation
 
         assertThat(setupCheckService.runFor(owner)).isEmpty();
     }
 
     @Test
+    void testRunFor_shouldEmitTheFeasibilityCard_whenASundayEveningSportSlotWrapsToMondayMorning() {
+        // (D + 1) mod 7 must wrap Sunday (6) to Monday (0), not compute an out-of-range 7 or
+        // silently treat Sunday as having no following day. This is the spec's own worked
+        // example's infeasible variant (Sunday 21:00, not 20:30).
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
+        trainPopulator.createGymSlot(owner, 0, "07:00"); // Monday 07:00 — required lights-out 22:15
+        trainPopulator.createScheduleSlot(owner, 6, "21:00", 120, "training"); // Sun ends 23:00, +30' = 23:30
+        // Sunday's following day, wrapped, is Monday: 23:30 − 22:15 = 75' > 45' ⇒ infeasible.
+
+        Optional<PlanFeasibilityCalculator.Verdict> verdict =
+            planFeasibilityCalculator.evaluate(owner, LocalDate.now());
+
+        assertThat(verdict).isPresent();
+        assertThat(verdict.orElseThrow().feasible()).isFalse();
+        assertThat(verdict.orElseThrow().constraintSource())
+            .isEqualTo(PlanFeasibilityCalculator.SOURCE_SPORT);
+        assertThat(verdict.orElseThrow().bindingDay()).isEqualTo(6);
+        assertThat(verdict.orElseThrow().misfitMin()).isEqualTo(75);
+    }
+
+    @Test
     void testRunFor_shouldStaySilent_whenTheMisfitExactlyEqualsTheTolerance() {
-        // required lights-out = 07:00 − 45' − 8h = 22:15. Slot 20:30 +120' +30' commute = 23:00 —
-        // misfit is EXACTLY 45', the configured tolerance's own boundary ("infeasible only when it
-        // misses by MORE than this" ⇒ a misfit equal to the tolerance is still feasible).
+        // required lights-out = 07:00 − 45' − 8h = 22:15. Sunday's sport slot day-pairs with
+        // Monday's real gym morning ((6 + 1) mod 7 = 0) — exactly the spec's worked example: the
+        // misfit lands EXACTLY on the 45' tolerance boundary ("infeasible only when it misses by
+        // MORE than this" ⇒ a misfit equal to the tolerance is still feasible).
         UUID owner = userPopulator.createUser().getId();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
         trainPopulator.createGymSlot(owner, 0, "07:00");
-        trainPopulator.createScheduleSlot(owner, 2, "20:30", 120, "training"); // ends 22:30, +30' = 23:00
+        trainPopulator.createScheduleSlot(owner, 6, "20:30", 120, "training"); // Sun ends 22:30, +30' = 23:00
 
         assertThat(setupCheckService.runFor(owner)).isEmpty();
     }
@@ -113,13 +157,16 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
 
     @Test
     void testRunFor_shouldEmitTheFeasibilityCard_whenTheObservedMedianBedtimeIsTooLate() {
-        // Sport schedule alone fits, but the logged bedtimes push past the required lights-out —
-        // the observed-bedtime half must be able to bind the verdict on its own.
+        // Sport schedule alone fits (even against its day-paired obligation), but the logged
+        // bedtimes push past the required lights-out — the observed-bedtime half must be able to
+        // bind the verdict on its own. The bedtime half is deliberately NOT day-paired: it is
+        // judged against the week's tightest morning (Monday's), exactly as before this
+        // correction — see the calculator's class javadoc for why.
         UUID owner = userPopulator.createUser().getId();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
         trainPopulator.createGymSlot(owner, 0, "07:00");
         // required lights-out = 07:00 − 45' − 8h = 22:15.
-        trainPopulator.createScheduleSlot(owner, 2, "19:00", 90, "training"); // ends 20:30, +30' = 21:00 — fits.
+        trainPopulator.createScheduleSlot(owner, 2, "19:00", 90, "training"); // Wed ends 20:30, +30' = 21:00 — fits.
 
         // sleep_log.date is the WAKE morning, so a 23:30 bedtime the night before is logged on the
         // following day's row. Four nights (>= minBedtimeSamples=4) at 23:30 ⇒ median 23:30 (1410),
@@ -137,12 +184,40 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
         assertThat(verdict.orElseThrow().feasible()).isFalse();
         assertThat(verdict.orElseThrow().constraintSource())
             .isEqualTo(PlanFeasibilityCalculator.SOURCE_BEDTIME);
+        assertThat(verdict.orElseThrow().bindingDay()).isNull();
 
         Optional<CompanionMessageEntity> card = setupCheckService.runFor(owner);
 
         assertThat(card).isPresent();
         assertThat(card.orElseThrow().getContent().setupKey())
             .isEqualTo(SetupCheckService.CHECK_PLAN_FEASIBILITY);
+    }
+
+    @Test
+    void testRunFor_shouldBindOnBedtime_whenThereIsNoSportScheduleAtAll() {
+        // The bedtime half must still bind against the week's tightest morning even when the
+        // sport half has literally nothing to pair with (zero sport_schedule_slot rows) — the
+        // day-pairing correction must not have accidentally coupled the two halves together.
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
+        trainPopulator.createGymSlot(owner, 0, "07:00"); // required lights-out = 22:15
+
+        LocalDate today = LocalDate.now();
+        for (int i = 1; i <= 4; i++) {
+            sleepLogPopulator.createTrackerSleepLog(owner, today.minusDays(i), "23:30", "07:00",
+                new java.math.BigDecimal("7.5"), 3, 0, null, null, null, null, null, null, "screenshot",
+                null, null);
+        }
+
+        Optional<PlanFeasibilityCalculator.Verdict> verdict =
+            planFeasibilityCalculator.evaluate(owner, today);
+
+        assertThat(verdict).isPresent();
+        assertThat(verdict.orElseThrow().feasible()).isFalse();
+        assertThat(verdict.orElseThrow().constraintSource())
+            .isEqualTo(PlanFeasibilityCalculator.SOURCE_BEDTIME);
+        assertThat(verdict.orElseThrow().bindingDay()).isNull();
+        assertThat(verdict.orElseThrow().misfitMin()).isEqualTo(75);
     }
 
     @Test
@@ -153,11 +228,13 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
         // every day, forever). The verdict must come out exactly as if the bad slot were absent.
         UUID owner = userPopulator.createUser().getId();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);   // 8h target (the goal's own wake)
-        trainPopulator.createGymSlot(owner, 0, "07:00");            // Monday 07:00 = morning obligation
-        // required lights-out = 07:00 − 45' wake buffer − 8h target = 22:15 the evening before.
+        trainPopulator.createGymSlot(owner, 0, "07:00");            // Monday — keeps the global gate open
+        trainPopulator.createGymSlot(owner, 5, "07:00");            // Saturday — pairs with Friday's sport slot
+        // required lights-out for the Saturday-paired slot = 07:00 − 45' wake buffer − 8h target = 22:15.
         trainPopulator.createScheduleSlot(owner, 1, "99:99", 60, "training"); // malformed — must not bind or throw
-        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // ends 23:00, +30' = 23:30
-        // 23:30 − 22:15 = 75' > 45' ⇒ infeasible, bound by the good Friday slot alone.
+        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // Fri ends 23:00, +30' = 23:30
+        // Friday's following day is Saturday (a real gym morning): 23:30 − 22:15 = 75' > 45' ⇒
+        // infeasible, bound by the good Friday slot alone.
 
         Optional<PlanFeasibilityCalculator.Verdict> verdict =
             planFeasibilityCalculator.evaluate(owner, LocalDate.now());
@@ -166,6 +243,7 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
         assertThat(verdict.orElseThrow().constraintSource())
             .isEqualTo(PlanFeasibilityCalculator.SOURCE_SPORT);
         assertThat(verdict.orElseThrow().misfitMin()).isEqualTo(75);
+        assertThat(verdict.orElseThrow().bindingDay()).isEqualTo(4);
 
         Optional<CompanionMessageEntity> card = setupCheckService.runFor(owner);
         assertThat(card).isPresent();
@@ -176,12 +254,16 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
     @Test
     void testRunFor_shouldIgnoreAMalformedGymSlot_andStillFindTheMorningObligation() {
         // gym_schedule_slot.time has the same free-form varchar(5) contract — a malformed morning
-        // slot must be dropped, not crash the earliest-obligation scan.
+        // slot must be dropped, not crash the earliest-obligation scan, in BOTH the global scan
+        // and the per-day scan the day-pairing correction added.
         UUID owner = userPopulator.createUser().getId();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
         trainPopulator.createGymSlot(owner, 0, "99:99");            // malformed — must not bind or throw
-        trainPopulator.createGymSlot(owner, 2, "07:00");            // the real morning obligation
-        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // ends 23:00, +30' = 23:30
+        trainPopulator.createGymSlot(owner, 2, "07:00");            // Wednesday — the real morning obligation
+        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // Fri ends 23:00, +30' = 23:30
+        // Friday's following day (Saturday) has no gym slot of its own, so the WAKE goal's own
+        // wake time (06:00) is the obligation there: required lights-out = 06:00 − 45' − 8h =
+        // 21:15. 23:30 − 21:15 = 135' > 45' ⇒ still infeasible — the card must fire regardless.
 
         Optional<CompanionMessageEntity> card = setupCheckService.runFor(owner);
 

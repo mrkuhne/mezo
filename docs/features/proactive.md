@@ -2113,16 +2113,30 @@ kind, non-LLM (the second config-text kind after `intervention`), cron-only, own
 - **`SetupCheckServiceIT`** — `runFor` emits the missing-sleep-goal card when no `sleep_goal` row
   exists; stays silent when the goal row exists (and the plan is feasible); does not repeat the same
   check inside the re-emit window; emits a new card once the prior one is outside the window.
-- **`PlanFeasibilityIT`** — the plan-feasibility check's own cases: emits when the evening sport
-  schedule pushes past the required lights-out; emits when the observed median bedtime does (not the
-  schedule); stays silent when the schedule fits inside `misfitToleranceMin`; stays silent — the
-  first of the three deliberate silences (spec §7, never estimate) — when there is no morning
-  obligation and the goal is BED-anchored (nothing to be early FOR); stays silent — the third
-  silence — when there is a morning obligation but neither the sport schedule nor a sufficiently-
-  sampled bedtime history has anything to say; the exact-tolerance boundary (misfit ==
-  `misfitToleranceMin`) is still feasible, not infeasible (`<=`, not `<`); and the missing-goal card
-  wins over a feasibility computation when there is no goal at all (checks are ORDERED, first-wins —
-  the second silence, though it never reaches `PlanFeasibilityCalculator` at all, since
+- **`PlanFeasibilityIT`** (11 cases) — the plan-feasibility check's own cases, including the
+  **day-pairing correction** (S3 whole-branch review, owner decision, same bd id): the sport half
+  pairs each evening with the morning that ACTUALLY follows it (weekday `(D + 1) mod 7`, 0=Monday..
+  6=Sunday on both `gym_schedule_slot.dayOfWeek`/`sport_schedule_slot.dayOfWeek`), never the
+  earliest morning anywhere else in the week — emits when a day-paired evening sport slot pushes
+  past its own following morning's required lights-out (the largest-misfit slot binds, and its
+  weekday rides along as `Verdict.bindingDay`); emits when the observed median bedtime does instead
+  (the bedtime half stays deliberately day-agnostic — judged against the week's tightest morning,
+  since a habitual bedtime happens every night — `bindingDay` is null there); stays silent when the
+  schedule fits inside `misfitToleranceMin` (including via the WAKE anchor's own wake time filling
+  in as the next day's obligation when that day has no gym slot of its own); stays silent — the
+  first of the three deliberate silences (spec §7, never estimate) — when there is NO morning
+  obligation anywhere in the week and the goal is BED-anchored (nothing to be early FOR at all, the
+  day-agnostic gate); stays silent — the regression guard for the bug this correction fixes — when
+  a sport slot's OWN following day has no morning obligation and the goal is BED-anchored (the slot
+  is skipped rather than compared against some other day's obligation); stays silent — the third
+  silence — when there is a morning obligation but neither half has anything to say; covers the
+  Sunday→Monday `(6 + 1) mod 7` wrap explicitly; covers the bedtime half binding when there is no
+  sport schedule at all (the two halves are not accidentally coupled); the exact-tolerance boundary
+  (misfit == `misfitToleranceMin`) is still feasible, not infeasible (`<=`, not `<`); a malformed
+  `sport_schedule_slot`/`gym_schedule_slot` row (`"99:99"`) is dropped rather than thrown, in both
+  the day-agnostic and the per-day obligation scans; and the missing-goal card wins over a
+  feasibility computation when there is no goal at all (checks are ORDERED, first-wins — the second
+  silence, though it never reaches `PlanFeasibilityCalculator` at all, since
   `SetupCheckService.runFor` short-circuits on the empty-goal branch first).
 - **`SetupCheckPropertiesIT`** — the whole `mezo.proactive.setup-checks.*` tree (including the
   nested `planFeasibility` record) binds from yml.
@@ -2554,12 +2568,30 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   `PlanFeasibilityCalculator.evaluate` except the first:
   1. **No sleep goal at all** — owned entirely by the missing-sleep-goal check (§3 above), so the
      feasibility calculator never even runs (`SetupCheckService.runFor` short-circuits first).
-  2. **No morning gym slot AND a BED-anchored goal** — a BED anchor states when to go to bed, not
-     what to be up FOR, so there is no obligation to be early for; inventing one would be an
-     estimate.
-  3. **Neither the evening sport schedule nor a sufficiently-sampled bedtime history has anything to
-     say** — `minBedtimeSamples` (default 4) honest-gates the median; below it, that half of the
-     check stays quiet even though the schedule half still could speak (and vice versa).
+  2. **No morning gym slot ANYWHERE in the week AND a BED-anchored goal** — a BED anchor states
+     when to go to bed, not what to be up FOR, so there is no obligation to be early for; inventing
+     one would be an estimate. This gate stays day-agnostic (see the correction below) — it asks
+     whether the week has ANY morning worth being early for at all.
+  3. **Neither half has anything to say** — the sport half now also counts as having nothing to say
+     when EVERY sport slot's own following day lacks a morning obligation (the day-pairing
+     correction below); `minBedtimeSamples` (default 4) honest-gates the bedtime half's median;
+     below it, that half stays quiet even though the sport half still could speak (and vice versa).
+
+  **Day-pairing correction (S3 whole-branch review, owner decision, same bd id):** the check
+  originally measured the LATEST evening sport slot anywhere in the week against the EARLIEST
+  morning obligation anywhere in the week — spec §4 row 6 stated the rule day-agnostically and the
+  first implementation faithfully built it, but on a real Mon–Fri-gym / Fri-Sat-volleyball
+  schedule that measured a Friday-night session against Monday's gym slot and asserted a conflict
+  that did not exist. The owner decided: **the sport half pairs each evening with the morning that
+  actually follows it** — weekday `(D + 1) mod 7`, 0=Monday..6=Sunday on both
+  `gym_schedule_slot.dayOfWeek` and `sport_schedule_slot.dayOfWeek` (NOT `DayOfWeek.getValue()`); a
+  sport slot whose following day has no obligation at all (BED-anchored goal, no gym slot that day)
+  is skipped rather than compared against an unrelated day; the slot with the largest per-day
+  misfit binds, and its weekday rides along on `Verdict.bindingDay` so the card can name the actual
+  evening. **The bedtime half is deliberately NOT day-paired** — asymmetric with the sport half ON
+  PURPOSE: an observed median bedtime is a nightly habit, not tied to one weekday, so it is still
+  judged against the week's tightest morning exactly as before this correction (`bindingDay` stays
+  null for the bedtime source).
 
   **The midnight frame:** every time operand the calculator compares — the required lights-out, the
   evening sport end, the observed median bedtime — is minutes-from-midnight with anything before
@@ -2666,7 +2698,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 **Backend — setup checks (S3, `mezo-d58h.3` — §3/§4/§9; cron-only, no trigger side to cross-reference)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/SetupCheckProperties.java` — the standalone `mezo.proactive.setup-checks.*` record (§4 above): `cron`, `reEmitHours`, nested `planFeasibility`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/SetupCheckService.java` — `runFor(userId)`: day-gate, checks first-wins (`CHECK_MISSING_SLEEP_GOAL` reading `SleepGoalRepository` directly — the ghosting trap, §3 — then `CHECK_PLAN_FEASIBILITY`), `emit`'s weekly re-emit cooldown keyed on the envelope's `setupKey`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PlanFeasibilityCalculator.java` — `evaluate(userId, today)`: required lights-out from the earliest morning obligation, compared against the latest evening sport end and the observed median bedtime; the three silences (§9 decision jj); the midnight-shift arithmetic (`shiftedMinutes`/`toLocalTime`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PlanFeasibilityCalculator.java` — `evaluate(userId, today)`: the sport half is DAY-PAIRED (each `sport_schedule_slot` on weekday `D` is measured against `earliestMorningObligation((D + 1) mod 7)`, the morning that actually follows it, not the week's earliest — S3 whole-branch-review correction, owner decision, same bd id; see the class javadoc for the full rationale) and picks the largest-misfit slot, carrying its weekday as `Verdict.bindingDay`; the bedtime half stays deliberately day-agnostic, compared against the week's tightest morning (`bindingDay` null there) since a habitual bedtime happens every night; the three silences (§9 decision jj), now including "every sport slot's following day has no morning obligation"; the midnight-shift arithmetic (`shiftedMinutes`/`toLocalTime`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/SetupCheckJob.java` — the daily `@Scheduled(cron = "${mezo.proactive.setup-checks.cron}")` bean, per-user try/catch, gated on `COMPANION_SWITCH` ∧ `PROACTIVE_SWITCH` ∧ `SETUP_CHECK_JOB_SWITCH`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{CompanionMessageEntity,CompanionMessageEnvelope}.java` — `KIND_SETUP` + `setupKey` (both above, S3 additions to the `mezo-gst9` entity/envelope; the envelope's canonical constructor is now the 5-arg form, §4 above).
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `SETUP_CHECK_JOB_SWITCH` (`mezo.techcore.cron.setup-check-job.enabled`).

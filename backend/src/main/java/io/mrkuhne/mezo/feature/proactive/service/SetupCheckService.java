@@ -72,6 +72,13 @@ public class SetupCheckService {
             .flatMap(verdict -> emit(userId, today, CHECK_PLAN_FEASIBILITY, feasibilityText(verdict)));
     }
 
+    /** Adjectival Hungarian weekday names, 0=Monday..6=Sunday — the same index convention as
+     *  {@code GymScheduleSlotEntity.dayOfWeek}/{@code SportScheduleSlotEntity.dayOfWeek} (S3
+     *  day-pairing correction, bd mezo-d58h.3). Names the sport half's binding evening in the
+     *  card instead of asserting an unattributed figure. */
+    private static final List<String> WEEKDAY_ADJECTIVES = List.of(
+        "hétfői", "keddi", "szerdai", "csütörtöki", "pénteki", "szombati", "vasárnapi");
+
     /** Config-free prose from the verdict's own numbers: lights-out, what actually binds, and the
      *  misfit. The two sources say genuinely different things (a late-ending evening session vs.
      *  an observed bedtime later than the plan needs), so each gets its own sentence and its own
@@ -86,9 +93,16 @@ public class SetupCheckService {
                 + "tolod a reggeli ébresztőt később, vagy korábban fekszel le, hogy beleférj.")
                 .formatted(verdict.requiredLightsOut(), verdict.latestConstraint(), verdict.misfitMin());
         }
-        return ("A terved nem fér bele a hetedbe: %s-kor kellene lekapcsolnod a villanyt, de az "
-            + "esti sportod %s-kor ér véget, ami %d perccel későbbi ennél. Vagy tolod a reggeli "
-            + "ébresztőt később, vagy rövidíted/ritkítod az esti edzéseket, hogy beleférj.")
+        // constraintSource == SOURCE_SPORT always carries a bindingDay (the day-paired slot that
+        // bound the verdict) — the card names the actual evening rather than an unattributed sport
+        // schedule.
+        String dayAdjective = verdict.bindingDay() != null
+            ? WEEKDAY_ADJECTIVES.get(verdict.bindingDay()) + " "
+            : "";
+        return ("A terved nem fér bele a hetedbe: %s-kor kellene lekapcsolnod a villanyt, de a "
+            + dayAdjective + "esti sportod %s-kor ér véget, ami %d perccel későbbi ennél. Vagy "
+            + "tolod a reggeli ébresztőt később, vagy rövidíted/ritkítod az esti edzéseket, hogy "
+            + "beleférj.")
             .formatted(verdict.requiredLightsOut(), verdict.latestConstraint(), verdict.misfitMin());
     }
 

@@ -121,7 +121,7 @@ Setup checks (daily job, weekly re-emit until resolved):
 | # | Check | Logic |
 |---|---|---|
 | 4 | missing sleep goal | `sleep_goal` empty → "let's set it" card; prerequisite for the anchor-shift action. |
-| 6 | plan feasibility | required lights-out = earliest morning obligation − wake buffer − target sleep; evening sport end (slot time + duration + commute buffer) and observed median bedtime vs. that; if the plan misses by >45′, card with plan-level suggestions (later target OR shorter/fewer sessions). |
+| 6 | plan feasibility | required lights-out = earliest morning obligation − wake buffer − target sleep; evening sport end (slot time + duration + commute buffer) and observed median bedtime vs. that; if the plan misses by >45′, card with plan-level suggestions (later target OR shorter/fewer sessions). **Corrected in S3's whole-branch review (owner decision, bd `mezo-d58h.3`):** the evening sport slot is compared against the morning obligation of the FOLLOWING day (weekday `(D + 1) mod 7`), not the earliest morning anywhere in the week — a Friday-night session has nothing to do with Monday's early gym slot. The observed median bedtime stays day-agnostic (compared against the week's tightest morning), since it is a nightly habit rather than a one-off evening. |
 
 Severity order (highest wins the daily card): acute_bad_day > load_fuel_mismatch >
 rapid_weight_loss > joint_overuse > missed_workouts > sleep_debt > logging_gap >

@@ -572,32 +572,51 @@ Co-Authored-By: <acting model> <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `SetupCheckProperties.PlanFeasibility` (Task 2); `SetupCheckService.emit(...)` and `CHECK_PLAN_FEASIBILITY` (Task 3).
-- Produces: `PlanFeasibilityCalculator.Verdict` — `record Verdict(boolean feasible, LocalTime requiredLightsOut, LocalTime latestConstraint, String constraintSource, int misfitMin)`; `constraintSource` is `"sport"` or `"bedtime"`, naming which half of the check bound the verdict so the card text can say it.
+- Produces: `PlanFeasibilityCalculator.Verdict` — `record Verdict(boolean feasible, LocalTime requiredLightsOut, LocalTime latestConstraint, String constraintSource, int misfitMin, Integer bindingDay)`; `constraintSource` is `"sport"` or `"bedtime"`, naming which half of the check bound the verdict so the card text can say it. `bindingDay` (0=Monday..6=Sunday, added in S3's day-pairing correction, same bd id) is the weekday of the sport slot that binds when `constraintSource` is `"sport"`, and `null` for `"bedtime"` (a nightly habit is not tied to one day) — the card uses it to name the actual evening instead of asserting an unattributed figure.
 
-**The arithmetic, stated once so it is not re-derived per reader:**
+**The arithmetic, stated once so it is not re-derived per reader.** (Corrected in S3's
+whole-branch review, owner decision, same bd id — the original day-agnostic pairing below is
+what actually shipped for a few commits, but it is WRONG: see the day-pairing note that follows.)
 
-- `requiredLightsOut = earliestMorningObligation − wakeBufferMin − targetMinutes`.
-- `earliestMorningObligation` = the earliest `gym_schedule_slot.time` at or before `morningCutoffHour`, across the whole schedule. If there is no morning gym slot, fall back to the sleep goal's `anchorTime` **only when `anchor == "WAKE"`**; when the goal is BED-anchored and there is no morning slot, there is no obligation to be early for — **the check stays silent** (honesty: do not invent an obligation).
-- `eveningSportEnd` = for each `sport_schedule_slot`, `time + durationMin + commuteBufferMin`; take the LATEST across the schedule.
-- `observedMedianBedtime` = median of `MetricSeriesService.series(userId, MetricKey.BEDTIME_HOUR, from, to)` values over `bedtimeWindowDays` ending today. **These values are already midnight-shifted** (the extractor adds 24 to clock hours below 12, so 00:30 reads as 24.5) — take the median of the shifted numbers directly and convert back only for display. Fewer than `minBedtimeSamples` values ⇒ this half stays silent, but the sport half can still bind.
-- The plan is **infeasible** when `max(eveningSportEnd, observedMedianBedtime) − requiredLightsOut > misfitToleranceMin`. Record which of the two was the max in `constraintSource`.
+- `earliestMorningObligation(day)` = the earliest `gym_schedule_slot.time` at or before `morningCutoffHour` **on that specific weekday** (0=Monday..6=Sunday, matching `GymScheduleSlotEntity.dayOfWeek`/`SportScheduleSlotEntity.dayOfWeek` — NOT `DayOfWeek.getValue()`). If that weekday has no morning gym slot, fall back to the sleep goal's `anchorTime` **only when `anchor == "WAKE"`** (a wake anchor is a daily commitment, so it applies to every following morning); when the goal is BED-anchored and that weekday has no morning slot, there is no obligation to be early for on that morning.
+- **Sport half — day-paired.** For each `sport_schedule_slot` on weekday `D`: its end = `time + durationMin + commuteBufferMin`; the morning obligation that constrains it is `earliestMorningObligation((D + 1) mod 7)` — the morning that ACTUALLY follows it, not the earliest morning anywhere in the week. If `(D + 1) mod 7` has no obligation (BED-anchored goal, no gym slot that day), the slot is **skipped** — nothing follows it, so it cannot make the plan infeasible. `requiredLightsOut(D) = earliestMorningObligation(D+1) − wakeBufferMin − targetMinutes`; `misfit(D) = end(D) − requiredLightsOut(D)`. The sport half's verdict is the slot with the LARGEST `misfit(D)`; that slot's weekday is what binds (carried as `Verdict.bindingDay`).
+- **Bedtime half — deliberately NOT day-paired.** The observed median bedtime is a nightly habit, not tied to one weekday, so it is judged against the week's TIGHTEST morning: `requiredLightsOut = earliestMorningObligation` computed day-agnostically across the whole week (the same day-agnostic scan the original design used for everything) `− wakeBufferMin − targetMinutes`. `observedMedianBedtime` = median of `MetricSeriesService.series(userId, MetricKey.BEDTIME_HOUR, from, to)` values over `bedtimeWindowDays` ending today. **These values are already midnight-shifted** (the extractor adds 24 to clock hours below 12, so 00:30 reads as 24.5) — take the median of the shifted numbers directly and convert back only for display. Fewer than `minBedtimeSamples` values ⇒ this half stays silent, but the sport half can still bind.
+- **Combining.** The plan is **infeasible** when the larger of the two halves' misfits exceeds `misfitToleranceMin`. Record which half won in `constraintSource`; record its weekday in `Verdict.bindingDay` for the sport case (null for bedtime). The overall check still stays silent when there is no morning obligation ANYWHERE in the week (day-agnostic gate, unchanged), or when neither half has anything to say (now also true when every sport slot's following day lacks an obligation).
 - Every comparison happens on minutes-from-midnight with the same +24h shift applied to any time before noon, so a 00:30 bedtime is later than a 23:00 lights-out rather than 22.5 hours earlier. Do the shift in ONE helper and use it for every operand.
+
+**Day-pairing note:** the spec's original row 6 text (and this plan's original arithmetic block)
+stated the rule day-agnostically — "the LATEST across the schedule" vs. "the earliest morning
+obligation" — which the first S3 implementation faithfully built. On the owner's real schedule
+(Mon–Fri 07:00 gym; volleyball Friday and Saturday evenings) that measured a Friday 21:00
+volleyball slot against MONDAY's 07:00 gym slot, asserting a conflict that does not exist. Found
+and corrected in S3's whole-branch review; the arithmetic above is what actually shipped.
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `PlanFeasibilityIT`, following `SetupCheckServiceIT`'s fixture style:
+Create `PlanFeasibilityIT`, following `SetupCheckServiceIT`'s fixture style. **Day-pairing
+correction (S3 whole-branch review, same bd id):** the fixtures below are what actually shipped —
+they differ from an earlier draft of this plan because most gym/sport weekday combinations need a
+REAL gym slot on the sport slot's OWN following day (`(D + 1) mod 7`) for the arithmetic to
+exercise the intended morning, not the WAKE goal's own anchor-time fallback (which now applies to
+every day lacking a gym slot, not just the day the fallback used to be scoped to).
 
 ```java
     @Test
     void testRunFor_shouldEmitTheFeasibilityCard_whenEveningSportEndsTooLateForTheMorningSlot() {
         UUID owner = userPopulator.createUser().getId();
         sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);   // 8h target (the goal's own wake)
-        trainPopulator.createGymSlot(owner, 0, "07:00");            // Monday 07:00 = morning obligation
-        // required lights-out = 07:00 − 45' wake buffer − 8h target = 22:15 the evening before.
-        trainPopulator.createScheduleSlot(owner, 2, "20:00", 120, "training"); // ends 22:00, +30' = 22:30
-        // 22:30 − 22:15 = 15' — inside the 45' tolerance, so this slot alone must NOT fire.
-        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // ends 23:00, +30' = 23:30
-        // 23:30 − 22:15 = 75' > 45' ⇒ infeasible, and the Friday slot is what binds.
+        trainPopulator.createGymSlot(owner, 1, "07:00");            // Tuesday 07:00 — pairs with Monday's sport slot
+        trainPopulator.createGymSlot(owner, 4, "07:00");            // Friday 07:00 — pairs with Thursday's sport slot
+        // Each real gym morning gives required lights-out = 07:00 − 45' wake buffer − 8h target =
+        // 22:15 the evening before — day-paired, so only the evening immediately preceding a given
+        // morning is compared against it.
+        trainPopulator.createScheduleSlot(owner, 0, "20:00", 120, "training"); // Mon ends 22:00, +30' = 22:30
+        // Monday's following day is Tuesday (a real gym morning): 22:30 − 22:15 = 15' — inside the
+        // 45' tolerance, so this slot alone must NOT fire.
+        trainPopulator.createScheduleSlot(owner, 3, "21:00", 120, "training"); // Thu ends 23:00, +30' = 23:30
+        // Thursday's following day is Friday (a real gym morning): 23:30 − 22:15 = 75' > 45' ⇒
+        // infeasible, and THIS slot is what binds — a genuine day-paired misfit, not a comparison
+        // across unrelated days.
 
         Optional<CompanionMessageEntity> card = setupCheckService.runFor(owner);
 
@@ -607,19 +626,9 @@ Create `PlanFeasibilityIT`, following `SetupCheckServiceIT`'s fixture style:
     }
 
     @Test
-    void testRunFor_shouldStaySilent_whenTheScheduleFitsInsideTheTolerance() {
-        UUID owner = userPopulator.createUser().getId();
-        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
-        trainPopulator.createGymSlot(owner, 0, "07:00");
-        trainPopulator.createScheduleSlot(owner, 2, "19:00", 90, "training"); // ends 20:30, +30' = 21:00
-        // 21:00 is BEFORE the 22:15 required lights-out ⇒ feasible, no card.
-
-        assertThat(setupCheckService.runFor(owner)).isEmpty();
-    }
-
-    @Test
     void testRunFor_shouldStaySilent_whenThereIsNoMorningObligationAndTheGoalIsBedAnchored() {
-        // No morning gym slot and a BED-anchored goal ⇒ nothing to be early FOR. Inventing an
+        // No morning gym slot ANYWHERE in the week and a BED-anchored goal ⇒ nothing to be early
+        // FOR at all — the global gate (day-agnostic by design) never opens. Inventing an
         // obligation here would be exactly the estimate spec §7 forbids.
         UUID owner = userPopulator.createUser().getId();
         sleepGoalPopulator.goal(owner, 480, "BED", "23:00", 15);
@@ -641,7 +650,7 @@ Create `PlanFeasibilityIT`, following `SetupCheckServiceIT`'s fixture style:
     }
 ```
 
-Add one more test for the observed-bedtime half: a schedule that fits, but a logged median bedtime past the required lights-out by more than the tolerance, asserting the card fires with `constraintSource` `"bedtime"`. Use `SleepLogPopulator.createTrackerSleepLog(...)` (the plain `createSleepLog` leaves `bedtime` null, so it cannot feed `BEDTIME_HOUR`) with at least `minBedtimeSamples` nights, and remember `sleep_log.date` is the WAKE morning.
+Add, at minimum: the observed-bedtime half binding on its own (`SleepLogPopulator.createTrackerSleepLog(...)`, since the plain `createSleepLog` leaves `bedtime` null; `sleep_log.date` is the WAKE morning); a case where the sport slot's OWN following day has no morning obligation and the goal is BED-anchored (silently skipped — the exact bug this correction fixes); the Sunday→Monday `(D + 1) mod 7` wrap; and the bedtime half still binding against the tightest morning when no sport slot pairs with anything at all. See the shipped `PlanFeasibilityIT` for the full, final set (11 tests).
 
 - [ ] **Step 2: Run to verify they fail**
 
@@ -662,33 +671,49 @@ import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.proactive.config.SetupCheckProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
-import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * Does the user's sleep plan actually fit their own week? (S3, bd mezo-d58h.3, spec §4 setup
- * table row 6.) Required lights-out is derived from the earliest MORNING obligation; the evening
- * schedule and the observed bedtime are what push against it.
+ * table row 6; day-pairing corrected in S3's whole-branch review, same bd id.) Required
+ * lights-out is derived from the earliest MORNING obligation; the evening schedule and the
+ * observed bedtime are what push against it.
+ *
+ * <p><b>The sport half is day-paired.</b> A sport evening only constrains the morning that
+ * ACTUALLY follows it — a Friday-night volleyball match has nothing to do with Monday's early gym
+ * slot. So each {@code sport_schedule_slot} on weekday {@code D} is measured against the morning
+ * obligation on weekday {@code (D + 1) mod 7}; a slot whose following day has no obligation at
+ * all is skipped (nothing follows it, so it cannot make the plan infeasible), never compared
+ * against some other day's obligation.
+ *
+ * <p><b>The bedtime half is deliberately NOT day-paired</b> — this is asymmetric with the sport
+ * half ON PURPOSE, not an oversight. The observed median bedtime is a HABIT: it happens every
+ * night, not on one weekday, so it must be judged against the user's TIGHTEST morning across the
+ * whole week (the earliest morning obligation, day-agnostic), exactly as before this correction.
  *
  * <p>Every operand is minutes-from-midnight with hours below 12 shifted by +24h, so a 00:30
  * bedtime is LATER than a 22:15 lights-out rather than 21h45m earlier. {@code BEDTIME_HOUR}'s
  * extractor already applies that same shift to its values, so its numbers drop straight in.
  *
  * <p>Silent by design (spec §7 — never estimate) when there is no goal, when nothing makes the
- * morning early, or when neither half has enough to say.
+ * morning early, or when neither half has enough to say (now including: every sport slot's
+ * following day has no morning obligation at all).
  */
 @Component
 @RequiredArgsConstructor
@@ -702,6 +727,7 @@ public class PlanFeasibilityCalculator {
 
     private static final int DAY_MINUTES = 1440;
     private static final int NOON_HOUR = 12;
+    private static final int DAYS_PER_WEEK = 7;
 
     private final SleepGoalRepository sleepGoalRepository;
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
@@ -712,56 +738,118 @@ public class PlanFeasibilityCalculator {
     /** The verdict, or empty when the check must stay silent. */
     public Optional<Verdict> evaluate(UUID userId, LocalDate today) {
         SetupCheckProperties.PlanFeasibility cfg = properties.planFeasibility();
-        Optional<SleepGoalEntity> goal = sleepGoalRepository.findByCreatedByAndDeletedFalse(userId);
-        if (goal.isEmpty()) {
+        Optional<SleepGoalEntity> goalOpt = sleepGoalRepository.findByCreatedByAndDeletedFalse(userId);
+        if (goalOpt.isEmpty()) {
             return Optional.empty(); // the missing-goal check owns this story
         }
-        OptionalInt obligation = earliestMorningObligation(userId, goal.get(), cfg);
-        if (obligation.isEmpty()) {
+        SleepGoalEntity goal = goalOpt.get();
+        List<GymScheduleSlotEntity> gymSlots =
+            gymScheduleSlotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
+
+        // The day-agnostic "tightest morning of the week" — gates the whole check, and is what
+        // the (deliberately un-paired) bedtime half is judged against.
+        OptionalInt tightestMorning = earliestMorningObligation(gymSlots, goal, cfg);
+        if (tightestMorning.isEmpty()) {
             return Optional.empty(); // nothing to be early FOR — inventing one would be an estimate
         }
-        int requiredLightsOut =
-            obligation.getAsInt() - cfg.wakeBufferMin() - goal.get().getTargetMinutes();
+        int bedtimeRequiredLightsOut =
+            tightestMorning.getAsInt() - cfg.wakeBufferMin() - goal.getTargetMinutes();
 
-        OptionalInt sportEnd = latestSportEnd(userId, cfg);
+        Optional<Candidate> sportCandidate = worstSportCandidate(userId, gymSlots, goal, cfg);
         OptionalInt medianBedtime = medianBedtime(userId, today, cfg);
-        if (sportEnd.isEmpty() && medianBedtime.isEmpty()) {
+        Optional<Candidate> bedtimeCandidate = medianBedtime.stream()
+            .mapToObj(bedtime -> new Candidate(
+                bedtime - bedtimeRequiredLightsOut, bedtime, bedtimeRequiredLightsOut, null))
+            .findFirst();
+
+        if (sportCandidate.isEmpty() && bedtimeCandidate.isEmpty()) {
             return Optional.empty(); // neither half has anything to say
         }
-        int latest = Math.max(sportEnd.orElse(Integer.MIN_VALUE), medianBedtime.orElse(Integer.MIN_VALUE));
-        String source = sportEnd.isPresent() && sportEnd.getAsInt() == latest ? SOURCE_SPORT : SOURCE_BEDTIME;
+        boolean sportWins = sportCandidate.isPresent()
+            && (bedtimeCandidate.isEmpty() || sportCandidate.get().misfit() >= bedtimeCandidate.get().misfit());
+        Candidate winner = sportWins ? sportCandidate.get() : bedtimeCandidate.get();
+        String source = sportWins ? SOURCE_SPORT : SOURCE_BEDTIME;
 
-        int misfit = latest - requiredLightsOut;
-        return Optional.of(new Verdict(misfit <= cfg.misfitToleranceMin(),
-            toLocalTime(requiredLightsOut), toLocalTime(latest), source, misfit));
+        return Optional.of(new Verdict(winner.misfit() <= cfg.misfitToleranceMin(),
+            toLocalTime(winner.requiredLightsOut()), toLocalTime(winner.latestConstraint()),
+            source, winner.misfit(), winner.bindingDay()));
     }
 
-    /** The earliest morning gym slot; failing that, a WAKE-anchored goal's own wake time. */
-    private OptionalInt earliestMorningObligation(
-            UUID userId, SleepGoalEntity goal, SetupCheckProperties.PlanFeasibility cfg) {
-        OptionalInt earliestSlot = gymScheduleSlotRepository
+    /**
+     * The sport slot whose day-paired misfit is largest, or empty when no sport slot has a
+     * following-morning obligation at all (skipped, not compared against an unrelated day).
+     */
+    private Optional<Candidate> worstSportCandidate(UUID userId, List<GymScheduleSlotEntity> gymSlots,
+            SleepGoalEntity goal, SetupCheckProperties.PlanFeasibility cfg) {
+        return sportScheduleSlotRepository
             .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
+            .flatMap(slot -> parseClock(slot.getTime()).stream()
+                .flatMap(t -> {
+                    int end = shiftedMinutes(t) + slot.getDurationMin() + cfg.commuteBufferMin();
+                    int followingDay = Math.floorMod(slot.getDayOfWeek() + 1, DAYS_PER_WEEK);
+                    return morningObligationForDay(gymSlots, followingDay, goal, cfg).stream()
+                        .mapToObj(obligation -> {
+                            int requiredLightsOut =
+                                obligation - cfg.wakeBufferMin() - goal.getTargetMinutes();
+                            return new Candidate(
+                                end - requiredLightsOut, end, requiredLightsOut, slot.getDayOfWeek());
+                        });
+                }))
+            .max(Comparator.comparingInt(Candidate::misfit));
+    }
+
+    /** The earliest MORNING gym slot across the WHOLE week, day-agnostic; failing that, a
+     *  WAKE-anchored goal's own wake time. Used for the top-level silence gate and for the
+     *  (deliberately un-paired) bedtime half — see the class javadoc. */
+    private OptionalInt earliestMorningObligation(List<GymScheduleSlotEntity> gymSlots,
+            SleepGoalEntity goal, SetupCheckProperties.PlanFeasibility cfg) {
+        OptionalInt slot = earliestQualifyingSlot(gymSlots.stream(), cfg);
+        return slot.isPresent() ? slot : wakeFallback(goal);
+    }
+
+    /** The earliest MORNING gym slot on exactly weekday {@code day}; failing that, a
+     *  WAKE-anchored goal's own wake time (a wake anchor is a daily commitment, so it applies to
+     *  every following morning, not just days with a logged slot). */
+    private OptionalInt morningObligationForDay(List<GymScheduleSlotEntity> gymSlots, int day,
+            SleepGoalEntity goal, SetupCheckProperties.PlanFeasibility cfg) {
+        OptionalInt slot = earliestQualifyingSlot(
+            gymSlots.stream().filter(g -> g.getDayOfWeek() == day), cfg);
+        return slot.isPresent() ? slot : wakeFallback(goal);
+    }
+
+    /** The earliest MORNING slot (at or before {@code morningCutoffHour}) in {@code slots},
+     *  malformed rows silently dropped (see {@link #parseClock}). */
+    private static OptionalInt earliestQualifyingSlot(
+            Stream<GymScheduleSlotEntity> slots, SetupCheckProperties.PlanFeasibility cfg) {
+        return slots
             .map(GymScheduleSlotEntity::getTime)
-            .map(LocalTime::parse)
+            .flatMap(clock -> parseClock(clock).stream())
             .filter(t -> t.getHour() <= cfg.morningCutoffHour())
             .mapToInt(PlanFeasibilityCalculator::shiftedMinutes)
             .min();
-        if (earliestSlot.isPresent()) {
-            return earliestSlot;
-        }
-        // A BED-anchored goal states when to go to bed, not what to be up FOR — no obligation.
+    }
+
+    /** A BED-anchored goal states when to go to bed, not what to be up FOR — no obligation. */
+    private static OptionalInt wakeFallback(SleepGoalEntity goal) {
         return "WAKE".equals(goal.getAnchor())
-            ? OptionalInt.of(shiftedMinutes(LocalTime.parse(goal.getAnchorTime())))
+            ? parseClock(goal.getAnchorTime()).map(PlanFeasibilityCalculator::shiftedMinutes)
+                .map(OptionalInt::of).orElseGet(OptionalInt::empty)
             : OptionalInt.empty();
     }
 
-    /** The latest "actually home" moment across the sport schedule. */
-    private OptionalInt latestSportEnd(UUID userId, SetupCheckProperties.PlanFeasibility cfg) {
-        return sportScheduleSlotRepository
-            .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
-            .mapToInt(slot -> shiftedMinutes(LocalTime.parse(slot.getTime()))
-                + slot.getDurationMin() + cfg.commuteBufferMin())
-            .max();
+    /** {@link LocalTime#parse} on a free-form clock string, returning empty instead of throwing
+     *  on malformed input (e.g. {@code "99:99"}, which the varchar(5) column contract admits) —
+     *  the {@code MetricSeriesService.clockHour} null-on-malformed idiom, so one bad slot cannot
+     *  kill the whole check for a user with an otherwise-fine schedule. */
+    private static Optional<LocalTime> parseClock(String clock) {
+        if (clock == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(LocalTime.parse(clock));
+        } catch (DateTimeParseException e) {
+            return Optional.empty();
+        }
     }
 
     /** Median of the logged bedtimes, honest-gated on sample count. */
@@ -792,14 +880,35 @@ public class PlanFeasibilityCalculator {
         return LocalTime.ofSecondOfDay(Math.floorMod(shiftedMinutes, DAY_MINUTES) * 60L);
     }
 
-    /** {@code constraintSource} names which half bound the verdict, so the card can say it. */
+    /** One half's candidate constraint: {@code misfit} decides which half (and, for sport, which
+     *  day's slot) wins; {@code bindingDay} is null for the day-agnostic bedtime half. */
+    private record Candidate(int misfit, int latestConstraint, int requiredLightsOut, Integer bindingDay) {
+    }
+
+    /**
+     * @param feasible whether {@code latestConstraint} is within tolerance of {@code requiredLightsOut}
+     * @param requiredLightsOut the lights-out time the winning half's morning obligation demands
+     *                          (day-paired for {@code sport}, the week's tightest morning for
+     *                          {@code bedtime})
+     * @param latestConstraint the winning half's own latest time — the day-paired sport slot's end,
+     *                         or the observed median bedtime — whichever one {@code constraintSource}
+     *                         names
+     * @param constraintSource {@link #SOURCE_SPORT} or {@link #SOURCE_BEDTIME} — which half bound
+     *                         the verdict, so the card can say it
+     * @param misfitMin {@code latestConstraint − requiredLightsOut} in minutes; negative when
+     *                  comfortably feasible (a margin, not a shortfall), positive when the plan
+     *                  runs late — a card is emitted only once this exceeds the tolerance
+     * @param bindingDay the weekday (0=Monday..6=Sunday) of the sport slot that binds when
+     *                   {@code constraintSource} is {@code sport}; null for {@code bedtime} — the
+     *                   observed bedtime is a nightly habit, not tied to one day
+     */
     public record Verdict(boolean feasible, LocalTime requiredLightsOut, LocalTime latestConstraint,
-                          String constraintSource, int misfitMin) {
+                          String constraintSource, int misfitMin, Integer bindingDay) {
     }
 }
 ```
 
-Note `shiftedMinutes` treats a morning gym slot (07:00) as 1860 and an evening sport end (23:30) as 1410 — both in the same "evening-then-next-morning" frame, which is what makes `latest - requiredLightsOut` meaningful. Verify that frame holds for every operand you add.
+Note `shiftedMinutes` treats a morning gym slot (07:00) as 1860 and an evening sport end (23:30) as 1410 — both in the same "evening-then-next-morning" frame, which is what makes `end - requiredLightsOut` meaningful. Verify that frame holds for every operand you add. The day-pairing correction (S3 whole-branch review, same bd id) is folded in here directly — `worstSportCandidate` measures each sport slot against `earliestMorningObligation(gymSlots, (D + 1) mod 7, ...)`, not the day-agnostic scan, while `medianBedtime`'s comparison stays keyed off the day-agnostic `tightestMorning`.
 
 - [ ] **Step 4: Wire it into `SetupCheckService`**
 
@@ -811,7 +920,7 @@ Inject `PlanFeasibilityCalculator` and add, after the missing-goal branch and be
             .flatMap(verdict -> emit(userId, today, CHECK_PLAN_FEASIBILITY, feasibilityText(verdict)));
 ```
 
-plus `CHECK_PLAN_FEASIBILITY` and a private `feasibilityText(Verdict)` composing the Hungarian card text from the verdict's numbers — it must name the required lights-out, what actually binds (`constraintSource`), the misfit in minutes, and the spec's two suggestions (a later wake target OR shorter/fewer evening sessions). Keep it config-free prose built from the verdict; no LLM call.
+plus `CHECK_PLAN_FEASIBILITY` and a private `feasibilityText(Verdict)` composing the Hungarian card text from the verdict's numbers — it must name the required lights-out, what actually binds (`constraintSource`), the misfit in minutes, and the spec's two suggestions (a later wake target OR shorter/fewer evening sessions). Keep it config-free prose built from the verdict; no LLM call. **Day-pairing correction (S3 whole-branch review, same bd id):** `feasibilityText` also carries a `WEEKDAY_ADJECTIVES` list (0=Monday..6=Sunday, `"hétfői".."vasárnapi"`) and, for the sport source, inserts `WEEKDAY_ADJECTIVES.get(verdict.bindingDay())` before "esti sportod" — the card names the actual evening ("a pénteki esti sportod...") instead of asserting an unattributed figure.
 
 - [ ] **Step 5: Run to verify green**
 
