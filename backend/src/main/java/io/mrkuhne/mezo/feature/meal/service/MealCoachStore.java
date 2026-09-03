@@ -81,7 +81,10 @@ class MealCoachStore {
     /**
      * Writes each note into the dimension carrying its id; ids the envelope doesn't have are
      * dropped silently. Every other field of the dimension is copied verbatim (mirrors {@link
-     * #writeProse}'s "coach never moves a number" contract).
+     * #writeProse}'s "coach never moves a number" contract). A weight-0 ("Nincs adat", degraded)
+     * dimension NEVER gets a note, even if the LLM disobeys the prompt rule and sends one — the
+     * prompt asks nicely, this is the enforcement, since an untrusted LLM answer cannot be trusted
+     * to honor a prose-only instruction.
      */
     static List<MealBreakdownJson.Dimension> mergeDimensionNotes(
         List<MealBreakdownJson.Dimension> dimensions, Map<String, String> notes) {
@@ -89,8 +92,13 @@ class MealCoachStore {
             return dimensions;
         }
         return dimensions.stream()
-            .map(d -> notes != null && notes.containsKey(d.id()) ? withNote(d, notes.get(d.id())) : d)
+            .map(d -> notes != null && notes.containsKey(d.id()) && !isDegraded(d)
+                ? withNote(d, notes.get(d.id())) : d)
             .toList();
+    }
+
+    private static boolean isDegraded(MealBreakdownJson.Dimension d) {
+        return d.weight() == null || d.weight().signum() == 0;
     }
 
     private static MealBreakdownJson.Dimension withNote(MealBreakdownJson.Dimension d, String note) {

@@ -30,6 +30,12 @@ class MealCoachServiceTest {
             null, null, null, null, note);
     }
 
+    /** A degraded, weight-0 ("Nincs adat") dimension — must never receive a coach note. */
+    private static Dimension degradedDim(String id, String note) {
+        return new Dimension(id, "Label", BigDecimal.ZERO, BigDecimal.ZERO, "Nincs adat",
+            null, null, null, null, note);
+    }
+
     @Test
     void notes_shouldReturnEmptyMap_whenTheAnswerCarriesNoDimensionNotes() {
         assertThat(MealCoachService.notes(verdict(null))).isEmpty();
@@ -80,6 +86,19 @@ class MealCoachServiceTest {
 
         assertThat(merged).extracting(Dimension::note).containsOnlyNulls();
         assertThat(merged.stream().map(Dimension::note)).doesNotContain("eldobandó");
+    }
+
+    @Test
+    void mergeDimensionNotes_shouldSuppressTheNote_whenTheDimensionIsDegradedWeightZero() {
+        List<Dimension> dimensions = List.of(degradedDim("nova", null), dim("macro", null));
+
+        List<Dimension> merged = MealCoachStore.mergeDimensionNotes(dimensions,
+            Map.of("nova", "Sose kellene ide szöveg.", "macro", "A fehérje erős ehhez az adaghoz."));
+
+        assertThat(merged).extracting(Dimension::id, Dimension::note)
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple("nova", null),
+                org.assertj.core.groups.Tuple.tuple("macro", "A fehérje erős ehhez az adaghoz."));
     }
 
     @Test
