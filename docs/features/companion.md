@@ -3330,8 +3330,17 @@ genuinely means zero completions, and `logging_gap`'s meal/check-in reads, which
 | `momentum_at_risk` | recentAvg(`HABITS_DONE`) ≤ baselineAvg × (1 − `drop-ratio`) **and** ≥1 missed planned gym day in the recent window; guarded by baselineAvg ≥ `min-baseline` | `MetricKey.HABITS_DONE`, `gym_schedule_slot.day_of_week`, `WorkoutSessionRepository.findDoneInstanceDates` |
 | `recovery_needed` | inside the last `window-days` days (today included): a day with `SLEEP_DURATION_H` ≤ `sleep-floor-hours` **and** a day with `TRAINING_RPE` ≥ `rpe-threshold` **and** a day with avg `CHECKIN_STRESS` ≥ `stress-threshold` | those three series |
 | `logging_gap` | `≥ min-stale-domains` of {meals, check-ins, sleep} stale (thresholds above); a domain with no row at all counts as stale | `meal_.logged_at`, `check_in.saved_at`, `sleep_log.date` (direct repository reads, not `MetricSeriesService`) |
-| `missed_workouts` | `≥ min-consecutive-missed` consecutive PLANNED gym days (in the sequence of planned days) with no completed workout instance, inside the last `window-days` days | `gym_schedule_slot.day_of_week`, `WorkoutSessionRepository.findDoneInstanceDates` |
-| `all_healthy` | none of the other six fire now, **and** no non-`all_healthy` row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+| `missed_workouts` | `≥ min-consecutive-missed` consecutive PLANNED gym days (in the sequence of planned days) with no completed workout instance, inside the `window-days`-day window ending YESTERDAY (today is still in progress), itself clamped to never start before the oldest surviving `gym_schedule_slot.created_at` — a day before the current schedule existed cannot be a violation of it (review fix, bd `mezo-d58h.2`) | `gym_schedule_slot.day_of_week`, `gym_schedule_slot.created_at`, `WorkoutSessionRepository.findDoneInstanceDates` |
+| `all_healthy` | none of the other six fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+
+`all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes both `all_healthy`
+itself and `logging_gap`: `logging_gap` names a data-availability gap (a domain has gone stale),
+not a health/behavior problem, so a user who tracks sleep and check-ins tightly but logs meals
+loosely must not have `all_healthy` blocked for a full `quiet-days` window every time
+`logging_gap` fires (review fix, bd `mezo-d58h.2`). `missed_workouts` stays counted as a problem —
+it IS a behavior signal, unlike a data gap. The other suppression is unchanged: `FlagEvaluator`
+only runs `AllHealthyRule` when nothing else raised in that same evaluation, so `all_healthy` and
+`logging_gap` still never appear together on the same day.
 
 A flag is written only when `companion_flag_log` holds no row with that `flag_key` newer than
 `cooldown-hours.<flag>` — identical for both sources.

@@ -227,4 +227,23 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
 
         assertThat(keys(owner)).contains(FlagKey.ALL_HEALTHY);
     }
+
+    @Test
+    void all_healthy_ignores_a_logging_gap_raise_inside_the_quiet_window() {
+        // logging_gap names a data-availability gap (a domain went stale), not a health problem —
+        // it must not block all_healthy for a full quiet-days window the way a genuine problem
+        // flag does (review fix, bd mezo-d58h.2).
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", 4, 2, null);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("8.0"), 4);
+        freshMeal(owner, today); // else meal reads as stale (S2 logging_gap) and preempts all_healthy
+        flagLogPopulator.raiseAt(owner, FlagKey.LOGGING_GAP, FlagKey.SOURCE_SWEEP, null,
+            Instant.now().minus(48, ChronoUnit.HOURS));
+
+        assertThat(keys(owner)).contains(FlagKey.ALL_HEALTHY);
+        // A genuine problem flag in the same window still blocks all_healthy — see
+        // all_healthy_stays_quiet_while_a_problem_flag_is_inside_the_quiet_window above (sleep_debt),
+        // which pins that the general suppression is unchanged.
+    }
 }

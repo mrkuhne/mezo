@@ -115,7 +115,10 @@ Add the two nested records after the `AllHealthy` record:
     }
 
     public record MissedWorkouts(
-        /** How far back (days, ending TODAY) planned gym days are scanned. */
+        /** How far back (days, ending YESTERDAY — today is still in progress) planned gym days
+         *  are scanned, clamped to never start before the current schedule's oldest slot was
+         *  created. [Corrected post-ship by the whole-branch review, bd mezo-d58h.2 — the window
+         *  originally ended TODAY and had no schedule-creation clamp; see Task 4's design note.] */
         @Min(2) @Max(60) int windowDays,
         /** Consecutive PLANNED gym days with no completed instance needed to raise. Consecutive
          *  in the sequence of planned days, not in calendar days. */
@@ -821,6 +824,12 @@ Co-Authored-By: <acting model> <noreply@anthropic.com>"
 
 **Design note:** "≥2 consecutive planned gym days" means consecutive in the sequence of PLANNED days, not in calendar days — a Mon/Wed/Fri schedule raises on a missed Mon+Wed. `MomentumAtRiskRule.missedPlannedGymDays` is the closest prior art (same repositories, same 0=Monday conversion) but answers a different question (ANY missed day), so this rule needs its own run-scan. Do not change `MomentumAtRiskRule`.
 
+**Corrected post-ship by the whole-branch review (bd mezo-d58h.2) — two behaviors below shipped different from how this task originally described them:**
+1. The scan window ends YESTERDAY, not TODAY as this task originally wrote it — today is still in progress (a Friday-evening gym session is not "missing" at the 00:05 sweep), matching `MomentumAtRiskRule`'s own windows and stated reasoning.
+2. The window is clamped so it never starts before the oldest surviving `gym_schedule_slot.created_at` — a day before the current schedule existed cannot be a violation of that schedule, so creating or changing a Mon/Wed/Fri plan does not retroactively manufacture missed days from before it existed.
+
+The rule source in Step 4 below reflects the shipped, corrected behavior, not the original draft.
+
 - [ ] **Step 1: Add the payload variant**
 
 In `FlagPayloadEnvelope`, add a seventh component (`MissedWorkouts missedWorkouts`) after `LoggingGap loggingGap`, the nested record:
@@ -1015,7 +1024,9 @@ import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -1034,6 +1045,16 @@ import org.springframework.stereotype.Component;
  * {@code findDoneInstanceDates} filters {@code templateSessionId IS NOT NULL AND
  * status = 'completed'}, which is what keeps nullable-dated template rows and half-finished
  * sessions out.
+ *
+ * <p>The window ends YESTERDAY, not today: today is still in progress, and a Friday-evening
+ * gym session is not "missing" at the 00:05 sweep just because it has not happened yet
+ * (same reasoning as {@link MomentumAtRiskRule}'s windows — review fix, whole-branch review,
+ * bd mezo-d58h.2).
+ *
+ * <p>The window is also clamped to the earliest {@code gym_schedule_slot.created_at}: a day
+ * before the current schedule existed cannot be a violation of that schedule, so a user who
+ * just created (or just changed) their Mon/Wed/Fri plan does not immediately inherit missed
+ * days from before it existed (review fix, bd mezo-d58h.2).
  */
 @Component
 @RequiredArgsConstructor
@@ -1047,23 +1068,38 @@ public class MissedWorkoutsRule implements FlagRule {
     @Override
     public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
         FlagProperties.MissedWorkouts cfg = properties.missedWorkouts();
-        LocalDate from = today.minusDays(cfg.windowDays() - 1L);
+        LocalDate to = today.minusDays(1);
+        LocalDate from = to.minusDays(cfg.windowDays() - 1L);
 
-        Set<Integer> plannedDows = gymScheduleSlotRepository
-            .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
-            .map(GymScheduleSlotEntity::getDayOfWeek)
-            .collect(Collectors.toSet());
-        if (plannedDows.isEmpty()) {
+        List<GymScheduleSlotEntity> slots =
+            gymScheduleSlotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
+        if (slots.isEmpty()) {
             return Optional.empty();
         }
+        Set<Integer> plannedDows =
+            slots.stream().map(GymScheduleSlotEntity::getDayOfWeek).collect(Collectors.toSet());
+
+        // A day before the schedule existed cannot be a violation of it — clamp the scan to
+        // start no earlier than the oldest surviving slot's creation date.
+        LocalDate earliestSlotDate = slots.stream()
+            .map(s -> s.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDate())
+            .min(Comparator.naturalOrder())
+            .orElse(from);
+        if (from.isBefore(earliestSlotDate)) {
+            from = earliestSlotDate;
+        }
+        if (from.isAfter(to)) {
+            return Optional.empty();
+        }
+
         Set<LocalDate> trained =
-            Set.copyOf(workoutSessionRepository.findDoneInstanceDates(userId, from, today));
+            Set.copyOf(workoutSessionRepository.findDoneInstanceDates(userId, from, to));
 
         List<String> plannedDays = new ArrayList<>();
         List<String> missedDays = new ArrayList<>();
         int run = 0;
         int longestRun = 0;
-        for (LocalDate day = from; !day.isAfter(today); day = day.plusDays(1)) {
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
             // gym_schedule_slot.day_of_week is 0=Monday..6=Sunday (the entity's own comment)
             int dow = day.getDayOfWeek().getValue() - 1;
             if (!plannedDows.contains(dow)) {

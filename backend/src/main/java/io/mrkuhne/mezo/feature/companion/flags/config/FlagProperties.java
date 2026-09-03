@@ -104,7 +104,9 @@ public record FlagProperties(
     }
 
     public record MissedWorkouts(
-        /** How far back (days, ending TODAY) planned gym days are scanned. */
+        /** How far back (days, ending YESTERDAY — today is still in progress) planned gym days
+         *  are scanned, clamped to never start before the current schedule's oldest slot was
+         *  created (review fix, bd mezo-d58h.2). */
         @Min(2) @Max(60) int windowDays,
         /** Consecutive PLANNED gym days with no completed instance needed to raise. Consecutive
          *  in the sequence of planned days, not in calendar days. */

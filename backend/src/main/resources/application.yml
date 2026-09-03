@@ -706,7 +706,9 @@ mezo:
       missed-workouts:
         # Spec 2026-09-03 §4 row 3. Two planned gym days in a row with nothing completed — the
         # morning prompt stops cheering blindly. Consecutive PLANNED days, so a Mon/Wed/Fri
-        # schedule raises on Mon+Wed, not only on two adjacent calendar days.
+        # schedule raises on Mon+Wed, not only on two adjacent calendar days. Window ends
+        # YESTERDAY (today is still in progress) and is clamped to the schedule's creation date
+        # (review fix, bd mezo-d58h.2).
         window-days: 14
         min-consecutive-missed: 2
       cooldown-hours:
