@@ -288,15 +288,36 @@ const STATUS_TO_POINT: Record<PillarDayStatus, number | undefined> = {
   hit: 0.8, partial: 0.5, miss: 0.15, no_data: undefined,
 }
 
-function buildPillarProgress(goalId: string, pillarId: string, goalIndex: number, from: string): PillarProgress {
+// currentValue/referenceValue (Task 9, mezo-iizd.5 final review, finding 5): the real backend
+// always fills these once a pillar has data, but the mock previously omitted them entirely —
+// no mock/CelPage/PillarCard test ever rendered PillarCard's real-mode value row. Mirrors
+// LifeGoalProgressService.referenceValue's per-kind mapping (habit/average → threshold,
+// target/linked → the rule's target figure); baseline/no-rule pillars stay honestly absent.
+function valuesFor(p: LifeGoalPillarResponse): Pick<PillarProgress, 'currentValue' | 'referenceValue'> {
+  const r = p.rule ?? {}
+  switch (p.kind) {
+    case 'habit':
+    case 'average':
+      if (r.threshold === undefined) return {}
+      return { referenceValue: r.threshold, currentValue: r.comparator === 'lte' ? r.threshold * 0.85 : r.threshold * 1.08 }
+    case 'target':
+    case 'linked':
+      if (r.targetValue === undefined) return {}
+      return { referenceValue: r.targetValue, currentValue: r.targetValue * 0.92 }
+    default:
+      return {}
+  }
+}
+
+function buildPillarProgress(goalId: string, p: LifeGoalPillarResponse, goalIndex: number, from: string): PillarProgress {
   const arrow = arrowFor(goalIndex)
   const days: PillarDayEntry[] = Array.from({ length: WINDOW_DAYS }, (_, dayIndex) => {
     const day = addDays(from, dayIndex)
-    const status = statusFor(goalIndex, dayIndex, hash(`${goalId}:${pillarId}:${dayIndex}`))
+    const status = statusFor(goalIndex, dayIndex, hash(`${goalId}:${p.id}:${dayIndex}`))
     const value = STATUS_TO_POINT[status]
     return value === undefined ? { day, status } : { day, status, value }
   })
-  return { pillarId, arrow, ...(arrow === 'down' ? { missingHitDays: 2 } : {}), days }
+  return { pillarId: p.id, arrow, ...(arrow === 'down' ? { missingHitDays: 2 } : {}), ...valuesFor(p), days }
 }
 
 function buildGoalDays(goalId: string, goalIndex: number, from: string): GoalDayEntry[] {
@@ -332,7 +353,7 @@ export function mockProgress(goalId: string): LifeGoalProgressResponse {
   const to = localDateString()
   const from = addDays(to, -(WINDOW_DAYS - 1))
   const days = buildGoalDays(goalId, goalIndex, from)
-  const pillars = (goal?.pillars ?? []).map((p) => buildPillarProgress(goalId, p.id, goalIndex, from))
+  const pillars = (goal?.pillars ?? []).map((p) => buildPillarProgress(goalId, p, goalIndex, from))
   const weeklyPct = weeklyPctOf(days)
   return {
     goalId, from, to, arrow: arrowFor(goalIndex),

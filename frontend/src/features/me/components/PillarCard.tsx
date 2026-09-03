@@ -1,6 +1,9 @@
 import { ClayIcon } from '@/shared/ui/clay'
+import { useSignalCatalog } from '@/data/hooks'
 import type { LifeGoalPillarResponse, PillarProgress } from '@/data/lifegoal/lifegoalApi'
 import { ARROW_CLASS, ARROW_GLYPH, DOT_CLASS, KIND_LABEL } from '@/features/me/logic/lifegoalLabels'
+import { findCatalogEntry } from '@/features/me/logic/pillarFromCatalog'
+import { hu1 } from '@/shared/lib/huNum'
 
 // Rule-line copy per pillar kind (prototype celok.html #page-g1 `.kind` chip text,
 // e.g. "átlag · ≥ 160 g", "szokás · 4× / hét"). The scorer (slice 2) will replace the
@@ -20,11 +23,16 @@ function ruleLine(p: LifeGoalPillarResponse): string {
 
 // Task 9 (mezo-iizd.5): the value row once `progress` resolves — currentValue plus a
 // reference (the rule's threshold/expected/median), or the down-arrow habit exception.
-function valueLine(pillar: LifeGoalPillarResponse, progress: PillarProgress): string {
+// Both figures are backend scale-3 decimals (e.g. "7.143") — `hu1` (the app-wide Hungarian
+// number formatter, KeretBelt.tsx/KeretHero.tsx precedent) renders them to one decimal with a
+// comma separator and no trailing zero; `unit` (the catalog entry's unit, e.g. "g"/"óra"/"kg")
+// is appended when the pillar's source resolves to one.
+function valueLine(pillar: LifeGoalPillarResponse, progress: PillarProgress, unit?: string): string {
   if (progress.arrow === 'down' && pillar.kind === 'habit' && progress.missingHitDays !== undefined) {
     return `még ${progress.missingHitDays} hit-nap a fordulásig`
   }
-  const ref = progress.referenceValue !== undefined ? ` · cél ${progress.referenceValue}` : ''
+  const suffix = unit ? ` ${unit}` : ''
+  const ref = progress.referenceValue !== undefined ? ` · cél ${hu1(progress.referenceValue)}${suffix}` : ''
   return `${ruleLine(pillar)}${ref}`
 }
 
@@ -46,6 +54,9 @@ export function PillarCard({
   const honest = !progress || progress.arrow === 'insufficient'
   const arrowClass = honest ? 'none' : ARROW_CLASS[progress!.arrow]
   const arrowGlyph = honest ? '—' : ARROW_GLYPH[progress!.arrow]
+  const { entries } = useSignalCatalog()
+  const unit = findCatalogEntry(entries, pillar.source)?.unit
+  const currentValue = progress?.currentValue !== undefined ? `${hu1(progress.currentValue)}${unit ? ` ${unit}` : ''}` : '—'
 
   return (
     <div className={`lg-pillar rise ${pillar.active ? '' : 'off'}`} style={{ '--d': `${delayMs}ms` } as React.CSSProperties}>
@@ -57,7 +68,7 @@ export function PillarCard({
       </div>
       {honest
         ? <div className="val"><b style={{ color: '#A2958A' }}>—</b><small>még nincs adat · az első nyíl 5 adat-nap után</small></div>
-        : <div className="val"><b>{progress!.currentValue ?? '—'}</b><small>{valueLine(pillar, progress!)}</small></div>}
+        : <div className="val"><b>{currentValue}</b><small>{valueLine(pillar, progress!, unit)}</small></div>}
       {period === 'month' && progress
         ? (
           <div className="lg-hm" style={{ '--d': `${delayMs}ms` } as React.CSSProperties}>

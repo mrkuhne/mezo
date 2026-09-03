@@ -67,6 +67,20 @@ describe('live progress (Task 9, mezo-iizd.5)', () => {
     expect(screen.getByText('még 2 hit-nap a fordulásig')).toBeInTheDocument()
   })
 
+  /**
+   * mezo-iizd.5 final review, finding 5: PillarCard's real-mode value row used to render the raw
+   * backend scale-3 number ("7.143") with no unit and no test ever covered it (mockProgress
+   * omitted currentValue/referenceValue entirely). 'Fehérje' (lg-kockahas, average, threshold
+   * 160g) now gets a mock currentValue of 160×1.08=172.8 and keeps its referenceValue=160 — both
+   * must render through `hu1` (comma decimal, no trailing zero) with the catalog's "g" unit.
+   */
+  test('the value row is locale-formatted and carries the catalog unit (Fehérje, lg-kockahas)', async () => {
+    renderGoal(MOCK_LIFE_GOALS[0].id)
+    await screen.findByText('Fehérje')
+    expect(screen.getByText('172,8 g')).toBeInTheDocument()
+    expect(screen.getByText(/· cél 160 g/)).toBeInTheDocument()
+  })
+
   test('the Hónap chip swaps every pillar to the 28-cell heatmap', async () => {
     renderGoal(MOCK_LIFE_GOALS[0].id)
     await screen.findByText(MOCK_LIFE_GOALS[0].pillars[0].label)
