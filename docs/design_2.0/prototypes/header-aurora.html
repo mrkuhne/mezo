@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mezo · Header prototípus v2</title>
+<style>
+  :root{
+    --surface-page:#FBF6EF; --surface-card:#FFFFFF; --text-primary:#2B2118; --text-secondary:#5F5346;
+    --text-muted:#8A7A6A; --primary-base:#FF6B4A; --primary-deep:#A84A26; --dv-amber:#FFB347;
+    --mz-chipbg:rgba(255,255,255,0.7); --gradient-cta:linear-gradient(135deg,#FF7A55,#FF5B36);
+    /* aurora wash alapok (mz-wash rokonok) · VILÁGOS */
+    --wash-reggel:linear-gradient(155deg,#FFD9A8 0%,#FFE7CE 55%,#FFF3E6 100%);
+    --wash-nap:linear-gradient(155deg,#B9DCF0 0%,#D3E9F6 55%,#EAF4FA 100%);
+    --wash-este:linear-gradient(155deg,#D6CDF3 0%,#E4DDF7 55%,#F1EDFB 100%);
+    --glass:rgba(255,255,255,0.6); --glass-line:rgba(43,33,24,0.08);
+    --deco-line:rgba(43,33,24,0.18); --deco-fill:rgba(43,33,24,0.24);
+  }
+  .ph[data-theme="dark"]{
+    --surface-page:#191410; --surface-card:#241D17; --text-primary:#F2E9DF; --text-secondary:#C9BAAB;
+    --text-muted:#8A7A6A; --mz-chipbg:rgba(255,255,255,0.09);
+    --wash-reggel:linear-gradient(155deg,#5A4224 0%,#3E2E1C 55%,#241C14 100%);
+    --wash-nap:linear-gradient(155deg,#1F4560 0%,#1C3242 55%,#1A2027 100%);
+    --wash-este:linear-gradient(155deg,#3A2F63 0%,#2A2444 55%,#1E1A2A 100%);
+    --glass:rgba(24,19,15,0.6); --glass-line:rgba(255,255,255,0.09);
+    --deco-line:rgba(255,255,255,0.2); --deco-fill:rgba(255,255,255,0.3);
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#E9E2D6;min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;gap:14px;padding:22px 12px 40px}
+  h1{font-size:17px;margin:0;color:#2B2118}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .ctl .grp{display:flex;gap:4px;background:#fff;border-radius:999px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+  .ctl button{border:none;background:none;font:inherit;font-size:12px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;color:#5F5346}
+  .ctl button.on{background:#2B2118;color:#fff}
+  .hint{font-size:12px;color:#6b5f52;margin:0}
+
+  .ph{width:390px;height:760px;border-radius:44px;background:var(--surface-page);overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.35),0 0 0 10px #17120E;position:relative;color:var(--text-primary)}
+  .scr{height:100%;overflow-y:auto;scrollbar-width:none}
+  .scr::-webkit-scrollbar{display:none}
+
+  /* ════ EGYSOROS STICKY FEJLÉC ════ */
+  .hero{position:sticky;top:0;z-index:20;transition:box-shadow .25s ease}
+  /* aurora háttér: wash + fényfoltok + napszak-grafika, alul kifakulva a tartalomba */
+  .hero-bg{position:absolute;inset:0;height:92px;overflow:hidden;transition:opacity .25s ease;pointer-events:none;
+    -webkit-mask-image:linear-gradient(to bottom,black 0%,black 58%,transparent 100%);
+    mask-image:linear-gradient(to bottom,black 0%,black 58%,transparent 100%)}
+  .hero-bg .grad{position:absolute;inset:0}
+  .blob{position:absolute;border-radius:50%;filter:blur(30px);opacity:.75}
+  .ph[data-dp="reggel"] .b1{background:#FFC078} .ph[data-dp="reggel"] .b2{background:#FF8E6A}
+  .ph[data-dp="nap"] .b1{background:#7FBEE8} .ph[data-dp="nap"] .b2{background:#69CFBD}
+  .ph[data-dp="este"] .b1{background:#A392E4} .ph[data-dp="este"] .b2{background:#E28FBB}
+  .b1{width:190px;height:190px;left:-56px;top:-84px}
+  .b2{width:150px;height:150px;right:-34px;top:-66px;opacity:.55}
+  .deco{position:absolute;inset:0;pointer-events:none}
+  .deco svg{position:absolute;right:0;top:0;height:92px;opacity:.9}
+  .arc{fill:none;stroke:var(--deco-line);stroke-width:1.5}
+  .dfill{fill:var(--deco-fill)}
+
+  .ph[data-dp="reggel"]{--hero-w:var(--wash-reggel)}
+  .ph[data-dp="nap"]{--hero-w:var(--wash-nap)}
+  .ph[data-dp="este"]{--hero-w:var(--wash-este)}
+  .grad{background:var(--hero-w)}
+
+  /* padding-top a valódi appban: calc(6px + env(safe-area-inset-top)) */
+  .hero .bar{position:relative;display:flex;align-items:center;gap:9px;padding:14px 14px 8px;
+    transition:padding .28s cubic-bezier(.4,0,.2,1)}
+  .grow{flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+  .pspot{flex:none;display:block}
+  .ptitle{font-size:19px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rbtn{position:relative;width:40px;height:40px;border-radius:50%;border:.5px solid var(--glass-line);
+    background:var(--mz-chipbg);display:grid;place-items:center;cursor:pointer;flex:none;
+    box-shadow:0 6px 14px -8px rgba(43,33,24,.3);backdrop-filter:blur(6px)}
+  .badge{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;border-radius:999px;background:var(--gradient-cta);
+    color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center;padding:0 4px}
+  .avatar{width:40px;height:40px;border:0;background:none;padding:0;cursor:pointer;flex:none}
+  .qm{font-family:Georgia,serif;font-style:italic;font-size:19px;font-weight:500;line-height:1;color:var(--primary-deep)}
+  .ph[data-theme="dark"] .qm{color:#FFB59A}
+  svg.ic{display:block}
+
+  /* kompakt üvegmód görgetéskor */
+  .hero.cond .bar{padding:10px 14px 10px}
+  .hero.cond{box-shadow:0 8px 24px -14px rgba(0,0,0,.35)}
+  .hero.cond .hero-bg{opacity:0}
+  .hero.cond::before{content:"";position:absolute;inset:0;background:var(--glass);
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:.5px solid var(--glass-line)}
+
+  .cont{padding:10px 14px 120px;display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--surface-card);border-radius:22px;padding:16px;min-height:86px;
+    box-shadow:0 17px 31px -17px rgba(43,33,24,.28),0 2px 6px rgba(43,33,24,.04)}
+  .card h3{margin:0 0 6px;font-size:14px}
+  .card p{margin:0;font-size:12px;color:var(--text-muted)}
+  .lbl{position:absolute;left:14px;bottom:12px;background:rgba(0,0,0,.75);color:#fff;font-size:11px;
+    font-weight:700;padding:6px 12px;border-radius:999px;z-index:40;pointer-events:none}
+</style>
+</head>
+<body>
+<h1>Mezo · egysoros sticky fejléc — lágy aurora + kifakuló grafika</h1>
+<div class="ctl">
+  <div class="grp" id="gPg">
+    <button data-pg="Nap" class="on">Nap</button>
+    <button data-pg="Edzés">Edzés</button>
+    <button data-pg="Fuel">Fuel</button>
+    <button data-pg="Mezo">Mezo</button>
+    <button data-pg="Én">Én</button>
+  </div>
+  <div class="grp" id="gDp">
+    <button data-dp="reggel" class="on">Reggel</button>
+    <button data-dp="nap">Napközben</button>
+    <button data-dp="este">Este</button>
+  </div>
+  <div class="grp" id="gTh">
+    <button data-th="light" class="on">Világos</button>
+    <button data-th="dark">Sötét</button>
+  </div>
+</div>
+<p class="hint">Görgess a telefonban: kompakt üvegsáv, az ikonok végig elérhetők. Az aurora + grafika alul belefolyik a tartalomba.</p>
+
+<div class="ph" data-dp="reggel" data-theme="light" id="phone">
+  <span class="lbl" id="lbl">Nap · Reggel · Világos</span>
+  <div class="scr" id="scr">
+    <header class="hero" id="hero">
+      <div class="hero-bg">
+        <div class="grad"></div>
+        <span class="blob b1"></span><span class="blob b2"></span>
+        <div class="deco" id="deco"></div>
+      </div>
+      <div class="bar">
+        <div class="grow">
+          <svg class="pspot" width="30" height="30" aria-hidden="true"><use href="#s-reggel" id="pspotUse"/></svg>
+          <span class="ptitle" id="ptitle">Nap</span>
+        </div>
+        <button class="rbtn" aria-label="Kalauz"><span class="qm">?</span></button>
+        <button class="rbtn" aria-label="Napszak"><svg class="ic" width="22" height="22"><use href="#i-hajnal" id="dpUse"/></svg></button>
+        <button class="rbtn" aria-label="Mezo üzenetei"><svg class="ic" width="21" height="21"><use href="#i-level"/></svg><span class="badge">2</span></button>
+        <button class="rbtn" aria-label="Értesítések"><svg class="ic" width="21" height="21"><use href="#i-ertesites"/></svg><span class="badge">3</span></button>
+        <button class="avatar" aria-label="Profil"><svg class="ic" width="40" height="40"><use href="#s-orb"/></svg></button>
+      </div>
+    </header>
+    <div class="cont">
+      <div class="card"><h3>Ma: Váll &amp; hát</h3><p>5 gyakorlat · kb. 55 perc · RP mezociklus 3. hét</p></div>
+      <div class="card"><h3>Heti volumen</h3><p>12 / 18 munkaszett — jó úton vagy.</p></div>
+      <div class="card"><h3>Alvás</h3><p>7 ó 20 p · nyugodt éjszaka</p></div>
+      <div class="card"><h3>Fuel</h3><p>Fehérje: 92 / 160 g</p></div>
+      <div class="card"><h3>Szokások</h3><p>Reggeli rutin ✓ · Víz 1,2 / 2,5 l</p></div>
+      <div class="card"><h3>Mezo üzenete</h3><p>„A tegnapi mellnap szép munka volt — ma a hátra figyelünk."</p></div>
+      <div class="card"><h3>Growth</h3><p>Heti fókusz: türelem a progresszióban.</p></div>
+      <div class="card"><h3>Sport</h3><p>Szombaton futás — 5 km könnyű tempó.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- clay sprite-ok (1:1 a valódi appból: clay-icons.svg / clay-spots.svg) -->
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <radialGradient id="sg-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="sg-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="sg-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="sg-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6BC9"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#463583"/></linearGradient>
+    <linearGradient id="sg-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3A79A"/><stop offset="1" stop-color="#7C7065"/></linearGradient>
+    <!-- ÚJ (hiányzó spotokhoz) -->
+    <radialGradient id="sg-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="sg-person" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="0.5" stop-color="#E0704A"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+  </defs>
+
+  <!-- meglévő spotok (clay-spots.svg-ből) -->
+  <symbol id="s-reggel" viewBox="0 0 100 100">
+    <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(181,126,20,0.25)"/>
+    <g>
+      <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)"/>
+      <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(45 50 50)"/>
+      <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(90 50 50)"/>
+      <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(135 50 50)"/>
+      <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(180 50 50)"/>
+      <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(225 50 50)"/>
+      <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(270 50 50)"/>
+      <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(315 50 50)"/>
+    </g>
+    <circle cx="50" cy="50" r="22" fill="url(#sg-sun)"/>
+    <ellipse cx="42" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.65)" transform="rotate(-22 42 41)"/>
+  </symbol>
+  <symbol id="s-edzes" viewBox="0 0 100 100">
+    <ellipse cx="50" cy="88" rx="30" ry="5.5" fill="rgba(70,53,131,0.22)"/>
+    <rect x="12" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+    <rect x="74" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+    <rect x="24" y="47" width="52" height="10" rx="5" fill="url(#sg-bar)"/>
+    <ellipse cx="17.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+    <ellipse cx="79.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+  </symbol>
+
+  <symbol id="s-orb-figyel" viewBox="0 0 100 100">
+    <ellipse cx="46" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+    <circle cx="46" cy="48" r="32" fill="url(#sg-orb)"/>
+    <ellipse cx="34" cy="33" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 34 33)"/>
+    <path d="M84 36a20 20 0 0 1 0 24" fill="none" stroke="rgba(201,150,46,0.75)" stroke-width="5" stroke-linecap="round"/>
+    <path d="M92 28a32 32 0 0 1 0 40" fill="none" stroke="rgba(201,150,46,0.4)" stroke-width="5" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- ÚJ SPOT · Fuel (a készletből hiányzott; i-fuel tál-motívumából, clay stílusban) -->
+  <symbol id="s-fuel" viewBox="0 0 100 100">
+    <ellipse cx="50" cy="90" rx="28" ry="5.5" fill="rgba(78,107,66,0.25)"/>
+    <path d="M37 27c0-7 6-7 6-14M57 27c0-7 6-7 6-14" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round" opacity=".85"/>
+    <path d="M14 48a36 33 0 0 0 72 0Z" fill="url(#sg-bowl)"/>
+    <rect x="10" y="42" width="80" height="10" rx="5" fill="#A8C494"/>
+    <ellipse cx="32" cy="61" rx="9" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 61)"/>
+  </symbol>
+
+  <!-- ÚJ SPOT · Én (a készletből hiányzott; i-emberek alakjából, clay stílusban) -->
+  <symbol id="s-en" viewBox="0 0 100 100">
+    <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(196,75,38,0.25)"/>
+    <circle cx="50" cy="33" r="19" fill="url(#sg-person)"/>
+    <path d="M18 88a32 27 0 0 1 64 0Z" fill="url(#sg-person)"/>
+    <ellipse cx="42" cy="25" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 42 25)"/>
+  </symbol>
+  <symbol id="i-nap" viewBox="0 0 100 100">
+    <g>
+      <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+      <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+      <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+      <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+      <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+      <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+      <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+    </g>
+    <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+    <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+  </symbol>
+  <symbol id="i-alvas" viewBox="0 0 100 100">
+    <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+    <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+    <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+  </symbol>
+  <symbol id="i-ertesites" viewBox="0 0 100 100">
+    <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+    <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+    <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+    <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+  </symbol>
+  <symbol id="i-level" viewBox="0 0 100 100">
+    <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+    <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+  </symbol>
+  <symbol id="i-hajnal" viewBox="0 0 100 100">
+    <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+    <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+    <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+    <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+    <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+    <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+  </symbol>
+  <symbol id="s-orb" viewBox="0 0 100 100">
+    <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+    <circle cx="50" cy="48" r="34" fill="url(#sg-orb)"/>
+    <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+    <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<script>
+  const phone=document.getElementById('phone'), scr=document.getElementById('scr'),
+        hero=document.getElementById('hero'), ptitle=document.getElementById('ptitle'),
+        dpUse=document.getElementById('dpUse'), deco=document.getElementById('deco'),
+        pspotUse=document.getElementById('pspotUse'), lbl=document.getElementById('lbl');
+  const ICON={reggel:'#i-hajnal',nap:'#i-nap',este:'#i-alvas'};
+  // Oldalanként egy clay SPOT a cím mellett. A Fuel és az Én spotja új (a készletből hiányzott).
+  const SPOT={'Nap':'#s-reggel','Edzés':'#s-edzes','Fuel':'#s-fuel','Mezo':'#s-orb-figyel','Én':'#s-en'};
+  const DECO={
+    reggel:`<svg viewBox="0 0 240 92" width="240"><path class="arc" d="M10 84 A 180 180 0 0 1 230 84"/><path class="arc" d="M44 84 A 140 140 0 0 1 196 84" opacity=".55"/><circle cx="120" cy="38" r="11" class="dfill"/></svg>`,
+    nap:`<svg viewBox="0 0 240 92" width="240"><circle class="arc" cx="188" cy="18" r="36"/><circle class="arc" cx="188" cy="18" r="56" opacity=".5"/><ellipse cx="76" cy="56" rx="32" ry="10" class="dfill" opacity=".45"/><ellipse cx="112" cy="70" rx="24" ry="8" class="dfill" opacity=".3"/></svg>`,
+    este:`<svg viewBox="0 0 240 92" width="240"><path class="arc" d="M230 78 A 180 180 0 0 0 10 78" opacity=".5"/><circle class="dfill" cx="158" cy="22" r="2.4"/><circle class="dfill" cx="200" cy="40" r="1.7"/><circle class="dfill" cx="128" cy="44" r="1.4"/><circle class="dfill" cx="216" cy="16" r="1.4"/><circle class="dfill" cx="104" cy="20" r="1.8"/><path d="M188 60a14 14 0 1 1-6-25a11 11 0 0 0 6 25Z" class="dfill"/></svg>`};
+  let pg='Nap',dp='reggel',th='light';
+  function apply(){
+    phone.dataset.dp=dp; phone.dataset.theme=th;
+    ptitle.textContent=pg; dpUse.setAttribute('href',ICON[dp]);
+    pspotUse.setAttribute('href',SPOT[pg]);
+    deco.innerHTML=DECO[dp];
+    lbl.textContent=pg+' · '+({reggel:'Reggel',nap:'Napközben',este:'Este'})[dp]+' · '+(th==='light'?'Világos':'Sötét');
+  }
+  function wire(id,attr,setter){
+    const g=document.getElementById(id);
+    g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+      g.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+      setter(b.dataset[attr]);apply();});
+  }
+  wire('gPg','pg',x=>pg=x); wire('gDp','dp',x=>dp=x); wire('gTh','th',x=>th=x);
+  scr.addEventListener('scroll',()=>hero.classList.toggle('cond',scr.scrollTop>14));
+  apply();
+</script>
+</body>
+</html>
