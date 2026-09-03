@@ -181,7 +181,7 @@ export function KalauzWelcome({ steps, onClose }: KalauzWelcomeProps) {
       </div>
       <div className="wl-foot">
         {!last && (
-          <button type="button" className="wl-ghost wl-link" onClick={() => onClose('skip', step)}>Kihagyom</button>
+          <button type="button" className="wl-ghost" onClick={() => onClose('skip', step)}>Kihagyom</button>
         )}
         <button type="button" className="wl-ghost wl-back"
           disabled={step === 0} onClick={() => go(step - 1)}><span aria-hidden="true">‹</span> Vissza</button>

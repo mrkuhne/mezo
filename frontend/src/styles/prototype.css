@@ -4576,7 +4576,10 @@ button.mz-tile:active { transform: scale(0.96); }
    z 12 / státuszsáv z 15 rétegzése prototípus-lokális műtermék volt. */
 .welcome { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column;
   background: var(--canvas); padding: 44px 18px 18px; overflow-y: auto; }
-.welcome .wl-art { flex: 1; display: grid; place-items: center; min-height: 0; width: 100%; }
+/* WCAG 2.3.3: az interakció kiváltotta mozgás letiltható — a lépés-belépés (lásd a
+   `.welcome--reduced` sorokat lent) és a „?" pulzus is. */
+.welcome .wl-art { flex: 1; display: grid; place-items: center; min-height: 0; width: 100%;
+  animation: wlfade 0.28s ease both; }
 .wl-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase;
   color: var(--primary-deep); text-align: center; }
 .wl-title { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; text-align: center;
@@ -4629,8 +4632,6 @@ button.mz-tile:active { transform: scale(0.96); }
   color: var(--primary-deep); background: var(--mz-chipbg); border: 0.5px solid rgba(43, 33, 24, 0.12); }
 .wl-qpulse { animation: wlqpulse 1.8s ease-in-out infinite; }
 @keyframes wlqpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(201, 150, 46, 0.45); } 50% { box-shadow: 0 0 0 8px rgba(201, 150, 46, 0); } }
-/* WCAG 2.3.3: az interakció kiváltotta mozgás letiltható — a lépés-belépés és a „?" pulzus is. */
-.welcome .wl-art { animation: wlfade 0.28s ease both; }
 @keyframes wlfade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .welcome--reduced .wl-art { animation: none; }
 .welcome--reduced .wl-qpulse { animation: none; }
