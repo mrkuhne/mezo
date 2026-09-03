@@ -5,7 +5,9 @@ import io.mrkuhne.mezo.feature.quest.config.QuestProperties;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.quest.repository.DailyQuestRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
@@ -41,17 +43,28 @@ public class QuestJob {
         LocalDate today = LocalDate.now();
         AtomicInteger generatedCount = new AtomicInteger();
         userFanOut.forEachActiveUser("Quest generate", user -> {
-            if (!repository.existsByCreatedByAndQuestDateGreaterThanEqual(
-                    user.getId(), today.minusDays(properties.cronPresenceDays()))) {
-                return; // spec L1: no quests in the presence window ⇒ no generation, no flavor LLM call
-            }
-            if (repository.findByCreatedByAndQuestDateOrderBySlotAsc(user.getId(), today).isEmpty()) {
-                List<DailyQuestEntity> fresh = selector.generate(user.getId(), today);
-                generatedCount.addAndGet(fresh.size());
-                QuestFlavor flavor = questFlavor.getIfAvailable();
-                if (flavor != null) {
-                    flavor.rewrite(fresh); // companion voice; failures keep catalog copy
+            try {
+                // S6 fix round 1 (mezo-qw37.6, HUMAN RULING): presence is read off
+                // app_user.last_seen_at, NEVER off quest rows the cron itself just created —
+                // a quest-existence check latches (this job's own writes would keep "proving"
+                // presence forever, defeating spec L1's whole point of stopping the daily
+                // flavor-LLM spend for someone who never opens the app again). last_seen_at is
+                // stamped only by CurrentUser on an authenticated request, so the cron cannot
+                // feed itself.
+                Instant cutoff = Instant.now().minus(properties.cronPresenceDays(), ChronoUnit.DAYS);
+                if (user.getLastSeenAt() == null || user.getLastSeenAt().isBefore(cutoff)) {
+                    return; // spec L1: never seen, or not seen inside the window ⇒ no generation, no flavor LLM call
                 }
+                if (repository.findByCreatedByAndQuestDateOrderBySlotAsc(user.getId(), today).isEmpty()) {
+                    List<DailyQuestEntity> fresh = selector.generate(user.getId(), today);
+                    generatedCount.addAndGet(fresh.size());
+                    QuestFlavor flavor = questFlavor.getIfAvailable();
+                    if (flavor != null) {
+                        flavor.rewrite(fresh); // companion voice; failures keep catalog copy
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Quest generation failed for user {} on {}", user.getId(), today, e);
             }
         });
         log.info("Quest generate run for {}: {} quest(s) created", today, generatedCount.get());
@@ -62,10 +75,14 @@ public class QuestJob {
         LocalDate today = LocalDate.now();
         AtomicInteger finalizedCount = new AtomicInteger();
         userFanOut.forEachActiveUser("Quest finalize", user -> {
-            List<DailyQuestEntity> stale = repository.findByCreatedByAndStatusAndQuestDateBefore(
-                    user.getId(), DailyQuestEntity.STATUS_OFFERED, today);
-            questService.evaluateAndFinalize(stale, today);
-            finalizedCount.addAndGet(stale.size());
+            try {
+                List<DailyQuestEntity> stale = repository.findByCreatedByAndStatusAndQuestDateBefore(
+                        user.getId(), DailyQuestEntity.STATUS_OFFERED, today);
+                questService.evaluateAndFinalize(stale, today);
+                finalizedCount.addAndGet(stale.size());
+            } catch (Exception e) {
+                log.warn("Quest finalize failed for user {} on {}", user.getId(), today, e);
+            }
         });
         log.info("Quest finalize run for {}: {} quest(s) closed", today, finalizedCount.get());
     }

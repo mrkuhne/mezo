@@ -16,8 +16,9 @@ public record QuestProperties(
     @Min(0) int rerollPerDay,        // 1
     @NotBlank String generateCron,   // "0 35 6 * * *"
     @NotBlank String finalizeCron,   // "0 5 0 * * *"
-    @Min(1) int cronPresenceDays,    // 7 — the morning cron only backstops users who had quests in
-                                     // this window (lazy GET proves presence)
+    @Min(1) int cronPresenceDays,    // 7 — the morning cron only backstops users seen
+                                     // (app_user.last_seen_at) within this window (S6 fix round 1:
+                                     // never quest-row existence, which the cron's own writes latch)
     @NotNull @Valid Adaptive adaptive
 ) {
     /** Adaptive difficulty banding (E3, spec §4): per-slot completion-ratio → allowed tiers. */

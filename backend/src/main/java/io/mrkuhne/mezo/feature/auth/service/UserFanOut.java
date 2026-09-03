@@ -34,6 +34,10 @@ public class UserFanOut {
             try {
                 LlmActorContext.runAs(user.getId(), () -> body.accept(user));
             } catch (Throwable e) {
+                // Throwable, not Exception/RuntimeException: Consumer.accept() cannot DECLARE a
+                // checked exception, but a sneaky-throw (@SneakyThrows, Unsafe, a generic
+                // rethrow) can still make one escape the body — and it must not abort the fan-out
+                // either. See UserFanOutIT's sneaky-throw test.
                 log.warn("{} failed for user {} — the fan-out continues", jobName, user.getId(), e);
             }
         }

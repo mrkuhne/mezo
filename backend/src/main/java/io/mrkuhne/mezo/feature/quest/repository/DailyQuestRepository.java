@@ -21,9 +21,6 @@ public interface DailyQuestRepository extends JpaRepository<DailyQuestEntity, UU
     /** Cooldown window read (selector filters per-key cooldownDays in code). */
     List<DailyQuestEntity> findByCreatedByAndQuestDateGreaterThanEqual(UUID createdBy, LocalDate from);
 
-    /** Cron presence guard (S6, mezo-qw37.6): any quest row in the window ⇒ the user is active. */
-    boolean existsByCreatedByAndQuestDateGreaterThanEqual(UUID createdBy, LocalDate from);
-
     /** Nightly finalize backstop: offered rows whose day has passed. */
     List<DailyQuestEntity> findByCreatedByAndStatusAndQuestDateBefore(UUID createdBy, String status, LocalDate before);
 
