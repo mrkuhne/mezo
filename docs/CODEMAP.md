@@ -143,10 +143,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `SleepGoalEntity`→`sleep_goal`, `SleepLogEntity`→`sleep_log`, `WeightLogEntity`→`weight_log`
   - **repositories:** `BiometricProfileRepository`, `CheckInRepository`, `SleepGoalRepository`, `SleepLogRepository`,
     `WeightLogRepository`
-  - **services:** `BiometricProfileService`, `CheckInSavedEvent`, `CheckInService`, `SleepAnchorPort`,
-    `SleepAnchorResolver`, `SleepGoalService`, `SleepLogSavedEvent`, `SleepLogService`, `SleepShotDraftValidator`,
-    `SleepShotLlm`, `SleepShotService`, `SleepTargetPort`, `WeightLogSavedEvent`, `WeightLogService`,
-    `WeightTrendService`
+  - **services:** `BiometricProfileService`, `CheckInSavedEvent`, `CheckInService`, `GoalSleepAdequacyAdapter`,
+    `SleepAnchorPort`, `SleepAnchorResolver`, `SleepGoalService`, `SleepLogSavedEvent`, `SleepLogService`,
+    `SleepShotDraftValidator`, `SleepShotLlm`, `SleepShotService`, `SleepTargetPort`, `WeightLogSavedEvent`,
+    `WeightLogService`, `WeightTrendService`
   - **controllers→contract:** `BiometricProfileController`→`BiometricProfileApi`, `CheckInController`→`CheckInApi`,
     `SleepGoalController`→`SleepGoalApi`, `SleepLogController`→`SleepApi`, `SleepShotController`→`SleepShotApi`,
     `WeightLogController`→`WeightApi`
@@ -165,12 +165,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/biometrics/sleep · POST /api/biometrics/sleep
 - **Contract** `api/feature/weight/weight.yml` — 3 operations
   - **endpoints:** GET /api/biometrics/weight · POST /api/biometrics/weight · GET /api/biometrics/weight/trend
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/biometrics` — 15 IT + 3 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/biometrics` — 16 IT + 3 unit
   - **ITs:** `ActivityLevelMigrationIT`, `BiometricProfileContractIT`, `BiometricProfileServiceIT`,
-    `BiometricsContractIT`, `CheckInServiceIT`, `SleepGoalApiIT`, `SleepGoalSwitchOffApiIT`, `SleepLogEnrichedApiIT`,
-    `SleepLogHypnogramIT`, `SleepLogServiceIT`, `SleepShotApiIT`, `SleepShotDisabledApiIT`,
-    `SleepShotLlmUnavailableApiIT`, `WeightLogServiceIT`, `WeightTrendServiceIT`
-  - **populators:** `DatabasePopulator`, `GoalPopulator`, `UserPopulator`, `WeightLogPopulator`
+    `BiometricsContractIT`, `CheckInServiceIT`, `GoalSleepAdequacyAdapterIT`, `SleepGoalApiIT`,
+    `SleepGoalSwitchOffApiIT`, `SleepLogEnrichedApiIT`, `SleepLogHypnogramIT`, `SleepLogServiceIT`, `SleepShotApiIT`,
+    `SleepShotDisabledApiIT`, `SleepShotLlmUnavailableApiIT`, `WeightLogServiceIT`, `WeightTrendServiceIT`
+  - **populators:** `DatabasePopulator`, `GoalPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `UserPopulator`,
+    `WeightLogPopulator`
 
 ### character
 
@@ -476,26 +477,27 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `GoalEntity`→`goal`, `GoalPlanLinkEntity`→`goal_plan_link`,
     `GoalSuggestionEntity`→`goal_suggestion`
   - **repositories:** `GoalPlanLinkRepository`, `GoalRepository`, `GoalSuggestionRepository`
-  - **services:** `DayTypeShiftCalculator`, `DietPreferences`, `DietPreferencesPort`, `GoalDeletedEvent`,
-    `GoalEngineService`, `GoalEvaluationService`, `GoalFeasibilityService`, `GoalPlanLinkService`,
-    `GoalProjectionService`, `GoalSavedEvent`, `GoalService`, `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`,
-    `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`, `MesoLifecycleSuggestionListener`,
-    `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
+  - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DayTypeShiftCalculator`,
+    `DietPreferences`, `DietPreferencesPort`, `GoalDeletedEvent`, `GoalEngineService`, `GoalEvaluationService`,
+    `GoalFeasibilityService`, `GoalPlanLinkService`, `GoalProjectionService`, `GoalSavedEvent`, `GoalService`,
+    `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`,
+    `GuardEvaluationService`, `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
   - **controllers→contract:** `GoalController`→`GoalApi`
   - **mappers:** `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
   - **other:** `GoalEngineProperties`, `GoalPrescriptionJson`, `GoalReevaluateRunner`, `GoalSeedData`,
-    `GoalSegmentOverrideJson`, `GoalSuggestionPayloadJson`, `TdeeBootstrapJson`
+    `GoalSegmentOverrideJson`, `GoalSuggestionPayloadJson`, `IntakeAdherencePort`, `SleepAdequacyPort`,
+    `TdeeBootstrapJson`
 - **Contract** `api/feature/goal/goal.yml` — 15 operations
   - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview · GET /api/goals/{id} ·
     PUT /api/goals/{id} · DELETE /api/goals/{id} · POST /api/goals/{id}/activate · POST /api/goals/{id}/archive ·
     GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate · POST /api/goals/{id}/plans ·
     DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     POST /api/goals/{id}/suggestions/{suggestionId}/accept · POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 14 IT + 2 unit
-  - **ITs:** `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`,
-    `GoalFeasibilityServiceIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`,
-    `GoalServiceIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`,
-    `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 15 IT + 4 unit
+  - **ITs:** `AdaptiveReviewServiceIT`, `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`,
+    `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`,
+    `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
+    `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
     `GoalSuggestionPopulator`, `RunningPopulator`, `TrainPopulator`, `WeightLogPopulator`
 
@@ -733,8 +735,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
   - **repositories:** `MealItemRepository`, `MealRepository`, `WaterLogRepository`
-  - **services:** `FuelDayService`, `MealAiDraftService`, `MealAiDraftValidator`, `MealCoachLlm`, `MealCoachPrompt`,
-    `MealCoachService`, `MealCoachStore`, `MealDraftLlm`, `MealService`, `PantryNameIndex`, `WaterLogService`
+  - **services:** `FuelDayService`, `GoalIntakeAdherenceAdapter`, `MealAiDraftService`, `MealAiDraftValidator`,
+    `MealCoachLlm`, `MealCoachPrompt`, `MealCoachService`, `MealCoachStore`, `MealDraftLlm`, `MealService`,
+    `PantryNameIndex`, `WaterLogService`
   - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
@@ -743,11 +746,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 20 IT + 4 unit
-  - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`,
-    `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`,
-    `MealCoachServiceIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`,
-    `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealRepositoryIT`, `MealServiceIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 21 IT + 4 unit
+  - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`,
+    `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`,
+    `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`,
+    `MealOverridesIT`, `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealRepositoryIT`, `MealServiceIT`,
     `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
   - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryItemPopulator`, `RecipePopulator`,
     `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
