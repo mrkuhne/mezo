@@ -34,7 +34,28 @@ export function useTutorialProgressActions() {
   const reset = useMutation({
     mutationFn: async () => {
       if (mock) { qc.setQueryData<TutorialProgress>(KEY, {}); return }
-      await tutorialProgressApi.reset()
+      // A DELETE hibája SZÁNDÉKOSAN kiszáll (mezo-gb1s.2): elnyelve a lokális kiürül, majd a
+      // TutorialProvider szerver-merge effektje a szerver régi állapotát visszahozza — a reset
+      // látszólag sikerül, aztán némán visszafordul.
+      // A cancelQueries a repülő GET VÁLASZA ellen véd: egy a DELETE ELŐTT indult fetch
+      // különben a törlés UTÁN írná be a régi mapet a cache-be. A cache-ben MÁR BENNE LÉVŐ
+      // régi mapet viszont nem bántja — ezért az optimista ürítés alább (final review, F1):
+      // a DELETE 300 ms – 2 s-ig repül, és amíg repül, MINDEN olvasó (a TutorialProvider
+      // szerver-merge és welcome-effektje) a reset ELŐTTI szerver-állapotot látná, azaz egy
+      // közben történő /nap-ra váltás némán „látott"-nak hinné a welcome-ot.
+      await qc.cancelQueries({ queryKey: KEY })
+      const previous = qc.getQueryData<TutorialProgress>(KEY)
+      qc.setQueryData<TutorialProgress>(KEY, {})
+      try {
+        await tutorialProgressApi.reset()
+      } catch (e) {
+        // Bukott DELETE: a szerveren MEGMARADT az állapot, tehát a cache sem maradhat üresen
+        // (a hiba a hívóhoz száll, a Beállítások sor kiírja). Ha még sosem volt adat, a
+        // bejegyzést eldobjuk, hogy a következő olvasó újra fetch-eljen.
+        if (previous === undefined) qc.removeQueries({ queryKey: KEY })
+        else qc.setQueryData<TutorialProgress>(KEY, previous)
+        throw e
+      }
       qc.setQueryData<TutorialProgress>(KEY, {})
     },
   })

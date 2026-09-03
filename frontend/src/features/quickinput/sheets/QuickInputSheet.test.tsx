@@ -9,6 +9,7 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { initialCheckins } from '@/data/today/checkins'
 import type { CheckinSlot } from '@/data/types'
+import { localDateString } from '@/shared/lib/dates'
 
 // Always returns a value — never `undefined` — so the mocked hook's identity never depends on
 // a conditional fallback to the real `useCheckins()` (finding 5): a test that flips the mock
@@ -34,7 +35,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useFuelDay: () => {
       const [water, setWater] = useState(1850)
       waterStore.set = setWater
-      return { fuel: { consumed: { water } } }
+      return { fuel: { consumed: { water }, targets: { water: 3000 } } }
     },
     useWaterActions: () => ({ logWater: (ml: number) => waterStore.set?.(n => n + ml) }),
     useWeight: () => ({
@@ -46,10 +47,21 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       today: { workoutTime: '17:00', workoutType: 'Pull Day' },
       workoutDone: false,
     }),
+    // Newest-first, like both real data sources (backend: OrderByDateDesc; mock: log
+    // prepends) — s3 is today's LAST-logged session (array head), s2 an earlier same-day
+    // session, s1 a past day. The subline must read s3, never s2 or s1.
+    useQuickLogSport: () => ({
+      sessions: [
+        { id: 's3', sport: 'volleyball', isoDate: localDateString(), duration: 45 },
+        { id: 's2', sport: 'volleyball', isoDate: localDateString(), duration: 90 },
+        { id: 's1', sport: 'volleyball', isoDate: '2026-05-22', duration: 60 },
+      ],
+      logSportSession: vi.fn(),
+    }),
   }
 })
 
-/** A deterministic now-window for the MOST head — the real hook is wall-clock dependent. */
+/** A deterministic now-window for the Étkezés tile — the real hook is wall-clock dependent. */
 const NOW_WINDOW = {
   time: '13:30', kind: 'meal', label: 'Ebéd-ablak', slotKey: 'lunch',
   state: 'now', mealName: 'Csirkés rizses tál',
@@ -71,7 +83,13 @@ afterEach(() => {
 })
 
 function LocationProbe() {
-  return <div data-testid="loc">{useLocation().pathname}</div>
+  const loc = useLocation()
+  return (
+    <>
+      <div data-testid="loc">{loc.pathname}</div>
+      <div data-testid="search">{loc.search}</div>
+    </>
+  )
 }
 function renderSheet(onClose = () => {}) {
   return render(
@@ -85,10 +103,34 @@ function renderSheet(onClose = () => {}) {
   )
 }
 
-test('renders all eight quick-log tiles', () => {
+test('renders all nine quick-log tiles', () => {
   renderSheet()
-  for (const label of ['Étkezés', 'Edzés', 'Víz', 'Súly', 'Stack', 'Check-in', 'Alvás', 'Napló'])
+  for (const label of ['Étkezés', 'Víz', 'Stack', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
     expect(screen.getByText(label)).toBeInTheDocument()
+})
+
+// Order-sensitive, unlike the loop above: a 3x3 implementation that still shipped the tiles in
+// the OLD arrangement would pass every `getByText` assertion in this file, since those are
+// order-insensitive by construction. This pins the actual DOM order within the grid, and the
+// chat row's promotion above it — the two halves of the redesign this suite otherwise misses.
+// A wrong order (e.g. the old Edzés-first layout) genuinely fails this: the label sequence
+// would no longer match the spec's row-major reading order asserted below.
+test('the 3x3 grid is ordered per spec, with the chat row above it', () => {
+  renderSheet()
+  const grid = document.querySelector('.quicklog-grid')
+  expect(grid).not.toBeNull()
+  const labels = Array.from(grid!.querySelectorAll('.quicklog-label')).map(el => el.textContent)
+  expect(labels).toEqual([
+    'Étkezés', 'Víz', 'Stack',
+    'Edzés', 'Sport', 'Súly',
+    'Check-in', 'Napló', 'Alvás',
+  ])
+
+  const chatRow = document.querySelector('.quicklog-chat')
+  expect(chatRow).not.toBeNull()
+  // DOCUMENT_POSITION_FOLLOWING on chatRow's comparison to grid means chatRow precedes grid.
+  // eslint-disable-next-line no-bitwise
+  expect(chatRow!.compareDocumentPosition(grid!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 })
 test('a navigating tile closes the sheet and routes to its target', async () => {
   const onClose = vi.fn()
@@ -98,40 +140,58 @@ test('a navigating tile closes the sheet and routes to its target', async () => 
   expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/stack')
 })
 
-// ── Design 2.0 quick-log v2 (mezo-d20.1.6) ─────────────────────────────────
+// ── Quick Log tile redesign (mezo-7lst) ────────────────────────────────────
 
 test('tiles carry clay icons via sprite use refs — no emojis', () => {
   renderSheet()
   // the Sheet renders through a portal — query the document, not the container
-  for (const sym of ['i-suly', 'i-alvas', 'i-naplo', 'i-fuel', 'i-edzes', 'i-stack']) {
+  for (const sym of ['i-suly', 'i-alvas', 'i-naplo', 'i-fuel', 'i-edzes', 'i-stack', 'i-viz', 'i-sport']) {
     expect(document.querySelector(`use[href="#${sym}"]`)).not.toBeNull()
   }
 })
 
-test('the MOST head shows the current eating window and Logold navigates to Fuel', async () => {
+test('the Étkezés tile routes to the active window’s log page', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
-  expect(screen.getByText('Ebéd-ablak')).toBeInTheDocument()
-  expect(screen.getByText('MOST')).toBeInTheDocument()
-  expect(screen.getByText('Csirkés rizses tál')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: /Logold/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Étkezés/ }))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
-  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj')
+  expect(screen.getByTestId('search')).toHaveTextContent('?w=13%3A30-Eb%C3%A9d-ablak')
 })
 
-test('without a now-window the MOST head renders nothing (honest state)', () => {
+test('without a now-window the Étkezés tile routes to free-item logging', async () => {
   fuelPreviewMock.useFuelPreview.mockReturnValue({ visible: [], nextStack: undefined, plan: { slots: [] } })
-  renderSheet()
-  expect(screen.queryByText('MOST')).not.toBeInTheDocument()
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  expect(screen.getByText('ablakon kívül is')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Étkezés/ }))
+  await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj')
+  expect(screen.getByTestId('search').textContent).toBe('')
 })
 
-test('the Víz chips log in place — the counter updates and the sheet stays open', async () => {
+test('the Étkezés tile’s subline names the active window', () => {
+  renderSheet()
+  expect(screen.getByText('MOST · Ebéd-ablak')).toBeInTheDocument()
+})
+
+test('the Víz tile opens the amount picker in place and the log lands', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
   expect(screen.getByText('1850 ml')).toBeInTheDocument() // hu-HU leaves 4-digit numbers ungrouped
-  await userEvent.click(screen.getByRole('button', { name: '＋250' }))
-  expect(await screen.findByText('2100 ml')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Víz/ }))
+  expect(await screen.findByText('Mennyit ittál?')).toBeInTheDocument()
+  expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
+  await userEvent.click(screen.getByRole('button', { name: '250 ml' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
+
+  // `onClose` firing only proves the sheet closed, not that the log landed (the title's
+  // claim). The mock's `logWater` feeds the reactive `waterStore` counter, which re-renders
+  // the still-mounted WaterLogSheet's own "ma eddig" readout — assert the amount actually
+  // moved: 1850 + 250 ml -> 2,1 l (WaterLogSheet renders `currentMl / 1000` in litres).
+  expect(screen.getByText(/ma eddig 2,1 \/ 3 l/)).toBeInTheDocument()
 })
 
 test('the Súly tile opens the weight log sheet in place', async () => {
@@ -205,6 +265,23 @@ test('the Alvás tile swaps the menu for the sleep log sheet, without closing', 
   expect(await screen.findByText('Hogyan aludtunk?')).toBeInTheDocument()
   expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
+})
+
+test('the Sport tile swaps the menu for the sport log sheet, without closing', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  await userEvent.click(screen.getByRole('button', { name: /Sport/ }))
+  expect(await screen.findByText(/Sport log ·/)).toBeInTheDocument()
+  expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
+  expect(onClose).not.toHaveBeenCalled()
+})
+
+test('the Sport tile’s subline reads today’s last session only', () => {
+  renderSheet()
+  // s3 (today, last-logged, array head) wins over s2 (today, but earlier) and s1 (past day).
+  expect(screen.getByText('Röpi · 45p')).toBeInTheDocument()
+  expect(screen.queryByText('Röpi · 90p')).not.toBeInTheDocument()
+  expect(screen.queryByText('Röpi · 60p')).not.toBeInTheDocument()
 })
 
 test('the Check-in tile swaps the menu for the check-in sheet on the next fillable slot', async () => {

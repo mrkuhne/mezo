@@ -41,6 +41,9 @@ export type IconName =
   | 'play'
   | 'thumb-up'
   | 'thumb-down'
+  | 'bell'
+  | 'trend-up'
+  | 'eye'
 
 export function Icon({
   name,
@@ -350,6 +353,32 @@ export function Icon({
           <line x1="16" y1="14" x2="20" y2="14" />
           <line x1="20" y1="14" x2="20" y2="3" />
           <line x1="16" y1="3" x2="20" y2="3" />
+        </svg>
+      )
+    case 'bell':
+      // Notification / decision-pending marker
+      return (
+        <svg {...props}>
+          <line x1="12" y1="2.5" x2="12" y2="5" />
+          <path d="M6 17 V11 A6 6 0 0 1 18 11 V17 L19.5 19.5 H4.5 Z" />
+          <path d="M9.8 19.5 A2.2 2.2 0 0 0 14.2 19.5" />
+        </svg>
+      )
+    case 'trend-up':
+      // Rising evidence line — "amit eddig látunk"
+      return (
+        <svg {...props}>
+          <path d="M4 4 V20 H20" />
+          <polyline points="7,15.5 11,11 14,13.5 19,7" />
+          <polyline points="15,7 19,7 19,11" />
+        </svg>
+      )
+    case 'eye':
+      // Watching / monitoring
+      return (
+        <svg {...props}>
+          <path d="M2.5 12 C5 7.5 8.5 5.5 12 5.5 C15.5 5.5 19 7.5 21.5 12 C19 16.5 15.5 18.5 12 18.5 C8.5 18.5 5 16.5 2.5 12 Z" />
+          <circle cx="12" cy="12" r="3" />
         </svg>
       )
     default:

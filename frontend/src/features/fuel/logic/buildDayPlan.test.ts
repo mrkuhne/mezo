@@ -312,6 +312,63 @@ test('deriveDailyBudget keeps the FAT_KCAL_SHARE fallback for pre-slice-1 segmen
   expect(budget.f).toBe(Math.round((2150 * 0.275) / 9)) // 66 — unchanged legacy behavior
 })
 
+describe('deriveDailyBudget day-type shift (slice 3)', () => {
+  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
+  const segment = { kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516, trainingDayKcal: 2300, restDayKcal: 1950 }
+  const gym60 = [{ kind: 'gym' as const, time: '17:30', durationMin: 60, label: 'Gym' }]
+  const energyTraining = { bmr: 1720, neat: 1.2, weightKg: 78.6, blocks: gym60 }
+  const energyRest = { bmr: 1720, neat: 1.2, weightKg: 78.6, blocks: [] }
+
+  it('training day adds the segment delta on top of actual EAT (no double counting)', () => {
+    const b = deriveDailyBudget(segment, fallback, energyTraining, true)
+    // maintenance 2064 + eat 471.6 + balance −516 + delta +150 = 2169.6 → 2170
+    expect(b.kcal).toBe(2170)
+    expect(b.p).toBe(163) // protein untouched by day type
+  })
+
+  it('rest day subtracts the delta and the BMR floor still holds', () => {
+    const b = deriveDailyBudget(segment, fallback, energyRest, false)
+    // maintenance 2064 + 0 − 516 − 200 = 1348 → floored at BMR 1720
+    expect(b.kcal).toBe(1720)
+  })
+
+  it('undefined isTrainingDay keeps the uniform behavior byte-identical', () => {
+    const a = deriveDailyBudget(segment, fallback, energyTraining)
+    const legacy = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, fallback, energyTraining)
+    expect(a).toEqual(legacy)
+  })
+
+  it('static path (no profile) uses the day-type kcal as the base', () => {
+    const b = deriveDailyBudget(segment, fallback, undefined, true)
+    expect(b.kcal).toBe(2300)
+    const r = deriveDailyBudget(segment, fallback, undefined, false)
+    expect(r.kcal).toBe(1950)
+  })
+
+  it('null day-type fields mean uniform on both paths', () => {
+    const uniform = { kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }
+    expect(deriveDailyBudget(uniform, fallback, undefined, true).kcal).toBe(2150)
+  })
+
+  it('static path carb delta applies when the segment carries carbsG/fatG (mirrors the BE serve-time delta)', () => {
+    const seg = { kcal: 2150, proteinG: 163, carbsG: 226, fatG: 66, trainingDayKcal: 2300 }
+    const b = deriveDailyBudget(seg, fallback, undefined, true)
+    expect(b.c).toBe(264) // 226 + round((2300−2150)/4) = 226+38
+    expect(b.f).toBe(66) // fat is day-independent
+  })
+
+  // Finding 3 (mezo-sxlj final fix wave): a partial split (only ONE of the two day-type fields set)
+  // is a shape DayTypeShiftCalculator never itself emits, but this DEFENSIVE consumer must still
+  // degrade safely — the missing field resolves `dayKcal` to null, so the uniform `kcal` is served,
+  // not a `restDayKcal: undefined` glitch.
+  it('partial split (trainingDayKcal set, restDayKcal absent) on a rest day serves the uniform kcal', () => {
+    const partial = { kcal: 2150, proteinG: 163, carbsG: 226, fatG: 66, trainingDayKcal: 2300 } // no restDayKcal
+    const b = deriveDailyBudget(partial, fallback, undefined, false)
+    expect(b.kcal).toBe(2150) // uniform kcal, NOT a crash and NOT trainingDayKcal
+    expect(b.c).toBe(226) // no day-type delta — carbsG passes through unchanged
+  })
+})
+
 // ── recipe fit ───────────────────────────────────────────────────────────────
 const budget600: Macro4 = { kcal: 600, p: 45, c: 70, f: 15 }
 test('pickRecipe matches category + ±20% kcal and ranks by |Δkcal|', () => {

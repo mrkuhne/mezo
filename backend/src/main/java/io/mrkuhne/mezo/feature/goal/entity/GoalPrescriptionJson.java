@@ -35,6 +35,8 @@ public record GoalPrescriptionJson(
         List<Integer> restDays,
         BigDecimal projectedRateKgPerWk,
         Integer dailyEnergyBalanceKcal,
+        Integer trainingDayKcal, // day-type split: kcal target on a training day; null → uniform (mezo-sxlj)
+        Integer restDayKcal,     // day-type split: kcal target on a rest day; null → uniform (mezo-sxlj)
         String rationale
     ) {
     }

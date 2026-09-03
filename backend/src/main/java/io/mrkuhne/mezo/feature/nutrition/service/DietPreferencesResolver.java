@@ -26,8 +26,10 @@ public class DietPreferencesResolver implements DietPreferencesPort {
     public DietPreferences resolve(UUID userId) {
         return repository.findByCreatedByAndDeletedFalse(userId)
             .map(e -> new DietPreferences(e.getSplitPreset(), e.getProteinPctX10(), e.getCarbsPctX10(),
-                e.getFatPctX10(), e.getProteinTier(), e.getWaterMl(), e.getFiberG()))
+                e.getFatPctX10(), e.getProteinTier(), e.getWaterMl(), e.getFiberG(),
+                e.getDayTypeShiftKcal()))
             .orElseGet(() -> new DietPreferences(properties.defaultSplitPreset(), null, null, null,
-                properties.defaultProteinTier(), properties.defaultWaterMl(), properties.defaultFiberG()));
+                properties.defaultProteinTier(), properties.defaultWaterMl(), properties.defaultFiberG(),
+                properties.defaultDayTypeShiftKcal()));
     }
 }

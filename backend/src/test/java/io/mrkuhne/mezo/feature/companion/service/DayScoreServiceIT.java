@@ -97,7 +97,7 @@ class DayScoreServiceIT extends AbstractIntegrationTest {
      */
     private void seedNoProteinTargetGoal(UUID owner, LocalDate date, int kcalTarget) {
         GoalPrescriptionJson.Segment segment = new GoalPrescriptionJson.Segment(
-                1, 1, "w1", kcalTarget, 0, null, null, null, null, null, null, null);
+                1, 1, "w1", kcalTarget, 0, null, null, null, null, null, null, null, null, null);
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, null, List.of(segment), null, null);
         goalPopulator.createGoalFull(owner, date, date.plusWeeks(4), prescription, null, null, null);
     }

@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { QuickInputSheet } from '@/features/quickinput/sheets/QuickInputSheet'
 
 // Design 2.0 decision B (mezo-d20.1.1): the quick log lives on a floating coral FAB
-// bottom-right — the thumb zone on every tab. The v2 sheet redesign is mezo-d20.1.6;
-// until then the FAB opens the existing QuickInputSheet.
+// bottom-right — the thumb zone on every tab. The sheet's flat 3×3 tile grid is
+// mezo-7lst.
 export function QuickLogFab() {
   const [open, setOpen] = useState(false)
   return (

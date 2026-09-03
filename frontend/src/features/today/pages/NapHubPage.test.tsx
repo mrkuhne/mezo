@@ -45,7 +45,10 @@ const habitStore = vi.hoisted(() => {
 })
 const CATALOG = {
   chains: [
-    { id: 'c-m', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING', position: 0, isActive: true, defs: [] },
+    {
+      id: 'c-m', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING', position: 0, isActive: true,
+      defs: [{ habitKey: 'morning_video', framework: null, celebration: 'ez a rutin első lépése' }],
+    },
     { id: 'c-e', chainKey: 'EVENING', title: 'Esti rutin', daypart: 'EVENING', position: 1, isActive: true, defs: [] },
   ],
   habits: [],
@@ -208,6 +211,15 @@ test('the Rutin tile tick completes the next habit in place (the capability the 
   await userEvent.click(within(tile).getByRole('button', { name: /Kipipálás/ }))
   const after = await screen.findByRole('button', { name: 'Reggeli rutin' })
   await waitFor(() => expect(after.querySelector('.nap-habcount')!.textContent).not.toBe(before))
+})
+
+// ── logging as reward (mezo-3zue.5) — the hub tile's OWN tick must replay the same
+// celebration as /nap/rutin's tick, not a plain reward toast (finding 1, whole-branch review).
+test('the hub tile tick also replays the habit its own celebration sentence', async () => {
+  renderHub('/nap?dp=reggel')
+  const tile = await screen.findByRole('button', { name: 'Reggeli rutin' })
+  await userEvent.click(within(tile).getByRole('button', { name: /Kipipálás/ }))
+  expect(await screen.findByText('ez a rutin első lépése')).toBeInTheDocument()
 })
 
 test('the Kreed tile has NO icon and carries the fókusz more-line', async () => {
