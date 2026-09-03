@@ -1,7 +1,10 @@
 package io.mrkuhne.mezo.feature.biometrics.sleep.service;
 
 import io.mrkuhne.mezo.feature.biometrics.sleep.config.SleepGoalProperties;
+import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepGoalEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +16,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class SleepAnchorResolver implements SleepAnchorPort {
+public class SleepAnchorResolver implements SleepAnchorPort, SleepTargetPort {
 
     private final SleepGoalRepository repository;
     private final SleepGoalProperties properties;
@@ -23,6 +26,15 @@ public class SleepAnchorResolver implements SleepAnchorPort {
         return repository.findByCreatedByAndDeletedFalse(userId)
             .map(g -> derive(g.getAnchor(), LocalTime.parse(g.getAnchorTime()), g.getTargetMinutes()))
             .orElseGet(this::ghost);
+    }
+
+    @Override
+    public BigDecimal targetHours(UUID userId) {
+        int minutes = repository.findByCreatedByAndDeletedFalse(userId)
+            .map(SleepGoalEntity::getTargetMinutes)
+            .orElse(properties.defaultTargetMin());
+        return BigDecimal.valueOf(minutes)
+            .divide(BigDecimal.valueOf(60), 1, RoundingMode.HALF_UP);
     }
 
     /** WAKE fixed -> bed = wake − target; BED fixed -> wake = bed + target (LocalTime wraps mod 24h). */

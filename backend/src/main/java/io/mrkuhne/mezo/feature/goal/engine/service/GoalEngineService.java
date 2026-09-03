@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
+import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepTargetPort;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
@@ -69,6 +70,7 @@ public class GoalEngineService {
     private final GoalEvaluationService evaluationService;
     private final WeeklyScheduledActivityService weeklyActivity;
     private final DietPreferencesPort dietPreferences;
+    private final SleepTargetPort sleepTargetPort;
 
     /**
      * Evaluate a goal: assemble + persist its segmented prescription (and TDEE bootstrap).
@@ -104,10 +106,11 @@ public class GoalEngineService {
 
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         List<ProjectionSegment> segments = projectionService.project(goal, userId, bootstrap, trend);
+        BigDecimal sleepTargetH = sleepTargetPort.targetHours(userId);
 
         GoalPrescriptionJson rx = evaluationService.assemble(
             goal, currentWeightKg, profile.getBodyFatPct(), segments, guards,
-            dietPreferences.resolve(userId));
+            dietPreferences.resolve(userId), sleepTargetH);
         goal.setPrescription(rx);
         return rx;
     }
