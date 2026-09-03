@@ -16,8 +16,11 @@ nem az ismétlés — a mező addig dísz, amíg a tett pillanatában vissza nem
 Ez a szelet a `/nap/rutin` pipálás jutalom-pillanatát zárja be: a saját mondat visszajátszása
 + az erő-csík valódi mozgása.
 
-**Terméken kívül marad:** a pipálás továbbra is KIZÁRÓLAG a `/nap/rutin` oldalon történik.
-Ez a szelet nem visz pipáló kontrollt egyetlen rutin-felületre sem.
+**Terméken kívül marad:** a pipálás a **Nap**-felületeken él (`/nap` hub-csempe in-place
+pipálása ÉS `/nap/rutin`), és soha a rutin-ÉPÍTŐ felületeken (`/me/rutin` alatt) — ez a szelet
+nem visz pipáló kontrollt egyetlen `/me/rutin` felületre sem. Mindkét Nap-oldali pipálás
+ugyanazt az ünneplés-visszajátszást kapja (`celebrationFor` a katalógusból, `/nap` és
+`/nap/rutin` egyaránt).
 
 ## 2. Viselkedés
 

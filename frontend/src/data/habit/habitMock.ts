@@ -18,7 +18,9 @@ export const mockHabitDay: HabitItem[] = [
     anchorCopy: 'ébredés után', mode: 'MANUAL', status: 'done', doneAt: '2026-07-19T04:40:00Z', xp: 5, strengthPct: 64 },
   { key: 'morning_pushups', chain: 'MORNING', position: 3, title: '50 fekvőtámasz',
     why: 'Egy rövid, kemény pumpa reggel — beindítja a vért és bebizonyítja, hogy te irányítasz.',
-    anchorCopy: 'napfény után', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 48 },
+    // Clause-form (nem „napfény után"): ez a mock első FOGG-sora, a „Miután …" sablon
+    // ragozott múlt idejű mellékmondatot vár, nem határozói alakot (mezo-3zue.5).
+    anchorCopy: 'megvolt a reggeli napfény', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 48 },
   { key: 'morning_video', chain: 'MORNING', position: 4, title: 'Reggeli videó',
     why: 'A napi videó egy kattintással — nézd meg és indítsd vele fókuszáltan a reggelt.',
     anchorCopy: 'napfény után', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 39,
@@ -40,7 +42,8 @@ export const mockHabitDay: HabitItem[] = [
     anchorCopy: 'a lánc kezdete', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 86 },
   { key: 'kitchen_close', chain: 'EVENING', position: 2, title: 'Konyha zárva',
     why: 'Az utolsó falat és a lefekvés közti 90 perc a mély alvásod védőzónája.',
-    anchorCopy: 'vacsora után', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 68 },
+    // Clause-form, ugyanaz az ok mint morning_pushups-nál (lásd ott).
+    anchorCopy: 'elpakoltam a vacsora után', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 68 },
   { key: 'intention_reflect', chain: 'EVENING', position: 3, title: 'Szándékkal éltem?',
     why: 'A napzáró őszinte pillantás tanít a legtöbbet — tartás vagy sodródás volt?',
     anchorCopy: 'konyhazárás után', mode: 'DERIVED', status: 'pending', xp: 5, strengthPct: 55 },

@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { useHabitDay, useHabitActions, useHabitSummary } from '@/data/habit/habitHooks'
+import { completeMockDerivedHabit, useHabitDay, useHabitActions, useHabitSummary } from '@/data/habit/habitHooks'
 import { API_BASE } from '@/data/_client/api'
 import { gamificationProfileMock } from '@/data/gamification/gamificationMock'
 import { GAMIFICATION_KEY } from '@/data/gamification/gamificationStore'
@@ -46,9 +46,53 @@ describe('useHabitDay (mock mode)', () => {
     await act(() => actions.result.current.check('morning_pushups'))
     await waitFor(() => expect(pct('morning_pushups')).toBe(50))
 
-    // a visszavonás a seed-értékre állít vissza — a pipa/visszavonás kör nem inflálja az erőt
+    // a visszavonás bumpStrength ARITMETIKAI INVERZE — nem a statikus seed-értékre ugrás —,
+    // ami erre a pending-seedelt sorra kerekítés mellett is pontosan a seedet adja vissza
+    // (F5): round((50 * 25 - 100) / 24) = round(47.9166…) = 48.
     await act(() => actions.result.current.uncheck('morning_pushups'))
     await waitFor(() => expect(pct('morning_pushups')).toBe(48))
+  })
+
+  // F5 (whole-branch review): a régi `seedStrength` a statikus seed-értékre ugrott vissza —
+  // egy MÁR `status: 'done'`-nak seedelt sornál (a seed-érték a kész napot már tartalmazza)
+  // ez azt jelentette, hogy a visszavonás egyáltalán nem mozgatta a csíkot, és az azt követő
+  // pipa sosem térhetett vissza a seedhez. Az inverz-képlet mindkét irányban kör-stabil.
+  test('a visszavonás egy MÁR kész-seedelt sornál is a csík valódi inverzét adja (F5)', async () => {
+    const wrapper = makeHookWrapper()
+    const day = renderHook(() => useHabitDay(DATE), { wrapper })
+    const actions = renderHook(() => useHabitActions(DATE), { wrapper })
+    const pct = (k: string) => day.result.current.habits.find((h) => h.key === k)?.strengthPct
+
+    // morning_sunlight: seedelve status 'done', 64% — C = 24 (18 + 6, minden sorra egyenlő)
+    expect(day.result.current.habits.find((h) => h.key === 'morning_sunlight')?.status).toBe('done')
+    expect(pct('morning_sunlight')).toBe(64)
+
+    // uncheck: round((64 * 25 - 100) / 24) = round(62.5) = 63 — MOZOG, nem fagy a seedre
+    await act(() => actions.result.current.uncheck('morning_sunlight'))
+    await waitFor(() => expect(pct('morning_sunlight')).toBe(63))
+
+    // re-check: round((63 * 24 / 100 + 1) * 100 / 25) = round(64.48) = 64 — visszatér a seedhez
+    await act(() => actions.result.current.check('morning_sunlight'))
+    await waitFor(() => expect(pct('morning_sunlight')).toBe(64))
+  })
+
+  // F4 (whole-branch review): completeMockDerivedHabit a DERIVED sorok mock-tükre — a MANUAL
+  // patchMock ág már csúsztatja a csíkot (fentebb), ennek is ugyanazt kell tennie, különben egy
+  // DERIVED sor (pl. reggeli súlymérés utáni logolás) befagy mock módban, míg élesben csúszik.
+  test('completeMockDerivedHabit a MANUAL pipához hasonlóan emeli a sor erejét is (F4)', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const before = mockHabitDay.find((h) => h.key === 'morning_coffee')!
+    expect(before.status).toBe('pending')
+    expect(before.strengthPct).toBe(71)
+
+    const flipped = completeMockDerivedHabit(qc, DATE, 'morning_coffee')
+    expect(flipped).toBe(true)
+
+    const row = qc.getQueryData<{ habits: typeof mockHabitDay }>(['habitDay', DATE])!
+      .habits.find((h) => h.key === 'morning_coffee')!
+    expect(row.status).toBe('done')
+    // round((71 * 24 / 100 + 1) * 100 / 25) = round(72.16) = 72
+    expect(row.strengthPct).toBe(72)
   })
 
   test('erő nélküli sor erő nélkül marad (minSample alatt a szerver is null-t ad)', async () => {

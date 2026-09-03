@@ -1395,7 +1395,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    ő hangja, nem mennyiségi addendum, ezért nem a `.t-meta` helyét foglalja el */
 .t-celebrate {
   margin-top: 5px;
-  font-size: 12.5px; font-style: italic; font-weight: 400; line-height: 1.35;
+  font-size: 14px; font-style: italic; font-weight: 400; line-height: 1.35;
   color: rgba(255,255,255,0.82);
 }
 .t-meter {
