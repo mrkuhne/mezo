@@ -22,9 +22,9 @@ class ChatHistoryTest {
                 new Turn(Role.ASSISTANT, "korábbi válasz")));
 
         assertThat(rendered).startsWith(ChatHistory.HEADER);
-        assertThat(rendered).contains("Daniel: korábbi kérdés\n");
+        assertThat(rendered).contains("Felhasználó: korábbi kérdés\n");
         assertThat(rendered).contains("Mezo: korábbi válasz\n");
-        assertThat(rendered.indexOf("Daniel: korábbi kérdés"))
+        assertThat(rendered.indexOf("Felhasználó: korábbi kérdés"))
                 .isLessThan(rendered.indexOf("Mezo: korábbi válasz"));
     }
 }

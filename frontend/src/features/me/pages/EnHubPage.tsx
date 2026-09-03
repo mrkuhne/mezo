@@ -56,12 +56,12 @@ export function EnHubPage() {
   const [sheet, setSheet] = useState<'biometric' | 'energy' | null>(null)
 
   // ── identity hero ───────────────────────────────────────────────────
-  const { user } = useProfile()
+  const { user: profile } = useProfile()
   const { profile: gam } = useGamification()
   const { titles } = useTitles()
   const equipped = titles.find((t) => t.equipped)
   const xpPct = gam.xpForNext > 0 ? Math.min(100, Math.round((gam.xpInLevel / gam.xpForNext) * 100)) : 0
-  const initial = user.name.trim().charAt(0).toUpperCase()
+  const initial = (profile?.name ?? '').trim().charAt(0).toUpperCase()
 
   const { profile: biometric } = useBiometricProfile()
   // Split-TDEE door (me.md §9): BiometricCard was the only Én-side entry into the
@@ -209,7 +209,7 @@ export function EnHubPage() {
             role="img" aria-label={`Szint ${gam.level} — ${xpPct}% a következő szintig`}>
             <i aria-hidden="true">{initial}</i>
           </div>
-          <div className="enh-nm">{user.name}</div>
+          <div className="enh-nm">{profile?.name ?? ''}</div>
           <button type="button" className={equipped != null ? 'enh-titlech' : 'enh-titlech is-none'}
             aria-label={equipped != null ? `Viselt cím: ${equipped.name} — cím-bolt` : 'Cím-bolt'}
             onClick={() => navigate('/me/growth/kituntetesek')}>

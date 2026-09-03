@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { markNudgeShown, shownNudges } from '@/features/today/logic/nudgeSeen'
+import { setCurrentUserId } from '@/shared/lib/userScope'
 
 beforeEach(() => localStorage.clear())
 
@@ -30,12 +31,19 @@ describe('nudgeSeen', () => {
   })
 
   test('sérült JSON a kulcs alatt → üres tömb, sosem dob', () => {
-    localStorage.setItem('mezo.needsnudge.2026-08-17', '{not json')
+    localStorage.setItem('mezo.anon.needsnudge.2026-08-17', '{not json')
     expect(shownNudges('2026-08-17')).toEqual([])
   })
 
   test('nem tömb JSON a kulcs alatt → üres tömb', () => {
-    localStorage.setItem('mezo.needsnudge.2026-08-17', '{"foo":"bar"}')
+    localStorage.setItem('mezo.anon.needsnudge.2026-08-17', '{"foo":"bar"}')
+    expect(shownNudges('2026-08-17')).toEqual([])
+  })
+
+  test('a nudge-napló user-névterezett', () => {
+    setCurrentUserId('u1')
+    markNudgeShown('2026-08-17', 'hidratacio', '2026-08-17T15:00:00.000Z')
+    setCurrentUserId('u2')
     expect(shownNudges('2026-08-17')).toEqual([])
   })
 })

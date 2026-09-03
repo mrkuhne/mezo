@@ -7,6 +7,7 @@ import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
+import { localDateString } from '@/shared/lib/dates'
 
 // A fejléc a shellben él, tehát MINDKÉT módú CI-futásban ugyanazt kell mutatnia —
 // ezért a mock mód kényszerítve van (ugyanaz a minta, mint a hubHeaders.test.tsx-ben).
@@ -65,7 +66,7 @@ test('a fejléc a kalauzos /fuel oldalon öt kontrollt visel, elöl a Kalauzzal'
   expect(labels[1]).toBe('Napszak váltása')
   expect(labels[2]).toMatch(/^Mezo üzenetei/)
   expect(labels[3]).toMatch(/^Értesítések/)
-  expect(labels[4]).toBe('Profil')
+  expect(labels[4]).toMatch(/^A mai napod/)
 })
 
 // mezo-gb1s.5 óta minden Nap/Edzés T2 aloldal kalauzos — az ellenpélda az éjszakai mód,
@@ -77,7 +78,7 @@ test('kalauz nélküli oldalon nincs „?" gomb — a négy kontroll a régi sor
   expect(screen.queryByRole('button', { name: 'Kalauz ehhez az oldalhoz' })).toBeNull()
   const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
   expect(labels[0]).toBe('Napszak váltása')
-  expect(labels[3]).toBe('Profil')
+  expect(labels[3]).toMatch(/^A mai napod/)
 })
 
 test('a „?" megnyitja az oldal kalauzát, és nyitva az is-open osztályt viseli', async () => {
@@ -190,31 +191,32 @@ test('a két dropdown kölcsönösen kizárja egymást', async () => {
   expect(container.querySelector('.nap-ntfmenu')).not.toBeNull()
 })
 
-test('a profil orb a /me oldalra visz', async () => {
+// mezo-idz2: a jobb szélső orb a mai nap-oldalra visz; a profil az alsó „Én" fülön van.
+test('a nap-orb a mai nap-oldalára visz', async () => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   renderAt('/fuel')
-  await user.click(await screen.findByRole('button', { name: 'Profil' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me')
+  await user.click(await screen.findByRole('button', { name: /^A mai napod/ }))
+  expect(screen.getByTestId('loc')).toHaveTextContent(`/me/week/napok/${localDateString()}`)
 })
 
 // ── item 7: a bal oldal a SZEKCIÓT mutatja (mezo-8az6, korábban dátum-eyebrow) ──
 test('a fejléc a szekció nevével és spotjával kezdődik', async () => {
   const { container } = renderAt('/fuel')
-  await screen.findByRole('button', { name: 'Profil' })
+  await screen.findByRole('button', { name: /^A mai napod/ })
   expect(container.querySelector('.app-head-title')!.textContent).toBe('Fuel')
   expect(container.querySelector('.app-head-sec use')!.getAttribute('href')).toBe('#s-fuel')
 })
 
 test('mélyoldalon a szekció címkéje marad', async () => {
   const { container } = renderAt('/train/mesocycles')
-  await screen.findByRole('button', { name: 'Profil' })
+  await screen.findByRole('button', { name: /^A mai napod/ })
   expect(container.querySelector('.app-head-title')!.textContent).toBe('Edzés')
 })
 
 // A dátum a telefon státuszsávján látszik — a fejlécből tudatosan kikerült.
 test('nincs többé dátum-eyebrow a fejlécben', async () => {
   const { container } = renderAt('/fuel')
-  await screen.findByRole('button', { name: 'Profil' })
+  await screen.findByRole('button', { name: /^A mai napod/ })
   expect(container.querySelector('.nap-head .mz-eyebrow')).toBeNull()
 })
 
@@ -249,7 +251,7 @@ test('a napszak-menü elemei rádió-menüelemek, a jelenlegi napszak bejelölve
 
 test('a fejléc gyökere <header> elem, a nap-head app-head osztályokkal', async () => {
   const { container } = renderAt('/fuel')
-  await screen.findByRole('button', { name: 'Profil' })
+  await screen.findByRole('button', { name: /^A mai napod/ })
   const head = container.querySelector('.nap-head.app-head')
   expect(head?.tagName).toBe('HEADER')
 })
@@ -263,7 +265,7 @@ test('a nyitott popover bezárul, amikor a fejléc máshová navigál', async ()
   await user.click(screen.getByRole('menuitem', { name: 'Összes értesítés ›' }))
   await user.click(screen.getByRole('button', { name: 'Napszak váltása' }))
   expect(container.querySelector('.nap-dpmenu')).not.toBeNull()
-  await user.click(screen.getByRole('button', { name: 'Profil' }))
+  await user.click(screen.getByRole('button', { name: /^A mai napod/ }))
   expect(container.querySelector('.nap-dpmenu')).toBeNull()
 })
 
@@ -292,7 +294,9 @@ test('a Mezo-badge a /nap/uzenetek meglátogatása és elhagyása után eltűnik
     <Routes>
       <Route path="/nap" element={<div>nap-hub</div>} />
       <Route path="/nap/uzenetek" element={<NapMezoPage />} />
-      <Route path="/me" element={<div>me-hub</div>} />
+      {/* mezo-idz2: a nap-orb már a mai nap-oldalra (/me/week/napok/<ma>) visz, nem a
+          puszta /me-re — a stub-route ezt a mélyebb útvonalat kell fedje. */}
+      <Route path="/me/week/napok/:date" element={<div>me-hub</div>} />
     </Routes>
   ))
   const msgBtn = await screen.findByRole('button', { name: /^Mezo üzenetei/ })
@@ -304,7 +308,7 @@ test('a Mezo-badge a /nap/uzenetek meglátogatása és elhagyása után eltűnik
   expect(screen.getByRole('button', { name: /^Mezo üzenetei/ }).getAttribute('aria-label'))
     .toBe('Mezo üzenetei')
 
-  await user.click(screen.getByRole('button', { name: 'Profil' }))
+  await user.click(screen.getByRole('button', { name: /^A mai napod/ }))
   expect(await screen.findByText('me-hub')).toBeInTheDocument()
   const after = screen.getByRole('button', { name: /^Mezo üzenetei/ })
   expect(after.getAttribute('aria-label')).toBe('Mezo üzenetei')

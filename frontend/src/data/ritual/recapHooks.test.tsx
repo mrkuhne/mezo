@@ -171,8 +171,11 @@ describe('useDayRecap (mock mode)', () => {
     const weightEvent = result.current.events.find((e) => e.icon === 'i-suly')
     expect(weightEvent).toEqual({ icon: 'i-suly', label: 'Súlymérés', meta: '78.6 kg', done: true })
 
+    // mezo-idz2 appended a date-relative today row to sleepLog (DayOrb mock parity); mock-mode
+    // "last night" reads the seed's last entry regardless of the `date` argument, so it's now
+    // that today row (7.1 h) instead of the former last entry (7.5 h).
     const sleepEvent = result.current.events.find((e) => e.icon === 'i-alvas')
-    expect(sleepEvent).toEqual({ icon: 'i-alvas', label: 'Alvás', meta: '7.5 óra', done: true })
+    expect(sleepEvent).toEqual({ icon: 'i-alvas', label: 'Alvás', meta: '7.1 óra', done: true })
 
     expect(result.current.events.filter((e) => e.icon === 'i-naplo')).toHaveLength(3) // mockActivities.length
     const fociEvents = result.current.events.filter((e) => e.icon === 'i-cel')

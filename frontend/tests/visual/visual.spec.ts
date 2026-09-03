@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { buildAllSeenProgress } from '../../src/test/kalauz'
+import { seedThemeAndKalauz } from './kalauzSeed'
 
 /**
  * Self-baselined visual goldens: 37 goto screens + the /ritual Harvest + Release and the
@@ -111,20 +111,6 @@ const SCREENS: Array<[string, string, string?]> = [
 
 /** The clock every screen freezes to unless its `SCREENS` tuple overrides it. */
 const DEFAULT_FROZEN = '2026-05-21T13:42:00'
-
-/** Téma + „minden kalauz látva" seed EGY init-scriptben (mezo-gb1s.5). A kattintós
- *  tesztek eredetileg csak a témát seedelték — amíg a route-jukon nem volt kalauz, ez
- *  elég is volt. Az S3a óta a /train/review kalauzos (T2, auto-open), és reduced-motion
- *  alatt a 0 ms-os auto-open sheet a shot fölé nyílt / a kattintást blokkolta. A seed
- *  a registryből generálódik, tehát a további tartalom-szeletek (S3b–d, S4) már nem
- *  tudják ugyanígy eltörni ezeket a teszteket. */
-async function seedThemeAndKalauz(page: import('@playwright/test').Page, theme: string) {
-  const kalauzSeen = JSON.stringify(buildAllSeenProgress())
-  await page.addInitScript(([t, seen]) => {
-    localStorage.setItem('mezo-theme', t)
-    localStorage.setItem('mezo.kalauz.v1', seen)
-  }, [theme, kalauzSeen] as const)
-}
 
 for (const theme of ['light', 'dark'] as const) {
   test.describe(theme, () => {

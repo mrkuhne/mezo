@@ -4,7 +4,9 @@ import { useWeight } from '@/data/me/weightHooks'
 import { useSleep } from '@/data/hooks'
 import { usePeople } from '@/data/hooks'
 import { people } from '@/data/me/people'
-import { QueryWrapper } from '@/test/queryWrapper'
+import { QueryWrapper, makeHookWrapper } from '@/test/queryWrapper'
+import { setToken } from '@/data/_client/api'
+import { useProfile } from '@/data/me/meHooks'
 
 // Assert the Phase-1 mock dataset/behavior, so pin mock mode explicitly.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -48,4 +50,22 @@ test('usePeople.logMention prepends an enriched Mention', async () => {
     person_id: target.id, personName: target.name, tone: 'positive',
     excerpt: 'jó beszélgetés', source: 'chip',
   })
+})
+
+// useProfile (S6, mezo-qw37.6): mock mode keeps the static seed identity; real mode reads
+// GET /api/auth/me via useMe() and stays null until it arrives — never the seed (ghost-guard).
+afterEach(() => { setToken(null) })
+
+test('useProfile: mock mode returns the static seed identity', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const { result } = renderHook(() => useProfile(), { wrapper: makeHookWrapper() })
+  expect(result.current.user?.name).toBe('Daniel')
+})
+
+test('useProfile: real mode reads the name from /api/auth/me, never the seed', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  const { result } = renderHook(() => useProfile(), { wrapper: makeHookWrapper() })
+  expect(result.current.user).toBeNull()
+  await waitFor(() => expect(result.current.user?.name).toBe('Owner'))
 })

@@ -39,7 +39,9 @@ const BASE_CONTROLS = [
   'Napszak váltása',
   expect.stringMatching(/^Mezo üzenetei/),
   expect.stringMatching(/^Értesítések/),
-  'Profil',
+  // mezo-idz2: a jobb szélső gomb már nem a profilra visz (azt az alsó „Én" fül adja),
+  // hanem a mai nap-oldalra, és a napi töltöttséget is kimondja.
+  expect.stringMatching(/^A mai napod/),
 ]
 
 // mezo-gb1s.1/.3: a „?" a gombsor ELEJÉN áll, de csak ott, ahol van registry-találat.

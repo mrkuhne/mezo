@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.character.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.DayOfWeek;
@@ -29,7 +28,7 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class CharacterConferenceJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final CharacterConferenceService conferenceService;
     private final CharacterProperties properties;
 
@@ -37,7 +36,7 @@ public class CharacterConferenceJob {
     public void run() {
         LocalDate latestWeekStart = latestWeekStart(LocalDate.now());
         LocalDate earliestWeekStart = latestWeekStart.minusWeeks(properties.conference().catchUpWeeks() - 1L);
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Character conference", user -> {
             int held = 0;
             for (LocalDate weekStart = earliestWeekStart; !weekStart.isAfter(latestWeekStart);
                     weekStart = weekStart.plusWeeks(1)) {
@@ -51,7 +50,7 @@ public class CharacterConferenceJob {
             }
             log.info("Character conference run for user {}: {} konzílium(s) held in window {}..{}",
                     user.getId(), held, earliestWeekStart, latestWeekStart);
-        }
+        });
     }
 
     /**

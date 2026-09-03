@@ -23,7 +23,7 @@ public record DiagnosisRecipe(
     public static final DiagnosisRecipe FATIGUE = new DiagnosisRecipe(
             DiagnosisEntity.PHENOMENON_FATIGUE,
             "fáradtság",
-            "Daniel azt kérdezi: miért fáradt?",
+            "{{NÉV}} azt kérdezi: miért fáradt?",
             List.of(
                     MetricKey.SLEEP_DURATION_H,
                     MetricKey.SLEEP_QUALITY,
@@ -50,7 +50,7 @@ public record DiagnosisRecipe(
     public static final DiagnosisRecipe SLEEP = new DiagnosisRecipe(
             DiagnosisEntity.PHENOMENON_SLEEP,
             "rossz alvás",
-            "Daniel azt kérdezi: miért alszik rosszul?",
+            "{{NÉV}} azt kérdezi: miért alszik rosszul?",
             List.of(
                     MetricKey.SLEEP_QUALITY,
                     MetricKey.SLEEP_DURATION_H,

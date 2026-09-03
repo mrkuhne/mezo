@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromptAssembler;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
@@ -37,7 +38,8 @@ class ChatServiceGraphBlockSwitchOffIT extends AbstractIntegrationTest {
                 SendMessageRequest.builder().content("miért rossz az alvás?").build());
 
         assertThat(answer.getContent()).doesNotContain("[Összefüggések]");
-        assertThat(answer.getContent()).contains(ChatService.TONE_REMINDER);
+        assertThat(answer.getContent()).contains(
+                ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-graph-off@test.local"));
         assertThat(answer.getDegraded()).isFalse();
     }
 }

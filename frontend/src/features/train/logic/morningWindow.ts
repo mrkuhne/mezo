@@ -1,10 +1,11 @@
 import type { GymScheduleSlot } from '@/data/types'
+import { userScopedKey } from '@/shared/lib/userScope'
 
 /** Wake-anchored morning-training window span, in hours (circadian training timing — no relation to the habit engine's tick, which is date-presence). */
 export const WINDOW_HOURS = 6
 /** Coffee-first start offset (the buildDayPlan "reggeli = wake+45" constant-family). */
 export const WINDOW_START_OFFSET_MIN = 60
-export const SNOOZE_KEY = 'mezo-morning-training-snooze'
+export const snoozeKey = () => userScopedKey('morning-training-snooze')
 
 export interface MorningWindow {
   start: string
@@ -43,7 +44,7 @@ export function snoozeHash(wakeTime: string, offending: GymScheduleSlot[]): stri
 
 export function isSnoozed(hash: string): boolean {
   try {
-    return localStorage.getItem(SNOOZE_KEY) === hash
+    return localStorage.getItem(snoozeKey()) === hash
   } catch {
     return false
   }
@@ -51,7 +52,7 @@ export function isSnoozed(hash: string): boolean {
 
 export function snooze(hash: string): void {
   try {
-    localStorage.setItem(SNOOZE_KEY, hash)
+    localStorage.setItem(snoozeKey(), hash)
   } catch {
     /* storage unavailable — best effort */
   }

@@ -8,7 +8,9 @@
 // nem találgatásból — ugyanaz az idióma, mint `me/logic/sleepEducation.ts`.
 // ============================================================
 
-export type FogalomKey = 'napszak' | 'mezociklus' | 'makro' | 'minta' | 'szint' | 'eletjel' | 'rir'
+export type FogalomKey =
+  | 'napszak' | 'mezociklus' | 'makro' | 'minta' | 'szint' | 'eletjel' | 'rir'
+  | 'ablak' | 'stack' | 'pontszam'
 
 export interface Fogalom {
   /** A fogalom neve — Fraunces-dőlt fejként renderel a fogalom-dobozban. */
@@ -54,6 +56,27 @@ export const FOGALMAK: Record<FogalomKey, Fogalom> = {
   rir: {
     term: 'RIR',
     def: 'Reps in Reserve — hány ismétlés maradt még a tartalékban a sorozat végén: a 2 RIR annyit tesz, kettő még belefért volna.',
+  },
+  // Forrás: features/fuel/logic/fuelSwimlane.ts (buildWindowLane) + FuelSlotsPage
+  // slot-sablonjai (mezo-7102): az ablakok a NAP TÍPUSÁHOZ (pihenő / reggeli edzés /
+  // esti edzés) igazodnak, nem fix órarendhez — ezért mondja a definíció, hogy javaslat.
+  ablak: {
+    term: 'étkezési ablak',
+    def: 'A napod egy tervezett étkezési sávja: időpont és szerep — reggeli, ebéd, vacsora. Javaslat a napod típusához, nem menetrend.',
+  },
+  // Forrás: docs/features/fuel.md §2 „Stack" + FuelStackPage (occurrence-alapú zóna-idővonal,
+  // mezo-vx9v): a stack MAGA az élő protokoll, nincs külön bekapcsolás — az edzésnap
+  // átköltözteti a zónákat. A definíció ezt a két tényt tartja, semmi többet.
+  stack: {
+    term: 'stack',
+    def: 'A napi kiegészítőid protokollja: mi, mennyi, és a nap melyik zónájában. A zónák az edzésnapodhoz igazodnak.',
+  },
+  // Forrás: features/fuel/components/{ScoreHero,ScoreBreakdownBody}.tsx — a bontás
+  // 0–100 skálán, „pont" egységgel jelenik meg; a hangnem sose büntető (toneOf: 90 alatt
+  // `is-mid`, nincs piros). Az „ítélet helyett visszajelzés" tagmondat ezt tartja copy-szinten.
+  pontszam: {
+    term: 'étkezés-pontszám',
+    def: 'Minden logolt étkezés kap egy 0–100 közötti értéket: mennyire illett a napodhoz. Visszajelzés, nem osztályzat.',
   },
   // Forrás: docs/features/growth.md + ADR 0010 (XP = visszajelzés, nem fizetség).
   // A „semmit nem nyit meg" tagmondat az ADR betartatása copy-szinten.

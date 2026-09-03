@@ -193,10 +193,13 @@ tile rather than in-page accordions.
   kind ("Javaslatok" for EXPERT turns, "A Szkeptikus", "Döntés" for Mezo's ruling), and
   persona-railed bubbles (the Szkeptikus gets the graphite face, Mezo's ruling gets the
   full-width coral tint). A line inside an expert's turn text that starts with the backend's own
-  `"DANIEL VÁLASZA — "` marker (`KonziliumProposalRound.USER_FEEDBACK_PREFIX` — there is no
-  structured "this is the user's own words" field on `ConferenceTurn`) is detected and re-styled
-  with the gold rail. The closing honesty note ("A fenti a valódi beszélgetés...") makes explicit
-  that the transcript is the real exchange, never re-dramatized.
+  `"FELHASZNÁLÓ VÁLASZA — "` marker (`KonziliumProposalRound.USER_FEEDBACK_PREFIX` — user-neutral
+  since S6, `mezo-qw37.6`; there is no structured "this is the user's own words" field on
+  `ConferenceTurn`) is detected and re-styled with the gold rail — `TranscriptTurn`'s
+  `USER_ANSWER_PREFIXES` also still matches the legacy `"DANIEL VÁLASZA — "` literal, since
+  conference transcripts written before S6 carry it verbatim and are never rewritten in place.
+  The closing honesty note ("A fenti a valódi beszélgetés...") makes explicit that the transcript
+  is the real exchange, never re-dramatized.
 
 - **Gépterem** (`/me/karakter/gepterem`, `GeptermPage`) — the geek-transparency sub-hub, reached
   from a thin full-width row below the hub's 4-tile mosaic (v4.2, NOT a 5th grid tile — its own
@@ -1007,7 +1010,9 @@ investigating.
 - `components/MaturityRing.tsx` — the 7-arc SVG ring
 - `components/ClaimTile.tsx` — one claim's confidence chip + feedback pills
 - `components/TranscriptTurn.tsx` — one konzílium transcript turn (persona rail, szkeptikus/
-  ruling faces, the "DANIEL VÁLASZA — " gold-rail line detection)
+  ruling faces, the "FELHASZNÁLÓ VÁLASZA — " gold-rail line detection — since S6, `mezo-qw37.6`;
+  `USER_ANSWER_PREFIXES` also matches the legacy "DANIEL VÁLASZA — " literal in transcripts
+  stored before S6, which are never rewritten)
 - `components/RunFlowStrip.tsx` (S9) — the jel → hívás → megfigyelés connected-step strip
 - `components/SignalChainCard.tsx` (S9) — the KÓD chip+summary → LLM persona+text two-tone chain
 - `runLabels.ts` (S9) — pure copy helpers deriving every run sentence from real

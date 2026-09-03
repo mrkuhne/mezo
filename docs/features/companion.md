@@ -1230,16 +1230,67 @@ order (`repository/AiConversationRepository.java:14`); `AiMessageRepository` is 
 arithmetic over `MetricSeriesService` series the owning features already compose READ-ONLY — there
 is **no `LlmCallContextHolder` call anywhere in this slice**, because there is no LLM/embed call to
 tag. **Rule spine (S1, bd `mezo-d58h.1`, spec 2026-09-03 §3.1) — one class per rule.** `FlagEvaluator`
-itself is now a thin orchestrator: it holds no rule logic, just five injected `FlagRule` beans
+itself is now a thin orchestrator: it holds no rule logic, just seven injected `FlagRule` beans
 (`SustainedStressRule`, `SleepDebtRule`, `MomentumAtRiskRule`, `RecoveryNeededRule`,
-`AllHealthyRule` — each `feature/companion/flags/service/rule/*.java`) called in that fixed order,
-`allHealthyRule` only when the other four raised nothing. The `FlagRule` interface
+`LoggingGapRule`, `MissedWorkoutsRule`, `AllHealthyRule` — each
+`feature/companion/flags/service/rule/*.java`) called in that fixed order, `allHealthyRule` only
+when the other six raised nothing. The `FlagRule` interface
 (`flags/service/FlagRule.java`) is one method, `evaluate(userId, today) → Optional<FlagRaise>`,
 cooldowns NOT applied; each implementation carries its own reads and thresholds (still 100% from
-`FlagProperties` — no rule holds a number of its own) and stays reviewable in isolation. Pure
-refactor — behavior, thresholds and the fixed evaluation order are all unchanged from the single-class
-`FlagEvaluator` this replaces; `FlagEvaluatorStressSleepIT`/`FlagEvaluatorMomentumRecoveryIT` (§8)
-cover the same scenarios unmodified. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
+`FlagProperties` — no rule holds a number of its own) and stays reviewable in isolation. S1 was a
+pure refactor of the original five; **S2 (bd `mezo-d58h.2`) adds two more rules**:
+
+- **`LoggingGapRule`** (spec §4 row 1) — the detector that must NOT go quiet when logging itself
+  stops: every value-based rule above reads a `MetricSeriesService` series, and a series with no
+  rows is honestly empty, which is exactly what happened on 2026-08-27 when a real logging
+  collapse muted every other rule at once. It checks three domains for staleness and raises ONE
+  flag carrying the list: meals stale at `logging-gap.meal-stale-hours` since `meal_.logged_at`,
+  check-ins stale at `logging-gap.checkin-stale-hours` since `check_in.saved_at`, and sleep stale
+  at `logging-gap.sleep-stale-mornings` consecutive missing wake mornings (`sleep_log.date`). A
+  domain with no row at all counts as stale (never-logged is the most stale a domain gets). It
+  raises once `≥ logging-gap.min-stale-domains` domains are stale. It also carries spec §4 row 5,
+  "gap + suspicion": when `sleep_debt` itself stayed silent for want of logged nights (fewer than
+  `sleep-debt.min-nights` inside its window) but the nights that ARE logged average at least
+  `logging-gap.sleep-suspicion-deficit-hours` of deficit, the payload attaches that observed
+  deficit instead of staying silent about it too.
+- **`MissedWorkoutsRule`** (spec §4 row 3) — raises when `≥ missed-workouts.min-consecutive-missed`
+  PLANNED gym days in a row (`gym_schedule_slot.day_of_week`, over the trailing
+  `missed-workouts.window-days`) have no completed workout instance. "Consecutive" counts through
+  the sequence of PLANNED days, not calendar days: a Mon/Wed/Fri schedule raises on a missed
+  Mon + Wed, two calendar days apart. Only `templateSessionId IS NOT NULL AND status = 'completed'`
+  instances count as training (`WorkoutSessionRepository.findDoneInstanceDates`).
+- **`SleepDeficitCalculator`** (`flags/service/rule/SleepDeficitCalculator.java`) — the cumulative
+  sleep-deficit-vs-goal arithmetic (goal lookup + the day-by-day `Σ max(0, goal − actual)` loop),
+  extracted out of `SleepDebtRule` in bd `c6c045082` so `LoggingGapRule`'s "gap + suspicion"
+  variant can reuse the exact same computation instead of a second copy. `SleepDebtRule` now calls
+  it and turns the result into a verdict; behavior is unchanged from the pre-extraction single-class
+  version (`FlagEvaluatorStressSleepIT` covers it unmodified).
+
+**The `logging_gap` recency-read exception.** Every other rule above reads
+`MetricSeriesService`'s day-bucketed series exclusively — but `LoggingGapRule`'s thresholds are in
+HOURS (`meal-stale-hours`/`checkin-stale-hours`), and a day bucket cannot express "36 hours since
+the last meal" once today is partially elapsed: a meal logged at 23:50 last night and none since
+would read as "logged today" in a day bucket while already being 12+ hours stale in real time. So
+`LoggingGapRule` reads `meal_.logged_at`/`check_in.saved_at` — real `Instant`s — directly off
+`MealRepository`/`CheckInRepository` instead of composing a `MetricSeriesService` series. Sleep
+stays day-bucketed (`sleepStaleMornings`, counted off `sleep_log.date`) because `sleep_log` carries
+only the wake-morning date, no clock, so there is no finer granularity to lose.
+
+**Adding a `FlagKey` needs FIVE mirrored changes** (S2 hit four of five; the fifth —
+`CompanionProperties.Intervention.flag` — was missed and caught only during the S2 fix-wave
+review, before it could fail at Spring context startup once S4 adds a `logging_gap`/
+`missed_workouts` intervention-library entry): the `FlagKey` string constant itself; a new
+`CooldownHours` field + `forFlag` switch arm in `FlagProperties`; a migration widening the
+`ck_companion_flag_log_flag_key` DB CHECK; the `@Pattern` regex on `CompanionFlagLogEntity.flagKey`
+(`entity/CompanionFlagLogEntity.java`) — a validation-layer mirror of the same DB CHECK that
+nothing else re-derives from the other four; and the `@Pattern` regex on
+`CompanionProperties.Intervention.flag` (`config/CompanionProperties.java`) — the same mirror again,
+one layer up, gating the W5.2 intervention-library binding instead of the flag-log row. Miss either
+`@Pattern` mirror and its own `@Valid`/binding validation rejects a legitimately-CHECK-permitted
+key before it ever does anything useful.
+Pure refactor beyond the two new rules — behavior, thresholds and the fixed evaluation order for
+the original five are all unchanged; `FlagEvaluatorStressSleepIT`/`FlagEvaluatorMomentumRecoveryIT`
+(§8) cover the same scenarios unmodified. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
 @TransactionalEventListener(phase = AFTER_COMMIT)` on the NEW `CheckInSavedEvent` — published by
 `CheckInService.save` — and the existing `SleepLogSavedEvent`, published by `SleepLogService.log`)
 and the hourly sweep
@@ -2590,29 +2641,32 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   the anchor, and only when `PROFILE_ASSEMBLER_JOB_SWITCH` is on (§4, "The anchor quarter" and
   "Phase 2 also honours `PROFILE_ASSEMBLER_JOB_SWITCH`").
 
-### Backend tables (W5.1 flag log, ✅ `mezo-b3pp.18`)
+### Backend tables (W5.1 flag log, ✅ `mezo-b3pp.18`; widened S2 `mezo-d58h.2`)
 
 Migration `202608241200_mezo-b3pp.18_create_companion_flag_log.sql` (in `1.0.0_master.yml`) — the
-append-only audit trail behind the composite-flag evaluator (spec §4.5/§9.1).
+append-only audit trail behind the composite-flag evaluator (spec §4.5/§9.1). S2 migration
+`202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql` widens
+`ck_companion_flag_log_flag_key` to the two new keys.
 
 - **`companion_flag_log`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON
   DELETE CASCADE`, `is_deleted`, `created_at timestamptz`, `flag_key varchar(24)`, `source
   varchar(6)`, `payload jsonb` (nullable). Constraints: `pk_companion_flag_log_id`,
   `fk_companion_flag_log_created_by_app_user_id`, `ck_companion_flag_log_flag_key`
-  (`sustained_stress | sleep_debt | momentum_at_risk | recovery_needed | all_healthy`),
-  `ck_companion_flag_log_source` (`write | sweep`). Index `idx_companion_flag_log_user_key_at
-  (created_by, flag_key, created_at desc)` — the cooldown gate's key.
+  (`sustained_stress | sleep_debt | momentum_at_risk | recovery_needed | all_healthy |
+  logging_gap | missed_workouts` — since S2), `ck_companion_flag_log_source` (`write | sweep`).
+  Index `idx_companion_flag_log_user_key_at (created_by, flag_key, created_at desc)` — the
+  cooldown gate's key.
 - **One row per RAISE, never per evaluation.** The evaluator is deterministic, so `FlagService`
   appends only when a flag is both TRUE and past its own cooldown; a quiet evaluation (nothing
   true, or everything still cooling down) writes nothing. Nothing ever updates a row — no history
   to amend, only new raises to append.
 - **`payload` is the typed jsonb `FlagPayloadEnvelope`** (`flags/entity/FlagPayloadEnvelope.java`
-  — the `FeedbackRollupStatsEnvelope` precedent: one record, five all-nullable nested-record
+  — the `FeedbackRollupStatsEnvelope` precedent: one record, seven all-nullable nested-record
   fields, a static factory per shape). Exactly one of `sustainedStress`/`sleepDebt`
-  /`momentumAtRisk`/`recoveryNeeded`/`allHealthy` is non-null per row, carrying BOTH the rule's
-  config thresholds and the observed values at raise time (day-keyed maps, `LocalDate.toString()`
-  keys — jsonb object keys are text), so the raise is reproducible from the log alone without
-  re-running the evaluator.
+  /`momentumAtRisk`/`recoveryNeeded`/`allHealthy`/`loggingGap`/`missedWorkouts` is non-null per
+  row, carrying BOTH the rule's config thresholds and the observed values at raise time (day-keyed
+  maps, `LocalDate.toString()` keys — jsonb object keys are text), so the raise is reproducible
+  from the log alone without re-running the evaluator.
 - **No FK from `payload` to anything** — it freezes values read from other features' tables at
   raise time; those source rows can later change or be deleted without touching this row (the
   `message_feedback`/`feedback_rollup` dangling-reference precedent, spec §8.1).
@@ -3352,20 +3406,30 @@ and cooldown below is config, never code — `FlagEvaluator` holds no numbers of
 | `recovery.rpe-threshold` | `7.0` | a training RPE at/above this counts as "high effort" |
 | `recovery.stress-threshold` | `6.0` | a check-in stress at/above this counts as "high stress" |
 | `all-healthy.quiet-days` | `7` | no other flag raised for this many days ⇒ the quiet state itself is logged |
+| `logging-gap.meal-stale-hours` | `36` | hours since the last `meal_.logged_at` at/above which meals count as stale |
+| `logging-gap.checkin-stale-hours` | `48` | hours since the last `check_in.saved_at` at/above which check-ins count as stale |
+| `logging-gap.sleep-stale-mornings` | `2` | consecutive missing wake mornings (`sleep_log.date`) at/above which sleep counts as stale |
+| `logging-gap.min-stale-domains` | `1` | how many of the three domains must be stale at once for the flag to raise |
+| `logging-gap.sleep-suspicion-deficit-hours` | `1.0` | when `sleep_debt` stayed silent for want of nights, the logged nights' average deficit at/above which the payload attaches the suspicion (spec §4 row 5) |
+| `missed-workouts.window-days` | `14` | how far back planned gym days are scanned, ending TODAY |
+| `missed-workouts.min-consecutive-missed` | `2` | consecutive PLANNED gym days with nothing completed needed to raise (consecutive in the sequence of planned days, not calendar days) |
 | `cooldown-hours.sustained-stress` | `24` | re-raise floor, per flag |
 | `cooldown-hours.sleep-debt` | `24` | ″ |
 | `cooldown-hours.momentum-at-risk` | `48` | ″ |
 | `cooldown-hours.recovery-needed` | `24` | ″ |
 | `cooldown-hours.all-healthy` | `168` | ″ (one week) |
+| `cooldown-hours.logging-gap` | `48` | ″ — long enough that a gap card does not repeat daily |
+| `cooldown-hours.missed-workouts` | `48` | ″ |
 
 Job switch `mezo.techcore.cron.flag-sweep-job.enabled`
 (`FeaturesConfiguration.FLAG_SWEEP_JOB_SWITCH`) — off ⇒ the `FlagSweepJob` bean does not exist;
 the on-write listener keeps running unaffected (it answers to `COMPANION_SWITCH` only).
 
-**The five rules** (source of truth: the W5.1 plan's "The rules" table — all windows are whole
-days computed from `LocalDate.now()`; missing days stay absent, never invented — the
-`MetricSeriesService` rule — except `HABITS_DONE`, where no `habit_day` row genuinely means zero
-completions):
+**The seven flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4 rows
+1/3 — all windows are whole days computed from `LocalDate.now()`; missing days stay absent, never
+invented — the `MetricSeriesService` rule — except `HABITS_DONE`, where no `habit_day` row
+genuinely means zero completions, and `logging_gap`'s meal/check-in reads, which bypass
+`MetricSeriesService` entirely — see §3 above for why):
 
 | flag | fires when | inputs |
 |---|---|---|
@@ -3373,7 +3437,18 @@ completions):
 | `sleep_debt` | over the last `nights` nights ending TODAY (`sleep_log.date` is the wake morning, so today's row is last night): Σ max(0, goalHours − durationH) ≥ `deficit-hours`, and at least `min-nights` of them are logged | `MetricKey.SLEEP_DURATION_H`, `sleep_goal.target_minutes` (fallback `default-goal-hours`) |
 | `momentum_at_risk` | recentAvg(`HABITS_DONE`) ≤ baselineAvg × (1 − `drop-ratio`) **and** ≥1 missed planned gym day in the recent window; guarded by baselineAvg ≥ `min-baseline` | `MetricKey.HABITS_DONE`, `gym_schedule_slot.day_of_week`, `WorkoutSessionRepository.findDoneInstanceDates` |
 | `recovery_needed` | inside the last `window-days` days (today included): a day with `SLEEP_DURATION_H` ≤ `sleep-floor-hours` **and** a day with `TRAINING_RPE` ≥ `rpe-threshold` **and** a day with avg `CHECKIN_STRESS` ≥ `stress-threshold` | those three series |
-| `all_healthy` | none of the four fire now, **and** no non-`all_healthy` row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+| `logging_gap` | `≥ min-stale-domains` of {meals, check-ins, sleep} stale (thresholds above); a domain with no row at all counts as stale | `meal_.logged_at`, `check_in.saved_at`, `sleep_log.date` (direct repository reads, not `MetricSeriesService`) |
+| `missed_workouts` | `≥ min-consecutive-missed` consecutive PLANNED gym days (in the sequence of planned days) with no completed workout instance, inside the `window-days`-day window ending YESTERDAY (today is still in progress), itself clamped to never start before the oldest surviving `gym_schedule_slot.created_at` — a day before the current schedule existed cannot be a violation of it (review fix, bd `mezo-d58h.2`) | `gym_schedule_slot.day_of_week`, `gym_schedule_slot.created_at`, `WorkoutSessionRepository.findDoneInstanceDates` |
+| `all_healthy` | none of the other six fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+
+`all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes both `all_healthy`
+itself and `logging_gap`: `logging_gap` names a data-availability gap (a domain has gone stale),
+not a health/behavior problem, so a user who tracks sleep and check-ins tightly but logs meals
+loosely must not have `all_healthy` blocked for a full `quiet-days` window every time
+`logging_gap` fires (review fix, bd `mezo-d58h.2`). `missed_workouts` stays counted as a problem —
+it IS a behavior signal, unlike a data gap. The other suppression is unchanged: `FlagEvaluator`
+only runs `AllHealthyRule` when nothing else raised in that same evaluation, so `all_healthy` and
+`logging_gap` still never appear together on the same day.
 
 A flag is written only when `companion_flag_log` holds no row with that `flag_key` newer than
 `cooldown-hours.<flag>` — identical for both sources.
@@ -3684,7 +3759,8 @@ the same owning-feature reads the snapshot/tools use, but date-scoped to ONE pas
 finders filtered to the day, `FuelDayService.getDay(date)`, sleep/check-in by-date finders,
 `MedicationCycleService.derive(userId, med, date)` (it already took an explicit date), and ONE new
 plain finder in the owning feature (`WeightLogRepository.findFirstBy…AndDate…` — the V0.3/V0.5
-precedent). The nightly job iterates `AppUserRepository.findAll()` (companion → auth read).
+precedent). The nightly job fans out over the ACTIVE + onboarded accounts via `UserFanOut.forEachActiveUser`
+(S6, `mezo-qw37.6` — companion → auth read), each user's body under `LlmActorContext.runAs`.
 
 **V2.3 recall seam (✅ wired).** `find_similar_past_days` is companion-internal (tools →
 `MemoryRecallService` → the V2.1 repository + V2.1 `EmbeddingPort`) — no new cross-feature reads.
@@ -4399,7 +4475,7 @@ IT):**
 **W5.1 composite-flag test additions (`mezo-b3pp.18`, spec §9.1) — no LLM anywhere in this path:**
 
 - **`flags/CompanionFlagLogPersistenceIT`** — entity round-trip with the typed jsonb payload for
-  all five `FlagPayloadEnvelope` shapes (including `MomentumAtRisk`'s `List<String>` and
+  all seven `FlagPayloadEnvelope` shapes (including `MomentumAtRisk`'s `List<String>` and
   `RecoveryNeeded`'s nullable boxed `Double`s); an unknown `flag_key`/`source` is rejected by the
   entity's `@Pattern` in-JVM AND, via a native insert that bypasses bean validation, by the DB
   CHECK too; `existsRaiseSince` sees only rows inside its window.
@@ -4412,19 +4488,38 @@ IT):**
   `min-nights` gate, falls back to the default goal without a `sleep_goal` row, **counts last
   night's sleep, which is logged this morning** (`sleep_log.date` is the wake morning), and raises
   exactly AT the threshold (boundary); the payload freezes the stress inputs
-  (`the_payload_freezes_the_stress_inputs`).
+  (`the_payload_freezes_the_stress_inputs`). Since S2 the `sleep_debt` cases exercise
+  `SleepDeficitCalculator` through `SleepDebtRule`, not inline arithmetic — behavior pinned
+  unchanged across the extraction.
 - **`flags/FlagEvaluatorMomentumRecoveryIT`** — `momentum_at_risk`: raises on a habit collapse plus
   a missed planned gym day, stays quiet when every planned day was trained, with no planned gym day
   at all, below the baseline floor, or when the habits held up; `recovery_needed`: raises on poor
   sleep + high RPE + high stress inside the 48h window, stays quiet when one leg is missing or
   falls outside the window (including exactly one day past the true edge — the boundary case);
-  `all_healthy`: raises after a quiet week WITH actual data, stays quiet on an EMPTY log (no
-  fabricated "all healthy" over nothing), stays quiet while a problem flag is still inside the
-  quiet window, and returns once that problem flag ages out of it.
+  `all_healthy`: raises after a quiet week WITH actual data, stays quiet while a problem flag is
+  still inside the quiet window, and returns once that problem flag ages out of it. **Since S2,
+  `an_empty_log_raises_logging_gap_not_all_healthy`** (renamed from
+  `all_healthy_stays_quiet_on_an_empty_log`, `mezo-d58h.2` — the fixture was updated when
+  `logging_gap` began raising for it, but the name still claimed the opposite): an EMPTY log is no
+  longer the "no fabricated all_healthy over nothing" case it once was — `logging_gap` now raises
+  first on a never-logged user (never-logged counts as stale, §3), so `all_healthy`'s own honesty
+  gate is untestable via a bare empty log and is instead pinned by the "quiet window" cases above.
+- **`flags/FlagEvaluatorLoggingGapIT`** and **`flags/FlagEvaluatorMissedWorkoutsIT`** (S2, bd
+  `mezo-d58h.2`) — `logging_gap`: raises when ≥`min-stale-domains` of meals/check-ins/sleep are
+  stale (including never-logged), stays quiet with fresh data in all domains, and the "gap +
+  suspicion" payload attaches the observed deficit only when `sleep_debt` itself stayed silent for
+  want of nights; `missed_workouts`: raises on `minConsecutiveMissed` consecutive PLANNED days with
+  nothing completed, stays quiet with no gym schedule at all or when the run breaks, and treats a
+  Mon/Wed/Fri schedule's consecutive PLANNED days correctly (not consecutive calendar days).
 - **`flags/FlagServiceIT`** — writes one audit row per raised flag with the right `source`; the
-  cooldown blocks an immediate re-raise and lifts once it expires; a quiet evaluation writes
-  nothing; the on-write and sweep sources raise IDENTICALLY apart from `source`
-  (`write_and_sweep_raise_identically_apart_from_the_source`).
+  cooldown blocks an immediate re-raise and lifts once it expires; the on-write and sweep sources
+  raise IDENTICALLY apart from `source`
+  (`write_and_sweep_raise_identically_apart_from_the_source`). **Since S2,
+  `a_quiet_evaluation_writes_only_logging_gap`** (renamed from
+  `a_quiet_evaluation_writes_nothing`, `mezo-d58h.2`): the fixture that once left every rule
+  silent now trips `logging_gap` (never-logged domains count as stale, §3), so the test asserts
+  exactly one row — `logging_gap` — is written, not zero; a genuinely quiet evaluation (every
+  domain fresh, nothing else true) is no longer reachable with this rule in the spine.
 - **`flags/FlagEvaluationListenerIT`** — a check-in save raises the flag with `source=write`
   (deliberately NOT `@Transactional` — the `FlagServiceIT` precedent: the save must genuinely
   COMMIT for `AFTER_COMMIT` to fire, Awaitility rides out the `@Async` hop, the
@@ -5318,23 +5413,28 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/profile/{ProfileAssemblerJobIT,ProfileAssemblerJobSwitchOffIT,ProfilePromptAssemblerIT,ProfilePropertiesIT,ProfileSourceFindersIT,service/ProfileAssemblerIT,service/ProfileAssemblerCapTest}.java` — §8.
 - **FE side** — at ship time, `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx`; **since `mezo-ms9a` (2026-09-01)** the card is `frontend/src/features/insights/components/ProfileNodeCard.tsx`, rendered by `KnowledgeListPage`'s `?view=profil` ("Így beszélj velem") view — plus `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`insights.md` §2.4](insights.md).
 
-**Backend — composite flags (W5.1, `mezo-b3pp.18` — §3/§4, spec §4.5/§9.1)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + five per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs.
+**Backend — composite flags (W5.1, `mezo-b3pp.18` — §3/§4, spec §4.5/§9.1; `logging_gap`/
+`missed_workouts` added S2, bd `mezo-d58h.2`, spec 2026-09-03 §4)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + seven per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); seven variants since S2.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the five flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the seven flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload, before the cooldown gate is applied.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling five `FlagRule` beans in a fixed order, LLM-free (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling seven `FlagRule` beans in a fixed order, LLM-free (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → Optional<FlagRaise>`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{SustainedStressRule,SleepDebtRule,MomentumAtRiskRule,RecoveryNeededRule,AllHealthyRule}.java` — S1 (`mezo-d58h.1`): the five rules, one class each, pure arithmetic over `MetricSeriesService`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{SustainedStressRule,SleepDebtRule,MomentumAtRiskRule,RecoveryNeededRule,AllHealthyRule}.java` — S1 (`mezo-d58h.1`): the original five rules, one class each, pure arithmetic over `MetricSeriesService`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/SleepDeficitCalculator.java` — S2 (bd `c6c045082`): the shared sleep-deficit-vs-goal computation, extracted out of `SleepDebtRule` so `LoggingGapRule`'s suspicion variant can reuse it (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/LoggingGapRule.java` — S2 (bd `mezo-d58h.2`): the `logging_gap` rule; reads `MealRepository`/`CheckInRepository`/`SleepLogRepository` directly, not `MetricSeriesService` (§3 recency-read exception).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MissedWorkoutsRule.java` — S2 (bd `mezo-d58h.2`): the `missed_workouts` rule; consecutive-in-planned-days-not-calendar-days logic (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/service/CheckInSavedEvent.java` — the NEW `CheckInService.save` AFTER_COMMIT event this slice consumes; the check-in feature itself knows nothing about flags.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `FLAG_SWEEP_JOB_SWITCH` (`mezo.techcore.cron.flag-sweep-job.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241200_mezo-b3pp.18_create_companion_flag_log.sql` — the table (in `1.0.0_master.yml`).
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql` — S2: widens `ck_companion_flag_log_flag_key` to seven keys.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
 
 **Backend — intervention delivery (W5.2, `mezo-b3pp.19` — §4/§5.8/§9, spec §9.2; consumer side, lives in `feature.proactive` not `feature.companion`)**

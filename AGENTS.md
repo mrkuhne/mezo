@@ -149,6 +149,7 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 | `configuration_conventions.md` | any configurable value or feature toggle — everything in `application.yml` under the `mezo:` root (switches: `mezo.feature.<name>.enabled` + `FeaturesConfiguration` constants + `@ConditionalOnProperty`; values: `@Validated` `*Properties` records), **never `@Value`**, no hardcoded tunables |
 | `api_contract_conventions.md` | any REST endpoint or FE↔BE DTO — **contract-first**: edit `api/feature/<name>/<name>.yml` BEFORE code, merge (`api/generate`), backend implements generated `<Tag>Api` + uses `api.dto` models, frontend types from `src/data/_client/api.gen.ts` (`satisfies` on request bodies); never hand-write boundary DTOs |
 | `companion_tool_conventions.md` | any `@Tool` in `feature/companion/tools/` — narrow responsibility, enumerated `scope`/param values, an explicit `Használd, amikor …` trigger clause, describe ONLY what is rendered (no overclaim); keep the system prompt's `[Eszköz-útmutató]` routing hint (`ChatService.SYSTEM_PROMPT`) in sync |
+| `security_conventions.md` | any auth, identity, ownership, cron fan-out or prompt-persona code — `CurrentUser`/`requireOwner()`, foreign row = 404, `UserFanOut`, `{{NÉV}}` via `PromptPersona`, B-user test on every endpoint |
 
 ### Project-specific adaptations (these override the generic references where noted)
 
@@ -156,7 +157,7 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 - **Base package:** `io.mrkuhne.mezo` (the references' `io.mrkuhne.{project}`).
 - **Primary keys: UUID** (`gen_random_uuid()`) across domain tables — matches the design handoff and the frontend (`crypto.randomUUID()`). Where a reference example shows `Long`/`BIGSERIAL`, use `UUID` here.
 - **Liquibase feature ID:** the reference uses spec-kit `F{NNN}`; mezo uses **beads**, so the feature segment of a changeset name is the **driving bd issue ID** (e.g. `202606092230_mezo-a1_create_weight_log.sql`). Keep the 12-digit UTC timestamp prefix and the immutability rules unchanged.
-- **Auth/ownership:** multi-user (`mezo-qw37`) — invite-gated registration, JWT bearer, `created_by` resolved server-side from `CurrentUser` (never from the client); app-level ownership filtering (`created_by = currentUser`). Login/register UI lives in `features/auth`.
+- **Auth/ownership:** multi-user (ADR 0035, mezo-qw37) — invite-gated registration, HS256 bearer JWT, `created_by` resolved server-side from `CurrentUser`/`CurrentUserId` (never from the client), app-level filtering (`created_by = currentUser`, foreign row = 404), catalog tables the only shared exception; crons via `UserFanOut`; prompts via `PromptPersona`. Rules: `docs/references/security_conventions.md`.
 - **Soft delete:** `is_deleted` + Hibernate `@SQLRestriction` / `@SQLDelete`; never physically delete in normal paths.
 - **jsonb** (provenance envelope, meal score, sleep factors): `@JdbcTypeCode(SqlTypes.JSON)` onto a typed embedded object — first-class, not `String`.
 

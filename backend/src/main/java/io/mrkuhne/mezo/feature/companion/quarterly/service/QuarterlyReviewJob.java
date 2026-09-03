@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.quarterly.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.companion.profile.service.ProfileAssembler;
 import io.mrkuhne.mezo.feature.companion.profile.service.ProfileAssemblerJob;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -81,7 +80,7 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class QuarterlyReviewJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final QuarterlyReviewService quarterlyReviewService;
     private final ProfileAssembler profileAssembler;
     // Bean presence IS the PROFILE_ASSEMBLER_JOB_SWITCH reading (see the class javadoc): absent
@@ -98,7 +97,7 @@ public class QuarterlyReviewJob {
             log.info("Profile assembler job switch is off — quarterly pass on {} proposes seasons "
                 + "but skips the profile rebuild", quarterLabel);
         }
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Quarterly review", user -> {
             try {
                 int candidates = quarterlyReviewService.runFor(user.getId(), quarter);
                 log.info("Quarterly season pass for user {} on {}: {} candidate(s)",
@@ -107,7 +106,7 @@ public class QuarterlyReviewJob {
                 log.warn("Quarterly season pass failed for user {} on {}", user.getId(), quarterLabel, e);
             }
             if (!profileEnabled) {
-                continue;   // phase 1 is independent of the profile switch; phase 2 is not
+                return;   // phase 1 is independent of the profile switch; phase 2 is not
             }
             try {
                 profileAssembler.rebuild(user.getId(), quarter)
@@ -119,6 +118,6 @@ public class QuarterlyReviewJob {
                 log.warn("Quarterly profile rebuild failed for user {} — the sweep continues",
                     user.getId(), e);
             }
-        }
+        });
     }
 }

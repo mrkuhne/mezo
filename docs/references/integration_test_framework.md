@@ -121,11 +121,12 @@ first needs them — never inline in a test class.
   never hardcoded in the helper) and returns ready-to-use Bearer headers.
 - Unauthenticated calls pass `null` headers — every protected endpoint gets at least one
   `401`-without-token test.
-- Multi-user model (S1, `mezo-qw37.1`): `registerUser("Anna")` runs the real invite → register
-  flow and returns `RegisteredUser(id, email, headers)` — the sanctioned second principal for
-  ownership-isolation tests. Roles: the seeded owner is `OWNER`; registered users are `USER`;
-  owner-only endpoints get one `USER → 403 AUTH_FORBIDDEN` test each. `UserPopulator` stays for
-  service-level tests that only need an FK-valid `created_by`.
+- Multi-user model (ADR 0035): the role matrix is OWNER/USER. Owner-only endpoints get an
+  OWNER → 200 and a USER → 403 `AUTH_FORBIDDEN` test; every owned endpoint gets a B-user 404/403
+  test. Mint the second user with `ApiIntegrationTest.registerUser(label)` (invite → register →
+  Bearer); `UserPopulator.createUser` (ACTIVE + onboarded, placeholder hash) serves the non-HTTP
+  tests — set `onboardedAt=null`/`status=DISABLED` + `save` to model a user a cron fan-out
+  (`UserFanOut`) must skip. Never forge tokens.
 
 ## Error-Contract Assertions
 

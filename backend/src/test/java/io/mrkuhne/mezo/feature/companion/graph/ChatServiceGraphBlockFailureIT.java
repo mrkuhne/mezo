@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doThrow;
 import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
@@ -68,7 +69,8 @@ class ChatServiceGraphBlockFailureIT extends AbstractIntegrationTest {
         String system = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
         assertThat(system).doesNotContain(GraphPromptAssembler.CONNECTIONS_HEADER);
         assertThat(system).doesNotContain("[Összefüggések]");
-        assertThat(system).endsWith(ChatService.TONE_REMINDER);
+        assertThat(system).endsWith(
+                ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-graph-fail@test.local"));
         assertThat(answer.getDegraded()).isFalse();
         assertThat(answer.getRefs()).extracting(MessageRef::getKind)
                 .doesNotContain(GraphPromptAssembler.REF_KIND);

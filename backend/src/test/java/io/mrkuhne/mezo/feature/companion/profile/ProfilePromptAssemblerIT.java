@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.profile;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
@@ -109,13 +110,15 @@ class ProfilePromptAssemblerIT extends AbstractIntegrationTest {
                 SendMessageRequest.builder().content("[fake-embed:1] mi a mai terv?").build());
 
         String prompt = turn.systemPrompt();
+        String factsHeader = KnowledgeFactService.FACTS_HEADER
+                .replace(PromptPersona.NAME_TOKEN, "profile-prompt-order@test.local");
         assertThat(prompt).contains(ProfilePromptAssembler.PROFILE_HEADER);
         // Guard (review fix): both ends of the ordering comparison must be real hits, not -1 —
         // an unseeded facts/memories block would make isGreaterThan/isLessThan vacuously true.
-        assertThat(prompt.indexOf(KnowledgeFactService.FACTS_HEADER)).isPositive();
+        assertThat(prompt.indexOf(factsHeader)).isPositive();
         assertThat(prompt.indexOf(PromptMemoryAssembler.MEMORIES_HEADER)).isPositive();
         assertThat(prompt.indexOf(ProfilePromptAssembler.PROFILE_HEADER))
-                .isGreaterThan(prompt.indexOf(KnowledgeFactService.FACTS_HEADER))
+                .isGreaterThan(prompt.indexOf(factsHeader))
                 .isLessThan(prompt.indexOf(PromptMemoryAssembler.MEMORIES_HEADER));
     }
 }

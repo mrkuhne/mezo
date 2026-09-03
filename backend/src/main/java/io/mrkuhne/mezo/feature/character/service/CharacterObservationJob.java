@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.character.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
@@ -26,7 +25,7 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class CharacterObservationJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final CharacterObservationService observationService;
     private final CharacterProperties properties;
 
@@ -34,7 +33,7 @@ public class CharacterObservationJob {
     public void run() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         LocalDate from = yesterday.minusDays(properties.observation().catchUpDays() - 1L);
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Character observation", user -> {
             int written = 0;
             for (LocalDate date = from; !date.isAfter(yesterday); date = date.plusDays(1)) {
                 try {
@@ -45,6 +44,6 @@ public class CharacterObservationJob {
             }
             log.info("Character observation run for user {}: {} row(s) in window {}..{}",
                     user.getId(), written, from, yesterday);
-        }
+        });
     }
 }

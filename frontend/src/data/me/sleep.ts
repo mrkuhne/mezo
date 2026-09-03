@@ -1,6 +1,7 @@
 import type { SleepEntry } from '@/data/types'
+import { localDateString } from '@/shared/lib/dates'
 
-export const sleepLog: SleepEntry[] = [
+const sleepLogFixed: SleepEntry[] = [
   { date: '2026-05-09', bedtime: '23:15', wakeup: '06:45', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 130, notes: null },
   { date: '2026-05-10', bedtime: '23:40', wakeup: '07:00', duration: 7.3, quality: 7, awakenings: 1, mealToSleep: 95, notes: 'Vacsora csúszott', inBedMin: 460, awakeMin: 22, lightMin: 200, remMin: 140, deepMin: 98, sourceQualityPct: 82, source: 'screenshot', hypnogram: { bucketMin: 15, stages: 'ALDDLLRRLDDLLRRLDDLLRRLALDDLRRR' } },
   { date: '2026-05-11', bedtime: '23:55', wakeup: '07:20', duration: 6.5, quality: 6, awakenings: 2, mealToSleep: 80, notes: 'Volleyball szombat · late dinner', inBedMin: 432, awakeMin: 42, lightMin: 190, remMin: 112, deepMin: 88, sourceQualityPct: 72, source: 'screenshot' },
@@ -16,3 +17,16 @@ export const sleepLog: SleepEntry[] = [
   { date: '2026-05-21', bedtime: '23:25', wakeup: '06:45', duration: 7.3, quality: 7, awakenings: 1, mealToSleep: 110, notes: null },
   { date: '2026-05-22', bedtime: '00:42', wakeup: '09:03', duration: 7.5, quality: 9, awakenings: 1, mealToSleep: 125, notes: 'Tegnap stabil', inBedMin: 501, awakeMin: 52, lightMin: 206, remMin: 144, deepMin: 100, sourceQualityPct: 95, source: 'screenshot', hypnogram: { bucketMin: 15, stages: 'ALDDLRRLDDLLRRRLDDLLRRLALDDLRRLRRR' } },
 ]
+
+// mezo-idz2: a DayOrb (és minden mai-napra néző fogyasztó) mock módban is lásson tegnap
+// éjszakát. Dátum-relatív, hogy ne avuljon el — a fenti sorok szándékosan fix dátumúak,
+// mert a hét/hónap nézetek görbéi rájuk épülnek. Egy befagyasztott órájú vizuális
+// futásban a „ma" egybeeshet egy meglévő fix sorral, ezért a beszúrás idempotens: csak
+// akkor adjuk hozzá, ha erre a napra még nincs sor, majd a fenti (növekvő) sorrendet a
+// beszúrás helyétől függetlenül explicit rendezéssel biztosítjuk.
+const todayIso = localDateString()
+export const sleepLog: SleepEntry[] = (
+  sleepLogFixed.some((e) => e.date === todayIso)
+    ? sleepLogFixed
+    : [...sleepLogFixed, { date: todayIso, bedtime: '23:20', wakeup: '06:30', duration: 7.1, quality: 7, awakenings: 1, mealToSleep: 120, notes: null }]
+).sort((a, b) => a.date.localeCompare(b.date))

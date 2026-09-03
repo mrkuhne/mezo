@@ -11,13 +11,14 @@
 // a Today feature saját logic-rétegébe költözött — `shared/lib` alatt nem volt más olvasója.
 // ============================================================
 import type { NeedKey } from '@/features/today/logic/needs'
+import { userScopedKey } from '@/shared/lib/userScope'
 
 export interface NudgeSeenEntry {
   key: NeedKey
   at: string
 }
 
-const keyFor = (date: string) => `mezo.needsnudge.${date}`
+const keyFor = (date: string) => userScopedKey(`needsnudge.${date}`)
 
 /** Az adott napon eddig megjelent nudge-ok, ring-kulcs + ISO időbélyeg párokként. */
 export function shownNudges(date: string): NudgeSeenEntry[] {

@@ -1028,3 +1028,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609031300_mezo-jcpt.4_create_day_review.sql
+  - changeSet:
+      id: "1.0.0:202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql

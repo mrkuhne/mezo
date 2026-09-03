@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import type { SleepEntry } from '@/data/types'
 import {
-  evaluateEscalation, isSnoozed, snooze, MIN_SAMPLES, SNOOZE_KEY,
+  evaluateEscalation, isSnoozed, snooze, MIN_SAMPLES, snoozeKey,
 } from '@/features/me/logic/sleepEscalation'
+import { setCurrentUserId } from '@/shared/lib/userScope'
 
 const TODAY = '2026-07-24'
 const entry = (date: string, duration: number, quality = 7): SleepEntry => ({
@@ -48,7 +49,12 @@ describe('snooze', () => {
     expect(isSnoozed('2026-08-07')).toBe(false) // day 14 — expired
   })
   test('corrupt stored value reads as not snoozed', () => {
-    localStorage.setItem(SNOOZE_KEY, 'garbage')
+    localStorage.setItem(snoozeKey(), 'garbage')
     expect(isSnoozed(TODAY)).toBe(false)
+  })
+
+  test('a snooze user-névterezett', () => {
+    setCurrentUserId('u1'); snooze(TODAY)
+    setCurrentUserId('u2'); expect(isSnoozed(TODAY)).toBe(false)
   })
 })

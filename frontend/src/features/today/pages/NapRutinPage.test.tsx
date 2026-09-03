@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { NapRutinPage } from '@/features/today/pages/NapRutinPage'
@@ -153,6 +153,26 @@ test('rows render honest anchorCopy lines and strength bars only where strength 
   const bedRow = screen.getByText('Ágyban időben').closest('.nr-row')!
   expect(within(bedRow as HTMLElement).queryByText(/%$/)).toBeNull()
   expect((bedRow as HTMLElement).querySelector('.nr-str')).toBeNull()
+})
+
+test('a százalék-címke a csík 380 ms-os csúszásával EGYÜTT fut, nem ugrik (mezo-apwd)', async () => {
+  renderPage()
+  expect(await screen.findByText('93%')).toBeInTheDocument()
+  vi.useFakeTimers()
+  try {
+    // a napi sor frissül: a súlymérés 28 napos lánc-ereje 93 → 100
+    act(() => habitStore.seed([
+      ...morningHabits.map((h) => (h.key === 'morning_weigh_in' ? { ...h, strengthPct: 100 } : h)),
+      ...eveningHabits,
+    ]))
+    // Ez a hibajelenség: a szám AZONNAL a 100%-ra ugrott, míg a .nr-str csík még
+    // 380 ms-ig csúszott az új szélességre — a kettő mozgása nem esett egybe.
+    expect(screen.getByText('93%')).toBeInTheDocument()
+    act(() => { vi.advanceTimersByTime(400) })
+    expect(screen.getByText('100%')).toBeInTheDocument()
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 test('a pending MANUAL row ticks through the habit check write', async () => {

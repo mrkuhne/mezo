@@ -328,6 +328,23 @@ describe('useHabitCatalog / useHabitCatalogActions (mock mode)', () => {
     })).rejects.toThrow('HABIT_ANCHOR_INVALID')
   })
 
+  it('createDef ismeretlen chainKey-re HABIT_DEF_UNKNOWN_CHAIN-t dob (mezo-3zue.9)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    const defCount = () => result.current.catalog.catalog.chains.flatMap((c) => c.defs).length
+    const before = defCount()
+
+    await expect(result.current.actions.createDef({
+      chainKey: 'chain_doesnotexist', title: 'Napi mondat', mode: 'MANUAL', skillKey: 'mindset', xp: 10,
+    })).rejects.toThrow('HABIT_DEF_UNKNOWN_CHAIN')
+    // A néma undefined a hívónak „siker, de sehol” volt: a wizard `?new=<habitKey>` átadása
+    // néma no-oppá vált. A backend 400-at ad — a katalógus itt is érintetlen marad.
+    expect(defCount()).toBe(before)
+  })
+
   it('updateDef ünneplés nélküli FOGG-ra váltást eldob: HABIT_FRAMEWORK_FOGG_INCOMPLETE (mezo-3zue.8)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(

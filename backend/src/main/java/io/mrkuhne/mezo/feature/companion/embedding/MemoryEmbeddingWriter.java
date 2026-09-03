@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.embedding;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.EmbeddingPort;
 import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -96,7 +97,7 @@ public class MemoryEmbeddingWriter {
                         assistant.getCreatedAt())
                 .map(AiMessageEntity::getContent).orElse("");
         write(assistant.getCreatedBy(), MemoryEmbeddingEntity.KIND_CHAT_TURN, assistant.getId(),
-                "Daniel: " + userContent + "\nMezo: " + assistant.getContent(),
+                PromptPersona.USER_TURN_LABEL + userContent + "\nMezo: " + assistant.getContent(),
                 LocalDate.ofInstant(assistant.getCreatedAt(), ZoneId.systemDefault()));
     }
 

@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.api.dto.CreateFactRequest;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
@@ -124,7 +125,8 @@ class KnowledgeFactServiceIT extends AbstractIntegrationTest {
 
         String block = knowledgeFactService.renderPromptBlock(userId);
 
-        assertThat(block).startsWith(KnowledgeFactService.FACTS_HEADER);
+        assertThat(block).startsWith(KnowledgeFactService.FACTS_HEADER
+                .replace(PromptPersona.NAME_TOKEN, "fact-topn@test.local"));
         assertThat(block).contains("tény-12").contains("tény-03");
         assertThat(block).doesNotContain("tény-02").doesNotContain("tény-01");
         // strongest reinforcement renders first — deterministic ordering
