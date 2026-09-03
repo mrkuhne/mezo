@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.pantry.service;
 import io.mrkuhne.mezo.api.dto.PantryCatalogEntry;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.pantry.entity.MicroFact;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.mapper.PantryMapper;
@@ -68,20 +69,31 @@ public class PantryCatalogService {
     }
 
     /**
-     * Natural-key find-or-create. A hit (even a soft-deleted one left by the migration) is revived,
-     * fill-only merged with the candidate's facts (see {@link #mergeIfEditable}), and returned —
-     * never a 409 (spec §11). A miss is inserted in its OWN committed transaction so that two users
-     * typing the same food at once both end up bound to the single winner: the loser's unique-index
+     * Natural-key find-or-create, with the merge in {@link #mergeIfAuthor} allowed. A hit (even a
+     * soft-deleted one left by the migration) is revived, fill-only merged, and returned — never a
+     * 409 (spec §11). A miss is inserted in its OWN committed transaction so that two users typing
+     * the same food at once both end up bound to the single winner: the loser's unique-index
      * violation is caught and re-resolved by lookup.
      */
     public PantryCatalogEntity findOrCreate(UUID authorId, PantryCatalogEntity candidate) {
+        return findOrCreate(authorId, candidate, true);
+    }
+
+    /**
+     * Natural-key find-or-create. {@code allowMerge = false} skips {@link #mergeIfAuthor} on a hit
+     * entirely — for a caller whose candidate facts are not yet trustworthy (S4 Task 7 fix round 1:
+     * a low-confidence / manual-review import draft must not touch the shared row before a human
+     * has confirmed it, even when the caller IS the row's author).
+     */
+    public PantryCatalogEntity findOrCreate(UUID authorId, PantryCatalogEntity candidate, boolean allowMerge) {
         Objects.requireNonNull(candidate.getName(), "candidate.name");
         candidate.setName(candidate.getName().strip());
         if (candidate.getBrand() != null) {
             candidate.setBrand(candidate.getBrand().strip());
         }
         return catalogRepository.findByNaturalKey(candidate.getName(), candidate.getBrand())
-            .map(existing -> mergeIfEditable(authorId, revive(existing), candidate))
+            .map(this::revive)
+            .map(existing -> allowMerge ? mergeIfAuthor(authorId, existing, candidate) : existing)
             .orElseGet(() -> insertOrBind(authorId, candidate));
     }
 
@@ -99,14 +111,23 @@ public class PantryCatalogService {
     }
 
     /**
-     * Merge policy (S4 Task 7 review finding h): a natural-key hit binds to the EXISTING row, so
-     * the candidate's freshly scraped/typed facts would otherwise be silently dropped. Fill only
-     * the fields the existing row still has NULL — never overwrite a value someone already
-     * curated — and only when {@code authorId} may edit the row (its author, or OWNER); otherwise
-     * another user's or the loader master's curated nutrition is left untouched.
+     * Merge policy (S4 Task 7 review finding h, narrowed in fix round 1 Important 2): a natural-key
+     * hit binds to the EXISTING row, so the candidate's freshly scraped/typed facts would otherwise
+     * be silently dropped. Fill only the fields the existing row still has NULL (or, for
+     * {@code micros}, still empty) — never overwrite a value someone already curated.
+     *
+     * <p>Deliberately narrower than the {@link #editable} author-or-OWNER gate: {@code editable}
+     * protects an EXPLICIT, user-initiated edit (PATCH, refused with a 403 the user can see), while
+     * this merge is an IMPLICIT side effect of an ordinary "add to my shelf" or import. This
+     * app's principal user IS the OWNER, so the OWNER arm would otherwise let every ordinary import
+     * or photo confirm silently backfill NULL fields on the 147 seeded master rows and other users'
+     * shared definitions as a side effect nobody asked for or reviewed. So only the row's own
+     * AUTHOR merges here — never a bystander OWNER, and never loader master content (never even
+     * consulted for master, both to honor "leave loader content to the loader" and to avoid an NPE
+     * on a null {@code createdBy}).
      */
-    private PantryCatalogEntity mergeIfEditable(UUID authorId, PantryCatalogEntity existing, PantryCatalogEntity candidate) {
-        if (!isEditableBy(authorId, existing)) {
+    private PantryCatalogEntity mergeIfAuthor(UUID authorId, PantryCatalogEntity existing, PantryCatalogEntity candidate) {
+        if (authorId == null || existing.isMaster() || !existing.getCreatedBy().equals(authorId)) {
             return existing;
         }
         boolean changed = false;
@@ -122,15 +143,11 @@ public class PantryCatalogService {
         changed |= fillIfNull(existing::getSaltG, existing::setSaltG, candidate.getSaltG());
         changed |= fillIfNull(existing::getSaturatedFatG, existing::setSaturatedFatG, candidate.getSaturatedFatG());
         changed |= fillIfNull(existing::getNova, existing::setNova, candidate.getNova());
+        changed |= fillIfNull(existing::getPackageLabel, existing::setPackageLabel, candidate.getPackageLabel());
+        changed |= fillIfNull(existing::getForm, existing::setForm, candidate.getForm());
+        changed |= fillIfNull(existing::getCaffeine, existing::setCaffeine, candidate.getCaffeine());
+        changed |= fillMicrosIfEmpty(existing, candidate);
         return changed ? catalogRepository.saveAndFlush(existing) : existing;
-    }
-
-    /** Same author-or-OWNER rule as {@link #editable}, from just the id (no {@code AppUserEntity} in hand yet). */
-    private boolean isEditableBy(UUID authorId, PantryCatalogEntity c) {
-        if (!c.isMaster() && c.getCreatedBy().equals(authorId)) {
-            return true;
-        }
-        return appUserRepository.findById(authorId).map(AppUserEntity::isOwner).orElse(false);
     }
 
     private static <T> boolean fillIfNull(java.util.function.Supplier<T> getter, java.util.function.Consumer<T> setter, T value) {
@@ -138,6 +155,17 @@ public class PantryCatalogService {
             return false;
         }
         setter.accept(value);
+        return true;
+    }
+
+    /** {@code micros} needs an empty-list check too: an empty list is how "no micros" is stored, same as null. */
+    private static boolean fillMicrosIfEmpty(PantryCatalogEntity existing, PantryCatalogEntity candidate) {
+        List<MicroFact> current = existing.getMicros();
+        List<MicroFact> incoming = candidate.getMicros();
+        if ((current != null && !current.isEmpty()) || incoming == null || incoming.isEmpty()) {
+            return false;
+        }
+        existing.setMicros(incoming);
         return true;
     }
 
@@ -156,8 +184,13 @@ public class PantryCatalogService {
             });
             return catalogRepository.findById(id).orElseThrow(); // re-read in the caller's session
         } catch (DataIntegrityViolationException raced) {
+            // The race loser takes the SAME path as an ordinary hit (revive + author-only merge):
+            // the loser's candidate carried createdBy == authorId, so if the winner happens to BE
+            // authorId (a genuine same-user race) its facts still get a fill-only merge; otherwise
+            // mergeIfAuthor's author check is a no-op, same as any other author-mismatch hit.
             return catalogRepository.findByNaturalKey(candidate.getName(), candidate.getBrand())
                 .map(this::revive)
+                .map(existing -> mergeIfAuthor(authorId, existing, candidate))
                 .orElseThrow(() -> raced);
         }
     }

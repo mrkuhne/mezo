@@ -176,18 +176,34 @@ class PantryImportApiIT extends ApiIntegrationTest {
     void testImport_shouldBindToExistingDefinition_whenAnotherUserImportedTheSameProduct() {
         RegisteredUser anna = registerUser("Anna");
         RegisteredUser bela = registerUser("Béla");
-        PantryImportRequest req = new PantryImportRequest();
-        req.setName("Skyr natúr");
-        req.setBrand("Ehrmann");
-        req.setPer(new BigDecimal("100"));
-        req.setUnit("g");
-        req.setKcal(new BigDecimal("63"));
-        PantryItemResponse annas = postForBody("/api/pantry-import", req, anna.headers(), HttpStatus.CREATED, PantryItemResponse.class);
-        PantryItemResponse belas = postForBody("/api/pantry-import", req, bela.headers(), HttpStatus.CREATED, PantryItemResponse.class);
+        PantryImportRequest annaReq = new PantryImportRequest();
+        annaReq.setName("Skyr natúr");
+        annaReq.setBrand("Ehrmann");
+        annaReq.setPer(new BigDecimal("100"));
+        annaReq.setUnit("g");
+        annaReq.setKcal(new BigDecimal("63"));
+        PantryItemResponse annas = postForBody("/api/pantry-import", annaReq, anna.headers(), HttpStatus.CREATED, PantryItemResponse.class);
+
+        // Béla's draft deliberately disagrees on kcal — his import is neither the author nor
+        // OWNER, so this MUST NOT overwrite Anna's already-curated value (fix round 1 Important 2/4).
+        PantryImportRequest belaReq = new PantryImportRequest();
+        belaReq.setName("Skyr natúr");
+        belaReq.setBrand("Ehrmann");
+        belaReq.setPer(new BigDecimal("100"));
+        belaReq.setUnit("g");
+        belaReq.setKcal(new BigDecimal("999"));
+        PantryItemResponse belas = postForBody("/api/pantry-import", belaReq, bela.headers(), HttpStatus.CREATED, PantryItemResponse.class);
+
         assertThat(belas.getCatalogId()).isEqualTo(annas.getCatalogId());
         assertThat(belas.getId()).isNotEqualTo(annas.getId());
         // each user's feed has exactly one row, pointing at their own shelf item
         assertThat(getForBody("/api/pantry", bela.headers(), HttpStatus.OK, PantryResponse.class).getImports()).hasSize(1);
+
+        // load-bearing: Béla's kcal must not have leaked onto Anna's (the shared) definition.
+        PantryResponse annaPantry = getForBody("/api/pantry", anna.headers(), HttpStatus.OK, PantryResponse.class);
+        var annaIng = annaPantry.getIngredients().stream()
+            .filter(i -> i.getId().equals(annas.getId())).findFirst().orElseThrow();
+        assertThat(annaIng.getMacros().getKcal()).isEqualByComparingTo(new BigDecimal("63"));
     }
 
     /**
@@ -200,8 +216,13 @@ class PantryImportApiIT extends ApiIntegrationTest {
     void testImport_shouldReuseSameShelfRow_whenSameUserImportsTheSameProductTwice() {
         HttpHeaders auth = ownerAuthHeaders();
 
-        PantryItemResponse first = postForBody("/api/pantry-import", importReq(), auth,
+        PantryImportRequest priced = importReq();
+        priced.setPriceHuf(590);
+        priced.setPriceUnit("db");
+        PantryItemResponse first = postForBody("/api/pantry-import", priced, auth,
             HttpStatus.CREATED, PantryItemResponse.class);
+        // The second (re-)import carries NO price — fix round 1 Important 1: this must not null
+        // out the price the user already entered on their existing shelf row.
         PantryItemResponse second = postForBody("/api/pantry-import", importReq(), auth,
             HttpStatus.CREATED, PantryItemResponse.class);
 
@@ -209,7 +230,9 @@ class PantryImportApiIT extends ApiIntegrationTest {
         assertThat(second.getCatalogId()).isEqualTo(first.getCatalogId());
 
         PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
-        assertThat(pantry.getIngredients().stream().filter(i -> i.getId().equals(first.getId())).count()).isEqualTo(1);
+        var ings = pantry.getIngredients().stream().filter(i -> i.getId().equals(first.getId())).toList();
+        assertThat(ings).hasSize(1);
+        assertThat(ings.getFirst().getPrice()).isEqualByComparingTo(new BigDecimal("590"));
         // both imports still feed the activity log — one row per import event, one shelf row total
         assertThat(pantry.getImports()).hasSize(2);
     }

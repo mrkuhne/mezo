@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.PantryCatalogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -144,6 +145,59 @@ class PantryCatalogServiceIT extends AbstractIntegrationTest {
         // one that carries ownerProperties.ownerName()) — assert against the source actually used.
         assertThat(service.sharedFromName(readerId, authored, names)).isEqualTo("cat-author@test.local");
         assertThat(service.sharedFromName(readerId, candidate("Kölesliszt Teszt", null), names)).isNull(); // master
+    }
+
+    /**
+     * Fix round 1 Important 4 (1/2): an editable caller — here, the row's own AUTHOR — gets their
+     * NULL fields backfilled, but a value the row already carries (kcal, curated by the populator)
+     * is never overwritten.
+     */
+    @Test
+    void testFindOrCreate_shouldBackfillOnlyNullFields_whenCallerIsTheAuthor() {
+        UUID author = databasePopulator.populateUser("cat-merge-author@test.local");
+        PantryCatalogEntity existing = catalogPopulator.createFoodDefinition(author, "Rozskenyér Teszt", "Sarki");
+        assertThat(existing.getKcal()).isNotNull();   // curated by the populator
+        assertThat(existing.getFiberG()).isNull();    // never set by the populator — the gap to fill
+
+        PantryCatalogEntity attempt = candidate("rozskenyér teszt", "sarki");
+        attempt.setKcal(new BigDecimal("999"));       // must NOT overwrite the curated 110
+        attempt.setFiberG(new BigDecimal("5.5"));      // must fill the NULL gap
+
+        PantryCatalogEntity got = service.findOrCreate(author, attempt);
+
+        assertThat(got.getId()).isEqualTo(existing.getId());
+        assertThat(got.getKcal()).isEqualByComparingTo(existing.getKcal());
+        assertThat(got.getFiberG()).isEqualByComparingTo("5.5");
+        // persisted, not just held in the returned managed instance
+        assertThat(catalogRepository.findById(existing.getId()).orElseThrow().getFiberG())
+            .isEqualByComparingTo("5.5");
+    }
+
+    /**
+     * Fix round 1 Important 4 (2/2) + Important 2: a non-author caller — even the OWNER, whose
+     * {@code editable()} arm would otherwise say yes — must leave the row byte-identical. The merge
+     * is narrower than the edit gate on purpose: it is an unreviewed SIDE EFFECT, not an explicit
+     * user-initiated edit.
+     */
+    @Test
+    void testFindOrCreate_shouldLeaveRowByteIdentical_whenCallerIsOwnerButNotAuthor() {
+        UUID author = databasePopulator.populateUser("cat-merge-author2@test.local");
+        AppUserEntity owner = userPopulator.createUser("cat-merge-owner@test.local");
+        owner.setRole(AppUserEntity.UserRole.OWNER);
+        owner = userPopulator.save(owner);
+        PantryCatalogEntity existing = catalogPopulator.createFoodDefinition(author, "Kölesgolyó Teszt", null);
+        assertThat(existing.getFiberG()).isNull();
+
+        PantryCatalogEntity attempt = candidate("kölesgolyó teszt", "");
+        attempt.setKcal(new BigDecimal("999"));
+        attempt.setFiberG(new BigDecimal("5.5"));
+
+        PantryCatalogEntity got = service.findOrCreate(owner.getId(), attempt);
+
+        assertThat(got.getId()).isEqualTo(existing.getId());
+        assertThat(got.getKcal()).isEqualByComparingTo(existing.getKcal()); // unchanged
+        assertThat(got.getFiberG()).isNull();                              // NOT filled — OWNER is not the author
+        assertThat(catalogRepository.findById(existing.getId()).orElseThrow().getFiberG()).isNull();
     }
 
     @Test

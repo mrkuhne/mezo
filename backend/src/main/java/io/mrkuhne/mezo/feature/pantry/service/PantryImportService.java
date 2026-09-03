@@ -102,15 +102,27 @@ public class PantryImportService {
         candidate.setSaltG(req.getSaltG());
         candidate.setSaturatedFatG(req.getSaturatedFatG());
         candidate.setNova(req.getNova() == null ? null : req.getNova().shortValue());
-        // A natural-key hit binds to the shared definition (fill-only merge of NULL fields — see
-        // PantryCatalogService#findOrCreate, review finding h); a miss is authored by this user.
-        PantryCatalogEntity catalog = catalogService.findOrCreate(userId, candidate);
+        // A confirmed but not-yet-reviewed draft (low-confidence scrape/photo) must not backfill
+        // the shared row's facts before a human confirms them — even when this user IS its author
+        // (fix round 1 Important 2c).
+        boolean manualReview = isManualReview(req.getConfidence());
+        // A natural-key hit binds to the shared definition (fill-only merge of NULL fields, author
+        // only, master rows never merged — see PantryCatalogService#mergeIfAuthor, review finding
+        // h / fix round 1 Important 2); a miss is authored by this user.
+        PantryCatalogEntity catalog = catalogService.findOrCreate(userId, candidate, !manualReview);
         // Idempotent shelf row (review finding g): a second import of the same product by the same
         // user must bind to their existing row instead of tripping
         // uq_pantry_item_created_by_catalog_id with an unconditional insert.
         PantryItemEntity item = catalogService.ensureItem(userId, catalog.getId());
-        item.setPriceHuf(req.getPriceHuf());
-        item.setPriceUnit(req.getPriceUnit());
+        // Partial apply (fix round 1 Important 1): ensureItem can now return an EXISTING shelf row
+        // (a re-import), so an unconditional set would null out a price the user already entered —
+        // only overwrite when this draft actually carries a price.
+        if (req.getPriceHuf() != null) {
+            item.setPriceHuf(req.getPriceHuf());
+        }
+        if (req.getPriceUnit() != null) {
+            item.setPriceUnit(req.getPriceUnit());
+        }
         item = itemRepository.save(item);
 
         PantryImportEntity feed = new PantryImportEntity();
@@ -118,7 +130,7 @@ public class PantryImportService {
         feed.setSource(source);
         feed.setItemName(catalog.getName());
         feed.setItemCount(1);
-        feed.setStatus(isManualReview(req.getConfidence()) ? "manual-review" : "synced");
+        feed.setStatus(manualReview ? "manual-review" : "synced");
         feed.setBarcode(req.getBarcode());
         feed.setSourceUrl(req.getSourceUrl());
         feed.setPantryItemId(item.getId());

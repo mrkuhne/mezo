@@ -78,7 +78,10 @@ public class PantryService {
     /**
      * With {@code catalogId}: bind to that definition (idempotent) and apply the state fields.
      * Without: find-or-create the definition by natural key — a hit binds to the existing shared
-     * row (no 409, spec §11), so the caller's OWN definition values only ever fill a NEW row.
+     * row (no 409, spec §11); the caller's own definition values fill a brand-new row outright, or
+     * fill-only backfill NULL fields on an existing row IF the caller happens to already be that
+     * row's author (see {@code PantryCatalogService#mergeIfAuthor}) — never a bystander's or the
+     * loader master's already-curated content.
      */
     @Transactional
     public PantryItemResponse createItem(UUID userId, PantryItemRequest req) {
