@@ -439,6 +439,10 @@ mezo:
       # mezo.feature.llm-log.enabled: already-written payload keeps aging while recording is off.
       llm-log-retention-job:
         enabled: true
+      # Életcél nightly evaluation pass (mezo-iizd.6, schedule: mezo.lifegoal.eval-cron);
+      # off = the LifeGoalEvalJob bean does not exist (manual POST /{id}/evaluate stays on)
+      life-goal-eval-job:
+        enabled: true
   # LLM call audit log (mezo-2zyu) — binds LlmLogProperties + LlmPricingProperties.
   llm-log:
     # Prompt/response payloads are truncated to this many characters before persisting
@@ -1467,6 +1471,11 @@ mezo:
   # Binds feature/lifegoal/config/LifeGoalProperties (mezo-iizd) — pillar cap per goal.
   lifegoal:
     max-pillars: 5
+    # XP per `hit` pillár-nap (mezo-iizd.6) — a pillér saját skill_key-ére, idempotensen
+    # (source_type=LIFE_GOAL, kulcs: UUID.nameUUIDFromBytes("lifegoal:<pillarId>:<day>")).
+    xp-per-hit: 5
+    # 00:20 — a habit close (00:10) UTÁN, hogy a nap metrikái már véglegesek legyenek.
+    eval-cron: "0 20 0 * * *"
   # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
   # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.
   # The dummy default keeps the context bootable with the notification feature switched off.

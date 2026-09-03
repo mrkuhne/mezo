@@ -109,4 +109,25 @@ class LifeGoalEvaluateApiIT extends ApiIntegrationTest {
         assertThat(dayRepository.findByPillarIdAndDayAndDeletedFalse(pillar.getId(), yesterday))
             .hasValueSatisfying(r -> assertThat(r.getCreatedBy()).isEqualTo(owner));
     }
+
+    /**
+     * Both writers of the evaluate seam must agree on "evaluable" (final-review fix,
+     * mezo-iizd.6): {@link io.mrkuhne.mezo.feature.lifegoal.service.LifeGoalEvalJob} already
+     * skips non-active goals; {@code evaluateDays} now enforces the same guard so the manual
+     * HTTP path can't write pillar-days (or XP) for an archived/draft/parked/done goal. The
+     * response itself stays 200 with a read-computed (unwritten) progress body, not an error.
+     */
+    @Test
+    void evaluate_writes_no_rows_for_an_archived_goal() {
+        UUID owner = ownerId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "archived");
+        LifeGoalPillarEntity pillar = activityPillar(goal);
+        activity(owner, yesterday, 40);
+
+        LifeGoalProgressResponse response = evaluate(goal.getId());
+
+        assertThat(response).isNotNull();
+        assertThat(dayRepository.findByPillarIdAndDayAndDeletedFalse(pillar.getId(), yesterday)).isEmpty();
+        assertThat(dayRepository.count()).isZero();
+    }
 }
