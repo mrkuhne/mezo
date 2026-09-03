@@ -14168,6 +14168,12 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/MealContextRow'
+        note:
+          type: string
+          nullable: true
+          description: >-
+            1-2 mondatos AI-jegyzet ehhez a dimenzióhoz (meal-coach tölti;
+            determinisztikusan null)
     MealMacroDetail:
       type: object
       required:
@@ -14311,6 +14317,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MealImproveRow'
+        dimensionNotes:
+          type: object
+          nullable: true
+          additionalProperties:
+            type: string
+          description: >-
+            dim-id → 1-2 mondat; a breakdown dimension.note tükre a frissen
+            generált verdictben
     MealImproveRow:
       type: object
       required:

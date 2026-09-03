@@ -20,6 +20,7 @@ import io.mrkuhne.mezo.feature.progression.quest.QuestSignal;
 import io.mrkuhne.mezo.feature.progression.entity.SkillProgressEntity;
 import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
 import io.mrkuhne.mezo.feature.progression.habit.HabitSignal;
+import io.mrkuhne.mezo.feature.progression.lifegoal.LifeGoalSignal;
 import io.mrkuhne.mezo.feature.progression.needs.NeedsSignal;
 import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.feature.progression.repository.PerkUnlockRepository;
@@ -57,6 +58,7 @@ public class ProgressionService {
     private static final String SOURCE_ACTIVITY = "ACTIVITY";
     public static final String SOURCE_HABIT = "HABIT";
     private static final String SOURCE_NEEDS = "NEEDS";
+    public static final String SOURCE_LIFE_GOAL = "LIFE_GOAL";
     private static final int[] MILESTONES = {5, 10, 15, 20, 25, 30};
 
     private final SkillProgressRepository skillProgressRepository;
@@ -243,6 +245,24 @@ public class ProgressionService {
             kinds.put("recovery", "LIFE");
         }
         return award(createdBy, SOURCE_NEEDS, signal.needsDayId(), deltas, kinds,
+            signal.label(), null, null, signal.occurredOn());
+    }
+
+    /**
+     * Life-goal pillar-hit XP (mezo-iizd.6) → the pillar's own skill through the shared idempotent
+     * tail (source LIFE_GOAL). Idempotency rides the caller's deterministic D-1 sourceRefId, so the
+     * nightly job's 3-day rewrite window re-awards nothing. Never subtracts: a miss simply does not
+     * call this (ADR 0034 guardrail).
+     */
+    @Transactional
+    public LevelUpResult applyLifeGoal(UUID createdBy, LifeGoalSignal signal) {
+        Map<String, Long> deltas = new LinkedHashMap<>();
+        Map<String, String> kinds = new LinkedHashMap<>();
+        if (signal.xp() > 0) {
+            deltas.put(signal.skillKey(), (long) signal.xp());
+            kinds.put(signal.skillKey(), signal.skillKind());
+        }
+        return award(createdBy, SOURCE_LIFE_GOAL, signal.sourceRefId(), deltas, kinds,
             signal.label(), null, null, signal.occurredOn());
     }
 

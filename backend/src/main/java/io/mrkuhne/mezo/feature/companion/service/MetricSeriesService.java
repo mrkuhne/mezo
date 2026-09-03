@@ -58,7 +58,8 @@ import java.util.stream.Collectors;
  * from the owning features (the snapshot/digest precedent — companion → others, never back).
  * Multi-row days aggregate deterministically (avg scores, sum loads/volumes, max sleep row,
  * latest weigh-in); missing days are simply absent — the correlation aligns on presence, it
- * never invents values.
+ * never invents values. The two documented exceptions are {@code HABITS_DONE} and
+ * {@code COMBINED_LOAD_MIN}, where absence of a row genuinely means zero.
  */
 @Service
 @RequiredArgsConstructor
@@ -129,6 +130,9 @@ public class MetricSeriesService {
             case ACWR -> acwr(userId, from, to);
             case TRAINING_MONOTONY -> trainingMonotony(userId, from, to);
             case BEDTIME_VARIABILITY -> bedtimeVariability(userId, from, to);
+            case SHOULDER_STRAIN -> shoulderStrain(userId, from, to);
+            case WEIGHT_TREND_PCT_WK -> weightTrendPctWk(userId, from, to);
+            case COMBINED_LOAD_MIN -> combinedLoad(userId, from, to);
         };
     }
 
@@ -347,6 +351,48 @@ public class MetricSeriesService {
         return series;
     }
 
+    /**
+     * 7 napos gördülő legkisebb-négyzetes súly-lejtő %/hét-ben (a lejtő kg/nap × 7 / ablakátlag
+     * × 100). Honest gate: <4 mérés a gördülő ablakban ⇒ nincs adatpont. Belső ablak-kiterjesztés
+     * (az ACWR mintája): a hívó [from,to]-ja változatlan.
+     */
+    private Map<LocalDate, Double> weightTrendPctWk(UUID userId, LocalDate from, LocalDate to) {
+        TreeMap<LocalDate, Double> weights = new TreeMap<>();
+        weightLogRepository.findAllOwned(userId).stream()
+                .filter(log -> !log.getDate().isBefore(from.minusDays(6)) && !log.getDate().isAfter(to))
+                .sorted(java.util.Comparator.comparing(WeightLogEntity::getDate)
+                        .thenComparing(WeightLogEntity::getCreatedAt))
+                .forEach(log -> weights.put(log.getDate(), log.getWeightKg().doubleValue()));
+
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            List<double[]> points = new ArrayList<>(); // {dayIndex 0..6, weightKg}
+            for (int i = 6; i >= 0; i--) {
+                Double kg = weights.get(day.minusDays(i));
+                if (kg != null) {
+                    points.add(new double[] {6 - i, kg});
+                }
+            }
+            if (points.size() < 4) {
+                continue;
+            }
+            double meanX = points.stream().mapToDouble(p -> p[0]).average().orElseThrow();
+            double meanY = points.stream().mapToDouble(p -> p[1]).average().orElseThrow();
+            double num = 0;
+            double den = 0;
+            for (double[] p : points) {
+                num += (p[0] - meanX) * (p[1] - meanY);
+                den += (p[0] - meanX) * (p[0] - meanX);
+            }
+            if (den == 0) {
+                continue;
+            }
+            double slopeKgPerDay = num / den;
+            series.put(day, slopeKgPerDay * 7 / meanY * 100);
+        }
+        return series;
+    }
+
     private interface FeedbackValue {
         Integer value(ExerciseFeedbackEntity feedback);
     }
@@ -419,6 +465,20 @@ public class MetricSeriesService {
             load[i] = sport.getOrDefault(day, 0.0) + gym.getOrDefault(day, 0.0) / kgPerMin;
         }
         return load;
+    }
+
+    /**
+     * A dailyLoad naptári sor sorozatként: minden nap létezik, a nem-logolt nap valódi 0 — a
+     * HABITS_DONE utáni második dokumentált kivétel a "missing stays missing" szabály alól
+     * (edzés-nemlét itt információ, a gördülő terhelés-ablakok ezt igénylik).
+     */
+    private Map<LocalDate, Double> combinedLoad(UUID userId, LocalDate from, LocalDate to) {
+        double[] load = dailyLoad(userId, from, to);
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (int i = 0; i < load.length; i++) {
+            series.put(from.plusDays(i), load[i]);
+        }
+        return series;
     }
 
     /**
@@ -576,6 +636,18 @@ public class MetricSeriesService {
                     }
                 });
         return average(perDay);
+    }
+
+    /** A nap sport-session shoulder_strain CSÚCSA (1–10; null-os session nem adatpont). */
+    private Map<LocalDate, Double> shoulderStrain(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        sportSessionRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from)
+                .forEach(s -> {
+                    if (!s.getDate().isAfter(to) && s.getShoulderStrain() != null) {
+                        series.merge(s.getDate(), s.getShoulderStrain().doubleValue(), Math::max);
+                    }
+                });
+        return series;
     }
 
     private static Map<LocalDate, Double> average(Map<LocalDate, List<Double>> perDay) {

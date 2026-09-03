@@ -50,6 +50,14 @@ class MealCoachServiceIT extends AbstractIntegrationTest {
             .formatted(mealId);
     }
 
+    private static String cannedWithDimensionNotes(UUID mealId) {
+        return """
+            {"meals":[{"mealId":"%s","tagline":"Jó ebéd","summary":"Rendben volt.",\
+            "improve":[],"dimensionNotes":{"macro":"A fehérje erős ehhez az adaghoz.",\
+            "bogus":"eldobandó"}}]}"""
+            .formatted(mealId);
+    }
+
     /** A scored meal on {@code date} whose title carries the scripted answer for its own id. */
     private MealEntity scriptedMeal(UUID owner, LocalDate date, String name) {
         PantryItemEntity item = pantryItemPopulator.createFood(owner, "Zabpehely", LocalDate.now().plusMonths(6));
@@ -155,6 +163,31 @@ class MealCoachServiceIT extends AbstractIntegrationTest {
         assertThat(service.generateForDay(owner, today, true)).isEmpty();
         assertThat(mealRepository.findById(meal.getId()).orElseThrow()
             .getBreakdown().tagline()).isNull();
+    }
+
+    @Test
+    void testGenerateForMeal_shouldWriteDimensionNotesIntoTheEnvelope_andDropUnknownIds() {
+        UUID owner = owner();
+        LocalDate today = LocalDate.now();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Zabpehely", LocalDate.now().plusMonths(6));
+        MealEntity meal = mealPopulator.createScoredMeal(owner, item, today, "Zabkása",
+            today.atTime(6, 15).toInstant(ZoneOffset.UTC));
+        meal.setTitle("Zabkása [fake-meal-coach:" + cannedWithDimensionNotes(meal.getId()) + "]");
+        mealRepository.saveAndFlush(meal);
+
+        List<MealCoachVerdict> verdicts = service.generateForMeal(owner, meal.getId());
+
+        assertThat(verdicts).hasSize(1);
+        assertThat(verdicts.getFirst().getDimensionNotes())
+            .containsEntry("macro", "A fehérje erős ehhez az adaghoz.")
+            .doesNotContainKey("bogus");
+        MealBreakdownJson stored = mealRepository.findById(meal.getId()).orElseThrow().getBreakdown();
+        assertThat(stored.dimensions()).extracting(MealBreakdownJson.Dimension::id,
+                MealBreakdownJson.Dimension::note)
+            .containsExactly(org.assertj.core.groups.Tuple.tuple("macro",
+                "A fehérje erős ehhez az adaghoz."));
+        assertThat(stored.dimensions().stream().map(MealBreakdownJson.Dimension::note)
+            .filter(n -> "eldobandó".equals(n))).isEmpty();
     }
 
     @Test

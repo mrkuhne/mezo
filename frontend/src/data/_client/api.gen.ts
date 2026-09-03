@@ -5827,6 +5827,8 @@ export interface components {
             micros?: components["schemas"]["MealMicroRow"][] | null;
             nova?: components["schemas"]["MealNovaDetail"] | null;
             context?: components["schemas"]["MealContextRow"][] | null;
+            /** @description 1-2 mondatos AI-jegyzet ehhez a dimenzióhoz (meal-coach tölti; determinisztikusan null) */
+            note?: string | null;
         };
         MealMacroDetail: {
             /** @description Protein kcal-share of the meal, % */
@@ -5883,6 +5885,10 @@ export interface components {
             tagline?: string | null;
             summary?: string | null;
             improve: components["schemas"]["MealImproveRow"][];
+            /** @description dim-id → 1-2 mondat; a breakdown dimension.note tükre a frissen generált verdictben */
+            dimensionNotes?: {
+                [key: string]: string;
+            } | null;
         };
         MealImproveRow: {
             text: string;

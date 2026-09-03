@@ -251,7 +251,7 @@ export function NapMezoPage() {
         <div className="mz-hero-sb">{messages.length} üzenet · a napod fonala</div>
       </div>
       <PageBody>
-        <div className="nap-mzseg" role="tablist" aria-label="Mezo tartalom">
+        <div className="nap-mzseg" role="tablist" aria-label="Mezo tartalom" data-kalauz-anchor="uzenetek-tabs">
           <button type="button" role="tab" aria-selected={tab === 'uzenetek'}
             className={cn(tab === 'uzenetek' && 'on')} onClick={() => setTab('uzenetek')}>
             Üzenetek
