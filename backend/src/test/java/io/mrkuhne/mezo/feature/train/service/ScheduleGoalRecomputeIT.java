@@ -4,9 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
+import io.mrkuhne.mezo.api.dto.RunWeek;
+import io.mrkuhne.mezo.api.dto.RunningBlockStructureDto;
+import io.mrkuhne.mezo.api.dto.RunningBlockUpsertRequest;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
+import io.mrkuhne.mezo.feature.train.mapper.RunningMapper;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
@@ -26,8 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Verifies the train-owned {@link GoalRecomputePort} seam (ADR 0012, mezo-3g5w): every schedule
  * mutation trigger site ({@code SportService.replaceSchedule}, {@code GymScheduleService.replaceSchedule},
- * {@code RunningService.activateBlock}/{@code closeBlock}/{@code deleteBlock}) recomputes the owner's
- * ACTIVE goal prescription, since the weekly EAT is schedule-derived and would otherwise go stale.
+ * {@code RunningService.activateBlock}/{@code closeBlock}/{@code deleteBlock}/{@code updateBlock})
+ * recomputes the owner's ACTIVE goal prescription, since the weekly EAT is schedule-derived and
+ * would otherwise go stale.
  * Must stay graceful when no goal is active — a schedule edit never depends on having a goal.
  */
 @Transactional
@@ -43,6 +49,7 @@ class ScheduleGoalRecomputeIT extends AbstractIntegrationTest {
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private RunningPopulator runningPopulator;
+    @Autowired private RunningMapper runningMapper;
 
     private UUID owner;
     private UUID goalId;
@@ -120,5 +127,30 @@ class ScheduleGoalRecomputeIT extends AbstractIntegrationTest {
         runningService.closeBlock(owner, blockId);
         OffsetDateTime t3 = prescriptionGeneratedAt();
         assertThat(t3).isAfter(t2);
+    }
+
+    @Test
+    void testUpdateBlock_shouldRecomputeActiveGoalPrescription_whenStructureChanges() {
+        // given an ACTIVE block (updateBlock rewrites structure/weeks/dates on it, mezo-3g5w F1)
+        RunningBlockEntity block = runningPopulator.createBlock(owner, "Alapozó blokk", "active");
+        goalEngineService.evaluate(owner, goalId);
+        OffsetDateTime before = prescriptionGeneratedAt();
+
+        // when the block's structure gains an extra week (sessions/week changes for that block)
+        RunningBlockStructureDto structure = runningMapper.toDtoStructure(block.getStructure());
+        structure.addWeeksItem(new RunWeek().weekNumber(4).phaseLabel("Csúcsoltatás").sessions(List.of()));
+        RunningBlockUpsertRequest req = RunningBlockUpsertRequest.builder()
+            .title(block.getTitle())
+            .kind(block.getKind())
+            .startDate(block.getStartDate())
+            .endDate(block.getEndDate())
+            .weeks(block.getWeeks())
+            .structure(structure)
+            .build();
+        runningService.updateBlock(owner, block.getId(), req);
+
+        // then the prescription was regenerated — updateBlock recomputes just like its siblings
+        OffsetDateTime after = prescriptionGeneratedAt();
+        assertThat(after).isAfter(before);
     }
 }

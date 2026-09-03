@@ -65,7 +65,11 @@ public class RunningService {
     public RunningBlockResponse updateBlock(UUID userId, UUID id, RunningBlockUpsertRequest req) {
         RunningBlockEntity e = requireOwned(userId, id);
         applyUpsert(e, req);
-        return toResponse(blockRepository.save(e));
+        RunningBlockEntity saved = blockRepository.save(e);
+        // The weekly EAT is schedule-derived → editing a block's structure/weeks/dates must
+        // recompute the prescription (G5 trigger, mezo-3g5w). Graceful when no goal is active.
+        goalRecomputePort.recomputeActiveGoal(userId);
+        return toResponse(saved);
     }
 
     @Transactional
