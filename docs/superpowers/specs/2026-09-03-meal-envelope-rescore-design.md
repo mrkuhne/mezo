@@ -119,10 +119,21 @@ fagyasztva, ezért egy régi étkezés ma más számot kaphat, mint a logolásak
    `macro-protein-surplus-penalty: 0.0` a *makró-score-t magát* mozgatja, kis étkezéseknél láthatóan.
 
 Ez nem mellékhatás: **ez a fix célja** (a review pont ezért választotta a re-score-t a
-FE-kozmetika helyett). Egy ismert kellemetlenség viszont itt bújik meg: a `mezo-g8qm` szerint
-a csupasz `Z`-instanttal logolt régi sorok időzítése **már ma is** félreolvasódik, és a
-`systemDefault()`-os újrapontozás ezeknek a *szerepét* is átírhatja. A runner ezért soronként
-`debug` szinten logolja a régi→új score-deltát, és egy `info` összegző sort ír.
+FE-kozmetika helyett). A runner ezért soronként `debug` szinten logolja a régi→új score-deltát,
+és egy `info` összegző sort ír.
+
+**Egy ráadás-gyógyulás.** A lezárt `mezo-g8qm` szerint a régi capture-sheetek csupasz `Z`
+instantot küldtek, és a backend az *írás-idejű* `loggedAt.toLocalTime()`-ot használta a
+szerep-klasszifikációhoz — a **tárolt `Instant` viszont mindig is helyes UTC volt**, csak a
+falióra-idő lett 1-2 órával elcsúsztatva. Az issue záró jegyzete explicit is kimondja, hogy a
+pre-fix élő étkezés (PB Banana Toast, 0.46) *„is NOT retroactively re-scored — re-log or edit
+to re-score"*. A `ZoneId.systemDefault()`-os újrapontozás a helyes UTC instantból a helyes helyi
+időt vezeti le, tehát ezeknek a soroknak a `MealRole`-ját és időzítés-dimenzióját **meggyógyítja**
+— ez a backfill nem költsége, hanem hozadéka.
+
+A `systemDefault()` valódi korlátja más: a **szerver** zónája, nem a felhasználóé. Amíg a kettő
+egyezik (egy felhasználó, `Europe/Budapest`), ez pontos; ha valaha eltérnének, az az egész
+kódbázis konvencióját érintő kérdés (36 hívóhely), nem ezé a szeletté.
 
 Az envelope-ok Hungarian `detail` / `MacroDetail.targetP|C|F` / `ContextRow` szövegei szintén
 újraíródnak — bármely fixture-szövegre asszertáló teszt elmozdul.
