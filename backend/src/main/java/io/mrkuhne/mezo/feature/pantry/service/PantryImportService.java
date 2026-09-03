@@ -9,7 +9,6 @@ import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryImportEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.mapper.PantryMapper;
-import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryImportRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -41,7 +40,7 @@ public class PantryImportService {
 
     private final OffClient offClient;
     private final PantryItemRepository itemRepository;
-    private final PantryCatalogRepository catalogRepository;
+    private final PantryCatalogService catalogService;
     private final PantryImportRepository importRepository;
     private final PantryMapper mapper;
     /**
@@ -83,34 +82,33 @@ public class PantryImportService {
             ? PantryScrapeService.sourceFor(req.getSourceUrl())
             : "photo".equals(req.getOrigin()) ? SOURCE_PHOTO : SOURCE_OPENFOODFACTS;
 
-        // Inline find-or-create by natural key — Task 7 swaps this for PantryCatalogService.
-        PantryCatalogEntity catalogCandidate = new PantryCatalogEntity();
-        // created_by MUST be set: a null author means "loader master content" (S4, mezo-qw37.4),
-        // so an imported definition without it would silently join the seeded master catalog.
-        catalogCandidate.setCreatedBy(userId);
-        catalogCandidate.setKind("food");
-        catalogCandidate.setSource(source);
-        catalogCandidate.setName(req.getName());
-        catalogCandidate.setBrand(req.getBrand());
-        catalogCandidate.setCategory(req.getCategory() == null ? null : req.getCategory().getValue());
-        catalogCandidate.setServingAmount(req.getPer());
-        catalogCandidate.setServingUnit(req.getUnit());
-        catalogCandidate.setKcal(req.getKcal());
-        catalogCandidate.setProteinG(req.getProteinG());
-        catalogCandidate.setCarbsG(req.getCarbsG());
-        catalogCandidate.setFatG(req.getFatG());
-        catalogCandidate.setFiberG(req.getFiberG());
-        catalogCandidate.setSugarG(req.getSugarG());
-        catalogCandidate.setSaltG(req.getSaltG());
-        catalogCandidate.setSaturatedFatG(req.getSaturatedFatG());
-        catalogCandidate.setNova(req.getNova() == null ? null : req.getNova().shortValue());
-        PantryCatalogEntity catalog = catalogRepository
-            .findByNaturalKey(catalogCandidate.getName(), catalogCandidate.getBrand())
-            .orElseGet(() -> catalogRepository.save(catalogCandidate));
-
-        PantryItemEntity item = new PantryItemEntity();
-        item.setCreatedBy(userId); // server-side ownership — never from the client
-        item.setCatalog(catalog);
+        // created_by is stamped server-side inside PantryCatalogService#findOrCreate on insert; a
+        // null author means "loader master content" (S4, mezo-qw37.4), so a user import must never
+        // skip that step and silently join the seeded master catalog (review finding i).
+        PantryCatalogEntity candidate = new PantryCatalogEntity();
+        candidate.setKind("food");
+        candidate.setSource(source);
+        candidate.setName(req.getName());
+        candidate.setBrand(req.getBrand());
+        candidate.setCategory(req.getCategory() == null ? null : req.getCategory().getValue());
+        candidate.setServingAmount(req.getPer());
+        candidate.setServingUnit(req.getUnit());
+        candidate.setKcal(req.getKcal());
+        candidate.setProteinG(req.getProteinG());
+        candidate.setCarbsG(req.getCarbsG());
+        candidate.setFatG(req.getFatG());
+        candidate.setFiberG(req.getFiberG());
+        candidate.setSugarG(req.getSugarG());
+        candidate.setSaltG(req.getSaltG());
+        candidate.setSaturatedFatG(req.getSaturatedFatG());
+        candidate.setNova(req.getNova() == null ? null : req.getNova().shortValue());
+        // A natural-key hit binds to the shared definition (fill-only merge of NULL fields — see
+        // PantryCatalogService#findOrCreate, review finding h); a miss is authored by this user.
+        PantryCatalogEntity catalog = catalogService.findOrCreate(userId, candidate);
+        // Idempotent shelf row (review finding g): a second import of the same product by the same
+        // user must bind to their existing row instead of tripping
+        // uq_pantry_item_created_by_catalog_id with an unconditional insert.
+        PantryItemEntity item = catalogService.ensureItem(userId, catalog.getId());
         item.setPriceHuf(req.getPriceHuf());
         item.setPriceUnit(req.getPriceUnit());
         item = itemRepository.save(item);
@@ -118,7 +116,7 @@ public class PantryImportService {
         PantryImportEntity feed = new PantryImportEntity();
         feed.setCreatedBy(userId);
         feed.setSource(source);
-        feed.setItemName(item.getCatalog().getName());
+        feed.setItemName(catalog.getName());
         feed.setItemCount(1);
         feed.setStatus(isManualReview(req.getConfidence()) ? "manual-review" : "synced");
         feed.setBarcode(req.getBarcode());

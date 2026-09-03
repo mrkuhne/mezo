@@ -165,6 +165,53 @@ class PantryImportApiIT extends ApiIntegrationTest {
         assertThat(feed.getStatus()).isEqualTo(PantryImportEntryResponse.StatusEnum.SYNCED);
         assertThat(feed.getItems()).isEqualTo(1);
         assertThat(feed.getWhen()).isNotNull();
+
+        var ing = pantry.getIngredients().stream().filter(i -> i.getId().equals(created.getId())).findFirst().orElseThrow();
+        assertThat(ing.getCatalogId()).isNotNull();
+        assertThat(ing.getSharedFrom()).isNull();         // own definition
+        assertThat(ing.getCatalogEditable()).isTrue();    // author (OWNER here anyway)
+    }
+
+    @Test
+    void testImport_shouldBindToExistingDefinition_whenAnotherUserImportedTheSameProduct() {
+        RegisteredUser anna = registerUser("Anna");
+        RegisteredUser bela = registerUser("Béla");
+        PantryImportRequest req = new PantryImportRequest();
+        req.setName("Skyr natúr");
+        req.setBrand("Ehrmann");
+        req.setPer(new BigDecimal("100"));
+        req.setUnit("g");
+        req.setKcal(new BigDecimal("63"));
+        PantryItemResponse annas = postForBody("/api/pantry-import", req, anna.headers(), HttpStatus.CREATED, PantryItemResponse.class);
+        PantryItemResponse belas = postForBody("/api/pantry-import", req, bela.headers(), HttpStatus.CREATED, PantryItemResponse.class);
+        assertThat(belas.getCatalogId()).isEqualTo(annas.getCatalogId());
+        assertThat(belas.getId()).isNotEqualTo(annas.getId());
+        // each user's feed has exactly one row, pointing at their own shelf item
+        assertThat(getForBody("/api/pantry", bela.headers(), HttpStatus.OK, PantryResponse.class).getImports()).hasSize(1);
+    }
+
+    /**
+     * Review finding (g): before Task 7, importItem unconditionally inserted a fresh
+     * pantry_item, so a second import of the same product by the SAME user violated
+     * uq_pantry_item_created_by_catalog_id (or, pre-split, silently duplicated the shelf row).
+     * Now it must route through PantryCatalogService#ensureItem and reuse the existing row.
+     */
+    @Test
+    void testImport_shouldReuseSameShelfRow_whenSameUserImportsTheSameProductTwice() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        PantryItemResponse first = postForBody("/api/pantry-import", importReq(), auth,
+            HttpStatus.CREATED, PantryItemResponse.class);
+        PantryItemResponse second = postForBody("/api/pantry-import", importReq(), auth,
+            HttpStatus.CREATED, PantryItemResponse.class);
+
+        assertThat(second.getId()).isEqualTo(first.getId());
+        assertThat(second.getCatalogId()).isEqualTo(first.getCatalogId());
+
+        PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
+        assertThat(pantry.getIngredients().stream().filter(i -> i.getId().equals(first.getId())).count()).isEqualTo(1);
+        // both imports still feed the activity log — one row per import event, one shelf row total
+        assertThat(pantry.getImports()).hasSize(2);
     }
 
     @Test

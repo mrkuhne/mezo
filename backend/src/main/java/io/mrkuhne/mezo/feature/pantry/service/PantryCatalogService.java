@@ -68,10 +68,11 @@ public class PantryCatalogService {
     }
 
     /**
-     * Natural-key find-or-create. A hit (even a soft-deleted one left by the migration) is revived
-     * and returned — never a 409 (spec §11). A miss is inserted in its OWN committed transaction so
-     * that two users typing the same food at once both end up bound to the single winner: the
-     * loser's unique-index violation is caught and re-resolved by lookup.
+     * Natural-key find-or-create. A hit (even a soft-deleted one left by the migration) is revived,
+     * fill-only merged with the candidate's facts (see {@link #mergeIfEditable}), and returned —
+     * never a 409 (spec §11). A miss is inserted in its OWN committed transaction so that two users
+     * typing the same food at once both end up bound to the single winner: the loser's unique-index
+     * violation is caught and re-resolved by lookup.
      */
     public PantryCatalogEntity findOrCreate(UUID authorId, PantryCatalogEntity candidate) {
         Objects.requireNonNull(candidate.getName(), "candidate.name");
@@ -80,7 +81,7 @@ public class PantryCatalogService {
             candidate.setBrand(candidate.getBrand().strip());
         }
         return catalogRepository.findByNaturalKey(candidate.getName(), candidate.getBrand())
-            .map(this::revive)
+            .map(existing -> mergeIfEditable(authorId, revive(existing), candidate))
             .orElseGet(() -> insertOrBind(authorId, candidate));
     }
 
@@ -95,6 +96,49 @@ public class PantryCatalogService {
             return catalogRepository.saveAndFlush(c);
         }
         return c;
+    }
+
+    /**
+     * Merge policy (S4 Task 7 review finding h): a natural-key hit binds to the EXISTING row, so
+     * the candidate's freshly scraped/typed facts would otherwise be silently dropped. Fill only
+     * the fields the existing row still has NULL — never overwrite a value someone already
+     * curated — and only when {@code authorId} may edit the row (its author, or OWNER); otherwise
+     * another user's or the loader master's curated nutrition is left untouched.
+     */
+    private PantryCatalogEntity mergeIfEditable(UUID authorId, PantryCatalogEntity existing, PantryCatalogEntity candidate) {
+        if (!isEditableBy(authorId, existing)) {
+            return existing;
+        }
+        boolean changed = false;
+        changed |= fillIfNull(existing::getCategory, existing::setCategory, candidate.getCategory());
+        changed |= fillIfNull(existing::getServingAmount, existing::setServingAmount, candidate.getServingAmount());
+        changed |= fillIfNull(existing::getServingUnit, existing::setServingUnit, candidate.getServingUnit());
+        changed |= fillIfNull(existing::getKcal, existing::setKcal, candidate.getKcal());
+        changed |= fillIfNull(existing::getProteinG, existing::setProteinG, candidate.getProteinG());
+        changed |= fillIfNull(existing::getCarbsG, existing::setCarbsG, candidate.getCarbsG());
+        changed |= fillIfNull(existing::getFatG, existing::setFatG, candidate.getFatG());
+        changed |= fillIfNull(existing::getFiberG, existing::setFiberG, candidate.getFiberG());
+        changed |= fillIfNull(existing::getSugarG, existing::setSugarG, candidate.getSugarG());
+        changed |= fillIfNull(existing::getSaltG, existing::setSaltG, candidate.getSaltG());
+        changed |= fillIfNull(existing::getSaturatedFatG, existing::setSaturatedFatG, candidate.getSaturatedFatG());
+        changed |= fillIfNull(existing::getNova, existing::setNova, candidate.getNova());
+        return changed ? catalogRepository.saveAndFlush(existing) : existing;
+    }
+
+    /** Same author-or-OWNER rule as {@link #editable}, from just the id (no {@code AppUserEntity} in hand yet). */
+    private boolean isEditableBy(UUID authorId, PantryCatalogEntity c) {
+        if (!c.isMaster() && c.getCreatedBy().equals(authorId)) {
+            return true;
+        }
+        return appUserRepository.findById(authorId).map(AppUserEntity::isOwner).orElse(false);
+    }
+
+    private static <T> boolean fillIfNull(java.util.function.Supplier<T> getter, java.util.function.Consumer<T> setter, T value) {
+        if (getter.get() != null || value == null) {
+            return false;
+        }
+        setter.accept(value);
+        return true;
     }
 
     private PantryCatalogEntity insertOrBind(UUID authorId, PantryCatalogEntity candidate) {
