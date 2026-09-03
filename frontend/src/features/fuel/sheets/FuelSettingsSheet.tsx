@@ -31,6 +31,7 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
   const [proteinTier, setProteinTier] = useState(diet.proteinTier)
   const [waterMl, setWaterMl] = useState(diet.waterMl)
   const [fiberG, setFiberG] = useState(diet.fiberG)
+  const [dayTypeShiftKcal, setDayTypeShiftKcal] = useState(diet.dayTypeShiftKcal)
 
   // Cold-open prefill race (mezo-53su): in real mode each read starts from its own ghost
   // (fuel: 4/14:00; diet: balanced/4000/30) and flips to the server value once its fetch lands.
@@ -55,7 +56,8 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
     setProteinTier(diet.proteinTier)
     setWaterMl(diet.waterMl)
     setFiberG(diet.fiberG)
-  }, [dietPending, touchedDiet, diet.splitPreset, diet.proteinPctX10, diet.carbsPctX10, diet.fatPctX10, diet.proteinTier, diet.waterMl, diet.fiberG])
+    setDayTypeShiftKcal(diet.dayTypeShiftKcal)
+  }, [dietPending, touchedDiet, diet.splitPreset, diet.proteinPctX10, diet.carbsPctX10, diet.fatPctX10, diet.proteinTier, diet.waterMl, diet.fiberG, diet.dayTypeShiftKcal])
 
   // Custom split must sum to exactly 100.0% (rounded to 0.1) before Save is allowed.
   const customSumOk = splitPreset !== 'custom' || Math.round((pPct + cPct + fPct) * 10) === 1000
@@ -73,7 +75,7 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
         carbsPctX10: splitPreset === 'custom' ? Math.round(cPct * 10) : null,
         fatPctX10: splitPreset === 'custom' ? Math.round(fPct * 10) : null,
         proteinTier, waterMl, fiberG,
-        dayTypeShiftKcal: diet.dayTypeShiftKcal, // pass through unchanged — knob UI is a later task
+        dayTypeShiftKcal,
       }),
     ]).then(close)
 
@@ -160,6 +162,24 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
               onChange={(e) => { setTouchedDiet(true); setFiberG(Number(e.target.value)) }}
               style={{ width: 72, background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right' }} />
           </div>
+          <div className="row" style={ROW}>
+            <span style={LABEL}>Edzőnap-shift</span>
+            <div className="row gap-sm" style={{ alignItems: 'center' }}>
+              <button type="button" className="chip" aria-label="Edzőnap-shift csökkentése"
+                disabled={dayTypeShiftKcal <= 0} onClick={() => { setTouchedDiet(true); setDayTypeShiftKcal(v => Math.max(0, v - 50)) }}
+                style={{ opacity: dayTypeShiftKcal <= 0 ? 0.4 : 1 }}><Icon name="minus" size={12} /></button>
+              <span aria-label="Edzőnap-shift"
+                style={{ minWidth: 34, textAlign: 'center', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+                {dayTypeShiftKcal > 0 ? `${dayTypeShiftKcal} kcal` : 'ki'}
+              </span>
+              <button type="button" className="chip" aria-label="Edzőnap-shift növelése"
+                disabled={dayTypeShiftKcal >= 500} onClick={() => { setTouchedDiet(true); setDayTypeShiftKcal(v => Math.min(500, v + 50)) }}
+                style={{ opacity: dayTypeShiftKcal >= 500 ? 0.4 : 1 }}><Icon name="plus" size={12} /></button>
+            </div>
+          </div>
+          <p style={{ fontSize: 10, color: 'var(--faint)', margin: 0 }}>
+            Pihenőnapról edzőnapra átcsoportosított kcal — a heti keret nem változik, a különbség szénhidrátba megy.
+          </p>
 
           <button type="button" style={ROW} className="row" aria-label="Étkezési ablakok szerkesztése" onClick={() => { close(); navigate('/fuel/slots') }}>
             <span style={LABEL}>Étkezési ablakok</span>
