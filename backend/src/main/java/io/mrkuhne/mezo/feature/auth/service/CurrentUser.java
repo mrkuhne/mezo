@@ -20,11 +20,20 @@ import org.springframework.web.context.request.RequestContextHolder;
  *
  * <p>Every protected request crosses {@link #get()} (via {@code CurrentUserId}), which is where
  * a DISABLED account is rejected — the JWT itself stays valid for 30 days, so this per-request
- * check is the revocation mechanism (spec M1). Since Finding 4 (mezo-qw37.1 review) it also
- * rejects a token whose {@code iat} precedes {@code AppUserEntity.tokensValidFrom} (stamped by
- * {@code AuthService.changePassword}), with a {@link #TOKENS_VALID_FROM_GRACE} tolerance for the
- * second-vs-microsecond precision mismatch between a JWT claim and the DB column. The loaded
- * entity is cached as a request attribute; on non-request threads (cron) no caching happens.
+ * check is the revocation mechanism (spec M1). Since Finding 4 (mezo-qw37.1 review, second pass)
+ * it also rejects a token whose {@code iat} is strictly before {@code
+ * AppUserEntity.tokensValidFrom}. That column is stamped by {@code AuthService.changePassword} to
+ * the {@code iat} of the token that PERFORMED the change (via {@link #tokenIssuedAt()}) — never
+ * to {@code Instant.now()} — so the comparison is JWT-iat vs JWT-iat, same clock, same
+ * granularity: the performing token's own {@code iat} equals the watermark exactly, so {@code
+ * isBefore} is false and it survives; every strictly older token dies. (An earlier version of
+ * this fix stamped {@code Instant.now()} at commit time and needed a grace window to paper over
+ * the gap between a token's mint and the password-change transaction's commit — that gap is
+ * seconds to minutes in practice [three form fields, two BCrypt operations], not a rounding
+ * error, so the grace window silently signed the user themselves out right after a successful
+ * change. Anchoring to the performing token's own {@code iat} removes the need for a grace window
+ * entirely.) The loaded entity is cached as a request attribute; on non-request threads (cron) no
+ * caching happens.
  *
  * <p><b>Usage contract:</b> call {@link #get()} / {@link #id()} from the controller layer only —
  * as a method argument, or at the very top of the handler before any service call — never from
@@ -43,13 +52,16 @@ public class CurrentUser {
     private final AppUserRepository appUserRepository;
 
     /**
-     * Grace window applied when comparing a JWT's second-granularity {@code iat} against the
-     * microsecond-precision {@code tokens_valid_from} column (Finding 4, mezo-qw37.1 review):
-     * without it, a request that straddles a UTC-second boundary between the token's mint and
-     * the change-password transaction's commit could invalidate the very token that just
-     * performed the change.
+     * The {@code iat} of the JWT authenticating the CURRENT request (Finding 4, mezo-qw37.1
+     * review). {@code AuthService.changePassword} stamps {@code AppUserEntity.tokensValidFrom} to
+     * this — the performing token's own mint time, not {@code Instant.now()} — so every token
+     * issued strictly before it (including the performing token's own future re-reads of {@link
+     * #get()} within the same request) is revoked, while the performing token itself, whose
+     * {@code iat} equals the watermark, is not.
      */
-    static final Duration TOKENS_VALID_FROM_GRACE = Duration.ofSeconds(1);
+    public Instant tokenIssuedAt() {
+        return subjectFromContext().issuedAt();
+    }
 
     public AppUserEntity get() {
         RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
@@ -94,10 +106,13 @@ public class CurrentUser {
                 SystemMessage.error("AUTH_ACCOUNT_DISABLED").build(), HttpStatus.FORBIDDEN);
         }
         Instant validFrom = user.getTokensValidFrom();
-        if (validFrom != null && claims.issuedAt() != null
-                && claims.issuedAt().isBefore(validFrom.minus(TOKENS_VALID_FROM_GRACE))) {
-            // A password change happened after this token was minted — same "dead session" as a
-            // missing token, so the same code/status the frontend already treats as sign-out.
+        if (validFrom != null && claims.issuedAt() != null && claims.issuedAt().isBefore(validFrom)) {
+            // tokensValidFrom is the iat of the token that performed the last password change —
+            // strictly-before means THIS token predates it, i.e. was minted before that change.
+            // No grace window: both sides are JWT iat values (same clock, same granularity), so
+            // the performing token itself (iat == validFrom) is never caught by isBefore.
+            // Same "dead session" as a missing token, so the same code/status the frontend
+            // already treats as sign-out.
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("AUTH_TOKEN_MISSING").build(), HttpStatus.UNAUTHORIZED);
         }

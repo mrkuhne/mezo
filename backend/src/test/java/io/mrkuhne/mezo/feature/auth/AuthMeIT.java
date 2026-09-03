@@ -11,7 +11,6 @@ import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.auth.service.InviteService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
-import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,25 +89,59 @@ class AuthMeIT extends ApiIntegrationTest {
     }
 
     /**
-     * Finding 4 (mezo-qw37.1 review): a token stolen before a password change must not survive
-     * it for the rest of its 30-day life. Sleeps past {@code CurrentUser}'s one-second grace
-     * window so the stale token's real {@code iat} is unambiguously before the watermark, then
-     * sets {@code tokensValidFrom} directly (rather than via a real change-password call, which
-     * is covered by the sibling test below) — isolating this test to the rejection side of the
-     * compare. A freshly-issued token (minted AFTER that watermark) must still work.
+     * Finding 4 (mezo-qw37.1 review, SECOND pass — the first pass regressed this exact case).
+     * {@code tokensValidFrom} used to be stamped to {@code Instant.now()} at the moment the
+     * change-password transaction committed. But a JWT's {@code iat} is fixed at LOGIN time and
+     * never refreshed, and everything between login and this call — typing three password
+     * fields, two deliberately slow BCrypt operations — is seconds to minutes, not the
+     * sub-second gap a naive fix might assume. So the wall-clock stamp landed measurably AFTER
+     * the performing token's own {@code iat}, and the very next request that token made (exactly
+     * what {@code AuthGate.onAuthenticated}'s post-success {@code me()} call is) got 401'd
+     * straight back to the login screen — the first thing a user seeing the forced-change screen
+     * would experience.
+     *
+     * <p>The {@code sleep} below is deliberate and makes the test STRICTER, not flaky: it widens
+     * the login-to-change-password gap to well over a second, which is exactly the gap that used
+     * to break this under the {@code Instant.now()} stamp. Verified against the pre-fix
+     * implementation (anchoring {@code tokensValidFrom} to {@code Instant.now()} instead of the
+     * performing token's {@code iat}): this test fails there (401 instead of 200) — see the
+     * mezo-qw37.1 fix-wave report for the run.
      */
     @Test
-    void testProtectedCall_shouldReturn401_whenTokenIssuedBeforeTokensValidFrom() throws InterruptedException {
-        HttpHeaders staleTokenHeaders = registerFresh("revoke@test.local");
-        Thread.sleep(1100); // > CurrentUser.TOKENS_VALID_FROM_GRACE, so the compare is unambiguous
-        AppUserEntity user = appUserRepository.findByEmail("revoke@test.local").orElseThrow();
-        user.setTokensValidFrom(Instant.now());
-        appUserRepository.saveAndFlush(user);
+    void testChangePassword_shouldNotInvalidateTheTokenThatPerformedTheChange() throws InterruptedException {
+        HttpHeaders headers = registerFresh("selfsurvive@test.local");
+        Thread.sleep(1100); // widens the login-to-change gap well past what broke this under Instant.now()
 
-        String body = getForBody("/api/auth/me", staleTokenHeaders, HttpStatus.UNAUTHORIZED, String.class);
+        postForBody("/api/auth/change-password", new ChangePasswordRequest("titkos-jelszo-1", "uj-jelszo-2026"),
+            headers, HttpStatus.NO_CONTENT, Void.class);
+
+        getForBody("/api/auth/me", headers, HttpStatus.OK, MeResponse.class);
+    }
+
+    /**
+     * Finding 4 (mezo-qw37.1 review): a token minted BEFORE a password change must not survive
+     * it, while a token from a fresh post-change login works. {@code changePassword} is
+     * performed with a SECOND, later-minted token (not the original registration token) so the
+     * watermark ({@code tokensValidFrom} = the performing token's {@code iat}) lands strictly
+     * after the original token's {@code iat} without any direct DB manipulation — the sleep
+     * between mints is what guarantees the two tokens land in different UTC seconds.
+     */
+    @Test
+    void testProtectedCall_shouldReturn401_whenTokenIssuedBeforeChange() throws InterruptedException {
+        HttpHeaders originalHeaders = registerFresh("beforechange@test.local");
+        Thread.sleep(1100); // guarantees the login below mints a token with a strictly later iat
+        TokenResponse performing = postForBody("/api/auth/login",
+            new LoginRequest("beforechange@test.local", "titkos-jelszo-1"), null, HttpStatus.OK, TokenResponse.class);
+        HttpHeaders performingHeaders = new HttpHeaders();
+        performingHeaders.setBearerAuth(performing.getToken());
+
+        postForBody("/api/auth/change-password", new ChangePasswordRequest("titkos-jelszo-1", "uj-jelszo-2026"),
+            performingHeaders, HttpStatus.NO_CONTENT, Void.class);
+
+        String body = getForBody("/api/auth/me", originalHeaders, HttpStatus.UNAUTHORIZED, String.class);
         assertHasRequestError(body, "AUTH_TOKEN_MISSING");
 
-        TokenResponse fresh = postForBody("/api/auth/login", new LoginRequest("revoke@test.local", "titkos-jelszo-1"),
+        TokenResponse fresh = postForBody("/api/auth/login", new LoginRequest("beforechange@test.local", "uj-jelszo-2026"),
             null, HttpStatus.OK, TokenResponse.class);
         HttpHeaders freshHeaders = new HttpHeaders();
         freshHeaders.setBearerAuth(fresh.getToken());
@@ -116,22 +149,27 @@ class AuthMeIT extends ApiIntegrationTest {
     }
 
     /**
-     * Finding 4 (mezo-qw37.1 review), the precision-mismatch pin: the token used to PERFORM the
-     * change is the most common case a naive (grace-less) {@code iat < tokensValidFrom} compare
-     * would break — the change-password transaction can commit a fraction of a second after the
-     * token's second-granularity {@code iat}, i.e. in a LATER UTC second, which a strict compare
-     * misreads as "issued before revocation". The real HTTP round-trip below exercises exactly
-     * that window; without the grace, this test is flaky-to-always-failing depending on second
-     * boundaries. Chosen behaviour: the change-password token stays valid (frontend never needs
-     * to special-case its own change-password call).
+     * Finding 4 (mezo-qw37.1 review) — the actual security property, isolated from any
+     * subsequent login: mint token A, then log in again to mint token B, then change the
+     * password USING B. A must die (it predates the watermark); B must live (it IS the
+     * watermark) — this is the "old sessions die, the acting session doesn't" guarantee that
+     * makes password-change a real compromise-recovery lever.
      */
     @Test
-    void testChangePassword_shouldNotInvalidateTheTokenThatPerformedTheChange() {
-        HttpHeaders headers = registerFresh("selfsurvive@test.local");
-        postForBody("/api/auth/change-password", new ChangePasswordRequest("titkos-jelszo-1", "uj-jelszo-2026"),
-            headers, HttpStatus.NO_CONTENT, Void.class);
+    void testChangePassword_shouldInvalidateOlderTokenButNotThePerformingToken() throws InterruptedException {
+        HttpHeaders tokenA = registerFresh("olderdies@test.local");
+        Thread.sleep(1100); // guarantees B's iat lands in a strictly later UTC second than A's
+        TokenResponse b = postForBody("/api/auth/login",
+            new LoginRequest("olderdies@test.local", "titkos-jelszo-1"), null, HttpStatus.OK, TokenResponse.class);
+        HttpHeaders tokenB = new HttpHeaders();
+        tokenB.setBearerAuth(b.getToken());
 
-        getForBody("/api/auth/me", headers, HttpStatus.OK, MeResponse.class);
+        postForBody("/api/auth/change-password", new ChangePasswordRequest("titkos-jelszo-1", "uj-jelszo-2026"),
+            tokenB, HttpStatus.NO_CONTENT, Void.class);
+
+        String body = getForBody("/api/auth/me", tokenA, HttpStatus.UNAUTHORIZED, String.class);
+        assertHasRequestError(body, "AUTH_TOKEN_MISSING");
+        getForBody("/api/auth/me", tokenB, HttpStatus.OK, MeResponse.class);
     }
 
     @Test

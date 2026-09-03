@@ -92,9 +92,21 @@ public class AuthService {
      * {@code @Version} column, so saving that stale snapshot would let JPA merge() silently
      * overwrite any concurrent write made to other columns between request start and this call.
      * The passed-in entity is used only for its id.
+     *
+     * @param performingTokenIssuedAt the {@code iat} of the JWT that is CALLING this method
+     *     (from {@code CurrentUser.tokenIssuedAt()}) — becomes the new {@code tokensValidFrom}
+     *     watermark. Finding 4 (mezo-qw37.1 review, second pass): this must be the performing
+     *     token's own mint time, NOT {@code Instant.now()}. A wall-clock stamp sits seconds to
+     *     minutes after the token was actually minted (three form fields, two deliberately slow
+     *     BCrypt operations), so it would revoke the very token that just performed the change —
+     *     the user's own next request (e.g. {@code AuthGate}'s post-success {@code me()} call)
+     *     would 401 and bounce them straight back to the login screen. Anchoring to the
+     *     performing token's {@code iat} instead makes the semantics exact and grace-free: every
+     *     token issued strictly before it is dead, and the performing token (whose {@code iat}
+     *     equals the watermark) is not "before" itself.
      */
     @Transactional
-    public void changePassword(AppUserEntity user, ChangePasswordRequest req) {
+    public void changePassword(AppUserEntity user, Instant performingTokenIssuedAt, ChangePasswordRequest req) {
         AppUserEntity current = appUserRepository.findById(user.getId())
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("AUTH_TOKEN_MISSING").build(), HttpStatus.UNAUTHORIZED));
@@ -106,9 +118,9 @@ public class AuthService {
         current.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
         current.setMustChangePassword(false);
         // Finding 4 (mezo-qw37.1 review): a token stolen before this change must not survive it.
-        // See CurrentUser.load()'s one-second grace note — that (not truncation here) is what
-        // keeps the token that just performed THIS very change from invalidating itself.
-        current.setTokensValidFrom(Instant.now());
+        // See the @param note above and CurrentUser's class javadoc for why this is the
+        // performing token's iat, not Instant.now().
+        current.setTokensValidFrom(performingTokenIssuedAt);
         appUserRepository.save(current);
     }
 

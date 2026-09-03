@@ -36,7 +36,9 @@ public class AuthController implements AuthApi {
 
     @Override
     public void changePassword(ChangePasswordRequest changePasswordRequest) {
-        authService.changePassword(currentUser.get(), changePasswordRequest);
+        // currentUser.tokenIssuedAt() (Finding 4, mezo-qw37.1 review): the performing token's
+        // OWN iat becomes the new tokens_valid_from watermark, so it survives its own change.
+        authService.changePassword(currentUser.get(), currentUser.tokenIssuedAt(), changePasswordRequest);
     }
 
     @Override

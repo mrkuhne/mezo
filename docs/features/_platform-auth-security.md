@@ -135,7 +135,7 @@ view → useX hook (frontend/src/data/hooks.ts) → *Api.ts client → apiFetch 
 | `onboarded_at` | `timestamptz` | null = onboarding not done; the S1 backfill sets it to `created_at` for every pre-existing (owner) row |
 | `must_change_password` | `boolean NOT NULL default false` | drives `AuthGate`'s `mustChangePassword` phase |
 | `last_seen_at` | `timestamptz` | stamped by `CurrentUser`, at most once per 5 minutes per account |
-| `tokens_valid_from` | `timestamptz` | null until the first password change; stamped to `now()` by `AuthService.changePassword`. `CurrentUser.load()` rejects a JWT whose `iat` precedes it (one-second grace for the second-vs-microsecond precision mismatch) — the password-change revocation mechanism (mezo-qw37.1 review, Finding 4) |
+| `tokens_valid_from` | `timestamptz` | null until the first password change; stamped by `AuthService.changePassword` to the **`iat` of the token that performed the change** (`CurrentUser.tokenIssuedAt()`), never to `Instant.now()` — a wall-clock stamp sits seconds-to-minutes after the token's actual mint (form-fill + two BCrypt rounds) and would sign the user themselves out on their very next request. `CurrentUser.load()` rejects a JWT whose `iat` is strictly before it, no grace window needed (both sides are JWT `iat` values, same clock/granularity) — the password-change revocation mechanism (mezo-qw37.1 review, Finding 4) |
 | `created_at` | `timestamptz` | `@CreationTimestamp` |
 
 Entity: `…/feature/auth/entity/AppUserEntity.java` (`UserRole`/`UserStatus` enums, `isOwner()`/`isOnboarded()` helpers). Repository: `AppUserRepository` (`findByEmail`, `existsByEmail`).
