@@ -85,6 +85,18 @@ const CATALOG_META: Record<string, { metric: string; skillKey: string }> = {
   wind_down: { metric: 'manual', skillKey: 'mindfulness' },
 }
 
+/**
+ * A két seed-sor, ami mock módban teljes FOGG receptet hordoz (mezo-3zue.5). Mindkettő
+ * MANUAL + pending a mock napban, tehát ténylegesen pipálható, és mindkettőnek van
+ * `anchorCopy`-ja — így a keret teljes a backend validátor szabálya szerint (horgony +
+ * ünneplés), a mock nem ír le elutasítandó állapotot. Nélkülük a jutalom-pillanat mock
+ * módban demózhatatlan és a VITE_USE_MOCK teszt-arm vak lenne.
+ */
+const MOCK_CELEBRATION: Record<string, string> = {
+  morning_pushups: 'ökölbe szorított kéz + „ez az"',
+  kitchen_close: 'lekapcsolom a lámpát és bólintok',
+}
+
 function toDefInfo(h: HabitItem): HabitDefInfo {
   const meta = CATALOG_META[h.key] ?? { metric: 'manual', skillKey: 'mindset' }
   return {
@@ -106,12 +118,12 @@ function toDefInfo(h: HabitItem): HabitDefInfo {
     xp: h.xp,
     linkUrl: h.linkUrl ?? null,
     isActive: true,
-    framework: null,
+    framework: MOCK_CELEBRATION[h.key] ? 'FOGG' : null,
     anchorHabitKey: null,
     cue: null,
     craving: null,
     reward: null,
-    celebration: null,
+    celebration: MOCK_CELEBRATION[h.key] ?? null,
     identity: null,
   }
 }
