@@ -14,10 +14,11 @@ import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalSuggestionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,15 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code @Lazy}: a future slice has the engine call back INTO this service (auto-propose during
  * evaluate), which would otherwise be a genuine constructor-injection cycle — broken here ahead
  * of that need since Lombok's {@code @RequiredArgsConstructor} cannot target a single parameter.
+ *
+ * <p><b>Weekly-correction guard, final-review fix (mezo-r4n7):</b> {@code applyWeeklyCorrection}
+ * used to race-guard on {@code payload.prescriptionGeneratedAt == goal.prescription.generatedAt}
+ * — but {@code generatedAt} rotates on EVERY engine recompute (weigh-in, profile edit,
+ * diet-settings save, any schedule edit), so a Monday proposal 409'd the instant the owner logged
+ * their next weigh-in, and nothing re-proposed until the following Monday. The guard now compares
+ * the SEMANTIC inputs the correction was actually computed from — {@code snapshotTrajectory},
+ * {@code snapshotRateTargetPctPerWeek}, {@code snapshotBalanceAdjustmentKcal} — against the goal's
+ * live values; {@code prescriptionGeneratedAt} stays on the payload for display/debug only.
  */
 @Service
 public class GoalSuggestionService {
@@ -139,9 +149,11 @@ public class GoalSuggestionService {
      * a deload override appends to {@code goal.segmentOverrides}); a {@code weekly_correction}
      * (slice 5) accumulates {@code deltaKcal} onto {@code goal.balanceAdjustmentKcal} — then
      * re-evaluate either way. Each kind carries its own accept-time race guard (spec §6.8):
-     * {@code phase_change} on {@code snapshotTrajectory}, {@code weekly_correction} on
-     * {@code prescriptionGeneratedAt}; a mismatch supersedes the suggestion and returns 409 so the
-     * UI can offer a regenerate.
+     * {@code phase_change} on {@code snapshotTrajectory}, {@code weekly_correction} on its three
+     * propose-time goal snapshots ({@code snapshotTrajectory}/{@code snapshotRateTargetPctPerWeek}/
+     * {@code snapshotBalanceAdjustmentKcal} — NOT {@code prescriptionGeneratedAt}, which rotates on
+     * every recompute regardless of whether these inputs changed, final-review fix mezo-r4n7); a
+     * mismatch supersedes the suggestion and returns 409 so the UI can offer a regenerate.
      */
     @Transactional
     public GoalResponse accept(UUID userId, UUID goalId, UUID suggestionId) {
@@ -190,21 +202,38 @@ public class GoalSuggestionService {
     }
 
     /**
-     * {@code weekly_correction} (slice 5): race guard on {@code prescriptionGeneratedAt} — every
-     * material goal change re-evaluates, so a differing prescription timestamp means the numbers
-     * this suggestion was computed from are gone — then accumulate {@code deltaKcal} onto the
+     * {@code weekly_correction} (slice 5): SEMANTIC race guard (final-review fix, mezo-r4n7) — a
+     * mismatch on any of {@code snapshotTrajectory}, {@code snapshotRateTargetPctPerWeek}, or the
+     * goal's running {@code balanceAdjustmentKcal} (vs. the snapshot taken at propose time) means
+     * the numbers this correction was computed from have actually changed underneath; a missing
+     * {@code deltaKcal} is treated the same way (Minor 5 — nothing to accumulate). Deliberately NOT
+     * guarded on {@code prescriptionGeneratedAt} — see {@link GoalSuggestionPayloadJson}'s javadoc
+     * for why that field rotates on unrelated recomputes (a weigh-in, a profile edit, …) and would
+     * false-positive-409 the very next one. On a match, accumulate {@code deltaKcal} onto the
      * goal's running {@code balanceAdjustmentKcal} (the fresh evaluate below then carries
      * {@code basis="adaptive"}, Task 3).
      */
     private void applyWeeklyCorrection(GoalEntity goal, GoalSuggestionPayloadJson p, UUID suggestionId) {
-        OffsetDateTime rxAt = goal.getPrescription() == null ? null : goal.getPrescription().generatedAt();
-        if (p.prescriptionGeneratedAt() == null || rxAt == null || !p.prescriptionGeneratedAt().isEqual(rxAt)) {
+        int currentAdjustment = goal.getBalanceAdjustmentKcal() == null ? 0 : goal.getBalanceAdjustmentKcal();
+        int snapshotAdjustment = p.snapshotBalanceAdjustmentKcal() == null ? 0 : p.snapshotBalanceAdjustmentKcal();
+        boolean stale = p.deltaKcal() == null
+            || !Objects.equals(goal.getTrajectory(), p.snapshotTrajectory())
+            || ratesDiffer(goal.getRateTargetPctPerWeek(), p.snapshotRateTargetPctPerWeek())
+            || currentAdjustment != snapshotAdjustment;
+        if (stale) {
             supersedeWriter.markSuperseded(suggestionId); // same REQUIRES_NEW guard as applyPhaseChange
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("GOAL_SUGGESTION_STALE").build(), HttpStatus.CONFLICT);
         }
-        int current = goal.getBalanceAdjustmentKcal() == null ? 0 : goal.getBalanceAdjustmentKcal();
-        goal.setBalanceAdjustmentKcal(current + p.deltaKcal());
+        goal.setBalanceAdjustmentKcal(currentAdjustment + p.deltaKcal());
+    }
+
+    /** Null-safe, scale-independent BigDecimal comparison ({@code 1.0} and {@code 1.00} are equal). */
+    private static boolean ratesDiffer(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) {
+            return !Objects.equals(a, b);
+        }
+        return a.compareTo(b) != 0;
     }
 
     GoalSuggestionEntity requireOwnedProposed(UUID userId, UUID goalId, UUID suggestionId) {

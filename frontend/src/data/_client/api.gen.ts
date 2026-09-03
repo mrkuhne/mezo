@@ -5422,9 +5422,13 @@ export interface components {
             adherenceAvgTargetKcal?: number | null;
             /**
              * Format: date-time
-             * @description weekly_correction accept race guard
+             * @description weekly_correction display/debug only — NOT the accept race guard (rotates on every recompute); see snapshotRateTargetPctPerWeek/snapshotBalanceAdjustmentKcal
              */
             prescriptionGeneratedAt?: string | null;
+            /** @description weekly_correction accept race guard: goal.rateTargetPctPerWeek at propose time */
+            snapshotRateTargetPctPerWeek?: number | null;
+            /** @description weekly_correction accept race guard: goal.balanceAdjustmentKcal at propose time */
+            snapshotBalanceAdjustmentKcal?: number | null;
         };
         /** @description Every field is optional AND nullable: an owner with no profile row yet gets a 200 with an empty profile — an object whose every field is null — not a 404 (mezo-5cmq). The UPSERT request keeps its required trio. */
         BiometricProfileResponse: {

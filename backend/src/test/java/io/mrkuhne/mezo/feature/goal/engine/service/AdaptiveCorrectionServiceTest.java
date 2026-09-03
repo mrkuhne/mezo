@@ -100,6 +100,18 @@ class AdaptiveCorrectionServiceTest {
     }
 
     @Test
+    void bulkTrimIsNeverDampedEvenUnderSleepDebt() {
+        // Final-review fix (mezo-r4n7): bulk gaining FASTER than the target 0.20 kg/wk surplus needs
+        // a negative delta to TRIM the surplus, not deepen a deficit — sleep-debt damping must never
+        // halve it, unlike the cut case above where a negative delta really is deficit-deepening.
+        Optional<Correction> c = service.compute(goal("bulk", "0.25"), trend("0.500", DataSufficiencyEnum.FULL), true);
+        assertThat(c).hasValueSatisfying(v -> {
+            assertThat(v.deltaKcal()).isEqualTo(-120); // needed −330, clamped — NOT halved to −60
+            assertThat(v.dampedBySleep()).isFalse();
+        });
+    }
+
+    @Test
     void insufficientTrendYieldsNothing() {
         assertThat(service.compute(goal("cut", "0.6"), trend("-0.200", DataSufficiencyEnum.NONE), false)).isEmpty();
         assertThat(service.compute(goal("cut", "0.6"), null, false)).isEmpty();

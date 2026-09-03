@@ -12900,7 +12900,22 @@ components:
           type: string
           format: date-time
           nullable: true
-          description: weekly_correction accept race guard
+          description: >-
+            weekly_correction display/debug only — NOT the accept race guard
+            (rotates on every recompute); see
+            snapshotRateTargetPctPerWeek/snapshotBalanceAdjustmentKcal
+        snapshotRateTargetPctPerWeek:
+          type: number
+          nullable: true
+          description: >-
+            weekly_correction accept race guard: goal.rateTargetPctPerWeek at
+            propose time
+        snapshotBalanceAdjustmentKcal:
+          type: integer
+          nullable: true
+          description: >-
+            weekly_correction accept race guard: goal.balanceAdjustmentKcal at
+            propose time
     BiometricProfileResponse:
       type: object
       description: >-

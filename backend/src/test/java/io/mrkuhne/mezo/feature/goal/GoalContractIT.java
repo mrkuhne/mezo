@@ -245,7 +245,7 @@ class GoalContractIT extends ApiIntegrationTest {
         suggestionPopulator.createOpen(owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
             new GoalSuggestionPayloadJson(
                 "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "cut",
-                null, null, null, null, null, null, null, null, null));
+                null, null, null, null, null, null, null, null, null, null, null));
 
         List<GoalSuggestionResponse> suggestions = getForList(
             "/api/goals/" + goal.getId() + "/suggestions", owner.headers(), HttpStatus.OK, GoalSuggestionResponse.class);
@@ -256,11 +256,15 @@ class GoalContractIT extends ApiIntegrationTest {
 
     /**
      * Fix round 1 (review finding 2): the null-guard in {@code GoalSuggestionMapper.toPayload}
-     * for {@code snapshotTrajectory} (null on every weekly_correction payload) is only exercised
-     * via a real HTTP round-trip — the ITs elsewhere read suggestions straight off the
-     * repository, never through this endpoint, so a regression to the old unconditional
-     * {@code SnapshotTrajectoryEnum.fromValue(...)} call (which throws on null) would 500 here
-     * and only here.
+     * for {@code snapshotTrajectory} (null on THIS payload, by construction below — the field is
+     * legitimately populated for weekly_correction now, final-review fix mezo-r4n7, but the mapper
+     * must still tolerate a null one defensively) is only exercised via a real HTTP round-trip —
+     * the ITs elsewhere read suggestions straight off the repository, never through this endpoint,
+     * so a regression to the old unconditional {@code SnapshotTrajectoryEnum.fromValue(...)} call
+     * (which throws on null) would 500 here and only here. Also round-trips the two propose-time
+     * goal snapshots ({@code snapshotRateTargetPctPerWeek}/{@code snapshotBalanceAdjustmentKcal})
+     * added by that same fix — the real accept-time race guard now lives on them, not
+     * {@code prescriptionGeneratedAt} (still round-tripped below, display/debug only).
      */
     @Test
     void testListGoalSuggestions_shouldRoundTripWeeklyCorrectionPayload_whenProposed() {
@@ -272,14 +276,14 @@ class GoalContractIT extends ApiIntegrationTest {
             new GoalSuggestionPayloadJson(
                 "A mért trend lassabb a célnál — heti korrekció.", null, null, null, null, null, null, null,
                 "2026-08-24", -120, new BigDecimal("-0.20"), new BigDecimal("-0.50"), false,
-                5, 1800, 2000, rxAt));
+                5, 1800, 2000, rxAt, new BigDecimal("0.60"), -60));
 
         List<GoalSuggestionResponse> suggestions = getForList(
             "/api/goals/" + goal.getId() + "/suggestions", owner.headers(), HttpStatus.OK, GoalSuggestionResponse.class);
 
         assertThat(suggestions).hasSize(1);
         var payload = suggestions.get(0).getPayload();
-        assertThat(payload.getSnapshotTrajectory()).as("null on weekly_correction — no NPE/500 mapping it").isNull();
+        assertThat(payload.getSnapshotTrajectory()).as("null tolerated — no NPE/500 mapping it").isNull();
         assertThat(payload.getDeltaKcal()).isEqualTo(-120);
         assertThat(payload.getObservedRateKgPerWk()).isEqualByComparingTo("-0.20");
         assertThat(payload.getTargetRateKgPerWk()).isEqualByComparingTo("-0.50");
@@ -289,6 +293,8 @@ class GoalContractIT extends ApiIntegrationTest {
         assertThat(payload.getAdherenceAvgTargetKcal()).isEqualTo(2000);
         assertThat(payload.getWeekStart()).isEqualTo(LocalDate.of(2026, 8, 24));
         assertThat(payload.getPrescriptionGeneratedAt().isEqual(rxAt)).as("same instant, offset representation may differ across the JSON round-trip").isTrue();
+        assertThat(payload.getSnapshotRateTargetPctPerWeek()).isEqualByComparingTo("0.60");
+        assertThat(payload.getSnapshotBalanceAdjustmentKcal()).isEqualTo(-60);
     }
 
     @Test
@@ -300,7 +306,7 @@ class GoalContractIT extends ApiIntegrationTest {
             owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
             new GoalSuggestionPayloadJson(
                 "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "bulk",
-                null, null, null, null, null, null, null, null, null)
+                null, null, null, null, null, null, null, null, null, null, null)
         ).getId();
 
         GoalResponse accepted = postForBody(
@@ -326,7 +332,7 @@ class GoalContractIT extends ApiIntegrationTest {
             owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
             new GoalSuggestionPayloadJson(
                 "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "bulk",
-                null, null, null, null, null, null, null, null, null)
+                null, null, null, null, null, null, null, null, null, null, null)
         ).getId();
 
         // snapshotTrajectory ("bulk") no longer matches the goal's current trajectory ("cut") → 409.
@@ -349,7 +355,7 @@ class GoalContractIT extends ApiIntegrationTest {
             owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
             new GoalSuggestionPayloadJson(
                 "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "cut",
-                null, null, null, null, null, null, null, null, null)
+                null, null, null, null, null, null, null, null, null, null, null)
         ).getId();
 
         postForBody("/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/dismiss",

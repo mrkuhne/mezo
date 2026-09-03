@@ -22,8 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
  * observed EWMA rate to the target rate and propose a smoothed {@code weekly_correction}
  * suggestion (suggest + approve — this NEVER writes a target itself). Gates: an active evaluated
  * goal, trend sufficiency (inside {@link AdaptiveCorrectionService}), dead-band, and per-week
- * idempotency via the (goal_id, dedup_key) unique index — {@code propose} returns null on a dedup
- * hit, decided rows included, so a dismissed week is never re-proposed.
+ * idempotency via {@code GoalSuggestionService.propose}'s goal-scoped dedup query on
+ * {@code (goal_id, dedup_key)} — backed by a plain (non-unique) index, single-owner assumption, no
+ * DB-level uniqueness constraint — returns null on a dedup hit, decided rows included, so a
+ * dismissed week is never re-proposed.
  */
 @Service
 @RequiredArgsConstructor
@@ -59,12 +61,17 @@ public class AdaptiveReviewService {
         IntakeAdherence adherence = intakeAdherence.weekAdherence(userId, weekStart.minusDays(7));
 
         // Weekly-correction payload: phase_change-only components null, reason carries the
-        // Hungarian rationale, prescriptionGeneratedAt is the accept-time race-guard snapshot.
+        // Hungarian rationale. snapshotTrajectory + the two snapshotRate/Adjustment fields are the
+        // accept-time race guard (final-review fix, mezo-r4n7): the goal's SEMANTIC inputs at
+        // propose time, not prescriptionGeneratedAt (kept for display/debug only — it rotates on
+        // every recompute, including ones that don't touch these inputs at all, see
+        // GoalSuggestionPayloadJson's javadoc).
         GoalSuggestionPayloadJson payload = new GoalSuggestionPayloadJson(
-            c.rationaleHu(), null, null, null, null, null, null, null,
+            c.rationaleHu(), null, null, null, null, null, null, goal.getTrajectory(),
             weekStart.toString(), c.deltaKcal(), c.observedRateKgPerWk(), c.targetRateKgPerWk(),
             c.dampedBySleep(), adherence.loggedDays(), adherence.avgIntakeKcal(),
-            adherence.avgTargetKcal(), goal.getPrescription().generatedAt());
+            adherence.avgTargetKcal(), goal.getPrescription().generatedAt(),
+            goal.getRateTargetPctPerWeek(), goal.getBalanceAdjustmentKcal());
 
         return suggestionService.propose(userId, goal.getId(),
             GoalSuggestionService.KIND_WEEKLY_CORRECTION, "weekly:" + weekStart, payload) != null;

@@ -37,11 +37,13 @@ export function GoalSuggestionCard({ suggestion, onAccept, onDismiss, pending }:
       <p style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--text-secondary)', margin: '6px 0 8px' }}>{p.reason}</p>
       {isWeeklyCorrection && (
         <>
-          <p style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--text-tertiary)', margin: p.dampedBySleep ? '0 0 4px' : '0 0 8px' }}>
-            Mért ütem {p.observedRateKgPerWk?.toFixed(2)} kg/hét · cél {p.targetRateKgPerWk?.toFixed(2)} kg/hét
-            {p.adherenceLoggedDays != null && p.adherenceLoggedDays > 0 &&
-              ` · loggolva ${p.adherenceLoggedDays}/7 nap (átlag ${p.adherenceAvgIntakeKcal} / cél ${p.adherenceAvgTargetKcal} kcal)`}
-          </p>
+          {p.observedRateKgPerWk != null && p.targetRateKgPerWk != null && (
+            <p style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--text-tertiary)', margin: p.dampedBySleep ? '0 0 4px' : '0 0 8px' }}>
+              Mért ütem {p.observedRateKgPerWk.toFixed(2)} kg/hét · cél {p.targetRateKgPerWk.toFixed(2)} kg/hét
+              {p.adherenceLoggedDays != null && p.adherenceLoggedDays > 0 &&
+                ` · loggolva ${p.adherenceLoggedDays}/7 nap (átlag ${p.adherenceAvgIntakeKcal} / cél ${p.adherenceAvgTargetKcal} kcal)`}
+            </p>
+          )}
           {p.dampedBySleep && (
             <p style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--warning)', margin: '0 0 8px' }}>
               Alváshiány miatt a javasolt lépés a felére tompítva.

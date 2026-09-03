@@ -43,6 +43,8 @@ public interface GoalSuggestionMapper {
             .adherenceAvgIntakeKcal(j.adherenceAvgIntakeKcal())
             .adherenceAvgTargetKcal(j.adherenceAvgTargetKcal())
             .prescriptionGeneratedAt(j.prescriptionGeneratedAt())
+            .snapshotRateTargetPctPerWeek(j.snapshotRateTargetPctPerWeek())
+            .snapshotBalanceAdjustmentKcal(j.snapshotBalanceAdjustmentKcal())
             .build();
     }
 

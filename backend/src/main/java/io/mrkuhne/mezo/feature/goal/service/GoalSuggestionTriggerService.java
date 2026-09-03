@@ -86,7 +86,7 @@ public class GoalSuggestionTriggerService {
                         + " presetje " + huTrajectory(wanted) + " irányt javasol, a cél most "
                         + huTrajectory(goal.getTrajectory()) + ".",
                     wanted, null, null, null, m.getId(), m.getTitle(), goal.getTrajectory(),
-                    null, null, null, null, null, null, null, null, null));
+                    null, null, null, null, null, null, null, null, null, null, null));
             if (proposed != null) {
                 return true;
             }
@@ -123,7 +123,7 @@ public class GoalSuggestionTriggerService {
             new GoalSuggestionPayloadJson(
                 "Deload hét (W" + week + ") — a regeneráció többet ér, ha ezen a héten tartáson eszel.",
                 null, 0, (int) week, (int) week, null, null, goal.getTrajectory(),
-                null, null, null, null, null, null, null, null, null));
+                null, null, null, null, null, null, null, null, null, null, null));
     }
 
     /**

@@ -15,11 +15,19 @@ import org.springframework.stereotype.Service;
  * {@code neededKcal = (targetRate − observedRate) × kcalPerKg ÷ 7} with signed kg/week rates
  * (cut negative, bulk positive, maintain 0), a dead-band (small gaps are on-track, not noise to
  * chase) and a ±maxStep clamp (small smoothed steps — the RP unsmoothed-jump anti-pattern is what
- * the clamp exists to avoid). The sleep guard halves a deficit-increasing (negative) correction;
- * corrections that ADD food are never damped.
+ * the clamp exists to avoid). The sleep guard halves a deficit-DEEPENING (negative, non-bulk)
+ * correction; corrections that ADD food are never damped, and neither is a bulk correction that
+ * trims a surplus even though it is also negative (see the bulk-aware note below).
  *
  * <p>Gates: no trend, sufficiency {@code none}, or a null observed rate → empty. The observed
  * spine is {@code last4wRateKgPerWeek} — the same reconciliation source the projection uses.
+ *
+ * <p><b>Sleep-debt damping is bulk-aware (final-review fix, mezo-r4n7):</b> a negative delta does
+ * NOT always mean "deepen a deficit" — on a {@code bulk} goal it means the opposite: the owner is
+ * gaining faster than the target surplus, and the correction TRIMS that surplus, it does not add
+ * one. Damping exists to protect sleep-debt recovery from a deeper deficit, so it must never fire
+ * on a bulk trim; the predicate is {@code delta < 0 && !"bulk".equals(trajectory)} — cut and
+ * maintain both keep the original halving (a negative delta on either really is deficit-deepening).
  */
 @Service
 @RequiredArgsConstructor
@@ -71,7 +79,9 @@ public class AdaptiveCorrectionService {
             .setScale(0, RoundingMode.HALF_UP)
             .intValueExact();
 
-        boolean damped = sleepDebted && delta < 0;
+        // Bulk-aware (final-review fix): a negative delta on a bulk goal TRIMS the surplus, it does
+        // not deepen a deficit — damping must never fire there. See class javadoc.
+        boolean damped = sleepDebted && delta < 0 && !TRAJ_BULK.equalsIgnoreCase(goal.getTrajectory());
         if (damped) {
             delta = delta / 2; // deficit-increasing under sleep debt → half step (recovery guard)
         }
@@ -84,7 +94,7 @@ public class AdaptiveCorrectionService {
     /** Signed target rate (kg/week): cut negative, bulk positive, maintain 0. */
     private BigDecimal targetRateKgPerWk(GoalEntity goal, BigDecimal weightKg) {
         if (TRAJ_MAINTAIN.equalsIgnoreCase(goal.getTrajectory())) {
-            return BigDecimal.ZERO;
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP); // scale-consistent with the non-maintain branch below (rationale() prints "0.00", not "0")
         }
         BigDecimal magnitude = goal.getRateTargetPctPerWeek() == null
             ? BigDecimal.ZERO
