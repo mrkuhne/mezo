@@ -156,9 +156,17 @@ ADD FOREIGN KEY (user_id) REFERENCES users(id);
 ## Indexing Convention (owned tables)
 
 Every domain table is owner-scoped (`created_by`) and every repository query filters on it —
-**except `exercise_catalog`**, where `created_by IS NULL` marks loader-seeded master rows and
-user-authored rows are readable by everyone (ADR 0035). For that table, the composite index leads
-with the natural key, not `created_by`. For every other table:
+**except `exercise_catalog` and `pantry_catalog`**, where `created_by IS NULL` marks loader-seeded
+master rows and user-authored rows are readable by everyone (ADR 0035). For those tables, the composite index leads
+with the natural key, not `created_by`.
+
+**Exception — catalog tables.** `exercise_catalog` and `pantry_catalog` are hybrid master/user
+tables: `created_by` is NULLABLE (NULL = loader master), the unique key is global (a slug, or a
+`lower(name), lower(coalesce(brand,''))` expression index), and the FK is `ON DELETE SET NULL` so a
+deleted author's definitions outlive the account. Per-user state stays in an owned table that points
+at the catalog (`pantry_item.catalog_id`).
+
+For every other table:
 
 - **Lead composite indexes with `created_by`**, then the common filter/sort column:
   `idx_<table>_created_by_date`, `idx_<table>_created_by_status`. This is the established
