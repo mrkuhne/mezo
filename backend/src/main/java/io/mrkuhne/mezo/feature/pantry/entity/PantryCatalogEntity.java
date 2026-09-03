@@ -26,7 +26,9 @@ import org.hibernate.type.SqlTypes;
  *
  * <p>Deliberately NO {@code @SQLRestriction}: a soft-deleted catalog row must stay loadable through
  * a (soft-deleted) item's FK and revivable by the loader; readers filter {@code deleted} explicitly.
- * Natural key {@code (lower(name), lower(coalesce(brand,'')))} is unique in the DB.
+ * Natural key {@code (lower(trim(name)), lower(trim(coalesce(brand,''))))} is unique in the DB
+ * ({@code uq_pantry_catalog_natural}); trimming is part of the KEY, not just of the writers, so a
+ * legacy untrimmed name cannot become a second, unreachable definition for the same food.
  */
 @Getter
 @Setter

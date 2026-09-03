@@ -48,8 +48,15 @@ create table pantry_catalog (
     constraint ck_pantry_catalog_nova check (nova is null or nova between 1 and 4)
 );
 
--- Natural key: case-insensitive name + brand (brand-less rows share the '' bucket).
-create unique index uq_pantry_catalog_natural on pantry_catalog (lower(name), lower(coalesce(brand, '')));
+-- Natural key: case-insensitive, WHITESPACE-INSENSITIVE name + brand (brand-less rows share the ''
+-- bucket). trim() is part of the key, not merely of the writers: pre-split pantry_item names were
+-- never trimmed, so 'Túró ' rows exist in production data. Without trim() here such a row would
+-- neither be found by the application's findByNaturalKey('Túró') nor collide on this index — it
+-- would silently become a second, unreachable definition for the same food. The same
+-- lower(trim(...)) expression is used by EVERY producer and consumer of the key: the dedupe below,
+-- the backfill join, the pantry_item duplicate guard, and PantryCatalogRepository.findByNaturalKey.
+create unique index uq_pantry_catalog_natural
+    on pantry_catalog (lower(trim(name)), lower(trim(coalesce(brand, ''))));
 create index idx_pantry_catalog_created_by on pantry_catalog (created_by);
 create index idx_pantry_catalog_kind on pantry_catalog (kind);
 
@@ -60,13 +67,13 @@ create index idx_pantry_catalog_kind on pantry_catalog (kind);
 --    (find them with the query below; docs/features/pantry.md §9 will carry the same diagnostic
 --    once Task 12 lands it) rather than let the migration pick one:
 --
---    select created_by, lower(name), lower(coalesce(brand,'')), count(*), array_agg(id)
+--    select created_by, lower(trim(name)), lower(trim(coalesce(brand,''))), count(*), array_agg(id)
 --    from pantry_item
 --    where is_deleted = false
 --    group by 1,2,3
 --    having count(*) > 1;
 create unique index uq_pantry_item_split_guard
-    on pantry_item (created_by, lower(name), lower(coalesce(brand, ''))) where is_deleted = false;
+    on pantry_item (created_by, lower(trim(name)), lower(trim(coalesce(brand, '')))) where is_deleted = false;
 drop index uq_pantry_item_split_guard;
 
 -- 3. One catalog row per natural key from the LIVE items; the earliest created_at (then id) wins
@@ -74,37 +81,37 @@ drop index uq_pantry_item_split_guard;
 insert into pantry_catalog (created_by, is_deleted, created_at, kind, name, brand, source, category,
     serving_amount, serving_unit, kcal, protein_g, carbs_g, fat_g, fiber_g, sugar_g, salt_g,
     saturated_fat_g, package_label, micros, nova, form, caffeine)
-select distinct on (lower(name), lower(coalesce(brand, '')))
-       created_by, false, created_at, kind, name, brand, source, category,
+select distinct on (lower(trim(name)), lower(trim(coalesce(brand, ''))))
+       created_by, false, created_at, kind, trim(name), trim(brand), source, category,
        serving_amount, serving_unit, kcal, protein_g, carbs_g, fat_g, fiber_g, sugar_g, salt_g,
        saturated_fat_g, package_label, micros, nova, form, caffeine
 from pantry_item
 where is_deleted = false
-order by lower(name), lower(coalesce(brand, '')), created_at asc, id asc;
+order by lower(trim(name)), lower(trim(coalesce(brand, ''))), created_at asc, id asc;
 
 -- 4. Soft-deleted items need a catalog_id too (NOT NULL). Those whose key already exists bind to
 --    the live row in step 5; the rest get an is_deleted=true catalog row of their own.
 insert into pantry_catalog (created_by, is_deleted, created_at, kind, name, brand, source, category,
     serving_amount, serving_unit, kcal, protein_g, carbs_g, fat_g, fiber_g, sugar_g, salt_g,
     saturated_fat_g, package_label, micros, nova, form, caffeine)
-select distinct on (lower(d.name), lower(coalesce(d.brand, '')))
-       d.created_by, true, d.created_at, d.kind, d.name, d.brand, d.source, d.category,
+select distinct on (lower(trim(d.name)), lower(trim(coalesce(d.brand, ''))))
+       d.created_by, true, d.created_at, d.kind, trim(d.name), trim(d.brand), d.source, d.category,
        d.serving_amount, d.serving_unit, d.kcal, d.protein_g, d.carbs_g, d.fat_g, d.fiber_g, d.sugar_g,
        d.salt_g, d.saturated_fat_g, d.package_label, d.micros, d.nova, d.form, d.caffeine
 from pantry_item d
 where d.is_deleted = true
   and not exists (select 1 from pantry_catalog c
-                   where lower(c.name) = lower(d.name)
-                     and lower(coalesce(c.brand, '')) = lower(coalesce(d.brand, '')))
-order by lower(d.name), lower(coalesce(d.brand, '')), d.created_at asc, d.id asc;
+                   where lower(trim(c.name)) = lower(trim(d.name))
+                     and lower(trim(coalesce(c.brand, ''))) = lower(trim(coalesce(d.brand, ''))))
+order by lower(trim(d.name)), lower(trim(coalesce(d.brand, ''))), d.created_at asc, d.id asc;
 
 -- 5. Backfill the link (nullable -> backfill -> NOT NULL -> constrain: the Citus recipe, spec §13).
 alter table pantry_item add column catalog_id uuid;
 update pantry_item i
    set catalog_id = c.id
   from pantry_catalog c
- where lower(c.name) = lower(i.name)
-   and lower(coalesce(c.brand, '')) = lower(coalesce(i.brand, ''));
+ where lower(trim(c.name)) = lower(trim(i.name))
+   and lower(trim(coalesce(c.brand, ''))) = lower(trim(coalesce(i.brand, '')));
 alter table pantry_item alter column catalog_id set not null;
 alter table pantry_item add constraint fk_pantry_item_catalog_id_pantry_catalog_id
     foreign key (catalog_id) references pantry_catalog (id) on delete restrict;

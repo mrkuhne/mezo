@@ -6,9 +6,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
+import io.mrkuhne.mezo.feature.pantry.service.PantryCatalogService;
 import io.mrkuhne.mezo.feature.pantry.service.PantryService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.PantryCatalogPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
@@ -30,6 +33,8 @@ class PantryServiceIT extends AbstractIntegrationTest {
     @Autowired private PantryItemPopulator populator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private AppUserRepository appUserRepository;
+    @Autowired private PantryCatalogService catalogService;
+    @Autowired private PantryCatalogPopulator catalogPopulator;
 
     // created_by has an FK to app_user(id) — owners MUST be real users (populateUser),
     // never UUID.randomUUID().
@@ -91,6 +96,29 @@ class PantryServiceIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> service.updateItem(user(other), mine.getId(), foodReq()))
             .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testUpdateItem_shouldAllowStateOnlyEdit_whenStoredDefinitionNameHasSurroundingWhitespace() {
+        // A LEGACY definition: the pre-split mapper never trimmed and the split migration copies
+        // `name` verbatim, so untrimmed stored names are genuinely reachable in production data.
+        PantryCatalogEntity legacy = catalogPopulator.createFoodDefinition(owner, "Túró ", null);
+        UUID shelfRow = catalogService.ensureItem(other, legacy.getId()).getId();
+
+        // `other` is NOT the author. The edit sheet echoes the DISPLAYED (trimmed) name back and
+        // changes only a STATE field — that must never be read as a definition edit.
+        PantryItemRequest stateOnly = new PantryItemRequest();
+        stateOnly.setKind(PantryItemRequest.KindEnum.FOOD);
+        stateOnly.setName("Túró");
+        stateOnly.setUnit("g");
+        stateOnly.setKcal(java.math.BigDecimal.valueOf(110));
+        stateOnly.setPrice(1290);
+
+        service.updateItem(user(other), shelfRow, stateOnly);
+
+        var ing = service.getPantry(user(other)).getIngredients().getFirst();
+        assertThat(ing.getPrice()).isEqualByComparingTo(java.math.BigDecimal.valueOf(1290));
+        assertThat(ing.getName()).isEqualTo("Túró "); // the shared definition is untouched
     }
 
     @Test

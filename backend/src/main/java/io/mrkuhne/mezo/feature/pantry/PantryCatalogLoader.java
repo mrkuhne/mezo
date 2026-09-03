@@ -65,7 +65,7 @@ public class PantryCatalogLoader implements CommandLineRunner {
             PantryCatalogEntity hit = byKey.get(key);
             if (hit == null) {
                 PantryCatalogEntity c = new PantryCatalogEntity();
-                c.setName(row.name());
+                c.setName(row.name().strip()); // every producer stores the natural key trimmed
                 fill(c, row, true);
                 byKey.put(key, repository.save(c));
                 inserted++;

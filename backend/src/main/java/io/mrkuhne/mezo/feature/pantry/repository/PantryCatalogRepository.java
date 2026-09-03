@@ -12,21 +12,29 @@ import org.springframework.data.repository.query.Param;
 /** Global (not owner-scoped) definition catalog — see PantryCatalogEntity for the master/user split. */
 public interface PantryCatalogRepository extends JpaRepository<PantryCatalogEntity, UUID> {
 
-    /** Natural-key lookup, deleted rows INCLUDED (the caller revives or binds). {@code brandKey} = lowercased brand or "". */
-    @Query("select c from PantryCatalogEntity c where lower(c.name) = lower(:name) "
-        + "and lower(coalesce(c.brand, '')) = :brandKey")
+    /**
+     * Natural-key lookup, deleted rows INCLUDED (the caller revives or binds).
+     *
+     * <p>BOTH halves are trimmed and case-folded by POSTGRES, never by Java: the key must be folded
+     * by exactly one implementation. Where {@code String.toLowerCase} and Postgres {@code lower()}
+     * disagree (Turkish dotted I, Greek final sigma) a Java-folded lookup would miss, insert, hit
+     * {@code uq_pantry_catalog_natural}, miss the re-lookup and surface as a 500.
+     * {@code brandKey} is the caller's brand or {@code ""} — never null, so {@code coalesce} stays
+     * on the column side and Hibernate needs no type hint for the parameter.
+     */
+    @Query("select c from PantryCatalogEntity c "
+        + "where lower(trim(c.name)) = lower(trim(:name)) "
+        + "and lower(trim(coalesce(c.brand, ''))) = lower(trim(:brandKey))")
     Optional<PantryCatalogEntity> findByNaturalKeyRaw(@Param("name") String name, @Param("brandKey") String brandKey);
 
     /**
-     * The natural key is {@code (lower(name), lower(coalesce(brand, '')))} — the expression unique
-     * index {@code uq_pantry_catalog_natural}. Both halves are trimmed (a trailing space must not
-     * mint a second definition) and the brand is lowercased with {@link java.util.Locale#ROOT} so
-     * Java matches Postgres {@code lower()} on a Turkish/Hungarian default locale too.
+     * The natural key is {@code (lower(trim(name)), lower(trim(coalesce(brand, ''))))} — the same
+     * expression as the unique index {@code uq_pantry_catalog_natural}. Trimming lives in the key
+     * itself (not only in the writers) so a legacy row stored as {@code "Túró "} is still found by
+     * {@code findByNaturalKey("Túró")} instead of becoming an unreachable duplicate definition.
      */
     default Optional<PantryCatalogEntity> findByNaturalKey(String name, String brand) {
-        return findByNaturalKeyRaw(
-            name == null ? null : name.strip(),
-            brand == null ? "" : brand.strip().toLowerCase(java.util.Locale.ROOT));
+        return findByNaturalKeyRaw(name == null ? "" : name, brand == null ? "" : brand);
     }
 
     /** {@code like} is already lowercased + %-wrapped by the service. Two methods (no `:kind is null`) keep the bind types explicit. */

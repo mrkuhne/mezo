@@ -102,7 +102,11 @@ public interface PantryMapper {
      */
     default boolean definitionDiffers(PantryCatalogEntity c, PantryItemRequest r) {
         return (r.getKind() != null && !r.getKind().getValue().equals(c.getKind()))
-            || (r.getName() != null && !r.getName().strip().equals(c.getName()))
+            // Both sides stripped, always: a legacy row stored as "Túró " (the pre-split mapper never
+            // trimmed and the split migration copies `name` verbatim) must not read as a definition
+            // CHANGE when the edit sheet echoes the displayed "Túró" back — that would 403 a
+            // non-author out of editing their own price/stock/notes forever.
+            || (r.getName() != null && !r.getName().strip().equals(c.getName() == null ? "" : c.getName().strip()))
             || (r.getBrand() != null
                 && !r.getBrand().strip().equals(c.getBrand() == null ? "" : c.getBrand().strip()))
             || (r.getSource() != null && !r.getSource().getValue().equals(c.getSource()))
