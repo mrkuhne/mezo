@@ -63,16 +63,18 @@ public class KonziliumProposalRound {
     private static final String ACTIVE = "ACTIVE";
     private static final Set<String> VALID_KINDS = Set.of("NEW", "UP", "DOWN", "RETIRE");
 
-    private static final Set<String> CORE_DIMENSION_KEYS = CharacterCoreCatalog.CORE.stream()
+    /** CORE + META (round-4 spec §4.2) — the self-audit dimension routes and validates exactly
+     *  like a CORE dimension, just owned by the Szkeptikus instead of a domain expert. */
+    private static final Set<String> CORE_DIMENSION_KEYS = CharacterCoreCatalog.SEEDED.stream()
             .map(CharacterCoreCatalog.CoreDimension::key)
             .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
     /**
-     * CORE dimension key -> owning expert key (mezo-1gim.10), reused rather than re-derived, so a
-     * user-feedback observation naming a CORE dimension routes to exactly the same expert
-     * {@link CharacterCoreCatalog} already says owns it.
+     * CORE + META dimension key -> owning expert key (mezo-1gim.10), reused rather than
+     * re-derived, so a user-feedback observation naming a CORE or META dimension routes to
+     * exactly the same expert {@link CharacterCoreCatalog} already says owns it.
      */
-    private static final Map<String, String> CORE_DIMENSION_TO_EXPERT = CharacterCoreCatalog.CORE.stream()
+    private static final Map<String, String> CORE_DIMENSION_TO_EXPERT = CharacterCoreCatalog.SEEDED.stream()
             .collect(java.util.stream.Collectors.toUnmodifiableMap(
                     CharacterCoreCatalog.CoreDimension::key, CharacterCoreCatalog.CoreDimension::expertKey));
 

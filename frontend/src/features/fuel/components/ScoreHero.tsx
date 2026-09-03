@@ -1,45 +1,45 @@
 // ============================================================
-// Mezo · ScoreHero (MealScoreSheet header block)
-// Big score ring + macro line + item chips + confidence bar — F7.3: rides the
-// tinted mz-sheet-hero band (fuel-mely.html §D: hero only where there is
-// something to headline).
+// Mezo · ScoreHero (MealScoreSheet header block) — Logolás 2.1 (mezo-zeeq)
+// 112px score ring with the tone word beside it, macro facts as chips (Rost only when
+// the meal carries fiberG — never fabricated), and the confidence bar. The tone
+// (jó / közepes / gyenge) is the same ladder the block pill uses (logic/scoreTone.ts)
+// and washes the hero's background.
 // ============================================================
 import type { FuelMeal } from '@/data/types'
-import { ScoreRing } from '@/shared/ui/ScoreRing'
-import { ProgressBar } from '@/shared/ui/ProgressBar'
+import { toneOf } from '@/features/fuel/logic/scoreTone'
+
+const SIZE = 112
+const STROKE = 8
+const R = SIZE / 2 - STROKE
+const C = 2 * Math.PI * R
 
 export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scorePct: number; confidence: number }) {
+  const pct = Math.round(scorePct)
+  const tone = toneOf(pct)
+  const conf = Math.round(confidence * 100)
   return (
-    <div className="mz-sheet-hero" style={{ padding: 16 }}>
-      <div className="row" style={{ gap: 16, alignItems: 'center' }}>
-        {/* Ring */}
-        <div style={{ flexShrink: 0 }}>
-          <ScoreRing pct={meal.score ?? 0} size={96} stroke={5} label={scorePct.toFixed(0)} labelColor="var(--coral)" sublabel="/100" />
+    <div className={`sb-hero ${tone.cls}`}>
+      <div className="sb-hero-ring">
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden="true">
+          <circle className="sb-hero-t" cx={SIZE / 2} cy={SIZE / 2} r={R} strokeWidth={STROKE} />
+          <circle className="sb-hero-f" cx={SIZE / 2} cy={SIZE / 2} r={R} strokeWidth={STROKE}
+            strokeDasharray={C} strokeDashoffset={C - (pct / 100) * C} />
+        </svg>
+        <span className="sb-hero-n" aria-label={`${pct} a 100-ból`}><b>{pct}</b><small>/ 100</small></span>
+      </div>
+      <div className="sb-hero-meta">
+        <div className="sb-hero-word">{tone.word}</div>
+        <div className="sb-hero-facts">
+          <span><i>kcal</i>{meal.kcal}</span>
+          <span><i>P</i>{meal.p} g</span>
+          <span><i>C</i>{meal.c} g</span>
+          <span><i>F</i>{meal.f} g</span>
+          {meal.fiberG != null && <span><i>Rost</i>{meal.fiberG} g</span>}
         </div>
-
-        {/* Meta */}
-        <div className="col flex-1" style={{ gap: 4, minWidth: 0 }}>
-          <div className="row gap-xs flex-wrap" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
-            <span><span style={{ color: 'var(--text-tertiary)' }}>kcal</span> <span style={{ color: 'var(--text-primary)' }}>{meal.kcal}</span></span>
-            <span style={{ color: 'var(--text-tertiary)' }}>·</span>
-            <span><span style={{ color: 'var(--text-tertiary)' }}>P</span> <span style={{ color: 'var(--text-primary)' }}>{meal.p}</span></span>
-            <span><span style={{ color: 'var(--text-tertiary)' }}>C</span> <span style={{ color: 'var(--text-primary)' }}>{meal.c}</span></span>
-            <span><span style={{ color: 'var(--text-tertiary)' }}>F</span> <span style={{ color: 'var(--text-primary)' }}>{meal.f}</span></span>
-          </div>
-          <div className="row gap-xs flex-wrap mt-sm">
-            {meal.items.map((it, i) => (
-              <span key={i} className="chip" style={{ fontSize: 9, padding: '3px 6px' }}>{it}</span>
-            ))}
-          </div>
-          <div className="row gap-sm" style={{ marginTop: 8, alignItems: 'center' }}>
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Confidence</span>
-            <div className="flex-1" style={{ maxWidth: 80 }}>
-              <ProgressBar value={confidence * 100} />
-            </div>
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)' }}>
-              {(confidence * 100).toFixed(0)}%
-            </span>
-          </div>
+        <div className="sb-hero-conf">
+          Konfidencia
+          <span className="bar"><i style={{ width: `${conf}%` }} /></span>
+          <b>{conf}%</b>
         </div>
       </div>
     </div>

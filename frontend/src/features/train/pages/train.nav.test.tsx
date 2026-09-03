@@ -47,9 +47,11 @@ test('Train opens on the Edzés hub and its tiles open the sub-pages', async () 
 
   renderApp('/train')
   await userEvent.click(await screen.findByRole('button', { name: 'Mesociklus' }))
-  // The active run's hero card — its title is shared with the template it was started
-  // from (the library's Sablonok section, mezo-meyc.1), so match the tappable card.
-  expect(await screen.findByRole('button', { name: /Hypertrophy 04 · Tavasz/ })).toBeInTheDocument()
+  // The active run's hero card — its own a11y name is the hero button's aria-label
+  // (mesocycle pages v2 Task 2, mezo-d20.15); the title (shared with the template it was
+  // started from, mezo-meyc.1) is checked as text inside it, not the accessible name.
+  const hero = await screen.findByRole('button', { name: 'Aktív mezociklus megnyitása' })
+  expect(hero).toHaveTextContent('Hypertrophy 04 · Tavasz')
 })
 
 // The Gym muscle-zone view folds into Heti in the new IA (handoff §10) — its route stays
@@ -90,15 +92,30 @@ test('Sablonok stays reachable on its own route', async () => {
 })
 
 test('the mesocycle planner is a full-screen flow without the sub-nav', () => {
+  // wizard v2 (mezo-d20.14): three steps, the first one asking when + why.
   const { container } = renderApp('/train/mesocycles/new')
   expect(container.querySelector('.np-pills')).toBeNull()
-  expect(screen.getByText('Mit szeretnénk építeni?')).toBeInTheDocument()
+  expect(screen.getByText('Mikor edzel — és miért?')).toBeInTheDocument()
+  expect(screen.getByText('01 / 03 · Mikor és miért')).toBeInTheDocument()
 })
 
 test('the mesocycle builder is a full-screen flow without the sub-nav', () => {
   const { container } = renderApp('/train/mesocycles/meso-hyp-04')
   expect(container.querySelector('.np-pills')).toBeNull()
-  expect(
-    screen.getByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' }),
-  ).toBeInTheDocument()
+  // Mesocycle pages v2 (mezo-d20.15): the run page speaks Mozaik — its name sits in the
+  // PageHero, not in an <h1> (no Mozaik subpage carries one).
+  expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
+})
+
+test('the retired Volumen route redirects to the Heti vizsgálat page (mezo-d20.15 Task 4)', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/train/mesocycles/meso-hyp-04/overview'] })
+  render(
+    <QueryWrapper>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </QueryWrapper>,
+  )
+  expect(await screen.findByText('Heti vizsgálat · 3. hét')).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/train/mesocycles/meso-hyp-04/week')
 })

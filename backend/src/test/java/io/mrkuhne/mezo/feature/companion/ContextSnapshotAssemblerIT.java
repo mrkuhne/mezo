@@ -18,7 +18,9 @@ import io.mrkuhne.mezo.support.populator.IntentionPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
+import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.RitualPopulator;
@@ -32,6 +34,7 @@ import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -72,6 +75,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private IntentionPopulator intentionPopulator;
     @Autowired private RitualPopulator ritualPopulator;
     @Autowired private HabitPopulator habitPopulator;
+    @Autowired private PersonPopulator personPopulator;
+    @Autowired private MentionPopulator mentionPopulator;
 
     @Test
     void testRender_shouldRenderAllBlocksWithNincsAdat_whenUserHasNoData() {
@@ -81,12 +86,13 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         String block = assembler.render(owner, today);
 
         assertThat(block).startsWith("\n\nAKTUÁLIS ÁLLAPOT (pillanatkép — " + today + "):");
-        // all eight blocks present, in render() order
+        // all nine blocks present, in render() order
         int profil = block.indexOf("[Profil]");
         int cel = block.indexOf("[Cél]");
         int edzes = block.indexOf("[Edzés]");
         int novekedes = block.indexOf("[Növekedés]");
         int gyakorlat = block.indexOf("[Napi gyakorlat]");
+        int emberek = block.indexOf("[Emberek]");
         int fuel = block.indexOf("[Mai üzemanyag]");
         int med = block.indexOf("[Gyógyszer]");
         int rege = block.indexOf("[Regeneráció]");
@@ -95,7 +101,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(edzes).isGreaterThan(cel);
         assertThat(novekedes).isGreaterThan(edzes);
         assertThat(gyakorlat).isGreaterThan(novekedes);
-        assertThat(fuel).isGreaterThan(gyakorlat);
+        assertThat(emberek).isGreaterThan(gyakorlat);
+        assertThat(fuel).isGreaterThan(emberek);
         assertThat(med).isGreaterThan(fuel);
         assertThat(rege).isGreaterThan(med);
         // absences are explicit, never invented (spec §4) — a zero weight-trend would be a fabricated number
@@ -112,6 +119,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
             .contains("hitvallás: nincs adat")
             .contains("mai fókusz: nincs adat")
             .contains("napzárás: nyitva")
+            .contains("[Emberek] nincs adat")
             .contains("protokoll: nincs adat, mai bevitel: 0")
             .contains("[Gyógyszer] nincs adat")
             .contains("alvás: nincs adat")
@@ -617,5 +625,45 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
             .doesNotContain("mérés:")
             .doesNotContain("alvás (");
         assertThat(snapshot).contains("[Cél]").contains("[Edzés]").contains("check-in");
+    }
+
+    /** mezo-x6oa: the chat variant carries the active circle, one line per person, newest mention first. */
+    @Test
+    void testRender_shouldRenderEmberekBlock_whenActivePersonsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var anna = personPopulator.createPerson(owner, "Anna");
+        var zita = personPopulator.createPerson(owner, "Zita");
+        personPopulator.createCandidate(owner, "Jelölt Jenő", "extractor");
+        Instant now = Instant.now();
+        mentionPopulator.createMention(owner, anna.getId(), now.minus(Duration.ofDays(2)), "positive");
+        mentionPopulator.createMention(owner, zita.getId(), now.minus(Duration.ofHours(1)), "positive");
+        mentionPopulator.createMention(owner, zita.getId(), now.minus(Duration.ofDays(1)), "positive");
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("[Emberek] (aktív kör, utolsó említés szerint, max 12)\n"
+            + "Zita — Mentee · teszt · 2× e héten · még kevés hét az irányhoz\n"
+            + "Anna — Mentee · teszt · 1× e héten · még kevés hét az irányhoz");
+        // mezo-x6oa final-review (finding E): locks the privacy boundary the spec names — none of
+        // PersonPopulator's other seeded free-text fields (notes, knownFacts, contactCadenceLabel,
+        // aliases) may ever ride along in the chat snapshot, only the flat spec-format line.
+        assertThat(snapshot).doesNotContain("Jelölt Jenő").doesNotContain("Teszt említés.")
+            .doesNotContain("Teszt személy.").doesNotContain("Teszt fact")
+            .doesNotContain("Havi 1:1").doesNotContain("Marcika");
+        assertThat(snapshot.indexOf("[Emberek]")).isGreaterThan(snapshot.indexOf("[Napi gyakorlat]"))
+            .isLessThan(snapshot.indexOf("[Mai üzemanyag]"));
+    }
+
+    /** The morning message must NOT know the circle — that would be the companion bringing people up unprompted. */
+    @Test
+    void testRenderWithoutBiometrics_shouldOmitEmberekBlock_evenWhenActivePersonsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        var anna = personPopulator.createPerson(owner, "Anna");
+        mentionPopulator.createMention(owner, anna.getId(), Instant.now(), "positive");
+
+        String morning = assembler.renderWithoutBiometrics(owner, LocalDate.now());
+
+        assertThat(morning).doesNotContain("[Emberek]").doesNotContain("Anna");
     }
 }

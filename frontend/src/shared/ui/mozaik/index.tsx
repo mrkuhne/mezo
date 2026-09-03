@@ -10,7 +10,7 @@
 // ============================================================
 import { useId, useState, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
-import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+import { ClayIcon, ClaySpot, type ClayIconName, type ClaySpotName } from '@/shared/ui/clay'
 
 /** Domain washes — Mozaik 2.0 relaxation: domain color ON the tile (handoff §10). */
 export type MozaikWash =
@@ -79,9 +79,14 @@ export function StatStrip({ children, className }: { children: ReactNode; classN
   return <div className={cn('mz-statstrip', className)}>{children}</div>
 }
 
-export function StatCell({ value, label }: { value: ReactNode; label: string }) {
+export function StatCell({ value, label, over }: {
+  value: ReactNode
+  label: string
+  /** Over its cap — the prototype's dashed cell (a flag, never a red alarm). */
+  over?: boolean
+}) {
   return (
-    <div className="mz-statcell">
+    <div className={cn('mz-statcell', over && 'mz-statcell-over')}>
       <b>{value}</b>
       <small>{label}</small>
     </div>
@@ -126,6 +131,8 @@ export function PageHead({ onBack, label = '‹ vissza', children }: { onBack: (
 
 interface PageHeroProps {
   icon?: ClayIconName
+  /** A clay SPOT (s-*) instead of an icon — Skillek (s-hajtas) / Kitüntetések (s-medal) heroes. */
+  spot?: ClaySpotName
   /** The prototypes size a hero spot per page (54 and 72 are both common, 48–92 across the
    *  set), so there is no single faithful default — a page that has been checked against its
    *  prototype passes the scaled value. 45 is what every page shipped with. */
@@ -137,11 +144,12 @@ interface PageHeroProps {
 }
 
 /** Subpage hero recipe (session rounds): title, then icon + big number in ONE row, no subtitle theater. */
-export function PageHero({ icon, iconSize = 45, big, name, sub, children }: PageHeroProps) {
+export function PageHero({ icon, spot, iconSize = 45, big, name, sub, children }: PageHeroProps) {
   return (
     <div className="mz-page-hero">
       <div className="mz-hero-nm">{name}</div>
       <div className="mz-hero-row">
+        {spot && <ClaySpot name={spot} size={iconSize} />}
         {icon && <ClayIcon name={icon} size={iconSize} />}
         {big !== undefined && <span className="mz-bignum">{big}</span>}
       </div>

@@ -360,6 +360,30 @@
   .mz-msg .txt { font-size: 11px; font-weight: 300; margin-top: 6px; }
   .mz-cta { width: 100%; margin-top: 4px; padding: 9px 0; text-align: center; }
 
+  /* Üzenetek | Életjelek tab-váltó (mezo-ho9k) — a mem-seg pill-idiómája: 2 gomb,
+     az aktív a CTA-gradienst kapja, a másikon pötty jelzi az olvasatlant. */
+  .mz-seg { display: flex; gap: 4px; background: rgba(43, 33, 24, 0.05); border-radius: 999px; padding: 3px; margin-bottom: 9px; }
+  .mz-seg button {
+    flex: 1; border: none; background: none; border-radius: 999px; min-height: 30px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    font-size: 9.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer;
+  }
+  .mz-seg button.on { background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.5); }
+  .mz-dot { width: 5px; height: 5px; border-radius: 50%; background: linear-gradient(135deg, #FF7A55, #FF5B36); flex: none; }
+
+  /* Életjelek tab: 6-cellás mini-ring sáv + rendben-sor (mezo-ho9k). */
+  .mz-ejstrip {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; width: 100%;
+    box-sizing: border-box; margin-bottom: 10px; padding: 0; border: none; background: none;
+    font-family: inherit; cursor: pointer;
+  }
+  .mz-ejcell { display: grid; justify-items: center; gap: 3px; padding: 7px 1px 6px;
+    background: #FFFFFF; border-radius: 11px; border: 0.5px solid rgba(43, 33, 24, 0.06); }
+  .mz-ejcell .eb { font-size: 6.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .mz-ejcell .pct { font-size: 9px; font-weight: 600; }
+  .mz-ejcell.warn { border-color: rgba(255, 107, 74, 0.55); }
+  .mz-ejok { font-size: 10px; font-weight: 600; color: #5F7A52; text-align: center; margin: 3px 0 8px; }
+
   .vcard {
     background: #FFFFFF; border-radius: 16px; padding: 4px 12px; margin-bottom: 10px;
     border: 0.5px solid rgba(43, 33, 24, 0.06);

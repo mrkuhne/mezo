@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test'
 /**
  * Self-baselined visual goldens: 22 goto screens + the /ritual Harvest + Release and the
  * /train/review lane + exercise-view click-throughs, and the F7.3 Fuel deep surfaces (gyógyszer
- * empty state, recipe mosaic + score sheet, slots editor; F7.4 added the Én deep four) = 73 snapshots per platform (mezo-mzbz added the two /ritual
+ * empty state, recipe mosaic + score sheet, slots editor; F7.4 added the Én deep four) = 75 snapshots per platform (mesocycle pages v2, mezo-d20.15,
+ * added meso-hub + meso-week; mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
  * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
  * `today` shot with one per daypart face — reggel/nap/este; mezo-p2tr swapped the retired
@@ -45,6 +46,10 @@ const SCREENS: Array<[string, string, string?]> = [
   ['train', '/train'],
   ['train-heti', '/train/week'],
   ['train-gym', '/train/gym'],
+  // Mesocycle pages v2 (mezo-d20.15): the run library hub (clickable hero + Heti vizsgálat
+  // tile) and the volume-week page for the mock's active run (meso-hyp-04, data/train/train.ts).
+  ['meso-hub', '/train/mesocycles'],
+  ['meso-week', '/train/mesocycles/meso-hyp-04/week'],
   ['train-session', '/train/session'],
   ['fuel', '/fuel'],
   ['fuel-terv', '/fuel/plan'],
@@ -61,7 +66,8 @@ const SCREENS: Array<[string, string, string?]> = [
   // tab (the progression's new home — streak card + titles section) and the AI-call detail.
   ['me-goal-wizard', '/me/goals/new'],
   ['me-rutinok', '/me/routines/edit'],
-  ['me-growth-awards', '/me/growth?tab=awards'],
+  ['me-growth', '/me/growth'],
+  ['me-growth-awards', '/me/growth/kituntetesek'],
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
   ['insights-mintak', '/insights'],
   ['insights-memoar', '/insights/memoir'],
@@ -94,7 +100,13 @@ for (const theme of ['light', 'dark'] as const) {
     for (const [name, path, frozen] of SCREENS) {
       test(name, async ({ page }) => {
         await page.clock.setFixedTime(new Date(frozen ?? DEFAULT_FROZEN))
-        await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+        await page.addInitScript((t) => {
+          localStorage.setItem('mezo-theme', t)
+          // Mezo-kalauz (mezo-gb1s.1): a first-visit sheet minden goldenbe beleugrana — látottnak seedeljük.
+          localStorage.setItem('mezo.kalauz.v1', JSON.stringify({
+            fuel: { version: 1, seenAt: '2026-05-21T13:00:00.000Z', completedAt: null, dismissedAtStep: null },
+          }))
+        }, theme)
         await page.goto(path)
         await page.waitForLoadState('networkidle')
         await page.evaluate(() => document.fonts.ready)

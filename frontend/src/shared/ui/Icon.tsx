@@ -39,6 +39,8 @@ export type IconName =
   | 'trash'
   | 'chat'
   | 'play'
+  | 'thumb-up'
+  | 'thumb-down'
 
 export function Icon({
   name,
@@ -330,6 +332,24 @@ export function Icon({
       return (
         <svg {...props}>
           <path d="M7.5 4.5 L19 12 L7.5 19.5 Z" fill={color} />
+        </svg>
+      )
+    case 'thumb-up':
+      return (
+        <svg {...props}>
+          <path d="M8 21 V10 L12.5 3.5 A2 2 0 0 1 16 5 L14.5 10 H19.5 A2 2 0 0 1 21.4 12.6 L19 19.6 A2 2 0 0 1 17.1 21 H8 Z" />
+          <line x1="8" y1="10" x2="4" y2="10" />
+          <line x1="4" y1="10" x2="4" y2="21" />
+          <line x1="8" y1="21" x2="4" y2="21" />
+        </svg>
+      )
+    case 'thumb-down':
+      return (
+        <svg {...props}>
+          <path d="M16 3 V14 L11.5 20.5 A2 2 0 0 1 8 19 L9.5 14 H4.5 A2 2 0 0 1 2.6 11.4 L5 4.4 A2 2 0 0 1 6.9 3 H16 Z" />
+          <line x1="16" y1="14" x2="20" y2="14" />
+          <line x1="20" y1="14" x2="20" y2="3" />
+          <line x1="16" y1="3" x2="20" y2="3" />
         </svg>
       )
     default:

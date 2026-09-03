@@ -3,8 +3,9 @@
 // per-muscle-group session breakdown for the ACTIVE day against the
 // SESSION_MUSCLE_CAP (mezo-smhn, spec 2026-08-03-daily-session-breakdown-
 // design, variant A mockup). Sits between MesoEditorHero and the weekly
-// SetBudgetCard — both levels stay visible at once (variant B's Ma/Hét
-// switcher was rejected). Presentational only: parent computes rows +
+// WeeklyBandsCard (formerly SetBudgetCard) — both levels stay visible at
+// once (variant B's Ma/Hét switcher was rejected). Presentational only:
+// parent computes rows +
 // warnings (daySessionBreakdown / leastLoadedDayFor).
 // ============================================================
 import { Eyebrow } from '@/shared/ui/Eyebrow'

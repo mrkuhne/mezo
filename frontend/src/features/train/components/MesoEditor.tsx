@@ -1,18 +1,21 @@
 // ============================================================
 // Mezo · MesoEditor — unified day-tabbed meso day editor (mezo-7rdg, spec
 // 2026-08-01-set-budget-unified-editor). Drop-in replacement for
-// MesoDayTabsEditor that composes MesoEditorHero + SetBudgetCard +
+// MesoDayTabsEditor that composes MesoEditorHero + WeeklyBandsCard +
 // ExerciseAccordionRow: same day-tab strip / active-day seeding / off-day
 // card / add-button (ported from MesoDayTabsEditor.tsx), plus a red
 // session-cap warning dot per tab, single-expand accordion rows with
 // auto-expand-on-add, and optional inline day-rename for custom splits
 // (capability parity with PlannerDaySection's onRename).
 //
-// Hero warningCount is WEEK-level: (budgets at level 'over') + ALL
-// session-cap breaches across the week — the hero is the week-truth
-// surface; per-day locality is what the red tab dots are for.
+// Hero warningCount is WEEK-level: ALL session-cap breaches across the week
+// (the weekly-band % overage alarm retired with SetBudgetCard, mezo-d20.14)
+// — the hero is the week-truth surface; per-day locality is what the red
+// tab dots are for. "Week" means the optional `weekDays` prop when given
+// (`ProgramDayView` edits ONE day but must judge it against the whole 7-day
+// program), else `days` — the two coincide wherever the editor owns the week.
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GymExercise, MesoDay, MusclePriorities } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 import { SortableList } from '@/shared/ui/SortableList'
@@ -20,34 +23,46 @@ import { DayBreakdownCard } from '@/features/train/components/DayBreakdownCard'
 import { ExerciseAccordionRow } from '@/features/train/components/ExerciseAccordionRow'
 import { MesoEditorHero } from '@/features/train/components/MesoEditorHero'
 import { PeakFitCard } from '@/features/train/components/PeakFitCard'
-import { SetBudgetCard } from '@/features/train/components/SetBudgetCard'
 import { StructureLintCard } from '@/features/train/components/StructureLintCard'
-import { budgetGroup, countsForVolume, daySessionBreakdown, leastLoadedDayFor, muscleBudgets, sessionCapWarnings } from '@/features/train/logic/setBudget'
+import { WeeklyBandsCard } from '@/features/train/components/WeeklyBandsCard'
+import { budgetGroup, countsForVolume, daySessionBreakdown, leastLoadedDayFor, sessionCapWarnings } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { peakWeekFit } from '@/features/train/logic/peakWeekFit'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { structureLint } from '@/features/train/logic/structureLint'
 import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
+import { weeklyBands } from '@/features/train/logic/weeklyBands'
 
 interface MesoEditorProps {
+  /** The days this editor EDITS — the tab strip, the breakdown and the exercise list. */
   days: MesoDay[]
+  /**
+   * The days the WEEK-level derivations read (hero week totals, `WeeklyBandsCard`,
+   * `structureLint`, `peakWeekFit`, `sessionCapWarnings`). Defaults to `days`, which is right
+   * whenever the editor owns the whole week. The wizard's one-day page (`ProgramDayView`)
+   * passes the full 7-day program here: otherwise every week-scope rule — weekly frequency,
+   * variety, the week's set band ceilings — would judge one Monday as if it were the week
+   * (mezo-d20.14 review, I2).
+   */
+  weekDays?: MesoDay[]
   onAddClick: (dayKey: string) => void
   onRemove: (dayKey: string, exId: string) => void
   onChange: (dayKey: string, exId: string, patch: Partial<GymExercise>) => void
   onReorder: (dayKey: string, ids: string[]) => void
   /** Renames the active day (custom splits, capability parity with PlannerDaySection). */
   onRenameDay?: (dayKey: string, name: string) => void
-  /** Per-coarse-muscle tier map (mezo-3m5m, spec GD4) — threaded into muscleBudgets,
+  /** Per-coarse-muscle tier map (mezo-3m5m, spec GD4) — threaded into weeklyBands,
    *  structureLint and peakWeekFit. Absent/null -> every group defaults to Grow. */
   priorities?: MusclePriorities | null
   /** Explicit per-mesocycle landmark override (AD5) — wins over the static GROUP_LANDMARKS
-   *  default in muscleBudgets and peakWeekFit. */
+   *  default in weeklyBands and peakWeekFit. */
   volumePerMuscle?: Record<string, { mev: number; mav: number; mrv: number }> | null
 }
 
 export function MesoEditor({
-  days, onAddClick, onRemove, onChange, onReorder, onRenameDay, priorities, volumePerMuscle,
+  days, weekDays, onAddClick, onRemove, onChange, onReorder, onRenameDay, priorities, volumePerMuscle,
 }: MesoEditorProps) {
+  const week = weekDays ?? days
   const [activeDay, setActiveDay] = useState<string | null>(
     () => days.find((d) => d.current)?.day ?? days.find((d) => !isOffDay(d))?.day ?? days[0]?.day ?? null,
   )
@@ -63,16 +78,19 @@ export function MesoEditor({
 
   const day = days.find((d) => d.day === activeDay) ?? days[0]
 
-  const budgets = muscleBudgets(days, priorities, volumePerMuscle)
-  const capWarnings = sessionCapWarnings(days)
-  const lintFindings = structureLint(days, priorities)
-  const peakFit = peakWeekFit(days, priorities, volumePerMuscle)
+  // Week-scope derivations read `week`, never `days` — see the `weekDays` prop doc.
+  const bands = useMemo(
+    () => weeklyBands(week, priorities ?? null, volumePerMuscle ?? undefined),
+    [week, priorities, volumePerMuscle],
+  )
+  const capWarnings = sessionCapWarnings(week)
+  const lintFindings = structureLint(week, priorities)
+  const peakFit = peakWeekFit(week, priorities, volumePerMuscle)
   const warningDays = new Set(capWarnings.map((w) => w.day))
-  const overBudgets = budgets.filter((b) => b.level === 'over')
-  const warningCount = overBudgets.length + capWarnings.length
+  const warningCount = capWarnings.length
 
   // Active-day-level breakdown (Task 1's daySessionBreakdown) — locality
-  // companion to the week-level SetBudgetCard below it; both stay visible.
+  // companion to the week-level WeeklyBandsCard below it; both stay visible.
   const dayRows = daySessionBreakdown(day)
   const dayOverRows = dayRows.filter((r) => r.over)
   const dayWarnings = dayOverRows.map((r) => ({
@@ -113,13 +131,16 @@ export function MesoEditor({
   const off = isOffDay(day)
   const daySets = day.exercises.reduce((a, e) => a + e.workingSets, 0)
   const dayMinutes = estimateSessionMinutes(day.exercises)
-  const weekSets = days.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
-  const trainingDays = days.filter((d) => d.exercises.length > 0).length
+  const weekSets = week.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
+  const trainingDays = week.filter((d) => d.exercises.length > 0).length
   const showRename = Boolean(onRenameDay) && day.muscle === 'custom'
 
   return (
     <div className="col gap-md">
-      {/* Day tabs */}
+      {/* Day tabs — only when there IS a choice. A single-day editor (the day page,
+          ProgramDayView) has its own hero saying which day this is; a lone tab there
+          is chrome that switches nothing (mezo-d20.15). */}
+      {days.length > 1 && (
       <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
         {days.map((d) => {
           const active = d.day === day.day
@@ -172,6 +193,7 @@ export function MesoEditor({
           )
         })}
       </div>
+      )}
 
       {showRename && (
         <input
@@ -197,7 +219,7 @@ export function MesoEditor({
 
       <DayBreakdownCard rows={dayRows} warnings={dayWarnings} />
 
-      <SetBudgetCard budgets={budgets} capWarnings={capWarnings} defaultOpen={warningCount > 0} />
+      <WeeklyBandsCard rows={bands} note="1. hét → plafon. Az Emphasize izmok kapják a legtöbbet." />
 
       <PeakFitCard fits={peakFit} />
 

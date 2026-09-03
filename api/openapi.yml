@@ -5,7 +5,7 @@ info:
     Contract-first API definition for the mezo backend — the single source of
     truth for generated backend DTOs / controller interfaces and frontend types.
     See docs/references/api_contract_conventions.md.
-  version: 0.5.0
+  version: 0.6.0
 servers:
   - url: 'http://localhost:8090'
     description: Local dev backend (MEZO_PORT)
@@ -98,6 +98,8 @@ tags:
       rides POST /api/biometrics/sleep)
   - name: FuelSettings
     description: Fuel-owned per-user planner settings (eating cadence + caffeine cutoff)
+  - name: TutorialProgress
+    description: 'Per-user "seen" store of the in-app page guides (Mezo-kalauz, mezo-gb1s)'
   - name: Gamification
     description: 'User progression system — XP, levels, coins, titles, and daily streaks'
   - name: LlmUsage
@@ -115,9 +117,9 @@ tags:
   - name: Character
     description: >-
       Karakter dossier (mezo-1gim) — the synthesized user profile: 7 CORE
-      dimensions + AI-opened chapters, confidence-carrying claims, expert
-      observations, and persisted konzílium transcripts. Slice 1 ships reads
-      over an honestly empty dossier.
+      dimensions + 1 META (the companion's self-audit) + AI-opened chapters,
+      confidence-carrying claims, expert observations, and persisted konzílium
+      transcripts. Slice 1 ships reads over an honestly empty dossier.
   - name: Diagnosis
     description: >-
       On-demand diagnostic reports (mezo-hqfi) — a phenomenon question answered
@@ -770,6 +772,42 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/meso-plans/generate:
+    post:
+      tags:
+        - Train
+      operationId: generateMesoPlan
+      summary: >-
+        Generate a hypertrophy mesocycle proposal (deterministic skeleton +
+        optional LLM exercise pick); returns a
+        MesoTemplateUpsertRequest-compatible template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoPlanGenerateRequest'
+      responses:
+        '200':
+          description: >-
+            Generated proposal — not persisted; save it via POST
+            /api/train/meso-templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoPlanGenerateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -6758,6 +6796,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/tutorial/progress:
+    get:
+      tags:
+        - TutorialProgress
+      operationId: getTutorialProgress
+      summary: >-
+        The user's guide progress; empty map ghost when nothing seen — never 404
+        (TutorialProgress)
+      responses:
+        '200':
+          description: The progress map (empty before the first guide is shown)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorialProgressResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - TutorialProgress
+      operationId: setTutorialProgress
+      summary: >-
+        Replace the whole progress map (per-user singleton upsert)
+        (TutorialProgress)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTutorialProgressRequest'
+      responses:
+        '200':
+          description: Saved progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorialProgressResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - TutorialProgress
+      operationId: resetTutorialProgress
+      summary: >-
+        Forget every seen guide (Beállítások · Kalauzok újranézése)
+        (TutorialProgress)
+      responses:
+        '204':
+          description: Progress cleared; the next GET returns the empty ghost
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/ritual/day/{date}':
     get:
       tags:
@@ -9354,6 +9461,62 @@ components:
           description: >-
             Demo still (end position); alternated with imageStartUrl to convey
             the movement
+    MesoPlanGenerateRequest:
+      type: object
+      required:
+        - daysOfWeek
+        - weeks
+      properties:
+        daysOfWeek:
+          type: array
+          minItems: 2
+          maxItems: 6
+          uniqueItems: true
+          description: 'Training days, FE day tokens; any weekday incl. weekend'
+          items:
+            type: string
+            pattern: ^(Hét|Kedd|Sze|Csü|Pén|Szo|Vas)$
+        weeks:
+          type: integer
+          minimum: 4
+          maximum: 8
+          description: Total length incl. the terminal deload week
+        priorities:
+          type: object
+          nullable: true
+          description: >-
+            Sparse per-muscle tier map over the 9 coarse groups (chest, back,
+            shoulder, biceps, triceps, quad, ham, glute, calf); absent = grow
+          additionalProperties:
+            type: string
+            pattern: ^(emphasize|grow|maintain)$
+        goalText:
+          type: string
+          nullable: true
+          maxLength: 400
+          description: >-
+            Free-text goal steering exercise choice (e.g. "röplabda mellett,
+            vállra figyelve")
+    MesoPlanGenerateResponse:
+      type: object
+      required:
+        - template
+        - rationale
+        - llmUsed
+      properties:
+        template:
+          $ref: '#/components/schemas/MesoTemplateUpsertRequest'
+        rationale:
+          type: string
+          description: >-
+            One Hungarian sentence on what was chosen and why (LLM or
+            deterministic)
+        llmUsed:
+          type: boolean
+          description: >-
+            false when the LLM port was absent, failed, or its answer changed
+            nothing (no accepted pick) — the deterministic filler produced the
+            plan
     MesoTemplateUpsertRequest:
       type: object
       required:
@@ -16726,6 +16889,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         isActive:
           type: boolean
     HabitCatalogResponse:
@@ -16810,6 +17003,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         position:
           type: integer
           minimum: 1
@@ -16840,6 +17063,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         isActive:
           type: boolean
     HabitReorderRequest:
@@ -16889,6 +17142,28 @@ components:
           maximum: 15
         chainKey:
           type: string
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
     HabitSuggestResponse:
       type: object
       required:
@@ -17126,6 +17401,53 @@ components:
         caffeineCutoff:
           type: string
           pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+    TutorialProgressEntry:
+      type: object
+      required:
+        - version
+        - seenAt
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          description: >-
+            The registry version of the guide that was seen — a bump re-arms the
+            auto-show
+        seenAt:
+          type: string
+          format: date-time
+          description: 'First time the guide appeared (seen = appeared, Appcues modal rule)'
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Set on "Értem, kezdjük" (last card confirmed)'
+        dismissedAtStep:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Zero-based card index when Kihagyom / ✕ / Escape closed it
+    TutorialProgressResponse:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TutorialProgressEntry'
+          description: >-
+            Keyed by guide id from the frontend registry (e.g. `fuel`,
+            `welcome`)
+    SetTutorialProgressRequest:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TutorialProgressEntry'
     RitualWindow:
       type: object
       required:
@@ -18492,6 +18814,7 @@ components:
           enum:
             - CORE
             - CHAPTER
+            - META
         expertKey:
           type: string
           nullable: true
@@ -18540,7 +18863,9 @@ components:
         dimensionKey:
           type: string
           nullable: true
-          description: null for szkeptikus/mezo — they are not CORE dimension owners
+          description: >-
+            null for mezo; for szkeptikus the META dimension key (self-audit);
+            the owned CORE key for experts
         kind:
           type: string
           enum:
@@ -18590,6 +18915,7 @@ components:
           enum:
             - CORE
             - CHAPTER
+            - META
         expertKey:
           type: string
           nullable: true

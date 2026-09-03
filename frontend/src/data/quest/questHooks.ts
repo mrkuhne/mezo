@@ -16,6 +16,8 @@ export interface DailyQuestsView {
   levelUps: LevelUpResult[]
   rerollsLeft: number
   mode: 'mock' | 'live'
+  /** True while the real-mode read is unresolved (mock mode is never pending — `initialData` seeds synchronously). */
+  isPending: boolean
 }
 
 /**
@@ -37,7 +39,7 @@ export function useDailyQuests(date: string): DailyQuestsView {
     retry: false,
   })
   const data = q.data ?? (mock ? MOCK_DAY : EMPTY_DAY)
-  return { ...data, mode: mock ? 'mock' : 'live' }
+  return { ...data, mode: mock ? 'mock' : 'live', isPending: q.isPending }
 }
 
 /** Quest history for a date range (Growth journal). Terminal statuses only — the builder

@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
+import io.mrkuhne.mezo.feature.people.repository.MentionSignal;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.feature.people.service.PersonAffectTrend;
 import io.mrkuhne.mezo.feature.people.service.PersonAffectTrendCalculator;
@@ -438,9 +439,8 @@ public class CompanionMessageGenerator {
                 .findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId).stream()
                 .filter(p -> "active".equals(p.getStatus()))
                 .toList();
-        Map<UUID, List<MentionEntity>> allByPerson = mentionRepository
-                .findAllByCreatedByAndDeletedFalseOrderByTsDesc(userId).stream()
-                .collect(Collectors.groupingBy(MentionEntity::getPersonId));
+        Map<UUID, List<MentionSignal>> allByPerson = mentionRepository.findSignals(userId).stream()
+                .collect(Collectors.groupingBy(MentionSignal::personId));
         Map<UUID, Long> weekCountByPerson = weekMentions.stream()
                 .collect(Collectors.groupingBy(MentionEntity::getPersonId, Collectors.counting()));
 

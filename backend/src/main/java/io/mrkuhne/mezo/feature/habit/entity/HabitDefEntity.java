@@ -25,6 +25,8 @@ public class HabitDefEntity extends OwnedEntity {
     public static final String MODE_MANUAL = "MANUAL";
     public static final String METRIC_MANUAL = "manual";
     public static final String SKILL_KIND_LIFE = "LIFE";
+    public static final String FRAMEWORK_FOGG = "FOGG";
+    public static final String FRAMEWORK_CLEAR = "CLEAR";
 
     @Id
     @GeneratedValue
@@ -66,6 +68,34 @@ public class HabitDefEntity extends OwnedEntity {
 
     @Column(name = "link_url")
     private String linkUrl;
+
+    /** Behaviour-change framework this recipe was built on; null for pre-mezo-3zue defs. */
+    @Column(length = 5)
+    private String framework;
+
+    /** FOGG: the habit_key of another of the user's defs this one is stacked onto. */
+    @Column(name = "anchor_habit_key", length = 40)
+    private String anchorHabitKey;
+
+    /** CLEAR: when and where — the 1st law's "make it obvious". */
+    @Column(length = 160)
+    private String cue;
+
+    /** CLEAR: the wanting behind the behaviour — the 2nd law. */
+    @Column(length = 200)
+    private String craving;
+
+    /** CLEAR: what makes it satisfying — the 4th law. */
+    @Column(length = 160)
+    private String reward;
+
+    /** FOGG: the immediate "shine" performed within seconds of the behaviour. */
+    @Column(length = 120)
+    private String celebration;
+
+    /** CLEAR: the optional identity sentence ("…hogy olyan ember legyek, aki"). */
+    @Column(length = 120)
+    private String identity;
 
     @Column(name = "is_active", nullable = false)
     private Boolean active = true;

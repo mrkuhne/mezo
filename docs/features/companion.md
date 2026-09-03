@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-01
+updated: 2026-09-02
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -60,10 +60,11 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   deterministic composition of the OTHER features' reads (profile + weight trend, active goal +
   prescription current-week segment + day-planner, active meso + schedules + last-7d digest,
   account level/coins/streak + top skills + weekly XP rollup, today's quest count + habit chains +
-  creed/foci/reflection + napzárás state, FuelDay rollup + protocol + intakes, cycleDay/phase, last
-  sleep + latest check-in), rendered as eight Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT
-  (pillanatkép — {dátum}):` and inserted into the `ChatService` system prompt **between the static
-  voice and the history transcript**.
+  creed/foci/reflection + napzárás state, the active people circle (`[Emberek]`, **mezo-x6oa**,
+  chat variant only), FuelDay rollup + protocol + intakes, cycleDay/phase, last sleep + latest
+  check-in), rendered as nine Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT (pillanatkép —
+  {dátum}):` and inserted into the `ChatService` system prompt **between the static voice and the
+  history transcript**.
   Missing data renders as explicit `nincs adat`, never invented; no LLM anywhere in the path.
 
 **V0.4 (`mezo-fnnq.4`) shipped streaming + the real FE:**
@@ -2213,6 +2214,44 @@ lives in [me.md §5.4](me.md); this section is the companion-side mechanics.
   onto the existing `GraphPromotionServiceIT`; `PersonGraphEdgeAdapter` has its own
   `PersonGraphEdgeAdapterIT`; FE coverage is `PersonDetailPage.test.tsx` in both modes.
 
+### Emberek a chat pillanatképben (✅ `mezo-x6oa`)
+
+Spec: [`2026-09-02-emberek-chat-snapshot-design.md`](../superpowers/specs/2026-09-02-emberek-chat-snapshot-design.md).
+Until this slice the companion chat knew nothing of the user's people — names only leaked in
+opportunistically through the `[Összefüggések]` graph block, for graph-promoted persons, with no
+weekly direction. Now every CHAT turn's snapshot carries an **`[Emberek]`** block:
+
+- **`PeopleService.chatContext(userId, today)`** (`feature/people/service`, read-only) — flat
+  `PersonChatContext(name, relationshipHu, mentionsThisWeek, lastMentionAt, direction,
+  directionReason)` rows for ACTIVE persons only (candidate/archived never), newest mention
+  first, unmentioned last by name, no limit. The weekly count and the direction come from the
+  SAME private helper the bootstrap uses, so the chat and the Emberek hub can never disagree.
+  Since `mezo-cc6x` this reads `MentionRepository.findSignals` — a `MentionSignal(personId, ts,
+  tone, intensity)` projection, not managed `MentionEntity` rows — so every chat turn's read
+  skips the free-text `excerpt` and never adds dirty-checked entities to `prepareTurn`'s
+  read-write persistence context.
+- **`PeopleSnapshotBlock`** (`feature/companion/service`, COMPANION_SWITCH) renders it:
+  header `[Emberek] (aktív kör, utolsó említés szerint, max N)`, one line per person
+  `<név> — <kapcsolat> · <k× e héten | e héten nem került szóba> · <felfelé (indok) | lefelé
+  (indok) | indok>`, capped at `snapshot.people-max-persons`. `PEOPLE_SWITCH` is independent of
+  the companion switch, so the `PeopleService` is read through `ObjectProvider` (the
+  `HabitService` precedent) — absent bean, empty circle or any `RuntimeException` all render
+  `[Emberek] nincs adat`. IDENT-3, precisely: a NON-DB `RuntimeException` degrades gracefully and
+  the turn continues; a `DataAccessException` from `chatContext` (its own `@Transactional
+  (readOnly = true)` joins `prepareTurn`'s transaction) leaves the Hibernate session
+  rollback-only regardless of this catch, so the turn still dies at commit — the same hazard
+  `MemoryEmbeddingAnnQuery` exists to work around. `people-max-persons = 0` omits the block
+  entirely. Raw quotes, `knownFacts`, `notes` never ride.
+- **Chat variant only:** `ContextSnapshotAssembler.render` inserts it after `[Napi gyakorlat]`;
+  `renderWithoutBiometrics` (the morning message) deliberately does not — that would be the
+  companion bringing people up unprompted.
+- **Grounding rule** in `ChatService.SYSTEM_PROMPT` (`[Mit szabad állítani]`): the model may
+  recognise a mentioned name and refer to the relationship and this week's direction, must not
+  invent anything else about a third party, and must not raise people on its own.
+- No new port, no new slice edge: `companion → people` already existed (`ChatMentionListener`).
+- Tests: `PeopleChatContextIT`, `PeopleSnapshotBlockTest`, `ContextSnapshotAssemblerIT`
+  (+2: block present in `render`, absent in `renderWithoutBiometrics`), `CompanionPropertiesIT`.
+
 ### Backend tables (W3.2 consolidation ladder, ✅ `mezo-b3pp.13`)
 
 Migration `202608231400_mezo-b3pp.13_create_period_summary.sql` (in `1.0.0_master.yml`) — the
@@ -2921,6 +2960,8 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   user's own sentence loses exactly the numbers, hedges and specifics that make it worth carrying,
   and asserts an interpretation of their state the app was never told. The contract lets a note be
   1000 chars and the snapshot rides EVERY turn, so this clip is load-bearing, not cosmetic.
+- `mezo.companion.snapshot.people-max-persons` = **12** (`@Min(0) @Max(30)`) — how many ACTIVE
+  people the `[Emberek]` chat-snapshot block lists (newest mention first). `0` omits the block.
 - `mezo.companion.tools.max-calls-per-turn` = **15** (`@Min(1) @Max(20)`, raised from 6 at
   mezo-xixu alongside the 8→15 tool expansion) — recorded tool calls per
   turn; past it every tool soft-fails with honest in-band text (V0.5).
@@ -3351,6 +3392,8 @@ deterministic fallback to fall back to, unlike stack-placement/meal-coach). Tagg
 `LlmCallContext("habit_ai_suggest", "propose", …)` for the `llm_log_history` audit (§4 below).
 Consumer side — the routine editor's „✨ AI javaslat" sheet, the grounding/filter chain, the contract —
 is in [`habit.md`](habit.md) §2/§4/§5.
+
+**Meso-plan-generator consumer (mesocycle wizard redesign).** `MesoPlanLlmAdapter` (`llm/MesoPlanLlmAdapter.java`) — the train-owned `MesoPlanLlm` port's Gemini half (`[meso-plan]`, SMART tier, `LlmCallContext(train_meso_plan, generate)`), gated by `MESO_PLAN_AI_SWITCH` + the companion switch; the model only picks catalog ids into fixed frames, `train.MesoPlanMerger` validates. Consumer side (the deterministic skeleton/fill pipeline, the `POST /api/train/meso-plans/generate` contract) is in [`train.md`](train.md) §4 `#### Plan generator`.
 
 **V2.1 embedding seam (✅ wired, unused until V2.2).** All embedding access goes through the
 `EmbeddingPort` (`EmbeddingPort.java`) — `embedDocuments(List<String>) → List<float[]>` /
@@ -5180,7 +5223,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Backend — LLM port (ADR 0008)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port. **Since mezo-q71s** `complete`/`stream(system, List<Turn> history, user, tools, toolContext)` are the ABSTRACT 5-arg forms; the old tools-carrying 2-string shape is now a `default` delegating with `List.of()` (the port's second inversion — V0.5's Decision 16 is the first); the mezo-78rn multimodal `complete(…, imageBytes, mimeType)` overload is unchanged.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`); `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration; the Spring AI `Media` image part (mezo-78rn); **records every call path** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu), including the new `conversationHistory` field on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y); the `MESO_REVIEW` branch (mezo-meyc.3) answering the canned `MESO_REVIEW_ANSWER` unless `[fake-meso-review:…]` is planted in the run TITLE, or `[fake-meso-review-echo]` which returns the **assembled user payload verbatim** (the only way to assert what the generator actually sent — the fake stays stateless, no prompt recorder) — failure injection rides the shared `[fake-fail]`. Unlike the `feature.proactive`/`feature.activity` markers this one is IMPORTED (`MesoReviewGenerator.MESO_REVIEW_MARKER`), not mirrored as a literal: the generator is in the SAME `companion` slice, so no new package cycle is possible.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y); the `MESO_REVIEW` branch (mezo-meyc.3) answering the canned `MESO_REVIEW_ANSWER` unless `[fake-meso-review:…]` is planted in the run TITLE, or `[fake-meso-review-echo]` which returns the **assembled user payload verbatim** (the only way to assert what the generator actually sent — the fake stays stateless, no prompt recorder) — failure injection rides the shared `[fake-fail]`. Unlike the `feature.proactive`/`feature.activity` markers this one is IMPORTED (`MesoReviewGenerator.MESO_REVIEW_MARKER`), not mirrored as a literal: the generator is in the SAME `companion` slice, so no new package cycle is possible. The plan-generator's `MesoPlanLlmAdapter` (`MARKER = "[meso-plan]"`) branch dispatches on the greedy `MESO_PLAN_SENTINEL` — `[fake-meso-plan:{json}]` planted in the request's `goalText` — with a default `{"rationale":"FAKE-INDOK","days":[]}` (a valid but empty-days answer — the un-scripted happy path still reaches the LLM branch and `MesoPlanMerger` runs, but an empty suggestion accepts no pick, so `MesoPlanGeneratorService` reports `llmUsed = false` and keeps the deterministic rationale, the same as no answer at all); failure injection rides the same shared `[fake-fail]`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/MealDraftLlmAdapter.java` — companion-side adapter for the meal-owned `MealDraftLlm` port (ADR 0012, mezo-78rn); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates both overloads to `CompanionLlm`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SleepShotLlmAdapter.java` — companion-side adapter for the sleep-owned `SleepShotLlm` vision port (ADR 0012, mezo-66ab); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates to `CompanionLlm.complete` with one `InlineImage`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/CompanionHelloRunner.java` — `companion-smoke` real-API round-trip proof.

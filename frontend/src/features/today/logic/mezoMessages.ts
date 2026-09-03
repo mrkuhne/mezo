@@ -10,6 +10,7 @@
 // jönnek. Pure: no React, no hooks, no side effects.
 // ============================================================
 import type { Briefing, BriefingRef, FeedMessage, FeedMessageKind } from '@/data/types'
+import type { ClayIconName } from '@/shared/ui/clay'
 
 export interface MezoMessageItem {
   /** Stabil a napon belül: a feed KINDJE (`morning`/`sleep`/…) vagy a nudge/demo kulcsa —
@@ -29,6 +30,13 @@ export interface MezoMessageItem {
   paragraphs: string[]
   refs: BriefingRef[]
   meta: string | null
+  /** Tab-partíció kulcs (mezo-ho9k): 'eletjel' = Életjel-figyelő nudge — a NapMezoPage
+   *  Életjelek tabjára tartozik. Hiánya = companion-üzenet (Üzenetek tab). */
+  source?: 'eletjel'
+  /** mezo-z4h4: a küszöb-nudge kártya domain clay ikonja (a nudge-ot kiváltó `NeedKey`
+   *  ikonja, `VITAL_TILE`-ból, `EletjelPage.tsx`) — csak nudge-elemeken van, felváltja a
+   *  kártya fején az emojit/daypart-spotot. Feed-soroknak nincs. */
+  icon?: ClayIconName
 }
 
 /** A briefing eyebrow-ja hordozhat egy `HH:mm`-et (pl. „Mezo · reggeli briefing · 06:30"). */
@@ -77,4 +85,16 @@ export function buildMezoMessages({ feed, demoBriefing, nudges }: {
   }
   if (nudges && nudges.length > 0) out.push(...nudges)
   return out
+}
+
+/** A NapMezoPage két tabjának partíciója (mezo-ho9k). Pure, sorrendtartó — a szál
+ *  maga (sorrend, tartalom) érintetlen: ez CSAK megjelenítési bontás. */
+export function partitionMezoThread(messages: MezoMessageItem[]): {
+  uzenetek: MezoMessageItem[]
+  eletjelek: MezoMessageItem[]
+} {
+  return {
+    uzenetek: messages.filter((m) => m.source !== 'eletjel'),
+    eletjelek: messages.filter((m) => m.source === 'eletjel'),
+  }
 }

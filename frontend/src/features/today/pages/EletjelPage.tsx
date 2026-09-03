@@ -17,7 +17,7 @@ import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 import { useCheckins, useSleep, useWaterActions } from '@/data/hooks'
-import { needRingGradient, type NeedKey, type NeedState } from '@/features/today/logic/needs'
+import { needRingGradient, NEED_ICON, type NeedKey, type NeedState } from '@/features/today/logic/needs'
 import { useNeeds } from '@/features/today/logic/useNeeds'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
@@ -27,16 +27,18 @@ import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 
 /** Prototype #page-vital tile skins, verbatim (eyebrow ink · mini-ring color ·
  *  wash · icon · aria). Labels differ from NEED_META's sheet names on purpose —
- *  the page speaks the prototype's tile language (Étel, Kapcsolat). */
-const VITAL_TILE: Record<NeedKey, {
+ *  the page speaks the prototype's tile language (Étel, Kapcsolat). The `icon` per key
+ *  comes from `NEED_ICON` (needs.ts, mezo-z4h4) — the SAME map the küszöb-nudge cards use
+ *  (needsNudges.ts), so the two surfaces can never drift apart. */
+export const VITAL_TILE: Record<NeedKey, {
   eyebrow: string; ink: string; ring: string; wash: string; icon: ClayIconName; aria: string
 }> = {
-  energia: { eyebrow: 'Étel', ink: '#4E6B42', ring: '#6E8B5E', wash: 'mz-w-sage', icon: 'i-fuel', aria: 'Étel logolása' },
-  hidratacio: { eyebrow: 'Víz', ink: '#3E7396', ring: '#4E8FB8', wash: 'mz-w-sky', icon: 'i-viz', aria: 'Víz +2,5 dl' },
-  pihenes: { eyebrow: 'Alvás', ink: '#6C5FA3', ring: '#6C5FA3', wash: 'mz-w-lav', icon: 'i-alvas', aria: 'Alvás logolása' },
-  mozgas: { eyebrow: 'Mozgás', ink: '#A84A26', ring: '#FF6B4A', wash: 'mz-w-coral', icon: 'i-edzes', aria: 'Mozgás — edzéshez' },
-  lelek: { eyebrow: 'Kapcsolat', ink: '#B0567E', ring: '#C46FA0', wash: 'mz-w-rose', icon: 'i-emberek', aria: 'Kapcsolat logolása' },
-  rend: { eyebrow: 'Rend', ink: '#A8801F', ring: '#C9962E', wash: 'mz-w-gold', icon: 'i-rend', aria: 'Rend' },
+  energia: { eyebrow: 'Étel', ink: '#4E6B42', ring: '#6E8B5E', wash: 'mz-w-sage', icon: NEED_ICON.energia, aria: 'Étel logolása' },
+  hidratacio: { eyebrow: 'Víz', ink: '#3E7396', ring: '#4E8FB8', wash: 'mz-w-sky', icon: NEED_ICON.hidratacio, aria: 'Víz +2,5 dl' },
+  pihenes: { eyebrow: 'Alvás', ink: '#6C5FA3', ring: '#6C5FA3', wash: 'mz-w-lav', icon: NEED_ICON.pihenes, aria: 'Alvás logolása' },
+  mozgas: { eyebrow: 'Mozgás', ink: '#A84A26', ring: '#FF6B4A', wash: 'mz-w-coral', icon: NEED_ICON.mozgas, aria: 'Mozgás — edzéshez' },
+  lelek: { eyebrow: 'Kapcsolat', ink: '#B0567E', ring: '#C46FA0', wash: 'mz-w-rose', icon: NEED_ICON.lelek, aria: 'Kapcsolat logolása' },
+  rend: { eyebrow: 'Rend', ink: '#A8801F', ring: '#C9962E', wash: 'mz-w-gold', icon: NEED_ICON.rend, aria: 'Rend' },
 }
 
 export function EletjelPage() {

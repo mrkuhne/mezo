@@ -2,8 +2,11 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { MesoComparePage } from '@/features/train/pages/MesoComparePage'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 function LocationProbe() {
   const { pathname, search } = useLocation()
@@ -52,22 +55,35 @@ describe('MesoComparePage (mock mode · the two fixture reports)', () => {
     expect(within(adh).getByText('19/24 edzés')).toBeInTheDocument()
   })
 
-  it('aligns the volume weeks per muscle behind a muscle pill switch', async () => {
-    const user = userEvent.setup()
+  it('tables each muscle\'s peak planned week against A\'s own MRV ceiling, "–" where a side never trained it', () => {
     renderAt(BOTH)
-    const vol = screen.getByTestId('meso-compare-volume')
+    const peak = screen.getByTestId('meso-compare-peak-volume')
+    const rowFor = (label: string) => within(peak).getByText(label).closest('tr') as HTMLElement
 
-    // chest is on both sides: W1 planned 6 (rec-03) vs 8 (hyp-03)
-    const rows = within(vol).getAllByTestId('compare-week-row')
-    expect(rows).toHaveLength(8) // the union W1..W8 — hyp-03 only ran 6
-    expect(within(rows[0]).getAllByRole('cell').map((c) => c.textContent)).toEqual(['W1', '6', '6', '8', '8'])
-    // past hyp-03's end the b side is "–", never 0 (W8 is rec-03's deload: 8 planned / 8 actual)
-    expect(within(rows[7]).getAllByRole('cell').map((c) => c.textContent)).toEqual(['W8', '8', '8', '–', '–'])
+    // chest: both runs trained it — A's own peak/ceiling next to B's peak
+    const chestCells = within(rowFor('Mell')).getAllByRole('cell').map((c) => c.textContent)
+    expect(chestCells[0]).toBe('Mell')
+    expect(chestCells[1]).not.toBe('–') // A's peak planned week
+    expect(chestCells[2]).not.toBe('–') // A's own MRV ceiling
+    expect(chestCells[3]).not.toBe('–') // B's peak planned week
 
-    // biceps exists ONLY in rec-03's arc — the union still offers it, with an empty b side
-    await user.click(within(vol).getByRole('button', { name: 'Bicep' }))
-    const bicepRows = within(vol).getAllByTestId('compare-week-row')
-    expect(within(bicepRows[0]).getAllByRole('cell').map((c) => c.textContent)).toEqual(['W1', '6', '6', '–', '–'])
+    // biceps exists ONLY in rec-03's (A's) arc — B's cell is an honest dash, never a 0
+    const bicepCells = within(rowFor('Bicepsz')).getAllByRole('cell').map((c) => c.textContent)
+    expect(bicepCells[3]).toBe('–')
+  })
+
+  it('shows each run\'s non-Grow focus tiers, and neither fixture run flagged legacy', () => {
+    renderAt(BOTH)
+    const focus = screen.getByTestId('meso-compare-focus')
+    const rows = within(focus).getAllByTestId('focus-row')
+    // Both mock fixture runs have no goalPreset at all (ABSENT, not present-and-wrong) and
+    // both phase curves close on Deload — an absent preset alone is not legacy.
+    expect(within(rows[0]).queryByTestId('focus-legacy-chip')).toBeNull()
+    expect(within(rows[1]).queryByTestId('focus-legacy-chip')).toBeNull()
+    // Neither fixture run carries musclePriorities either, so no tier chips at all — just
+    // the side label and the (absent) legacy chip.
+    expect(within(rows[0]).queryByTestId('focus-chip')).toBeNull()
+    expect(within(rows[1]).queryByTestId('focus-chip')).toBeNull()
   })
 
   it('lists ONLY the shared exercises, loudest first, and highlights the better side', () => {
@@ -142,5 +158,63 @@ describe('MesoComparePage (mock mode · the two fixture reports)', () => {
     renderAt(BOTH)
     await user.click(screen.getByRole('button', { name: /Vissza/ }))
     expect(screen.getByTestId('loc').textContent).toBe('/train/mesocycles')
+  })
+})
+
+// Real-mode coverage for the legacy chip path (mesoCompare.focusDiff / isLegacyPlan): a run
+// with a PRESENT, wrong goalPreset must still read as legacy — only an ABSENT preset is
+// exempt (mock-mode's two fixture runs above cover that exemption; this covers the flag).
+describe('MesoComparePage (real mode · one legacy run, one current)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  const mesoBase = {
+    startDate: '2026-01-01', endDate: '2026-02-12', weeks: 6, currentWeek: 6,
+    split: 'x', style: 'x', status: 'archived' as const,
+  }
+  const legacyMeso = {
+    ...mesoBase,
+    id: 'c0ffee00-0000-4000-8000-000000000001', title: 'Legacy blokk', shortTitle: 'Legacy',
+    goal: 'x', goalPreset: 'strength', musclePriorities: { back: 'emphasize' },
+    phaseCurve: ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'],
+  }
+  const currentMeso = {
+    ...mesoBase,
+    id: 'c0ffee00-0000-4000-8000-000000000002', title: 'Current blokk', shortTitle: 'Current',
+    goal: 'x', goalPreset: 'hypertrophy', musclePriorities: { chest: 'maintain' },
+    phaseCurve: ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'],
+  }
+  const reportFor = (meso: { id: string; title: string; startDate: string; endDate: string; weeks: number }) => ({
+    mesocycleId: meso.id, templateId: null, title: meso.title,
+    startDate: meso.startDate, endDate: meso.endDate, closedAt: '2026-02-12T18:00:00Z', weeks: meso.weeks,
+    selfEval: null, aiEval: null, aiEvalStatus: 'ready', aiEvalGeneratedAt: null, aiEvalEnabled: false,
+    adherence: { plannedSessions: 12, completedSessions: 10, plannedWeeks: 6, completedWeeks: 6, completionPct: 83 },
+    volume: null, strength: [], records: { medalCount: 0, top: [] }, context: null,
+  })
+
+  it('flags the PRESENT-and-wrong-preset run legacy, leaves the current-preset run unflagged', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([legacyMeso, currentMeso])),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/report`, ({ params }) => {
+        const meso = [legacyMeso, currentMeso].find((m) => m.id === params.id)
+        return meso ? HttpResponse.json(reportFor(meso)) : new HttpResponse(null, { status: 404 })
+      }),
+    )
+    render(
+      <QueryWrapper>
+        <MemoryRouter initialEntries={[`/train/mesocycles/compare?a=${legacyMeso.id}&b=${currentMeso.id}`]}>
+          <Routes>
+            <Route path="train/mesocycles/compare" element={<MesoComparePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+
+    const focus = await screen.findByTestId('meso-compare-focus')
+    const rows = within(focus).getAllByTestId('focus-row')
+    expect(within(rows[0]).getByTestId('focus-legacy-chip')).toHaveTextContent('régi modell · címke')
+    expect(within(rows[0]).getByTestId('focus-chip')).toHaveTextContent('Hát ★')
+    expect(within(rows[1]).queryByTestId('focus-legacy-chip')).toBeNull()
+    expect(within(rows[1]).getByTestId('focus-chip')).toHaveTextContent('Mell')
   })
 })

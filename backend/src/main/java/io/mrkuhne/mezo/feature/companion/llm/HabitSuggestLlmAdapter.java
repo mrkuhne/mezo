@@ -69,9 +69,14 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
             SOHA ne javasolj már létező szokás címét (sem szó szerint, sem átfogalmazva). Minden
             javaslatot horgonyozz egy meglévő szokáshoz (anchorCopy: mikor / mi után jön, pl.
             "reggeli után"). A skillKey KIZÁRÓLAG a megadott [Skillek] listából jöhet, a chainKey
-            KIZÁRÓLAG a megadott láncok kulcsai közül, az xp essen 5 és 15 közé. Válaszolj
+            KIZÁRÓLAG a megadott láncok kulcsai közül, az xp essen 5 és 15 közé.
+            Minden javaslat egy szokás-recept. Válassz keretet:
+            - "FOGG": add meg az anchorCopy-t ("miután …" pillanat) és a celebration-t (azonnali ünneplés).
+            - "CLEAR": add meg a cue-t (mikor és hol), a craving-et (miért vonzó) és a reward-ot.
+            A framework mezőt mindig töltsd ki. Válaszolj
             KIZÁRÓLAG JSON tömbbel, pontosan ebben a formában:
-            [{"title":"...","why":"...","anchorCopy":"...","skillKey":"...","xp":10,"chainKey":"..."}]
+            [{"title":"...","why":"...","anchorCopy":"...","skillKey":"...","xp":10,"chainKey":"...",
+            "framework":"FOGG","cue":"...","craving":"...","reward":"...","celebration":"..."}]
             Ha nincs értelmes javaslat: []""";
 
     private final CompanionLlm companionLlm;

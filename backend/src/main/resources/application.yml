@@ -174,6 +174,10 @@ mezo:
     # additionally needs the companion switch (CompanionLlm port).
     meso-review:
       enabled: true
+    # Meso plan generator AI half (mesocycle wizard redesign) — Gemini exercise pick inside the
+    # deterministic frames; needs the companion switch too. Off -> deterministic filler, llmUsed=false.
+    meso-plan-ai:
+      enabled: true
     # Fuel P6 pantry import — gates the OpenFoodFacts lookup/import endpoints (off -> 404);
     # the import feed + suggestions in GET /api/pantry stay on regardless.
     pantry-import:
@@ -254,6 +258,9 @@ mezo:
       enabled: true
     # Fuel planner settings (mezo-53su): eating cadence + caffeine cutoff singleton.
     fuel-settings:
+      enabled: true
+    # Mezo-kalauz seen-store (mezo-gb1s.1): per-user guide-progress singleton.
+    tutorial:
       enabled: true
     # Stack placement LLM fallback (mezo-vx9v) — zone suggestion for supplements the rule
     # table does not know; needs the companion switch too (CompanionLlm bean), otherwise
@@ -442,6 +449,13 @@ mezo:
       # The workout closing note is included verbatim, truncated to this many characters
       # (mezo-d20.13). Never summarized — truncation is honestly lossy, rewriting fabricates.
       workout-note-max-chars: 180
+      # mezo-x6oa: how many active people the [Emberek] chat-snapshot block lists (newest mention
+      # first; name · relationship · this week's count · mood direction). 0 = the block is omitted
+      # entirely — note that ChatService.SYSTEM_PROMPT's "[Mit szabad állítani]" grounding
+      # paragraph still refers to [Emberek] unconditionally in that case, i.e. the prompt then
+      # names a block that is not actually rendered (deliberate: the prompt is not made
+      # conditional on this value).
+      people-max-persons: 12
     tools:
       # V0.5 tool calling — per-turn call budget + result-window clamps (spec §5 discipline)
       max-calls-per-turn: 15
@@ -1482,6 +1496,16 @@ mezo:
       1: [ { pct: 0.70, reps: 4 } ]
       2: [ { pct: 0.50, reps: 8 }, { pct: 0.75, reps: 3 } ]
       3: [ { pct: 0.50, reps: 8 }, { pct: 0.70, reps: 4 }, { pct: 0.90, reps: 2 } ]
+  # Hypertrophy plan generator frames (POST /api/train/meso-plans/generate).
+  meso-plan:
+    max-exercises-per-group-per-day: 2
+    compound-rep-min: 8
+    compound-rep-max: 10
+    isolation-rep-min: 12
+    isolation-rep-max: 15
+    target-rir: 1
+    compound-warmup: 2
+    isolation-warmup: 1
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
     step: 2                 # sets added per productive week

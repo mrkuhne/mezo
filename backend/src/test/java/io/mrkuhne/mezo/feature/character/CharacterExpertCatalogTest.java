@@ -31,4 +31,22 @@ class CharacterExpertCatalogTest {
             assertThat(e.displayName()).isNotBlank();
         });
     }
+
+    @Test
+    void skeptic_isNotAnExpertCatalogEntry_butResolvesByKey_andOwnsTheMetaDimension() {
+        assertThat(CharacterExpertCatalog.EXPERTS).extracting(CharacterExpertCatalog.Expert::key)
+                .doesNotContain("szkeptikus");
+        CharacterExpertCatalog.Expert skeptic = CharacterExpertCatalog.byKey("szkeptikus");
+        assertThat(skeptic).isSameAs(CharacterExpertCatalog.SKEPTIC);
+        assertThat(skeptic.primaryDimensionKey()).isEqualTo("self-audit");
+        assertThat(skeptic.systemPersona()).contains("rendszerről");
+        assertThat(CharacterCoreCatalog.META).singleElement().satisfies(m -> {
+            assertThat(m.key()).isEqualTo("self-audit");
+            assertThat(m.title()).isEqualTo("A társ önvizsgálata");
+            assertThat(m.expertKey()).isEqualTo("szkeptikus");
+        });
+        assertThat(CharacterCoreCatalog.SEEDED).hasSize(8);
+        assertThat(CharacterCoreCatalog.kindOf("self-audit")).isEqualTo("META");
+        assertThat(CharacterCoreCatalog.kindOf("physical")).isEqualTo("CORE");
+    }
 }
