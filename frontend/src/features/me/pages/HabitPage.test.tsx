@@ -302,6 +302,93 @@ describe('HabitPage', () => {
     expect(missFill).not.toContain('--surface-recess')
   })
 
+  // ---- fix wave (mezo-3zue.4): the two fields that lost their only editor ----
+
+  test('linkUrl is editable on every definition and rides the patch', () => {
+    renderPage('intent')
+    const link = screen.getByLabelText('Link')
+    expect(link).toHaveValue('')
+    fireEvent.change(link, { target: { value: 'https://example.com/video' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+    expect(updateDef.mock.calls[0][1]).toMatchObject({ linkUrl: 'https://example.com/video' })
+  })
+
+  test('an existing linkUrl seeds the field and survives an unrelated edit', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[2], linkUrl: 'https://example.com/a' }] }, EVENING] },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    renderPage('water')
+    expect(screen.getByLabelText('Link')).toHaveValue('https://example.com/a')
+    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+    expect(updateDef.mock.calls[0][1]).toMatchObject({ linkUrl: 'https://example.com/a' })
+  })
+
+  test('an emptied linkUrl omits the key rather than sending an empty string', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[2], linkUrl: 'https://example.com/a' }] }, EVENING] },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    renderPage('water')
+    fireEvent.change(screen.getByLabelText('Link'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+    expect(updateDef.mock.calls[0][1]).not.toHaveProperty('linkUrl')
+  })
+
+  test('a framework-less definition can edit its anchorCopy — the Nap tab renders that line', () => {
+    renderPage('water')
+    const anchor = screen.getByLabelText('Horgony-szöveg')
+    fireEvent.change(anchor, { target: { value: 'fogmosás után' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+    expect(updateDef.mock.calls[0][1]).toMatchObject({ anchorCopy: 'fogmosás után' })
+  })
+
+  test('the anchorCopy field is legacy-only — a framework habit has its own anchor slot instead', () => {
+    renderPage('intent')
+    expect(screen.queryByLabelText('Horgony-szöveg')).not.toBeInTheDocument()
+    renderPage('sun')
+    expect(screen.queryByLabelText('Horgony-szöveg')).not.toBeInTheDocument()
+  })
+
+  // ---- fix wave (mezo-3zue.4): a paused habit must SAY so, and must be resumable ----
+
+  test('a paused habit shows a paused note and offers Folytatás, not a second pause', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[1], isActive: false }] }, EVENING] },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    renderPage('intent')
+    expect(screen.getByTestId('paused-note')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Folytatás/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Szüneteltetés/ })).not.toBeInTheDocument()
+  })
+
+  test('resuming a paused habit sends isActive: true', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[1], isActive: false }] }, EVENING] },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    renderPage('intent')
+    fireEvent.click(screen.getByRole('button', { name: /Folytatás/ }))
+    expect(updateDef).toHaveBeenCalledWith('d-intent', { isActive: true })
+  })
+
+  test('an active habit shows no paused note', () => {
+    renderPage('intent')
+    expect(screen.queryByTestId('paused-note')).not.toBeInTheDocument()
+  })
+
+  // ---- fix wave (mezo-3zue.4): a FAILED fetch is not a resolved miss ----
+
+  test('a failed catalog fetch shows the retry ghost instead of silently redirecting', () => {
+    const refetch = vi.fn()
+    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: false, isError: true, refetch })
+    renderPage('intent')
+    expect(screen.queryByText('RUTIN HUB')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
+    expect(refetch).toHaveBeenCalled()
+  })
+
   test('never renders a tick control', () => {
     renderPage('intent')
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()

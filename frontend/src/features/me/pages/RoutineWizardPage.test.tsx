@@ -427,4 +427,43 @@ describe('RoutineWizardPage', () => {
     expect(screen.getByText(/nagynak hangzik/)).toBeInTheDocument()
     expect(next()).toBeEnabled()
   })
+
+  // ---- fix wave (mezo-3zue.4) ----
+
+  it('a re-framed FOGG habit is absent from its OWN anchor chips (a self-anchor 400s)', () => {
+    renderWizard('/me/rutin/uj?prefill=stack')
+    // step 1 seeded to FOGG by the prefill — walk to the anchor step
+    fireEvent.click(next())
+    expect(screen.getByRole('button', { name: 'kész a Reggeli fény' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /kész a Egy oldal olvasás/ })).not.toBeInTheDocument()
+  })
+
+  it('the chain chips are position-ordered and skip paused chains', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: {
+        chains: [
+          { ...EVENING, position: 2 },
+          { ...MORNING, position: 1 },
+          { id: 'c3', chainKey: 'DAY', title: 'Napközbeni rutin', daypart: 'DAY', position: 3, isActive: false, defs: [] },
+        ],
+      },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: 'kész a Reggeli fény' }))
+    fireEvent.click(next())
+    const chips = screen.getAllByRole('button').filter((b) => ['Reggeli rutin', 'Esti rutin', 'Napközbeni rutin'].includes(b.textContent ?? ''))
+    expect(chips.map((b) => b.textContent)).toEqual(['Reggeli rutin', 'Esti rutin'])
+  })
+
+  it('a failed catalog fetch shows the retry ghost, never a chain-less step 3', () => {
+    const refetch = vi.fn()
+    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: false, isError: true, refetch })
+    renderWizard()
+    expect(screen.queryByRole('button', { name: /Szokás-láncolás/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
+    expect(refetch).toHaveBeenCalled()
+  })
 })

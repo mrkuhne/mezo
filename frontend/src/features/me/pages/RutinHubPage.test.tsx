@@ -122,14 +122,29 @@ describe('RutinHubPage', () => {
 
   test('badges each habit row with its framework, legacy rows included', () => {
     renderPage()
-    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás')).toBeInTheDocument()
+    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%')).toBeInTheDocument()
     expect(screen.getByLabelText('Napi szándék · négy törvény')).toBeInTheDocument()
+    expect(screen.getByLabelText('Hidratálás · keret nélkül')).toBeInTheDocument()
+  })
+
+  // ---- fix wave (mezo-3zue.4): spec §5's strength NUMBER, and the bar not being silent ----
+
+  test('a habit row shows the strength as a number beside the bar', () => {
+    const { container } = renderPage()
+    expect(screen.getByText('71%')).toBeInTheDocument()
+    expect(container.querySelector('.rt-strength')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  test('the row button names the strength — the bar alone is silent to a screen reader', () => {
+    renderPage()
+    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%')).toBeInTheDocument()
+    // a def with no summary row names no standing at all (honesty rule)
     expect(screen.getByLabelText('Hidratálás · keret nélkül')).toBeInTheDocument()
   })
 
   test('opens the habit page from a row and never renders a tick control', () => {
     renderPage()
-    screen.getByLabelText('Reggeli fény · szokás-láncolás').click()
+    screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%').click()
     expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/sun')
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })

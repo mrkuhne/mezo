@@ -19,6 +19,7 @@ import { routineSentenceParts, recipeFromDef, titlePlaceholder, type RoutineReci
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { cn } from '@/shared/lib/cn'
 import { ClayIcon } from '@/shared/ui/clay'
+import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
@@ -107,7 +108,7 @@ export function RoutineWizardPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const prefillKey = params.get('prefill')
-  const { catalog, isPending } = useHabitCatalog()
+  const { catalog, isPending, isError, refetch } = useHabitCatalog()
   const { createDef, updateDef, pending } = useHabitCatalogActions()
 
   // The accepted AI suggestion, claimed once on mount. It only ever seeds INITIAL values: where
@@ -173,9 +174,28 @@ export function RoutineWizardPage() {
   }, [catalog, prefillKey, params])
 
   if (isPending) return <ScreenSkeleton />
+  // A FAILED catalog fetch is not an empty catalog: without this branch step 3 offered zero
+  // chain chips while `chainKey` still defaulted to 'MORNING', so a save could 400 on a chain
+  // the user never saw. The retry ghost is the one `RutinHubPage`/`HabitPage` already use.
+  if (isError && (catalog?.chains ?? []).length === 0) {
+    return (
+      <MozaikPage tone="gold">
+        <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
+        <PageBody>
+          <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
+        </PageBody>
+      </MozaikPage>
+    )
+  }
 
-  const chains = catalog?.chains ?? []
-  const anchors = catalog != null ? habitAnchorOptions(catalog) : []
+  // Sorted by position and ACTIVE-only, exactly as `HabitPage`'s own chain picker does — an
+  // unsorted list contradicted the hub's order, and a paused chain is not a place to file a
+  // brand-new recipe.
+  const chains = [...(catalog?.chains ?? [])].filter((c) => c.isActive).sort((a, b) => a.position - b.position)
+  // Excluding the prefilled definition keeps a re-framed habit out of its OWN anchor chips:
+  // picking itself sends a self-anchor, which the backend rejects with 400 HABIT_ANCHOR_INVALID
+  // (HabitFrameworkValidator.validateAnchorReference) with nothing shown inline.
+  const anchors = catalog != null ? habitAnchorOptions(catalog, prefillDef?.id) : []
   const fwKey: 'FOGG' | 'CLEAR' = framework === 'CLEAR' ? 'CLEAR' : 'FOGG'
   const stepTitle = STEP_TITLES[fwKey][step - 1]
   const stepSub = STEP_SUBS[fwKey][step - 1] || INTRO_SUB

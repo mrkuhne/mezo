@@ -82,7 +82,9 @@ export function RutinHubPage() {
   const { catalog, isPending, isError, refetch } = useHabitCatalog()
   const { updateChain, updateDef, reorderChain, pending } = useHabitCatalogActions()
   const [chainSheet, setChainSheet] = useState<{ chain?: HabitChainInfo } | null>(null)
-  const [habitSheet, setHabitSheet] = useState<{ chainKey: string; def?: HabitDefInfo } | null>(null)
+  // CREATE only — a habit ROW navigates to /me/rutin/szokas/{habitKey}, which is where a
+  // definition is edited and deleted. `HabitEditSheet` no longer has an edit branch at all.
+  const [habitSheet, setHabitSheet] = useState<{ chainKey: string } | null>(null)
   const [suggestSheet, setSuggestSheet] = useState(false)
 
   const strength = (key: string) => summary.habits.find((h) => h.key === key)?.strengthPct ?? null
@@ -125,16 +127,24 @@ export function RutinHubPage() {
           className={cn('gr-chainrow', 'rt-hrow', item?.status === 'done' && 'done', newHabitKey === def.habitKey && 'rt-row-new')}
           style={{ flex: 1, minWidth: 0 }}
           onClick={() => navigate(`/me/rutin/szokas/${def.habitKey}`)}
-          aria-label={`${def.title} · ${FRAMEWORK_LABEL[fw]}`}
+          /* The row is a button, so its aria-label REPLACES its inner text: the strength has to
+             be spelled out here or it stays a silent graphic for assistive tech. */
+          aria-label={`${def.title} · ${FRAMEWORK_LABEL[fw]}${pct != null ? ` · 28 napos erő ${pct}%` : ''}`}
         >
           <span className="gr-ck" aria-hidden="true">✓</span>
           {item && <span className="sr-only">{STATUS_SR[item.status]}</span>}
           <span className="tx">{def.title}</span>
           <span className={cn('rt-fw', `rt-fw-${fw.toLowerCase()}`)}>{FRAMEWORK_BADGE[fw]}</span>
+          {/* Spec §5 (and the retired GrowthRutinPage) show the NUMBER beside the bar: a bare
+              graphic is silent to a screen reader and unreadable at a glance, so the bar is
+              aria-hidden and the percentage carries the meaning in text. */}
           {pct != null && (
-            <span className="rt-strength">
-              <div style={{ width: `${pct}%` }} />
-            </span>
+            <>
+              <span className="rt-strength" aria-hidden="true">
+                <div style={{ width: `${pct}%` }} />
+              </span>
+              <span className="rt-strength-n">{pct}%</span>
+            </>
           )}
         </button>
         <Toggle
@@ -263,7 +273,7 @@ export function RutinHubPage() {
         </EntranceGroup>
       </PageBody>
       {chainSheet && <ChainEditSheet chain={chainSheet.chain} onClose={() => setChainSheet(null)} />}
-      {habitSheet && <HabitEditSheet chainKey={habitSheet.chainKey} def={habitSheet.def} onClose={() => setHabitSheet(null)} />}
+      {habitSheet && <HabitEditSheet chainKey={habitSheet.chainKey} onClose={() => setHabitSheet(null)} />}
       {suggestSheet && <AiSuggestSheet onClose={() => setSuggestSheet(false)} />}
     </MozaikPage>
   )

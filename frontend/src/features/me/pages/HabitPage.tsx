@@ -93,7 +93,7 @@ function Field({ label, opt, value, onChange, placeholder, readOnly, hint }: {
 export function HabitPage() {
   const navigate = useNavigate()
   const { habitKey = '' } = useParams<{ habitKey: string }>()
-  const { catalog, isPending } = useHabitCatalog()
+  const { catalog, isPending, isError, refetch } = useHabitCatalog()
   const { data: summary } = useHabitSummary()
   const { updateDef, deleteDef, pending } = useHabitCatalogActions()
 
@@ -113,6 +113,10 @@ export function HabitPage() {
   const [reward, setReward] = useState('')
   const [identity, setIdentity] = useState('')
   const [why, setWhy] = useState('')
+  // `linkUrl` renders on /nap/rutin (the row title becomes that link) and, since the hub stopped
+  // opening HabitEditSheet in edit mode, this page is its ONLY editor — same for a legacy def's
+  // free-text anchor line, which the Nap tab prints under the title.
+  const [linkUrl, setLinkUrl] = useState('')
   const [chainKey, setChainKey] = useState('MORNING')
   const [xp, setXp] = useState(XP_MIN)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -129,6 +133,7 @@ export function HabitPage() {
     setReward(seed.reward)
     setIdentity(seed.identity)
     setWhy(def.why ?? '')
+    setLinkUrl(def.linkUrl ?? '')
     setChainKey(def.chainKey)
     setXp(def.xp)
     setConfirmDelete(false)
@@ -143,6 +148,18 @@ export function HabitPage() {
         <MozaikPage tone="gold">
           <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
           <PageBody><GhostState message="Szokás betöltése…" lines={3} /></PageBody>
+        </MozaikPage>
+      )
+    }
+    // A FAILED fetch is not a resolved miss: bouncing on it ejected the user from a habit that
+    // exists, with no word about the failure. Only a catalog that actually answered redirects.
+    if (isError) {
+      return (
+        <MozaikPage tone="gold">
+          <PageHead onBack={() => navigate('/me/rutin')} label="‹ Rutin" />
+          <PageBody>
+            <GhostState message="Nem sikerült betölteni a szokást." ctaLabel="Újra" onCta={refetch} />
+          </PageBody>
         </MozaikPage>
       )
     }
@@ -199,13 +216,22 @@ export function HabitPage() {
       patch.craving = craving.trim()
       patch.reward = reward.trim()
       if (identity.trim()) patch.identity = identity.trim()
-    } else if (why.trim()) {
-      patch.why = why.trim()
+    } else {
+      // A framework-less legacy def owns `why` AND the free-text `anchorCopy` — the Nap tab
+      // prints the latter under the row title, and this page is now its only editor. The
+      // validator forbids the framework fields on such a def, but not `anchorCopy`.
+      if (why.trim()) patch.why = why.trim()
+      if (anchorLabel.trim()) patch.anchorCopy = anchorLabel.trim()
     }
+    if (linkUrl.trim()) patch.linkUrl = linkUrl.trim()
     updateDef(def.id, patch).then(() => navigate('/me/rutin'))
   }
 
-  const pause = () => { updateDef(def.id, { isActive: false }).then(() => navigate('/me/rutin')) }
+  // ONE control, both directions: a paused def deep-linked to reads as paused and offers
+  // "Folytatás", never a second pause. Either way the 28-day history survives untouched.
+  const togglePause = () => {
+    updateDef(def.id, { isActive: !def.isActive }).then(() => navigate('/me/rutin'))
+  }
 
   const remove = () => {
     if (!confirmDelete) { setConfirmDelete(true); return }
@@ -228,6 +254,17 @@ export function HabitPage() {
       />
       <PageBody principle={PRINCIPLE}>
         <EntranceGroup replayKey={def.id}>
+          {/* A deep link to a PAUSED habit used to read exactly like an active one — the hub's
+              dimming was the only signal anywhere, and it is not on this page. */}
+          {!def.isActive && (
+            <div className="rt-tip is-warn rise" style={rise(40)} data-testid="paused-note">
+              <span aria-hidden="true">⏸</span>
+              <span>
+                <b>Szüneteltetve.</b> Ez a szokás most nem jelenik meg a Nap tabon — az erő-történet
+                közben megmarad. A „Folytatás” bármikor visszateszi.
+              </span>
+            </div>
+          )}
           <div className={cn('rt-fwband', `is-${fwKey.toLowerCase()}`, 'rise')} style={rise(50)}>
             <span className="rt-fwband-sgn" aria-hidden="true">{fw.sign}</span>
             <div>
@@ -302,8 +339,29 @@ export function HabitPage() {
               </>
             )}
             {framework === null && (
-              <Field label="Miért" opt value={why} onChange={setWhy} placeholder="…" />
+              <>
+                <Field label="Miért" opt value={why} onChange={setWhy} placeholder="…" />
+                <Field
+                  label="Horgony-szöveg"
+                  opt
+                  value={anchorLabel}
+                  onChange={setAnchorLabel}
+                  placeholder="pl. „fogmosás után”"
+                  hint="Ez a sor jelenik meg a szokás alatt a Nap tabon."
+                />
+              </>
             )}
+            {/* Every definition can carry an external link — /nap/rutin renders the row title
+                as that link. This page is its only editor since the hub stopped opening
+                HabitEditSheet in edit mode. */}
+            <Field
+              label="Link"
+              opt
+              value={linkUrl}
+              onChange={setLinkUrl}
+              placeholder="https://…"
+              hint="A Nap tabon a szokás címe erre a linkre mutat."
+            />
           </FieldCard>
 
           <FieldCard delayMs={170}>
@@ -328,11 +386,12 @@ export function HabitPage() {
             </span>
           </FieldCard>
 
-          {/* Pausing is the prominent way out — it promises the progress survives. Deleting
+          {/* Pausing is the prominent way out — it promises the progress survives, and the SAME
+              button resumes a paused habit (there is no other resume anywhere). Deleting
               sits below it, quieter, behind two taps (the old HabitEditSheet's danger idiom
               made explicit: this page is the only DELETE affordance in the app). */}
-          <button type="button" className="rt-danger rise" style={rise(200)} disabled={pending} onClick={pause}>
-            Szüneteltetés — a haladás megmarad
+          <button type="button" className="rt-danger rise" style={rise(200)} disabled={pending} onClick={togglePause}>
+            {def.isActive ? 'Szüneteltetés — a haladás megmarad' : 'Folytatás — a haladás megmaradt'}
           </button>
           <button
             type="button"

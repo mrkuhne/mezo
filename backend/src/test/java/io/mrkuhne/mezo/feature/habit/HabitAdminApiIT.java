@@ -318,8 +318,10 @@ class HabitAdminApiIT extends ApiIntegrationTest {
             HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
                 .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
                 .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
-                .anchorHabitKey("morning_sunlight").celebration("ökölrázás").build(),
+                .anchorHabitKey("morning_sunlight").anchorCopy("kitöltöttem a reggeli kávét")
+                .celebration("ökölrázás").build(),
             ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(created.getAnchorCopy()).isEqualTo("kitöltöttem a reggeli kávét");
 
         HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
             HabitDefUpdateRequest.builder().framework(HabitDefUpdateRequest.FrameworkEnum.CLEAR)
@@ -329,10 +331,19 @@ class HabitAdminApiIT extends ApiIntegrationTest {
 
         assertThat(updated.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.CLEAR);
         assertThat(updated.getAnchorHabitKey()).isNull();
+        // anchorCopy goes with the anchor: it is RENDERED on the Nap tab (NapRutinPage's
+        // `.nr-anchor` line), so keeping it left a stale „miután …" cue under a Clear recipe.
+        assertThat(updated.getAnchorCopy()).isNull();
         assertThat(updated.getCelebration()).isNull();
         assertThat(updated.getCue()).isEqualTo("7:10-kor a konyhában");
         assertThat(updated.getCraving()).isEqualTo("tisztább fejjel indul a nap");
         assertThat(updated.getReward()).isEqualTo("a pipa maga");
+
+        // Persisted, not merely mapped on the response.
+        HabitDefAdmin after = findDef(catalog(), created.getId());
+        assertThat(after.getAnchorCopy()).isNull();
+        assertThat(after.getAnchorHabitKey()).isNull();
+        assertThat(after.getCelebration()).isNull();
     }
 
     @Test

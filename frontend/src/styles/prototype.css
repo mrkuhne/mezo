@@ -8388,6 +8388,12 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 }
 .rt-strength div { height: 100%; border-radius: 2px; background: var(--mz-strength); transition: width 0.6s cubic-bezier(0.22, 0.9, 0.32, 1); }
 .gr-chainrow.done .rt-strength div { background: var(--gradient-sage); }
+/* The number beside the bar (spec §5, restored from the retired GrowthRutinPage): the bar alone
+   is a silent graphic, and the exact standing is the thing a user actually reads. */
+.rt-strength-n {
+  flex: none; min-width: 30px; text-align: right;
+  font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--faint);
+}
 .rt-row-new {
   background: linear-gradient(90deg, color-mix(in srgb, var(--primary-soft) 55%, transparent), transparent);
   border-radius: 12px;
