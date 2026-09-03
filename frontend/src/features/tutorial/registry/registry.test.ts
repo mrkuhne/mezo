@@ -2,10 +2,7 @@ import { matchRoutes } from 'react-router-dom'
 import { routes } from '@/app/router'
 import { KALAUZ_REGISTRY, findKalauz, getKalauz } from '@/features/tutorial/registry'
 import { FOGALMAK, type FogalomKey } from '@/features/tutorial/registry/fogalmak'
-
-// Stems, not whole words — no trailing \b — so inflections (pl. "kellene", "hibázik", "elbuktad",
-// "rosszul") are caught too, not just the dictionary form.
-const FORBIDDEN = /\b(kell|muszáj|hib[aá]|elbuk|rossz)/i
+import { FORBIDDEN, countSentences } from '@/features/tutorial/registry/lint'
 
 // `matchRoutes(...).not.toBeNull()` alone would never fail: a router.tsx-ben van egy
 // top-szintű `{ path: '*', element: <Navigate to="/nap" /> }` fogó-route (:326), ami
@@ -38,10 +35,7 @@ test('hang-lint: nincs tiltott szó, kártyánként legfeljebb 2 mondat, fogalom
   for (const e of KALAUZ_REGISTRY) for (const c of e.cards) {
     expect(c.voice).not.toMatch(FORBIDDEN)
     expect(c.title).not.toMatch(FORBIDDEN)
-    // A lookahead szándékosan tág: a mondat kezdődhet **félkövéren** (`*`), számjeggyel, vagy
-    // kisbetűvel is (idézet, márkanév) — a szűk „csak nagybetű" változat mellett egy 3 mondatos
-    // kártya átcsúszott volna. Unicode-flag, hogy az ékezetes kisbetűk is beleessenek.
-    const sentences = c.voice.split(/[.!?…]\s+(?=[\p{L}\d*„])/u).length
+    const sentences = countSentences(c.voice)
     expect(sentences).toBeLessThanOrEqual(2)
     if (c.kind === 'fogalom') expect(c.def.split(/\s+/).length).toBeLessThanOrEqual(25)
   }

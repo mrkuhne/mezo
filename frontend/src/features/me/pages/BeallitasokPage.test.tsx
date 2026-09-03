@@ -1,9 +1,13 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { http, HttpResponse } from 'msw'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { API_BASE } from '@/data/_client/api'
+import { server } from '@/test/msw/server'
+import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 
 // Beállítások oldal — a korábbi téma-only SettingsSheet utódja (hub-tile-reorg spec).
 // Csoportosított lista: Téma választó helyben + Értesítések / AI-napló sorok, amelyek a
@@ -11,6 +15,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
+  localStorage.clear()
   localStorage.setItem('mezo-theme', 'light')
 })
 afterEach(() => vi.unstubAllEnvs())
@@ -24,13 +29,13 @@ function renderPage() {
     <QueryWrapper>
       <ThemeProvider>
         <MemoryRouter initialEntries={['/me/beallitasok']}>
-          <>
+          <TutorialProvider>
             <Routes>
               <Route path="/me/beallitasok" element={<BeallitasokPage />} />
               <Route path="*" element={null} />
             </Routes>
             <LocationProbe />
-          </>
+          </TutorialProvider>
         </MemoryRouter>
       </ThemeProvider>
     </QueryWrapper>,
@@ -86,4 +91,21 @@ test('real mode (USER): sem a Beta admin, sem az AI-napló sor nem jelenik meg',
   expect(screen.queryByRole('button', { name: 'Beta admin' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'AI-napló' })).toBeNull()
   setToken(null)
+})
+
+test('a Kalauzok sor törli a seen-állapotot', async () => {
+  localStorage.setItem('mezo.kalauz.v1', JSON.stringify({ fuel: { version: 1, seenAt: '2026-08-30T10:00:00.000Z', completedAt: null, dismissedAtStep: null } }))
+  renderPage()
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: 'Kalauzok újranézése' }))
+  await waitFor(() => expect(localStorage.getItem('mezo.kalauz.v1')).toBe('{}'))
+})
+
+test('a sor visszajelzést ad, és hiba esetén nem hazudik sikert', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.delete(`${API_BASE}/api/tutorial/progress`, () => new HttpResponse(null, { status: 500 })))
+  renderPage()
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: 'Kalauzok újranézése' }))
+  expect(await screen.findByText('Most nem sikerült — próbáld újra.')).toBeInTheDocument()
 })

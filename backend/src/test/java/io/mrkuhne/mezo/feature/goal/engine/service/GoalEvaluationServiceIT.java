@@ -304,9 +304,9 @@ class GoalEvaluationServiceIT extends AbstractIntegrationTest {
         GoalEntity g = goal(user, "cut", "0.70", List.of());
         List<ProjectionSegment> segments = List.of(new ProjectionSegment(
             1, 8, "W1-8", new BigDecimal("2800"), new BigDecimal("2500"),
-            new BigDecimal("-0.50"), -300, List.of(), "test"));
+            new BigDecimal("-0.50"), -300, null, null, List.of(), "test"));
         GuardStatus guards = new GuardStatus(null, null);
-        DietPreferences prefs = new DietPreferences("balanced", null, null, null, "moderate", 2500, 30);
+        DietPreferences prefs = new DietPreferences("balanced", null, null, null, "moderate", 2500, 30, 0);
 
         // a 7.5h sleep target resolved from the user's sleep goal (port-resolved upstream)
         GoalPrescriptionJson rx = evaluationService.assemble(

@@ -7,6 +7,7 @@ import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { routes } from '@/app/router'
+import { seedAllKalauzSeen } from '@/test/kalauz'
 
 // Napi küldetések detail page (mezo-d20.2.4) — the hub's quest tile → own full page
 // (prototype nap-body.html #page-quest, p-gold tone). ADR 0010: quests are OFFERS —
@@ -45,7 +46,12 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   }
 })
 
-beforeEach(() => store.reset())
+beforeEach(() => {
+  store.reset()
+  // A teljes-router eset a /nap-ot rendeli az AppLayouttal — seed nélkül a T0 welcome
+  // (és a /nap kalauza) az assertek elé ugrana.
+  seedAllKalauzSeen()
+})
 
 function LocationProbe() {
   return <div data-testid="loc">{useLocation().pathname}</div>

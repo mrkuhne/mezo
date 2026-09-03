@@ -91,6 +91,8 @@ public interface GoalMapper {
             .restDays(s.restDays() == null ? List.of() : s.restDays())
             .projectedRateKgPerWk(s.projectedRateKgPerWk())
             .dailyEnergyBalanceKcal(s.dailyEnergyBalanceKcal())
+            .trainingDayKcal(s.trainingDayKcal())
+            .restDayKcal(s.restDayKcal())
             .rationale(s.rationale())
             .build()).toList();
     }

@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -93,7 +94,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         // With no gym/sport schedule seeded, scheduledWeeklyEat = 0; the only delta between the run-on and
         // run-off segments is the running EAT (MET run × weight × runDefaultMin/60 × sessions ÷ 7).
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null));
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
 
         // exactly two segments: W1–4 (run active) and W5–8 (run off) — the meso is a single phase class.
         assertThat(segments).hasSize(2);
@@ -136,7 +137,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         linkPopulator.createLink(user, goal.getId(), "mesocycle", meso.getId(), 1, 8);
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"));
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"), 0);
 
         assertThat(segments).isNotEmpty();
         for (ProjectionSegment s : segments) {
@@ -155,7 +156,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         linkPopulator.createLink(user, goal.getId(), "mesocycle", meso.getId(), 1, 8);
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"));
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"), 0);
 
         assertThat(segments).isNotEmpty();
         double balance = expectedDailyBalanceMagnitude(); // 646.8 kcal/day surplus
@@ -184,7 +185,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         linkPopulator.createLink(user, goal.getId(), "mesocycle", meso.getId(), 1, 8);
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"));
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"), 0);
 
         // No running, single meso phase class over 1..8 → exactly one segment spanning the window.
         assertThat(segments).hasSize(1);
@@ -204,15 +205,52 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
 
         // Observed trailing-4w rate −0.30 kg/wk differs from the formula rate (−0.588 kg/wk).
         List<ProjectionSegment> provisional =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.PROVISIONAL, "-0.30"));
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.PROVISIONAL, "-0.30"), 0);
         // With provisional data the observed rate is the spine.
         assertThat(provisional.get(0).projectedRateKgPerWk().doubleValue())
             .isCloseTo(-0.30, within(0.001));
 
         // With no data the formula projection drives the rate (−0.588 kg/wk, ignores the trend value).
         List<ProjectionSegment> none =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "-0.30"));
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "-0.30"), 0);
         assertThat(none.get(0).projectedRateKgPerWk().doubleValue())
             .isCloseTo(-0.588, within(0.01));
+    }
+
+    // ── Day-type shift (slice 3 — mezo-sxlj): the weekly-invariant kcal split off rest days ────────
+
+    @Test
+    void dayTypeShiftSplitsSegmentKcalWeeklyInvariant() {
+        UUID user = databasePopulator.populateUser("proj-daytype@test.local");
+        // gym slots on 2 weekdays + a sport slot on a 3rd → scheduledTrainingDayOfWeeks unions to 3
+        // distinct days; no running block, no meso link → the whole window is one segment.
+        trainPopulator.createGymSlot(user, 0, "07:00");
+        trainPopulator.createGymSlot(user, 1, "07:00");
+        trainPopulator.createScheduleSlot(user, 2, "18:00", 90, "training");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active"); // 8-week window
+
+        List<ProjectionSegment> segments =
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 200);
+
+        ProjectionSegment seg = segments.get(0);
+        int kcal = seg.targetKcal().setScale(0, RoundingMode.HALF_UP).intValueExact();
+        assertThat(seg.restDayKcal()).isEqualTo(Math.max(kcal - 200, 1795)); // floored at ceil(bmr)
+        int effective = kcal - seg.restDayKcal();
+        assertThat(seg.trainingDayKcal())
+            .isEqualTo(kcal + Math.round(effective * 4 / 3f));
+        assertThat(3 * seg.trainingDayKcal() + 4 * seg.restDayKcal())
+            .isCloseTo(7 * kcal, within(2));
+    }
+
+    @Test
+    void zeroShiftLeavesDayTypeFieldsNull() {
+        UUID user = databasePopulator.populateUser("proj-daytype-zero@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+
+        List<ProjectionSegment> segments =
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+
+        assertThat(segments.get(0).trainingDayKcal()).isNull();
+        assertThat(segments.get(0).restDayKcal()).isNull();
     }
 }
