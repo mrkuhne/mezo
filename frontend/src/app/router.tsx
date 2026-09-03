@@ -86,6 +86,7 @@ import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
 import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
 import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
+import { BetaAdminPage } from '@/features/me/pages/BetaAdminPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
 import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
@@ -345,6 +346,8 @@ export const routes: RouteObject[] = [
       // Beállítások oldal (hub-tile-reorg): az Én hub Beállítások csempéjének célja —
       // Téma helyben + az Értesítések-kapcsolók és az AI-napló ajtajai.
       { path: 'me/beallitasok', element: <BeallitasokPage /> },
+      // Beta admin (mezo-qw37.3) — OWNER-only row on Beállítások; backend requireOwner() is the real gate.
+      { path: 'me/beallitasok/admin', element: <BetaAdminPage /> },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },
       // Full-screen night surface (train/session idiom) — no Me sub-nav chrome.
       { path: 'me/sleep/night', element: <NightPage /> },
