@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.nutrition.service;
+package io.mrkuhne.mezo.feature.goal.engine.service;
 
 /** Resolved diet preferences — a saved row's values or the config ghost; never null fields except the custom pcts. */
 public record DietPreferences(

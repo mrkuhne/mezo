@@ -7,7 +7,6 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.Feasibility;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.GuardStatus;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.Segment;
-import io.mrkuhne.mezo.feature.nutrition.service.DietPreferences;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.nutrition.service;
 
 import io.mrkuhne.mezo.api.dto.DietSettingsResponse;
 import io.mrkuhne.mezo.api.dto.SetDietSettingsRequest;
+import io.mrkuhne.mezo.feature.goal.engine.service.DietPreferences;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;

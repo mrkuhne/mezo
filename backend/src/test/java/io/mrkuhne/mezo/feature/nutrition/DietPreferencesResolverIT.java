@@ -2,9 +2,9 @@ package io.mrkuhne.mezo.feature.nutrition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.goal.engine.service.DietPreferences;
 import io.mrkuhne.mezo.feature.nutrition.entity.DietSettingsEntity;
 import io.mrkuhne.mezo.feature.nutrition.repository.DietSettingsRepository;
-import io.mrkuhne.mezo.feature.nutrition.service.DietPreferences;
 import io.mrkuhne.mezo.feature.nutrition.service.DietPreferencesResolver;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
