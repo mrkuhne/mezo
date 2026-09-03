@@ -90,6 +90,23 @@ class QuestJobIT extends AbstractIntegrationTest {
         assertThat(repository.findByCreatedByAndQuestDateOrderBySlotAsc(ghost.getId(), today)).isEmpty();
     }
 
+    /**
+     * Pins the WIDTH of the {@code cronPresenceDays} window (mezo-qw37.6 carry-along): every other
+     * skip case in this class uses a null {@code last_seen_at}, so nothing here catches a wrong unit
+     * or a wrong magnitude (days vs hours, 7 vs 70) — only an inverted comparison would fail. A user
+     * seen ~30 days ago is well past the default 7-day window and must still be skipped.
+     */
+    @Test
+    void testRunGenerate_shouldSkipUser_whenLastSeenIsOlderThanPresenceWindow() {
+        LocalDate today = LocalDate.now();
+        AppUserEntity staleSeen = userPopulator.createUser("quest-stale-seen@test.local");
+        markSeen(staleSeen, Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS));
+
+        job.runGenerate();
+
+        assertThat(repository.findByCreatedByAndQuestDateOrderBySlotAsc(staleSeen.getId(), today)).isEmpty();
+    }
+
     private void markSeen(AppUserEntity user, Instant at) {
         user.setLastSeenAt(at);
         userPopulator.save(user);
