@@ -10,19 +10,17 @@ import io.mrkuhne.mezo.api.dto.LifeGoalStatusRequest;
 import io.mrkuhne.mezo.api.dto.LifeGoalTodayResponse;
 import io.mrkuhne.mezo.api.dto.LifeGoalUpsertRequest;
 import io.mrkuhne.mezo.api.dto.SignalCatalogResponse;
+import io.mrkuhne.mezo.feature.lifegoal.service.LifeGoalProgressService;
 import io.mrkuhne.mezo.feature.lifegoal.service.LifeGoalProposeService;
 import io.mrkuhne.mezo.feature.lifegoal.service.LifeGoalService;
 import io.mrkuhne.mezo.feature.lifegoal.service.LifeGoalSignalService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
-import io.mrkuhne.mezo.techcore.exception.SystemMessage;
-import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /** /api/life-goals surface (bd mezo-iizd) — thin delegation, ownership from the principal; gated on LIFEGOAL_SWITCH. */
@@ -32,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class LifeGoalController implements LifeGoalApi {
 
     private final LifeGoalService lifeGoalService;
+    private final LifeGoalProgressService progressService;
     private final LifeGoalProposeService proposeService;
     private final LifeGoalSignalService signalService;
     private final CurrentUserId currentUserId;
@@ -45,12 +44,7 @@ public class LifeGoalController implements LifeGoalApi {
     @Override public LifeGoalResponse replaceLifeGoalPillars(UUID id, LifeGoalPillarsRequest req) { return lifeGoalService.replacePillars(currentUserId.get(), id, req.getPillars()); }
     @Override public LifeGoalProposeResponse proposeLifeGoal(LifeGoalProposeRequest req) { return proposeService.propose(currentUserId.get(), req); }
     @Override public SignalCatalogResponse listLifeGoalSignals() { return signalService.catalog(); }
-    @Override public LifeGoalProgressResponse getLifeGoalProgress(UUID id, LocalDate from, LocalDate to) { throw notImplementedYet(); }
-    @Override public LifeGoalProgressResponse evaluateLifeGoal(UUID id) { throw notImplementedYet(); }
-    @Override public LifeGoalTodayResponse getLifeGoalsToday() { throw notImplementedYet(); }
-
-    /** Task 1 scaffolding (mezo-iizd.5): a progress-service a Task 5-ben érkezik. */
-    private static SystemRuntimeErrorException notImplementedYet() {
-        return new SystemRuntimeErrorException(SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
-    }
+    @Override public LifeGoalProgressResponse getLifeGoalProgress(UUID id, LocalDate from, LocalDate to) { return progressService.progress(currentUserId.get(), id, from, to); }
+    @Override public LifeGoalProgressResponse evaluateLifeGoal(UUID id) { return progressService.evaluate(currentUserId.get(), id); }
+    @Override public LifeGoalTodayResponse getLifeGoalsToday() { return progressService.today(currentUserId.get()); }
 }

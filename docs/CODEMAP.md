@@ -619,14 +619,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `LifeGoalEntity`→`life_goal`, `LifeGoalPillarDayEntity`→`life_goal_pillar_day`,
     `LifeGoalPillarEntity`→`life_goal_pillar`
   - **repositories:** `LifeGoalPillarDayRepository`, `LifeGoalPillarRepository`, `LifeGoalRepository`
-  - **services:** `LifeGoalPillarService`, `LifeGoalProposeService`, `LifeGoalService`, `LifeGoalSignalService`,
-    `LifeGoalTemplateProposer`
+  - **services:** `LifeGoalPillarService`, `LifeGoalProgressService`, `LifeGoalProposeService`, `LifeGoalService`,
+    `LifeGoalSignalService`, `LifeGoalTemplateProposer`
   - **controllers→contract:** `LifeGoalController`→`LifeGoalApi`
   - **mappers:** `LifeGoalMapper`
   - **config:** `LifeGoalProperties`
   - **other:** `ActivitySignalSource`, `IfThenPlanJson`, `LifeGoalScorer`, `LifeGoalSeedData`, `MetricSignalSource`,
     `NeedsRingSignalSource`, `PillarDayScore`, `PillarRuleJson`, `PillarSourceJson`, `PlanTriggerJson`,
-    `SignalCatalog`, `SignalCatalogEntry`, `SignalSource`, `SignalWindow`, `SocialMentionsSignalSource`
+    `SignalCatalog`, `SignalCatalogEntry`, `SignalSource`, `SignalWindow`, `SocialMentionsSignalSource`,
+    `WeightGoalSignalSource`
 - **Contract** `api/feature/lifegoal/lifegoal.yml` — 12 operations
   - **endpoints:** GET /api/life-goals · POST /api/life-goals · GET /api/life-goals/signals ·
     POST /api/life-goals/propose · GET /api/life-goals/{id} · PUT /api/life-goals/{id} · DELETE /api/life-goals/{id} ·
@@ -636,9 +637,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalPropose`, `useLifeGoals`,
     `useSignalCatalog`
   - **modules:** lifegoalApi.ts, lifegoalHooks.ts, lifegoalMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 6 IT + 1 unit
-  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalPillarApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`,
-    `SignalSourceIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 8 IT + 1 unit
+  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalPillarApiIT`, `LifeGoalProgressApiIT`, `LifeGoalProposeIT`,
+    `LifeGoalSeedDataIT`, `SignalSourceIT`, `WeightGoalSignalSourceIT`
   - **populators:** `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`
 
 ### llmlog
