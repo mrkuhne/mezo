@@ -186,6 +186,10 @@
   --mz-stripbg: #FFFFFF;
   --mz-sheet-bg: linear-gradient(180deg, #FFFDF9 0%, #FDFAF4 100%); /* F7.3 sheet-minta */
   --mz-strength: linear-gradient(90deg, #E5C46B, #C9962E); /* habit-strength bar (nap #page-hab .hstr) */
+  /* week-spark "now" bar + the derivation timeline's 04 disc (mezo-d20.15 Task 4) */
+  --mz-gold-bar: linear-gradient(180deg, #FFD979, #C9962E);
+  --mz-deload-stripe: repeating-linear-gradient(135deg, #E5C46B 0 3px, #F3E3B5 3px 6px);
+  --mz-dstep-custom: #6C5FA3; /* derivation timeline's 03 „Rád szabva" disc */
   --mz-ink-mut: #A2958A;
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
@@ -502,6 +506,9 @@
   --rz-nw-line: rgba(255, 255, 255, 0.13);
   --rz-nw-shadow: 0 14px 26px -14px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.14);
   --mz-strength: linear-gradient(90deg, color-mix(in srgb, var(--dv-amber) 55%, var(--surface-card)), var(--dv-amber));
+  --mz-gold-bar: linear-gradient(180deg, color-mix(in srgb, var(--dv-amber) 55%, white), var(--dv-amber));
+  --mz-deload-stripe: repeating-linear-gradient(135deg, color-mix(in srgb, var(--dv-amber) 45%, var(--surface-card)) 0 3px, color-mix(in srgb, var(--dv-amber) 15%, var(--surface-card)) 3px 6px);
+  --mz-dstep-custom: var(--dv-lav);
   /* quest cards (mezo-d20.2.4) — done wash / XP pill on the dark dv ramp */
   --mz-qdone-bg: linear-gradient(150deg, color-mix(in srgb, var(--dv-sage) 14%, var(--surface-card)), var(--surface-card));
   --mz-qdone-ink: var(--dv-sage);
@@ -4414,6 +4421,9 @@ button.mz-tile:active { transform: scale(0.96); }
 }
 .mz-statcell b { font-size: 15px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
 .mz-statcell small { font-size: 10px; color: var(--mz-ink-soft); }
+/* over its cap — the prototype's dashed cell: a flag the model will act on, not an alarm */
+.mz-statcell-over { border: 1px dashed var(--mz-cell-gold-ink); background: var(--mz-cell-gold-bg); }
+.mz-statcell-over small { color: var(--mz-cell-gold-ink); }
 
 /* tinted mini-cells — the .mcells recipe */
 .mz-mcells { display: flex; gap: 6px; }
@@ -4470,6 +4480,28 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-chev { color: var(--mz-ink-mut); font-size: 12px; transition: transform 0.2s ease; flex: none; }
 .mz-colstrip.open .mz-chev { transform: rotate(180deg); }
 .mz-colbody { padding: 0 14px 13px; }
+
+/* ===== ActiveMesoCard hub hero (mesocycle pages v2 Task 2, mezo-d20.15) —
+   status-first: phase chip + week-dots strip + current->ceiling band chips.
+   Ported from meso-body.html's "AKTÍV FUTAM HERO" (.phchip / .wdots / .tplchip)
+   ×1.18. Reuses existing --mz-* tokens rather than declaring new ones: the
+   phase chip borrows the quest-XP amber pair (same #A8801F ink the prototype's
+   .phchip carries verbatim), the band chips borrow the sage/neutral cell
+   tokens, and the deload stripe is built from the gold cell pair instead of a
+   literal hex so it stays theme-ready. */
+.mz-phchip { font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 10px; flex: none;
+  background: var(--mz-qxp-bg); color: var(--mz-qxp-ink); }
+.mz-wdots { display: flex; gap: 5px; align-items: center; margin-top: 9px; }
+.mz-wdots i { flex: 1; height: 9px; border-radius: 5px; background: var(--mz-cellbg); }
+.mz-wdots i.done { background: var(--mz-cell-sage-ink); }
+.mz-wdots i.now { background: var(--mz-strength); }
+.mz-wdots i.deload { background: repeating-linear-gradient(135deg, var(--mz-cell-gold-ink) 0 3px, var(--mz-cell-gold-bg) 3px 6px); }
+/* A deload week that is ALSO the current one keeps its „most" marker: the stripe wins the
+   background (it is the later rule), the ring says where you stand. The classes layer
+   („now deload") rather than choosing — see mesoBands.weekDotClass. */
+.mz-wdots i.now.deload { box-shadow: inset 0 0 0 1.5px var(--mz-strength); }
+.mz-mband { font-size: 9px; font-weight: 700; border-radius: 999px; padding: 3px 9px; background: var(--mz-chipbg); color: var(--mz-ink-soft); }
+.mz-mband.up { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
 
 /* ── Nap hub (mezo-d20.2.1) — header recipe + panel heroes + tile extras ── */
 .nap-hub { display: flex; flex-direction: column; gap: 13px; padding: 6px 0 8px; }
@@ -8181,6 +8213,85 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 /* lépés-lábléc — egy elsődleges CTA, mellette a csendes társa */
 .mz-wfoot { display: flex; gap: 9px; margin-top: 14px; }
 .mz-wfoot > :first-child { flex: 1; }
+
+/* ---- aktív futam oldala (#page-run, mezo-d20.15) ----
+   A blokk íve kártya alsó sora, a „Heti vizsgálat" csempe mini sáv-fürtje
+   (a prototípus .wmini-je ×1.18) és a „Hétfőn jön" csempe előrejelző chipjei. */
+.mz-arcline { margin-top: 4px; font-size: 10px; font-weight: 600; color: var(--mz-ink-mut); }
+.mz-arcline b { color: var(--mz-cell-gold-ink); }
+.mz-wmini { display: flex; gap: 4px; align-items: flex-end; height: 31px; margin: 7px 0 3px; }
+.mz-wmini b { flex: 1; border-radius: 4px 4px 1px 1px; min-height: 4px;
+  transform: scaleY(0); transform-origin: bottom; }
+.mz-play .mz-wmini b { animation: mz-growy 0.45s ease-out forwards; animation-delay: var(--d); }
+@keyframes mz-growy { to { transform: scaleY(1); } }
+.mz-rollchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.mz-tile-note { font-size: 10px; color: var(--mz-ink-mut); margin-top: 7px; }
+@media (prefers-reduced-motion: reduce) {
+  .mz-wmini b, .mz-play .mz-wmini b { transform: scaleY(1); animation: none; }
+}
+
+/* ---- Heti vizsgálat + izom-részlet (#page-week / #page-muscle, mezo-d20.15 Task 4) ----
+   The week mosaic tile (`.mz-wtile`), its week-spark (`.mz-wspark`) and the muscle page's
+   4-layer derivation timeline (`.mz-dsteps`/`.mz-dstep`/`.mz-dnum`/`.mz-dcells`). The
+   MEV/MAV/MRV band itself stays inline-style (VolumeBand.tsx, VolumeBar.tsx's own idiom —
+   percentages of the 0→MRV span don't tokenize cleanly), so only the tile chrome, the
+   spark bars and the derivation timeline get classes here. */
+.mz-wtile { border-radius: 16px; padding: 10px 11px; text-align: left; font-family: inherit;
+  color: var(--text-primary); border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow);
+  background: var(--mz-wash, var(--mz-wash-white)); display: flex; flex-direction: column;
+  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); width: 100%; }
+button.mz-wtile { cursor: pointer; }
+button.mz-wtile:active { transform: scale(0.96); }
+/* prototype .wnums: 20px / weight 200 — the hairline numeral is the tile's whole voice
+   (20 × 1.18 ≈ 24). */
+.mz-wnums { margin-top: 6px; font-size: 24px; font-weight: 200; font-variant-numeric: tabular-nums;
+  display: flex; align-items: baseline; gap: 2px; white-space: nowrap; }
+.mz-wnums small { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin-left: 3px; }
+.mz-arr { font-size: 13px; opacity: 0.55; margin: 0 2px; }
+.mz-wspark { display: flex; gap: 2px; align-items: flex-end; height: 26px; margin-top: 8px; }
+.mz-wspark b { flex: 1; border-radius: 2px 2px 1px 1px; min-height: 4px; transform: scaleY(0); transform-origin: bottom; }
+.mz-play .mz-wspark b { animation: mz-growy 0.45s ease-out forwards; animation-delay: var(--d, 0ms); }
+.mz-wspark b.mz-wspark-fut { opacity: 0.32; }
+.mz-wspark b.mz-wspark-dl { background: var(--mz-deload-stripe) !important; }
+.mz-wstat { font-size: 9.5px; font-weight: 700; margin-top: 6px; }
+/* per-week label row under the muscle page's block-arc spark (#page-muscle .arclbl) */
+.mz-arclbl { display: flex; gap: 4px; margin-top: 4px; }
+.mz-arclbl span { flex: 1; text-align: center; font-size: 7.5px; font-weight: 700; color: var(--mz-ink-mut); }
+@media (prefers-reduced-motion: reduce) { .mz-wspark b, .mz-play .mz-wspark b { transform: none; animation: none; } }
+
+/* live-rollover banner (week page) */
+.mz-livebanner { display: flex; gap: 8px; align-items: center; border-radius: 14px; padding: 9px 11px;
+  background: var(--mz-cell-sage-bg); }
+.mz-livedot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--mz-cell-sage-ink);
+  box-shadow: 0 0 6px var(--mz-cell-sage-ink); animation: mz-pulsedot 2s ease-in-out infinite; }
+.mz-livebanner-title { font-size: 10px; font-weight: 700; color: var(--mz-cell-sage-ink); }
+@keyframes mz-pulsedot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@media (prefers-reduced-motion: reduce) { .mz-livedot { animation: none; } }
+
+/* derivation timeline — „Honnan a sáv · levezetés" (DerivationSteps.tsx) */
+.mz-dsteps { position: relative; margin-top: 6px; }
+.mz-dstep { display: flex; gap: 9px; padding: 6px 0 10px; position: relative; }
+.mz-dstep + .mz-dstep::before { content: ''; position: absolute; left: 10px; top: -8px; height: 10px; width: 1.5px;
+  background: rgba(43, 33, 24, 0.12); }
+.mz-dnum { width: 21px; height: 21px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  font-size: 8.5px; font-weight: 700; color: #fff; box-shadow: 0 4px 10px -5px rgba(43, 33, 24, 0.5); }
+.mz-dnum-baseline { background: var(--mz-ink-mut); }
+.mz-dnum-custom { background: var(--mz-dstep-custom); }
+.mz-dnum-final { background: var(--mz-gold-bar); }
+.mz-dt { font-size: 8.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-soft); margin-top: 3px; }
+.mz-dcells { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+.mz-dcell { flex: 1; text-align: center; padding: 4px 2px; border-radius: 9px; background: var(--mz-cellbg); min-width: 40px; }
+.mz-dcell b { display: block; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.mz-dcell small { font-size: 7px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mz-ink-mut); }
+.mz-dcell.hot { background: var(--mz-cell-gold-bg); }
+.mz-dcell.hot b { color: var(--mz-cell-gold-ink); }
+.mz-dadj { display: flex; gap: 7px; align-items: flex-start; margin-top: 5px; }
+.mz-dadj .mz-ico { font-size: 11px; flex: none; }
+.mz-dadj .mz-tx { flex: 1; font-size: 11px; line-height: 1.4; color: var(--text-primary); }
+.mz-eff { font-size: 8.5px; font-weight: 700; border-radius: 999px; padding: 2px 7px; flex: none; white-space: nowrap; }
+.mz-confbar { height: 3px; border-radius: 2px; background: var(--mz-cellbg); overflow: hidden; margin-top: 6px; }
+.mz-confbar > div { height: 100%; background: var(--mz-gold-bar); }
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)

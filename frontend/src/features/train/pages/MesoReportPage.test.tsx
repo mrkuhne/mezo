@@ -53,6 +53,24 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     expect(screen.getByText('MRV 20')).toBeInTheDocument()
   })
 
+  it('does not render the "Ezt akartad" quote when the run has no notes (mezo-d20.15 Task 5)', () => {
+    // meso-rec-03's fixture carries a `summary`, but no `notes` — the wizard's goal text.
+    renderAt('meso-rec-03')
+    expect(screen.queryByTestId('meso-report-quote')).toBeNull()
+    expect(screen.queryByText('Ezt akartad')).toBeNull()
+  })
+
+  it('renders the per-muscle band card — start → peak / ceiling, sorted by ceiling desc', () => {
+    renderAt('meso-rec-03')
+    expect(screen.getByText('Izmonként · indulás → elért csúcs / plafon')).toBeInTheDocument()
+    const bands = screen.getByTestId('meso-report-bands')
+    const rows = within(bands).getAllByTestId('report-band-row')
+    expect(rows).toHaveLength(6)
+    // Hát (back): mev 8 -> mav/mrv 20, so W1 8, peak reaches the 20 ceiling exactly
+    expect(within(rows[0]).getByText('Hát')).toBeInTheDocument()
+    expect(within(rows[0]).getByText('8 → 20 / 20')).toBeInTheDocument()
+  })
+
   it('renders the lifestyle context block — totals pills, weekly rows, "–" for missing data', () => {
     renderAt('meso-rec-03')
     const ctx = screen.getByTestId('meso-report-context')
@@ -208,6 +226,25 @@ describe('MesoReportPage (real mode · no report yet)', () => {
     // this fixture carries neither — both blocks must be ABSENT, not empty
     expect(screen.queryByTestId('meso-report-context')).toBeNull()
     expect(screen.queryByTestId('meso-report-ai')).toBeNull()
+  })
+
+  it('renders the "Ezt akartad" quote when the run carries the wizard\'s goal notes (mezo-d20.15 Task 5)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json([{
+          ...archivedMeso,
+          notes: 'röplabda szezon mellett, a vállam kímélve — de a hát és a váll nagyon jöhet',
+          summary: 'a hát elérte a 20 szettet, váll-panasz nélkül zárult a blokk.',
+        }]),
+      ),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/report`, () => HttpResponse.json(report)),
+    )
+    renderAt(ID)
+
+    const quote = await screen.findByTestId('meso-report-quote')
+    expect(within(quote).getByText('Ezt akartad')).toBeInTheDocument()
+    expect(within(quote).getByText(/röplabda szezon mellett/)).toBeInTheDocument()
+    expect(within(quote).getByText(/a hát elérte a 20 szettet/)).toBeInTheDocument()
   })
 
   it('renders a retryable error state on a non-404 read failure (never a blank page)', async () => {

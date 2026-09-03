@@ -24,6 +24,7 @@ import { useMesoReport, useMesoTemplates, useTrain } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { huMonthDay } from '@/shared/lib/dates'
 import { MUSCLE_LABELS } from '@/data/train/train'
+import { BUDGET_GROUP_LABELS } from '@/features/train/logic/setBudget'
 import type {
   MesoContext,
   MesoContextWeek,
@@ -70,6 +71,28 @@ function toMuscleArcs(volume: MesocycleReportResponse['volume']): MuscleVolumeAr
     mrv: m.mrv,
     weeks: m.weeks.map((w) => ({ ...w, actual: w.actual ?? null })),
   }))
+}
+
+interface PeakBandRow { muscle: string; label: string; start: number | null; peak: number; ceiling: number }
+
+/**
+ * The band language's frozen close-time read, per muscle: where W1 started, the loudest
+ * planned week the run actually reached, and the arc's ceiling (MRV). Sorted by ceiling desc
+ * — the same convention `runBands` uses on the live page — so Emphasize's MRV-bound muscles
+ * lead. A muscle with no logged weeks at all cannot happen (a frozen arc always carries at
+ * least W1), but the empty-array guard keeps `Math.max` from returning `-Infinity`. `start`
+ * stays `null` (never a fabricated 0) when the arc genuinely has no W1 row to read.
+ */
+function peakBands(arcs: MuscleVolumeArc[]): PeakBandRow[] {
+  return arcs
+    .map((m) => ({
+      muscle: m.muscle,
+      label: BUDGET_GROUP_LABELS[m.muscle] ?? m.muscle,
+      start: m.weeks[0]?.planned ?? null,
+      peak: m.weeks.length > 0 ? Math.max(...m.weeks.map((w) => w.planned)) : 0,
+      ceiling: m.mrv,
+    }))
+    .sort((a, b) => b.ceiling - a.ceiling)
 }
 
 // --- context block (mezo-meyc.3) — every numeric field is nullable and null NEVER renders
@@ -283,13 +306,61 @@ export function MesoReportPage() {
             />
           </div>
 
-          {/* Frozen volume arc — same switch as the live overview (MuscleArcSwitch) */}
+          {/* „Ezt akartad" — the wizard's freeform goal text, read back once the block is
+              done, next to the one honest line the close captured (report.summary). Notes
+              are the wizard step-0 goal text; a run without one (nothing typed, or a legacy
+              run predating the field) simply has no quote to show. */}
+          {meso?.notes && (
+            <div className="card col gap-xs" style={{ padding: 'var(--sp-4)' }} data-testid="meso-report-quote">
+              <Eyebrow>Ezt akartad</Eyebrow>
+              <p style={{ fontSize: 14, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--text-primary)' }}>
+                {`„${meso.notes}"`}
+              </p>
+              {meso.summary && (
+                <span className="text-secondary" style={{ fontSize: 12 }}>{`— és ez lett: ${meso.summary}`}</span>
+              )}
+            </div>
+          )}
+
+          {/* Frozen volume arc — MuscleArcSwitch, which since v2 lives ONLY here: the live
+              overview page it was shared with was retired (the running block's arc now reads
+              per muscle on MesoMusclePage). */}
           {arcs.length > 0 && (
             <>
               <div style={{ padding: '12px 0 0' }}>
                 <Eyebrow>Heti szettek · a blokk íve</Eyebrow>
               </div>
               <MuscleArcSwitch muscles={arcs} />
+              <div style={{ padding: '12px 0 0' }}>
+                <Eyebrow>Izmonként · indulás → elért csúcs / plafon</Eyebrow>
+              </div>
+              <div className="card col" style={{ padding: '8px 12px' }} data-testid="meso-report-bands">
+                {peakBands(arcs).map((r) => (
+                  <div
+                    key={r.muscle}
+                    className="col"
+                    style={{ padding: '7px 0', borderTop: '0.5px solid var(--border-subtle)' }}
+                    data-testid="report-band-row"
+                  >
+                    <div className="row" style={{ alignItems: 'center', gap: 8 }}>
+                      <span className="chip">{r.label}</span>
+                      <span style={{ flex: 1 }} />
+                      <span className="label-mono" style={{ fontSize: 12, fontWeight: 700 }}>
+                        {`${dash(r.start)} → ${fmt(r.peak)} / ${fmt(r.ceiling)}`}
+                      </span>
+                    </div>
+                    <div style={{ height: 9, borderRadius: 5, background: 'var(--surface-1)', overflow: 'hidden', marginTop: 5 }}>
+                      <div
+                        style={{
+                          width: `${r.ceiling > 0 ? Math.min(100, (r.peak / r.ceiling) * 100) : 0}%`,
+                          height: '100%',
+                          background: 'var(--sage-deep)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </>
           )}
 

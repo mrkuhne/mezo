@@ -1,34 +1,41 @@
 // ============================================================
-// Mezo · MesoExercises (builder · Gyakorlatok) — the weekly exercise editor.
-// Seeds LOCAL day-state from meso.days (deep-ish copy so edits never mutate the
-// module const), renders the shared unified MesoEditor (gradient hero, the
-// collapsible weekly set-budget card, and the day-tabbed accordion exercise
-// rows). Add/remove/change/reorder all mutate the local state only (Phase-1
-// UI) and fire a background full-list PUT when the day carries a real row id.
-// The exercise picker (ExercisePickerSheet) opens for the active day and
-// appends to that day's list.
-// Ported from prototype mesocycles.jsx MesoExercises.
+// Mezo · MesoExercises — the run's exercise editor. Seeds LOCAL day-state from
+// meso.days (deep-ish copy so edits never mutate the module const), renders the
+// shared unified MesoEditor (gradient hero, the collapsible weekly set-budget
+// card, and the accordion exercise rows). Add/remove/change/reorder all mutate
+// the local state only (Phase-1 UI) and fire a background full-list PUT when the
+// day carries a real row id. The exercise picker (ExercisePickerSheet) opens for
+// the active day and appends to that day's list.
+//
+// Two shapes, ONE component (mesocycle pages v2 Task 3, mezo-d20.15):
+//   - no `day`  → the whole week (day tabs, the pre-v2 builder behaviour)
+//   - `day="Hét"` → ONE day, from its own page (`MesoDayPage`). The editor gets
+//     `days={[thatDay]}` (MesoEditor drops the tab strip at a single day) and
+//     `weekDays={all}` so the week-scope derivations (bands, lint, peak-week fit)
+//     still judge the day against the whole week — the ProgramDayView idiom.
+// The in-cycle Fókusz (tier) picker is GONE (mesocycle pages v2): a running block's
+// tiers are set at planning time; changing them mid-run silently re-planned the
+// remaining weeks. The tier UX lives in the wizard (StepFocus) + the template editor.
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
-import type { ExerciseLibraryItem, MesoDay, Mesocycle, MusclePriorities } from '@/data/types'
+import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
-import { MusclePriorityPicker } from '@/features/train/components/MusclePriorityPicker'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
-export function MesoExercises({ meso }: { meso: Mesocycle }) {
-  const { saveDayExercises, updateMusclePriorities } = useTrain()
+export function MesoExercises({ meso, day }: {
+  meso: Mesocycle
+  /** Restricts the editor to ONE day (its `MesoDay.day` key) — the day page's shape. */
+  day?: string
+}) {
+  const { saveDayExercises } = useTrain()
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(meso.days ?? []))
-  // Same local-authoritative idiom as `days` above: seeded once from the prop, then the
-  // single source of truth for the picker AND the editor's budgets/lint. Real mode's
-  // updateMusclePriorities mutation is invalidate-only (no optimistic cache write), so
-  // reading `meso.musclePriorities` directly here would lag until refetch — two rapid
-  // picks would both build off the same stale map and the second onChange would
-  // full-replace away the first pick (mezo-3m5m final review, fix 2).
-  const [priorities, setPriorities] = useState<MusclePriorities>(() => meso.musclePriorities ?? {})
+  // Read-only now: tiers are a planning-time decision (see the header note), so the
+  // meso's stored map just feeds the editor's bands/lint.
+  const priorities = meso.musclePriorities ?? {}
 
   // T1 persistence: each add/remove keeps the synchronous local update (instant UI,
   // Phase-1 behavior) and fires a background full-list PUT when the day carries a real
@@ -94,28 +101,17 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
     persistDay(next.find((d) => d.day === dayKey))
   }
 
+  // Single-day mode edits ONE day but keeps the WEEK as the yardstick (weekDays) —
+  // otherwise the weekly bands / lint / peak-week fit would read one Monday as a week.
+  const edited = day ? days.filter((d) => d.day === day) : days
+  if (day && edited.length === 0) return null
+
   return (
     <div className="col">
-      <details style={{ padding: '4px 24px 8px' }}>
-        <summary className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', cursor: 'pointer' }}>
-          Fókusz
-        </summary>
-        <div className="col" style={{ marginTop: 8, gap: 6 }}>
-          <MusclePriorityPicker
-            value={priorities}
-            onChange={(next) => {
-              setPriorities(next)
-              updateMusclePriorities(meso.id, next)
-            }}
-          />
-          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-            A módosítás a következő heti görgetésnél lép életbe.
-          </span>
-        </div>
-      </details>
       <div style={{ padding: '12px 24px' }}>
         <MesoEditor
-          days={days}
+          days={edited}
+          weekDays={day ? days : undefined}
           onAddClick={setPickerDay}
           onRemove={removeExercise}
           onChange={updateExercise}
