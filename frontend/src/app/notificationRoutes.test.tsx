@@ -4,8 +4,12 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { seedAllKalauzSeen } from '@/test/kalauz'
 
-beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  seedAllKalauzSeen()
+})
 afterEach(() => vi.unstubAllEnvs())
 
 const renderAt = (path: string) => {

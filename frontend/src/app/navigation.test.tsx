@@ -4,6 +4,10 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { seedAllKalauzSeen } from '@/test/kalauz'
+
+// mezo-gb1s.3: a hub-kalauzok 600 ms után felugranának a navigációs asszertek közben.
+beforeEach(() => seedAllKalauzSeen())
 
 function renderApp(path = '/') {
   const router = createMemoryRouter(routes, { initialEntries: [path] })

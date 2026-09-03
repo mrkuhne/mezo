@@ -157,7 +157,7 @@ export function MezoHubPage() {
         </div>
 
         {/* ===== composer-shaped chat opener ===== */}
-        <button type="button" className="mzh-chatopen rise" style={{ '--d': '70ms' } as React.CSSProperties}
+        <button type="button" className="mzh-chatopen rise" data-kalauz-anchor="mezo-chat" style={{ '--d': '70ms' } as React.CSSProperties}
           aria-label="Beszélgetés a társsal" onClick={() => navigate('/mezo/chat')}>
           <span className="mzh-ph">Mondj valamit…</span>
           <span className="mzh-micd"><ClayIcon name="i-mikrofon" size={17} /></span>

@@ -1,3 +1,4 @@
+import { fogalom } from '@/features/tutorial/registry/fogalmak'
 import type { KalauzEntry } from '@/features/tutorial/registry/types'
 
 export const FUEL_KALAUZ: KalauzEntry[] = [
@@ -17,8 +18,7 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
         kind: 'fogalom', spot: 's-energia', orb: 's-orb',
         title: 'A napi keret és a makrók.',
         voice: 'A tested minden nap kap egy **keretet** — ennyi energia fér bele. A gyűrű fent mutatja, hol tartunk.',
-        term: 'makró',
-        def: 'A három „építőanyag": **fehérje** (izom), **szénhidrát** (üzemanyag), **zsír** (hormonok). A kalória ezekből adódik össze.',
+        ...fogalom('makro'),
       },
       {
         kind: 'hogyan', spot: 'i-reggeli', orb: 's-orb-figyel', anchor: 'fuel-log',
