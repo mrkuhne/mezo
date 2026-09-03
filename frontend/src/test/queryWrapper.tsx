@@ -23,3 +23,17 @@ export function makeHookWrapper() {
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
   )
 }
+
+/**
+ * Same as `makeHookWrapper`, but also hands back the `QueryClient` instance so a test can
+ * seed/inspect the cache directly (`client.setQueryData`/`getQueryData`) instead of only
+ * observing it through a hook's return value — needed to assert cache-clearing behaviour
+ * (e.g. login/logout wiping OTHER accounts' cached keys, not just the token).
+ */
+export function makeHookWrapperWithClient() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  )
+  return { wrapper, client }
+}

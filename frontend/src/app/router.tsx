@@ -1,4 +1,4 @@
-import { Navigate, type RouteObject, useLocation, useSearchParams } from 'react-router-dom'
+import { Navigate, type RouteObject, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
@@ -20,7 +20,9 @@ import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
 import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPage'
-import { MesoOverviewPage } from '@/features/train/pages/MesoOverviewPage'
+import { MesoWeekPage } from '@/features/train/pages/MesoWeekPage'
+import { MesoMusclePage } from '@/features/train/pages/MesoMusclePage'
+import { MesoDayPage } from '@/features/train/pages/MesoDayPage'
 import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
 import { MesoComparePage } from '@/features/train/pages/MesoComparePage'
 import { MesoTemplateEditorPage } from '@/features/train/pages/MesoTemplateEditorPage'
@@ -56,7 +58,13 @@ import { MemoryPage } from '@/features/insights/pages/MemoryPage'
 import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { NightPage } from '@/features/me/pages/NightPage'
-import { GrowthPage } from '@/features/me/pages/GrowthPage'
+import { GrowthHubPage } from '@/features/me/pages/GrowthHubPage'
+import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
+import { HabitPage } from '@/features/me/pages/HabitPage'
+import { RoutineWizardPage } from '@/features/me/pages/RoutineWizardPage'
+import { RutinHubPage } from '@/features/me/pages/RutinHubPage'
+import { GrowthNaploPage } from '@/features/me/pages/GrowthNaploPage'
+import { GrowthAwardsPage } from '@/features/me/pages/GrowthAwardsPage'
 import { JournalPage } from '@/features/me/pages/JournalPage'
 import { WeekHubPage } from '@/features/me/pages/WeekHubPage'
 import { WeekAnalysisPage } from '@/features/me/pages/WeekAnalysisPage'
@@ -64,7 +72,6 @@ import { WeekDaysPage } from '@/features/me/pages/WeekDaysPage'
 import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
 import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
 import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
-import { RoutineEditorPage } from '@/features/me/pages/RoutineEditorPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
@@ -98,6 +105,15 @@ import { DetektorokPage } from '@/features/character/pages/DetektorokPage'
 function LegacyPathRedirect({ prefix, to }: { prefix: string; to: string }) {
   const location = useLocation()
   return <Navigate to={location.pathname.replace(prefix, to) + location.search} replace />
+}
+
+/** `/train/mesocycles/:id/overview` — the retired standalone Volumen page (mezo-d20.15
+ *  Task 4): its provenance anatomy moved into MesoMusclePage (reached from the week
+ *  page's tiles), so a bookmark/in-app navigate() to the old route lands on the week
+ *  page instead — the nearest surviving equivalent (Heti vizsgálat), not a dead end. */
+function RedirectToWeek() {
+  const { id } = useParams<{ id: string }>()
+  return <Navigate to={`/train/mesocycles/${id}/week`} replace />
 }
 
 /** `/me/knowledge` — the old standalone Tudásgráf page (mezo-ms9a: merged into the
@@ -170,7 +186,14 @@ export const routes: RouteObject[] = [
       // dynamic anyway). Full-screen sibling; the pair travels in `?a=&b=`.
       { path: 'train/mesocycles/compare', element: <MesoComparePage /> },
       { path: 'train/mesocycles/:id', element: <MesocycleBuilderPage /> },
-      { path: 'train/mesocycles/:id/overview', element: <MesoOverviewPage /> },
+      // ONE day of a running block (mezo-d20.15): the run page is status-first and the
+      // editing lives here, one level down. The day token travels URL-encoded ('H%C3%A9t').
+      { path: 'train/mesocycles/:id/days/:day', element: <MesoDayPage /> },
+      // „Heti vizsgálat" + „izom-részlet" (mezo-d20.15 Task 4) — absorbs the retired
+      // Volumen page's provenance anatomy (MesoMusclePage's DerivationSteps).
+      { path: 'train/mesocycles/:id/week', element: <MesoWeekPage /> },
+      { path: 'train/mesocycles/:id/week/:muscle', element: <MesoMusclePage /> },
+      { path: 'train/mesocycles/:id/overview', element: <RedirectToWeek /> },
       { path: 'train/custom/new', element: <CustomWorkoutBuilderPage /> },
       { path: 'train/custom/:id', element: <CustomWorkoutBuilderPage /> },
       { path: 'train/futas/:id', element: <RunningBlockBuilderPage /> },
@@ -264,7 +287,25 @@ export const routes: RouteObject[] = [
       { path: 'me/karakter/gepterem/adatforrasok', element: <AdatforrasokPage /> },
       { path: 'me/karakter/gepterem/adatforrasok/kor/:n', element: <KorPage /> },
       { path: 'me/karakter/gepterem/detektorok', element: <DetektorokPage /> },
-      { path: 'me/growth', element: <GrowthPage /> },
+      // Growth hub (mezo-rmi0.1) — hero + Ma strip + 2×2 mosaic; the four sub-pages are flat siblings below (added per task).
+      { path: 'me/growth', element: <GrowthHubPage /> },
+      { path: 'me/growth/skillek', element: <GrowthSkillsPage /> },
+      { path: 'me/growth/naplo', element: <GrowthNaploPage /> },
+      { path: 'me/growth/kituntetesek', element: <GrowthAwardsPage /> },
+      // Rutin home (mezo-3zue): the routine surface's own page under Én, reached from the Én
+      // hub's full-width Rutin tile. It absorbed /me/growth/rutin (mezo-rmi0.1) and the
+      // /me/routines/edit editor — build and edit here, tick on /nap/rutin.
+      { path: 'me/rutin', element: <RutinHubPage /> },
+      // The 4-step recipe wizard (mezo-3zue.4). Registered BEFORE any `:param` sibling so
+      // "uj" can never be swallowed as a habit key.
+      { path: 'me/rutin/uj', element: <RoutineWizardPage /> },
+      // The single-recipe page (mezo-3zue.4). LAST of the `me/rutin/*` family: every static
+      // sibling is registered above it so none is swallowed as a habit key. The parameter is
+      // the habitKey (what the hub's rows link with), not the definition id.
+      { path: 'me/rutin/szokas/:habitKey', element: <HabitPage /> },
+      // Both former homes keep working as redirects.
+      { path: 'me/growth/rutin', element: <Navigate to="/me/rutin" replace /> },
+      { path: 'me/routines/edit', element: <Navigate to="/me/rutin" replace /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
       // WeekPage. Its four view tiles open full-screen siblings, NOT child routes: the
@@ -305,8 +346,6 @@ export const routes: RouteObject[] = [
       // Téma helyben + az Értesítések-kapcsolók és az AI-napló ajtajai.
       { path: 'me/beallitasok', element: <BeallitasokPage /> },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },
-      // Full-screen routine editor (mezo-n5e9.2) — same sibling idiom (no Me sub-nav chrome).
-      { path: 'me/routines/edit', element: <RoutineEditorPage /> },
       // Full-screen night surface (train/session idiom) — no Me sub-nav chrome.
       { path: 'me/sleep/night', element: <NightPage /> },
       // Full-screen AI audit log browser (mezo-uakh) — no Me sub-nav chrome.

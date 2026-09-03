@@ -4,6 +4,13 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { seedAllKalauzSeen } from '@/test/kalauz'
+
+// mezo-gb1s.3: real-módban fut szándékosan — env-stub nélkül, csak a seed.
+beforeEach(() => {
+  localStorage.clear()
+  seedAllKalauzSeen()
+})
 
 // Mezo tab navigation after the shell dissolution (mezo-d20.5.1): the Insights
 // SubNavDropdown is gone — /mezo is the hub Mozaik face, and the former sub-tabs are

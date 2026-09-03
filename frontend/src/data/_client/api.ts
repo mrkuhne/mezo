@@ -1,3 +1,6 @@
+import { tokenStore } from '@/data/_client/tokenStore'
+import { authEvents } from '@/data/_client/authEvents'
+
 /** Single source of truth for the backend origin — MSW handlers import this too. */
 export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8090'
 const BASE = API_BASE
@@ -16,8 +19,37 @@ export class ApiError extends Error {
   }
 }
 
-let token: string | null = null
-export function setToken(t: string | null) { token = t }
+/** Writes the persisted token store — kept as the historical name so callers/tests do not move. */
+export function setToken(t: string | null) { tokenStore.set(t) }
+
+/**
+ * Public auth paths where a 401 means "wrong credentials", never "your session died".
+ * change-password is PROTECTED (needs a valid bearer) but answers 401 when the CURRENT
+ * password is wrong — without this exemption a mistyped current password would log the
+ * user out instead of just failing the form.
+ */
+const PUBLIC_AUTH_PATHS = ['/api/auth/login', '/api/auth/register', '/api/auth/change-password']
+
+/**
+ * Session-death detection shared by apiFetch and apiSse: a 401 anywhere protected, or a 403
+ * carrying AUTH_ACCOUNT_DISABLED, drops the token and tells AuthGate to show the login screen.
+ * A 403 AUTH_FORBIDDEN (owner-only endpoint) is a permission problem, not a session one.
+ */
+function handleAuthFailure(path: string, status: number, messages: SystemMessage[]): void {
+  // Normalise away a query string / trailing slash so a caller passing
+  // '/api/auth/login?x=1' or '/api/auth/login/' still matches the exemption.
+  const normalizedPath = path.split('?')[0].replace(/\/$/, '')
+  if (PUBLIC_AUTH_PATHS.includes(normalizedPath)) return
+  if (status === 401) { tokenStore.clear(); authEvents.emitSignedOut('expired'); return }
+  if (status === 403 && messages.some((m) => m.code === 'AUTH_ACCOUNT_DISABLED')) {
+    tokenStore.clear(); authEvents.emitSignedOut('disabled')
+  }
+}
+
+function authHeader(): Record<string, string> {
+  const token = tokenStore.get()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   // FormData bodies (multipart uploads) MUST NOT carry a manual Content-Type — the browser
@@ -27,13 +59,15 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     ...init,
     headers: {
       ...(isForm ? {} : { 'Content-Type': 'application/json' }),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...authHeader(),
       ...(init.headers ?? {}),
     },
   })
   if (!res.ok) {
     const body = (await res.json().catch(() => [])) as SystemMessage[]
-    throw new ApiError(Array.isArray(body) && body.length ? body : [{ code: 'INTERNAL_ERROR', message: `HTTP ${res.status}` }], res.status)
+    const messages = Array.isArray(body) && body.length ? body : [{ code: 'INTERNAL_ERROR', message: `HTTP ${res.status}` }]
+    handleAuthFailure(path, res.status, messages)
+    throw new ApiError(messages, res.status)
   }
   if (res.status === 204) return undefined as T
   // Not every success carries a body: 202 Accepted (report regeneration) answers with none,
@@ -59,16 +93,15 @@ export async function* apiSse(
     headers: {
       'Content-Type': 'application/json',
       Accept: 'text/event-stream, application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...authHeader(),
       ...(init.headers ?? {}),
     },
   })
   if (!res.ok) {
     const body = (await res.json().catch(() => [])) as SystemMessage[]
-    throw new ApiError(
-      Array.isArray(body) && body.length ? body : [{ code: 'INTERNAL_ERROR', message: `HTTP ${res.status}` }],
-      res.status,
-    )
+    const messages = Array.isArray(body) && body.length ? body : [{ code: 'INTERNAL_ERROR', message: `HTTP ${res.status}` }]
+    handleAuthFailure(path, res.status, messages)
+    throw new ApiError(messages, res.status)
   }
   if (!res.body) {
     throw new ApiError([{ code: 'STREAM_ERROR', message: 'No response body' }], res.status)

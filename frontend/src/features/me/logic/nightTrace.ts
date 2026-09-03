@@ -42,6 +42,23 @@ export function clearNightWake(date: string): void {
   try { localStorage.removeItem(PREFIX + date) } catch { /* ignore */ }
 }
 
+/**
+ * Sign-out account-isolation boundary (mezo-qw37.1 review, Finding 2): the trace is real
+ * personal data (how many times, and when, the account woke overnight) and SleepLogSheet
+ * prefills the SUBMITTING account's sleep-log `awakenings` from whatever is under today's key —
+ * so on a shared device account A's night data would both show to account B and get written
+ * into B's record. AuthGate's `onSignedOut` listener (every reason: expired/disabled/manual)
+ * calls this so no trace survives past the account that recorded it.
+ */
+export function clearAllNightWake(): void {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i)
+      if (k?.startsWith(PREFIX)) localStorage.removeItem(k)
+    }
+  } catch { /* ignore */ }
+}
+
 function prune(now: Date): void {
   const cutoff = new Date(now)
   cutoff.setDate(cutoff.getDate() - KEEP_DAYS)

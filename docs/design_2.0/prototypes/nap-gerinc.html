@@ -360,6 +360,30 @@
   .mz-msg .txt { font-size: 11px; font-weight: 300; margin-top: 6px; }
   .mz-cta { width: 100%; margin-top: 4px; padding: 9px 0; text-align: center; }
 
+  /* Üzenetek | Életjelek tab-váltó (mezo-ho9k) — a mem-seg pill-idiómája: 2 gomb,
+     az aktív a CTA-gradienst kapja, a másikon pötty jelzi az olvasatlant. */
+  .mz-seg { display: flex; gap: 4px; background: rgba(43, 33, 24, 0.05); border-radius: 999px; padding: 3px; margin-bottom: 9px; }
+  .mz-seg button {
+    flex: 1; border: none; background: none; border-radius: 999px; min-height: 30px;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    font-size: 9.5px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer;
+  }
+  .mz-seg button.on { background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.5); }
+  .mz-dot { width: 5px; height: 5px; border-radius: 50%; background: linear-gradient(135deg, #FF7A55, #FF5B36); flex: none; }
+
+  /* Életjelek tab: 6-cellás mini-ring sáv + rendben-sor (mezo-ho9k). */
+  .mz-ejstrip {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; width: 100%;
+    box-sizing: border-box; margin-bottom: 10px; padding: 0; border: none; background: none;
+    font-family: inherit; cursor: pointer;
+  }
+  .mz-ejcell { display: grid; justify-items: center; gap: 3px; padding: 7px 1px 6px;
+    background: #FFFFFF; border-radius: 11px; border: 0.5px solid rgba(43, 33, 24, 0.06); }
+  .mz-ejcell .eb { font-size: 6.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .mz-ejcell .pct { font-size: 9px; font-weight: 600; }
+  .mz-ejcell.warn { border-color: rgba(255, 107, 74, 0.55); }
+  .mz-ejok { font-size: 10px; font-weight: 600; color: #5F7A52; text-align: center; margin: 3px 0 8px; }
+
   .vcard {
     background: #FFFFFF; border-radius: 16px; padding: 4px 12px; margin-bottom: 10px;
     border: 0.5px solid rgba(43, 33, 24, 0.06);
@@ -1383,31 +1407,58 @@
           <div class="sb">3 üzenet · a napod fonala</div>
         </div>
         <div class="page-body">
-          <div class="mz-msg rise" style="--d:40ms;">
-            <div class="mrow" style="gap:9px;">
-              <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-reggel"/></svg>
-              <div class="t">07:05 · Reggeli briefing</div>
-            </div>
-            <div class="txt">Két nap múlva W3-csúcs — ma a Pull A a hét kulcs-edzése. A fókuszod az evezés-tempó; a vállad jelzett múlt héten, melegíts rá külön.</div>
-            <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
+          <!-- Üzenetek | Életjelek tab-váltó (mezo-ho9k): a szál (sorrend, tartalom, a hero
+               számláló forrása) érintetlen — ez CSAK megjelenítési bontás. A valós oldalon a
+               bontás kulcsa `MezoMessageItem.source === 'eletjel'`, session-lokális
+               olvasatlan-pöttyökkel (`.mz-dot`), lásd NapMezoPage.tsx. -->
+          <div class="mz-seg" role="tablist" aria-label="Mezo tartalom" id="mzSeg">
+            <button type="button" role="tab" aria-selected="true" class="on" data-seg="mzUzenetek">Üzenetek</button>
+            <button type="button" role="tab" aria-selected="false" data-seg="mzEletjelek">Életjelek<span class="mz-dot" id="mzEjDot"></span></button>
           </div>
-          <div class="mz-msg rise" style="--d:100ms;">
-            <div class="mrow" style="gap:9px;">
-              <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-este"/></svg>
-              <div class="t">07:12 · Alvás-reakció</div>
+          <div id="mzUzenetek">
+            <div class="mz-msg rise" style="--d:40ms;">
+              <div class="mrow" style="gap:9px;">
+                <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-reggel"/></svg>
+                <div class="t">07:05 · Reggeli briefing</div>
+              </div>
+              <div class="txt">Két nap múlva W3-csúcs — ma a Pull A a hét kulcs-edzése. A fókuszod az evezés-tempó; a vállad jelzett múlt héten, melegíts rá külön.</div>
+              <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
             </div>
-            <div class="txt">7:24, 92% hatékonyság — zsinórban a harmadik cél feletti éjszakád. A korai lecsendesítés működik.</div>
-            <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
-          </div>
-          <div class="mz-msg rise" style="--d:160ms;">
-            <div class="mrow" style="gap:9px;">
-              <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-energia"/></svg>
-              <div class="t">11:30 · Déli jelzés</div>
+            <div class="mz-msg rise" style="--d:100ms;">
+              <div class="mrow" style="gap:9px;">
+                <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-este"/></svg>
+                <div class="t">07:12 · Alvás-reakció</div>
+              </div>
+              <div class="txt">7:24, 92% hatékonyság — zsinórban a harmadik cél feletti éjszakád. A korai lecsendesítés működik.</div>
+              <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
             </div>
-            <div class="txt">A hátad hét ez — a mai Pull A-ban dől el a W3 íve. Az ebéd-ablakod most nyílt: 640 kcal fér bele, edzésig bőven megemészted.</div>
-            <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
+            <div class="mz-msg rise" style="--d:160ms;">
+              <div class="mrow" style="gap:9px;">
+                <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-energia"/></svg>
+                <div class="t">11:30 · Déli jelzés</div>
+              </div>
+              <div class="txt">A hátad hét ez — a mai Pull A-ban dől el a W3 íve. Az ebéd-ablakod most nyílt: 640 kcal fér bele, edzésig bőven megemészted.</div>
+              <div class="fbrow"><button class="fb">Segített</button><button class="fb">Nem talált</button></div>
+            </div>
+            <button class="cta mz-cta rise" style="--d:220ms;">Beszélgess Mezóval ›</button>
           </div>
-          <button class="cta mz-cta rise" style="--d:220ms;">Beszélgess Mezóval ›</button>
+          <div id="mzEletjelek" hidden>
+            <button type="button" class="mz-ejstrip rise" style="--d:40ms;" aria-label="Életjelek részletei">
+              <span class="mz-ejcell"><span class="eb" style="color:#4E6B42;">Étel</span><span class="rr" style="--v:72;--c:#6E8B5E;"></span><span class="pct">72%</span></span>
+              <span class="mz-ejcell"><span class="eb" style="color:#3E7396;">Víz</span><span class="rr" style="--v:43;--c:#4E8FB8;"></span><span class="pct">43%</span></span>
+              <span class="mz-ejcell"><span class="eb" style="color:#6C5FA3;">Alvás</span><span class="rr" style="--v:88;--c:#6C5FA3;"></span><span class="pct">88%</span></span>
+              <span class="mz-ejcell warn"><span class="eb" style="color:#A84A26;">Mozgás</span><span class="rr" style="--v:30;--c:#FF6B4A;"></span><span class="pct">30%</span></span>
+              <span class="mz-ejcell"><span class="eb" style="color:#B0567E;">Kapcsolat</span><span class="rr" style="--v:65;--c:#C46FA0;"></span><span class="pct">65%</span></span>
+              <span class="mz-ejcell"><span class="eb" style="color:#A8801F;">Rend</span><span class="rr" style="--v:50;--c:#C9962E;"></span><span class="pct">50%</span></span>
+            </button>
+            <div class="mz-msg rise" style="--d:100ms;">
+              <div class="mrow" style="gap:9px;">
+                <svg width="30" height="30" viewBox="0 0 100 100"><use href="#s-energia"/></svg>
+                <div class="t">14:20 · Életjel-figyelő</div>
+              </div>
+              <div class="txt">💪 Két napja nem mozdultál nagyot — egy edzés vagy séta újra feltölt.</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1738,6 +1789,20 @@
   bindOpen('.open-mezo', 'page-mezo', function () {
     document.querySelectorAll('.unread').forEach(function (d) { d.style.display = 'none'; });
   });
+
+  /* Üzenetek | Életjelek tab-váltó (mezo-ho9k) — csak megjelenítés, a szál egy marad. */
+  document.getElementById('mzSeg').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-seg]'); if (!b) return;
+    var seg = b.getAttribute('data-seg');
+    document.querySelectorAll('#mzSeg button').forEach(function (x) {
+      var on = x.getAttribute('data-seg') === seg;
+      x.classList.toggle('on', on); x.setAttribute('aria-selected', on);
+    });
+    document.getElementById('mzUzenetek').hidden = seg !== 'mzUzenetek';
+    document.getElementById('mzEletjelek').hidden = seg !== 'mzEletjelek';
+    if (seg === 'mzEletjelek') document.getElementById('mzEjDot').style.display = 'none';
+  });
+
   bindOpen('.open-quest', 'page-quest');
   bindOpen('.open-vital', 'page-vital');
   bindOpen('.open-check', 'page-check');

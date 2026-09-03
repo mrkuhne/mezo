@@ -50,4 +50,17 @@ class GoalEnginePropertiesIT extends AbstractIntegrationTest {
 
         assertThat(props.ewma().halfLifeDays()).isEqualTo(10);
     }
+
+    @Test
+    void testDietSplitTunables_shouldBindFromYml() {
+        assertThat(props.diet().fatShareBalanced()).isEqualTo(0.275);
+        assertThat(props.diet().fatShareLowFat()).isEqualTo(0.20);
+        assertThat(props.diet().fatShareLowCarb()).isEqualTo(0.40);
+        assertThat(props.diet().fatShareHighCarb()).isEqualTo(0.22);
+        assertThat(props.diet().fatFloorGPerKg()).isEqualTo(0.5);
+        // preset resolution helper: custom uses the tenths-of-percent field, presets use config
+        assertThat(props.diet().fatShareFor("balanced", null)).isEqualTo(0.275);
+        assertThat(props.diet().fatShareFor("custom", 300)).isEqualTo(0.30);
+        assertThat(props.diet().fatShareFor("unknown", null)).isEqualTo(0.275); // safe default
+    }
 }

@@ -169,6 +169,10 @@ public class FeaturesConfiguration {
     /** Fuel planner settings (mezo-53su) — eating cadence + caffeine cutoff singleton. Gates /api/fuel/settings (the caffeine resolver stays on). */
     public static final String FUEL_SETTINGS_SWITCH = "mezo.feature.fuel-settings.enabled";
 
+    /** Diet preferences (Diet Plan slice 1) — macro split + protein tier + water/fiber singleton.
+     *  Gates /api/diet/settings (the DietPreferencesResolver stays on — the engine always resolves). */
+    public static final String DIET_SETTINGS_SWITCH = "mezo.feature.diet-settings.enabled";
+
     /** Stack placement LLM fallback (mezo-vx9v) — gates ONLY the LLM placement fallback for
      *  unknown supplements; the deterministic rule table runs regardless. The adapter bean
      *  additionally needs COMPANION_SWITCH (both condition the same bean, array-AND'ed exactly
@@ -263,4 +267,7 @@ public class FeaturesConfiguration {
      *  (frozen, not reverted to seeds). Measurement (slice 1) is independent and keeps running
      *  either way. */
     public static final String TIMING_PROFILE_SWITCH = "mezo.feature.timing-profile.enabled";
+
+    /** Mezo-kalauz seen-store (mezo-gb1s.1). */
+    public static final String TUTORIAL_SWITCH = "mezo.feature.tutorial.enabled";
 }

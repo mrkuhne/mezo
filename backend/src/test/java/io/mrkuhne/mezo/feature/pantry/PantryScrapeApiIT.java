@@ -14,11 +14,14 @@ import io.mrkuhne.mezo.api.dto.PantryResponse;
 import io.mrkuhne.mezo.api.dto.PantryScrapeRequest;
 import io.mrkuhne.mezo.api.dto.PantryScrapeResponse;
 import io.mrkuhne.mezo.api.dto.PantrySource;
+import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -36,6 +39,8 @@ import org.springframework.test.context.DynamicPropertySource;
  */
 @ActiveProfiles("companion-fake")
 class PantryScrapeApiIT extends ApiIntegrationTest {
+
+    @Autowired private AppUserRepository appUserRepository;
 
     static final WireMockServer SHOP = new WireMockServer(wireMockConfig().dynamicPort());
 
@@ -152,6 +157,26 @@ class PantryScrapeApiIT extends ApiIntegrationTest {
         assertThat(feed.getSource()).isEqualTo(PantrySource.GYMBEAM_HU);
         assertThat(feed.getStatus()).isEqualTo(PantryImportEntryResponse.StatusEnum.MANUAL_REVIEW);
         assertThat(feed.getOfWhat()).isEqualTo("Gyanús szelet");
+    }
+
+    // mezo-qw37.1 review Finding 3: PantryScrapeController used to never touch CurrentUser, so a
+    // revoked account holding a still-valid 30-day JWT could keep hitting this endpoint and
+    // burning Gemini quota. Same pattern as CurrentUserIT#testProtectedCall_shouldReturn403_whenAccountDisabled.
+    @Test
+    void testScrape_shouldReturn403_whenAccountDisabled() {
+        HttpHeaders headers = ownerAuthHeaders(); // token minted while ACTIVE
+        AppUserEntity owner = appUserRepository.findByEmail("owner@mezo.local").orElseThrow();
+        owner.setStatus(AppUserEntity.UserStatus.DISABLED);
+        appUserRepository.saveAndFlush(owner);
+        try {
+            PantryScrapeRequest req = new PantryScrapeRequest();
+            req.setUrl("https://www.myprotein.hu/p/impact-whey/10530943/");
+            String body = postForBody("/api/pantry-import/scrape", req, headers, HttpStatus.FORBIDDEN, String.class);
+            assertHasRequestError(body, "AUTH_ACCOUNT_DISABLED");
+        } finally {
+            owner.setStatus(AppUserEntity.UserStatus.ACTIVE);
+            appUserRepository.saveAndFlush(owner);
+        }
     }
 
     @Test

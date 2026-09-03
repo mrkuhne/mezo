@@ -27,6 +27,7 @@ import { PlannedMesoCard } from '@/features/train/components/PlannedMesoCard'
 import { ArchivedMesoCard } from '@/features/train/components/ArchivedMesoCard'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import { runToTemplate } from '@/features/train/logic/runToTemplate'
+import { runBands } from '@/features/train/logic/mesoBands'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import MesocycleSkeleton from '@/features/train/pages/MesocycleSkeleton'
@@ -63,7 +64,10 @@ export function MesocycleLibraryPage() {
   const openPlanner = () => navigate('/train/mesocycles/new')
   const openTemplateEditor = (id: string) => navigate(`/train/mesocycles/templates/${id}`)
   const openTemplates = () => navigate('/train/templates')
-  const openOverview = (id: string) => navigate(`/train/mesocycles/${id}/overview`)
+  // The hub's first tile (mesocycle pages v2 Task 2, mezo-d20.15). Its route lands in
+  // Task 4 — navigating there now hits the router's no-match, same as any other
+  // not-yet-built destination mid-slice.
+  const openWeek = (id: string) => navigate(`/train/mesocycles/${id}/week`)
   // Leaving the mode clears the pick: a selection surviving an invisible mode would fire the
   // next time the user turns it on, out of nowhere.
   const toggleCompareMode = () => {
@@ -122,11 +126,11 @@ export function MesocycleLibraryPage() {
             {active[0] && (
               <Tile
                 wash="coral"
-                icon="i-meso"
-                eyebrow="Volumen"
-                line="élő rendszer"
+                icon="i-heti"
+                eyebrow="Heti vizsgálat"
+                line={`W${active[0].currentWeek} · ${runBands(active[0]).reduce((s, r) => s + r.current, 0)} szett`}
                 delayMs={40}
-                onClick={() => openOverview(active[0].id)}
+                onClick={() => openWeek(active[0].id)}
               />
             )}
             <Tile
@@ -151,7 +155,7 @@ export function MesocycleLibraryPage() {
               wash="coral"
               icon="i-edzes"
               eyebrow="Új blokk"
-              line="AI-tervezővel ›"
+              line="3 lépés · AI ›"
               delayMs={160}
               onClick={openPlanner}
               aria-label="Új blokk tervezése"

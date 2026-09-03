@@ -26,6 +26,8 @@ inputs:
   - inputFile: ../feature/sleep-goal/sleep-goal.yml
   - inputFile: ../feature/sleep-shot/sleep-shot.yml
   - inputFile: ../feature/fuel-settings/fuel-settings.yml
+  - inputFile: ../feature/diet-settings/diet-settings.yml
+  - inputFile: ../feature/tutorial/tutorial-progress.yml
   - inputFile: ../feature/ritual/ritual.yml
   - inputFile: ../feature/gamification/gamification.yml
   - inputFile: ../feature/notification/notification.yml

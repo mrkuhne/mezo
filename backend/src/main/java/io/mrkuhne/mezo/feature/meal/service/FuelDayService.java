@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
+import io.mrkuhne.mezo.feature.nutrition.service.DietPreferencesResolver;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import java.math.BigDecimal;
@@ -27,11 +28,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Assembles {@link FuelDayResponse} for the Fuel-day MacroHero: {@code targets} come from the
- * active goal's prescribed recept when one covers the date — kcal + protein from the
+ * active goal's prescribed recept when one covers the date — kcal + protein + carbs + fat from the
  * {@link GoalPrescriptionJson} segment of that date's goal-week (mezo-najo; the recept IS the
- * TDEE + training + deficit prescription) — falling back to the config-driven
- * {@link NutritionTargetsProperties} when there is no active/evaluated goal or no covering
- * segment. Carbs/fat/water are not prescribed, so they always render from config. {@code consumed}
+ * TDEE + training + deficit prescription; carbs/fat since mezo-xwgb) — falling back to the
+ * config-driven {@link NutritionTargetsProperties} per field when there is no active/evaluated
+ * goal, no covering segment, or the segment predates the carbs/fat split. Water is never
+ * prescribed by the goal; it always comes from {@link DietPreferencesResolver} (the saved
+ * preference row, or its config ghost when none exists). {@code consumed}
  * = Σ the day's meal macros; {@code water} consumed is the real Σ of the day's water-log entries
  * (via {@link WaterLogService}); no meal carries water in v1.
  */
@@ -44,6 +47,7 @@ public class FuelDayService {
     private final NutritionTargetsProperties targets;
     private final WaterLogService waterLogService;
     private final GoalRepository goalRepository;
+    private final DietPreferencesResolver dietPreferences;
     private final WeightLogRepository weightLogRepository;
 
     // Annotated by exception: the meal mapper walks LAZY items with open-in-view false (spring_patterns.md).
@@ -54,9 +58,10 @@ public class FuelDayService {
             .map(mapper::toResponse)
             .toList();
         int water = waterLogService.sumForDay(userId, date);
+        int waterMl = dietPreferences.resolve(userId).waterMl();
         return FuelDayResponse.builder()
             .date(date)
-            .targets(targetSet(activeGoal(userId), date))
+            .targets(targetSet(activeGoal(userId), date, waterMl))
             .consumed(consumed(meals, water))
             .meals(meals)
             .build();
@@ -79,11 +84,13 @@ public class FuelDayService {
     @Transactional(readOnly = true)
     public FuelWeekResponse getWeek(UUID userId, LocalDate start) {
         GoalEntity goal = activeGoal(userId);
+        // Resolve preferences ONCE for the whole week, not per day (7 identical queries otherwise).
+        int waterMl = dietPreferences.resolve(userId).waterMl();
         LocalDate end = start.plusDays(6);
         List<FuelDayRollup> days = start.datesUntil(start.plusDays(7))
             .map(d -> FuelDayRollup.builder()
                 .date(d)
-                .targets(targetSet(goal, d))
+                .targets(targetSet(goal, d, waterMl))
                 .consumed(consumedFor(userId, d))
                 .build())
             .toList();
@@ -145,12 +152,14 @@ public class FuelDayService {
     }
 
     /**
-     * kcal + protein from the active goal's recept segment covering {@code date}'s goal-week
-     * (week derived from startDate — the ContextSnapshotAssembler#goalBlock idiom); config
-     * fallback per field when there is no goal, no evaluated prescription, or no covering
-     * segment (e.g. a date before the goal started).
+     * kcal + protein + carbs + fat from the active goal's recept segment covering {@code date}'s
+     * goal-week (week derived from startDate — the ContextSnapshotAssembler#goalBlock idiom);
+     * config fallback per field when there is no goal, no evaluated prescription, no covering
+     * segment (e.g. a date before the goal started), or the segment predates the carbs/fat split
+     * (pre-slice-1 prescriptions carry null carbsG/fatG). {@code waterMl} is caller-resolved (once
+     * per request, via {@link DietPreferencesResolver}) since water is never goal-prescribed.
      */
-    private MacroSet targetSet(GoalEntity goal, LocalDate date) {
+    private MacroSet targetSet(GoalEntity goal, LocalDate date, int waterMl) {
         GoalPrescriptionJson.Segment seg = null;
         if (goal != null && goal.getStartDate() != null) {
             long week = ChronoUnit.DAYS.between(goal.getStartDate(), date) / 7 + 1;
@@ -159,9 +168,9 @@ public class FuelDayService {
         return MacroSet.builder()
             .kcal(BigDecimal.valueOf(seg != null && seg.kcal() != null ? seg.kcal() : targets.kcal()))
             .p(BigDecimal.valueOf(seg != null && seg.proteinG() != null ? seg.proteinG() : targets.p()))
-            .c(BigDecimal.valueOf(targets.c()))
-            .f(BigDecimal.valueOf(targets.f()))
-            .water(BigDecimal.valueOf(targets.water()))
+            .c(BigDecimal.valueOf(seg != null && seg.carbsG() != null ? seg.carbsG() : targets.c()))
+            .f(BigDecimal.valueOf(seg != null && seg.fatG() != null ? seg.fatG() : targets.f()))
+            .water(BigDecimal.valueOf(waterMl))
             .build();
     }
 

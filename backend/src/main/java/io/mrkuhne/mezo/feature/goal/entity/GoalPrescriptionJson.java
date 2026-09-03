@@ -29,6 +29,8 @@ public record GoalPrescriptionJson(
         String label,
         Integer kcal,
         Integer proteinG,
+        Integer carbsG,   // prescribed carbs (g) — split remainder; null on pre-slice-1 prescriptions
+        Integer fatG,     // prescribed fat (g) — split share floored at fat-floor g/kg; null on pre-slice-1 prescriptions
         BigDecimal sleepTargetH,
         List<Integer> restDays,
         BigDecimal projectedRateKgPerWk,

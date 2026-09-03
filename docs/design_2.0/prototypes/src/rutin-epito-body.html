@@ -1,0 +1,540 @@
+<div class="wrap">
+  <p class="eyebrow">Design 2.0 · Rutin-építő · mezo-3zue</p>
+  <h1>Rutin-építő — saját csempe az Én hubon, saját oldal, és egy wizard, ami két keretrendszerre építi a szokást</h1>
+  <p class="lede">
+    A rutin kiköltözik a Growth szegmensei alól: <strong>széles Rutin csempe</strong> az Én hubon,
+    <strong>/me/rutin</strong> hub erő-mérőkkel és lánc-kártyákkal, és egy <strong>négylépéses szokás-recept wizard</strong>,
+    amely vagy <strong>BJ Fogg szokás-láncolására</strong> („Miután …, én …”), vagy <strong>James Clear Négy törvényére</strong>
+    (jelzés → vágy → válasz → jutalom) fűzi fel az új szokást. A napi pipálás marad a Nap tabon — itt épül, ott logolódik.
+  </p>
+
+  <div class="stage">
+    <div>
+      <div class="phone"><div class="screen play" id="screen">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>▮▮▮ 82%</span></div>
+
+        <!-- ============ ÉN HUB — a széles Rutin csempe ============ -->
+        <div class="page on" id="pg-hub">
+          <div class="page-body" style="padding-top:6px;">
+            <div class="idhero rise" style="--d:0ms;">
+              <div class="idring" style="--xp:62;" role="img" aria-label="Szint 12 — 62% a következő szintig"><i>D</i></div>
+              <div class="nm">Daniel</div>
+              <div class="stats"><span>Lv 12</span><span>4 820 XP</span><span>🔥 9 nap</span></div>
+            </div>
+            <div class="mosaic" style="margin:0;">
+              <div class="tile t-water rise" style="--d:130ms;" role="button" tabindex="0" aria-label="Súly">
+                <div class="p-eyebrow" style="color:#3E7396;">Súly</div>
+                <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-suly"/></svg></div>
+                <div class="tline">78,6 kg · −0,5 / hét</div>
+              </div>
+              <div class="tile t-habe rise" style="--d:170ms;" role="button" tabindex="0" aria-label="Alvás">
+                <div class="p-eyebrow" style="color:#5D4FA0;">Alvás</div>
+                <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-alvas"/></svg></div>
+                <div class="tline">7,5 h · Q9</div>
+              </div>
+              <div class="tile t-minta rise" style="--d:210ms;" role="button" tabindex="0" aria-label="Growth">
+                <div class="p-eyebrow" style="color:#5D4FA0;">Growth</div>
+                <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-growth"/></svg></div>
+                <div class="tline">78% fegyelem · 5 hét</div>
+              </div>
+              <div class="tile t-kreed rise" style="--d:250ms;" role="button" tabindex="0" aria-label="Napló">
+                <div class="p-eyebrow" style="color:#A84A26;">Napló</div>
+                <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-naplo"/></svg></div>
+                <div class="tline">4 napos hála-sorozat</div>
+              </div>
+              <div class="tile t-check rise" style="--d:290ms;" role="button" tabindex="0" aria-label="Emberek">
+                <div class="p-eyebrow" style="color:#8E3F6F;">Emberek</div>
+                <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-emberek"/></svg></div>
+                <div class="tline">Petra 4× · e héten</div>
+              </div>
+              <div class="tile t-stack rise" style="--d:330ms;" role="button" tabindex="0" aria-label="Beállítások">
+                <div class="p-eyebrow" style="color:#4E6B42;">Beállítások</div>
+                <div class="spotwrap"><svg width="38" height="38" viewBox="0 0 100 100"><use href="#i-beallitas"/></svg></div>
+                <div class="tline">téma: cirkadián</div>
+              </div>
+              <div class="tile wide rise" style="--d:370ms;" role="button" tabindex="0" aria-label="Rutin" data-go="pg-rutin">
+                <svg width="34" height="34" viewBox="0 0 100 100" style="flex:none;"><use href="#i-rend"/></svg>
+                <div class="txt">
+                  <div class="p-eyebrow" style="color:#A8801F;">Rutin</div>
+                  <div class="dg" id="hubRutinLine">3 / 6 ma<small>reggel 82% · este 64%</small></div>
+                </div>
+                <span class="chev">›</span>
+              </div>
+            </div>
+            <p class="habnote" style="padding:0 2px;">A hat kis csempe párosítása nem bomlik meg: a Rutin széles cellát kap (a Mezo hub Diagnózis/Karakter mintája).
+              Egy élő adat: ma kész / összes + a két lánc ereje. Ha nincs egy szokás sem, a sor eltűnik — nincs kitalált szám.</p>
+          </div>
+        </div>
+
+        <!-- ============ RUTIN HUB ============ -->
+        <div class="page p-gold" id="pg-rutin">
+          <div class="page-head">
+            <button class="backbtn" data-go="pg-hub">‹ Én</button>
+            <button class="pgact" data-sheet="none" id="aiBtn">✨ AI javaslat</button>
+          </div>
+          <div class="page-hero rise" style="--d:20ms;">
+            <svg width="54" height="54" viewBox="0 0 100 100"><use href="#s-reggel"/></svg>
+            <div class="bignum" id="rutinBig">3 / 6</div>
+            <div class="nm">Rutin</div>
+            <div class="sb" id="rutinSub">ma · 28 napos átlagerő 70%</div>
+          </div>
+          <div class="page-body">
+            <div class="statstrip rise" style="--d:50ms;">
+              <div class="statcell"><b>12</b><small>tökéletes reggel · 30 n</small></div>
+              <div class="statcell"><b>7</b><small>tökéletes este · 30 n</small></div>
+              <div class="statcell"><b id="activeCnt">6</b><small>aktív szokás</small></div>
+            </div>
+            <div id="chains"></div>
+            <div class="shrow rise" style="--d:200ms;"><button class="cta" data-go="pg-wiz">＋ Új szokás-recept</button><button class="ghost">＋ Új lánc</button></div>
+            <p class="habnote">Egyszerre egy szokás. A logolás maga a jutalom: a csík minden pipával emelkedik, egy kihagyás nem nullázza — csak halványítja.
+              A pipa a Nap tabon él, itt a sor a szerkesztőt nyitja.</p>
+          </div>
+        </div>
+
+        <!-- ============ WIZARD ============ -->
+        <div class="page p-gold" id="pg-wiz">
+          <div class="page-head">
+            <button class="backbtn" id="wback">‹ Rutin</button>
+            <button class="pgact" id="wclose" style="color:#6E6257;">Mégse</button>
+          </div>
+          <div class="page-body" style="padding-top:6px;">
+            <div class="stepper rise" style="--d:10ms;">
+              <span class="title">Új szokás-recept</span>
+              <span class="dots" id="wdots"><i></i><i></i><i></i><i></i></span>
+              <span class="cnt" id="wcnt">1 / 4</span>
+            </div>
+            <div class="wtitle rise" style="--d:30ms;" id="wtitle">Milyen keretre építsük?</div>
+            <div class="wsub rise" style="--d:40ms;" id="wsub">Mindkettő ugyanoda visz: egy mondat, amit minden nap el tudsz mondani magadnak.</div>
+
+            <div class="sentence rise" style="--d:60ms;" id="sentence" hidden>
+              <div class="lb"><span id="sentFw">Recept</span><span style="color:#C9BCAD;">· épül, ahogy töltöd</span></div>
+              <div class="tx" id="sentTx"></div>
+            </div>
+
+            <!-- 1 · KERET -->
+            <div id="ws1">
+              <button class="fwcard fogg rise" style="--d:80ms;" data-fw="FOGG">
+                <span class="sgn">⚓</span>
+                <span class="grow">
+                  <b>Szokás-láncolás</b>
+                  <small>Egy már meglévő szokásod végpillanatához kötöd az újat. Pici viselkedés, azonnali ünneplés — a szokás nő magától.</small>
+                  <span class="fwloop"><span>Horgony</span><i>→</i><span>Pici tett</span><i>→</i><span>Ünneplés</span></span>
+                  <span class="who">BJ Fogg · Tiny Habits</span>
+                </span>
+              </button>
+              <button class="fwcard clear rise" style="--d:120ms;" data-fw="CLEAR">
+                <span class="sgn">◈</span>
+                <span class="grow">
+                  <b>Négy törvény</b>
+                  <small>Tedd nyilvánvalóvá, vonzóvá, könnyűvé és kielégítővé. Akkor válaszd, ha a viselkedésnek valódi akadálya van.</small>
+                  <span class="fwloop"><span>Jelzés</span><i>→</i><span>Vágy</span><i>→</i><span>Válasz</span><i>→</i><span>Jutalom</span></span>
+                  <span class="who">James Clear · Atomic Habits</span>
+                </span>
+              </button>
+              <div class="tip rise" style="--d:160ms;">💡 <span>Nem tudod eldönteni? <b>Szokás-láncolással</b> kezdj — ha a tett tényleg pici, nincs mit legyőzni.</span></div>
+            </div>
+
+            <!-- 2 · HORGONY / JELZÉS -->
+            <div id="ws2" hidden>
+              <div id="ws2fogg">
+                <div class="fcard">
+                  <label class="flabel">Miután … · horgony</label>
+                  <div class="chips sage" id="anchorChips"></div>
+                  <input class="fin" id="anchorFree" style="margin-top:7px;" placeholder="…vagy a saját szavaiddal: „kitöltöttem a reggeli kávét”">
+                </div>
+                <div class="tip">⚓ <span>A horgony <b>végpillanata</b> számít: nem „reggel”, hanem „miután letettem a fogkefét”. Ugyanaz a hely, ugyanaz a gyakoriság.</span></div>
+              </div>
+              <div id="ws2clear" hidden>
+                <div class="fcard">
+                  <label class="flabel">Mikor és hol? · jelzés</label>
+                  <div class="chips" id="cueChips"></div>
+                  <input class="fin" id="cueFree" style="margin-top:7px;" placeholder="pl. „7:10-kor, a konyhaasztalnál, a jegyzetfüzet a bögre mellett”">
+                </div>
+                <div class="tip lav">◈ <span><b>1. törvény — tedd nyilvánvalóvá.</b> A jelzés legyen látható a térben: a füzet a párnán, a cipő az ajtóban.</span></div>
+              </div>
+            </div>
+
+            <!-- 3 · VISELKEDÉS -->
+            <div id="ws3" hidden>
+              <div class="fcard">
+                <label class="flabel" id="titleLb">Én … · pici tett</label>
+                <input class="fin" id="titleIn" placeholder="pl. „leírok egy mondatot a füzetbe”">
+                <div class="tip warn" id="tinyWarn" hidden>✂ <span>Ez nagynak hangzik. <b>Mi a legkisebb változat</b>, amit rossz napon is megteszel? Nőni fog magától.</span></div>
+              </div>
+              <div class="fcard">
+                <label class="flabel">Melyik láncba?</label>
+                <div class="chips gold" id="chainChips"></div>
+              </div>
+              <div class="fcard">
+                <div class="frow2">
+                  <div><label class="flabel">Életterület</label>
+                    <div class="lifegrid" id="lifeGrid"></div></div>
+                  <div><label class="flabel">XP</label>
+                    <span class="stepin"><button id="xpDn">−</button><b id="xpV">10 XP</b><button id="xpUp">＋</button></span>
+                    <div class="mut" style="font-size:8px;margin-top:6px;">5–15 · a pici tett 5-öt ér, a nehéz 15-öt.</div></div>
+                </div>
+              </div>
+              <div id="ws3clear" hidden>
+                <div class="fcard">
+                  <label class="flabel">Mert … · vágy</label>
+                  <input class="fin" id="cravingIn" placeholder="pl. „tisztább fejjel indul a nap”">
+                </div>
+                <div class="fcard">
+                  <label class="flabel">Hogy olyan ember legyek, aki … <span class="opt">opcionális</span></label>
+                  <input class="fin" id="identityIn" placeholder="pl. „figyel a saját gondolataira”">
+                </div>
+                <div class="tip lav">◈ <span><b>2. + 3. törvény.</b> A vágy a tett vonzereje; a könnyűség a kétperces szabály — a tett első két perce legyen a cél.</span></div>
+              </div>
+            </div>
+
+            <!-- 4 · JUTALOM + VÁLLALÁS -->
+            <div id="ws4" hidden>
+              <div id="ws4fogg">
+                <div class="fcard">
+                  <label class="flabel">Ünneplésül … · shine</label>
+                  <div class="chips sage" id="celebChips"></div>
+                  <input class="fin" id="celebFree" style="margin-top:7px;" placeholder="…vagy a sajátod">
+                </div>
+                <div class="tip">⚓ <span>Az ünneplés <b>másodperceken belül</b> jön, és tényleg jó érzés. Ettől rögzül a szokás — nem a fegyelemtől.</span></div>
+              </div>
+              <div id="ws4clear" hidden>
+                <div class="fcard">
+                  <label class="flabel">Jutalmam … · kielégítő</label>
+                  <div class="chips" id="rewardChips"></div>
+                  <input class="fin" id="rewardFree" style="margin-top:7px;" placeholder="…vagy a sajátod">
+                </div>
+                <div class="tip lav">◈ <span><b>4. törvény — tedd kielégítővé.</b> A logolás maga a jutalom: a pipa és az emelkedő erő-csík. Ezért az első chip az alap.</span></div>
+              </div>
+              <button class="commit" id="commit">
+                <span class="box">✓</span>
+                <span class="grow"><b>Vállalom</b><small>A pipa egy ígéret, nem beállítás. Holnap reggel ott lesz a Nap tabon.</small></span>
+              </button>
+            </div>
+
+            <div class="shrow" id="wnav">
+              <button class="ghost" id="wprev" hidden>← Vissza</button>
+              <button class="cta" id="wnext" disabled>Tovább →</button>
+            </div>
+            <p class="habnote" id="wnote">Egy futtatás = egy szokás. A lánc a stack; a következő recept horgonya ez a szokás lehet.</p>
+          </div>
+        </div>
+
+        <!-- ============ SZOKÁS SZERKESZTŐ ============ -->
+        <div class="page p-gold" id="pg-edit">
+          <div class="page-head">
+            <button class="backbtn" data-go="pg-rutin">‹ Rutin</button>
+            <button class="pgact" data-go="pg-rutin">Mentés</button>
+          </div>
+          <div class="page-hero rise" style="--d:20ms;">
+            <div class="bignum" id="edPct">82%</div>
+            <div class="nm" id="edTitle">Reggeli fény · 10 perc kint</div>
+            <div class="sb" id="edSub">28 napos erő · 23 pipa · 5 kihagyás</div>
+          </div>
+          <div class="page-body">
+            <div class="fwband rise" style="--d:50ms;" id="edBand">
+              <span style="font-size:16px;" id="edSgn">⚓</span>
+              <div><div class="t" id="edFw">Szokás-láncolás</div><div class="s" id="edFwS">BJ Fogg · horgony → pici tett → ünneplés</div></div>
+              <button class="sw">Keret váltása</button>
+            </div>
+            <div class="sentence big rise" style="--d:80ms;" id="edSentence">
+              <div class="lb"><span>A recepted</span></div>
+              <div class="tx" id="edSentTx"></div>
+            </div>
+            <div class="fcard rise" style="--d:110ms;"><label class="flabel">Elmúlt 28 nap</label>
+              <div class="hist" id="edHist"></div>
+              <div class="mut" style="font-size:8px;margin-top:5px;">zöld = pipa · szürke = kihagyás · üres = még nem volt · egy kihagyás halványít, nem nulláz</div>
+            </div>
+            <div class="fcard rise" style="--d:140ms;" id="edFields"></div>
+            <div class="fcard rise" style="--d:170ms;">
+              <div class="frow2">
+                <div><label class="flabel">Lánc</label><div class="chips gold"><button class="on">Reggeli</button><button>Napközbeni</button><button>Esti</button></div></div>
+                <div><label class="flabel">XP</label><span class="stepin"><button>−</button><b>10 XP</b><button>＋</button></span></div>
+              </div>
+            </div>
+            <button class="danger rise" style="--d:200ms;">Szüneteltetés — a haladás megmarad</button>
+            <p class="habnote">Szüneteltetve a sor tompul és nem jelenik meg a Nap tabon, de az erő-történet nem vész el (Atoms-minta). A törlés a ⋯-ben van, két koppintás.</p>
+          </div>
+        </div>
+
+        <div class="homebar"></div>
+      </div></div>
+
+      <div class="demobar">
+        <button data-pg="pg-hub" aria-pressed="true">Én hub</button>
+        <button data-pg="pg-rutin" aria-pressed="false">Rutin hub</button>
+        <button data-pg="pg-wiz" aria-pressed="false">Wizard</button>
+        <button data-pg="pg-edit" aria-pressed="false">Szokás</button>
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Mit nézz meg</h2>
+        <ul>
+          <li><strong>Én hub</strong> — a hat kis csempe alatt a <strong>széles Rutin csempe</strong>: egy élő adat (ma kész / összes + a két lánc ereje). Koppints rá.</li>
+          <li><strong>Rutin hub</strong> — hero (ma kész / összes + 28 napos átlagerő), statstrip (tökéletes reggelek/esték, aktív szokások), lánc-kártyák
+            <strong>erő-csíkkal és keret-jelvénnyel</strong> (⚓ Fogg · ◈ Clear · – régi). A sor a szerkesztőt nyitja; a pipa nem itt van.</li>
+          <li><strong>Wizard</strong> — válassz keretet, és nézd, ahogy a <strong>mondat-kártya</strong> épül lépésről lépésre. A Fogg-ág horgony-chipjei a meglévő szokásaidból
+            és mezo-eseményekből jönnek; a Clear-ág a négy törvényt egy-egy tippsávban tanítja. A 4. lépés <strong>Vállalom</strong> pipája engedi a mentést;
+            mentés után a hubon az új sor kiemelve érkezik.</li>
+          <li><strong>Szokás</strong> — a kész recept oldala: keret-sáv, a mondat nagyban, 28 napos történet-sáv, a keret mezői szerkeszthetően, szüneteltetés.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>A két recept</h2>
+        <p class="recipe" style="margin-bottom:8px;"><small>⚓ Szokás-láncolás · Fogg</small>Miután <u>[horgony]</u>, <u>[pici tett]</u> — és logolom. Ünneplésül: <u>[shine]</u>.</p>
+        <p class="recipe"><small>◈ Négy törvény · Clear</small><u>[Jelzés]</u> <u>[tett]</u>, mert <u>[vágy]</u>. Jutalmam: <u>[jutalom]</u>. Hogy olyan ember legyek, aki <u>[identitás]</u>.</p>
+      </div>
+      <div>
+        <h2>Ami szándékosan nem változik</h2>
+        <ul>
+          <li>A napi pipálás a <strong>Nap tabon</strong> marad (/nap/rutin) — a hub nem ad második pipáló kontrollt.</li>
+          <li>A lánc-szerkesztés (reorder, be/ki, seed-védelem) és a sheetek — csak az otthonuk költözik a Growth alól.</li>
+          <li>Nincs streak-büntetés, nincs piros: az erő 28 napos súlyozott átlag, egy kihagyás halványít (ADR 0010).</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Döntendő ezen az oldalon</h2>
+        <ol>
+          <li>A széles Rutin csempe a hat kis csempe <strong>alatt</strong> (ahogy itt) vagy a cél-kártya után, <strong>fölöttük</strong>?</li>
+          <li>Az AI javaslat a wizard 3. lépésébe töltsön elő (ahogy tervezzük), vagy maradjon a mai „elfogadom → kész sor” sheet?</li>
+          <li>A Clear-ág „identitás” mezője maradjon opcionális, vagy legyen kötelező, mint az Atoms appban?</li>
+          <li>Kell-e a Fogg-ágban a „pici?” figyelmeztetés (6 szó / 5-nél nagyobb szám), vagy csak zavar?</li>
+        </ol>
+      </div>
+      <p class="note">
+        Két keret, egy mondat. A user nem tanul szakszavakat — kitölt három-négy üres helyet, és a végén egy mondatot kap, amit reggel el tud mondani magának.
+      </p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var screen = $('screen');
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+
+  /* ---------- adat (mock-katalógus a két keretre) ---------- */
+  var CHAINS = [
+    { key: 'morning', title: 'Reggeli rutin', icon: '#i-hajnal', pw: 82, on: true, defs: [
+      { key: 'sun', title: 'Reggeli fény · 10 perc kint', fw: 'FOGG', pct: 82, done: true, anchor: 'kitöltöttem a reggeli kávét', celeb: 'mély levegő + „ez az”' },
+      { key: 'water', title: 'Hidratálás ébredés után', fw: null, pct: 91, done: true },
+      { key: 'intent', title: 'Napi szándék leírása', fw: 'CLEAR', pct: 64, done: false, cue: '7:10-kor a konyhaasztalnál, füzet a bögre mellett', craving: 'tisztább fejjel indul a nap', reward: 'a pipa maga', identity: 'figyel a saját gondolataira' }
+    ] },
+    { key: 'day', title: 'Napközbeni', icon: '#i-nap', pw: 55, on: true, defs: [
+      { key: 'walk', title: 'Ebéd utáni séta', fw: 'FOGG', pct: 55, done: true, anchor: 'letettem az ebédes tányért', celeb: 'ökölrázás' }
+    ] },
+    { key: 'evening', title: 'Esti lezárás', icon: '#i-alvas', pw: 64, on: true, defs: [
+      { key: 'screen', title: 'Képernyő-zár 22:00', fw: 'CLEAR', pct: 48, done: false, cue: '21:55 · a telefon a konyhában tölt', craving: 'reggel nem vagyok szétesve', reward: 'egy fejezet papírkönyv', identity: '' },
+      { key: 'mg', title: 'Magnézium', fw: null, pct: 77, done: false }
+    ] }
+  ];
+  var FW_LABEL = { FOGG: '⚓ FOGG', CLEAR: '◈ CLEAR' };
+
+  function sentenceOf(d) {
+    if (d.fw === 'FOGG') return 'Miután ' + esc(d.anchor) + ', ' + esc(d.title) + ' — és logolom. Ünneplésül: ' + esc(d.celeb) + '.';
+    if (d.fw === 'CLEAR') return esc(d.cue) + ' ' + esc(d.title) + ', mert ' + esc(d.craving) + '. Jutalmam: ' + esc(d.reward) + '.' + (d.identity ? ' Hogy olyan ember legyek, aki ' + esc(d.identity) + '.' : '');
+    return esc(d.title) + '.';
+  }
+
+  /* ---------- oldalváltás ---------- */
+  var pages = ['pg-hub', 'pg-rutin', 'pg-wiz', 'pg-edit'];
+  function go(id) {
+    pages.forEach(function (p) { $(p).classList.remove('on'); });
+    $(id).classList.add('on');
+    document.querySelectorAll('.demobar button').forEach(function (x) { x.setAttribute('aria-pressed', String(x.dataset.pg === id)); });
+    screen.classList.remove('play'); void screen.offsetHeight; screen.classList.add('play');
+    if (id === 'pg-wiz') resetWizard();
+    if (id === 'pg-rutin') renderChains();
+  }
+  document.querySelectorAll('.demobar button').forEach(function (b) { b.addEventListener('click', function () { go(b.dataset.pg); }); });
+  document.querySelectorAll('[data-go]').forEach(function (b) {
+    b.addEventListener('click', function () { go(b.dataset.go); });
+    b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(b.dataset.go); } });
+  });
+
+  /* ---------- rutin hub ---------- */
+  var newKey = null;
+  function renderChains() {
+    var total = 0, done = 0;
+    var html = CHAINS.map(function (c, ci) {
+      var rows = c.defs.map(function (d) {
+        total++; if (d.done) done++;
+        var fwc = d.fw ? d.fw.toLowerCase() : 'none';
+        return '<button class="hrow' + (d.key === newKey ? ' new' : '') + '" data-edit="' + d.key + '">' +
+          '<span class="grip">⠿</span><span class="nm">' + esc(d.title) + '</span>' +
+          '<span class="fw ' + fwc + '">' + (d.fw ? FW_LABEL[d.fw] : '– RÉGI') + '</span>' +
+          '<span class="bar"><span class="tick' + (d.done ? ' on' : '') + '">✓</span><span class="strength' + (d.done ? ' done' : '') + '"><div style="width:' + d.pct + '%"></div></span><span class="pct">' + d.pct + '%</span></span>' +
+          '</button>';
+      }).join('');
+      return '<div class="chaincard rise" style="--d:' + (80 + ci * 40) + 'ms;"><div class="chainhead">' +
+        '<svg width="20" height="20" viewBox="0 0 100 100"><use href="' + c.icon + '"/></svg>' +
+        '<span class="t grow">' + esc(c.title) + '</span><span class="pw">' + c.pw + '%</span>' +
+        '<button class="togg' + (c.on ? ' on' : '') + '" aria-label="' + esc(c.title) + ' aktív"></button>' +
+        '<button class="ghost" style="padding:4px 10px;font-size:9px;" aria-label="Lánc szerkesztése">✎</button></div>' + rows + '</div>';
+    }).join('');
+    $('chains').innerHTML = html;
+    $('rutinBig').textContent = done + ' / ' + total;
+    $('activeCnt').textContent = total;
+    $('hubRutinLine').innerHTML = done + ' / ' + total + ' ma<small>reggel ' + CHAINS[0].pw + '% · este ' + CHAINS[2].pw + '%</small>';
+    document.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { openEdit(b.dataset.edit); }); });
+    document.querySelectorAll('#chains .togg').forEach(function (t) { t.addEventListener('click', function (e) { e.stopPropagation(); t.classList.toggle('on'); t.closest('.chaincard').classList.toggle('off'); }); });
+  }
+
+  /* ---------- wizard ---------- */
+  var ANCHORS = [
+    { t: 'kitöltöttem a reggeli kávét', src: 'SAJÁT' },
+    { t: 'megmértem magam', src: 'MEZO' },
+    { t: 'logoltam a reggelit', src: 'MEZO' },
+    { t: 'kész a Reggeli fény', src: 'SZOKÁS' },
+    { t: 'befejeztem az edzést', src: 'MEZO' },
+    { t: 'letettem a fogkefét', src: 'SAJÁT' }
+  ];
+  var CUES = ['reggel · konyha', 'este · hálószoba', 'edzés előtt · öltöző', 'ebéd után · asztal'];
+  var CELEBS = ['ökölrázás', '„Igen!”', 'mosoly a tükörbe', 'mély levegő'];
+  var REWARDS = ['a pipa maga', 'egy fejezet papírkönyv', 'kávé csak utána', 'öt perc semmittevés'];
+  var CHAIN_OPTS = [['morning', 'Reggeli'], ['day', 'Napközbeni'], ['evening', 'Esti']];
+  var LIFE = [['tudatossag', 'Tudatosság'], ['szemlelet', 'Szemlélet'], ['konyha', 'Konyha'], ['penzugyek', 'Pénzügy'], ['produktivitas', 'Produktív'], ['tanulas', 'Tanulás'], ['kapcsolatok', 'Kapcsolat'], ['regeneracio', 'Regeneráció']];
+
+  var S = {};
+  var step = 1;
+  var TITLES = {
+    FOGG: ['Milyen keretre építsük?', 'Mihez horgonyzod?', 'Mi a pici tett?', 'Hogyan ünnepled?'],
+    CLEAR: ['Milyen keretre építsük?', 'Mi a jelzés?', 'Mi a válasz, és miért vágysz rá?', 'Mi teszi kielégítővé?']
+  };
+  var SUBS = {
+    FOGG: ['', 'Válassz egy szokást, ami már megy — vagy írd le a pillanatot.', 'Olyan kicsi, hogy rossz napon is megteszed.', 'Az azonnali jó érzés rögzíti a szokást.'],
+    CLEAR: ['', 'Idő és hely — hogy a jelzés nyilvánvaló legyen.', 'A tett és a mögötte lévő vágy.', 'A logolás maga jutalom — de lehet több is.']
+  };
+
+  function chips(el, items, cls, onPick, withSrc) {
+    el.innerHTML = items.map(function (it, i) {
+      var t = withSrc ? it.t : it;
+      return '<button data-i="' + i + '">' + esc(t) + (withSrc ? '<span class="src">' + it.src + '</span>' : '') + '</button>';
+    }).join('');
+    el.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        el.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+        b.classList.add('on');
+        onPick(withSrc ? items[+b.dataset.i].t : items[+b.dataset.i]);
+      });
+    });
+  }
+  function bindFree(input, key) {
+    input.addEventListener('input', function () { S[key] = input.value.trim(); update(); });
+  }
+
+  function resetWizard() {
+    S = { fw: null, anchor: '', cue: '', title: '', chain: 'morning', life: 'tudatossag', xp: 10, craving: '', identity: '', celeb: '', reward: 'a pipa maga', commit: false };
+    step = 1;
+    document.querySelectorAll('.fwcard').forEach(function (c) { c.classList.remove('on'); });
+    ['anchorFree', 'cueFree', 'titleIn', 'cravingIn', 'identityIn', 'celebFree', 'rewardFree'].forEach(function (id) { $(id).value = ''; });
+    $('commit').classList.remove('on');
+    chips($('anchorChips'), ANCHORS, 'sage', function (v) { S.anchor = v; $('anchorFree').value = ''; update(); }, true);
+    chips($('cueChips'), CUES, '', function (v) { S.cue = v; $('cueFree').value = ''; update(); });
+    chips($('celebChips'), CELEBS, 'sage', function (v) { S.celeb = v; $('celebFree').value = ''; update(); });
+    chips($('rewardChips'), REWARDS, '', function (v) { S.reward = v; $('rewardFree').value = ''; update(); });
+    $('rewardChips').querySelector('button').classList.add('on');
+    $('chainChips').innerHTML = CHAIN_OPTS.map(function (c) { return '<button data-c="' + c[0] + '"' + (c[0] === S.chain ? ' class="on"' : '') + '>' + c[1] + '</button>'; }).join('');
+    $('chainChips').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () {
+      $('chainChips').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); S.chain = b.dataset.c; }); });
+    $('lifeGrid').innerHTML = LIFE.map(function (l) { return '<button data-l="' + l[0] + '"' + (l[0] === S.life ? ' class="on"' : '') + '><svg width="18" height="18" viewBox="0 0 100 100"><use href="#i-life-' + l[0] + '"/></svg><small>' + l[1] + '</small></button>'; }).join('');
+    $('lifeGrid').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () {
+      $('lifeGrid').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); b.classList.add('on'); S.life = b.dataset.l; }); });
+    update();
+  }
+
+  function blank(v, ph) { return v ? '<span class="b f">' + esc(v) + '</span>' : '<span class="b">' + ph + '</span>'; }
+  function liveSentence() {
+    if (S.fw === 'FOGG') return 'Miután ' + blank(S.anchor, 'horgony') + ', ' + blank(S.title, 'pici tett') + ' — és logolom. Ünneplésül: ' + blank(S.celeb, 'shine') + '.';
+    return blank(S.cue, 'jelzés') + ' ' + blank(S.title, 'tett') + ', mert ' + blank(S.craving, 'vágy') + '. Jutalmam: ' + blank(S.reward, 'jutalom') + '.' + (S.identity ? ' Hogy olyan ember legyek, aki <span class="b f">' + esc(S.identity) + '</span>.' : '');
+  }
+  function canProceed() {
+    if (step === 1) return !!S.fw;
+    if (step === 2) return S.fw === 'FOGG' ? !!S.anchor : !!S.cue;
+    if (step === 3) return !!S.title && (S.fw === 'FOGG' || !!S.craving);
+    if (step === 4) return (S.fw === 'FOGG' ? !!S.celeb : !!S.reward) && S.commit;
+    return false;
+  }
+  function update() {
+    var fw = S.fw || 'FOGG';
+    $('wtitle').textContent = TITLES[fw][step - 1];
+    $('wsub').textContent = SUBS[fw][step - 1] || 'Mindkettő ugyanoda visz: egy mondat, amit minden nap el tudsz mondani magadnak.';
+    $('wcnt').textContent = step + ' / 4';
+    $('wdots').querySelectorAll('i').forEach(function (d, i) { d.className = i + 1 < step ? 'done' : (i + 1 === step ? 'active' : ''); });
+    for (var i = 1; i <= 4; i++) $('ws' + i).hidden = i !== step;
+    $('ws2fogg').hidden = S.fw !== 'FOGG'; $('ws2clear').hidden = S.fw !== 'CLEAR';
+    $('ws3clear').hidden = S.fw !== 'CLEAR';
+    $('ws4fogg').hidden = S.fw !== 'FOGG'; $('ws4clear').hidden = S.fw !== 'CLEAR';
+    $('titleLb').textContent = S.fw === 'FOGG' ? 'Én … · pici tett' : 'Én … · válasz';
+    var sent = $('sentence');
+    sent.hidden = step === 1;
+    sent.className = 'sentence ' + (S.fw ? S.fw.toLowerCase() : '') + (step === 4 ? ' big' : '');
+    $('sentFw').textContent = S.fw === 'FOGG' ? '⚓ Szokás-láncolás' : '◈ Négy törvény';
+    $('sentTx').innerHTML = liveSentence();
+    var words = S.title ? S.title.split(/\s+/).length : 0;
+    var num = S.title ? (S.title.match(/\d+/) || [0])[0] : 0;
+    $('tinyWarn').hidden = !(S.fw === 'FOGG' && (words > 6 || +num > 5));
+    $('wprev').hidden = step === 1;
+    $('wnext').textContent = step === 4 ? '✓ Mentés' : 'Tovább →';
+    $('wnext').disabled = !canProceed();
+    $('wnote').textContent = step === 4 ? 'Mentés = egy sor a láncban. A pipa holnaptól a Nap tabon, az erő-csík itt.' : 'Egy futtatás = egy szokás. A lánc a stack; a következő recept horgonya ez a szokás lehet.';
+  }
+  document.querySelectorAll('.fwcard').forEach(function (c) {
+    c.addEventListener('click', function () {
+      document.querySelectorAll('.fwcard').forEach(function (x) { x.classList.remove('on'); });
+      c.classList.add('on'); S.fw = c.dataset.fw; update();
+    });
+  });
+  bindFree($('anchorFree'), 'anchor'); bindFree($('cueFree'), 'cue'); bindFree($('titleIn'), 'title');
+  bindFree($('cravingIn'), 'craving'); bindFree($('identityIn'), 'identity'); bindFree($('celebFree'), 'celeb'); bindFree($('rewardFree'), 'reward');
+  $('anchorFree').addEventListener('input', function () { $('anchorChips').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); });
+  $('cueFree').addEventListener('input', function () { $('cueChips').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); });
+  $('celebFree').addEventListener('input', function () { $('celebChips').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); });
+  $('rewardFree').addEventListener('input', function () { $('rewardChips').querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); }); });
+  $('xpDn').addEventListener('click', function () { S.xp = Math.max(5, S.xp - 5); $('xpV').textContent = S.xp + ' XP'; });
+  $('xpUp').addEventListener('click', function () { S.xp = Math.min(15, S.xp + 5); $('xpV').textContent = S.xp + ' XP'; });
+  $('commit').addEventListener('click', function () { S.commit = !S.commit; $('commit').classList.toggle('on', S.commit); update(); });
+  $('wprev').addEventListener('click', function () { if (step > 1) { step--; update(); } });
+  $('wback').addEventListener('click', function () { if (step > 1) { step--; update(); } else go('pg-rutin'); });
+  $('wclose').addEventListener('click', function () { go('pg-rutin'); });
+  $('wnext').addEventListener('click', function () {
+    if (!canProceed()) return;
+    if (step < 4) { step++; update(); return; }
+    var chain = CHAINS.filter(function (c) { return c.key === S.chain; })[0];
+    var d = { key: 'new' + Date.now(), title: S.title, fw: S.fw, pct: 0, done: false, anchor: S.anchor, celeb: S.celeb, cue: S.cue, craving: S.craving, reward: S.reward, identity: S.identity };
+    chain.defs.push(d); newKey = d.key;
+    go('pg-rutin');
+  });
+
+  /* ---------- szokás szerkesztő ---------- */
+  function openEdit(key) {
+    var d = null; CHAINS.forEach(function (c) { c.defs.forEach(function (x) { if (x.key === key) d = x; }); });
+    if (!d) return;
+    $('edPct').textContent = d.pct + '%';
+    $('edTitle').textContent = d.title;
+    var done28 = Math.round(28 * d.pct / 100);
+    $('edSub').textContent = d.pct === 0 ? 'új recept · az első pipa holnap' : '28 napos erő · ' + done28 + ' pipa · ' + (28 - done28) + ' kihagyás';
+    var band = $('edBand');
+    if (d.fw === 'FOGG') { band.style.setProperty('--bw', '#E9F1E2'); band.style.setProperty('--bs', 'rgba(127,160,108,0.4)'); $('edSgn').textContent = '⚓'; $('edFw').textContent = 'Szokás-láncolás'; $('edFwS').textContent = 'BJ Fogg · horgony → pici tett → ünneplés'; }
+    else if (d.fw === 'CLEAR') { band.style.setProperty('--bw', '#EDE9F8'); band.style.setProperty('--bs', 'rgba(108,95,163,0.4)'); $('edSgn').textContent = '◈'; $('edFw').textContent = 'Négy törvény'; $('edFwS').textContent = 'James Clear · jelzés → vágy → válasz → jutalom'; }
+    else { band.style.setProperty('--bw', '#F1EDE6'); band.style.setProperty('--bs', 'rgba(43,33,24,0.2)'); $('edSgn').textContent = '–'; $('edFw').textContent = 'Keret nélkül'; $('edFwS').textContent = 'régi szokás — a „Keret váltása” a wizardot nyitja előtöltve'; }
+    $('edSentence').className = 'sentence big rise ' + (d.fw ? d.fw.toLowerCase() : '');
+    $('edSentTx').innerHTML = sentenceOf(d);
+    var h = ''; for (var i = 0; i < 28; i++) { var r = (i * 7 + d.key.length * 3) % 10; h += '<i class="' + (d.pct === 0 ? '' : (r < d.pct / 10 ? 'd' : 's')) + '"></i>'; }
+    $('edHist').innerHTML = h;
+    var f = '<label class="flabel">Cím</label><input class="fin" value="' + esc(d.title) + '">';
+    if (d.fw === 'FOGG') f += '<label class="flabel" style="margin-top:8px;">Miután … · horgony</label><input class="fin" value="' + esc(d.anchor) + '"><label class="flabel" style="margin-top:8px;">Ünneplésül … · shine</label><input class="fin" value="' + esc(d.celeb) + '">';
+    if (d.fw === 'CLEAR') f += '<label class="flabel" style="margin-top:8px;">Jelzés</label><input class="fin" value="' + esc(d.cue) + '"><label class="flabel" style="margin-top:8px;">Vágy</label><input class="fin" value="' + esc(d.craving) + '"><label class="flabel" style="margin-top:8px;">Jutalom</label><input class="fin" value="' + esc(d.reward) + '"><label class="flabel" style="margin-top:8px;">Identitás <span class="opt">opcionális</span></label><input class="fin" value="' + esc(d.identity || '') + '">';
+    if (!d.fw) f += '<label class="flabel" style="margin-top:8px;">Miért <span class="opt">régi mező</span></label><input class="fin" placeholder="…">';
+    $('edFields').innerHTML = f;
+    go('pg-edit');
+  }
+  document.querySelector('.demobar [data-pg="pg-edit"]').addEventListener('click', function () { openEdit('sun'); });
+
+  renderChains();
+})();
+</script>

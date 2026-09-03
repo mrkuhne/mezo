@@ -31,7 +31,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import {
-  useFuelDay, useFuelTimeline, useFuelWeek, useMedication, usePantry, useRecipes,
+  useDietSettings, useFuelDay, useFuelTimeline, useFuelWeek, useMedication, usePantry, useRecipes,
   useStackDay, useWaterActions,
 } from '@/data/hooks'
 import { toMin } from '@/data/fuel/fuelConfig'
@@ -52,6 +52,9 @@ export function FuelMaiPage() {
   const navigate = useNavigate()
   const { fuel } = useFuelDay()
   const { plan, budget, nowHHmm, energyBreakdown } = useFuelTimeline()
+  // Diet Plan slice 1 (mezo-xwgb): the fiber ring's target now comes from the user's own diet
+  // settings instead of the static FIBER_TARGET_G default.
+  const { settings: dietSettings } = useDietSettings()
   const { logWater } = useWaterActions()
 
   const [waterOpen, setWaterOpen] = useState(false)
@@ -66,7 +69,7 @@ export function FuelMaiPage() {
   const keretHeroVm = buildKeretHero({
     budget, staticEnergy, consumed: fuel.consumed, meals: fuel.meals,
     water: { currentMl: fuel.consumed.water, targetMl: fuel.targets.water },
-    slots: plan.slots, nowHHmm,
+    slots: plan.slots, nowHHmm, fiberTargetG: dietSettings.fiberG,
   })
 
   // ── the Logolás hero tile's VM (the /fuel/log page reads the same lane) ─
@@ -129,7 +132,7 @@ export function FuelMaiPage() {
 
         {/* The window swimlane dissolved (mezo-byo1): the whole day's logging lives on
             /fuel/log, and the hub carries ONE live door to it — the Logolás hero tile. */}
-        <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties}>
+        <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties} data-kalauz-anchor="fuel-log">
           <FuelLogHeroTile vm={lane} onOpen={() => navigate('/fuel/log')}
             pastHint={!yPending && yMissed > 0 ? {
               dateLabel: `${huMonthDay(yesterday).toLowerCase()}.`,

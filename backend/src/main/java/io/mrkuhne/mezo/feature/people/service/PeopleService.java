@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.mapper.PeopleMapper;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
+import io.mrkuhne.mezo.feature.people.repository.MentionSignal;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -41,6 +42,7 @@ public class PeopleService {
     /** Bootstrap feed cap — the view renders at most 8 rows; 50 leaves filter headroom. */
     private static final int MENTION_FEED_LIMIT = 50;
     private static final Duration WEEK = Duration.ofDays(7);
+    private static final String STATUS_ACTIVE = "active";
 
     private final PersonRepository personRepository;
     private final MentionRepository mentionRepository;
@@ -67,6 +69,11 @@ public class PeopleService {
             .collect(Collectors.toMap(PersonEntity::getId, PersonEntity::getName));
         Map<UUID, List<MentionEntity>> byPerson = mentions.stream()
             .collect(Collectors.groupingBy(MentionEntity::getPersonId));
+        // A weekStats/affect-ív bemenete csak a négy jel-mező — a már betöltött entitásokat
+        // képezzük le egyszer, NE fusson hozzá új lekérdezés (mezo-cc6x).
+        Map<UUID, List<MentionSignal>> signalsByPerson = mentions.stream()
+            .collect(Collectors.groupingBy(MentionEntity::getPersonId,
+                Collectors.mapping(PeopleService::toSignal, Collectors.toList())));
         Instant weekAgo = Instant.now().minus(WEEK);
         Map<UUID, List<PersonGraphEdgeSource.Edge>> edgesByPerson = graphEdgeSource
             .getIfAvailable(() -> u -> Map.of())
@@ -75,17 +82,17 @@ public class PeopleService {
         List<PersonResponse> personResponses = persons.stream()
             .map(p -> {
                 List<MentionEntity> own = byPerson.getOrDefault(p.getId(), List.of());
-                int thisWeek = (int) own.stream().filter(m -> !m.getTs().isBefore(weekAgo)).count();
-                Instant lastAt = own.isEmpty() ? null : own.getFirst().getTs(); // list is ts-desc
-                PersonResponse response = mapper.toPersonResponse(p, own.size(), thisWeek, lastAt);
+                List<MentionSignal> ownSignals = signalsByPerson.getOrDefault(p.getId(), List.of());
+                WeekStats stats = weekStats(ownSignals, weekAgo, LocalDate.now());
+                PersonResponse response = mapper.toPersonResponse(p, own.size(), stats.mentionsThisWeek(),
+                    stats.lastMentionAt());
                 response.setGraphEdges(edgesByPerson.getOrDefault(p.getId(), List.of()).stream()
                     .map(e -> new PersonGraphEdge(e.nodeKind(), e.title(), e.relationHu(), e.strength()))
                     .toList());
-                PersonAffectTrend trend = affectTrendCalculator.calculate(own, LocalDate.now());
-                response.setAffectTrend(trend.readings());
-                response.setAffectTrendStart(trend.startWeek());
-                response.setDirection(PersonResponse.DirectionEnum.fromValue(trend.direction()));
-                response.setDirectionReason(trend.reason());
+                response.setAffectTrend(stats.trend().readings());
+                response.setAffectTrendStart(stats.trend().startWeek());
+                response.setDirection(PersonResponse.DirectionEnum.fromValue(stats.trend().direction()));
+                response.setDirectionReason(stats.trend().reason());
                 return response;
             })
             .sorted(Comparator.comparingInt(PersonResponse::getMentionCount).reversed()
@@ -103,6 +110,49 @@ public class PeopleService {
             .todaysNote(userId, LocalDate.now())
             .orElseGet(() -> derivedMezoNote(personResponses));
         return new PeopleResponse(personResponses, mentionResponses, mezoNote);
+    }
+
+    /** A bootstrap és a chat-kontextus KÖZÖS heti számítása — a két hely sosem térhet el. */
+    private record WeekStats(int mentionsThisWeek, Instant lastMentionAt, PersonAffectTrend trend) {}
+
+    private WeekStats weekStats(List<MentionSignal> ownTsDesc, Instant weekAgo, LocalDate today) {
+        int thisWeek = (int) ownTsDesc.stream().filter(m -> !m.ts().isBefore(weekAgo)).count();
+        Instant lastAt = ownTsDesc.isEmpty() ? null : ownTsDesc.getFirst().ts(); // list is ts-desc
+        return new WeekStats(thisWeek, lastAt, affectTrendCalculator.calculate(ownTsDesc, today));
+    }
+
+    private static MentionSignal toSignal(MentionEntity m) {
+        return new MentionSignal(m.getPersonId(), m.getTs(), m.getTone(), m.getIntensity());
+    }
+
+    /**
+     * A companion chat kontextus-pillanatképének people-oldali olvasója (mezo-x6oa): CSAK aktív
+     * személyek (jelölt és archivált soha — a proaktív felületek ugyanígy), utolsó említés szerint
+     * csökkenő, a sosem említettek a végén név szerint. Nincs limit — a cap a fogyasztó
+     * (companion, {@code snapshot.people-max-persons}) döntése. A heti szám és az irány a
+     * {@link #getBootstrap} képlete ({@link #weekStats}), tehát a chat és az Emberek hub sosem
+     * mond mást ugyanarról a személyről. Csak olvas.
+     */
+    @Transactional(readOnly = true)
+    public List<PersonChatContext> chatContext(UUID userId, LocalDate today) {
+        List<PersonEntity> persons = personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId);
+        if (persons.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, List<MentionSignal>> byPerson = mentionRepository.findSignals(userId).stream()
+            .collect(Collectors.groupingBy(MentionSignal::personId));
+        Instant weekAgo = Instant.now().minus(WEEK);
+        return persons.stream()
+            .filter(p -> STATUS_ACTIVE.equals(p.getStatus()))
+            .map(p -> {
+                WeekStats stats = weekStats(byPerson.getOrDefault(p.getId(), List.of()), weekAgo, today);
+                return new PersonChatContext(p.getName(), p.getRelationshipHu(), stats.mentionsThisWeek(),
+                    stats.lastMentionAt(), stats.trend().direction(), stats.trend().reason());
+            })
+            .sorted(Comparator.comparing(PersonChatContext::lastMentionAt,
+                    Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(PersonChatContext::name))
+            .toList();
     }
 
     /**
@@ -238,7 +288,7 @@ public class PeopleService {
             eventPublisher.publishEvent(new PersonDeletedEvent(userId, personId));
             return snapshot;
         }
-        p.setStatus("active");
+        p.setStatus(STATUS_ACTIVE);
         PersonResponse response = mapper.toPersonResponse(personRepository.save(p), 0, 0, null);
         response.setGraphEdges(List.of());
         response.setAffectTrend(List.of());

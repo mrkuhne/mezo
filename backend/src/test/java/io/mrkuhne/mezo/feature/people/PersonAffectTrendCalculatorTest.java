@@ -2,7 +2,7 @@ package io.mrkuhne.mezo.feature.people;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
+import io.mrkuhne.mezo.feature.people.repository.MentionSignal;
 import io.mrkuhne.mezo.feature.people.service.PersonAffectTrend;
 import io.mrkuhne.mezo.feature.people.service.PersonAffectTrendCalculator;
 import java.time.Instant;
@@ -16,12 +16,9 @@ class PersonAffectTrendCalculatorTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 9, 2);   // szerda
     private final PersonAffectTrendCalculator calculator = new PersonAffectTrendCalculator();
 
-    private static MentionEntity mention(LocalDate day, String tone, Integer intensity) {
-        MentionEntity m = new MentionEntity();
-        m.setTs(day.atStartOfDay().toInstant(ZoneOffset.UTC));
-        m.setTone(tone);
-        m.setIntensity(intensity == null ? null : intensity.shortValue());
-        return m;
+    private static MentionSignal mention(LocalDate day, String tone, Integer intensity) {
+        return new MentionSignal(null, day.atStartOfDay().toInstant(ZoneOffset.UTC), tone,
+            intensity == null ? null : intensity.shortValue());
     }
 
     @Test
@@ -47,7 +44,7 @@ class PersonAffectTrendCalculatorTest {
 
     @Test
     void calculate_shouldBucketByWeek_oldestFirst_andSkipEmptyWeeks() {
-        List<MentionEntity> mentions = List.of(
+        List<MentionSignal> mentions = List.of(
             mention(TODAY.minusWeeks(3), "negative", 2),
             mention(TODAY, "positive", 2));           // a köztes két hét üres
         PersonAffectTrend trend = calculator.calculate(mentions, TODAY);
@@ -58,7 +55,7 @@ class PersonAffectTrendCalculatorTest {
 
     @Test
     void calculate_shouldCapAtEightReadings_keepingTheNewest() {
-        List<MentionEntity> mentions = new java.util.ArrayList<>();
+        List<MentionSignal> mentions = new java.util.ArrayList<>();
         for (int w = 11; w >= 0; w--) {
             mentions.add(mention(TODAY.minusWeeks(w), "neutral", 2));
         }
@@ -71,7 +68,7 @@ class PersonAffectTrendCalculatorTest {
 
     @Test
     void calculate_shouldReportDown_withHungarianReason() {
-        List<MentionEntity> mentions = List.of(
+        List<MentionSignal> mentions = List.of(
             mention(TODAY.minusWeeks(3), "positive", 3),
             mention(TODAY.minusWeeks(2), "positive", 3),
             mention(TODAY.minusWeeks(1), "negative", 3),
@@ -83,7 +80,7 @@ class PersonAffectTrendCalculatorTest {
 
     @Test
     void calculate_shouldReportFlat_whenTooFewReadings() {
-        List<MentionEntity> mentions = List.of(
+        List<MentionSignal> mentions = List.of(
             mention(TODAY.minusWeeks(1), "positive", 3),
             mention(TODAY, "negative", 3));
         assertThat(calculator.calculate(mentions, TODAY).direction())

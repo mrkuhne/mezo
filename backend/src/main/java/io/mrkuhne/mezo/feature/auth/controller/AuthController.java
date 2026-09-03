@@ -1,9 +1,13 @@
 package io.mrkuhne.mezo.feature.auth.controller;
 
 import io.mrkuhne.mezo.api.controller.AuthApi;
+import io.mrkuhne.mezo.api.dto.ChangePasswordRequest;
 import io.mrkuhne.mezo.api.dto.LoginRequest;
+import io.mrkuhne.mezo.api.dto.MeResponse;
+import io.mrkuhne.mezo.api.dto.RegisterRequest;
 import io.mrkuhne.mezo.api.dto.TokenResponse;
 import io.mrkuhne.mezo.feature.auth.service.AuthService;
+import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -13,9 +17,32 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController implements AuthApi {
 
     private final AuthService authService;
+    private final CurrentUser currentUser;
 
     @Override
     public TokenResponse login(LoginRequest loginRequest) {
         return authService.login(loginRequest);
+    }
+
+    @Override
+    public TokenResponse register(RegisterRequest registerRequest) {
+        return authService.register(registerRequest);
+    }
+
+    @Override
+    public MeResponse me() {
+        return authService.me(currentUser.get());
+    }
+
+    @Override
+    public void changePassword(ChangePasswordRequest changePasswordRequest) {
+        // currentUser.tokenIssuedAt() (Finding 4, mezo-qw37.1 review): the performing token's
+        // OWN iat becomes the new tokens_valid_from watermark, so it survives its own change.
+        authService.changePassword(currentUser.get(), currentUser.tokenIssuedAt(), changePasswordRequest);
+    }
+
+    @Override
+    public void completeOnboarding() {
+        authService.completeOnboarding(currentUser.get());
     }
 }

@@ -175,3 +175,13 @@ test('the chip group exposes an accessible name built from the label prop', () =
   render(<FeedbackChips value={undefined} onVote={() => {}} label="a heti tervjavaslatról" />)
   expect(screen.getByRole('group', { name: /a heti tervjavaslatról/ })).toBeInTheDocument()
 })
+
+test('mezo-z4h4: the up/down chips render the thumb-up/thumb-down icons, not emoji, and keep their text accessible name', () => {
+  render(<FeedbackChips value={undefined} onVote={() => {}} label="a heti tervjavaslatról" />)
+  const up = screen.getByRole('button', { name: /Segített/ })
+  const down = screen.getByRole('button', { name: /Nem talált/ })
+  expect(up.querySelector('svg')).toBeTruthy()
+  expect(down.querySelector('svg')).toBeTruthy()
+  expect(up.textContent).not.toMatch(/👍/)
+  expect(down.textContent).not.toMatch(/👎/)
+})

@@ -81,12 +81,10 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - name: Build (real mode, owner baked in)
+      - name: Build (real mode)
         env:
           VITE_USE_MOCK: "false"
           VITE_API_URL: ""
-          VITE_OWNER_EMAIL: ${{ vars.VITE_OWNER_EMAIL }}
-          VITE_OWNER_PASSWORD: ${{ vars.VITE_OWNER_PASSWORD }}
           # The VAPID PUBLIC half is baked into the bundle at BUILD time (it becomes
           # pushManager.subscribe()'s applicationServerKey) — sealing the keypair into the
           # cluster does NOT reach the frontend. Blank here ⇒ a zero-length key ⇒ every

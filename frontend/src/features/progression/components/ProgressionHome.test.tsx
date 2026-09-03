@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StreakCard, TitlesSection } from '@/features/progression/components/ProgressionHome'
-import { GrowthPage } from '@/features/me/pages/GrowthPage'
 
 // F7.4 (mezo-d20.8.4.1): the retired StreakSheet/TitleShopSheet content re-homed as
 // Growth sections — the buy/equip/saver machinery moved verbatim, so these tests
@@ -35,9 +34,16 @@ describe('TitlesSection', () => {
   it('renders the ladder by default with the lock state machine, and the shop tab swaps the list', () => {
     renderIn(<TitlesSection />)
     const sec = screen.getByTestId('titles-section')
-    // ladder rows carry LV sublines; at least one locked row
+    // ladder rows carry LV sublines; at least one locked row reads LV n-TŐL, no lock emoji
     expect(within(sec).getAllByText(/^LV \d+/).length).toBeGreaterThan(0)
-    fireEvent.click(within(sec).getByRole('button', { name: 'Bolt' }))
+    expect(within(sec).getAllByText(/^LV \d+-TŐL$/).length).toBeGreaterThan(0)
+    expect(within(sec).queryByText('🔒')).toBeNull()
+    // Létra/Bolt are real tabs (role="tab" + aria-selected), not plain toggle buttons.
+    expect(within(sec).getByRole('tab', { name: 'Létra' })).toHaveAttribute('aria-selected', 'true')
+    expect(within(sec).getByRole('tab', { name: 'Bolt' })).toHaveAttribute('aria-selected', 'false')
+    fireEvent.click(within(sec).getByRole('tab', { name: 'Bolt' }))
+    expect(within(sec).getByRole('tab', { name: 'Bolt' })).toHaveAttribute('aria-selected', 'true')
+    expect(within(sec).getByRole('tab', { name: 'Létra' })).toHaveAttribute('aria-selected', 'false')
     // shop rows price in coins + the saver row appended
     expect(within(sec).getAllByText(/🪙 \d+/).length).toBeGreaterThan(0)
     expect(within(sec).getByText(/Streak-mentő/)).toBeInTheDocument()
@@ -53,16 +59,9 @@ describe('TitlesSection', () => {
   })
 })
 
-describe('GrowthPage awards tab (the progression home)', () => {
-  it('?tab=awards deep-link opens the Kitüntetések tab with the streak card + titles section', async () => {
-    render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={['/me/growth?tab=awards']}>
-          <GrowthPage />
-        </MemoryRouter>
-      </QueryClientProvider>,
-    )
-    expect(await screen.findByTestId('streak-card')).toBeInTheDocument()
-    expect(screen.getByTestId('titles-section')).toBeInTheDocument()
-  })
-})
+// The 'GrowthPage awards tab' describe block that used to render the whole page at
+// /me/growth?tab=awards and assert both cards mounted together was removed with GrowthPage
+// itself (mezo-rmi0.1): the Growth hub now just redirects ?tab=awards to the flat
+// /me/growth/kituntetesek sibling route, whose own page (a later task) is what actually
+// mounts StreakCard + TitlesSection — the two describe blocks above already pin those
+// components directly.

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { Icon } from '@/shared/ui/Icon'
 import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
 
 const REASONS: { value: FeedbackReason; label: string }[] = [
@@ -10,18 +11,19 @@ const REASONS: { value: FeedbackReason; label: string }[] = [
 ]
 
 /**
- * Shared 👍/👎 feedback chips for AI-produced artifacts (CompanionFeedback, mezo-b3pp.15).
- * Presentational only — the mounting page owns `useFeedback` and passes `value`/`onVote`.
+ * Shared thumb-up/thumb-down feedback chips for AI-produced artifacts (CompanionFeedback,
+ * mezo-b3pp.15). Presentational only — the mounting page owns `useFeedback` and passes
+ * `value`/`onVote`.
  *
  * Vote semantics live in the `useFeedback` hook, not here: this component just decides WHEN
  * to call `onVote` and with what args.
- * - 👍 always calls `onVote('up')` — the hook turns a repeat tap into a retraction.
- * - 👎 when not already the current verdict reveals a four-chip reason row instead of voting
- *   immediately; picking a reason calls `onVote('down', reason)`.
- * - 👎 when ALREADY `down` calls `onVote('down')` with no reason — a retraction.
+ * - thumb-up always calls `onVote('up')` — the hook turns a repeat tap into a retraction.
+ * - thumb-down when not already the current verdict reveals a four-chip reason row instead of
+ *   voting immediately; picking a reason calls `onVote('down', reason)`.
+ * - thumb-down when ALREADY `down` calls `onVote('down')` with no reason — a retraction.
  *
  * The reason row is DERIVED, not seeded: it shows whenever the verdict is `down` (`isDown`), or
- * when this session's 👎 opened it on a card that has no verdict yet (`reasonsOpen`). Seeding
+ * when this session's thumb-down opened it on a card that has no verdict yet (`reasonsOpen`). Seeding
  * `useState` from `value` on mount was a bug (mezo-b3pp.15 review): in real mode `useDualQuery`
  * serves `realEmpty` until the batch GET resolves, so `value` is `undefined` at mount on every
  * cold load and — since all five mount sites key the instance by artifact id, so the arriving
@@ -31,9 +33,10 @@ const REASONS: { value: FeedbackReason; label: string }[] = [
  * longer depends on whether the query cache happened to be warm on the first paint.
  *
  * The row therefore closes when the verdict stops being `down` — which is exactly what the
- * retraction the 👎 re-tap fires does (the hook writes the cleared row optimistically). The 👍
- * handler additionally clears the session flag, or an `up` card opened by an earlier 👎 in this
- * session would keep the four NEGATIVE reason chips on screen under a positive verdict.
+ * retraction the thumb-down re-tap fires does (the hook writes the cleared row optimistically).
+ * The thumb-up handler additionally clears the session flag, or an `up` card opened by an
+ * earlier thumb-down in this session would keep the four NEGATIVE reason chips on screen under
+ * a positive verdict.
  */
 export function FeedbackChips({
   value,
@@ -45,7 +48,7 @@ export function FeedbackChips({
   /** Screen-reader context, e.g. 'a heti tervjavaslatról'. */
   label: string
 }) {
-  // Only the "opened by 👎 before any vote exists" case needs state; a stored `down` speaks for
+  // Only the "opened by thumb-down before any vote exists" case needs state; a stored `down` speaks for
   // itself through `isDown` below.
   const [reasonsOpen, setReasonsOpen] = useState(false)
 
@@ -54,8 +57,8 @@ export function FeedbackChips({
   const showReasons = reasonsOpen || isDown
 
   function handleUp() {
-    // Clearing the flag matters even though 👍 never sets it: an `up` verdict must never sit above
-    // a row of NEGATIVE reason chips left open by a 👎 earlier in this session.
+    // Clearing the flag matters even though thumb-up never sets it: an `up` verdict must never
+    // sit above a row of NEGATIVE reason chips left open by a thumb-down earlier in this session.
     onVote('up')
     setReasonsOpen(false)
   }
@@ -85,7 +88,7 @@ export function FeedbackChips({
           aria-pressed={isUp}
           style={{ padding: '6px 12px' }}
         >
-          👍 Segített
+          <Icon name="thumb-up" size={13} /> Segített
         </button>
         <button
           type="button"
@@ -94,7 +97,7 @@ export function FeedbackChips({
           aria-pressed={isDown}
           style={{ padding: '6px 12px' }}
         >
-          👎 Nem talált
+          <Icon name="thumb-down" size={13} /> Nem talált
         </button>
       </div>
       {showReasons && (

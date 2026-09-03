@@ -7,6 +7,7 @@ const def = (habitKey: string, skillKey: string): HabitDefInfo => ({
   id: `def-${habitKey}`, habitKey, chainKey: 'MORNING', position: 0, title: habitKey,
   why: null, anchorCopy: null, mode: 'MANUAL', metric: '', skillKey, xp: 5,
   linkUrl: null, isActive: true,
+  framework: null, anchorHabitKey: null, cue: null, craving: null, reward: null, celebration: null, identity: null,
 })
 
 const chain = (defs: HabitDefInfo[], daypart: HabitChainInfo['daypart'] = 'MORNING'): HabitChainInfo => ({

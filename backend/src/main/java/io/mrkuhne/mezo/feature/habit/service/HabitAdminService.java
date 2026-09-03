@@ -48,6 +48,7 @@ public class HabitAdminService {
     private final HabitChainRepository chainRepository;
     private final HabitDefRepository defRepository;
     private final HabitMapper mapper;
+    private final HabitFrameworkValidator frameworkValidator;
 
     @Transactional
     public HabitCatalogResponse catalog(UUID userId) {
@@ -160,6 +161,15 @@ public class HabitAdminService {
         def.setSkillKey(request.getSkillKey());
         def.setXp(request.getXp());
         def.setLinkUrl(request.getLinkUrl());
+        def.setFramework(request.getFramework() != null ? request.getFramework().getValue() : null);
+        def.setAnchorHabitKey(blankToNull(request.getAnchorHabitKey()));
+        def.setCue(request.getCue());
+        def.setCraving(request.getCraving());
+        def.setReward(request.getReward());
+        def.setCelebration(request.getCelebration());
+        def.setIdentity(request.getIdentity());
+        frameworkValidator.clearForeignFields(def);
+        frameworkValidator.validate(def);
         HabitDefEntity saved = defRepository.save(def);
         return mapper.toDefAdmin(saved, chain.getChainKey());
     }
@@ -200,7 +210,39 @@ public class HabitAdminService {
         }
         if (request.getIsActive() != null) {
             def.setActive(request.getIsActive());
+            if (Boolean.FALSE.equals(request.getIsActive())) {
+                releaseAnchors(userId, def);
+            }
         }
+        if (request.getFramework() != null) {
+            def.setFramework(request.getFramework().getValue());
+        }
+        if (request.getAnchorHabitKey() != null) {
+            // A BLANK anchorHabitKey is the wire signal for "unlink this anchor" — the only one the
+            // PATCH can carry, since a null means "leave unchanged" here. It must not survive as
+            // STORED state, though: the mapper would hand "" straight back to the client, and the
+            // frontend's contract is "null means unlinked", so a def that was just unlinked would
+            // come back looking linked and re-lock its own read-only anchor field. Normalize on the
+            // way in, so the persisted state says exactly what is true.
+            def.setAnchorHabitKey(blankToNull(request.getAnchorHabitKey()));
+        }
+        if (request.getCue() != null) {
+            def.setCue(request.getCue());
+        }
+        if (request.getCraving() != null) {
+            def.setCraving(request.getCraving());
+        }
+        if (request.getReward() != null) {
+            def.setReward(request.getReward());
+        }
+        if (request.getCelebration() != null) {
+            def.setCelebration(request.getCelebration());
+        }
+        if (request.getIdentity() != null) {
+            def.setIdentity(request.getIdentity());
+        }
+        frameworkValidator.clearForeignFields(def);
+        frameworkValidator.validate(def);
         HabitDefEntity saved = defRepository.save(def);
         return mapper.toDefAdmin(saved, chainKeyOf(saved.getChainId()));
     }
@@ -208,7 +250,26 @@ public class HabitAdminService {
     @Transactional
     public void deleteDef(UUID userId, UUID id) {
         catalogService.ensureCatalog(userId);
-        defRepository.delete(requireDef(userId, id)); // @SQLDelete soft-deletes
+        HabitDefEntity def = requireDef(userId, id);
+        releaseAnchors(userId, def);
+        defRepository.delete(def); // @SQLDelete soft-deletes
+    }
+
+    /**
+     * A stacked recipe must survive its anchor disappearing (mezo-3zue.2): the sentence
+     * "Miután [anchor], …" is the user's own words, so instead of nulling the whole recipe we
+     * demote the reference to free text and drop the key. Runs inside the caller's transaction.
+     */
+    private void releaseAnchors(UUID userId, HabitDefEntity anchor) {
+        List<HabitDefEntity> dependents =
+            defRepository.findByCreatedByAndAnchorHabitKeyAndDeletedFalse(userId, anchor.getHabitKey());
+        for (HabitDefEntity dependent : dependents) {
+            if (dependent.getAnchorCopy() == null || dependent.getAnchorCopy().isBlank()) {
+                dependent.setAnchorCopy("kész a " + anchor.getTitle());
+            }
+            dependent.setAnchorHabitKey(null);
+            defRepository.save(dependent);
+        }
     }
 
     private String resolveMetric(String mode, String requestedMetric) {
@@ -251,6 +312,12 @@ public class HabitAdminService {
 
     private static String generateKey(String prefix) {
         return prefix + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
+    /** Blank in, null stored — see the unlink note in updateDef. Mirrors HabitFrameworkValidator's
+     *  own isSet(), which already reads a blank anchor key as "no link" for validation purposes. */
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private SystemRuntimeErrorException conflict(String code) {

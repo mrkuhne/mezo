@@ -5,7 +5,7 @@ info:
     Contract-first API definition for the mezo backend — the single source of
     truth for generated backend DTOs / controller interfaces and frontend types.
     See docs/references/api_contract_conventions.md.
-  version: 0.5.0
+  version: 0.6.0
 servers:
   - url: 'http://localhost:8090'
     description: Local dev backend (MEZO_PORT)
@@ -13,7 +13,7 @@ security:
   - bearerAuth: []
 tags:
   - name: Auth
-    description: Single-user thin auth (owner login)
+    description: 'Multi-user auth — invite-code registration, login, current-user profile'
   - name: Weight
     description: Weight log (biometrics)
   - name: Sleep
@@ -98,6 +98,12 @@ tags:
       rides POST /api/biometrics/sleep)
   - name: FuelSettings
     description: Fuel-owned per-user planner settings (eating cadence + caffeine cutoff)
+  - name: DietSettings
+    description: >-
+      Nutrition-owned per-user diet preferences (macro split, protein tier,
+      water/fiber targets)
+  - name: TutorialProgress
+    description: 'Per-user "seen" store of the in-app page guides (Mezo-kalauz, mezo-gb1s)'
   - name: Gamification
     description: 'User progression system — XP, levels, coins, titles, and daily streaks'
   - name: LlmUsage
@@ -130,7 +136,7 @@ paths:
       tags:
         - Auth
       operationId: login
-      summary: 'Login with the owner credentials, returns a JWT'
+      summary: 'Login with email + password, returns a JWT'
       security: []
       requestBody:
         required: true
@@ -153,6 +159,115 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Invalid credentials (AUTH_LOGIN_INVALID_CREDENTIALS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Account disabled (AUTH_ACCOUNT_DISABLED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      operationId: register
+      summary: 'Register with an invite code, returns a JWT'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: 'Account created, JWT issued'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            Invite invalid/used/expired (AUTH_INVITE_INVALID) or email taken
+            (AUTH_EMAIL_TAKEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/auth/me:
+    get:
+      tags:
+        - Auth
+      operationId: me
+      summary: The authenticated user's account profile
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Account disabled (AUTH_ACCOUNT_DISABLED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/auth/change-password:
+    post:
+      tags:
+        - Auth
+      operationId: changePassword
+      summary: >-
+        Change the authenticated user's password (also clears
+        must-change-password)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Current password wrong (AUTH_LOGIN_INVALID_CREDENTIALS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/auth/onboarding-complete:
+    post:
+      tags:
+        - Auth
+      operationId: completeOnboarding
+      summary: Mark the authenticated user's onboarding as done
+      responses:
+        '204':
+          description: Marked
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -6709,6 +6824,128 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/diet/settings:
+    get:
+      tags:
+        - DietSettings
+      operationId: getDietSettings
+      summary: >-
+        The diet settings; config-default ghost when unset — never 404
+        (DietSettings)
+      responses:
+        '200':
+          description: >-
+            The settings (ghost balanced / moderate / 4000 / 30 before the first
+            save)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietSettingsResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - DietSettings
+      operationId: setDietSettings
+      summary: Upsert the diet settings (per-user singleton) (DietSettings)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDietSettingsRequest'
+      responses:
+        '200':
+          description: Saved settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietSettingsResponse'
+        '400':
+          description: Validation failure (incl. custom split not summing to 100.0%)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/tutorial/progress:
+    get:
+      tags:
+        - TutorialProgress
+      operationId: getTutorialProgress
+      summary: >-
+        The user's guide progress; empty map ghost when nothing seen — never 404
+        (TutorialProgress)
+      responses:
+        '200':
+          description: The progress map (empty before the first guide is shown)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorialProgressResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - TutorialProgress
+      operationId: setTutorialProgress
+      summary: >-
+        Replace the whole progress map (per-user singleton upsert)
+        (TutorialProgress)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTutorialProgressRequest'
+      responses:
+        '200':
+          description: Saved progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorialProgressResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - TutorialProgress
+      operationId: resetTutorialProgress
+      summary: >-
+        Forget every seen guide (Beállítások · Kalauzok újranézése)
+        (TutorialProgress)
+      responses:
+        '204':
+          description: Progress cleared; the next GET returns the empty ghost
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/ritual/day/{date}':
     get:
       tags:
@@ -8475,6 +8712,72 @@ components:
         token:
           type: string
           description: HS256-signed JWT bearer token
+    RegisterRequest:
+      type: object
+      required:
+        - inviteCode
+        - email
+        - password
+        - name
+      properties:
+        inviteCode:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: MEZO-7KQ2-XN4P
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+    MeResponse:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - role
+        - onboarded
+        - mustChangePassword
+        - timezone
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          description: OWNER or USER
+        onboarded:
+          type: boolean
+        mustChangePassword:
+          type: boolean
+        timezone:
+          type: string
+          example: Europe/Budapest
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 72
     LogWeightRequest:
       type: object
       required:
@@ -11523,6 +11826,16 @@ components:
           type: integer
         proteinG:
           type: integer
+        carbsG:
+          type: integer
+          description: >-
+            Prescribed carbohydrate grams — the split remainder after protein +
+            fat (absent on pre-slice-1 prescriptions)
+        fatG:
+          type: integer
+          description: >-
+            Prescribed fat grams — split fat-share of segment kcal, floored at
+            fat-floor g/kg (absent on pre-slice-1 prescriptions)
         sleepTargetH:
           type: number
         restDays:
@@ -16751,6 +17064,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         isActive:
           type: boolean
     HabitCatalogResponse:
@@ -16835,6 +17178,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         position:
           type: integer
           minimum: 1
@@ -16865,6 +17238,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         isActive:
           type: boolean
     HabitReorderRequest:
@@ -16914,6 +17317,28 @@ components:
           maximum: 15
         chainKey:
           type: string
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
     HabitSuggestResponse:
       type: object
       required:
@@ -17151,6 +17576,142 @@ components:
         caffeineCutoff:
           type: string
           pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+    DietSettingsResponse:
+      type: object
+      required:
+        - splitPreset
+        - proteinTier
+        - waterMl
+        - fiberG
+      properties:
+        splitPreset:
+          type: string
+          enum:
+            - balanced
+            - low_fat
+            - low_carb
+            - high_carb
+            - custom
+          description: Named fat/carb balance; custom uses the three pct fields
+        proteinPctX10:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: >-
+            Custom protein energy share, tenths of a percent (advisory — the
+            g/kg floor wins)
+        carbsPctX10:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        fatPctX10:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        proteinTier:
+          type: string
+          enum:
+            - moderate
+            - high
+          description: >-
+            g/kg band endpoint — moderate=2.0 g/kg BW, high=2.2 g/kg BW (engine
+            config)
+        waterMl:
+          type: integer
+          minimum: 500
+          maximum: 8000
+        fiberG:
+          type: integer
+          minimum: 10
+          maximum: 80
+    SetDietSettingsRequest:
+      type: object
+      required:
+        - splitPreset
+        - proteinTier
+        - waterMl
+        - fiberG
+      properties:
+        splitPreset:
+          type: string
+          enum:
+            - balanced
+            - low_fat
+            - low_carb
+            - high_carb
+            - custom
+        proteinPctX10:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        carbsPctX10:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        fatPctX10:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        proteinTier:
+          type: string
+          enum:
+            - moderate
+            - high
+        waterMl:
+          type: integer
+          minimum: 500
+          maximum: 8000
+        fiberG:
+          type: integer
+          minimum: 10
+          maximum: 80
+    TutorialProgressEntry:
+      type: object
+      required:
+        - version
+        - seenAt
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          description: >-
+            The registry version of the guide that was seen — a bump re-arms the
+            auto-show
+        seenAt:
+          type: string
+          format: date-time
+          description: 'First time the guide appeared (seen = appeared, Appcues modal rule)'
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Set on "Értem, kezdjük" (last card confirmed)'
+        dismissedAtStep:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Zero-based card index when Kihagyom / ✕ / Escape closed it
+    TutorialProgressResponse:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TutorialProgressEntry'
+          description: >-
+            Keyed by guide id from the frontend registry (e.g. `fuel`,
+            `welcome`)
+    SetTutorialProgressRequest:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TutorialProgressEntry'
     RitualWindow:
       type: object
       required:

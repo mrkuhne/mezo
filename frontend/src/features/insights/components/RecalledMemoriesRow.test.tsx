@@ -35,4 +35,11 @@ describe('RecalledMemoriesRow (card strip, mezo-vdf4)', () => {
     const { container } = render(<RecalledMemoriesRow items={[]} />)
     expect(container).toBeEmptyDOMElement()
   })
+
+  it('mezo-z4h4: the toggler shows a sparkle icon instead of the ✦ glyph, text intact', () => {
+    const { container } = render(<RecalledMemoriesRow items={ITEMS} />)
+    expect(container.querySelector('.mzc-memeb svg')).toBeTruthy()
+    expect(container.querySelector('.mzc-memeb')?.textContent).not.toMatch(/✦/)
+    expect(screen.getByRole('button', { name: /Emlékek · 2/ })).toBeInTheDocument()
+  })
 })

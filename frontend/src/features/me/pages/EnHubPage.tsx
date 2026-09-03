@@ -27,7 +27,7 @@ import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
   useBiometricProfile, useDecisions, useGamification, useGoal,
-  useGratitudeEntries, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
+  useGratitudeEntries, useHabitDay, useHabitSummary, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
 } from '@/data/hooks'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
@@ -50,7 +50,8 @@ export function EnHubPage() {
   const navigate = useNavigate()
   const { mode: themeMode } = useTheme()
   // F7.4 (mezo-d20.8.4.1): the progression moved HOME — the title chip and the
-  // streak/coin stats deep-link to /me/growth?tab=awards (StreakCard + TitlesSection);
+  // streak/coin stats deep-link to /me/growth/kituntetesek (StreakCard + TitlesSection,
+  // mezo-rmi0.1: the Growth hub's sibling route, was the ?tab=awards deep link);
   // the two standalone sheets are retired.
   const [sheet, setSheet] = useState<'biometric' | 'energy' | null>(null)
 
@@ -175,11 +176,35 @@ export function EnHubPage() {
       ? `${topPerson.name} ${topPerson.mentionsThisWeek}× · e héten`
       : `${people.length} kapcsolat`
 
+  const { habits: todayHabits } = useHabitDay(todayIso)
+  const { data: habitSummary } = useHabitSummary()
+  const strengthOf = (keys: string[]) => {
+    const values = habitSummary.habits
+      .filter((h) => keys.includes(h.key) && h.strengthPct != null)
+      .map((h) => h.strengthPct as number)
+    return values.length > 0 ? Math.round(values.reduce((s, v) => s + v, 0) / values.length) : null
+  }
+  const morningPct = strengthOf(todayHabits.filter((h) => h.chain === 'MORNING').map((h) => h.key))
+  const eveningPct = strengthOf(todayHabits.filter((h) => h.chain === 'EVENING').map((h) => h.key))
+  const doneToday = todayHabits.filter((h) => h.status === 'done').length
+  // No habits at all → no line. A fabricated "0 / 0" would read as a real standing.
+  const rutinLine = todayHabits.length === 0 ? undefined : (
+    <>
+      {doneToday} / {todayHabits.length} ma
+      {(morningPct != null || eveningPct != null) && (
+        <small>
+          {[morningPct != null ? `reggel ${morningPct}%` : null,
+            eveningPct != null ? `este ${eveningPct}%` : null].filter(Boolean).join(' · ')}
+        </small>
+      )}
+    </>
+  )
+
   return (
     <div className="enh-hub">
       <EntranceGroup className="mz-panel-stack">
         {/* ===== identity hero ===== */}
-        <div className="enh-idhero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+        <div className="enh-idhero rise" data-kalauz-anchor="me-idhero" style={{ '--d': '0ms' } as React.CSSProperties}>
           <div className="enh-idring" style={{ '--xp': xpPct } as React.CSSProperties}
             role="img" aria-label={`Szint ${gam.level} — ${xpPct}% a következő szintig`}>
             <i aria-hidden="true">{initial}</i>
@@ -187,7 +212,7 @@ export function EnHubPage() {
           <div className="enh-nm">{user.name}</div>
           <button type="button" className={equipped != null ? 'enh-titlech' : 'enh-titlech is-none'}
             aria-label={equipped != null ? `Viselt cím: ${equipped.name} — cím-bolt` : 'Cím-bolt'}
-            onClick={() => navigate('/me/growth?tab=awards')}>
+            onClick={() => navigate('/me/growth/kituntetesek')}>
             {equipped != null ? equipped.name : 'Válassz címet'}
           </button>
           <div className="enh-idstats">
@@ -195,10 +220,10 @@ export function EnHubPage() {
             <span>{huInt(gam.totalXp)} XP</span>
             <button type="button" className="enh-idstat" aria-label="Sorozat részletei"
               style={{ opacity: gam.streakAlive === false ? 0.45 : 1, display: 'inline-flex', alignItems: 'center', gap: 3 }}
-              onClick={() => navigate('/me/growth?tab=awards')}><ClayIcon name="i-lang" size={13} /> {gam.streakDays} nap</button>
+              onClick={() => navigate('/me/growth/kituntetesek')}><ClayIcon name="i-lang" size={13} /> {gam.streakDays} nap</button>
             <button type="button" className="enh-idstat" aria-label="Érme — címek"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}
-              onClick={() => navigate('/me/growth?tab=awards')}><ClayIcon name="i-erme" size={13} /> {gam.coins}</button>
+              onClick={() => navigate('/me/growth/kituntetesek')}><ClayIcon name="i-erme" size={13} /> {gam.coins}</button>
           </div>
           {bioBits.length > 0 ? (
             <button type="button" className="enh-bio" aria-label="Biometria szerkesztése"
@@ -232,6 +257,8 @@ export function EnHubPage() {
             line={emberekLine} onClick={() => navigate('/me/people')} aria-label="Emberek" />
           <Tile wash="sage" icon="i-beallitas" eyebrow="Beállítások" delayMs={330} className="enh-eb-sage"
             line={`téma: ${THEME_LABEL[themeMode]}`} onClick={() => navigate('/me/beallitasok')} aria-label="Beállítások" />
+          <Tile wide wash="gold" icon="i-rend" iconSize={34} eyebrow="Rutin" delayMs={370}
+            line={rutinLine} onClick={() => navigate('/me/rutin')} aria-label="Rutin" />
         </Mosaic>
       </EntranceGroup>
 

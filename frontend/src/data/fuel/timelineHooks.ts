@@ -53,7 +53,7 @@ export { deriveBlocks }
 function currentSegment(
   goalResponse: GoalResponse | null,
   timeline: GoalTimelineResponse | null,
-): { kcal: number; proteinG: number; dailyEnergyBalanceKcal: number } | null {
+): { kcal: number; proteinG: number; carbsG?: number | null; fatG?: number | null; dailyEnergyBalanceKcal: number } | null {
   const segments = goalResponse?.prescription?.segments
   if (!segments?.length) return null
   const totalWeeks = timeline?.weeks ?? segments[segments.length - 1].toWeek
