@@ -1010,8 +1010,6 @@ databaseChangeLog:
   - changeSet:
       id: "1.0.0:202609030200_mezo-ktg8_goal_suggestion"
       author: daniel.kuhne
-      validCheckSums:
-        - 9:28e91c9dfa090fcf05f4a2365f809930
       changes:
         - sqlFile:
             relativeToChangelogFile: true
