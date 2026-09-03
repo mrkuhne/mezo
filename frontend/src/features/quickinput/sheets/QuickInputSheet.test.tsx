@@ -50,20 +50,18 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     // Newest-first, like both real data sources (backend: OrderByDateDesc; mock: log
     // prepends) — s3 is today's LAST-logged session (array head), s2 an earlier same-day
     // session, s1 a past day. The subline must read s3, never s2 or s1.
-    useTrain: () => ({
-      sport: {
-        sessions: [
-          { id: 's3', sport: 'volleyball', isoDate: localDateString(), duration: 45 },
-          { id: 's2', sport: 'volleyball', isoDate: localDateString(), duration: 90 },
-          { id: 's1', sport: 'volleyball', isoDate: '2026-05-22', duration: 60 },
-        ],
-      },
+    useQuickLogSport: () => ({
+      sessions: [
+        { id: 's3', sport: 'volleyball', isoDate: localDateString(), duration: 45 },
+        { id: 's2', sport: 'volleyball', isoDate: localDateString(), duration: 90 },
+        { id: 's1', sport: 'volleyball', isoDate: '2026-05-22', duration: 60 },
+      ],
       logSportSession: vi.fn(),
     }),
   }
 })
 
-/** A deterministic now-window for the MOST head — the real hook is wall-clock dependent. */
+/** A deterministic now-window for the Étkezés tile — the real hook is wall-clock dependent. */
 const NOW_WINDOW = {
   time: '13:30', kind: 'meal', label: 'Ebéd-ablak', slotKey: 'lunch',
   state: 'now', mealName: 'Csirkés rizses tál',
@@ -110,6 +108,30 @@ test('renders all nine quick-log tiles', () => {
   for (const label of ['Étkezés', 'Víz', 'Stack', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
     expect(screen.getByText(label)).toBeInTheDocument()
 })
+
+// Order-sensitive, unlike the loop above: a 3x3 implementation that still shipped the tiles in
+// the OLD arrangement would pass every `getByText` assertion in this file, since those are
+// order-insensitive by construction. This pins the actual DOM order within the grid, and the
+// chat row's promotion above it — the two halves of the redesign this suite otherwise misses.
+// A wrong order (e.g. the old Edzés-first layout) genuinely fails this: the label sequence
+// would no longer match the spec's row-major reading order asserted below.
+test('the 3x3 grid is ordered per spec, with the chat row above it', () => {
+  renderSheet()
+  const grid = document.querySelector('.quicklog-grid')
+  expect(grid).not.toBeNull()
+  const labels = Array.from(grid!.querySelectorAll('.quicklog-label')).map(el => el.textContent)
+  expect(labels).toEqual([
+    'Étkezés', 'Víz', 'Stack',
+    'Edzés', 'Sport', 'Súly',
+    'Check-in', 'Napló', 'Alvás',
+  ])
+
+  const chatRow = document.querySelector('.quicklog-chat')
+  expect(chatRow).not.toBeNull()
+  // DOCUMENT_POSITION_FOLLOWING on chatRow's comparison to grid means chatRow precedes grid.
+  // eslint-disable-next-line no-bitwise
+  expect(chatRow!.compareDocumentPosition(grid!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
 test('a navigating tile closes the sheet and routes to its target', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
@@ -118,7 +140,7 @@ test('a navigating tile closes the sheet and routes to its target', async () => 
   expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/stack')
 })
 
-// ── Design 2.0 quick-log v2 (mezo-d20.1.6) ─────────────────────────────────
+// ── Quick Log tile redesign (mezo-7lst) ────────────────────────────────────
 
 test('tiles carry clay icons via sprite use refs — no emojis', () => {
   renderSheet()
@@ -164,6 +186,12 @@ test('the Víz tile opens the amount picker in place and the log lands', async (
   await userEvent.click(screen.getByRole('button', { name: '250 ml' }))
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
+
+  // `onClose` firing only proves the sheet closed, not that the log landed (the title's
+  // claim). The mock's `logWater` feeds the reactive `waterStore` counter, which re-renders
+  // the still-mounted WaterLogSheet's own "ma eddig" readout — assert the amount actually
+  // moved: 1850 + 250 ml -> 2,1 l (WaterLogSheet renders `currentMl / 1000` in litres).
+  expect(screen.getByText(/ma eddig 2,1 \/ 3 l/)).toBeInTheDocument()
 })
 
 test('the Súly tile opens the weight log sheet in place', async () => {

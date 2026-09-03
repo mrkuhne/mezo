@@ -28,10 +28,11 @@ import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { localDateString } from '@/shared/lib/dates'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
-import { useCheckins, useFuelPreview, useFuelDay, useWaterActions, useWeight, useToday, useTrain } from '@/data/hooks'
+import { useCheckins, useFuelPreview, useFuelDay, useWaterActions, useWeight, useToday, useQuickLogSport } from '@/data/hooks'
 
 /** Which surface the sheet shows: the launcher grid, an in-place two-option picker, or a log
- * sheet opened in its place (mezo-b3pp.1 / mezo-d20.1.6 — Súly joined the in-place set). */
+ * sheet opened in its place (mezo-b3pp.1 / mezo-d20.1.6 — Súly joined the in-place set;
+ * mezo-7lst — 'water' and 'sport' joined it too, for the Víz/Sport tiles). */
 type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin' | 'weight' | 'water' | 'sport'
 
 const HU = new Intl.NumberFormat('hu-HU')
@@ -54,9 +55,9 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
   const [phase, setPhase] = useState<Phase>('menu')
 
-  // ── live context for the head + sublines ─────────────────────────────
-  // The MOST head mirrors the Fuel swimlane: the user-scheduled eating window
-  // whose state is 'now' (slotKey present = meal/snack window, not a block slot).
+  // ── live context for the Étkezés tile + the other sublines ────────────
+  // The Étkezés tile's subline/target mirror the Fuel swimlane: the user-scheduled eating
+  // window whose state is 'now' (slotKey present = meal/snack window, not a block slot).
   const { plan } = useFuelPreview()
   const nowWindow = plan.slots.find(s => s.slotKey !== undefined && s.state === 'now')
   // A dinamikus Étkezés csempe: a hely, az ikon és a címke FIX — csak az alszöveg és a cél
@@ -70,13 +71,16 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   const { weightLog, logWeight } = useWeight()
   const latestWeight = weightLog.length > 0 ? weightLog[weightLog.length - 1] : null
   const { today, workoutDone } = useToday()
-  const { sport, logSportSession } = useTrain()
+  // Narrow read (mezo-7lst, whole-branch-review finding 1): the FAB used to mount the whole
+  // `useTrain()` — 8 ungated queries — for one subline and one mutation. `useQuickLogSport`
+  // shares `useTrain`'s param-less `['train','sportSessions']` key and mutation instead.
+  const { sessions, logSportSession } = useQuickLogSport()
   const { showLevelUp } = useLevelUp()
   // A mai UTOLSÓ sport-session az alszöveghez — múltbeli session sosem szólal meg itt.
-  // `sport.sessions` mindkét adatforrásban legújabb-elöl sorrendű (backend:
+  // `sessions` mindkét adatforrásban legújabb-elöl sorrendű (backend:
   // OrderByDateDesc; mock: a log a lista elejére fűz), így egy sima `.find()`
   // a mai nap UTOLSÓNAK logolt sessionjét adja — reverse NÉLKÜL.
-  const todaysSport = (sport.sessions ?? []).find(s => s.isoDate === localDateString())
+  const todaysSport = sessions.find(s => s.isoDate === localDateString())
   const sportSub = todaysSport ? `${SPORT_LABELS[sportOf({ sport: todaysSport.sport as SportKind })]} · ${HU.format(todaysSport.duration)}p` : undefined
 
   const { checkins, saveCheckIn } = useCheckins()
