@@ -12,7 +12,7 @@ vi.mock('@/features/me/logic/sleepEscalation', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/me/logic/sleepEscalation')>()),
   evaluateEscalation: vi.fn(() => ({ triggered: false, reason: null })),
 }))
-import { evaluateEscalation, SNOOZE_KEY } from '@/features/me/logic/sleepEscalation'
+import { evaluateEscalation, snoozeKey } from '@/features/me/logic/sleepEscalation'
 
 // mezo-idz2 appended a date-relative today row to the END of the mock sleepLog (DayOrb
 // mock parity), so `lastNight` (the seed's last array entry, by design) is now that minimal
@@ -179,7 +179,7 @@ test('escalation replaces the stat card and Most nem snoozes it away', () => {
   expect(screen.queryByText('Miért számít?')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Most nem' }))
   expect(screen.getByText('Miért számít?')).toBeInTheDocument()
-  expect(localStorage.getItem(SNOOZE_KEY)).not.toBeNull()
+  expect(localStorage.getItem(snoozeKey())).not.toBeNull()
   vi.mocked(evaluateEscalation).mockReturnValue({ triggered: false, reason: null })
 })
 

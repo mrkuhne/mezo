@@ -10,12 +10,12 @@ import { QueryWrapper } from '@/test/queryWrapper'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('useProfile exposes only the user meta', () => {
-  const { result } = renderHook(() => useProfile())
+test('useProfile exposes only the user meta (mock mode)', () => {
+  const { result } = renderHook(() => useProfile(), { wrapper: QueryWrapper })
   // Shape guard: the Profil strip (mezo-lfw) cut useProfile down to just `user`;
   // catches a stray re-add of identityGoal/areas/quickSettings/version.
   expect(Object.keys(result.current)).toEqual(['user'])
-  expect(result.current.user.name).toBe('Daniel')
+  expect(result.current.user?.name).toBe('Daniel')
 })
 
 test('useGoal returns the active cut goal + linked mesocycles', () => {

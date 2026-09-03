@@ -199,14 +199,25 @@ test('a nap-orb a mai nap-oldalára visz', async () => {
   expect(screen.getByTestId('loc')).toHaveTextContent(`/me/week/napok/${localDateString()}`)
 })
 
-// ── item 7: a dátum-eyebrow ─────────────────────────────────────────────────
-test('a fejléc a dátum-eyebrow-val kezdődik', async () => {
+// ── item 7: a bal oldal a SZEKCIÓT mutatja (mezo-8az6, korábban dátum-eyebrow) ──
+test('a fejléc a szekció nevével és spotjával kezdődik', async () => {
   const { container } = renderAt('/fuel')
   await screen.findByRole('button', { name: /^A mai napod/ })
-  const eyebrow = container.querySelector('.nap-head .nap-head-grow .mz-eyebrow')
-  expect(eyebrow).not.toBeNull()
-  // `useToday` napcímke · dátumcímke — a pontos szöveg a data-rétegé, a szerkezet a fejlécé.
-  expect(eyebrow!.textContent).toMatch(/\S+ · \S+/)
+  expect(container.querySelector('.app-head-title')!.textContent).toBe('Fuel')
+  expect(container.querySelector('.app-head-sec use')!.getAttribute('href')).toBe('#s-fuel')
+})
+
+test('mélyoldalon a szekció címkéje marad', async () => {
+  const { container } = renderAt('/train/mesocycles')
+  await screen.findByRole('button', { name: /^A mai napod/ })
+  expect(container.querySelector('.app-head-title')!.textContent).toBe('Edzés')
+})
+
+// A dátum a telefon státuszsávján látszik — a fejlécből tudatosan kikerült.
+test('nincs többé dátum-eyebrow a fejlécben', async () => {
+  const { container } = renderAt('/fuel')
+  await screen.findByRole('button', { name: /^A mai napod/ })
+  expect(container.querySelector('.nap-head .mz-eyebrow')).toBeNull()
 })
 
 // ── item 5: popover-elvárások ───────────────────────────────────────────────

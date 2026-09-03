@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.api.dto.PatternMonitorResponse;
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
@@ -68,7 +69,7 @@ public class HypothesisPipelineService {
 
     private static final String PROPOSE_PROMPT = HYPOTHESIS_MARKER + """
             . Az alábbi heti kontextus (napi összefoglalók + megerősített tények + statisztikai
-            minták) alapján javasolj legfeljebb %d MECHANIZMUS-szintű hipotézist Daniel adatairól —
+            minták) alapján javasolj legfeljebb %d MECHANIZMUS-szintű hipotézist {{NÉV}} adatairól —
             olyan ok-okozati sejtést, amit a páronkénti statisztika önmagában nem lát. Csak a
             megadott adatokra építs. Válaszolj KIZÁRÓLAG JSON tömbbel, pontosan ebben a formában:
             [{"title":"...","mechanism":"...","category":"physiology|trigger|response"}]
@@ -99,6 +100,7 @@ public class HypothesisPipelineService {
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
     private final AppNotificationEmitter appNotificationEmitter;
+    private final PromptPersona promptPersona;
 
     /** One hypothesis as the LLM returns it. */
     record Hypothesis(String title, String mechanism, String category) {}
@@ -228,8 +230,8 @@ public class HypothesisPipelineService {
     private List<Hypothesis> propose(UUID userId, String context) {
         String raw;
         try {
-            String prompt = String.format(Locale.ROOT, PROPOSE_PROMPT,
-                    properties.hypotheses().maxPerRun());
+            String prompt = promptPersona.render(userId, String.format(Locale.ROOT, PROPOSE_PROMPT,
+                    properties.hypotheses().maxPerRun()));
             raw = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_hypothesis", "propose", null, null),
                     () -> companionLlm.completeSmart(prompt, context));

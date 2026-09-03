@@ -191,6 +191,22 @@
   --mz-deload-stripe: repeating-linear-gradient(135deg, #E5C46B 0 3px, #F3E3B5 3px 6px);
   --mz-dstep-custom: #6C5FA3; /* derivation timeline's 03 „Rád szabva" disc */
   --mz-ink-mut: #A2958A;
+  /* ── Fejléc-aurora (mezo-8az6) — napszak-tónusok. A wash a sáv teteje, a foltok
+        adják a mélységet; a réteg alja maszkkal fakul a tartalomba. Dark párjuk a
+        dark blokkban, azonos nevekkel. */
+  --mzh-wash-reggel: linear-gradient(155deg, #FFD9A8 0%, #FFE7CE 55%, #FFF3E6 100%);
+  --mzh-wash-nap:    linear-gradient(155deg, #B9DCF0 0%, #D3E9F6 55%, #EAF4FA 100%);
+  --mzh-wash-este:   linear-gradient(155deg, #D6CDF3 0%, #E4DDF7 55%, #F1EDFB 100%);
+  --mzh-blob1-reggel: #FFC078; --mzh-blob2-reggel: #FF8E6A;
+  --mzh-blob1-nap:    #7FBEE8; --mzh-blob2-nap:    #69CFBD;
+  --mzh-blob1-este:   #A392E4; --mzh-blob2-este:   #E28FBB;
+  --mzh-deco-line: rgba(43, 33, 24, 0.18);
+  --mzh-deco-fill: rgba(43, 33, 24, 0.24);
+  --mzh-glass: rgba(255, 255, 255, 0.6);
+  --mzh-glass-line: rgba(43, 33, 24, 0.08);
+  /* A kompakt fejléc doboz-magassága (4px felső padding + 40px kontrollsor). A lapokon
+     belüli sticky chrome ehhez képest tapad ki, hogy ne csússzon a shell-fejléc alá. */
+  --mzh-head-cond-h: 44px;
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
         blocks carry IDENTICAL values: the duplication keeps the Mozaik rule (a --rz-*
@@ -510,6 +526,19 @@
   --mz-stripbg: var(--surface-card);
   --mz-sheet-bg: var(--surface-1); /* F7.3 sheet-minta — dark keeps the theme surface */
   --mz-ink-mut: #8A7A6A;
+  /* ── Fejléc-aurora dark párja (mezo-8az6): mélyebb, tompított tónusok a grafit
+        vászon fölé; a foltok ugyanazok a színek, a wash viszi a sötétítést. */
+  --mzh-wash-reggel: linear-gradient(155deg, #5A4224 0%, #3E2E1C 55%, #241C14 100%);
+  --mzh-wash-nap:    linear-gradient(155deg, #1F4560 0%, #1C3242 55%, #1A2027 100%);
+  --mzh-wash-este:   linear-gradient(155deg, #3A2F63 0%, #2A2444 55%, #1E1A2A 100%);
+  --mzh-blob1-reggel: #FFC078; --mzh-blob2-reggel: #FF8E6A;
+  --mzh-blob1-nap:    #7FBEE8; --mzh-blob2-nap:    #69CFBD;
+  --mzh-blob1-este:   #A392E4; --mzh-blob2-este:   #E28FBB;
+  --mzh-deco-line: rgba(255, 255, 255, 0.2);
+  --mzh-deco-fill: rgba(255, 255, 255, 0.3);
+  --mzh-glass: rgba(24, 19, 15, 0.6);
+  --mzh-glass-line: rgba(255, 255, 255, 0.09);
+  --mzh-head-cond-h: 44px;
   --mz-ink-soft: var(--text-secondary);
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
@@ -903,13 +932,17 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    while the content scrolls under it, like native app navigation chrome. */
 .sticky-top {
   position: sticky;
-  /* top: 0 — NOT 54px: the .screen-content already offsets the scrollport below
-     the status bar via padding-top, so a non-zero top double-counts it and the
-     breadcrumb pins below the status bar, letting the header scroll over it. */
+  /* NEM 0 és NEM 54px: a .screen-content padding-topja (54px) továbbra is a fake
+     státuszsáv alá offsetel, de a shell-fejléc (mezo-8az6) mostantól maga is kitapad
+     ugyanoda — a lap chrome-ja ezért a KOMPAKT fejléc magasságával (--mzh-head-cond-h)
+     lejjebb tapad ki, hogy ne csússzon a shell-fejléc alá. Ez CSAK akkor igaz, ha van
+     shell-fejléc: a chrome nélküli oldalakon (AppLayout.tsx hideChrome) nincs mi alá
+     tapadni, ott a 0 a helyes — innen a :has() scope. */
   top: 0;
   z-index: 40;
   background: var(--canvas);
 }
+.screen-content:has(.app-head) .sticky-top { top: var(--mzh-head-cond-h); }
 
 /* Lock background scroll when a sheet/modal (or the SubNavDropdown popover, whose
    backdrop is portaled into .phone-screen the same way) is open */
@@ -1075,7 +1108,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
     padding-top: env(safe-area-inset-top);
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
-  .sticky-top { top: 0; }
+  /* A shell-fejléc valódi eszközön is kitapad (mezo-8az6), ezért a lap chrome-ja itt sem
+     tapadhat ki 0-nál — ugyanaz a kompakt fejléc-magasság, mint az alapszabályban.
+     Ugyanúgy csak fejléces oldalon: lásd az alapszabály :has() scope-ját. */
+  .screen-content:has(.app-head) .sticky-top { top: var(--mzh-head-cond-h); }
   .tab-bar {
     height: auto;
     padding-top: 8px;
@@ -4519,7 +4555,86 @@ button.mz-tile:active { transform: scale(0.96); }
    (gap: 11px). A fejléc kikerült a konténerekből, a 7px margó pedig szándékosan egységes:
    a Nap 13px-ét pontosan visszaadja, a másik négyet 11-ről 13-ra emeli — egy közös fejléc
    alatt egy közös rés jár, a 2px a megosztásért fizetett ár. */
-.app-head { padding-top: 6px; margin-bottom: 7px; }
+/* A fejléc KITAPAD (mezo-8az6): az app egyetlen görgetője a .screen-content, a fejléc
+   benne ül, így `top: 0` a helyes — a scroller padding-top: 54px-je már a fake
+   státuszsáv alá offsetel (ugyanez a logika, mint a .sticky-top-nál). Az értesítés és
+   az üzenetek így egy hosszú lista aljáról is egy koppintásra vannak. */
+.app-head {
+  position: sticky;
+  top: 0;
+  /* 46: a lapokon belüli sticky chrome (breadcrumb 40, chat-fejléc 30) FÖLÖTT, de a
+     StatusBar (50) alatt — a shell fejléce mindig a lap saját chrome-ja fölött ül. */
+  z-index: 46;
+  padding-top: 6px;
+  margin-bottom: 7px;
+  transition: padding var(--duration-normal) var(--ease-in-out),
+    margin var(--duration-normal) var(--ease-in-out);
+}
+/* Az aurora full-bleed: a .screen-content --screen-gutter paddingját negatív margóval
+   lépi át, hogy a telefon széléig érjen. A fejléc TARTALMA a gutteren belül marad. */
+.app-head-bg {
+  position: absolute;
+  top: 0;
+  left: calc(-1 * var(--screen-gutter));
+  right: calc(-1 * var(--screen-gutter));
+  height: 92px;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity var(--duration-normal) var(--ease-out);
+  /* az alja belefolyik a tartalomba — nincs éles vágás */
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+}
+.app-head-wash { position: absolute; inset: 0; }
+.app-head-bg[data-face="reggel"] .app-head-wash { background: var(--mzh-wash-reggel); }
+.app-head-bg[data-face="nap"]    .app-head-wash { background: var(--mzh-wash-nap); }
+.app-head-bg[data-face="este"]   .app-head-wash { background: var(--mzh-wash-este); }
+.app-head-blob { position: absolute; border-radius: 50%; filter: blur(30px); opacity: 0.75; }
+.app-head-blob.b1 { width: 190px; height: 190px; left: -56px; top: -84px; }
+.app-head-blob.b2 { width: 150px; height: 150px; right: -34px; top: -66px; opacity: 0.55; }
+.app-head-bg[data-face="reggel"] .b1 { background: var(--mzh-blob1-reggel); }
+.app-head-bg[data-face="reggel"] .b2 { background: var(--mzh-blob2-reggel); }
+.app-head-bg[data-face="nap"]    .b1 { background: var(--mzh-blob1-nap); }
+.app-head-bg[data-face="nap"]    .b2 { background: var(--mzh-blob2-nap); }
+.app-head-bg[data-face="este"]   .b1 { background: var(--mzh-blob1-este); }
+.app-head-bg[data-face="este"]   .b2 { background: var(--mzh-blob2-este); }
+.app-head-deco { position: absolute; inset: 0; }
+.app-head-deco svg { position: absolute; right: 0; top: 0; opacity: 0.9; }
+.app-head-arc { fill: none; stroke: var(--mzh-deco-line); stroke-width: 1.5; }
+.app-head-dfill { fill: var(--mzh-deco-fill); }
+/* A szekció-blokk a fejléc bal oldalán: spot + név, egy sorban, csonkolva. */
+.app-head-sec { display: flex; align-items: center; gap: 8px; }
+.app-head-spot { flex: none; }
+.app-head-title {
+  font-size: 19px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Kompakt üvegmód: az aurora kifakul, a helyét áttetsző, elmosott sáv veszi át.
+   A blur SZÁNDÉKOSAN csak erre az alacsony sávra kerül, nem a teljes aurorára —
+   nagy felületen a backdrop-filter gyenge telefonon képkockát ejt. */
+/* A padding-top a --mzh-head-cond-h tokenből SZÁRMAZIK, nem külön szám: 40px a
+   .nap-roundbtn kontrollsor magassága, a token a mérvadó (44px mindkét témában) — így
+   nem szakadhat el csendben a kettő egymástól. */
+.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 40px); margin-bottom: 3px; }
+.app-head.is-cond .app-head-bg { opacity: 0; }
+.app-head.is-cond::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: calc(-1 * var(--screen-gutter));
+  right: calc(-1 * var(--screen-gutter));
+  background: var(--mzh-glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 0.5px solid var(--mzh-glass-line);
+}
+/* A fejléc tartalma az aurora és az üvegsáv FÖLÖTT ül. Figyelem: ez minden fejléc-
+   gyerekből saját stacking contextet csinál, tehát a bennük lévő .nap-dpmenu/
+   .nap-ntfmenu 30-as z-indexe is EBBE a helyi kontextusba zárul, nem a globálisba.
+   Jelenleg ez nem okoz ütközést (a menük geometriailag nem lógnak ki később jövő
+   testvérek alá), de új fejléc-gyerek hozzáadásakor erre figyelni kell. */
+.app-head > *:not(.app-head-bg) { position: relative; z-index: 1; }
 .nap-head-grow { flex: 1; min-width: 0; }
 .nap-dpwrap { position: relative; }
 .nap-roundbtn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
@@ -5285,7 +5400,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
    hosszú szál aljáról a kiút ismét csak a tabbar lenne (lásd a #page-chat page-head
    korábbi sticky-jét, prototype.css régi 6865). */
 .mzc-chathead { display: flex; align-items: center; gap: 9px; padding: 2px 19px 6px;
-  position: sticky; top: 0; z-index: 30; background: var(--canvas); }
+  position: sticky; top: var(--mzh-head-cond-h); z-index: 30; background: var(--canvas); }
 .mzc-hdisc {
   width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; flex: none;
   font-family: inherit; font-size: 15px; color: var(--text-primary); padding: 0;
@@ -7990,6 +8105,147 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   .mz-play .wkd-gbar div { animation: none; transform: none; }
   .wkd-skel { animation: none; }
   .wkd-tile { transition: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Napi értékelés · 6 dimenzió (mezo-jcpt.4)
+   Source: the approved day-evaluation prototype, screens 1 „Lezárt nap" and 2
+   „Ma, napközben" — `.dayring.dash` / `.scorechips` / `.predtile` (+ its six
+   domain washes) / `.sring` / `.fchips` / `.why` / `.stag` / `.revcard` /
+   `.hlch` / `.adj`, scaled ×1.18 (330 → 390px frame).
+
+   SCOPING — every dimension modifier (`is-nutrition` … `is-rhythm`) is written
+   under `.dayev-dim`, NEVER bare: the weekly mosaic already owns a differently
+   coloured `.wkd-sparks i.is-sleep` / `.wkd-legend i.is-sleep`, and the two must
+   never see each other's rules. The six domain colours come from the shared
+   --mz-wash-* / --mz-shadow-* / --mz-cell-*-ink token families, so both themes
+   follow without a parallel palette.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── hero: szaggatott „este zárom" gyűrű + alap/kontextus chip-pár ────────── */
+.wk-ring.dayev-ringdash { background: none; box-shadow: inset 0 0 0 2.5px var(--mz-sc-track); }
+.wk-ring.dayev-ringdash .in { background: none; box-shadow: none; }
+
+.dayev-scorechips { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+.dayev-scorechips span {
+  font-size: 9px; font-weight: 700; border-radius: 999px; padding: 4px 11px;
+  background: var(--mz-chipbg); color: var(--mz-ink-soft); font-variant-numeric: tabular-nums;
+  box-shadow: 0 5px 12px -7px rgba(43, 33, 24, 0.3);
+}
+.dayev-scorechips span.is-mezo { background: var(--mz-wash-lav); color: var(--mz-cell-lav-ink); }
+
+/* ── dimenzió-csempe ─────────────────────────────────────────────────────── */
+.dayev-dim {
+  border-radius: 21px; padding: 13px 15px 12px; margin-bottom: 11px;
+  border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-wash-white);
+  box-shadow: var(--mz-shadow);
+}
+.dayev-dim.is-nutrition { background: var(--mz-wash-sage);  box-shadow: var(--mz-shadow-sage); }
+.dayev-dim.is-quality   { background: var(--mz-wash-gold);  box-shadow: var(--mz-shadow-gold); }
+.dayev-dim.is-training  { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.dayev-dim.is-sleep     { background: var(--mz-wash-lav);   box-shadow: var(--mz-shadow-lav); }
+.dayev-dim.is-logging   { background: var(--mz-wash-rose);  box-shadow: var(--mz-shadow-rose); }
+.dayev-dim.is-rhythm    { background: var(--mz-wash-sky);   box-shadow: var(--mz-shadow-sky); }
+/* `.dayev-ctx` is the un-scored CONTEXT tile — the same ghost anatomy, but deliberately NOT a
+   `.dayev-dim`: it carries no weight, no score and no ring, and nothing may count it as one of
+   the six dimensions. */
+.dayev-dim.is-ghost,
+.dayev-ctx {
+  background: var(--mz-wk-thin-bg); border: 1px dashed rgba(43, 33, 24, 0.18); box-shadow: none;
+}
+.dayev-ctx { border-radius: 21px; padding: 13px 15px 12px; margin-bottom: 11px; }
+
+.dayev-dimhead { display: flex; align-items: center; gap: 10px; }
+.dayev-dimname { flex: 1; min-width: 0; }
+.dayev-pic {
+  width: 35px; height: 35px; border-radius: 13px; display: grid; place-items: center; flex: none;
+  background: var(--mz-chipbg); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.08);
+}
+.dayev-dnm { font-size: 12.5px; font-weight: 700; letter-spacing: -0.01em; }
+.dayev-dwt { display: block; margin-top: 2px; }
+.dayev-stag {
+  display: inline-block; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; border-radius: 6px; padding: 2.5px 7px;
+  background: var(--mz-stch-mut-bg); color: var(--mz-stch-mut-ink);
+}
+/* The prototype's `stag done` — a dimension that has already FINALISED on a day still running. */
+.dayev-stag.is-done { background: var(--mz-stch-ok-bg); color: var(--mz-stch-ok-ink); }
+/* The nutrition tile's goal bars sit directly under its header (prototype screens 1–2). */
+.dayev-goals { margin-top: 7px; }
+.dayev-fchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.dayev-fchip {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700;
+  color: var(--mz-ink-soft); background: var(--mz-chipbg); border-radius: 8px; padding: 3px 7px;
+  font-variant-numeric: tabular-nums;
+}
+.dayev-why { font-size: 10.5px; font-weight: 300; line-height: 1.5; color: var(--text-primary); margin-top: 8px; }
+.dayev-why.is-mut { color: var(--mz-ink-soft); }
+.dayev-ctxeb { display: block; padding-bottom: 2px; }
+
+/* ── sring (dimenzió-gyűrű) + a „Miből jött össze" hatos sáv ─────────────── */
+.dayev-sring {
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
+  background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-sc-track) 0);
+}
+.dayev-sring i {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--mz-fh-ringhole);
+  display: grid; place-items: center; font-style: normal; font-size: 10.5px; font-weight: 700;
+  color: var(--c); font-variant-numeric: tabular-nums;
+}
+.dayev-sring.is-dash { background: none; box-shadow: inset 0 0 0 1.5px rgba(43, 33, 24, 0.12); }
+.dayev-sring.is-dash i { background: none; color: var(--mz-ink-mut); }
+.dayev-subrings { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.dayev-subring { display: grid; justify-items: center; gap: 3.5px; }
+.dayev-subring small {
+  font-size: 6.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--mz-ink-mut); text-align: center;
+}
+
+/* ── a Mezo napi értékelése (lila revcard) ───────────────────────────────── */
+.dayev-revcard {
+  border-radius: 22px; padding: 14px 15px; margin-bottom: 11px; border: 1px solid var(--mz-mem-ink);
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
+}
+.dayev-revhead { display: flex; align-items: center; gap: 8px; }
+.dayev-revlabel { color: var(--mz-cell-lav-ink); }
+.dayev-prose { font-size: 12.5px; font-weight: 300; line-height: 1.62; margin-top: 7px; color: var(--text-primary); }
+.dayev-hlrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+.dayev-hlch {
+  display: inline-flex; flex-direction: column; border-radius: 11px; padding: 5px 10px;
+  font-size: 10px; font-weight: 600; color: var(--text-primary); background: var(--mz-chipbg);
+  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: 0 5px 12px -7px rgba(43, 33, 24, 0.3);
+}
+.dayev-hlch em {
+  font-style: normal; font-size: 7px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; margin-bottom: 1px;
+}
+.dayev-hlch.is-key em { color: var(--mz-cell-lav-ink); }
+.dayev-hlch.is-pattern em { color: var(--mz-cell-amber-ink); }
+.dayev-hlch.is-win em { color: var(--mz-cell-sage-ink); }
+.dayev-hlch span { text-align: left; line-height: 1.3; }
+.dayev-adj {
+  display: flex; gap: 8px; align-items: baseline; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid rgba(93, 79, 160, 0.16);
+}
+.dayev-adj b {
+  font-size: 14px; font-weight: 800; color: var(--mz-cell-lav-ink); flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.dayev-adj span { font-size: 10.5px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); }
+
+/* ── napközbeni „figyelő" orb-kártya ─────────────────────────────────────── */
+.dayev-waiting {
+  border-radius: 21px; padding: 13px 15px; margin-bottom: 11px;
+  background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav);
+  display: grid; grid-template-columns: auto 1fr; align-items: center;
+  justify-items: start; gap: 9px;
+}
+.dayev-waiting p { font-size: 11px; font-weight: 300; line-height: 1.5; color: var(--mz-ink-soft); }
+.dayev-waiting > .wkd-chatch { grid-column: 1 / -1; }
+.dayev-orbb { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dayev-orbb { animation: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

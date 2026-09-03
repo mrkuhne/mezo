@@ -18,6 +18,9 @@ public interface CheckInRepository extends OwnedRepository<CheckInEntity> {
     /** Latest check-in across days (date, then slot) for the companion context snapshot. */
     Optional<CheckInEntity> findFirstByCreatedByAndDeletedFalseOrderByDateDescSlotTimeDesc(UUID createdBy);
 
+    /** The user's most recent check-in by when it was SAVED. */
+    Optional<CheckInEntity> findFirstByCreatedByAndDeletedFalseOrderBySavedAtDesc(UUID createdBy);
+
     /** Weekly review {@code stale} probe (mezo-p2tr): the most recently CREATED check-in inside
      *  the week — compared against the review's {@code generatedAt}, not its own {@code date}. */
     Optional<CheckInEntity> findFirstByCreatedByAndDeletedFalseAndDateBetweenOrderByCreatedAtDesc(

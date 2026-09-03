@@ -62,7 +62,7 @@ FE: `data/admin/adminApi.ts` (types off `api.gen.ts`), `adminMock.ts` (`ADMIN_US
 - **→ llmlog**: `LlmUsageController` gate + `byUser`/`userId`; `LlmActorResolver` reads `LlmActorContext`. Contract: `LlmUsageUserGroup`, `LlmCallFilters.userId`.
 - **→ S6 (`mezo-qw37.6`)**: `UserFanOut.activeUsers()` wraps each iteration in `LlmActorContext.runAs(user.getId(), …)` — until then background rows stay in the `Háttér` bucket.
 - **me**: Beállítások rows; AI-napló chip row (`AiUserFilter`).
-- **companion memory observatory**: `GET /api/companion/memory/llm-usage` still aggregates every account's rows without an owner gate — see §9.
+- **companion memory observatory**: `GET /api/companion/memory/llm-usage` is per-user filtered (`mezo-qw37.7`), not owner-gated — see §9.
 
 ## 6. How to use it (consume)
 
@@ -94,7 +94,7 @@ Frontend (both `VITE_USE_MOCK=true pnpm test` and `VITE_USE_MOCK=false pnpm test
 - **Temp password is 12 chars from the readable alphabet + lowercase**, `SecureRandom`; the response is the only clear-text copy.
 - **`LlmActorContext` is a plain ThreadLocal** — correct because the actor is resolved before the `@Async` audit hop; `CHAT_STREAM` calls completing on reactive threads keep a null actor (pre-existing).
 - **`useLlmUsageSummary` still mounts for a USER** on Beállítások and fails silently into the honest empty; gating it on role is a small follow-up.
-- **Deferred**: `GET /api/companion/memory/llm-usage` (memory observatory) is still ungated cross-user — the end-to-end `LlmActorContext` cron IT (job call's `created_by` is the user) needs S6's production `runAs` caller (`UserFanOut`), so S3 proves the seam with the resolver unit test only and leaves the cron IT to S6; file a bd issue and gate the memory observatory with `requireOwner()` alongside S6's doc rewrite — the AI-napló entry row in the S2 `EnHubPage` Profil card (if any) should follow the same `isOwner` guard.
+- **Closed (`mezo-qw37.7`)**: `GET /api/companion/memory/llm-usage` (memory observatory) was cross-account — every account saw the whole installation's LLM call count, tokens and cost, because `MemoryObservatoryService.llmUsage` called the installation-wide `LlmUsageService.perDay(days)`. Fixed by PER-USER filtering, not an owner gate: `LlmLogRepository.aggregatePerDaySinceForUser` / `LlmUsageService.perDay(userId, days)` add a `created_by = :userId` predicate, and `MemoryObservatoryService.llmUsage(userId, days)` / `CompanionController.getMemoryLlmUsage` pass the caller's own id. The Memória/Audit panel every user sees stays as-is (an owner gate would delete it for ordinary users); the OWNER's installation-wide view remains `/api/llm-usage/*`. Rows with `created_by IS NULL` (pre-S6 cron traffic, stream writes) belong to nobody and are excluded from every per-user rollup, never attributed to the caller.
 
 ## 10. Key files
 

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.LifeGoalProposePort;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -51,7 +52,7 @@ public class LifeGoalProposeLlmAdapter implements LifeGoalProposePort {
     private static final int MAX_OBSTACLE = 300;
 
     private static final String SYSTEM_PROMPT = PROPOSE_MARKER + """
-            . Daniel életcél-tervezője vagy. Kapsz egy célt és egy „miért”-et. Feladatod:
+            . {{NÉV}} életcél-tervezője vagy. Kapsz egy célt és egy „miért”-et. Feladatod:
             1) Sorold be egy PERMAH-dimenzióba (positive_emotion|engagement|relationships|meaning|accomplishment|health),
                opcionális másodlagossal.
             2) Ítéld meg a keretet: ha a „miért” külső (kinézet, pénz, státusz) → frame="extrinsic", és adj
@@ -72,10 +73,12 @@ public class LifeGoalProposeLlmAdapter implements LifeGoalProposePort {
     private final CompanionProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
+    private final PromptPersona promptPersona;
 
     @Override
     public Optional<Proposal> propose(UUID userId, String title, String whyText, String catalogText, Set<String> skillKeys) {
-        String prompt = String.format(Locale.ROOT, SYSTEM_PROMPT, properties.lifegoalPropose().maxPillars());
+        String prompt = promptPersona.render(userId,
+                String.format(Locale.ROOT, SYSTEM_PROMPT, properties.lifegoalPropose().maxPillars()));
         String context = "[Cél]\n" + title + "\n[Miért]\n" + (whyText == null ? "" : whyText)
             + "\n[Skillek]\n" + String.join(", ", skillKeys) + "\n[Jelek]\n" + catalogText;
         String raw;

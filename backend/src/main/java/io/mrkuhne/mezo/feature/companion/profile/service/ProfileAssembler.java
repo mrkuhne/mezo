@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.profile.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.feedback.config.FeedbackLearningProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
@@ -81,8 +82,8 @@ public class ProfileAssembler {
 
     private static final String PROMPT = PROFILE_MARKER + """
 
-            Te Daniel személyes társának a tanuló rétege vagy. A lenti nyers jelekből írj EGYETLEN
-            tömör, magyar bekezdést arról, HOGYAN érdemes Daniellel beszélni: milyen üzenet válik be
+            Te {{NÉV}} személyes társának a tanuló rétege vagy. A lenti nyers jelekből írj EGYETLEN
+            tömör, magyar bekezdést arról, HOGYAN érdemes vele beszélni: milyen üzenet válik be
             nála, mikor, milyen hosszban, mit utasít el. Csak abból dolgozz, amit a jelek mutatnak —
             ha valamire nincs jel, hallgass róla. Ne szólítsd meg, ne adj tanácsot, ne sorold fel a
             számokat: a megfigyelést fogalmazd meg. Legfeljebb 5 mondat.""";
@@ -100,6 +101,7 @@ public class ProfileAssembler {
      *  live window's numbers and the stale ones as separate, contradictory lines per scope. Filter
      *  on this same property, or the filter and the data disagree. */
     private final FeedbackLearningProperties feedbackLearningProperties;
+    private final PromptPersona promptPersona;
 
     /**
      * Rebuilds the profile for one user. Returns the node id, or empty when there was no signal
@@ -139,7 +141,7 @@ public class ProfileAssembler {
         String payload = renderPayload(userId, anchorQuarter, rollups, decisions, nodes);
         String prose = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_profile", "assemble", null, null),
-                () -> companionLlm.completeSmart(PROMPT, payload));
+                () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), payload));
         if (prose == null || prose.isBlank()) {
             log.warn("Profile skipped for user {} — the model returned nothing", userId);
             return Optional.empty();

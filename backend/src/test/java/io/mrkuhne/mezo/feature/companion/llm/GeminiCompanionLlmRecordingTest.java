@@ -105,10 +105,10 @@ class GeminiCompanionLlmRecordingTest {
         llm.complete("sys", history, "és most?", List.of(), Map.of());
 
         LlmCallRecord record = recorder.last();
-        assertThat(record.conversationHistory()).contains("Daniel: korábbi kérdés");
+        assertThat(record.conversationHistory()).contains("Felhasználó: korábbi kérdés");
         assertThat(record.conversationHistory()).contains("Mezo: korábbi válasz");
         assertThat(record.systemPrompt()).isEqualTo("sys");
-        assertThat(record.systemPrompt()).doesNotContain("Daniel: korábbi kérdés");
+        assertThat(record.systemPrompt()).doesNotContain("Felhasználó: korábbi kérdés");
     }
 
     /** History-less chat calls render to {@code ""} (mezo-q71s), never null — {@link
@@ -131,8 +131,8 @@ class GeminiCompanionLlmRecordingTest {
         llm.stream("sys", history, "és most?", List.of(), Map.of()).collectList().block();
 
         LlmCallRecord record = recorder.last();
-        assertThat(record.conversationHistory()).contains("Daniel: korábbi kérdés");
-        assertThat(record.systemPrompt()).doesNotContain("Daniel: korábbi kérdés");
+        assertThat(record.conversationHistory()).contains("Felhasználó: korábbi kérdés");
+        assertThat(record.systemPrompt()).doesNotContain("Felhasználó: korábbi kérdés");
     }
 
     /** Non-chat paths have no conversation — the column must stay null, not empty (mezo-q71s). */

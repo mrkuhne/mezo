@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
+import { setCurrentUserId } from '@/shared/lib/userScope'
 
 // Note: the global test setup (src/test/setup.ts) clears sessionStorage after
 // every test, so each case starts from a clean slate.
@@ -27,5 +28,15 @@ test('different keys are independent', () => {
   const a = renderHook(() => useStickyTab<Seg>('t.a', 'week'))
   act(() => a.result.current[1]('blocks'))
   const b = renderHook(() => useStickyTab<Seg>('t.b', 'week'))
+  expect(b.result.current[0]).toBe('week')
+})
+
+test('a sticky tab user-névterezett — másik user a fallbackot kapja', () => {
+  setCurrentUserId('u1')
+  const a = renderHook(() => useStickyTab<Seg>('t.scoped', 'week'))
+  act(() => a.result.current[1]('blocks'))
+  a.unmount()
+  setCurrentUserId('u2')
+  const b = renderHook(() => useStickyTab<Seg>('t.scoped', 'week'))
   expect(b.result.current[0]).toBe('week')
 })

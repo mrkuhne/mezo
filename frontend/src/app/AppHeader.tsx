@@ -2,7 +2,7 @@
 // Mezo · AppHeader — az app EGYETLEN felső fejléce (mezo-atry). Korábban mind az öt
 // tab-gyökér külön bemásolta a `.nap-head` receptet, eltérő tartalommal; itt egy helyen
 // él, és az AppLayout mountolja minden oldalra. Sorrend fixen:
-//   dátum-eyebrow · [kalauz ?] · napszakváltó · Mezo-üzenetek · értesítések · napi orb
+//   szekció (spot + név) · [kalauz ?] · napszakváltó · Mezo-üzenetek · értesítések · napi orb
 // A napszak-választás állapota az URL-ben marad (`/nap?dp=`) — nincs globális state, és a
 // meglévő deep-linkek változatlanul működnek. A választó BÁRHONNAN a Nap oldalra navigál.
 //
@@ -17,13 +17,15 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { DayOrb } from '@/shared/ui/DayOrb'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
-import { useToday } from '@/data/hooks'
 import { useNotificationFeed } from '@/data/notification/feedHooks'
 import { DAY_FACES, FACE_LABEL, type DayFace } from '@/features/today/logic/dayFace'
 import { useDayFace } from '@/features/today/logic/useDayFace'
 import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
+import { HeaderAurora } from '@/app/HeaderAurora'
+import { sectionFor } from '@/app/headerSection'
+import { useCondensedHeader } from '@/app/useCondensedHeader'
 
 const FACE_ICON: Record<DayFace, 'i-hajnal' | 'i-nap' | 'i-alvas'> = {
   reggel: 'i-hajnal', nap: 'i-nap', este: 'i-alvas',
@@ -34,10 +36,12 @@ export function AppHeader() {
   const { pathname } = useLocation()
   const [params] = useSearchParams()
 
-  const { today } = useToday()
   const { face, nowFace } = useDayFace()
   // A `?dp=` CSAK a Nap oldalon jelent napszak-választást; máshol a valós napszak látszik.
   const onNap = pathname === '/nap'
+  // A bal oldal a szekciót mutatja („hol vagyok"); a pontos oldalcím a lapok PageHead-jéé.
+  const section = sectionFor(pathname)
+  const condensed = useCondensedHeader()
 
   const { items: notifications } = useNotificationFeed()
   const unreadNtf = notifications.filter((n) => n.readAt === null).length
@@ -82,9 +86,15 @@ export function AppHeader() {
   }
 
   return (
-    <header className="nap-head app-head" ref={rootRef}>
-      <div className="nap-head-grow">
-        <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
+    <header className={cn('nap-head app-head', condensed && 'is-cond')} ref={rootRef}>
+      <HeaderAurora face={face} />
+      <div className="nap-head-grow app-head-sec">
+        {section && (
+          <>
+            <ClaySpot name={section.spot} size={30} className="app-head-spot" />
+            <span className="app-head-title">{section.label}</span>
+          </>
+        )}
       </div>
 
       {/* Mezo-kalauz (mezo-gb1s.1): az oldal kalauza — csak ott, ahol van (honest state).

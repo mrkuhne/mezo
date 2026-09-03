@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.MeWeekDay;
 import io.mrkuhne.mezo.api.dto.MeWeekResponse;
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
@@ -81,10 +82,10 @@ public class WeeklyReviewGenerator {
     public static final String WEEKLY_REVIEW_MARKER = "HETI-ELEMZES-FELADAT";
 
     private static final String PROMPT = WEEKLY_REVIEW_MARKER + "\n"
-            + "Elemezd Daniel hetét KIZÁRÓLAG a megadott adatokból: mi ment jól, mi tört meg, milyen "
+            + "Elemezd {{NÉV}} hetét KIZÁRÓLAG a megadott adatokból: mi ment jól, mi tört meg, milyen "
             + "összefüggés látszik a napok között. Társ-hangnem, nem jelentés; számot kitalálni tilos; "
             + "gyógyszer-adagolást érintő javaslat tilos. Minden adatot tartalmazó naphoz írj 1-2 mondatos "
-            + "megjegyzést. A candidateFacts a hét TANULSÁGAI: tartós, Danielre vonatkozó megállapítás, "
+            + "megjegyzést. A candidateFacts a hét TANULSÁGAI: tartós, a felhasználóra ({{NÉV}}) vonatkozó megállapítás, "
             + "amit a napokon átnyúló összefüggésből olvasol ki. Jelöltet KIZÁRÓLAG a fent megadott napi "
             + "adatokból vagy minta-eseményekből következtethetsz — külső tudásból, feltételezésből vagy "
             + "egyetlen napból nem —, és az evidence mezőben nevezd meg, MIRE épül (mely napok, hány nap, "
@@ -111,6 +112,7 @@ public class WeeklyReviewGenerator {
     private final WeeklyReviewContextSources contextSources;
     /** mezo-1gim.11 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
     private final ObjectProvider<CharacterPromptSource> characterPromptSource;
+    private final PromptPersona promptPersona;
 
     public record WeeklyReviewGather(String payload, List<Highlight> candidates) {
     }
@@ -139,7 +141,7 @@ public class WeeklyReviewGenerator {
         }
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_weekly_review", "generate", null, null),
-                () -> companionLlm.completeSmart(PROMPT, gather.payload()));
+                () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
         ParsedReview parsed = parse(answer);
         if (parsed == null || parsed.summary() == null || parsed.summary().isBlank()) {
             log.warn("Unusable weekly review answer for {} week {} — no row", userId, weekStart);

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.graph.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
@@ -85,7 +86,7 @@ public class LifeEventExtractionService {
 
     private static final String SYSTEM_PROMPT = EXTRACTOR_MARKER + """
 
-        Te egy életesemény-kiszűrő vagy. Bemenet: Daniel egy napjának saját szövegei, és a
+        Te egy életesemény-kiszűrő vagy. Bemenet: {{NÉV}} egy napjának saját szövegei, és a
         tudásgráf meglévő csomópontjainak számozott listája. Feladat: megtalálni a nap valódi
         ÉLETESEMÉNYEIT — olyan konkrét, dátumhoz köthető eseményeket, amelyek később is
         számítanak (költözés, új munka, betegség, szakítás, utazás, veszteség, mérföldkő).
@@ -111,6 +112,7 @@ public class LifeEventExtractionService {
     private final CompanionProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
+    private final PromptPersona promptPersona;
     // Self-injected proxy (ObjectProvider defers resolution, so this is safe despite the apparent
     // circularity) — see GraphPromotionService.reconcile's javadoc for why persistCandidates is
     // invoked through this proxy instead of `this`.
@@ -135,7 +137,7 @@ public class LifeEventExtractionService {
         try {
             String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_graph", "extract_life_events", "day", null),
-                () -> companionLlm.complete(SYSTEM_PROMPT, buildUserMessage(narrative, existing)));
+                () -> companionLlm.complete(promptPersona.render(userId, SYSTEM_PROMPT), buildUserMessage(narrative, existing)));
             suggestions = parse(raw).stream()
                 .filter(s -> s != null && s.title() != null && !s.title().isBlank())
                 .limit(topK)

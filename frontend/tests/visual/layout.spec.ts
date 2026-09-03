@@ -152,6 +152,78 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
   if (m.contentOverflow > 0) expect(m.pageScrollable).toBe(true)
 })
 
+test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)', async ({ page }) => {
+  // Spec §5 (docs/superpowers/specs/2026-09-03-header-aurora-design.md) ígérte ezt a
+  // regressziós tesztet: a shell-fejléc (`.app-head`) kitapad a görgetőport (`.screen-content`)
+  // tetejéhez és a küszöb (14px) fölött kompakt magasságra (--mzh-head-cond-h: 44px) húzódik;
+  // a lap saját sticky chrome-ja (`.sticky-top`) ehhez képest tapad ki, sosem csúszhat a
+  // fejléc alá; a fejléc nélküli oldalakon (AppLayout.tsx hideChrome) viszont nincs mi alá
+  // tapadni, ott a `.sticky-top`-nak a görgetőport tetejéhez KELL tapadnia (top ≈ 0), nem
+  // 44px-cel lejjebb.
+  // /fuel (not /nap): the Nap hub's panel exactly fills a 393×852 viewport with no
+  // overflow, so `.screen-content` cannot be scrolled there — /fuel's longer hub
+  // reliably overflows, which the condensed-header transition needs to trigger.
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+  await page.goto('/fuel')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+
+  await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    sc.scrollTop = 40
+    sc.dispatchEvent(new Event('scroll'))
+  })
+
+  await expect(page.locator('.app-head')).toHaveClass(/is-cond/)
+  // Let the 250ms padding/margin transition (prototype.css `--duration-normal`) settle
+  // before measuring — mid-transition the rect height is neither the expanded nor the
+  // condensed value.
+  await page.waitForTimeout(350)
+
+  const withHead = await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    const head = document.querySelector('.app-head') as HTMLElement
+    const sticky = document.querySelector('.sticky-top') as HTMLElement | null
+    const scRect = sc.getBoundingClientRect()
+    const headRect = head.getBoundingClientRect()
+    return {
+      headTop: Math.round(headRect.top - scRect.top),
+      headHeight: Math.round(headRect.height),
+      stickyTopBelowHead: sticky
+        ? Math.round(sticky.getBoundingClientRect().top - headRect.bottom)
+        : null,
+    }
+  })
+  expect(withHead.headTop, 'a kompakt fejléc a görgetőport tetejéhez tapad').toBe(0)
+  expect(withHead.headHeight, 'a kompakt fejléc magassága a --mzh-head-cond-h token (44px)').toBe(44)
+  if (withHead.stickyTopBelowHead !== null) {
+    expect(
+      withHead.stickyTopBelowHead,
+      'a lap .sticky-top-ja nem csúszhat a fejléc alá'
+    ).toBeGreaterThanOrEqual(0)
+  }
+
+  // Chrome nélküli oldal: nincs .app-head, a .sticky-top a görgetőport tetejéhez tapad,
+  // NEM 44px-cel lejjebb (az 1. finding regressziója: üres sáv a lap tetején).
+  await page.goto('/train/session')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+
+  const chromeFree = await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    const sticky = sc.querySelector('.sticky-top') as HTMLElement | null
+    return {
+      hasHead: !!document.querySelector('.app-head'),
+      stickyTop: sticky
+        ? Math.round(sticky.getBoundingClientRect().top - sc.getBoundingClientRect().top)
+        : null,
+    }
+  })
+  expect(chromeFree.hasHead, '/train/session nem renderel shell-fejlécet').toBe(false)
+  expect(chromeFree.stickyTop, "a lap .sticky-top-ja tapad, üres sáv nélkül").toBe(0)
+})
+
 test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async ({ page }) => {
   // mezo-bq2t: `.fkp-item` carried `overflow: hidden`, which zeroes the flex-item auto
   // min-height — so the picker list's `max-height: 400px` flex column squashed every row

@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-08-31
+updated: 2026-09-02
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -569,6 +569,8 @@ See N1's own migration
 [`202607291000_..._create_push_subscription.sql`](../../backend/src/main/resources/db/changelog/1.0.0/script/202607291000_mezo-h4wp.6.1_create_push_subscription.sql).
 `endpoint`/`p256dh`/`auth`/`user_agent`/`last_success_at`, partial-unique on
 `(created_by, endpoint)`. Entity `PushSubscriptionEntity`, service `PushSubscriptionService`.
+Since S6 (`mezo-qw37.6`) `register` first soft-deletes any other account's live row for the same
+endpoint — one browser = one account.
 
 ### `notification_pref` (N2)
 

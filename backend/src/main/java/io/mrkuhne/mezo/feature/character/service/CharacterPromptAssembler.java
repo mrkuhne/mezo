@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
@@ -47,7 +48,7 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
     /** Same "\n\n[Blokk] (magyarázat):\n" shape as the facts/[Emlékek]/[Összefüggések] headers —
      *  the parenthetical also supplies the facts-vs-claims + ÉRZÉKENY tone rule (spec §3, §8)
      *  that would otherwise never reach the chat prompt itself. */
-    private static final String HEADER = "\n\n[Karakter — amit eddig megtudtam Danielről] (értelmezések,"
+    private static final String HEADER = "\n\n[Karakter — amit eddig megtudtam {{NÉV}} személyéről] (értelmezések,"
             + " nem tények; az ÉRZÉKENY jelöléssel ellátott állításokat tükörként vagy kérdésként"
             + " hozd fel, sosem ítélkezve; az önvizsgálat sorai a saját találati arányomról szólnak —"
             + " ezekhez tartsd magad, ne ígérj magabiztosabban, mint amit igazolnak):\n";
@@ -70,6 +71,7 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
     private final CharacterProperties properties;
+    private final PromptPersona promptPersona;
 
     @Override
     public String render(UUID userId) {
@@ -87,7 +89,8 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
             }
         }
 
-        StringBuilder result = new StringBuilder(HEADER);
+        String header = promptPersona.render(userId, HEADER);
+        StringBuilder result = new StringBuilder(header);
         for (String block : blocks) {
             if (result.length() + block.length() > config.maxTotalChars()) {
                 // One oversized dimension must never suppress the ones after it — skip just this
@@ -96,7 +99,7 @@ public class CharacterPromptAssembler implements CharacterPromptSource {
             }
             result.append(block);
         }
-        return result.length() == HEADER.length() ? "" : result.toString();
+        return result.length() == header.length() ? "" : result.toString();
     }
 
     private List<CharacterDimensionEntity> orderedDimensions(UUID userId) {

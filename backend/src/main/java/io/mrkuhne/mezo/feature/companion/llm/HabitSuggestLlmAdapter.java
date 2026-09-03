@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.llm;
 
 import io.mrkuhne.mezo.api.dto.ProgressionProfileResponse;
 import io.mrkuhne.mezo.api.dto.SkillLevel;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
@@ -63,7 +64,7 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
     private static final String NO_DATA = "nincs adat";
 
     private static final String SYSTEM_PROMPT = SUGGEST_MARKER + """
-            . Azonosság-választó vagy: Daniel szokás-rendszerének (rutin-láncok) bővítésén dolgozol.
+            . Azonosság-választó vagy: {{NÉV}} szokás-rendszerének (rutin-láncok) bővítésén dolgozol.
             Az alábbi kontextus (skillek, aktuális cél, meglévő láncok és a bennük élő szokások)
             alapján javasolj legfeljebb %d ÚJ szokást, amelyek KIEGÉSZÍTIK a meglévő láncokat —
             SOHA ne javasolj már létező szokás címét (sem szó szerint, sem átfogalmazva). Minden
@@ -91,6 +92,7 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
      *  ObjectProvider#getObject()} is fine (never actually throws) rather than a defensive
      *  null-check + manual 503. */
     private final ObjectProvider<HabitCatalogService> habitCatalogServiceProvider;
+    private final PromptPersona promptPersona;
 
     @Override
     public List<Suggestion> suggest(UUID userId, String chainKey, String hint) {
@@ -106,7 +108,7 @@ public class HabitSuggestLlmAdapter implements HabitSuggestPort {
 
         String context = buildContext(userId, chains, defs, groundedSkills, chainKeys, chainKey, hint);
         String prompt =
-                String.format(Locale.ROOT, SYSTEM_PROMPT, properties.habitSuggest().maxSuggestions());
+                promptPersona.render(userId, String.format(Locale.ROOT, SYSTEM_PROMPT, properties.habitSuggest().maxSuggestions()));
 
         return propose(userId, prompt, context).stream()
                 .filter(Objects::nonNull)

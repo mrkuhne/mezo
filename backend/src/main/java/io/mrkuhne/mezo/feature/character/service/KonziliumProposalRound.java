@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
@@ -86,13 +87,14 @@ public class KonziliumProposalRound {
     /** Prefix a routed user-feedback observation's evidence line gets (Karakter S6 spec §6,
      *  mezo-1gim.10) — makes its authorship unmistakable so the expert cannot mistake Daniel's own
      *  words for a detector signal. */
-    static final String USER_FEEDBACK_PREFIX = "DANIEL VÁLASZA — ";
+    static final String USER_FEEDBACK_PREFIX = "FELHASZNÁLÓ VÁLASZA — ";
 
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final PromptPersona promptPersona;
 
     /** One drafted proposal as the LLM returns it, before validation/clamping. */
     record Draft(String kind, String dimensionKey, String claimId, String text, BigDecimal confidence,
@@ -227,8 +229,8 @@ public class KonziliumProposalRound {
                             })
                             .toList()
                     : null;
-            String systemPrompt = marker + "\n" + expert.systemPersona() + "\n" + outputContract();
-            String userMessage = userMessage(periodLabel, evidence.lines(), expertActiveClaims, expert);
+            String systemPrompt = promptPersona.render(owner, marker + "\n" + expert.systemPersona() + "\n" + outputContract());
+            String userMessage = promptPersona.render(owner, userMessage(periodLabel, evidence.lines(), expertActiveClaims, expert));
             raw = llmCallContextHolder.runWith(
                     new LlmCallContext("character", auditOp, "expert", null),
                     () -> companionLlm.complete(systemPrompt, userMessage));
@@ -367,7 +369,7 @@ public class KonziliumProposalRound {
                 felsorolt aktív állítások egyikének claimId-ja kötelező. Minden javaslatot KIZÁRÓLAG \
                 a felsorolt megfigyelésekre alapozz — ne találj ki számot vagy tényt. Jelöld \
                 sensitive=true-val az önértékelési, elutasítás-mintázati vagy gyógyszerciklus \
-                jellegű állításokat. A "DANIEL VÁLASZA —" jelöléssel kezdődő sorok Daniel saját \
+                jellegű állításokat. A "FELHASZNÁLÓ VÁLASZA —" jelöléssel kezdődő sorok a felhasználó ({{NÉV}}) saját \
                 válaszai — ezek FELÜLÍRJÁK az érzékelt jeleket, és a sor elején álló [claimId] \
                 jelöli, melyik állításra vonatkoznak — ezt az azonosítót használd a claimId \
                 mezőben, ha UP/DOWN/RETIRE javaslatot teszel rá. Egy önmagában álló "talál" \

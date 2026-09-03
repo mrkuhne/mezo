@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { NIGHT_WATCHDOG_MIN, WATCHDOG_TICK_MS } from '@/features/me/logic/nightFlow'
+import { userScopedKey } from '@/shared/lib/userScope'
 
 const renderPage = () =>
   render(<MemoryRouter initialEntries={['/me/sleep/night']}><NightPage /></MemoryRouter>)
@@ -29,7 +30,7 @@ describe('NightPage', () => {
     expect(screen.getByRole('button', { name: /Légzés/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Testpásztázás/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /4K-séta/ })).toBeInTheDocument()
-    expect(localStorage.getItem('mezo-night-wake:2026-07-24')).not.toBeNull()
+    expect(localStorage.getItem(userScopedKey('night-wake:2026-07-24'))).not.toBeNull() // same value today (anon scope, no AuthGate here); derived so it self-corrects if that ever changes
   })
 
   test('a tool opens from waiting and megállítom returns to waiting', () => {

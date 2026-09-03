@@ -1,18 +1,18 @@
+import { isMockMode } from '@/data/_client/mode'
+import { useMe } from '@/data/auth/authHooks'
 import { user } from '@/data/today/today'
 
+export interface ProfileIdentity { name: string }
+
 /**
- * DECIDED (Slice E, mezo-t16y.2; REVISITED Napiv S7, mezo-8141): `user` stays a static
- * const — the single-user identity source, recorded not wired to any backend profile.
- * Today overrides only the meso-derived fields from useTrain() (Slice T), FuelStackPage
- * reads seed consts by decision mezo-4nu, and ProfilePage dropped the identity hero in
- * mezo-lfw. **Sanctioned exception (S7):** `AppHero` (retired `MeHead`'s identity role,
- * mezo-k7rn) renders `user.name` in BOTH modes on every main tab — the one real-mode
- * surface that does render the identity statics; the one-line biometrics beside it on
- * ProfilePage (`MeBioRow`: age/height/latest weight/body-fat%) is genuine real-hook data
- * (`useBiometricProfile`/`useWeight`), not part of this static. The legacy `user_profiles`
- * table still lacks `name`. Revisit again when a backend profile identity surface exists —
- * see docs/features/me.md §9.
+ * The signed-in identity for the Én hero (S6, mezo-qw37.6 — closes the me.md §9 "static
+ * user" decision). Real mode: GET /api/auth/me via useMe(), `null` until it arrives (ghost-guard,
+ * no seed fallback — dual-mode read invariant). Mock mode: the static today.ts seed, which is
+ * now the ONLY place that seed's identity fields are read.
  */
-export function useProfile() {
-  return { user }
+export function useProfile(): { user: ProfileIdentity | null } {
+  const mock = isMockMode()
+  const me = useMe()
+  if (mock) return { user: { name: user.name } }
+  return { user: me.data ? { name: me.data.name } : null }
 }

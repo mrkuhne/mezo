@@ -36,7 +36,7 @@ public class CompanionHelloRunner implements CommandLineRunner {
             .runWith(new LlmCallContext("companion_smoke", "hello", null, null),
                 () -> companionLlm.stream(
                     "Te vagy a mezo companion. Valaszolj magyarul, egyetlen rovid mondatban.",
-                    "Koszonj Danielnek!"))
+                    "Koszonj a felhasznalonak!"))
             .doOnNext(chunk -> log.info("companion-smoke chunk: [{}]", chunk))
             .blockLast();
         log.info("companion-smoke: done — round-trip proven.");

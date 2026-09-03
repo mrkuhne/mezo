@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
@@ -67,7 +68,8 @@ class ChatServiceGraphBlockIT extends AbstractIntegrationTest {
         String system = systemBlock(answer);
         int memories = system.indexOf(PromptMemoryAssembler.MEMORIES_HEADER);
         int connections = system.indexOf(GraphPromptAssembler.CONNECTIONS_HEADER);
-        int tone = system.indexOf(ChatService.TONE_REMINDER);
+        String toneReminder = ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-graph@test.local");
+        int tone = system.indexOf(toneReminder);
         assertThat(memories).isPositive();
         assertThat(connections).isGreaterThan(memories);
         assertThat(tone).isGreaterThan(connections);
@@ -98,7 +100,7 @@ class ChatServiceGraphBlockIT extends AbstractIntegrationTest {
                 request("a stressz mit csinál velem?"));
 
         assertThat(turn.systemPrompt()).contains(GraphPromptAssembler.CONNECTIONS_HEADER);
-        assertThat(turn.systemPrompt()).endsWith(ChatService.TONE_REMINDER);
+        assertThat(turn.systemPrompt()).endsWith(ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-graph-stream@test.local"));
         // mezo-b3pp.33: each ref carries its node's title as the label
         assertThat(turn.recalledRefs()).containsExactly(
                 new RefsEnvelope.Ref("GraphNode", a.getId().toString(), "Stressz"),
@@ -116,7 +118,7 @@ class ChatServiceGraphBlockIT extends AbstractIntegrationTest {
         MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("mi a mai terv?"));
 
         assertThat(systemBlock(answer)).doesNotContain("[Összefüggések]");
-        assertThat(systemBlock(answer)).endsWith(ChatService.TONE_REMINDER);
+        assertThat(systemBlock(answer)).endsWith(ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-graph-none@test.local"));
         assertThat(answer.getRefs()).noneMatch(r -> "GraphNode".equals(r.getKind()));
     }
 }

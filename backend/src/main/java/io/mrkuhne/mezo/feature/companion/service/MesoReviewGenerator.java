@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -65,11 +66,11 @@ public class MesoReviewGenerator {
     private static final String LLM_ENTITY_KIND = "mesocycle";
 
     private static final String SYSTEM_PROMPT = MESO_REVIEW_MARKER + "\n"
-        + "Daniel edzés-társa vagy, és egy most lezárt mezociklus (futam) VÉGÉRTÉKELÉSÉT írod meg "
+        + "{{NÉV}} edzés-társa vagy, és egy most lezárt mezociklus (futam) VÉGÉRTÉKELÉSÉT írod meg "
         + "magyarul, kizárólag a megadott adatokból. Számot, rekordot vagy trendet kitalálni tilos; "
         + "ahol az adat hiányzik (null), ott mondd ki, hogy nincs róla adat, és ne pótold "
         + "becsléssel. Diagnózist, gyógyszeres vagy klinikai javaslatot SOHA ne adj, és ne "
-        + "minősítsd Danielt — a hangvétel ítélkezésmentes és mintázat-fókuszú.\n\n"
+        + "minősítsd őt — a hangvétel ítélkezésmentes és mintázat-fókuszú.\n\n"
         + "A felhasználói üzenet JELMAGYARÁZAT blokkja megadja, mit mér PONTOSAN az egyes mező. "
         + "Kötelező eszerint értelmezni őket: ha egy mező kevesebbet mér, mint amit a neve sugall, "
         + "akkor a szövegben is szűkebben, minősítve fogalmazz róla — sose állíts többet, mint amit "
@@ -90,6 +91,7 @@ public class MesoReviewGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectProvider<MesoReviewGate> reviewGate;
     private final ObjectMapper objectMapper;
+    private final PromptPersona promptPersona;
 
     /**
      * Assembles + persists the run's lifestyle context, then (switch permitting) generates and
@@ -128,7 +130,7 @@ public class MesoReviewGenerator {
             }
             String answer = llmCallContextHolder.runWith(
                 new LlmCallContext(LLM_FEATURE, "generate", LLM_ENTITY_KIND, mesocycleId),
-                () -> companionLlm.completeSmart(SYSTEM_PROMPT, payload(run, windowEnd, stored)));
+                () -> companionLlm.completeSmart(promptPersona.render(userId, SYSTEM_PROMPT), payload(run, windowEnd, stored)));
             if (answer == null || answer.isBlank()) {
                 // An unusable answer is a degrade, not an app error (the MemoirGenerator precedent):
                 // no exception to raise, just the same 'failed' the FE renders as a retry affordance.
