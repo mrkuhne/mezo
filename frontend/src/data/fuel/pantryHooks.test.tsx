@@ -190,6 +190,22 @@ describe('usePantryActions (real mode)', () => {
     expect(hits).toEqual([{ id: 'c1', kind: 'food', name: 'Kefir', source: 'manual', authorName: null }])
   })
 
+  it('searchCatalog encodes a Hungarian query with accents + a space the same way the real client sends it', async () => {
+    // Carried-forward gap (Task 10 review): the earlier real-mode test only ever sent the
+    // ASCII 'kef' and asserted a raw substring on the URL, which would also pass against a
+    // handler that percent-encodes differently than the real fetch client. Assert via the
+    // DECODED searchParams value instead, so this can't pass against a disagreeing handler.
+    let seenUrl = ''
+    server.use(http.get(`${API_BASE}/api/pantry/catalog`, ({ request }) => {
+      seenUrl = request.url
+      return HttpResponse.json([])
+    }))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+    await result.current.searchCatalog('kávé leves')
+    expect(new URL(seenUrl).searchParams.get('q')).toBe('kávé leves')
+  })
+
   it('addFromCatalog POSTs /api/pantry/items/from-catalog and invalidates the pantry', async () => {
     let body: unknown = null
     server.use(http.post(`${API_BASE}/api/pantry/items/from-catalog`, async ({ request }) => {

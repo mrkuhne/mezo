@@ -199,4 +199,23 @@ describe('AddPantryItemSheet', () => {
     })
     expect(onClose).toHaveBeenCalled()
   })
+
+  it('definitionLocked disables the definition fields but keeps price editable', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={qc}>
+        <AddPantryItemSheet
+          open
+          onClose={vi.fn()}
+          editId="e1"
+          definitionLocked
+          initial={{ kind: 'food', name: 'Skyr natúr', per: 100, unit: 'g', kcal: 63 }}
+        />
+      </QueryClientProvider>,
+    )
+    expect(screen.getByDisplayValue('Skyr natúr')).toBeDisabled()
+    expect(screen.getByDisplayValue('63')).toBeDisabled()
+    expect(screen.getByPlaceholderText('750')).toBeEnabled()
+    expect(screen.getByText(/csak a szerző vagy a tulajdonos/)).toBeInTheDocument()
+  })
 })

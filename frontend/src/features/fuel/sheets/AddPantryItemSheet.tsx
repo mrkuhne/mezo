@@ -64,12 +64,18 @@ export function AddPantryItemSheet({
   onClose,
   editId,
   initial,
+  definitionLocked,
 }: {
   open: boolean
   onClose: () => void
   editId?: string
   initial?: Partial<PantryItemInput>
+  /** S4 (mezo-qw37.4): true when this row's shared definition may not be edited by this
+   *  user (item.catalogEditable === false) — kind/category/name/source/macro/nutrition
+   *  inputs lock; price/stock/dose stay editable (they are the caller's own facts). */
+  definitionLocked?: boolean
 }) {
+  const lock = definitionLocked === true
   const { addItem, updateItem } = usePantryActions()
   const [kind, setKind] = useState<PantryItemKind>(initial?.kind ?? 'food')
   const [category, setCategory] = useState(initial?.category ?? 'protein')
@@ -158,24 +164,24 @@ export function AddPantryItemSheet({
           <SectionHead>Alap</SectionHead>
           <div style={grid2}>
             <Field label="Típus">
-              <select value={kind} onChange={e => setKind(e.target.value as PantryItemKind)} style={selectStyle}>
+              <select disabled={lock} value={kind} onChange={e => setKind(e.target.value as PantryItemKind)} style={selectStyle}>
                 {kinds.map(k => <option key={k.id} value={k.id}>{k.label}</option>)}
               </select>
             </Field>
             <Field label="Kategória">
-              <select value={category} onChange={e => setCategory(e.target.value)} style={selectStyle}>
+              <select disabled={lock} value={category} onChange={e => setCategory(e.target.value)} style={selectStyle}>
                 {categoryKeys.map(c => <option key={c} value={c}>{pantryCategoryMeta[c].label}</option>)}
               </select>
             </Field>
           </div>
           <div style={{ marginBottom: 8 }}>
             <Field label="Név">
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="pl. Görög joghurt 10%" style={fieldInputStyle} />
+              <input disabled={lock} value={name} onChange={e => setName(e.target.value)} placeholder="pl. Görög joghurt 10%" style={fieldInputStyle} />
             </Field>
           </div>
           <div style={grid2}>
             <Field label="Forrás">
-              <select value={source} onChange={e => setSource(e.target.value as PantrySourceKey)} style={selectStyle}>
+              <select disabled={lock} value={source} onChange={e => setSource(e.target.value as PantrySourceKey)} style={selectStyle}>
                 {sourceKeys.map(s => <option key={s} value={s}>{pantrySources[s].label}</option>)}
               </select>
             </Field>
@@ -185,29 +191,34 @@ export function AddPantryItemSheet({
               Bázis: /{legacyPer} {initial?.unit ?? 'g'} · örökölt
             </p>
           )}
+          {lock && (
+            <p className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', margin: '0 2px 8px' }}>
+              Közös katalógus-tétel: az adatait csak a szerző vagy a tulajdonos szerkesztheti. Az ár, a készlet és a dózis a tiéd.
+            </p>
+          )}
 
           {isFood ? (
             <>
               {/* Makrók — the label's per-100 g column, verbatim (mezo-0gjr) */}
               <SectionHead>Makrók · /100 g</SectionHead>
               <div style={grid2}>
-                <Field label="kcal"><input {...numProps} value={kcal} onChange={e => setKcal(e.target.value)} placeholder="119" style={fieldInputStyle} /></Field>
-                <Field label="Fehérje"><input {...numProps} value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="6" style={fieldInputStyle} /></Field>
+                <Field label="kcal"><input disabled={lock} {...numProps} value={kcal} onChange={e => setKcal(e.target.value)} placeholder="119" style={fieldInputStyle} /></Field>
+                <Field label="Fehérje"><input disabled={lock} {...numProps} value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="6" style={fieldInputStyle} /></Field>
               </div>
               <div style={grid2}>
-                <Field label="Szénhidrát"><input {...numProps} value={carbsG} onChange={e => setCarbsG(e.target.value)} placeholder="4" style={fieldInputStyle} /></Field>
-                <Field label="Zsír"><input {...numProps} value={fatG} onChange={e => setFatG(e.target.value)} placeholder="9" style={fieldInputStyle} /></Field>
+                <Field label="Szénhidrát"><input disabled={lock} {...numProps} value={carbsG} onChange={e => setCarbsG(e.target.value)} placeholder="4" style={fieldInputStyle} /></Field>
+                <Field label="Zsír"><input disabled={lock} {...numProps} value={fatG} onChange={e => setFatG(e.target.value)} placeholder="9" style={fieldInputStyle} /></Field>
               </div>
 
               {/* Tápanyag — same per-100 g basis as the macros */}
               <SectionHead>Tápanyag · /100 g</SectionHead>
               <div style={grid2}>
-                <Field label="Rost"><input {...numProps} value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
-                <Field label="Cukor"><input {...numProps} value={sugarG} onChange={e => setSugarG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+                <Field label="Rost"><input disabled={lock} {...numProps} value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+                <Field label="Cukor"><input disabled={lock} {...numProps} value={sugarG} onChange={e => setSugarG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
               </div>
               <div style={grid2}>
-                <Field label="Tel. zsír"><input {...numProps} value={saturatedFatG} onChange={e => setSaturatedFatG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
-                <Field label="Só"><input {...numProps} value={saltG} onChange={e => setSaltG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+                <Field label="Tel. zsír"><input disabled={lock} {...numProps} value={saturatedFatG} onChange={e => setSaturatedFatG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+                <Field label="Só"><input disabled={lock} {...numProps} value={saltG} onChange={e => setSaltG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
               </div>
             </>
           ) : (

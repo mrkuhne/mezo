@@ -60,6 +60,11 @@ test('header "Új tétel" opens the manual add-item sheet', async () => {
   await userEvent.click(screen.getByRole('button', { name: /Új tétel/ }))
   expect(await screen.findByText('Új kamra-tétel')).toBeInTheDocument()
 })
+test('header "Közös" opens the catalog search sheet', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: /Közös/ }))
+  expect(screen.getByText('Hozzáadás a közösből')).toBeInTheDocument()
+})
 test('type switcher filters the list to one type', async () => {
   renderView()
   // A food item is visible in "Mind"; switching to Stim hides it.

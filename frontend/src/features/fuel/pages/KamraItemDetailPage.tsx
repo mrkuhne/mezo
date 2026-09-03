@@ -183,6 +183,12 @@ export function KamraItemDetailPage() {
                 <NovaDot nova={item.nova} />
               </>
             )}
+            {item.sharedFrom && (
+              <>
+                <span>·</span>
+                <span style={{ color: 'var(--mz-cell-sage-ink)' }}>közös · {item.sharedFrom.authorName}</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -265,6 +271,7 @@ export function KamraItemDetailPage() {
         onClose={() => setEditOpen(false)}
         editId={backendId}
         initial={inputFromItem(item)}
+        definitionLocked={item.catalogEditable === false}
       />
       {logOpen && <LogFlowPage prefill={{ source: 'pantry', pantryItemId: backendId }} onClose={() => setLogOpen(false)} />}
     </MozaikPage>
