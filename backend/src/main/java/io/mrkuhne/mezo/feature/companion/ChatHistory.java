@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 
@@ -24,7 +25,7 @@ public final class ChatHistory {
         }
         StringBuilder rendered = new StringBuilder(HEADER);
         for (Turn turn : history) {
-            rendered.append(turn.role() == Role.USER ? "Daniel: " : "Mezo: ")
+            rendered.append(turn.role() == Role.USER ? PromptPersona.USER_TURN_LABEL : "Mezo: ")
                     .append(turn.content())
                     .append('\n');
         }

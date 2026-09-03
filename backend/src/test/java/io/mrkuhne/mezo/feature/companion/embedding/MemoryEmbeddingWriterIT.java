@@ -63,7 +63,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         MemoryEmbeddingEntity row = rows.getFirst();
         assertThat(row.getKind()).isEqualTo(MemoryEmbeddingEntity.KIND_CHAT_TURN);
         assertThat(row.getRefId()).isEqualTo(assistant.getId());
-        assertThat(row.getContent()).isEqualTo("Daniel: mit egyek?\nMezo: fehérjét");
+        assertThat(row.getContent()).isEqualTo("Felhasználó: mit egyek?\nMezo: fehérjét");
         // occurred_on = the episode's day (the assistant row's creation day), never the embed day
         assertThat(row.getOccurredOn())
                 .isEqualTo(LocalDate.ofInstant(assistant.getCreatedAt(), ZoneId.systemDefault()));

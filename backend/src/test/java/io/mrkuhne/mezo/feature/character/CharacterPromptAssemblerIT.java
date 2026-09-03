@@ -99,7 +99,8 @@ class CharacterPromptAssemblerIT extends ApiIntegrationTest {
 
         String block = promptSource.render(owner);
 
-        assertThat(block).contains("[Karakter — amit eddig megtudtam Danielről]");
+        assertThat(block).contains("[Karakter — amit eddig megtudtam ").contains(" személyéről]");
+        assertThat(block).doesNotContain("Daniel");
         // I4 (final review): the header carries the tone-rule parenthetical itself — the chat
         // prompt gets no other explanation of what ÉRZÉKENY means or that this is interpretation,
         // not fact.

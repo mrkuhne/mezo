@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.api.dto.CreateFactRequest;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
@@ -38,7 +39,7 @@ import java.util.stream.Collectors;
 public class KnowledgeFactService {
 
     /** The injection block header — ChatService inserts it between the context snapshot and the history. */
-    public static final String FACTS_HEADER = "\n\nMEGERŐSÍTETT TÉNYEK Danielről (legfontosabb elöl):\n";
+    public static final String FACTS_HEADER = "\n\nMEGERŐSÍTETT TÉNYEK {{NÉV}} személyéről (legfontosabb elöl):\n";
 
     /** The V3.3 acknowledgment header — freshly promoted pattern-facts the companion mentions once. */
     public static final String NEW_PATTERN_FACTS_HEADER =
@@ -58,6 +59,7 @@ public class KnowledgeFactService {
     private final ApplicationEventPublisher eventPublisher;
     /** mezo-d20.7.7 — absent when the proactive switch is off; then the signal is null, not 0. */
     private final ObjectProvider<HighlightCitationSource> citationSource;
+    private final PromptPersona promptPersona;
 
     public List<KnowledgeFactResponse> list(UUID userId) {
         // V3.3 evidence link: pattern-sourced facts carry their promoting pattern's title
@@ -150,7 +152,7 @@ public class KnowledgeFactService {
         if (facts.isEmpty()) {
             return "";
         }
-        StringBuilder block = new StringBuilder(FACTS_HEADER);
+        StringBuilder block = new StringBuilder(promptPersona.render(userId, FACTS_HEADER));
         for (KnowledgeFactEntity fact : facts) {
             block.append("- (")
                     .append(CATEGORY_LABELS.getOrDefault(fact.getCategory(), fact.getCategory()))
