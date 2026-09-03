@@ -162,7 +162,7 @@ test('the goal card shows the coral track, the indulás/most/cél labels and the
   expect(card).toHaveTextContent('−0,5')
   expect(card).toHaveTextContent('11 hét')
   await userEvent.click(card)
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals/weight')
 })
 
 test('a maintain goal drops the track and reads „tartás" (the real contract)', async () => {
@@ -193,7 +193,7 @@ test('with no active goal the card becomes the honest ＋ Új cél door', async 
   const opener = await screen.findByRole('button', { name: /Új cél/ })
   expect(screen.queryByRole('button', { name: 'Hosszú cél' })).not.toBeInTheDocument()
   await userEvent.click(opener)
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals/weight')
 })
 
 test('renders the six small tiles plus the wide Rutin tile, each opening its own page', async () => {

@@ -220,6 +220,12 @@ public class FeaturesConfiguration {
     /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
     public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
 
+    /** Életcél-rendszer (bd mezo-iizd) — off ⇒ /api/life-goals 404s, no lifegoal beans. */
+    public static final String LIFEGOAL_SWITCH = "mezo.feature.lifegoal.enabled";
+
+    /** AI pillar proposal for life goals (propose-only, ADR 0019) — off ⇒ the template proposer answers. */
+    public static final String LIFEGOAL_AI_PROPOSE_SWITCH = "mezo.feature.lifegoal-ai-propose.enabled";
+
     /** In-app notification feed + bell (bd mezo-gzhp) — off ⇒ no feed beans, /api/notification/feed 404s, producers' emits no-op through AppNotificationEmitter. */
     public static final String NOTIFICATION_FEED_SWITCH = "mezo.feature.notification-feed.enabled";
 

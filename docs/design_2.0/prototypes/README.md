@@ -35,6 +35,7 @@ they inline come from `../assets/`.
 | `kalauz.html` | https://claude.ai/code/artifact/aff4eff9-775c-4222-82cf-487d143479bf |
 | `growth-tab.html` | https://claude.ai/code/artifact/393bca87-9095-42dd-ac55-127162ad0412 |
 | `rutin-epito.html` | https://claude.ai/code/artifact/78c8f0f9-925f-44a9-93b4-3e9cc077e162 (Rutin-építő — széles Rutin csempe az Én hubon, /me/rutin hub erő-csíkokkal, 4 lépéses szokás-recept wizard Fogg / Clear keretre, szokás-szerkesztő — mezo-3zue) |
+| `celok.html` | https://claude.ai/code/artifact/e404d1d4-55c3-4e81-a8b4-716c6ba45f87 |
 
 ## Workflow
 
@@ -630,3 +631,14 @@ are usable without a build step).
   the new row highlighted. **Habit page** (`/me/rutin/szokas/:id`): framework band, the recipe
   sentence large, 28-day history strip, framework fields, pause-without-losing-progress.
   Backend vision it mocks: spec `docs/superpowers/specs/2026-09-02-routine-builder-design.md`.
+- **celok** — the Célok (life goals) hub + goal detail + five-step creation wizard, spec
+  `docs/superpowers/specs/2026-09-02-lifegoal-system-design.md`. **Slice 1 implemented**
+  (`mezo-iizd.1`, real backend `docs/features/lifegoal.md`): the PERMAH-ring hero, dimension
+  chips, per-goal tiles, the pillar-card detail page, and the wizard's five steps (Cél · Keret ·
+  Pillérek · Ha–akkor · Összegzés) all ship against a real `life_goal`/`life_goal_pillar`
+  backend and a closed 28-entry signal catalog, in both FE modes. **Not yet implemented** (the
+  prototype's remaining surface, slices 2–3): the scored ↗/→/↘ arrows and % readouts anywhere
+  on the hub/detail/tiles (every numeric slot renders an honest `—` in the real build), the
+  "Jelek" signals page, the Nap "Célok · ma" tile, the Heti goals card, the Growth skill-row
+  chip, and the companion `[Célok]` prompt block — all scorer/job output the prototype narrates
+  but the real engine has not yet computed.

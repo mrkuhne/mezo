@@ -397,6 +397,20 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SUGGEST_SENTINEL =
             Pattern.compile("\\[fake-habit-suggest:(\\[.*\\]|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Scripted life-goal proposal (mezo-iizd): {@code [fake-lifegoal-propose:{…}]} planted in the
+     *  request WHYTEXT (title is capped at 120 chars by the contract, too tight for a scripted JSON
+     *  payload — whyText's 600-char cap has room). Greedy object alternative + raw-text fallback (a
+     *  broken payload exercises the degrade-to-template path). Default = one valid minimal proposal. */
+    public static final Pattern LIFEGOAL_PROPOSE_SENTINEL =
+            Pattern.compile("\\[fake-lifegoal-propose:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
+    public static final String LIFEGOAL_PROPOSE_DEFAULT =
+            "{\"dimension\":\"health\",\"secondaryDimension\":\"accomplishment\",\"frame\":\"extrinsic\","
+            + "\"frameNote\":\"FAKE-KERET\",\"reframedWhy\":\"Erős, egészséges test.\","
+            + "\"pillars\":[{\"catalogId\":\"sleep_duration\",\"label\":\"Alvás\",\"kind\":\"average\",\"skillKey\":\"recovery\","
+            + "\"weight\":2,\"threshold\":7.0,\"comparator\":\"gte\"}],"
+            + "\"obstacles\":[\"Röpi-szezon\"],\"plans\":[{\"ha\":\"röpi-edzést logolsz\",\"akkor\":\"másnap laza kocogás\","
+            + "\"triggerSource\":\"sport_session_logged\",\"delayHours\":10}]}";
+
     /** Canned meso end-of-run review (mezo-meyc.3) — plain Hungarian prose, exactly the shape the
      *  real generator persists into {@code mesocycle_report.ai_eval}. A CONSTANT (not an echo) so
      *  {@code MesoReviewGeneratorIT} can assert the narrative landed verbatim. Error injection rides
@@ -651,6 +665,10 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(MesoPlanLlmAdapter.MARKER)) {
             Matcher m = MESO_PLAN_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "{\"rationale\":\"FAKE-INDOK\",\"days\":[]}";
+        }
+        if (systemPrompt.startsWith(LifeGoalProposeLlmAdapter.PROPOSE_MARKER)) {
+            Matcher m = LIFEGOAL_PROPOSE_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : LIFEGOAL_PROPOSE_DEFAULT;
         }
         if (systemPrompt.startsWith(MesoReviewGenerator.MESO_REVIEW_MARKER)) {
             if (userMessage.contains(MESO_REVIEW_ECHO)) {
