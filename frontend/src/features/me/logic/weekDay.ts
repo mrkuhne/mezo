@@ -41,6 +41,38 @@ export function subscoreCount(day: MeWeekDay): number {
   return SUBSCORE_KEYS.filter((k) => day.subscores[k] != null).length
 }
 
+// ── Day-page six dimensions (mezo-jcpt.4) ─────────────────────────────────────
+// The evaluation endpoint's `DayDimension.id`s, in the config-weight order (constraints.md:
+// nutrition .30 · quality .15 · training .20 · sleep .15 · logging .10 · rhythm .10). This is
+// DELIBERATELY separate from `SUBSCORES`/`SUBRING_LABEL` above: those stay bound to
+// `MeWeekDay.subscores`'s four-key wire shape for the weekly mosaic (WeekScoreBars/WeekDayTile),
+// which is unchanged by this slice. The six dimensions belong to the DAY PAGE only, sourced
+// from `useDayEvaluation` (Task 10 wires the UI on top of these exports).
+const DAY_DIMENSION_KEYS = ['nutrition', 'quality', 'training', 'sleep', 'logging', 'rhythm'] as const
+export type DayDimensionKey = (typeof DAY_DIMENSION_KEYS)[number]
+
+/** The six day-page dimension bars, in bar order. `barClass` follows the existing `is-sleep`
+ *  naming pattern (`is-<key>`) — Task 10 backs each with its own CSS token (sage/gold/coral/
+ *  lav/rose/sky per constraints.md), scoped to the day page's own container so it never
+ *  collides with the weekly mosaic's identically-named-by-coincidence `is-sleep` class (which
+ *  carries a DIFFERENT color there — sky, not lav). */
+export const DAY_DIMENSIONS: readonly { key: DayDimensionKey; label: string; barClass: string }[] = [
+  { key: 'nutrition', label: 'tápanyag', barClass: 'is-nutrition' },
+  { key: 'quality', label: 'minőség', barClass: 'is-quality' },
+  { key: 'training', label: 'edzés', barClass: 'is-training' },
+  { key: 'sleep', label: 'alvás', barClass: 'is-sleep' },
+  { key: 'logging', label: 'logolás', barClass: 'is-logging' },
+  { key: 'rhythm', label: 'ritmus', barClass: 'is-rhythm' },
+]
+
+/** Count of day-page dimensions with real data (`DONE`) — the day-page analogue of
+ *  `subscoreCount` above, over the evaluation endpoint's `dimensions[]` instead of
+ *  `MeWeekDay.subscores`. Takes any `{ status }[]` (not `DayDimension[]`) so it needs no
+ *  import from the generated API types. */
+export function doneDimensionCount(dimensions: readonly { status: string }[]): number {
+  return dimensions.filter((d) => d.status === 'DONE').length
+}
+
 /** True when NOTHING was logged on the day — the `nincs adat` state, distinct from `tanulom`.
  *  The prototype checks kcal/sleep/check-in/workout; the real contract also carries a per-day
  *  weight and XP, and a logged weight IS a log, so both join the test (see the slice report). */
