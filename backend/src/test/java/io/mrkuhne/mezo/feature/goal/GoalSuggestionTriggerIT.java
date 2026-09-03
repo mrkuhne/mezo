@@ -83,4 +83,18 @@ class GoalSuggestionTriggerIT extends AbstractIntegrationTest {
         assertThat(open.get().getPayload().fromWeek()).isEqualTo(3);
         assertThat(open.get().getPayload().toWeek()).isEqualTo(3);
     }
+
+    @Test
+    void testOnMesoLifecycle_shouldResolveActiveGoalAndPropose() {
+        UUID user = databasePopulator.populateUser("trig4@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "bulk", "active");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Pre-cut prep", "active");
+        meso.setGoalPreset("cut-prep");
+        linkPopulator.createLink(user, goal.getId(), "mesocycle", meso.getId(), 1, meso.getWeeks());
+
+        triggerService.onMesoLifecycle(user);
+
+        assertThat(suggestionRepository.findByGoalIdAndKindAndStatusAndDeletedFalse(
+            goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "proposed")).isPresent();
+    }
 }
