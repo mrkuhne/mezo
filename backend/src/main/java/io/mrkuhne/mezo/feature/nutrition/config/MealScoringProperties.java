@@ -26,6 +26,9 @@ public record MealScoringProperties(
     @DecimalMin("0.5") @DecimalMax("10.0") double macroDeviationSlope,
     /** Penalty factor on the protein-SURPLUS side of the macro deviation: 0 = overshoot forgiven (fitness-app policy, mezo-8ms6), 1 = symmetric. Deficits always count in full. */
     @DecimalMin("0.0") @DecimalMax("1.0") double macroProteinSurplusPenalty,
+    /** kcal-share of the day at (or above) which a meal's macro-ratio deviation counts in full;
+     *  smaller meals scale linearly (a 100-kcal snack can no longer tank the macro dimension). */
+    @DecimalMin("0.05") @DecimalMax("1.0") double macroSignificanceRefShare,
     @NotNull @Valid MicroRefs micro,
     @NotNull @Valid WhoRefs who,
     @NotNull @Valid FatQualityRefs fatQuality,
