@@ -22,7 +22,7 @@ describe('DiagnosisListPage (mock mode)', () => {
     expect(screen.getAllByText('Miért vagyok fáradt?').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Miért alszom rosszul?')).toBeInTheDocument()
     // generate is inert in mock — it costs a real SMART call — on EVERY live card
-    const asks = screen.getAllByRole('button', { name: '✦ Kérdezd meg most' })
+    const asks = screen.getAllByRole('button', { name: 'Kérdezd meg most' })
     expect(asks).toHaveLength(2)
     // the ask CTA is the house pill button, not an unstyled bare 'cta' (the live-app regression)
     asks.forEach((b) => expect(b).toHaveClass('mzp-cta'))
@@ -46,7 +46,29 @@ describe('DiagnosisListPage (real mode)', () => {
       expect(screen.getByText('Még nem kérdezted meg. A Mezo az elmúlt két hét adataiból keres okokat.')).toBeInTheDocument(),
     )
     expect(screen.queryByText(/Alváshiány/)).not.toBeInTheDocument()
-    screen.getAllByRole('button', { name: '✦ Kérdezd meg most' }).forEach((b) => expect(b).toBeEnabled())
+    screen.getAllByRole('button', { name: 'Kérdezd meg most' }).forEach((b) => expect(b).toBeEnabled())
     expect(screen.getByText('napi 3 kérdés · a megnyitás mindig ingyen')).toBeInTheDocument()
+  })
+})
+
+// mezo-hq44: a „Kérdezd meg" szemöldök és a CTA ✦-ja sparkle-ikon lett. A gomb
+// akadálymentes neve emiatt a puszta szöveg — a látható copy változatlan.
+describe('DiagnosisListPage — emoji→ikon (mezo-hq44)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('a szemöldök és a CTA ikont rajzol, nem ✦ glifát', () => {
+    const { container } = renderPage()
+    const eyebrows = container.querySelectorAll('.mzp-pred .mz-eyebrow')
+    const ask = Array.from(eyebrows).find((e) => /Kérdezd meg/.test(e.textContent ?? '')) as HTMLElement
+    expect(ask).toBeTruthy()
+    expect(ask.querySelector('svg')).toBeTruthy()
+    expect(ask.textContent).not.toMatch(/✦/)
+    const ctas = screen.getAllByRole('button', { name: 'Kérdezd meg most' })
+    expect(ctas).toHaveLength(2)
+    ctas.forEach((b) => {
+      expect(b.querySelector('svg')).toBeTruthy()
+      expect(b.textContent).not.toMatch(/✦/)
+    })
   })
 })

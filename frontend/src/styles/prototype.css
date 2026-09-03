@@ -4394,6 +4394,12 @@ button.mz-tile:active { transform: scale(0.96); }
 
 .mz-tile-top { display: flex; align-items: center; }
 .mz-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-ink-mut); }
+/* mezo-hq44: szemöldök/címke ikonnal — a glifa helyére lépő Icon a szöveggel egy sorban,
+   optikailag középre igazítva (a .mzc-memeb mintája). Az Icon svg-je display:block, ezért
+   EGYSORNYI címkénél az inline-flex a helyes hordozó (.mz-ebic); FOLYÓ szövegben, ahol a
+   sortörésnek meg kell maradnia, az ikon lesz inline (.mz-icin). */
+.mz-ebic { display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+.mz-icin > svg { display: inline-block; vertical-align: -0.16em; }
 .mz-mut { color: var(--mz-ink-soft); }
 .mz-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF6B4A; flex: none; margin-left: auto; }
 /* The counted sibling of .mz-dot (prototype `.badge.unread`). A number already carries the
