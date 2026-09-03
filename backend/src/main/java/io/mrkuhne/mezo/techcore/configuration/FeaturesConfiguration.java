@@ -272,6 +272,12 @@ public class FeaturesConfiguration {
      *  PROACTIVE_SWITCH too (the card is a companion_message row). */
     public static final String INTERVENTION_SWITCH = "mezo.feature.intervention.enabled";
 
+    /** S3 (bd mezo-d58h.3) daily setup-check pass — techcore cron zone (schedule:
+     *  mezo.proactive.setup-checks.cron). Off ⇒ the SetupCheckJob bean does not exist (the
+     *  FLAG_SWEEP_JOB_SWITCH precedent — SetupCheckService itself is unaffected, so a direct
+     *  call still works). */
+    public static final String SETUP_CHECK_JOB_SWITCH = "mezo.techcore.cron.setup-check-job.enabled";
+
     /** Emberek szekció (mezo-06o0) — az automata mention-detektálás rétege. Off ⇒ egyetlen
      *  detektáló listener-bean sem létezik; a kézi /api/people felület ettől függetlenül él. */
     public static final String PEOPLE_SWITCH = "mezo.feature.people.enabled";

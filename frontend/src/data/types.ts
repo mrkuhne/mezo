@@ -12,9 +12,11 @@ export interface BriefingRef { kind: string; id?: string; label: string }
 export interface BriefingPara { type: 'p'; text: string }
 export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence?: number; tone?: string }
 /** The unified companion-feed message kinds (companion-feed, mezo-gst9) — one persisted row per
- *  generation. `intervention` (W5.2, mezo-b3pp.19) is the odd one out: config-text, never LLM
- *  output — the card's body comes straight from `mezo.companion.interventions[].textHu`. */
-export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people'
+ *  generation. Two kinds are config-text, never LLM output: `intervention` (W5.2, mezo-b3pp.19),
+ *  whose card body comes straight from `mezo.companion.interventions[].textHu`, and `setup` (S3,
+ *  mezo-d58h.3), whose card body is composed in `SetupCheckService` from a check verdict's own
+ *  numbers. */
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
   /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
