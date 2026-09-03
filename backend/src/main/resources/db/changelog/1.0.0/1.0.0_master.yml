@@ -1014,3 +1014,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609030200_mezo-ktg8_goal_suggestion.sql
+  - changeSet:
+      id: "1.0.0:202609030300_mezo-r4n7_goal_balance_adjustment"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609030300_mezo-r4n7_goal_balance_adjustment.sql

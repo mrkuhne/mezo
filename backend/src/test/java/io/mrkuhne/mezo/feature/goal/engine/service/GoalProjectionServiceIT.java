@@ -238,6 +238,60 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         assertThat(w3.label()).contains("deload — tartás");
     }
 
+    // ── Balance adjustment (slice 5 — accepted adaptive-review correction) ─────────────────────────
+
+    @Test
+    void balanceAdjustmentShiftsTheDailyEnergyBalance() {
+        UUID user = databasePopulator.populateUser("proj-adjust@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active"); // 8-week window
+        goal.setBalanceAdjustmentKcal(-120); // an accepted "cut deeper" weekly correction
+
+        List<ProjectionSegment> withAdjustment =
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+        goal.setBalanceAdjustmentKcal(null);
+        List<ProjectionSegment> baseline =
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+
+        int delta = withAdjustment.get(0).dailyEnergyBalanceKcal() - baseline.get(0).dailyEnergyBalanceKcal();
+        assertThat(delta).isEqualTo(-120);
+    }
+
+    @Test
+    void balanceAdjustmentAppliesToMaintainToo() {
+        UUID user = databasePopulator.populateUser("proj-adjust-maintain@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "maintain", "active");
+        goal.setBalanceAdjustmentKcal(80); // a maintain goal's accepted calibration nudges upward
+
+        List<ProjectionSegment> segments =
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"), 0);
+
+        assertThat(segments.get(0).dailyEnergyBalanceKcal()).isEqualTo(80);
+    }
+
+    @Test
+    void anAcceptedSegmentOverrideWinsOverTheAdjustmentForItsOwnWeek() {
+        UUID user = databasePopulator.populateUser("proj-adjust-override@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active"); // 8-week window
+        goal.setBalanceAdjustmentKcal(-120);
+        goal.setSegmentOverrides(List.of(new GoalSegmentOverrideJson(3, 3, 0)));
+
+        List<ProjectionSegment> segments =
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+
+        // Week 3 (the deload override) is untouched by the adjustment — the override REPLACES the
+        // balance for its own week rather than composing with it.
+        ProjectionSegment w3 = segments.stream()
+            .filter(s -> s.fromWeek() <= 3 && s.toWeek() >= 3).findFirst().orElseThrow();
+        assertThat(w3.dailyEnergyBalanceKcal()).isZero();
+
+        // Every other (non-overridden) week DOES feel the adjustment.
+        ProjectionSegment w1 = segments.stream()
+            .filter(s -> s.fromWeek() <= 1 && s.toWeek() >= 1).findFirst().orElseThrow();
+        double expectedMagnitude = expectedDailyBalanceMagnitude();
+        assertThat(w1.dailyEnergyBalanceKcal())
+            .isCloseTo((int) Math.round(-expectedMagnitude - 120), within(1));
+    }
+
     // ── Day-type shift (slice 3 — mezo-sxlj): the weekly-invariant kcal split off rest days ────────
 
     @Test
