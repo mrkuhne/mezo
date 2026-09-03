@@ -103,7 +103,26 @@ Ez a lista a teljes token-inventárból származik
 
 **Infra és teszt-identitás (a fenti döntés szerint):**
 
-- `mezo_pg`, `mezo_test`, `_mezo_branch`, `MEZO_*` env varok
+- `mezo_pg`, `mezo_test`, `_mezo_branch`
+- **Valódi** env varok: `MEZO_PORT`, `MEZO_JWT_SECRET`, `MEZO_OWNER_EMAIL`,
+  `MEZO_OWNER_PASSWORD`, `MEZO_OWNER_NAME`, `MEZO_AUTH_STRICT`,
+  `MEZO_FEATURE_COMPANION_ENABLED`, `MEZO_FEATURE_PROACTIVE_ENABLED`,
+  `MEZO_FEATURE_LLM_LOG_ENABLED`, `MEZO_BACKUP_DIR`, `MEZO_PROTOTYPE_DIR`
+
+> **Figyelem — nem minden `MEZO_*` alakú név env var.** Három `MEZO_`-val kezdődő
+> azonosító **kódkonstans**, nem környezeti változó, tehát a „márka + kód"
+> döntés alá esik és át kell nevezni:
+>
+> | Konstans | Hol | Szelet |
+> |---|---|---|
+> | `MEZO_EVENT_ANCHORS` | `frontend/src/features/me/logic/habitAnchors.ts` | S2 |
+> | `MEZO_KALAUZ` | `frontend/src/features/tutorial/registry/index.ts` | S2 |
+> | `MEZO_INTEGRATOR_PERSONA` | `PortraitWriter.java:47` | S3 |
+>
+> A megkülönböztetés nem kozmetikai: egy `MEZO_*` alakú név átnevezése env var
+> esetén deploy-eseményt jelentene, konstans esetén viszont csak fordítási idejű
+> csere. A hasonlóan kinéző `mezo.kalauz.v1` **localStorage-kulcs** ettől
+> függetlenül marad — az perzisztált adat.
 
 **Történelem:**
 
@@ -196,9 +215,15 @@ mintájára új sor:
 A meglévő `/insights → /mezo` redirect célja `/boop`-ra frissül, hogy a
 backend `AppNotificationKind` `/insights/*` deeplinkjei egy ugrással érkezzenek.
 
+**Konstansok:** `MEZO_EVENT_ANCHORS` (`features/me/logic/habitAnchors.ts`) →
+`BOOP_EVENT_ANCHORS`, `MEZO_KALAUZ` (`features/tutorial/registry/index.ts`) →
+`BOOP_KALAUZ`. Mindkettő TS kódkonstans, nem env var.
+
 **Csomag:** `frontend/package.json` `name`.
 
-**Nem változik:** `i-mezo`, `mz-`/`mzc-`/`mzh-`, minden localStorage-kulcs.
+**Nem változik:** `i-mezo`, `mz-`/`mzc-`/`mzh-`, minden localStorage-kulcs —
+köztük a `mezo.kalauz.v1`, amely a `MEZO_KALAUZ` konstans ellenére perzisztált
+adat.
 
 **Ellenőrzés:** FE tesztek mindkét módban, build, vizuális regresszió (a
 baselineeknek változatlanul kell átmenniük — ha nem, az elrontott selektor
@@ -211,6 +236,10 @@ landol.
 `main` és `test` egyaránt). Osztályok: `MezoApplication` → `BoopApplication`,
 `TestMezoApplication`, `MezoApplicationIT`, `PeopleMezoNoteSource`,
 `PeopleMezoNoteAdapter`, `PeopleMezoNoteIT`.
+
+**Konstans:** `MEZO_INTEGRATOR_PERSONA` (`PortraitWriter.java:47`) →
+`BOOP_INTEGRATOR_PERSONA`. Java kódkonstans, nem env var; a *tartalma*
+(a persona-szöveg) már az S1-ben Boopra vált, itt csak a neve.
 
 **Maven:** `artifactId` és `name` `mezo` → `boop`. Ha a build az artifactId-ből
 származtatja a jar nevét, a `Dockerfile` `COPY` mintáját is igazítani kell — az
