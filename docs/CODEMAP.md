@@ -319,7 +319,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/companion/graph/edge/count
 - **Contract** `api/feature/me-week/me-week.yml` — 2 operations
   - **endpoints:** GET /api/me/week/{start} · GET /api/me/week/{start}/trend
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 141 IT + 18 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 142 IT + 18 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`,
     `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`,
@@ -346,13 +346,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `GraphTraversalQueryIT`, `HypothesisGatherContextIT`, `HypothesisJobSwitchOffIT`, `HypothesisPipelineServiceIT`,
     `KnowledgeFactServiceIT`, `LearnedFactPersistenceIT`, `LifeEventExtractionServiceIT`, `LifeGoalProposeNameIT`,
     `MeWeekControllerIT`, `MeWeekServiceFuelFetchCountIT`, `MeWeekTrendIT`, `MemoryEmbeddingAnnQueryIT`,
-    `MemoryEmbeddingRepositoryIT`, `MemoryEmbeddingWriterIT`, `MemoryRecallServiceIT`, `MemoryToolsRenderIT`,
-    `MesoReviewGeneratorIT`, `MessageFeedbackPersistenceIT`, `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`,
-    `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`,
-    `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`,
-    `PatternDetectionJobSwitchOffIT`, `PatternDetectionServiceIT`, `PeriodSummaryPersistenceIT`,
-    `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`, `PersonGraphEdgeAdapterIT`, `ProfileAssemblerIT`,
-    `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`,
+    `MemoryEmbeddingRepositoryIT`, `MemoryEmbeddingWriterIT`, `MemoryLlmUsageIsolationIT`, `MemoryRecallServiceIT`,
+    `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`, `MessageFeedbackPersistenceIT`, `MetricSeriesDerivedIT`,
+    `MetricSeriesExpansionIT`, `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`,
+    `NoteEmbeddingSwitchOffIT`, `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`,
+    `NoteVectorLifecycleIT`, `PatternDetectionJobSwitchOffIT`, `PatternDetectionServiceIT`,
+    `PeriodSummaryPersistenceIT`, `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`, `PersonGraphEdgeAdapterIT`,
+    `ProfileAssemblerIT`, `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`,
     `ProfilePromptAssemblerFailureIT`, `ProfilePromptAssemblerIT`, `ProfilePropertiesIT`, `ProfileSourceFindersIT`,
     `PromptMemoryAssemblerIT`, `PromptMemoryAssemblerShadowIT`, `PromptMemoryAssemblerSwitchOffIT`,
     `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`, `QuarterlyReviewJobProfileSwitchOffIT`,
@@ -810,11 +810,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     notificationPrefHooks.ts, notificationScheduleWriter.ts
 - **FE ui** `frontend/src/features/notification`
   - **logic:** groupByDay.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/notification` — 13 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/notification` — 14 IT + 5 unit
   - **ITs:** `AnchorResolverDecisionIT`, `AnchorResolverFeedIT`, `AnchorResolverIT`, `AnchorResolverInterventionIT`,
     `AnchorResolverRitualSwitchOffIT`, `NotificationApiIT`, `NotificationDispatchJobIT`, `NotificationPrefApiIT`,
-    `NotificationPrefRepositoryIT`, `NotificationScheduleApiIT`, `PushSenderIT`, `PushSubscriptionRepositoryIT`,
-    `PushSubscriptionServiceIT`
+    `NotificationPrefRepositoryIT`, `NotificationScheduleApiIT`, `PushSenderIT`, `PushSubscriptionRebindIT`,
+    `PushSubscriptionRepositoryIT`, `PushSubscriptionServiceIT`
   - **populators:** `AppNotificationPopulator`, `CompanionMessagePopulator`, `DatabasePopulator`, `JournalPopulator`,
     `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `NotificationPopulator`, `SleepGoalPopulator`,
     `TrainPopulator`, `UserPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`

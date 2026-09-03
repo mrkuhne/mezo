@@ -139,7 +139,7 @@ public class CompanionController implements CompanionApi {
 
     @Override
     public MemoryLlmUsageResponse getMemoryLlmUsage(Integer days) {
-        return memoryObservatoryService.llmUsage(days);
+        return memoryObservatoryService.llmUsage(currentUserId.get(), days);
     }
 
     @Override

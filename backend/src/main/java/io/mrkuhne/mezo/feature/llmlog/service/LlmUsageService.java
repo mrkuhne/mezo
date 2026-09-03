@@ -270,4 +270,15 @@ public class LlmUsageService {
         Instant since = LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant();
         return llmLogRepository.aggregatePerDaySince(since, zone.getId());
     }
+
+    /**
+     * Ugyanaz, egy accountra szűkítve (mezo-qw37.7) — a Memória/Audit panel csak a saját hívásait
+     * látja; a {@code created_by IS NULL} sorok (cron/stream) senkihez sem tartoznak, ezért kimaradnak.
+     */
+    @Transactional(readOnly = true)
+    public List<LlmDailyAggregate> perDay(UUID userId, int days) {
+        ZoneId zone = llmLogProperties.reportZone();
+        Instant since = LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant();
+        return llmLogRepository.aggregatePerDaySinceForUser(since, zone.getId(), userId);
+    }
 }
