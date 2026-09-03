@@ -99,6 +99,32 @@ describe('BetaAdminPage (real mode)', () => {
     await waitFor(() => expect(del).not.toBeDisabled())
   })
 
+  // Fix (mezo-qw37.3 review): mint/deleteInvite/resetFor/setStatus all call `mutateAsync`, which
+  // rejects on failure — a bare `void` on the click handler silences the lint but not the
+  // rejection, so a 500 (or a non-owner deep-linking here past the client-side gate) used to
+  // escape as an unhandled promise rejection. Each site now ends in `.catch(() => {})`.
+  it('does not leak an unhandled rejection when a mutation 500s, and leaves the page usable', async () => {
+    const seenRejections: unknown[] = []
+    const onUnhandledRejection = (event: PromiseRejectionEvent) => { seenRejections.push(event.reason) }
+    window.addEventListener('unhandledrejection', onUnhandledRejection)
+    server.use(http.delete(`${API_BASE}/api/admin/invites/:id`, () => HttpResponse.json(
+      { messages: [{ code: 'ADMIN_INVITE_USED', text: 'error' }] }, { status: 409 })))
+    try {
+      renderPage()
+      await waitFor(() => expect(screen.getByText('MEZO-7KQ2-XN4P')).toBeInTheDocument())
+      const del = screen.getByRole('button', { name: /Törlés/ })
+      fireEvent.click(del)
+      await waitFor(() => expect(del).not.toBeDisabled())
+      // page stays usable — the seed row is still there and other controls still work
+      expect(screen.getByText('MEZO-7KQ2-XN4P')).toBeInTheDocument()
+      // give any stray rejection a microtask/macrotask to surface before asserting its absence
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      expect(seenRejections).toEqual([])
+    } finally {
+      window.removeEventListener('unhandledrejection', onUnhandledRejection)
+    }
+  })
+
   it('keeps Jelszó-reset and the status toggle disabled for the in-flight reset-password call', async () => {
     const deferred: { resolve: (() => void) | null } = { resolve: null }
     server.use(http.post(`${API_BASE}/api/admin/users/:id/reset-password`, () => new Promise((resolve) => {

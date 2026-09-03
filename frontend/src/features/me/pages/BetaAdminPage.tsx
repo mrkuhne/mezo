@@ -31,14 +31,15 @@ export function BetaAdminPage() {
   const users = useAdminUsers()
   const actions = useAdminActions()
 
-  const mint = async () => {
-    await actions.createInvite(label)
-    setLabel('')
+  // `mutateAsync` rejects on failure; the QueryProvider mutation cache toasts it
+  // (frontend_conventions §7a), but the rejection still needs a home here or it escapes as an
+  // unhandled promise rejection (NotificationFeedPage.tsx explains why `void` alone isn't enough).
+  const mint = () => {
+    actions.createInvite(label).then(() => setLabel('')).catch(() => {})
   }
-  const resetFor = async (id: string) => {
+  const resetFor = (id: string) => {
     const name = users.data.find((u) => u.id === id)?.name ?? ''
-    const password = await actions.resetPassword(id)
-    setReset({ name, password })
+    actions.resetPassword(id).then((password) => setReset({ name, password })).catch(() => {})
   }
 
   return (
@@ -69,7 +70,7 @@ export function BetaAdminPage() {
                 <GhostState message="Nincs nyitott meghívó." />
               ) : (
                 invites.data.map((invite) => (
-                  <AdminInviteRow key={invite.id} invite={invite} pending={actions.pending} onDelete={(id) => { void actions.deleteInvite(id) }} />
+                  <AdminInviteRow key={invite.id} invite={invite} pending={actions.pending} onDelete={(id) => { actions.deleteInvite(id).catch(() => {}) }} />
                 ))
               )}
             </div>
@@ -84,8 +85,8 @@ export function BetaAdminPage() {
               ) : (
                 users.data.map((user) => (
                   <AdminUserRow key={user.id} user={user} self={user.id === me.data?.id} pending={actions.pending}
-                    onReset={(id) => { void resetFor(id) }}
-                    onToggleStatus={(id, next) => { void actions.setStatus(id, next) }} />
+                    onReset={(id) => { resetFor(id) }}
+                    onToggleStatus={(id, next) => { actions.setStatus(id, next).catch(() => {}) }} />
                 ))
               )}
             </div>

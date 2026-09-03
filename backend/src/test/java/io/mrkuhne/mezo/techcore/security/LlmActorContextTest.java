@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.techcore.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,11 +34,8 @@ class LlmActorContextTest {
     @Test
     void testRunAs_shouldClear_whenBodyThrows() {
         UUID id = UUID.randomUUID();
-        try {
-            LlmActorContext.runAs(id, () -> { throw new IllegalStateException("boom"); });
-        } catch (IllegalStateException expected) {
-            // the exception propagates — the context must not swallow it
-        }
+        assertThatThrownBy(() -> LlmActorContext.runAs(id, () -> { throw new IllegalStateException("boom"); }))
+            .isInstanceOf(IllegalStateException.class);
         assertThat(LlmActorContext.current()).isNull();
     }
 

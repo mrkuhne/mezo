@@ -97,6 +97,12 @@ public class AdminService {
         String temporary = generateTemporaryPassword();
         user.setPasswordHash(passwordEncoder.encode(temporary));
         user.setMustChangePassword(true);
+        // Finding 1 (mezo-qw37.3 review): a reset must revoke the target's existing sessions the
+        // same way AuthService.changePassword does — otherwise a stolen token outlives the reset
+        // that was supposed to kill it. Truncated to seconds because JWT iat has second
+        // granularity: an untruncated Instant.now() would round down and make the next login's
+        // token (iat == this second) compare isBefore the watermark and be revoked on arrival.
+        user.setTokensValidFrom(Instant.now().truncatedTo(ChronoUnit.SECONDS));
         appUserRepository.save(user);
         return ResetPasswordResponse.builder().temporaryPassword(temporary).build();
     }

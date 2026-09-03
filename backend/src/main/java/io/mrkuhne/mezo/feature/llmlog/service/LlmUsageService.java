@@ -129,8 +129,9 @@ public class LlmUsageService {
 
     /**
      * One audited call in full (mezo-uakh) — the only read that returns the verbatim payload.
-     * No ownership check: the log has rows with no owner at all (cron/stream), and this is a
-     * single-user app behind JWT (ADR 0014).
+     * No ownership check: the surface is owner-gated (requireOwner(), since mezo-qw37.3) and the
+     * rows are deliberately unfiltered — the log has rows with no owner at all (cron/stream),
+     * whose createdBy is null.
      */
     @Transactional(readOnly = true)
     public LlmCallDetailResponse call(UUID id) {

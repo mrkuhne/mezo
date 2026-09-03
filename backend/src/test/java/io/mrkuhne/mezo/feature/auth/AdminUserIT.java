@@ -53,8 +53,12 @@ class AdminUserIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testResetPassword_shouldInvalidateOldAndForceChange_whenOwner() {
+    void testResetPassword_shouldInvalidateOldAndForceChange_whenOwner() throws InterruptedException {
         RegisteredUser anna = registerUser("Anna");
+        // Same guard as AuthMeIT's changePassword revocation test: tokensValidFrom is truncated
+        // to the second, so anna's pre-reset token must land in a strictly earlier UTC second
+        // than the reset, or it would (correctly) survive as if it were the performing token.
+        Thread.sleep(1100);
         ResetPasswordResponse reset = postForBody(URI + "/" + anna.id() + "/reset-password", null, ownerAuthHeaders(),
             HttpStatus.OK, ResetPasswordResponse.class);
         assertThat(reset.getTemporaryPassword()).hasSize(12).matches("[A-HJ-NP-Za-hj-km-np-z2-9]+");
@@ -62,6 +66,11 @@ class AdminUserIT extends ApiIntegrationTest {
         // registerUser's password is "teszt-jelszo-1" (S1 helper) — it must no longer log in
         assertHasRequestError(postForBody("/api/auth/login", new LoginRequest(anna.email(), "teszt-jelszo-1"), null,
             HttpStatus.UNAUTHORIZED, String.class), "AUTH_LOGIN_INVALID_CREDENTIALS");
+
+        // Finding 1 (mezo-qw37.3 review): a stolen pre-reset token must not survive the reset —
+        // otherwise the whole point of resetting a compromised account's password is defeated.
+        String staleBody = getForBody("/api/auth/me", anna.headers(), HttpStatus.UNAUTHORIZED, String.class);
+        assertHasRequestError(staleBody, "AUTH_TOKEN_MISSING");
 
         TokenResponse token = postForBody("/api/auth/login", new LoginRequest(anna.email(), reset.getTemporaryPassword()),
             null, HttpStatus.OK, TokenResponse.class);
