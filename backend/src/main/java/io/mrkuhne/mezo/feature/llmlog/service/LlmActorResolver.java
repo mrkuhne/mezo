@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.llmlog.service;
 
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component;
  * Cron threads legitimately make LLM calls with no security context, and audit logging must never
  * be the thing that fails a call — so this reads the context defensively and returns null instead.
  * {@code llm_log_history.created_by} is nullable precisely for that case (single-user app, ADR 0008).
+ * Unless the thread runs inside {@link LlmActorContext#runAs} (mezo-qw37.3), in which case that
+ * account is the actor; a request principal always wins over the context.
  */
 @Component
 public class LlmActorResolver {
@@ -25,12 +28,12 @@ public class LlmActorResolver {
             || !authentication.isAuthenticated()
             || !(authentication.getPrincipal() instanceof Jwt jwt)
             || jwt.getSubject() == null) {
-            return null;
+            return LlmActorContext.current();
         }
         try {
             return UUID.fromString(jwt.getSubject());
         } catch (IllegalArgumentException ex) {
-            return null; // a non-UUID subject is not ours to reject here — the caller is already running
+            return LlmActorContext.current(); // a non-UUID subject is not ours to reject here — the caller is already running
         }
     }
 }
