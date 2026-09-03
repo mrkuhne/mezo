@@ -7,20 +7,26 @@ import io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.api.dto.LogWeightRequest;
 import io.mrkuhne.mezo.api.dto.WeightLogResponse;
+import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionPayloadJson;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.GoalSuggestionPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
 /** HTTP round-trips through the GENERATED goal contract (api/openapi.yml). */
 class GoalContractIT extends ApiIntegrationTest {
+
+    @Autowired private GoalSuggestionPopulator suggestionPopulator;
 
     private static GoalUpsertRequest.GoalUpsertRequestBuilder req() {
         return GoalUpsertRequest.builder()
@@ -216,6 +222,70 @@ class GoalContractIT extends ApiIntegrationTest {
             .trajectory("cut").startWeightKg(new BigDecimal("84.00")).targetWeightKg(new BigDecimal("80.00"))
             .startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 7, 27)).build();
         postForBody("/api/goals/feasibility-preview", body, null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    // ── GET/POST /api/goals/{id}/suggestions* (Diet Plan slice 4 Task 8: mezo-ktg8) ─────────────────
+
+    @Test
+    void testListGoalSuggestions_shouldReturnEmpty_whenNoneProposed() {
+        HttpHeaders auth = ownerAuthHeaders();
+        GoalResponse goal = postForBody("/api/goals", req().build(), auth, HttpStatus.CREATED, GoalResponse.class);
+
+        List<GoalSuggestionResponse> suggestions = getForList(
+            "/api/goals/" + goal.getId() + "/suggestions", auth, HttpStatus.OK, GoalSuggestionResponse.class);
+
+        assertThat(suggestions).isEmpty();
+    }
+
+    @Test
+    void testListGoalSuggestions_shouldReturnOne_whenProposed() {
+        RegisteredUser owner = registerUser("Suggestion Lister");
+        GoalResponse goal = postForBody("/api/goals", req().build(), owner.headers(), HttpStatus.CREATED, GoalResponse.class);
+        suggestionPopulator.createOpen(owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
+            new GoalSuggestionPayloadJson(
+                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "cut"));
+
+        List<GoalSuggestionResponse> suggestions = getForList(
+            "/api/goals/" + goal.getId() + "/suggestions", owner.headers(), HttpStatus.OK, GoalSuggestionResponse.class);
+
+        assertThat(suggestions).hasSize(1);
+        assertThat(suggestions.get(0).getPayload().getReason()).isEqualTo("A cut-prep mezo deficitet javasol.");
+    }
+
+    @Test
+    void testAcceptGoalSuggestion_shouldFlipTrajectory_whenSnapshotMatches() {
+        RegisteredUser owner = registerUser("Suggestion Acceptor");
+        GoalResponse goal = postForBody("/api/goals", req().trajectory("bulk").build(), owner.headers(),
+            HttpStatus.CREATED, GoalResponse.class);
+        UUID suggestionId = suggestionPopulator.createOpen(
+            owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
+            new GoalSuggestionPayloadJson(
+                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "bulk")
+        ).getId();
+
+        GoalResponse accepted = postForBody(
+            "/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/accept",
+            null, owner.headers(), HttpStatus.OK, GoalResponse.class);
+
+        assertThat(accepted.getTrajectory()).isEqualTo(GoalResponse.TrajectoryEnum.CUT);
+    }
+
+    @Test
+    void testDismissGoalSuggestion_shouldReturn204AndLeaveList_whenValid() {
+        RegisteredUser owner = registerUser("Suggestion Dismisser");
+        GoalResponse goal = postForBody("/api/goals", req().build(), owner.headers(), HttpStatus.CREATED, GoalResponse.class);
+        UUID suggestionId = suggestionPopulator.createOpen(
+            owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
+            new GoalSuggestionPayloadJson(
+                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "cut")
+        ).getId();
+
+        postForBody("/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/dismiss",
+            null, owner.headers(), HttpStatus.NO_CONTENT, Void.class);
+
+        List<GoalSuggestionResponse> suggestions = getForList(
+            "/api/goals/" + goal.getId() + "/suggestions", owner.headers(), HttpStatus.OK, GoalSuggestionResponse.class);
+        assertThat(suggestions).isEmpty();
     }
 
     private void seedProfile(HttpHeaders auth) {
