@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -38,6 +38,20 @@ test('the hero carries the tone word and the Rost fact, the header the context c
 test('Lehetne jobb renders the gain as pont', () => {
   renderSheet() // mock improve impacts are "+0.04 score" / "+0.01 score"
   expect(screen.getByText('+4')).toBeInTheDocument()
+})
+test('improve-javaslatok pont-chipként a Mezo-kártyán jelennek meg (mezo-jcpt.1)', () => {
+  // Mozaik 2.0: the improve list is no longer a separate „Lehetne jobb" stack under the
+  // dimensions on the MEAL surface — it rides as action chips inside the Mezo verdict card
+  // (the prototype's `.improw` / `.impch`). The recipe surface keeps the stacked cards.
+  renderSheet() // mock m1 improve impacts: "+0.04 score" / "+0.01 score"
+  const card = screen.getByText('Mezo · olvasat').closest<HTMLElement>('.card')
+  expect(card).not.toBeNull()
+  // the gain rides ON the suggestion chip (not in a separate list further down the sheet)
+  const chip = within(card!).getByText('+4').closest('.sb-impch')
+  expect(chip).not.toBeNull()
+  expect(chip).toHaveTextContent(/tökmag/)
+  // …and the „Lehetne jobb" stack is gone from the meal surface — one suggestion, one place
+  expect(screen.queryByText('Lehetne jobb')).not.toBeInTheDocument()
 })
 test('renders the derived name (not a blank header) for a scored meal with an empty title (mezo-u68c)', () => {
   const seed = seedScoredMeal()

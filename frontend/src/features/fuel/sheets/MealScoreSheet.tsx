@@ -9,11 +9,16 @@ import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { ClaySpot } from '@/shared/ui/clay'
+import { formatImpact } from '@/features/fuel/logic/formatImpact'
 import { ScoreHero } from '@/features/fuel/components/ScoreHero'
 import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { mealContextOf, MEAL_CONTEXT_LABEL } from '@/features/fuel/logic/mealContext'
 import { useMealCoachFor } from '@/data/hooks'
+
+/** "+4 pont" → the number and its unit split, so the chip can size them apart. */
+const PONT_RE = /^([+−]\d+) pont$/
 
 export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () => void }) {
   // The coach verdict materializes on demand (mezo-mr4n): the deterministic body below renders
@@ -25,7 +30,11 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
   const summary = verdict?.summary ?? b.summary
   // The role the meal was SCORED under (Standard / Pre / Post) — the same chip the block wears.
   const ctx = mealContextOf(meal)
-  const breakdown = verdict?.improve?.length ? { ...b, improve: verdict.improve } : b
+  // mezo-jcpt.1: the improve list rides the Mezo card as action chips (prototype `.impch`),
+  // so the body below gets an EMPTY improve — one suggestion, one place. The recipe surface,
+  // which has no coach card, still renders them as the stacked „Lehetne jobb" gain cards.
+  const improve = verdict?.improve?.length ? verdict.improve : b.improve
+  const breakdown = { ...b, improve: [] }
 
   return (
     <Sheet onClose={onClose} labelledBy="meal-score-title">
@@ -65,19 +74,34 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
               </div>
             </div>
           )}
+          {/* The coach's verdict, Mozaik 2.0 (mezo-jcpt.1): the prototype's lila `.revcard`
+              with the táplálkozó orb, and the improve suggestions as `.impch` action chips
+              right under the prose — the gain is a number ON the action, not a list item
+              three screens further down. */}
           {summary && (
-            <div className="card" style={{
-              padding: 12, marginTop: 14,
-              background: 'color-mix(in srgb, var(--coral) 5%, transparent)',
-              borderColor: 'var(--line)',
-            }}>
+            <div className="card sb-rev" style={{ marginTop: 14 }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                <Icon name="sparkle" size={12} color="var(--coral)" />
+                <ClaySpot name="s-orb-taplalkozo" size={26} />
                 <div className="col flex-1">
                   <Eyebrow brand>Mezo · olvasat</Eyebrow>
                   <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>
                     <SafeMarkdown text={summary} />
                   </p>
+                  {improve.length > 0 && (
+                    <div className="sb-improw">
+                      {improve.map((it, i) => {
+                        // "+0.04 score" → "+4 pont" (formatImpact); other impact text stays verbatim.
+                        const gain = formatImpact(it.impact)
+                        const m = PONT_RE.exec(gain)
+                        return (
+                          <span key={i} className="sb-impch">
+                            <span><SafeMarkdown text={it.text} /></span>
+                            {m ? <><b>{m[1]}</b><em>pont</em></> : <b>{gain}</b>}
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

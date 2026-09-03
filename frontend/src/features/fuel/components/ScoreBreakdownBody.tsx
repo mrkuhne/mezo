@@ -1,10 +1,13 @@
 // ============================================================
 // Mezo · ScoreBreakdownBody (shared score-breakdown sections)
-// „Miből áll össze" head + ScoreLedger + collapsible DimensionCards + „Lehetne jobb"
-// gain cards — used by MealScoreSheet (meal score) and RecipeScoreSheet (template
-// breakdown, mezo-bw3y / F7.3). One body, two callers, so the two surfaces stay
-// pixel-identical. Logolás 2.1 (mezo-zeeq) retired the „Hogyan számoltam" tool
-// list from here — it was noise in a details view (ToolChipRow lives on elsewhere).
+// „Miből áll össze" head + the Σ ledger tile + the Mozaik 2.0 dimension MOSAIC
+// (one wash tile per dimension, staggered entrance) + the „Lehetne jobb" gain cards.
+// Used by MealScoreSheet (meal score) and RecipeScoreSheet (template breakdown,
+// mezo-bw3y / F7.3). One body, two callers, so the two surfaces stay pixel-identical.
+//
+// mezo-jcpt.1: the MEAL surface hands the improve list to its Mezo card as action chips
+// and passes an empty `improve` here, so the same suggestion is never shown twice; the
+// recipe surface (which has no coach card) keeps the stacked gain cards below.
 // ============================================================
 import type { MealBreakdown } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
@@ -34,8 +37,13 @@ export function ScoreBreakdownBody({ breakdown, scorePct }: {
         <span className="sb-sec-r">{b.dimensions.length} dimenzió · súlyozva</span>
       </div>
       <ScoreLedger dimensions={b.dimensions} />
-      <div className="col gap-sm" style={{ marginTop: 8 }}>
-        {b.dimensions.map(d => <DimensionCard key={d.id} dim={d} />)}
+      {/* The mosaic: live dimensions first (rich, washed), the ghosts last — a degraded
+          dimension is named, not hidden, but it never outranks a scoring one. The 40ms
+          stagger is the prototype's entrance choreography. */}
+      <div className="sb-mosaic">
+        {[...b.dimensions]
+          .sort((x, y) => (y.weight > 0 ? 1 : 0) - (x.weight > 0 ? 1 : 0))
+          .map((d, i) => <DimensionCard key={`${d.id}-${i}`} dim={d} delayMs={60 + i * 40} />)}
       </div>
 
       {b.improve && b.improve.length > 0 && (
