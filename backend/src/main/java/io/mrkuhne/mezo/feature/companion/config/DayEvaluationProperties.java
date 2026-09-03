@@ -17,8 +17,8 @@ import org.springframework.validation.annotation.Validated;
  * CompanionProperties} nested component (the {@code MeWeekProperties}/{@code
  * QuarterlyProperties} precedent). Picked up by {@code @ConfigurationPropertiesScan}.
  *
- * <p>{@code MeWeekProperties.sleepTargetH} stays for the legacy weekly-review day-score path;
- * this record carries its own {@code sleepTargetH} for the new engine.
+ * <p>The legacy weekly-review day-score path is gone (Task 5): {@code DayScoreService} now runs
+ * on this engine, so this record's {@code sleepTargetH} is the only sleep target still read.
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.companion.day-evaluation")
@@ -27,7 +27,7 @@ public record DayEvaluationProperties(
     @NotNull @Valid NutritionBands nutrition,
     /** Edzésnapi kcal/CH sáv-tágítás (kcal). */
     @Min(0) @Max(600) int workoutDayKcalWiden,
-    /** Alvás-cél óra (a MeWeekProperties.sleepTargetH marad a legacy útnak; itt a sajátunk). */
+    /** Alvás-cél óra — a napi értékelés EGYETLEN alvás-célja (Task 5 óta). */
     @DecimalMin("4.0") @DecimalMax("12.0") double sleepTargetH,
     /** Ritmus-ablak napokban + a minimum értékelt nap benne. */
     @Min(3) @Max(14) int rhythmWindowDays,

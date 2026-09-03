@@ -21,7 +21,9 @@ import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,7 +78,11 @@ class MeWeekControllerIT extends ApiIntegrationTest {
 
         MealEntity meal = new MealEntity();
         meal.setCreatedBy(owner);
-        meal.setLoggedAt(date.atStartOfDay(ZoneOffset.UTC).toInstant().plusSeconds(3600));
+        // Eaten at today's wall-clock time-of-day so the row's Hibernate-stamped created_at (when
+        // it was WRITTEN — no test can choose it) lands inside the logging dimension's 120-minute
+        // timeliness band: the fixture is "logged as it was eaten", the normal case.
+        meal.setLoggedAt(date.atTime(LocalTime.now(ZoneOffset.UTC).truncatedTo(ChronoUnit.MINUTES))
+            .toInstant(ZoneOffset.UTC));
         meal.setMealDate(date);
         meal.setSlot("lunch");
         meal.setTitle("Weekly review fixture");
@@ -134,10 +140,18 @@ class MeWeekControllerIT extends ApiIntegrationTest {
         assertThat(response.getDays().get(6).getDate()).isEqualTo(MONDAY.plusDays(6));
 
         var monday = response.getDays().get(0);
-        assertThat(monday.getScore()).isEqualTo(100);
+        // The 6-dimension engine (mezo-jcpt.4) behind the unchanged four-field wire projection:
+        // sleep←sleep 100 (8h over the 7.5h target, quality 10/10) · fuel←nutrition 80 (kcal and
+        // protein exactly on target, but 10 g carbs / 1 g fat are far outside the C+F band) ·
+        // checkin←logging 80 (timely meal + 4/4 check-ins, no water logged) · activity←training
+        // 100 (the seeded sport session yields one window, done). quality and rhythm degrade (the
+        // fixture writes meal rows straight to the repository, so they carry no score envelope;
+        // no earlier day has a base), so the four DONE dimensions renormalize over 0.75:
+        // (0.30*80 + 0.20*100 + 0.15*100 + 0.10*80) / 0.75 = 89.33 -> 89.
+        assertThat(monday.getScore()).isEqualTo(89);
         assertThat(monday.getSubscores().getSleep()).isEqualTo(100);
-        assertThat(monday.getSubscores().getFuel()).isEqualTo(100);
-        assertThat(monday.getSubscores().getCheckin()).isEqualTo(100);
+        assertThat(monday.getSubscores().getFuel()).isEqualTo(80);
+        assertThat(monday.getSubscores().getCheckin()).isEqualTo(80);
         assertThat(monday.getSubscores().getActivity()).isEqualTo(100);
         assertThat(monday.getKcal().doubleValue()).isEqualTo(targets.getKcal().doubleValue());
         assertThat(monday.getProteinG().doubleValue()).isEqualTo(targets.getP().doubleValue());

@@ -2,16 +2,34 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
+import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.MealScoreDimension;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
-import io.mrkuhne.mezo.feature.companion.config.MeWeekProperties;
+import io.mrkuhne.mezo.feature.companion.config.DayEvaluationProperties;
+import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayDimension;
+import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayEvaluation;
+import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayInputs;
+import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.MealLogFact;
+import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
+import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
+import io.mrkuhne.mezo.feature.meal.repository.WaterLogRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
+import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
+import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.Window;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,101 +37,222 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Weekly review (mezo-p2tr, spec §2) — the deterministic {@code deriveScore} promoted from the
- * companion's exploratory scoring notes into a real service. Produces one {@link DayScore} per
- * calendar day in {@code [from, to]}: four domain subscores in {@code [0,100]} (sleep/fuel/
- * check-in/activity, {@code null} = "tanulom", i.e. not enough data that day) and an overall
- * {@code score} that is the rounded mean of whichever subscores are present — {@code null} when
- * fewer than two are.
+ * The day-score READ path (mezo-jcpt.4, plan 2/2): resolves everything a day evaluation needs from
+ * the owning features and hands it to {@link DayEvaluationEngine} as a {@link DayInputs} carrier.
+ * There is exactly ONE day math in the codebase and it lives in that engine — this service holds
+ * no formula at all any more: the four legacy {@code sleep/fuel/checkin/activity} sub-score methods
+ * were deleted here and their semantics live on in the engine's six dimensions (the sleep formula
+ * bit-for-bit, verified in Task 4). {@code MeWeekProperties} consequently has no reader left — it
+ * is retired with the rest of the legacy documentation sweep (Task 11), not silently here.
  *
- * <p><b>Scale verification (per the task brief):</b> the brief's default formula assumed a 1-5
- * span for sleep {@code quality} and check-in {@code energy}. The actual FE inputs
- * ({@code frontend/src/features/me/sheets/SleepLogSheet.tsx}, quality dial rendered "{@code n}/10";
- * {@code frontend/src/features/today/sheets/CheckInSheet.tsx}, the 1-10 grid under each
- * {@code CHECKIN_DIMS} step) are BOTH 1-10 dials, not 1-5. The quality/energy normalization below
- * therefore uses {@code (v-1)/9}, not {@code (v-1)/4}.
+ * <p><b>Legacy wire mapping (binding).</b> {@link DaySubscores} stays on {@link DayScore} for the
+ * weekly trend ({@code WeeklyScoreService}'s persisted per-domain averages and the {@code me-week}
+ * contract's {@code MeWeekSubscores}, which this task deliberately does NOT change). Its four
+ * fields are now projections of the closest successor dimension:
+ * <pre>
+ *   sleep    &lt;- dimension "sleep"
+ *   fuel     &lt;- dimension "nutrition"
+ *   checkin  &lt;- dimension "logging"
+ *   activity &lt;- dimension "training"
+ * </pre>
+ * and {@code score} is {@link DayEvaluation#base()}. A degraded (NO_DATA/IN_PROGRESS) dimension
+ * projects to {@code null}, which is the same "tanulom" signal the legacy sub-scores carried. The
+ * day page itself does not read these — it consumes the full {@link DayEvaluation} through the new
+ * evaluation endpoint (Task 7).
  *
- * <p>One pass over the range: every {@link MetricSeriesService} series is fetched ONCE for the
- * whole {@code [from, to]} window (never re-queried per day), matching the V3.1 series-extraction
- * idiom this service builds on.
+ * <p><b>Input-loading map.</b> Each {@link DayInputs} field comes from the feature that owns it:
+ * <ul>
+ *   <li>{@code closed} — {@code date < today} (v1 day closure), {@code today} resolved once per
+ *       call with plain {@link LocalDate#now()}, the convention every neighbour here already uses
+ *       ({@code MeWeekService}, {@code WeeklyScoreService});</li>
+ *   <li>{@code kcal/proteinG/carbsG/fatG} + the four targets — the day's
+ *       {@link FuelDayResponse} ({@code getConsumed()} / {@code getTargets()}), the SAME rollup
+ *       {@code MeWeekService.buildDay} renders, pre-fetched by the caller where possible. A day
+ *       with no meal at all has no nutrition measurement: all four consumed values are
+ *       {@code null} (never a fabricated "0 kcal vs a 2600 target");</li>
+ *   <li>{@code plannedWorkouts/doneWorkouts/workoutDay} —
+ *       {@link WorkoutWindowQueryService#windowsFor} (planned = the day's windows, done = those
+ *       marked done). {@code WorkoutSessionRepository} has no planned-instance finder, only
+ *       {@code findDoneInstancesBetween}, so the window query is the one source that knows the
+ *       PLAN — and it already folds gym slots, sport slots/events and prescribed runs together;</li>
+ *   <li>{@code sleepH/sleepQuality1to10} — {@link MetricSeriesService} {@code SLEEP_DURATION_H} /
+ *       {@code SLEEP_QUALITY} over the whole window (one query each, never per day);</li>
+ *   <li>{@code meals} — slot / eaten-at / kcal / NOVA + micro dimension scores from the fuel
+ *       rollup's {@link MealResponse}s, and the REAL logging instant from the meal row's
+ *       {@code created_at} ({@link MealRepository}, one ranged query). The two timestamps are
+ *       genuinely different things: {@code meal.logged_at} is when the meal was EATEN (the user
+ *       can backdate it), {@code created_at} is when it was written down — which is exactly what
+ *       the logging dimension's timeliness component measures;</li>
+ *   <li>{@code waterLogged} — {@link WaterLogRepository#sumsBetween} (one grouped query);</li>
+ *   <li>{@code checkinCount} — {@link CheckInRepository}'s windowed finder, unchanged;</li>
+ *   <li>{@code priorBaseScores} — see below.</li>
+ * </ul>
+ *
+ * <p><b>Rhythm without recursion.</b> The rhythm dimension is the mean of the PRIOR days' base
+ * scores, so a naive implementation would re-enter a full evaluation per prior day, each pulling
+ * its own seven priors. Instead every day of the EXTENDED window {@code [from - rhythmWindowDays,
+ * to]} is loaded once and evaluated once with an EMPTY prior list (the brief's second option), and
+ * those rhythm-free bases are what the in-range days' rhythm dimension averages. Cost is therefore
+ * linear and bounded: one input load and at most two pure engine calls per day of the extended
+ * window — never a fan-out.
  */
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class DayScoreService {
 
-    /** Canonical check-in slots per day (Heartbeat's 4-step rhythm) — the checkin count denominator. */
-    private static final int CANONICAL_CHECKIN_SLOTS = 4;
-    /** The verified FE dial span for sleep quality / check-in energy: 1-10, not the brief's 1-5. */
-    private static final double SCALE_MAX = 10.0;
+    private static final String DIM_NUTRITION = "nutrition";
+    private static final String DIM_TRAINING = "training";
+    private static final String DIM_SLEEP = "sleep";
+    private static final String DIM_LOGGING = "logging";
+    /** The meal-score envelope dimensions the day's quality dimension aggregates (mezo-yta). */
+    private static final String MEAL_DIM_NOVA = "nova";
+    private static final String MEAL_DIM_MICRO = "micro";
 
     private final MetricSeriesService metricSeriesService;
     private final CheckInRepository checkInRepository;
     private final FuelDayService fuelDayService;
-    private final MeWeekProperties properties;
+    private final MealRepository mealRepository;
+    private final WaterLogRepository waterLogRepository;
+    private final WorkoutWindowQueryService workoutWindowQueryService;
+    private final DayEvaluationEngine dayEvaluationEngine;
+    private final DayEvaluationProperties properties;
 
+    /** Legacy four-domain projection of the evaluation — see the class javadoc's mapping table. */
     public record DaySubscores(Integer sleep, Integer fuel, Integer checkin, Integer activity) {
     }
 
-    public record DayScore(LocalDate date, Integer score, DaySubscores subscores) {
+    public record DayScore(LocalDate date, Integer score, DaySubscores subscores,
+                           DayEvaluation evaluation) {
     }
 
     /** Standalone entry point (WeeklyReviewGenerator, tests): fetches its own {@link FuelDayResponse}
-     *  per day — one {@link FuelDayService#getDay} call per day in {@code [from, to]}. Callers that
-     *  already hold the day's rollup (e.g. {@code MeWeekService}, which needs it for its own display
-     *  fields anyway) should use {@link #scores(UUID, LocalDate, LocalDate, Map)} instead, to avoid
-     *  fetching the same rollup twice. */
+     *  per day. Callers that already hold the day's rollup (e.g. {@code MeWeekService}, which needs
+     *  it for its own display fields anyway) should use {@link #scores(UUID, LocalDate, LocalDate,
+     *  Map)} instead, to avoid fetching the same rollup twice. */
     @Transactional(readOnly = true)
     public List<DayScore> scores(UUID userId, LocalDate from, LocalDate to) {
-        Map<LocalDate, FuelDayResponse> fuelDayByDate = new HashMap<>();
-        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
-            fuelDayByDate.put(day, fuelDayService.getDay(userId, day));
-        }
-        return scores(userId, from, to, fuelDayByDate);
+        return scores(userId, from, to, Map.of());
     }
 
-    /** Same contract as {@link #scores(UUID, LocalDate, LocalDate)}, but takes the day's
-     *  {@link FuelDayResponse} pre-fetched by the caller (keyed by date, one entry per day in
-     *  {@code [from, to]}) instead of fetching it again here — the B1 efficiency fix (mezo-8tp8):
-     *  a caller that already loaded the day's fuel rollup for its own purposes no longer pays for
-     *  a second identical {@link FuelDayService#getDay} call per day. Safe by construction: a day
-     *  missing from {@code fuelDayByDate} falls back to {@link FuelDayService#getDay} for that
-     *  date, so an incomplete map degrades to the standalone behaviour instead of a null-pointer
-     *  failure. */
+    /** Same contract as {@link #scores(UUID, LocalDate, LocalDate)}, but takes the days'
+     *  {@link FuelDayResponse}s pre-fetched by the caller (keyed by date) instead of fetching them
+     *  again here — the B1 efficiency fix (mezo-8tp8). Safe by construction: a day missing from
+     *  {@code fuelDayByDate} falls back to {@link FuelDayService#getDay} for that date, so an
+     *  incomplete map (and the empty one the standalone overload passes) degrades to the
+     *  standalone behaviour instead of a null-pointer failure. The rhythm window's prior days are
+     *  always fetched here — they are outside the caller's rendered range by definition. */
     @Transactional(readOnly = true)
-    public List<DayScore> scores(UUID userId, LocalDate from, LocalDate to, Map<LocalDate, FuelDayResponse> fuelDayByDate) {
-        Map<LocalDate, Double> durationH = metricSeriesService.series(userId, MetricKey.SLEEP_DURATION_H, from, to);
-        Map<LocalDate, Double> quality = metricSeriesService.series(userId, MetricKey.SLEEP_QUALITY, from, to);
-        Map<LocalDate, Double> kcal = metricSeriesService.series(userId, MetricKey.DAILY_KCAL, from, to);
-        Map<LocalDate, Double> protein = metricSeriesService.series(userId, MetricKey.DAILY_PROTEIN_G, from, to);
-        Map<LocalDate, Double> gymVolume = metricSeriesService.series(userId, MetricKey.GYM_VOLUME_KG, from, to);
-        Map<LocalDate, Double> sportLoad = metricSeriesService.series(userId, MetricKey.SPORT_LOAD_MIN, from, to);
-        Map<LocalDate, Double> trainingRpe = metricSeriesService.series(userId, MetricKey.TRAINING_RPE, from, to);
-        Map<LocalDate, Double> dailyXp = metricSeriesService.series(userId, MetricKey.DAILY_XP, from, to);
-        Map<LocalDate, Double> checkinEnergy = metricSeriesService.series(userId, MetricKey.CHECKIN_ENERGY, from, to);
-        Map<LocalDate, Long> checkinCounts = checkinCounts(userId, from, to);
+    public List<DayScore> scores(UUID userId, LocalDate from, LocalDate to,
+                                 Map<LocalDate, FuelDayResponse> fuelDayByDate) {
+        Map<LocalDate, DayInputs> window = rhythmFreeInputs(
+                userId, from.minusDays(properties.rhythmWindowDays()), to, fuelDayByDate);
+        Map<LocalDate, Integer> rhythmFreeBases = rhythmFreeBases(window);
 
         List<DayScore> result = new ArrayList<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
-            Integer sleep = sleepSubscore(durationH.get(day), quality.get(day));
-            FuelDayResponse fuelDay = fuelDayByDate.get(day);
-            if (fuelDay == null) {
-                fuelDay = fuelDayService.getDay(userId, day);
-            }
-            Integer fuel = fuelSubscore(fuelDay, kcal.get(day), protein.get(day));
-            Integer checkin = checkinSubscore(checkinCounts.getOrDefault(day, 0L), checkinEnergy.get(day));
-            Integer activity = activitySubscore(
-                    gymVolume.containsKey(day) || sportLoad.containsKey(day) || trainingRpe.containsKey(day),
-                    dailyXp.get(day));
-            result.add(new DayScore(day, overallScore(sleep, fuel, checkin, activity),
-                    new DaySubscores(sleep, fuel, checkin, activity)));
+            DayEvaluation evaluation = dayEvaluationEngine.evaluate(
+                    withPriors(window.get(day), rhythmFreeBases));
+            result.add(new DayScore(day, evaluation.base(), toSubscores(evaluation), evaluation));
         }
         return result;
     }
 
-    /** Slot count per day inside the window — canonical Heartbeat cadence is 4/day. B2 (mezo-8tp8):
-     *  queries the {@code [from, to]} window directly instead of loading every check-in the user
-     *  has ever logged and filtering in Java. */
+    /**
+     * One day's fully-resolved {@link DayInputs}, priors included — the loading map above applied
+     * to a single date. Exposed for the day-evaluation read path (Task 7/8), which needs the
+     * inputs for an arbitrary user + date without going through a week's worth of scores.
+     */
+    @Transactional(readOnly = true)
+    public DayInputs inputsFor(UUID userId, LocalDate date) {
+        Map<LocalDate, DayInputs> window = rhythmFreeInputs(
+                userId, date.minusDays(properties.rhythmWindowDays()), date, Map.of());
+        return withPriors(window.get(date), rhythmFreeBases(window));
+    }
+
+    // --- Input loading ---------------------------------------------------------------------
+
+    /**
+     * Every day of {@code [from, to]} as a {@link DayInputs} with an EMPTY {@code priorBaseScores}
+     * — the rhythm dimension is filled in afterwards by {@link #withPriors}. Every windowed source
+     * is queried ONCE for the whole range (the V3.1 series idiom this service has always used);
+     * only the fuel rollup and the workout windows are inherently per-day queries.
+     */
+    private Map<LocalDate, DayInputs> rhythmFreeInputs(UUID userId, LocalDate from, LocalDate to,
+                                                       Map<LocalDate, FuelDayResponse> fuelDayByDate) {
+        Map<LocalDate, Double> sleepH = metricSeriesService.series(userId, MetricKey.SLEEP_DURATION_H, from, to);
+        Map<LocalDate, Double> sleepQuality = metricSeriesService.series(userId, MetricKey.SLEEP_QUALITY, from, to);
+        Map<LocalDate, Long> checkinCounts = checkinCounts(userId, from, to);
+        Set<LocalDate> wateredDays = wateredDays(userId, from, to);
+        Map<UUID, Instant> mealWrittenAt = mealWrittenAt(userId, from, to);
+        LocalDate today = LocalDate.now();
+
+        Map<LocalDate, DayInputs> inputs = new LinkedHashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            FuelDayResponse fuelDay = fuelDayByDate.get(day);
+            if (fuelDay == null) {
+                fuelDay = fuelDayService.getDay(userId, day);
+            }
+            boolean loggedFuel = !fuelDay.getMeals().isEmpty();
+            MacroSet consumed = fuelDay.getConsumed();
+            MacroSet targets = fuelDay.getTargets();
+            List<Window> windows = workoutWindowQueryService.windowsFor(userId, day);
+            int planned = windows.size();
+            int done = (int) windows.stream().filter(Window::done).count();
+            Double quality = sleepQuality.get(day);
+
+            inputs.put(day, new DayInputs(
+                    day, day.isBefore(today),
+                    loggedFuel ? dbl(consumed.getKcal()) : null,
+                    loggedFuel ? dbl(consumed.getP()) : null,
+                    loggedFuel ? dbl(consumed.getC()) : null,
+                    loggedFuel ? dbl(consumed.getF()) : null,
+                    dbl(targets.getKcal()), dbl(targets.getP()), dbl(targets.getC()), dbl(targets.getF()),
+                    planned > 0 || done > 0,
+                    planned, done,
+                    sleepH.get(day), quality == null ? null : (int) Math.round(quality),
+                    mealFacts(fuelDay, mealWrittenAt),
+                    wateredDays.contains(day),
+                    checkinCounts.getOrDefault(day, 0L).intValue(),
+                    List.of()));
+        }
+        return inputs;
+    }
+
+    /** Each day's base score computed WITHOUT the rhythm dimension (empty prior list) — the values
+     *  the in-range days' rhythm dimension averages, and the reason rhythm can never recurse. */
+    private Map<LocalDate, Integer> rhythmFreeBases(Map<LocalDate, DayInputs> window) {
+        Map<LocalDate, Integer> bases = new HashMap<>();
+        window.forEach((day, inputs) -> {
+            Integer base = dayEvaluationEngine.evaluate(inputs).base();
+            if (base != null) {
+                bases.put(day, base);
+            }
+        });
+        return bases;
+    }
+
+    /** The same inputs with the day's prior {@code rhythmWindowDays} base scores attached (oldest
+     *  first); days without a base are simply absent, never padded. */
+    private DayInputs withPriors(DayInputs inputs, Map<LocalDate, Integer> rhythmFreeBases) {
+        List<Integer> priors = new ArrayList<>();
+        for (int back = properties.rhythmWindowDays(); back >= 1; back--) {
+            Integer base = rhythmFreeBases.get(inputs.date().minusDays(back));
+            if (base != null) {
+                priors.add(base);
+            }
+        }
+        return new DayInputs(inputs.date(), inputs.closed(),
+                inputs.kcal(), inputs.proteinG(), inputs.carbsG(), inputs.fatG(),
+                inputs.kcalTarget(), inputs.proteinTargetG(), inputs.carbsTargetG(), inputs.fatTargetG(),
+                inputs.workoutDay(), inputs.plannedWorkouts(), inputs.doneWorkouts(),
+                inputs.sleepH(), inputs.sleepQuality1to10(), inputs.meals(),
+                inputs.waterLogged(), inputs.checkinCount(), List.copyOf(priors));
+    }
+
+    /** Slot count per day inside the window — canonical Heartbeat cadence is 4/day (the engine's
+     *  own denominator). B2 (mezo-8tp8): queries the {@code [from, to]} window directly instead of
+     *  loading every check-in the user has ever logged and filtering in Java. */
     private Map<LocalDate, Long> checkinCounts(UUID userId, LocalDate from, LocalDate to) {
         Map<LocalDate, Long> counts = new HashMap<>();
         for (CheckInEntity checkIn : checkInRepository.findByCreatedByAndDeletedFalseAndDateBetween(userId, from, to)) {
@@ -122,85 +261,86 @@ public class DayScoreService {
         return counts;
     }
 
-    /** {@code d = min(1, durationH/target)}; blended with quality (1-10) when present. Absent = no sleep row. */
-    private Integer sleepSubscore(Double durationH, Double quality) {
-        if (durationH == null) {
-            return null;
-        }
-        double d = Math.min(1.0, durationH / properties.sleepTargetH());
-        double value = quality == null ? d : 0.7 * d + 0.3 * clamp01((quality - 1) / (SCALE_MAX - 1));
-        return toScore(value);
-    }
-
-    /**
-     * kcal-closeness vs the day's {@link FuelDayService} target, blended with protein-hit ratio
-     * when a protein target is prescribed. Absent when no kcal was logged that day, or the day's
-     * kcal target is not positive (reused from {@code FuelDayService}, never re-derived here).
-     * Takes the day's already-fetched {@link FuelDayResponse} — see {@link #scores(UUID, LocalDate,
-     * LocalDate, Map)} for why this is not fetched again here (B1, mezo-8tp8).
-     */
-    private Integer fuelSubscore(FuelDayResponse fuelDay, Double kcalConsumed, Double proteinConsumed) {
-        if (kcalConsumed == null) {
-            return null;
-        }
-        MacroSet targets = fuelDay.getTargets();
-        double kcalTarget = targets.getKcal().doubleValue();
-        if (kcalTarget <= 0) {
-            return null;
-        }
-        double kcalCloseness = Math.max(0.0, 1.0 - Math.abs(kcalConsumed / kcalTarget - 1.0) / properties.kcalBand());
-        double proteinTarget = targets.getP().doubleValue();
-        double value;
-        if (proteinTarget > 0) {
-            double protein = proteinConsumed == null ? 0.0 : proteinConsumed;
-            value = 0.5 * kcalCloseness + 0.5 * Math.min(1.0, protein / proteinTarget);
-        } else {
-            value = kcalCloseness;
-        }
-        return toScore(value);
-    }
-
-    /** {@code c = count/4}, blended with the day's average energy (1-10) when any check-in has it. */
-    private Integer checkinSubscore(long count, Double energyAvg) {
-        if (count == 0) {
-            return null;
-        }
-        double c = Math.min(1.0, count / (double) CANONICAL_CHECKIN_SLOTS);
-        double value = energyAvg == null ? c : 0.6 * c + 0.4 * clamp01((energyAvg - 1) / (SCALE_MAX - 1));
-        return toScore(value);
-    }
-
-    /** A logged workout alone maxes the subscore; otherwise XP alone scales it. Absent = neither signal. */
-    private Integer activitySubscore(boolean workoutLogged, Double xp) {
-        if (!workoutLogged && xp == null) {
-            return null;
-        }
-        double xpRatio = xp == null ? 0.0 : Math.min(1.0, xp / properties.xpBaseline());
-        double value = Math.max(workoutLogged ? 1.0 : 0.0, xpRatio);
-        return toScore(value);
-    }
-
-    /** Rounded mean of the present subscores; {@code null} ("tanulom") below the 2-subscore honesty gate. */
-    private static Integer overallScore(Integer... subscores) {
-        int sum = 0;
-        int present = 0;
-        for (Integer subscore : subscores) {
-            if (subscore != null) {
-                sum += subscore;
-                present++;
+    /** Days with any water logged at all — the logging dimension only asks the boolean question. */
+    private Set<LocalDate> wateredDays(UUID userId, LocalDate from, LocalDate to) {
+        Set<LocalDate> days = new HashSet<>();
+        for (Object[] row : waterLogRepository.sumsBetween(userId, from, to)) {
+            if (row[1] != null && ((Number) row[1]).longValue() > 0) {
+                days.add((LocalDate) row[0]);
             }
         }
-        if (present < 2) {
+        return days;
+    }
+
+    /** {@code meal.created_at} per meal id — when the row was actually WRITTEN, as opposed to the
+     *  {@code logged_at} the {@link MealResponse} carries (when the meal was eaten). */
+    private Map<UUID, Instant> mealWrittenAt(UUID userId, LocalDate from, LocalDate to) {
+        Map<UUID, Instant> writtenAt = new HashMap<>();
+        for (MealEntity meal : mealRepository
+                .findByCreatedByAndDeletedFalseAndMealDateBetweenOrderByMealDateAsc(userId, from, to)) {
+            writtenAt.put(meal.getId(), meal.getCreatedAt());
+        }
+        return writtenAt;
+    }
+
+    private static List<MealLogFact> mealFacts(FuelDayResponse fuelDay, Map<UUID, Instant> mealWrittenAt) {
+        List<MealLogFact> facts = new ArrayList<>();
+        for (MealResponse meal : fuelDay.getMeals()) {
+            Instant writtenAt = mealWrittenAt.get(meal.getId());
+            facts.add(new MealLogFact(
+                    meal.getSlot(),
+                    writtenAt == null ? null : LocalTime.ofInstant(writtenAt, ZoneOffset.UTC),
+                    meal.getLoggedAt() == null ? null : meal.getLoggedAt()
+                            .withOffsetSameInstant(ZoneOffset.UTC).toLocalTime(),
+                    mealDimScore(meal, MEAL_DIM_NOVA),
+                    mealDimScore(meal, MEAL_DIM_MICRO),
+                    meal.getMacros() == null ? 0.0 : dblOrZero(meal.getMacros().getKcal())));
+        }
+        return facts;
+    }
+
+    /** One meal-envelope dimension's 0..1 score, or {@code null} when the meal is unscored or that
+     *  dimension DEGRADED (weight 0, the scorer's honest "no input coverage" marker) — a degraded
+     *  dimension's stored 0 is not a measurement and must never drag the day's quality down. */
+    private static Double mealDimScore(MealResponse meal, String dimensionId) {
+        if (meal.getScore() == null || meal.getScore().getBreakdown() == null
+                || meal.getScore().getBreakdown().getDimensions() == null) {
             return null;
         }
-        return (int) Math.round(sum / (double) present);
+        return meal.getScore().getBreakdown().getDimensions().stream()
+                .filter(d -> dimensionId.equals(d.getId()))
+                .filter(d -> d.getWeight() != null && d.getWeight().signum() > 0)
+                .findFirst()
+                .map(MealScoreDimension::getScore)
+                .map(BigDecimal::doubleValue)
+                .orElse(null);
     }
 
-    private static double clamp01(double value) {
-        return Math.max(0.0, Math.min(1.0, value));
+    // --- Legacy projection -----------------------------------------------------------------
+
+    private static DaySubscores toSubscores(DayEvaluation evaluation) {
+        return new DaySubscores(
+                dimScore(evaluation, DIM_SLEEP),
+                dimScore(evaluation, DIM_NUTRITION),
+                dimScore(evaluation, DIM_LOGGING),
+                dimScore(evaluation, DIM_TRAINING));
     }
 
-    private static Integer toScore(double value01) {
-        return (int) Math.round(clamp01(value01) * 100);
+    private static Integer dimScore(DayEvaluation evaluation, String dimensionId) {
+        return evaluation.dimensions().stream()
+                .filter(d -> d.id().equals(dimensionId))
+                .findFirst()
+                .map(DayDimension::score)
+                .orElse(null);
+    }
+
+    private static Double dbl(BigDecimal value) {
+        return value == null ? null : value.doubleValue();
+    }
+
+    /** The kcal a meal contributes to the day's NOVA weighting — a meal always has a mass, so an
+     *  absent rollup is 0 (it simply carries no weight), never a null the engine would unbox. */
+    private static double dblOrZero(BigDecimal value) {
+        return value == null ? 0.0 : value.doubleValue();
     }
 }
