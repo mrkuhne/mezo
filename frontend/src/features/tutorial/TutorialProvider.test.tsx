@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { StrictMode } from 'react'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
-import { TutorialProvider, useTutorial } from '@/features/tutorial/TutorialProvider'
+import { AUTO_DELAY_MS, TutorialProvider, useTutorial } from '@/features/tutorial/TutorialProvider'
+import { WELCOME_VERSION } from '@/features/tutorial/registry/welcome'
 import { readLocalProgress, writeLocalProgress } from '@/shared/lib/tutorialSeen'
 import { API_BASE } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
@@ -26,8 +27,11 @@ function stubReducedMotion() {
   }))
 }
 
+const resetHandle: { current: (() => Promise<void>) | null } = { current: null }
+
 function Probe() {
   const t = useTutorial()
+  resetHandle.current = t.resetAll
   const navigate = useNavigate()
   return (
     <div>
@@ -36,6 +40,7 @@ function Probe() {
       <button onClick={() => t.open('fuel')}>nyisd</button>
       <button onClick={() => navigate('/train')}>train</button>
       <button onClick={() => navigate('/fuel')}>fuel</button>
+      <button onClick={() => navigate('/nap')}>nap</button>
       {/* /nap/rutin: T2 subpage, ebben a szeletben nincs saját kalauz-bejegyzése — a
           „kalauz nélküli route" fixture-je (Task 2 ugyanezt a route-ot választotta
           az AppHeader.test.tsx-ben, ugyanezért). */}
@@ -236,4 +241,239 @@ test('PUT-hiba esetén a lokális írás (seenAt) marad az igazság, a sheet nem
   await waitFor(() => expect(readLocalProgress().fuel).toBeDefined())
   expect(readLocalProgress().fuel?.version).toBe(1)
   expect(screen.getByRole('dialog', { name: 'Kalauz · Fuel' })).toBeInTheDocument()
+})
+
+// ── T0 welcome (mezo-gb1s.4, S2b spec §4.2) ─────────────────────────────────────
+// A sheet jelenlétét NEM a `Kalauz · <label>` szövegre kérdezzük: a KalauzSheet két elembe is
+// kiírja (.mz-eyebrow és az .sr-only cím), tehát egy getByText(/^Kalauz · /) „multiple elements"
+// hibát dobna. Az egyedi horgony a pötty-sáv aria-labelje: `Kártyák`.
+const SEEN = '2026-08-30T10:00:00.000Z'
+const welcomeSeen = () => ({ welcome: { version: WELCOME_VERSION, seenAt: SEEN, completedAt: SEEN, dismissedAtStep: null } })
+
+test('a legelső /nap betöltéskor a welcome felugrik, és a /nap kalauza NEM', async () => {
+  renderAt('/nap')
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  // A /nap auto-open timere el sem indult (a route-effekt guardja), tehát 600 ms után sincs sheet.
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(screen.queryByLabelText('Kártyák')).not.toBeInTheDocument()
+})
+
+test('„látva = megjelent": a welcome bejegyzés a megnyitás pillanatában íródik', async () => {
+  renderAt('/nap')
+  await screen.findByRole('dialog')
+  await waitFor(() => expect(readLocalProgress().welcome?.seenAt).toEqual(expect.any(String)))
+  expect(readLocalProgress().welcome?.version).toBe(WELCOME_VERSION)
+  expect(readLocalProgress().welcome?.completedAt).toBeNull()
+})
+
+test('az Induljunk completedAt-ot ír, és utána NEM láncol a /nap kalauzába', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/nap')
+  await screen.findByRole('dialog')
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  await user.click(screen.getByRole('button', { name: 'Induljunk' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  await waitFor(() => expect(readLocalProgress().welcome?.completedAt).toEqual(expect.any(String)))
+  // S2b-6: a route-effekt ugyanarra a pathname-re nem fut újra — a /nap kalauza most nem jön.
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(screen.queryByLabelText('Kártyák')).not.toBeInTheDocument()
+})
+
+test('a Kihagyom dismissedAtStep-et ír, és a welcome nem jön vissza', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/nap')
+  await screen.findByRole('dialog')
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  await user.click(screen.getByRole('button', { name: 'Kihagyom' }))
+  await waitFor(() => expect(readLocalProgress().welcome?.dismissedAtStep).toBe(1))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+test('látott welcome mellett a /nap kalauza normálisan felugrik', async () => {
+  writeLocalProgress(welcomeSeen())
+  renderAt('/nap')
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
+  expect(screen.queryByText('Szia, Mezo vagyok.')).not.toBeInTheDocument()
+})
+
+test('a függő welcome MÁS route kalauzát nem nyomja el', async () => {
+  renderAt('/train')
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
+})
+
+test('reduced-motion alatt is a welcome nyer a 0 ms-os /nap auto-open ellen', async () => {
+  stubReducedMotion()
+  renderAt('/nap')
+  await act(async () => { vi.advanceTimersByTime(50) })
+  expect(screen.getByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  expect(screen.queryByLabelText('Kártyák')).not.toBeInTheDocument()
+})
+
+// A megnyitó effekt `persist`-et hív, a StrictMode pedig mount → cleanup → re-run sorrendben
+// futtatja — a két futás KÖZÖTT nincs render, tehát sem a `welcomeStatus` state, sem a
+// `progressRef` nem frissült. A state-re támaszkodó kapu így kétszer engedne át egy-egy külön
+// `new Date()`-tel; a Provider eager ref-latche zárja ezt (a `close`/`openIdRef` mintája).
+test('StrictMode alatt a welcome megnyitása pontosan EGY seenAt-írást ad', async () => {
+  const written: string[] = []
+  const orig = Storage.prototype.setItem
+  Storage.prototype.setItem = function (key: string, value: string) {
+    if (key.includes('kalauz') && value.includes('welcome')) written.push(JSON.parse(value).welcome.seenAt)
+    return orig.call(this, key, value)
+  }
+  try {
+    renderAtStrict('/nap')
+    await screen.findByRole('dialog')
+    await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+    expect(written).toHaveLength(1)
+  } finally {
+    Storage.prototype.setItem = orig
+  }
+})
+
+// Új eszköz: üres localStorage, a szerver viszont MÁR tud a welcome-ról. Ez az egyetlen ok,
+// amiért a megnyitó effekt megvárja a `!isPending`-et — de a `progressRef` csak RENDERKOR
+// frissül, a merge-effekt és a welcome-effekt pedig UGYANABBAN a passzív-effekt flush-ban fut
+// (react-query egy renderben billenti az isPending-et és adja a datát). A welcome-effekt tehát
+// nem támaszkodhat a refre: a szerver-mapet magának kell összefésülnie, különben (1) felvillan,
+// és (2) a `persist` bázisa a merge ELŐTTI map, ami visszaírja a csonkolt állapotot.
+test('új eszköz: a szerver szerint látott welcome nem villan fel, és a merge-elt mapet nem csorbítja (real mode)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  if (isMockMode()) return
+  const entry = (v: number) => ({ version: v, seenAt: SEEN, completedAt: SEEN, dismissedAtStep: null })
+  server.use(
+    http.get(`${API_BASE}/api/tutorial/progress`, () =>
+      HttpResponse.json({ progress: { welcome: entry(WELCOME_VERSION), fuel: entry(1), nap: entry(1) } }),
+    ),
+    http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+      const body = (await request.json()) as { progress: unknown }
+      return HttpResponse.json({ progress: body.progress })
+    }),
+  )
+  renderAt('/nap') // a localStorage üres — a globális beforeEach törli
+  await waitFor(() => expect(Object.keys(readLocalProgress()).length).toBeGreaterThan(0))
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument() // nincs felvillanás
+  const p = readLocalProgress()
+  expect(p.fuel).toBeDefined() // a merge-elt map többi bejegyzése megmaradt
+  expect(p.nap).toBeDefined()
+  expect(p.welcome?.seenAt).toBe(SEEN) // az eredeti seenAt él, nem írtuk felül frissel
+})
+
+// ── resetAll (mezo-gb1s.2) ──────────────────────────────────────────────────
+test('resetAll: kiüríti az állapotot, zárja a nyitottat, és a welcome újra esedékes lesz', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  writeLocalProgress(welcomeSeen())
+  renderAt('/fuel')
+  await user.click(screen.getByText('nyisd'))
+  expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
+  await act(async () => { await resetHandle.current!() })
+  expect(screen.queryByLabelText('Kártyák')).not.toBeInTheDocument()
+  expect(readLocalProgress()).toEqual({})
+  // A rákövetkező /nap-belépés a reset VÉGPONTTÓL VÉGPONTIG bizonyítéka: a lokális map, a
+  // welcomeStatus és a session-guardok is tényleg visszaálltak, tehát a welcome újra esedékes.
+  // (A `resetAll` eager `welcomeStatusRef.current = 'pending'` sora NEM ez a bizonyíték: a
+  // reset state-írásai közé mindig esik render, ami a per-render ref-tükrözésből amúgy is
+  // beállítaná — a sor VÉDEKEZŐ, a fájl ref-tükör-doktrínájával konzisztens, és ez a teszt
+  // ugyanúgy zöld nélküle is.)
+  await user.click(screen.getByRole('button', { name: 'nap' }))
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+})
+
+// Finding 1 (végső review): a reset a LOKÁLIS mapet üríti, a DELETE viszont 300 ms – 2 s-ig
+// repül. Amíg repül, a react-query cache-ben MARAD a reset ELŐTTI szerver-map — és ha a
+// felhasználó közben átvált a /nap-ra, a megnyitó effekt ezt fésüli össze, „látott"-nak találja
+// a welcome-ot, és némán 'done'-ra billen: a „Kalauzok újranézése" hatástalan marad a session
+// végéig. A javítás: a mutáció optimistán kiüríti a cache-t a DELETE ELŐTT.
+test('resetAll: a repülő DELETE alatt a /nap-ra váltás is a RESET UTÁNI állapotot látja (real mode)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  if (isMockMode()) return
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  let releaseDelete: () => void = () => undefined
+  const deleteGate = new Promise<void>((resolve) => { releaseDelete = resolve })
+  server.use(
+    http.get(`${API_BASE}/api/tutorial/progress`, () =>
+      HttpResponse.json({ progress: { welcome: { version: WELCOME_VERSION, seenAt: SEEN, completedAt: SEEN, dismissedAtStep: null } } }),
+    ),
+    http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+      const body = (await request.json()) as { progress: unknown }
+      return HttpResponse.json({ progress: body.progress })
+    }),
+    http.delete(`${API_BASE}/api/tutorial/progress`, async () => {
+      await deleteGate
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  renderAt('/nap/rutin') // kalauz nélküli route, mint a Beállítások — innen indul a reset
+  await waitFor(() => expect(readLocalProgress().welcome).toBeDefined())
+  let resetPromise: Promise<void> = Promise.resolve()
+  await act(async () => {
+    resetPromise = resetHandle.current!()
+    vi.advanceTimersByTime(10) // a mutáció eljut az optimista cache-ürítésig; a DELETE még repül
+  })
+  await user.click(screen.getByRole('button', { name: 'nap' }))
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  releaseDelete()
+  await act(async () => { await resetPromise })
+})
+
+// Finding 2 (végső review): route-váltás a NYITOTT sheetet force-dismiss-eli — a welcome-nak
+// ugyanez jár. Enélkül a Beállítások → /nap → welcome → vissza-gesztus után a teljes képernyős
+// overlay (inset:0, document-szintű Tab-csapda) a cél oldal FÖLÖTT ragad.
+test('route-váltás a nyitott welcome-ot is zárja, dismissedAtStep-tel', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/nap')
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  await user.click(screen.getByRole('button', { name: 'train' }))
+  expect(screen.queryByText('Szia, Mezo vagyok.')).not.toBeInTheDocument()
+  await waitFor(() => expect(readLocalProgress().welcome?.dismissedAtStep).toBe(0))
+  expect(readLocalProgress().welcome?.completedAt).toBeNull()
+})
+
+// Finding 3 (végső review): a `.welcome` z-indexe 60, a sheeteké 200 — a welcome tehát a nyitott
+// sheet ALÁ nyílna, láthatatlanul „látott"-ra billentve magát, két egyidejű aria-modal
+// dialógussal. A hosszú `isPending` ablak (hideg indítás lassú hálón) alatt a „?" gomb pont ezt
+// idézi elő. A gate nem lehet ref-olvasó korai return: az `openId` DEP kell, különben a sheet
+// bezárása után sosem futna újra az effekt.
+test('a welcome nem nyílik nyitott sheet alá, és a sheet zárása után jelenik meg (real mode)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  if (isMockMode()) return
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  let releaseGet: () => void = () => undefined
+  const getGate = new Promise<void>((resolve) => { releaseGet = resolve })
+  server.use(
+    http.get(`${API_BASE}/api/tutorial/progress`, async () => { await getGate; return HttpResponse.json({ progress: {} }) }),
+    http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+      const body = (await request.json()) as { progress: unknown }
+      return HttpResponse.json({ progress: body.progress })
+    }),
+  )
+  renderAt('/nap')
+  await user.click(screen.getByRole('button', { name: 'nyisd' })) // „?" az isPending ablakban
+  expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
+  releaseGet()
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(screen.queryByText('Szia, Mezo vagyok.')).not.toBeInTheDocument()
+  expect(readLocalProgress().welcome).toBeUndefined() // „látva = megjelent" — nem jelent meg
+  await user.click(screen.getByRole('button', { name: 'Kihagyom' })) // a sheet zárása
+  await act(async () => { vi.advanceTimersByTime(400) })
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  await waitFor(() => expect(readLocalProgress().welcome?.seenAt).toEqual(expect.any(String)))
+})
+
+test('resetAll: a DELETE hibája FELSZÍNRE kerül, nem nyeli el némán', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  if (isMockMode()) return
+  let hits = 0
+  server.use(http.delete(`${API_BASE}/api/tutorial/progress`, () => {
+    hits += 1
+    return new HttpResponse(null, { status: 500 })
+  }))
+  renderAt('/fuel')
+  await expect(act(async () => { await resetHandle.current!() })).rejects.toThrow(/HTTP 500/)
+  expect(hits).toBe(1)
 })
