@@ -907,9 +907,15 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     completedTodayWorkout: mock ? null : (todayData?.completedWorkout ?? null),
     // Gym done-state dates: real mode reads them from /today (computed server-side);
     // mock mode has no persisted instances, so the gym never flips to done offline.
-    // mezo-idz2: mock módban a mai nap „megcsinált gym-nap" — enélkül a DayOrb edzés-jele
-    // mock módban strukturálisan sosem lenne jelen, és a fejlesztői felület hazudna.
-    gymDoneDates: mock ? [localDateString()] : (todayData?.weekDoneDates ?? []),
+    // mezo-idz2: mock módban a mai nap csak akkor „megcsinált gym-nap", ha a heti terv
+    // szerint egyáltalán van ma edzés (ugyanaz a today && active idióma, mint a DayOrb
+    // nevezőjében, useDayOrbFill.ts) — enélkül MINDEN mock napon (pihenőnapon és
+    // hétvégén is) kész edzést hazudna a felület. Pihenőnapon ez nem kerül semmibe: a
+    // DayOrb nevezőjéből is kiesik aznap az edzés-jel, tehát egy tisztán lelogolt
+    // pihenőnap így is 100%-ra fut ki.
+    gymDoneDates: mock
+      ? (trainGymSchedule.weeklyTimes.some((d) => d.today && d.active) ? [localDateString()] : [])
+      : (todayData?.weekDoneDates ?? []),
     workoutPending: !mock && (mesoPending || todayPending),
     sportPending: !mock && sportQueryPending,
     exercisesPending: !mock && (catalogPending || recordsPending),
