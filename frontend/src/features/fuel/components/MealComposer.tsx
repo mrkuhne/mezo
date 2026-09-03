@@ -350,7 +350,7 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
       )}
 
       <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>HONNAN ADOD HOZZÁ?</span>
-      <div className="logflow-srctiles">
+      <div className="logflow-srctiles" data-kalauz-anchor="log-forrasok">
         <button type="button" className="logflow-srct tone-gold" onClick={() => setKamraOpen(true)} aria-label="Kamra · hozzáadás">
           <ClayIcon name="i-kamra" size={26} />
           <b>Kamra</b><small>polcról, grammra</small>
