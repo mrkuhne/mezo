@@ -2,7 +2,7 @@
 // Mezo · AppHeader — az app EGYETLEN felső fejléce (mezo-atry). Korábban mind az öt
 // tab-gyökér külön bemásolta a `.nap-head` receptet, eltérő tartalommal; itt egy helyen
 // él, és az AppLayout mountolja minden oldalra. Sorrend fixen:
-//   dátum-eyebrow · [kalauz ?] · napszakváltó · Mezo-üzenetek · értesítések · profil orb
+//   dátum-eyebrow · [kalauz ?] · napszakváltó · Mezo-üzenetek · értesítések · napi orb
 // A napszak-választás állapota az URL-ben marad (`/nap?dp=`) — nincs globális state, és a
 // meglévő deep-linkek változatlanul működnek. A választó BÁRHONNAN a Nap oldalra navigál.
 //
