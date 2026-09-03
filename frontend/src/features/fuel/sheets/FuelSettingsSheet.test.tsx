@@ -61,6 +61,29 @@ describe('FuelSettingsSheet', () => {
     // close() is called immediately, navigate() happens immediately; location changes before animation completes
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/fuel/slots'))
   })
+
+  // Diéta section (Diet Plan slice 1, mezo-xwgb) — split preset, custom %, protein tier, water/fiber.
+  test('custom split blocks save until the three percents sum to 100.0', async () => {
+    const user = userEvent.setup()
+    renderSheet()
+    await user.click(screen.getByRole('button', { name: /Egyéni/ }))
+    const protein = screen.getByLabelText('Fehérje %')
+    await user.clear(protein); await user.type(protein, '30')
+    const carbs = screen.getByLabelText('Szénhidrát %')
+    await user.clear(carbs); await user.type(carbs, '30')
+    const fat = screen.getByLabelText('Zsír %')
+    await user.clear(fat); await user.type(fat, '30')
+    expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled() // 90 ≠ 100
+    await user.clear(carbs); await user.type(carbs, '40')
+    expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
+  })
+
+  test('preset selection hides the custom percent inputs', async () => {
+    const user = userEvent.setup()
+    renderSheet()
+    await user.click(screen.getByRole('button', { name: /Kiegyensúlyozott/ }))
+    expect(screen.queryByLabelText('Fehérje %')).not.toBeInTheDocument()
+  })
 })
 
 // Real mode: the cold-open prefill race (mezo-53su). The read starts from the ghost
