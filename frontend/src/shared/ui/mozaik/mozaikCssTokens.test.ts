@@ -81,3 +81,15 @@ describe('the Mozaik panel rhythm is declared once (mezo-d20.11.2)', () => {
     expect(copies).toEqual([])
   })
 })
+
+// mezo-8az6: a fejléc aurora tokenjei ugyanezt a szabályt követik.
+test('minden --mzh-* fejléc-token deklarált light-ban ÉS dark-ban', () => {
+  const light = declared(blockBody(rawCss, /(?:^|\n):root[ \t]*\{([^}]*)\}/))
+  const dark = declared(blockBody(rawCss, /(?:^|\n):root\[data-theme="dark"\][ \t]*\{([^}]*)\}/))
+  const used = new Set([...rawCss.matchAll(/var\(\s*(--mzh-[a-zA-Z0-9-]+)/g)].map(m => m[1]))
+  expect(used.size).toBeGreaterThan(3)
+  for (const token of used) {
+    expect(light.has(token), `${token} hiányzik a light :root-ból`).toBe(true)
+    expect(dark.has(token), `${token} hiányzik a dark blokkból`).toBe(true)
+  }
+})
