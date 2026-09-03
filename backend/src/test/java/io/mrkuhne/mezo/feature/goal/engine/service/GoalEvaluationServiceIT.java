@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
+import io.mrkuhne.mezo.feature.goal.engine.service.GoalProjectionService.ProjectionSegment;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.GuardStatus;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
@@ -42,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 class GoalEvaluationServiceIT extends AbstractIntegrationTest {
 
     @Autowired private GoalEngineService engine;
+    @Autowired private GoalEvaluationService evaluationService;
     @Autowired private GoalRepository goalRepository;
     @Autowired private BiometricProfileRepository profileRepository;
     @Autowired private GoalPopulator goalPopulator;
@@ -291,5 +294,26 @@ class GoalEvaluationServiceIT extends AbstractIntegrationTest {
         assertThat(seg.fatG()).isEqualTo(expectedFat);
         assertThat(seg.carbsG())
             .isEqualTo(Math.max(0, Math.round((seg.kcal() - 4 * seg.proteinG() - 9 * seg.fatG()) / 4.0f)));
+    }
+
+    // ── Sleep target: assemble writes the PASSED sleep target onto every segment (mezo-3g5w) ──────
+
+    @Test
+    void testAssemble_shouldCarryProvidedSleepTarget_whenSegmentsEmitted() {
+        UUID user = databasePopulator.populateUser("eval-sleep@test.local");
+        GoalEntity g = goal(user, "cut", "0.70", List.of());
+        List<ProjectionSegment> segments = List.of(new ProjectionSegment(
+            1, 8, "W1-8", new BigDecimal("2800"), new BigDecimal("2500"),
+            new BigDecimal("-0.50"), -300, List.of(), "test"));
+        GuardStatus guards = new GuardStatus(null, null);
+        DietPreferences prefs = new DietPreferences("balanced", null, null, null, "moderate", 2500, 30);
+
+        // a 7.5h sleep target resolved from the user's sleep goal (port-resolved upstream)
+        GoalPrescriptionJson rx = evaluationService.assemble(
+            g, new BigDecimal("90"), null, segments, guards, prefs, new BigDecimal("7.5"));
+
+        assertThat(rx.segments()).isNotEmpty();
+        assertThat(rx.segments()).allSatisfy(s ->
+            assertThat(s.sleepTargetH()).isEqualByComparingTo(new BigDecimal("7.5")));
     }
 }
