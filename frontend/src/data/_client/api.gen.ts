@@ -1160,6 +1160,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pantry/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Global pantry catalog search (master + every user's definitions; is_deleted=false; max 50) */
+        get: operations["searchPantryCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pantry/items/from-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Put a catalog entry on the caller's shelf — idempotent (an existing live row is returned as-is) */
+        post: operations["addPantryItemFromCatalog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pantry-import/lookup": {
         parameters: {
             query?: never;
@@ -5486,6 +5520,10 @@ export interface components {
             saturatedFatG?: number | null;
             lastUsed: string;
             usedInRecipes: number;
+            /** Format: uuid */
+            catalogId: string;
+            sharedFrom?: components["schemas"]["PantrySharedFrom"] | null;
+            catalogEditable: boolean;
         };
         SupplementStashResponse: {
             /** Format: uuid */
@@ -5516,10 +5554,16 @@ export interface components {
             sugarG?: number | null;
             saltG?: number | null;
             saturatedFatG?: number | null;
+            /** Format: uuid */
+            catalogId: string;
+            sharedFrom?: components["schemas"]["PantrySharedFrom"] | null;
+            catalogEditable: boolean;
         };
         PantryItemRequest: {
             /** @enum {string} */
             kind: "food" | "supplement" | "stim" | "med";
+            /** Format: uuid */
+            catalogId?: string | null;
             name: string;
             brand?: string | null;
             source?: components["schemas"]["PantrySource"] | null;
@@ -5554,12 +5598,45 @@ export interface components {
         PantryItemResponse: {
             /** Format: uuid */
             id: string;
+            /** Format: uuid */
+            catalogId: string;
             /** @enum {string} */
             kind: "food" | "supplement" | "stim" | "med";
             name: string;
             brand?: string | null;
             source?: string | null;
             category?: string | null;
+        };
+        PantrySharedFrom: {
+            authorName: string;
+        };
+        PantryFromCatalogRequest: {
+            /** Format: uuid */
+            catalogId: string;
+        };
+        PantryCatalogEntry: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "food" | "supplement" | "stim" | "med";
+            name: string;
+            brand?: string | null;
+            source: components["schemas"]["PantrySource"];
+            category?: string | null;
+            per?: number | null;
+            unit?: string | null;
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
+            nova?: number | null;
+            form?: string | null;
+            caffeine?: boolean | null;
+            authorName?: string | null;
         };
         PantryLookupResponse: {
             results: components["schemas"]["PantryLookupResult"][];
@@ -12312,8 +12389,26 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Definition fields changed on a catalog entry the caller did not author (and is not OWNER) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Renaming would collide with another catalog entry's name+brand */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12351,6 +12446,98 @@ export interface operations {
                 };
             };
             /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    searchPantryCatalog: {
+        parameters: {
+            query?: {
+                q?: string;
+                kind?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matching catalog entries ordered by name */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryCatalogEntry"][];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    addPantryItemFromCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PantryFromCatalogRequest"];
+            };
+        };
+        responses: {
+            /** @description The caller's pantry item for that catalog entry (created or pre-existing) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryItemResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown or deleted catalog entry */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -38,6 +38,8 @@ paths:
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '403': { description: Definition fields changed on a catalog entry the caller did not author (and is not OWNER), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: Renaming would collide with another catalog entry's name+brand, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     delete:
       tags: [Pantry]
       operationId: deletePantryItem
@@ -46,6 +48,33 @@ paths:
         '204': { description: Deleted }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  # Static segments under /api/pantry are safe here: there is no GET /api/pantry/{id} and no
+  # POST /api/pantry/{id}, so `catalog` / `items/from-catalog` never fall into the id pattern.
+  /api/pantry/catalog:
+    get:
+      tags: [Pantry]
+      operationId: searchPantryCatalog
+      summary: Global pantry catalog search (master + every user's definitions; is_deleted=false; max 50)
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 120 } }
+        - { name: kind, in: query, required: false, schema: { type: string, pattern: '^(food|supplement|stim|med)$' } }
+      responses:
+        '200': { description: Matching catalog entries ordered by name, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/PantryCatalogEntry' } } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/pantry/items/from-catalog:
+    post:
+      tags: [Pantry]
+      operationId: addPantryItemFromCatalog
+      summary: Put a catalog entry on the caller's shelf — idempotent (an existing live row is returned as-is)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PantryFromCatalogRequest' } } }
+      responses:
+        '200': { description: The caller's pantry item for that catalog entry (created or pre-existing), content: { application/json: { schema: { $ref: '#/components/schemas/PantryItemResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Unknown or deleted catalog entry, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   # Import paths live OUTSIDE /api/pantry/* on purpose: a static segment under /api/pantry would
   # fall into the PUT/DELETE /api/pantry/{id} pattern when the import switch is off (405, not 404)
   # — the same collision the fuel intake 'entry' segment avoids.
@@ -149,7 +178,7 @@ components:
       type: object
       # nova left OUT of required since mezo-32ko: an unclassified item is an honest null,
       # not a fabricated NOVA 1 (the old mapper default masked the data gap on the Kamra UI).
-      required: [id, name, brand, source, category, per, unit, macros, price, priceUnit, pkg, micros, lastUsed, usedInRecipes]
+      required: [id, name, brand, source, category, per, unit, macros, price, priceUnit, pkg, micros, lastUsed, usedInRecipes, catalogId, catalogEditable]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -172,9 +201,13 @@ components:
         saturatedFatG: { type: number, nullable: true }
         lastUsed: { type: string }
         usedInRecipes: { type: integer }
+        # S4 (mezo-qw37.4): the shared definition row behind this shelf entry
+        catalogId: { type: string, format: uuid }
+        sharedFrom: { allOf: [ { $ref: '#/components/schemas/PantrySharedFrom' } ], nullable: true }
+        catalogEditable: { type: boolean }
     SupplementStashResponse:
       type: object
-      required: [id, name, brand, type, category, dose, form, protocol, timing, taken]
+      required: [id, name, brand, type, category, dose, form, protocol, timing, taken, catalogId, catalogEditable]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -205,11 +238,17 @@ components:
         sugarG: { type: number, nullable: true }
         saltG: { type: number, nullable: true }
         saturatedFatG: { type: number, nullable: true }
+        # S4 (mezo-qw37.4): the shared definition row behind this shelf entry
+        catalogId: { type: string, format: uuid }
+        sharedFrom: { allOf: [ { $ref: '#/components/schemas/PantrySharedFrom' } ], nullable: true }
+        catalogEditable: { type: boolean }
     PantryItemRequest:
       type: object
       required: [kind, name]
       properties:
         kind: { type: string, enum: [food, supplement, stim, med] }
+        # S4: bind to an existing catalog entry instead of describing a new definition (create only; ignored on update)
+        catalogId: { type: string, format: uuid, nullable: true }
         name: { type: string }
         brand: { type: string, nullable: true }
         source: { allOf: [ { $ref: '#/components/schemas/PantrySource' } ], nullable: true }
@@ -240,14 +279,50 @@ components:
         caffeine: { type: boolean, nullable: true }
     PantryItemResponse:
       type: object
-      required: [id, kind, name]
+      required: [id, kind, name, catalogId]
       properties:
         id: { type: string, format: uuid }
+        catalogId: { type: string, format: uuid }
         kind: { type: string, enum: [food, supplement, stim, med] }
         name: { type: string }
         brand: { type: string, nullable: true }
         source: { type: string, nullable: true }
         category: { type: string, nullable: true }
+    PantrySharedFrom:
+      type: object
+      required: [authorName]
+      properties:
+        authorName: { type: string }
+    PantryFromCatalogRequest:
+      type: object
+      required: [catalogId]
+      properties:
+        catalogId: { type: string, format: uuid }
+    PantryCatalogEntry:
+      type: object
+      required: [id, kind, name, source]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [food, supplement, stim, med] }
+        name: { type: string }
+        brand: { type: string, nullable: true }
+        source: { $ref: '#/components/schemas/PantrySource' }
+        category: { type: string, nullable: true }
+        per: { type: number, nullable: true }
+        unit: { type: string, nullable: true }
+        kcal: { type: number, nullable: true }
+        proteinG: { type: number, nullable: true }
+        carbsG: { type: number, nullable: true }
+        fatG: { type: number, nullable: true }
+        fiberG: { type: number, nullable: true }
+        sugarG: { type: number, nullable: true }
+        saltG: { type: number, nullable: true }
+        saturatedFatG: { type: number, nullable: true }
+        nova: { type: integer, minimum: 1, maximum: 4, nullable: true }
+        form: { type: string, nullable: true }
+        caffeine: { type: boolean, nullable: true }
+        # null = loader master row; set = the user who authored it
+        authorName: { type: string, nullable: true }
     PantryLookupResponse:
       type: object
       required: [results]
