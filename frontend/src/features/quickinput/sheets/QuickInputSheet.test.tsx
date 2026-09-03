@@ -9,6 +9,7 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { initialCheckins } from '@/data/today/checkins'
 import type { CheckinSlot } from '@/data/types'
+import { localDateString } from '@/shared/lib/dates'
 
 // Always returns a value — never `undefined` — so the mocked hook's identity never depends on
 // a conditional fallback to the real `useCheckins()` (finding 5): a test that flips the mock
@@ -45,6 +46,15 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useToday: () => ({
       today: { workoutTime: '17:00', workoutType: 'Pull Day' },
       workoutDone: false,
+    }),
+    useTrain: () => ({
+      sport: {
+        sessions: [
+          { id: 's1', sport: 'volleyball', isoDate: '2026-05-22', duration: 60 },
+          { id: 's2', sport: 'volleyball', isoDate: localDateString(), duration: 90 },
+        ],
+      },
+      logSportSession: vi.fn(),
     }),
   }
 })
@@ -91,9 +101,9 @@ function renderSheet(onClose = () => {}) {
   )
 }
 
-test('renders all eight quick-log tiles', () => {
+test('renders all nine quick-log tiles', () => {
   renderSheet()
-  for (const label of ['Étkezés', 'Víz', 'Stack', 'Edzés', 'Súly', 'Check-in', 'Napló', 'Alvás'])
+  for (const label of ['Étkezés', 'Víz', 'Stack', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
     expect(screen.getByText(label)).toBeInTheDocument()
 })
 test('a navigating tile closes the sheet and routes to its target', async () => {
@@ -109,7 +119,7 @@ test('a navigating tile closes the sheet and routes to its target', async () => 
 test('tiles carry clay icons via sprite use refs — no emojis', () => {
   renderSheet()
   // the Sheet renders through a portal — query the document, not the container
-  for (const sym of ['i-suly', 'i-alvas', 'i-naplo', 'i-fuel', 'i-edzes', 'i-stack', 'i-viz']) {
+  for (const sym of ['i-suly', 'i-alvas', 'i-naplo', 'i-fuel', 'i-edzes', 'i-stack', 'i-viz', 'i-sport']) {
     expect(document.querySelector(`use[href="#${sym}"]`)).not.toBeNull()
   }
 })
@@ -223,6 +233,21 @@ test('the Alvás tile swaps the menu for the sleep log sheet, without closing', 
   expect(await screen.findByText('Hogyan aludtunk?')).toBeInTheDocument()
   expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
+})
+
+test('the Sport tile swaps the menu for the sport log sheet, without closing', async () => {
+  const onClose = vi.fn()
+  renderSheet(onClose)
+  await userEvent.click(screen.getByRole('button', { name: /Sport/ }))
+  expect(await screen.findByText(/Sport log ·/)).toBeInTheDocument()
+  expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
+  expect(onClose).not.toHaveBeenCalled()
+})
+
+test('the Sport tile’s subline reads today’s last session only', () => {
+  renderSheet()
+  expect(screen.getByText('Röpi · 90p')).toBeInTheDocument()
+  expect(screen.queryByText('Röpi · 60p')).not.toBeInTheDocument()
 })
 
 test('the Check-in tile swaps the menu for the check-in sheet on the next fillable slot', async () => {

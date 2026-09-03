@@ -20,13 +20,17 @@ import { QuickSleepSheet } from '@/features/quickinput/sheets/QuickSleepSheet'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { WeightLogSheet } from '@/features/me/sheets/WeightLogSheet'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
+import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
+import { SPORT_LABELS, sportOf } from '@/features/train/logic/sportKinds'
+import { useLevelUp } from '@/features/progression/LevelUpProvider'
+import { localDateString } from '@/shared/lib/dates'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
-import { useCheckins, useFuelPreview, useFuelDay, useWaterActions, useWeight, useToday } from '@/data/hooks'
+import { useCheckins, useFuelPreview, useFuelDay, useWaterActions, useWeight, useToday, useTrain } from '@/data/hooks'
 
 /** Which surface the sheet shows: the launcher grid, an in-place two-option picker, or a log
  * sheet opened in its place (mezo-b3pp.1 / mezo-d20.1.6 — Súly joined the in-place set). */
-type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin' | 'weight' | 'water'
+type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin' | 'weight' | 'water' | 'sport'
 
 const HU = new Intl.NumberFormat('hu-HU')
 
@@ -64,6 +68,11 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   const { weightLog, logWeight } = useWeight()
   const latestWeight = weightLog.length > 0 ? weightLog[weightLog.length - 1] : null
   const { today, workoutDone } = useToday()
+  const { sport, logSportSession } = useTrain()
+  const { showLevelUp } = useLevelUp()
+  // A mai UTOLSÓ sport-session az alszöveghez — múltbeli session sosem szólal meg itt.
+  const todaysSport = [...(sport.sessions ?? [])].reverse().find(s => s.isoDate === localDateString())
+  const sportSub = todaysSport ? `${SPORT_LABELS[sportOf(todaysSport)]} · ${todaysSport.duration}p` : undefined
 
   const { checkins, saveCheckIn } = useCheckins()
   // Pinned at click time (see the tile below), NOT recomputed here — see mezo-967c finding 1.
@@ -83,6 +92,15 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
         targetMl={fuel.targets.water}
         onLog={logWater}
         onClose={onClose}
+      />
+    )
+  }
+  if (phase === 'sport') {
+    return (
+      <SportLogSheet
+        onClose={onClose}
+        onSave={(body, done) =>
+          logSportSession(body, { onSuccess: r => showLevelUp(r?.levelUp), onSettled: done })}
       />
     )
   }
@@ -152,6 +170,8 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
                   onClick={() => { close(); navigate('/fuel/stack') }} />
                 <Tile icon="i-edzes" label="Edzés" tone="coral" sub={trainSub} subDone={workoutDone}
                   onClick={() => { close(); navigate('/train') }} />
+                <Tile icon="i-sport" label="Sport" tone="rose" sub={sportSub}
+                  onClick={() => setPhase('sport')} />
                 <Tile icon="i-suly" label="Súly" tone="sky"
                   sub={latestWeight ? `${HU.format(latestWeight.value)} kg` : undefined}
                   onClick={() => setPhase('weight')} />
