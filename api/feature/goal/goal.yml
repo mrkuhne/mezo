@@ -188,6 +188,7 @@ components:
         mealsPerDay: { type: integer, minimum: 3, maximum: 6, description: 'Day-planner: eating occasions per day' }
         wakeTime: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', description: 'Day-planner wake anchor, HH:mm' }
         bedTime: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', description: 'Day-planner bed anchor, HH:mm' }
+        balanceAdjustmentKcal: { type: integer, nullable: true, description: 'Accepted adaptive corrections, summed (kcal/day); slice 5' }
         # Engine outputs — null until the goal is evaluated (POST /api/goals/{id}/evaluate).
         tdeeBootstrap: { allOf: [ { $ref: '#/components/schemas/TdeeBootstrap' } ], nullable: true }
         prescription: { allOf: [ { $ref: '#/components/schemas/GoalPrescription' } ], nullable: true }

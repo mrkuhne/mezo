@@ -62,6 +62,7 @@ public class GoalEvaluationService {
     private static final String VERDICT_AGGRESSIVE = "aggressive";
 
     private static final String BASIS_FORMULA = "formula";
+    private static final String BASIS_ADAPTIVE = "adaptive";
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
@@ -79,7 +80,9 @@ public class GoalEvaluationService {
      * @param prefs        the resolved diet preferences (Task 4) — split preset + protein tier
      * @param sleepTargetH the nightly sleep target (h), port-resolved from the user's sleep goal
      *                     (mezo-3g5w) — never null by contract, but a {@code null} caller falls back to 8.0
-     * @return the assembled {@link GoalPrescriptionJson}; {@code basis="formula"}, {@code generatedAt=now}
+     * @return the assembled {@link GoalPrescriptionJson}; {@code basis="adaptive"} iff the goal
+     *     carries a non-zero {@code balanceAdjustmentKcal} (an accepted weekly correction, slice 5),
+     *     else {@code "formula"}; {@code generatedAt=now}
      */
     public GoalPrescriptionJson assemble(
         GoalEntity goal,
@@ -116,8 +119,10 @@ public class GoalEvaluationService {
                 seg.rationale()));
         }
 
+        String basis = goal.getBalanceAdjustmentKcal() != null && goal.getBalanceAdjustmentKcal() != 0
+            ? BASIS_ADAPTIVE : BASIS_FORMULA;
         return new GoalPrescriptionJson(
-            OffsetDateTime.now(), BASIS_FORMULA, rxSegments, guards, feasibility);
+            OffsetDateTime.now(), basis, rxSegments, guards, feasibility);
     }
 
     /**

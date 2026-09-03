@@ -12369,6 +12369,10 @@ components:
           type: string
           pattern: '^([01]\d|2[0-3]):[0-5]\d$'
           description: 'Day-planner bed anchor, HH:mm'
+        balanceAdjustmentKcal:
+          type: integer
+          nullable: true
+          description: 'Accepted adaptive corrections, summed (kcal/day); slice 5'
         tdeeBootstrap:
           allOf:
             - $ref: '#/components/schemas/TdeeBootstrap'

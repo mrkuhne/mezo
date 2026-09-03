@@ -43,6 +43,8 @@ export const goalResponse: GoalResponse = {
   mealsPerDay: goal.mealsPerDay ?? undefined,
   wakeTime: goal.wakeTime ?? undefined,
   bedTime: goal.bedTime ?? undefined,
+  // Slice 5: no adaptive correction accepted in the mock baseline.
+  balanceAdjustmentKcal: undefined,
   // G5 engine output (mock) — a feasible-with-warnings verdict + two recept
   // segments (deficit during the gym blocks, taper near the target) + the guard
   // status the recept card renders. Mirrors the GoalPrescription contract so the

@@ -5218,6 +5218,8 @@ export interface components {
             wakeTime?: string;
             /** @description Day-planner bed anchor, HH:mm */
             bedTime?: string;
+            /** @description Accepted adaptive corrections, summed (kcal/day); slice 5 */
+            balanceAdjustmentKcal?: number | null;
             tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
             prescription?: components["schemas"]["GoalPrescription"] | null;
         };
