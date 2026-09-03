@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -39,15 +40,19 @@ class UserFanOutIT extends AbstractIntegrationTest {
         AppUserEntity a = userPopulator.createUser("fan-a@test.local");
         AppUserEntity b = userPopulator.createUser("fan-b@test.local");
         List<UUID> actors = new ArrayList<>();
+        // The throw must deterministically precede at least one surviving body — not just happen
+        // to hit user "a" — otherwise iteration order (no ORDER BY on the finder) could put the
+        // throwing user last and this would stay green even with the try/catch removed.
+        AtomicBoolean first = new AtomicBoolean(true);
 
         userFanOut.forEachActiveUser("test-job", user -> {
             actors.add(llmActorResolver.currentActor());
-            if (user.getId().equals(a.getId())) {
+            if (first.getAndSet(false)) {
                 throw new UnsupportedOperationException("boom");
             }
         });
 
-        assertThat(actors).contains(a.getId(), b.getId());
+        assertThat(actors).hasSizeGreaterThanOrEqualTo(2).contains(a.getId(), b.getId());
         assertThat(llmActorResolver.currentActor()).isNull(); // context cleared after the loop
     }
 
