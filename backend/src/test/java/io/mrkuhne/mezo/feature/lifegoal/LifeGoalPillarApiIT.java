@@ -63,6 +63,42 @@ class LifeGoalPillarApiIT extends ApiIntegrationTest {
         assertHasFieldError(res.getBody(), "pillars", "LIFE_GOAL_UNKNOWN_SIGNAL");
     }
 
+    /**
+     * The shipped ＋Pillér flow (frontend pillarFromCatalog.defaultRule) never sends an average
+     * rule with no threshold, but a direct/future caller could — and before this check the
+     * missing threshold reached LifeGoalScorer.scoreAverage and NPE'd on threshold().doubleValue()
+     * at progress/evaluate/today time instead of failing fast here with a 400.
+     */
+    @Test
+    void testReplacePillars_shouldReturn400_whenAverageRuleMissingThreshold() {
+        LifeGoalResponse g = postForBody("/api/life-goals", LifeGoalApiIT.kockahas(List.of()),
+            ownerAuthHeaders(), HttpStatus.CREATED, LifeGoalResponse.class);
+        LifeGoalPillarInput noThreshold = LifeGoalPillarInput.builder().label("Fehérje").skillKey("cooking").kind(PillarKind.AVERAGE)
+            .source(PillarSource.builder().type(PillarSource.TypeEnum.METRIC).key("DAILY_PROTEIN_G").build())
+            .build();
+        ResponseEntity<String> res = exchangeForResponse(HttpMethod.PUT, "/api/life-goals/" + g.getId() + "/pillars",
+            LifeGoalPillarsRequest.builder().pillars(List.of(noThreshold)).build(), ownerAuthHeaders());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertHasFieldError(res.getBody(), "pillars", "LIFE_GOAL_INVALID_RULE");
+    }
+
+    @Test
+    void testReplacePillars_shouldReturn400_whenTargetRuleMissingDirection() {
+        LifeGoalResponse g = postForBody("/api/life-goals", LifeGoalApiIT.kockahas(List.of()),
+            ownerAuthHeaders(), HttpStatus.CREATED, LifeGoalResponse.class);
+        LifeGoalPillarInput incomplete = LifeGoalPillarInput.builder().label("Produktivitás").skillKey("productivity").kind(PillarKind.TARGET)
+            .source(PillarSource.builder().type(PillarSource.TypeEnum.ACTIVITY).skillKey("productivity")
+                .measure(PillarSource.MeasureEnum.MINUTES).build())
+            .rule(io.mrkuhne.mezo.api.dto.PillarRule.builder()
+                .startValue(java.math.BigDecimal.ZERO).targetValue(java.math.BigDecimal.TEN)
+                .startDate(LocalDate.of(2026, 8, 1)).targetDate(LocalDate.of(2026, 9, 1)).build())
+            .build();
+        ResponseEntity<String> res = exchangeForResponse(HttpMethod.PUT, "/api/life-goals/" + g.getId() + "/pillars",
+            LifeGoalPillarsRequest.builder().pillars(List.of(incomplete)).build(), ownerAuthHeaders());
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertHasFieldError(res.getBody(), "pillars", "LIFE_GOAL_INVALID_RULE");
+    }
+
     @Test
     void testReplacePillars_shouldAcceptPillar_whenHabitKeyKnown() {
         UUID owner = ownerId();
@@ -103,7 +139,10 @@ class LifeGoalPillarApiIT extends ApiIntegrationTest {
         LifeGoalResponse g = postForBody("/api/life-goals", LifeGoalApiIT.kockahas(List.of(LifeGoalApiIT.sleepPillar())),
             ownerAuthHeaders(), HttpStatus.CREATED, LifeGoalResponse.class);
         LifeGoalPillarInput protein = LifeGoalPillarInput.builder().label("Fehérje").skillKey("cooking").kind(PillarKind.AVERAGE)
-            .source(PillarSource.builder().type(PillarSource.TypeEnum.METRIC).key("DAILY_PROTEIN_G").build()).build();
+            .source(PillarSource.builder().type(PillarSource.TypeEnum.METRIC).key("DAILY_PROTEIN_G").build())
+            .rule(io.mrkuhne.mezo.api.dto.PillarRule.builder()
+                .threshold(new java.math.BigDecimal("160")).comparator(io.mrkuhne.mezo.api.dto.PillarRule.ComparatorEnum.GTE).build())
+            .build();
         LifeGoalResponse res = putForBody("/api/life-goals/" + g.getId() + "/pillars",
             LifeGoalPillarsRequest.builder().pillars(List.of(protein, LifeGoalApiIT.sleepPillar())).build(),
             ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
@@ -215,7 +254,10 @@ class LifeGoalPillarApiIT extends ApiIntegrationTest {
 
         LifeGoalPillarInput swapped = LifeGoalPillarInput.builder().label("Alvás").skillKey("recovery")
             .kind(PillarKind.AVERAGE).id(pillar.getId())
-            .source(PillarSource.builder().type(PillarSource.TypeEnum.METRIC).key("DAILY_PROTEIN_G").build()).build();
+            .source(PillarSource.builder().type(PillarSource.TypeEnum.METRIC).key("DAILY_PROTEIN_G").build())
+            .rule(io.mrkuhne.mezo.api.dto.PillarRule.builder()
+                .threshold(new java.math.BigDecimal("160")).comparator(io.mrkuhne.mezo.api.dto.PillarRule.ComparatorEnum.GTE).build())
+            .build();
         LifeGoalResponse res = putForBody("/api/life-goals/" + goal.getId() + "/pillars",
             LifeGoalPillarsRequest.builder().pillars(List.of(swapped)).build(),
             ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);

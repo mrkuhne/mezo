@@ -19,6 +19,12 @@ export type LifeGoalProposeRequest = components['schemas']['LifeGoalProposeReque
 export type LifeGoalProposeResponse = components['schemas']['LifeGoalProposeResponse']
 export type SignalCatalogEntry = components['schemas']['SignalCatalogEntry']
 type SignalCatalogResponse = components['schemas']['SignalCatalogResponse']
+export type LifeGoalProgressResponse = components['schemas']['LifeGoalProgressResponse']
+export type LifeGoalTodayResponse = components['schemas']['LifeGoalTodayResponse']
+export type LifeGoalTodaySummary = components['schemas']['LifeGoalTodaySummary']
+export type PillarProgress = components['schemas']['PillarProgress']
+export type PillarDayStatus = components['schemas']['PillarDayStatus']
+export type TrendArrow = components['schemas']['TrendArrow']
 
 const json = (body: unknown) => JSON.stringify(body)
 
@@ -37,4 +43,9 @@ export const lifegoalApi = {
   propose: (body: LifeGoalProposeRequest) =>
     apiFetch<LifeGoalProposeResponse>('/api/life-goals/propose', { method: 'POST', body: json(body) }),
   signals: () => apiFetch<SignalCatalogResponse>('/api/life-goals/signals'),
+  progress: (id: string, from: string, to: string) =>
+    apiFetch<LifeGoalProgressResponse>(`/api/life-goals/${id}/progress?from=${from}&to=${to}`),
+  today: () => apiFetch<LifeGoalTodayResponse>('/api/life-goals/today'),
+  evaluate: (id: string) =>
+    apiFetch<LifeGoalProgressResponse>(`/api/life-goals/${id}/evaluate`, { method: 'POST' }),
 }
