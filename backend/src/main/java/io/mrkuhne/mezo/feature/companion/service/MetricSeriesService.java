@@ -129,6 +129,7 @@ public class MetricSeriesService {
             case ACWR -> acwr(userId, from, to);
             case TRAINING_MONOTONY -> trainingMonotony(userId, from, to);
             case BEDTIME_VARIABILITY -> bedtimeVariability(userId, from, to);
+            case SHOULDER_STRAIN -> shoulderStrain(userId, from, to);
         };
     }
 
@@ -576,6 +577,18 @@ public class MetricSeriesService {
                     }
                 });
         return average(perDay);
+    }
+
+    /** A nap sport-session shoulder_strain CSÚCSA (1–10; null-os session nem adatpont). */
+    private Map<LocalDate, Double> shoulderStrain(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, Double> series = new HashMap<>();
+        sportSessionRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from)
+                .forEach(s -> {
+                    if (!s.getDate().isAfter(to) && s.getShoulderStrain() != null) {
+                        series.merge(s.getDate(), s.getShoulderStrain().doubleValue(), Math::max);
+                    }
+                });
+        return series;
     }
 
     private static Map<LocalDate, Double> average(Map<LocalDate, List<Double>> perDay) {
