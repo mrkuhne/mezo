@@ -13,6 +13,13 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        // The main chunk crossed workbox's default 2 MiB precache ceiling when the lifegoal
+        // scorer slice landed (mezo-iizd.5), which fails the build outright — see mezo-zp7c.
+        // This raises the ceiling to unbreak the gate; it is NOT the fix. The real fix is to
+        // split the 2.1 MB single chunk (manualChunks / route-level dynamic import) and put
+        // this back to the default, because one 2 MB chunk is a genuine first-load and
+        // install-cost problem on a PWA, not just a lint threshold.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // Extend the default precache globs (js/wasm/css/html) with ico/png/svg/woff2 so
         // the self-hosted brand fonts (public/fonts/*.woff2) are precached — the app
         // then renders Geist + Fraunces offline instead of falling back to system.
