@@ -9,6 +9,8 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/engine/LifeGoalScorer.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/engine/SignalSource.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalProgressService.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalEvalJob.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalXpService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalProposePort.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/LifeGoalProposeLlmAdapter.java
   - api/feature/lifegoal/lifegoal.yml
@@ -23,13 +25,14 @@ related: [goal-engine, growth, companion, me, today]
 
 > One-line: general-purpose life goals ("Célok") at route `/me/goals` (tab "Én"), tagged to a
 > PERMAH dimension and measured by 1–5 pillars drawn from a closed signal catalog.
-> **Status: slice 2 of 3 (`mezo-iizd.5`) — ✅ backend CRUD/lifecycle/catalog/AI-propose (slice 1)
-> ✅ scorer core: `LifeGoalScorer` + 5 `SignalSource` adapters + `progress`/`evaluate`/`today`
-> endpoints (this slice); ✅ FE hub/detail/wizard now render live dots/arrows/weekly% in both
-> modes. Still 🔴 not built: `LifeGoalEvalJob` (nightly scheduling — `evaluate` exists but nothing
-> calls it yet), `GET /signals` liveness (`JelekPage`), XP award, if–then trigger evaluation, the
-> Nap "Célok · ma" tile, the Heti card, the `[Célok]` companion prompt block, the knowledge-graph
-> `GOAL` node — see §9.**
+> **Status: slice 2 of 3 (`mezo-iizd.5`/`mezo-iizd.6`) — ✅ backend CRUD/lifecycle/catalog/
+> AI-propose (slice 1) ✅ scorer core: `LifeGoalScorer` + 5 `SignalSource` adapters +
+> `progress`/`evaluate`/`today` endpoints (`mezo-iizd.5`); ✅ nightly `LifeGoalEvalJob` (dual-gated
+> cron, per-user + per-goal error isolation) and pillar-hit XP via `LifeGoalXpService` →
+> `ProgressionService.applyLifeGoal` (`mezo-iizd.6`); ✅ FE hub/detail/wizard render live
+> dots/arrows/weekly% in both modes. Still 🔴 not built: `GET /signals` liveness (`JelekPage`),
+> if–then trigger evaluation + `LIFE_GOAL_PLAN` notifications, the Nap "Célok · ma" tile, the Heti
+> card, the `[Célok]` companion prompt block, the knowledge-graph `GOAL` node — see §9.**
 
 ## 1. Summary
 
@@ -56,17 +59,19 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
   **plus, this slice:** the pure `LifeGoalScorer` engine (daily hit/partial/miss/no_data per pillar
   kind, weighted daily goal-point, 7-vs-21-day arrow), 5 `SignalSource` adapters, and
   `LifeGoalProgressService`'s three read/write operations (`GET /{id}/progress`,
-  `POST /{id}/evaluate`, `GET /today`) — see §3/§4.
+  `POST /{id}/evaluate`, `GET /today`) — see §3/§4. **Plus, `mezo-iizd.6`:** `LifeGoalEvalJob`
+  (nightly cron, dual `@ConditionalOnProperty`, calling `evaluateDays` for every user's `active`
+  goals with per-user + per-goal error isolation) and `LifeGoalXpService` (the D-1-keyed, hit-only
+  XP seam on the pillar's own skill, `source_type=LIFE_GOAL`) — see §3/§5/§9.
 - **FE:** ✅ the Célok hub (`CelokPage`), the goal detail page (`CelPage`), the five-step
   creation wizard (`CelWizardPage`) — both `pnpm test` (real) and `VITE_USE_MOCK=true pnpm test`
   (mock) green — **plus, this slice:** `CelPage`/`PillarCard` render live dots, arrows, and
   weekly-% (with week/month chips), and `CelokPage`'s hub renders live per-goal arrow counters
   and per-tile dots, all dual-mode via `useLifeGoalProgress`/`useLifeGoalToday`.
-- **Deferred to slice 2 tail/3** (§9): `LifeGoalEvalJob` (nightly scheduling of `evaluate` —
-  the operation itself ships this slice, the cron trigger does not), `GET /signals` liveness,
-  the `JelekPage`, XP award, if–then trigger evaluation + notifications, the Nap "Célok · ma"
-  tile, the Heti goals card, the `[Célok]` companion prompt block, the knowledge-graph `GOAL`
-  node, the Growth skill-row chip, and the Én-hub hero's goal-count line.
+- **Deferred to slice 3** (§9): `GET /signals` liveness, the `JelekPage`, if–then trigger
+  evaluation + `LIFE_GOAL_PLAN` notifications, the Nap "Célok · ma" tile, the Heti goals card, the
+  `[Célok]` companion prompt block, the knowledge-graph `GOAL` node, the Growth skill-row chip, and
+  the Én-hub hero's goal-count line.
 
 ## 2. User-facing behavior
 
@@ -123,6 +128,19 @@ LifeGoalRepository → life_goal/life_goal_pillar`. Write path (create/update/st
 `useLifeGoalMutations() → lifegoalApi.<op> → LifeGoalController → LifeGoalService /
 LifeGoalPillarService → repository`, with mock mode patching an in-memory
 `['lifeGoals']` query-cache list instead (`lifegoalHooks.ts`).
+
+**`life_goal_pillar_day` now has two writers** (`mezo-iizd.6`), both funneling through the same
+`LifeGoalProgressService.evaluateDays(userId, goal)`: the manual `POST /{id}/evaluate` endpoint,
+and `LifeGoalEvalJob` — a nightly `@Scheduled(cron = "${mezo.lifegoal.eval-cron}")` bean (default
+`0 20 0 * * *`, i.e. 00:20, deliberately after the 00:10 habit close) that iterates every user's
+`active` goals and calls the same method. The job is gated by BOTH `mezo.feature.lifegoal.enabled`
+and `mezo.techcore.cron.life-goal-eval-job.enabled` (`FeaturesConfiguration.LIFE_GOAL_EVAL_JOB_SWITCH`)
+via a dual `@ConditionalOnProperty` — either switch off and the job bean does not exist at all,
+while the manual `evaluate` endpoint keeps working. Failures are isolated per user (the goal-list
+fetch) and per goal (each `evaluateDays` call) — one broken signal source or a user with a bad row
+must not cost every other user, or every other goal, its evaluation. `evaluateDays`'s day-upsert
+also calls `LifeGoalXpService.awardIfHit` per pillar-day, so both writers grant XP identically —
+see §5.
 
 **Dependency direction (spec §3, ArchUnit `feature_slices_are_cycle_free`):** `lifegoal` may
 import `companion`, `progression` (`ProgressionTaxonomy` — skill-key validation), and `habit`
@@ -242,12 +260,12 @@ Three tables (`db/changelog/1.0.0/script/…life_goal…sql`), all `OwnedEntity`
   average `{threshold, comparator, windowDays}` · target `{startValue, targetValue, startDate,
   targetDate, direction}` · baseline `{windowDays=28, minDataDays=14, direction}` · linked `{}`).
 - **`life_goal_pillar_day`** — `uq(pillar_id, day)`, `value`/`target`/`baseline numeric`,
-  `status` (`hit|partial|miss|no_data`), `computed_at`. **Written this slice, by exactly one
-  path:** `POST /{id}/evaluate` upserts the last 3 *closed* days (today−1..today−3, "closed" so
-  late-logged data still gets one more re-write pass) for every active pillar
-  (`LifeGoalProgressService.evaluate` → `upsertPillarDay`) — a plain `GET /{id}/progress` never
-  writes, it only reads what's there and computes the rest on the fly (below). `LifeGoalEvalJob`
-  (the nightly caller of `evaluate`) is still deferred — see §9. The rows hang off the pillar's
+  `status` (`hit|partial|miss|no_data`), `computed_at`. **Written by two callers now** (`mezo-iizd.6`,
+  see §3): `POST /{id}/evaluate` and the nightly `LifeGoalEvalJob`, both funneling through
+  `LifeGoalProgressService.evaluateDays`, which upserts the last 3 *closed* days (today−1..today−3,
+  "closed" so late-logged data still gets one more re-write pass) for every active pillar
+  (`evaluateDays` → `upsertPillarDay`) — a plain `GET /{id}/progress` never writes, it only reads
+  what's there and computes the rest on the fly (below). The rows hang off the pillar's
   **identity**, which is why `replace` updates pillars in place (below) and why every pillar
   deletion path soft-deletes the pillar's day rows with it (`LifeGoalPillarService.deleteWithDays`;
   the table has no cascade of its own).
@@ -337,7 +355,20 @@ hand-written types, mirroring the contract), `lifegoalMock.ts` (`MOCK_LIFE_GOALS
   never imports `lifegoal`. See §3.
 - **← Progression** (`ProgressionTaxonomy`). *Contract:* the static skill-key sets (LIFE,
   ATHLETIC, MUSCLE, ROBUSTNESS) `LifeGoalPillarService` validates every pillar's `skillKey`
-  against. No write path yet — the XP award (slice 2) will call `ProgressionService.award`.
+  against.
+- **→ Progression** (`mezo-iizd.6`, `LifeGoalXpService` → `ProgressionService.applyLifeGoal`).
+  *Contract:* every evaluated `hit` pillar-day grants `mezo.lifegoal.xp-per-hit` XP (default 5) on
+  the pillar's *own* `skillKey`, `source_type=LIFE_GOAL`, riding the shared idempotent `award(...)`
+  tail — `LifeGoalSignal{sourceRefId, skillKey, skillKind, xp, label, occurredOn}`, `skillKind`
+  derived from `ProgressionTaxonomy` (LIFE/ATHLETIC/MUSCLE). Idempotency key is the D-1
+  deterministic `LifeGoalXpService.refIdFor(pillarId, day)` = `UUID.nameUUIDFromBytes(
+  "lifegoal:<pillarId>:<day>")` — stable across the job's 3-day rewrite window and across a
+  source/kind change that drops and recomputes the pillar-day rows. Only a `hit` day awards; a
+  `miss`/`partial`/`no_data` day never subtracts (ADR 0034). A `robustness`-keyed pillar's `hit`
+  grants **nothing** — the shared progression tail recomputes that skill to an absolute streak
+  target, so a delta award there would be discarded (see §9). Progression is optional via
+  `ObjectProvider<ProgressionGate>` — the progression feature off (no `ProgressionGate` bean) and
+  the award is a no-op, the pillar-day row still writes.
 - **← Habit** (`HabitCatalogService`, via `ObjectProvider`). *Contract:* habit-key existence
   check for `source.type=habit` pillars; a missing bean (feature off) degrades to reject, not
   a hard dependency.
@@ -350,13 +381,12 @@ hand-written types, mirroring the contract), `lifegoalMock.ts` (`MOCK_LIFE_GOALS
 - **← Activity, Needs** (`ActivitySignalSource`, `NeedsRingSignalSource`, this slice).
   *Contract:* `ActivityLogRepository` (rows filtered by `skillKey`, aggregated per day by
   `measure`) and `NeedsDayRepository` (one ring field per closed day) — both read-only, one-way.
-- **🟣 Deferred seams (slice 2 tail/3, spec §5–§7):** `companion/LifeGoalSource` port feeding the
+- **🟣 Deferred seams (slice 3, spec §5–§7):** `companion/LifeGoalSource` port feeding the
   `ContextSnapshotAssembler` `[Célok]` prompt block + a `get_life_goals` chat tool; the
   knowledge-graph `GOAL` node (`GraphPromotionService`, blocked on `mezo-06o0.5`); the Nap
   "Célok · ma" tile; the Heti `WeekGoalsCard`; the Growth skill-row `goalchip`; the Én-hub
-  hero's goal-count line; `LifeGoalEvalJob`'s nightly scheduling of `evaluate`; if-then trigger
-  evaluation + `LIFE_GOAL_PLAN` notifications; XP award (`source_type=LIFE_GOAL`). None of these
-  read or write anything today.
+  hero's goal-count line; if-then trigger evaluation + `LIFE_GOAL_PLAN` notifications; `GET
+  /signals` liveness (`JelekPage`). None of these read or write anything today.
 
 ## 6. How to use it (consume)
 
@@ -455,6 +485,18 @@ pure-mock branch that never touches `lifegoalApi.ts`.
   that behavior falls out of `windowFor`'s `findFirst()` returning `Optional.empty()` →
   `SignalWindow.of(Map.of())`, itself covered generically by `LifeGoalScorerTest`'s no-value
   no-data assertions for each kind.)
+- **`mezo-iizd.6` (nightly job + XP):** `ProgressionLifeGoalIT` — `applyLifeGoal`'s idempotent
+  award on the D-1 `sourceRefId`, the `LIFE_GOAL` `source_type`, and skill-kind derivation.
+  `LifeGoalXpIT` — `LifeGoalXpService.awardIfHit` end to end: XP granted only on `hit`,
+  nothing on `miss`/`partial`/`no_data`, the `robustness`-keyed pillar granting nothing, and
+  `refIdFor` idempotency across a repeated call. `LifeGoalEvalJobIT` — the nightly job run twice
+  leaves the same rows and the same XP (the Habitica double-cron lesson), a non-`active` goal is
+  skipped, and per-goal error isolation (an unknown activity `measure` on one user's pillar does
+  not cost a healthy user's goal its evaluation or XP). `LifeGoalEvalJobSwitchOffIT` — the cron
+  switch is a bean boundary: `mezo.techcore.cron.life-goal-eval-job.enabled=false` ⇒ the
+  `LifeGoalEvalJob` bean does not exist, while `LifeGoalProgressService` (the manual `evaluate`
+  path) stays fully wired. Focused run: `cd backend && ./mvnw clean test
+  -Dmezo.test.use-testcontainers=true -Dtest='LifeGoal*IT,ProgressionLifeGoalIT'`.
 
 **Frontend**: `CelokPage.test.tsx`, `CelPage.test.tsx`, `CelWizardPage.test.tsx` (page-level,
 both test modes — each also covers its real-mode loading/error state, and now also the live
@@ -477,9 +519,10 @@ two structural CSS guards in `shared/ui/mozaik/prototypeCssStructure.test.ts` /
   (measurable/visible goals, overriding the old PRD's PERMA-widget prohibition — ADR 0034,
   below), D2 (PERMAH + skill hybrid), D3 (existing signals only, no new logging, no GitHub/
   external import), D4 (AI proposes from a closed catalog, user approves), D5 (`/me/goals` +
-  `/me/goals/weight` split, slice 1), **D6 (stored daily rows + on-read computation — the
-  storage half ships this slice via `evaluate`'s idempotent 3-day upsert; the nightly *job* that
-  calls it is still deferred)**, **D7 (no cap on active goals — implemented as written; the
+  `/me/goals/weight` split, slice 1), **D6 (stored daily rows + on-read computation — fully
+  implemented as of `mezo-iizd.6`: the storage half via `evaluate`'s idempotent 3-day upsert
+  (`mezo-iizd.5`), and the nightly *job* that also calls it (`LifeGoalEvalJob`, `mezo-iizd.6`))**,
+  **D7 (no cap on active goals — implemented as written; the
   earlier 3-goal 409 gate was dropped before slice 1)**, D8 (the five-step wizard, implemented
   as written), **D9 (if–then plans as trigger rules — the plan *shape* shipped in slice 1, the
   *evaluation* is still deferred)**, **D10 (the five-kind pillar taxonomy — every kind now has a
@@ -517,20 +560,28 @@ two structural CSS guards in `shared/ui/mozaik/prototypeCssStructure.test.ts` /
   nudge), and fixes the guardrails that survive the override (no loss mechanics, a declining
   trend is never red, `no_data` is never a miss, minimum-data gates before any trend, XP as
   feedback and never a penalty).
-- **Shipped this slice** (mezo-iizd.5, spec §5 + slice2-motor-design D-1..D-4): `LifeGoalScorer`
+- **Shipped `mezo-iizd.5`** (spec §5 + slice2-motor-design D-1..D-4): `LifeGoalScorer`
   (daily hit/partial/miss/no_data per kind + weighted goal score + 7-vs-21-day arrow with a
   5-data-day gate), the `SignalSource` port with 5 adapters (metric, social_mentions, activity,
   needs_ring, weight_goal — **deliberately no `habit`-type adapter**, see §3), `GET /{id}/progress`,
   `POST /{id}/evaluate` (the last-3-closed-days idempotent upsert), `GET /today`, and
-  goal-conflict detection. **Not yet shipped, still deferred:** `LifeGoalEvalJob` (the nightly
-  scheduler that would call `evaluate` automatically — nothing calls it today except a manual/test
-  invocation of the endpoint), `GET /signals` liveness, the `JelekPage`, XP award
-  (`source_type=LIFE_GOAL`), if-then trigger evaluation + `LIFE_GOAL_PLAN` notifications, and the
-  `HabitSignalSource` the base spec originally named — the slice-2 design doc explicitly retired
-  it in favor of the existing `HABITS_DONE` metric (see §3).
-- **Deferred to slice 3** (spec §6–§7): the Nap "Célok · ma" tile, the Heti `WeekGoalsCard`,
-  the companion `[Célok]` prompt block + `get_life_goals` chat tool, the knowledge-graph `GOAL`
-  node (blocked on `mezo-06o0.5`), the Growth skill-row chip, the Én-hub hero's goal line.
+  goal-conflict detection. The `HabitSignalSource` the base spec originally named was retired in
+  favor of the existing `HABITS_DONE` metric (see §3).
+- **Shipped this slice** (`mezo-iizd.6`, spec §.6): `LifeGoalEvalJob` — the nightly scheduler
+  (`@Scheduled(cron = "${mezo.lifegoal.eval-cron}")`, default `0 20 0 * * *`) that now calls
+  `evaluateDays` automatically for every user's `active` goals, dual-gated
+  (`LIFEGOAL_SWITCH` + `LIFE_GOAL_EVAL_JOB_SWITCH`) and per-user/per-goal error isolated — and the
+  pillar-hit XP award (`LifeGoalXpService` → `ProgressionService.applyLifeGoal`,
+  `source_type=LIFE_GOAL`, the D-1 deterministic idempotency key). **D6 is now fully implemented:
+  stored rows AND the nightly job that populates them.** **Gotcha:** a `robustness`-keyed pillar's
+  `hit` grants no XP — the shared progression tail overwrites that skill's row with an absolute
+  streak target on every award, so a delta award there would be a ledger entry that changes
+  nothing (see §5).
+- **Deferred to slice 3** (spec §6–§7): `GET /signals` liveness, the `JelekPage`, the Nap
+  "Célok · ma" tile, the Heti `WeekGoalsCard`, the companion `[Célok]` prompt block +
+  `get_life_goals` chat tool, if-then trigger evaluation + `LIFE_GOAL_PLAN` notifications, the
+  knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`), the Growth skill-row chip, the Én-hub
+  hero's goal line.
 
 ## 10. Key files
 
@@ -542,12 +593,17 @@ service, controller, mapper, catalog, config); `feature/companion/LifeGoalPropos
 `feature/lifegoal/engine/{LifeGoalScorer, SignalSource, PillarDayScore, SignalWindow,
 MetricSignalSource, SocialMentionsSignalSource, ActivitySignalSource, NeedsRingSignalSource,
 WeightGoalSignalSource}.java`; `feature/lifegoal/service/LifeGoalProgressService.java`
-(`progress`/`evaluate`/`today` + conflict detection).
+(`progress`/`evaluate`/`today` + conflict detection). **This slice's job + XP (mezo-iizd.6):**
+`feature/lifegoal/service/LifeGoalEvalJob.java` (the nightly cron bean); `feature/lifegoal/
+service/LifeGoalXpService.java` (the D-1-keyed, hit-only XP seam); `feature/progression/
+lifegoal/LifeGoalSignal.java` (the `applyLifeGoal` signal record).
 
 **Tests** — `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal/{LifeGoalEntityIT,
 LifeGoalApiIT, LifeGoalPillarApiIT, LifeGoalProposeIT, LifeGoalSeedDataIT,
-LifeGoalProgressApiIT, LifeGoalEvaluateApiIT, LifeGoalTodayApiIT}.java`;
-`.../lifegoal/engine/{LifeGoalScorerTest, SignalSourceIT, WeightGoalSignalSourceIT}.java`.
+LifeGoalProgressApiIT, LifeGoalEvaluateApiIT, LifeGoalTodayApiIT, LifeGoalEvalJobIT,
+LifeGoalEvalJobSwitchOffIT}.java`;
+`.../lifegoal/engine/{LifeGoalScorerTest, SignalSourceIT, WeightGoalSignalSourceIT}.java`;
+`.../progression/ProgressionLifeGoalIT.java`; `.../lifegoal/LifeGoalXpIT.java`.
 
 **Contract** — `api/feature/lifegoal/lifegoal.yml`.
 

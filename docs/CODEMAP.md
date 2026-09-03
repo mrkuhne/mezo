@@ -623,8 +623,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `LifeGoalEntity`→`life_goal`, `LifeGoalPillarDayEntity`→`life_goal_pillar_day`,
     `LifeGoalPillarEntity`→`life_goal_pillar`
   - **repositories:** `LifeGoalPillarDayRepository`, `LifeGoalPillarRepository`, `LifeGoalRepository`
-  - **services:** `LifeGoalPillarService`, `LifeGoalProgressService`, `LifeGoalProposeService`, `LifeGoalService`,
-    `LifeGoalSignalService`, `LifeGoalTemplateProposer`
+  - **services:** `LifeGoalEvalJob`, `LifeGoalPillarService`, `LifeGoalProgressService`, `LifeGoalProposeService`,
+    `LifeGoalService`, `LifeGoalSignalService`, `LifeGoalTemplateProposer`, `LifeGoalXpService`
   - **controllers→contract:** `LifeGoalController`→`LifeGoalApi`
   - **mappers:** `LifeGoalMapper`
   - **config:** `LifeGoalProperties`
@@ -641,11 +641,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalProgress`, `useLifeGoalPropose`,
     `useLifeGoalToday`, `useLifeGoals`, `useSignalCatalog`
   - **modules:** lifegoalApi.ts, lifegoalHooks.ts, lifegoalMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 10 IT + 1 unit
-  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalEvaluateApiIT`, `LifeGoalPillarApiIT`,
-    `LifeGoalProgressApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`, `LifeGoalTodayApiIT`, `SignalSourceIT`,
-    `WeightGoalSignalSourceIT`
-  - **populators:** `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 13 IT + 1 unit
+  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalEvalJobIT`, `LifeGoalEvalJobSwitchOffIT`,
+    `LifeGoalEvaluateApiIT`, `LifeGoalPillarApiIT`, `LifeGoalProgressApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`,
+    `LifeGoalTodayApiIT`, `LifeGoalXpIT`, `SignalSourceIT`, `WeightGoalSignalSourceIT`
+  - **populators:** `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`, `UserPopulator`
 
 ### llmlog
 
@@ -959,7 +959,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/progression`
-  - **sub-features:** `activity`, `gym`, `habit`, `needs`, `quest`, `run`, `sport`
+  - **sub-features:** `activity`, `gym`, `habit`, `lifegoal`, `needs`, `quest`, `run`, `sport`
   - **entities→tables:** `LevelUpEventEntity`→`level_up_event`, `PerkUnlockEntity`→`perk_unlock`,
     `SkillProgressEntity`→`skill_progress`
   - **repositories:** `LevelUpEventRepository`, `PerkUnlockRepository`, `SkillProgressRepository`
@@ -968,8 +968,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **mappers:** `LevelUpResultMapper`
   - **config:** `ProgressionProperties`
   - **other:** `AccountProgressPort`, `ActivityLedgerSource`, `ActivitySignal`, `GymSignal`, `HabitSignal`,
-    `LevelUpResult`, `NeedsSignal`, `PerkCatalog`, `ProgressionCurve`, `ProgressionGate`, `ProgressionTaxonomy`,
-    `QuestLedgerSource`, `QuestSignal`, `RobustnessSource`, `RunSignal`, `SportSignal`, `TrainingCommitmentSource`
+    `LevelUpResult`, `LifeGoalSignal`, `NeedsSignal`, `PerkCatalog`, `ProgressionCurve`, `ProgressionGate`,
+    `ProgressionTaxonomy`, `QuestLedgerSource`, `QuestSignal`, `RobustnessSource`, `RunSignal`, `SportSignal`,
+    `TrainingCommitmentSource`
 - **Contract** `api/feature/progression/progression.yml` — 3 operations
   - **endpoints:** GET /api/progression/profile · GET /api/progression/growth-week/{date} ·
     GET /api/progression/achievements
@@ -980,11 +981,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** ProgressionHome.tsx
   - **logic:** levelUpMeta.ts, rewardToast.ts
   - **root:** LevelUpProvider.tsx, LevelUpScreen.tsx
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/progression` — 17 IT + 2 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/progression` — 18 IT + 2 unit
   - **ITs:** `AchievementsApiIT`, `GrowthWeekApiIT`, `PerkCatalogIT`, `ProfileSavingsIT`, `ProfileTraitsIT`,
-    `ProgressionActivityIT`, `ProgressionHabitIT`, `ProgressionPersistenceIT`, `ProgressionPopulatorIT`,
-    `ProgressionProfileApiIT`, `ProgressionProfileServiceIT`, `ProgressionProfileSwitchOffApiIT`,
-    `ProgressionPropertiesIT`, `ProgressionQuestIT`, `ProgressionRunIT`, `ProgressionServiceIT`, `ProgressionSportIT`
+    `ProgressionActivityIT`, `ProgressionHabitIT`, `ProgressionLifeGoalIT`, `ProgressionPersistenceIT`,
+    `ProgressionPopulatorIT`, `ProgressionProfileApiIT`, `ProgressionProfileServiceIT`,
+    `ProgressionProfileSwitchOffApiIT`, `ProgressionPropertiesIT`, `ProgressionQuestIT`, `ProgressionRunIT`,
+    `ProgressionServiceIT`, `ProgressionSportIT`
   - **populators:** `ActivityPopulator`, `DatabasePopulator`, `LevelUpEventPopulator`, `QuestPopulator`,
     `SkillProgressPopulator`, `UserPopulator`
 

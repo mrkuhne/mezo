@@ -18,6 +18,12 @@ import org.springframework.stereotype.Component;
  * backfills late logging (spec §2, Exist.io); the whole pass is idempotent, so a double run (or a
  * manual evaluate in between) changes nothing. Failures are isolated per goal — one broken signal
  * source must not cost every other user their evaluation.
+ *
+ * <p>Isolation is two-layered, but only one layer is exercised by a test: the inner per-goal catch
+ * is covered by {@code LifeGoalEvalJobIT}'s isolation test (a pillar with an unknown activity
+ * {@code measure}). The outer per-user catch, guarding the goal-list fetch itself, is
+ * defense-in-depth only — no no-mock seam can make that plain JPA query throw, and the house rules
+ * forbid mocks in integration tests.
  */
 @Slf4j
 @Component
