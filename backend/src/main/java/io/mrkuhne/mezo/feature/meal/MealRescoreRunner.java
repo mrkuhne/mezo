@@ -57,7 +57,10 @@ public class MealRescoreRunner implements CommandLineRunner {
      * No-arg overload — az integrációs teszt belépési pontja. Szándékosan NEM
      * {@code @Transactional}: minden étkezés a saját {@link MealService#rescore} tranzakciójában
      * gyógyul, így egy hibás sor nem visz magával egy egész backfillt, és a self-invocation
-     * proxy-csapda fel sem merül.
+     * proxy-csapda fel sem merül. A hibaizoláció a batch szintjén is érvényesül: egy dobó sort a
+     * ciklus itt elkap és kihagy, mert a {@code CommandLineRunner}-ből kiszivárgó kivétel az egész
+     * alkalmazásindítást megállítaná — a kihagyott sor a következő induláskor (idempotens
+     * megtalálón keresztül) újra próbálkozik.
      *
      * @return a ténylegesen újrapontozott étkezések száma
      */
@@ -69,8 +72,13 @@ public class MealRescoreRunner implements CommandLineRunner {
         }
         int healed = 0;
         for (UUID id : stale) {
-            if (mealService.rescore(id)) {
-                healed++;
+            try {
+                if (mealService.rescore(id)) {
+                    healed++;
+                }
+            } catch (RuntimeException e) {
+                log.warn("Re-score failed for meal {} — skipped, retried on the next start: {}",
+                    id, e.getMessage());
             }
         }
         log.info("Re-scored {} meal envelope(s) to formula version {} (mezo-jcpt.2); "
