@@ -634,12 +634,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/life-goals/{id}/status · PUT /api/life-goals/{id}/pillars · GET /api/life-goals/today ·
     GET /api/life-goals/{id}/progress · POST /api/life-goals/{id}/evaluate
 - **FE data** `frontend/src/data/lifegoal`
-  - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalPropose`, `useLifeGoals`,
-    `useSignalCatalog`
+  - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalProgress`, `useLifeGoalPropose`,
+    `useLifeGoalToday`, `useLifeGoals`, `useSignalCatalog`
   - **modules:** lifegoalApi.ts, lifegoalHooks.ts, lifegoalMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 8 IT + 1 unit
-  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalPillarApiIT`, `LifeGoalProgressApiIT`, `LifeGoalProposeIT`,
-    `LifeGoalSeedDataIT`, `SignalSourceIT`, `WeightGoalSignalSourceIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 10 IT + 1 unit
+  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalEvaluateApiIT`, `LifeGoalPillarApiIT`,
+    `LifeGoalProgressApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`, `LifeGoalTodayApiIT`, `SignalSourceIT`,
+    `WeightGoalSignalSourceIT`
   - **populators:** `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`
 
 ### llmlog
