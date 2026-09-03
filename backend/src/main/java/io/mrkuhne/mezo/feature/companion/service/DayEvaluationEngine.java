@@ -24,7 +24,12 @@ import org.springframework.stereotype.Service;
  * weight 0; the {@code weight} each surviving DONE dimension reports is RENORMALISED so the DONE
  * dimensions' weights sum to 1.0. {@code base} is the rounded weighted sum of the DONE dimensions,
  * and is {@code null} when fewer than 2 dimensions are DONE, or when the day is not yet
- * {@code closed} (open/future day → no overall score, only the per-dimension progress).
+ * {@code closed} (open/future day → no overall score, only the per-dimension progress). No
+ * component is ever awarded an invented neutral/full score for data that was never measured
+ * (mezo-jcpt review round 1): a missing TARGET means we never set an expectation (full credit,
+ * doesn't penalize); missing DATA against a real target means the component drops out and the
+ * remaining components renormalize — same policy as the dimension-level renormalization above,
+ * applied one level down inside the nutrition dimension's own kcal/protein/carb-fat split.
  */
 @Service
 @RequiredArgsConstructor
@@ -59,6 +64,7 @@ public class DayEvaluationEngine {
     private static final String DONE = "DONE";
     private static final String IN_PROGRESS = "IN_PROGRESS";
     private static final String NO_DATA = "NO_DATA";
+    private static final String NO_CARB_FAT_DATA = "nincs adat";
 
     /** A dimension before weight renormalisation — carries the raw config weight. */
     private record RawDim(String id, String label, double configWeight, Integer score,
@@ -77,8 +83,11 @@ public class DayEvaluationEngine {
 
         Integer base = null;
         if (in.closed() && doneCount >= 2) {
-            double weighted = raw.stream().filter(d -> DONE.equals(d.status()))
-                .mapToDouble(d -> (d.configWeight() / doneWeightSum) * d.score())
+            // Folded over the already-renormalized `dimensions` list, not re-derived from `raw`:
+            // one weight computation, reused everywhere — the per-dimension weight and the base
+            // total can never drift apart (review round 1, Minor).
+            double weighted = dimensions.stream().filter(d -> DONE.equals(d.status()))
+                .mapToDouble(d -> d.weight() * d.score())
                 .sum();
             base = (int) Math.round(weighted);
         }
@@ -101,15 +110,23 @@ public class DayEvaluationEngine {
         if (!in.closed()) {
             return new RawDim(id, label, configWeight, null, IN_PROGRESS, nutritionFacts(in));
         }
-        if (in.kcal() == null || in.kcalTarget() == null
-            || in.proteinG() == null || in.proteinTargetG() == null) {
+        // A non-positive target is not a real target (review round 1, Important 2) — treated the
+        // same as a null one: the dimension has nothing to score against, so it degrades to
+        // NO_DATA rather than dividing by (or against) a bogus zero/negative denominator.
+        if (in.kcal() == null || in.kcalTarget() == null || in.kcalTarget() <= 0
+            || in.proteinG() == null || in.proteinTargetG() == null || in.proteinTargetG() <= 0) {
             return new RawDim(id, label, configWeight, null, NO_DATA, List.of());
         }
 
         double kcalFit = kcalFit(in.kcal(), in.kcalTarget(), in.workoutDay());
         double proteinFit = proteinFit(in.proteinG(), in.proteinTargetG());
-        double carbFatFit = carbFatFit(in.carbsG(), in.fatG(), in.carbsTargetG(), in.fatTargetG());
-        double value = 0.5 * kcalFit + 0.3 * proteinFit + 0.2 * carbFatFit;
+        // null = no carb/fat DATA against a real target → the component drops out and kcal/protein
+        // renormalize over their combined 0.8 share (0.5/0.8, 0.3/0.8) instead of the component
+        // silently getting an invented full score (review round 1, Important 1).
+        Double carbFatFit = carbFatFit(in.carbsG(), in.fatG(), in.carbsTargetG(), in.fatTargetG());
+        double value = carbFatFit == null
+            ? (0.5 * kcalFit + 0.3 * proteinFit) / 0.8
+            : 0.5 * kcalFit + 0.3 * proteinFit + 0.2 * carbFatFit;
         int score = (int) Math.round(value * 100);
 
         return new RawDim(id, label, configWeight, score, DONE, nutritionFacts(in));
@@ -130,9 +147,19 @@ public class DayEvaluationEngine {
         return Math.max(0, 1 - under * props.nutrition().proteinSlope()); // surplus: teljes pont
     }
 
-    private double carbFatFit(Double c, Double f, Double ct, Double ft) {
-        if (c == null || f == null || ct == null || ft == null) {
-            return 1.0; // nincs C/F cél/adat → nem büntetünk
+    /**
+     * {@code null} means "the component has no measurement and drops out" (missing DATA against a
+     * real, positive target) — the caller renormalizes kcal/protein over it. A missing or
+     * non-positive TARGET is a different case: we never set an expectation, so it returns full
+     * credit (1.0) rather than dropping out — same as the brief's original {@code ct == null ||
+     * ft == null} policy, extended to non-positive targets (review round 1, Important 2).
+     */
+    private Double carbFatFit(Double c, Double f, Double ct, Double ft) {
+        if (ct == null || ft == null || ct <= 0 || ft <= 0) {
+            return 1.0;
+        }
+        if (c == null || f == null) {
+            return null;
         }
         double dev = (Math.max(0, Math.abs(c / ct - 1) - props.nutrition().carbFatBand())
                     + Math.max(0, Math.abs(f / ft - 1) - props.nutrition().carbFatBand())) / 2;
@@ -143,11 +170,20 @@ public class DayEvaluationEngine {
         List<DimFact> facts = new ArrayList<>();
         facts.add(new DimFact("kcal", fmtPair(in.kcal(), in.kcalTarget())));
         facts.add(new DimFact("fehérje", fmtPair(in.proteinG(), in.proteinTargetG()) + " g"));
-        facts.add(new DimFact("c · f", fmtInt(in.carbsG()) + " g · " + fmtInt(in.fatG()) + " g"));
+        facts.add(new DimFact("c · f", carbFatFactValue(in)));
         if (in.workoutDay()) {
             facts.add(new DimFact("sáv", "edzésnapi +" + props.workoutDayKcalWiden() + " kcal"));
         }
         return facts;
+    }
+
+    /** "nincs adat" when carbs/fat weren't logged at all, so the tile never implies a measured
+     *  value for an unmeasured component (review round 1, chosen resolution for Important 1). */
+    private static String carbFatFactValue(DayInputs in) {
+        if (in.carbsG() == null || in.fatG() == null) {
+            return NO_CARB_FAT_DATA;
+        }
+        return fmtInt(in.carbsG()) + " g · " + fmtInt(in.fatG()) + " g";
     }
 
     private static String fmtPair(Double a, Double b) {

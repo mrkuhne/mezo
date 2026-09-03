@@ -96,6 +96,12 @@ class DayEvaluationEngineTest {
             return this;
         }
 
+        DayInputsBuilder noCarbFatLogged() {
+            this.carbsG = null;
+            this.fatG = null;
+            return this;
+        }
+
         DayInputs build() {
             return new DayInputs(date, closed, kcal, proteinG, carbsG, fatG,
                 kcalTarget, proteinTargetG, carbsTargetG, fatTargetG, workoutDay,
@@ -159,7 +165,7 @@ class DayEvaluationEngineTest {
         // 150/170 (deficit): relUnder = 1 - 150/170 = 0.1176; under = 0.1176 - 0.05 = 0.0676
         //   proteinFit = 1 - 0.0676*2.5 = 0.831 -> nutrition = 0.5 + 0.3*0.831 + 0.2 = 0.9494 -> 95
         int deficit = score(engine, b -> b.proteinG(150.0), 2600);
-        assertThat(deficit).isLessThan(exact);
+        assertThat(deficit).isEqualTo(95);
     }
 
     @Test
@@ -204,5 +210,56 @@ class DayEvaluationEngineTest {
         assertThat(dim(e, "nutrition").weight()).isEqualTo(1.0);
         // still <2 DONE dimensions overall -> no base yet (Tasks 3-4 add the rest)
         assertThat(e.base()).isNull();
+    }
+
+    // --- Review round 1 fixes: no invented score for unmeasured carb/fat data; no NaN/Infinity
+    //     from a non-positive target -----------------------------------------------------------
+
+    @Test
+    void nutrition_missingCarbFatData_dropsOutAndRenormalizesKcalProtein() {
+        // protein deficit 150/170 -> proteinFit = 0.830882 (see the deficit case above).
+        // kcal 2600/2600 (=target) -> kcalFit = 1.0. carbsG/fatG null but the targets ARE set
+        // (310/80, the builder default) -- this is missing DATA against a real target, not a
+        // missing target, so the carb/fat component drops out and kcal/protein renormalize over
+        // their combined 0.8 share instead of the component getting an invented full score:
+        //   value = (0.5*1.0 + 0.3*0.830882) / 0.8 = 0.749265 / 0.8 = 0.936581 -> round*100 -> 94
+        // (had the old bug awarded the missing component a full 1.0 instead of dropping out, the
+        // score would have been 95 -- see nutrition_proteinSurplusForgiven_deficitCounts's
+        // deficit case, which is the same protein input with a MEASURED, on-target carb/fat pair)
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.proteinG(150.0).noCarbFatLogged()));
+        DayDimension nutrition = dim(e, "nutrition");
+        assertThat(nutrition.status()).isEqualTo("DONE");
+        assertThat(nutrition.score()).isEqualTo(94);
+        assertThat(nutrition.facts()).contains(new DayEvaluationEngine.DimFact("c · f", "nincs adat"));
+    }
+
+    @Test
+    void nutrition_missingCarbFatTarget_isForgiven_fullCredit() {
+        // carbsTargetG/fatTargetG = 0 (no target ever set for them) -- a DIFFERENT case from the
+        // one above: no expectation was set, so the component is forgiven (full credit), matching
+        // the brief's original null-target policy. kcal/protein both at-target -> kcalFit=
+        // proteinFit=1.0 -> value = 0.5 + 0.3 + 0.2*1.0 = 1.0 -> 100.
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.targets(2600, 170, 0, 80)));
+        DayDimension nutrition = dim(e, "nutrition");
+        assertThat(nutrition.status()).isEqualTo("DONE");
+        assertThat(nutrition.score()).isEqualTo(100);
+    }
+
+    @Test
+    void nutrition_nonPositiveKcalTarget_isTreatedAsNoTarget_degradesToNoData() {
+        // kcalTarget = 0 is not null, so it would otherwise slip past the null-check and divide
+        // by zero inside kcalFit -- must be caught the same way a null target is.
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.kcalTarget(0.0)));
+        DayDimension nutrition = dim(e, "nutrition");
+        assertThat(nutrition.status()).isEqualTo("NO_DATA");
+        assertThat(nutrition.score()).isNull();
+    }
+
+    @Test
+    void nutrition_nonPositiveProteinTarget_isTreatedAsNoTarget_degradesToNoData() {
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.targets(2600, -5, 310, 80)));
+        DayDimension nutrition = dim(e, "nutrition");
+        assertThat(nutrition.status()).isEqualTo("NO_DATA");
+        assertThat(nutrition.score()).isNull();
     }
 }
