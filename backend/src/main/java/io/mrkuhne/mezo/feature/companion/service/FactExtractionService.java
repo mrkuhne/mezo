@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
@@ -44,8 +45,8 @@ public class FactExtractionService {
     public static final String EXTRACTION_MARKER = "TÉNYKINYERÉS";
 
     static final String EXTRACTION_PROMPT = """
-            TÉNYKINYERÉS. A következő beszélgetés-fordulóból gyűjtsd ki a Danielre vonatkozó ÚJ, tartós tényeket
-            (preferencia, szokás, egészségi jellemző, cél) — kizárólag azt, amit Daniel maga állított vagy megerősített.
+            TÉNYKINYERÉS. A következő beszélgetés-fordulóból gyűjtsd ki a felhasználóra ({{NÉV}}) vonatkozó ÚJ, tartós tényeket
+            (preferencia, szokás, egészségi jellemző, cél) — kizárólag azt, amit {{NÉV}} maga állított vagy megerősített.
             Ne vegyél fel egyszeri eseményt, kérdést, feltételezést, sem a Mezo saját javaslatait.
             Válaszolj KIZÁRÓLAG egy JSON tömbbel, magyarázat nélkül, pontosan ebben a formában:
             [{"fact":"...","category":"train|fuel|health|life"}]
@@ -60,6 +61,7 @@ public class FactExtractionService {
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
     private final AppNotificationEmitter appNotificationEmitter;
+    private final PromptPersona promptPersona;
 
     /** One extracted item as the LLM returns it. */
     record ExtractedFact(String fact, String category) {}
@@ -67,12 +69,12 @@ public class FactExtractionService {
     /** Runs the whole extraction for one committed turn; returns the number of persisted candidates. */
     @Transactional
     public int extractFromTurn(UUID userId, UUID userMessageId, String userContent, String assistantContent) {
-        String transcript = "Daniel: " + userContent + "\nMezo: " + assistantContent;
+        String transcript = PromptPersona.USER_TURN_LABEL + userContent + "\nMezo: " + assistantContent;
         String raw;
         try {
             raw = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_fact_extract", "extract", null, null),
-                    () -> companionLlm.complete(EXTRACTION_PROMPT, transcript));
+                    () -> companionLlm.complete(promptPersona.render(userId, EXTRACTION_PROMPT), transcript));
         } catch (Exception e) {
             log.warn("Fact extraction LLM call failed for user {}", userId, e);
             return 0;

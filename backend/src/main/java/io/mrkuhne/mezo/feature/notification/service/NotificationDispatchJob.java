@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.notification.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.notification.config.NotificationProperties;
 import io.mrkuhne.mezo.feature.notification.domain.AnchorSet;
 import io.mrkuhne.mezo.feature.notification.domain.CategoryPref;
@@ -13,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -58,7 +58,7 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class NotificationDispatchJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final AnchorResolver anchorResolver;
     private final NotificationPrefService notificationPrefService;
     private final DueEvaluator dueEvaluator;
@@ -84,24 +84,24 @@ public class NotificationDispatchJob {
      *     sender) across every user this run
      */
     public int runOnce(LocalDate date, int nowMinuteOfDay) {
-        int users = 0;
-        int dispatched = 0;
-        for (AppUserEntity user : appUserRepository.findAll()) {
-            users++;
+        AtomicInteger users = new AtomicInteger();
+        AtomicInteger dispatched = new AtomicInteger();
+        userFanOut.forEachActiveUser("Notification dispatch", user -> {
+            users.incrementAndGet();
             try {
-                dispatched += dispatchForUser(user.getId(), date, nowMinuteOfDay);
+                dispatched.addAndGet(dispatchForUser(user.getId(), date, nowMinuteOfDay));
             } catch (Exception e) {
                 log.warn("Notification dispatch failed for user {} on {}", user.getId(), date, e);
             }
-        }
+        });
         // Only when something actually went out: this runs 1440x/day, so an unconditional summary
         // would add 1440 lines/day forever and bury the lines that matter. Counts only — never a
         // push endpoint (a capability URL) or key material in this line.
-        if (dispatched > 0) {
+        if (dispatched.get() > 0) {
             log.info("Notification dispatch run {} min={}: {} user(s), {} dispatched", date, nowMinuteOfDay,
-                    users, dispatched);
+                    users.get(), dispatched.get());
         }
-        return dispatched;
+        return dispatched.get();
     }
 
     private int dispatchForUser(UUID owner, LocalDate date, int nowMinuteOfDay) {

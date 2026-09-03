@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.StreamDelta;
 import io.mrkuhne.mezo.api.dto.StreamError;
 import io.mrkuhne.mezo.api.dto.StreamToolCall;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
@@ -252,8 +253,8 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
 
         String systemBlock = streamed.substring(streamed.indexOf("system=["), streamed.indexOf("] history=["));
         String historyBlock = streamed.substring(streamed.indexOf("history=["), streamed.indexOf("] user=["));
-        assertThat(systemBlock).doesNotContain("Daniel: korábbi kérdés");
-        assertThat(historyBlock).contains("Daniel: korábbi kérdés");
+        assertThat(systemBlock).doesNotContain("Felhasználó: korábbi kérdés");
+        assertThat(historyBlock).contains("Felhasználó: korábbi kérdés");
     }
 
     @Test
@@ -268,9 +269,10 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         String streamed = collectDeltas(userId, conversation.getId(), "szia");
 
         String systemBlock = streamed.substring(streamed.indexOf("system=["), streamed.indexOf("] history=["));
-        assertThat(systemBlock.indexOf(ChatService.TONE_REMINDER))
+        String toneReminder = ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "stream-tone-tail@test.local");
+        assertThat(systemBlock.indexOf(toneReminder))
                 .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
-        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+        assertThat(systemBlock).endsWith(toneReminder);
     }
 
     @Test
@@ -294,7 +296,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
         assertThat(systemBlock.indexOf(PromptMemoryAssembler.MEMORIES_HEADER))
                 .isGreaterThan(systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK"));
         assertThat(systemBlock).contains("(napló): futás után jobban aludtam");
-        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "stream-memories@test.local"));
 
         MessageResponse done = (MessageResponse) events.getLast().data();
         assertThat(done.getRefs()).extracting(MessageRef::getKind, MessageRef::getId)

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
@@ -48,13 +49,13 @@ public class PeriodSummaryService {
 
     private static final String WEEKLY_PROMPT = WEEKLY_MARKER + "\n"
             + "Sűrítsd az alábbi napi összefoglalókat EGY rövid (4-6 mondatos), múlt idejű, magyar "
-            + "heti összefoglalóvá Daniel hetéről. Csak a megadott szövegekre támaszkodj, semmit ne "
+            + "heti összefoglalóvá {{NÉV}} hetéről. Csak a megadott szövegekre támaszkodj, semmit ne "
             + "találj ki; a visszatérő mintákat és a hét ívét emeld ki, a napi felsorolást ne "
             + "ismételd meg. Közvetlen, társ-hangú fogalmazás.";
 
     private static final String MONTHLY_PROMPT = MONTHLY_MARKER + "\n"
             + "Sűrítsd az alábbi heti összefoglalókat EGY rövid (4-6 mondatos), múlt idejű, magyar "
-            + "havi összefoglalóvá Daniel hónapjáról. Csak a megadott szövegekre támaszkodj, semmit "
+            + "havi összefoglalóvá {{NÉV}} hónapjáról. Csak a megadott szövegekre támaszkodj, semmit "
             + "ne találj ki; a hónap ívét és a heteken átnyúló mintákat emeld ki. Közvetlen, "
             + "társ-hangú fogalmazás.";
 
@@ -62,6 +63,7 @@ public class PeriodSummaryService {
     private final DailySummaryRepository dailySummaryRepository;
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final PromptPersona promptPersona;
 
     /**
      * The week rung for the ISO week starting at {@code weekStart} (a Monday). Returns the
@@ -89,7 +91,7 @@ public class PeriodSummaryService {
         }
         String payload = "Hét: " + weekStart + " – " + weekEnd + "\n" + String.join("\n", lines);
         return persist(userId, PeriodSummaryEntity.GRANULARITY_WEEK, weekStart,
-                complete(WEEKLY_PROMPT, payload, "weekly"));
+                complete(userId, WEEKLY_PROMPT, payload, "weekly"));
     }
 
     /**
@@ -119,13 +121,13 @@ public class PeriodSummaryService {
         }
         String payload = "Hónap: " + monthStart + " – " + monthEnd + "\n" + String.join("\n", lines);
         return persist(userId, PeriodSummaryEntity.GRANULARITY_MONTH, monthStart,
-                complete(MONTHLY_PROMPT, payload, "monthly"));
+                complete(userId, MONTHLY_PROMPT, payload, "monthly"));
     }
 
-    private String complete(String prompt, String payload, String operation) {
+    private String complete(UUID userId, String prompt, String payload, String operation) {
         return llmCallContextHolder.runWith(
                 new LlmCallContext("companion_consolidation", operation, null, null),
-                () -> companionLlm.complete(prompt, payload));
+                () -> companionLlm.complete(promptPersona.render(userId, prompt), payload));
     }
 
     /** No row for a blank answer — an empty rung would shadow real memory with nothing. */

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -63,7 +64,7 @@ public class ChallengeGenerator {
             ChallengeEntity.TYPE_PR, ChallengeEntity.TYPE_DEPTH, ChallengeEntity.TYPE_VOLUME);
 
     private static final String PROMPT = CHALLENGE_MARKER + "\n"
-            + "Javasolj 1-3 magyar MIKRO-KIHÍVÁST Daniel mai edzésére, KIZÁRÓLAG a megadott GYAKORLATOK "
+            + "Javasolj 1-3 magyar MIKRO-KIHÍVÁST {{NÉV}} mai edzésére, KIZÁRÓLAG a megadott GYAKORLATOK "
             + "és kontextus alapján. Minden kihívás EGY gyakorlathoz kötődik (exerciseIndex) és EGY "
             + "típushoz: PR (targetWeightKg + targetReps kell), Depth (targetRir kell), Volume "
             + "(targetSets kell). Adatot kitalálni tilos; gyógyszer-adagolást SOHA ne javasolj. "
@@ -84,6 +85,7 @@ public class ChallengeGenerator {
     private final ObjectMapper objectMapper;
     private final ProactiveProperties properties;
     private final AppNotificationEmitter appNotificationEmitter;
+    private final PromptPersona promptPersona;
 
     record ExerciseCandidate(ExerciseEntity exercise, int maxWeightPr, int loggedSetCount) {
     }
@@ -118,7 +120,7 @@ public class ChallengeGenerator {
         }
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_challenge", "generate", null, null),
-                () -> companionLlm.completeSmart(PROMPT, gather.payload()));
+                () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
         ParsedChallenges parsed = parse(answer);
         if (parsed == null || parsed.challenges() == null) {
             log.warn("Unusable challenge answer for {} / {} — no rows", userId, templateSessionId);

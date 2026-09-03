@@ -1,11 +1,11 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,22 +26,22 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class MemoirJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final MemoirGenerator generator;
 
     @Scheduled(cron = "${mezo.proactive.memoir.cron}")
     public void run() {
         LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        int generated = 0;
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        AtomicInteger generated = new AtomicInteger();
+        userFanOut.forEachActiveUser("Memoir", user -> {
             try {
                 if (generator.generate(user.getId(), weekStart) != null) {
-                    generated++;
+                    generated.incrementAndGet();
                 }
             } catch (Exception e) {
                 log.warn("Memoir generation failed for user {} week {}", user.getId(), weekStart, e);
             }
-        }
-        log.info("Memoir run for {}: {} memoir(s) present", weekStart, generated);
+        });
+        log.info("Memoir run for {}: {} memoir(s) present", weekStart, generated.get());
     }
 }

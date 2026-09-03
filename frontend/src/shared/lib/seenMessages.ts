@@ -5,7 +5,9 @@
 // módban / kvótatúllépéskor a `localStorage` DOB, és egy olvasatlan-pötty
 // sosem érhet meg egy összeomlott képernyőt.
 // ============================================================
-const keyFor = (date: string) => `mezo.msgseen.${date}`
+import { userScopedKey } from '@/shared/lib/userScope'
+
+const keyFor = (date: string) => userScopedKey(`msgseen.${date}`)
 
 /** Az adott napon utoljára LÁTOTT üzenet id-je, vagy `null`. */
 export function lastSeenMessage(date: string): string | null {

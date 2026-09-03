@@ -2,6 +2,7 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { userScopedKey } from '@/shared/lib/userScope'
 
 test('Save bubbles up a SleepLogInput with computed duration then closes', async () => {
   const onSave = vi.fn()
@@ -136,7 +137,7 @@ describe('night-trace prefill (mezo-d71m)', () => {
   }
 
   const today = new Intl.DateTimeFormat('en-CA').format(new Date())
-  const KEY = `mezo-night-wake:${today}`
+  const KEY = userScopedKey(`night-wake:${today}`) // same value today (anon scope, no AuthGate here); derived so it self-corrects if that ever changes
 
   beforeEach(() => localStorage.clear())
 

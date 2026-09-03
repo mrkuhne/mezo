@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.embedding.MemoryEmbeddingWriter;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
@@ -41,7 +40,7 @@ import java.util.UUID;
         havingValue = "true")
 public class ConsolidationJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final PeriodSummaryService periodSummaryService;
     private final MemoryEmbeddingWriter memoryEmbeddingWriter;
     private final CompanionProperties properties;
@@ -52,7 +51,7 @@ public class ConsolidationJob {
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 .minusWeeks(1);
         int weeks = properties.consolidation().backfillWeeks();
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Weekly consolidation", user -> {
             int generated = 0;
             for (int i = 0; i < weeks; i++) {
                 LocalDate weekStart = lastFinishedWeek.minusWeeks(i);
@@ -62,14 +61,14 @@ public class ConsolidationJob {
             }
             log.info("Weekly consolidation for user {}: {} rung(s) present in window {}..{}",
                     user.getId(), generated, lastFinishedWeek.minusWeeks(weeks - 1L), lastFinishedWeek);
-        }
+        });
     }
 
     @Scheduled(cron = "${mezo.companion.consolidation.monthly-cron}")
     public void runMonthly() {
         LocalDate lastFinishedMonth = LocalDate.now().withDayOfMonth(1).minusMonths(1);
         int months = properties.consolidation().backfillMonths();
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Monthly consolidation", user -> {
             int generated = 0;
             for (int i = 0; i < months; i++) {
                 LocalDate monthStart = lastFinishedMonth.minusMonths(i);
@@ -79,7 +78,7 @@ public class ConsolidationJob {
             }
             log.info("Monthly consolidation for user {}: {} rung(s) present in window {}..{}",
                     user.getId(), generated, lastFinishedMonth.minusMonths(months - 1L), lastFinishedMonth);
-        }
+        });
     }
 
     /** One period: generate-or-return + embed. Returns whether a rung exists for it afterwards. */

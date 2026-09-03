@@ -5,33 +5,33 @@
 // bubble, szkeptikus getting the graphite face, mezo's ruling getting the full-width coral tint
 // and no avatar.
 //
-// DANIEL VÁLASZA — the backend has no structured "this is Daniel's own words" field on a turn
-// (`ConferenceTurn{persona,text,refIds}` — see api.gen.ts). `KonziliumProposalRound`'s own
-// USER_FEEDBACK_PREFIX constant ("DANIEL VÁLASZA — ", backend
-// service/KonziliumProposalRound.java) is fed to the LLM as an instruction to keep the user's
-// own correction unmistakable when it quotes one back — so a line carrying that literal prefix
-// can show up INSIDE an expert turn's free text, never as its own field. This component
-// therefore splits `text` on newlines and re-styles any line that starts with the prefix as
-// the prototype's `.userquote` gold rail — detecting real S6 output shape, not inventing a
-// structured field the API doesn't have.
+// FELHASZNÁLÓ VÁLASZA — (and the legacy DANIEL VÁLASZA — in stored transcripts) — the backend
+// has no structured "this is the user's own words" field on a turn (`ConferenceTurn{persona,
+// text,refIds}` — see api.gen.ts). `KonziliumProposalRound`'s own USER_FEEDBACK_PREFIX constant
+// is fed to the LLM as an instruction to keep the user's own correction unmistakable when it
+// quotes one back — so a line carrying that literal prefix can show up INSIDE an expert turn's
+// free text, never as its own field. This component therefore splits `text` on newlines and
+// re-styles any line that starts with a known prefix as the prototype's `.userquote` gold rail —
+// detecting real S6 output shape, not inventing a structured field the API doesn't have.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import type { ConferenceTurn } from '@/data/character/characterApi'
 
-const DANIEL_PREFIX = 'DANIEL VÁLASZA — '
+/** S6 (mezo-qw37.6): the backend now emits FELHASZNÁLÓ VÁLASZA —; conferences stored before
+ *  that carry the old DANIEL VÁLASZA — literal in their transcript envelope, so both parse. */
+export const USER_ANSWER_PREFIXES = ['FELHASZNÁLÓ VÁLASZA — ', 'DANIEL VÁLASZA — '] as const
 
-interface Line {
-  isDaniel: boolean
+export interface Line {
+  isUser: boolean
   text: string
 }
 
-function splitLines(text: string): Line[] {
-  return text.split('\n').map((line) => (
-    line.startsWith(DANIEL_PREFIX)
-      ? { isDaniel: true, text: line.slice(DANIEL_PREFIX.length) }
-      : { isDaniel: false, text: line }
-  ))
+export function splitTranscriptLines(text: string): Line[] {
+  return text.split('\n').map((line) => {
+    const prefix = USER_ANSWER_PREFIXES.find((p) => line.startsWith(p))
+    return prefix ? { isUser: true, text: line.slice(prefix.length) } : { isUser: false, text: line }
+  })
 }
 
 export interface TranscriptTurnProps {
@@ -49,7 +49,7 @@ export function TranscriptTurn({ turn, kind, displayName, color, delayMs }: Tran
   const isSkeptic = kind === 'SKEPTIC'
   const isRuling = kind === 'CHAIR'
   const variant = isSkeptic ? ' szkeptikus' : isRuling ? ' ruling' : ''
-  const lines = splitLines(turn.text)
+  const lines = splitTranscriptLines(turn.text)
   const style = { '--tc': color, ...(delayMs != null ? { '--d': `${delayMs}ms` } : {}) } as CSSProperties
 
   return (
@@ -63,10 +63,10 @@ export function TranscriptTurn({ turn, kind, displayName, color, delayMs }: Tran
         <div className="kr-tname">{displayName}</div>
         <div className="kr-ttxt">
           {lines.map((line, i) => (
-            line.isDaniel
+            line.isUser
               ? (
                   <span key={i} className="kr-danielline">
-                    <span className="kr-ul">Daniel válasza</span>
+                    <span className="kr-ul">Válaszod</span>
                     <span className="kr-ut">{line.text}</span>
                   </span>
                 )

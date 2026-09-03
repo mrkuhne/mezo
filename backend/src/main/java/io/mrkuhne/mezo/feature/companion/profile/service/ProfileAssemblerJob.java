@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.profile.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
@@ -37,13 +36,13 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class ProfileAssemblerJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final ProfileAssembler profileAssembler;
 
     @Scheduled(cron = "${mezo.companion.profile.cron}")
     public void run() {
         LocalDate anchorQuarter = Quarters.startOf(LocalDate.now());
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Profile assembler", user -> {
             try {
                 profileAssembler.rebuild(user.getId(), anchorQuarter)
                         .ifPresentOrElse(
@@ -52,6 +51,6 @@ public class ProfileAssemblerJob {
             } catch (Exception e) {
                 log.warn("Profile rebuild failed for user {} — the sweep continues", user.getId(), e);
             }
-        }
+        });
     }
 }

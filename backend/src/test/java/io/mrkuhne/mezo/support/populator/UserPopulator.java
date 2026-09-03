@@ -27,6 +27,9 @@ public class UserPopulator {
      * Find-or-create by email — idempotent, yields an FK-valid owner for
      * {@code created_by} columns. The password hash is irrelevant for ownership
      * tests, so a placeholder string is stored.
+     *
+     * <p>Onboarded by default so the S6 cron fan-out sees populated users; call
+     * {@code setOnboardedAt(null)} + {@code save} to model a half-registered account.
      */
     public AppUserEntity createUser(String email) {
         return appUserRepository.findByEmail(email).orElseGet(() -> {
@@ -34,7 +37,13 @@ public class UserPopulator {
             user.setEmail(email);
             user.setName(email);
             user.setPasswordHash("x");
+            user.setOnboardedAt(java.time.Instant.now());
             return appUserRepository.saveAndFlush(user);
         });
+    }
+
+    /** Persists edits made on a populated user (name, status, onboardedAt). */
+    public AppUserEntity save(AppUserEntity user) {
+        return appUserRepository.saveAndFlush(user);
     }
 }

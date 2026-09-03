@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.character.service;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterPortraitRevisionEntity;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterPortraitRevisionRepository;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
@@ -45,14 +46,15 @@ public class PortraitWriter {
     private static final short MAX_MATURITY = 100;
 
     private static final String MEZO_INTEGRATOR_PERSONA = """
-            Te vagy Mezo, Daniel személyes egészség- és teljesítmény-társa, most integrátor \
+            Te vagy Mezo, {{NÉV}} személyes egészség- és teljesítmény-társa, most integrátor \
             szerepben egy dossziéfejezet portréját írod. Meleg, de tárgyszerű hangon írsz, \
-            mindig második személyben szólítod meg Danielt.""";
+            mindig második személyben szólítod meg őt.""";
 
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterPortraitRevisionRepository portraitRevisionRepository;
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final PromptPersona promptPersona;
 
     /**
      * Rewrites {@code dimension}'s portrait from {@code activeClaims}. Returns {@code false} (and
@@ -66,8 +68,8 @@ public class PortraitWriter {
     @Transactional
     public boolean rewrite(UUID owner, CharacterDimensionEntity dimension, List<CharacterClaimEntity> activeClaims,
                            UUID conferenceId) {
-        String systemPrompt = PORTRAIT_MARKER + "\n" + persona(dimension) + "\n" + contract();
-        String userMessage = userMessage(dimension, activeClaims);
+        String systemPrompt = promptPersona.render(owner, PORTRAIT_MARKER + "\n" + persona(dimension) + "\n" + contract());
+        String userMessage = promptPersona.render(owner, userMessage(dimension, activeClaims));
         String raw;
         try {
             raw = llmCallContextHolder.runWith(
@@ -125,7 +127,7 @@ public class PortraitWriter {
 
     private static String contract() {
         return """
-                Írj 2–5 mondatos, egyszerű magyar nyelvű portré-szöveget Danielről, második \
+                Írj 2–5 mondatos, egyszerű magyar nyelvű portré-szöveget róla ({{NÉV}}), második \
                 személyben (Te szólítással), társ hangon. KIZÁRÓLAG a felsorolt állításokra \
                 alapozz — ne találj ki számot vagy tényt, ami nincs köztük. A(z) ÉRZÉKENY \
                 jelöléssel ellátott állításokat tükörként vagy kérdésként fogalmazd meg, sosem \

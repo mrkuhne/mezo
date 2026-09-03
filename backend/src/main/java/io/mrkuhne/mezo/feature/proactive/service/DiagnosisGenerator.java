@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -75,6 +76,7 @@ public class DiagnosisGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final DiagnosisProperties properties;
     private final ObjectMapper objectMapper;
+    private final PromptPersona promptPersona;
 
     record ParsedProbe(String text, String metricKey, String expectedDirection, Integer totalDays) {
     }
@@ -106,7 +108,7 @@ public class DiagnosisGenerator {
         }
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_diagnosis", "generate", null, null),
-                () -> companionLlm.completeSmart(prompt(recipe), gather.payload()));
+                () -> companionLlm.completeSmart(promptPersona.render(userId, prompt(recipe)), gather.payload()));
         ParsedDiagnosis parsed = parse(answer);
         if (parsed == null || parsed.verdict() == null || parsed.verdict().isBlank()
                 || !STRENGTHS.contains(parsed.confidence())) {

@@ -12,4 +12,7 @@ public interface PushSubscriptionRepository extends JpaRepository<PushSubscripti
     List<PushSubscriptionEntity> findByCreatedBy(UUID createdBy);
 
     Optional<PushSubscriptionEntity> findByCreatedByAndEndpoint(UUID createdBy, String endpoint);
+
+    /** Every live row for this endpoint regardless of owner — the S6 re-bind reads it. */
+    List<PushSubscriptionEntity> findByEndpoint(String endpoint);
 }

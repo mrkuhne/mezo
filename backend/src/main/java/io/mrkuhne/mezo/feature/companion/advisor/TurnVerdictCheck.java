@@ -39,7 +39,7 @@ public class TurnVerdictCheck {
     static final String VERDICT_PROMPT = VERDICT_MARKER + """
             . Bíráld el a Mezo asszisztens válaszát az alábbi szempontok szerint.
             1) redundantQuestion: rákérdez-e a válasz olyasmire, amire a kontextus MEGERŐSÍTETT TÉNYEK blokkja már választ ad?
-            2) unmarkedClaim: állít-e a válasz MAGABIZTOSAN, JELÖLÉS NÉLKÜL konkrét múltbeli adatot vagy számot, amit sem a kontextus, sem a felsorolt eszközhívások, sem Daniel üzenete nem támaszt alá? Ha a válasz nyelvileg jelöli a bizonytalanságot („tippelek", „gyanítom", „lehet, hogy", „ezt csak sejtem"), az NEM sértés — a jelölt sejtés megengedett. Kitalált konkrét szám viszont jelöléssel is sértés. A kontextusban szereplő adatokból számolt/becsült érték alátámasztottnak számít.
+            2) unmarkedClaim: állít-e a válasz MAGABIZTOSAN, JELÖLÉS NÉLKÜL konkrét múltbeli adatot vagy számot, amit sem a kontextus, sem a felsorolt eszközhívások, sem a felhasználó üzenete nem támaszt alá? Ha a válasz nyelvileg jelöli a bizonytalanságot („tippelek", „gyanítom", „lehet, hogy", „ezt csak sejtem"), az NEM sértés — a jelölt sejtés megengedett. Kitalált konkrét szám viszont jelöléssel is sértés. A kontextusban szereplő adatokból számolt/becsült érték alátámasztottnak számít.
             Válaszolj KIZÁRÓLAG ezzel a JSON objektummal, magyarázat nélkül:
             {"redundantQuestion":true|false,"unmarkedClaim":true|false,"reason":"rövid indoklás"}""";
 
@@ -56,7 +56,7 @@ public class TurnVerdictCheck {
         String payload = "KONTEXTUS:\n" + turnSystemPrompt
                 + ChatHistory.render(history)
                 + "\n\nESZKÖZHÍVÁSOK: " + (toolCallNames.isEmpty() ? "nincs" : String.join(", ", toolCallNames))
-                + "\n\nDaniel üzenete: " + userMessage
+                + "\n\nA felhasználó üzenete: " + userMessage
                 + "\n\nMEZO VÁLASZA:\n" + answer;
         String raw;
         try {

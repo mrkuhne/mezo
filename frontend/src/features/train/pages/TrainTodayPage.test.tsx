@@ -8,7 +8,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
-import { SNOOZE_KEY } from '@/features/train/logic/morningWindow'
+import { snoozeKey } from '@/features/train/logic/morningWindow'
 import { localDateString } from '@/shared/lib/dates'
 
 // Weekly-row gym taps route straight to the session/review (direct-start flow,
@@ -25,7 +25,7 @@ vi.mock('react-router-dom', async () => {
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   mockNavigate.mockReset()
-  localStorage.removeItem(SNOOZE_KEY) // the morning-training card state must not leak between tests
+  localStorage.removeItem(snoozeKey()) // the morning-training card state must not leak between tests
 })
 afterEach(() => vi.unstubAllEnvs())
 
