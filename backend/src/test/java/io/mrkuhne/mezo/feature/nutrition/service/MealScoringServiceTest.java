@@ -682,6 +682,20 @@ class MealScoringServiceTest {
         assertThat(b.dimensions().get(0).macro().targetP()).isEqualTo("~18%");
     }
 
+    @Test
+    void scoreMeal_stampsTheCurrentFormulaVersion() {
+        MealBreakdownJson out = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0));
+
+        assertThat(out.formulaVersion()).isEqualTo(MealScoringService.FORMULA_VERSION);
+    }
+
+    @Test
+    void recipeTemplateBreakdown_stampsTheCurrentFormulaVersion() {
+        MealBreakdownJson out = service.recipeTemplateBreakdown("lunch", lunchLines());
+
+        assertThat(out.formulaVersion()).isEqualTo(MealScoringService.FORMULA_VERSION);
+    }
+
     private static BigDecimal bd(double v) {
         return BigDecimal.valueOf(v);
     }

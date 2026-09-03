@@ -86,6 +86,9 @@ public class MealPopulator {
      * (summary/tagline/improve) start empty exactly as the scorer leaves them. {@code title} is
      * also where an IT plants the {@code [fake-meal-coach:…]} sentinel, since the name reaches
      * the prompt.
+     *
+     * <p>A verzióbélyeg szándékosan null: ez a fixture a pre-jcpt.1 envelope-alakot mintázza
+     * (mezo-jcpt.2).
      */
     public MealEntity createScoredMeal(UUID owner, PantryItemEntity pantryItem, LocalDate mealDate,
         String title, Instant loggedAt) {
@@ -96,7 +99,8 @@ public class MealPopulator {
             null, null,
             List.of(new MealBreakdownJson.Dimension("macro", "Kcal & makró", new BigDecimal("0.22"),
                 new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null)),
-            List.of(), List.of(new MealBreakdownJson.ToolRow("compute", "score(deterministic)"))));
+            List.of(), List.of(new MealBreakdownJson.ToolRow("compute", "score(deterministic)")),
+            null));
         return repository.saveAndFlush(meal);
     }
 

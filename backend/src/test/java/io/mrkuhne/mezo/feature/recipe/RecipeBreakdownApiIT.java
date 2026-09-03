@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -298,7 +299,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         entity.setBreakdown(new MealBreakdownJson(new BigDecimal("0.50"), new BigDecimal("0.50"),
             "Régi 4-dimenziós olvasat.", null,
             List.of(staleDim("macro"), staleDim("micro"), staleDim("nova"), staleDim("context")),
-            List.of(), List.of()));
+            List.of(), List.of(), MealScoringService.FORMULA_VERSION));
         entity.setFitsFor(List.of("régi"));
         recipeRepository.saveAndFlush(entity);
 

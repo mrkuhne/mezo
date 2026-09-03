@@ -170,6 +170,6 @@ public class RecipeBreakdownProseService {
         tools.add(new ToolRow("compute", "llm:sablon-olvasat"));
         // tagline stays null: it is the logged-meal card's cut (mezo-mr4n); a recipe has no card row.
         return new MealBreakdownJson(det.value(), det.confidence(), prose.summary(), null, dims,
-            improve, tools);
+            improve, tools, det.formulaVersion());
     }
 }
