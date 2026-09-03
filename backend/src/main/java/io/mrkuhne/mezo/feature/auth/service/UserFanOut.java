@@ -33,7 +33,7 @@ public class UserFanOut {
         for (AppUserEntity user : users) {
             try {
                 LlmActorContext.runAs(user.getId(), () -> body.accept(user));
-            } catch (RuntimeException | Error e) {
+            } catch (Throwable e) {
                 log.warn("{} failed for user {} — the fan-out continues", jobName, user.getId(), e);
             }
         }

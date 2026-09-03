@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -54,6 +55,31 @@ class UserFanOutIT extends AbstractIntegrationTest {
 
         assertThat(actors).hasSizeGreaterThanOrEqualTo(2).contains(a.getId(), b.getId());
         assertThat(llmActorResolver.currentActor()).isNull(); // context cleared after the loop
+    }
+
+    @Test
+    void testForEachActiveUser_shouldIsolateSneakyThrownCheckedException() {
+        AppUserEntity a = userPopulator.createUser("fan-sneaky-a@test.local");
+        AppUserEntity b = userPopulator.createUser("fan-sneaky-b@test.local");
+        List<UUID> actors = new ArrayList<>();
+        AtomicBoolean first = new AtomicBoolean(true);
+
+        // Consumer.accept() cannot declare a checked exception, but a sneaky-throw can still
+        // make one escape the body — catch (RuntimeException | Error) would miss it entirely.
+        userFanOut.forEachActiveUser("test-job-sneaky", user -> {
+            actors.add(llmActorResolver.currentActor());
+            if (first.getAndSet(false)) {
+                sneakyThrowChecked();
+            }
+        });
+
+        assertThat(actors).hasSizeGreaterThanOrEqualTo(2).contains(a.getId(), b.getId());
+        assertThat(llmActorResolver.currentActor()).isNull();
+    }
+
+    @SneakyThrows(Exception.class)
+    private void sneakyThrowChecked() {
+        throw new java.io.IOException("boom-checked");
     }
 
     @Test

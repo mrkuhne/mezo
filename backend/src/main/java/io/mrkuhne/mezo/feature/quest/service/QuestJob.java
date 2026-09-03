@@ -1,12 +1,13 @@
 package io.mrkuhne.mezo.feature.quest.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
+import io.mrkuhne.mezo.feature.quest.config.QuestProperties;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.quest.repository.DailyQuestRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,47 +29,44 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class QuestJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final DailyQuestRepository repository;
     private final QuestSelector selector;
     private final QuestService questService;
+    private final QuestProperties properties;
     private final org.springframework.beans.factory.ObjectProvider<QuestFlavor> questFlavor;
 
     @Scheduled(cron = "${mezo.quest.generate-cron}")
     public void runGenerate() {
         LocalDate today = LocalDate.now();
-        int generated = 0;
-        for (AppUserEntity user : appUserRepository.findAll()) {
-            try {
-                if (repository.findByCreatedByAndQuestDateOrderBySlotAsc(user.getId(), today).isEmpty()) {
-                    List<DailyQuestEntity> fresh = selector.generate(user.getId(), today);
-                    generated += fresh.size();
-                    QuestFlavor flavor = questFlavor.getIfAvailable();
-                    if (flavor != null) {
-                        flavor.rewrite(fresh); // companion voice; failures keep catalog copy
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Quest generation failed for user {} on {}", user.getId(), today, e);
+        AtomicInteger generatedCount = new AtomicInteger();
+        userFanOut.forEachActiveUser("Quest generate", user -> {
+            if (!repository.existsByCreatedByAndQuestDateGreaterThanEqual(
+                    user.getId(), today.minusDays(properties.cronPresenceDays()))) {
+                return; // spec L1: no quests in the presence window ⇒ no generation, no flavor LLM call
             }
-        }
-        log.info("Quest generate run for {}: {} quest(s) created", today, generated);
+            if (repository.findByCreatedByAndQuestDateOrderBySlotAsc(user.getId(), today).isEmpty()) {
+                List<DailyQuestEntity> fresh = selector.generate(user.getId(), today);
+                generatedCount.addAndGet(fresh.size());
+                QuestFlavor flavor = questFlavor.getIfAvailable();
+                if (flavor != null) {
+                    flavor.rewrite(fresh); // companion voice; failures keep catalog copy
+                }
+            }
+        });
+        log.info("Quest generate run for {}: {} quest(s) created", today, generatedCount.get());
     }
 
     @Scheduled(cron = "${mezo.quest.finalize-cron}")
     public void runFinalize() {
         LocalDate today = LocalDate.now();
-        int finalized = 0;
-        for (AppUserEntity user : appUserRepository.findAll()) {
-            try {
-                List<DailyQuestEntity> stale = repository.findByCreatedByAndStatusAndQuestDateBefore(
+        AtomicInteger finalizedCount = new AtomicInteger();
+        userFanOut.forEachActiveUser("Quest finalize", user -> {
+            List<DailyQuestEntity> stale = repository.findByCreatedByAndStatusAndQuestDateBefore(
                     user.getId(), DailyQuestEntity.STATUS_OFFERED, today);
-                questService.evaluateAndFinalize(stale, today);
-                finalized += stale.size();
-            } catch (Exception e) {
-                log.warn("Quest finalize failed for user {} on {}", user.getId(), today, e);
-            }
-        }
-        log.info("Quest finalize run for {}: {} quest(s) closed", today, finalized);
+            questService.evaluateAndFinalize(stale, today);
+            finalizedCount.addAndGet(stale.size());
+        });
+        log.info("Quest finalize run for {}: {} quest(s) closed", today, finalizedCount.get());
     }
 }

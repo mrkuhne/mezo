@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.feedback.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,18 +22,18 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class FeedbackLearningJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final FeedbackLearningService feedbackLearningService;
 
     @Scheduled(cron = "${mezo.companion.feedback-learning.cron}")
     public void run() {
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Feedback learning", user -> {
             try {
                 int upserted = feedbackLearningService.computeRollups(user.getId());
                 log.info("Feedback-learning rollup for user {}: {} scope(s) upserted", user.getId(), upserted);
             } catch (Exception e) {
                 log.warn("Feedback-learning rollup failed for user {}", user.getId(), e);
             }
-        }
+        });
     }
 }

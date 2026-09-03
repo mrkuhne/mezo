@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.habit.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
@@ -23,19 +22,19 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class HabitJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final HabitService habitService;
 
     @Scheduled(cron = "${mezo.habit.close-cron}")
     public void runClose() {
         LocalDate today = LocalDate.now();
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Habit close", user -> {
             try {
                 habitService.closePast(user.getId(), today);
             } catch (Exception e) {
                 log.warn("Habit close failed for user {} on {}", user.getId(), today, e);
             }
-        }
+        });
         log.info("Habit close run for {} complete", today);
     }
 }
