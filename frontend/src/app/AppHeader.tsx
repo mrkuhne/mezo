@@ -13,7 +13,7 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { ClayIcon } from '@/shared/ui/clay'
+import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { DayOrb } from '@/shared/ui/DayOrb'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
