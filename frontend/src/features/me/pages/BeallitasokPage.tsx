@@ -35,12 +35,18 @@ export function BeallitasokPage() {
     ? undefined
     : `${enabledPrefs} / ${prefs.length} kategória`
 
-  const { data: llm, isPending: llmPending } = useLlmUsageSummary()
+  const isOwner = useMe().data?.role === 'OWNER'
+  // The endpoint is OWNER-only (LlmUsageController.requireOwner()) — a non-owner visiting
+  // Beállítások must never fire this request (it would 403, twice with the query's retry).
+  // `enabled: isOwner` skips the fetch entirely for a non-owner; the row below is ALSO
+  // gated on `isOwner`, so aiLine is never even read in that case — but the query stays
+  // permanently pending (never resolved, never errored) while disabled, which is the
+  // deliberate honest-empty state a re-render-without-remount (e.g. role flips) would see,
+  // not an accident of `llm` going unread.
+  const { data: llm, isPending: llmPending } = useLlmUsageSummary({ enabled: isOwner })
   const aiLine = llmPending
     ? undefined
     : `${llm.week.callCount} hívás · ${formatRollupCost(llm.week.costUsd)} / hét`
-
-  const isOwner = useMe().data?.role === 'OWNER'
 
   const row = (icon: 'i-ertesites' | 'i-erme' | 'i-emberek', label: string, line: string | undefined, to: string) => (
     <button type="button" className="card row" aria-label={label} onClick={() => navigate(to)}

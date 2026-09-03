@@ -55,6 +55,14 @@ export function useDualQuery<T>(opts: {
    * identical to not passing the option at all: no existing caller's behaviour can change.
    */
   keepPreviousRealData?: boolean
+  /**
+   * Real mode only, opt-in (mezo-qw37.6): skip the fetch entirely while `false` (e.g. an
+   * OWNER-only endpoint on a non-owner's screen — `useLlmUsageSummary`/`BeallitasokPage`).
+   * Mock mode ignores this and always serves the seed synchronously, matching the local
+   * `useCompanionFeed`/`options.enabled` precedent. Omitted ⇒ `true` (no behaviour change
+   * for existing callers).
+   */
+  enabled?: boolean
 }): { data: T; isPending: boolean; isError: boolean; refetch: () => void } {
   const mock = isMockMode()
   const q = useQuery({
@@ -63,6 +71,7 @@ export function useDualQuery<T>(opts: {
     initialData: mock ? opts.mockData : undefined,
     staleTime: mock ? Infinity : opts.realStaleTime,
     placeholderData: !mock && opts.keepPreviousRealData ? keepPreviousData : undefined,
+    enabled: mock ? true : (opts.enabled ?? true),
   })
   return {
     // mock: q.data is always the seed (initialData). real: the fetched value, or — while
