@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.companion.config.DayEvaluationProperties;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -16,9 +17,12 @@ import org.springframework.stereotype.Service;
  * anything else.
  *
  * <p>Task 2 built the engine skeleton ({@link #evaluate}, the weight-renormalisation mechanism)
- * plus the {@code nutrition} dimension. This task (3) adds {@code quality} and {@code training}
- * to the same private-method + one-list-entry seam in {@link #evaluate}; Task 4 adds {@code
- * sleep, logging, rhythm} the same way — deliberately not a plugin framework (YAGNI).
+ * plus the {@code nutrition} dimension. Task 3 added {@code quality} and {@code training} to the
+ * same private-method + one-list-entry seam in {@link #evaluate}; this task (4) adds {@code
+ * sleep, logging, rhythm} the same way, completing all six — deliberately not a plugin framework
+ * (YAGNI). {@code sleep} is the one exception to "dimensions wait for {@code closed}": it
+ * finalizes as soon as it's logged, even on an open day (the "A+ lifecycle" pattern — each
+ * dimension closes out on its own natural trigger rather than all waiting for day-close).
  *
  * <p>Honesty rules (binding, constraints.md): a NO_DATA/IN_PROGRESS dimension drops out with
  * weight 0; the {@code weight} each surviving DONE dimension reports is RENORMALISED so the DONE
@@ -65,13 +69,17 @@ public class DayEvaluationEngine {
     private static final String IN_PROGRESS = "IN_PROGRESS";
     private static final String NO_DATA = "NO_DATA";
     private static final String NO_CARB_FAT_DATA = "nincs adat";
+    /** Canonical check-in slots per day (brief's literal {@code checkinCount/4}, not config-driven
+     *  -- matches {@code DayScoreService.CANONICAL_CHECKIN_SLOTS}, the legacy path's same constant). */
+    private static final double CHECKIN_SLOTS = 4.0;
 
     /** A dimension before weight renormalisation — carries the raw config weight. */
     private record RawDim(String id, String label, double configWeight, Integer score,
                           String status, List<DimFact> facts) { }
 
     public DayEvaluation evaluate(DayInputs in) {
-        List<RawDim> raw = List.of(nutritionDim(in), qualityDim(in), trainingDim(in));
+        List<RawDim> raw = List.of(nutritionDim(in), qualityDim(in), trainingDim(in),
+            sleepDim(in), loggingDim(in), rhythmDim(in));
 
         double doneWeightSum = raw.stream().filter(d -> DONE.equals(d.status()))
             .mapToDouble(RawDim::configWeight).sum();
@@ -280,6 +288,123 @@ public class DayEvaluationEngine {
         double ratio = Math.min(1.0, (double) done / planned);
         double value = 0.3 + 0.7 * ratio;
         int score = (int) Math.round(value * 100);
+        return new RawDim(id, label, configWeight, score, DONE, facts);
+    }
+
+    // --- Sleep (.15 default): duration-vs-target ratio blended 0.7/0.3 with the logged 1-10
+    // quality dial, mapped (v-1)/9. Deliberately reuses DayScoreService#sleepSubscore's semantics
+    // (Task 5 swaps that legacy path over to this engine; the formula must not drift). A+
+    // lifecycle: sleep finalizes as soon as it's logged, independent of the day's own closure --
+    // unlike every other dimension it can be DONE on an open day.
+
+    private RawDim sleepDim(DayInputs in) {
+        String id = "sleep";
+        String label = "Alvás";
+        double configWeight = props.weights().sleep();
+        List<DimFact> facts = sleepFacts(in);
+
+        if (in.sleepH() == null) {
+            // No log yet: on an open day it may still arrive today (IN_PROGRESS); on a closed day
+            // the day is over and nothing more will land (NO_DATA).
+            return new RawDim(id, label, configWeight, null, in.closed() ? NO_DATA : IN_PROGRESS, facts);
+        }
+
+        double ratio = Math.min(1.0, in.sleepH() / props.sleepTargetH());
+        Integer quality = in.sleepQuality1to10();
+        double value = quality == null ? ratio
+            : 0.7 * ratio + 0.3 * clamp01((quality - 1) / 9.0);
+        int score = (int) Math.round(clamp01(value) * 100);
+        return new RawDim(id, label, configWeight, score, DONE, facts);
+    }
+
+    private static List<DimFact> sleepFacts(DayInputs in) {
+        List<DimFact> facts = new ArrayList<>();
+        facts.add(new DimFact("alvás", in.sleepH() == null ? "–" : fmtInt(in.sleepH()) + " h"));
+        facts.add(new DimFact("minőség",
+            in.sleepQuality1to10() == null ? "–" : "Q" + in.sleepQuality1to10()));
+        return facts;
+    }
+
+    private static double clamp01(double v) {
+        return Math.max(0.0, Math.min(1.0, v));
+    }
+
+    // --- Logging (.10 default): 0.5 x timely-meal ratio + 0.2 x water logged + 0.3 x
+    // min(1, checkinCount/4). "Timely" = |loggedAt - eatenAt| <= logTimelyMin minutes. Water/
+    // check-in are always real measurements (false/0 is data, not a gap), so only the meal
+    // component can be genuinely missing: 0 meals drops that 0.5 share out and the remaining two
+    // renormalize over their combined 0.5 (0.2/0.5=0.4, 0.3/0.5=0.6).
+
+    private RawDim loggingDim(DayInputs in) {
+        String id = "logging";
+        String label = "Naplózás";
+        double configWeight = props.weights().logging();
+        List<MealLogFact> meals = in.meals() == null ? List.of() : in.meals();
+
+        if (!in.closed()) {
+            return new RawDim(id, label, configWeight, null, IN_PROGRESS, loggingFacts(in, null));
+        }
+
+        Double mealPart = timelyMealRatio(meals, props.logTimelyMin());
+        // No meal-timing data AND water not logged AND zero check-ins: nothing at all was
+        // captured that day -- degrade honestly rather than reporting a "0/100 logging" score for
+        // a day that simply carries no logging signal (e.g. a day the day-evaluation feature ran
+        // against before any logging happened).
+        if (mealPart == null && !in.waterLogged() && in.checkinCount() == 0) {
+            return new RawDim(id, label, configWeight, null, NO_DATA, loggingFacts(in, null));
+        }
+
+        double waterComponent = in.waterLogged() ? 1.0 : 0.0;
+        double checkinComponent = Math.min(1.0, in.checkinCount() / CHECKIN_SLOTS);
+        double value = mealPart == null
+            ? (0.2 * waterComponent + 0.3 * checkinComponent) / 0.5
+            : 0.5 * mealPart + 0.2 * waterComponent + 0.3 * checkinComponent;
+        int score = (int) Math.round(clamp01(value) * 100);
+        return new RawDim(id, label, configWeight, score, DONE, loggingFacts(in, mealPart));
+    }
+
+    /** {@code null} when no meal carries both a {@code loggedAt} and an {@code eatenAt} (nothing
+     *  to compare, either because no meals were logged at all or because none carry timing data)
+     *  -- the caller drops the meal component out rather than inventing a ratio. */
+    private static Double timelyMealRatio(List<MealLogFact> meals, int logTimelyMin) {
+        List<MealLogFact> withTiming = meals.stream()
+            .filter(m -> m.loggedAt() != null && m.eatenAt() != null).toList();
+        if (withTiming.isEmpty()) {
+            return null;
+        }
+        long onTime = withTiming.stream()
+            .filter(m -> Math.abs(Duration.between(m.eatenAt(), m.loggedAt()).toMinutes()) <= logTimelyMin)
+            .count();
+        return (double) onTime / withTiming.size();
+    }
+
+    private static List<DimFact> loggingFacts(DayInputs in, Double mealPart) {
+        List<DimFact> facts = new ArrayList<>();
+        facts.add(new DimFact("étkezés időben", mealPart == null ? "–" : Math.round(mealPart * 100) + "%"));
+        facts.add(new DimFact("víz", in.waterLogged() ? "✓" : "–"));
+        facts.add(new DimFact("check-in", in.checkinCount() + " / " + (int) CHECKIN_SLOTS));
+        return facts;
+    }
+
+    // --- Rhythm (.10 default): mean of the PRIOR days' base scores (never today's own, which
+    // would let it eat itself), gated at rhythmMinDays so a couple of stray days can't drive it.
+
+    private RawDim rhythmDim(DayInputs in) {
+        String id = "rhythm";
+        String label = "Ritmus";
+        double configWeight = props.weights().rhythm();
+        List<Integer> prior = in.priorBaseScores() == null ? List.of() : in.priorBaseScores();
+        List<DimFact> facts = List.of(new DimFact("napok", prior.size() + " / " + props.rhythmWindowDays()));
+
+        if (!in.closed()) {
+            return new RawDim(id, label, configWeight, null, IN_PROGRESS, facts);
+        }
+        if (prior.size() < props.rhythmMinDays()) {
+            return new RawDim(id, label, configWeight, null, NO_DATA, facts);
+        }
+
+        double mean = prior.stream().mapToInt(Integer::intValue).average().orElseThrow();
+        int score = (int) Math.round(mean);
         return new RawDim(id, label, configWeight, score, DONE, facts);
     }
 }

@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayEvaluati
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayInputs;
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.MealLogFact;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,11 @@ class DayEvaluationEngineTest {
         private List<MealLogFact> meals = List.of();
         private Integer plannedWorkouts = null;
         private Integer doneWorkouts = null;
+        private Double sleepH = null;
+        private Integer sleepQuality1to10 = null;
+        private boolean waterLogged = false;
+        private int checkinCount = 0;
+        private List<Integer> priorBaseScores = List.of();
 
         DayInputsBuilder kcal(double v) {
             this.kcal = v;
@@ -121,10 +127,36 @@ class DayEvaluationEngineTest {
             return this;
         }
 
+        DayInputsBuilder sleepH(double v) {
+            this.sleepH = v;
+            return this;
+        }
+
+        DayInputsBuilder sleepQuality1to10(int v) {
+            this.sleepQuality1to10 = v;
+            return this;
+        }
+
+        DayInputsBuilder waterLogged(boolean v) {
+            this.waterLogged = v;
+            return this;
+        }
+
+        DayInputsBuilder checkinCount(int v) {
+            this.checkinCount = v;
+            return this;
+        }
+
+        DayInputsBuilder priorBaseScores(List<Integer> v) {
+            this.priorBaseScores = v;
+            return this;
+        }
+
         DayInputs build() {
             return new DayInputs(date, closed, kcal, proteinG, carbsG, fatG,
                 kcalTarget, proteinTargetG, carbsTargetG, fatTargetG, workoutDay,
-                plannedWorkouts, doneWorkouts, null, null, meals, false, 0, List.of());
+                plannedWorkouts, doneWorkouts, sleepH, sleepQuality1to10, meals,
+                waterLogged, checkinCount, priorBaseScores);
         }
     }
 
@@ -351,5 +383,113 @@ class DayEvaluationEngineTest {
         DayDimension training = dim(e, "training");
         assertThat(training.status()).isEqualTo("IN_PROGRESS");
         assertThat(training.score()).isNull();
+    }
+
+    // --- Task 4: sleep + logging + rhythm + honesty gate --------------------------------------
+
+    @Test
+    void sleep_durationBlendedWithQuality() {
+        // 6.33h/7.5 cél -> d = 0.84400; Q6 -> (6-1)/9 = 0.55556
+        // value = 0.7*0.84400 + 0.3*0.55556 = 0.59080 + 0.16667 = 0.75747 -> round*100 -> 76
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.sleepH(6.33).sleepQuality1to10(6)));
+        DayDimension sleep = dim(e, "sleep");
+        assertThat(sleep.status()).isEqualTo("DONE");
+        assertThat(sleep.score()).isEqualTo(76);
+    }
+
+    @Test
+    void sleep_presentOnOpenDay_isDone() {
+        // A+ lifecycle: sleep finalizes independently of the day's own closure -- a sleep log on
+        // an OPEN day is still DONE (unlike nutrition/quality/training/logging/rhythm, which wait
+        // for day close).
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.closed(false).sleepH(7.5)));
+        DayDimension sleep = dim(e, "sleep");
+        assertThat(sleep.status()).isEqualTo("DONE");
+        assertThat(sleep.score()).isEqualTo(100);
+    }
+
+    @Test
+    void logging_timelyMealsWaterCheckins() {
+        // 4/4 meal logolva a slot-ablak+logTimelyMin(120p)-en belül -> mealPart = 1.0
+        // víz logolva -> 1.0; 3 check-in a 4-ből -> min(1, 3/4) = 0.75
+        // value = 0.5*1.0 + 0.2*1.0 + 0.3*0.75 = 0.5 + 0.2 + 0.225 = 0.925 -> round*100 -> 93
+        List<MealLogFact> meals = List.of(
+            new MealLogFact("breakfast", LocalTime.of(8, 10), LocalTime.of(8, 0), null, null, 500),
+            new MealLogFact("lunch", LocalTime.of(12, 30), LocalTime.of(12, 0), null, null, 700),
+            new MealLogFact("dinner", LocalTime.of(19, 50), LocalTime.of(19, 0), null, null, 700),
+            new MealLogFact("snack", LocalTime.of(21, 30), LocalTime.of(21, 0), null, null, 300));
+        DayEvaluation e = engine.evaluate(
+            closedDay(b -> b.meals(meals).waterLogged(true).checkinCount(3)));
+        DayDimension logging = dim(e, "logging");
+        assertThat(logging.status()).isEqualTo("DONE");
+        assertThat(logging.score()).isEqualTo(93);
+    }
+
+    @Test
+    void logging_lateLogsLowerTheScore() {
+        // 2/4 meal logolva 120 percen túl (180p késés) -> mealPart = 2/4 = 0.5
+        // víz logolva -> 1.0; 4/4 check-in -> 1.0
+        // value = 0.5*0.5 + 0.2*1.0 + 0.3*1.0 = 0.25 + 0.2 + 0.3 = 0.75 -> 75 (< a teljes 93-nál)
+        List<MealLogFact> meals = List.of(
+            new MealLogFact("breakfast", LocalTime.of(8, 10), LocalTime.of(8, 0), null, null, 500),
+            new MealLogFact("lunch", LocalTime.of(12, 30), LocalTime.of(12, 0), null, null, 700),
+            new MealLogFact("dinner", LocalTime.of(19, 0), LocalTime.of(16, 0), null, null, 700),
+            new MealLogFact("snack", LocalTime.of(23, 0), LocalTime.of(20, 0), null, null, 300));
+        DayEvaluation e = engine.evaluate(
+            closedDay(b -> b.meals(meals).waterLogged(true).checkinCount(4)));
+        DayDimension logging = dim(e, "logging");
+        assertThat(logging.status()).isEqualTo("DONE");
+        assertThat(logging.score()).isEqualTo(75);
+    }
+
+    @Test
+    void logging_noMealsLogged_mealPartDropsOutAndRenormalizes() {
+        // 0 meal -> a meal-rész (0.5) kiesik, a maradék két rész arányosan skálázódik: 0.2/0.5=0.4,
+        // 0.3/0.5=0.6. víz logolva -> 1.0; 2/4 check-in -> 0.5
+        // value = 0.4*1.0 + 0.6*0.5 = 0.4 + 0.3 = 0.7 -> 70
+        DayEvaluation e = engine.evaluate(
+            closedDay(b -> b.meals(List.of()).waterLogged(true).checkinCount(2)));
+        DayDimension logging = dim(e, "logging");
+        assertThat(logging.status()).isEqualTo("DONE");
+        assertThat(logging.score()).isEqualTo(70);
+    }
+
+    @Test
+    void rhythm_meanOfPriorBaseScores_minDaysGate() {
+        // rhythmMinDays = 3, [84, 72, 80] van 3 nap -> mean = 236/3 = 78.667 -> round -> 79
+        DayEvaluation enough = engine.evaluate(closedDay(b -> b.priorBaseScores(List.of(84, 72, 80))));
+        DayDimension rhythmEnough = dim(enough, "rhythm");
+        assertThat(rhythmEnough.status()).isEqualTo("DONE");
+        assertThat(rhythmEnough.score()).isEqualTo(79);
+
+        // 2 elem < rhythmMinDays(3) -> NO_DATA, súlya kiesik
+        DayEvaluation notEnough = engine.evaluate(closedDay(b -> b.priorBaseScores(List.of(84, 72))));
+        DayDimension rhythmNotEnough = dim(notEnough, "rhythm");
+        assertThat(rhythmNotEnough.status()).isEqualTo("NO_DATA");
+        assertThat(rhythmNotEnough.score()).isNull();
+        assertThat(rhythmNotEnough.weight()).isZero();
+    }
+
+    @Test
+    void overall_fewerThanTwoDoneDims_isNull() {
+        // nutrition/quality/training/logging/rhythm mind adat nélkül degradál (kcal hiányzik, nincs
+        // meal, nincs terv, nincs log-aktivitás, nincs elég korábbi nap); csak a sleep DONE (van
+        // alvás-log) -> egyetlen DONE dimenzió < 2 -> base null.
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.noKcalLogged().sleepH(7.5)));
+        long doneCount = e.dimensions().stream().filter(d -> "DONE".equals(d.status())).count();
+        assertThat(doneCount).isEqualTo(1);
+        assertThat(dim(e, "sleep").status()).isEqualTo("DONE");
+        assertThat(dim(e, "logging").status()).isEqualTo("NO_DATA");
+        assertThat(e.base()).isNull();
+    }
+
+    @Test
+    void overall_openDay_hasNoBaseScore() {
+        // closed=false -> nincs összpontszám, de a dimenziók státusza él: sleep DONE marad (A+
+        // lifecycle), a többi (pl. nutrition) IN_PROGRESS.
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.closed(false).sleepH(7.5)));
+        assertThat(e.base()).isNull();
+        assertThat(dim(e, "sleep").status()).isEqualTo("DONE");
+        assertThat(dim(e, "nutrition").status()).isEqualTo("IN_PROGRESS");
     }
 }
