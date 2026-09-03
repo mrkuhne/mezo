@@ -51,6 +51,14 @@ test('summary section renders (SafeMarkdown, no innerHTML)', () => {
   renderSheet()
   expect(screen.getByText('Mezo · olvasat')).toBeInTheDocument()
 })
+test('dimension note renders (as text, no innerHTML) once its card is expanded (mezo-jcpt.1)', async () => {
+  const meal = renderSheet()
+  const noted = meal.breakdown!.dimensions.find(d => d.note)!
+  expect(noted).toBeDefined()
+  // collapsed by default (mezo-zeeq) — the note is inside the expandable body
+  await userEvent.click(screen.getByRole('button', { name: new RegExp(noted.label) }))
+  expect(screen.getByText(new RegExp(noted.note!.slice(0, 20)))).toBeInTheDocument()
+})
 test('close button dismisses', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)

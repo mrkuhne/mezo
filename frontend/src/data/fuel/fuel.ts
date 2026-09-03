@@ -74,6 +74,7 @@ const m1Dimensions: MealDimension[] = [
     color: 'var(--cat-tendency)',
     detail:
       "5/5 összetevő NOVA 1–3. Túró az egyetlen NOVA 3 (kulturált tejtermék) — élelmiszerként ez nem 'ultra-processed'. Zéró additívum, zéró ipari rekonstrukció.",
+    note: 'A túró itt nem gyengeség — kulturált tejtermékként NOVA 3, de messze van az ultra-feldolgozott tartománytól.',
     nova: {
       dominant: 1,
       stack: [
@@ -240,6 +241,7 @@ const m2Dimensions: MealDimension[] = [
     color: 'var(--cat-preference)',
     detail:
       '13:30 · pre-workout T-3.5h — ablakon belül van, de a határán. Sweet spot 2–3h, és a Pull Day PR-attempt-en egy gyorsabb-emésztésű C-snack 16:00 körül így kötelező (whey+banán már be van időzítve).',
+    note: 'A T-3.5h a sweet spot szélén van — egy 16:00-s gyors C-snack biztosítja, hogy a PR-attempt-re ne fogyjon ki a glikogén.',
     context: [
       { label: 'Szerep', value: 'Pre-workout üzemanyag-ablak' },
       { label: 'Időzítés', value: 'Pre-workout · T-3.5h' },

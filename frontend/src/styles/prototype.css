@@ -7194,6 +7194,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-sec-r { font-size: 10.5px; font-weight: 700; color: var(--mz-ink-mut); }
 
 .sb-ledger { border-radius: 18px; background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle); padding: 12px 14px; }
+.sb-ledger-mut { font: 500 10px/1.4 var(--ff-body); color: var(--text-muted); margin-top: 4px; }
 .sb-ledger-bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 2px; }
 .sb-ledger-seg { position: relative; display: block; height: 100%; background: var(--mz-gbar-bg); }
 .sb-ledger-seg i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 3px 3px 0; display: block; }

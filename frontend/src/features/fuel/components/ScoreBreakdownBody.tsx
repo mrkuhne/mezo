@@ -21,7 +21,12 @@ export function ScoreBreakdownBody({ breakdown, scorePct }: {
   scorePct?: number
 }) {
   const b = breakdown
-  const total = scorePct ?? Math.round(b.dimensions.reduce((s, d) => s + d.weight * d.score * 100, 0))
+  // Fallback total mirrors ScoreLedger's honest Σ: only live (weight > 0) dimensions count
+  // (a degraded dim's weight is already 0, so including it is a no-op mathematically — this
+  // filter documents the intent and matches the ledger's rendering, not just its arithmetic).
+  const total = scorePct ?? Math.round(
+    b.dimensions.filter(d => d.weight > 0).reduce((s, d) => s + d.weight * d.score * 100, 0),
+  )
   return (
     <>
       <div className="sb-sec">

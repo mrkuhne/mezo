@@ -45,6 +45,7 @@ function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
     score: d.score,
     color: DIMENSION_COLOR[d.id as MealDimension['id']],
     detail: d.detail,
+    note: d.note ?? null,
   }
   if (d.id === 'macro' && d.macro) {
     return {

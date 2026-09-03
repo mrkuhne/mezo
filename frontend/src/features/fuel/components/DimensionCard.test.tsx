@@ -33,3 +33,12 @@ test('collapsed header shows label, ring score, weight→pont line; the rows app
   expect(screen.getByText('Só')).toBeInTheDocument()
   expect(screen.getByText('0.8 g / 1.5 g keret')).toBeInTheDocument()
 })
+
+test('renders dim.note below the detail sentence once expanded, and nothing when note is absent (mezo-jcpt.1)', async () => {
+  render(<DimensionCard dim={whoDim} defaultOpen />)
+  expect(screen.queryByText('Só szinte nincs — feldolgozatlan alapanyagok.')).not.toBeInTheDocument()
+
+  const noted: RowsDimension = { ...whoDim, note: 'Só szinte nincs — feldolgozatlan alapanyagok.' }
+  render(<DimensionCard dim={noted} defaultOpen />)
+  expect(screen.getByText('Só szinte nincs — feldolgozatlan alapanyagok.')).toBeInTheDocument()
+})

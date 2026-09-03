@@ -9,6 +9,7 @@ import { useId, useState } from 'react'
 import type { MealDimension } from '@/data/types'
 import { hu1 } from '@/shared/lib/huNum'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { Icon } from '@/shared/ui/Icon'
 import { MacroPanel } from '@/features/fuel/components/MacroPanel'
 import { MicroPanel } from '@/features/fuel/components/MicroPanel'
 import { NovaPanel } from '@/features/fuel/components/NovaPanel'
@@ -46,6 +47,11 @@ export function DimensionCard({ dim, defaultOpen = false }: { dim: MealDimension
       {open && (
         <div id={id} className="sb-dim-body">
           <p><SafeMarkdown text={dim.detail} /></p>
+          {dim.note && (
+            <p className="dim-note" style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-secondary)', marginTop: 6 }}>
+              <Icon name="sparkle" size={10} color="var(--lav-deep)" /> <SafeMarkdown text={dim.note} />
+            </p>
+          )}
           {dim.id === 'macro' && <MacroPanel dim={dim} />}
           {dim.id === 'micro' && <MicroPanel dim={dim} />}
           {dim.id === 'nova' && <NovaPanel dim={dim} />}
