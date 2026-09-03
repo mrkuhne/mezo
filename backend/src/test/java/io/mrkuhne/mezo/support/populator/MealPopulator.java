@@ -95,7 +95,7 @@ public class MealPopulator {
         meal.setBreakdown(new MealBreakdownJson(new BigDecimal("0.62"), new BigDecimal("0.80"),
             null, null,
             List.of(new MealBreakdownJson.Dimension("macro", "Kcal & makró", new BigDecimal("0.22"),
-                new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null)),
+                new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null)),
             List.of(), List.of(new MealBreakdownJson.ToolRow("compute", "score(deterministic)"))));
         return repository.saveAndFlush(meal);
     }

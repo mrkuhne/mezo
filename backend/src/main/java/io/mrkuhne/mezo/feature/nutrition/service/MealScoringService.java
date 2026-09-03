@@ -600,7 +600,7 @@ public class MealScoringService {
 
         Dimension toJson() {
             return new Dimension(id, label, round2(effectiveWeight), round2(score), detail,
-                macro, micros, nova, context);
+                macro, micros, nova, context, null);
         }
     }
 
