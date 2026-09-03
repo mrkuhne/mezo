@@ -83,7 +83,7 @@ public class LifeGoalService {
     @Transactional
     public void delete(UUID userId, UUID id) {
         LifeGoalEntity g = requireOwned(userId, id);
-        pillarRepository.findByGoalIdAndDeletedFalseOrderByPositionAsc(id).forEach(pillarRepository::delete);
+        pillarService.deleteAllForGoal(id);   // pillars + their life_goal_pillar_day rows (mezo-iizd.2)
         goalRepository.delete(g);
     }
 

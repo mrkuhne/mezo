@@ -12,7 +12,8 @@
 // Honest states: no fabricated numbers — tile lines vanish (or say
 // „tanulom", the pages' own vocabulary) while their source is unresolved.
 // ============================================================
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Icon } from '@/shared/ui/Icon'
 import { useNavigate } from 'react-router-dom'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
@@ -34,10 +35,12 @@ import { bucketFacts } from '@/features/insights/logic/factCopy'
 import type { PatternStatus } from '@/data/types'
 
 /** A prototípus döntés-visszaigazolásai — a sage decdone kártya szövege döntésenként. */
-const DECIDED_MSG: Record<PatternStatus, string> = {
+const DECIDED_MSG: Record<PatternStatus, ReactNode> = {
+  // A ✓ marad glifa: az a ház pipa-idiómája (rutin/küldetés/szokás). A két másik
+  // nyugtázás pikto-glifája viszont ikonra vált (mezo-hq44).
   confirm: '✓ Beépítettem a tudásba — mostantól számolok vele.',
-  monitor: '👁 Rendben, figyeljük tovább — szólok, ha erősödik.',
-  reject: '✕ Elvetve — nem hozom fel újra.',
+  monitor: <><Icon name="eye" size={14} /> Rendben, figyeljük tovább — szólok, ha erősödik.</>,
+  reject: <><Icon name="x" size={14} /> Elvetve — nem hozom fel újra.</>,
 }
 
 export function MezoHubPage() {
@@ -161,19 +164,19 @@ export function MezoHubPage() {
           aria-label="Beszélgetés a társsal" onClick={() => navigate('/mezo/chat')}>
           <span className="mzh-ph">Mondj valamit…</span>
           <span className="mzh-micd"><ClayIcon name="i-mikrofon" size={17} /></span>
-          <span className="mzh-snd" aria-hidden="true">➤</span>
+          <span className="mzh-snd" aria-hidden="true"><Icon name="send" size={17} /></span>
         </button>
 
         {/* ===== the motor's single decision card ===== */}
         {decidedAs != null ? (
           <div className="mzh-decdone rise" style={{ '--d': '110ms' } as React.CSSProperties}>
             <ClaySpot name="s-orb-unnepel" size={26} />
-            <span>{DECIDED_MSG[decidedAs]}</span>
+            <span className="mz-icin">{DECIDED_MSG[decidedAs]}</span>
           </div>
         ) : !patternsPendingAny && decEntry?.pattern != null && (
           <div className="mzh-deccard rise" style={{ '--d': '110ms' } as React.CSSProperties}>
             <div className="mzh-dechead">
-              <span className="mz-eyebrow mzh-eb-gold">🔔 Döntésre vár · {decideBucket.length}</span>
+              <span className="mz-eyebrow mzh-eb-gold mz-ebic"><Icon name="bell" size={12} /> Döntésre vár · {decideBucket.length}</span>
               {decConf != null && <span className={`mzh-confch is-${decConf.tone}`}>{decConf.chip}</span>}
             </div>
             <div className="mzh-decq">{decPair?.questionHu ?? decEntry.pattern.title}</div>
@@ -182,8 +185,8 @@ export function MezoHubPage() {
                 {pairLine(decPair)}{decPair.n != null ? ` · ${decPair.n} közös nap` : ''}
               </div>
             )}
-            <div className="mzh-decobs">
-              📈 Amit eddig látunk: {decFinding != null ? (
+            <div className="mzh-decobs mz-icin">
+              <Icon name="trend-up" size={13} /> Amit eddig látunk: {decFinding != null ? (
                 <>{decFinding.prefix} {decFinding.before}<b>{decFinding.strength}</b>{decFinding.after}.</>
               ) : (
                 decPair != null && decPair.verdict !== 'live'
@@ -217,7 +220,7 @@ export function MezoHubPage() {
               catalog entry, not a 7th cell that would break the 2-col pairing. */}
           <Tile wash="gold" eyebrow="Diagnózis" delayMs={400} aria-label="Diagnózis"
             className="mzh-eb-gold mzh-t-diag" line={diagLine} onClick={() => navigate('/mezo/diagnozis')}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>Miért vagyok fáradt? <span style={{ color: 'var(--mz-decring)' }}>✦</span></div>
+            <div className="mz-icin" style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>Miért vagyok fáradt? <Icon name="sparkle" size={13} color="var(--mz-decring)" /></div>
           </Tile>
           {/* Karakter (hub-tile-reorg): AI-domain dossier — wide like Diagnózis, so the
               6-cell 2-col pairing stays intact. */}

@@ -17,11 +17,12 @@ related: [today, train, insights, me, fuel, _platform-design-system, _platform-d
 # Mezo-kalauz — In-App Page Guides
 
 > One-line: per-route onboarding tutorials ("kalauz"), a five-card sheet auto-shown once per route
-> tier and reachable any time from the header "?" button. **Status: mixed — backend ✅ done
-> (`tutorial_progress` singleton, 3 endpoints), FE ✅ done for the motor (`TutorialProvider`,
-> `KalauzSheet`, registry, header "?"), content 🔶 five T1 guides shipped (`nap`, `train`, `fuel`,
-> `mezo`, `me` — all five tab roots, all version 1) plus the shared `fogalmak.ts` glossary; the
-> `T0` first-launch welcome flow and any `T2`/`T3` guide are still unbuilt.**
+> tier and reachable any time from the header "?" button, plus a first-launch welcome pager on
+> `/nap`. **Status: mixed — backend ✅ done (`tutorial_progress` singleton, 3 endpoints), FE ✅ done
+> for the motor (`TutorialProvider`, `KalauzSheet`, registry, header "?") and the `T0` welcome flow
+> (`KalauzWelcome`, `registry/welcome.ts`), content 🔶 five T1 guides shipped (`nap`, `train`,
+> `fuel`, `mezo`, `me` — all five tab roots, all version 1) plus the shared `fogalmak.ts` glossary
+> and the four-step welcome; any `T2`/`T3` guide beyond the shipped set is still unbuilt.**
 
 ## 1. Summary
 
@@ -44,9 +45,15 @@ runs the same dual-mode data-layer contract every other backed hook does.
 
 Guide **tiers** (`KalauzTier`): `T1`/`T2` auto-open once per route-visit-and-not-yet-seen (after
 the page's entrance choreography settles); `T3` never auto-opens — it is reachable only via the
-header "?", which then carries the `.nap-offnow` amber dot while unseen. **T0** (a first-launch
-welcome flow) and any `T2`/`T3` guides beyond `fuel` are explicitly **out of scope for S1** — next
-slices under the same `mezo-gb1s` epic (S2: first launch + hubs).
+header "?", which then carries the `.nap-offnow` amber dot while unseen. Any `T2`/`T3` guide beyond
+the five shipped tab-root guides is still **out of scope**.
+
+**S2b (`mezo-gb1s.4`) added `T0`**: a one-time, four-step first-launch **welcome pager**
+(`frontend/src/shared/ui/kalauz/KalauzWelcome.tsx`), shown once on `/nap` before any per-route
+guide gets a chance to auto-open. It is a different UI family from `KalauzSheet` (a full-screen
+pager, not a bottom sheet) and its registry entry
+(`frontend/src/features/tutorial/registry/welcome.ts`) deliberately lives **outside**
+`KALAUZ_REGISTRY` — see §2 below.
 
 ## 2. User-facing behavior
 
@@ -73,6 +80,47 @@ slices under the same `mezo-gb1s` epic (S2: first launch + hubs).
   the sheet as `'done'`.
 - Route navigation while a guide is open closes it as a dismissal at step 0 (`dismissedAtStep: 0`)
   — the guide doesn't survive a page change.
+
+### T0 — the first-launch welcome
+
+- **`WELCOME`** (`frontend/src/features/tutorial/registry/welcome.ts`) — `WELCOME_ID = 'welcome'`,
+  `WELCOME_VERSION = 1`, four steps: `napszak` (the three daypart faces), `tabbar` (all five tabs),
+  `log` (the real `QuickInputSheet` tile grid + "Mondd el Mezónak" row), `sugo` (a pointer to the
+  header "?"). It is deliberately **outside `KALAUZ_REGISTRY`** — a `/nap`-routed entry there would
+  collide with the `nap` guide (identical pattern, which the registry route-lint rejects), and the four steps
+  are tappable demos `KalauzCard`'s five kinds can't express. Its seen-key still lands in the same
+  `tutorial_progress` map (the backend is key-agnostic), so this needs **no backend/contract
+  change** — `versionOf(id)` (`registry/index.ts`) special-cases `WELCOME_ID` so `isUnseen('welcome')`
+  resolves correctly even though `getKalauz('welcome')` would return `null`.
+- **Trigger**: `TutorialProvider` opens the welcome when `welcomeStatus === 'pending' &&
+  pathname === '/nap' && !isPending` (the `isPending` wait avoids a flash-then-revert on a new
+  device where localStorage is empty but the server already has it marked seen). While
+  `welcomeStatus === 'pending'` on `/nap`, the per-route auto-open timer for `nap`'s own `T1` guide
+  is held back by the same "is anything open?" seam described in §9 — **there is no chaining**
+  between the welcome and `/nap`'s own kalauz; they simply never race, because the welcome's gate
+  blocks the timer from ever starting. The seam runs **both ways**: the welcome effect also
+  refuses to open while a `KalauzSheet` is open (the "?" button can fire during a long `isPending`
+  window), because `.welcome` sits at `z-index: 60` — *below* the sheets (200) — so it would
+  otherwise mount invisibly, write its own `seenAt` ("seen = shown" would be a lie), steal focus,
+  and put two `aria-modal` dialogs on screen at once. `openId` is a real dependency of that
+  effect, not just a ref read, so the welcome still opens the moment the sheet closes.
+- **Route change closes it**, exactly like an open sheet: the route effect's force-dismiss branch
+  handles the welcome too, writing `dismissedAtStep: 0` (the same value the sheet branch uses —
+  the provider does not know the pager's internal step) when the entry is neither completed nor
+  already dismissed. Without this an Android back gesture would leave the full-screen overlay,
+  its `document`-level Tab-trap and its `Escape` handler mounted over the page the user left.
+  The branch keys off the pathname the welcome *opened on*, not a bare "is open" flag, so a
+  StrictMode re-run of the route effect can't dismiss the welcome it just opened.
+- **UI** (`KalauzWelcome.tsx`) — a domain-free, full-screen pager (not `KalauzSheet`), portalled
+  into `.phone-screen`, `z-index: 60`. It follows the ARIA APG dialog pattern: focus moves to the
+  step `<h2>` on mount and again on every step change, `Escape` closes with reason `'skip'`, and
+  focus returns to the element that opened it on unmount. The back button's accessible name is
+  exactly `Vissza` (the `‹` glyph is `aria-hidden`).
+- **Registry vs. welcome are not the same UI stack**: `KalauzCard`'s five question types, the
+  glossary, and the hang-lint (§7) apply only to `KALAUZ_REGISTRY` entries. `WELCOME`'s steps have
+  their own shape (`WelcomeStep`) and their own copy; they share only the lint *primitives*
+  (`FORBIDDEN`, `countSentences` — `frontend/src/features/tutorial/registry/lint.ts`), factored out
+  so `registry.test.ts` and `welcome.test.ts` enforce the same voice rules without duplicating them.
 
 ## 3. Architecture & data flow
 
@@ -117,7 +165,7 @@ tag `TutorialProgress`):
 |---|---|---|
 | `GET` | `/api/tutorial/progress` | Returns `TutorialProgressResponse{progress}` — **empty-map ghost**, never 404, before anything is seen. Corrupt jsonb entries (blank `seenAt`, unparseable date) are **skipped with a `log.warn`**, not thrown — the rest of the map still returns. |
 | `PUT` | `/api/tutorial/progress` | `SetTutorialProgressRequest{progress}` → whole-map replace (upsert the singleton row). The client owns the merge (§3); the server never merges. |
-| `DELETE` | `/api/tutorial/progress` | `204`; soft-deletes the live row (`Beállítások · Kalauzok újranézése`) — next `GET` returns the empty ghost again. |
+| `DELETE` | `/api/tutorial/progress` | `204`; soft-deletes the live row — triggered by the **"Kalauzok újranézése"** row in `frontend/src/features/me/pages/BeallitasokPage.tsx:70-87` (not owner-gated), which drives an `idle \| busy \| done \| error` state off `resetAll()`'s promise; next `GET` returns the empty ghost again. |
 
 `TutorialProgressEntry` shape: `{ version: int, seenAt: date-time, completedAt: date-time | null,
 dismissedAtStep: int | null }`. `version` is the **registry** version of the guide that was seen —
@@ -151,6 +199,10 @@ Gated by the switch `mezo.feature.tutorial.enabled`
     lives under `features/insights` — see [`insights.md`](insights.md) for the tab-rename
     history).
   - `me-idhero` — the identity hero, one node, in `frontend/src/features/me/pages/EnHubPage.tsx`.
+- **`BeallitasokPage`** (`frontend/src/features/me/pages/BeallitasokPage.tsx:70-87`) — the
+  "Kalauzok újranézése" row calls `useTutorial().resetAll()` and reflects its promise in an
+  `idle | busy | done | error` local state; this row is **not** owner-gated (unlike the LLM-usage
+  row on the same page), since resetting the tutorial state has no cost implication.
 - **Auth** — `created_by` is stamped server-side from `CurrentUserId`, never client-supplied (same
   ownership seam as every other backed feature, [`_platform-auth-security.md`](_platform-auth-security.md)
   §4). The **`tutorialSeen.ts` localStorage key is `mezo.kalauz.v1`, with no user-id prefix** —
@@ -173,8 +225,21 @@ import { useTutorialProgress, useTutorialProgressActions } from '@/data/hooks'
 - `useTutorial()` — the shell-level context: `{ current, openId, open(id), close(reason, step),
   isUnseen(id), resetAll() }`. `current` is the `KalauzEntry | null` for the route right now (drives
   the header "?"); `open`/`close` drive the sheet; `isUnseen(id)` compares the stored `version`
-  against the registry's; `resetAll()` clears both the local mirror and the server row (the
-  "Kalauzok újranézése" settings action).
+  against the registry's (via `versionOf`, so it also resolves the `welcome` id — see §2).
+  `resetAll()` is an honest reset: it clears every session flag (`autoShown`, the pending timer,
+  the open sheet, `welcomeStatus`/`welcomeOpen`), the local mirror, and fires the `DELETE`, but
+  **it now rejects when the `DELETE` fails** rather than swallowing the error — the caller decides
+  what to show. `tutorialProgressHooks.ts`'s reset mutation guards the round-trip on two fronts:
+  `cancelQueries` on the progress key stops an in-flight `GET`'s **response** from landing after
+  the `DELETE` and writing the old map back — but the map **already sitting in the query cache**
+  is a separate hazard, because the `DELETE` flies for 300 ms – 2 s and every reader
+  (`TutorialProvider`'s server-merge and welcome effects) would see the pre-reset server state
+  meanwhile: a tab-tap to `/nap` in that window used to find `welcome` "already seen" and
+  silently suppress it for the whole session. So the mutation **optimistically writes `{}` into
+  the cache before the `DELETE`**, and on failure restores the previous value (or drops the entry
+  if there was none) before rethrowing — a failed reset must not leave the cache empty, since the
+  server still holds the data. It is wired to the "Kalauzok újranézése" row in
+  `BeallitasokPage.tsx` (§5).
 - `useTutorialProgress()` / `useTutorialProgressActions()` — the raw dual-mode data-layer hooks
   (`@/data/tutorial/tutorialProgressHooks.ts`, re-exported from `@/data/hooks`) most call sites
   never need directly; `TutorialProvider` is the one consumer. `TUTORIAL_PROGRESS_GHOST` (`{}`) is
@@ -188,7 +253,14 @@ Adding a guide to an existing route:
 
 1. Add (or extend) a registry file under `frontend/src/features/tutorial/registry/` (see `fuel.ts`
    for the shape) exporting a `KalauzEntry[]`.
-2. Wire it into `KALAUZ_REGISTRY` in `frontend/src/features/tutorial/registry/index.ts`.
+2. Wire it into `KALAUZ_REGISTRY` in `frontend/src/features/tutorial/registry/index.ts`. **Array
+   order carries no meaning**: `findKalauz` delegates to `resolveKalauz`, which runs react-router's
+   own `matchRoutes` ranking over the entry patterns, so the literal sibling always beats the
+   parameterised one (`/me/people/heti` over `/me/people/:id`) exactly as the router picked the
+   page. Two guards in `registry.test.ts` keep that true: no two entries may share a route pattern,
+   and no overlapping pair may be *rank-tied* (a tie is where the array order would silently
+   decide — e.g. `/me/:a/heti` vs `/me/people/:b`, both scoring 10+3+10). A tie is reported as
+   `a (route) ⇄ b (route) — <witness pathname>`; fix it by making one pattern more specific.
 3. If a `hogyan` card wants a spotlight, add `data-kalauz-anchor="<name>"` to the target DOM
    element on the real page — the spotlight button only renders when the anchor is present, so a
    missing anchor degrades gracefully rather than pointing at nothing.
@@ -214,11 +286,15 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   dismissed/completed writes, session-guard, version-bump re-arm, route-change close),
   `frontend/src/shared/ui/kalauz/KalauzSheet.test.tsx`, `frontend/src/shared/lib/tutorialSeen.test.ts`,
   `frontend/src/data/tutorial/tutorialProgressHooks.test.ts`,
-  `frontend/src/features/tutorial/registry/registry.test.ts` (hang-lint + route/id checks). Header
-  tests that share the `/fuel` route (`frontend/src/app/AppHeader.test.tsx`,
-  `frontend/src/app/hubHeaders.test.tsx` or equivalent) seed the fuel guide as already-seen via
-  `writeLocalProgress()` before rendering, so the header's own assertions aren't flaked by the
-  600 ms auto-open.
+  `frontend/src/features/tutorial/registry/registry.test.ts` (hang-lint + route/id checks),
+  `frontend/src/features/tutorial/registry/welcome.test.ts` (the same hang-lint, over `WELCOME`'s
+  steps, via the shared `registry/lint.ts` primitives),
+  `frontend/src/shared/ui/kalauz/KalauzWelcome.test.tsx` (steps, focus contract, Escape). Header
+  tests that render a route with a registry hit (`frontend/src/app/AppHeader.test.tsx`,
+  `frontend/src/app/hubHeaders.test.tsx`) seed **every** guide as already-seen via
+  `seedAllKalauzSeen()` (`frontend/src/test/kalauz.ts`) before rendering, so the header's own
+  assertions aren't flaked by the 600 ms auto-open — not `writeLocalProgress()` directly (that was
+  true only while `fuel` was the sole guide; see §9's "shell tests must seed every guide" note).
 - **MSW**: `resetTutorialProgressState()` is called from `frontend/src/test/setup.ts`'s
   `afterEach`, and that same `setup.ts` prefix-clears every `mezo.kalauz.*` localStorage key after
   each test — a persisted "seen" mark would otherwise silently mute the next test's auto-open.
@@ -229,8 +305,11 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   covered here — the single-owner IT harness this repo has today can't stand up a second
   authenticated user to assert against; tracked for the multi-user slice.
 - **Visual goldens**: `frontend/tests/visual/visual.spec.ts` seeds `mezo.kalauz.v1` in its init
-  script so the header "?" renders deterministically seen/unseen; `fuel-{light,dark}.png` changed
-  in this slice purely because of the new "?" button (baseline refresh via the
+  script so the header "?" renders deterministically seen/unseen — but **only in the file's first
+  `describe` block** (the theme-comparison suite, `:114-`). The other `addInitScript` calls in the
+  same file (`:144`, `:175`, `:197`, `:212`, `:225`, `:238`) set only the `mezo-theme` localStorage
+  key and touch no route with a kalauz seam, `/nap` included; `fuel-{light,dark}.png` changed in
+  this slice purely because of the new "?" button (baseline refresh via the
   `update-visual-baselines.yml` workflow, not a content regression).
 
 ## 9. Decisions, gotchas & deferred
@@ -247,9 +326,10 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   position every re-render.
 - **The header "?" renders only on a registry hit** — this is a deliberate honesty rule (§2), not
   an oversight; a guide-less route shows no button at all rather than a disabled one.
-- **Header tests are seed-order-sensitive**: any test that renders `/fuel` and asserts on the
-  header's control count/order must seed the fuel guide as seen first, or the 600 ms auto-open
-  timer can fire mid-test.
+- **Header tests are seed-order-sensitive**: any test that renders a kalauz-having route and
+  asserts on the header's control count/order must seed guides as seen first (via
+  `seedAllKalauzSeen()`, see the "shell tests must seed every guide" note below), or the 600 ms
+  auto-open timer can fire mid-test.
 - **Auto-open never fires while something is already open** (`TutorialProvider.tsx`, route effect):
   a `kapcsolat` chip navigates *before* its sheet finishes the 300 ms exit, and under
   `prefers-reduced-motion` the destination's auto-open delay is 0 — without the guard the
@@ -265,8 +345,15 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - **Open question #2 (spec §13)**: `tutorialSeen.ts`'s localStorage key (`mezo.kalauz.v1`) carries
   no user-id prefix. Fine while the app is single-owner; the multi-user slice must prefix it (or
   two users on one device/browser will share "seen" state).
-- **Deferred to later `mezo-gb1s` slices**: T0 first-launch welcome flow (S2b), the
-  chrome-free-page mini-"?" (S3, tied to the active-workout guide).
+- **Deferred to a later `mezo-gb1s` slice**: the chrome-free-page mini-"?" (S3, tied to the
+  active-workout guide). `T0` shipped in S2b — see §2.
+- **Spec/shipped drift, carried forward from earlier slices — noted here, not fixed**: the spec's
+  architecture diagram (§5) writes the localStorage key as `mezo.kalauz.<userId>`, but the shipped
+  key is the unprefixed `mezo.kalauz.v1` (open question #2 above already covers this as a known
+  gap, not new). The spec's type table (§8) types the `fogalom` card as
+  `{ term: FogalomKey }`, but the shipped `KalauzCard` spreads `{ term, def }` from `fogalom(key)`
+  at registry-construction time (§7, item 4) — the spec predates the glossary-spread design that
+  S2a actually shipped.
 - **Anchors are per-face/per-variant JSX nodes, not a single element**: `nap-hero` sits on all
   four `.nap-hero` nodes in `NapHubPage.tsx` (three daypart faces + the `?day=rough` anchor-mode
   hero, a dev URL-param state outside the guide copy's scope) and `train-hero` sits on all
@@ -283,7 +370,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - `frontend/src/features/tutorial/TutorialProvider.tsx` — the motor: registry lookup, auto-open
   timing, session-guard, write-order, merge.
 - `frontend/src/features/tutorial/registry/` — `types.ts` (`KalauzEntry`/`KalauzCard`), `index.ts`
-  (`KALAUZ_REGISTRY`, `findKalauz`, `getKalauz`).
+  (`KALAUZ_REGISTRY`, `resolveKalauz`, `findKalauz`, `getKalauz`, `versionOf`).
 - `frontend/src/features/tutorial/registry/fogalmak.ts` — canonical Hungarian glossary
   (`FOGALMAK`, `fogalom(key)`), consumed via `...fogalom('<key>')` spread by any `fogalom` card.
 - `frontend/src/features/tutorial/registry/fuel.ts` — the Fuel hub guide (`fuel`).
@@ -293,11 +380,17 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - `frontend/src/features/tutorial/registry/mezo.ts` — the Mezo hub guide (`mezo`), anchor
   `mezo-chat`.
 - `frontend/src/features/tutorial/registry/me.ts` — the Én hub guide (`me`), anchor `me-idhero`.
+- `frontend/src/features/tutorial/registry/welcome.ts` — the `T0` welcome (`WELCOME`,
+  `WELCOME_ID`, `WELCOME_VERSION`), deliberately outside `KALAUZ_REGISTRY` (§2).
+- `frontend/src/features/tutorial/registry/lint.ts` — shared hang-lint primitives (`FORBIDDEN`,
+  `countSentences`), used by both `registry.test.ts` and `welcome.test.ts`.
 - `frontend/src/shared/ui/kalauz/KalauzSheet.tsx` — the five-card sheet, spotlight peek.
+- `frontend/src/shared/ui/kalauz/KalauzWelcome.tsx` — the `T0` full-screen welcome pager (§2).
 - `frontend/src/shared/ui/Sheet.tsx` — gained `onBackdropClick`/`backdropClassName` for peek.
 - `frontend/src/shared/lib/tutorialSeen.ts` — localStorage mirror + `mergeProgress`.
 - `frontend/src/app/AppHeader.tsx` — the "?" button.
 - `frontend/src/app/AppLayout.tsx` — `TutorialProvider` mount point.
+- `frontend/src/features/me/pages/BeallitasokPage.tsx` — the "Kalauzok újranézése" reset row (§5).
 - `frontend/src/features/fuel/pages/FuelMaiPage.tsx` — `data-kalauz-anchor="fuel-log"`.
 - `frontend/src/features/today/pages/NapHubPage.tsx` — `data-kalauz-anchor="nap-hero"` × 4
   (one per daypart face).
@@ -324,11 +417,14 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 
 **Tests**
 - `frontend/src/test/kalauz.ts` — `buildAllSeenProgress()` (pure data, Node-safe; also consumed
-  by `frontend/tests/visual/visual.spec.ts`'s init script) and `seedAllKalauzSeen()` (writes the
-  localStorage mirror; used by shell tests' `beforeEach`).
+  by `frontend/tests/visual/visual.spec.ts`'s init script; includes the `welcome` key explicitly,
+  since it is outside `KALAUZ_REGISTRY`) and `seedAllKalauzSeen()` (writes the localStorage mirror;
+  used by shell tests' `beforeEach`).
 - `frontend/src/features/tutorial/TutorialProvider.test.tsx`,
   `frontend/src/features/tutorial/registry/registry.test.ts`,
+  `frontend/src/features/tutorial/registry/welcome.test.ts`,
   `frontend/src/shared/ui/kalauz/KalauzSheet.test.tsx`,
+  `frontend/src/shared/ui/kalauz/KalauzWelcome.test.tsx`,
   `frontend/src/shared/lib/tutorialSeen.test.ts`,
   `frontend/src/data/tutorial/tutorialProgressHooks.test.ts`
 - `backend/src/test/java/io/mrkuhne/mezo/feature/tutorial/TutorialProgressApiIT.java`,

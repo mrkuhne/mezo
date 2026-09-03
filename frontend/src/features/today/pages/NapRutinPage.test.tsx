@@ -6,7 +6,7 @@ import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import type { HabitItem } from '@/data/types'
+import type { HabitCatalog, HabitItem } from '@/data/types'
 
 // Rutin page (mezo-d20.2.3) — the hub's habit tile → own full page (prototype page-hab):
 // p-gold tone, hero = selected chain-group spot + done/total + name, stat strip
@@ -45,9 +45,17 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useHabitCatalog: () => ({
       catalog: {
         chains: [
-          { id: 'c-m', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING', position: 1, isActive: true, defs: [] },
-          { id: 'c-e', chainKey: 'EVENING', title: 'Esti rutin', daypart: 'EVENING', position: 2, isActive: true, defs: [] },
-        ],
+          { id: 'c-m', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING', position: 1, isActive: true,
+            // a keret-mezők a katalógus-olvasásból jönnek, nem a napi sorból (mezo-3zue.5)
+            defs: [
+              { habitKey: 'morning_pushups', framework: 'FOGG', celebration: 'ökölbe szorított kéz + „ez az”' },
+              { habitKey: 'morning_sunlight', framework: null, celebration: null },
+            ],
+          },
+          { id: 'c-e', chainKey: 'EVENING', title: 'Esti rutin', daypart: 'EVENING', position: 2, isActive: true,
+            defs: [{ habitKey: 'kitchen_close', framework: null, celebration: null }],
+          },
+        ] as HabitCatalog['chains'],
       },
       isPending: false, isError: false, refetch: vi.fn(),
     }),
@@ -252,4 +260,24 @@ test('the lánc-erő bars carry a staggered --d so the .mz-play fill animates', 
   const bar = document.querySelector('.nr-str div') as HTMLElement
   expect(bar.style.getPropertyValue('--d')).toMatch(/ms$/)
   expect(bar.style.width).toMatch(/%$/)
+})
+
+// ── logging as reward (mezo-3zue.5) ─────────────────────────────────────────────
+
+test('ünnepléses szokás pipálása visszajátssza a saját mondatot', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await user.click(screen.getByRole('button', { name: '50 fekvőtámasz' }))
+  expect(await screen.findByText('ökölbe szorított kéz + „ez az”')).toBeInTheDocument()
+})
+
+test('ünneplés nélküli szokásnál a toast a régi marad', async () => {
+  const user = userEvent.setup()
+  renderPage('/nap/rutin?dp=este')
+  await user.click(screen.getByRole('button', { name: 'Konyha zárva' }))
+  // a toast megjelenik, de ünneplés-sor nélkül — generikus fallback szándékosan nincs.
+  // Az esti lánc a fixtúrában 2 sor (kitchen_close + bed_on_time), egyik sem done →
+  // chainProgress = { done: 0, total: 2 } → az eyebrow „Szokás · 1 / 2".
+  expect(await screen.findByText('Szokás · 1 / 2')).toBeInTheDocument()
+  expect(screen.queryByText('ökölbe szorított kéz + „ez az”')).not.toBeInTheDocument()
 })

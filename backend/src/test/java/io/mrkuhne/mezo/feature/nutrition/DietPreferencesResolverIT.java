@@ -44,6 +44,7 @@ class DietPreferencesResolverIT extends AbstractIntegrationTest {
         row.setProteinTier("high");
         row.setWaterMl(3500);
         row.setFiberG(35);
+        row.setDayTypeShiftKcal(0);
         repository.save(row);
 
         DietPreferences p = resolver.resolve(owner);

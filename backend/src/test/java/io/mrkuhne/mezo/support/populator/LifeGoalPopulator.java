@@ -1,9 +1,11 @@
 package io.mrkuhne.mezo.support.populator;
 
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalEntity;
+import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalPillarDayEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalPillarEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarRuleJson;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarSourceJson;
+import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalPillarDayRepository;
 import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalPillarRepository;
 import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalRepository;
 import java.math.BigDecimal;
@@ -19,6 +21,7 @@ public class LifeGoalPopulator {
 
     private final LifeGoalRepository goalRepository;
     private final LifeGoalPillarRepository pillarRepository;
+    private final LifeGoalPillarDayRepository pillarDayRepository;
 
     public LifeGoalEntity goal(UUID owner, String status) {
         LifeGoalEntity g = new LifeGoalEntity();
@@ -45,6 +48,16 @@ public class LifeGoalPopulator {
         p.setSource(source);
         p.setRule(rule);
         return pillarRepository.saveAndFlush(p);
+    }
+
+    /** One nightly evaluation row for a pillar — the history slice 2 must not orphan. */
+    public LifeGoalPillarDayEntity pillarDay(LifeGoalPillarEntity pillar, LocalDate day, String status) {
+        LifeGoalPillarDayEntity d = new LifeGoalPillarDayEntity();
+        d.setCreatedBy(pillar.getCreatedBy());
+        d.setPillarId(pillar.getId());
+        d.setDay(day);
+        d.setStatus(status);
+        return pillarDayRepository.saveAndFlush(d);
     }
 
     /** The canonical "Alvás ≥ 7 ó" average pillar on the sleep-duration metric. */

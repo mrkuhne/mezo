@@ -132,35 +132,57 @@ export interface DayBudget extends Macro4 { energy: { base: number; activity: nu
  * path they prefer the segment's prescribed `carbsG`, falling back to the same remainder formula.
  * balance = segment.dailyEnergyBalanceKcal (explicit goal deficit/surplus from the wire).
  * maintenance = BMR×neat (NEAT lifestyle multiplier from the bootstrap).
+ *
+ * Day-type shift (Diet Plan slice 3 — mezo-sxlj): `isTrainingDay` picks the segment's
+ * `trainingDayKcal`/`restDayKcal` as the day's kcal base instead of its uniform `kcal`; `undefined`
+ * (untouched callers/tests) keeps the pre-slice-3 uniform behavior byte-identical. Fat stays
+ * DAY-INDEPENDENT — its FAT_KCAL_SHARE fallback always uses the uniform segment kcal, never the
+ * day-type kcal, so a day-type shift never redistributes fat. Static path carbs absorb the day-type
+ * delta against the segment's own prescribed `carbsG` (mirrors the BE's serve-time carb-delta rule);
+ * dynamic path folds the delta into the target kcal and carbs absorb it same as the activity bonus.
  */
 export function deriveDailyBudget(
-  segment: { kcal: number; proteinG: number; carbsG?: number | null; fatG?: number | null; dailyEnergyBalanceKcal?: number } | null,
+  segment: {
+    kcal: number; proteinG: number; carbsG?: number | null; fatG?: number | null; dailyEnergyBalanceKcal?: number
+    trainingDayKcal?: number | null; restDayKcal?: number | null
+  } | null,
   fallback: MacroSet,
   energy?: EnergyInputs,
+  /** Day-type pick (slice 3): true/false applies the segment's training/rest kcal; undefined = uniform. */
+  isTrainingDay?: boolean,
 ): DayBudget {
-  const baseKcal = segment?.kcal ?? fallback.kcal
+  const dayKcal = segment == null || isTrainingDay === undefined
+    ? null
+    : (isTrainingDay ? segment.trainingDayKcal : segment.restDayKcal) ?? null
+  const uniformKcal = segment?.kcal ?? fallback.kcal
+  const baseKcal = dayKcal ?? uniformKcal
   const proteinG = segment?.proteinG ?? fallback.p
-  // Prescribed fat wins (Diet Plan slice 1); FAT_KCAL_SHARE remains the pre-slice-1 fallback.
-  const fat = segment?.fatG ?? Math.round((baseKcal * FAT_KCAL_SHARE) / 9)
+  // Prescribed fat wins (Diet Plan slice 1); FAT_KCAL_SHARE remains the pre-slice-1 fallback. The
+  // fallback share is tied to the UNIFORM segment kcal (not the day-type kcal) — fat never varies
+  // by day type.
+  const fat = segment?.fatG ?? Math.round((uniformKcal * FAT_KCAL_SHARE) / 9)
   const carbs = (kcal: number) => Math.max(0, Math.round((kcal - proteinG * 4 - fat * 9) / 4))
 
   if (!energy || energy.bmr == null || energy.neat == null) {
     // Static path (no biometric profile) keeps today's behavior: no segment → the fallback MacroSet
     // passes through verbatim (only water dropped); a segment carries kcal+proteinG, so derive c/f
-    // (preferring the segment's own prescribed carbsG when present).
+    // (preferring the segment's own prescribed carbsG when present, offset by the day-type delta —
+    // mirrors the BE's serve-time carb-delta rule; without a day type this reduces to `carbsG` as-is).
     if (!segment) {
       return { kcal: fallback.kcal, p: fallback.p, c: fallback.c, f: fallback.f, energy: { base: fallback.kcal, activity: 0, balance: 0, target: fallback.kcal } }
     }
-    return { kcal: baseKcal, p: proteinG, c: segment.carbsG ?? carbs(baseKcal), f: fat, energy: { base: baseKcal, activity: 0, balance: 0, target: baseKcal } }
+    const c = segment.carbsG != null ? segment.carbsG + Math.round((baseKcal - segment.kcal) / 4) : carbs(baseKcal)
+    return { kcal: baseKcal, p: proteinG, c, f: fat, energy: { base: baseKcal, activity: 0, balance: 0, target: baseKcal } }
   }
   const balance = segment?.dailyEnergyBalanceKcal ?? 0
+  const dayTypeDelta = dayKcal != null && segment != null ? dayKcal - segment.kcal : 0
   const maintenance = energy.bmr * energy.neat
   const eat = activityKcal(energy.blocks, energy.weightKg)
-  const target = Math.max(energy.bmr, maintenance + eat + balance) // KCAL_FLOOR = BMR
+  const target = Math.max(energy.bmr, maintenance + eat + balance + dayTypeDelta) // KCAL_FLOOR = BMR
   return {
     kcal: Math.round(target),
     p: proteinG,
-    c: carbs(target), // carbs stay the absorber of the day's activity bonus, off the prescribed fat
+    c: carbs(target), // carbs stay the absorber of the day's activity bonus + day-type delta, off the prescribed fat
     f: fat,
     energy: { base: Math.round(maintenance), activity: Math.round(eat), balance: Math.round(balance), target: Math.round(target) },
   }

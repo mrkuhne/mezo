@@ -9062,6 +9062,90 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/life-goals/today:
+    get:
+      tags:
+        - LifeGoal
+      operationId: getLifeGoalsToday
+      summary: >-
+        Per-active-goal weekly arrow + 7-day dots + today's pillar tally
+        (LifeGoal)
+      responses:
+        '200':
+          description: Summary for the hub tiles and the Nap tile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalTodayResponse'
+  '/api/life-goals/{id}/progress':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - LifeGoal
+      operationId: getLifeGoalProgress
+      summary: >-
+        Daily rows + computed arrows + conflict note for one goal; stored rows
+        win, missing days are computed on read (LifeGoal)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalProgressResponse'
+        '404':
+          description: Not found / not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/life-goals/{id}/evaluate':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - LifeGoal
+      operationId: evaluateLifeGoal
+      summary: >-
+        Manual evaluation — upserts the last 3 closed days' pillar rows, returns
+        fresh 28-day progress (LifeGoal)
+      responses:
+        '200':
+          description: Fresh progress after the upsert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalProgressResponse'
+        '404':
+          description: Not found / not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -12294,6 +12378,18 @@ components:
             sign×rate%/100×kg×kcalPerKg÷7
         rationale:
           type: string
+        trainingDayKcal:
+          type: integer
+          nullable: true
+          description: >-
+            Day-type kcal target on a training day (kcal +
+            shift×restDays/trainingDays); null → uniform kcal (mezo-sxlj)
+        restDayKcal:
+          type: integer
+          nullable: true
+          description: >-
+            Day-type kcal target on a rest day (kcal − shift, floored at BMR);
+            null → uniform kcal (mezo-sxlj)
     GoalGuardStatus:
       type: object
       required:
@@ -18026,6 +18122,7 @@ components:
         - proteinTier
         - waterMl
         - fiberG
+        - dayTypeShiftKcal
       properties:
         splitPreset:
           type: string
@@ -18067,6 +18164,13 @@ components:
           type: integer
           minimum: 10
           maximum: 80
+        dayTypeShiftKcal:
+          type: integer
+          minimum: 0
+          maximum: 500
+          description: >-
+            Kcal moved off each rest day onto training days (weekly budget
+            unchanged); 0 = uniform days
     SetDietSettingsRequest:
       type: object
       required:
@@ -18074,6 +18178,7 @@ components:
         - proteinTier
         - waterMl
         - fiberG
+        - dayTypeShiftKcal
       properties:
         splitPreset:
           type: string
@@ -18108,6 +18213,13 @@ components:
           type: integer
           minimum: 10
           maximum: 80
+        dayTypeShiftKcal:
+          type: integer
+          minimum: 0
+          maximum: 500
+          description: >-
+            Kcal moved off each rest day onto training days (weekly budget
+            unchanged); 0 = uniform days
     TutorialProgressEntry:
       type: object
       required:
@@ -20250,6 +20362,9 @@ components:
         - kind
         - source
       properties:
+        id:
+          type: string
+          format: uuid
         label:
           type: string
           minLength: 1
@@ -20478,3 +20593,154 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SignalCatalogEntry'
+    PillarDayStatus:
+      type: string
+      enum:
+        - hit
+        - partial
+        - miss
+        - no_data
+    TrendArrow:
+      type: string
+      enum:
+        - up
+        - flat
+        - down
+        - insufficient
+    PillarDayEntry:
+      type: object
+      required:
+        - day
+        - status
+      properties:
+        day:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/PillarDayStatus'
+        value:
+          type: number
+        target:
+          type: number
+        baseline:
+          type: number
+    PillarProgress:
+      type: object
+      required:
+        - pillarId
+        - arrow
+        - days
+      properties:
+        pillarId:
+          type: string
+          format: uuid
+        arrow:
+          $ref: '#/components/schemas/TrendArrow'
+        currentValue:
+          type: number
+          description: mean of the last 7 days' values (absent when none)
+        referenceValue:
+          type: number
+          description: >-
+            the rule's comparison figure: threshold / expected(today) / baseline
+            median
+        missingHitDays:
+          type: integer
+          description: >-
+            habit kind, arrow=down only: max(0, daysPerWeek − hits in the last 7
+            days)
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/PillarDayEntry'
+    GoalDayEntry:
+      type: object
+      required:
+        - day
+      properties:
+        day:
+          type: string
+          format: date
+        point:
+          type: number
+          description: weighted daily point 0..1; absent = no pillar had data
+    LifeGoalProgressResponse:
+      type: object
+      required:
+        - goalId
+        - from
+        - to
+        - arrow
+        - days
+        - pillars
+        - conflicts
+      properties:
+        goalId:
+          type: string
+          format: uuid
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        arrow:
+          $ref: '#/components/schemas/TrendArrow'
+        weeklyPct:
+          type: integer
+          description: >-
+            round(mean of the last 7 days' points × 100); absent when no
+            data-day in the window
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalDayEntry'
+        pillars:
+          type: array
+          items:
+            $ref: '#/components/schemas/PillarProgress'
+        conflicts:
+          type: array
+          items:
+            type: string
+          description: >-
+            Hungarian one-liners — same signal pulled in opposite directions by
+            another active goal
+    LifeGoalTodaySummary:
+      type: object
+      required:
+        - goalId
+        - title
+        - dimension
+        - arrow
+        - days7
+      properties:
+        goalId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        dimension:
+          $ref: '#/components/schemas/LifeGoalDimension'
+        arrow:
+          $ref: '#/components/schemas/TrendArrow'
+        days7:
+          type: array
+          description: >-
+            oldest→today; goal-day dot statuses derived from the daily point
+            (≥0.66 hit, ≥0.33 partial, <0.33 miss, null no_data)
+          items:
+            $ref: '#/components/schemas/PillarDayStatus'
+        pillarsTotal:
+          type: integer
+        pillarsHitToday:
+          type: integer
+    LifeGoalTodayResponse:
+      type: object
+      required:
+        - goals
+      properties:
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeGoalTodaySummary'

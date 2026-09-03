@@ -22,6 +22,9 @@ export interface RewardToast {
   title: string
   /** italic addendum beside the title: „2000 ml" */
   meta?: string
+  /** a felhasználó saját ünneplés-mondata (FOGG `celebration`), a tett pillanatában
+   *  visszajátszva — saját sor a cím alatt, NEM a `meta` addendum (mezo-3zue.5) */
+  celebration?: string
   /** the meter row: the skill's display name (real mode) or 'XP' (mock) + the delta */
   meter?: { label: string; delta: number }
   /** only when levelAfter > levelBefore */
