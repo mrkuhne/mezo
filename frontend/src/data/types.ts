@@ -56,6 +56,16 @@ export interface FuelSettings {
   mealsPerDay: number
   caffeineCutoff: string
 }
+/** Diet preferences (Diet Plan slice 1) — macro split + protein tier + water/fiber, per-user singleton. */
+export interface DietSettings {
+  splitPreset: 'balanced' | 'low_fat' | 'low_carb' | 'high_carb' | 'custom'
+  proteinPctX10: number | null
+  carbsPctX10: number | null
+  fatPctX10: number | null
+  proteinTier: 'moderate' | 'high'
+  waterMl: number
+  fiberG: number
+}
 /** Meal-slot templates (mezo-7102) — per-day-type anchor plan the planner replays onto a real day. */
 export type SlotTemplateDayType = 'rest' | 'training_am' | 'training_pm'
 export type SlotAnchor =

@@ -42,6 +42,7 @@ export { useFuelDay, useMealActions, useRecipeLogs, useWaterActions } from '@/da
 export { useMealCoach, useMealCoachFor } from '@/data/fuel/coachHooks'
 export { useMedication, useMedicationActions } from '@/data/fuel/medicationHooks'
 export { useFuelSettings, useFuelSettingsActions } from '@/data/fuel/fuelSettingsHooks'
+export { useDietSettings, useDietSettingsActions, DIET_SETTINGS_GHOST } from '@/data/fuel/dietSettingsHooks'
 export { useSlotTemplates, useSlotTemplateActions, useSlotTemplateEvaluation } from '@/data/fuel/slotTemplateHooks'
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from '@/data/me/goalHooks'
 export { useBiometricProfile, useBiometricActions } from '@/data/me/biometricHooks'
