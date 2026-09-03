@@ -6,8 +6,12 @@ import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.meal.config.MealAiLogProperties;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
+import io.mrkuhne.mezo.feature.pantry.service.PantryCatalogService;
+import io.mrkuhne.mezo.feature.pantry.service.PantryNameIndex;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
@@ -57,6 +61,8 @@ public class MealAiDraftService {
 
     private final ObjectProvider<MealDraftLlm> llm;
     private final PantryItemRepository pantryItemRepository;
+    private final PantryCatalogRepository pantryCatalogRepository;
+    private final PantryCatalogService pantryCatalogService;
     private final RecipeRepository recipeRepository;
     private final RecipeMapper recipeMapper;
     private final MealAiLogProperties props;
@@ -85,10 +91,12 @@ public class MealAiDraftService {
         return port;
     }
 
-    // Read-only tx spans the whole call: the recipe arm's per-serving rollup walks the LAZY
-    // recipe.lines through RecipeMapper (open-in-view is false). Single-user app, so holding one
-    // pooled connection across the LLM call is acceptable (cf. MealService's method-level txns).
-    @Transactional(readOnly = true)
+    // Read-write since S4: a catalog name-match creates the user's shelf row (ensureItem); a
+    // read-only tx would silently skip that flush. Still spans the whole call: the recipe arm's
+    // per-serving rollup walks the LAZY recipe.lines through RecipeMapper (open-in-view is false).
+    // Single-user app, so holding one pooled connection across the LLM call is acceptable (cf.
+    // MealService's method-level txns).
+    @Transactional
     public MealAiDraftResponse draft(UUID userId, LocalDate date, String text, MultipartFile photo) {
         MealDraftLlm port = requireAvailable();
         validateInput(text, photo);
@@ -193,7 +201,7 @@ public class MealAiDraftService {
             List<PantryItemEntity> pantry) {
         Map<UUID, PantryItemEntity> pantryById = pantry.stream()
                 .collect(Collectors.toMap(PantryItemEntity::getId, Function.identity()));
-        PantryNameIndex nameIndex = PantryNameIndex.of(pantry);
+        PantryNameIndex nameIndex = PantryNameIndex.of(pantryCatalogRepository.findByDeletedFalseOrderByNameAsc());
         MealAiDraftResponse res = new MealAiDraftResponse();
         res.setSlot(extracted.slot() != null && SLOTS.contains(extracted.slot()) ? extracted.slot() : "snack");
         res.setTitle(extracted.title());
@@ -225,7 +233,7 @@ public class MealAiDraftService {
                 return pantryItem(p, line, false);
             }
             log.warn("Meal AI draft: hallucinated pantry id {} demoted", pantryId);
-            return matchByNameOrEstimate(line, nameIndex, true);
+            return matchByNameOrEstimate(userId, line, nameIndex, true);
         }
         if (recipeId != null) {
             RecipeEntity r = recipeRepository.findByIdAndCreatedByAndDeletedFalse(recipeId, userId)
@@ -234,9 +242,9 @@ public class MealAiDraftService {
                 return recipeItem(r, line);
             }
             log.warn("Meal AI draft: hallucinated recipe id {} demoted", recipeId);
-            return matchByNameOrEstimate(line, nameIndex, true);
+            return matchByNameOrEstimate(userId, line, nameIndex, true);
         }
-        return matchByNameOrEstimate(line, nameIndex, false);
+        return matchByNameOrEstimate(userId, line, nameIndex, false);
     }
 
     /**
@@ -245,12 +253,13 @@ public class MealAiDraftService {
      * is what stayed uncertain. Runs before the macro-completeness check on purpose: a matched line
      * gets its macros from the row, so the LLM's missing kcal no longer has to drop it.
      */
-    private MealAiDraftItem matchByNameOrEstimate(ExtractedLine line, PantryNameIndex nameIndex,
+    private MealAiDraftItem matchByNameOrEstimate(UUID userId, ExtractedLine line, PantryNameIndex nameIndex,
             boolean demoted) {
-        PantryItemEntity matched = nameIndex.match(line.name(), line.unit()).orElse(null);
+        PantryCatalogEntity matched = nameIndex.match(line.name(), line.unit()).orElse(null);
         if (matched != null) {
-            log.info("Meal AI draft: '{}' name-matched pantry item {}", line.name(), matched.getId());
-            return pantryItem(matched, line, true);
+            PantryItemEntity mine = pantryCatalogService.ensureItem(userId, matched.getId()); // idempotent auto-add
+            log.info("Meal AI draft: '{}' name-matched catalog {} -> shelf row {}", line.name(), matched.getId(), mine.getId());
+            return pantryItem(mine, line, true);
         }
         return estimateItem(line, demoted);
     }

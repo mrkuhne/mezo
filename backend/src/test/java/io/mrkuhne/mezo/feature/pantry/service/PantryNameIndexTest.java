@@ -1,9 +1,8 @@
-package io.mrkuhne.mezo.feature.meal.service;
+package io.mrkuhne.mezo.feature.pantry.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
-import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
@@ -16,22 +15,20 @@ import org.junit.jupiter.api.Test;
  */
 class PantryNameIndexTest {
 
-    private static PantryItemEntity item(String name, String brand, String servingUnit) {
-        PantryCatalogEntity c = new PantryCatalogEntity();
-        c.setName(name);
-        c.setBrand(brand);
-        c.setServingAmount(new BigDecimal("100"));
-        c.setServingUnit(servingUnit);
-        c.setKind("food");
-        PantryItemEntity e = new PantryItemEntity();
+    private static PantryCatalogEntity item(String name, String brand, String servingUnit) {
+        PantryCatalogEntity e = new PantryCatalogEntity();
         e.setId(UUID.randomUUID());
-        e.setCatalog(c);
+        e.setName(name);
+        e.setBrand(brand);
+        e.setServingAmount(new BigDecimal("100"));
+        e.setServingUnit(servingUnit);
+        e.setKind("food");
         return e;
     }
 
     @Test
     void testMatch_shouldFindExactName_whenCaseAndAccentsDiffer() {
-        PantryItemEntity turo = item("Túró Rudi", null, "g");
+        PantryCatalogEntity turo = item("Túró Rudi", null, "g");
         PantryNameIndex index = PantryNameIndex.of(List.of(turo));
 
         assertThat(index.match("Túró Rudi", "g")).contains(turo);
@@ -41,7 +38,7 @@ class PantryNameIndexTest {
 
     @Test
     void testMatch_shouldFindByBrandPrefixedName() {
-        PantryItemEntity rizs = item("Basmati rizs", "Rizspont", "g");
+        PantryCatalogEntity rizs = item("Basmati rizs", "Rizspont", "g");
         PantryNameIndex index = PantryNameIndex.of(List.of(rizs));
 
         assertThat(index.match("Rizspont Basmati rizs", "g")).contains(rizs);
@@ -50,7 +47,7 @@ class PantryNameIndexTest {
 
     @Test
     void testMatch_shouldStripPackSize_whenNameEndsWithUnitSuffixedNumber() {
-        PantryItemEntity zab = item("Zabpehely 500 g", null, "g");
+        PantryCatalogEntity zab = item("Zabpehely 500 g", null, "g");
         PantryNameIndex index = PantryNameIndex.of(List.of(zab));
 
         assertThat(index.match("Zabpehely", "g")).contains(zab);
@@ -59,7 +56,7 @@ class PantryNameIndexTest {
 
     @Test
     void testMatch_shouldNotStripPercentage_soMilkFatContentSurvives() {
-        PantryItemEntity tej = item("Tej 1,5%", null, "ml");
+        PantryCatalogEntity tej = item("Tej 1,5%", null, "ml");
         PantryNameIndex index = PantryNameIndex.of(List.of(tej));
 
         assertThat(index.match("Tej 1,5%", "ml")).contains(tej);
@@ -68,8 +65,8 @@ class PantryNameIndexTest {
 
     @Test
     void testMatch_shouldMiss_whenAStrippedKeyIsAmbiguous() {
-        PantryItemEntity small = item("Tej 1 l", null, "ml");
-        PantryItemEntity big = item("Tej 2 l", null, "ml");
+        PantryCatalogEntity small = item("Tej 1 l", null, "ml");
+        PantryCatalogEntity big = item("Tej 2 l", null, "ml");
         PantryNameIndex index = PantryNameIndex.of(List.of(small, big));
 
         assertThat(index.match("Tej", "ml")).isEmpty();       // ambiguous -> no guess
@@ -79,7 +76,7 @@ class PantryNameIndexTest {
 
     @Test
     void testMatch_shouldMiss_whenUnitDisagrees() {
-        PantryItemEntity zab = item("Zabpehely", null, "g");
+        PantryCatalogEntity zab = item("Zabpehely", null, "g");
         PantryNameIndex index = PantryNameIndex.of(List.of(zab));
 
         assertThat(index.match("Zabpehely", "db")).isEmpty();
@@ -89,8 +86,8 @@ class PantryNameIndexTest {
 
     @Test
     void testMatch_shouldAcceptUnitSynonyms() {
-        PantryItemEntity zab = item("Zabpehely", null, "g");
-        PantryItemEntity tojas = item("Tojás", null, "db");
+        PantryCatalogEntity zab = item("Zabpehely", null, "g");
+        PantryCatalogEntity tojas = item("Tojás", null, "db");
         PantryNameIndex index = PantryNameIndex.of(List.of(zab, tojas));
 
         assertThat(index.match("Zabpehely", "gramm")).contains(zab);
@@ -100,7 +97,7 @@ class PantryNameIndexTest {
 
     @Test
     void testMatch_shouldTreatNullServingUnitAsGrams() {
-        PantryItemEntity e = item("Mák", null, null);
+        PantryCatalogEntity e = item("Mák", null, null);
         PantryNameIndex index = PantryNameIndex.of(List.of(e));
 
         assertThat(index.match("Mák", "g")).contains(e);
@@ -113,8 +110,8 @@ class PantryNameIndexTest {
         // splits food into `ingredients`, everything else into `stash`); matching a supplement
         // by name would return a source=pantry line the frontend can't resolve, desyncing the
         // displayed totals from what actually gets logged on save.
-        PantryItemEntity magnezium = item("Magnézium", null, "db");
-        magnezium.getCatalog().setKind("supplement");
+        PantryCatalogEntity magnezium = item("Magnézium", null, "db");
+        magnezium.setKind("supplement");
         PantryNameIndex index = PantryNameIndex.of(List.of(magnezium));
 
         assertThat(index.match("Magnézium", "db")).isEmpty();

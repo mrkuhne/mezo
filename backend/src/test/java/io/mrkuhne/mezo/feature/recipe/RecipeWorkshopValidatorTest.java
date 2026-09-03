@@ -74,6 +74,21 @@ class RecipeWorkshopValidatorTest {
     }
 
     @Test
+    void testSanitize_shouldMatchByName_whenLlmLeftIdNull_andPantryIdWasNull() {
+        RawDraft raw = new RawDraft("Golyós tál", "snack", 1, List.of(),
+                List.of(new RawLine(null, "kölesgolyó", BigDecimal.valueOf(40), "g",
+                        null, null, null, null)));
+
+        WorkshopDraft out = validator.sanitize(raw, id -> Optional.empty(),
+                (n, u) -> Optional.of(pantry(UUID.randomUUID(), "Kölesgolyó")));
+
+        assertThat(out.getLines()).hasSize(1);
+        assertThat(out.getLines().getFirst().getSource()).isEqualTo("pantry");
+        assertThat(out.getLines().getFirst().getName()).isEqualTo("Kölesgolyó"); // DB, not LLM
+        assertThat(out.getLines().getFirst().getKcal()).isNull();
+    }
+
+    @Test
     void testSanitize_shouldDropMacrolessEstimate_andClampMeta() {
         RawDraft raw = new RawDraft(null, "brunch", 0, List.of(),
                 List.of(new RawLine(null, "Valami", BigDecimal.ONE, "g", null, null, null, null),

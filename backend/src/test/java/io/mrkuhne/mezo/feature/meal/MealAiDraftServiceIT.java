@@ -6,11 +6,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.api.dto.MealAiDraftItem;
 import io.mrkuhne.mezo.api.dto.MealAiDraftResponse;
 import io.mrkuhne.mezo.feature.meal.service.MealAiDraftService;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.PantryCatalogPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -48,6 +51,36 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
 
     @Autowired
     private DatabasePopulator databasePopulator;
+
+    @Autowired
+    private PantryCatalogPopulator catalogPopulator;
+
+    @Autowired
+    private PantryItemRepository pantryItemRepository;
+
+    @Test
+    void testDraft_shouldMatchAnotherUsersCatalogDefinition_andCreateMyShelfRow() {
+        UUID anna = databasePopulator.populateUser("meal-ai-anna@test.local");
+        UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
+        PantryCatalogEntity def = catalogPopulator.createFoodDefinition(anna, "Kölesgolyó", null); // per 100 g, 110 kcal
+        assertThat(pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner)).isEmpty();
+
+        String json = """
+            {"slot":"snack","title":null,"note":null,"items":[
+              {"pantryItemId":null,"recipeId":null,"name":"kölesgolyó","amount":40,"unit":"g",
+               "kcal":999,"proteinG":1,"carbsG":1,"fatG":1}
+            ]}""";
+        MealAiDraftResponse res = service.draft(owner, LocalDate.now(), "[fake-meal:" + json + "]", null);
+
+        MealAiDraftItem line = res.getItems().getFirst();
+        assertThat(line.getSource()).isEqualTo("pantry");
+        assertThat(line.getKcal()).isEqualByComparingTo("110");          // the catalog's numbers, not 999
+        assertThat(line.getNeedsReview()).isTrue();
+        var mine = pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner);
+        assertThat(mine).hasSize(1);                                       // auto-added from the catalog
+        assertThat(mine.getFirst().getCatalog().getId()).isEqualTo(def.getId());
+        assertThat(line.getPantryItemId()).isEqualTo(mine.getFirst().getId()); // MY row, resolvable by MealService.create
+    }
 
     @Test
     void testDraft_shouldMatchPantryAndEstimate_whenSentinelCarriesBoth() {

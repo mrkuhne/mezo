@@ -8,7 +8,10 @@ import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
+import io.mrkuhne.mezo.feature.pantry.service.PantryCatalogService;
+import io.mrkuhne.mezo.feature.pantry.service.PantryNameIndex;
 import io.mrkuhne.mezo.feature.recipe.config.RecipeWorkshopProperties;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeWorkshopValidator.RawDraft;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -48,6 +51,8 @@ public class RecipeWorkshopService {
 
     private final ObjectProvider<RecipeWorkshopLlm> llm;
     private final PantryItemRepository pantryItemRepository;
+    private final PantryCatalogRepository pantryCatalogRepository;
+    private final PantryCatalogService pantryCatalogService;
     private final RecipeWorkshopProperties props;
     private final RecipeWorkshopValidator validator;
     private final ObjectMapper objectMapper;
@@ -65,7 +70,9 @@ public class RecipeWorkshopService {
         return port;
     }
 
-    @Transactional(readOnly = true)
+    // Read-write since S4: a catalog name-match creates the user's shelf row (ensureItem); a
+    // read-only tx would silently skip that flush.
+    @Transactional
     public WorkshopTurnResponse turn(UUID userId, WorkshopTurnRequest req) {
         RecipeWorkshopLlm port = requireAvailable();
 
@@ -77,8 +84,10 @@ public class RecipeWorkshopService {
                 () -> port.complete(systemPrompt, userMessage));
 
         LlmAnswer parsed = parse(answer);
+        PantryNameIndex nameIndex = PantryNameIndex.of(pantryCatalogRepository.findByDeletedFalseOrderByNameAsc());
         WorkshopDraft draft = validator.sanitize(parsed.draft(),
-                id -> pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(id, userId));
+                id -> pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(id, userId),
+                (name, unit) -> nameIndex.match(name, unit).map(c -> pantryCatalogService.ensureItem(userId, c.getId())));
 
         WorkshopTurnResponse res = new WorkshopTurnResponse();
         res.setReply(parsed.reply() == null || parsed.reply().isBlank()
