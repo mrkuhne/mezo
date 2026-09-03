@@ -66,6 +66,42 @@ function GoalRow({ name, value, target, unit, fill, delayMs }: {
   )
 }
 
+/** The prototype draws the kcal / fehérje / `c · f` bars INSIDE the Tápanyag tile (not in a card
+ *  of their own): the numbers judged by the nutrition dimension and the numbers shown under it
+ *  are then the same numbers. They come from `useMeWeek` — the evaluation's `facts[]` are
+ *  label/value strings and carry no targets to draw a bar against.
+ *
+ *  `c · f` has no target on the wire, so its bar is a RELATIVE fill against a fixed 400 g
+ *  reference rather than a goal: the numerals beside it are the honest part. */
+function NutritionGoals({ day }: { day: MeWeekDay }) {
+  if (day.kcal == null) return null
+  return (
+    <div className="dayev-goals">
+      <GoalRow name="kcal" value={day.kcal} target={day.kcalTarget} unit="" fill="is-coral" delayMs={200} />
+      {day.proteinG != null && (
+        <GoalRow name="fehérje" value={day.proteinG} target={day.proteinTargetG} unit=" g" fill="is-sage" delayMs={280} />
+      )}
+      {(day.carbsG != null || day.fatG != null) && (
+        <div className="wkd-tgrow">
+          <span className="nm">c · f</span>
+          <div className="wkd-gbar">
+            <div
+              className="is-gold"
+              style={{
+                width: `${Math.min(100, Math.round(((day.carbsG ?? 0) / 400) * 100))}%`,
+                '--d': '360ms',
+              } as CSSProperties}
+            />
+          </div>
+          <span className="vl">
+            {day.carbsG != null ? `${day.carbsG} g` : '—'} · {day.fatG != null ? `${day.fatG} g` : '—'}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function DayChips({ day }: { day: MeWeekDay }) {
   return (
     <div className="wkd-chips wkd-herochips">
@@ -180,7 +216,7 @@ export function WeekDayPage() {
           <>
             <div className="wkd-herorow">
               <WeekScoreRing
-                className={cn('is-day', open && 'dev-ringdash')}
+                className={cn('is-day', open && 'dayev-ringdash')}
                 score={heroScore}
                 learningLabel={ringWords.label}
                 learningCaption={ringWords.caption}
@@ -188,7 +224,7 @@ export function WeekDayPage() {
               <DayChips day={day} />
             </div>
             {evaluation?.base != null && (
-              <div className="dev-scorechips">
+              <div className="dayev-scorechips">
                 <span>alap {evaluation.base}</span>
                 {evaluation.adjustment && (
                   <span className="is-mezo">
@@ -232,10 +268,10 @@ export function WeekDayPage() {
                 {scored && evaluation && (
                   <section className="wkd-card rise" style={{ '--d': '50ms' } as CSSProperties}>
                     <div className="mz-eyebrow">Miből jött össze</div>
-                    <div className="dev-subrings">
+                    <div className="dayev-subrings">
                       {orderedDimensions(evaluation).map((d) => (
-                        <div key={d.id} className="dev-subring">
-                          <DayDimRing score={d.score} />
+                        <div key={d.id} className="dayev-subring">
+                          <DayDimRing score={d.score} label={d.label} decorative />
                           <small>{DAY_DIMENSIONS.find((x) => x.key === d.id)?.label ?? d.label}</small>
                         </div>
                       ))}
@@ -244,39 +280,41 @@ export function WeekDayPage() {
                 )}
 
                 {evaluation && state !== 'empty' && orderedDimensions(evaluation).map((d, i) => (
-                  <DayDimensionTile key={d.id} dimension={d} delayMs={90 + i * 40} />
+                  <DayDimensionTile key={d.id} dimension={d} delayMs={90 + i * 40} dayOpen={open}>
+                    {d.id === 'nutrition' && <NutritionGoals day={day} />}
+                  </DayDimensionTile>
                 ))}
 
                 {open && (
-                  <section className="dev-waiting rise" style={{ '--d': '350ms' } as CSSProperties}>
-                    <ClaySpot name="s-orb-figyel" size={26} className="dev-orbb" />
+                  <section className="dayev-waiting rise" style={{ '--d': '350ms' } as CSSProperties}>
+                    <ClaySpot name="s-orb-figyel" size={26} className="dayev-orbb" />
                     <p>A napodról a zárás után írok — addig gyűjtöm, ami történik.</p>
                     {chatButton}
                   </section>
                 )}
 
-                {day.kcal != null && (
-                  <section className="wkd-card rise" style={{ '--d': '370ms' } as CSSProperties}>
-                    <div className="mz-eyebrow">Fuel · a cél ellenében</div>
-                    <GoalRow name="kcal" value={day.kcal} target={day.kcalTarget} unit="" fill="is-coral" delayMs={450} />
-                    {day.proteinG != null && (
-                      <GoalRow name="fehérje" value={day.proteinG} target={day.proteinTargetG} unit=" g" fill="is-sage" delayMs={520} />
-                    )}
-                  </section>
-                )}
-
                 {evaluation && evaluation.context.length > 0 && (
-                  <section className="dev-ctx rise" style={{ '--d': '390ms' } as CSSProperties}>
-                    <div className="mz-eyebrow dev-ctxeb">Kontextus · nem pontozott</div>
-                    <div className="dev-fchips">
+                  <section className="dayev-ctx rise" style={{ '--d': '390ms' } as CSSProperties}>
+                    <div className="mz-eyebrow dayev-ctxeb">Kontextus · nem pontozott</div>
+                    <div className="dayev-fchips">
                       {evaluation.context.map((c) => (
-                        <span key={`${c.label}·${c.value}`} className="dev-fchip">{c.label} · {c.value}</span>
+                        <span key={`${c.label}·${c.value}`} className="dayev-fchip">{c.label} · {c.value}</span>
                       ))}
                     </div>
-                    <p className="dev-why is-mut">
+                    <p className="dayev-why is-mut">
                       Ezt a Mezo látja az értékeléshez, de pontot nem kap — az érzéseidet és a
                       súlyingadozást nem osztályozzuk.
                     </p>
+                  </section>
+                )}
+
+                {/* Degraded path only — with no evaluation (or an `empty` day) there is no
+                    Tápanyag tile to host the bars, and the week's own kcal/protein targets
+                    would otherwise disappear from the page entirely (handoff §6.1). */}
+                {(!evaluation || state === 'empty') && day.kcal != null && (
+                  <section className="wkd-card rise" style={{ '--d': '370ms' } as CSSProperties}>
+                    <div className="mz-eyebrow">Fuel · a cél ellenében</div>
+                    <NutritionGoals day={day} />
                   </section>
                 )}
 

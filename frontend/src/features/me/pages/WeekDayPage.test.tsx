@@ -96,30 +96,49 @@ describe('WeekDayPage (mock mode)', () => {
 
   test('a scored day renders all SIX dimension tiles, each with its weight, score and note', () => {
     const { container } = renderDay(mockDayEvaluationDates.scored, '2026-05-18')
-    const tiles = [...container.querySelectorAll('.dev-dim')]
+    const tiles = [...container.querySelectorAll('.dayev-dim')]
     expect(tiles).toHaveLength(6)
-    expect(tiles.map((t) => t.querySelector('.dev-dnm')?.textContent))
+    expect(tiles.map((t) => t.querySelector('.dayev-dnm')?.textContent))
       .toEqual(['Táplálkozás', 'Minőség', 'Edzés', 'Alvás', 'Logolás', 'Ritmus'])
     // the renormalised weight is the tile's eyebrow, the dimension score its sring
     expect(screen.getByText('súly 30%')).toBeInTheDocument()
-    expect(tiles[0]?.querySelector('.dev-sring i')?.textContent).toBe('82')
+    expect(tiles[0]?.querySelector('.dayev-sring i')?.textContent).toBe('82')
     // facts and the per-dimension sentence
     expect(screen.getByText('fehérje · 205g / 220g cél')).toBeInTheDocument()
     expect(screen.getByText('A fehérjecélt majdnem hoztad, a kalória is célban volt.')).toBeInTheDocument()
     // no dimension is a ghost on a closed, fully-logged day
-    expect(container.querySelectorAll('.dev-dim.is-ghost')).toHaveLength(0)
+    expect(container.querySelectorAll('.dayev-dim.is-ghost')).toHaveLength(0)
+    // the ring is announced by NAME, not as a bare numeral
+    expect(screen.getByRole('img', { name: 'Táplálkozás · 82 / 100' })).toBeInTheDocument()
+  })
+
+  test("the kcal / fehérje / c·f goal bars live INSIDE the Tápanyag tile, off the week's targets", () => {
+    const { container } = renderDay(mockDayEvaluationDates.scored, '2026-05-18')
+    const nutrition = [...container.querySelectorAll('.dayev-dim')]
+      .find((t) => t.querySelector('.dayev-dnm')?.textContent === 'Táplálkozás')
+    const goals = nutrition?.querySelector('.dayev-goals')
+    expect(goals).not.toBeNull()
+    // `kcalTarget` / `proteinTargetG` are fetched by /api/me/week and were thrown away by the
+    // pre-d20.6.10 UI (handoff §6.1) — this is where they land, and the `c · f` row with them.
+    expect([...goals!.querySelectorAll('.wkd-tgrow .nm')].map((n) => n.textContent))
+      .toEqual(['kcal', 'fehérje', 'c · f'])
+    expect(screen.getByText('2 980 / 3 100')).toBeInTheDocument()
+    expect(screen.getByText('212 / 220 g')).toBeInTheDocument()
+    expect(screen.getByText('335 g · 92 g')).toBeInTheDocument()
+    // and nowhere else on the page — the separate Fuel card is gone
+    expect(screen.queryByText('Fuel · a cél ellenében')).not.toBeInTheDocument()
   })
 
   test('the narrative, the highlight chips and the +3 reason ride the review card', () => {
     const { container } = renderDay(mockDayEvaluationDates.scored, '2026-05-18')
     expect(screen.getByText('Mezo · a napodról')).toBeInTheDocument()
-    expect(container.querySelectorAll('.dev-prose')).toHaveLength(3)
+    expect(container.querySelectorAll('.dayev-prose')).toHaveLength(3)
     expect(screen.getByText(/Hétfőn erős napot zártál/)).toBeInTheDocument()
     // highlights: kind → its own eyebrow word and colour class
     expect(screen.getByText('Teljes napi logolás')).toBeInTheDocument()
     // …in the prototype's reading order (the key leads), NOT the wire order (which is win-first)
-    expect([...container.querySelectorAll('.dev-hlch')].map((c) => c.className))
-      .toEqual(['dev-hlch is-key', 'dev-hlch is-pattern', 'dev-hlch is-win'])
+    expect([...container.querySelectorAll('.dayev-hlch')].map((c) => c.className))
+      .toEqual(['dayev-hlch is-key', 'dayev-hlch is-pattern', 'dayev-hlch is-win'])
     expect(screen.getByText('A nap kulcsa')).toBeInTheDocument()
     // the adjustment always carries its reason — an unexplained delta is not shown at all
     expect(screen.getByText('Következetes napi ritmus és jó regeneráció miatt +3 korrekció.')).toBeInTheDocument()
@@ -135,16 +154,30 @@ describe('WeekDayPage (mock mode)', () => {
     expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/mezo\/chat\?c=/))
   })
 
-  test('the mcells and the day stepper stay on the page', () => {
+  test('the mcells stay on the page', () => {
     renderDay(mockDayEvaluationDates.scored, '2026-05-18')
     expect(screen.getByText('súly · kg')).toBeInTheDocument()
+  })
+
+  test('the prev/next tiles carry the neighbour’s day and score, and step by date', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderDay('2026-05-13', '2026-05-11')
+    expect(screen.getByText('Kedd · 72')).toBeInTheDocument()
+    expect(screen.getByText('Csü · —')).toBeInTheDocument() // an unscored neighbour, never a 0
+    await user.click(screen.getByRole('button', { name: /Következő nap/ }))
+    expect(mockNavigate).toHaveBeenCalledWith('/me/week/napok/2026-05-14?start=2026-05-11')
+  })
+
+  test('the week edges disable the stepper rather than wrapping', () => {
+    renderDay('2026-05-11', '2026-05-11')
+    expect(screen.getByRole('button', { name: 'Előző nap' })).toBeDisabled()
     expect(screen.getByRole('button', { name: /Következő nap:/ })).toBeEnabled()
   })
 
   test('CONTRACT — a day still in progress: a dashed `este zárom` ring and NO overall score', () => {
     const { container } = renderDay(mockDayEvaluationDates.inProgress, '2026-05-18')
     expect(screen.getByRole('img', { name: 'Pontszám: este zárom' })).toBeInTheDocument()
-    expect(container.querySelector('.wk-ring.dev-ringdash')).not.toBeNull()
+    expect(container.querySelector('.wk-ring.dayev-ringdash')).not.toBeNull()
     // no fabricated part-way score, and no base/adjustment chips either
     expect(screen.queryByRole('img', { name: /Pontszám: \d/ })).not.toBeInTheDocument()
     expect(screen.queryByText(/^alap /)).not.toBeInTheDocument()
@@ -157,11 +190,15 @@ describe('WeekDayPage (mock mode)', () => {
 
   test('CONTRACT — in progress: what is FINAL floats up as a full tile, the rest stays a ghost', () => {
     const { container } = renderDay(mockDayEvaluationDates.inProgress, '2026-05-18')
-    const tiles = [...container.querySelectorAll('.dev-dim')]
-    expect(tiles.map((t) => t.querySelector('.dev-dnm')?.textContent))
+    const tiles = [...container.querySelectorAll('.dayev-dim')]
+    expect(tiles.map((t) => t.querySelector('.dayev-dnm')?.textContent))
       .toEqual(['Edzés', 'Alvás', 'Táplálkozás', 'Minőség', 'Logolás', 'Ritmus'])
     expect(tiles.slice(0, 2).some((t) => t.classList.contains('is-ghost'))).toBe(false)
     expect(tiles.slice(2).every((t) => t.classList.contains('is-ghost'))).toBe(true)
+    // while the day runs, a finalised dimension SAYS it is final rather than showing its weight
+    expect(tiles.slice(0, 2).map((t) => t.querySelector('.dayev-stag')?.textContent))
+      .toEqual(['kész', 'kész'])
+    expect(screen.queryByText(/^súly \d/)).not.toBeInTheDocument()
     expect(screen.getAllByText('még íródik').length).toBeGreaterThan(0)
     expect(screen.getAllByText('nincs adat').length).toBeGreaterThan(0)
   })
@@ -179,7 +216,7 @@ describe('WeekDayPage (mock mode)', () => {
     const { container } = renderDay(mockDayEvaluationDates.future, '2026-05-25')
     expect(screen.getByText('még előtted')).toBeInTheDocument()
     expect(screen.getByText('Ez a nap még előtted van — ide majd a logolt adatai kerülnek.')).toBeInTheDocument()
-    expect(container.querySelectorAll('.dev-dim')).toHaveLength(0)
+    expect(container.querySelectorAll('.dayev-dim')).toHaveLength(0)
     expect(screen.getByRole('button', { name: /Előző nap/ })).toBeInTheDocument()
   })
 
@@ -220,10 +257,10 @@ describe('WeekDayPage (real mode)', () => {
     }))
     const { container } = renderDay('2026-05-11', '2026-05-11')
     expect(await screen.findByText('edzés · Pihenőnap')).toBeInTheDocument()
-    const training = [...container.querySelectorAll('.dev-dim')]
-      .find((t) => t.querySelector('.dev-dnm')?.textContent === 'Edzés')
-    expect(training?.querySelector('.dev-sring')?.classList.contains('is-dash')).toBe(true)
-    expect(training?.querySelector('.dev-sring i')?.textContent).toBe('—')
+    const training = [...container.querySelectorAll('.dayev-dim')]
+      .find((t) => t.querySelector('.dayev-dnm')?.textContent === 'Edzés')
+    expect(training?.querySelector('.dayev-sring')?.classList.contains('is-dash')).toBe(true)
+    expect(training?.querySelector('.dayev-sring i')?.textContent).toBe('—')
   })
 
   test('CONTRACT — nothing logged: `nincs adat`, a different sentence from `tanulom`', async () => {

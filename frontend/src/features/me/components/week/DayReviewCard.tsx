@@ -39,18 +39,18 @@ export function DayReviewCard({ evaluation, delayMs, children }: {
 }) {
   const { narrative, highlights, adjustment } = evaluation
   return (
-    <section className="dev-revcard rise" style={{ '--d': `${delayMs}ms` } as CSSProperties}>
-      <div className="dev-revhead">
-        <ClaySpot name="s-orb" size={28} className="dev-orbb" />
-        <span className="mz-eyebrow dev-revlabel">Mezo · a napodról</span>
+    <section className="dayev-revcard rise" style={{ '--d': `${delayMs}ms` } as CSSProperties}>
+      <div className="dayev-revhead">
+        <ClaySpot name="s-orb" size={28} className="dayev-orbb" />
+        <span className="mz-eyebrow dayev-revlabel">Mezo · a napodról</span>
       </div>
-      {narrative.map((p, i) => <p key={i} className="dev-prose">{p}</p>)}
+      {narrative.map((p) => <p key={p} className="dayev-prose">{p}</p>)}
       {highlights.length > 0 && (
-        <div className="dev-hlrow">
+        <div className="dayev-hlrow">
           {[...highlights]
             .sort((a, b) => HIGHLIGHT_ORDER.indexOf(a.kind) - HIGHLIGHT_ORDER.indexOf(b.kind))
-            .map((h, i) => (
-              <span key={i} className={`dev-hlch is-${h.kind}`}>
+            .map((h) => (
+              <span key={`${h.kind}·${h.label}`} className={`dayev-hlch is-${h.kind}`}>
                 <em>{HIGHLIGHT_EYEBROW[h.kind]}</em>
                 <span>{h.label}</span>
               </span>
@@ -58,7 +58,7 @@ export function DayReviewCard({ evaluation, delayMs, children }: {
         </div>
       )}
       {adjustment && (
-        <div className="dev-adj">
+        <div className="dayev-adj">
           <b>{fmtDelta(adjustment.delta)}</b>
           <span>{adjustment.reason}</span>
         </div>
