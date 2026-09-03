@@ -59,10 +59,13 @@ test.each([
   expect(labels).toEqual(['Kalauz ehhez az oldalhoz', ...BASE_CONTROLS])
 })
 
-// A kalauz nélküli route-on nincs „?" — a négy alap-kontroll marad.
+// A kalauz nélküli route-on nincs „?" — a négy alap-kontroll marad. A fixture S3a óta
+// (mezo-gb1s.5: minden Nap/Edzés T2 aloldal kalauzos) egy T3-váró heti alnézet; az S4
+// (mezo-gb1s.9) ezt is kalauzossá teszi majd — akkor a fixture-t újra költöztetni
+// (vagy a tesztet kivezetni: chrome-os, kalauz nélküli route nem marad).
 test('a kalauz nélküli aloldal fejlécén nincs „?" gomb', () => {
-  expect(findKalauz('/nap/rutin')).toBeNull()
-  const { container } = renderAt('/nap/rutin')
+  expect(findKalauz('/me/week/napok')).toBeNull()
+  const { container } = renderAt('/me/week/napok')
   const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
   expect(labels).toEqual(BASE_CONTROLS)
 })

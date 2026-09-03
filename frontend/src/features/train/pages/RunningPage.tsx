@@ -132,7 +132,7 @@ export function RunningPage() {
           {/* Same `.segtabs` control Sport uses (mezo-setx.6.5): the selected segment
               speaks PRIMARY, because ADR 0018 D5 keeps the run sky in the data-viz
               band and off buttons. */}
-          <div className="segtabs rise" style={{ '--d': '60ms', marginTop: 12 } as React.CSSProperties}>
+          <div className="segtabs rise" data-kalauz-anchor="futas-tabs" style={{ '--d': '60ms', marginTop: 12 } as React.CSSProperties}>
             {SUB_VIEWS.map((v) => (
               <button
                 key={v.id}

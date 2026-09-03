@@ -8,7 +8,7 @@
 // nem találgatásból — ugyanaz az idióma, mint `me/logic/sleepEducation.ts`.
 // ============================================================
 
-export type FogalomKey = 'napszak' | 'mezociklus' | 'makro' | 'minta' | 'szint'
+export type FogalomKey = 'napszak' | 'mezociklus' | 'makro' | 'minta' | 'szint' | 'eletjel' | 'rir'
 
 export interface Fogalom {
   /** A fogalom neve — Fraunces-dőlt fejként renderel a fogalom-dobozban. */
@@ -41,6 +41,19 @@ export const FOGALMAK: Record<FogalomKey, Fogalom> = {
   minta: {
     term: 'minta',
     def: 'Egy ismétlődő összefüggés a saját adataidban, amit Mezo vesz észre — például „kevés alvás után több szénhidrát".',
+  },
+  // Forrás: features/today/logic/needs.ts (hat NeedKey) + EletjelPage.tsx VITAL_TILE
+  // (a csempe-nyelv nevei: Étel, Víz, Alvás, Mozgás, Kapcsolat, Rend) — a definíció a
+  // hat gyűrű felsorolása a csempék szavaival, nem a belső kulcsokkal.
+  eletjel: {
+    term: 'Életjel',
+    def: 'Hat alapszükséglet — étel, víz, alvás, mozgás, kapcsolat, rend — egy-egy gyűrűn; együtt mutatják, hogy vagy éppen.',
+  },
+  // Forrás: docs/features/train.md (RIR-alapú szett-logolás); a SetStepper RIR-mezője.
+  // Szándékosan példával: a laikusnak a rövidítés önmagában semmit nem mond.
+  rir: {
+    term: 'RIR',
+    def: 'Reps in Reserve — hány ismétlés maradt még a tartalékban a sorozat végén: a 2 RIR annyit tesz, kettő még belefért volna.',
   },
   // Forrás: docs/features/growth.md + ADR 0010 (XP = visszajelzés, nem fizetség).
   // A „semmit nem nyit meg" tagmondat az ADR betartatása copy-szinten.

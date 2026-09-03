@@ -54,3 +54,40 @@ test('/me — a me-idhero anchor jelen van', () => {
   renderAt('/me')
   expect(hasAnchor('me-idhero')).not.toBeNull()
 })
+
+// ── S3a (mezo-gb1s.5): a Nap + Edzés T2 aloldalak horgonyai ──────────────────
+// Adat-függő felületek (react-query mock-fetch) — a horgony az első paint után,
+// a betöltött ágban jelenik meg, ezért itt waitFor jár. A spotlight-gomb ugyanígy
+// későn olvassa a DOM-ot (a kártya renderelésekor), tehát a szerződés őszinte.
+// A /nap/kuldetesek és a /train/review szándékosan horgony nélkül él: a beszélő
+// felületük adat-feltételes (kisorsolt küldetés / lezárt edzés), a „Mutasd meg"
+// némán degradál.
+import { waitFor } from '@testing-library/react'
+
+test.each([
+  ['/nap/uzenetek', 'uzenetek-tabs'],
+  ['/nap/rutin', 'rutin-lista'],
+  ['/nap/checkin', 'checkin-sor'],
+  ['/nap/eletjel', 'eletjel-gyuru'],
+  ['/train/mai', 'mai-napsav'],
+  ['/train/week', 'heti-napok'],
+  ['/train/sport', 'sport-tabs'],
+  ['/train/futas', 'futas-tabs'],
+  ['/train/exercises', 'exercises-kereso'],
+  ['/train/medals', 'medals-hero'],
+  ['/train/mesocycles', 'mesociklus-mosaic'],
+  ['/train/session', 'session-start'],
+])('%s — a(z) %s anchor jelen van', async (path, name) => {
+  renderAt(path)
+  await waitFor(() => expect(hasAnchor(name)).not.toBeNull())
+})
+
+// D11 (epic-spec §2): az aktív edzés oldala chrome-mentes (AppLayout hideChrome),
+// tehát a fejléc „?" gombja itt nem létezik — a prep-fázis saját mini ?-e nyitja
+// újra a kalauzt. Auto-open először, mini ? utána: mindkét út él.
+test('/train/session — a prep-fázisban van mini ? gomb', async () => {
+  renderAt('/train/session')
+  await waitFor(() =>
+    expect(document.querySelector('[aria-label="Kalauz ehhez az oldalhoz"]')).not.toBeNull(),
+  )
+})
