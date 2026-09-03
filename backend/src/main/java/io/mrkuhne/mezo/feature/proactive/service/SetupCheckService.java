@@ -51,6 +51,7 @@ public class SetupCheckService {
     private final SleepGoalRepository sleepGoalRepository;
     private final CompanionMessageRepository companionMessageRepository;
     private final SetupCheckProperties properties;
+    private final PlanFeasibilityCalculator planFeasibilityCalculator;
 
     /** The first check that fires for {@code userId} today, or empty when the setup is sound. */
     @Transactional
@@ -66,7 +67,21 @@ public class SetupCheckService {
         if (sleepGoalRepository.findByCreatedByAndDeletedFalse(userId).isEmpty()) {
             return emit(userId, today, CHECK_MISSING_SLEEP_GOAL, MISSING_SLEEP_GOAL_TEXT);
         }
-        return Optional.empty();
+        return planFeasibilityCalculator.evaluate(userId, today)
+            .filter(verdict -> !verdict.feasible())
+            .flatMap(verdict -> emit(userId, today, CHECK_PLAN_FEASIBILITY, feasibilityText(verdict)));
+    }
+
+    /** Config-free prose from the verdict's own numbers: lights-out, what actually binds, the
+     *  misfit, and the spec's two levers (a later wake target, or shorter/fewer evening sessions). */
+    private String feasibilityText(PlanFeasibilityCalculator.Verdict verdict) {
+        String culprit = PlanFeasibilityCalculator.SOURCE_BEDTIME.equals(verdict.constraintSource())
+            ? "a mért lefekvésed"
+            : "az esti sportod";
+        return ("A terved nem fér bele a hetedbe: %s-kor kellene lekapcsolnod a villanyt, de %s "
+            + "%d perccel ez után tolja ki a lefekvést (%s helyett). Vagy tolod a reggeli "
+            + "ébresztőt később, vagy rövidíted/ritkítod az esti edzéseket, hogy beleférj.")
+            .formatted(verdict.requiredLightsOut(), culprit, verdict.misfitMin(), verdict.latestConstraint());
     }
 
     /** Writes the card unless this same check already spoke inside the re-emit window. */

@@ -917,12 +917,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`,
     `FeedMessageKindService`, `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `InterventionEventListener`,
     `InterventionService`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`,
-    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PredictionGenerator`,
-    `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`,
-    `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`,
-    `SetupCheckJob`, `SetupCheckService`, `WeekReviewSourceAdapter`, `WeeklyLessonService`,
-    `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`,
-    `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
+    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`,
+    `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`,
+    `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`,
+    `ProactiveWeeklySuggestionService`, `SetupCheckJob`, `SetupCheckService`, `WeekReviewSourceAdapter`,
+    `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`,
+    `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`,
+    `WeeklySuggestionJob`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
   - **config:** `DiagnosisProperties`, `ProactiveProperties`, `SetupCheckProperties`
@@ -939,7 +940,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/proactive/challenge · POST /api/proactive/challenge/{id}/decision ·
     GET /api/proactive/weekly-review/{start} · POST /api/proactive/weekly-review/{start}/regenerate ·
     GET /api/proactive/weekly-review/{start}/lessons · GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 56 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 57 IT + 1 unit
   - **ITs:** `ChallengeGeneratorIT`, `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`,
     `ChallengePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
     `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`,
@@ -948,10 +949,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`, `FatigueEvidenceCollectorIT`,
     `GrowthDigestBlockIT`, `HighlightCitationIT`, `InterventionConfigIT`, `InterventionServiceIT`,
     `InterventionSwitchOffIT`, `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`,
-    `MemoirPersistenceIT`, `OverloadChallengeGeneratorIT`, `PredictionGeneratorIT`, `PredictionJobIT`,
-    `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiChallengeIT`,
-    `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`, `ProactiveApiIT`,
-    `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
+    `MemoirPersistenceIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`,
+    `PredictionJobIT`, `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`,
+    `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
+    `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
     `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`, `SetupCheckServiceIT`, `SleepDiagnosisIT`,
     `WeeklyLessonServiceIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`,
     `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionPersistenceIT`
