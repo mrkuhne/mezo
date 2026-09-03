@@ -82,6 +82,13 @@ describe('useLlmUsageBreakdown (mock mode)', () => {
     expect(models.find((m) => m.key == null))
       .toEqual({ key: null, callCount: totals.errorCount, costUsd: null })
   })
+
+  it('keeps byUser reconcilable too: the per-account groups sum to the totals, background is the null group', () => {
+    const { totals, byUser } = LLM_BREAKDOWN_MOCK
+    expect(byUser.reduce((n, g) => n + g.callCount, 0)).toBe(totals.callCount)
+    expect(byUser.reduce((n, g) => n + (g.costUsd ?? 0), 0)).toBeCloseTo(totals.costUsd ?? 0, 6)
+    expect(byUser.find((g) => g.userId == null)?.name).toBeNull()
+  })
 })
 
 describe('useLlmUsageBreakdown (real mode)', () => {
@@ -95,6 +102,7 @@ describe('useLlmUsageBreakdown (real mode)', () => {
           totals: { callCount: 3, successCount: 3, errorCount: 0, cancelledCount: 0, unpricedCount: 1, costUsd: 0.5, currency: 'USD' },
           features: [{ key: 'companion_chat', callCount: 3, costUsd: 0.5 }],
           models: [{ key: 'gemini-2.5-flash', callCount: 3, costUsd: 0.5 }],
+          byUser: [],
         }),
       ),
     )
@@ -150,6 +158,12 @@ describe('useLlmCalls (mock mode)', () => {
     expect(exact.result.current.data.items).toHaveLength(7)
     expect(exact.result.current.data.hasMore).toBe(false)
   })
+
+  it('narrows to one account on userId, like the server does', () => {
+    const anna = renderHook(() => useLlmCalls('DAY', { userId: '00000000-0000-4000-8000-000000000002' }, 50), { wrapper: makeHookWrapper() })
+    expect(anna.result.current.data.items.length).toBeGreaterThan(0)
+    expect(anna.result.current.data.items.every((i) => i.createdBy === '00000000-0000-4000-8000-000000000002')).toBe(true)
+  })
 })
 
 describe('useLlmCalls (real mode)', () => {
@@ -171,7 +185,7 @@ describe('useLlmCalls (real mode)', () => {
     )
 
     const { result } = renderHook(
-      () => useLlmCalls('WEEK', { feature: 'meal_coach', status: 'ERROR' }, 100),
+      () => useLlmCalls('WEEK', { feature: 'meal_coach', status: 'ERROR', userId: 'u-1' }, 100),
       { wrapper: makeHookWrapper() },
     )
 
@@ -180,6 +194,7 @@ describe('useLlmCalls (real mode)', () => {
     expect(seen).toContain('feature=meal_coach')
     expect(seen).toContain('status=ERROR')
     expect(seen).toContain('limit=100')
+    expect(seen).toContain('userId=u-1')
   })
 })
 
