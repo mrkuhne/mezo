@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
+import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepTargetPort;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
@@ -56,6 +57,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GoalEngineService {
 
     private static final String PLAN_MESOCYCLE = "mesocycle";
+    private static final String STATUS_ACTIVE = "active";
 
     private final GoalRepository goalRepository;
     private final GoalPlanLinkRepository linkRepository;
@@ -68,6 +70,7 @@ public class GoalEngineService {
     private final GoalEvaluationService evaluationService;
     private final WeeklyScheduledActivityService weeklyActivity;
     private final DietPreferencesPort dietPreferences;
+    private final SleepTargetPort sleepTargetPort;
 
     /**
      * Evaluate a goal: assemble + persist its segmented prescription (and TDEE bootstrap).
@@ -103,12 +106,28 @@ public class GoalEngineService {
 
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         List<ProjectionSegment> segments = projectionService.project(goal, userId, bootstrap, trend);
+        BigDecimal sleepTargetH = sleepTargetPort.targetHours(userId);
 
         GoalPrescriptionJson rx = evaluationService.assemble(
             goal, currentWeightKg, profile.getBodyFatPct(), segments, guards,
-            dietPreferences.resolve(userId));
+            dietPreferences.resolve(userId), sleepTargetH);
         goal.setPrescription(rx);
         return rx;
+    }
+
+    /**
+     * Recompute the owner's single ACTIVE goal (if any) — graceful no-op when none is active.
+     * The shared body of every "an engine input moved" trigger (weigh-in, profile, schedule edits);
+     * extracted from WeightLogService so the trigger set can grow without copy-paste (mezo-3g5w).
+     */
+    @Transactional
+    public void recomputeActiveGoal(UUID userId) {
+        List<GoalEntity> active =
+            goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE);
+        if (active.isEmpty()) {
+            return;
+        }
+        evaluate(userId, active.get(0).getId());
     }
 
     /** The goal's linked mesocycle planIds — the muscle-volume guard scope (Task 7). */

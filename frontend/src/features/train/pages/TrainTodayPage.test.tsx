@@ -299,18 +299,17 @@ test('real mode renders the today card and agenda from the active meso + /today'
   renderView()
   expect(await screen.findByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  // Hand-computed duration (sessionLength.ts estimateSessionMinutes), never call the
-  // estimator here — single exercise: type=compound, workingSets=4, warmupSets=2,
-  // repMin=8, repMax=10.
-  //   avgReps = (8 + 10) / 2 = 9
-  //   repSec = 3.5 (compound is not plyo)
-  //   workingSeconds = workingSets * avgReps * repSec = 4 * 9 * 3.5 = 126
-  //   restSeconds = (workingSets - 1) * restSecondsFor('compound' = 150) = 3 * 150 = 450
-  //   warmupSeconds = warmupSets * (warmupSetSeconds 20 + warmupRestSeconds 45) = 2 * 65 = 130
-  //   transitionSeconds = 90
-  //   total = 126 + 450 + 130 + 90 = 796 seconds
-  //   minutes = Math.round(796 / 60) + warmupBlockMinutes(8) = Math.round(13.2667) + 8 = 13 + 8 = 21
-  expect(screen.getByText('~21 perc')).toBeInTheDocument()
+  // Hand-computed duration (sessionLength.ts estimateSessionMinutes) using the CALIBRATED
+  // path — real mode resolves GET /api/train/timing-profile (default MSW handler, the same
+  // static-seed values as the mock: 480/180/125/240) — never call the estimator here.
+  // Single exercise: type=compound, workingSets=4, warmupSets=2.
+  //   sets = workingSets + warmupSets = 6
+  //   setCycles = max(0, sets - 1) * setCycleCompoundSeconds = 5 * 180 = 900
+  //   transitions = max(0, exerciseCount - 1) * transitionSeconds = 0 (one exercise)
+  //   total = leadInSeconds(480) + 900 + 0 = 1380 seconds = 23 minutes
+  // The workoutMinutes render is gated on the profile query settling (no flash from static
+  // to calibrated), so this must be awaited rather than asserted synchronously.
+  expect(await screen.findByText('~23 perc')).toBeInTheDocument()
 })
 
 test('real mode shows the rest-day note when /today is empty but a meso is active', async () => {

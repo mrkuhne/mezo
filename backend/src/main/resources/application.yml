@@ -184,6 +184,11 @@ mezo:
     # additionally needs the companion switch (CompanionLlm port).
     meso-review:
       enabled: true
+    # Learned workout-timing profile (mezo-dzbm) — off -> no profile is ever written and
+    # GET /api/train/timing-profile returns the static config seeds unchanged. Measurement
+    # (slice 1, mezo.train.timing) is independent and keeps running either way.
+    timing-profile:
+      enabled: true
     # Meso plan generator AI half (mesocycle wizard redesign) — Gemini exercise pick inside the
     # deterministic frames; needs the companion switch too. Off -> deterministic filler, llmUsed=false.
     meso-plan-ai:
@@ -311,6 +316,12 @@ mezo:
     # Emberek (mezo-06o0) — automata mention-detektálás a narratív forrásokból (név+alias match).
     # Off ⇒ nincs detektáló listener; a kézi people CRUD + chip-log felület változatlanul él.
     people:
+      enabled: true
+    # Életcél-rendszer (mezo-iizd) — off ⇒ the /api/life-goals surface 404s and no lifegoal beans exist.
+    lifegoal:
+      enabled: true
+    # AI pillar proposal (propose-only): off ⇒ POST /api/life-goals/propose answers from the rule template.
+    lifegoal-ai-propose:
       enabled: true
   techcore:
     cron:
@@ -1121,6 +1132,9 @@ mezo:
       # how many suggestions the Task 2 adapter asks the model for / returns (HabitAiService's
       # own sanitize step is a defensive bounds check, not a count clamp).
       max-suggestions: 5
+    lifegoal-propose:
+      # AI life-goal proposer (mezo-iizd) — smart-model, propose-only; max pillars per proposal.
+      max-pillars: 5
     transcription:
       # Chat voice input (mezo-at8x.4) — kept under the 6 MB container multipart cap so the
       # SERVICE check in TranscriptionService is the effective, message-bearing limit.
@@ -1412,6 +1426,9 @@ mezo:
     green-threshold: 60
     per-ring-xp: 5
     all-green-bonus-xp: 30
+  # Binds feature/lifegoal/config/LifeGoalProperties (mezo-iizd) — pillar cap per goal.
+  lifegoal:
+    max-pillars: 5
   # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
   # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.
   # The dummy default keeps the context bootable with the notification feature switched off.
@@ -1553,6 +1570,24 @@ mezo:
       sport: 4.5
       run: 9.5
       default-kind: 5.0
+    # Workout-timing tuning (mezo-1jm8) — measurement clips + profile-learner seeds.
+    # Binds onto TimingProperties.
+    timing:
+      gap-cap-seconds: 300
+      lead-in-cap-seconds: 900
+      max-clipped-ratio: 0.25
+      alpha: 0.125
+      beta: 0.25
+      outlier-k: 4
+      min-samples: 3
+      # RFC 6298 granularity floor (RTO = SRTT + max(G, K*RTTVAR)): without it, a very consistent
+      # user's deviation converges toward 0 and the outlier gate rejects every future observation,
+      # freezing the estimate permanently and silently once min-samples is reached (mezo-dzbm).
+      min-deviation-seconds: 20
+      seed-set-cycle-compound: 180
+      seed-set-cycle-isolation: 125
+      seed-transition: 240
+      seed-lead-in: 480
   # Fix zárás — closing exercises ensured on every gym day of the active meso; slug references
   # master exercise-catalog rows (content/exercise-catalog.json). Dead-hang reps are SECONDS
   # (plyo type -> weightless, reps-only logging on the FE).

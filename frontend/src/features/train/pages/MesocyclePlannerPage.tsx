@@ -18,7 +18,7 @@
 // ============================================================
 import { useReducer, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMesoPlanGenerate, useMesoTemplates } from '@/data/hooks'
+import { useMesoPlanGenerate, useMesoTemplates, useTimingProfile } from '@/data/hooks'
 import type { ExerciseLibraryItem, MesoDay } from '@/data/types'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
@@ -47,6 +47,11 @@ export function MesocyclePlannerPage() {
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [pickerDay, setPickerDay] = useState<string | null>(null)
+  // Calibrated pacing (Task 12, mezo-dzbm) for the MesoEditor hero below — called here
+  // (before the early "still generating" return, since hooks must run unconditionally)
+  // rather than inside MesoEditor itself: components/ stay presentational, pages/ own data
+  // fetching (frontend_conventions.md).
+  const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
 
   const runGenerate = async (from: WizardState) => {
     setFailed(false)
@@ -101,6 +106,8 @@ export function MesocyclePlannerPage() {
           program={state.program}
           priorities={state.priorities}
           volumePerMuscle={state.proposal?.template.volumePerMuscle ?? null}
+          timingProfile={timingProfile}
+          timingProfilePending={timingProfilePending}
           onBack={() => dispatch({ type: 'openDay', day: null })}
           onChange={(next) => editProgram(state.program.map((d) => (d.day === next.day ? next : d)))}
           onAdd={() => setPickerDay(activeDay.day)}

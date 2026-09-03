@@ -43,6 +43,7 @@ public class ResetDatabase {
                 + "meso_template, mesocycle_report, "
                 + "gym_schedule_slot, sport_schedule_slot, sport_event, sport_session, run_session_log, running_block, "
                 + "skill_progress, level_up_event, perk_unlock, "
+                + "life_goal_pillar_day, life_goal_pillar, life_goal, "
                 + "goal_plan_link, goal, biometric_profile, "
                 + "character_run, character_portrait_revision, character_conference, character_observation, character_claim, character_dimension, "
                 + "mention, person CASCADE").executeUpdate();

@@ -40,4 +40,5 @@ inputs:
   - inputFile: ../feature/character/character.yml
   - inputFile: ../feature/diagnosis/diagnosis.yml
   - inputFile: ../feature/admin/admin.yml
+  - inputFile: ../feature/lifegoal/lifegoal.yml
 output: ../openapi.yml

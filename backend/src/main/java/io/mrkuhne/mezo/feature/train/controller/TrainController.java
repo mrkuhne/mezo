@@ -38,6 +38,8 @@ import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
+import io.mrkuhne.mezo.api.dto.TimingProfileResponse;
+import io.mrkuhne.mezo.api.dto.TimingProfileSamples;
 import io.mrkuhne.mezo.api.dto.WorkoutDetailResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
@@ -46,6 +48,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutSkipRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
+import io.mrkuhne.mezo.feature.train.service.EwmaEstimator;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
@@ -55,12 +58,16 @@ import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.MesocycleReportService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
+import io.mrkuhne.mezo.feature.train.service.TimingObservationExtractor;
+import io.mrkuhne.mezo.feature.train.service.TimingProfileService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.VolumeArcService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
@@ -83,6 +90,7 @@ public class TrainController implements TrainApi {
     private final VolumeArcService volumeArcService;
     private final CurrentUserId currentUserId;
     private final MesoPlanGeneratorService mesoPlanGeneratorService;
+    private final TimingProfileService timingProfileService;
 
     @Override
     public List<MesocycleResponse> listMesocycles() {
@@ -369,5 +377,26 @@ public class TrainController implements TrainApi {
     @Override
     public RunSessionLogResponse logRunSession(RunSessionLogRequest runSessionLogRequest) {
         return runningService.logSession(currentUserId.get(), runSessionLogRequest);
+    }
+
+    @Override
+    public TimingProfileResponse getTimingProfile() {
+        Map<String, EwmaEstimator.Estimate> profile = timingProfileService.read(currentUserId.get());
+        EwmaEstimator.Estimate setCycleCompound = profile.get(TimingObservationExtractor.SET_CYCLE_COMPOUND);
+        EwmaEstimator.Estimate setCycleIsolation = profile.get(TimingObservationExtractor.SET_CYCLE_ISOLATION);
+        EwmaEstimator.Estimate transition = profile.get(TimingObservationExtractor.TRANSITION);
+        EwmaEstimator.Estimate leadIn = profile.get(TimingObservationExtractor.LEAD_IN);
+        return TimingProfileResponse.builder()
+            .leadInSeconds(BigDecimal.valueOf(leadIn.value()))
+            .setCycleCompoundSeconds(BigDecimal.valueOf(setCycleCompound.value()))
+            .setCycleIsolationSeconds(BigDecimal.valueOf(setCycleIsolation.value()))
+            .transitionSeconds(BigDecimal.valueOf(transition.value()))
+            .samples(TimingProfileSamples.builder()
+                .leadIn(leadIn.samples())
+                .setCycleCompound(setCycleCompound.samples())
+                .setCycleIsolation(setCycleIsolation.samples())
+                .transition(transition.samples())
+                .build())
+            .build();
     }
 }
