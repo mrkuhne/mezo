@@ -48,6 +48,18 @@ bd close <id>         # Complete work
 4. Hand off: short context for the next session
 <!-- END BEADS INTEGRATION -->
 
+## Design direction (MANDATORY for any UI design/mockup work)
+
+Every UI design, mockup, and prototype MUST follow the **design 2.0 / "Mozaik 2.0"** visual
+language (`docs/design_2.0/` — handoff doc + `prototypes/`): the living, breathing, colorful
+Huawei-Health-inspired direction. That means: tile mosaic with domain-color washes,
+poster-anatomy cards (eyebrow + spot graphic + one big numeral), data drawn as graphics
+(rings, gauges, sparklines), clay 3D SVG icons (NEVER emojis), two-layer colored shadows,
+one-shot entrance choreography, tile → full-page Huawei slide-in pattern. Do NOT produce
+flat/minimal/list-style designs. Start from the existing prototypes in
+`docs/design_2.0/prototypes/` and the shared `mozaik`/`clay` UI kit
+(`frontend/src/shared/ui/mozaik`, `frontend/src/shared/ui/clay`) rather than inventing a look.
+
 ## Claude-specific notes
 
 - Superpowers process skills (brainstorming → writing-plans → executing-plans, TDD,

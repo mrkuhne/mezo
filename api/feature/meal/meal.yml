@@ -207,6 +207,10 @@ components:
         micros: { type: array, nullable: true, items: { $ref: '#/components/schemas/MealMicroRow' } }
         nova: { allOf: [ { $ref: '#/components/schemas/MealNovaDetail' } ], nullable: true }
         context: { type: array, nullable: true, items: { $ref: '#/components/schemas/MealContextRow' } }
+        note:
+          type: string
+          nullable: true
+          description: 1-2 mondatos AI-jegyzet ehhez a dimenzióhoz (meal-coach tölti; determinisztikusan null)
     MealMacroDetail:
       type: object
       required: [ratioP, ratioC, ratioF, targetP, targetC, targetF, kcalShareOfDay]
@@ -269,6 +273,11 @@ components:
         tagline: { type: string, nullable: true }
         summary: { type: string, nullable: true }
         improve: { type: array, items: { $ref: '#/components/schemas/MealImproveRow' } }
+        dimensionNotes:
+          type: object
+          nullable: true
+          additionalProperties: { type: string }
+          description: dim-id → 1-2 mondat; a breakdown dimension.note tükre a frissen generált verdictben
     MealImproveRow:
       type: object
       required: [text, impact]

@@ -73,12 +73,14 @@ public class MemoryObservatoryService {
         LocalDate to = LocalDate.now().minusDays(1);
         LocalDate from = to.minusDays(patterns.lookbackDays() - 1L);
 
-        // L0 — a minta-ablak napjai, amelyeken BÁRMELY metrika ad adatot (kulcs-unió). A WEEKEND
-        // naptári metrika kimarad: minden napra szintetikus 0/1 értéket ad (MetricSeriesService#weekend),
-        // sosem hiányzik, így egy valódi-adat uniójába keverve mindig a teljes ablakot mutatná.
+        // L0 — a minta-ablak napjai, amelyeken BÁRMELY metrika ad adatot (kulcs-unió). A WEEKEND és a
+        // COMBINED_LOAD_MIN naptári metrikák kimaradnak: mindketten minden napra adnak értéket
+        // (MetricSeriesService#weekend, illetve #combinedLoad a nem-logolt napokra 0.0-t ír), sosem
+        // hiányoznak — ez a naptár bizonyítéka, nem azé, hogy a user bármit is logolt. Egy valódi-adat
+        // uniójába keverve mindig a teljes ablakot mutatnák.
         Set<LocalDate> daysWithData = new HashSet<>();
         for (MetricKey metric : MetricKey.values()) {
-            if (metric == MetricKey.WEEKEND) {
+            if (metric == MetricKey.WEEKEND || metric == MetricKey.COMBINED_LOAD_MIN) {
                 continue;
             }
             daysWithData.addAll(PatternGate.window(

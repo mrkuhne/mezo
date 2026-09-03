@@ -34,7 +34,9 @@ public record MealBreakdownJson(
      * One weighted dimension; exactly one of {@code macro}/{@code micros}/{@code nova}/
      * {@code context} is populated, matching {@code id}. A dimension with zero input coverage
      * degrades honestly: {@code weight 0, score 0} + a "nincs adat" detail (the total
-     * renormalizes over the remaining weights).
+     * renormalizes over the remaining weights). {@code note} is a 1-2 sentence AI prose socket
+     * (mezo-jcpt) — the deterministic scorer always writes it {@code null}; the meal-coach layer
+     * fills it lazily, mirroring {@code MealCoachVerdict.dimensionNotes}.
      */
     public record Dimension(
         String id,
@@ -45,15 +47,21 @@ public record MealBreakdownJson(
         MacroDetail macro,
         List<MicroRow> micros,
         NovaDetail nova,
-        List<ContextRow> context
+        List<ContextRow> context,
+        String note
     ) {
     }
 
-    /** Meal P/C/F kcal-shares vs the config target shares; {@code notes} is P8 prose (null in v0). */
+    /**
+     * Meal P/C/F kcal-shares vs the config target shares.
+     *
+     * @param notes @deprecated superseded by the dim-level {@link Dimension#note} (mezo-jcpt);
+     *     nobody reads it — kept only so existing stored envelopes still deserialize.
+     */
     public record MacroDetail(
         BigDecimal ratioP, BigDecimal ratioC, BigDecimal ratioF,
         String targetP, String targetC, String targetF,
-        BigDecimal kcalShareOfDay, String notes
+        BigDecimal kcalShareOfDay, @Deprecated String notes
     ) {
     }
 

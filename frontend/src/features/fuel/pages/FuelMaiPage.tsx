@@ -43,6 +43,7 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { KeretHero } from '@/features/fuel/components/KeretHero'
+import { DietSuggestionBanner } from '@/features/fuel/components/DietSuggestionBanner'
 import { FuelLogHeroTile } from '@/features/fuel/components/FuelLogHeroTile'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
@@ -122,6 +123,10 @@ export function FuelMaiPage() {
   return (
     <div className="fh-hub">
       <EntranceGroup className="mz-panel-stack">
+        {/* Diet-phase suggestion signal (slice 4) — a slim deep-link to the Cél page's
+            decision surface; renders nothing while there is no open suggestion. */}
+        <DietSuggestionBanner />
+
         <div className="fh-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <KeretHero
             vm={keretHeroVm}

@@ -105,6 +105,13 @@ mezo:
       fat-floor-g-per-kg: 0.5
     thermogenesis-haircut-kcal-per-day: 0   # default off; optional band 100–200
     bootstrap-uncertainty-kcal: 300
+    suggestion:
+      # goalPreset (FE-owned id) -> trajectory the diet should lean toward. Absent = neutral.
+      preset-trajectory:
+        cut-prep: cut
+        hypertrophy: bulk
+        erohipertrofia: bulk
+        recovery: maintain
   nutrition:
     # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
     # Binds onto NutritionTargetsProperties. Since mezo-najo kcal+p are only the FALLBACK —
@@ -1278,6 +1285,9 @@ mezo:
       # Protein-surplus side of the macro deviation: 0.0 = protein overshoot forgiven (fitness-app
       # policy, mezo-8ms6), 1.0 = old symmetric penalty. Protein DEFICIT always counts in full.
       macro-protein-surplus-penalty: 0.0
+      # A meal's ratio-deviation counts in full at/above this kcal-share of the day; below it the
+      # penalty scales down linearly (the "tiny snack can't tank the macro dim" fix, mezo-jcpt).
+      macro-significance-ref-share: 0.25
       micro:                      # fiber TARGET only since mezo-7797 (sugar/salt/satFat → who/fat-quality)
         fiber-g: 38
       who:                        # WHO guideline dimension

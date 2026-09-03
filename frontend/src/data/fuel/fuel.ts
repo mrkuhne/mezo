@@ -74,6 +74,7 @@ const m1Dimensions: MealDimension[] = [
     color: 'var(--cat-tendency)',
     detail:
       "5/5 összetevő NOVA 1–3. Túró az egyetlen NOVA 3 (kulturált tejtermék) — élelmiszerként ez nem 'ultra-processed'. Zéró additívum, zéró ipari rekonstrukció.",
+    note: 'A túró itt nem gyengeség — kulturált tejtermékként NOVA 3, de messze van az ultra-feldolgozott tartománytól.',
     nova: {
       dominant: 1,
       stack: [
@@ -240,6 +241,7 @@ const m2Dimensions: MealDimension[] = [
     color: 'var(--cat-preference)',
     detail:
       '13:30 · pre-workout T-3.5h — ablakon belül van, de a határán. Sweet spot 2–3h, és a Pull Day PR-attempt-en egy gyorsabb-emésztésű C-snack 16:00 körül így kötelező (whey+banán már be van időzítve).',
+    note: 'A T-3.5h a sweet spot szélén van — egy 16:00-s gyors C-snack biztosítja, hogy a PR-attempt-re ne fogyjon ki a glikogén.',
     context: [
       { label: 'Szerep', value: 'Pre-workout üzemanyag-ablak' },
       { label: 'Időzítés', value: 'Pre-workout · T-3.5h' },
@@ -247,6 +249,19 @@ const m2Dimensions: MealDimension[] = [
       { label: 'PR-attempt', value: 'Chest Row · 107.5kg' },
       { label: 'Glikémia', value: 'Mixed-release' },
     ],
+  },
+  // Degraded (weight 0 — zero input coverage, mezo-jcpt.1): no adag-adat for this meal, so the
+  // backend can't score portion-arány at all. Weight 0 contributes nothing to weightedScore()
+  // below, so this is a no-op on m2's Σ; it exists purely to give MOCK mode a real "Nincs adat"
+  // case for ScoreLedger (frontend/src/features/fuel/components/ScoreLedger.tsx) end-to-end,
+  // not just the ScoreLedger/DimensionCard unit tests' hand-built props.
+  {
+    id: 'portion',
+    label: 'Adag-arány',
+    weight: 0,
+    score: 0,
+    color: 'var(--coral-deep)',
+    detail: 'Nincs elég adag-adat ehhez az ételhez — a dimenzió nem számít bele a pontba.',
   },
 ]
 

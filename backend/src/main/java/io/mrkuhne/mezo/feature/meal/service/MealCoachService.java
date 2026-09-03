@@ -56,6 +56,7 @@ public class MealCoachService {
     /** Card-sized by construction — a longer cut is truncated rather than shown broken. */
     private static final int TAGLINE_MAX = 60;
     private static final int IMPROVE_MAX = 3;
+    private static final int NOTE_MAX = 240;
 
     private static final String SYSTEM_PROMPT = """
         Egy fitness-alkalmazás étkezés-coach rétege vagy: a felhasználó MÁR LOGOLT étkezéseiről
@@ -65,12 +66,17 @@ public class MealCoachService {
         keret az adott étkezés PILLANATÁBAN.
         Válaszolj EGY JSON objektummal és semmi mással:
         {"meals":[{"mealId":string,"tagline":string,"summary":string,
-                   "improve":[{"text":string,"impact":string}]}]}
+                   "improve":[{"text":string,"impact":string}],
+                   "dimensionNotes":{"<dim-id>":string}}]}
         Szabályok:
         - Magyarul, tegeződve, tömören.
         - tagline: LEGFELJEBB 60 karakter, kártyára való vágat (pl. "Remek pre-workout üzemanyag").
         - summary: 2-3 mondat — mire volt jó ez az étkezés EBBEN a helyzetben, a szerepét figyelembe véve.
         - improve: 0-3 konkrét javaslat; az impact rövid kvalitatív címke (pl. "+rost", "-NOVA4").
+        - dimensionNotes: a kapott dimenzió-id-khez (macro, micro, who, fat_quality, nova,
+          plant_diversity, energy_density, context) írj 1-2 mondatot — MINDIG az adott dimenzió
+          számaiból indulj ki, és ahol tudsz, köss át más adatra (edzés-szerep, napi keret állása,
+          a nap többi étkezése). A "Nincs adat" (weight 0) dimenziókhoz NE írj.
         - A megadott SZÁMOKNAK soha ne mondj ellent és ne találj ki újakat — magyarázod őket.
         - Minden étkezésnél CSAK a saját pillanatáig ismert napi állapotot vedd figyelembe;
           későbbi étkezésre ne utalj egy korábbi értékelésében.
@@ -84,7 +90,7 @@ public class MealCoachService {
     }
 
     record ExtractedVerdict(String mealId, String tagline, String summary,
-                            List<ExtractedImprove> improve) {
+                            List<ExtractedImprove> improve, Map<String, String> dimensionNotes) {
     }
 
     record ExtractedAnswer(List<ExtractedVerdict> meals) {
@@ -220,7 +226,7 @@ public class MealCoachService {
                     v.mealId());
                 continue;
             }
-            store.writeProse(userId, mealId, v.summary(), tagline(v.tagline()), improve(v))
+            store.writeProse(userId, mealId, v.summary(), tagline(v.tagline()), improve(v), notes(v))
                 .map(MealCoachService::toVerdict)
                 .ifPresent(out::add);
         }
@@ -252,6 +258,28 @@ public class MealCoachService {
             .toList();
     }
 
+    /**
+     * Null-safe, blank-filtered, 240-char-trimmed dim-id → note map. Ids the stored envelope
+     * doesn't recognize are dropped later, by {@link MealCoachStore#mergeDimensionNotes} — this
+     * method only cleans the values, it never knows which ids are valid.
+     */
+    static Map<String, String> notes(ExtractedVerdict v) {
+        if (v.dimensionNotes() == null) {
+            return Map.of();
+        }
+        Map<String, String> out = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : v.dimensionNotes().entrySet()) {
+            String raw = e.getValue();
+            if (e.getKey() == null || raw == null || raw.isBlank()) {
+                continue;
+            }
+            String trimmed = raw.trim();
+            out.put(e.getKey(), trimmed.length() <= NOTE_MAX
+                ? trimmed : trimmed.substring(0, NOTE_MAX));
+        }
+        return out;
+    }
+
     /** A meal counts as narrated once it carries prose — the summary is the required half. */
     private static boolean hasVerdict(LoadedMeal meal) {
         return meal.breakdown() != null && meal.breakdown().summary() != null
@@ -267,6 +295,21 @@ public class MealCoachService {
             .improve(b.improve() == null ? List.of() : b.improve().stream()
                 .map(i -> MealImproveRow.builder().text(i.text()).impact(i.impact()).build())
                 .toList())
+            .dimensionNotes(dimensionNotes(b))
             .build();
+    }
+
+    /** dim-id → note, mirroring the stored dimensions — the mirror {@link #notes} feeds. */
+    private static Map<String, String> dimensionNotes(MealBreakdownJson b) {
+        if (b.dimensions() == null) {
+            return Map.of();
+        }
+        Map<String, String> out = new LinkedHashMap<>();
+        for (MealBreakdownJson.Dimension d : b.dimensions()) {
+            if (d.note() != null && !d.note().isBlank()) {
+                out.put(d.id(), d.note());
+            }
+        }
+        return out;
     }
 }

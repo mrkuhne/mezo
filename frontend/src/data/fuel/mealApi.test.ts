@@ -55,7 +55,7 @@ describe('fromResponse', () => {
     expect(meal.mealItems[1]).toMatchObject({ source: 'pantry', refId: 'p-zab', amount: 70, unit: 'g' })
   })
 
-  it('maps a scored breakdown to the FE union: colors injected, degraded dimensions dropped (mezo-yta)', () => {
+  it('maps a scored breakdown to the FE union: colors injected, a degraded dim KEPT base-fields-only (mezo-jcpt.1)', () => {
     const scored = {
       ...mealResponse,
       score: {
@@ -68,7 +68,8 @@ describe('fromResponse', () => {
               macro: { ratioP: 27, ratioC: 47, ratioF: 26, targetP: '~27%', targetC: '~47%', targetF: '~26%', kcalShareOfDay: 27.1, notes: null },
               micros: null, nova: null, context: null,
             },
-            { // degraded micro: weight 0, no payload → must be DROPPED by the mapper
+            { // degraded micro: weight 0, no payload → since mezo-jcpt.1 this is KEPT
+              // (ScoreLedger's "Nincs adat" line needs it), not dropped
               id: 'micro', label: 'Rost & mikro', weight: 0, score: 0, detail: 'Nincs tápanyag-adat.',
               macro: null, micros: null, nova: null, context: null,
             },
@@ -97,15 +98,61 @@ describe('fromResponse', () => {
     expect(meal.score).toBe(0.87)
     expect(meal.breakdown).toBeDefined()
     expect(meal.breakdown!.summary).toBeNull()
-    expect(meal.breakdown!.dimensions.map(d => d.id)).toEqual(['macro', 'nova', 'context']) // degraded micro dropped
+    expect(meal.breakdown!.dimensions.map(d => d.id)).toEqual(['macro', 'micro', 'nova', 'context']) // degraded micro kept, in place
     expect(meal.breakdown!.dimensions[0]).toMatchObject({
       id: 'macro', color: 'var(--coral)',
       macroRatio: { p: 27, c: 47, f: 26 }, kcalShareOfDay: 27.1,
     })
-    const nova = meal.breakdown!.dimensions[1]
+    const micro = meal.breakdown!.dimensions[1]
+    expect(micro).toMatchObject({ id: 'micro', color: 'var(--cat-physiology)', weight: 0, score: 0, label: 'Rost & mikro' })
+    expect(micro).not.toHaveProperty('micros') // no per-kind payload — no panel to render from
+    const nova = meal.breakdown!.dimensions[2]
     expect(nova).toMatchObject({ id: 'nova', color: 'var(--cat-tendency)' })
-    expect(nova.id === 'nova' && nova.nova.items[1].warning).toBe(true)
+    expect(nova.id === 'nova' && 'nova' in nova && nova.nova.items[1].warning).toBe(true)
     expect(meal.breakdown!.tools[0]).toEqual({ type: 'compute', name: 'macroFit(config)' })
+  })
+
+  it('drops a MALFORMED dimension — weight > 0 with a missing payload is a backend bug, not degradation', () => {
+    const scored = {
+      ...mealResponse,
+      score: {
+        value: 0.5,
+        breakdown: {
+          value: 0.5, confidence: 0.5, summary: null,
+          dimensions: [
+            { // live (weight > 0) but its declared payload never arrived — malformed, still dropped
+              id: 'micro', label: 'Rost & mikro', weight: 0.1, score: 0.5, detail: 'x',
+              macro: null, micros: null, nova: null, context: null,
+            },
+          ],
+          improve: [], tools: [],
+        },
+      },
+    }
+
+    const meal = fromResponse(scored)
+
+    expect(meal.breakdown!.dimensions).toEqual([])
+  })
+
+  it('drops an UNKNOWN-id degraded dimension (id outside DIMENSION_COLOR — version skew, not a real dimension)', () => {
+    const scored = {
+      ...mealResponse,
+      score: {
+        value: 0,
+        breakdown: {
+          value: 0, confidence: 0, summary: null,
+          dimensions: [
+            { id: 'made_up_dim', label: 'x', weight: 0, score: 0, detail: 'x', macro: null, micros: null, nova: null, context: null },
+          ],
+          improve: [], tools: [],
+        },
+      },
+    }
+
+    const meal = fromResponse(scored)
+
+    expect(meal.breakdown!.dimensions).toEqual([])
   })
 })
 
@@ -145,7 +192,7 @@ describe('fromResponse — nutrients mapping (mezo-m6uv)', () => {
 })
 
 describe('fromBreakdown — 8-dimension envelope rows dimensions (mezo-7797)', () => {
-  it('maps a WHO rows dimension to a RowsDimension with the injected var(--sky) color; drops a degraded new-id dimension', () => {
+  it('maps a WHO rows dimension to a RowsDimension with the injected var(--sky) color; KEEPS a degraded new-id dimension (mezo-jcpt.1)', () => {
     const envelope = {
       value: 0.9, confidence: 0.9, summary: null,
       dimensions: [
@@ -154,7 +201,7 @@ describe('fromBreakdown — 8-dimension envelope rows dimensions (mezo-7797)', (
           macro: null, micros: null, nova: null,
           context: [{ label: 'Cukor', value: '6 E%' }],
         },
-        { // degraded new-id dimension: weight 0, empty context → must be DROPPED
+        { // degraded new-id dimension: weight 0, empty context — kept (base fields only, no panel)
           id: 'portion', label: 'Adag-arány', weight: 0, score: 0, detail: 'Nincs adag-adat.',
           macro: null, micros: null, nova: null, context: [],
         },
@@ -164,10 +211,13 @@ describe('fromBreakdown — 8-dimension envelope rows dimensions (mezo-7797)', (
 
     const b = fromBreakdown(envelope)
 
-    expect(b.dimensions.map(d => d.id)).toEqual(['who']) // degraded portion dropped
+    expect(b.dimensions.map(d => d.id)).toEqual(['who', 'portion']) // degraded portion kept, in place
     const who = b.dimensions[0]
     expect(who).toMatchObject({ id: 'who', color: 'var(--sky)', weight: 0.14, score: 0.9 })
-    expect(who.id === 'who' && who.context).toEqual([{ label: 'Cukor', value: '6 E%' }])
+    expect(who.id === 'who' && 'context' in who && who.context).toEqual([{ label: 'Cukor', value: '6 E%' }])
+    const portion = b.dimensions[1]
+    expect(portion).toMatchObject({ id: 'portion', color: 'var(--coral-deep)', weight: 0, score: 0, label: 'Adag-arány' })
+    expect(portion).not.toHaveProperty('context') // no per-kind payload — no panel to render from
   })
 
   it('injects each new dimension its constant color', () => {

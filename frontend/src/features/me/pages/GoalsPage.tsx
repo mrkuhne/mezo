@@ -5,11 +5,12 @@ import { Display } from '@/shared/ui/Display'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
-import { useGoal, useGoalActions, useWeight, useBiometricProfile } from '@/data/hooks'
+import { useGoal, useGoalActions, useGoalSuggestions, useSuggestionActions, useWeight, useBiometricProfile } from '@/data/hooks'
 import { huMonthDay } from '@/shared/lib/dates'
 import { hu1 } from '@/shared/lib/huNum'
 import { GoalTimeline } from '@/features/me/components/GoalTimeline'
 import { GoalRecept } from '@/features/me/components/GoalRecept'
+import { GoalSuggestionCard } from '@/features/me/components/GoalSuggestionCard'
 import { GoalPlanSlots } from '@/features/me/components/GoalPlanSlots'
 import { EditGoalSheet } from '@/features/me/sheets/EditGoalSheet'
 import { GoalGate } from '@/features/me/components/GoalGate'
@@ -27,10 +28,43 @@ export function GoalsPage() {
   const navigate = useNavigate()
   const { goal, goalResponse, timeline, goalId, pending } = useGoal()
   const { detachPlan, evaluate, evaluating } = useGoalActions()
+  // Diet-phase suggestions (slice 4) — the suggest+approve surface above the recept.
+  const { suggestions } = useGoalSuggestions(goalId)
+  const { accept, dismiss, pending: suggestionPending, invalidateSuggestions } = useSuggestionActions()
   const { weightTrends } = useWeight()
   const { isComplete: biometricComplete } = useBiometricProfile()
   const [sheet, setSheet] = useState<'goal' | null>(null)
   const [gateOpen, setGateOpen] = useState(false)
+  // The engine's accept re-evaluates the prescription snapshot-guarded (409 when the
+  // goal moved under the suggestion) — GoalsPage has no shared mutation-error toast idiom
+  // yet, so a one-line notice covers the stale case honestly instead of failing silently.
+  const [suggestionError, setSuggestionError] = useState<string | null>(null)
+
+  const acceptSuggestion = async (sid: string) => {
+    if (!goalId) return
+    setSuggestionError(null)
+    try {
+      await accept(goalId, sid)
+    } catch {
+      setSuggestionError('A javaslat elavult — frissítsd az oldalt.')
+      // A 409 here means the backend already superseded the suggestion server-side (mezo-ktg8
+      // final-review finding 1) — refetch so the now-superseded card clears without a manual
+      // page refresh, rather than lingering until the next unrelated invalidation.
+      invalidateSuggestions(goalId)
+    }
+  }
+  const dismissSuggestion = async (sid: string) => {
+    if (!goalId) return
+    setSuggestionError(null)
+    try {
+      await dismiss(goalId, sid)
+    } catch {
+      // Unlike accept, dismiss has no staleness branch server-side — a failure here is only ever
+      // a 404 (already decided) or a network error, so the message must not claim staleness
+      // (mezo-ktg8 final-review finding 4).
+      setSuggestionError('Nem sikerült — próbáld újra.')
+    }
+  }
 
   // Signed math so bulk still lands in 0..100; maintain (totalRange 0) hides the
   // track entirely — mirrors GoalMiniCard's exact contract (review fix, Task 5).
@@ -153,6 +187,26 @@ export function GoalsPage() {
             {/* Identity */}
             <p className="gc-quote">"{goal.identityFrame}"</p>
           </button>
+
+          {/* Diet-phase suggestion cards (slice 4) — the suggest+approve surface: the
+              engine proposed a trajectory flip or a deload maintenance week, rendered
+              above the recept so the owner decides before seeing the (stale) prescription. */}
+          {suggestions.length > 0 && (
+            <div className="rise" style={{ '--d': '80ms' } as React.CSSProperties}>
+              {suggestions.map(s => (
+                <GoalSuggestionCard
+                  key={s.id}
+                  suggestion={s}
+                  onAccept={() => acceptSuggestion(s.id)}
+                  onDismiss={() => dismissSuggestion(s.id)}
+                  pending={suggestionPending}
+                />
+              ))}
+              {suggestionError && (
+                <p className="text-secondary" style={{ fontSize: 10, margin: '0 0 8px' }}>{suggestionError}</p>
+              )}
+            </div>
+          )}
 
           {/* Recept — the G5 engine finale: the segmented prescription (kcal/
               protein/sleep/rest per block + projected rate + rationale), the
