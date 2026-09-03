@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -92,3 +92,63 @@ test('a signedOut event clears the query cache for every reason, not just manual
 
   expect(client.getQueryData(['someone', 'elses', 'meals'])).toBeUndefined()
 })
+
+const meFixture = { id: '1', email: 'a@b.c', name: 'A', role: 'USER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest' }
+
+// Review finding 1 (Task 10): useAuthActions().login already client.clear()s then seeds
+// ME_QUERY_KEY via setQueryData before LoginPage's onSuccess (= AuthGate.onAuthenticated) runs.
+// onAuthenticated used to make its OWN third /api/auth/me call regardless — a network blip on
+// THAT call rejected back into LoginPage.submit's catch and stranded an already-authenticated
+// user on the login form. Fixed by preferring the fresh, non-invalidated cache entry: the
+// second /api/auth/me call below (rigged to fail) must never actually be reached.
+test('a network blip on the post-login verification call does not strand the user on the login form', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  let meCalls = 0
+  server.use(http.get(`${API_BASE}/api/auth/me`, () => {
+    meCalls += 1
+    return meCalls === 1 ? HttpResponse.json(meFixture) : HttpResponse.error()
+  }))
+  renderGate()
+  await screen.findByRole('heading', { name: 'Bejelentkezés' })
+  await userEvent.type(screen.getByLabelText('E-mail'), 'a@b.c')
+  await userEvent.type(screen.getByLabelText('Jelszó'), 'password123')
+  await userEvent.click(screen.getByRole('button', { name: 'Belépés' }))
+  expect(await screen.findByText('APP')).toBeInTheDocument()
+})
+
+// Review finding 2 (Task 10): the boot loop's own `cancelled` flag knows nothing about a
+// sign-out arriving from the SEPARATE onSignedOut listener while `me()` is still in flight.
+// Without a shared "superseded" marker, the loop's in-flight response would overwrite the
+// signedOut phase the listener just set (and repopulate the cache it just cleared) once it
+// resolves — reverting a sign-out that raced the boot fetch.
+test('a signedOut event mid-boot is not reverted by the in-flight me() response', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  let resolveMe: (() => void) | undefined
+  server.use(http.get(`${API_BASE}/api/auth/me`, () => new Promise<Response>((resolve) => {
+    resolveMe = () => resolve(HttpResponse.json(meFixture) as unknown as Response)
+  })))
+  setToken('t')
+  renderGate()
+  await waitFor(() => expect(resolveMe).toBeDefined())
+
+  authEvents.emitSignedOut('expired')
+  resolveMe!()
+
+  expect(await screen.findByRole('heading', { name: 'Bejelentkezés' })).toBeInTheDocument()
+  expect(screen.queryByText('APP')).not.toBeInTheDocument()
+})
+
+// Review finding 4 (Task 10): coverage regression versus the old QueryProvider.test.tsx, which
+// clicked the degraded screen's Újra button and asserted the app recovered. Restored here
+// against AuthGate directly.
+test('the degraded screen recovers via Újra once the backend answers again', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  let up = false
+  server.use(http.get(`${API_BASE}/api/auth/me`, () => (up ? HttpResponse.json(meFixture) : HttpResponse.error())))
+  setToken('t')
+  renderGate()
+  const retry = await screen.findByRole('button', { name: 'Újra' }, { timeout: 8000 })
+  up = true
+  await userEvent.click(retry)
+  expect(await screen.findByText('APP')).toBeInTheDocument()
+}, 15000)
