@@ -20,6 +20,10 @@ import { useState } from 'react'
 import { Chip } from '@/shared/ui/Chip'
 import { Icon } from '@/shared/ui/Icon'
 import type { MesoTemplate } from '@/data/types'
+import { SPLIT_LABELS, isLegacyPlan } from '@/features/train/logic/mesoPlan'
+import { TIER_GROUPS, tierOf } from '@/features/train/logic/musclePriorities'
+import { BUDGET_GROUP_LABELS } from '@/features/train/logic/setBudget'
+import { isOffDay } from '@/features/train/logic/offDay'
 
 interface MesoTemplateCardProps {
   template: MesoTemplate
@@ -29,9 +33,21 @@ interface MesoTemplateCardProps {
   onDelete: () => void
 }
 
+const clampDays = (n: number) => Math.min(6, Math.max(2, n))
+
 export function MesoTemplateCard({ template, onEdit, onStart, onDuplicate, onDelete }: MesoTemplateCardProps) {
-  const splitHead = template.split?.split(' · ')[0]
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  // Training-day count via the shared off-day rule (rest/sport days don't count toward the
+  // split) — the chip reads the CURRENT band-model split label off that count, not the raw
+  // `template.split` free-text field (which can predate this vocabulary entirely).
+  const dayCount = template.days.filter((d) => !isOffDay(d)).length
+  const splitChip = dayCount > 0 ? `${dayCount} nap · ${SPLIT_LABELS[clampDays(dayCount)]}` : null
+  const starLabels = TIER_GROUPS
+    .filter((g) => tierOf(template.musclePriorities, g) === 'emphasize')
+    .map((g) => BUDGET_GROUP_LABELS[g] ?? g)
+  const weeksChip = template.weeks > 1 ? `${template.weeks - 1} + 1 deload` : null
+  const legacy = isLegacyPlan(template)
   return (
     <div className="card col" style={{ padding: 'var(--sp-4)', width: '100%' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -46,10 +62,23 @@ export function MesoTemplateCard({ template, onEdit, onStart, onDuplicate, onDel
           {template.goal}
         </span>
       ) : null}
-      <div className="row gap-sm mt-md">
-        <Chip>{template.weeks} hét</Chip>
-        {splitHead ? <Chip>{splitHead}</Chip> : null}
+      <div className="row gap-sm mt-md" style={{ flexWrap: 'wrap' }}>
+        {splitChip ? <Chip>{splitChip}</Chip> : null}
+        {starLabels.map((label) => (
+          <Chip key={label} style={{ color: 'var(--coral)' }}>{`★ ${label}`}</Chip>
+        ))}
+        {weeksChip ? <Chip>{weeksChip}</Chip> : null}
+        {legacy ? (
+          <Chip style={{ border: '1px dashed var(--border-subtle)', color: 'var(--text-tertiary)', background: 'transparent' }}>
+            régi modell
+          </Chip>
+        ) : null}
       </div>
+      {legacy ? (
+        <span className="text-tertiary" style={{ fontSize: 11, marginTop: 4 }}>
+          indításkor az új modellre konvertálódik
+        </span>
+      ) : null}
       <div className="row gap-sm mt-md">
         <button type="button" className="cta-ghost flex-1" onClick={onEdit}>
           <Icon name="pencil" size={14} /> Szerkesztés

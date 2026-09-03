@@ -135,8 +135,8 @@ describe('MesoEditor', () => {
     const bands = screen.getByRole('group', { name: 'Heti szetek · izmonként' })
     expect(within(bands).getByText('Hát')).toBeInTheDocument()
     expect(within(bands).getByText(/^13 →/)).toBeInTheDocument()
-    // the tab strip still shows only the edited day
-    expect(screen.getAllByRole('button', { name: /^(H|K|Cs) ·/ })).toHaveLength(1)
+    // a single edited day has no tab strip at all — a lone tab switches nothing (mezo-d20.15)
+    expect(screen.queryAllByRole('button', { name: /^(H|K|Cs) ·/ })).toHaveLength(0)
   })
 
   it('does not render the peak-week fit card when nothing projects out of band (mezo-3m5m, GD6)', () => {

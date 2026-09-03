@@ -79,9 +79,14 @@ export function StatStrip({ children, className }: { children: ReactNode; classN
   return <div className={cn('mz-statstrip', className)}>{children}</div>
 }
 
-export function StatCell({ value, label }: { value: ReactNode; label: string }) {
+export function StatCell({ value, label, over }: {
+  value: ReactNode
+  label: string
+  /** Over its cap — the prototype's dashed cell (a flag, never a red alarm). */
+  over?: boolean
+}) {
   return (
-    <div className="mz-statcell">
+    <div className={cn('mz-statcell', over && 'mz-statcell-over')}>
       <b>{value}</b>
       <small>{label}</small>
     </div>

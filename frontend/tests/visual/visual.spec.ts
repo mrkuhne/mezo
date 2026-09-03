@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Self-baselined visual goldens: 36 goto screens + the /ritual Harvest + Release and the
+ * Self-baselined visual goldens: 37 goto screens + the /ritual Harvest + Release and the
  * /train/review lane + exercise-view click-throughs, and the F7.3 Fuel deep surfaces (gyógyszer
- * empty state, recipe mosaic + score sheet, slots editor; F7.4 added the Én deep four) = 86 snapshots per platform (mezo-iizd.1 added me-cel-suly / me-cel-reszlet /
- * me-goal-wizard-suly and re-pointed me-cel + me-goal-wizard at the new life-goal surfaces) (mezo-mzbz added the two /ritual
+ * empty state, recipe mosaic + score sheet, slots editor; F7.4 added the Én deep four)
+ * = 90 snapshots per platform (mezo-d20.15 added meso-hub + meso-week; mezo-iizd.1 added
+ * me-cel-suly / me-cel-reszlet / me-goal-wizard-suly and re-pointed me-cel + me-goal-wizard
+ * at the new life-goal surfaces; mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
  * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
  * `today` shot with one per daypart face — reggel/nap/este; mezo-p2tr swapped the retired
@@ -46,6 +48,10 @@ const SCREENS: Array<[string, string, string?]> = [
   ['train', '/train'],
   ['train-heti', '/train/week'],
   ['train-gym', '/train/gym'],
+  // Mesocycle pages v2 (mezo-d20.15): the run library hub (clickable hero + Heti vizsgálat
+  // tile) and the volume-week page for the mock's active run (meso-hyp-04, data/train/train.ts).
+  ['meso-hub', '/train/mesocycles'],
+  ['meso-week', '/train/mesocycles/meso-hyp-04/week'],
   ['train-session', '/train/session'],
   ['fuel', '/fuel'],
   ['fuel-terv', '/fuel/plan'],

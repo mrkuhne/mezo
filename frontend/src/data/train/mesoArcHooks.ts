@@ -46,5 +46,7 @@ export function useMesocycleVolumeArc(id: string | null) {
     initialData: mock ? mockArc : undefined,
     retry: false,
   })
-  return { arc: q.data ?? null, pending: !mock && q.isPending, error: !mock && q.isError }
+  // `refetch` rides along so a failed arc fetch can offer a real retry (MesoWeekPage's
+  // „Újra") instead of a dead-end message.
+  return { arc: q.data ?? null, pending: !mock && q.isPending, error: !mock && q.isError, refetch: q.refetch }
 }

@@ -13,17 +13,19 @@
 // signal colour is the sage token on the better side's percentage — deliberately NO red on
 // the weaker side: this is a comparison of two finished blocks, not a verdict on one.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useMesoReport } from '@/data/hooks'
+import { useMesoReport, useTrain } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { huMonthDay } from '@/shared/lib/dates'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { MesocycleReportResponse } from '@/data/train/trainApi'
+import type { MesoVolumeArc } from '@/data/types'
 import {
-  alignVolumeWeeks,
   betterSide,
   contextDiff,
+  focusDiff,
+  peakVolumeRows,
   sharedStrengthDeltas,
   type CompareContextRow,
 } from '@/features/train/logic/mesoCompare'
@@ -57,6 +59,18 @@ function contextCell(v: number | null, unit: string): string {
   if (unit === 'kg') return `${signed(v)} kg`
   return unit ? `${fmt(v)} ${unit}` : fmt(v)
 }
+
+/** Contract → domain arc: identical but for `actual`'s optionality (MesoReportPage's idiom). */
+function toVolumeArc(volume: MesocycleReportResponse['volume']): MesoVolumeArc | null {
+  if (!volume) return null
+  return { ...volume, muscles: volume.muscles.map((m) => ({ ...m, weeks: m.weeks.map((w) => ({ ...w, actual: w.actual ?? null })) })) }
+}
+
+const TIER_CHIP_STYLE: Record<'emphasize' | 'maintain', CSSProperties> = {
+  emphasize: { color: 'var(--coral)', background: 'color-mix(in srgb, var(--coral) 10%, transparent)' },
+  maintain: { border: '1px dashed var(--text-tertiary)', color: 'var(--text-tertiary)', background: 'transparent' },
+}
+const LEGACY_CHIP_STYLE: CSSProperties = { border: '1px dashed var(--border-subtle)', color: 'var(--text-tertiary)', background: 'transparent' }
 
 /** One run's `{kg, %}` pair inside a strength row — always both cells, so the two sides align. */
 function SideDeltas({ kg, pct, better }: { kg: number | null; pct: number | null; better: boolean }) {
@@ -140,15 +154,16 @@ export function MesoComparePage() {
   // firing a pointless request while the link is unusable.
   const A = useMesoReport(valid ? aId : null)
   const B = useMesoReport(valid ? bId : null)
-  const [muscle, setMuscle] = useState<string | null>(null)
+  const { mesocycles } = useTrain()
 
   const a = A.report
   const b = B.report
   const both = a && b ? ({ a, b } as { a: MesocycleReportResponse; b: MesocycleReportResponse }) : null
-  const volumeMuscles = both ? alignVolumeWeeks(both.a, both.b) : []
+  const peakRows = both ? peakVolumeRows(toVolumeArc(both.a.volume), toVolumeArc(both.b.volume)) : []
   const strengthRows = both ? sharedStrengthDeltas(both.a, both.b) : []
   const contextRows: CompareContextRow[] = both ? contextDiff(both.a, both.b) : []
-  const activeMuscle = volumeMuscles.find((m) => m.muscle === muscle) ?? volumeMuscles[0]
+  const focusA = focusDiff(mesocycles.find((m) => m.id === aId) ?? null)
+  const focusB = focusDiff(mesocycles.find((m) => m.id === bId) ?? null)
 
   return (
     <MozaikPage tone="gold">
@@ -213,58 +228,62 @@ export function MesoComparePage() {
                 ))}
               </div>
 
-              {/* Volumen — the union of both arcs' muscles, weeks aligned W1..Wn */}
-              {activeMuscle && (
-                <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-volume">
-                  <Eyebrow>Volumen · szet/hét</Eyebrow>
-                  {/* Same pill row as the report/overview arc switch (MuscleArcSwitch) — the
-                      chart itself cannot be reused here: it draws ONE run's arc. */}
-                  <div className="row gap-xs" style={{ overflowX: 'auto' }}>
-                    {volumeMuscles.map((m) => {
-                      const active = m.muscle === activeMuscle.muscle
-                      return (
-                        <button
-                          key={m.muscle}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => setMuscle(m.muscle)}
-                          className="rad-12"
-                          style={{
-                            padding: '10px 14px',
-                            flexShrink: 0,
-                            background: active ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'var(--surface-1)',
-                            border: `1px solid ${active ? 'var(--line)' : 'var(--border-subtle)'}`,
-                            color: active ? 'var(--coral)' : 'var(--text-secondary)',
-                            fontSize: 10,
-                            fontWeight: 600,
-                            letterSpacing: '0.14em',
-                            textTransform: 'uppercase',
-                          }}
-                        >
-                          {MUSCLE_LABELS[m.muscle] ?? m.muscle}
-                        </button>
-                      )
-                    })}
-                  </div>
+              {/* Fókusz-különbség — each run's non-Grow tiers, side by side (Grow is the
+                  silent default, so it never earns a chip); a legacy run's own dashed label
+                  makes clear its tiers are display-only, not band-model-generated. */}
+              <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-focus">
+                <Eyebrow>Fókusz-különbség</Eyebrow>
+                <div className="card col" style={{ padding: '8px 10px' }}>
+                  {([['A', focusA], ['B', focusB]] as const).map(([side, f], i) => (
+                    <div
+                      key={side}
+                      className="row gap-xs"
+                      style={{ alignItems: 'center', flexWrap: 'wrap', padding: '4px 0', borderTop: i > 0 ? '0.5px solid var(--border-subtle)' : 'none' }}
+                      data-testid="focus-row"
+                    >
+                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 14 }}>{side}</span>
+                      {/* No run on this side at all — „—", never „Minden izom Grow" (that
+                          would be a claim about a run we do not have). */}
+                      {f === null && <span className="text-secondary" style={{ fontSize: 12 }}>—</span>}
+                      {f !== null && f.chips.length === 0 && !f.legacy && (
+                        <span className="text-secondary" style={{ fontSize: 12 }}>Minden izom Grow</span>
+                      )}
+                      {f?.chips.map((c) => (
+                        <span key={c.group} className="chip" style={TIER_CHIP_STYLE[c.tier]} data-testid="focus-chip">
+                          {c.tier === 'emphasize' ? `${c.label} ★` : c.label}
+                        </span>
+                      ))}
+                      {f?.legacy && (
+                        <span className="chip" style={LEGACY_CHIP_STYLE} data-testid="focus-legacy-chip">régi modell · címke</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Csúcs-volumen — the loudest week each run actually reached per muscle, next
+                  to A's own MRV ceiling; B's ceiling is not shown (the table judges A's peak
+                  against A's own plafon, not a cross-run ceiling comparison). */}
+              {peakRows.length > 0 && (
+                <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-peak-volume">
+                  <Eyebrow>Csúcs-volumen · szet/hét</Eyebrow>
                   <div className="card" style={{ padding: '10px 4px 6px' }}>
-                    {/* Wide content scrolls in its own container (DS rule) — the page never does. */}
                     <div style={{ overflowX: 'auto' }}>
-                      <table style={{ minWidth: 360, width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+                      <table style={{ minWidth: 320, width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
                         <thead>
                           <tr>
-                            {['Hét', 'A terv', 'A tény', 'B terv', 'B tény'].map((h) => (
-                              <th key={h} style={{ ...HEAD, textAlign: h === 'Hét' ? 'left' : 'right' }}>{h}</th>
+                            {['Izom', 'A csúcs', 'A plafon', 'B csúcs'].map((h) => (
+                              <th key={h} style={{ ...HEAD, textAlign: h === 'Izom' ? 'left' : 'right' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
-                          {activeMuscle.weeks.map((w) => (
-                            <tr key={w.week} data-testid="compare-week-row">
-                              <td style={{ ...CELL, textAlign: 'left' }}>{`W${w.week}`}</td>
-                              <td style={CELL}>{dash(w.aPlanned)}</td>
-                              <td style={CELL}>{dash(w.aActual)}</td>
-                              <td style={CELL}>{dash(w.bPlanned)}</td>
-                              <td style={CELL}>{dash(w.bActual)}</td>
+                          {peakRows.map((r) => (
+                            <tr key={r.group} data-testid="peak-volume-row">
+                              <td style={{ ...CELL, textAlign: 'left' }}>{r.label}</td>
+                              <td style={CELL}>{dash(r.aPeak)}</td>
+                              <td style={CELL}>{dash(r.aCeiling)}</td>
+                              <td style={CELL}>{dash(r.bPeak)}</td>
                             </tr>
                           ))}
                         </tbody>
