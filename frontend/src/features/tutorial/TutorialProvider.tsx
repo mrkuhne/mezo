@@ -92,6 +92,14 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   // át a `persist`-et, két külön `new Date()`-tel. A latch a nyitás pillanatában zár.
   const welcomeStatusRef = useRef(welcomeStatus)
   welcomeStatusRef.current = welcomeStatus
+  // „Nyitva van-e a welcome, és MELYIK route-on nyílt" — az `openIdRef` szerepe a welcome-ra,
+  // egy pluszinformációval. A route-effekt force-dismiss ága a render ELŐTT kérdezi meg, ezért
+  // ref (és minden nyitó/záró pont EAGERLY írja: a nyitó effekt, a closeWelcome, a resetAll és
+  // maga a force-dismiss). A PATH azért kell a puszta bool helyett, mert a route-effekt nem csak
+  // route-VÁLTÁSRA fut: StrictMode alatt mount → cleanup → re-run, és a `current`/`persist`
+  // identitása is újraindíthatja. A welcome viszont ugyanabban a passzív flush-ban nyílik, mint
+  // amelyikben a route-effekt (újra)fut — egy bool tehát a saját megnyitását dismisselné el.
+  const welcomeOpenAtRef = useRef<string | null>(null)
   // The kapcsolat-chip navigates AND animates the Sheet's close in the same click — `navigate()`
   // schedules the route-change effect below, but the animated close's `persist()` (the actual
   // 'done'/completedAt write) only runs once the exit animation finishes (Sheet's `onClose`,
@@ -175,6 +183,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   // skip → dismissedAtStep), csak a fix `welcome` kulcsra; a bejegyzést a megnyitó effekt
   // már megírta, tehát a `prev` hiánya csak elméleti.
   const closeWelcome = useCallback((reason: KalauzCloseReason, step: number) => {
+    welcomeOpenAtRef.current = null
     setWelcomeOpen(false)
     const map = progressRef.current
     const prev = map[WELCOME_ID]
@@ -199,6 +208,7 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     if (timer.current) { clearTimeout(timer.current); timer.current = null }
     openIdRef.current = null
     setOpenId(null)
+    welcomeOpenAtRef.current = null
     setWelcomeOpen(false)
     // Eager ref-írás is kell, ugyanúgy, mint a nyitó effektnél (lásd `welcomeStatusRef` fent):
     // a state-írás csak a következő render-flush-kor jelenik meg a refben, de a megnyitó effekt
@@ -233,14 +243,32 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
       // kihagyjuk, a nyitott kalauzt a Sheet animált onClose-ja zárja a helyes reasonnel.
       navPendingCloseRef.current = false
     } else {
+      const map = progressRef.current
+      let next = map
       const openedId = openIdRef.current
       if (openedId !== null) {
-        const map = progressRef.current
-        const prev = map[openedId]
+        const prev = next[openedId]
         if (prev && prev.completedAt === null && prev.dismissedAtStep === null) {
-          persist({ ...map, [openedId]: { ...prev, dismissedAtStep: 0 } })
+          next = { ...next, [openedId]: { ...prev, dismissedAtStep: 0 } }
         }
       }
+      // A T0 welcome UGYANEZT a szerződést kapja (final review, F2): egy full-screen overlay
+      // (inset:0, document-szintű Tab-csapda + Escape) különben az elhagyott oldalhoz tartozva
+      // ottragadna a cél oldal FÖLÖTT — és a cél kalauza 600 ms múlva még rá is nyílna.
+      // A `dismissedAtStep: 0` szándékosan ugyanaz, mint a sheetnél: a Provider nem ismeri a
+      // lapozó belső lépését (az a KalauzWelcome state-je), a bejegyzés viszont ne maradjon
+      // „megnyitva, sosem lezárva" — a seenAt már megvan, a Kihagyom szerződése pedig épp ez.
+      if (welcomeOpenAtRef.current !== null && welcomeOpenAtRef.current !== pathname) {
+        const prev = next[WELCOME_ID]
+        if (prev && prev.completedAt === null && prev.dismissedAtStep === null) {
+          next = { ...next, [WELCOME_ID]: { ...prev, dismissedAtStep: 0 } }
+        }
+        welcomeOpenAtRef.current = null
+        setWelcomeOpen(false)
+      }
+      // EGY persist a kettőre: két külön hívás közül a második a progressRef ELAVULT
+      // (renderenként frissülő) mapjéből indulna, és elnyelné az elsőt.
+      if (next !== map) persist(next)
       // Eager ref-írás: az alábbi „már van nyitva valami" kapu ugyanebben a futásban kérdez.
       openIdRef.current = null
       setOpenId(null)
@@ -275,6 +303,14 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isPending || welcomeStatus !== 'pending' || pathname !== '/nap') return
     if (welcomeStatusRef.current !== 'pending') return // a fenti latch: a re-run closure-je még 'pending'-et lát
+    // Nyitott sheet ALÁ nem nyílunk (final review, F3): a `.welcome` z-indexe 60, a sheeteké 200,
+    // tehát a welcome láthatatlanul jelenne meg — miközben seenAt-ot írna magára („látva =
+    // megjelent" hazugsága), fókuszt lopna a nem látszó címre, és két aria-modal dialógus élne.
+    // Ez a hosszú `isPending` ablakban valós: a „?" gomb nyithat, mielőtt a GET beér.
+    // A gate NEM lehet csak ref-olvasás: az `openId` DEP is kell, különben a sheet bezárása
+    // után az effekt sosem futna újra, és a welcome örökre elmaradna. A ref viszont marad az
+    // IGAZSÁG (open/close eagerly írja) — a dep csak az újrafutás kiváltója.
+    if (openId !== null || openIdRef.current !== null) return
     // A `progressRef` a SAJÁT effekt-flush-ünkön belül elavult, és ezt ref-tükör nem gyógyítja:
     // a merge-effekt (fent) ugyanerre az `isPending`-re van kötve, react-query pedig EGY renderben
     // billenti az isPending-et és adja a datát — a két effekt tehát ugyanabban a passzív flush-ban
@@ -291,9 +327,10 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
     // „látva = megjelent" — a státusz a megnyitással zárul le (előbb a latch, lásd fent).
     welcomeStatusRef.current = 'done'
     setWelcomeStatus('done')
+    welcomeOpenAtRef.current = pathname
     setWelcomeOpen(true)
     persist({ ...map, [WELCOME_ID]: { version: WELCOME_VERSION, seenAt: new Date().toISOString(), completedAt: null, dismissedAtStep: null } })
-  }, [isPending, serverProgress, welcomeStatus, pathname, persist])
+  }, [isPending, serverProgress, welcomeStatus, pathname, openId, persist])
 
   const value = useMemo<TutorialContextValue>(
     () => ({ current, openId, open, close, isUnseen, resetAll }),

@@ -98,7 +98,19 @@ pager, not a bottom sheet) and its registry entry
   `welcomeStatus === 'pending'` on `/nap`, the per-route auto-open timer for `nap`'s own `T1` guide
   is held back by the same "is anything open?" seam described in §9 — **there is no chaining**
   between the welcome and `/nap`'s own kalauz; they simply never race, because the welcome's gate
-  blocks the timer from ever starting.
+  blocks the timer from ever starting. The seam runs **both ways**: the welcome effect also
+  refuses to open while a `KalauzSheet` is open (the "?" button can fire during a long `isPending`
+  window), because `.welcome` sits at `z-index: 60` — *below* the sheets (200) — so it would
+  otherwise mount invisibly, write its own `seenAt` ("seen = shown" would be a lie), steal focus,
+  and put two `aria-modal` dialogs on screen at once. `openId` is a real dependency of that
+  effect, not just a ref read, so the welcome still opens the moment the sheet closes.
+- **Route change closes it**, exactly like an open sheet: the route effect's force-dismiss branch
+  handles the welcome too, writing `dismissedAtStep: 0` (the same value the sheet branch uses —
+  the provider does not know the pager's internal step) when the entry is neither completed nor
+  already dismissed. Without this an Android back gesture would leave the full-screen overlay,
+  its `document`-level Tab-trap and its `Escape` handler mounted over the page the user left.
+  The branch keys off the pathname the welcome *opened on*, not a bare "is open" flag, so a
+  StrictMode re-run of the route effect can't dismiss the welcome it just opened.
 - **UI** (`KalauzWelcome.tsx`) — a domain-free, full-screen pager (not `KalauzSheet`), portalled
   into `.phone-screen`, `z-index: 60`. It follows the ARIA APG dialog pattern: focus moves to the
   step `<h2>` on mount and again on every step change, `Escape` closes with reason `'skip'`, and
@@ -217,9 +229,16 @@ import { useTutorialProgress, useTutorialProgressActions } from '@/data/hooks'
   `resetAll()` is an honest reset: it clears every session flag (`autoShown`, the pending timer,
   the open sheet, `welcomeStatus`/`welcomeOpen`), the local mirror, and fires the `DELETE`, but
   **it now rejects when the `DELETE` fails** rather than swallowing the error — the caller decides
-  what to show. `tutorialProgressHooks.ts`'s reset mutation `cancelQueries` on the progress key
-  before firing the `DELETE`, so an in-flight `GET` that started before the reset can't land after
-  it and resurrect the old server state. It is wired to the "Kalauzok újranézése" row in
+  what to show. `tutorialProgressHooks.ts`'s reset mutation guards the round-trip on two fronts:
+  `cancelQueries` on the progress key stops an in-flight `GET`'s **response** from landing after
+  the `DELETE` and writing the old map back — but the map **already sitting in the query cache**
+  is a separate hazard, because the `DELETE` flies for 300 ms – 2 s and every reader
+  (`TutorialProvider`'s server-merge and welcome effects) would see the pre-reset server state
+  meanwhile: a tab-tap to `/nap` in that window used to find `welcome` "already seen" and
+  silently suppress it for the whole session. So the mutation **optimistically writes `{}` into
+  the cache before the `DELETE`**, and on failure restores the previous value (or drops the entry
+  if there was none) before rethrowing — a failed reset must not leave the cache empty, since the
+  server still holds the data. It is wired to the "Kalauzok újranézése" row in
   `BeallitasokPage.tsx` (§5).
 - `useTutorialProgress()` / `useTutorialProgressActions()` — the raw dual-mode data-layer hooks
   (`@/data/tutorial/tutorialProgressHooks.ts`, re-exported from `@/data/hooks`) most call sites

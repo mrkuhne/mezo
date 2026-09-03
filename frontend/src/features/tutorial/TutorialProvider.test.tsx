@@ -373,11 +373,96 @@ test('resetAll: kiüríti az állapotot, zárja a nyitottat, és a welcome újra
   await act(async () => { await resetHandle.current!() })
   expect(screen.queryByLabelText('Kártyák')).not.toBeInTheDocument()
   expect(readLocalProgress()).toEqual({})
-  // A reset a `welcomeStatusRef`-et is visszaállítja `'pending'`-re (nem csak a state-et) —
-  // enélkül a /nap-ra visszatérve a megnyitó effekt eager latchje ('done'-t olvasva a refből)
-  // örökre elnyomná a welcome-ot. A rákövetkező /nap-belépés a bizonyíték.
+  // A rákövetkező /nap-belépés a reset VÉGPONTTÓL VÉGPONTIG bizonyítéka: a lokális map, a
+  // welcomeStatus és a session-guardok is tényleg visszaálltak, tehát a welcome újra esedékes.
+  // (A `resetAll` eager `welcomeStatusRef.current = 'pending'` sora NEM ez a bizonyíték: a
+  // reset state-írásai közé mindig esik render, ami a per-render ref-tükrözésből amúgy is
+  // beállítaná — a sor VÉDEKEZŐ, a fájl ref-tükör-doktrínájával konzisztens, és ez a teszt
+  // ugyanúgy zöld nélküle is.)
   await user.click(screen.getByRole('button', { name: 'nap' }))
   expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+})
+
+// Finding 1 (végső review): a reset a LOKÁLIS mapet üríti, a DELETE viszont 300 ms – 2 s-ig
+// repül. Amíg repül, a react-query cache-ben MARAD a reset ELŐTTI szerver-map — és ha a
+// felhasználó közben átvált a /nap-ra, a megnyitó effekt ezt fésüli össze, „látott"-nak találja
+// a welcome-ot, és némán 'done'-ra billen: a „Kalauzok újranézése" hatástalan marad a session
+// végéig. A javítás: a mutáció optimistán kiüríti a cache-t a DELETE ELŐTT.
+test('resetAll: a repülő DELETE alatt a /nap-ra váltás is a RESET UTÁNI állapotot látja (real mode)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  if (isMockMode()) return
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  let releaseDelete: () => void = () => undefined
+  const deleteGate = new Promise<void>((resolve) => { releaseDelete = resolve })
+  server.use(
+    http.get(`${API_BASE}/api/tutorial/progress`, () =>
+      HttpResponse.json({ progress: { welcome: { version: WELCOME_VERSION, seenAt: SEEN, completedAt: SEEN, dismissedAtStep: null } } }),
+    ),
+    http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+      const body = (await request.json()) as { progress: unknown }
+      return HttpResponse.json({ progress: body.progress })
+    }),
+    http.delete(`${API_BASE}/api/tutorial/progress`, async () => {
+      await deleteGate
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  renderAt('/nap/rutin') // kalauz nélküli route, mint a Beállítások — innen indul a reset
+  await waitFor(() => expect(readLocalProgress().welcome).toBeDefined())
+  let resetPromise: Promise<void> = Promise.resolve()
+  await act(async () => {
+    resetPromise = resetHandle.current!()
+    vi.advanceTimersByTime(10) // a mutáció eljut az optimista cache-ürítésig; a DELETE még repül
+  })
+  await user.click(screen.getByRole('button', { name: 'nap' }))
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  releaseDelete()
+  await act(async () => { await resetPromise })
+})
+
+// Finding 2 (végső review): route-váltás a NYITOTT sheetet force-dismiss-eli — a welcome-nak
+// ugyanez jár. Enélkül a Beállítások → /nap → welcome → vissza-gesztus után a teljes képernyős
+// overlay (inset:0, document-szintű Tab-csapda) a cél oldal FÖLÖTT ragad.
+test('route-váltás a nyitott welcome-ot is zárja, dismissedAtStep-tel', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/nap')
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  await user.click(screen.getByRole('button', { name: 'train' }))
+  expect(screen.queryByText('Szia, Mezo vagyok.')).not.toBeInTheDocument()
+  await waitFor(() => expect(readLocalProgress().welcome?.dismissedAtStep).toBe(0))
+  expect(readLocalProgress().welcome?.completedAt).toBeNull()
+})
+
+// Finding 3 (végső review): a `.welcome` z-indexe 60, a sheeteké 200 — a welcome tehát a nyitott
+// sheet ALÁ nyílna, láthatatlanul „látott"-ra billentve magát, két egyidejű aria-modal
+// dialógussal. A hosszú `isPending` ablak (hideg indítás lassú hálón) alatt a „?" gomb pont ezt
+// idézi elő. A gate nem lehet ref-olvasó korai return: az `openId` DEP kell, különben a sheet
+// bezárása után sosem futna újra az effekt.
+test('a welcome nem nyílik nyitott sheet alá, és a sheet zárása után jelenik meg (real mode)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  if (isMockMode()) return
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  let releaseGet: () => void = () => undefined
+  const getGate = new Promise<void>((resolve) => { releaseGet = resolve })
+  server.use(
+    http.get(`${API_BASE}/api/tutorial/progress`, async () => { await getGate; return HttpResponse.json({ progress: {} }) }),
+    http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+      const body = (await request.json()) as { progress: unknown }
+      return HttpResponse.json({ progress: body.progress })
+    }),
+  )
+  renderAt('/nap')
+  await user.click(screen.getByRole('button', { name: 'nyisd' })) // „?" az isPending ablakban
+  expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
+  releaseGet()
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(screen.queryByText('Szia, Mezo vagyok.')).not.toBeInTheDocument()
+  expect(readLocalProgress().welcome).toBeUndefined() // „látva = megjelent" — nem jelent meg
+  await user.click(screen.getByRole('button', { name: 'Kihagyom' })) // a sheet zárása
+  await act(async () => { vi.advanceTimersByTime(400) })
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  await waitFor(() => expect(readLocalProgress().welcome?.seenAt).toEqual(expect.any(String)))
 })
 
 test('resetAll: a DELETE hibája FELSZÍNRE kerül, nem nyeli el némán', async () => {
