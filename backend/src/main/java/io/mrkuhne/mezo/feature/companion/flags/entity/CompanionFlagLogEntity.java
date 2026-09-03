@@ -37,7 +37,8 @@ public class CompanionFlagLogEntity extends OwnedEntity {
 
     /** Mirrors ck_companion_flag_log_flag_key — see {@code FlagKey}. */
     @NotNull
-    @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy")
+    @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy"
+        + "|logging_gap|missed_workouts")
     @Column(name = "flag_key", nullable = false, length = 24)
     private String flagKey;
 

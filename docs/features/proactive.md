@@ -1257,6 +1257,10 @@ card came from, so the „Segített?" verdict rolls up per-entry ([companion.md]
 `null` on every other kind, including every pre-W5.2 row (an overloaded 3-arg constructor
 keeps every other writer unchanged — see the entity's own javadoc). **No `regenCount` field** —
 the column that made the old briefing's `refreshIfStale` possible has no successor on this entity.
+**S2's `logging_gap`/`missed_workouts` flag keys ([companion.md](companion.md) §3) have no
+library entry until S4** — `InterventionService.deliverForFlag` finds no candidates for either
+key and returns `Optional.empty()` with an info log line, a deliberate no-op rather than a
+failure, same as any other flag whose candidate list is empty.
 
 `WeeklySuggestionEntity` (`entity/WeeklySuggestionEntity.java`) `extends OwnedEntity`, UUID
 `@GeneratedValue` id, soft-deleted; three flat columns `{LocalDate weekStart, String prose, Instant
