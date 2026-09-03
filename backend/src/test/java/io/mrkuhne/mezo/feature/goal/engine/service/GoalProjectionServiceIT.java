@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.WeightTrendResponse.DataSufficiencyEnum;
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalProjectionService.ProjectionSegment;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
+import io.mrkuhne.mezo.feature.goal.entity.GoalSegmentOverrideJson;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
@@ -215,6 +216,26 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
             service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "-0.30"), 0);
         assertThat(none.get(0).projectedRateKgPerWk().doubleValue())
             .isCloseTo(-0.588, within(0.01));
+    }
+
+    // ── Segment override (slice 4 — accepted deload week eats at maintenance) ──────────────────────
+
+    @Test
+    void testProject_shouldApplySegmentOverride_whenDeloadWeekAccepted() {
+        UUID user = databasePopulator.populateUser("proj-override@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active"); // 8-week window
+        goal.setSegmentOverrides(List.of(new GoalSegmentOverrideJson(3, 3, 0)));
+
+        List<ProjectionSegment> segments =
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+
+        ProjectionSegment w3 = segments.stream()
+            .filter(s -> s.fromWeek() <= 3 && s.toWeek() >= 3).findFirst().orElseThrow();
+        assertThat(w3.fromWeek()).as("override splits its own segment").isEqualTo(3);
+        assertThat(w3.toWeek()).isEqualTo(3);
+        assertThat(w3.dailyEnergyBalanceKcal()).isZero();
+        assertThat(w3.targetKcal()).isEqualByComparingTo(w3.tdeeEstimate());
+        assertThat(w3.label()).contains("deload — tartás");
     }
 
     // ── Day-type shift (slice 3 — mezo-sxlj): the weekly-invariant kcal split off rest days ────────

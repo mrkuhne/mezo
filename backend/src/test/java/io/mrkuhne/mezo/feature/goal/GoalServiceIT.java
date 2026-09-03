@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.goal.entity.GoalSegmentOverrideJson;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
@@ -238,6 +239,49 @@ class GoalServiceIT extends AbstractIntegrationTest {
         // (84 − 78) / 84 * 100 / 8 = 0.89285… → re-derived, clearly higher than the 17-week rate.
         assertThat(updated.getRateTargetPctPerWeek())
             .isCloseTo(new BigDecimal("0.89"), within(new BigDecimal("0.01")));
+    }
+
+    // ── segmentOverrides staleness on window edits (mezo-ktg8 final-review finding 2) ──────────────
+
+    @Test
+    void testUpdateGoal_shouldClearSegmentOverrides_whenStartDateMoves() {
+        UUID user = databasePopulator.populateUser("goal-override-move@test.local");
+        GoalEntity g = goalPopulator.createGoal(user, "cut", "active");
+        g.setSegmentOverrides(List.of(new GoalSegmentOverrideJson(3, 3, 0)));
+        goalRepository.saveAndFlush(g);
+        entityManager.clear();
+
+        // Moving startDate a week later renumbers every goal-week — the week-3 override from the
+        // OLD numbering must not silently keep targeting whatever week 3 now means.
+        goalService.updateGoal(user, g.getId(), upsertReq()
+            .startDate(LocalDate.of(2026, 6, 8)).targetDate(LocalDate.of(2026, 8, 3)).build());
+
+        // updateGoal mutates the managed entity via dirty-checking (no explicit save/flush inside
+        // it) — entityManager.clear() alone would DISCARD that still-pending change instead of
+        // persisting it, so flush explicitly before detaching for the fresh re-fetch below.
+        entityManager.flush();
+        entityManager.clear();
+        GoalEntity reloaded = goalRepository.findById(g.getId()).orElseThrow();
+        assertThat(reloaded.getSegmentOverrides()).isNull();
+    }
+
+    @Test
+    void testUpdateGoal_shouldKeepSegmentOverrides_whenStartDateUnchanged() {
+        UUID user = databasePopulator.populateUser("goal-override-keep@test.local");
+        GoalEntity g = goalPopulator.createGoal(user, "cut", "active");
+        g.setSegmentOverrides(List.of(new GoalSegmentOverrideJson(3, 3, 0)));
+        goalRepository.saveAndFlush(g);
+        entityManager.clear();
+
+        // Same startDate (2026-06-01, GoalPopulator's default) — only the title changes, so the
+        // week numbering is untouched and the override must survive the upsert.
+        goalService.updateGoal(user, g.getId(), upsertReq().title("Updated").build());
+
+        entityManager.flush();
+        entityManager.clear();
+        GoalEntity reloaded = goalRepository.findById(g.getId()).orElseThrow();
+        assertThat(reloaded.getSegmentOverrides()).hasSize(1);
+        assertThat(reloaded.getSegmentOverrides().get(0).fromWeek()).isEqualTo(3);
     }
 
     private static GoalUpsertRequest.GoalUpsertRequestBuilder upsertReq() {

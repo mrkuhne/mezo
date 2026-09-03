@@ -1054,6 +1054,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The goal's OPEN (proposed) suggestions — diet-phase / correction proposals awaiting a decision */
+        get: operations["listGoalSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{id}/suggestions/{suggestionId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a suggestion — applies its payload to the goal (trajectory change or segment override), re-evaluates, returns the updated goal */
+        post: operations["acceptGoalSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{id}/suggestions/{suggestionId}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss a suggestion — records the decision so the same trigger input never re-proposes it */
+        post: operations["dismissGoalSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/biometrics/profile": {
         parameters: {
             query?: never;
@@ -5323,6 +5374,35 @@ export interface components {
             weeks: number;
             links: components["schemas"]["GoalPlanLinkResponse"][];
             gaps: components["schemas"]["GoalGap"][];
+        };
+        GoalSuggestionResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "phase_change" | "weekly_correction";
+            /** @enum {string} */
+            status: "proposed" | "accepted" | "dismissed" | "superseded";
+            payload: components["schemas"]["GoalSuggestionPayload"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+        };
+        /** @description Typed suggestion body. phase_change carries either suggestedTrajectory (preset↔trajectory mismatch) or balanceOverrideKcal+fromWeek+toWeek (deload maintenance week). snapshotTrajectory is the accept-time race guard. */
+        GoalSuggestionPayload: {
+            /** @description Hungarian, user-facing rationale */
+            reason: string;
+            /** @enum {string|null} */
+            suggestedTrajectory?: "cut" | "bulk" | "maintain" | null;
+            /** @description Per-week energy-balance override (kcal/day); 0 = maintenance-leaning week */
+            balanceOverrideKcal?: number | null;
+            fromWeek?: number | null;
+            toWeek?: number | null;
+            /** Format: uuid */
+            mesoId?: string | null;
+            mesoTitle?: string | null;
+            /** @enum {string} */
+            snapshotTrajectory: "cut" | "bulk" | "maintain";
         };
         /** @description Every field is optional AND nullable: an owner with no profile row yet gets a 200 with an empty profile — an object whose every field is null — not a 404 (mezo-5cmq). The UPSERT request keeps its required trio. */
         BiometricProfileResponse: {
@@ -11829,6 +11909,135 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Detached */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listGoalSuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Open suggestions (may be empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalSuggestionResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    acceptGoalSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                suggestionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Applied + re-evaluated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Stale — the goal changed since the proposal; the suggestion is now superseded */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    dismissGoalSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                suggestionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dismissed */
             204: {
                 headers: {
                     [name: string]: unknown;
