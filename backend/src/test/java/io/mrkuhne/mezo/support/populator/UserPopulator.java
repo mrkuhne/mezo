@@ -37,4 +37,9 @@ public class UserPopulator {
             return appUserRepository.saveAndFlush(user);
         });
     }
+
+    /** Persists edits made on a populated user (name, status, onboardedAt). */
+    public AppUserEntity save(AppUserEntity user) {
+        return appUserRepository.saveAndFlush(user);
+    }
 }
