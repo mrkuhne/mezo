@@ -2,8 +2,10 @@ import { MOCK_SIGNAL_CATALOG } from '@/data/lifegoal/lifegoalMock'
 import { defaultRule, pillarFromCatalog, preferredKind } from '@/features/me/logic/pillarFromCatalog'
 import type { SignalCatalogEntry } from '@/data/lifegoal/lifegoalApi'
 
+// `id`/`live`/`daysWithData`/`fedPillars` (mezo-iizd.7) are irrelevant to preferredKind/
+// defaultRule/pillarFromCatalog — this helper only fills them to satisfy the now-required shape.
 const entry = (kinds: SignalCatalogEntry['kinds']): SignalCatalogEntry =>
-  ({ source: { type: 'metric', key: 'SLEEP_DURATION_H' }, label: 'Alváshossz', group: 'Alvás', kinds, unit: 'óra', defaultSkillKey: 'recovery' })
+  ({ id: 'sleep_duration', source: { type: 'metric', key: 'SLEEP_DURATION_H' }, label: 'Alváshossz', group: 'Alvás', kinds, unit: 'óra', defaultSkillKey: 'recovery', live: true, daysWithData: 7, fedPillars: [] })
 
 test('preferredKind prefers average, then baseline, then habit over the catalog order', () => {
   expect(preferredKind(entry(['habit', 'average', 'baseline']))).toBe('average')

@@ -121,7 +121,7 @@ export function FuelKamraPage() {
       </PageHead>
 
       <EntranceGroup>
-      <PageHero icon="i-kamra" big={heroCount} name="Kamra" />
+      <PageHero icon="i-kamra" big={heroCount} name="Kamra" kalauzAnchor="kamra-hero" />
 
       <PageBody>
         {isEmpty ? (

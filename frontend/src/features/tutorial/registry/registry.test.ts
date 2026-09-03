@@ -14,9 +14,13 @@ const routeExists = (to: string) => {
   return m != null && m[m.length - 1]?.route.path !== '*'
 }
 
-test('a /fuel-nek van kalauza, a /fuel/log-nak (még) nincs', () => {
+// A hub és az aloldala KÜLÖN kalauz (a route `end: true`-val matchel), és van olyan
+// Fuel-útvonal, ami szándékosan kalauz nélkül él — a /fuel/slots csak a beállítás-lapról
+// érhető el, a spec §10 T2-listája nem sorolja (S4-ig marad üresen).
+test('a /fuel-nek és a /fuel/log-nak külön kalauza van, a /fuel/slots-nak nincs', () => {
   expect(findKalauz('/fuel')?.id).toBe('fuel')
-  expect(findKalauz('/fuel/log')).toBeNull()
+  expect(findKalauz('/fuel/log')?.id).toBe('fuel-log')
+  expect(findKalauz('/fuel/slots')).toBeNull()
   expect(getKalauz('fuel')?.label).toBe('Fuel')
   expect(getKalauz('nincs-ilyen')).toBeNull()
 })
@@ -161,6 +165,25 @@ const S3A_T2_ROUTES = [
 
 test('S3a: minden Nap + Edzés fő aloldalnak van T2 kalauza', () => {
   for (const route of S3A_T2_ROUTES) {
+    const e = KALAUZ_REGISTRY.find((k) => k.route === route)
+    expect(e, route).toBeDefined()
+    expect(e!.tier, route).toBe('T2')
+  }
+})
+
+// ── S3b lefedettség (mezo-gb1s.6) ─────────────────────────────────────────────
+// A spec §10 T2-listájának Fuel szelete. A `/fuel/log/uj` szándékosan ÖNÁLLÓ kalauz,
+// nem a `/fuel/log` folytatása: a composer saját teljes oldal (mezo-bq2t), és a
+// route-effekt ott külön auto-opent futtat. A listából KIMARAD a „Gyors logolás sheet"
+// (`quickinput`): nem route, a motor route-effektje nem tudja triggerelni — az S4
+// komponens-esemény seamjére csúszott (epic-komment).
+const S3B_T2_ROUTES = [
+  '/fuel/log', '/fuel/log/uj', '/fuel/plan', '/fuel/stack',
+  '/fuel/recipes', '/fuel/kamra', '/fuel/gyogyszer', '/fuel/naplo',
+]
+
+test('S3b: minden Fuel fő aloldalnak van T2 kalauza', () => {
+  for (const route of S3B_T2_ROUTES) {
     const e = KALAUZ_REGISTRY.find((k) => k.route === route)
     expect(e, route).toBeDefined()
     expect(e!.tier, route).toBe('T2')

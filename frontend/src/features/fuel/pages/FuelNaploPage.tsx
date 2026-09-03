@@ -37,7 +37,7 @@ export function FuelNaploPage() {
     <MozaikPage tone="sky">
       <PageHead onBack={() => navigate(-1)} label="‹ Fuel" />
       {/* Honest hero: nothing scored today → an em dash, never a fabricated 0 pont. */}
-      <PageHero icon="i-naplo" name="Napló" big={avg != null ? avg : '—'} sub="AI-átlag · ma" />
+      <PageHero icon="i-naplo" name="Napló" big={avg != null ? avg : '—'} sub="AI-átlag · ma" kalauzAnchor="naplo-hero" />
       <PageBody principle="A napló a mai valóságot mutatja — a heti trend akkor kerül ide, amikor a hét adatai tárolva lesznek.">
         <EntranceGroup>
           <StatStrip className="rise">

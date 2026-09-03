@@ -14,6 +14,26 @@ vi.mock('@/features/me/logic/sleepEscalation', async (importOriginal) => ({
 }))
 import { evaluateEscalation, snoozeKey } from '@/features/me/logic/sleepEscalation'
 
+// mezo-idz2 appended a date-relative today row to the END of the mock sleepLog (DayOrb
+// mock parity), so `lastNight` (the seed's last array entry, by design) is now that minimal
+// today row instead of the 2026-05-22 "screenshot night" with hypnogram/phase fields. Two
+// tests below are specifically about rendering a night that DOES carry that rich data — they
+// pin `lastNight` to the real 2026-05-22 seed entry via this override, preserving what they
+// actually prove instead of asserting a tautology against whichever row happens to be last.
+const sleepPin = vi.hoisted(() => ({ iso: null as string | null }))
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    useSleep: () => {
+      const real = actual.useSleep()
+      if (!sleepPin.iso) return real
+      const pinned = real.sleepLog.find((n) => n.date === sleepPin.iso)
+      return pinned ? { ...real, lastNight: pinned } : real
+    },
+  }
+})
+
 // Asserts the Phase-1 mock sleep hero, so pin mock mode explicitly. Also clears the
 // snooze localStorage key and resets the escalation mock to its not-triggered default
 // so test order can't leak state between the escalation cases.
@@ -21,8 +41,12 @@ beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   localStorage.clear()
   vi.mocked(evaluateEscalation).mockReturnValue({ triggered: false, reason: null })
+  sleepPin.iso = null
 })
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => {
+  vi.unstubAllEnvs()
+  sleepPin.iso = null
+})
 
 // SleepPage renders a <Link> (night-mode entry row), so a router context is required.
 const renderPage = () =>
@@ -110,8 +134,11 @@ it('opens the SleepGoalSheet from the szerkeszt button', async () => {
 
 it('shows the bed-delta stat on the hero', () => {
   renderPage()
-  // last mock night bed 00:42 vs target 23:15 -> +87p (wraps past midnight: 42 − 1395 + 1440)
-  expect(screen.getByText(/vs\. cél lefekvés/)).toHaveTextContent('+87p')
+  // mezo-idz2 appended a today row to the end of sleepLog, so lastNight (last array entry)
+  // is now that row: bed 23:20 vs target 23:15 -> +5p (no wrap; the wrap-past-midnight case
+  // this used to exercise via the old last night's 00:42 bedtime is already unit-tested
+  // directly in sleepStats.test.ts > bedDeltaMin).
+  expect(screen.getByText(/vs\. cél lefekvés/)).toHaveTextContent('+5p')
 })
 
 test('renders the night-mode entry row linking to /me/sleep/night', () => {
@@ -163,6 +190,10 @@ test('stat card opens the deck sheet', () => {
 })
 
 it('renders the phase rail and both reference rows for a screenshot night', async () => {
+  // mezo-idz2's appended today row is now the seed's last entry, but it carries no
+  // hypnogram/phase fields — pin lastNight back to the real screenshot night this test
+  // is about (see sleepPin comment above).
+  sleepPin.iso = '2026-05-22'
   renderPage()
   // "Mély"/"REM" each label FOUR things: the hero's own rail legend item + reference row,
   // and PhaseAverageCard's rail legend item + reference row (mock seed clears its 3-night
@@ -188,7 +219,10 @@ it('renders the REM-duration card against the real mock seed (3 short / 5 long n
 })
 
 test('renders the night-arc heading and card when the last night has a hypnogram', () => {
-  renderPage() // mock lastNight (2026-05-22) carries a hypnogram
+  // mezo-idz2's appended today row is now the seed's last entry and carries no hypnogram —
+  // pin lastNight back to the real 2026-05-22 night this test is about.
+  sleepPin.iso = '2026-05-22'
+  renderPage()
   expect(screen.getByText('Az éjszaka íve')).toBeInTheDocument()
 })
 

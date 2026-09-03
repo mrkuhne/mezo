@@ -58,6 +58,18 @@ public class CompanionMessagePopulator {
         return companionMessageRepository.saveAndFlush(entity);
     }
 
+    /** S3 setup card (bd mezo-d58h.3) — kind + envelope setupKey in one shot. */
+    public CompanionMessageEntity createSetup(
+            UUID owner, LocalDate date, String setupKey, String eyebrow, List<String> body, Instant generatedAt) {
+        CompanionMessageEntity entity = new CompanionMessageEntity();
+        entity.setCreatedBy(owner);
+        entity.setMessageDate(date);
+        entity.setKind(CompanionMessageEntity.KIND_SETUP);
+        entity.setContent(new CompanionMessageEnvelope(eyebrow, body, List.of(), null, setupKey));
+        entity.setGeneratedAt(generatedAt);
+        return companionMessageRepository.saveAndFlush(entity);
+    }
+
     /** Inserts natively, so an unknown kind reaches the DB CHECK instead of being stopped by
      *  the entity's own {@code @NotNull}/length constraints — the {@code FlagLogPopulator.rawInsert}
      *  idiom, pinning that {@code ck_companion_message_kind} really lives in the schema. */

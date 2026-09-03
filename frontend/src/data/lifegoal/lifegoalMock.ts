@@ -122,38 +122,62 @@ export const MOCK_LIFE_GOALS: LifeGoalResponse[] = [
   },
 ]
 
-// ── Signal catalog (SignalCatalog.java's 28 ENTRIES, minus the Java-only `id` — the
-// SignalCatalogEntry response DTO does not serialize `id`; see SignalCatalogEntry.java) ──
-export const MOCK_SIGNAL_CATALOG: SignalCatalogEntry[] = [
-  { source: metric('SLEEP_DURATION_H'), label: 'Alváshossz', group: 'Alvás', kinds: ['habit', 'average', 'baseline'], unit: 'óra', defaultSkillKey: 'recovery' },
-  { source: metric('SLEEP_QUALITY'), label: 'Alvásminőség', group: 'Alvás', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'recovery' },
-  { source: metric('BEDTIME_VARIABILITY'), label: 'Lefekvés-szórás', group: 'Alvás', kinds: ['average', 'baseline'], unit: 'perc', defaultSkillKey: 'recovery' },
-  { source: metric('DAILY_PROTEIN_G'), label: 'Fehérje', group: 'Fuel', kinds: ['habit', 'average', 'baseline'], unit: 'g', defaultSkillKey: 'cooking' },
-  { source: metric('DAILY_KCAL'), label: 'Kalória', group: 'Fuel', kinds: ['average', 'baseline'], unit: 'kcal', defaultSkillKey: 'cooking' },
-  { source: metric('DAILY_WATER_ML'), label: 'Víz', group: 'Fuel', kinds: ['habit', 'average'], unit: 'ml', defaultSkillKey: 'recovery' },
-  { source: metric('LATE_MEAL_HOUR'), label: 'Utolsó étkezés ideje', group: 'Fuel', kinds: ['habit', 'average'], unit: 'óra', defaultSkillKey: 'mindset' },
-  { source: metric('MEAL_SCORE'), label: 'Étkezés-pontszám', group: 'Fuel', kinds: ['average', 'baseline'], unit: 'pont', defaultSkillKey: 'cooking' },
-  { source: metric('GYM_VOLUME_KG'), label: 'Gym-volumen', group: 'Edzés', kinds: ['habit', 'average', 'baseline'], unit: 'kg', defaultSkillKey: 'max_strength' },
-  { source: metric('SPORT_LOAD_MIN'), label: 'Sportterhelés', group: 'Edzés', kinds: ['habit', 'average', 'baseline'], unit: 'perc', defaultSkillKey: 'aerobic_capacity' },
-  { source: metric('ACWR'), label: 'Akut:krónikus terhelés', group: 'Edzés', kinds: ['average'], unit: 'arány', defaultSkillKey: 'recovery' },
-  { source: metric('RUN_HR_RECOVERY_S'), label: 'Pulzus-visszaállás', group: 'Edzés', kinds: ['average', 'baseline'], unit: 'mp', defaultSkillKey: 'aerobic_capacity' },
-  { source: { type: 'weight_goal' }, label: 'Súlycél · ütem', group: 'Edzés', kinds: ['linked'], unit: 'ítélet', defaultSkillKey: 'recovery' },
-  { source: metric('CHECKIN_ENERGY'), label: 'Check-in energia', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindset' },
-  { source: metric('CHECKIN_MENTAL'), label: 'Check-in hangulat', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindfulness' },
-  { source: metric('CHECKIN_STRESS'), label: 'Stressz', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindfulness' },
-  { source: metric('HABITS_DONE'), label: 'Kész szokások', group: 'Elme', kinds: ['habit', 'average'], unit: 'db', defaultSkillKey: 'mindset' },
-  { source: metric('RITUAL_CLOSED'), label: 'Napzárás', group: 'Elme', kinds: ['habit'], unit: 'igen/nem', defaultSkillKey: 'mindset' },
-  { source: metric('DAILY_XP'), label: 'Napi XP', group: 'Elme', kinds: ['average', 'baseline'], unit: 'XP', defaultSkillKey: 'mindset' },
-  { source: activitySrc('productivity', 'minutes'), label: 'Produktivitás · perc', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'perc', defaultSkillKey: 'productivity' },
-  { source: activitySrc('learning', 'count'), label: 'Tanulás · alkalom', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'alkalom', defaultSkillKey: 'learning' },
-  { source: activitySrc('financial', 'huf'), label: 'Pénzügy · Ft', group: 'Activity', kinds: ['target', 'baseline'], unit: 'Ft', defaultSkillKey: 'financial' },
-  { source: activitySrc('connection', 'count'), label: 'Kapcsolatok · alkalom', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'alkalom', defaultSkillKey: 'connection' },
-  { source: activitySrc('cooking', 'count'), label: 'Konyha · alkalom', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'alkalom', defaultSkillKey: 'cooking' },
-  { source: { type: 'social_mentions' }, label: 'Társas említések', group: 'Emberek', kinds: ['habit', 'average', 'baseline'], unit: 'ember', defaultSkillKey: 'connection' },
-  { source: ring('mozgas'), label: 'Mozgás-gyűrű', group: 'Életjel', kinds: ['average', 'baseline'], unit: '%', defaultSkillKey: 'recovery' },
-  { source: ring('pihenes'), label: 'Pihenés-gyűrű', group: 'Életjel', kinds: ['average', 'baseline'], unit: '%', defaultSkillKey: 'recovery' },
-  { source: ring('lelek'), label: 'Lélek-gyűrű', group: 'Életjel', kinds: ['average', 'baseline'], unit: '%', defaultSkillKey: 'mindfulness' },
-]
+// ── Signal catalog (SignalCatalog.java's 28 ENTRIES). `id` mirrors the Java-side catalog id
+// (SignalCatalog.java ENTRIES order) — the JelekPage transparency list (mezo-iizd.7) keys and
+// sorts rows by it, and `withLiveness` below looks liveness up by the same id. ──
+const MOCK_LIVENESS: Record<string, { days: number; fedPillars?: string[] }> = {
+  sleep_duration: { days: 7, fedPillars: ['Alvás ≥ 7 óra'] },
+  protein: { days: 7, fedPillars: ['Fehérje'] },
+  kcal: { days: 6 },
+  gym_volume: { days: 5, fedPillars: ['Gym-volumen'] },
+  sport_load: { days: 5 },
+  weight_goal: { days: 6, fedPillars: ['Testkompozíció'] },
+  checkin_energy: { days: 6, fedPillars: ['Energia'] },
+  checkin_mental: { days: 4 },
+  ritual_closed: { days: 4, fedPillars: ['Fegyelem'] },
+  social_mentions: { days: 3, fedPillars: ['Társas élet'] },
+}
+
+// A liveness a mock-oldalon fix: a prototípus (celok.html #page-jelek) él/alszik aránya, hogy a
+// JelekPage mindkét szekciója (Él · Alszik) valódi tartalommal renderelődjön. Ami nincs a
+// táblában, az alszik — a valódi backend a 7 napos ablakból számolja (LifeGoalSignalService).
+function withLiveness(entries: Omit<SignalCatalogEntry, 'live' | 'daysWithData' | 'fedPillars'>[]): SignalCatalogEntry[] {
+  return entries.map((e) => {
+    const l = MOCK_LIVENESS[e.id] ?? { days: 0 }
+    return { ...e, live: l.days > 0, daysWithData: l.days, fedPillars: l.fedPillars ?? [] }
+  })
+}
+
+export const MOCK_SIGNAL_CATALOG: SignalCatalogEntry[] = withLiveness([
+  { id: 'sleep_duration', source: metric('SLEEP_DURATION_H'), label: 'Alváshossz', group: 'Alvás', kinds: ['habit', 'average', 'baseline'], unit: 'óra', defaultSkillKey: 'recovery' },
+  { id: 'sleep_quality', source: metric('SLEEP_QUALITY'), label: 'Alvásminőség', group: 'Alvás', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'recovery' },
+  { id: 'bedtime_variability', source: metric('BEDTIME_VARIABILITY'), label: 'Lefekvés-szórás', group: 'Alvás', kinds: ['average', 'baseline'], unit: 'perc', defaultSkillKey: 'recovery' },
+  { id: 'protein', source: metric('DAILY_PROTEIN_G'), label: 'Fehérje', group: 'Fuel', kinds: ['habit', 'average', 'baseline'], unit: 'g', defaultSkillKey: 'cooking' },
+  { id: 'kcal', source: metric('DAILY_KCAL'), label: 'Kalória', group: 'Fuel', kinds: ['average', 'baseline'], unit: 'kcal', defaultSkillKey: 'cooking' },
+  { id: 'water', source: metric('DAILY_WATER_ML'), label: 'Víz', group: 'Fuel', kinds: ['habit', 'average'], unit: 'ml', defaultSkillKey: 'recovery' },
+  { id: 'late_meal', source: metric('LATE_MEAL_HOUR'), label: 'Utolsó étkezés ideje', group: 'Fuel', kinds: ['habit', 'average'], unit: 'óra', defaultSkillKey: 'mindset' },
+  { id: 'meal_score', source: metric('MEAL_SCORE'), label: 'Étkezés-pontszám', group: 'Fuel', kinds: ['average', 'baseline'], unit: 'pont', defaultSkillKey: 'cooking' },
+  { id: 'gym_volume', source: metric('GYM_VOLUME_KG'), label: 'Gym-volumen', group: 'Edzés', kinds: ['habit', 'average', 'baseline'], unit: 'kg', defaultSkillKey: 'max_strength' },
+  { id: 'sport_load', source: metric('SPORT_LOAD_MIN'), label: 'Sportterhelés', group: 'Edzés', kinds: ['habit', 'average', 'baseline'], unit: 'perc', defaultSkillKey: 'aerobic_capacity' },
+  { id: 'acwr', source: metric('ACWR'), label: 'Akut:krónikus terhelés', group: 'Edzés', kinds: ['average'], unit: 'arány', defaultSkillKey: 'recovery' },
+  { id: 'hr_recovery', source: metric('RUN_HR_RECOVERY_S'), label: 'Pulzus-visszaállás', group: 'Edzés', kinds: ['average', 'baseline'], unit: 'mp', defaultSkillKey: 'aerobic_capacity' },
+  { id: 'weight_goal', source: { type: 'weight_goal' }, label: 'Súlycél · ütem', group: 'Edzés', kinds: ['linked'], unit: 'ítélet', defaultSkillKey: 'recovery' },
+  { id: 'checkin_energy', source: metric('CHECKIN_ENERGY'), label: 'Check-in energia', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindset' },
+  { id: 'checkin_mental', source: metric('CHECKIN_MENTAL'), label: 'Check-in hangulat', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindfulness' },
+  { id: 'checkin_stress', source: metric('CHECKIN_STRESS'), label: 'Stressz', group: 'Elme', kinds: ['average', 'baseline'], unit: '1–10', defaultSkillKey: 'mindfulness' },
+  { id: 'habits_done', source: metric('HABITS_DONE'), label: 'Kész szokások', group: 'Elme', kinds: ['habit', 'average'], unit: 'db', defaultSkillKey: 'mindset' },
+  { id: 'ritual_closed', source: metric('RITUAL_CLOSED'), label: 'Napzárás', group: 'Elme', kinds: ['habit'], unit: 'igen/nem', defaultSkillKey: 'mindset' },
+  { id: 'daily_xp', source: metric('DAILY_XP'), label: 'Napi XP', group: 'Elme', kinds: ['average', 'baseline'], unit: 'XP', defaultSkillKey: 'mindset' },
+  { id: 'activity_productivity', source: activitySrc('productivity', 'minutes'), label: 'Produktivitás · perc', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'perc', defaultSkillKey: 'productivity' },
+  { id: 'activity_learning', source: activitySrc('learning', 'count'), label: 'Tanulás · alkalom', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'alkalom', defaultSkillKey: 'learning' },
+  { id: 'activity_financial', source: activitySrc('financial', 'huf'), label: 'Pénzügy · Ft', group: 'Activity', kinds: ['target', 'baseline'], unit: 'Ft', defaultSkillKey: 'financial' },
+  { id: 'activity_connection', source: activitySrc('connection', 'count'), label: 'Kapcsolatok · alkalom', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'alkalom', defaultSkillKey: 'connection' },
+  { id: 'activity_cooking', source: activitySrc('cooking', 'count'), label: 'Konyha · alkalom', group: 'Activity', kinds: ['habit', 'baseline', 'target'], unit: 'alkalom', defaultSkillKey: 'cooking' },
+  { id: 'social_mentions', source: { type: 'social_mentions' }, label: 'Társas említések', group: 'Emberek', kinds: ['habit', 'average', 'baseline'], unit: 'ember', defaultSkillKey: 'connection' },
+  { id: 'ring_mozgas', source: ring('mozgas'), label: 'Mozgás-gyűrű', group: 'Életjel', kinds: ['average', 'baseline'], unit: '%', defaultSkillKey: 'recovery' },
+  { id: 'ring_pihenes', source: ring('pihenes'), label: 'Pihenés-gyűrű', group: 'Életjel', kinds: ['average', 'baseline'], unit: '%', defaultSkillKey: 'recovery' },
+  { id: 'ring_lelek', source: ring('lelek'), label: 'Lélek-gyűrű', group: 'Életjel', kinds: ['average', 'baseline'], unit: '%', defaultSkillKey: 'mindfulness' },
+])
 
 // ── Template proposer (mirrors LifeGoalTemplateProposer.java) ──
 

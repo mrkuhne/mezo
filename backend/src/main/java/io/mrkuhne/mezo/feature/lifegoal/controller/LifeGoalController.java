@@ -43,7 +43,7 @@ public class LifeGoalController implements LifeGoalApi {
     @Override public LifeGoalResponse changeLifeGoalStatus(UUID id, LifeGoalStatusRequest req) { return lifeGoalService.changeStatus(currentUserId.get(), id, req.getStatus()); }
     @Override public LifeGoalResponse replaceLifeGoalPillars(UUID id, LifeGoalPillarsRequest req) { return lifeGoalService.replacePillars(currentUserId.get(), id, req.getPillars()); }
     @Override public LifeGoalProposeResponse proposeLifeGoal(LifeGoalProposeRequest req) { return proposeService.propose(currentUserId.get(), req); }
-    @Override public SignalCatalogResponse listLifeGoalSignals() { return signalService.catalog(); }
+    @Override public SignalCatalogResponse listLifeGoalSignals() { return signalService.catalog(currentUserId.get()); }
     @Override public LifeGoalProgressResponse getLifeGoalProgress(UUID id, LocalDate from, LocalDate to) { return progressService.progress(currentUserId.get(), id, from, to); }
     @Override public LifeGoalProgressResponse evaluateLifeGoal(UUID id) { return progressService.evaluate(currentUserId.get(), id); }
     @Override public LifeGoalTodayResponse getLifeGoalsToday() { return progressService.today(currentUserId.get()); }

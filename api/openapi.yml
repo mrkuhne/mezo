@@ -17184,7 +17184,9 @@ components:
           description: >-
             Feed message kind — morning, sleep, weight, midday, evening, or
             people LLM-generated messages; intervention is config text
-            (mezo.companion.interventions), never LLM output.
+            (mezo.companion.interventions) and setup is config text for a
+            configuration gap (mezo.proactive.setup-checks), neither ever LLM
+            output.
           enum:
             - morning
             - sleep
@@ -17193,6 +17195,7 @@ components:
             - evening
             - intervention
             - people
+            - setup
         eyebrow:
           type: string
         body:
@@ -21128,12 +21131,19 @@ components:
     SignalCatalogEntry:
       type: object
       required:
+        - id
         - source
         - label
         - group
         - kinds
         - unit
+        - live
+        - daysWithData
+        - fedPillars
       properties:
+        id:
+          type: string
+          description: stable catalog id (SignalCatalog#id) — the JelekPage row key
         source:
           $ref: '#/components/schemas/PillarSource'
         label:
@@ -21151,6 +21161,21 @@ components:
           type: string
         defaultSkillKey:
           type: string
+        live:
+          type: boolean
+          description: had at least one data day in the last 7 days (mezo-iizd.7)
+        daysWithData:
+          type: integer
+          minimum: 0
+          maximum: 7
+          description: data days out of the last 7
+        fedPillars:
+          type: array
+          items:
+            type: string
+          description: >-
+            labels of the caller's ACTIVE goals' active pillars fed by this
+            signal
     SignalCatalogResponse:
       type: object
       required:

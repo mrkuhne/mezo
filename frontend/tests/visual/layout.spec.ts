@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { seedKalauzSeen } from './kalauzSeed'
 
 /**
  * Layout invariants (mezo-gllr) — non-screenshot Playwright checks in the same harness
@@ -13,6 +14,10 @@ import { test, expect } from '@playwright/test'
  * "content is reachable" — either it fits, or the page scrolls to it. Never clipped into
  * nothing by an `overflow: hidden` island.
  */
+
+// Minden kalauzt látottnak seedelünk: ezek a tesztek MÉRNEK és KATTINTANAK, egy
+// auto-open sheet pedig mindkettőt elrontja (mezo-gb1s.6 — lásd `kalauzSeed.ts`).
+test.beforeEach(async ({ page }) => { await seedKalauzSeen(page) })
 
 /** Real-phone heights the goldens' 956 does not cover. */
 const PHONE_VIEWPORTS = [

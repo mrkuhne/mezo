@@ -42,7 +42,10 @@ export function useSignalCatalog() {
     realFetch: async () => (await lifegoalApi.signals()).entries, realEmpty: [],
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
-  return { entries: q.data, isPending: q.isPending }
+  // `entries` is the established field name (PillarCatalogSheet/PillarCard already destructure
+  // it); `isError`/`refetch` are added here for JelekPage's (mezo-iizd.7) loading/error/list
+  // triad, the same idiom useLifeGoals/useLifeGoalToday already expose.
+  return { entries: q.data, isPending: q.isPending, isError: q.isError, refetch: q.refetch }
 }
 
 /** 28 napos ablak: from = ma−27, to = ma (ISO yyyy-MM-dd). */

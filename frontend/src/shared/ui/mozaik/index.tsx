@@ -152,12 +152,16 @@ interface PageHeroProps {
   name: string
   sub?: string
   children?: ReactNode
+  /** Kalauz-horgony (mezo-gb1s.6) — a hős a legtöbb aloldalon az EGYETLEN feltétel nélkül
+   *  renderelő elem, tehát a „Mutasd meg a képernyőn" gomb csak rajta tud őszintén állni.
+   *  Ugyanaz az idióma, mint a `DayStrip` `kalauzAnchor` propja (mezo-gb1s.5). */
+  kalauzAnchor?: string
 }
 
 /** Subpage hero recipe (session rounds): title, then icon + big number in ONE row, no subtitle theater. */
-export function PageHero({ icon, spot, iconSize = 45, big, name, sub, children }: PageHeroProps) {
+export function PageHero({ icon, spot, iconSize = 45, big, name, sub, children, kalauzAnchor }: PageHeroProps) {
   return (
-    <div className="mz-page-hero">
+    <div className="mz-page-hero" data-kalauz-anchor={kalauzAnchor}>
       <div className="mz-hero-nm">{name}</div>
       <div className="mz-hero-row">
         {spot && <ClaySpot name={spot} size={iconSize} />}
