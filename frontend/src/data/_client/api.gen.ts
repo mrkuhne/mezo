@@ -8301,6 +8301,8 @@ export interface components {
             trigger?: components["schemas"]["PlanTrigger"];
         };
         LifeGoalPillarInput: {
+            /** Format: uuid */
+            id?: string;
             label: string;
             skillKey: string;
             kind: components["schemas"]["PillarKind"];

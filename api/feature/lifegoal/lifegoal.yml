@@ -156,6 +156,11 @@ components:
       type: object
       required: [label, skillKey, kind, source]
       properties:
+        # Identity carried BACK by the client on a pillars-replace so that a rename/retune
+        # updates the row in place instead of dropping a fresh UUID and orphaning the
+        # pillar's evaluation history (life_goal_pillar_day). Absent = a brand-new pillar;
+        # an id that is not one of this goal's live pillars is a 400 (mezo-iizd.2).
+        id: { type: string, format: uuid }
         label: { type: string, minLength: 1, maxLength: 80 }
         skillKey: { type: string, maxLength: 40 }
         kind: { $ref: '#/components/schemas/PillarKind' }

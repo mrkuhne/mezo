@@ -59,8 +59,11 @@ export function CelPage() {
   ].filter(Boolean).join(' · ')
 
   const addPillar = (e: SignalCatalogEntry) => {
+    // The existing pillars go back WITH their ids so the replace updates those rows in place
+    // instead of minting fresh UUIDs and orphaning their evaluation history (mezo-iizd.2);
+    // `position` is server-derived from list order, so it is the only field stripped.
     const next: LifeGoalPillarInput[] = [
-      ...goal.pillars.map(({ id: _id, position: _p, ...rest }) => rest),
+      ...goal.pillars.map(({ position: _p, ...rest }) => rest),
       pillarFromCatalog(e),
     ]
     replacePillars(goal.id, next)

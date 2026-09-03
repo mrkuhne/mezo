@@ -162,7 +162,10 @@ Three tables (`db/changelog/1.0.0/script/…life_goal…sql`), all `OwnedEntity`
   targetDate, direction}` · baseline `{windowDays=28, minDataDays=14, direction}` · linked `{}`).
 - **`life_goal_pillar_day`** — `uq(pillar_id, day)`, `value`/`target`/`baseline numeric`,
   `status` (`hit|partial|miss|no_data`), `computed_at`. **Table + entity + repository exist;
-  nothing writes to it yet** — that is `LifeGoalScorer`/`LifeGoalEvalJob`, slice 2.
+  nothing writes to it yet** — that is `LifeGoalScorer`/`LifeGoalEvalJob`, slice 2. The rows
+  hang off the pillar's **identity**, which is why `replace` updates pillars in place (below)
+  and why every pillar deletion path soft-deletes the pillar's day rows with it
+  (`LifeGoalPillarService.deleteWithDays`; the table has no cascade of its own).
 
 **Contract** — `api/feature/lifegoal/lifegoal.yml`, nine operations:
 
@@ -172,19 +175,32 @@ Three tables (`db/changelog/1.0.0/script/…life_goal…sql`), all `OwnedEntity`
 | POST | `/api/life-goals` | `LifeGoalResponse` (201) | creates in `draft`; 400 on validation |
 | GET | `/api/life-goals/{id}` | `LifeGoalResponse` | 404 if not found/owned |
 | PUT | `/api/life-goals/{id}` | `LifeGoalResponse` | editable fields only — status/pillars untouched |
-| DELETE | `/api/life-goals/{id}` | 204 | soft-delete goal + pillars |
+| DELETE | `/api/life-goals/{id}` | 204 | soft-delete goal + pillars + their day rows |
 | POST | `/api/life-goals/{id}/status` | `LifeGoalResponse` | lifecycle transition; 409 on illegal one |
-| PUT | `/api/life-goals/{id}/pillars` | `LifeGoalResponse` | replaces the whole list, `maxItems: 5` |
+| PUT | `/api/life-goals/{id}/pillars` | `LifeGoalResponse` | replaces the whole list, `maxItems: 5`; an echoed `id` keeps that pillar |
 | GET | `/api/life-goals/signals` | `SignalCatalogResponse` | the 28-entry closed catalog |
 | POST | `/api/life-goals/propose` | `LifeGoalProposeResponse` | AI-or-template draft, never empty |
 
 **Error codes** (`messages.properties`): `LIFE_GOAL_INVALID_STATUS_TRANSITION`,
 `LIFE_GOAL_UNKNOWN_SIGNAL`, `LIFE_GOAL_UNKNOWN_SKILL`, `LIFE_GOAL_TOO_MANY_PILLARS`,
-`LIFE_GOAL_KIND_NOT_ALLOWED`. **Gotcha (§9):** the contract's `maxItems: 5` on both
+`LIFE_GOAL_KIND_NOT_ALLOWED`, `LIFE_GOAL_UNKNOWN_PILLAR`. **Gotcha (§9):** the contract's `maxItems: 5` on both
 `LifeGoalUpsertRequest.pillars` and `LifeGoalPillarsRequest.pillars` intercepts a 6th pillar
 with a generic bean-validation error *before* `LifeGoalPillarService.validate`'s
 `LIFE_GOAL_TOO_MANY_PILLARS` check ever runs — `LifeGoalProperties.maxPillars` (also capped at
 5 by `@Max(5)`) exists only for future non-HTTP callers; raising the cap means raising both.
+
+**Pillar identity across a replace** (mezo-iizd.2, `LifeGoalPillarService.replace`):
+`LifeGoalPillarInput.id` is optional and is the client's way of saying *this is the same pillar*.
+An input carrying the id of one of the goal's live pillars **updates that row in place** (label,
+skill, kind, weight, active, source, rule, position); an input without an id is inserted; a live
+pillar nobody claimed is soft-deleted together with its `life_goal_pillar_day` rows. An id that
+is not one of this goal's live pillars — including the same id twice in one list — is a 400
+(`LIFE_GOAL_UNKNOWN_PILLAR`), never a silent insert. One deliberate exception to "identity keeps
+history": if the echoed pillar's **`source` or `kind` changed**, the day rows are dropped even
+though the id survives — old `hit`/`miss` verdicts about a different measurement are not
+comparable. The frontend upholds its half of this in `CelPage.addPillar`, which strips only
+`position` (server-derived) and sends every existing pillar back with its id; the mock hook and
+the MSW handler mirror the same rule (`lifegoalHooks.replacePillars`, `handlers.lifeGoalEcho`).
 
 **Signal catalog** (`SignalCatalog`, 28 entries, seven Hungarian groups): Alvás (3: sleep
 duration/quality, bedtime variability), Fuel (5: protein, kcal, water, late-meal hour, meal

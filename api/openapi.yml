@@ -20250,6 +20250,9 @@ components:
         - kind
         - source
       properties:
+        id:
+          type: string
+          format: uuid
         label:
           type: string
           minLength: 1
