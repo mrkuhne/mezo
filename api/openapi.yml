@@ -109,7 +109,8 @@ tags:
   - name: LlmUsage
     description: >-
       Read-only rollups of the llm_log_history audit table (mezo-2zyu) — LLM
-      call count + cost per calendar period
+      call count + cost per calendar period — every operation OWNER-only since
+      mezo-qw37.3 (403 AUTH_FORBIDDEN)
   - name: Needs
     description: 'Életjel-ringek — day-close snapshot, bonus XP, "Életben tartva" streak'
   - name: MeWeek
@@ -130,6 +131,14 @@ tags:
       with ranked, evidence-bound suspects. Evidence is code-collected and
       frozen at generation time; the model selects it by index and can never
       invent a reference.
+  - name: Admin
+    description: >-
+      Beta admin (mezo-qw37.3) — invite codes and account management, every
+      operation OWNER-only (403 AUTH_FORBIDDEN otherwise)
+  - name: LifeGoal
+    description: >-
+      Életcél-rendszer — PERMAH-dimenziós célok, pillérek a zárt
+      jel-katalógusból, AI-javaslat (mezo-iizd)
 paths:
   /api/auth/login:
     post:
@@ -2394,6 +2403,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/timing-profile:
+    get:
+      tags:
+        - Train
+      operationId: getTimingProfile
+      summary: The caller's learned workout-timing profile
+      description: >
+        Per-component learned pacing in seconds, used to personalise the
+        session-length estimate. Always complete: any component the user has not
+        yet accumulated data for is returned at its static seed, so the client
+        never has to implement a cold-start branch.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimingProfileResponse'
         '401':
           description: Missing/invalid token
           content:
@@ -7320,6 +7353,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LlmUsageSummaryResponse'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/llm-usage/breakdown:
     get:
       tags:
@@ -7347,6 +7386,12 @@ paths:
                 $ref: '#/components/schemas/LlmUsageBreakdownResponse'
         '400':
           description: Unknown period
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
           content:
             application/json:
               schema:
@@ -7386,6 +7431,15 @@ paths:
             type: string
             pattern: >-
               ^(CHAT|CHAT_STREAM|VISION|SMART|TOOL|TRANSCRIBE|EMBED_DOC|EMBED_QUERY)$
+        - name: userId
+          in: query
+          required: false
+          description: >-
+            only calls made by this account (created_by); background rows (null
+            owner) never match
+          schema:
+            type: string
+            format: uuid
         - name: limit
           in: query
           required: false
@@ -7405,6 +7459,12 @@ paths:
                 $ref: '#/components/schemas/LlmCallListResponse'
         '400':
           description: 'Unknown period, status or call kind'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
           content:
             application/json:
               schema:
@@ -7431,6 +7491,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LlmCallDetailResponse'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: No such call
           content:
@@ -8591,6 +8657,491 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: 'Diagnosis not found, not owned, or no suspect at that rank'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/admin/invites:
+    post:
+      tags:
+        - Admin
+      operationId: createInvite
+      summary: Mint a one-shot invite code (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInviteRequest'
+      responses:
+        '200':
+          description: 'The new code, shown once in full on the admin page'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    get:
+      tags:
+        - Admin
+      operationId: listInvites
+      summary: 'Every invite, open and used, newest first (Admin)'
+      responses:
+        '200':
+          description: Invites newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InviteResponse'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/admin/invites/{id}':
+    delete:
+      tags:
+        - Admin
+      operationId: deleteInvite
+      summary: Revoke an unused invite (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Revoked
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Unknown invite (ADMIN_INVITE_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            Already used — the registration it produced must stay traceable
+            (ADMIN_INVITE_USED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/admin/users:
+    get:
+      tags:
+        - Admin
+      operationId: listUsers
+      summary: 'Every account, oldest first (Admin)'
+      responses:
+        '200':
+          description: Accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUserResponse'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/admin/users/{id}/reset-password':
+    post:
+      tags:
+        - Admin
+      operationId: resetPassword
+      summary: >-
+        Replace the account's password with a temporary one and force a change
+        at next login (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: >-
+            The temporary password — returned exactly once, never stored in
+            clear
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetPasswordResponse'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Unknown account (ADMIN_USER_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/admin/users/{id}/status':
+    post:
+      tags:
+        - Admin
+      operationId: setStatus
+      summary: >-
+        Enable or disable an account; a disabled account is rejected on its next
+        request (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetUserStatusRequest'
+      responses:
+        '204':
+          description: Status set
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Unknown account (ADMIN_USER_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The owner cannot change their own status (ADMIN_SELF_STATUS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/life-goals:
+    get:
+      tags:
+        - LifeGoal
+      operationId: listLifeGoals
+      summary: 'Every non-deleted life goal of the caller, newest first (LifeGoal)'
+      responses:
+        '200':
+          description: Goals with their pillars
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LifeGoalResponse'
+    post:
+      tags:
+        - LifeGoal
+      operationId: createLifeGoal
+      summary: Create a life goal in draft with its pillars (LifeGoal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifeGoalUpsertRequest'
+      responses:
+        '201':
+          description: Created (status draft)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalResponse'
+        '400':
+          description: >-
+            Validation error — unknown signal/skill, >5 pillars, target before
+            start (LIFE_GOAL_*)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/life-goals/signals:
+    get:
+      tags:
+        - LifeGoal
+      operationId: listLifeGoalSignals
+      summary: The closed signal catalog a pillar may point at (LifeGoal)
+      responses:
+        '200':
+          description: Catalog entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignalCatalogResponse'
+  /api/life-goals/propose:
+    post:
+      tags:
+        - LifeGoal
+      operationId: proposeLifeGoal
+      summary: >-
+        Propose-only AI draft — dimension, frame, pillars from the catalog,
+        obstacles, ha–akkor (LifeGoal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifeGoalProposeRequest'
+      responses:
+        '200':
+          description: >-
+            Proposal (template fallback when the AI is off or fails — never
+            empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalProposeResponse'
+  '/api/life-goals/{id}':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - LifeGoal
+      operationId: getLifeGoal
+      summary: One life goal with pillars (LifeGoal)
+      responses:
+        '200':
+          description: Goal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalResponse'
+        '404':
+          description: Not found / not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - LifeGoal
+      operationId: updateLifeGoal
+      summary: >-
+        Replace the goal's editable fields (status and pillars untouched)
+        (LifeGoal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifeGoalUpsertRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - LifeGoal
+      operationId: deleteLifeGoal
+      summary: Soft-delete the goal and its pillars (LifeGoal)
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/life-goals/{id}/status':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - LifeGoal
+      operationId: changeLifeGoalStatus
+      summary: >-
+        Lifecycle transition — activate / park / done / archive; no active-count
+        cap (LifeGoal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifeGoalStatusRequest'
+      responses:
+        '200':
+          description: New state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalResponse'
+        '409':
+          description: Illegal transition (LIFE_GOAL_INVALID_STATUS_TRANSITION)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/life-goals/{id}/pillars':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - LifeGoal
+      operationId: replaceLifeGoalPillars
+      summary: 'Replace the goal''s pillar list (max 5, catalog-validated) (LifeGoal)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LifeGoalPillarsRequest'
+      responses:
+        '200':
+          description: Goal with the new pillars
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/life-goals/today:
+    get:
+      tags:
+        - LifeGoal
+      operationId: getLifeGoalsToday
+      summary: >-
+        Per-active-goal weekly arrow + 7-day dots + today's pillar tally
+        (LifeGoal)
+      responses:
+        '200':
+          description: Summary for the hub tiles and the Nap tile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalTodayResponse'
+  '/api/life-goals/{id}/progress':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - LifeGoal
+      operationId: getLifeGoalProgress
+      summary: >-
+        Daily rows + computed arrows + conflict note for one goal; stored rows
+        win, missing days are computed on read (LifeGoal)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalProgressResponse'
+        '404':
+          description: Not found / not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/life-goals/{id}/evaluate':
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - LifeGoal
+      operationId: evaluateLifeGoal
+      summary: >-
+        Manual evaluation — upserts the last 3 closed days' pillar rows, returns
+        fresh 28-day progress (LifeGoal)
+      responses:
+        '200':
+          description: Fresh progress after the upsert
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LifeGoalProgressResponse'
+        '404':
+          description: Not found / not owned
           content:
             application/json:
               schema:
@@ -10623,6 +11174,24 @@ components:
           items:
             $ref: '#/components/schemas/Medal'
           description: 'Medals earned across the session, including SESSION_VOLUME'
+        startedAt:
+          type: string
+          format: date-time
+          description: >-
+            Wall-clock start of the instance. Absent on rows created before
+            mezo-1jm8.
+        finishedAt:
+          type: string
+          format: date-time
+          description: >
+            Wall-clock finish. ABSENT on an auto-closed (abandoned) session even
+            though its status is 'completed' — that pair is exactly "the timing
+            here is not trustworthy".
+        activeSeconds:
+          type: integer
+          description: >
+            Derived work time: consecutive set-completion intervals, each
+            clipped at the gap cap. Absent when nothing was logged.
     WorkoutSummaryResponse:
       type: object
       required:
@@ -10704,6 +11273,24 @@ components:
           description: >
             The workout-level closing note, absent when none was written
             (mezo-d20.8.2.2).
+        startedAt:
+          type: string
+          format: date-time
+          description: >-
+            Wall-clock start of the instance. Absent on rows created before
+            mezo-1jm8.
+        finishedAt:
+          type: string
+          format: date-time
+          description: >
+            Wall-clock finish. ABSENT on an auto-closed (abandoned) session even
+            though its status is 'completed' — that pair is exactly "the timing
+            here is not trustworthy".
+        activeSeconds:
+          type: integer
+          description: >
+            Derived work time: consecutive set-completion intervals, each
+            clipped at the gap cap. Absent when nothing was logged.
         exercises:
           type: array
           items:
@@ -10901,6 +11488,12 @@ components:
           items:
             $ref: '#/components/schemas/Medal'
           description: Medals this set earned (empty when none)
+        doneAt:
+          type: string
+          format: date-time
+          description: >-
+            When the set was completed. Already persisted since mezo-n5q;
+            exposed by mezo-1jm8.
     WorkoutStartRequest:
       type: object
       required:
@@ -11548,6 +12141,48 @@ components:
         notes:
           type: string
           nullable: true
+    TimingProfileResponse:
+      type: object
+      required:
+        - leadInSeconds
+        - setCycleCompoundSeconds
+        - setCycleIsolationSeconds
+        - transitionSeconds
+        - samples
+      properties:
+        leadInSeconds:
+          type: number
+          description: Session start to the first completed set.
+        setCycleCompoundSeconds:
+          type: number
+          description: Rest + execution for one compound set.
+        setCycleIsolationSeconds:
+          type: number
+          description: Rest + execution for one non-compound set.
+        transitionSeconds:
+          type: number
+          description: Interval spanning an exercise change.
+        samples:
+          $ref: '#/components/schemas/TimingProfileSamples'
+    TimingProfileSamples:
+      type: object
+      required:
+        - leadIn
+        - setCycleCompound
+        - setCycleIsolation
+        - transition
+      description: >-
+        Accepted observations per component. 0 means the value is still the
+        static seed.
+      properties:
+        leadIn:
+          type: integer
+        setCycleCompound:
+          type: integer
+        setCycleIsolation:
+          type: integer
+        transition:
+          type: integer
     GoalResponse:
       type: object
       required:
@@ -11743,6 +12378,18 @@ components:
             sign×rate%/100×kg×kcalPerKg÷7
         rationale:
           type: string
+        trainingDayKcal:
+          type: integer
+          nullable: true
+          description: >-
+            Day-type kcal target on a training day (kcal +
+            shift×restDays/trainingDays); null → uniform kcal (mezo-sxlj)
+        restDayKcal:
+          type: integer
+          nullable: true
+          description: >-
+            Day-type kcal target on a rest day (kcal − shift, floored at BMR);
+            null → uniform kcal (mezo-sxlj)
     GoalGuardStatus:
       type: object
       required:
@@ -17475,6 +18122,7 @@ components:
         - proteinTier
         - waterMl
         - fiberG
+        - dayTypeShiftKcal
       properties:
         splitPreset:
           type: string
@@ -17516,6 +18164,13 @@ components:
           type: integer
           minimum: 10
           maximum: 80
+        dayTypeShiftKcal:
+          type: integer
+          minimum: 0
+          maximum: 500
+          description: >-
+            Kcal moved off each rest day onto training days (weekly budget
+            unchanged); 0 = uniform days
     SetDietSettingsRequest:
       type: object
       required:
@@ -17523,6 +18178,7 @@ components:
         - proteinTier
         - waterMl
         - fiberG
+        - dayTypeShiftKcal
       properties:
         splitPreset:
           type: string
@@ -17557,6 +18213,13 @@ components:
           type: integer
           minimum: 10
           maximum: 80
+        dayTypeShiftKcal:
+          type: integer
+          minimum: 0
+          maximum: 500
+          description: >-
+            Kcal moved off each rest day onto training days (weekly budget
+            unchanged); 0 = uniform days
     TutorialProgressEntry:
       type: object
       required:
@@ -17983,6 +18646,7 @@ components:
         - totals
         - features
         - models
+        - byUser
       properties:
         from:
           type: string
@@ -18002,6 +18666,13 @@ components:
             one
           items:
             $ref: '#/components/schemas/LlmUsageGroup'
+        byUser:
+          type: array
+          description: >-
+            one entry per calling account, cost-descending (unpriced last); the
+            null-user entry is the background (cron/stream) traffic
+          items:
+            $ref: '#/components/schemas/LlmUsageUserGroup'
     LlmUsageTotals:
       type: object
       required:
@@ -18053,6 +18724,32 @@ components:
           type: number
           format: double
           nullable: true
+    LlmUsageUserGroup:
+      type: object
+      required:
+        - callCount
+        - totalTokens
+      properties:
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          description: null = background traffic with no principal
+        name:
+          type: string
+          nullable: true
+          description: app_user.name; null for background traffic or a deleted account
+        callCount:
+          type: integer
+          format: int64
+        totalTokens:
+          type: integer
+          format: int64
+          description: sum of total_tokens over the rows that reported it
+        costUsd:
+          type: number
+          format: double
+          nullable: true
     LlmCallListResponse:
       type: object
       required:
@@ -18084,6 +18781,11 @@ components:
         createdAt:
           type: string
           format: date-time
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+          description: null for background (cron/stream) calls
         feature:
           type: string
         operation:
@@ -19414,3 +20116,631 @@ components:
         stale:
           type: boolean
           description: a log landed in the window after generatedAt
+    CreateInviteRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          maxLength: 120
+          nullable: true
+          description: 'who the code is meant for — free text, shown in the list'
+          example: Csaba
+        expiresInDays:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: omitted = never expires
+    InviteResponse:
+      type: object
+      required:
+        - id
+        - code
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: MEZO-7KQ2-XN4P
+        label:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        usedBy:
+          type: string
+          format: uuid
+          nullable: true
+        usedByName:
+          type: string
+          nullable: true
+          description: display name of the account that consumed the code
+        usedAt:
+          type: string
+          format: date-time
+          nullable: true
+    AdminUserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - role
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          description: OWNER or USER
+        status:
+          type: string
+          description: ACTIVE or DISABLED
+        createdAt:
+          type: string
+          format: date-time
+        onboardedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastSeenAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: stamped at most every 5 minutes by CurrentUser
+    ResetPasswordResponse:
+      type: object
+      required:
+        - temporaryPassword
+      properties:
+        temporaryPassword:
+          type: string
+          description: 12 readable characters; must_change_password is set on the account
+    SetUserStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          pattern: ^(ACTIVE|DISABLED)$
+    LifeGoalDimension:
+      type: string
+      enum:
+        - positive_emotion
+        - engagement
+        - relationships
+        - meaning
+        - accomplishment
+        - health
+    LifeGoalStatus:
+      type: string
+      enum:
+        - draft
+        - active
+        - parked
+        - done
+        - archived
+    LifeGoalFrame:
+      type: string
+      enum:
+        - intrinsic
+        - extrinsic
+        - unset
+    PillarKind:
+      type: string
+      enum:
+        - habit
+        - average
+        - target
+        - baseline
+        - linked
+    PillarSource:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - metric
+            - activity
+            - habit
+            - weight_goal
+            - needs_ring
+            - social_mentions
+        key:
+          type: string
+          description: MetricKey name for type=metric
+        skillKey:
+          type: string
+          description: activity skill filter for type=activity
+        measure:
+          type: string
+          enum:
+            - minutes
+            - count
+            - huf
+        habitKey:
+          type: string
+        ring:
+          type: string
+          enum:
+            - energia
+            - hidratacio
+            - pihenes
+            - mozgas
+            - lelek
+            - rend
+    PillarRule:
+      type: object
+      properties:
+        threshold:
+          type: number
+        comparator:
+          type: string
+          enum:
+            - gte
+            - lte
+        daysPerWeek:
+          type: integer
+          minimum: 1
+          maximum: 7
+        windowDays:
+          type: integer
+          minimum: 1
+          maximum: 90
+        startValue:
+          type: number
+        targetValue:
+          type: number
+        startDate:
+          type: string
+          format: date
+        targetDate:
+          type: string
+          format: date
+        direction:
+          type: string
+          enum:
+            - up
+            - down
+        minDataDays:
+          type: integer
+          minimum: 1
+          maximum: 90
+    PlanTrigger:
+      type: object
+      required:
+        - source
+      properties:
+        source:
+          type: string
+          maxLength: 60
+        condition:
+          type: string
+          maxLength: 120
+        delayHours:
+          type: integer
+          minimum: 0
+          maximum: 168
+    IfThenPlan:
+      type: object
+      required:
+        - ha
+        - akkor
+      properties:
+        ha:
+          type: string
+          minLength: 1
+          maxLength: 240
+        akkor:
+          type: string
+          minLength: 1
+          maxLength: 240
+        trigger:
+          $ref: '#/components/schemas/PlanTrigger'
+    LifeGoalPillarInput:
+      type: object
+      required:
+        - label
+        - skillKey
+        - kind
+        - source
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        skillKey:
+          type: string
+          maxLength: 40
+        kind:
+          $ref: '#/components/schemas/PillarKind'
+        weight:
+          type: integer
+          minimum: 1
+          maximum: 3
+          default: 1
+        active:
+          type: boolean
+          default: true
+        source:
+          $ref: '#/components/schemas/PillarSource'
+        rule:
+          $ref: '#/components/schemas/PillarRule'
+    LifeGoalPillarResponse:
+      allOf:
+        - $ref: '#/components/schemas/LifeGoalPillarInput'
+        - type: object
+          required:
+            - id
+            - position
+          properties:
+            id:
+              type: string
+              format: uuid
+            position:
+              type: integer
+    LifeGoalUpsertRequest:
+      type: object
+      required:
+        - title
+        - dimension
+        - startDate
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        whyText:
+          type: string
+          maxLength: 600
+        frame:
+          $ref: '#/components/schemas/LifeGoalFrame'
+        dimension:
+          $ref: '#/components/schemas/LifeGoalDimension'
+        secondaryDimension:
+          $ref: '#/components/schemas/LifeGoalDimension'
+        startDate:
+          type: string
+          format: date
+        targetDate:
+          type: string
+          format: date
+        obstacleText:
+          type: string
+          maxLength: 300
+        ifThenPlans:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/IfThenPlan'
+        pillars:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/LifeGoalPillarInput'
+    LifeGoalResponse:
+      type: object
+      required:
+        - id
+        - title
+        - frame
+        - dimension
+        - status
+        - startDate
+        - ifThenPlans
+        - pillars
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        whyText:
+          type: string
+        frame:
+          $ref: '#/components/schemas/LifeGoalFrame'
+        dimension:
+          $ref: '#/components/schemas/LifeGoalDimension'
+        secondaryDimension:
+          $ref: '#/components/schemas/LifeGoalDimension'
+        status:
+          $ref: '#/components/schemas/LifeGoalStatus'
+        startDate:
+          type: string
+          format: date
+        targetDate:
+          type: string
+          format: date
+        activatedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+        obstacleText:
+          type: string
+        ifThenPlans:
+          type: array
+          items:
+            $ref: '#/components/schemas/IfThenPlan'
+        pillars:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeGoalPillarResponse'
+    LifeGoalStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/LifeGoalStatus'
+    LifeGoalPillarsRequest:
+      type: object
+      required:
+        - pillars
+      properties:
+        pillars:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/LifeGoalPillarInput'
+    LifeGoalProposeRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        whyText:
+          type: string
+          maxLength: 600
+        targetDate:
+          type: string
+          format: date
+    LifeGoalProposeResponse:
+      type: object
+      required:
+        - dimension
+        - frame
+        - pillars
+        - obstacles
+        - ifThenPlans
+        - source
+      properties:
+        dimension:
+          $ref: '#/components/schemas/LifeGoalDimension'
+        secondaryDimension:
+          $ref: '#/components/schemas/LifeGoalDimension'
+        frame:
+          $ref: '#/components/schemas/LifeGoalFrame'
+        frameNote:
+          type: string
+          description: Mezo's one-sentence reading of the why (Hungarian)
+        reframedWhy:
+          type: string
+          description: the intrinsic reframing offered when frame=extrinsic
+        pillars:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeGoalPillarInput'
+        obstacles:
+          type: array
+          items:
+            type: string
+        ifThenPlans:
+          type: array
+          items:
+            $ref: '#/components/schemas/IfThenPlan'
+        source:
+          type: string
+          enum:
+            - ai
+            - template
+    SignalCatalogEntry:
+      type: object
+      required:
+        - source
+        - label
+        - group
+        - kinds
+        - unit
+      properties:
+        source:
+          $ref: '#/components/schemas/PillarSource'
+        label:
+          type: string
+        group:
+          type: string
+          description: >-
+            Hungarian group label (Alvás · Fuel · Edzés · Elme · Activity ·
+            Emberek · Életjel)
+        kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/PillarKind'
+        unit:
+          type: string
+        defaultSkillKey:
+          type: string
+    SignalCatalogResponse:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignalCatalogEntry'
+    PillarDayStatus:
+      type: string
+      enum:
+        - hit
+        - partial
+        - miss
+        - no_data
+    TrendArrow:
+      type: string
+      enum:
+        - up
+        - flat
+        - down
+        - insufficient
+    PillarDayEntry:
+      type: object
+      required:
+        - day
+        - status
+      properties:
+        day:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/PillarDayStatus'
+        value:
+          type: number
+        target:
+          type: number
+        baseline:
+          type: number
+    PillarProgress:
+      type: object
+      required:
+        - pillarId
+        - arrow
+        - days
+      properties:
+        pillarId:
+          type: string
+          format: uuid
+        arrow:
+          $ref: '#/components/schemas/TrendArrow'
+        currentValue:
+          type: number
+          description: mean of the last 7 days' values (absent when none)
+        referenceValue:
+          type: number
+          description: >-
+            the rule's comparison figure: threshold / expected(today) / baseline
+            median
+        missingHitDays:
+          type: integer
+          description: >-
+            habit kind, arrow=down only: max(0, daysPerWeek − hits in the last 7
+            days)
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/PillarDayEntry'
+    GoalDayEntry:
+      type: object
+      required:
+        - day
+      properties:
+        day:
+          type: string
+          format: date
+        point:
+          type: number
+          description: weighted daily point 0..1; absent = no pillar had data
+    LifeGoalProgressResponse:
+      type: object
+      required:
+        - goalId
+        - from
+        - to
+        - arrow
+        - days
+        - pillars
+        - conflicts
+      properties:
+        goalId:
+          type: string
+          format: uuid
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        arrow:
+          $ref: '#/components/schemas/TrendArrow'
+        weeklyPct:
+          type: integer
+          description: >-
+            round(mean of the last 7 days' points × 100); absent when no
+            data-day in the window
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalDayEntry'
+        pillars:
+          type: array
+          items:
+            $ref: '#/components/schemas/PillarProgress'
+        conflicts:
+          type: array
+          items:
+            type: string
+          description: >-
+            Hungarian one-liners — same signal pulled in opposite directions by
+            another active goal
+    LifeGoalTodaySummary:
+      type: object
+      required:
+        - goalId
+        - title
+        - dimension
+        - arrow
+        - days7
+      properties:
+        goalId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        dimension:
+          $ref: '#/components/schemas/LifeGoalDimension'
+        arrow:
+          $ref: '#/components/schemas/TrendArrow'
+        days7:
+          type: array
+          description: >-
+            oldest→today; goal-day dot statuses derived from the daily point
+            (≥0.66 hit, ≥0.33 partial, <0.33 miss, null no_data)
+          items:
+            $ref: '#/components/schemas/PillarDayStatus'
+        pillarsTotal:
+          type: integer
+        pillarsHitToday:
+          type: integer
+    LifeGoalTodayResponse:
+      type: object
+      required:
+        - goals
+      properties:
+        goals:
+          type: array
+          items:
+            $ref: '#/components/schemas/LifeGoalTodaySummary'

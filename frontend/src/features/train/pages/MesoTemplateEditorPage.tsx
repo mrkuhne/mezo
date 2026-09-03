@@ -14,7 +14,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useMesoTemplates } from '@/data/hooks'
+import { useMesoTemplates, useTimingProfile } from '@/data/hooks'
 import type { ExerciseLibraryItem, GymExercise, MesoDay, MesoTemplate, MusclePriorities } from '@/data/types'
 import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
 import { useBackNav } from '@/shared/hooks/useBackNav'
@@ -151,6 +151,10 @@ function TemplateDayEditor({ template, onPersist }: {
   // final review, fix 2).
   const [priorities, setPriorities] = useState<MusclePriorities>(() => template.musclePriorities ?? {})
   const [pickerDay, setPickerDay] = useState<string | null>(null)
+  // Calibrated pacing (Task 12, mezo-dzbm) for the MesoEditor hero below — fetched here
+  // (a pages/ component) and passed down as a prop: components/ stay presentational, pages/
+  // own data fetching (frontend_conventions.md).
+  const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
 
   const apply = (next: MesoDay[]) => {
     setDays(next)
@@ -217,6 +221,8 @@ function TemplateDayEditor({ template, onPersist }: {
           onReorder={reorderExercises}
           priorities={priorities}
           volumePerMuscle={template.volumePerMuscle ?? undefined}
+          timingProfile={timingProfile}
+          timingProfilePending={timingProfilePending}
         />
       </div>
 

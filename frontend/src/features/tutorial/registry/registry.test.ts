@@ -1,11 +1,8 @@
 import { matchRoutes } from 'react-router-dom'
 import { routes } from '@/app/router'
-import { KALAUZ_REGISTRY, findKalauz, getKalauz } from '@/features/tutorial/registry'
+import { KALAUZ_REGISTRY, type KalauzEntry, findKalauz, getKalauz, resolveKalauz } from '@/features/tutorial/registry'
 import { FOGALMAK, type FogalomKey } from '@/features/tutorial/registry/fogalmak'
-
-// Stems, not whole words — no trailing \b — so inflections (pl. "kellene", "hibázik", "elbuktad",
-// "rosszul") are caught too, not just the dictionary form.
-const FORBIDDEN = /\b(kell|muszáj|hib[aá]|elbuk|rossz)/i
+import { FORBIDDEN, countSentences } from '@/features/tutorial/registry/lint'
 
 // `matchRoutes(...).not.toBeNull()` alone would never fail: a router.tsx-ben van egy
 // top-szintű `{ path: '*', element: <Navigate to="/nap" /> }` fogó-route (:326), ami
@@ -38,10 +35,7 @@ test('hang-lint: nincs tiltott szó, kártyánként legfeljebb 2 mondat, fogalom
   for (const e of KALAUZ_REGISTRY) for (const c of e.cards) {
     expect(c.voice).not.toMatch(FORBIDDEN)
     expect(c.title).not.toMatch(FORBIDDEN)
-    // A lookahead szándékosan tág: a mondat kezdődhet **félkövéren** (`*`), számjeggyel, vagy
-    // kisbetűvel is (idézet, márkanév) — a szűk „csak nagybetű" változat mellett egy 3 mondatos
-    // kártya átcsúszott volna. Unicode-flag, hogy az ékezetes kisbetűk is beleessenek.
-    const sentences = c.voice.split(/[.!?…]\s+(?=[\p{L}\d*„])/u).length
+    const sentences = countSentences(c.voice)
     expect(sentences).toBeLessThanOrEqual(2)
     if (c.kind === 'fogalom') expect(c.def.split(/\s+/).length).toBeLessThanOrEqual(25)
   }
@@ -86,4 +80,71 @@ test('szótár: a definíciók lintelve vannak', () => {
     expect(f.term, key).not.toMatch(FORBIDDEN)
     expect(f.def.split(/\s+/).length, key).toBeLessThanOrEqual(25)
   }
+})
+
+// ── route-feloldás (mezo-gvbl) ────────────────────────────────────────────────
+// A T3 detail-route-ok (`:id`) mellett a routerben ott ülnek a literál testvéreik
+// (`/me/people/heti`, `/me/goals/new`, `/fuel/recipes/muhely`, `/train/mesocycles/compare`),
+// tehát az átfedés nem tiltható — a feloldásnak kell determinisztikusnak lennie.
+const entry = (id: string, route: string): KalauzEntry => ({
+  id, route, tier: 'T3', version: 1, label: id,
+  cards: [{ kind: 'intro', title: id, voice: id, spot: 'i-nap' }],
+})
+
+test('a specifikusabb route nyer, a registry-sorrendtől függetlenül', () => {
+  const literal = entry('people-heti', '/me/people/heti')
+  const param = entry('person', '/me/people/:id')
+  expect(resolveKalauz([param, literal], '/me/people/heti')?.id).toBe('people-heti')
+  expect(resolveKalauz([literal, param], '/me/people/heti')?.id).toBe('people-heti')
+  expect(resolveKalauz([literal, param], '/me/people/42')?.id).toBe('person')
+})
+
+test('route-lint: nincs két bejegyzés azonos route-mintával', () => {
+  const seen = new Map<string, string>()
+  for (const e of KALAUZ_REGISTRY) {
+    expect(seen.get(e.route), `${e.route}: ${seen.get(e.route)} vs ${e.id}`).toBeUndefined()
+    seen.set(e.route, e.id)
+  }
+})
+
+// A `matchRoutes` rangsora nem totális: két KÜLÖNBÖZŐ minta azonos pontszámot kaphat
+// (statikus szegmens 10, paraméteres 3), és holtversenyben a tömbsorrend dönt — némán.
+// A lint ezért PÁRONKÉNT keres tanú-útvonalat: azt a konkrét pathnamet, amit mindkét minta
+// matchel (a literál szegmensek fixek, a két paraméteres pozíció helyőrzőt kap).
+const witness = (a: string, b: string): string | null => {
+  const A = a.split('/'), B = b.split('/')
+  if (A.length !== B.length) return null
+  const out: string[] = []
+  for (let i = 0; i < A.length; i++) {
+    const [x, y] = [A[i]!, B[i]!]
+    const [px, py] = [x.startsWith(':'), y.startsWith(':')]
+    if (!px && !py && x !== y) return null
+    out.push(px ? (py ? 'x1' : y) : x)
+  }
+  return out.join('/')
+}
+
+/** Azok az átfedő párok, amelyeken a registry MEGFORDÍTÁSA más kalauzt old fel. */
+const orderDependent = (entries: KalauzEntry[]) => {
+  const rev = [...entries].reverse()
+  const bad: string[] = []
+  for (let i = 0; i < entries.length; i++) for (let j = i + 1; j < entries.length; j++) {
+    const [a, b] = [entries[i]!, entries[j]!]
+    const w = witness(a.route, b.route)
+    if (w != null && resolveKalauz(entries, w)?.id !== resolveKalauz(rev, w)?.id) {
+      bad.push(`${a.id} (${a.route}) ⇄ ${b.id} (${b.route}) — ${w}`)
+    }
+  }
+  return bad
+}
+
+test('a sorrend-lint elkapja a holtversenyes párt', () => {
+  // `/me/:a/heti` és `/me/people/:b` pontszáma egyaránt 10+3+10, a tanú `/me/people/heti`-t
+  // mindkettő matcheli — ott csak a tömbsorrend dönt.
+  const pair = [entry('a', '/me/:a/heti'), entry('b', '/me/people/:b')]
+  expect(orderDependent(pair)).toHaveLength(1)
+})
+
+test('a KALAUZ_REGISTRY feloldása sorrend-független', () => {
+  expect(orderDependent(KALAUZ_REGISTRY)).toEqual([])
 })

@@ -215,7 +215,7 @@ test('GoalPlannerPage real-mode save posts the goal (no profile PUT) and activat
   )
   render(
     <QueryWrapper>
-      <MemoryRouter initialEntries={['/me/goals/new']}>
+      <MemoryRouter initialEntries={['/me/goals/weight/new']}>
         <GoalPlannerPage />
       </MemoryRouter>
     </QueryWrapper>,
@@ -242,16 +242,16 @@ test('GoalPlannerPage real-mode save posts the goal (no profile PUT) and activat
 test('GoalPlannerPage redirects an incomplete-profile user away from the wizard (real mode, 404)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   // 404 = no biometric profile yet → incomplete → the route must NOT render the
-  // wizard; it redirects to /me/goals where the GoalGate setup flow lives.
+  // wizard; it redirects to /me/goals/weight where the GoalGate setup flow lives.
   server.use(
     http.get(`${API_BASE}/api/biometrics/profile`, () => new HttpResponse(null, { status: 404 })),
   )
   render(
     <QueryWrapper>
-      <MemoryRouter initialEntries={['/me/goals/new']}>
+      <MemoryRouter initialEntries={['/me/goals/weight/new']}>
         <Routes>
-          <Route path="/me/goals" element={<div>cél-nézet</div>} />
-          <Route path="/me/goals/new" element={<GoalPlannerPage />} />
+          <Route path="/me/goals/weight" element={<div>cél-nézet</div>} />
+          <Route path="/me/goals/weight/new" element={<GoalPlannerPage />} />
         </Routes>
       </MemoryRouter>
     </QueryWrapper>,
@@ -268,10 +268,10 @@ test('GoalPlannerPage renders the wizard for a complete-profile user (real mode,
   // wizard (no redirect).
   render(
     <QueryWrapper>
-      <MemoryRouter initialEntries={['/me/goals/new']}>
+      <MemoryRouter initialEntries={['/me/goals/weight/new']}>
         <Routes>
-          <Route path="/me/goals" element={<div>cél-nézet</div>} />
-          <Route path="/me/goals/new" element={<GoalPlannerPage />} />
+          <Route path="/me/goals/weight" element={<div>cél-nézet</div>} />
+          <Route path="/me/goals/weight/new" element={<GoalPlannerPage />} />
         </Routes>
       </MemoryRouter>
     </QueryWrapper>,
@@ -294,7 +294,7 @@ describe('GoalPlannerPage (real mode, pending)', () => {
     )
     render(
       <QueryWrapper>
-        <MemoryRouter initialEntries={['/me/goals/new']}>
+        <MemoryRouter initialEntries={['/me/goals/weight/new']}>
           <GoalPlannerPage />
         </MemoryRouter>
       </QueryWrapper>,
@@ -311,7 +311,7 @@ describe('GoalPlannerPage (mock mode)', () => {
     vi.stubEnv('VITE_USE_MOCK', 'true')
     render(
       <QueryWrapper>
-        <MemoryRouter initialEntries={['/me/goals/new']}>
+        <MemoryRouter initialEntries={['/me/goals/weight/new']}>
           <GoalPlannerPage />
         </MemoryRouter>
       </QueryWrapper>,
@@ -322,12 +322,12 @@ describe('GoalPlannerPage (mock mode)', () => {
 })
 
 // ── entrance choreography (mezo-d20.11) ──
-// The audit measured /me/goals/new with NO choreography at all (play: 0, rise: 0) —
+// The audit measured /me/goals/weight/new with NO choreography at all (play: 0, rise: 0) —
 // the one Én sibling with neither an EntranceGroup nor a single `.rise`.
 test('the wizard is choreographed — .rise steps inside a .mz-play group, re-armed per step', async () => {
   const { container } = render(
     <QueryWrapper>
-      <MemoryRouter initialEntries={['/me/goals/new']}>
+      <MemoryRouter initialEntries={['/me/goals/weight/new']}>
         <GoalPlannerPage />
       </MemoryRouter>
     </QueryWrapper>,

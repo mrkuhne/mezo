@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Icon } from '@/shared/ui/Icon'
 import { ClaySpot } from '@/shared/ui/clay'
 import { factCategoryColor, factCategoryLabel } from '@/data/insights/knowledge'
 import type { FactCandidate, FactDecision, KnowledgeFact } from '@/data/types'
@@ -47,8 +48,8 @@ export function FactCandidateCard({ candidate, onDecide, conflictFact = null, on
 
       {conflictFact && (
         <div className="col gap-xs" style={{ marginTop: 8 }}>
-          <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5, margin: 0, color: 'var(--mz-cell-amber-ink)' }}>
-            ⚠ Ellentmond ennek: »{conflictFact.text}«
+          <p className="text-secondary mz-icin" style={{ fontSize: 12, lineHeight: 1.5, margin: 0, color: 'var(--mz-cell-amber-ink)' }}>
+            <Icon name="warning" size={12} /> Ellentmond ennek: »{conflictFact.text}«
           </p>
           <label className="row gap-sm" style={{ alignItems: 'center', fontSize: 12 }}>
             <input

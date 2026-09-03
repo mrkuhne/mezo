@@ -3,7 +3,7 @@ import { useGoal } from '@/data/hooks'
 import { TRAJECTORY_LABEL } from '@/features/me/logic/goalLabels'
 import { hu1 } from '@/shared/lib/huNum'
 
-/** Profil goal mini-track (spec §4.6) — compact progress card, taps through to /me/goals. */
+/** Profil goal mini-track (spec §4.6) — compact progress card, taps through to /me/goals/weight. */
 export function GoalMiniCard() {
   const navigate = useNavigate()
   const { goal, goalResponse, pending } = useGoal()
@@ -16,7 +16,7 @@ export function GoalMiniCard() {
   const remaining = Math.abs(goal.currentWeight - goal.targetWeight)
 
   return (
-    <button type="button" className="card goalmini np-press" onClick={() => navigate('/me/goals')}>
+    <button type="button" className="card goalmini np-press" onClick={() => navigate('/me/goals/weight')}>
       <span className="sr-only">Cél oldal megnyitása — </span>
       <div className="row1">
         <div className="t">🎯 {TRAJECTORY_LABEL[goalResponse.trajectory]} · {goalResponse.title}</div>

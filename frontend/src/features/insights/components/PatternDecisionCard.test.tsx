@@ -104,3 +104,17 @@ test('showDetailLink={false} suppresses the self-referential detail link (mezo-t
   )
   expect(screen.queryByRole('link', { name: /Részletek és előzmények/ })).not.toBeInTheDocument()
 })
+
+// mezo-hq44: az „Amit eddig látunk" szemöldök 📈 helyett trend-ikont rajzol.
+test('mezo-hq44: az „Amit eddig látunk" szemöldök ikonos, glifa nélkül', () => {
+  const { container } = render(
+    <MemoryRouter>
+      <PatternDecisionCard pattern={statistical} pair={pair} onDecide={() => {}} showExplainer />
+    </MemoryRouter>,
+  )
+  const eyebrow = Array.from(container.querySelectorAll('.eyebrow'))
+    .find((e) => /Amit eddig látunk/.test(e.textContent ?? '')) as HTMLElement
+  expect(eyebrow).toBeTruthy()
+  expect(eyebrow.querySelector('svg')).toBeTruthy()
+  expect(eyebrow.textContent).not.toMatch(/📈/)
+})

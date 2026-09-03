@@ -22,6 +22,8 @@ export interface LlmCallFilters {
   feature?: string
   status?: string
   callKind?: string
+  /** created_by — only an account's own calls; background rows never match */
+  userId?: string
 }
 
 function callsQuery(period: LlmUsagePeriodKey, filters: LlmCallFilters, limit: number): string {
@@ -29,6 +31,7 @@ function callsQuery(period: LlmUsagePeriodKey, filters: LlmCallFilters, limit: n
   if (filters.feature) params.set('feature', filters.feature)
   if (filters.status) params.set('status', filters.status)
   if (filters.callKind) params.set('callKind', filters.callKind)
+  if (filters.userId) params.set('userId', filters.userId)
   return params.toString()
 }
 

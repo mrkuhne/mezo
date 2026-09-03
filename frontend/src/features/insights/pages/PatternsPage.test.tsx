@@ -350,3 +350,64 @@ describe('PatternsPage (real mode)', () => {
     expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
   })
 })
+
+// mezo-hq44: a Minták életciklus-fejlécei és a döntés-nyugtázások ikonosak. A ✓ marad
+// glifa: az a ház pipa-idiómája (rutin/küldetés/szokás), amihez ez a kör nem nyúl.
+describe('PatternsPage — emoji→ikon (mezo-hq44)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  const wire = (status: string) => ({
+    id: 'w9', kind: 'statistical', category: 'physiology', categoryLabel: 'Fiziológia',
+    title: 'Alvásminőség ↔ másnapi edzés-RPE', mechanism: 'Erős negatív együttjárás.',
+    evidence: ['r=-0.82'], confidence: null, critique: null, status,
+    pairKey: 'sleep-quality~next-day-training-rpe', lastDetectedAt: '2026-07-04T02:40:00Z',
+  })
+
+  test('a „Döntésre vár" fejléc harang-ikont rajzol, nem 🔔 glifát', () => {
+    renderPage()
+    const decide = screen.getByText(/Döntésre vár · /)
+    expect(decide.querySelector('svg')).toBeTruthy()
+    expect(decide.textContent).not.toMatch(/🔔/)
+  })
+
+  test('a „Megfigyelés alatt" fejléc szem-ikont rajzol, nem 👁 glifát', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern`, () => HttpResponse.json([wire('monitoring')])),
+    )
+    renderPage()
+    const monitoring = await screen.findByText(/Megfigyelés alatt/)
+    expect(monitoring.querySelector('svg')).toBeTruthy()
+    expect(monitoring.textContent).not.toMatch(/👁/)
+  })
+
+  test('az „Elvetve" fejléc x-ikont rajzol, nem ✕ glifát', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern`, () => HttpResponse.json([wire('rejected')])),
+    )
+    renderPage()
+    const rejected = await screen.findByText(/^Elvetve$/)
+    expect(rejected.querySelector('svg')).toBeTruthy()
+    expect(rejected.textContent).not.toMatch(/✕/)
+  })
+
+  test('a ✓ Megerősítve fejléc szándékosan glifa marad (házi pipa-idióma)', () => {
+    renderPage()
+    expect(screen.getByText('✓ Megerősítve — él a tudásban')).toBeInTheDocument()
+  })
+
+  test('az elvetés nyugtázása x-ikont kap, a mondat változatlan', async () => {
+    const { container } = renderPage()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Elvetem' })[0])
+    const ack = await waitFor(() => {
+      const el = container.querySelector('.mnt-decdone') as HTMLElement
+      expect(el).not.toBeNull()
+      return el
+    })
+    expect(ack.querySelector('svg')).toBeTruthy()
+    expect(ack.textContent).not.toMatch(/✕/)
+    expect(ack.textContent).toMatch(/Elvetve — nem hozom fel újra\./)
+  })
+})

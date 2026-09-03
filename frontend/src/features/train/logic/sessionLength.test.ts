@@ -40,3 +40,36 @@ describe('estimateSessionMinutes', () => {
     expect(estimateSessionMinutes([ex({ workingSets: 1, warmupSets: 0 })])).toBe(10)
   })
 })
+
+describe('estimateSessionMinutes with a timing profile', () => {
+  const ex = (type: 'compound' | 'isolation', workingSets: number) =>
+    ({ type, workingSets, warmupSets: 0, repMin: 8, repMax: 12 }) as const
+
+  const profile = {
+    leadInSeconds: 480,
+    setCycleCompoundSeconds: 180,
+    setCycleIsolationSeconds: 120,
+    transitionSeconds: 240,
+  }
+
+  it('is unchanged when no profile is passed', () => {
+    // The static path is the contract for structureLint and peakWeekFit — it must not move.
+    expect(estimateSessionMinutes([ex('compound', 3)]))
+      .toBe(estimateSessionMinutes([ex('compound', 3)], undefined))
+  })
+
+  it('sums lead-in, per-exercise set cycles and transitions', () => {
+    // 480 + (3-1)*180 + (2-1)*120 + 1*240 = 1200s = 20 perc
+    expect(estimateSessionMinutes([ex('compound', 3), ex('isolation', 2)], profile)).toBe(20)
+  })
+
+  it('counts warm-up sets as ordinary set cycles', () => {
+    // 480 + (2+2-1)*180 = 1020s = 17 perc
+    expect(estimateSessionMinutes(
+      [{ type: 'compound', workingSets: 2, warmupSets: 2, repMin: 8, repMax: 12 }], profile)).toBe(17)
+  })
+
+  it('returns 0 for an empty list, profile or not', () => {
+    expect(estimateSessionMinutes([], profile)).toBe(0)
+  })
+})

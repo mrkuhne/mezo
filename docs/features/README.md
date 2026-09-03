@@ -50,6 +50,7 @@ Status legend: ✅ done · 🔶 mock-only (Phase-1 FE, no real backend yet) · �
 | [`growth.md`](growth.md) | Growth (daily quests, no own route — Today card) | ✅ E1 done | Gamified growth layer per ADR 0010: deterministic catalog-driven daily quests (BODY+FUELBIO), derived completion → XP via the progression award tail, LIFE band seed (`recovery`), reroll, cron backstops. E2 (LIFE band + activity log + GrowthCard) planned. |
 | [`ritual.md`](ritual.md) | Ritual (`/ritual`, sleep-anchored Napzárás closing flow) | ✅ BE+FE done; R4 visual goldens + reduced-motion audit shipped | Full-screen 6-act evening closing ritual (Megérkezés → A napod íve → Ma milyen volt → Nyitott hurkok → Termés → Elengedés — the prose-reflection act joined at 3 in Phase 5 W1.2, `mezo-b3pp.2`) entered via the Today evening island's Napzárás CTA (`IslandEvening`) or the `evening_ritual` habit row; closes open loops (check-in/reflection), stages the day's XP/coin/skill Harvest, hands off into sleep-prep. No new progression source — rides the HABIT tail. |
 | [`journal.md`](journal.md) | Journal (`/me/naplo`, "Napló"; also reachable from QuickInput) | ✅ done | Free-prose journal entries (`journal_entry`) feeding the companion's `memory_embedding(kind=journal_entry)` narrative memory via a post-commit event → `JournalEmbeddingListener` → the single `MemoryEmbeddingWriter` write path. W1.1 of the Phase 5 "deep memory" epic (`mezo-b3pp`) — the schema/pipeline shape W1.2–W1.5 (reflection/gratitude/decision/catch-up) reuse. |
+| [`beta-admin.md`](beta-admin.md) | Beta admin (`/me/beallitasok/admin`, OWNER-only) | ✅ done (BE + FE real + FE mock) | Invite codes, account list, temp-password reset, enable/disable; OWNER gate + per-account split on the AI-napló; `LlmActorContext` seam for cron attribution (`mezo-qw37.3`). |
 
 ### Platform docs (cross-cutting, `_`-prefixed — no route/tab of their own)
 
@@ -96,6 +97,8 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | People / "Mizu Velünk" 1:1 ritual ("Emberek") | `/me/people` | [`me.md`](me.md) §2 (mock-only) |
 | Push-notification opt-in ("Értesítés") — install-gate, subscribe toggle, test push | `/me/ertesitesek/beallitasok` | [`me.md`](me.md) §2, §5.8 · protocol/data-model/categories: [`_platform-notifications.md`](_platform-notifications.md) |
 | Free-prose journal ("Napló") — write/edit/delete, month-grouped read view | `/me/naplo` | [`journal.md`](journal.md) §2 · Me surface: [`me.md`](me.md) §2 |
+| Meghívó kódok / felhasználók / jelszó-reset / letiltás | `/me/beallitasok/admin` | [`beta-admin.md`](beta-admin.md) §2, §4 |
+| AI-napló per-user chips, owner-only LLM-usage | `/me/ai-usage` | [`beta-admin.md`](beta-admin.md) §3 · [`me.md`](me.md) §2 |
 | The `useX()` hooks / mock-vs-real / ghost-guard rule | — | [`_platform-data-layer.md`](_platform-data-layer.md) §2, §4 |
 | OpenAPI contract / `api/feature/<x>.yml` / codegen | — | [`_platform-api-backend.md`](_platform-api-backend.md) §3–§4 |
 | `OwnedEntity` / `CurrentUserId` / soft delete / typed jsonb | — | [`_platform-api-backend.md`](_platform-api-backend.md) §4b · [`_platform-auth-security.md`](_platform-auth-security.md) §4 |

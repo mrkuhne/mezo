@@ -10,6 +10,7 @@
 // ============================================================
 import type { GymExercise, MesoDay, MusclePriorities } from '@/data/types'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
+import type { SessionTimingProfile } from '@/features/train/logic/sessionLength'
 import { dayTileData } from '@/features/train/wizard/dayTiles'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -23,12 +24,18 @@ interface ProgramDayViewProps {
   program: MesoDay[]
   priorities: MusclePriorities
   volumePerMuscle?: Record<string, { mev: number; mav: number; mrv: number }> | null
+  /** Calibrated pacing (Task 12, mezo-dzbm) — fetched by MesocyclePlannerPage and threaded
+   *  down to MesoEditor via this page-state view, matching MesoEditor's own props. */
+  timingProfile?: SessionTimingProfile | null
+  timingProfilePending?: boolean
   onBack: () => void
   onChange: (day: MesoDay) => void
   onAdd: () => void
 }
 
-export function ProgramDayView({ day, program, priorities, volumePerMuscle, onBack, onChange, onAdd }: ProgramDayViewProps) {
+export function ProgramDayView({
+  day, program, priorities, volumePerMuscle, timingProfile, timingProfilePending, onBack, onChange, onAdd,
+}: ProgramDayViewProps) {
   const tile = dayTileData(day)
 
   const patch = (exercises: GymExercise[]) => onChange({ ...day, exercises, exerciseCount: exercises.length })
@@ -56,6 +63,8 @@ export function ProgramDayView({ day, program, priorities, volumePerMuscle, onBa
             weekDays={program}
             priorities={priorities}
             volumePerMuscle={volumePerMuscle}
+            timingProfile={timingProfile}
+            timingProfilePending={timingProfilePending}
             onAddClick={onAdd}
             onRemove={(_dayKey, exId) => patch(day.exercises.filter((e) => e.id !== exId))}
             onChange={(_dayKey, exId, p) => patch(day.exercises.map((e) => (e.id === exId ? { ...e, ...p } : e)))}

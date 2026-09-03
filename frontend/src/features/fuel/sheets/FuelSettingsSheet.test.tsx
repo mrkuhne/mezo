@@ -84,6 +84,18 @@ describe('FuelSettingsSheet', () => {
     await user.click(screen.getByRole('button', { name: /Kiegyensúlyozott/ }))
     expect(screen.queryByLabelText('Fehérje %')).not.toBeInTheDocument()
   })
+
+  // Edzőnap-shift stepper (Diet Plan slice 3, mezo-sxlj): 0–500 kcal, step 50, 'ki' at 0.
+  test('edzőnap-shift stepper steps by 50 and saves the value', async () => {
+    const user = userEvent.setup()
+    const onClose = renderSheet()
+    expect(screen.getByLabelText('Edzőnap-shift')).toHaveTextContent('ki')
+    const plus = screen.getByRole('button', { name: /Edzőnap-shift növelése/ })
+    await user.click(plus)
+    expect(screen.getByLabelText('Edzőnap-shift')).toHaveTextContent('50')
+    await user.click(screen.getByRole('button', { name: /Mentés/ }))
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
+  })
 })
 
 // Real mode: the cold-open prefill race (mezo-53su). The read starts from the ghost
@@ -135,7 +147,7 @@ describe('FuelSettingsSheet — real-mode cold-open prefill', () => {
       http.get(`${API_BASE}/api/diet/settings`, async () => {
         await new Promise((r) => setTimeout(r, 50))
         return HttpResponse.json({
-          splitPreset: 'low_carb', proteinTier: 'high', waterMl: 3200, fiberG: 35,
+          splitPreset: 'low_carb', proteinTier: 'high', waterMl: 3200, fiberG: 35, dayTypeShiftKcal: 200,
         })
       }),
     )
@@ -154,5 +166,6 @@ describe('FuelSettingsSheet — real-mode cold-open prefill', () => {
     expect(screen.getByRole('button', { name: 'Magas' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Víz-cél')).toHaveValue(3200)
     expect(screen.getByLabelText('Rost-cél')).toHaveValue(35)
+    expect(screen.getByLabelText('Edzőnap-shift')).toHaveTextContent('200')
   })
 })

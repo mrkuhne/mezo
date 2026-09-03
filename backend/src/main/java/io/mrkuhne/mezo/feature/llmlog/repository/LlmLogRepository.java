@@ -87,6 +87,21 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
     List<LlmGroupRow> aggregateByModelSince(@Param("since") Instant since);
 
     /**
+     * Per-account rollup (mezo-qw37.3). Ad-hoc left join onto {@code AppUserEntity} for the display
+     * name — there is no JPA association from the audit row to the account on purpose (the row must
+     * outlive the account). Background rows group under a null user.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmUserRow(
+            l.createdBy, u.name, count(l), coalesce(sum(l.totalTokens), 0L), sum(l.costUsd))
+        from LlmLogEntity l
+        left join AppUserEntity u on u.id = l.createdBy
+        where l.createdAt >= :since
+        group by l.createdBy, u.name
+        """)
+    List<LlmUserRow> aggregateByUserSince(@Param("since") Instant since);
+
+    /**
      * The browsable list (mezo-uakh): newest first, metadata only, every filter optional via the
      * {@code (:param is null or …)} idiom. No owner filter — same reason as the aggregates.
      *
@@ -95,7 +110,7 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
      */
     @Query("""
         select new io.mrkuhne.mezo.feature.llmlog.repository.LlmCallRow(
-            l.id, l.createdAt, l.feature, l.operation, l.callKind, l.status,
+            l.id, l.createdBy, l.createdAt, l.feature, l.operation, l.callKind, l.status,
             l.requestedModel, l.servedModel, l.latencyMs, l.streamed, l.toolRounds,
             l.totalTokens, l.imageCount, l.embedInputCount, l.embedDimensions,
             l.costUsd, l.errorClass, l.errorCode)
@@ -104,12 +119,14 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
           and (:feature is null or l.feature = :feature)
           and (:status is null or l.status = :status)
           and (:callKind is null or l.callKind = :callKind)
+          and (:userId is null or l.createdBy = :userId)
         order by l.createdAt desc
         """)
     List<LlmCallRow> findCalls(@Param("since") Instant since,
                                @Param("feature") String feature,
                                @Param("status") CallStatus status,
                                @Param("callKind") CallKind callKind,
+                               @Param("userId") UUID userId,
                                Pageable pageable);
 
     /**

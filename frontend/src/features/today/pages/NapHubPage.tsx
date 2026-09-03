@@ -37,6 +37,7 @@ import { useNeeds } from '@/features/today/logic/useNeeds'
 import { needRingGradient } from '@/features/today/logic/needs'
 import { minsToBed } from '@/features/today/logic/windDown'
 import { habitAction } from '@/features/today/logic/habitAction'
+import { celebrationFor } from '@/features/today/logic/habitCelebration'
 import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import type { HabitItem } from '@/data/types'
@@ -156,6 +157,7 @@ export function NapHubPage() {
   const tileTick = (h: HabitItem): (() => void) | null => {
     if (h.status !== 'pending' || habitAction(h).kind !== 'check') return null
     const chainSteps = habits.filter((x) => x.chain === h.chain)
+    const celebration = celebrationFor(habitCatalog, h.key)
     return () => {
       check(h.key)
         .then((lu) => emitToast(buildHabitRewardToast({
@@ -164,6 +166,7 @@ export function NapHubPage() {
           chainTotal: chainSteps.length,
           xp: h.xp,
           levelUp: lu?.[0],
+          celebration,
         })))
         .catch(() => {})
     }
