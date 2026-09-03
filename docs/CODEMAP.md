@@ -521,7 +521,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/habit`
   - **hooks (via `@/data/hooks`):** `useHabitActions`, `useHabitAiSuggest`, `useHabitCatalog`,
     `useHabitCatalogActions`, `useHabitDay`, `useHabitSummary`
-  - **modules:** habitAdminApi.ts, habitAdminHooks.ts, habitApi.ts, habitHooks.ts, habitMock.ts
+  - **modules:** habitAdminApi.ts, habitAdminHooks.ts, habitApi.ts, habitFrameworkRules.ts, habitHooks.ts,
+    habitMock.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/habit` — 12 IT + 0 unit
   - **ITs:** `HabitAdminApiIT`, `HabitAiSuggestApiIT`, `HabitAiSuggestSwitchOffIT`, `HabitApiIT`,
     `HabitCatalogBootstrapIT`, `HabitCatalogIT`, `HabitChainDefEntityIT`, `HabitDayEntityIT`, `HabitEvaluatorIT`,

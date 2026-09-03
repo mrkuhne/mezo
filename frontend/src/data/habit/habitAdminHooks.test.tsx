@@ -251,6 +251,114 @@ describe('useHabitCatalog / useHabitCatalogActions (mock mode)', () => {
     expect(stillThere).toBeDefined()
   })
 
+  it('updateDef FOGG→CLEAR átkeretezésnél leveszi a FOGG-mezőket — mirrors clearForeignFields (mezo-3zue.8)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    let created: { id: string } | undefined
+    await act(async () => {
+      created = await result.current.actions.createDef({
+        chainKey: 'MORNING', title: 'Egy oldal olvasás', mode: 'MANUAL', skillKey: 'mindset', xp: 5,
+        framework: 'FOGG', anchorHabitKey: 'morning_sunlight', anchorCopy: 'letettem a fogkefét',
+        celebration: 'ökölrázás',
+      })
+    })
+    const findIt = () => result.current.catalog.catalog.chains
+      .flatMap((c) => c.defs).find((d) => d.id === created!.id)!
+    await waitFor(() => expect(findIt().celebration).toBe('ökölrázás'))
+
+    await act(async () => {
+      await result.current.actions.updateDef(created!.id, {
+        framework: 'CLEAR', cue: '7:10-kor a konyhaasztalnál', craving: 'tisztább fej', reward: 'a pipa maga',
+      })
+    })
+    await waitFor(() => expect(findIt().framework).toBe('CLEAR'))
+    // Ez a hibajelenség, amiért a szelet létezik: mock módban bennragadt a régi FOGG recept.
+    expect(findIt().celebration).toBeNull()
+    expect(findIt().anchorHabitKey).toBeNull()
+    expect(findIt().anchorCopy).toBeNull()
+    expect(findIt().cue).toBe('7:10-kor a konyhaasztalnál')
+  })
+
+  it('updateDef CLEAR→FOGG átkeretezésnél leveszi a CLEAR-mezőket (mezo-3zue.8)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    let created: { id: string } | undefined
+    await act(async () => {
+      created = await result.current.actions.createDef({
+        chainKey: 'MORNING', title: 'Egy oldal olvasás', mode: 'MANUAL', skillKey: 'mindset', xp: 5,
+        framework: 'CLEAR', cue: 'jelzés', craving: 'vágy', reward: 'jutalom', identity: 'olvasó ember',
+      })
+    })
+    const findIt = () => result.current.catalog.catalog.chains
+      .flatMap((c) => c.defs).find((d) => d.id === created!.id)!
+    await waitFor(() => expect(findIt().cue).toBe('jelzés'))
+
+    await act(async () => {
+      await result.current.actions.updateDef(created!.id, {
+        framework: 'FOGG', anchorCopy: 'letettem a fogkefét', celebration: 'ökölrázás',
+      })
+    })
+    await waitFor(() => expect(findIt().framework).toBe('FOGG'))
+    expect([findIt().cue, findIt().craving, findIt().reward, findIt().identity])
+      .toEqual([null, null, null, null])
+    expect(findIt().celebration).toBe('ökölrázás')
+  })
+
+  it('createDef keret nélküli defre írt keret-mezőt eldob: HABIT_FRAMEWORK_FIELDS_ORPHAN (mezo-3zue.8)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitCatalogActions(), { wrapper: Wrapper })
+    await expect(result.current.createDef({
+      chainKey: 'MORNING', title: 'Napi mondat', mode: 'MANUAL', skillKey: 'mindset', xp: 10,
+      celebration: 'ökölrázás',
+    })).rejects.toThrow('HABIT_FRAMEWORK_FIELDS_ORPHAN')
+  })
+
+  it('createDef ismeretlen horgony-kulcsra HABIT_ANCHOR_INVALID-ot dob (mezo-3zue.8)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useHabitCatalogActions(), { wrapper: Wrapper })
+    await expect(result.current.createDef({
+      chainKey: 'MORNING', title: 'Napi mondat', mode: 'MANUAL', skillKey: 'mindset', xp: 10,
+      framework: 'FOGG', anchorHabitKey: 'custom_nemletezik', celebration: 'ökölrázás',
+    })).rejects.toThrow('HABIT_ANCHOR_INVALID')
+  })
+
+  it('updateDef ünneplés nélküli FOGG-ra váltást eldob: HABIT_FRAMEWORK_FOGG_INCOMPLETE (mezo-3zue.8)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    const target = result.current.catalog.catalog.chains
+      .find((c) => c.chainKey === 'MORNING')!.defs.find((d) => d.habitKey === 'morning_sunlight')!
+
+    await expect(result.current.actions.updateDef(target.id, { framework: 'FOGG' }))
+      .rejects.toThrow('HABIT_FRAMEWORK_FOGG_INCOMPLETE')
+    // Az elutasított írás nem hagyhat nyomot a cache-ben.
+    const after = result.current.catalog.catalog.chains
+      .flatMap((c) => c.defs).find((d) => d.id === target.id)!
+    expect(after.framework).toBeNull()
+  })
+
+  it('egy elutasított írás után a katalógus érintetlen marad (mezo-3zue.8)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    const before = result.current.catalog.catalog.chains.flatMap((c) => c.defs).length
+    await expect(result.current.actions.createDef({
+      chainKey: 'MORNING', title: 'Napi mondat', mode: 'MANUAL', skillKey: 'mindset', xp: 10,
+      framework: 'CLEAR', cue: 'jelzés', reward: 'jutalom',
+    })).rejects.toThrow('HABIT_FRAMEWORK_CLEAR_INCOMPLETE')
+    expect(result.current.catalog.catalog.chains.flatMap((c) => c.defs)).toHaveLength(before)
+  })
+
   it('useHabitAiSuggest.suggest resolves the canned 2-suggestion fixture (mezo-n5e9.3)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useHabitAiSuggest(), { wrapper: Wrapper })
