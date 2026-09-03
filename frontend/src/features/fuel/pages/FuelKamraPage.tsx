@@ -110,7 +110,7 @@ export function FuelKamraPage() {
     <MozaikPage tone="gold">
       <PageHead onBack={() => navigate('/fuel')} label="‹ Fuel">
         <button type="button" className="pgact" onClick={() => setCatalogOpen(true)}>
-          <Icon name="search" size={12} /> Közös
+          <Icon name="bookmark" size={12} /> Közös
         </button>
         <button type="button" className="pgact" style={{ marginLeft: 6 }} onClick={() => setImportOpen(true)}>
           <Icon name="search" size={12} /> Import

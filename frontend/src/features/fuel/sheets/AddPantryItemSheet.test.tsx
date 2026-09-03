@@ -218,4 +218,58 @@ describe('AddPantryItemSheet', () => {
     expect(screen.getByPlaceholderText('750')).toBeEnabled()
     expect(screen.getByText(/csak a szerző vagy a tulajdonos/)).toBeInTheDocument()
   })
+
+  it('a state-only edit of a locked, dose-only shared row must NOT fabricate per/unit (mezo-qw37.4 review round 1)', async () => {
+    // Fix-round regression: a dose/protocol-based supplement/stim/med row may legitimately carry
+    // NO per/unit at all (validatePerKind permits it server-side). The edit sheet used to default
+    // a missing basis to per:100/unit:'g' even in edit mode, which — for a LOCKED shared row whose
+    // real serving_unit is null server-side — makes PantryMapper.definitionDiffers see a spurious
+    // definition change and 403 a pure price/dose edit. Assert the mock cache's per/unit survive a
+    // state-only save UNCHANGED (still absent), not silently introduced as 100/'g'.
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = renderHook(() => usePantry(), { wrapper })
+    await waitFor(() => expect(result.current.stash.length).toBeGreaterThan(0))
+
+    const DOSE_ONLY_ID = 'shared-dose-only-teszt'
+    qc.setQueryData(['pantry'], (prev: typeof result.current & Record<string, unknown>) => ({
+      ...prev,
+      stash: [
+        ...prev.stash,
+        {
+          id: DOSE_ONLY_ID, name: 'Közös Magnézium', brand: '', type: 'supplement', category: 'supplement',
+          dose: '400 mg', form: 'tabletta', stock: null, stockUnit: null, protocol: '', timing: 'flexible',
+          taken: false,
+          // No per/unit at all — a genuine dose-only row, mirroring what validatePerKind allows.
+          catalogId: 'cat-magnezium', sharedFrom: { authorName: 'Anna' }, catalogEditable: false,
+        },
+      ],
+    }))
+
+    const onClose = vi.fn()
+    render(
+      <QueryClientProvider client={qc}>
+        <AddPantryItemSheet
+          open
+          onClose={onClose}
+          editId={DOSE_ONLY_ID}
+          definitionLocked
+          initial={{ kind: 'supplement', name: 'Közös Magnézium', dose: '400 mg' }}
+        />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.change(screen.getByLabelText(/ár \(ft\)/i), { target: { value: '1490' } })
+    fireEvent.click(screen.getByRole('button', { name: /mentés/i }))
+
+    await waitFor(() => {
+      const edited = result.current.stash.find(s => s.id === DOSE_ONLY_ID)
+      expect(edited?.price).toBe(1490) // the state-only field DID save
+      expect(edited?.per).toBeUndefined() // per/unit must NOT be fabricated
+      expect(edited?.unit).toBeUndefined()
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
 })

@@ -112,10 +112,18 @@ export function AddPantryItemSheet({
       category,
       // Create pins the per-100 g / grams basis explicitly (a null serving_amount would re-open
       // the `per ?? 1` recipe-math trap). Edit ECHOES the stored basis unchanged (omitting it
-      // would 400: validatePerKind runs on the update request too — food requires unit, a
-      // gram-based dose-less supplement requires per). The legacy per-serving row survives
-      // because inputFromItem always hands the stored per/unit back via `initial`.
-      ...(editId ? { per: initial?.per ?? 100, unit: initial?.unit ?? 'g' } : { per: 100, unit: 'g' }),
+      // for a row that HAS one would 400: validatePerKind runs on the update request too — food
+      // always carries per/unit, so this always fires for food). The legacy per-serving row
+      // survives because inputFromItem always hands the stored per/unit back via `initial`.
+      // A dose/protocol-based supplement/stim/med row may legitimately have NEITHER (the
+      // backend's validatePerKind allows a dose-only row with no serving_unit at all) — mirror
+      // that by omitting per/unit entirely rather than defaulting to 100/'g' when `initial` never
+      // carried a per (mezo-qw37.4 review round 1): a locked shared dose-only row with a null
+      // server-side unit must echo null, not fabricate 'g', or PantryMapper.definitionDiffers
+      // sees a spurious change and requireEditable() 403s a pure price/dose edit.
+      ...(editId
+        ? (initial?.per != null ? { per: initial.per, unit: initial?.unit ?? 'g' } : {})
+        : { per: 100, unit: 'g' }),
       stockQty: toNum(stockQty),
       stockUnit: stockUnit || undefined,
       price: toNum(price),
