@@ -20,6 +20,7 @@ import { huWeekdayFull, localDateString } from '@/shared/lib/dates'
 import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
+import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
 import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromPlan } from '@/features/train/logic/prepBriefing'
 import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
@@ -253,6 +254,9 @@ function ActiveWorkoutSession({
   const startPrefill = prefill(resumeExercise)
 
   const [phase, setPhase] = useState<Phase>(initialPhase)
+  // Mezo-kalauz (mezo-gb1s.5, D11): ez az oldal chrome-mentes (AppLayout hideChrome),
+  // a fejléc ?-e itt nem létezik — az újranyitás a prep breadcrumb mini ?-én át megy.
+  const kalauz = useTutorial()
   const [session, setSession] = useState<Session>(initialSession)
   // Free navigation (spec 2026-07-15): the VIEWED exercise is the logging target.
   // Seeds from the linear resume point; Task 7's nav UI drives setViewedId.
@@ -850,16 +854,24 @@ function ActiveWorkoutSession({
     return (
       <div>
         {/* Breadcrumb — pinned below the status bar like native nav chrome (mezo-wdk) */}
-        <div className="sticky-top" style={{ padding: '8px 24px' }}>
+        <div className="sticky-top" style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button className="row gap-sm" onClick={onExit}>
             <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
             <span className="eyebrow">Vissza</span>
           </button>
+          {/* Mini ? (D11): a fejléc-gomb receptje, csak a prep-fázisban — az élő logolás
+              fölé a kalauz nem nyúl. Auto-open az első belépéskor; ez az újranézés útja. */}
+          {kalauz.current && (
+            <button type="button" className="nap-roundbtn nap-q" aria-label="Kalauz ehhez az oldalhoz"
+              aria-haspopup="dialog" onClick={() => kalauz.open(kalauz.current!.id)}>
+              <span className="nap-q-glyph" aria-hidden="true">?</span>
+            </button>
+          )}
         </div>
 
         <EntranceGroup>
           <div style={{ padding: '6px 24px 0' }}>
-            <div className="mz-tile mz-w-coral tp-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+            <div className="mz-tile mz-w-coral tp-hero rise" data-kalauz-anchor="session-start" style={{ '--d': '0ms' } as React.CSSProperties}>
               <span className="mz-eyebrow" style={{ color: 'var(--coral-deep)' }}>{huWeekdayFull()} · {weekLabel}</span>
               <span className="tp-title">{W.title}</span>
               <StatStrip className="mt-sm">

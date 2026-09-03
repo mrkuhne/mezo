@@ -121,7 +121,7 @@ export function MesocycleLibraryPage() {
       <EntranceGroup>
         {/* The hub's real navigation — Volumen/Történet/Sablonok/Új blokk tiles
             (mezociklus prototype's base panel). */}
-        <div style={{ padding: '8px 24px 16px' }}>
+        <div style={{ padding: '8px 24px 16px' }} data-kalauz-anchor="mesociklus-mosaic">
           <Mosaic>
             {active[0] && (
               <Tile

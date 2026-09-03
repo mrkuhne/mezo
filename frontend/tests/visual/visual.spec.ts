@@ -110,6 +110,20 @@ const SCREENS: Array<[string, string, string?]> = [
 /** The clock every screen freezes to unless its `SCREENS` tuple overrides it. */
 const DEFAULT_FROZEN = '2026-05-21T13:42:00'
 
+/** Téma + „minden kalauz látva" seed EGY init-scriptben (mezo-gb1s.5). A kattintós
+ *  tesztek eredetileg csak a témát seedelték — amíg a route-jukon nem volt kalauz, ez
+ *  elég is volt. Az S3a óta a /train/review kalauzos (T2, auto-open), és reduced-motion
+ *  alatt a 0 ms-os auto-open sheet a shot fölé nyílt / a kattintást blokkolta. A seed
+ *  a registryből generálódik, tehát a további tartalom-szeletek (S3b–d, S4) már nem
+ *  tudják ugyanígy eltörni ezeket a teszteket. */
+async function seedThemeAndKalauz(page: import('@playwright/test').Page, theme: string) {
+  const kalauzSeen = JSON.stringify(buildAllSeenProgress())
+  await page.addInitScript(([t, seen]) => {
+    localStorage.setItem('mezo-theme', t)
+    localStorage.setItem('mezo.kalauz.v1', seen)
+  }, [theme, kalauzSeen] as const)
+}
+
 for (const theme of ['light', 'dark'] as const) {
   test.describe(theme, () => {
     test.use({ colorScheme: theme })
@@ -117,13 +131,8 @@ for (const theme of ['light', 'dark'] as const) {
       test(name, async ({ page }) => {
         await page.clock.setFixedTime(new Date(frozen ?? DEFAULT_FROZEN))
         // Mezo-kalauz (mezo-gb1s.1/.3): egy first-visit sheet minden goldenbe beleugrana —
-        // MINDEN kalauzt látottnak seedelünk. A map a registryből generálódik (Node-oldal),
-        // és argumentumként utazik be a böngészőbe: az init-script nem importálhat.
-        const kalauzSeen = JSON.stringify(buildAllSeenProgress())
-        await page.addInitScript(([t, seen]) => {
-          localStorage.setItem('mezo-theme', t)
-          localStorage.setItem('mezo.kalauz.v1', seen)
-        }, [theme, kalauzSeen] as const)
+        // MINDEN kalauzt látottnak seedelünk.
+        await seedThemeAndKalauz(page, theme)
         await page.goto(path)
         await page.waitForLoadState('networkidle')
         await page.evaluate(() => document.fonts.ready)
@@ -194,7 +203,7 @@ for (const theme of ['light', 'dark'] as const) {
     // unphotographed.
     test('train-review-lane', async ({ page }) => {
       await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
-      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await seedThemeAndKalauz(page, theme)
       await page.goto('/train/review/wd-mock-1')
       await page.waitForLoadState('networkidle')
       const lane = page.locator('.wr-lane')
@@ -209,7 +218,7 @@ for (const theme of ['light', 'dark'] as const) {
     // unreadable, and only a rendered set tile can show whether that actually got fixed.
     test('train-review-exercise', async ({ page }) => {
       await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
-      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await seedThemeAndKalauz(page, theme)
       await page.goto('/train/review/wd-mock-1')
       await page.waitForLoadState('networkidle')
       await page.getByRole('button', { name: /Chest Supported Row/ }).click()
@@ -222,7 +231,7 @@ for (const theme of ['light', 'dark'] as const) {
     // proves the full breakdown moved OFF the page into the shared ScoreBreakdownBody sheet.
     test('fuel-recept-score', async ({ page }) => {
       await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
-      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await seedThemeAndKalauz(page, theme)
       await page.goto('/fuel/recipes/rec-1')
       await page.waitForLoadState('networkidle')
       await page.getByTestId('recipe-score-tile').click()
@@ -235,7 +244,7 @@ for (const theme of ['light', 'dark'] as const) {
     // through the read-only view's Testreszabás fork, so it is a click-through.
     test('fuel-slots-editor', async ({ page }) => {
       await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
-      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await seedThemeAndKalauz(page, theme)
       await page.goto('/fuel/slots')
       await page.waitForLoadState('networkidle')
       await page.getByRole('button', { name: /Testreszabás/ }).click()

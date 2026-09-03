@@ -143,7 +143,7 @@ export function TrainWeekPage() {
             <StatCell value={weekMedalCount} label="medál e héten" />
           </div>
 
-          <div className="col gap-sm mt-md">
+          <div className="col gap-sm mt-md" data-kalauz-anchor="heti-napok">
             {agenda.map((a, i) => (
               <div key={a.day} className="rise" style={{ '--d': `${100 + i * 40}ms` } as React.CSSProperties}>
               <WeeklyDayRow

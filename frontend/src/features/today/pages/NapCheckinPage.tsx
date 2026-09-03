@@ -41,7 +41,7 @@ export function NapCheckinPage() {
     const name = SLOT_NAMES[i] ?? slot.time
     if (slot.state === 'done') {
       return (
-        <div key={i} className="nck-row">
+        <div key={i} className="nck-row" data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
           <span className="nck-tick f">✓</span>
           <div className="nck-grow">
             <div className="nck-t">{name} · {slot.time}</div>
@@ -53,7 +53,7 @@ export function NapCheckinPage() {
     }
     if (i === nextIdx) {
       return (
-        <div key={i} className="nck-row nck-hot">
+        <div key={i} className="nck-row nck-hot" data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
           <div className="nck-grow">
             <div className="nck-t nck-rose">
               {slot.state === 'now' ? `${name} · most esedékes` : `${name} · ${slot.time}`}
@@ -68,7 +68,7 @@ export function NapCheckinPage() {
     }
     // future (or non-next missed) slot — muted, honest: no values, no affordance
     return (
-      <div key={i} className="nck-row nck-dim">
+      <div key={i} className="nck-row nck-dim" data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
         <span className="nck-tick" aria-hidden="true" />
         <div className="nck-grow">
           <div className="nck-t">{name} · {slot.time} körül</div>
