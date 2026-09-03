@@ -7,7 +7,7 @@ import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import { ADMIN_INVITES_MOCK, ADMIN_USERS_MOCK } from '@/data/admin/adminMock'
 import { addDays } from '@/shared/lib/dates'
 import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
-import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose } from '@/data/lifegoal/lifegoalMock'
+import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockToday } from '@/data/lifegoal/lifegoalMock'
 import type { LifeGoalProposeRequest } from '@/data/lifegoal/lifegoalApi'
 
 // Re-exported so hook tests keep importing it from here.
@@ -1590,11 +1590,12 @@ export const handlers = [
   // Life goals (mezo-iizd.1) — default fixtures mirroring the mock seed so real-mode component
   // tests that render these hooks without a per-test server.use() get the same four goals.
   http.get(`${API_BASE}/api/life-goals`, () => HttpResponse.json(MOCK_LIFE_GOALS)),
-  // NOTE: the static `signals` / `propose` paths MUST stay ahead of the `:id` handlers below —
-  // MSW resolves in registration order and `/signals` also matches `/api/life-goals/:id`.
+  // NOTE: the static `signals` / `propose` / `today` paths MUST stay ahead of the `:id` handlers
+  // below — MSW resolves in registration order and `/signals` (etc.) also matches `/api/life-goals/:id`.
   http.get(`${API_BASE}/api/life-goals/signals`, () => HttpResponse.json({ entries: MOCK_SIGNAL_CATALOG })),
   http.post(`${API_BASE}/api/life-goals/propose`, async ({ request }) =>
     HttpResponse.json(mockPropose((await request.json()) as LifeGoalProposeRequest))),
+  http.get(`${API_BASE}/api/life-goals/today`, () => HttpResponse.json(mockToday())),
   // The create handler ECHOES the submitted frame/pillars/ifThenPlans (assigning ids/positions)
   // exactly as LifeGoalService.create does — it used to hard-override all three to empty after
   // spreading the body, so a real-mode wizard test saw a goal the backend would never return.
@@ -1633,4 +1634,12 @@ export const handlers = [
       closedAt: closing ? MSW_NOW : g.closedAt,
     })
   }),
+  http.get(`${API_BASE}/api/life-goals/:id/progress`, ({ params }) =>
+    findLifeGoal(params.id as string) != null
+      ? HttpResponse.json(mockProgress(params.id as string))
+      : new HttpResponse(null, { status: 404 })),
+  http.post(`${API_BASE}/api/life-goals/:id/evaluate`, ({ params }) =>
+    findLifeGoal(params.id as string) != null
+      ? HttpResponse.json(mockProgress(params.id as string))
+      : new HttpResponse(null, { status: 404 })),
 ]

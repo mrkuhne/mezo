@@ -3,8 +3,9 @@ import { WELCOME, WELCOME_ID, WELCOME_VERSION } from '@/features/tutorial/regist
 import { KALAUZ_REGISTRY } from '@/features/tutorial/registry'
 
 test('a welcome NEM a KALAUZ_REGISTRY-ben él', () => {
-  // S2b-5: a findKalauz first-match — egy /nap route-ú bejegyzés némán árnyékolná a `nap`
-  // kalauzt, és a KalauzCard öt típusa nem tudja kifejezni a koppintható demókat.
+  // S2b-5: egy /nap route-ú bejegyzés ütközne a `nap` kalauzzal (azonos minta — a
+  // registry route-lintje elutasítja), és a KalauzCard öt típusa nem tudja kifejezni
+  // a koppintható demókat.
   expect(KALAUZ_REGISTRY.some((e) => e.id === WELCOME_ID)).toBe(false)
 })
 

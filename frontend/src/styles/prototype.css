@@ -422,6 +422,9 @@
   --lg-frame-warn: #FFF1D6;
   --lg-frame-warn2: #FFFCF4;
   --lg-ok-wash: #EEF4E8;
+  /* Hét/Hónap chip "on" wash (Task 9, mezo-iizd.5) — same hoisting reason as the wizard
+     washes above: the mozaikCssTokens hex guard flags raw D/E/FF hex outside :root. */
+  --lg-fchip-on: #FFEDE5;
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -1446,6 +1449,13 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   font-size: 16px; font-weight: 500; line-height: 1.25; letter-spacing: -0.005em;
 }
 .t-meta { font-style: italic; font-weight: 400; color: rgba(255,255,255,0.72); }
+/* a felhasználó saját ünneplés-mondata (mezo-3zue.5) — a cím alatt, saját sorban: ez az
+   ő hangja, nem mennyiségi addendum, ezért nem a `.t-meta` helyét foglalja el */
+.t-celebrate {
+  margin-top: 5px;
+  font-size: 14px; font-style: italic; font-weight: 400; line-height: 1.35;
+  color: rgba(255,255,255,0.82);
+}
 .t-meter {
   display: flex; align-items: center; gap: 9px;
   margin-top: 10px; padding: 7px 11px;
@@ -5062,7 +5072,11 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 .nr-anchor { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); }
 .nr-str { height: 6px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 5px; }
 .nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength);
-  transform: scaleX(1); transform-origin: left; }
+  transform: scaleX(1); transform-origin: left;
+  /* a pipa után a friss strengthPct-re CSUSSZAN, nem ugrik — a jutalom-pillanat
+     vizuális magja (mezo-3zue.5). A belépő scaleX animációval nem ütközik: mountoláskor
+     a szélesség már a helyén van, tehát nincs mit átmenetezni. */
+  transition: width 380ms cubic-bezier(0.25, 0.8, 0.35, 1); }
 /* the lánc-erő bars FILL on the page's entrance (mezo-d20.11) — the `.mnt-gbar` recipe */
 .mz-play .nr-str div { transform: scaleX(0);
   animation: nap-segfill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
@@ -5146,7 +5160,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev, .nr-tick { transition: none; }
-  .nr-str div, .mz-play .nr-str div { animation: none; transform: scaleX(1); }
+  .nr-str div, .mz-play .nr-str div { animation: none; transform: scaleX(1); transition: none; }
   .nck-fill { transition: none; }
   .mzh-orbhero svg:first-child { animation: none; }
   .mzh-chatopen, .mzh-membnd { transition: none; }
@@ -8520,10 +8534,24 @@ button.mz-wtile:active { transform: scale(0.96); }
 .lg-wk7 i { width: 11px; height: 11px; border-radius: 50%; flex: none; background: rgba(43,33,24,0.12); transform: scale(0); }
 .lg-wk7 i.h { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
 .lg-wk7 i.p { background: linear-gradient(135deg, var(--lg-wk7-p2), #C9962E); }
+.lg-wk7 i.m { background: rgba(43,33,24,0.12); }
 .lg-wk7 i.n { background: transparent; border: 1px dashed rgba(43,33,24,0.28); }
 .play .lg-wk7 i { animation: lg-dotpop 0.35s cubic-bezier(0.3,1.4,0.5,1) forwards; animation-delay: calc(var(--d, 0ms) + 280ms + var(--i) * 45ms); }
 @keyframes lg-dotpop { to { transform: scale(1); } }
 .lg-wk7 .lbl { font-size: 8.5px; font-weight: 700; color: #A2958A; margin-left: auto; }
+/* Hét/Hónap chips + the 28-cell heatmap row (Task 9, mezo-iizd.5, prototype celok.html
+   #page-g1 `.chiprow`/`.fchip`/`.hm` — reusing the `.lg-wk7 i.*` status colors so the two
+   views read as the same data at two grains). */
+.lg-chiprow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.lg-fchip { border: 1px solid rgba(43,33,24,0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+.lg-fchip.on { background: var(--lg-fchip-on); border-color: #FF6B4A; color: #A84A26; }
+.lg-fchip:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+.lg-hm { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 8px; }
+.lg-hm i { height: 12px; border-radius: 3px; background: rgba(43,33,24,0.1); }
+.lg-hm i.h { background: #8FAF7E; }
+.lg-hm i.p { background: var(--lg-wk7-p2); }
+.lg-hm i.m { background: rgba(43,33,24,0.1); }
+.lg-hm i.n { background: transparent; border: 1px dashed rgba(43,33,24,0.2); }
 .lg-parkrow { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border-radius: 17px; width: 100%; text-align: left;
   background: rgba(255,255,255,0.55); border: 0.5px dashed rgba(43,33,24,0.18); }
 /* Two real, focusable buttons live inside the row (mezo-iizd.1 review fix): a nested

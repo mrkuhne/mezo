@@ -26,6 +26,13 @@ test('renders the three active goals as tiles, Spanyol B2 parked, three live dim
   expect(document.querySelectorAll('.lg-dimchip:not(.empty)')).toHaveLength(3)
 })
 
+test('hub shows arrow counters and live tile dots', async () => {
+  renderHub()
+  await screen.findByText('Célok')
+  expect(screen.queryByText(/Az irány-nyíl a 2\. szelettel jön/)).toBeNull()
+  expect(document.querySelectorAll('.lg-tile .lg-wk7 i.h').length).toBeGreaterThan(0)
+})
+
 test('tile tap opens the goal page; ＋ Új cél opens the wizard', () => {
   renderHub()
   fireEvent.click(screen.getByRole('button', { name: 'Kockahas' }))
@@ -61,6 +68,26 @@ describe('real mode', () => {
     renderHub()
     expect(screen.queryByText(/0 aktív/)).not.toBeInTheDocument()
     expect(screen.queryByRole('img', { name: /aktív cél/ })).not.toBeInTheDocument()
+  })
+
+  /**
+   * mezo-iizd.5 final review, finding 2: `useLifeGoalToday` resolves independently of the goal
+   * list — the list can be ready while `/api/life-goals/today` is still loading or failing. Before
+   * this fix the hero sentence read the unresolved `{goals:[]}` fallback as "zero of everything
+   * this week" and printed a fabricated "0↗ · 0→ · 0↘" instead of the honest neutral sentence.
+   */
+  test('today counters stay honest — neutral sentence, not a fabricated 0↗·0→·0↘ — while /today is loading', () => {
+    server.use(http.get(`${API_BASE}/api/life-goals/today`, () => new Promise(() => {})))
+    renderHub()
+    expect(screen.queryByText(/0↗ · 0→ · 0↘/)).not.toBeInTheDocument()
+  })
+
+  test('today counters stay honest when /today fails, even though the goal list loaded fine', async () => {
+    server.use(http.get(`${API_BASE}/api/life-goals/today`, () => new HttpResponse(null, { status: 500 })))
+    renderHub()
+    await screen.findByText('Célok')
+    expect(screen.queryByText(/0↗ · 0→ · 0↘/)).not.toBeInTheDocument()
+    expect(await screen.findByText(/Az irány-nyíl a 2\. szelettel jön/)).toBeInTheDocument()
   })
 
   test('a failed list read renders a terminal error + retry, not the empty state', async () => {
