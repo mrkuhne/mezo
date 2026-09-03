@@ -8,13 +8,17 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
 import {
-  lifegoalApi, type LifeGoalPillarInput, type LifeGoalProposeRequest, type LifeGoalProposeResponse,
-  type LifeGoalResponse, type LifeGoalStatus, type LifeGoalUpsertRequest, type SignalCatalogEntry,
+  lifegoalApi, type LifeGoalPillarInput, type LifeGoalProgressResponse, type LifeGoalProposeRequest,
+  type LifeGoalProposeResponse, type LifeGoalResponse, type LifeGoalStatus, type LifeGoalTodayResponse,
+  type LifeGoalUpsertRequest, type SignalCatalogEntry,
 } from '@/data/lifegoal/lifegoalApi'
-import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose } from '@/data/lifegoal/lifegoalMock'
+import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockToday } from '@/data/lifegoal/lifegoalMock'
+import { addDays, localDateString } from '@/shared/lib/dates'
 
 export const LIFE_GOALS_KEY = ['lifeGoals'] as const
 export const SIGNAL_CATALOG_KEY = ['lifeGoalSignals'] as const
+export const LIFE_GOAL_PROGRESS_KEY = (id: string) => ['lifeGoalProgress', id] as const
+export const LIFE_GOAL_TODAY_KEY = ['lifeGoalToday'] as const
 
 export function useLifeGoals() {
   const q = useDualQuery<LifeGoalResponse[]>({
@@ -39,6 +43,28 @@ export function useSignalCatalog() {
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { entries: q.data, isPending: q.isPending }
+}
+
+/** 28 napos ablak: from = ma−27, to = ma (ISO yyyy-MM-dd). */
+export function useLifeGoalProgress(id: string | undefined) {
+  const to = localDateString()
+  const from = addDays(to, -27)
+  const q = useDualQuery<LifeGoalProgressResponse | null>({
+    queryKey: LIFE_GOAL_PROGRESS_KEY(id ?? '_none'),
+    mockData: id ? mockProgress(id) : null,
+    realFetch: async () => (id ? lifegoalApi.progress(id, from, to) : null),
+    realEmpty: null,
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+  })
+  return { progress: q.data, isPending: q.isPending, isError: q.isError }
+}
+
+export function useLifeGoalToday() {
+  const q = useDualQuery<LifeGoalTodayResponse>({
+    queryKey: LIFE_GOAL_TODAY_KEY, mockData: mockToday(), realFetch: lifegoalApi.today,
+    realEmpty: { goals: [] }, realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+  })
+  return { today: q.data, isPending: q.isPending, isError: q.isError }
 }
 
 function mockId() { return `lg-${Math.random().toString(36).slice(2, 8)}` }

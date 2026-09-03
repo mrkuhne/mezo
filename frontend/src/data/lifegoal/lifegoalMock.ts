@@ -7,9 +7,15 @@
 // backend seed has no stable ids — later tasks' tests reference them directly.
 // ============================================================
 import type {
-  IfThenPlan, LifeGoalPillarInput, LifeGoalPillarResponse, LifeGoalProposeRequest,
-  LifeGoalProposeResponse, LifeGoalResponse, PillarRule, PillarSource, SignalCatalogEntry,
+  IfThenPlan, LifeGoalPillarInput, LifeGoalPillarResponse, LifeGoalProgressResponse,
+  LifeGoalProposeRequest, LifeGoalProposeResponse, LifeGoalResponse, LifeGoalTodayResponse,
+  PillarDayStatus, PillarProgress, PillarRule, PillarSource, SignalCatalogEntry, TrendArrow,
 } from '@/data/lifegoal/lifegoalApi'
+import type { components } from '@/data/_client/api.gen'
+import { addDays, localDateString } from '@/shared/lib/dates'
+
+type PillarDayEntry = components['schemas']['PillarDayEntry']
+type GoalDayEntry = components['schemas']['GoalDayEntry']
 
 function pillar(
   id: string, position: number, label: string, skillKey: string,
@@ -236,4 +242,119 @@ export function mockPropose(req: LifeGoalProposeRequest): LifeGoalProposeRespons
     ],
     source: 'template',
   }
+}
+
+// ── Progress / Today mocks (mezo-iizd.5) ──
+// Deterministic 28-day mock progress: a hash of (goalId, pillarId/​'goal', dayIndex) drives the
+// EARLY (days 0..20) status mix so real/mock diffing never depends on Math.random. The LAST 7
+// days use a fixed per-arrow pattern instead of the hash, so the arrow's story is guaranteed by
+// construction rather than by luck of the hash: the first seed goal (kockahas) trends 'up' and
+// always shows at least one 'hit' in its last 7 days; the second (hustle) trends 'down' with
+// missingHitDays=2; every other goal (incl. the pillarless, parked 'spanyol') is 'insufficient'.
+
+const WINDOW_DAYS = 28
+
+function hash(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
+  return Math.abs(h)
+}
+
+const EARLY_CYCLE: PillarDayStatus[] = ['hit', 'partial', 'miss', 'no_data']
+const RECENT_STATUS_UP: PillarDayStatus[] = ['hit', 'partial', 'hit', 'miss', 'hit', 'no_data', 'partial']
+const RECENT_STATUS_DOWN: PillarDayStatus[] = ['miss', 'miss', 'partial', 'miss', 'no_data', 'partial', 'miss']
+const RECENT_STATUS_INSUFFICIENT: PillarDayStatus[] = ['no_data', 'no_data', 'miss', 'no_data', 'partial', 'no_data', 'no_data']
+
+function arrowFor(goalIndex: number): TrendArrow {
+  if (goalIndex === 0) return 'up'
+  if (goalIndex === 1) return 'down'
+  return 'insufficient'
+}
+
+function recentPatternFor(goalIndex: number): PillarDayStatus[] {
+  if (goalIndex === 0) return RECENT_STATUS_UP
+  if (goalIndex === 1) return RECENT_STATUS_DOWN
+  return RECENT_STATUS_INSUFFICIENT
+}
+
+function statusFor(goalIndex: number, dayIndex: number, hashValue: number): PillarDayStatus {
+  if (dayIndex >= WINDOW_DAYS - 7) return recentPatternFor(goalIndex)[dayIndex - (WINDOW_DAYS - 7)]
+  return EARLY_CYCLE[hashValue % EARLY_CYCLE.length]
+}
+
+// hit/partial/miss/no_data → the point value that maps back to the SAME status under the
+// LifeGoalTodaySummary#days7 doc-comment thresholds (≥0.66 hit, ≥0.33 partial, <0.33 miss).
+const STATUS_TO_POINT: Record<PillarDayStatus, number | undefined> = {
+  hit: 0.8, partial: 0.5, miss: 0.15, no_data: undefined,
+}
+
+function buildPillarProgress(goalId: string, pillarId: string, goalIndex: number, from: string): PillarProgress {
+  const arrow = arrowFor(goalIndex)
+  const days: PillarDayEntry[] = Array.from({ length: WINDOW_DAYS }, (_, dayIndex) => {
+    const day = addDays(from, dayIndex)
+    const status = statusFor(goalIndex, dayIndex, hash(`${goalId}:${pillarId}:${dayIndex}`))
+    const value = STATUS_TO_POINT[status]
+    return value === undefined ? { day, status } : { day, status, value }
+  })
+  return { pillarId, arrow, ...(arrow === 'down' ? { missingHitDays: 2 } : {}), days }
+}
+
+function buildGoalDays(goalId: string, goalIndex: number, from: string): GoalDayEntry[] {
+  return Array.from({ length: WINDOW_DAYS }, (_, dayIndex) => {
+    const day = addDays(from, dayIndex)
+    const status = statusFor(goalIndex, dayIndex, hash(`${goalId}:goal:${dayIndex}`))
+    const point = STATUS_TO_POINT[status]
+    return point === undefined ? { day } : { day, point }
+  })
+}
+
+function weeklyPctOf(days: GoalDayEntry[]): number | undefined {
+  const points = days.slice(-7).map((d) => d.point).filter((p): p is number => p !== undefined)
+  if (points.length === 0) return undefined
+  return Math.round((points.reduce((a, b) => a + b, 0) / points.length) * 100)
+}
+
+function last7StatusFromPoints(days: GoalDayEntry[]): PillarDayStatus[] {
+  return days.slice(-7).map((d) => {
+    if (d.point === undefined) return 'no_data'
+    if (d.point >= 0.66) return 'hit'
+    if (d.point >= 0.33) return 'partial'
+    return 'miss'
+  })
+}
+
+/** Determinisztikus 28 napos mock-progress a seed-célokhoz: a (goalId, pillarId, dayIndex) hash
+ *  dönti a státuszt úgy, hogy legyen hit/partial/miss/no_data vegyesen, az első seed-cél nyila 'up',
+ *  a másodiké 'down' (missingHitDays=2), a többi 'insufficient'. */
+export function mockProgress(goalId: string): LifeGoalProgressResponse {
+  const goalIndex = MOCK_LIFE_GOALS.findIndex((g) => g.id === goalId)
+  const goal = goalIndex >= 0 ? MOCK_LIFE_GOALS[goalIndex] : undefined
+  const to = localDateString()
+  const from = addDays(to, -(WINDOW_DAYS - 1))
+  const days = buildGoalDays(goalId, goalIndex, from)
+  const pillars = (goal?.pillars ?? []).map((p) => buildPillarProgress(goalId, p.id, goalIndex, from))
+  const weeklyPct = weeklyPctOf(days)
+  return {
+    goalId, from, to, arrow: arrowFor(goalIndex),
+    ...(weeklyPct === undefined ? {} : { weeklyPct }),
+    days, pillars, conflicts: [],
+  }
+}
+
+export function mockToday(): LifeGoalTodayResponse {
+  const goals = MOCK_LIFE_GOALS
+    .filter((g) => g.status === 'active')
+    .map((g) => {
+      const progress = mockProgress(g.id)
+      return {
+        goalId: g.id,
+        title: g.title,
+        dimension: g.dimension,
+        arrow: progress.arrow,
+        days7: last7StatusFromPoints(progress.days),
+        pillarsTotal: progress.pillars.length,
+        pillarsHitToday: progress.pillars.filter((p) => p.days[p.days.length - 1]?.status === 'hit').length,
+      }
+    })
+  return { goals }
 }
