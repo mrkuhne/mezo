@@ -58,6 +58,13 @@ class LifeGoalScorerTest {
         assertThat(s.target().scale()).isEqualTo(3);
     }
 
+    @Test
+    void habit_empty_rule_is_no_data_never_npe() {
+        PillarRuleJson empty = new PillarRuleJson(null, null, null, null, null, null, null, null, null, null);
+        assertThat(LifeGoalScorer.scoreDay("habit", empty, DAY, SignalWindow.of(Map.of(DAY, new BigDecimal("165"))))
+            .status()).isEqualTo("no_data");
+    }
+
     // ---- average ----
 
     @Test
@@ -110,6 +117,14 @@ class LifeGoalScorerTest {
         assertThat(s.value()).isEqualByComparingTo("165");
     }
 
+    @Test
+    void average_empty_rule_is_no_data_never_npe() {
+        PillarRuleJson empty = new PillarRuleJson(null, null, null, null, null, null, null, null, null, null);
+        Map<LocalDate, BigDecimal> vals = new HashMap<>();
+        for (int i = 0; i < 7; i++) vals.put(DAY.minusDays(i), new BigDecimal("165"));
+        assertThat(LifeGoalScorer.scoreDay("average", empty, DAY, SignalWindow.of(vals)).status()).isEqualTo("no_data");
+    }
+
     // ---- target ----
 
     @Test
@@ -153,6 +168,13 @@ class LifeGoalScorerTest {
         PillarRuleJson rule = new PillarRuleJson(null, null, null, null, new BigDecimal("0"),
             new BigDecimal("100"), DAY.minusDays(10), DAY.plusDays(10), "up", null);
         assertThat(LifeGoalScorer.scoreDay("target", rule, DAY, SignalWindow.of(Map.of())).status()).isEqualTo("no_data");
+    }
+
+    @Test
+    void target_empty_rule_is_no_data_never_npe() {
+        PillarRuleJson empty = new PillarRuleJson(null, null, null, null, null, null, null, null, null, null);
+        SignalWindow w = SignalWindow.of(Map.of(DAY, new BigDecimal("55")));
+        assertThat(LifeGoalScorer.scoreDay("target", empty, DAY, w).status()).isEqualTo("no_data");
     }
 
     // ---- baseline ----
@@ -201,6 +223,19 @@ class LifeGoalScorerTest {
         vals.put(DAY, new BigDecimal("6"));
         PillarRuleJson rule = new PillarRuleJson(null, null, null, null, null, null, null, null, "up", null);
         assertThat(LifeGoalScorer.scoreDay("baseline", rule, DAY, SignalWindow.of(vals)).status()).isEqualTo("hit");
+    }
+
+    @Test
+    void baseline_empty_rule_is_no_data_never_npe() {
+        PillarRuleJson empty = new PillarRuleJson(null, null, null, null, null, null, null, null, null, null);
+        Map<LocalDate, BigDecimal> vals = new HashMap<>();
+        for (int i = 1; i <= 14; i++) vals.put(DAY.minusDays(i), new BigDecimal("5"));
+        vals.put(DAY, new BigDecimal("6"));
+        // No direction: without the guard this silently fell through the "up" side of the
+        // ternary instead of crashing, which is its own honesty bug (a rule missing its
+        // required field scoring as if it were complete) — no_data is correct here.
+        assertThat(LifeGoalScorer.scoreDay("baseline", empty, DAY, SignalWindow.of(vals)).status())
+            .isEqualTo("no_data");
     }
 
     // ---- linked ----

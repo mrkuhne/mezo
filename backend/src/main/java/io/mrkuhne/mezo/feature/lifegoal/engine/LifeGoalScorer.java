@@ -42,6 +42,9 @@ public final class LifeGoalScorer {
     }
 
     private static PillarDayScore scoreHabit(PillarRuleJson rule, LocalDate day, SignalWindow window) {
+        if (rule.threshold() == null || rule.comparator() == null) {
+            return noData(null, null, null);
+        }
         BigDecimal value = window.values().get(day);
         if (value == null) {
             return noData(null, round(rule.threshold()), null);
@@ -51,6 +54,9 @@ public final class LifeGoalScorer {
     }
 
     private static PillarDayScore scoreAverage(PillarRuleJson rule, LocalDate day, SignalWindow window) {
+        if (rule.threshold() == null || rule.comparator() == null) {
+            return noData(null, null, null);
+        }
         int windowDays = rule.windowDays() != null ? rule.windowDays() : DEFAULT_AVERAGE_WINDOW_DAYS;
         List<BigDecimal> collected = new ArrayList<>();
         for (int i = 0; i < windowDays; i++) {
@@ -76,6 +82,10 @@ public final class LifeGoalScorer {
     }
 
     private static PillarDayScore scoreTarget(PillarRuleJson rule, LocalDate day, SignalWindow window) {
+        if (rule.startDate() == null || rule.targetDate() == null
+            || rule.startValue() == null || rule.targetValue() == null) {
+            return noData(null, null, null);
+        }
         long total = ChronoUnit.DAYS.between(rule.startDate(), rule.targetDate());
         if (total <= 0) {
             return noData(null, null, null);
@@ -94,6 +104,9 @@ public final class LifeGoalScorer {
     }
 
     private static PillarDayScore scoreBaseline(PillarRuleJson rule, LocalDate day, SignalWindow window) {
+        if (rule.direction() == null) {
+            return noData(null, null, null);
+        }
         int windowDays = rule.windowDays() != null ? rule.windowDays() : DEFAULT_BASELINE_WINDOW_DAYS;
         int minDataDays = rule.minDataDays() != null ? rule.minDataDays() : DEFAULT_BASELINE_MIN_DATA_DAYS;
         List<BigDecimal> preceding = new ArrayList<>();

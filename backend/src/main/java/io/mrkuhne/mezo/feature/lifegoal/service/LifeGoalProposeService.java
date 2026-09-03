@@ -69,7 +69,12 @@ public class LifeGoalProposeService {
                     .rule(PillarRule.builder().threshold(x.threshold())
                         .comparator(x.comparator() == null ? null : PillarRule.ComparatorEnum.fromValue(x.comparator()))
                         .daysPerWeek(x.daysPerWeek()).windowDays(windowDaysFor(x.kind()))
-                        .minDataDays("baseline".equals(x.kind()) ? 14 : null).startValue(x.startValue()).targetValue(x.targetValue()).build())
+                        .minDataDays("baseline".equals(x.kind()) ? 14 : null).startValue(x.startValue()).targetValue(x.targetValue())
+                        // Neither PillarProposal (AI or template) carries a direction — baseline's
+                        // required field per LifeGoalPillarService.requireRuleShape — so a proposed
+                        // baseline pillar accepted verbatim would 400 on create. "up" (more is
+                        // better) is the same default the test/mock baseline fixtures already use.
+                        .direction("baseline".equals(x.kind()) ? PillarRule.DirectionEnum.UP : null).build())
                     .build()))
             .toList();
         return LifeGoalProposeResponse.builder()
