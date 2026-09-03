@@ -554,6 +554,13 @@ coverage response, and widen what the proactive **Diagnózis** report can name a
 34-total figure supersedes the "31 since V3.4" statements above, which remain accurate as a
 historical snapshot of the V3.4 slice itself.
 
+`MemoryObservatoryService`'s L0 `daysWithAnyData` union is a fourth `MetricKey.values()` consumer,
+but a presence-counting one: it needed the `COMBINED_LOAD_MIN` calendar series excluded the same
+way `WEEKEND` already was, since a key that is populated for every day by construction is evidence
+of the calendar, not of the user having logged anything (CI regression `mezo-d58h.1`, fixed
+alongside this doc update). Any future presence-counting consumer over `MetricKey.values()` must
+skip both calendar-derived keys for the same reason.
+
 **Memória-obszervatórium (`mezo-al1i`, post-epic) — a 4 memória-réteg read-only pillanatképe.**
 `MemoryObservatoryService` (`service/MemoryObservatoryService.java`, companion-switch conditional)
 backs 4 new read-only endpoints under `GET /api/companion/memory/*`, consumed by the Insights
