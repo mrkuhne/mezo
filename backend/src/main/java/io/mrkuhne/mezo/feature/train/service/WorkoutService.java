@@ -770,7 +770,8 @@ public class WorkoutService {
     @Transactional
     public WorkoutInstanceResponse finishWorkout(UUID createdBy, UUID workoutId, String closingNote) {
         WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
-        if ("active".equals(instance.getStatus())) {
+        boolean isRealTransition = "active".equals(instance.getStatus());
+        if (isRealTransition) {
             instance.setStatus("completed"); // dirty-checked, flushed at commit
         }
         // FILL-IF-EMPTY, like closeMesocycle's self-eval: finishing is contractually idempotent, so
@@ -819,14 +820,20 @@ public class WorkoutService {
                 instance.getId(), e);
             base.setMedals(List.of());
         }
-        // Learned workout-timing profile (mezo-dzbm): published unconditionally, exactly like
-        // ChatService publishes ChatTurnCompleted — the gate lives on the LISTENER
-        // (@ConditionalOnProperty on TimingProfileListener), not on the publish call. Consumed
-        // AFTER_COMMIT, so profile learning only ever runs once this completion write has
-        // actually landed, and — because it then runs on its own thread, after commit — nothing
-        // it does or throws can roll this write back. A rolled-back test transaction never fires
-        // it, by design (mirrors ChatTurnCompleted).
-        eventPublisher.publishEvent(new WorkoutFinishedEvent(createdBy, instance.getId()));
+        // Learned workout-timing profile (mezo-dzbm): published only on the REAL active->completed
+        // transition, gated on isRealTransition above — finishWorkout is deliberately idempotent
+        // (a bodyless retry after a failed one re-enters this method with the instance already
+        // completed, see the fill-if-empty comments above), and learnFrom has no already-learned
+        // marker of its own, so an unconditional publish would fold the same session's intervals
+        // into the EWMA twice on every retry, silently over-weighting it. The switch gate itself
+        // lives on the LISTENER (@ConditionalOnProperty on TimingProfileListener), not on this
+        // publish call. Consumed AFTER_COMMIT, so profile learning only ever runs once this
+        // completion write has actually landed, and — because it then runs on its own thread,
+        // after commit — nothing it does or throws can roll this write back. A rolled-back test
+        // transaction never fires it, by design (mirrors ChatTurnCompleted).
+        if (isRealTransition) {
+            eventPublisher.publishEvent(new WorkoutFinishedEvent(createdBy, instance.getId()));
+        }
         return base;
     }
 

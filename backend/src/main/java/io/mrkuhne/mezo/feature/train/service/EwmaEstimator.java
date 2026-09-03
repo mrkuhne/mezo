@@ -19,8 +19,10 @@ import lombok.NoArgsConstructor;
  * only — the stored {@code deviation} itself is never floored, so it stays a faithful measurement
  * of the user's actual consistency.
  *
- * <p>Seeds come from config, not from the first observation: a fresh profile starts at the
- * frontend's static pacing constants, so the estimate is never worse than today's.
+ * <p>Seeds come from config, not from the first observation: a fresh profile starts at an
+ * untuned starting point derived from the frontend's static pacing constants — in the right
+ * ballpark, but deliberately NOT calibrated to reproduce the static formula's numbers. Tuning
+ * the seeds against real observation data is outstanding work.
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class EwmaEstimator {

@@ -10,9 +10,12 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * Workout-timing tuning (mezo.train.timing) — the measurement clips (slice 1) and the profile
- * learner (slice 2). The seed values are the backend's copy of the frontend's static pacing
- * constants (SESSION_TIME + restSecondsFor): a brand-new profile therefore returns today's
- * numbers, and only moves as real observations arrive.
+ * learner (slice 2). The seed values are an untuned starting point in the right ballpark, hand-
+ * picked from the frontend's static pacing constants (SESSION_TIME + restSecondsFor) — they are
+ * deliberately NOT calibrated to reproduce the static formula's numbers (the calibrated path
+ * prices warm-up sets and transitions differently, see docs/features/train.md's timing section),
+ * so a brand-new profile does not return today's numbers. Retuning the seeds against real
+ * observation data is outstanding work.
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.train.timing")

@@ -1262,9 +1262,11 @@ export const workoutDetailsMock: Record<string, import('@/data/train/trainApi').
 }
 
 // Task 12 (mezo-dzbm): the calibrated timing profile mock (GET /api/train/timing-profile,
-// Task 11). Deliberately the static config seeds with all sample counts at 0 — mock mode
-// has no session history to learn from, so `estimateSessionMinutes` must keep producing
-// today's numbers (same formula the seeds were chosen to reproduce), not a fake calibration.
+// Task 11). Deliberately the same untuned config seeds the backend falls back to, with all
+// sample counts at 0 — mock mode has no session history to learn from, so this mirrors a
+// brand-new profile rather than fabricating a fake calibration. NOTE: these seeds are NOT
+// calibrated to reproduce the static formula's numbers (`estimateSessionMinutes` without a
+// profile) — the calibrated path reads noticeably higher; see docs/features/train.md.
 export const timingProfileMock: import('@/data/train/timingProfileApi').TimingProfileResponse = {
   leadInSeconds: 480,
   setCycleCompoundSeconds: 180,

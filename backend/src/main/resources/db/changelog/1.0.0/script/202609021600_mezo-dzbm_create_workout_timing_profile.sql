@@ -3,8 +3,10 @@
 -- sample count so the outlier gate can open independently per component.
 --
 -- value_num/deviation_num are the RFC 6298 pair (smoothed estimate + smoothed deviation).
--- Seeds live in config (mezo.train.timing.seed-*), not here: a user with no row yet gets the
--- static frontend constants, so the estimate is correct from the first day.
+-- Seeds live in config (mezo.train.timing.seed-*), not here: a user with no row yet gets an
+-- untuned starting point derived from the static frontend constants — in the right ballpark,
+-- but deliberately NOT calibrated to reproduce the static formula's numbers. Tuning the seeds
+-- against real observation data is outstanding work.
 create table workout_timing_profile (
     id             UUID        NOT NULL,
     created_by     UUID        NOT NULL,

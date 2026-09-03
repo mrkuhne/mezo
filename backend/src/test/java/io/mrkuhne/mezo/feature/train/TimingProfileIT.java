@@ -336,4 +336,89 @@ class TimingProfileIT extends AbstractIntegrationTest {
             logger.detachAppender(appender);
         }
     }
+
+    /**
+     * Fix wave (final-branch-review, mezo-dzbm): {@code finishWorkout} is deliberately
+     * idempotent (the fill-if-empty {@code finishedAt}/{@code closingNote} comments in {@code
+     * WorkoutService.finishWorkout} name "a bodyless retry after a failed one" as the reason).
+     * Before the fix, {@code WorkoutFinishedEvent} was published unconditionally on every call,
+     * so a retried finish re-published the event and {@code learnFrom} — which has no
+     * already-learned marker of its own — folded the same session's intervals into the EWMA a
+     * second time, over-weighting it. The event is now published only on the real
+     * active->completed transition. This test proves a bodyless re-finish of an
+     * already-completed instance leaves the profile's sample counts unchanged.
+     */
+    @Test
+    void testFinishWorkout_shouldNotLearnTwice_whenTheSameSessionIsFinishedAgain() throws InterruptedException {
+        UUID user = databasePopulator.populateUser("timing-profile-refinish@test.local");
+        WorkoutSessionEntity tmpl = template(user);
+        ExerciseEntity exercise = train.createExercise(user, tmpl.getId(), "Row", 0);
+        Instant t0 = Instant.now().minusSeconds(2000);
+        WorkoutSessionEntity instance = train.createWorkoutInstance(user, tmpl, LocalDate.now(), "active");
+        instance.setStartedAt(t0);
+        train.save(instance);
+        train.createLoggedSet(user, exercise.getId(), instance.getId(), 0, "60.0", 8, 1, t0.plusSeconds(900));
+        train.createLoggedSet(user, exercise.getId(), instance.getId(), 1, "60.0", 8, 1, t0.plusSeconds(1050));
+        train.createLoggedSet(user, exercise.getId(), instance.getId(), 2, "60.0", 8, 1, t0.plusSeconds(1200));
+
+        workoutService.finishWorkout(user, instance.getId(), null);
+
+        await().atMost(10, SECONDS).untilAsserted(() ->
+            assertThat(profileRepository.findByCreatedBy(user)).hasSize(2));
+        Map<String, Integer> samplesAfterFirstFinish = profileRepository.findByCreatedBy(user).stream()
+            .collect(java.util.stream.Collectors.toMap(
+                WorkoutTimingProfileEntity::getComponent, WorkoutTimingProfileEntity::getSamples));
+
+        // Bodyless retry: the instance is already 'completed', so this call must be a no-op for
+        // event publishing (and therefore for learning) even though it re-returns successfully.
+        workoutService.finishWorkout(user, instance.getId(), null);
+
+        // No new event is published on the retry, so there is nothing to await — a fixed, short
+        // grace period stands in for "prove nothing happened" (the alternative, asserting
+        // immediately with zero wait, would be vacuous if the (buggy) listener were merely slow).
+        Thread.sleep(500);
+        Map<String, Integer> samplesAfterRefinish = profileRepository.findByCreatedBy(user).stream()
+            .collect(java.util.stream.Collectors.toMap(
+                WorkoutTimingProfileEntity::getComponent, WorkoutTimingProfileEntity::getSamples));
+        assertThat(samplesAfterRefinish).isEqualTo(samplesAfterFirstFinish);
+    }
+
+    /**
+     * Fix wave (final-branch-review, mezo-dzbm): {@code TimingProfileService.stampsFor} used to
+     * pass every set's exercise type through unconditionally, including {@code null} for an
+     * exercise that has since been soft-deleted ({@code ExerciseEntity} carries
+     * {@code @SQLRestriction("is_deleted = false")}, so a batch {@code findAllById} silently
+     * omits it) — {@code TimingObservationExtractor.componentFor} has no "unknown type" branch,
+     * so a null-typed stamp fell through to the {@code set_cycle_isolation} bucket regardless of
+     * the exercise's real type. Stamps whose exercise cannot be resolved are now skipped
+     * entirely. Here the session's only exercise is soft-deleted before the session is
+     * finished, so BOTH its stamps are dropped and the session ends up with zero observations —
+     * proof the sets were skipped rather than mis-bucketed as set_cycle_isolation.
+     */
+    @Test
+    void testFinishWorkout_shouldSkipStamps_whenTheExerciseWasSoftDeleted() {
+        UUID user = databasePopulator.populateUser("timing-profile-soft-deleted@test.local");
+        WorkoutSessionEntity tmpl = template(user);
+        ExerciseEntity exercise = train.createExercise(user, tmpl.getId(), "Row", 0);
+        Instant t0 = Instant.now().minusSeconds(500);
+        WorkoutSessionEntity instance = train.createWorkoutInstance(user, tmpl, LocalDate.now(), "active");
+        instance.setStartedAt(t0);
+        train.save(instance);
+        train.createLoggedSet(user, exercise.getId(), instance.getId(), 0, "60.0", 8, 1, t0);
+        train.createLoggedSet(user, exercise.getId(), instance.getId(), 1, "60.0", 8, 1, t0.plusSeconds(100));
+        exercise.setDeleted(true);
+        train.save(exercise);
+
+        WorkoutInstanceResponse finished = workoutService.finishWorkout(user, instance.getId(), null);
+        assertThat(finished.getFinishedAt()).isNotNull();
+
+        // learnFrom runs AFTER_COMMIT — give it a grace period, then assert the negative: no
+        // set_cycle_isolation (or any other) row was created from the soft-deleted exercise's sets.
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        assertThat(profileRepository.findByCreatedBy(user)).isEmpty();
+    }
 }

@@ -82,7 +82,12 @@ public class TimingProfileService {
      * extractor trusts clean input (sorts by doneAt, no null-tolerance), so filtering skip-marker
      * rows and null doneAt is THIS method's job, not the extractor's. Mirrors the predicate
      * {@code WorkoutService.finishWorkout} already applies for its own SessionTimingCalculator call.
-     * Each set's exercise type is resolved with ONE batch lookup, not a query per set.
+     * Each set's exercise type is resolved with ONE batch lookup, not a query per set. A set
+     * whose exercise cannot be resolved (soft-deleted since — {@code ExerciseEntity} carries
+     * {@code @SQLRestriction("is_deleted = false")}, so {@code findAllById} silently omits it) is
+     * skipped rather than folded into the extractor: {@code componentFor} has no "unknown type"
+     * bucket, so a stamp with a null type would silently mis-bucket as {@code
+     * set_cycle_isolation} regardless of the exercise's real type.
      */
     private List<TimingObservationExtractor.SetStamp> stampsFor(UUID createdBy, WorkoutSessionEntity session) {
         List<ExerciseSetEntity> sets = exerciseSetRepository
@@ -97,6 +102,7 @@ public class TimingProfileService {
         Map<UUID, String> typeById = exerciseRepository.findAllById(exerciseIds).stream()
             .collect(Collectors.toMap(ExerciseEntity::getId, ExerciseEntity::getType));
         return sets.stream()
+            .filter(s -> typeById.containsKey(s.getExerciseId()))
             .map(s -> new TimingObservationExtractor.SetStamp(
                 s.getExerciseId(), typeById.get(s.getExerciseId()), s.getDoneAt()))
             .toList();
