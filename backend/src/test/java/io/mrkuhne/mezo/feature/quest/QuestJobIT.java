@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -91,20 +92,34 @@ class QuestJobIT extends AbstractIntegrationTest {
     }
 
     /**
-     * Pins the WIDTH of the {@code cronPresenceDays} window (mezo-qw37.6 carry-along): every other
-     * skip case in this class uses a null {@code last_seen_at}, so nothing here catches a wrong unit
-     * or a wrong magnitude (days vs hours, 7 vs 70) — only an inverted comparison would fail. A user
-     * seen ~30 days ago is well past the default 7-day window and must still be skipped.
+     * Brackets the WIDTH of the {@code cronPresenceDays} window from both sides (mezo-qw37.6
+     * carry-along, fix round 1 Finding 1): every other skip case in this class uses a null
+     * {@code last_seen_at}, so none of them catches a wrong unit or magnitude (e.g. days vs hours,
+     * or 7 vs 70) — only an inverted comparison would fail there. A user seen ~30 days ago (well
+     * outside the default 7-day window) must be skipped, and a user seen 2 days ago (well inside
+     * it) must still be served; together these two fail if the unit were hours instead of days, or
+     * if the window were narrower than 2 days — pinning both the unit and the rough magnitude.
      */
     @Test
     void testRunGenerate_shouldSkipUser_whenLastSeenIsOlderThanPresenceWindow() {
         LocalDate today = LocalDate.now();
         AppUserEntity staleSeen = userPopulator.createUser("quest-stale-seen@test.local");
-        markSeen(staleSeen, Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS));
+        markSeen(staleSeen, Instant.now().minus(30, ChronoUnit.DAYS));
 
         job.runGenerate();
 
         assertThat(repository.findByCreatedByAndQuestDateOrderBySlotAsc(staleSeen.getId(), today)).isEmpty();
+    }
+
+    @Test
+    void testRunGenerate_shouldServeUser_whenLastSeenIsWellInsidePresenceWindow() {
+        LocalDate today = LocalDate.now();
+        AppUserEntity recentSeen = userPopulator.createUser("quest-recent-seen@test.local");
+        markSeen(recentSeen, Instant.now().minus(2, ChronoUnit.DAYS));
+
+        job.runGenerate();
+
+        assertThat(repository.findByCreatedByAndQuestDateOrderBySlotAsc(recentSeen.getId(), today)).isNotEmpty();
     }
 
     private void markSeen(AppUserEntity user, Instant at) {
