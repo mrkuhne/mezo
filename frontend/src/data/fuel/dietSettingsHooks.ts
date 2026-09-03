@@ -7,7 +7,7 @@ import type { DietSettings } from '@/data/types'
 /** The backend's config-default ghost — the honest value in BOTH modes before a save. */
 export const DIET_SETTINGS_GHOST: DietSettings = {
   splitPreset: 'balanced', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
-  proteinTier: 'moderate', waterMl: 4000, fiberG: 30,
+  proteinTier: 'moderate', waterMl: 4000, fiberG: 30, dayTypeShiftKcal: 0,
 }
 
 export function useDietSettings() {

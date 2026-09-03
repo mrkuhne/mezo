@@ -11743,6 +11743,18 @@ components:
             sign×rate%/100×kg×kcalPerKg÷7
         rationale:
           type: string
+        trainingDayKcal:
+          type: integer
+          nullable: true
+          description: >-
+            Day-type kcal target on a training day (kcal +
+            shift×restDays/trainingDays); null → uniform kcal (mezo-sxlj)
+        restDayKcal:
+          type: integer
+          nullable: true
+          description: >-
+            Day-type kcal target on a rest day (kcal − shift, floored at BMR);
+            null → uniform kcal (mezo-sxlj)
     GoalGuardStatus:
       type: object
       required:
@@ -17475,6 +17487,7 @@ components:
         - proteinTier
         - waterMl
         - fiberG
+        - dayTypeShiftKcal
       properties:
         splitPreset:
           type: string
@@ -17516,6 +17529,13 @@ components:
           type: integer
           minimum: 10
           maximum: 80
+        dayTypeShiftKcal:
+          type: integer
+          minimum: 0
+          maximum: 500
+          description: >-
+            Kcal moved off each rest day onto training days (weekly budget
+            unchanged); 0 = uniform days
     SetDietSettingsRequest:
       type: object
       required:
@@ -17523,6 +17543,7 @@ components:
         - proteinTier
         - waterMl
         - fiberG
+        - dayTypeShiftKcal
       properties:
         splitPreset:
           type: string
@@ -17557,6 +17578,13 @@ components:
           type: integer
           minimum: 10
           maximum: 80
+        dayTypeShiftKcal:
+          type: integer
+          minimum: 0
+          maximum: 500
+          description: >-
+            Kcal moved off each rest day onto training days (weekly budget
+            unchanged); 0 = uniform days
     TutorialProgressEntry:
       type: object
       required:

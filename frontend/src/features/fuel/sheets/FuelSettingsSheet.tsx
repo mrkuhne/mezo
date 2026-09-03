@@ -73,6 +73,7 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
         carbsPctX10: splitPreset === 'custom' ? Math.round(cPct * 10) : null,
         fatPctX10: splitPreset === 'custom' ? Math.round(fPct * 10) : null,
         proteinTier, waterMl, fiberG,
+        dayTypeShiftKcal: diet.dayTypeShiftKcal, // pass through unchanged — knob UI is a later task
       }),
     ]).then(close)
 
