@@ -628,7 +628,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `LifeGoalPillarEntity`→`life_goal_pillar`
   - **repositories:** `LifeGoalPillarDayRepository`, `LifeGoalPillarRepository`, `LifeGoalRepository`
   - **services:** `LifeGoalEvalJob`, `LifeGoalPillarService`, `LifeGoalProgressService`, `LifeGoalProposeService`,
-    `LifeGoalService`, `LifeGoalSignalService`, `LifeGoalTemplateProposer`, `LifeGoalXpService`
+    `LifeGoalService`, `LifeGoalSignalService`, `LifeGoalTemplateProposer`, `LifeGoalTriggerListener`,
+    `LifeGoalTriggerRules`, `LifeGoalTriggerService`, `LifeGoalXpService`
   - **controllers→contract:** `LifeGoalController`→`LifeGoalApi`
   - **mappers:** `LifeGoalMapper`
   - **config:** `LifeGoalProperties`
@@ -645,11 +646,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalProgress`, `useLifeGoalPropose`,
     `useLifeGoalToday`, `useLifeGoals`, `useSignalCatalog`
   - **modules:** lifegoalApi.ts, lifegoalHooks.ts, lifegoalMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 13 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 15 IT + 2 unit
   - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalEvalJobIT`, `LifeGoalEvalJobSwitchOffIT`,
     `LifeGoalEvaluateApiIT`, `LifeGoalPillarApiIT`, `LifeGoalProgressApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`,
-    `LifeGoalTodayApiIT`, `LifeGoalXpIT`, `SignalSourceIT`, `WeightGoalSignalSourceIT`
-  - **populators:** `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`, `UserPopulator`
+    `LifeGoalSignalsLivenessIT`, `LifeGoalTodayApiIT`, `LifeGoalTriggerIT`, `LifeGoalXpIT`, `SignalSourceIT`,
+    `WeightGoalSignalSourceIT`
+  - **populators:** `CheckInPopulator`, `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`, `TrainPopulator`,
+    `UserPopulator`
 
 ### llmlog
 
@@ -703,11 +706,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE ui** `frontend/src/features/me`
   - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, BetaAdminPage.tsx, CelPage.tsx,
     CelWizardPage.tsx, CelokPage.tsx, EnHubPage.tsx, GoalPlannerPage.tsx, GoalsPage.tsx, GoalsSkeleton.tsx,
-    GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx, GrowthSkillsPage.tsx, HabitPage.tsx, JournalPage.tsx,
-    NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx,
-    PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx, RoutineWizardPage.tsx,
-    RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx, WeekDiscoveriesPage.tsx,
-    WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
+    GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx, GrowthSkillsPage.tsx, HabitPage.tsx, JelekPage.tsx,
+    JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx,
+    PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx,
+    RoutineWizardPage.tsx, RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx,
+    WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
     DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx,
     PersonLogSheet.tsx, PillarCatalogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx,
@@ -1120,9 +1123,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MedalService`, `MesoPlanFiller`, `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`,
     `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `Prescription`,
     `PriorityTier`, `ProgressionDecider`, `RunningService`, `SessionTimingCalculator`, `SetRecommendationService`,
-    `SportService`, `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`, `TimingProfileService`,
-    `TrainService`, `VolumeArcService`, `VolumeDecider`, `VolumeProgressionService`, `WeeklyScheduledActivityService`,
-    `WorkoutAutoCloseService`, `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
+    `SportService`, `SportSessionLoggedEvent`, `TimingObservation`, `TimingObservationExtractor`,
+    `TimingProfileListener`, `TimingProfileService`, `TrainService`, `VolumeArcService`, `VolumeDecider`,
+    `VolumeProgressionService`, `WeeklyScheduledActivityService`, `WorkoutAutoCloseService`, `WorkoutFinishedEvent`,
+    `WorkoutService`, `WorkoutWindowQueryService`
   - **controllers→contract:** `TrainController`→`TrainApi`
   - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`
   - **config:** `ClosingBlockProperties`, `HypertrophyProperties`, `MesoPlanProperties`, `TimingProperties`,
