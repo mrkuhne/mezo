@@ -17,7 +17,8 @@ public record FlagPayloadEnvelope(
     MomentumAtRisk momentumAtRisk,
     RecoveryNeeded recoveryNeeded,
     AllHealthy allHealthy,
-    LoggingGap loggingGap
+    LoggingGap loggingGap,
+    MissedWorkouts missedWorkouts
 ) {
 
     public record SustainedStress(
@@ -51,27 +52,36 @@ public record FlagPayloadEnvelope(
         Integer loggedNights) {
     }
 
+    public record MissedWorkouts(
+        int windowDays, int minConsecutiveMissed, int longestMissedRun,
+        List<String> missedDays, List<String> plannedDays) {
+    }
+
     public static FlagPayloadEnvelope sustainedStress(SustainedStress p) {
-        return new FlagPayloadEnvelope(p, null, null, null, null, null);
+        return new FlagPayloadEnvelope(p, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope sleepDebt(SleepDebt p) {
-        return new FlagPayloadEnvelope(null, p, null, null, null, null);
+        return new FlagPayloadEnvelope(null, p, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope momentumAtRisk(MomentumAtRisk p) {
-        return new FlagPayloadEnvelope(null, null, p, null, null, null);
+        return new FlagPayloadEnvelope(null, null, p, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope recoveryNeeded(RecoveryNeeded p) {
-        return new FlagPayloadEnvelope(null, null, null, p, null, null);
+        return new FlagPayloadEnvelope(null, null, null, p, null, null, null);
     }
 
     public static FlagPayloadEnvelope allHealthy(AllHealthy p) {
-        return new FlagPayloadEnvelope(null, null, null, null, p, null);
+        return new FlagPayloadEnvelope(null, null, null, null, p, null, null);
     }
 
     public static FlagPayloadEnvelope loggingGap(LoggingGap p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, p);
+        return new FlagPayloadEnvelope(null, null, null, null, null, p, null);
+    }
+
+    public static FlagPayloadEnvelope missedWorkouts(MissedWorkouts p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, p);
     }
 }

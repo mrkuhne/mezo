@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.flags.service;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.AllHealthyRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoggingGapRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.MissedWorkoutsRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MomentumAtRiskRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.RecoveryNeededRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.SleepDebtRule;
@@ -42,6 +43,7 @@ public class FlagEvaluator {
     private final MomentumAtRiskRule momentumAtRiskRule;
     private final RecoveryNeededRule recoveryNeededRule;
     private final LoggingGapRule loggingGapRule;
+    private final MissedWorkoutsRule missedWorkoutsRule;
     private final AllHealthyRule allHealthyRule;
 
     /** Every flag that is TRUE for {@code userId} right now, cooldowns NOT yet applied. */
@@ -54,6 +56,7 @@ public class FlagEvaluator {
         momentumAtRiskRule.evaluate(userId, today).ifPresent(raises::add);
         recoveryNeededRule.evaluate(userId, today).ifPresent(raises::add);
         loggingGapRule.evaluate(userId, today).ifPresent(raises::add);
+        missedWorkoutsRule.evaluate(userId, today).ifPresent(raises::add);
         if (raises.isEmpty()) {
             allHealthyRule.evaluate(userId, today).ifPresent(raises::add);
         }
