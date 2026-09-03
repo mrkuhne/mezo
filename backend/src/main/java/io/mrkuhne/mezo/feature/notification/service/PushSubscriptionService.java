@@ -12,8 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Owns the {@code push_subscription} rows: upsert-on-register, soft-delete-on-unregister/GONE, and
- * the per-owner live-device list {@link PushSender} fans out to (bd mezo-h4wp.6.1).
+ * Owns the {@code push_subscription} rows: upsert-on-register, <b>re-bind across owners</b>
+ * on register, and soft-delete-on-unregister/GONE, plus the per-owner live-device list
+ * {@link PushSender} fans out to (bd mezo-h4wp.6.1).
  */
 @Service
 @RequiredArgsConstructor
@@ -27,9 +28,19 @@ public class PushSubscriptionService {
      * material on the existing row rather than inserting a second one — the DB has a partial
      * unique index on {@code (created_by, endpoint) where is_deleted = false} that a duplicate
      * insert would violate.
+     *
+     * <p>S6 (mezo-qw37.6) re-bind: a push endpoint identifies one physical device, and a device
+     * belongs to whoever is signed in on it now — one browser, one account. If another account
+     * still holds a live row for this endpoint, that row is soft-deleted first (never an
+     * {@code UPDATE} of {@code created_by}, which is {@code updatable=false} on
+     * {@link io.mrkuhne.mezo.techcore.persistence.OwnedEntity}) before the caller's own row is
+     * upserted, so the same browser can never notify two accounts at once.
      */
     @Transactional
     public void register(UUID owner, String endpoint, String p256dh, String auth, String userAgent) {
+        repository.findByEndpoint(endpoint).stream()
+                .filter(other -> !owner.equals(other.getCreatedBy()))
+                .forEach(repository::delete);
         PushSubscriptionEntity entity = repository.findByCreatedByAndEndpoint(owner, endpoint)
                 .orElseGet(PushSubscriptionEntity::new);
         entity.setCreatedBy(owner);
