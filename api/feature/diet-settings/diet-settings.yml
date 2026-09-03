@@ -49,7 +49,7 @@ components:
   schemas:
     DietSettingsResponse:
       type: object
-      required: [splitPreset, proteinTier, waterMl, fiberG]
+      required: [splitPreset, proteinTier, waterMl, fiberG, dayTypeShiftKcal]
       properties:
         splitPreset:
           type: string
@@ -68,9 +68,14 @@ components:
           description: g/kg band endpoint — moderate=2.0 g/kg BW, high=2.2 g/kg BW (engine config)
         waterMl: { type: integer, minimum: 500, maximum: 8000 }
         fiberG: { type: integer, minimum: 10, maximum: 80 }
+        dayTypeShiftKcal:
+          type: integer
+          minimum: 0
+          maximum: 500
+          description: 'Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days'
     SetDietSettingsRequest:
       type: object
-      required: [splitPreset, proteinTier, waterMl, fiberG]
+      required: [splitPreset, proteinTier, waterMl, fiberG, dayTypeShiftKcal]
       properties:
         splitPreset: { type: string, enum: [balanced, low_fat, low_carb, high_carb, custom] }
         proteinPctX10: { type: integer, minimum: 0, maximum: 1000 }
@@ -79,3 +84,8 @@ components:
         proteinTier: { type: string, enum: [moderate, high] }
         waterMl: { type: integer, minimum: 500, maximum: 8000 }
         fiberG: { type: integer, minimum: 10, maximum: 80 }
+        dayTypeShiftKcal:
+          type: integer
+          minimum: 0
+          maximum: 500
+          description: 'Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days'

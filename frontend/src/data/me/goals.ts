@@ -59,6 +59,11 @@ export const goalResponse: GoalResponse = {
         toWeek: 12,
         label: 'Mély deficit',
         kcal: 2150,
+        // Day-type shift (mezo-sxlj): mock's dayTypeShiftKcal is 200, T=4/R=3 mock schedule,
+        // no floor bite — trainingDayKcal/restDayKcal demo the split even though the diet-settings
+        // ghost itself stays at 0 (drift guard vs the BE config default).
+        trainingDayKcal: 2300,
+        restDayKcal: 1950,
         proteinG: 163,
         carbsG: 226,
         fatG: 66,
@@ -73,6 +78,8 @@ export const goalResponse: GoalResponse = {
         toWeek: 20,
         label: 'Lassú befutó · taper',
         kcal: 2380,
+        trainingDayKcal: 2530,
+        restDayKcal: 2180,
         proteinG: 155,
         carbsG: 276,
         fatG: 73,

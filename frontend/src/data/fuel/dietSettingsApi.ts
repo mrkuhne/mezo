@@ -13,6 +13,7 @@ const fromWire = (r: DietSettingsResponse): DietSettings => ({
   proteinTier: r.proteinTier,
   waterMl: r.waterMl,
   fiberG: r.fiberG,
+  dayTypeShiftKcal: r.dayTypeShiftKcal,
 })
 
 export const dietSettingsApi = {
@@ -29,6 +30,7 @@ export const dietSettingsApi = {
         proteinTier: settings.proteinTier,
         waterMl: settings.waterMl,
         fiberG: settings.fiberG,
+        dayTypeShiftKcal: settings.dayTypeShiftKcal,
       } satisfies SetDietSettingsRequest),
     }).then(fromWire),
 }

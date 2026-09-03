@@ -5161,6 +5161,10 @@ export interface components {
             /** @description Goal deficit(−)/surplus(+) per day (kcal); sign×rate%/100×kg×kcalPerKg÷7 */
             dailyEnergyBalanceKcal: number;
             rationale: string;
+            /** @description Day-type kcal target on a training day (kcal + shift×restDays/trainingDays); null → uniform kcal (mezo-sxlj) */
+            trainingDayKcal?: number | null;
+            /** @description Day-type kcal target on a rest day (kcal − shift, floored at BMR); null → uniform kcal (mezo-sxlj) */
+            restDayKcal?: number | null;
         };
         GoalGuardStatus: {
             strength: components["schemas"]["GoalStrengthGuardStatus"];
@@ -7381,6 +7385,8 @@ export interface components {
             proteinTier: "moderate" | "high";
             waterMl: number;
             fiberG: number;
+            /** @description Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days */
+            dayTypeShiftKcal: number;
         };
         SetDietSettingsRequest: {
             /** @enum {string} */
@@ -7392,6 +7398,8 @@ export interface components {
             proteinTier: "moderate" | "high";
             waterMl: number;
             fiberG: number;
+            /** @description Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days */
+            dayTypeShiftKcal: number;
         };
         TutorialProgressEntry: {
             /** @description The registry version of the guide that was seen — a bump re-arms the auto-show */

@@ -66,6 +66,7 @@ export interface DietSettings {
   proteinTier: 'moderate' | 'high'
   waterMl: number
   fiberG: number
+  dayTypeShiftKcal: number
 }
 /** Mezo-kalauz seen-store (mezo-gb1s): one record per guide id, the whole map is the per-user singleton. */
 export interface TutorialProgressEntry {
