@@ -356,6 +356,17 @@ describe('deriveDailyBudget day-type shift (slice 3)', () => {
     expect(b.c).toBe(264) // 226 + round((2300−2150)/4) = 226+38
     expect(b.f).toBe(66) // fat is day-independent
   })
+
+  // Finding 3 (mezo-sxlj final fix wave): a partial split (only ONE of the two day-type fields set)
+  // is a shape DayTypeShiftCalculator never itself emits, but this DEFENSIVE consumer must still
+  // degrade safely — the missing field resolves `dayKcal` to null, so the uniform `kcal` is served,
+  // not a `restDayKcal: undefined` glitch.
+  it('partial split (trainingDayKcal set, restDayKcal absent) on a rest day serves the uniform kcal', () => {
+    const partial = { kcal: 2150, proteinG: 163, carbsG: 226, fatG: 66, trainingDayKcal: 2300 } // no restDayKcal
+    const b = deriveDailyBudget(partial, fallback, undefined, false)
+    expect(b.kcal).toBe(2150) // uniform kcal, NOT a crash and NOT trainingDayKcal
+    expect(b.c).toBe(226) // no day-type delta — carbsG passes through unchanged
+  })
 })
 
 // ── recipe fit ───────────────────────────────────────────────────────────────

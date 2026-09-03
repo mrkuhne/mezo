@@ -42,9 +42,12 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Slice 3 (mezo-sxlj): when a segment carries a day-type split ({@code trainingDayKcal} /
  * {@code restDayKcal}), the served kcal is picked at serve time by {@link #dayTypeAdjusted} —
- * a date with ANY workout window ({@link WorkoutWindowQueryService}: gym slots, sport
- * slots/events, logged sessions, prescribed runs) is a training day. The whole kcal delta lands
- * in carbs (ISSN), derived at serve time and never stored.
+ * a date is a training day when it carries a SCHEDULE-derived training source
+ * ({@link WorkoutWindowQueryService#hasScheduledTrainingOn}: gym schedule slots, sport schedule
+ * slots, dated sport events, prescribed runs) — the same basis the FE's {@code deriveBlocks} and
+ * the engine's weekly split use. An ad-hoc LOGGED session with no matching schedule/event does
+ * NOT flip the day. The whole kcal delta lands in carbs (ISSN), derived at serve time and never
+ * stored.
  */
 @Service
 @RequiredArgsConstructor
@@ -82,8 +85,8 @@ public class FuelDayService {
      * the Terv weekly stats (kcal avg / protein-hit days), the week-centric Fuel Napló page and the
      * Insights Weekly review (Phase-2 roadmap D′).
      *
-     * <p>Slice 3: each of the 7 days does its own {@link WorkoutWindowQueryService#windowsFor}
-     * lookup via {@link #targetSet} — 7 window lookups per call. Acceptable single-owner cost;
+     * <p>Slice 3: each of the 7 days does its own {@link WorkoutWindowQueryService#hasScheduledTrainingOn}
+     * lookup via {@link #targetSet} — 7 lookups per call. Acceptable single-owner cost;
      * revisit with a week-bulk query only if it ever shows up in traces.
      *
      * <p>The two week-level scalars (mezo-d20.7.2) are DERIVED AT READ, not stored: Fuel has no
@@ -213,21 +216,24 @@ public class FuelDayService {
      * The day-type pick for {@code seg} on {@code date} (slice 3, mezo-sxlj): {@code null} when the
      * segment has no kcal, or carries no day-type split ({@code trainingDayKcal} AND
      * {@code restDayKcal} both null — a pre-slice-3/uniform prescription), or the picked field
-     * itself is null (only one of the two set). Otherwise picks {@code trainingDayKcal} when any
-     * {@link WorkoutWindowQueryService#windowsFor} window covers the date, else
-     * {@code restDayKcal} — the same source the FE's {@code deriveBlocks}/{@code resolveDayType}
-     * reads (gym slots, sport slots + events + logged sessions, prescribed runs), so both surfaces
-     * classify the day identically. The whole day-type delta lands in carbs (ISSN): derived here at
-     * serve time, never stored. SHARED by {@link #targetSet} (the FuelDay MacroHero) and
-     * {@link #dailyTargets} (the meal scorer) — one classification rule, two projections (the
-     * {@link #segmentFor} precedent).
+     * itself is null (only one of the two set). Otherwise picks {@code trainingDayKcal} when
+     * {@link WorkoutWindowQueryService#hasScheduledTrainingOn} reports a SCHEDULE-derived training
+     * source for the date, else {@code restDayKcal} — the same basis the FE's
+     * {@code deriveBlocks}/{@code resolveDayType} reads (gym schedule slots, sport schedule slots,
+     * dated sport events, prescribed runs) and the engine's weekly split counts, so both surfaces
+     * classify the day identically. Deliberately NOT {@link WorkoutWindowQueryService#windowsFor} —
+     * that also counts ad-hoc LOGGED sessions, which must not flip the day-type kcal pick (an
+     * unplanned sport session on an otherwise rest day still serves rest-day kcal). The whole
+     * day-type delta lands in carbs (ISSN): derived here at serve time, never stored. SHARED by
+     * {@link #targetSet} (the FuelDay MacroHero) and {@link #dailyTargets} (the meal scorer) — one
+     * classification rule, two projections (the {@link #segmentFor} precedent).
      */
     private DayTypePick dayTypeAdjusted(GoalPrescriptionJson.Segment seg, UUID userId, LocalDate date) {
         if (seg == null || seg.kcal() == null
             || (seg.trainingDayKcal() == null && seg.restDayKcal() == null)) {
             return null;
         }
-        boolean training = !workoutWindowQueryService.windowsFor(userId, date).isEmpty();
+        boolean training = workoutWindowQueryService.hasScheduledTrainingOn(userId, date);
         Integer dayKcal = training ? seg.trainingDayKcal() : seg.restDayKcal();
         if (dayKcal == null) {
             return null;

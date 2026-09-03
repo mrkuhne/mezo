@@ -7,7 +7,11 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.entity.SportEventEntity;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.repository.SportEventRepository;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
@@ -31,6 +35,8 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
 
     @Autowired private FuelDayService fuelDayService;
     @Autowired private GymScheduleSlotRepository gymRepo;
+    @Autowired private SportSessionRepository sportSessionRepository;
+    @Autowired private SportEventRepository sportEventRepository;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
@@ -59,6 +65,19 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
             null, null, null));
     }
 
+    /**
+     * Same segment shape, but ONLY {@code trainingDayKcal} set — {@code restDayKcal} null (a
+     * defensive shape {@link io.mrkuhne.mezo.feature.goal.engine.service.DayTypeShiftCalculator}
+     * never itself emits, but {@code dayTypeAdjusted} must still degrade safely on: only one of the
+     * two fields set means the picked field can be null on a rest day, and the uniform {@code kcal}
+     * must be served rather than NPE-ing or half-applying the split, mezo-sxlj Finding 3).
+     */
+    private UUID seedGoalWithPartialSplitSegment() {
+        return seedGoal(new GoalPrescriptionJson.Segment(1, 6, "partial-split", SEGMENT_KCAL,
+            SEGMENT_PROTEIN_G, SEGMENT_CARBS_G, SEGMENT_FAT_G, null, null, null, null,
+            TRAINING_DAY_KCAL, null, null));
+    }
+
     private UUID seedGoal(GoalPrescriptionJson.Segment segment) {
         UUID owner = databasePopulator.populateUser("day-type-owner-" + UUID.randomUUID() + "@test.local");
         LocalDate startDate = LocalDate.of(2026, 6, 1); // Monday — goal-week 1 covers 06-01..07
@@ -75,6 +94,28 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
         g.setDayOfWeek(dayOfWeek);
         g.setTime("17:30");
         gymRepo.save(g);
+    }
+
+    /** An ad-hoc LOGGED sport session — no matching schedule slot or event, played on {@code date}. */
+    private void seedLoggedSportSession(UUID owner, LocalDate date) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(owner);
+        s.setDate(date);
+        s.setTime("18:00");
+        s.setSport("volleyball");
+        sportSessionRepository.save(s);
+    }
+
+    /** A dated, one-off sport EVENT on {@code date} (mezo-e1sp) — schedule-derived, unlike a logged session. */
+    private void seedSportEvent(UUID owner, LocalDate date) {
+        SportEventEntity e = new SportEventEntity();
+        e.setCreatedBy(owner);
+        e.setDate(date);
+        e.setTime("18:00");
+        e.setDurationMin(90);
+        e.setKind("match");
+        e.setSport("volleyball");
+        sportEventRepository.save(e);
     }
 
     @Test
@@ -110,6 +151,51 @@ class FuelDayDayTypeIT extends AbstractIntegrationTest {
         UUID owner = seedGoalWithUniformSegment();
 
         FuelDayResponse day = fuelDayService.getDay(owner, LocalDate.of(2026, 6, 2));
+
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(SEGMENT_KCAL));
+        assertThat(day.getTargets().getC()).isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG()));
+    }
+
+    // -- Finding 1 (mezo-sxlj final fix wave): classification is SCHEDULE-based, mirroring the FE's
+    // deriveBlocks and the engine's weekly split basis — an ad-hoc logged session must not flip the
+    // day, only a genuine schedule/event/prescribed-run source may.
+
+    @Test
+    void adHocLoggedSportSessionDoesNotMakeItATrainingDay() {
+        UUID owner = seedGoalWithDayTypeSegment();
+        LocalDate tuesday = LocalDate.of(2026, 6, 2); // dayOfWeek 1 — no schedule seeded
+        seedLoggedSportSession(owner, tuesday);
+
+        FuelDayResponse day = fuelDayService.getDay(owner, tuesday);
+
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(REST_DAY_KCAL));
+        assertThat(day.getTargets().getC())
+            .isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG() - 50));
+    }
+
+    @Test
+    void datedSportEventMakesItATrainingDay() {
+        UUID owner = seedGoalWithDayTypeSegment();
+        LocalDate wednesday = LocalDate.of(2026, 6, 3); // dayOfWeek 2 — no schedule seeded
+        seedSportEvent(owner, wednesday);
+
+        FuelDayResponse day = fuelDayService.getDay(owner, wednesday);
+
+        assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(TRAINING_DAY_KCAL));
+        assertThat(day.getTargets().getC())
+            .isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG() + 38));
+    }
+
+    // -- Finding 3 (mezo-sxlj final fix wave): a partial split (only one of the two day-type fields
+    // set) is a shape the engine's DayTypeShiftCalculator never itself emits, but dayTypeAdjusted
+    // must still degrade safely — served kcal falls back to the uniform target, not a null-fueled NPE.
+
+    @Test
+    void partialSplitOnRestDayServesUniformKcal() {
+        UUID owner = seedGoalWithPartialSplitSegment();
+        LocalDate tuesday = LocalDate.of(2026, 6, 2); // dayOfWeek 1 — no schedule seeded, a rest day
+
+        FuelDayResponse day = fuelDayService.getDay(owner, tuesday);
 
         assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(SEGMENT_KCAL));
         assertThat(day.getTargets().getC()).isEqualByComparingTo(BigDecimal.valueOf(segmentCarbsG()));
