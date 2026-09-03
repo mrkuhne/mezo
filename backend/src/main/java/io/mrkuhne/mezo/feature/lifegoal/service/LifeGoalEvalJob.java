@@ -36,18 +36,22 @@ public class LifeGoalEvalJob {
         LocalDate today = LocalDate.now();
         int goals = 0;
         for (AppUserEntity user : appUserRepository.findAll()) {
-            for (LifeGoalEntity goal
-                    : goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(user.getId())) {
-                if (!"active".equals(goal.getStatus())) {
-                    continue;
+            try {
+                for (LifeGoalEntity goal
+                        : goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(user.getId())) {
+                    if (!"active".equals(goal.getStatus())) {
+                        continue;
+                    }
+                    try {
+                        progressService.evaluateDays(user.getId(), goal);
+                        goals++;
+                    } catch (Exception e) {
+                        log.warn("Life-goal evaluation failed for goal {} (user {}) on {}",
+                            goal.getId(), user.getId(), today, e);
+                    }
                 }
-                try {
-                    progressService.evaluateDays(user.getId(), goal);
-                    goals++;
-                } catch (Exception e) {
-                    log.warn("Life-goal evaluation failed for goal {} (user {}) on {}",
-                        goal.getId(), user.getId(), today, e);
-                }
+            } catch (Exception e) {
+                log.warn("Life-goal evaluation failed for user {} on {}", user.getId(), today, e);
             }
         }
         log.info("Life-goal evaluation run for {} complete — {} active goal(s)", today, goals);

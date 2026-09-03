@@ -87,4 +87,31 @@ class LifeGoalEvalJobIT extends AbstractIntegrationTest {
             List.of(pillar.getId()), today.minusDays(3), today.minusDays(1))).isEmpty();
         assertThat(skillProgressRepository.findByCreatedByAndSkillKey(owner, "recovery")).isEmpty();
     }
+
+    @Test
+    void testRunEval_shouldIsolatePerUser_whenOneUsersGoalThrowsDuringEvaluation() {
+        UUID brokenOwner = userPopulator.createUser("lifegoal-job-broken@test.hu").getId();
+        LifeGoalEntity brokenGoal = lifeGoalPopulator.goal(brokenOwner, "active");
+        LifeGoalPillarEntity brokenPillar = lifeGoalPopulator.pillar(brokenGoal, "Fókusz", "habit",
+            new PillarSourceJson("activity", null, "productivity", "bogus", null, null),
+            new PillarRuleJson(new BigDecimal("30"), "gte", 4, null, null, null, null, null, null, null));
+        activity(brokenOwner, today.minusDays(1), 40);
+
+        UUID healthyOwner = userPopulator.createUser("lifegoal-job-healthy@test.hu").getId();
+        LifeGoalEntity healthyGoal = lifeGoalPopulator.goal(healthyOwner, "active");
+        LifeGoalPillarEntity healthyPillar = focusPillar(healthyGoal);
+        activity(healthyOwner, today.minusDays(1), 40);
+
+        job.runEval();
+
+        assertThat(dayRepository.findByPillarIdInAndDayBetweenAndDeletedFalseOrderByDayAsc(
+            List.of(brokenPillar.getId()), today.minusDays(3), today.minusDays(1))).isEmpty();
+
+        var healthyRows = dayRepository.findByPillarIdInAndDayBetweenAndDeletedFalseOrderByDayAsc(
+            List.of(healthyPillar.getId()), today.minusDays(3), today.minusDays(1));
+        assertThat(healthyRows).hasSize(3);
+        assertThat(healthyRows).filteredOn(r -> "hit".equals(r.getStatus())).hasSize(1);
+        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(healthyOwner, "recovery")
+            .orElseThrow().getCumulativeXp()).isEqualTo(XP_PER_HIT);
+    }
 }
