@@ -6699,7 +6699,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    tappable — the user's explicit ask; :active and reduced motion stop it (see the .fh-*
    reduced-motion block below). */
 .fh-aisc { display: inline-flex; align-items: center; gap: 7px; padding: 4px 11px 4px 5px; border-radius: 999px;
-  background: var(--surface-card, #fff); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), inset 0 0 0 1px var(--border-subtle);
+  background: var(--surface-card); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), inset 0 0 0 1px var(--border-subtle);
   color: var(--text-primary); transform-origin: 40% 50%; border: none; font-family: inherit; text-align: left; }
 .fh-aisc.is-tap { cursor: pointer; min-height: 44px; }
 .fh-aisc-r { position: relative; width: 30px; height: 30px; flex: none; }
@@ -7043,7 +7043,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .logflow-lncard[data-tag="becslés"] { --ln-spine: var(--lav-deep); --ln-wash: var(--mz-tone-lav); }
 .logflow-lnkcal {
   margin-left: auto; flex: none; border-radius: 10px; padding: 3px 10px 2px; text-align: center;
-  background: var(--surface-0, #fff); box-shadow: inset 0 0 0 1px var(--border-subtle);
+  background: var(--surface-0); box-shadow: inset 0 0 0 1px var(--border-subtle);
   color: var(--ln-spine);
 }
 .logflow-lnkcal b { display: block; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -7081,7 +7081,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   box-shadow: 0 2px 6px rgba(43, 33, 24, 0.05); }
 .fkp-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--kc); }
 .fkp-kcell { flex: none; border-radius: 10px; padding: 3px 9px 2px; text-align: center;
-  background: var(--surface-0, #fff); box-shadow: inset 0 0 0 1px var(--border-subtle); }
+  background: var(--surface-0); box-shadow: inset 0 0 0 1px var(--border-subtle); }
 .fkp-kcell b { display: block; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); }
 .fkp-kcell small { font-size: 6px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-tertiary); }
 .logflow-lntag {
@@ -7142,7 +7142,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .flog-dayclosed span { font-size: 10px; color: var(--text-secondary); }
 .flog-blk {
   border-radius: 22px; margin-bottom: 12px; overflow: hidden;
-  background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle);
+  background: var(--surface-card); border: 0.5px solid var(--border-subtle);
   box-shadow: var(--mz-shadow);
 }
 .flog-blk.is-done { background: var(--mz-wash-sage); }
@@ -7172,7 +7172,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .flog-data { flex: none; display: grid; gap: 6px; justify-items: center; margin-left: auto; }
 .flog-kcal {
   border-radius: 12px; padding: 4px 12px 3px; text-align: center;
-  background: var(--surface-card, #fff); box-shadow: inset 0 0 0 1px var(--border-subtle);
+  background: var(--surface-card); box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 .flog-kcal b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .flog-kcal small { font-size: 7px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-tertiary); margin-left: 3px; }
@@ -7208,7 +7208,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-ledger-sum b { font-weight: 800; color: var(--text-primary); }
 .sb-ledger-sum em { font-style: normal; }
 
-.sb-dim { border-radius: 21px; background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle);
+.sb-dim { border-radius: 21px; background: var(--surface-card); border: 0.5px solid var(--border-subtle);
   overflow: hidden; box-shadow: var(--sb-tone-shadow, none); }
 .sb-dim-head { display: grid; grid-template-columns: auto 1fr auto auto; gap: 11px; align-items: center; width: 100%;
   padding: 13px 15px; border: none; background: none; font-family: inherit; text-align: left;
@@ -7266,7 +7266,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 /* konikus rész-pontszám gyűrű (prototype `.sring`) */
 .sb-sring { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
   background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--mz-gbar-bg) 0); }
-.sb-sring i { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-card, #fff);
+.sb-sring i { width: 28px; height: 28px; border-radius: 50%; background: var(--surface-card);
   display: grid; place-items: center; font-style: normal; font-size: 11.5px; font-weight: 700;
   color: var(--c); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 .sb-sring.is-dash { background: none; box-shadow: inset 0 0 0 1.5px var(--mz-gbar-bg); }
@@ -7338,7 +7338,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-hero-word { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; text-transform: capitalize; }
 .sb-hero-facts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; font-variant-numeric: tabular-nums; }
 .sb-hero-facts span { font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 999px;
-  background: var(--surface-card, #fff); color: var(--mz-ink-soft); }
+  background: var(--surface-card); color: var(--mz-ink-soft); }
 .sb-hero-facts i { font-style: normal; color: var(--mz-ink-mut); font-weight: 600; margin-right: 3px; }
 .sb-hero-conf { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 9.5px; font-weight: 800;
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
@@ -7346,7 +7346,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-hero-conf .bar i { display: block; height: 100%; background: var(--sc); border-radius: 999px; }
 .sb-hero-conf b { color: var(--mz-ink-soft); }
 
-.sb-imp { border-radius: 16px; background: var(--surface-card, #fff); border: 0.5px solid var(--border-subtle);
+.sb-imp { border-radius: 16px; background: var(--surface-card); border: 0.5px solid var(--border-subtle);
   padding: 12px 12px 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
 .sb-imp p { margin: 0; font-size: 13px; line-height: 1.45; }
 .sb-imp-gain { font-size: 15px; font-weight: 700; color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg);

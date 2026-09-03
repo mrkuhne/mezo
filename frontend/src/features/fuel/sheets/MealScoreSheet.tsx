@@ -34,7 +34,11 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
   // so the body below gets an EMPTY improve — one suggestion, one place. The recipe surface,
   // which has no coach card, still renders them as the stacked „Lehetne jobb" gain cards.
   const improve = verdict?.improve?.length ? verdict.improve : b.improve
-  const breakdown = { ...b, improve: [] }
+  // …but ONLY when that card actually renders. `summary` is null until the coach fills it
+  // (data/types.ts: deterministic v0 ships null), and with the coach off or unavailable it
+  // stays null forever — emptying `improve` unconditionally would then drop the deterministic
+  // suggestions off the sheet entirely. No card, no chips: the body keeps the stack.
+  const breakdown = summary ? { ...b, improve: [] } : { ...b, improve }
 
   return (
     <Sheet onClose={onClose} labelledBy="meal-score-title">

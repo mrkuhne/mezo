@@ -53,6 +53,21 @@ test('improve-javaslatok pont-chipként a Mezo-kártyán jelennek meg (mezo-jcpt
   // …and the „Lehetne jobb" stack is gone from the meal surface — one suggestion, one place
   expect(screen.queryByText('Lehetne jobb')).not.toBeInTheDocument()
 })
+test('a coach-less meal (summary null) still shows its improve suggestions (mezo-jcpt.1)', () => {
+  // The chips live INSIDE the Mezo card, which renders only when there is a summary.
+  // `MealBreakdown.summary` is null until the coach fills it — and stays null when the coach
+  // is off/unavailable — so the sheet must fall back to the „Lehetne jobb" stack rather than
+  // dropping the deterministic suggestions entirely.
+  const seed = seedScoredMeal()
+  const coachless = { ...seed, breakdown: { ...seed.breakdown!, summary: null } }
+  render(<MealScoreSheet meal={coachless} onClose={() => {}} />, { wrapper: QueryWrapper })
+  expect(screen.queryByText('Mezo · olvasat')).not.toBeInTheDocument()
+  expect(document.querySelectorAll('.sb-impch')).toHaveLength(0) // no card → no chips
+  expect(screen.getByText('Lehetne jobb')).toBeInTheDocument()
+  const gain = screen.getByText('+4').closest<HTMLElement>('.sb-imp')
+  expect(gain).not.toBeNull()
+  expect(gain).toHaveTextContent(/tökmag/)
+})
 test('renders the derived name (not a blank header) for a scored meal with an empty title (mezo-u68c)', () => {
   const seed = seedScoredMeal()
   const titleless = { ...seed, title: '' } // pre-fix meal: null title coerced to '' (mealApi.ts)

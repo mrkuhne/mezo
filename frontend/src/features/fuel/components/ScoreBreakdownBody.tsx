@@ -13,6 +13,7 @@ import type { MealBreakdown } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { formatImpact } from '@/features/fuel/logic/formatImpact'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { DimensionCard } from '@/features/fuel/components/DimensionCard'
 import { ScoreLedger } from '@/features/fuel/components/ScoreLedger'
 
@@ -39,12 +40,15 @@ export function ScoreBreakdownBody({ breakdown, scorePct }: {
       <ScoreLedger dimensions={b.dimensions} />
       {/* The mosaic: live dimensions first (rich, washed), the ghosts last — a degraded
           dimension is named, not hidden, but it never outranks a scoring one. The 40ms
-          stagger is the prototype's entrance choreography. */}
-      <div className="sb-mosaic">
+          stagger is the prototype's entrance choreography, and it only RUNS inside an
+          EntranceGroup: the `.rise` keyframe is scoped to `.mz-play .rise`, and a sheet
+          portals to `.phone-screen`, which is an ancestor of the pages that arm it — so
+          without this wrapper the class would be dead markup (mezo-jcpt.1). */}
+      <EntranceGroup className="sb-mosaic">
         {[...b.dimensions]
           .sort((x, y) => (y.weight > 0 ? 1 : 0) - (x.weight > 0 ? 1 : 0))
           .map((d, i) => <DimensionCard key={`${d.id}-${i}`} dim={d} delayMs={60 + i * 40} />)}
-      </div>
+      </EntranceGroup>
 
       {b.improve && b.improve.length > 0 && (
         <>
