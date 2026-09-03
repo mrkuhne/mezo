@@ -195,7 +195,28 @@ S8 re-skinned the **shared primitives themselves** (the `Common` block, `prototy
 
 ### Napiv S9 gamified-header classes (`mezo-k7rn`, 2026-07-18) → AppHero v2 (compact-header redesign, `mezo-ugqb`, 2026-07-18 pm)
 
-> **RETIRED (`mezo-d20.9.1`, 2026-08-29).** `AppHero.tsx` and the whole `.apphero*` family are deleted: under [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md) no tab root mounts a shared header — as of `mezo-d20.9.1` each Mozaik hub rendered its own header recipe (date eyebrow · daypart switch · clay bell · orb avatar) and each sibling page renders `PageHead`. The account-progression surfaces the counters linked to (`TitleShopSheet`, `StreakSheet`, `/me/growth`) all survive; only the header that hosted them is gone. **Superseded again by `mezo-atry` (2026-08-30):** the five hubs' near-identical per-hub copies of that recipe are themselves gone now — the header is back to being a single shared component, `frontend/src/app/AppHeader.tsx`, mounted once by `AppLayout` above every tab-root and sub-page (not sticky — it scrolls with the content, unlike the old `.apphero`), carrying date eyebrow · daypart switch · a Mezo-messages circle (new — the tile that used to sit in Today's daypart mosaics) · notification bell · profile orb. See [today.md](today.md#the-header-is-the-shells-not-the-hubs) for the full contract. Kept below as the record of what the five sections used to share, in both eras.
+> **RETIRED (`mezo-d20.9.1`, 2026-08-29).** `AppHero.tsx` and the whole `.apphero*` family are deleted: under [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md) no tab root mounts a shared header — as of `mezo-d20.9.1` each Mozaik hub rendered its own header recipe (date eyebrow · daypart switch · clay bell · orb avatar) and each sibling page renders `PageHead`. The account-progression surfaces the counters linked to (`TitleShopSheet`, `StreakSheet`, `/me/growth`) all survive; only the header that hosted them is gone. **Superseded again by `mezo-atry` (2026-08-30):** the five hubs' near-identical per-hub copies of that recipe are themselves gone now — the header is back to being a single shared component, `frontend/src/app/AppHeader.tsx`, mounted once by `AppLayout` above every tab-root and sub-page (mounted inside `ScreenContent`, the app's one scroller; **kitapad since `mezo-8az6`** — see the note right below, superseding the earlier "not sticky" state), carrying date eyebrow · daypart switch · a Mezo-messages circle (new — the tile that used to sit in Today's daypart mosaics) · notification bell · profile orb. See [today.md](today.md#the-header-is-the-shells-not-the-hubs) for the full contract. Kept below as the record of what the five sections used to share, in both eras.
+
+**Fejléc-aurora (mezo-8az6).** A shell-fejléc kitapad (`position: sticky`, `top: 0` a
+`.screen-content` scrollerben), és napszak-követő aurora hátteret visel: wash + két
+elmosott fényfolt + dekoratív SVG (`HeaderAurora.tsx`), a réteg alja maszkkal fakul a
+tartalomba. Görgetéskor (`useCondensedHeader`, küszöb 14px) az aurora kifakul, és
+áttetsző, elmosott üvegsáv marad — az ikonok végig elérhetők. A bal oldalon a SZEKCIÓ
+neve + clay spot (`headerSection.ts`), nem a dátum. Tokenek: `--mzh-*`, light és dark
+párral. A látvány forrása: `docs/design_2.0/prototypes/header-aurora.html`.
+
+A kitapadó fejléc átrendezte a lapon belüli sticky chrome-ot is. Bevezettünk egy
+`--mzh-head-cond-h: 44px` tokent (a kompakt fejléc doboz-magassága: 4px felső padding +
+40px kontrollsor). Az `.app-head` z-indexe **46** (a lap-chrome fölött, a StatusBar 50
+alatt), a `.sticky-top` (breadcrumb-sávok) és a `.mzc-chathead` (chat-fejléc) pedig
+`top: var(--mzh-head-cond-h)`-nál tapad ki — a fő szabályban ÉS a „Real mobile / installed
+PWA" media query-ben is (`frontend/src/styles/prototype.css:1107`). Bármely ÚJ, lapon
+belüli sticky elem is ezt a mintát kell kövesse, különben a shell-fejléc alá csúszik.
+
+Két új clay spot készült ehhez a slice-hoz: **`s-fuel`** (Fuel szekció) és **`s-en`** (Én
+szekció) — a `docs/design_2.0/assets/clay-spots.svg`-ben és a verbatim frontend-másolatban,
+a `ClaySpotName` unióban. A Mezo szekció tudatosan `s-orb-figyel`-t kapott, nem `s-orb`-ot:
+az utóbbi betűre ugyanaz, mint a fejléc jobb szélén ülő profil-avatar (`headerSection.ts`).
 
 The gamified-header slice (`mezo-k7rn`) added the **`.apphero`** family — the unified identity/progression header — consumed by all 5 sections (`TodayPage`, `TrainSection`, `FuelSection`, `MeSection`, `InsightsSection`, the last added by the same-day compact-header redesign), retiring the per-domain `.mehead`/`.avatar` (§ above), the Today-only `BrandRow`, and — since the compact-header redesign a few hours later — the per-domain `*SubNav` components + `.np-pills` (§4/§5 above, §5 below). What shipped that morning as **three stacked bands** (a 62px-avatar hero row + a separate `.apphero-chips` stat row +, per section, an `.np-pills` sub-nav row — together ~150px) is now **one ~64px sticky row**:
 
