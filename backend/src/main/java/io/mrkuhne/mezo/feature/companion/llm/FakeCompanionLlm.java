@@ -410,6 +410,14 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  broken payload exercises the degrade-to-template path). Default = one valid minimal proposal. */
     public static final Pattern LIFEGOAL_PROPOSE_SENTINEL =
             Pattern.compile("\\[fake-lifegoal-propose:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
+    /** mezo-qw37.6: proves {@code LifeGoalProposeLlmAdapter} renders its system prompt through
+     *  {@code PromptPersona} before calling out. The generic {@link #SYSTEM_ECHO_SENTINEL} cannot
+     *  serve this site — echoing the RAW prompt as the answer is unparseable JSON, so the adapter
+     *  would degrade to {@code Optional.empty()} and swallow the evidence. This sentinel instead
+     *  returns the VALID default proposal with the prompt's FIRST LINE (the persona sentence)
+     *  carried in {@code frameNote} — the one field the adapter passes through untouched. Planted
+     *  in {@code whyText}, like the scripting sentinel above. */
+    public static final String LIFEGOAL_PROPOSE_SYSTEM_ECHO = "[fake-lifegoal-system-echo]";
     public static final String LIFEGOAL_PROPOSE_DEFAULT =
             "{\"dimension\":\"health\",\"secondaryDimension\":\"accomplishment\",\"frame\":\"extrinsic\","
             + "\"frameNote\":\"FAKE-KERET\",\"reframedWhy\":\"Erős, egészséges test.\","
@@ -677,6 +685,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1) : "{\"rationale\":\"FAKE-INDOK\",\"days\":[]}";
         }
         if (systemPrompt.startsWith(LifeGoalProposeLlmAdapter.PROPOSE_MARKER)) {
+            if (userMessage.contains(LIFEGOAL_PROPOSE_SYSTEM_ECHO)) {
+                return LIFEGOAL_PROPOSE_DEFAULT.replace("\"frameNote\":\"FAKE-KERET\"",
+                        "\"frameNote\":\"" + jsonEscape(systemPrompt.lines().findFirst().orElse("")) + "\"");
+            }
             Matcher m = LIFEGOAL_PROPOSE_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : LIFEGOAL_PROPOSE_DEFAULT;
         }
@@ -954,7 +966,8 @@ public class FakeCompanionLlm implements CompanionLlm {
     }
 
     /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO}
-     *  — the echo embeds the WHOLE assembled user message as one JSON string value. */
+     *  and {@link #LIFEGOAL_PROPOSE_SYSTEM_ECHO} — the echo embeds assembled prompt text as one
+     *  JSON string value. */
     private static String jsonEscape(String raw) {
         return raw.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
