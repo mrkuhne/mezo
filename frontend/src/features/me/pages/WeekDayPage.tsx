@@ -1,7 +1,7 @@
 // ============================================================
-// Mezo · WeekDayPage — `/me/week/napok/:date` (mezo-d20.6.10)
-// Source of truth: docs/design_2.0/prototypes/src/en-body.html `#page-hday`
-// + `dayPage()` / `dayNav()`, ×1.18 (330 → 390px frame). Handoff §3.5.
+// Mezo · WeekDayPage — `/me/week/napok/:date` (mezo-d20.6.10 → mezo-jcpt.4)
+// Source of truth: the approved day-evaluation prototype (screens 1 „Lezárt nap"
+// and 2 „Ma, napközben"), in the Mozaik 2.0 language.
 //
 // ONE day, deep-linkable — the fix for audit gap §8.3/6: the expanded day
 // used to live in component state, so nothing (a push notification least of
@@ -10,8 +10,19 @@
 // week; a malformed `:date` redirects to the days mosaic rather than
 // crashing on a Date NaN.
 //
-// It also finally renders `kcalTarget`/`proteinTargetG` — fetched by
-// `/api/me/week/{start}` today and thrown away by the UI (handoff §6.1).
+// mezo-jcpt.4 — the page's JUDGEMENT now comes from `GET /api/me/day/{date}/
+// evaluation` (`useDayEvaluation`): six weighted dimensions, the Mezo's
+// cross-context narrative, and the ±5 AI adjustment shown as its own chip and
+// its own reasoned row. `useMeWeek` stays the source of the raw day signals it
+// alone carries — the hero chips, the kcal/protein goal bars (`kcalTarget` /
+// `proteinTargetG`, handoff §6.1) and the mcells — and of the neighbour tiles.
+//
+// The evaluation's `state` drives everything honest about the page: it is the
+// one place that knows the day is still OPEN (`in_progress` — a dashed „este
+// zárom" ring, never a part-way number), which `dayState`'s four week-level
+// states cannot express. When the evaluation has not resolved (or errored) in
+// real mode the page falls back to `dayState` + the week's own score, so a
+// failed evaluation degrades to the pre-jcpt page rather than to nothing.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -22,32 +33,21 @@ import { Spinner } from '@/shared/ui/Spinner'
 import { cn } from '@/shared/lib/cn'
 import { huMonthDay, localDateString } from '@/shared/lib/dates'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
-import { useFeedback, useMeWeek, useWeeklyReview } from '@/data/hooks'
-import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
+import { useMeWeek } from '@/data/hooks'
+import { useDayEvaluation } from '@/data/me/dayEvaluationHooks'
+import { normalizeDayEvaluation, type NormalizedDayEvaluation } from '@/data/me/dayEvaluation'
 import { useChatHandoff } from '@/features/me/logic/useChatHandoff'
 import { resolveWeekStart } from '@/features/me/logic/weekNav'
-import { scoreBandColor } from '@/features/me/logic/scoreBand'
 import {
-  DAY_COPY, SUBRING_LABEL, SUBSCORES, dayNoteFor, dayState, dayVerdict, fmtSleep, hu1, huDowFull,
+  DAY_COPY, DAY_DIMENSIONS, dayState, dayVerdict, doneDimensionCount, fmtSleep, hu1, huDowFull,
   huInt, isInWeek, isValidIsoDate, mondayOf, ringLearningLabels,
 } from '@/features/me/logic/weekDay'
 import { WeekScoreRing } from '@/features/me/components/week/WeekScoreRing'
 import { DayNavTiles } from '@/features/me/components/week/DayNavTiles'
+import { DayDimensionTile, DayDimRing } from '@/features/me/components/week/DayDimensionTile'
+import { DayReviewCard } from '@/features/me/components/week/DayReviewCard'
 import { WeekPageSkeleton, WeekPageError } from '@/features/me/components/week/WeekLoadStates'
 import type { MeWeekDay } from '@/data/me/meWeek'
-
-/** One of the four sub-score rings under „Miből jött össze". */
-function SubRing({ value, label }: { value: number | null | undefined; label: string }) {
-  const style = { '--c': scoreBandColor(value), '--v': value ?? 0 } as CSSProperties
-  return (
-    <div className="wkd-subring">
-      <div className={cn('wkd-sring', value == null && 'is-dash')} style={style}>
-        <i>{value ?? '—'}</i>
-      </div>
-      <small>{label}</small>
-    </div>
-  )
-}
 
 /** A goal bar — rendered ONLY when both the value and its target are on the wire. */
 function GoalRow({ name, value, target, unit, fill, delayMs }: {
@@ -88,6 +88,35 @@ function DayChips({ day }: { day: MeWeekDay }) {
   )
 }
 
+/** The six dimensions in their config-weight order, EXCEPT that what is already final floats
+ *  up — the prototype's „ami véglegesedett, felúszik" rule for an open day. On a closed day
+ *  every dimension is DONE, so the order is exactly `DAY_DIMENSIONS`'. */
+function orderedDimensions(evaluation: NormalizedDayEvaluation) {
+  const rank = new Map(DAY_DIMENSIONS.map((d, i) => [d.key, i]))
+  return [...evaluation.dimensions].sort((a, b) => {
+    const done = Number(b.status === 'DONE') - Number(a.status === 'DONE')
+    return done !== 0 ? done : (rank.get(a.id) ?? 99) - (rank.get(b.id) ?? 99)
+  })
+}
+
+/** The one line under the hero — each state gets its own sentence, never a shared hedge. */
+function heroSubtitle(
+  state: NormalizedDayEvaluation['state'],
+  evaluation: NormalizedDayEvaluation | null,
+  day: MeWeekDay | null,
+  days: readonly MeWeekDay[],
+  today: string,
+): string {
+  if (state === 'future') return 'még előtted'
+  if (state === 'empty') return 'ezen a napon nem logoltál'
+  if (state === 'thin') return 'kevés adat a pontszámhoz'
+  if (state === 'in_progress' && evaluation) {
+    const done = doneDimensionCount(evaluation.dimensions)
+    return `${done} dimenzió kész · ${evaluation.dimensions.length - done} még íródik`
+  }
+  return day ? dayVerdict(day, days, today) : ''
+}
+
 export function WeekDayPage() {
   const navigate = useNavigate()
   const { date } = useParams<{ date: string }>()
@@ -103,9 +132,8 @@ export function WeekDayPage() {
     : ''
 
   const { week, isPending, isError, refetch } = useMeWeek(start || derived || localDateString())
-  const { review } = useWeeklyReview(start || derived || localDateString())
+  const evalQuery = useDayEvaluation(date ?? '')
   const chat = useChatHandoff()
-  const feedback = useFeedback('weekly_review', review ? [review.id] : [])
   const today = localDateString()
 
   // Hooks first, THEN the bail-out: a malformed `:date` must not crash the page.
@@ -114,11 +142,28 @@ export function WeekDayPage() {
   const days = week?.days ?? []
   const idx = days.findIndex((d) => d.date === date)
   const day = idx >= 0 ? days[idx] : null
-  const state = day ? dayState(day, today) : 'empty'
-  const note = dayNoteFor(review, date)
-  const ringWords = ringLearningLabels(state)
+  const evaluation = evalQuery.data ? normalizeDayEvaluation(evalQuery.data) : null
+  // The evaluation owns the state; without it the page degrades to the week-level four.
+  const state = evaluation?.state ?? (day ? dayState(day, today) : 'empty')
+  const open = state === 'in_progress'
+  const scored = state === 'scored'
+  const heroScore = evaluation ? evaluation.score : (scored ? day?.score ?? null : null)
+  const ringWords = open
+    ? { label: 'este zárom', caption: 'folyamatban' }
+    : ringLearningLabels(state)
 
   const backToDays = () => navigate(`/me/week/napok?start=${start}`)
+
+  const chatButton = (
+    <button
+      type="button"
+      className="wkd-chatch"
+      disabled={chat.pending}
+      onClick={() => chat.open({ kind: 'day', date })}
+    >
+      {chat.pending ? <><Spinner size="sm" label="" />Indítás…</> : 'Beszélgess a napról ›'}
+    </button>
+  )
 
   return (
     <MozaikPage tone="sage" className="wkd-page">
@@ -135,14 +180,25 @@ export function WeekDayPage() {
           <>
             <div className="wkd-herorow">
               <WeekScoreRing
-                className="is-day"
-                score={state === 'scored' ? day.score ?? null : null}
+                className={cn('is-day', open && 'dev-ringdash')}
+                score={heroScore}
                 learningLabel={ringWords.label}
                 learningCaption={ringWords.caption}
               />
               <DayChips day={day} />
             </div>
-            <div className="mz-hero-sb">{dayVerdict(day, days, today)}</div>
+            {evaluation?.base != null && (
+              <div className="dev-scorechips">
+                <span>alap {evaluation.base}</span>
+                {evaluation.adjustment && (
+                  <span className="is-mezo">
+                    Mezo-kontextus {evaluation.adjustment.delta < 0 ? '−' : '+'}
+                    {Math.abs(evaluation.adjustment.delta)}
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="mz-hero-sb">{heroSubtitle(state, evaluation, day, days, today)}</div>
           </>
         )}
       </div>
@@ -162,44 +218,65 @@ export function WeekDayPage() {
               </div>
             ) : (
               <>
-                <section className="wkd-card rise" style={{ '--d': '0ms' } as CSSProperties}>
-                  <div className="mz-eyebrow">Miből jött össze</div>
-                  <div className="wkd-subrings">
-                    {SUBSCORES.map((s) => (
-                      <SubRing key={s.key} value={day.subscores[s.key]} label={SUBRING_LABEL[s.key]} />
-                    ))}
+                {evaluation && scored && (
+                  <DayReviewCard evaluation={evaluation} delayMs={0}>{chatButton}</DayReviewCard>
+                )}
+
+                {(state === 'thin' || state === 'empty') && (
+                  <div className="wkd-ghost rise" style={{ '--d': '30ms' } as CSSProperties}>
+                    <p>{state === 'empty' ? DAY_COPY.emptyPage : DAY_COPY.thinPage}</p>
+                    {chatButton}
                   </div>
-                  {state !== 'scored' && (
-                    <p className="wkd-note wkd-note-block">
-                      {state === 'empty' ? DAY_COPY.emptyPage : DAY_COPY.thinPage}
-                    </p>
-                  )}
-                </section>
+                )}
+
+                {scored && evaluation && (
+                  <section className="wkd-card rise" style={{ '--d': '50ms' } as CSSProperties}>
+                    <div className="mz-eyebrow">Miből jött össze</div>
+                    <div className="dev-subrings">
+                      {orderedDimensions(evaluation).map((d) => (
+                        <div key={d.id} className="dev-subring">
+                          <DayDimRing score={d.score} />
+                          <small>{DAY_DIMENSIONS.find((x) => x.key === d.id)?.label ?? d.label}</small>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {evaluation && state !== 'empty' && orderedDimensions(evaluation).map((d, i) => (
+                  <DayDimensionTile key={d.id} dimension={d} delayMs={90 + i * 40} />
+                ))}
+
+                {open && (
+                  <section className="dev-waiting rise" style={{ '--d': '350ms' } as CSSProperties}>
+                    <ClaySpot name="s-orb-figyel" size={26} className="dev-orbb" />
+                    <p>A napodról a zárás után írok — addig gyűjtöm, ami történik.</p>
+                    {chatButton}
+                  </section>
+                )}
 
                 {day.kcal != null && (
-                  <section className="wkd-card rise" style={{ '--d': '50ms' } as CSSProperties}>
+                  <section className="wkd-card rise" style={{ '--d': '370ms' } as CSSProperties}>
                     <div className="mz-eyebrow">Fuel · a cél ellenében</div>
-                    <GoalRow name="kcal" value={day.kcal} target={day.kcalTarget} unit="" fill="is-coral" delayMs={150} />
+                    <GoalRow name="kcal" value={day.kcal} target={day.kcalTarget} unit="" fill="is-coral" delayMs={450} />
                     {day.proteinG != null && (
-                      <GoalRow name="fehérje" value={day.proteinG} target={day.proteinTargetG} unit=" g" fill="is-sage" delayMs={230} />
+                      <GoalRow name="fehérje" value={day.proteinG} target={day.proteinTargetG} unit=" g" fill="is-sage" delayMs={520} />
                     )}
-                    {(day.carbsG != null || day.fatG != null) && (
-                      <div className="wkd-tgrow">
-                        <span className="nm">c · f</span>
-                        <div className="wkd-gbar">
-                          <div
-                            className="is-gold"
-                            style={{
-                              width: `${Math.min(100, Math.round(((day.carbsG ?? 0) / 400) * 100))}%`,
-                              '--d': '310ms',
-                            } as CSSProperties}
-                          />
-                        </div>
-                        <span className="vl">
-                          {day.carbsG != null ? `${day.carbsG} g` : '—'} · {day.fatG != null ? `${day.fatG} g` : '—'}
-                        </span>
-                      </div>
-                    )}
+                  </section>
+                )}
+
+                {evaluation && evaluation.context.length > 0 && (
+                  <section className="dev-ctx rise" style={{ '--d': '390ms' } as CSSProperties}>
+                    <div className="mz-eyebrow dev-ctxeb">Kontextus · nem pontozott</div>
+                    <div className="dev-fchips">
+                      {evaluation.context.map((c) => (
+                        <span key={`${c.label}·${c.value}`} className="dev-fchip">{c.label} · {c.value}</span>
+                      ))}
+                    </div>
+                    <p className="dev-why is-mut">
+                      Ezt a Mezo látja az értékeléshez, de pontot nem kap — az érzéseidet és a
+                      súlyingadozást nem osztályozzuk.
+                    </p>
                   </section>
                 )}
 
@@ -217,49 +294,7 @@ export function WeekDayPage() {
                   ]}
                 />
 
-                {note != null ? (
-                  <section className="wkd-orbcard rise" style={{ '--d': '130ms' } as CSSProperties}>
-                    <div className="wkd-orbrow">
-                      <ClaySpot name="s-orb" size={28} />
-                      <span className="mz-eyebrow wkd-orb-eyebrow">Mezo · erről a napról</span>
-                    </div>
-                    <p className="wkd-prose">{note}</p>
-                    <div className="wkd-orbfoot">
-                      <button
-                        type="button"
-                        className="wkd-chatch"
-                        disabled={chat.pending}
-                        onClick={() => chat.open({ kind: 'day', date })}
-                      >
-                        {chat.pending
-                          ? <><Spinner size="sm" label="" />Indítás…</>
-                          : 'Beszélgess a napról ›'}
-                      </button>
-                      {review && (
-                        <FeedbackChips
-                          key={review.id}
-                          value={feedback.get(review.id)}
-                          onVote={(verdict, reason) => feedback.vote(review.id, verdict, reason)}
-                          label="a napról írt jegyzetről"
-                        />
-                      )}
-                    </div>
-                  </section>
-                ) : (
-                  <section className="wkd-ghost rise" style={{ '--d': '130ms' } as CSSProperties}>
-                    <p>{review ? DAY_COPY.noNote : DAY_COPY.noReview}</p>
-                    <button
-                      type="button"
-                      className="wkd-chatch"
-                      disabled={chat.pending}
-                      onClick={() => chat.open({ kind: 'day', date })}
-                    >
-                      {chat.pending
-                        ? <><Spinner size="sm" label="" />Indítás…</>
-                        : 'Beszélgess a napról ›'}
-                    </button>
-                  </section>
-                )}
+                {!evaluation && scored && chatButton}
               </>
             )}
 
