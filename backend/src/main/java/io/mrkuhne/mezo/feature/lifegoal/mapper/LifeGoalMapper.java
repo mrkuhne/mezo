@@ -59,6 +59,15 @@ public class LifeGoalMapper {
         LifeGoalPillarEntity p = new LifeGoalPillarEntity();
         p.setCreatedBy(goal.getCreatedBy());
         p.setGoalId(goal.getId());
+        return applyPillar(p, in, position);
+    }
+
+    /**
+     * Copies every editable field of the input onto an EXISTING pillar row (mezo-iizd.2) — id,
+     * goal and ownership stay untouched, so a rename/retune keeps the row's identity and with it
+     * its {@code life_goal_pillar_day} history.
+     */
+    public LifeGoalPillarEntity applyPillar(LifeGoalPillarEntity p, LifeGoalPillarInput in, int position) {
         p.setLabel(in.getLabel());
         p.setSkillKey(in.getSkillKey());
         p.setKind(in.getKind().getValue());

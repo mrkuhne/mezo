@@ -79,6 +79,28 @@ describe('real mode (default MSW handlers)', () => {
     }
   })
 
+  // mezo-iizd.2: the existing pillars must go back WITH their ids, or the server's replace
+  // drops fresh UUIDs and orphans each pillar's evaluation history.
+  test('＋ Pillér echoes the existing pillars\' ids in the PUT body', async () => {
+    let sent: { pillars: { id?: string; label: string }[] } | null = null
+    server.use(http.put(`${API_BASE}/api/life-goals/:id/pillars`, async ({ request }) => {
+      sent = (await request.json()) as { pillars: { id?: string; label: string }[] }
+      return HttpResponse.json({ id: 'lg-baratno', title: 'Az utolsó barátnő', frame: 'unset', dimension: 'relationships', status: 'active', startDate: '2026-08-01', ifThenPlans: [], pillars: [] })
+    }))
+    renderGoal('lg-baratno')
+    await screen.findByText('Az utolsó barátnő')
+    await waitFor(() => expect(document.querySelectorAll('.lg-pillar')).toHaveLength(3))
+    fireEvent.click(screen.getByRole('button', { name: '＋ Pillér' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Alváshossz' }))
+
+    await waitFor(() => expect(sent).not.toBeNull())
+    const pillars = sent!.pillars
+    expect(pillars).toHaveLength(4)
+    expect(pillars.slice(0, 3).every((p) => typeof p.id === 'string' && p.id.length > 0)).toBe(true)
+    expect(pillars.slice(0, 3).map((p) => p.id)).toEqual(['pil-baratno-0', 'pil-baratno-1', 'pil-baratno-2'])
+    expect(pillars[3].id).toBeUndefined()   // the freshly picked one has no identity yet
+  })
+
   // Item 3: a failed list read used to render "Nincs ilyen cél." — a 500 read as a not-found.
   test('a failed list read renders a terminal error + retry, not "Nincs ilyen cél."', async () => {
     let calls = 0
