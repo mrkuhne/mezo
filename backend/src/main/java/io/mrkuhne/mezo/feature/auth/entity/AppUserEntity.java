@@ -62,10 +62,14 @@ public class AppUserEntity {
     private Instant lastSeenAt;
 
     /**
-     * Token-revocation watermark (mezo-qw37.1 review, Finding 4): stamped to {@code now()} by
-     * {@code AuthService.changePassword} on a successful change; {@code CurrentUser.load()}
-     * rejects any JWT whose {@code iat} precedes this. {@code null} (never changed a password)
-     * means every token is valid, subject only to the normal 30-day expiry.
+     * Token-revocation watermark (mezo-qw37.1 review, Finding 4): on a successful password
+     * change, {@code AuthService.changePassword} stamps this to the {@code iat} of the token
+     * that PERFORMED the change ({@code CurrentUser.tokenIssuedAt()}) — never to {@code
+     * Instant.now()}. {@code CurrentUser.load()} rejects any JWT whose {@code iat} is strictly
+     * before this (no grace window: both sides are JWT {@code iat} values, same clock/
+     * granularity), so the performing token itself survives while every token issued before it
+     * is revoked. {@code null} (never changed a password) means every token is valid, subject
+     * only to the normal 30-day expiry.
      */
     @Column(name = "tokens_valid_from")
     private Instant tokensValidFrom;
