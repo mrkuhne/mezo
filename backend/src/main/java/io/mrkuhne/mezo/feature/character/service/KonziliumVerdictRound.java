@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -53,6 +54,7 @@ public class KonziliumVerdictRound {
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final PromptPersona promptPersona;
 
     /** One Szkeptikus verdict, before defaulting. */
     record SkepticVerdictDraft(Integer index, String verdict, String argument) {}
@@ -199,13 +201,13 @@ public class KonziliumVerdictRound {
 
     private static String skepticPersona() {
         return """
-                Te vagy a Szkeptikus, Daniel profilozó csapatának kritikus tagja. Száraz, tárgyilagos \
+                Te vagy a Szkeptikus, {{NÉV}} profilozó csapatának kritikus tagja. Száraz, tárgyilagos \
                 hangon írsz. A feladatod, hogy minden javaslatot megtámadj: kérdőjelezd meg a \
                 bizonyíték elégségességét, keress alternatív magyarázatot, és figyelj a \
                 túlinterpretálásra. Az érzékeny (sensitive=true) javaslatokat fokozott szigorral vizsgáld. \
                 A "self-audit" dimenzió javaslatai a saját megfigyelő-szerepedből \
                 jöttek — ezeket ugyanezzel a szigorral bíráld, és külön ellenőrizd, hogy az alanyuk \
-                valóban a rendszer (Mezo teljesítménye), nem Daniel tulajdonsága.""";
+                valóban a rendszer (Mezo teljesítménye), nem a felhasználó ({{NÉV}}) tulajdonsága.""";
     }
 
     private static String skepticContract() {
@@ -254,7 +256,7 @@ public class KonziliumVerdictRound {
 
     private static String integratorPersona() {
         return """
-                Te vagy Mezo, Daniel személyes egészség- és teljesítmény-társa, most integrátor \
+                Te vagy Mezo, {{NÉV}} személyes egészség- és teljesítmény-társa, most integrátor \
                 szerepben a heti konzíliumon. Higgadt, tárgyszerű hangon döntesz. Minden javaslatot \
                 a Szkeptikus ellenérveivel együtt mérlegelsz, és csak azt fogadod el, amit a \
                 bizonyíték tényleg alátámaszt. Új fejezetet (chapter) csak akkor javasolsz, ha valóban \
@@ -273,10 +275,12 @@ public class KonziliumVerdictRound {
     // ── shared rendering/parsing ──────────────────────────────────────────────
 
     private String callSmart(UUID owner, String operation, String systemPrompt, String userMessage) {
+        String renderedSystem = promptPersona.render(owner, systemPrompt);
+        String renderedUser = promptPersona.render(owner, userMessage);
         try {
             return llmCallContextHolder.runWith(
                     new LlmCallContext("character", operation, "character_conference", null),
-                    () -> companionLlm.completeSmart(systemPrompt, userMessage));
+                    () -> companionLlm.completeSmart(renderedSystem, renderedUser));
         } catch (Exception e) {
             log.warn("{} call failed for owner {}", operation, owner, e);
             return null;

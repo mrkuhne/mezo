@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.character.detector.DetectorRegistry;
 import io.mrkuhne.mezo.feature.character.detector.DetectorSignal;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
@@ -58,6 +59,7 @@ public class CharacterObservationService {
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
     private final CharacterRunLog runLog;
+    private final PromptPersona promptPersona;
 
     /** One drafted observation as the LLM returns it, before validation/clamping. */
     record Draft(String text, Integer salience, List<String> dimensionKeys) {}
@@ -117,7 +119,8 @@ public class CharacterObservationService {
             // never abort the whole per-day pass — same per-expert isolation contract as the LLM
             // call below.
             expert = CharacterExpertCatalog.byKey(expertKey);
-            String systemPrompt = OBSERVATION_MARKER + "\n" + expert.systemPersona() + "\n" + outputContract();
+            String systemPrompt =
+                    promptPersona.render(owner, OBSERVATION_MARKER + "\n" + expert.systemPersona() + "\n" + outputContract());
             String userMessage = userMessage(day, expertSignals);
             raw = llmCallContextHolder.runWith(
                     new LlmCallContext("character", "observe", "expert", null),

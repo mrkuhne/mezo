@@ -42,7 +42,7 @@ import org.springframework.test.context.ActiveProfiles;
  * observation was logged and then silently skipped by every konzílium. This IT proves a
  * user-feedback observation is instead routed to the expert(s) owning the dimension(s) it names
  * (CORE -> that dimension's expert; CHAPTER/unknown -> {@code drill}), carries the
- * "DANIEL VÁLASZA —" authorship prefix in the expert's evidence, still triggers a turn even when
+ * "FELHASZNÁLÓ VÁLASZA —" authorship prefix in the expert's evidence, still triggers a turn even when
  * it is an expert's ONLY evidence, and is genuinely consumed end to end by a real weekly run.
  */
 @ActiveProfiles("companion-fake")
@@ -96,7 +96,7 @@ class KonziliumUserFeedbackIT extends ApiIntegrationTest {
     }
 
     @Test
-    void userObservation_namingCoreDimension_routesToOwningExpert_withDanielPrefix() {
+    void userObservation_namingCoreDimension_routesToOwningExpert_withUserPrefix() {
         UUID owner = ownerId();
         String text = "Cáfolat: rendszeresen kihagyja a naplózást. " + FakeCompanionLlm.CHAR_PROPOSALS_ECHO;
         seedUserObservation(owner, WEEK_START.plusDays(1), text, (short) 5, List.of("discipline"));
@@ -112,7 +112,9 @@ class KonziliumUserFeedbackIT extends ApiIntegrationTest {
         // Drill actually saw carries the authorship prefix in front of Daniel's own text
         assertThat(result.proposals()).singleElement()
                 .satisfies(p -> assertThat(p.rationale())
-                        .contains("DANIEL VÁLASZA — Cáfolat: rendszeresen kihagyja a naplózást."));
+                        .contains("FELHASZNÁLÓ VÁLASZA — Cáfolat: rendszeresen kihagyja a naplózást."));
+        assertThat(result.proposals()).singleElement()
+                .satisfies(p -> assertThat(p.rationale()).doesNotContain("DANIEL VÁLASZA").doesNotContain("{{NÉV}}"));
     }
 
     @Test
