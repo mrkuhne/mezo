@@ -17023,7 +17023,9 @@ components:
           description: >-
             Feed message kind — morning, sleep, weight, midday, evening, or
             people LLM-generated messages; intervention is config text
-            (mezo.companion.interventions), never LLM output.
+            (mezo.companion.interventions) and setup is config text for a
+            configuration gap (mezo.proactive.setup-checks), neither ever LLM
+            output.
           enum:
             - morning
             - sleep
@@ -17032,6 +17034,7 @@ components:
             - evening
             - intervention
             - people
+            - setup
         eyebrow:
           type: string
         body:

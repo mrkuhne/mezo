@@ -4662,6 +4662,13 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none;
   display: grid; place-items: center; cursor: pointer; }
 
+/* DayOrb (mezo-idz2) — a fejléc napi állapotjelzője. Az alap a `#s-orb` szürkén;
+   a kitöltés magassága a `clipPath` rect y-ja, ami új adatnál átcsúszik. */
+.dayorb { display: block; }
+.dayorb-base { filter: grayscale(1) brightness(1.28) contrast(0.55); opacity: 0.55; }
+.dayorb rect { transition: y 0.45s cubic-bezier(0.25, 0.8, 0.35, 1), height 0.45s cubic-bezier(0.25, 0.8, 0.35, 1); }
+@media (prefers-reduced-motion: reduce) { .dayorb rect { transition: none; } }
+
 /* Mezo-kalauz „?" (mezo-gb1s.1) — Fraunces-dőlt kérdőjel, coral; nyitva coral wash. */
 .nap-q .nap-q-glyph { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 19px; font-weight: 500; color: var(--primary-deep); line-height: 1; }
 .nap-q.is-open { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }

@@ -2,7 +2,7 @@
 // Mezo · AppHeader — az app EGYETLEN felső fejléce (mezo-atry). Korábban mind az öt
 // tab-gyökér külön bemásolta a `.nap-head` receptet, eltérő tartalommal; itt egy helyen
 // él, és az AppLayout mountolja minden oldalra. Sorrend fixen:
-//   szekció (spot + név) · [kalauz ?] · napszakváltó · Mezo-üzenetek · értesítések · profil orb
+//   szekció (spot + név) · [kalauz ?] · napszakváltó · Mezo-üzenetek · értesítések · napi orb
 // A napszak-választás állapota az URL-ben marad (`/nap?dp=`) — nincs globális state, és a
 // meglévő deep-linkek változatlanul működnek. A választó BÁRHONNAN a Nap oldalra navigál.
 //
@@ -14,10 +14,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
+import { DayOrb } from '@/shared/ui/DayOrb'
 import { cn } from '@/shared/lib/cn'
+import { localDateString } from '@/shared/lib/dates'
 import { useNotificationFeed } from '@/data/notification/feedHooks'
 import { DAY_FACES, FACE_LABEL, type DayFace } from '@/features/today/logic/dayFace'
 import { useDayFace } from '@/features/today/logic/useDayFace'
+import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { HeaderAurora } from '@/app/HeaderAurora'
@@ -43,6 +46,7 @@ export function AppHeader() {
   const { items: notifications } = useNotificationFeed()
   const unreadNtf = notifications.filter((n) => n.readAt === null).length
   const { unread: unreadMsgs } = useMezoThread()
+  const dayOrb = useDayOrbFill()
   const kalauz = useTutorial()
   const qUnseenDot = kalauz.current !== null && kalauz.current.tier === 'T3' && kalauz.isUnseen(kalauz.current.id)
 
@@ -161,8 +165,13 @@ export function AppHeader() {
         )}
       </div>
 
-      <button type="button" className="nap-avatar" aria-label="Profil" onClick={() => navigate('/me')}>
-        <ClaySpot name="s-orb" size={40} />
+      {/* mezo-idz2: a jobb szélső orb korábban a profilra vitt — ugyanoda, ahova az alsó
+          „Én" fül, tehát duplikátum volt. Most a nap állapotjelzője: alulról fölfelé telik
+          a rögzített jelek szerint, és a mai nap-oldalra visz. A töltöttség maga a jelzés,
+          ezért nincs rajta badge. */}
+      <button type="button" className="nap-avatar" aria-label={dayOrb.label}
+        onClick={() => navigate(`/me/week/napok/${localDateString()}`)}>
+        <DayOrb pct={dayOrb.pct} intensity={dayOrb.intensity} size={40} />
       </button>
     </header>
   )

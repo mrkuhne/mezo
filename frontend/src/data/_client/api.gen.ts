@@ -6961,10 +6961,10 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions) and setup is config text for a configuration gap (mezo.proactive.setup-checks), neither ever LLM output.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people" | "setup";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];

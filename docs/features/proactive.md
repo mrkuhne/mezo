@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-02
+updated: 2026-09-03
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -28,14 +28,18 @@ related: [companion, today, insights, train, me, _platform-api-backend, _platfor
 > [`specs/2026-08-15-companion-feed-design.md`](../superpowers/specs/2026-08-15-companion-feed-design.md)).**
 > The old `briefing` + `heartbeat_note` tables and their generators/jobs/read-path staleness
 > machinery are GONE (dropped, no data migration — the disposable generated rows were never worth
-> preserving). One new table, `companion_message`, holds **seven kinds**: `morning` (dawn cron, the
+> preserving). One new table, `companion_message`, holds **eight kinds**: `morning` (dawn cron, the
 > briefing's successor — sleep/weight-free by construction, spec §3), `sleep` (fired by a sleep-log
 > event), `weight` (fired by a weight-log event), `midday`/`evening` (the heartbeat's two window
 > crons, ported near-verbatim), `intervention` (since W5.2, `mezo-b3pp.19`, 2026-08-25 — the
-> only NON-LLM kind: config-text card, flag-raise event-fired; §3/§4 below), and — since
-> **Emberek S6** (`mezo-06o0.8`, 2026-09-01) — `people` (fired by the dawn cron alongside
+> first NON-LLM kind: config-text card, flag-raise event-fired; §3/§4 below), `people` (since
+> **Emberek S6**, `mezo-06o0.8`, 2026-09-01 — fired by the dawn cron alongside
 > `morning`, gated on this week's mentions existing; §3.x below) — the Emberek section's weekly
-> human-circle observation, aggregated per person, never raw quotes. A `CompanionMessageGenerator` with one method per kind, a
+> human-circle observation, aggregated per person, never raw quotes — and, since **S3**
+> (`mezo-d58h.3`, 2026-09-03), `setup` — the SECOND config-text kind, a daily cron-only pass that
+> checks the user's own CONFIGURATION (never their day's data) for a missing sleep goal or an
+> infeasible sleep plan, re-emitting at most weekly until the configuration itself changes; §3/§4/§9
+> below. A `CompanionMessageGenerator` with one method per kind, a
 > `CompanionMessageJob` (3 crons: dawn/midday/evening) + a `CompanionMessageEventListener`
 > (`@Async` `AFTER_COMMIT` on the sleep/weight log services' own events), and a unified
 > `GET /api/proactive/feed?date=` (lazy miss-recovery for the cron kinds, `200 []` honest empty —
@@ -70,7 +74,8 @@ related: [companion, today, insights, train, me, _platform-api-backend, _platfor
 > `ExperimentOutcomeService` (reusing the shared `MetricWindowEvaluator`), and a two-cron
 > `ExperimentJob` — the Insights **Experiments tab un-ghosts** (the LAST `PHASE3_TAB_IDS` ghost).
 >
-> **Status: backend 🟢 companion feed (morning/sleep/weight/midday/evening/people) + 🟢 W1 + 🟢 W2 + 🟢 P1
+> **Status: backend 🟢 companion feed (morning/sleep/weight/midday/evening/people) + 🟢 setup checks
+> (S3, missing-sleep-goal + plan-feasibility) + 🟢 W1 + 🟢 W2 + 🟢 P1
 > + 🟢 P2 + 🟢 HBWI · FE 🟢 Today MezoChip thread real (`useCompanionFeed`) + 🟢 W1 (Weekly card
 > real, inert buttons hidden in live) + 🟢 W2 (Memoir tab real, demo extras mock-only) + 🟢 P1
 > (Predictions tab real, un-ghosted) + 🟢 P2 (Experiments tab real) + 🟢 HBWI (Train challenge
@@ -834,6 +839,48 @@ for instead of the `Háttér` bucket ([`beta-admin.md`](beta-admin.md) §5), and
 try/catch INSIDE the body on top of it. The pseudocode blocks below write the loop as
 `userFanOut.forEachActiveUser(…)`.
 
+**Setup checks (S3, bd `mezo-d58h.3`) sit OUTSIDE this whole read/event picture — cron only, no
+listener at all.** Every other kind above is fired either by the lazy feed read (`morning`/`midday`/
+`evening`) or by a write event (`sleep`/`weight`/`intervention`/`people`'s dawn-cron cousin); a
+`setup` card reacts to the user's own CONFIGURATION (a sleep goal that doesn't exist, a plan that
+no longer fits the week), and no write announces "the configuration changed" the way
+`SleepLogSavedEvent` announces a new log — so there is nothing to hang an on-write listener on, and
+`ProactiveFeedService.getFeed`/`ensureTodayCronKinds` never call `SetupCheckService`. The daily
+`SetupCheckJob` (`06:10`, `mezo.proactive.setup-checks.cron`, gated on `COMPANION_SWITCH` ∧
+`PROACTIVE_SWITCH` ∧ the new `SETUP_CHECK_JOB_SWITCH`) is the WHOLE delivery mechanism — it followed
+`FlagSweepJob` onto the S6 fan-out above (`userFanOut.forEachActiveUser`, own per-user try/catch
+kept on top) and calls `SetupCheckService.runFor(userId)`:
+
+```
+SetupCheckService.runFor(userId):                    service/SetupCheckService.java
+  today = LocalDate.now()
+  if a `setup`-kind row already exists for (userId, today): return empty   (one setup card/user/day)
+  if SleepGoalRepository.findByCreatedByAndDeletedFalse(userId).isEmpty():
+      emit(MISSING_SLEEP_GOAL)                        checks are ORDERED, first-wins
+  else:
+      PlanFeasibilityCalculator.evaluate(userId, today)
+        .filter(!verdict.feasible())
+        .flatMap(verdict -> emit(PLAN_FEASIBILITY, text-from(verdict)))
+```
+
+**The ghosting trap — why `runFor` reads `SleepGoalRepository` directly instead of going through
+`SleepGoalService`/`SleepAnchorResolver`:** both of those fall back to a config-default ghost goal
+when no `sleep_goal` row exists for the user, precisely so `GET /api/sleep/goal` **never 404s**
+(`SleepGoalService.getGoal` serves the config-default ghost — WAKE 06:00 / 480 min / band 15 →
+bed 22:00, from `SleepGoalProperties`) and every other consumer always has something plausible to
+render (the FE `useSleepGoal()` ghosts it too — its `realEmpty` is `SLEEP_GOAL_GHOST`, see
+[`me.md`](me.md) §4/§9) — which means the missing-row condition is INVISIBLE through
+either of them. `SetupCheckService` is the one caller in the codebase that needs to know the row is
+actually absent, so it calls `sleepGoalRepository.findByCreatedByAndDeletedFalse(userId).isEmpty()`
+straight off the repository, bypassing both ghosting layers.
+
+**`emit(userId, today, checkKey, text)` enforces the weekly re-emit window** (`reEmitHours`, default
+168h = 7 days) — the same cooldown idiom `InterventionService` uses for its per-flag-key cooldown,
+here keyed on the envelope's new `setupKey` field instead of `interventionKey`: it reads every
+`setup`-kind row generated for the user inside the window and skips if any of them carries this
+SAME `checkKey`, so the SAME check does not repeat inside the window but a DIFFERENT check (e.g.
+the plan-feasibility card firing right after the goal card resolves) is unaffected.
+
 **The crons (`mezo-gst9` — `service/CompanionMessageJob.java`):**
 
 ```
@@ -1187,10 +1234,12 @@ changeset, not an edit) + `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql
   (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE CASCADE`, `is_deleted boolean not
   null default false`, `created_at timestamptz not null default now()`, `message_date date not null`
   (the day it is FOR — not when generated), `kind varchar(16) not null` (CHECK
-  `morning|sleep|weight|midday|evening|intervention|people` — the sixth value, `intervention`, is
-  W5.2's, migration `202608241500_mezo-b3pp.19_companion_message_intervention_kind.sql`, a
+  `morning|sleep|weight|midday|evening|intervention|people|setup` — the sixth value, `intervention`,
+  is W5.2's, migration `202608241500_mezo-b3pp.19_companion_message_intervention_kind.sql`, a
   CK-swap-only widening; the seventh, `people`, is **Emberek S6**'s (`mezo-06o0.8`), another
-  CK-swap-only widening — see the W5.2 subsection below and §3.x for `people`), `content jsonb not
+  CK-swap-only widening; the eighth, `setup`, is **S3**'s (`mezo-d58h.3`), migration
+  `202609040900_mezo-d58h.3_companion_message_setup_kind.sql`, another CK-swap-only widening — see
+  the W5.2 subsection below, §3.x for `people`, and §3/§9 above for `setup`), `content jsonb not
   null` (the typed envelope, the old
   `BriefingContentEnvelope` idiom renamed `CompanionMessageEnvelope`), `generated_at timestamptz not
   null`. Uniqueness is a **partial unique index**
@@ -1253,22 +1302,31 @@ changeset, not an edit) + `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql
 
 `CompanionMessageEntity` (`entity/CompanionMessageEntity.java`, replaces `BriefingEntity` +
 `HeartbeatNoteEntity`) `extends OwnedEntity`, UUID `@GeneratedValue` id, soft-deleted; `messageDate`/
-`kind` (the `KIND_MORNING`/`KIND_SLEEP`/`KIND_WEIGHT`/`KIND_MIDDAY`/`KIND_EVENING`/`KIND_INTERVENTION`/`KIND_PEOPLE`
-— `KIND_INTERVENTION` is W5.2's, `KIND_PEOPLE` is Emberek S6's (`mezo-06o0.8`) — constants) +
+`kind` (the `KIND_MORNING`/`KIND_SLEEP`/`KIND_WEIGHT`/`KIND_MIDDAY`/`KIND_EVENING`/`KIND_INTERVENTION`/`KIND_PEOPLE`/`KIND_SETUP`
+— `KIND_INTERVENTION` is W5.2's, `KIND_PEOPLE` is Emberek S6's (`mezo-06o0.8`), `KIND_SETUP` is
+S3's (`mezo-d58h.3`) — constants) +
 `generatedAt`, and `content` maps as a typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto
 `CompanionMessageEnvelope` (`entity/CompanionMessageEnvelope.java`, renamed from
 `BriefingContentEnvelope`) — a record `{String eyebrow, List<String> body, List<Ref> refs,
-String interventionKey}` with a nested `Ref(String kind, String label)` (ADR 0006 /
+String interventionKey, String setupKey}` with a nested `Ref(String kind, String label)` (ADR 0006 /
 `ProvenanceEnvelope` typed-jsonb precedent, unchanged). The envelope **deliberately mirrors the FE
 Briefing shape MINUS `confidence` and `tone`** (§9 gotcha c, unchanged — a fabricated-number rule
 that predates and outlives the rename). `refs` are code-collected candidates the model selected by
 index, never invented — empty for the `midday`/`evening` kinds (the retired heartbeat generator
-never collected refs either) and ALWAYS empty for `intervention` (config text has nothing to
+never collected refs either) and ALWAYS empty for `intervention`/`setup` (config text has nothing to
 select refs from). **`interventionKey` (W5.2, bd `mezo-b3pp.19`) is set ONLY on
 `kind=intervention` rows** — it names the `mezo.companion.interventions[].key` library entry the
 card came from, so the „Segített?" verdict rolls up per-entry ([companion.md](companion.md) §4);
 `null` on every other kind, including every pre-W5.2 row (an overloaded 3-arg constructor
-keeps every other writer unchanged — see the entity's own javadoc). **No `regenCount` field** —
+keeps every other writer unchanged — see the entity's own javadoc). **`setupKey` (S3, bd
+`mezo-d58h.3`) is set ONLY on `kind=setup` rows** — it names the check
+(`SetupCheckService.CHECK_MISSING_SLEEP_GOAL` = `missing_sleep_goal` or
+`CHECK_PLAN_FEASIBILITY` = `plan_feasibility`) so `emit`'s weekly re-emit cooldown can be keyed
+per check (§3 above); `null` on every other kind. The record's CANONICAL constructor is now the
+5-arg `(eyebrow, body, refs, interventionKey, setupKey)` shape; the pre-W5.2 3-arg and the W5.2
+4-arg constructors are BOTH kept as overloads delegating to it (with `null` for the trailing
+field(s)), so every existing writer — `intervention` included — compiles unchanged. **No
+`regenCount` field** —
 the column that made the old briefing's `refreshIfStale` possible has no successor on this entity.
 **S2's `logging_gap`/`missed_workouts` flag keys ([companion.md](companion.md) §3) have no
 library entry until S4** — `InterventionService.deliverForFlag` finds no candidates for either
@@ -1335,17 +1393,19 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 
 Schemas: `FeedMessageResponse{id, date, kind, eyebrow, body[], refs[], generatedAt}` (replaces
 `BriefingResponse` + `HeartbeatNoteResponse`) + `FeedRef{kind, label}` — **no `confidence`, no
-`tone`** on the wire (§9 gotcha c, unchanged). `kind` is the **7-value** companion-feed enum
-(`morning|sleep|weight|midday|evening|intervention|people` — the sixth, `intervention`, W5.2 bd
-`mezo-b3pp.19`, added 2026-08-25; the seventh, `people`, Emberek S6 bd `mezo-06o0.8`, added
-2026-09-01 — the FE `FeedMessageKind` union carries the same string); `refs[].kind` is the FE
+`tone`** on the wire (§9 gotcha c, unchanged). `kind` is the **8-value** companion-feed enum
+(`morning|sleep|weight|midday|evening|intervention|people|setup` — the sixth, `intervention`, W5.2
+bd `mezo-b3pp.19`, added 2026-08-25; the seventh, `people`, Emberek S6 bd `mezo-06o0.8`, added
+2026-09-01; the eighth, `setup`, S3 bd `mezo-d58h.3`, added 2026-09-03 — the FE `FeedMessageKind`
+union carries the same string); `refs[].kind` is the FE
 `RefTag` vocabulary — extended with `Person` for the `people` kind's `Ref("Person", name)`
 candidates (§3.x below) — `WeightTrend|Goal|Workout|FuelDay|Medication|Sleep|Memory|Person` —
 always `[]` for the `midday`/
-`evening`/`intervention` kinds (the retired heartbeat generator carried no refs either; config text
-has no refs to select). **`interventionKey` itself never reaches the wire** — the FE branches on
-`kind === 'intervention'` alone ([companion.md](companion.md) §10); the key only matters
-server-side, for the feedback rollup (§4 below, [companion.md](companion.md) §4).
+`evening`/`intervention`/`setup` kinds (the retired heartbeat generator carried no refs either;
+config text has no refs to select). **Neither `interventionKey` nor `setupKey` reaches the wire** —
+the FE branches on `kind === 'intervention'` alone ([companion.md](companion.md) §10); the keys only
+matter server-side — `interventionKey` for the feedback rollup (§4 below,
+[companion.md](companion.md) §4), `setupKey` for the weekly re-emit cooldown (§3 above).
 `WeeklySuggestionResponse{id, weekStart, prose, generatedAt}` — plain prose, no structured fields.
 `MemoirResponse{id, weekStart, title, body, anchors[], generatedAt}` + `MemoirAnchor{kind, label}` —
 `anchors[].kind` is the same FE `RefTag` vocabulary (`Memory`/`Pattern` in practice), model-SELECTED
@@ -1499,11 +1559,41 @@ anything stale anywhere in the codebase (bd `mezo-hszs`).
   outcome-backstop schedule and the per-workout proposal cap. **No propose/generation cron** —
   challenges are generated lazily on the prep-read (§9 challenge decision).
 
-Plus the **six** techcore job switches (down from seven — `mezo-gst9` merged `briefing-job` +
-`heartbeat-job` into one `feed-job`), each the THIRD `@ConditionalOnProperty` on its job bean (on
+**`config/SetupCheckProperties.java` (S3, bd `mezo-d58h.3`) — a SEPARATE `@ConfigurationProperties`
+record, prefix `mezo.proactive.setup-checks`, NOT nested inside `ProactiveProperties`** (the
+`FlagProperties` precedent — its own already-large sibling is `CompanionProperties`, and this one
+is `ProactiveProperties`, so a standalone record avoids growing it further):
+
+- **`cron`** (`@NotBlank`, default **`0 10 6 * * *`** — 06:10 server zone, after the 05:45 morning
+  message job so a setup card lands below the briefing): the `SetupCheckJob` schedule.
+- **`reEmitHours`** (`@Min(1) @Max(8760)`, default **168** = 7 days): the spec's "at most weekly
+  until the configuration contradicts them" cadence — the SAME check does not repeat inside this
+  window (§3 above).
+- **`planFeasibility`** (`@NotNull @Valid`, nested record) — every threshold the plan-feasibility
+  check uses, all config, never code:
+  - **`wakeBufferMin`** (`@Min(0) @Max(240)`, default **45**): minutes between waking and actually
+    being ready for the morning obligation (shower, breakfast, travel).
+  - **`commuteBufferMin`** (`@Min(0) @Max(240)`, default **30**): minutes between an evening sport
+    slot ending and actually being home — `sport_schedule_slot` carries free-text location, nothing
+    geocoded, so this is one flat number.
+  - **`morningCutoffHour`** (`@Min(1) @Max(23)`, default **10**): a gym slot at or before this hour
+    counts as a MORNING obligation; later slots are evening training and do not constrain lights-out.
+  - **`misfitToleranceMin`** (`@Min(5) @Max(240)`, default **45**): the plan is called infeasible
+    only when it misses by MORE than this.
+  - **`bedtimeWindowDays`** (`@Min(3) @Max(90)`, default **14**): trailing days of bedtime history
+    the observed median is taken over.
+  - **`minBedtimeSamples`** (`@Min(2) @Max(30)`, default **4**): fewer logged bedtimes than this in
+    the window ⇒ the observed-bedtime half of the check stays silent (the schedule half can still
+    speak).
+
+Plus the **seven** techcore job switches (up from six — S3 adds `setup-check-job` alongside the
+`mezo-gst9` `feed-job` merge), each the THIRD `@ConditionalOnProperty` on its job bean (on
 top of the companion+proactive dual gate; off ⇒ the cron bean does not exist, the lazy GET still
 serves): **`feed-job`** (`FEED_JOB_SWITCH` — ALL THREE `CompanionMessageJob` crons, morning +
-midday + evening), **`weekly-suggestion-job`** (`WEEKLY_SUGGESTION_JOB_SWITCH`), **`memoir-job`**
+midday + evening), **`setup-check-job`** (`SETUP_CHECK_JOB_SWITCH`, `mezo.techcore.cron.setup-
+check-job.enabled` — off ⇒ no `SetupCheckJob` bean; `SetupCheckService` itself is unaffected, a
+direct call still works, the `FlagSweepJob` vs `FlagService` idiom), **`weekly-suggestion-job`**
+(`WEEKLY_SUGGESTION_JOB_SWITCH`), **`memoir-job`**
 (`MEMOIR_JOB_SWITCH`), **`prediction-job`** (`PREDICTION_JOB_SWITCH` — generation + validation),
 **`experiment-job`** (`EXPERIMENT_JOB_SWITCH` — propose + outcome), and **`challenge-job`**
 (`CHALLENGE_JOB_SWITCH` — outcome backstop only), all `mezo.techcore.cron.*.enabled`, default `true`.
@@ -2016,6 +2106,44 @@ companion's own, [companion.md](companion.md) §8:**
   [`_platform-notifications.md`](_platform-notifications.md) §8/§3d.
 - Commands: `cd backend && ./mvnw clean test -Dtest='CompanionMessageInterventionPersistenceIT,InterventionConfigIT,FlagServiceIT,InterventionServiceIT,InterventionSwitchOffIT,InterventionFireMinuteTest,AnchorResolverInterventionIT,AnchorResolverIT,AnchorResolverFeedIT,NotificationPrefApiIT,NotificationCategoryTest,Feedback*IT' -Dmezo.test.use-testcontainers=true` — the full focused re-run this slice's Task 9 gate runs (`AnchorResolverIT`/`AnchorResolverFeedIT` are regression guards on the shared `AnchorResolver.resolve` entry point, not new W5.2 cases).
 
+**S3 setup checks (bd `mezo-d58h.3`, spec 2026-09-03 §4 setup table) — the eighth `companion_message`
+kind, non-LLM (the second config-text kind after `intervention`), cron-only, owned entirely here
+(`feature.proactive`; no companion-side trigger to document):**
+
+- **`SetupCheckServiceIT`** — `runFor` emits the missing-sleep-goal card when no `sleep_goal` row
+  exists; stays silent when the goal row exists (and the plan is feasible); does not repeat the same
+  check inside the re-emit window; emits a new card once the prior one is outside the window.
+- **`PlanFeasibilityIT`** (11 cases) — the plan-feasibility check's own cases, including the
+  **day-pairing correction** (S3 whole-branch review, owner decision, same bd id): the sport half
+  pairs each evening with the morning that ACTUALLY follows it (weekday `(D + 1) mod 7`, 0=Monday..
+  6=Sunday on both `gym_schedule_slot.dayOfWeek`/`sport_schedule_slot.dayOfWeek`), never the
+  earliest morning anywhere else in the week — emits when a day-paired evening sport slot pushes
+  past its own following morning's required lights-out (the largest-misfit slot binds, and its
+  weekday rides along as `Verdict.bindingDay`); emits when the observed median bedtime does instead
+  (the bedtime half stays deliberately day-agnostic — judged against the week's tightest morning,
+  since a habitual bedtime happens every night — `bindingDay` is null there); stays silent when the
+  schedule fits inside `misfitToleranceMin` (including via the WAKE anchor's own wake time filling
+  in as the next day's obligation when that day has no gym slot of its own); stays silent — the
+  first of the three deliberate silences (spec §7, never estimate) — when there is NO morning
+  obligation anywhere in the week and the goal is BED-anchored (nothing to be early FOR at all, the
+  day-agnostic gate); stays silent — the regression guard for the bug this correction fixes — when
+  a sport slot's OWN following day has no morning obligation and the goal is BED-anchored (the slot
+  is skipped rather than compared against some other day's obligation); stays silent — the third
+  silence — when there is a morning obligation but neither half has anything to say; covers the
+  Sunday→Monday `(6 + 1) mod 7` wrap explicitly; covers the bedtime half binding when there is no
+  sport schedule at all (the two halves are not accidentally coupled); the exact-tolerance boundary
+  (misfit == `misfitToleranceMin`) is still feasible, not infeasible (`<=`, not `<`); a malformed
+  `sport_schedule_slot`/`gym_schedule_slot` row (`"99:99"`) is dropped rather than thrown, in both
+  the day-agnostic and the per-day obligation scans; and the missing-goal card wins over a
+  feasibility computation when there is no goal at all (checks are ORDERED, first-wins — the second
+  silence, though it never reaches `PlanFeasibilityCalculator` at all, since
+  `SetupCheckService.runFor` short-circuits on the empty-goal branch first).
+- **`SetupCheckPropertiesIT`** — the whole `mezo.proactive.setup-checks.*` tree (including the
+  nested `planFeasibility` record) binds from yml.
+- **`SetupCheckJobSwitchOffIT`** — `mezo.techcore.cron.setup-check-job.enabled=false` ⇒ no
+  `SetupCheckJob` bean; `SetupCheckService` itself is unaffected (a direct call still works).
+- Commands: `cd backend && ./mvnw test -Dtest='SetupCheck*IT,PlanFeasibilityIT' -Dmezo.test.use-testcontainers=true -q` — note `ProactiveFeed*IT` does NOT match `ProactiveApiFeedIT` (no glob hits), so it proves nothing about the feed read path staying untouched; run `ProactiveApiFeedIT` explicitly if that needs re-covering.
+
 **W (weekly suggestion, W1):**
 
 - **`WeeklySuggestionPersistenceIT` (3)** — save/reload round-trip; the partial-unique index rejects a
@@ -2434,6 +2562,54 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   `CompanionLlm` inside it. The table shape didn't need to change (the CHECK widened, nothing else)
   — see §4's W5.2 subsection and [companion.md](companion.md) §4/§9 for the full selection math and
   the two shipped decisions (`channel: push` ≡ `both`; one card/day, first raise wins).
+- **(jj) `setup` is the eighth `companion_message` kind (S3, bd `mezo-d58h.3`) — cron-only, checks
+  CONFIGURATION rather than a day's data, and is silent by design far more often than it speaks
+  (spec §7: never estimate).** Three deliberate silence conditions, all in
+  `PlanFeasibilityCalculator.evaluate` except the first:
+  1. **No sleep goal at all** — owned entirely by the missing-sleep-goal check (§3 above), so the
+     feasibility calculator never even runs (`SetupCheckService.runFor` short-circuits first).
+  2. **No morning gym slot ANYWHERE in the week AND a BED-anchored goal** — a BED anchor states
+     when to go to bed, not what to be up FOR, so there is no obligation to be early for; inventing
+     one would be an estimate. This gate stays day-agnostic (see the correction below) — it asks
+     whether the week has ANY morning worth being early for at all.
+  3. **Neither half has anything to say** — the sport half now also counts as having nothing to say
+     when EVERY sport slot's own following day lacks a morning obligation (the day-pairing
+     correction below); `minBedtimeSamples` (default 4) honest-gates the bedtime half's median;
+     below it, that half stays quiet even though the sport half still could speak (and vice versa).
+
+  **Day-pairing correction (S3 whole-branch review, owner decision, same bd id):** the check
+  originally measured the LATEST evening sport slot anywhere in the week against the EARLIEST
+  morning obligation anywhere in the week — spec §4 row 6 stated the rule day-agnostically and the
+  first implementation faithfully built it, but on a real Mon–Fri-gym / Fri-Sat-volleyball
+  schedule that measured a Friday-night session against Monday's gym slot and asserted a conflict
+  that did not exist. The owner decided: **the sport half pairs each evening with the morning that
+  actually follows it** — weekday `(D + 1) mod 7`, 0=Monday..6=Sunday on both
+  `gym_schedule_slot.dayOfWeek` and `sport_schedule_slot.dayOfWeek` (NOT `DayOfWeek.getValue()`); a
+  sport slot whose following day has no obligation at all (BED-anchored goal, no gym slot that day)
+  is skipped rather than compared against an unrelated day; the slot with the largest per-day
+  misfit binds, and its weekday rides along on `Verdict.bindingDay` so the card can name the actual
+  evening. **The bedtime half is deliberately NOT day-paired** — asymmetric with the sport half ON
+  PURPOSE: an observed median bedtime is a nightly habit, not tied to one weekday, so it is still
+  judged against the week's tightest morning exactly as before this correction (`bindingDay` stays
+  null for the bedtime source).
+
+  **The midnight frame:** every time operand the calculator compares — the required lights-out, the
+  evening sport end, the observed median bedtime — is minutes-from-midnight with anything before
+  noon shifted `+1440` (`shiftedMinutes`), so a 00:30 bedtime reads as LATER than a 22:15 lights-out
+  rather than 21h45m earlier. `MetricKey.BEDTIME_HOUR`'s own extractor already applies the identical
+  shift to its values, so the median-bedtime half's numbers drop straight into the same arithmetic
+  with no re-shifting at the call site.
+
+  **Adding a `companion_message` kind (four mirrored changes) is a smaller ritual than adding a
+  `FlagKey` (FIVE, [companion.md](companion.md) §9)** — `setup` touched all four: the entity's
+  `KIND_*` string constant, the `ck_companion_message_kind` CHECK-widening migration, the
+  `FeedMessageResponse.kind` contract enum (`api/openapi.yml` → `api.gen.ts`), and the FE
+  `FeedMessageKind` union. There is no `@Pattern`-regex mirror to keep in step for a message kind
+  the way a `FlagKey` needs two (§9 above, companion.md) — nothing else re-derives or validates a
+  `companion_message.kind` string independently.
+
+  See §4's data-model subsection and §3 above for the full delivery mechanics ("Setup checks sit
+  OUTSIDE this whole read/event picture") and the ghosting-trap rationale.
 - **Epic complete, H2 Web Push shipped with it, and `mezo-gst9` then redesigned the B/H stages.**
   All eight original slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2), **H2 (`mezo-h4wp.6`) shipped** — N1
   (delivery spine) + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3
@@ -2518,6 +2694,17 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241500_mezo-b3pp.19_companion_message_intervention_kind.sql` — the `kind` CHECK widening (CK-swap only).
 - Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{InterventionServiceIT,InterventionConfigIT,InterventionSwitchOffIT,CompanionMessageInterventionPersistenceIT}.java` — §8.
 - The intervention library/config (`mezo.companion.interventions`, `CompanionProperties.Intervention`) and the raise-side `FlagRaisedEvent`/`FlagService` are companion's own — [companion.md](companion.md) §4/§10. The push anchor (`AnchorResolver.interventionAnchors`), the `INTERVENTION` category, and quiet hours (`mezo.notification.quiet-hours`) are notification's own — [`_platform-notifications.md`](_platform-notifications.md) §10.
+
+**Backend — setup checks (S3, `mezo-d58h.3` — §3/§4/§9; cron-only, no trigger side to cross-reference)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/SetupCheckProperties.java` — the standalone `mezo.proactive.setup-checks.*` record (§4 above): `cron`, `reEmitHours`, nested `planFeasibility`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/SetupCheckService.java` — `runFor(userId)`: day-gate, checks first-wins (`CHECK_MISSING_SLEEP_GOAL` reading `SleepGoalRepository` directly — the ghosting trap, §3 — then `CHECK_PLAN_FEASIBILITY`), `emit`'s weekly re-emit cooldown keyed on the envelope's `setupKey`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PlanFeasibilityCalculator.java` — `evaluate(userId, today)`: the sport half is DAY-PAIRED (each `sport_schedule_slot` on weekday `D` is measured against `earliestMorningObligation((D + 1) mod 7)`, the morning that actually follows it, not the week's earliest — S3 whole-branch-review correction, owner decision, same bd id; see the class javadoc for the full rationale) and picks the largest-misfit slot, carrying its weekday as `Verdict.bindingDay`; the bedtime half stays deliberately day-agnostic, compared against the week's tightest morning (`bindingDay` null there) since a habitual bedtime happens every night; the three silences (§9 decision jj), now including "every sport slot's following day has no morning obligation"; the midnight-shift arithmetic (`shiftedMinutes`/`toLocalTime`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/SetupCheckJob.java` — the daily `@Scheduled(cron = "${mezo.proactive.setup-checks.cron}")` bean, per-user try/catch, gated on `COMPANION_SWITCH` ∧ `PROACTIVE_SWITCH` ∧ `SETUP_CHECK_JOB_SWITCH`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{CompanionMessageEntity,CompanionMessageEnvelope}.java` — `KIND_SETUP` + `setupKey` (both above, S3 additions to the `mezo-gst9` entity/envelope; the envelope's canonical constructor is now the 5-arg form, §4 above).
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `SETUP_CHECK_JOB_SWITCH` (`mezo.techcore.cron.setup-check-job.enabled`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609040900_mezo-d58h.3_companion_message_setup_kind.sql` — the `kind` CHECK widening to eight values (CK-swap only).
+- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{SetupCheckServiceIT,PlanFeasibilityIT,SetupCheckPropertiesIT,SetupCheckJobSwitchOffIT}.java` — §8.
+- The `setup` kind reaches the wire through the SAME `FeedMessageResponse.kind`/`FeedMessageKind` mirrors every other kind uses (§4 above; `api/openapi.yml` → `api.gen.ts`, and the FE `frontend/src/data/types.ts` union) — no dedicated FE consumer branches on `kind === 'setup'` (unlike `intervention`'s „Segített?" label swap): a `setup` card renders through the generic feed-message path.
 
 **Frontend — Today consumer (`mezo-gst9`, replaces the B1.2 briefing seam + the H1 companion-note seam)**
 - `frontend/src/data/today/feedApi.ts` — `feedApi.get(date)` + `toFeedMessages` (wire→`FeedMessage[]`); replaces `briefingApi.ts` + `heartbeatApi.ts` (both DELETED).

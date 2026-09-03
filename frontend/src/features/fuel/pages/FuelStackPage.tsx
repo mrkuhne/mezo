@@ -102,7 +102,7 @@ export function FuelStackPage() {
       </PageHead>
 
       <EntranceGroup>
-        <PageHero icon="i-stack" big={`${takenCount}/${totalCount}`} name="Stack" />
+        <PageHero icon="i-stack" big={`${takenCount}/${totalCount}`} name="Stack" kalauzAnchor="stack-hero" />
 
         <PageBody principle="Pihenőnapon az edzés-zónák maguktól átköltöznek (reggeli / ebéd) — vagy kimaradnak, ha úgy állítottad. A „miért ide” indoklás mindig a zónán ül.">
           {occurrences.length === 0 ? (
