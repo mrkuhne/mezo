@@ -112,7 +112,7 @@ Elvárt: mindkét fájlban van találat.
 - [ ] **Step 4: Fordulj le (a backend most még nem tölti a mezőket, de a DTO builder létezik)**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw -q -pl backend compile
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw -q compile
 ```
 
 Elvárt: BUILD SUCCESS (a `LifeGoalSignalService` a builder hiányzó mezőit `null`-lal hagyja — Java builder, nem kötelező mező).
@@ -164,7 +164,7 @@ Create `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal/LifeGoalSignalsLi
 - [ ] **Step 2: Futtasd — bukjon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalSignalsLivenessIT'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalSignalsLivenessIT'
 ```
 
 Elvárt: FAIL — `live` és `daysWithData` `null` a válaszban.
@@ -257,7 +257,7 @@ Ellenőrizd az `LifeGoalPillarEntity` getter-neveit (`getActive()`, `getLabel()`
 - [ ] **Step 4: Futtasd — passzoljon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalSignalsLivenessIT,LifeGoalApiIT,LifeGoalProposeIT'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalSignalsLivenessIT,LifeGoalApiIT,LifeGoalProposeIT'
 ```
 
 Elvárt: PASS mindhárom (a `LifeGoalApiIT` már hívja a `/signals`-t).
@@ -296,7 +296,7 @@ cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-ap
 - [ ] **Step 2: Futtasd — bukjon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='AppNotificationKindTest'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='AppNotificationKindTest'
 ```
 
 Elvárt: fordítási hiba (`LIFE_GOAL_PLAN` nem létezik).
@@ -317,7 +317,7 @@ Az osztály-javadocban a „12 kinds" → „14 kinds" megfogalmazást is igazí
 - [ ] **Step 4: Futtasd — passzoljon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='AppNotificationKindTest'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='AppNotificationKindTest'
 ```
 
 Elvárt: PASS.
@@ -439,7 +439,7 @@ class LifeGoalTriggerRulesTest {
 - [ ] **Step 2: Futtasd — bukjon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalTriggerRulesTest'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalTriggerRulesTest'
 ```
 
 Elvárt: fordítási hiba (`LifeGoalTriggerRules` nem létezik).
@@ -526,7 +526,7 @@ public final class LifeGoalTriggerRules {
 - [ ] **Step 4: Futtasd — passzoljon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalTriggerRulesTest'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalTriggerRulesTest'
 ```
 
 Elvárt: PASS (5 teszt).
@@ -685,7 +685,7 @@ public class LifeGoalTriggerService {
 - [ ] **Step 2: Fordulj le**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw -q -pl backend compile
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw -q compile
 ```
 
 Elvárt: BUILD SUCCESS. (Ha `LifeGoalEntity.getCreatedBy()`/`getTitle()` másképp hívódik, igazítsd a fájl szerint.)
@@ -798,7 +798,7 @@ A `@Async` listener miatt kell egy `awaitNotification(String kind)` helper — A
 - [ ] **Step 2: Futtasd — bukjon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalTriggerIT'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalTriggerIT'
 ```
 
 Elvárt: FAIL — nincs értesítés (a listener és a job-ág még nem létezik).
@@ -906,7 +906,7 @@ Az osztály-javadocot told meg egy mondattal: a job a pillér-napokon és az XP-
 - [ ] **Step 6: Futtasd — passzoljon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalTriggerIT,LifeGoalEvalJobIT,LifeGoalEvalJobSwitchOffIT,LifeGoalXpIT'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoalTriggerIT,LifeGoalEvalJobIT,LifeGoalEvalJobSwitchOffIT,LifeGoalXpIT'
 ```
 
 Elvárt: PASS mind.
@@ -914,7 +914,7 @@ Elvárt: PASS mind.
 - [ ] **Step 7: ArchUnit külön (a lifegoal → train irány új)**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='*Arch*Test'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='*Arch*Test'
 ```
 
 Elvárt: PASS. Ha a fagyasztott ciklus-szabály elbukik a `lifegoal → train` élre, NE lazíts a szabályon: nézd meg, hogy a train nem hivatkozik-e vissza a lifegoalra, és ha nem, a fagyasztott store frissítése a helyes lépés (a szabály `FreezingArchRule`; a store `backend/src/test/resources/archunit_store` alatt van).
@@ -1318,7 +1318,7 @@ Elvárt: mind PASS.
 - [ ] **Step 4: Fókuszált backend kapu**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081 && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoal*,AppNotification*,*Arch*Test'
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true -Dtest='LifeGoal*,AppNotification*,*Arch*Test'
 ```
 
 Elvárt: PASS. (A TELJES suite a CI dolga — a self-PR az autoritatív kapu.)
