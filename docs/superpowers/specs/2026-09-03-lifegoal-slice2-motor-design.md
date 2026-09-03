@@ -15,8 +15,12 @@ Daniel döntése: függőleges szeletek, 3 nagyobb darabban (A verzió).
   `ActivityLogRepository.findByCreatedByAndOccurredOnBetween` (measure: minutes|count|huf) ·
   `NeedsRingSignalSource` → `NeedsDayRepository` (csak zárt napok, különben `no_data`) ·
   `WeightGoalSignalSource` (lásd D-2). Az alap-spec 6. forrása (`HabitSignalSource`) NEM készül:
-  a zárt katalógusban nincs `habit` típusú bejegyzés (a szokásokat a `HABITS_DONE` metrika fedi),
-  a katalógus-validáció miatt ilyen pillér nem is jöhet létre — ismeretlen forrás-típus → `no_data`.
+  a zárt katalógusban nincs `habit` típusú bejegyzés (a szokásokat a `HABITS_DONE` metrika fedi).
+  Egy `source.type=habit` pillér **létrehozható** — `LifeGoalPillarService.validate` habit ágon
+  a `habitKey`-t a felhasználó saját `habit_def` sorai ellen ellenőrzi és a katalógus-egyezést
+  kihagyja (slice 1 viselkedés, nem hiba) —, de mivel egyetlen `SignalSource` adapter sem
+  `supports()`-olja a `habit` típust, minden napja örökre `no_data`: kimarad a `dailyPoint`
+  súlyozásból és a konfliktus-derivációból is (ismeretlen forrás-típus → `no_data`).
 - `LifeGoalScorer` — tiszta, determinisztikus (napi státusz fajtánként, súlyozott napi pont,
   irány-nyíl 7 vs 21 nap + 5 adat-napos kapu, hét/hónap aggregálás olvasáskor — alap-spec §5).
 - Endpointok: `GET /api/life-goals/{id}/progress?from&to` (napi sorok + nyilak +

@@ -178,7 +178,9 @@ core with no Spring context.
   habit catalog entry (`HABITS_DONE`) is itself a `metric` served by `MetricSignalSource`, so a
   pillar whose `source.type` is literally `habit` matches no adapter's `supports()` and every day
   scores `no_data` via `LifeGoalProgressService.windowFor`'s empty-`SignalWindow` fallback — this
-  is intentional, not a gap (spec `2026-09-03-lifegoal-slice2-motor-design.md`).
+  is intentional, not a gap (spec `2026-09-03-lifegoal-slice2-motor-design.md`). Such a pillar
+  **is creatable** (see the catalog-validation note below), not rejected — it is permanently
+  unscored by design, not unbuildable.
 - **`WeightGoalSignalSource`** (linked pillars, `feature/goal`/`feature/biometrics.weight`
   imports) reads the trend-weight EWMA series (`WeightTrendService.computeTrend`) and the single
   active body-weight `GoalEntity`'s start/target line, builds a day→expected-weight `targets` map
@@ -189,9 +191,16 @@ core with no Spring context.
 **Catalog validation** (`SignalCatalog`, `LifeGoalPillarService.validate`): every pillar's
 `source` (type+key/skillKey+measure/ring) must exact-match one of the 28 closed
 `SignalCatalogEntry` rows, and its `kind` must be one of that entry's allowed `kinds` — an
-unknown source/skill/kind is rejected with a dedicated `SystemMessage` code (§4). This is the
-**only** place a pillar can originate a signal; there is no free-text metric or external
-integration (D3).
+unknown source/skill/kind is rejected with a dedicated `SystemMessage` code (§4). **`source.type=
+habit` is the one exception:** `validate`'s habit branch checks `habitKey` against the user's own
+`habit_def` rows (via `HabitCatalogService`, cross-feature read through `ObjectProvider` so
+`HABIT_SWITCH` off degrades to "cannot verify" rather than breaking context) and skips the
+catalog-entry check entirely — a known `habitKey` is accepted with no `SignalCatalogEntry` behind
+it at all (slice-1 behavior, unchanged by slice 2). Every other source still goes through the
+closed catalog; there is no free-text metric or external integration (D3). The habit-source
+pillars this creates score `no_data` forever (no `SignalSource` adapter serves `source.type=
+habit`, see above) — excluded from `dailyPoint` and from conflict detection, but not rejected at
+creation time.
 
 **AI propose, port-first-then-template** (`LifeGoalProposeService.propose`): if
 `LifeGoalProposePort` has no bean (any of `LIFEGOAL_AI_PROPOSE_SWITCH` /
