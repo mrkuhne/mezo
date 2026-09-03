@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.DietPreferencesResolver;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
+import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -38,6 +39,12 @@ import org.springframework.transaction.annotation.Transactional;
  * preference row, or its config ghost when none exists). {@code consumed}
  * = Σ the day's meal macros; {@code water} consumed is the real Σ of the day's water-log entries
  * (via {@link WaterLogService}); no meal carries water in v1.
+ *
+ * <p>Slice 3 (mezo-sxlj): when a segment carries a day-type split ({@code trainingDayKcal} /
+ * {@code restDayKcal}), the served kcal is picked at serve time by {@link #dayTypeAdjusted} —
+ * a date with ANY workout window ({@link WorkoutWindowQueryService}: gym slots, sport
+ * slots/events, logged sessions, prescribed runs) is a training day. The whole kcal delta lands
+ * in carbs (ISSN), derived at serve time and never stored.
  */
 @Service
 @RequiredArgsConstructor
@@ -50,6 +57,7 @@ public class FuelDayService {
     private final GoalRepository goalRepository;
     private final DietPreferencesResolver dietPreferences;
     private final WeightLogRepository weightLogRepository;
+    private final WorkoutWindowQueryService workoutWindowQueryService;
 
     // Annotated by exception: the meal mapper walks LAZY items with open-in-view false (spring_patterns.md).
     @Transactional(readOnly = true)
@@ -62,7 +70,7 @@ public class FuelDayService {
         int waterMl = dietPreferences.resolve(userId).waterMl();
         return FuelDayResponse.builder()
             .date(date)
-            .targets(targetSet(activeGoal(userId), date, waterMl))
+            .targets(targetSet(activeGoal(userId), date, waterMl, userId))
             .consumed(consumed(meals, water))
             .meals(meals)
             .build();
@@ -73,6 +81,10 @@ public class FuelDayService {
      * so a segment boundary can fall inside the rendered week) + consumed Σ, no meal bodies. Feeds
      * the Terv weekly stats (kcal avg / protein-hit days), the week-centric Fuel Napló page and the
      * Insights Weekly review (Phase-2 roadmap D′).
+     *
+     * <p>Slice 3: each of the 7 days does its own {@link WorkoutWindowQueryService#windowsFor}
+     * lookup via {@link #targetSet} — 7 window lookups per call. Acceptable single-owner cost;
+     * revisit with a week-bulk query only if it ever shows up in traces.
      *
      * <p>The two week-level scalars (mezo-d20.7.2) are DERIVED AT READ, not stored: Fuel has no
      * per-week row to hang them on, and both are pure functions of already-persisted data
@@ -91,7 +103,7 @@ public class FuelDayService {
         List<FuelDayRollup> days = start.datesUntil(start.plusDays(7))
             .map(d -> FuelDayRollup.builder()
                 .date(d)
-                .targets(targetSet(goal, d, waterMl))
+                .targets(targetSet(goal, d, waterMl, userId))
                 .consumed(consumedFor(userId, d))
                 .build())
             .toList();
@@ -171,25 +183,64 @@ public class FuelDayService {
     /**
      * kcal + protein + carbs + fat from {@link #segmentFor}; config fallback per field when there
      * is no covering segment, or the segment predates the carbs/fat split (pre-slice-1
-     * prescriptions carry null carbsG/fatG). {@code waterMl} is caller-resolved (once per request,
-     * via {@link DietPreferencesResolver}) since water is never goal-prescribed.
+     * prescriptions carry null carbsG/fatG). The day-type pick ({@link #dayTypeAdjusted}) overrides
+     * kcal and shifts carbs when the segment carries a day-type split. {@code waterMl} is
+     * caller-resolved (once per request, via {@link DietPreferencesResolver}) since water is never
+     * goal-prescribed.
      */
-    private MacroSet targetSet(GoalEntity goal, LocalDate date, int waterMl) {
+    private MacroSet targetSet(GoalEntity goal, LocalDate date, int waterMl, UUID userId) {
         GoalPrescriptionJson.Segment seg = segmentFor(goal, date);
+        DayTypePick pick = dayTypeAdjusted(seg, userId, date);
+        // Both branches must stay boxed Integer — mixing pick.kcal() (primitive int) directly with
+        // seg.kcal() (Integer) here would force JLS 15.25 numeric promotion to int and NPE on
+        // unboxing null when seg is null.
+        Integer kcal = pick != null ? Integer.valueOf(pick.kcal()) : (seg != null ? seg.kcal() : null);
+        int carbDeltaG = pick != null ? pick.carbDeltaG() : 0;
         return MacroSet.builder()
-            .kcal(BigDecimal.valueOf(seg != null && seg.kcal() != null ? seg.kcal() : targets.kcal()))
+            .kcal(BigDecimal.valueOf(kcal != null ? kcal : targets.kcal()))
             .p(BigDecimal.valueOf(seg != null && seg.proteinG() != null ? seg.proteinG() : targets.p()))
-            .c(BigDecimal.valueOf(seg != null && seg.carbsG() != null ? seg.carbsG() : targets.c()))
+            .c(BigDecimal.valueOf((seg != null && seg.carbsG() != null ? seg.carbsG() : targets.c()) + carbDeltaG))
             .f(BigDecimal.valueOf(seg != null && seg.fatG() != null ? seg.fatG() : targets.f()))
             .water(BigDecimal.valueOf(waterMl))
             .build();
     }
 
+    /** One day-type pick: the kcal the date actually serves, plus the carb delta (g) it implies. */
+    private record DayTypePick(int kcal, int carbDeltaG) {
+    }
+
+    /**
+     * The day-type pick for {@code seg} on {@code date} (slice 3, mezo-sxlj): {@code null} when the
+     * segment has no kcal, or carries no day-type split ({@code trainingDayKcal} AND
+     * {@code restDayKcal} both null — a pre-slice-3/uniform prescription), or the picked field
+     * itself is null (only one of the two set). Otherwise picks {@code trainingDayKcal} when any
+     * {@link WorkoutWindowQueryService#windowsFor} window covers the date, else
+     * {@code restDayKcal} — the same source the FE's {@code deriveBlocks}/{@code resolveDayType}
+     * reads (gym slots, sport slots + events + logged sessions, prescribed runs), so both surfaces
+     * classify the day identically. The whole day-type delta lands in carbs (ISSN): derived here at
+     * serve time, never stored. SHARED by {@link #targetSet} (the FuelDay MacroHero) and
+     * {@link #dailyTargets} (the meal scorer) — one classification rule, two projections (the
+     * {@link #segmentFor} precedent).
+     */
+    private DayTypePick dayTypeAdjusted(GoalPrescriptionJson.Segment seg, UUID userId, LocalDate date) {
+        if (seg == null || seg.kcal() == null
+            || (seg.trainingDayKcal() == null && seg.restDayKcal() == null)) {
+            return null;
+        }
+        boolean training = !workoutWindowQueryService.windowsFor(userId, date).isEmpty();
+        Integer dayKcal = training ? seg.trainingDayKcal() : seg.restDayKcal();
+        if (dayKcal == null) {
+            return null;
+        }
+        int carbDeltaG = Math.round((dayKcal - seg.kcal()) / 4f);
+        return new DayTypePick(dayKcal, carbDeltaG);
+    }
+
     /**
      * The day's resolved macro targets for the meal scorer (mezo-3g5w): the active goal's covering
-     * segment via {@link #segmentFor}, per-field config fallback — the SAME resolution
-     * {@link #targetSet} serves the MacroHero, so the score and the hero can never judge against
-     * different numbers.
+     * segment via {@link #segmentFor}, per-field config fallback, with the SAME day-type pick
+     * ({@link #dayTypeAdjusted}) {@link #targetSet} applies — so the score and the hero can never
+     * judge against different numbers.
      */
     @Transactional(readOnly = true)
     public DailyTargets dailyTargets(UUID userId, LocalDate date) {
@@ -197,10 +248,13 @@ public class FuelDayService {
         if (seg == null) {
             return DailyTargets.fromConfig(targets);
         }
+        DayTypePick pick = dayTypeAdjusted(seg, userId, date);
+        int kcal = pick != null ? pick.kcal() : (seg.kcal() != null ? seg.kcal() : targets.kcal());
+        int carbDeltaG = pick != null ? pick.carbDeltaG() : 0;
         return new DailyTargets(
-            seg.kcal() != null ? seg.kcal() : targets.kcal(),
+            kcal,
             seg.proteinG() != null ? seg.proteinG() : targets.p(),
-            seg.carbsG() != null ? seg.carbsG() : targets.c(),
+            (seg.carbsG() != null ? seg.carbsG() : targets.c()) + carbDeltaG,
             seg.fatG() != null ? seg.fatG() : targets.f(),
             "goal");
     }
