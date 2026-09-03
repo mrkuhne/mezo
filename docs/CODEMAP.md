@@ -651,8 +651,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `LifeGoalEvaluateApiIT`, `LifeGoalPillarApiIT`, `LifeGoalProgressApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`,
     `LifeGoalSignalsLivenessIT`, `LifeGoalTodayApiIT`, `LifeGoalTriggerIT`, `LifeGoalXpIT`, `SignalSourceIT`,
     `WeightGoalSignalSourceIT`
-  - **populators:** `CheckInPopulator`, `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`, `TrainPopulator`,
-    `UserPopulator`
+  - **populators:** `CheckInPopulator`, `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`, `RitualPopulator`,
+    `TrainPopulator`, `UserPopulator`
 
 ### llmlog
 

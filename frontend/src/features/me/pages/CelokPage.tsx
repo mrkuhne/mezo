@@ -104,8 +104,10 @@ export function CelokPage() {
             </div>
           ))}
           {/* Jelek (mezo-iizd.7, prototípus celok.html:106): a hub alján egy sor nyitja a
-              transzparencia-oldalt. A parkrow-nyelvet viszi, de teljes egészében gomb. */}
-          <button type="button" className="lg-parkrow lg-parkrow-nav rise"
+              transzparencia-oldalt. A parkrow-nyelvet viszi, de teljes egészében gomb — CSAK
+              `lg-parkrow`, mert a `lg-parkrow-nav` (későbbi, azonos specificitású szabály)
+              nullázná a sor 10px 13px paddingjét, és a sor alacsonyabb lenne a park-soroknál. */}
+          <button type="button" className="lg-parkrow rise"
             style={{ '--d': `${300 + parked.length * 40}ms`, marginTop: 10 } as React.CSSProperties}
             onClick={() => navigate('/me/goals/signals')} aria-label="Jelek · mit figyel a rendszer">
             <ClayIcon name="i-retegek" size={22} />

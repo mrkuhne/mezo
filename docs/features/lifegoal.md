@@ -171,13 +171,16 @@ spec §.7/D-3): a plan's `trigger.source` is one of exactly three closed values 
 | `trigger.source` | Metrika-jel | Predikátum |
 |---|---|---|
 | `sport_session_logged` | `metric:SPORT_LOAD_MIN` | a napi érték > 0 |
-| `checkin_energy_lte` | `metric:CHECKIN_ENERGY` | a napi érték ≤ küszöb (a `condition` szám-szövege, hiány/parse-hiba esetén 4 az alapérték) |
-| `ritual_missed` | `metric:RITUAL_CLOSED` | a napi érték hiányzik VAGY 0 — az EGYETLEN hiány-alapú szabály |
+| `checkin_energy_lte` | `metric:CHECKIN_ENERGY` | a napi érték ≤ küszöb. A küszöb a `condition` szám-szövege; HIÁNYZÓ `condition` esetén 4 az alapérték, NEM-SZÁM `condition` esetén viszont **nem tüzelünk** — a 4-es fallback lazíthatna a szándékon (egy `"<=2"` kétszer lazábbra esne vissza) |
+| `ritual_missed` | `metric:RITUAL_CLOSED` | a napi érték hiányzik VAGY 0 — az EGYETLEN hiány-alapú szabály. **Adopciós kapu:** csak akkor szólalhat meg, ha a kiértékelt napot megelőző 14 napban volt legalább EGY lezárt rituálé-nap; aki nem (vagy már nem) használja a rituálét, azt nem nyaggatjuk |
 
 The signal value itself comes from the same `SignalSource` dispatch `LifeGoalProgressService`
 uses (`sources.stream().filter(s -> s.supports(source)).findFirst()`), so the trigger path adds
-no new dependency — with the companion switch off (no `MetricSignalSource` bean) every trigger
-predicate simply reads `no_data` and never fires.
+no new dependency. **"Nincs adat" ≠ "a jel alszik":** if NO `SignalSource` bean supports the
+trigger's signal (companion switch off ⇒ no `MetricSignalSource`), the plan is **skipped entirely**
+— no predicate call, no emit. Without that split the gap-based `ritual_missed` would read the
+missing bean as "the ritual was missed" and nudge every night, forever, even for a user who closed
+every day. This is the same "asleep" state `LifeGoalSignalService`'s liveness reports (§3, D-4).
 
 `LifeGoalTriggerService` exposes two entry points over that same predicate, both restricted to
 `status == "active"` goals (the same evaluable definition `LifeGoalProgressService.evaluateDays`
@@ -190,10 +193,13 @@ by `SportService.logSportSession` in `feature/train` — AFTER_COMMIT so only a 
 triggers evaluation, `@Async` so a notification can never slow or fail the check-in/sport-session
 response. **`fireDelayed(userId, goal, today)`** evaluates plans with `delayHours > 0` PLUS EVERY
 `ritual_missed` plan regardless of its `delayHours` (absence can only be judged after the day
-closes — there is no "ritual missed" event), always against **yesterday** — called from
+closes — there is no "ritual missed" event), against **the same three closed days
+`evaluateDays` rewrites** (yesterday, −2, −3, newest first) — called from
 `LifeGoalEvalJob.runEval()` inside its existing per-goal try/catch, right after
 `evaluateDays`, so one broken goal's trigger evaluation cannot cost another goal or user its
-pillar-day write. There is no separate scheduler for the delayed branch (D-3).
+pillar-day write. The rolling window is what earns a LATE-logged day its delayed nudge (a Monday
+session written on Tuesday evening still speaks), and re-running is safe precisely because the
+dedup key is per-day. There is no separate scheduler for the delayed branch (D-3).
 
 A firing plan emits `AppNotificationKind.LIFE_GOAL_PLAN` via `AppNotificationEmitter` — see §5
 for the notification shape and the `dedupKey` that makes "one plan speaks at most once a day, on
@@ -459,7 +465,9 @@ hand-written types, mirroring the contract), `lifegoalMock.ts` (`MOCK_LIFE_GOALS
   *Contract:* `AppNotificationKind.LIFE_GOAL_PLAN` (`life_goal_plan`), feed-only (`familyKey =
   null`, the `WEEKLY_REVIEW_READY` precedent — an existing push category already covers the
   underlying check-in/sport-session/nightly-job event, a second category would double-notify),
-  deeplink `/me/goals/{goalId}`, `dedupKey = <goalId>:<planIdx>:<day>` — see §3 and §9.
+  deeplink `/me/goals/{goalId}`, `dedupKey = <goalId>:<planKey>:<day>`, where `planKey` is the
+  first 12 hex chars of `SHA-256(ha + " " + akkor + " " + trigger.source)`
+  (`LifeGoalTriggerRules.planKey`) — see §3 and §9.
 - **🟣 Deferred seams (slice 3, spec §5–§7):** `companion/LifeGoalSource` port feeding the
   `ContextSnapshotAssembler` `[Célok]` prompt block + a `get_life_goals` chat tool; the
   knowledge-graph `GOAL` node (`GraphPromotionService`, blocked on `mezo-06o0.5`); the Nap
@@ -577,15 +585,22 @@ pure-mock branch that never touches `lifegoalApi.ts`.
   path) stays fully wired.
 - **`mezo-iizd.7` (ha–akkor triggers + `LIFE_GOAL_PLAN` + `/signals` liveness):**
   `service/LifeGoalTriggerRulesTest` — pure unit tests, no Spring context, full coverage of the
-  three-source → predicate table (both `gte`/`lte` energy comparisons, the `condition` parse
-  fallback to 4, the `ritual_missed` null-or-zero absence check). `LifeGoalTriggerIT` — the
+  three-source → predicate table (the `condition` threshold: the 4-es default for a MISSING
+  condition vs. the no-fire for an unparseable one, the `ritual_missed` null-or-zero absence check,
+  and `planKey`'s position-independence — the same plan keeps its key when the list is reordered,
+  two different plans get different keys). `LifeGoalTriggerIT` — the
   wiring end to end through the real writes (no mocks, the `FlagEvaluationListenerIT` pattern):
   the immediate branch via `CheckInService.save`/`SportService.logSportSession`
   (Awaitility-waited, since the listener is `@Async`) and the delayed branch via
   `LifeGoalEvalJob` — a delayed plan firing once for the closed day and staying silent on a
-  second run, the `ritual_missed` plan firing when yesterday's ritual-closed value is absent, a
-  parked goal staying silent, and both immediate sources (`checkin_energy_lte`,
-  `sport_session_logged`) firing on their own event. `LifeGoalSignalsLivenessIT` —
+  second run, a session dated 3 days back but logged NOW still earning its nudge (the rolling
+  window) and staying silent on the second run, the `ritual_missed` plan firing for a missed day
+  when the user HAS adopted the ritual and staying silent when they never did, a parked goal
+  staying silent, both immediate sources (`checkin_energy_lte`, `sport_session_logged`) firing on
+  their own event, and the negatives: an energy ABOVE the threshold, a `delayHours > 0` plan on the
+  immediate branch, and cross-user isolation (all three via Awaitility `during(...)` settle windows,
+  since the listener is `@Async`). The "signal is ASLEEP" skip has no no-mock seam in that suite and
+  is documented as such in its javadoc; the companion-off case is covered on the liveness side. `LifeGoalSignalsLivenessIT` —
   `GET /signals`'s `daysWithData`/`live`/`fedPillars` against real rows, including the
   companion-off/no-`MetricSignalSource` asleep case. Focused run:
   `cd backend && ./mvnw clean test -Dmezo.test.use-testcontainers=true
@@ -680,11 +695,16 @@ convention. The two structural CSS guards in `shared/ui/mozaik/prototypeCssStruc
   branch via `LifeGoalEvalJob`) and `AppNotificationKind.LIFE_GOAL_PLAN`; `GET /signals` per-source
   liveness (`daysWithData`/`live`/`fedPillars`, `LifeGoalSignalService`); FE `JelekPage` +
   the hub's Jelek row. **D9 is now fully implemented.**
-  **Gotcha — `dedupKey` is per-DAY, not per-transition-condition:** `dedupKey =
-  <goalId>:<planIdx>:<day>` means a plan speaks at most once for a given day even if its signal
+  **Gotcha — `dedupKey` is per-DAY and CONTENT-keyed, not per-transition-condition:** `dedupKey =
+  <goalId>:<planKey>:<day>` means a plan speaks at most once for a given day even if its signal
   keeps satisfying the predicate on every re-evaluation within that day (e.g. a second
   `checkin_energy_lte` check-in the same day, or the job re-running the delayed pass) — this is
   the intended "one plan, one voice, per day" contract (spec D-3), not a missed-notification bug.
+  The `planKey` is a content hash rather than the plan's list index because `IfThenPlanJson` has no
+  identity and `LifeGoalService` replaces the WHOLE `ifThenPlans` list on every PUT — an index would
+  shift on any delete/insert and either silence a different plan for the rest of the day or let one
+  speak twice. Accepted trade-off: a RE-WORDED plan hashes differently and may speak again that day
+  — we treat it as a new plan, deliberately. Migration-free, no contract change.
   **Gotcha — `LIFE_GOAL_PLAN` has no push category yet:** `familyKey = null` means it is feed-only
   by design in this first round (D-3); a push category is explicitly out of scope for `mezo-iizd.7`
   (deferred to `.8`, see below) — do not read the `null` as an oversight.
