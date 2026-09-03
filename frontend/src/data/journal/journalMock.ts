@@ -1,8 +1,10 @@
 import type { JournalNote } from '@/data/journal/journalTypes'
 import { localDateString } from '@/shared/lib/dates'
 
-/** Mock seed: 5 free-prose Hungarian entries spanning two months (2026-07 + 2026-08), newest
- * first — so Task 7's month-grouping visibly renders two group headers in mock mode. */
+/** Mock seed: 6 free-prose Hungarian entries, newest first. Five have fixed dates spanning
+ * two months (2026-07 + 2026-08) — so Task 7's month-grouping visibly renders two group
+ * headers in mock mode. The sixth (jn-today, mezo-idz2) is date-relative to "today" and
+ * forms its own (floating) third month group whenever the suite runs outside July/August. */
 export const mockJournalNotes: JournalNote[] = [
   {
     id: 'jn-today',
