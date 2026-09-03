@@ -46,7 +46,7 @@ public class SetupCheckService {
     private static final String MISSING_SLEEP_GOAL_TEXT =
         "Nincs még alvás-célod beállítva, így az alvásról csak találgatni tudok. "
         + "Állítsd be a cél alvásidőt és a horgonyt (ébredés vagy lefekvés) — onnantól "
-        + "az alváskárt és a terv-javaslatok a te számaidra szólnak.";
+        + "az alvás-kártya és a terv-javaslatok a te számaidra szólnak.";
 
     private final SleepGoalRepository sleepGoalRepository;
     private final CompanionMessageRepository companionMessageRepository;
@@ -72,20 +72,28 @@ public class SetupCheckService {
             .flatMap(verdict -> emit(userId, today, CHECK_PLAN_FEASIBILITY, feasibilityText(verdict)));
     }
 
-    /** Config-free prose from the verdict's own numbers: lights-out, what actually binds, the
-     *  misfit, and the spec's two levers (a later wake target, or shorter/fewer evening sessions). */
+    /** Config-free prose from the verdict's own numbers: lights-out, what actually binds, and the
+     *  misfit. The two sources say genuinely different things (a late-ending evening session vs.
+     *  an observed bedtime later than the plan needs), so each gets its own sentence and its own
+     *  lever — the parenthetical this replaced filled {@code (%s helyett)} with
+     *  {@code latestConstraint} (the ACTUAL, binding time), which read as "instead of the very
+     *  thing that is happening" and was circular for the bedtime source ("your measured bedtime
+     *  pushes bedtime out"). */
     private String feasibilityText(PlanFeasibilityCalculator.Verdict verdict) {
-        String culprit = PlanFeasibilityCalculator.SOURCE_BEDTIME.equals(verdict.constraintSource())
-            ? "a mért lefekvésed"
-            : "az esti sportod";
-        return ("A terved nem fér bele a hetedbe: %s-kor kellene lekapcsolnod a villanyt, de %s "
-            + "%d perccel ez után tolja ki a lefekvést (%s helyett). Vagy tolod a reggeli "
+        if (PlanFeasibilityCalculator.SOURCE_BEDTIME.equals(verdict.constraintSource())) {
+            return ("A terved nem fér bele a hetedbe: %s-kor kellene lekapcsolnod a villanyt, de "
+                + "a mért lefekvésed valójában %s-kor van, ami %d perccel későbbi ennél. Vagy "
+                + "tolod a reggeli ébresztőt később, vagy korábban fekszel le, hogy beleférj.")
+                .formatted(verdict.requiredLightsOut(), verdict.latestConstraint(), verdict.misfitMin());
+        }
+        return ("A terved nem fér bele a hetedbe: %s-kor kellene lekapcsolnod a villanyt, de az "
+            + "esti sportod %s-kor ér véget, ami %d perccel későbbi ennél. Vagy tolod a reggeli "
             + "ébresztőt később, vagy rövidíted/ritkítod az esti edzéseket, hogy beleférj.")
-            .formatted(verdict.requiredLightsOut(), culprit, verdict.misfitMin(), verdict.latestConstraint());
+            .formatted(verdict.requiredLightsOut(), verdict.latestConstraint(), verdict.misfitMin());
     }
 
     /** Writes the card unless this same check already spoke inside the re-emit window. */
-    Optional<CompanionMessageEntity> emit(UUID userId, LocalDate today, String checkKey, String text) {
+    private Optional<CompanionMessageEntity> emit(UUID userId, LocalDate today, String checkKey, String text) {
         if (inReEmitWindow(userId, checkKey)) {
             log.info("Setup check {} skipped for user {}: inside the re-emit window", checkKey, userId);
             return Optional.empty();

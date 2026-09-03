@@ -144,4 +144,49 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
         assertThat(card.orElseThrow().getContent().setupKey())
             .isEqualTo(SetupCheckService.CHECK_PLAN_FEASIBILITY);
     }
+
+    @Test
+    void testRunFor_shouldIgnoreAMalformedScheduleSlot_andStillEvaluateFromTheGoodOnes() {
+        // sport_schedule_slot.time is varchar(5) with no entity-level @Pattern — a malformed row
+        // ("99:99") must not throw DateTimeParseException out of the calculator (the job's
+        // per-user catch would otherwise swallow it and silently kill this user's setup checks
+        // every day, forever). The verdict must come out exactly as if the bad slot were absent.
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);   // 8h target (the goal's own wake)
+        trainPopulator.createGymSlot(owner, 0, "07:00");            // Monday 07:00 = morning obligation
+        // required lights-out = 07:00 − 45' wake buffer − 8h target = 22:15 the evening before.
+        trainPopulator.createScheduleSlot(owner, 1, "99:99", 60, "training"); // malformed — must not bind or throw
+        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // ends 23:00, +30' = 23:30
+        // 23:30 − 22:15 = 75' > 45' ⇒ infeasible, bound by the good Friday slot alone.
+
+        Optional<PlanFeasibilityCalculator.Verdict> verdict =
+            planFeasibilityCalculator.evaluate(owner, LocalDate.now());
+        assertThat(verdict).isPresent();
+        assertThat(verdict.orElseThrow().feasible()).isFalse();
+        assertThat(verdict.orElseThrow().constraintSource())
+            .isEqualTo(PlanFeasibilityCalculator.SOURCE_SPORT);
+        assertThat(verdict.orElseThrow().misfitMin()).isEqualTo(75);
+
+        Optional<CompanionMessageEntity> card = setupCheckService.runFor(owner);
+        assertThat(card).isPresent();
+        assertThat(card.orElseThrow().getContent().setupKey())
+            .isEqualTo(SetupCheckService.CHECK_PLAN_FEASIBILITY);
+    }
+
+    @Test
+    void testRunFor_shouldIgnoreAMalformedGymSlot_andStillFindTheMorningObligation() {
+        // gym_schedule_slot.time has the same free-form varchar(5) contract — a malformed morning
+        // slot must be dropped, not crash the earliest-obligation scan.
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
+        trainPopulator.createGymSlot(owner, 0, "99:99");            // malformed — must not bind or throw
+        trainPopulator.createGymSlot(owner, 2, "07:00");            // the real morning obligation
+        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // ends 23:00, +30' = 23:30
+
+        Optional<CompanionMessageEntity> card = setupCheckService.runFor(owner);
+
+        assertThat(card).isPresent();
+        assertThat(card.orElseThrow().getContent().setupKey())
+            .isEqualTo(SetupCheckService.CHECK_PLAN_FEASIBILITY);
+    }
 }

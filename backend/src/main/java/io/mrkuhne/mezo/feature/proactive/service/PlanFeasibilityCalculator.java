@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -80,13 +81,17 @@ public class PlanFeasibilityCalculator {
             toLocalTime(requiredLightsOut), toLocalTime(latest), source, misfit));
     }
 
-    /** The earliest morning gym slot; failing that, a WAKE-anchored goal's own wake time. */
+    /** The earliest morning gym slot; failing that, a WAKE-anchored goal's own wake time. Slots
+     *  and the goal's anchor time are free-form {@code varchar(5)} with no entity-level
+     *  {@code @Pattern} guard (unlike this class's own contract elsewhere) — {@link #parseClock}
+     *  drops anything unparseable rather than letting {@code DateTimeParseException} propagate,
+     *  the {@code MetricSeriesService.clockHour} idiom for exactly these columns. */
     private OptionalInt earliestMorningObligation(
             UUID userId, SleepGoalEntity goal, SetupCheckProperties.PlanFeasibility cfg) {
         OptionalInt earliestSlot = gymScheduleSlotRepository
             .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
             .map(GymScheduleSlotEntity::getTime)
-            .map(LocalTime::parse)
+            .flatMap(clock -> parseClock(clock).stream())
             .filter(t -> t.getHour() <= cfg.morningCutoffHour())
             .mapToInt(PlanFeasibilityCalculator::shiftedMinutes)
             .min();
@@ -95,7 +100,8 @@ public class PlanFeasibilityCalculator {
         }
         // A BED-anchored goal states when to go to bed, not what to be up FOR — no obligation.
         return "WAKE".equals(goal.getAnchor())
-            ? OptionalInt.of(shiftedMinutes(LocalTime.parse(goal.getAnchorTime())))
+            ? parseClock(goal.getAnchorTime()).map(PlanFeasibilityCalculator::shiftedMinutes)
+                .map(OptionalInt::of).orElseGet(OptionalInt::empty)
             : OptionalInt.empty();
     }
 
@@ -103,9 +109,26 @@ public class PlanFeasibilityCalculator {
     private OptionalInt latestSportEnd(UUID userId, SetupCheckProperties.PlanFeasibility cfg) {
         return sportScheduleSlotRepository
             .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
-            .mapToInt(slot -> shiftedMinutes(LocalTime.parse(slot.getTime()))
-                + slot.getDurationMin() + cfg.commuteBufferMin())
+            .flatMap(slot -> parseClock(slot.getTime())
+                .map(t -> shiftedMinutes(t) + slot.getDurationMin() + cfg.commuteBufferMin())
+                .stream())
+            .mapToInt(Integer::intValue)
             .max();
+    }
+
+    /** {@link LocalTime#parse} on a free-form clock string, returning empty instead of throwing
+     *  on malformed input (e.g. {@code "99:99"}, which the varchar(5) column contract admits) —
+     *  the {@code MetricSeriesService.clockHour} null-on-malformed idiom, so one bad slot cannot
+     *  kill the whole check for a user with an otherwise-fine schedule. */
+    private static Optional<LocalTime> parseClock(String clock) {
+        if (clock == null) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(LocalTime.parse(clock));
+        } catch (DateTimeParseException e) {
+            return Optional.empty();
+        }
     }
 
     /** Median of the logged bedtimes, honest-gated on sample count. */
