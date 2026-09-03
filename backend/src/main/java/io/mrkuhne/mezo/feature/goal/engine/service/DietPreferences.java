@@ -8,5 +8,6 @@ public record DietPreferences(
     Integer fatPctX10,
     String proteinTier,
     int waterMl,
-    int fiberG
+    int fiberG,
+    int dayTypeShiftKcal
 ) {}

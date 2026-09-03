@@ -25,5 +25,9 @@ public record DietSettingsProperties(
 
     /** Fiber target ghost (g) — equals the old FE FIBER_TARGET_G so behavior is unchanged. */
     @Min(10) @Max(80)
-    int defaultFiberG
+    int defaultFiberG,
+
+    /** Day-type kcal shift ghost — 0 = uniform days until the user opts in. */
+    @Min(0) @Max(500)
+    int defaultDayTypeShiftKcal
 ) {}

@@ -64,4 +64,11 @@ public class DietSettingsEntity extends OwnedEntity {
     @Max(80)
     @Column(name = "fiber_g", nullable = false)
     private Integer fiberG;
+
+    /** Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days. */
+    @NotNull
+    @Min(0)
+    @Max(500)
+    @Column(name = "day_type_shift_kcal", nullable = false)
+    private Integer dayTypeShiftKcal;
 }

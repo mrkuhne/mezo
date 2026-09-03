@@ -435,6 +435,72 @@ type TrainData = {
   mesoMutationPending: boolean
 }
 
+/**
+ * The `logSportSession` mutation (T3 sport log), extracted so it can be mounted by BOTH
+ * `useTrain` and the narrow `useQuickLogSport` (mezo-7lst) without duplicating the mock
+ * cache-append + invalidation logic — the trap finding 1 of the whole-branch review flagged
+ * a copy-paste of this as worse than the regression it would fix. `mock`/`qc` are threaded
+ * in rather than recomputed here so both callers share one `isMockMode()`/`useQueryClient()`
+ * read.
+ *
+ * Real persists then refetches the affected query. Mock appends the logged session to the
+ * cache (mirrors running's mock log) so the Mai hero flips to its done-state and the Napló
+ * reflects it without a backend.
+ */
+function useLogSportSession(
+  mock: boolean,
+  qc: QueryClient,
+): (
+  req: SportSessionCreateRequest,
+  opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void },
+) => void {
+  const invalidateProgression = () => {
+    if (!mock) qc.invalidateQueries({ queryKey: ['progressionProfile'] })
+  }
+  const logSportMutation = useMutation({
+    // Forward the full response (carries levelUp). Mock appends the logged
+    // session to the cache (Mai done-state flip) AND returns a seeded
+    // LevelUpResult-carrying response so the prototype shows the overlay.
+    mutationFn: mock
+      ? async (req: SportSessionCreateRequest): Promise<SportSessionResponse> => {
+          const now = new Date()
+          const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+          // Retroactive logging (mezo-9bbc) sends the LOGGED day's ISO date; only an
+          // absent `date` means "now". Hardcoding today here dropped a Pótold log onto
+          // today's card instead of the past day it was written for (mock-mode parity
+          // with the real backend, whose server-side default is the same rule).
+          const iso = req.date ?? localDateString()
+          qc.setQueryData<{ sessions: SportSession[]; week: SportWeek | null }>(
+            ['train', 'sportSessions'],
+            (prev) => {
+              const logged: SportSession = {
+                id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball',
+                date: huMonthDayDow(iso), isoDate: iso, time: hhmm,
+                duration: req.duration, setsPlayed: req.setsPlayed ?? null, rounds: req.rounds ?? null, intensity: null,
+                rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: req.notes ?? null,
+              }
+              return { sessions: [logged, ...(prev?.sessions ?? [])], week: prev?.week ?? null }
+            },
+          )
+          awardGamificationEvent(qc, { type: 'SPORT' })
+          // Only levelUp is read downstream; provide the required fields + the
+          // captured effort, omitting the optional nullables.
+          return {
+            id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball', date: iso, time: hhmm,
+            duration: req.duration, rpe: req.rpe, setsPlayed: req.setsPlayed, shoulderStrain: req.shoulderStrain,
+            rounds: req.rounds, levelUp: sportLevelUpMock,
+          } as SportSessionResponse
+        }
+      : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),
+    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }); invalidateProgression() },
+  })
+  return useCallback(
+    (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) =>
+      logSportMutation.mutate(req, { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }),
+    [logSportMutation],
+  )
+}
+
 export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   const mock = isMockMode()
   const qc = useQueryClient()
@@ -670,46 +736,6 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     onSuccess: () => { invalidateToday(); invalidateProgression(); invalidateHabitAndQuests() },
   })
 
-  // T3 sport mutations: real persists then refetches the affected query. Mock
-  // appends the logged session to the cache (mirrors running's mock log) so the
-  // Mai hero flips to its done-state and the Napló reflects it without a backend.
-  const logSportMutation = useMutation({
-    // Forward the full response (carries levelUp). Mock appends the logged
-    // session to the cache (Mai done-state flip) AND returns a seeded
-    // LevelUpResult-carrying response so the prototype shows the overlay.
-    mutationFn: mock
-      ? async (req: SportSessionCreateRequest): Promise<SportSessionResponse> => {
-          const now = new Date()
-          const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-          // Retroactive logging (mezo-9bbc) sends the LOGGED day's ISO date; only an
-          // absent `date` means "now". Hardcoding today here dropped a Pótold log onto
-          // today's card instead of the past day it was written for (mock-mode parity
-          // with the real backend, whose server-side default is the same rule).
-          const iso = req.date ?? localDateString()
-          qc.setQueryData<{ sessions: SportSession[]; week: SportWeek | null }>(
-            ['train', 'sportSessions'],
-            (prev) => {
-              const logged: SportSession = {
-                id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball',
-                date: huMonthDayDow(iso), isoDate: iso, time: hhmm,
-                duration: req.duration, setsPlayed: req.setsPlayed ?? null, rounds: req.rounds ?? null, intensity: null,
-                rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: req.notes ?? null,
-              }
-              return { sessions: [logged, ...(prev?.sessions ?? [])], week: prev?.week ?? null }
-            },
-          )
-          awardGamificationEvent(qc, { type: 'SPORT' })
-          // Only levelUp is read downstream; provide the required fields + the
-          // captured effort, omitting the optional nullables.
-          return {
-            id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball', date: iso, time: hhmm,
-            duration: req.duration, rpe: req.rpe, setsPlayed: req.setsPlayed, shoulderStrain: req.shoulderStrain,
-            rounds: req.rounds, levelUp: sportLevelUpMock,
-          } as SportSessionResponse
-        }
-      : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),
-    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }); invalidateProgression() },
-  })
   const sportScheduleMutation = useMutation({
     mutationFn: mock
       ? async (_slots: SportScheduleSlotInput[]) => undefined
@@ -850,11 +876,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
         { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }),
     [finishMutation],
   )
-  const logSportSession = useCallback(
-    (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) =>
-      logSportMutation.mutate(req, { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }),
-    [logSportMutation],
-  )
+  const logSportSession = useLogSportSession(mock, qc)
   const saveSportSchedule = useCallback(
     (slots: SportScheduleSlotInput[], opts?: MutateOpts) => sportScheduleMutation.mutate(slots, opts),
     [sportScheduleMutation],
@@ -986,4 +1008,35 @@ export function useOpenWorkout(): {
     title: open ? data?.title ?? null : null,
     doneSets: open ? open.sets.filter((s) => !s.skipped).length : 0,
   }
+}
+
+/**
+ * Lightweight any-route read of today's sport sessions plus the `logSportSession` mutation —
+ * the QuickInputSheet's data source (mezo-7lst, whole-branch-review finding 1). `useTrain()`
+ * mounted the FAB's whole 8-query fan-out for a subline and one mutation, on the app's most-
+ * opened surface; this shares `useTrain`'s param-less `['train','sportSessions']` key (so on
+ * Train/Sport routes it dedupes against the already-warm cache and adds zero network) and the
+ * SAME `logSportSession` mutation via `useLogSportSession` (zero duplicated invalidation
+ * logic — the mockClose/mockUpdateMusclePriorities trap this file already documents), instead
+ * of dragging in the other seven queries `useTrain` also mounts. Mirrors `useOpenWorkout`'s
+ * established narrow-hook pattern one field over.
+ */
+export function useQuickLogSport(): {
+  sessions: SportSession[]
+  logSportSession: (
+    req: SportSessionCreateRequest,
+    opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void },
+  ) => void
+} {
+  const mock = isMockMode()
+  const qc = useQueryClient()
+  const { data: sportData } = useQuery({
+    queryKey: ['train', 'sportSessions'],
+    queryFn: mock
+      ? async () => ({ sessions: sport.sessions, week: sport.week })
+      : () => trainApi.sportSessions().then((rs) => ({ sessions: rs.map(toSportSession), week: deriveSportWeek(rs) })),
+    initialData: mock ? { sessions: sport.sessions, week: sport.week } : undefined,
+  })
+  const logSportSession = useLogSportSession(mock, qc)
+  return { sessions: sportData?.sessions ?? [], logSportSession }
 }

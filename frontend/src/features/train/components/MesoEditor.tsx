@@ -28,7 +28,7 @@ import { WeeklyBandsCard } from '@/features/train/components/WeeklyBandsCard'
 import { budgetGroup, countsForVolume, daySessionBreakdown, leastLoadedDayFor, sessionCapWarnings } from '@/features/train/logic/setBudget'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { peakWeekFit } from '@/features/train/logic/peakWeekFit'
-import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
+import { estimateSessionMinutes, type SessionTimingProfile } from '@/features/train/logic/sessionLength'
 import { structureLint } from '@/features/train/logic/structureLint'
 import { suggestedWarmupSets } from '@/features/train/logic/warmupSuggest'
 import { weeklyBands } from '@/features/train/logic/weeklyBands'
@@ -57,10 +57,21 @@ interface MesoEditorProps {
   /** Explicit per-mesocycle landmark override (AD5) — wins over the static GROUP_LANDMARKS
    *  default in weeklyBands and peakWeekFit. */
   volumePerMuscle?: Record<string, { mev: number; mav: number; mrv: number }> | null
+  /** Calibrated pacing (Task 12, mezo-dzbm; GET /api/train/timing-profile via useTimingProfile
+   *  in the CALLING PAGE — this presentational component never fetches its own data, per
+   *  frontend_conventions.md §"components are presentational"). Only feeds `dayMinutes` below —
+   *  structureLint/peakWeekFit stay on the static estimate (see sessionLength.ts header). */
+  timingProfile?: SessionTimingProfile | null
+  /** True while the profile fetch is unresolved (real mode, first load/navigation within a
+   *  mount). While true, `dayMinutes` is held at 0 rather than falling back to the static
+   *  estimate — otherwise the hero would show the static number and then swap to the
+   *  calibrated one the instant the fetch lands. */
+  timingProfilePending?: boolean
 }
 
 export function MesoEditor({
   days, weekDays, onAddClick, onRemove, onChange, onReorder, onRenameDay, priorities, volumePerMuscle,
+  timingProfile, timingProfilePending,
 }: MesoEditorProps) {
   const week = weekDays ?? days
   const [activeDay, setActiveDay] = useState<string | null>(
@@ -130,7 +141,9 @@ export function MesoEditor({
 
   const off = isOffDay(day)
   const daySets = day.exercises.reduce((a, e) => a + e.workingSets, 0)
-  const dayMinutes = estimateSessionMinutes(day.exercises)
+  // Held at 0 (the hero's existing "no minutes" treatment) while the profile fetch is
+  // pending — never the static fallback, which would render then swap under the user.
+  const dayMinutes = timingProfilePending ? 0 : estimateSessionMinutes(day.exercises, timingProfile ?? undefined)
   const weekSets = week.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
   const trainingDays = week.filter((d) => d.exercises.length > 0).length
   const showRename = Boolean(onRenameDay) && day.muscle === 'custom'

@@ -13,9 +13,12 @@ import java.util.UUID;
  *
  * <p>The component order IS the {@code select new} order in
  * {@link LlmLogRepository#findCalls} — changing one without the other is a runtime failure.
+ *
+ * <p>{@code createdBy} (mezo-qw37.3) — the calling account, null for background rows.
  */
 public record LlmCallRow(
     UUID id,
+    UUID createdBy,
     Instant createdAt,
     String feature,
     String operation,

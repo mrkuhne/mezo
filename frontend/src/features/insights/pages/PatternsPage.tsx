@@ -16,6 +16,7 @@
 // batch-clearing "Mind" chip, `?pair=` redirect.
 // ============================================================
 import { useState, type ReactNode } from 'react'
+import { Icon } from '@/shared/ui/Icon'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { ClayIcon, ClaySpot, type ClayIconName } from '@/shared/ui/clay'
@@ -67,10 +68,11 @@ const LCEL_META: Record<LifecycleBucket, { label: string; skin: string }> = {
 }
 
 /** A döntés zsálya-nyugtázása (prototípus decdone) — a mutáció maga a régi `decide`. */
-const ACK: Record<PatternStatus, string> = {
+const ACK: Record<PatternStatus, ReactNode> = {
+  // Ld. MezoHubPage DECIDED_MSG — a ✓ a ház pipa-idiómája, ezért glifa marad (mezo-hq44).
   confirm: '✓ Beépítettem a tudásba — mostantól számolok vele.',
-  monitor: '👁 Rendben, figyeljük tovább — szólok, ha erősödik.',
-  reject: '✕ Elvetve — nem hozom fel újra.',
+  monitor: <><Icon name="eye" size={14} /> Rendben, figyeljük tovább — szólok, ha erősödik.</>,
+  reject: <><Icon name="x" size={14} /> Elvetve — nem hozom fel újra.</>,
 }
 
 /** HUMÁN bizonyosság-chip a csempén (confidenceMeta szavai) — nyers r/p soha. */
@@ -123,11 +125,11 @@ function PatternTile({ entry, skin, chip, sb, barPct, delayMs }: {
 
 /** Szekció-fejléc (prototípus .lsec): eyebrow + jobbra igazított darabszám. */
 function Lsec({ title, ink, count, countTestId, delayMs }: {
-  title: string; ink: string; count?: ReactNode; countTestId?: string; delayMs: number
+  title: ReactNode; ink: string; count?: ReactNode; countTestId?: string; delayMs: number
 }) {
   return (
     <div className="mnt-lsec rise" style={{ '--d': `${delayMs}ms` } as React.CSSProperties}>
-      <span className="mz-eyebrow" style={{ color: ink }}>{title}</span>
+      <span className="mz-eyebrow mz-ebic" style={{ color: ink }}>{title}</span>
       {count !== undefined && <span className="mnt-cnt" data-testid={countTestId}>{count}</span>}
     </div>
   )
@@ -178,7 +180,7 @@ export function PatternsPage() {
   const [activeDomains, setActiveDomains] = useState<Set<MetricDomain>>(new Set())
   // Zsálya-nyugtázások (prototípus decdone) — a döntés a régi mutáción megy, a kártya helyén
   // a nyugtázó sor marad, miközben az adat a kosarak közt költözik.
-  const [acks, setAcks] = useState<{ key: string; msg: string }[]>([])
+  const [acks, setAcks] = useState<{ key: string; msg: ReactNode }[]>([])
 
   // A kosarak pure számolása a hook-szabály miatt ÁLL az early returnök előtt (useCountUp).
   const buckets = bucketize(patterns, monitor)
@@ -323,12 +325,12 @@ export function PatternsPage() {
       {acks.map((a) => (
         <div key={a.key} className="mnt-decdone rise">
           <ClaySpot name="s-orb-unnepel" size={26} />
-          <span>{a.msg}</span>
+          <span className="mz-icin">{a.msg}</span>
         </div>
       ))}
       {decideVisible.length > 0 && (
         <>
-          <Lsec title={`🔔 Döntésre vár · ${decideVisible.length}`} ink="var(--mz-cell-amber-ink)"
+          <Lsec title={<><Icon name="bell" size={12} /> Döntésre vár · {decideVisible.length}</>} ink="var(--mz-cell-amber-ink)"
             count="csak erős jel" delayMs={80} />
           {decideVisible.map((entry, i) => (
             <div key={entry.key} className="mnt-decwrap rise" style={{ '--d': `${110 + i * 40}ms` } as React.CSSProperties}>
@@ -368,7 +370,7 @@ export function PatternsPage() {
       {/* ── Megfigyelés alatt: levendula-csempék animált bizonyíték-sávval ── */}
       {monitoringVisible.length > 0 && (
         <>
-          <Lsec title="👁 Megfigyelés alatt" ink="var(--mz-cell-lav-ink)" count={monitoringVisible.length} delayMs={220} />
+          <Lsec title={<><Icon name="eye" size={12} /> Megfigyelés alatt</>} ink="var(--mz-cell-lav-ink)" count={monitoringVisible.length} delayMs={220} />
           <div className="mnt-mosaic">
             {monitoringVisible.map((entry, i) => (
               <PatternTile
@@ -430,7 +432,7 @@ export function PatternsPage() {
       {/* ── Elvetve ── */}
       {rejectedVisible.length > 0 && (
         <>
-          <Lsec title="✕ Elvetve" ink="var(--mz-ink-mut)" count={rejectedVisible.length} delayMs={440} />
+          <Lsec title={<><Icon name="x" size={12} /> Elvetve</>} ink="var(--mz-ink-mut)" count={rejectedVisible.length} delayMs={440} />
           <div className="mnt-mosaic">
             {rejectedVisible.map((entry, i) => (
               <PatternTile key={entry.key} entry={entry} skin="mute"

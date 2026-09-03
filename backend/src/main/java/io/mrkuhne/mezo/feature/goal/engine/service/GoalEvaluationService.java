@@ -63,9 +63,6 @@ public class GoalEvaluationService {
 
     private static final String BASIS_FORMULA = "formula";
 
-    /** Default sleep target (h/night). The Sleep-domain bridge (spec §5.4) is future; this is a seed. */
-    private static final BigDecimal DEFAULT_SLEEP_TARGET_H = new BigDecimal("8.0");
-
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     private final GoalEngineProperties props;
@@ -80,6 +77,8 @@ public class GoalEvaluationService {
      * @param segments     the projection segments (Task 6) — the per-segment kcal/rate spine
      * @param guards       the soft-guard status (Task 7)
      * @param prefs        the resolved diet preferences (Task 4) — split preset + protein tier
+     * @param sleepTargetH the nightly sleep target (h), port-resolved from the user's sleep goal
+     *                     (mezo-3g5w) — never null by contract, but a {@code null} caller falls back to 8.0
      * @return the assembled {@link GoalPrescriptionJson}; {@code basis="formula"}, {@code generatedAt=now}
      */
     public GoalPrescriptionJson assemble(
@@ -88,10 +87,12 @@ public class GoalEvaluationService {
         BigDecimal bodyFatPct,
         List<ProjectionSegment> segments,
         GuardStatus guards,
-        DietPreferences prefs) {
+        DietPreferences prefs,
+        BigDecimal sleepTargetH) {
 
         Feasibility feasibility = grade(goal, segments, guards);
         int proteinG = proteinTargetGrams(weightKg, bodyFatPct, prefs.proteinTier());
+        BigDecimal sleep = sleepTargetH == null ? new BigDecimal("8.0") : sleepTargetH;
 
         List<Segment> rxSegments = new ArrayList<>(segments.size());
         for (ProjectionSegment seg : segments) {
@@ -106,10 +107,12 @@ public class GoalEvaluationService {
                 proteinG,
                 carbsG,
                 fatG,
-                DEFAULT_SLEEP_TARGET_H,
+                sleep,
                 List.of(), // rest-day placement is a future Train bridge (no deload weeks derivable here).
                 seg.projectedRateKgPerWk(),
                 seg.dailyEnergyBalanceKcal(),
+                seg.trainingDayKcal(),
+                seg.restDayKcal(),
                 seg.rationale()));
         }
 

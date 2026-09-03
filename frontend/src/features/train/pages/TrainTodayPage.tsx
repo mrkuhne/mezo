@@ -12,7 +12,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useQueryClient } from '@tanstack/react-query'
-import { useTrain, useRunning, useWeekWorkouts, useSleepGoal } from '@/data/hooks'
+import { useTrain, useRunning, useWeekWorkouts, useSleepGoal, useTimingProfile } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { MorningTrainingCard } from '@/features/train/components/MorningTrainingCard'
 import {
@@ -62,6 +62,9 @@ export function TrainTodayPage() {
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
   const [customOpen, setCustomOpen] = useState(false)
   const { goal: sleepGoal } = useSleepGoal()
+  // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
+  // structureLint/peakWeekFit/programFit/prepBriefing deliberately stay on the static estimate.
+  const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
   const qc = useQueryClient()
   // Morning-training reschedule (mezo-67rb): wake-anchored window over the raw gym slots.
   const mtrWindow = morningWindow(sleepGoal.wakeTime)
@@ -316,7 +319,12 @@ export function TrainTodayPage() {
             // else the fresh start CTA. `completedTodayWorkout`/`todaySession` are real-
             // mode only (both null in mock → Indítsuk, byte-identical to Phase 1).
             const gymInProgress = Boolean(todaySession?.openWorkout && !completedTodayWorkout)
-            const workoutMinutes = estimateSessionMinutes(workout.exercises)
+            // Held at 0 (the chip's existing "no minutes" treatment, `workoutMinutes > 0 &&`
+            // below) while the profile fetch is pending — never the static fallback, which
+            // would render then swap to the calibrated number the instant the fetch lands.
+            const workoutMinutes = timingProfilePending
+              ? 0
+              : estimateSessionMinutes(workout.exercises, timingProfile ?? undefined)
             return (
               <section key="hero-gym" className="trainhero np-anim">
                 <div className="trainhero-over">

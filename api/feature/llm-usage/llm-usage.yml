@@ -2,7 +2,7 @@ openapi: 3.0.3
 info: { title: mezo llm-usage fragment, version: 1.0.0 }
 tags:
   - name: LlmUsage
-    description: Read-only rollups of the llm_log_history audit table (mezo-2zyu) — LLM call count + cost per calendar period
+    description: Read-only rollups of the llm_log_history audit table (mezo-2zyu) — LLM call count + cost per calendar period — every operation OWNER-only since mezo-qw37.3 (403 AUTH_FORBIDDEN)
 paths:
   /api/llm-usage/summary:
     get:
@@ -15,6 +15,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/LlmUsageSummaryResponse' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/llm-usage/breakdown:
     get:
       tags: [LlmUsage]
@@ -34,6 +39,11 @@ paths:
               schema: { $ref: '#/components/schemas/LlmUsageBreakdownResponse' }
         '400':
           description: Unknown period
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
@@ -60,6 +70,11 @@ paths:
           in: query
           required: false
           schema: { type: string, pattern: '^(CHAT|CHAT_STREAM|VISION|SMART|TOOL|TRANSCRIBE|EMBED_DOC|EMBED_QUERY)$' }
+        - name: userId
+          in: query
+          required: false
+          description: only calls made by this account (created_by); background rows (null owner) never match
+          schema: { type: string, format: uuid }
         - name: limit
           in: query
           required: false
@@ -73,6 +88,11 @@ paths:
               schema: { $ref: '#/components/schemas/LlmCallListResponse' }
         '400':
           description: Unknown period, status or call kind
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
@@ -92,6 +112,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/LlmCallDetailResponse' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '404':
           description: No such call
           content:
@@ -115,7 +140,7 @@ components:
         currency: { type: string, example: USD }
     LlmUsageBreakdownResponse:
       type: object
-      required: [from, totals, features, models]
+      required: [from, totals, features, models, byUser]
       properties:
         from: { type: string, format: date, description: "first day of the period in the report zone" }
         totals: { $ref: '#/components/schemas/LlmUsageTotals' }
@@ -127,6 +152,10 @@ components:
           type: array
           description: "one entry per SERVED model; key is null for calls that never reached one"
           items: { $ref: '#/components/schemas/LlmUsageGroup' }
+        byUser:
+          type: array
+          description: "one entry per calling account, cost-descending (unpriced last); the null-user entry is the background (cron/stream) traffic"
+          items: { $ref: '#/components/schemas/LlmUsageUserGroup' }
     LlmUsageTotals:
       type: object
       required: [callCount, successCount, errorCount, cancelledCount, unpricedCount, currency]
@@ -145,6 +174,15 @@ components:
         key: { type: string, nullable: true, description: "feature slug or served model id; null = unknown" }
         callCount: { type: integer, format: int64 }
         costUsd: { type: number, format: double, nullable: true }
+    LlmUsageUserGroup:
+      type: object
+      required: [callCount, totalTokens]
+      properties:
+        userId: { type: string, format: uuid, nullable: true, description: "null = background traffic with no principal" }
+        name: { type: string, nullable: true, description: "app_user.name; null for background traffic or a deleted account" }
+        callCount: { type: integer, format: int64 }
+        totalTokens: { type: integer, format: int64, description: "sum of total_tokens over the rows that reported it" }
+        costUsd: { type: number, format: double, nullable: true }
     LlmCallListResponse:
       type: object
       required: [items, hasMore]
@@ -159,6 +197,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         createdAt: { type: string, format: date-time }
+        createdBy: { type: string, format: uuid, nullable: true, description: "null for background (cron/stream) calls" }
         feature: { type: string }
         operation: { type: string, nullable: true }
         callKind:

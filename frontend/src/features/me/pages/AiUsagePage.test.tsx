@@ -80,6 +80,15 @@ describe('AiUsagePage (mock mode)', () => {
       screen.getByText('~ becslés — a modellárak tájékoztató jellegűek · Befagyasztott ártábla hívásonként.'),
     ).toBeInTheDocument()
   })
+
+  it('offers a per-user chip row from byUser and narrows the list on tap (mezo-qw37.3)', async () => {
+    renderPage()
+    const before = screen.getAllByRole('link').length
+    fireEvent.click(screen.getByRole('button', { name: 'Anna 70' }))
+    await waitFor(() => expect(screen.getAllByRole('link').length).toBeLessThan(before))
+    fireEvent.click(screen.getByRole('button', { name: 'Mindenki' }))
+    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(before))
+  })
 })
 
 describe('AiUsagePage (real mode)', () => {
@@ -92,7 +101,7 @@ describe('AiUsagePage (real mode)', () => {
         HttpResponse.json({
           from: '2026-08-14',
           totals: { callCount: 60, successCount: 60, errorCount: 0, cancelledCount: 0, unpricedCount: 0, costUsd: 1, currency: 'USD' },
-          features: [], models: [],
+          features: [], models: [], byUser: [],
         }),
       ),
       http.get(`${API_BASE}/api/llm-usage/calls`, ({ request }) => {

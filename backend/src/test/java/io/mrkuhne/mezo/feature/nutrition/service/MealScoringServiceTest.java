@@ -581,6 +581,53 @@ class MealScoringServiceTest {
             .orElseThrow(() -> new AssertionError("no dimension with id " + id));
     }
 
+    @Test
+    void testScoreMeal_shouldUseProvidedDailyTargets_whenBaseGiven() {
+        // A cutting-goal day: 2400 kcal, 180/240/70 g. The same lunch must be judged
+        // against THESE shares, not the static 3100/220/380/95 config.
+        DailyTargets base = new DailyTargets(2400, 180, 240, 70, "goal");
+
+        MealBreakdownJson withGoal =
+            service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0), MealRole.STANDARD, base);
+        MealBreakdownJson withConfig =
+            service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0), MealRole.STANDARD);
+
+        MealBreakdownJson.Dimension goalMacro = withGoal.dimensions().get(0);
+        MealBreakdownJson.Dimension configMacro = withConfig.dimensions().get(0);
+        assertThat(goalMacro.id()).isEqualTo("macro");
+        // The target shares differ (config P share ≈ 26%, goal P share ≈ 29%) → different score.
+        assertThat(goalMacro.score()).isNotEqualTo(configMacro.score());
+        // kcalShareOfDay uses the goal kcal: (800+285)/2400 ≈ 45.2%, not (…)/3100 ≈ 35.0%.
+        assertThat(goalMacro.macro().kcalShareOfDay()).isEqualByComparingTo(new BigDecimal("45.2"));
+    }
+
+    @Test
+    void testScoreMeal_shouldMatchConfigOverload_whenBaseIsFromConfig() {
+        // The delegating overload and an explicit config-derived base are byte-identical.
+        MealBreakdownJson explicit = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0),
+            MealRole.STANDARD, DailyTargets.fromConfig(targets));
+        MealBreakdownJson implicit = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0));
+
+        assertThat(explicit).isEqualTo(implicit);
+    }
+
+    @Test
+    void testScoreMeal_shouldKeepRoleRubric_whenPrePostWithGoalBase() {
+        // PRE/POST rubrics are role-absolute config bundles — a goal base must NOT change the
+        // macro targets they judge against, only the day-share denominators (kcalShare, slot kcal).
+        DailyTargets base = new DailyTargets(2400, 180, 240, 70, "goal");
+        List<WorkoutWindow> windows = List.of(
+            new WorkoutWindow(LocalTime.of(15, 0), LocalTime.of(16, 0), false));
+        MealRole role = MealScoringService.classifyRole(LocalTime.of(14, 0), windows, 120, 90);
+        assertThat(role).isEqualTo(MealRole.PRE_WORKOUT);
+
+        MealBreakdownJson b =
+            service.scoreMeal("snack", lunchLines(), LocalTime.of(14, 0), role, base);
+        // The pre-workout macro target label comes from the role rubric (150/550/60), whose
+        // protein share is 150·4 / (150·4+550·4+60·9) ≈ 18%.
+        assertThat(b.dimensions().get(0).macro().targetP()).isEqualTo("~18%");
+    }
+
     private static BigDecimal bd(double v) {
         return BigDecimal.valueOf(v);
     }

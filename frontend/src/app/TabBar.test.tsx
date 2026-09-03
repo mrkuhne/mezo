@@ -4,10 +4,15 @@ import { MemoryRouter } from 'react-router-dom'
 import { TabBar } from '@/app/TabBar'
 import { QuickLogFab } from '@/app/QuickLogFab'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 
 function renderAt(path: string, ui: React.ReactNode) {
   return render(
-    <QueryWrapper><MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter></QueryWrapper>,
+    <QueryWrapper>
+      <LevelUpProvider>
+        <MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>
+      </LevelUpProvider>
+    </QueryWrapper>,
   )
 }
 

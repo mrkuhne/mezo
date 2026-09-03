@@ -4,14 +4,11 @@ import io.mrkuhne.mezo.api.dto.DietSettingsResponse;
 import io.mrkuhne.mezo.api.dto.SetDietSettingsRequest;
 import io.mrkuhne.mezo.feature.goal.engine.service.DietPreferences;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
-import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
-import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.nutrition.entity.DietSettingsEntity;
 import io.mrkuhne.mezo.feature.nutrition.repository.DietSettingsRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -29,13 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = FeaturesConfiguration.DIET_SETTINGS_SWITCH, havingValue = "true")
 public class DietSettingsService {
 
-    private static final String STATUS_ACTIVE = "active";
     private static final String PRESET_CUSTOM = "custom";
     private static final int PCT_X10_TOTAL = 1000;
 
     private final DietSettingsRepository repository;
     private final DietPreferencesResolver resolver;
-    private final GoalRepository goalRepository;
     private final GoalEngineService goalEngineService;
 
     /** Config-default ghost when unset — never 404: the split always resolves. */
@@ -60,10 +55,11 @@ public class DietSettingsService {
         row.setProteinTier(req.getProteinTier().getValue());
         row.setWaterMl(req.getWaterMl());
         row.setFiberG(req.getFiberG());
+        row.setDayTypeShiftKcal(req.getDayTypeShiftKcal());
         repository.save(row);
         // The split moved (Diet Plan slice 1 — the 7th recompute trigger): re-prescribe the owner's
         // ACTIVE goal so segments carry the new carbsG/fatG. No active goal → skip gracefully.
-        recomputeActiveGoal(userId);
+        goalEngineService.recomputeActiveGoal(userId);
         return compose(resolver.resolve(userId));
     }
 
@@ -81,16 +77,6 @@ public class DietSettingsService {
         }
     }
 
-    /** Recompute the owner's single active goal (if any) — the WeightLogService idiom. */
-    private void recomputeActiveGoal(UUID userId) {
-        List<GoalEntity> active =
-            goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE);
-        if (active.isEmpty()) {
-            return;
-        }
-        goalEngineService.evaluate(userId, active.get(0).getId());
-    }
-
     private static DietSettingsResponse compose(DietPreferences p) {
         return DietSettingsResponse.builder()
             .splitPreset(DietSettingsResponse.SplitPresetEnum.fromValue(p.splitPreset()))
@@ -100,6 +86,7 @@ public class DietSettingsService {
             .proteinTier(DietSettingsResponse.ProteinTierEnum.fromValue(p.proteinTier()))
             .waterMl(p.waterMl())
             .fiberG(p.fiberG())
+            .dayTypeShiftKcal(p.dayTypeShiftKcal())
             .build();
     }
 }

@@ -14,7 +14,7 @@
 // not saved anywhere yet; this one edits a persisted run.
 // ============================================================
 import { useParams } from 'react-router-dom'
-import { useTrain } from '@/data/hooks'
+import { useTrain, useTimingProfile } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton } from '@/shared/ui/Skeleton'
@@ -44,6 +44,10 @@ export function MesoDayPage() {
   const { id, day: dayParam } = useParams<{ id: string; day: string }>()
   const goBack = useBackNav(`/train/mesocycles/${id}`)
   const { mesocycles, workoutPending } = useTrain()
+  // Calibrated pacing (Task 12, mezo-dzbm) for MesoExercises' MesoEditor hero — fetched here
+  // (before either early return below, since hooks must run unconditionally) and threaded
+  // down as a prop: components/ stay presentational, pages/ own data fetching.
+  const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
 
   const meso = mesocycles.find((m) => m.id === id)
   const day = meso?.days?.find((d) => d.day === dayParam)
@@ -86,7 +90,12 @@ export function MesoDayPage() {
               </StatStrip>
             </div>
           )}
-          <MesoExercises meso={meso} day={day.day} />
+          <MesoExercises
+            meso={meso}
+            day={day.day}
+            timingProfile={timingProfile}
+            timingProfilePending={timingProfilePending}
+          />
         </PageBody>
       </EntranceGroup>
     </MozaikPage>

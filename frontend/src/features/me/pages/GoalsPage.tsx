@@ -48,7 +48,7 @@ export function GoalsPage() {
   // sets up the profile first, then continues. Shared by both entry points (the
   // empty-state CTA + the header chip) so the rule lives in one place.
   const startNewGoal = () => {
-    if (biometricComplete) navigate('/me/goals/new')
+    if (biometricComplete) navigate('/me/goals/weight/new')
     else setGateOpen(true)
   }
 
@@ -83,7 +83,7 @@ export function GoalsPage() {
           />
         </PageBody>
         {gateOpen && (
-          <GoalGate onClose={() => setGateOpen(false)} onComplete={() => navigate('/me/goals/new')} />
+          <GoalGate onClose={() => setGateOpen(false)} onComplete={() => navigate('/me/goals/weight/new')} />
         )}
       </MozaikPage>
     )
@@ -204,7 +204,7 @@ export function GoalsPage() {
       )}
 
       {gateOpen && (
-        <GoalGate onClose={() => setGateOpen(false)} onComplete={() => navigate('/me/goals/new')} />
+        <GoalGate onClose={() => setGateOpen(false)} onComplete={() => navigate('/me/goals/weight/new')} />
       )}
     </MozaikPage>
   )

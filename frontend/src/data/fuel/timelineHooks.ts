@@ -53,7 +53,10 @@ export { deriveBlocks }
 function currentSegment(
   goalResponse: GoalResponse | null,
   timeline: GoalTimelineResponse | null,
-): { kcal: number; proteinG: number; carbsG?: number | null; fatG?: number | null; dailyEnergyBalanceKcal: number } | null {
+): {
+  kcal: number; proteinG: number; carbsG?: number | null; fatG?: number | null; dailyEnergyBalanceKcal: number
+  trainingDayKcal?: number | null; restDayKcal?: number | null
+} | null {
   const segments = goalResponse?.prescription?.segments
   if (!segments?.length) return null
   const totalWeeks = timeline?.weeks ?? segments[segments.length - 1].toWeek
@@ -105,7 +108,7 @@ export function useFuelTimeline(date: string = localDateString()) {
     neat: goalResponse?.tdeeBootstrap?.neat ?? null,
     weightKg,
     blocks,
-  })
+  }, dayType !== 'rest')
 
   // Protocol slots (mezo-vx9v Task 9): the living protocol's occurrences (Task 5), projected
   // into zoned/timed slots by the same pure `projectStackDay` the Stack page uses (Task 6/8) —

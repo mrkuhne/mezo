@@ -46,14 +46,14 @@ class DietSettingsApiIT extends ApiIntegrationTest {
             SetDietSettingsRequest.builder()
                 .splitPreset(SetDietSettingsRequest.SplitPresetEnum.LOW_CARB)
                 .proteinTier(SetDietSettingsRequest.ProteinTierEnum.HIGH)
-                .waterMl(3500).fiberG(35).build(),
+                .waterMl(3500).fiberG(35).dayTypeShiftKcal(0).build(),
             auth, HttpStatus.OK, DietSettingsResponse.class);
         DietSettingsResponse second = putForBody("/api/diet/settings",
             SetDietSettingsRequest.builder()
                 .splitPreset(SetDietSettingsRequest.SplitPresetEnum.CUSTOM)
                 .proteinPctX10(300).carbsPctX10(400).fatPctX10(300)
                 .proteinTier(SetDietSettingsRequest.ProteinTierEnum.MODERATE)
-                .waterMl(4000).fiberG(30).build(),
+                .waterMl(4000).fiberG(30).dayTypeShiftKcal(0).build(),
             auth, HttpStatus.OK, DietSettingsResponse.class);
 
         assertThat(second.getSplitPreset()).isEqualTo(DietSettingsResponse.SplitPresetEnum.CUSTOM);
@@ -70,7 +70,7 @@ class DietSettingsApiIT extends ApiIntegrationTest {
             .splitPreset(SetDietSettingsRequest.SplitPresetEnum.CUSTOM)
             .proteinPctX10(300).carbsPctX10(300).fatPctX10(300) // 900 ≠ 1000
             .proteinTier(SetDietSettingsRequest.ProteinTierEnum.MODERATE)
-            .waterMl(4000).fiberG(30).build();
+            .waterMl(4000).fiberG(30).dayTypeShiftKcal(0).build();
 
         putForBody("/api/diet/settings", bad, ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
     }
@@ -94,7 +94,7 @@ class DietSettingsApiIT extends ApiIntegrationTest {
             SetDietSettingsRequest.builder()
                 .splitPreset(SetDietSettingsRequest.SplitPresetEnum.LOW_CARB)
                 .proteinTier(SetDietSettingsRequest.ProteinTierEnum.MODERATE)
-                .waterMl(4000).fiberG(30).build(),
+                .waterMl(4000).fiberG(30).dayTypeShiftKcal(0).build(),
             auth, HttpStatus.OK, DietSettingsResponse.class);
 
         // Assert: the active goal's prescription segments now carry fatG ≈ 0.40×kcal/9 (>= floor).

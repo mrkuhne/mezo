@@ -4,8 +4,11 @@ import { initialChat, cannedReply } from '@/data/insights/chat'
 import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge'
 import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
+import { ADMIN_INVITES_MOCK, ADMIN_USERS_MOCK } from '@/data/admin/adminMock'
 import { addDays } from '@/shared/lib/dates'
 import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
+import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose } from '@/data/lifegoal/lifegoalMock'
+import type { LifeGoalProposeRequest } from '@/data/lifegoal/lifegoalApi'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -181,6 +184,29 @@ export function resetTutorialProgressState(): void {
   tutorialProgressState = {}
 }
 
+// ── Life-goal write helpers (mezo-iizd.1) ────────────────────────────────────────────────
+// The five write endpoints all answer with a full LifeGoalResponse built off the seeded goal,
+// so a real-mode test of a write path asserts against the SAME shape the backend echoes
+// (LifeGoalService.create/update + LifeGoalPillarService.replace) instead of escaping to the
+// network under setup.ts's `onUnhandledRequest: 'bypass'`.
+const MSW_NOW = '2026-09-01T08:00:00Z'
+
+/** Resolve a seeded goal by id — the handlers 404 on an unknown id, as the backend does. */
+function findLifeGoal(id: string) {
+  return MOCK_LIFE_GOALS.find((g) => g.id === id) ?? null
+}
+
+/** Fill in the server-assigned pillar ids/positions the backend stamps on every write. */
+function lifeGoalEcho(g: Record<string, unknown>) {
+  const pillars = (g.pillars as Record<string, unknown>[] | undefined) ?? []
+  return {
+    ...g,
+    frame: g.frame ?? 'unset',
+    ifThenPlans: g.ifThenPlans ?? [],
+    pillars: pillars.map((p, i) => ({ ...p, id: (p.id as string) ?? `lg-p-${i}`, position: i, weight: p.weight ?? 1, active: p.active ?? true })),
+  }
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
   http.post(`${API_BASE}/api/auth/register`, () => HttpResponse.json({ token: 'test-token' })),
@@ -237,6 +263,17 @@ export const handlers = [
       month: { callCount: 240, costUsd: 0.95, currency: 'USD' },
     }),
   ),
+  // Beta admin (mezo-qw37.3) — populated defaults mirroring the mock seed; tests override with
+  // server.use() to capture payloads. The 403 USER path is a backend concern (AdminInviteIT).
+  http.get(`${API_BASE}/api/admin/invites`, () => HttpResponse.json(ADMIN_INVITES_MOCK)),
+  http.post(`${API_BASE}/api/admin/invites`, async ({ request }) => {
+    const body = (await request.json()) as { label: string | null }
+    return HttpResponse.json({ ...ADMIN_INVITES_MOCK[0], id: 'msw-invite', code: 'MEZO-MSWX-TEST', label: body.label })
+  }),
+  http.delete(`${API_BASE}/api/admin/invites/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.get(`${API_BASE}/api/admin/users`, () => HttpResponse.json(ADMIN_USERS_MOCK)),
+  http.post(`${API_BASE}/api/admin/users/:id/reset-password`, () => HttpResponse.json({ temporaryPassword: 'MswTempPw2026' })),
+  http.post(`${API_BASE}/api/admin/users/:id/status`, () => new HttpResponse(null, { status: 204 })),
   // Gamification profile (mezo-huzd) — populated default (never a 404 in the contract;
   // the backend answers ghost-shaped zeros before any activity, not an HTTP error).
   // Tests override with server.use() for specific field-mapping/mutation assertions.
@@ -1035,6 +1072,19 @@ export const handlers = [
       ],
     }),
   ),
+  // Timing profile default (Task 12, mezo-dzbm) — the static config seeds, all `samples: 0`,
+  // matching `timingProfileMock` (train.ts) so mock and unmocked-real-mode tests agree.
+  // Every field is ALWAYS present on this endpoint (no cold-start branch); tests exercising a
+  // specific calibrated value override this with server.use().
+  http.get(`${API_BASE}/api/train/timing-profile`, () =>
+    HttpResponse.json({
+      leadInSeconds: 480,
+      setCycleCompoundSeconds: 180,
+      setCycleIsolationSeconds: 125,
+      transitionSeconds: 240,
+      samples: { leadIn: 0, setCycleCompound: 0, setCycleIsolation: 0, transition: 0 },
+    }),
+  ),
   http.post(`${API_BASE}/api/train/sport-sessions`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json(
@@ -1535,5 +1585,52 @@ export const handlers = [
   http.get(`${API_BASE}/api/character/run/:id`, ({ params }) => {
     const detail = MOCK_RUN_DETAIL[params.id as string]
     return detail != null ? HttpResponse.json(detail) : new HttpResponse(null, { status: 404 })
+  }),
+
+  // Life goals (mezo-iizd.1) — default fixtures mirroring the mock seed so real-mode component
+  // tests that render these hooks without a per-test server.use() get the same four goals.
+  http.get(`${API_BASE}/api/life-goals`, () => HttpResponse.json(MOCK_LIFE_GOALS)),
+  // NOTE: the static `signals` / `propose` paths MUST stay ahead of the `:id` handlers below —
+  // MSW resolves in registration order and `/signals` also matches `/api/life-goals/:id`.
+  http.get(`${API_BASE}/api/life-goals/signals`, () => HttpResponse.json({ entries: MOCK_SIGNAL_CATALOG })),
+  http.post(`${API_BASE}/api/life-goals/propose`, async ({ request }) =>
+    HttpResponse.json(mockPropose((await request.json()) as LifeGoalProposeRequest))),
+  // The create handler ECHOES the submitted frame/pillars/ifThenPlans (assigning ids/positions)
+  // exactly as LifeGoalService.create does — it used to hard-override all three to empty after
+  // spreading the body, so a real-mode wizard test saw a goal the backend would never return.
+  http.post(`${API_BASE}/api/life-goals`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json(lifeGoalEcho({ ...body, id: 'lg-new', status: 'draft' }), { status: 201 })
+  }),
+  http.get(`${API_BASE}/api/life-goals/:id`, ({ params }) => {
+    const g = findLifeGoal(params.id as string)
+    return g != null ? HttpResponse.json(g) : new HttpResponse(null, { status: 404 })
+  }),
+  http.put(`${API_BASE}/api/life-goals/:id`, async ({ params, request }) => {
+    const g = findLifeGoal(params.id as string)
+    if (g == null) return new HttpResponse(null, { status: 404 })
+    const body = (await request.json()) as Record<string, unknown>
+    // PUT /{id} does NOT touch status or pillars (their own endpoints own them) — LifeGoalService.update.
+    return HttpResponse.json(lifeGoalEcho({ ...g, ...body, status: g.status, pillars: g.pillars }))
+  }),
+  http.put(`${API_BASE}/api/life-goals/:id/pillars`, async ({ params, request }) => {
+    const g = findLifeGoal(params.id as string)
+    if (g == null) return new HttpResponse(null, { status: 404 })
+    const body = (await request.json()) as { pillars?: unknown[] }
+    return HttpResponse.json(lifeGoalEcho({ ...g, pillars: body.pillars ?? [] }))
+  }),
+  http.delete(`${API_BASE}/api/life-goals/:id`, ({ params }) =>
+    findLifeGoal(params.id as string) != null ? new HttpResponse(null, { status: 204 }) : new HttpResponse(null, { status: 404 })),
+  http.post(`${API_BASE}/api/life-goals/:id/status`, async ({ params, request }) => {
+    const g = findLifeGoal(params.id as string)
+    if (g == null) return new HttpResponse(null, { status: 404 })
+    const body = (await request.json()) as { status: string }
+    const closing = body.status === 'done' || body.status === 'archived'
+    return HttpResponse.json({
+      ...g,
+      status: body.status,
+      activatedAt: body.status === 'active' ? (g.activatedAt ?? MSW_NOW) : g.activatedAt,
+      closedAt: closing ? MSW_NOW : g.closedAt,
+    })
   }),
 ]
